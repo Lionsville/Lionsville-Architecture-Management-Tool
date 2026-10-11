@@ -21,7 +21,8 @@ import { useStrings } from '../i18n/LanguageContext';
 import { recordSummary } from './ElementRecord';
 import type { InspectorField } from './elementInspectorFacts';
 import type { ElementInspectorProps } from './ElementInspectorProps';
-import type { PartyElsewhere } from './props';
+import type { AnsweredBy, PartyElsewhere } from './props';
+import { usePersonNames } from '../people/ui/names';
 
 const STRIP = { px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover' } as const;
 
@@ -122,14 +123,17 @@ export function MoveRecord({ move }: { move: NonNullable<ElementInspectorProps['
  * the page, where the fields are. Outside the tabs because it is about the
  * whole record, like the name above it.
  */
-export function RecordSummaryLine({ element, model, parties, onOpenDocumentation }: {
+export function RecordSummaryLine({ element, model, parties, answeredBy, onOpenDocumentation }: {
   element: DesignElement;
   model: DesignModel;
   parties?: readonly PartyElsewhere[];
+  answeredBy?: AnsweredBy;
   onOpenDocumentation?(elementId: ElementId): void;
 }) {
   const { t } = useStrings();
-  const summary = recordSummary(element, model, t, parties);
+  // Who answers for it reads through the register: a name, or a pseudonym once forgotten (ADR-0036 §8).
+  const names = usePersonNames();
+  const summary = recordSummary(element, model, t, parties, { names, ...(answeredBy ? { answeredBy } : {}) });
   return (
     <Box data-testid="record-summary" sx={{ display: 'flex', alignItems: 'center', gap: 1, ...STRIP }}>
       <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>

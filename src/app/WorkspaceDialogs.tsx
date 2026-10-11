@@ -11,6 +11,7 @@ import type { Destination } from '../agent/screen'
 import type { ProjectPatch } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
+import { usePersonNames } from '../people/ui/names'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { treeSources } from '../search/search'
 import type { SearchHit } from '../search/search'
@@ -175,6 +176,8 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
 export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
   const { props, session, showElement, library, readings, dialogs } = parts
   const { s } = props.shell
+  // A person is found through the register first, then the records that point at them (ADR-0036 §8).
+  const names = usePersonNames()
   const { index, scopeModels, ancestorDecisions } = props.tree
   /**
    * What ⌘K searches, nearest first: this scope as the session has it, the
@@ -219,6 +222,7 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
         scopeLabel={scopeLabel}
         onClose={() => dialogs.setSearchOpen(false)}
         onChoose={dialogs.chooseHit}
+        people={names.match}
         s={s}
       />
       <GestureDialogs parts={parts} />

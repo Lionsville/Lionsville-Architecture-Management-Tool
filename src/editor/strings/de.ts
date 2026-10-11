@@ -336,6 +336,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'record.emptyAdd': 'Noch keine Stammdaten \u2014 auf der Seite eintragen \u203a',
   'record.openTip': 'Die Seite dieses Elements öffnen, auf der Eigentümer, Anbieter und Daten geführt werden',
   'record.outsideOf': 'Extern \u00b7 {name}',
+  'record.ownerWorkedOut': '{who}, {role} von {unit}: heute aus der Rolle abgeleitet, nicht gespeichert',
   'field.replace': 'Ersetzen…',
   'edge.replaces': 'ersetzt',
   'field.validFrom': 'Linie gültig ab',

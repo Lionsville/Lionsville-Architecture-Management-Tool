@@ -26,6 +26,7 @@ import type {
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
+import type { PersonId, PersonRef } from '../model/person';
 import type { PlatformTree } from '../model/deployment';
 import type { LeverageLine } from '../model/leverage';
 import type { WindowChrome } from '../platform/windowChrome';
@@ -469,6 +470,20 @@ export interface PartyElsewhere {
   where: string;
 }
 
+/**
+ * Who answers for a record beyond what it says itself (ADR-0036 §8): the
+ * owner its master names, for a stand-in — an id the register names, or
+ * text — and, for an application nobody wrote an owner on, the people the
+ * operating model's rule works out on the day: whoever holds the role in
+ * the unit it belongs to. Worked out by the host, never stored.
+ */
+export interface AnsweredBy {
+  /** The master's owner, for a stand-in, which carries none of its own. */
+  owner?: PersonRef;
+  /** Worked out from the rule, on `day`: who, and the role and the unit that make them it. */
+  workedOut?: { people: readonly PersonId[]; role: string; unit: string; day: string };
+}
+
 export interface EditorOwnership {
   /**
    * Who answers for this element, or nothing when this scope does.
@@ -607,6 +622,8 @@ export interface EditorOwnership {
    * register, the tree) and none of it the canvas's. Absent = no section.
    */
   unitSection?(element: DesignElement, readOnly: boolean): ReactNode;
+  /** See {@link AnsweredBy}. Absent = the record's own owner field only. */
+  answeredBy?(element: DesignElement): AnsweredBy | undefined;
 }
 
 /** Where *Add here ▸ Existing application…* was asked for, in flow coordinates. */

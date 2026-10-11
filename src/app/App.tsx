@@ -39,6 +39,7 @@ import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
 import { usePeopleRegister } from './organisation/usePeopleRegister'
+import { PersonNamesProvider, personNames } from '../people/ui/names'
 import type { OpenScope } from './organisation/leaving'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
@@ -415,6 +416,8 @@ function localToday(): string {
 export function App(props: AppProps) {
   const parts = useShellParts(props)
   const { prefs, s, toasts } = parts.services
+  // Every page under the shell reads a person through the one register (ADR-0036 §8).
+  const names = useMemo(() => personNames(parts.people, s), [parts.people, s])
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
@@ -424,6 +427,7 @@ export function App(props: AppProps) {
       {/* The open source's provider's action on a problem, for every boundary
           below: nothing where it offers none. */}
       <ProblemOfferContext.Provider value={parts.services.problem}>
+      <PersonNamesProvider names={names}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -441,6 +445,7 @@ export function App(props: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </PersonNamesProvider>
       </ProblemOfferContext.Provider>
     </ThemeProvider>
   )

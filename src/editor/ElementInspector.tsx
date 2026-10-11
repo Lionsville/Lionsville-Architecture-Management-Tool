@@ -63,7 +63,7 @@ export function ElementInspector(props: ElementInspectorProps) {
       <InspectorHeader field={field} stacked={stacked} nameRef={nameRef} onOpenDocumentation={props.onOpenDocumentation} />
       {props.owned && <OwnedElsewhere owned={props.owned} />}
       {!readOnly && props.move && <MoveRecord move={props.move} />}
-      {!stacked && <RecordSummaryLine element={element} model={props.model} parties={props.parties} onOpenDocumentation={props.onOpenDocumentation} />}
+      {!stacked && <RecordSummaryLine element={element} model={props.model} parties={props.parties} answeredBy={props.answeredBy} onOpenDocumentation={props.onOpenDocumentation} />}
 
       {stacked && sectionTitle(t('record.title'))}
       {stacked && (
@@ -74,6 +74,7 @@ export function ElementInspector(props: ElementInspectorProps) {
           actions={actions}
           owned={field.owned}
           parties={props.parties}
+          answeredBy={props.answeredBy}
           onReplace={props.onReplace}
         />
       )}

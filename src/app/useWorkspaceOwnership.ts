@@ -11,7 +11,12 @@
  */
 import { createElement, useMemo } from 'react'
 import type { Translate } from '../i18n'
-import type { EditorOwnership, StandInNote } from '../editor'
+import type { AnsweredBy, EditorOwnership, StandInNote } from '../editor'
+import type { DesignElement } from '../model'
+import type { HostModel } from '../model/hostModel'
+import { isBlankRef } from '../model/person'
+import { applicationOwnersOn } from '../model/owners'
+import { organisationHere } from './units/organisationHere'
 import { platformTreeOf } from './platformTree'
 import type { Relation } from '../model'
 import { describeLeverage, leverageOf } from '../model'
@@ -112,7 +117,50 @@ export function useWorkspaceOwnership(deps: {
       element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
       people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
     }),
+    // Who answers for a record beyond its own field (ADR-0036 §8): a stand-in's master, and the rule.
+    answeredBy: (element) => answeredByOf(element, { session, scope, index, today: units.today }),
   }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units])
+}
+
+/** The organisation with this scope's session laid over it, once per index and model: a panel asks on every render. */
+function organisationOver(index: ScopeIndex, scope: ScopePath, model: HostModel): ReturnType<typeof organisationHere> {
+  const held = laidOver.get(model)
+  if (held && held.index === index && held.scope === scope) return held.over
+  const over = organisationHere(index, scope, model)
+  laidOver.set(model, { index, scope, over })
+  return over
+}
+const laidOver = new WeakMap<HostModel, { index: ScopeIndex; scope: ScopePath; over: ReturnType<typeof organisationHere> }>()
+
+/**
+ * Who answers for a record beyond its own owner field (ADR-0036 §2, §8).
+ *
+ * A stand-in carries no owner (ADR-0012 §3): the one its master names is
+ * read off the index, as an id or the text written there, and the register
+ * names it. An application nobody wrote an owner on is owned, on the day,
+ * by whoever holds the role the organisation's `applicationOwner` rule names
+ * in the unit it belongs to (`partyId`) — worked out over the tree with this
+ * scope's session laid over it, so an assignment made a second ago counts,
+ * and never stored.
+ */
+export function answeredByOf(element: DesignElement, at: {
+  session: Pick<ModelSession, 'current'>; scope: ScopePath; index: ScopeIndex; today: string
+}): AnsweredBy | undefined {
+  const entry = element.ref !== undefined ? at.index.lookup(element.id) : undefined
+  const master = entry?.owner !== undefined ? { owner: entry.owner } : {}
+  const written = element.ref !== undefined ? entry?.owner : element.owner
+  const partyId = element.ref !== undefined ? entry?.partyId : element.partyId
+  if (element.kind !== 'application' || !isBlankRef(written) || partyId === undefined) {
+    return entry?.owner !== undefined ? master : undefined
+  }
+  const model = at.session.current()
+  const { organisation } = organisationOver(at.index, at.scope, model)
+  const rules = at.scope === '' ? model.operatingRules : at.index.operatingModel().operatingRules
+  const found = applicationOwnersOn(organisation, rules, { partyId }, at.today)
+  if (found.length === 0) return entry?.owner !== undefined ? master : undefined
+  const role = organisation.roles.find((one) => one.id === found[0].roleId)?.name ?? found[0].roleId
+  const unit = organisation.units.find((one) => one.id === partyId)?.name ?? partyId
+  return { ...master, workedOut: { people: found.map((one) => one.person), role, unit, day: at.today } }
 }
 
 /**

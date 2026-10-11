@@ -47,6 +47,10 @@ import type {
   Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
 } from '../observation'
 import { observationProblems } from '../form'
+import type { PersonRef } from '../../model/person'
+import type { PersonNames } from '../../people/ui/names'
+import { usePersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
@@ -295,6 +299,8 @@ export function ObservationReader(props: ObservationReaderProps) {
     date: observation.date, impact: observation.impact,
   }), [observation])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
+  // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
+  const names = usePersonNames()
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : observation.body
@@ -339,7 +345,7 @@ export function ObservationReader(props: ObservationReaderProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} s={s} />
+            <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} names={names} s={s} />
             <DocumentSource
               value={draft.body}
               onChange={(body) => setDraft((d) => ({ ...d, body }))}
@@ -362,7 +368,7 @@ export function ObservationReader(props: ObservationReaderProps) {
               <Term>{s('observation.whereField')}</Term>
               <Value><Box component="span" sx={{ color: observation.where ? 'inherit' : 'text.secondary' }}>{observation.where || '—'}</Box></Value>
               <Term>{s('observation.byField')}</Term>
-              <Value testId="observation-by"><Box component="span" sx={{ color: observation.by ? 'inherit' : 'text.secondary' }}>{observation.by || '—'}</Box></Value>
+              <Value testId="observation-by"><Box component="span" sx={{ color: observation.by ? 'inherit' : 'text.secondary' }}>{names.text(observation.by) || '—'}</Box></Value>
               <Term>{s('observation.impactField')}</Term><Value>{s(IMPACT_LABEL[observation.impact])}</Value>
               <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
               <Term>{s('observation.colScope')}</Term>
@@ -401,15 +407,16 @@ export function ObservationReader(props: ObservationReaderProps) {
 }
 
 /** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
-function ObservationFields({ draft, onChange, onBlur, today, s }: {
-  draft: { title: string; where: string; by: string; date: string; impact: ObservationImpact }
-  onChange: (patch: Partial<{ title: string; where: string; by: string; date: string; impact: ObservationImpact }>) => void
+function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
+  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact }
+  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact }>) => void
   onBlur: () => void
   today: string
+  names: PersonNames
   s: Translate
 }) {
   const problems = observationProblems(draft, today)
-  const field = (key: 'title' | 'where' | 'by', labelKey: 'observation.titleField' | 'observation.whereField' | 'observation.byField', wide?: boolean) => (
+  const field = (key: 'title' | 'where', labelKey: 'observation.titleField' | 'observation.whereField', wide?: boolean) => (
     <Box sx={wide ? { gridColumn: '1 / -1' } : undefined}>
       <ExampleField
         required label={s(labelKey)} value={draft[key]} onChange={(value) => onChange({ [key]: value })} onBlur={onBlur}
@@ -421,7 +428,11 @@ function ObservationFields({ draft, onChange, onBlur, today, s }: {
     <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1.5, gridTemplateColumns: '1fr 1fr' }}>
       {field('title', 'observation.titleField', true)}
       {field('where', 'observation.whereField')}
-      {field('by', 'observation.byField')}
+      <PersonRefField
+        required label={s('observation.byField')} value={draft.by} onChange={(by) => onChange({ by: by ?? '' })} onBlur={onBlur}
+        names={names} error={problems.by !== undefined} helperText={problemText('by', problems.by, s) ?? exampleFor('by', s)}
+        testId="observation-by-field" s={s}
+      />
       <ExampleField
         required type="date" max={today} label={s('observation.dateField')} value={draft.date}
         onChange={(date) => onChange({ date })} onBlur={onBlur}

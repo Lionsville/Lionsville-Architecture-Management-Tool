@@ -31,6 +31,7 @@ import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import type { DesignElement, DesignModel, ElementId } from '../model/types';
 import { DATED_PHASES, datesInOrder } from '../model/lifecycle';
 import { OrderedDateFields } from '../widgets/OrderedDateFields';
@@ -38,7 +39,12 @@ import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
-import type { PartyElsewhere } from './props';
+import type { AnsweredBy, PartyElsewhere } from './props';
+import { isBlankRef } from '../model/person';
+import type { PersonRef } from '../model/person';
+import type { PersonNames } from '../people/ui/names';
+import { usePersonNames } from '../people/ui/names';
+import { PersonRefField } from '../people/ui/PersonRefField';
 
 /**
  * Who sells it — asked of an application and of nothing else.
@@ -132,11 +138,32 @@ export interface ElementRecordProps {
   parties?: readonly PartyElsewhere[];
   /** Start a replacement (ADR-0010). Absent = no Replace… button. */
   onReplace?(elementId: ElementId): void;
+  /** Who answers for it beyond its own field: a stand-in's master, the rule (`EditorOwnership.answeredBy`). */
+  answeredBy?: AnsweredBy;
+}
+
+/**
+ * Who answers for a record, in words (ADR-0036 §8): its own owner, the owner
+ * its master names for a stand-in, or — where nobody wrote one — whoever the
+ * operating model's rule works out on the day, with the role and the unit
+ * that make them it. Nothing where none of the three says anyone.
+ */
+export function ownerText(
+  element: Pick<DesignElement, 'owner'>, names: PersonNames, t: Translate, answeredBy?: AnsweredBy,
+): string | undefined {
+  const written: PersonRef | undefined = isBlankRef(element.owner) ? answeredBy?.owner : element.owner;
+  if (!isBlankRef(written)) return names.text(written);
+  const worked = answeredBy?.workedOut;
+  if (!worked || worked.people.length === 0) return undefined;
+  const who = worked.people.map((id) => names.text({ person: id })).join(', ');
+  return t('record.ownerWorkedOut', { who, role: worked.role, unit: worked.unit });
 }
 
 export function ElementRecord(props: ElementRecordProps) {
   const { element, model, readOnly, actions, owned } = props;
   const { t } = useStrings();
+  // A person picked from the register, or text; read through the register (ADR-0036 §8).
+  const names = usePersonNames();
   const update = (patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
     actions.updateElement(element.id, patch);
   const typed = (field: string, patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
@@ -146,13 +173,8 @@ export function ElementRecord(props: ElementRecordProps) {
 
   return (
     <Box data-testid="element-record" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <TextField
-        label={t('field.owner')}
-        value={element.owner ?? ''}
-        fullWidth
-        disabled={readOnly || owned('owner')}
-        onChange={(e) => typed('owner', { owner: e.target.value || undefined })}
-      />
+      <OwnerField element={element} names={names} readOnly={readOnly || owned('owner')} answeredBy={props.answeredBy}
+        onChange={(owner) => typed('owner', { owner })} />
 
       {showVendor(element.kind) && (
         <TextField
@@ -197,7 +219,10 @@ export function ElementRecord(props: ElementRecordProps) {
             label={t('field.outside')}
             sx={{ flex: 1, minWidth: 180 }}
           />
-          {element.kind === 'application' && element.outside && (
+          {/* Whose it is: a party outside, or — for one of ours — the unit
+              it belongs to, which the operating model's rule reads its
+              owner from (ADR-0036 §2). */}
+          {element.kind === 'application' && (
             <TextField
               select
               label={t('field.party')}
@@ -282,18 +307,52 @@ export function ElementRecord(props: ElementRecordProps) {
 }
 
 /**
+ * Who answers for it: a person picked from the register or a name typed — a
+ * stand-in shows its master's, greyed — and, where nobody wrote one, whoever
+ * the rule works out today, said under the field (ADR-0036 §2, §8).
+ */
+function OwnerField({ element, names, readOnly, answeredBy, onChange }: {
+  element: DesignElement;
+  names: PersonNames;
+  readOnly: boolean;
+  answeredBy?: AnsweredBy;
+  onChange(owner: PersonRef | undefined): void;
+}) {
+  const { t } = useStrings();
+  const shown = isBlankRef(element.owner) && answeredBy?.owner !== undefined ? answeredBy.owner : element.owner;
+  const worked = isBlankRef(shown) ? ownerText({}, names, t, answeredBy) : undefined;
+  return (
+    <Box data-testid="record-owner">
+      <PersonRefField
+        value={shown} onChange={onChange} names={names} label={t('field.owner')} disabled={readOnly}
+        testId="record-owner-field" inputTestId="record-owner-text" s={t}
+      />
+      {worked && (
+        <Typography variant="caption" color="text.secondary" data-testid="record-owner-worked-out" sx={{ display: 'block', mt: 0.5 }}>
+          {worked}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+/**
  * The record in one line, for the panel beside the canvas: "Owner · Vendor ·
  * Technology · Outside", whichever are set. Empty when none is, so the panel
- * can say so instead.
+ * can say so instead. The owner reads through the register, and where
+ * nobody wrote one, it is whoever the rule works out (ADR-0036 §8); without
+ * `people` a picked owner reads as nobody's name.
  */
 export function recordSummary(
   element: DesignElement,
   model: DesignModel,
   t: Translate,
   parties?: readonly PartyElsewhere[],
+  people?: { names: PersonNames; answeredBy?: AnsweredBy },
 ): string[] {
   const parts: string[] = [];
-  if (element.owner) parts.push(`${t('field.owner')}: ${element.owner}`);
+  const owner = people ? ownerText(element, people.names, t, people.answeredBy) : typeof element.owner === 'string' ? element.owner : undefined;
+  if (owner) parts.push(`${t('field.owner')}: ${owner}`);
   if (element.vendor) parts.push(`${t('field.vendor')}: ${element.vendor}`);
   if (element.technology) parts.push(`${t('field.technology')}: ${element.technology}`);
   if (element.outside) {

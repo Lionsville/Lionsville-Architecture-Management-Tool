@@ -149,6 +149,25 @@ export const EN = {
   'people.csvDoneOther': '{count} people added to the register.',
   'people.csvNothing': 'Nothing to add: every row is there already, or skipped.',
 
+  // --- a field that names a person, and what points at a person (ADR-0036 §8) ---
+  'people.fromRegister': 'From the register…',
+  'people.inRegister': 'In the register:',
+  'people.pointsAt': 'Points at them',
+  'people.pointsAtNothing': 'Nothing points at them.',
+  'people.pointsAtNote': 'Records whose fields name this person by id, shown by the register; a signature keeps the name it was signed with.',
+  'people.pointedOwnerOf': 'Owner of {name}',
+  'people.pointedPlanOwner': '{label} {name}: owner',
+  'people.pointedSeenBy': '{label} {name}: seen by',
+  'people.pointedRunBy': '{label} {name}: run by',
+  'people.pointedProposed': '{label} {name}: proposed',
+  'people.pointedSigner': '{label} {name}: signer',
+  'people.pointedSigned': '{label} {name}: signed as {as}',
+  'people.pointedSignedNote': 'kept: a signature keeps its name',
+  'people.pointedByRule': 'Owner of {name} on {day}',
+  'people.pointedDomainByRule': 'Owner of the domain {name} on {day}',
+  'people.pointedRuleNote': 'worked out from the role, not stored',
+  'people.pointedWhere': 'in {scope}',
+
   // --- refusals ----------------------------------------------------------------
   'people.unknown': 'Nobody in the register has that id.',
   'people.merged': 'That entry was merged into another, and is changed no more.',

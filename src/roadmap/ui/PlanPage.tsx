@@ -53,6 +53,8 @@ import { SeamResizer } from '../../widgets/SeamResizer'
 import { AddElement, StatusField, WindowFields, namedSelect } from './PlanFacts'
 import { DecisionRow, ElementRow } from './PlanRows'
 import type { DescribeElsewhere } from '../planGateHints'
+import { usePersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 
 export type PlanActions = {
   updateTransition(id: string, patch: Partial<Transition>): void
@@ -252,6 +254,18 @@ function Heading({ children }: { children: ReactNode }) {
   )
 }
 
+/** Who answers for the plan: a person picked from the register, or text; read through the register (ADR-0036 §8). */
+function PlanOwner({ plan, readOnly, set }: { plan: Transition; readOnly: boolean; set: (patch: Partial<Transition>) => void }) {
+  const { t } = useStrings()
+  const names = usePersonNames()
+  return (
+    <PersonRefField
+      value={plan.owner} names={names} label={t('roadmap.owner')} disabled={readOnly}
+      onChange={(owner) => set({ owner })} testId="plan-owner" inputTestId="plan-owner-text" s={t}
+    />
+  )
+}
+
 function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle, describe, organisation }: {
   plan: Transition
   model: DesignModel
@@ -286,10 +300,7 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
         describe={describe} set={set}
       />
       <WindowFields plan={plan} readOnly={readOnly} set={set} />
-      <TextField
-        size="small" label={t('roadmap.owner')} value={plan.owner ?? ''} disabled={readOnly}
-        onChange={(e) => set({ owner: e.target.value || undefined })}
-      />
+      <PlanOwner plan={plan} readOnly={readOnly} set={set} />
       {initiativeToggle && (
         <Tooltip title={t('roadmap.initiativeHelp')} placement="right">
           <FormControlLabel

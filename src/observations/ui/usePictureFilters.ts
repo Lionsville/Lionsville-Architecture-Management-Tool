@@ -27,6 +27,7 @@ import { nodeKey, pictureCounts, pictureLinks } from '../graph'
 import type { PictureCounts, PictureSize } from '../graph'
 import type { ObservationBelow, ScopeAnalysis } from '../observation'
 import type { Translate } from '../../i18n'
+import { usePersonNames } from '../../people/ui/names'
 
 /** How the picture is looked at: the size of its marks, the zoom, and whether the zoom is the fitted one. */
 export type PictureView = {
@@ -113,7 +114,9 @@ export function usePictureFilters(deps: {
 
   const inView = useMemo(() => (viewLocal ? [here, ...below] : [here]), [viewLocal, here, below])
   const paths = useMemo(() => inView.map((one) => one.scope), [inView])
-  const records = useMemo(() => filterRecords(inView, here.scope), [inView, here.scope])
+  // Who saw it is matched as it reads, the register's name or the text (ADR-0036 §8).
+  const names = usePersonNames()
+  const records = useMemo(() => filterRecords(inView, here.scope, names.text), [inView, here.scope, names])
   const links = useMemo(() => pictureLinks(inView, here.scope), [inView, here.scope])
   const result = useMemo(() => applyFilters(records, links, filters), [records, links, filters])
   const hiddenLocal = useMemo(() => (viewLocal ? 0 : below.reduce((sum, one) => sum + recordsIn(one), 0)), [viewLocal, below])

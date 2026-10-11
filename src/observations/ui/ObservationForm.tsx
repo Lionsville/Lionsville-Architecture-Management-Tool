@@ -47,6 +47,10 @@ import { IMPACT_LABEL } from '../observationScope'
 import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
 import { FormDialog, problemsLine } from './FormDialog'
+import { isBlankRef, personRefOf } from '../../model/person'
+import type { PersonRef } from '../../model/person'
+import { usePersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -144,10 +148,12 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
   const forget = (key: string) => {
     if (key in shown) setShown((held) => { const next = { ...held }; delete next[key as Refused]; return next })
   }
-  const set = (key: keyof ObservationFields, value: string) => {
-    setFields((held) => ({ ...held, [key]: value }))
+  const set = (key: keyof ObservationFields, value: string | PersonRef | undefined) => {
+    setFields((held) => ({ ...held, [key]: value ?? '' }))
     forget(key)
   }
+  // Who saw it is a person picked from the register, or a name typed (ADR-0036 §8).
+  const names = usePersonNames()
   const setSection = (key: keyof ObservationSections, value: string) => {
     setSections((held) => ({ ...held, [key]: value }))
     forget(key)
@@ -165,11 +171,12 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
     if (Object.keys(problems).length) { setShown(problems); return }
     props.onRecord({
       ...(scope?.scope !== undefined ? { scope: scope.scope } : {}),
-      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), by: fields.by.trim(), body },
+      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), by: personRefOf(fields.by) ?? '', body },
       causes: rows.map(({ key: _key, ...choice }) => { void _key; return choice }),
     })
   }
-  const dirty = rows.length > 0 || [fields.title, fields.where, fields.by, ...Object.values(sections)].some((one) => one.trim() !== '')
+  const dirty = rows.length > 0 || !isBlankRef(fields.by)
+    || [fields.title, fields.where, ...Object.values(sections)].some((one) => one.trim() !== '')
 
   return (
     <FormDialog
@@ -210,9 +217,10 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
             required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
             example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
           />
-          <ExampleField
-            required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)}
-            example={exampleFor('by', s)} problem={problemText('by', shown.by, s)} testId="form-by"
+          <PersonRefField
+            required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)} names={names}
+            error={shown.by !== undefined} helperText={problemText('by', shown.by, s) ?? exampleFor('by', s)}
+            testId="form-by-field" inputTestId="form-by" s={s}
           />
           <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 1.5 }}>
             <ExampleField

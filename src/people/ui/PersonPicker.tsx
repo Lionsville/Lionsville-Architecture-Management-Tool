@@ -3,8 +3,8 @@
 
 /**
  * A person picked from the register, wherever one is asked for (ADR-0036 §9):
- * a slot on a unit, an assignment corrected — and, later, every field that
- * names a person.
+ * a slot on a unit, an assignment corrected, and every field that names a
+ * person (`PersonRefField`).
  *
  * It searches the register as it is, the people still with the organisation
  * first, and marks *you*. Nobody new is added without the four signs being
@@ -38,6 +38,8 @@ export type PersonPickerProps = {
   onChange: (id: PersonId | undefined) => void
   /** Said beside a name: what the person holds already, say. */
   note?: (person: Person) => string | undefined
+  /** What the search starts with: a name already typed into the field it picks for. */
+  initialQuery?: string
   s: Translate
 }
 
@@ -48,8 +50,8 @@ export function pickable(people: readonly Person[], query: string): Person[] {
     .sort((one, other) => (one.name ?? '').localeCompare(other.name ?? ''))
 }
 
-export function PersonPicker({ register, saying, value, onChange, note, s }: PersonPickerProps) {
-  const [query, setQuery] = useState('')
+export function PersonPicker({ register, saying, value, onChange, note, initialQuery, s }: PersonPickerProps) {
+  const [query, setQuery] = useState(initialQuery ?? '')
   const [adding, setAdding] = useState(false)
   const people = useMemo(() => register.people ?? [], [register.people])
   const found = useMemo(() => pickable(people, query), [people, query])
@@ -60,7 +62,7 @@ export function PersonPicker({ register, saying, value, onChange, note, s }: Per
     setQuery('')
   }
   if (adding) {
-    return <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} s={s} />
+    return <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} initialName={query} s={s} />
   }
   return (
     <Box data-testid="person-picker" sx={{ display: 'grid', gap: 0.75 }}>

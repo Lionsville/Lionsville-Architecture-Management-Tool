@@ -38,7 +38,7 @@ import {
 } from '../../observations/observationScope'
 import { PLAN_STATUS_LABEL } from '../../roadmap/labels'
 import { searchAll } from '../search'
-import type { SearchHit, SearchSource } from '../search'
+import type { PeopleMatch, SearchHit, SearchSource } from '../search'
 
 export type GlobalSearchDialogProps = {
   open: boolean
@@ -48,6 +48,8 @@ export type GlobalSearchDialogProps = {
   scopeLabel: (path: string) => string
   onClose: () => void
   onChoose: (hit: SearchHit) => void
+  /** The register's half (ADR-0036 §8): which register ids a word names. Absent, people are found by text alone. */
+  people?: PeopleMatch
   s: Translate
 }
 
@@ -105,7 +107,7 @@ export function chipOf(hit: SearchHit, s: Translate): string | undefined {
   return undefined
 }
 
-export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, s }: GlobalSearchDialogProps) {
+export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, people, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -127,8 +129,8 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
   const asked = useDeferredValue(query)
 
   const hits = useMemo(
-    () => (open ? searchAll({ sources, query: asked }) : []),
-    [open, sources, asked],
+    () => (open ? searchAll({ sources, query: asked, ...(people ? { people } : {}) }) : []),
+    [open, sources, asked, people],
   )
   // Keyed on the query the list was built from, not on the one being typed: the
   // highlight resets when the rows it points into change.

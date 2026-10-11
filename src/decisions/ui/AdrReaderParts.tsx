@@ -10,7 +10,7 @@
  * these draw what the record says about itself (ADR-0008, amended 28
  * September 2026).
  */
-import { useEffect, useState, type ReactNode, type RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -25,13 +25,30 @@ import type { StringKey, Translate } from '../../i18n'
 import {
   adrGate, adrOptionNames, formatAdrNumber, isAdrDeletable, isAdrLocked, selfAccepted, supersededByUnaccepted, transitionsFrom,
 } from '../adr'
-import type { Adr, AdrGateItem, AdrPatch, AdrStatus } from '../adr'
+import type { Adr, AdrGateItem, AdrPatch, AdrSigner, AdrStatus } from '../adr'
+import { signerNamed } from '../adr'
+import type { PersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Solution } from '../../model/observation'
 import { transitionLabel } from '../../model/transition'
 import type { Transition } from '../../model/transition'
 import { STATUS_COLOR, STATUS_LABEL } from '../adrScope'
 
 export type Mode = 'read' | 'edit'
+
+/**
+ * Who signed, as the record says it (ADR-0036 §8): the name a signature kept
+ * where there is one — it stays after the person is forgotten — and what the
+ * register says otherwise.
+ */
+export function signerText(signer: AdrSigner, names: PersonNames): string {
+  return signer.signedAs ?? names.text(signer.name)
+}
+
+/** Who proposed it: the name fixed when the record was signed, or what the register says. */
+export function proposerText(adr: Pick<Adr, 'proposedBy' | 'proposedAs'>, names: PersonNames): string {
+  return adr.proposedAs ?? names.text(adr.proposedBy)
+}
 
 /** Each line of a gate, in the words the page says it in. */
 const GATE_LABEL: Record<AdrGateItem, StringKey> = {
@@ -174,15 +191,17 @@ function Notice({ testId, warning = false, children }: { testId?: string; warnin
  * needs, that it is locked, a successor that is not in force, and an
  * approval that is only the proposer's own.
  */
-export function ReaderNotices({ adr, list, readOnly, s }: { adr: Adr; list: readonly Adr[]; readOnly: boolean; s: Translate }) {
+export function ReaderNotices({ adr, list, readOnly, names, s }: {
+  adr: Adr; list: readonly Adr[]; readOnly: boolean; names: PersonNames; s: Translate
+}) {
   const gate = readOnly ? undefined : acceptGateOf(adr, list)
-  const ownApproval = (adr.status === 'reviewing' || adr.status === 'accepted') && selfAccepted(adr)
+  const ownApproval = (adr.status === 'reviewing' || adr.status === 'accepted') && selfAccepted(adr, names.canonical)
   return (
     <>
       {gate && <GateChecklist items={gate.items} body={adr.body} s={s} />}
       {isAdrLocked(adr) && <Notice>{s('adr.locked', { status: s(STATUS_LABEL[adr.status]).toLowerCase() })}</Notice>}
       {supersededByUnaccepted(adr, list) && <Notice testId="adr-broken-successor" warning>{s('adr.brokenSuccessor')}</Notice>}
-      {ownApproval && <Notice testId="adr-self-accepted" warning>{s('adr.selfAccepted', { name: adr.proposedBy ?? '' })}</Notice>}
+      {ownApproval && <Notice testId="adr-self-accepted" warning>{s('adr.selfAccepted', { name: proposerText(adr, names) })}</Notice>}
     </>
   )
 }
@@ -256,10 +275,11 @@ function LinkRow({ term, links, testId }: {
  * successor, day, decision-makers, who proposed it, why it ended, what it
  * supersedes, and what rests on it.
  */
-export function FrontMatter({ adr, list, canEdit, s, day, onUpdate, onSelect, plans, solutions }: {
+export function FrontMatter({ adr, list, canEdit, names, s, day, onUpdate, onSelect, plans, solutions }: {
   adr: Adr
   list: readonly Adr[]
   canEdit: boolean
+  names: PersonNames
   s: Translate
   day: (value: string) => string
   onUpdate: (patch: AdrPatch) => void
@@ -269,7 +289,7 @@ export function FrontMatter({ adr, list, canEdit, s, day, onUpdate, onSelect, pl
 }) {
   const nameOf = namer(list)
   const successor = adr.supersededBy ? list.find((a) => a.id === adr.supersededBy) : undefined
-  const deciders = adr.signers.map((signer) => signer.name.trim()).filter(Boolean)
+  const deciders = adr.signers.filter(signerNamed).map((signer) => signerText(signer, names))
   const predecessors = list.filter((a) => a.supersededBy === adr.id)
     .map((p) => ({ key: p.id, label: s('adr.supersedes', { name: nameOf(p.id) }), onOpen: () => onSelect(p.id) }))
   // Derived, as the plans are: the solution names its record, and the record reads the name back.
@@ -294,7 +314,7 @@ export function FrontMatter({ adr, list, canEdit, s, day, onUpdate, onSelect, pl
       <Box component="dd" sx={{ m: 0, color: deciders.length ? 'inherit' : 'text.secondary' }}>
         {deciders.length ? deciders.join(', ') : '—'}
       </Box>
-      <ProposedByRow adr={adr} canEdit={canEdit} s={s} onUpdate={onUpdate} />
+      <ProposedByRow adr={adr} canEdit={canEdit} names={names} s={s} onUpdate={onUpdate} />
       {adr.reason && (
         <>
           <Term>{s('adr.reason')}</Term>
@@ -309,39 +329,27 @@ export function FrontMatter({ adr, list, canEdit, s, day, onUpdate, onSelect, pl
   )
 }
 
-/** Who proposed it: a field while the record is written, a name once it is not, nothing when nobody said. */
-function ProposedByRow({ adr, canEdit, s, onUpdate }: { adr: Adr; canEdit: boolean; s: Translate; onUpdate: (patch: AdrPatch) => void }) {
-  if (!canEdit && !adr.proposedBy) return null
+/**
+ * Who proposed it: a field while the record is written — a person picked from
+ * the register, or a name typed and committed when the field is left — what
+ * the record says once it is not, and nothing when nobody said.
+ */
+function ProposedByRow({ adr, canEdit, names, s, onUpdate }: {
+  adr: Adr; canEdit: boolean; names: PersonNames; s: Translate; onUpdate: (patch: AdrPatch) => void
+}) {
+  if (!canEdit && adr.proposedBy === undefined) return null
   return (
     <>
       <Term>{s('adr.proposedBy')}</Term>
       <Box component="dd" sx={{ m: 0 }}>
         {canEdit ? (
-          <ProposedByField value={adr.proposedBy ?? ''} label={s('adr.proposedBy')} onCommit={(proposedBy) => onUpdate({ proposedBy })} />
-        ) : adr.proposedBy}
+          <PersonRefField
+            value={adr.proposedBy} names={names} label={s('adr.proposedBy')} variant="standard" commit="blur"
+            onChange={(proposedBy) => onUpdate({ proposedBy })} testId="adr-proposed-by" s={s}
+          />
+        ) : <span data-testid="adr-proposed-by">{proposerText(adr, names)}</span>}
       </Box>
     </>
-  )
-}
-
-/**
- * Who proposed it: typed, and committed when the field is left — a name is
- * not worth a commit per keystroke.
- */
-function ProposedByField({ value, label, onCommit }: { value: string; label: string; onCommit: (next: string) => void }) {
-  const [draft, setDraft] = useState(value)
-  useEffect(() => { setDraft(value) }, [value])
-  const commit = () => { if (draft.trim() !== value) onCommit(draft) }
-  return (
-    <TextField
-      variant="standard"
-      size="small"
-      value={draft}
-      slotProps={{ htmlInput: { 'aria-label': label } }}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => { if (event.key === 'Enter') commit() }}
-    />
   )
 }
 

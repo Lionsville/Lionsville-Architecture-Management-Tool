@@ -635,9 +635,14 @@ describe('ElementInspector — the record on the page', () => {
     expect(again.updateElement).toHaveBeenLastCalledWith('e1', { outside: undefined, partyId: undefined });
   });
 
-  it('asks whose it is only once it is outside, offering the actors of this scope', () => {
-    renderInspector(element(), { layout: 'stacked', others: [actor('p1', 'Globex')] });
-    expect(screen.queryByLabelText('Belongs to')).toBeNull();
+  // Of every application (ADR-0036 §2): one of ours belongs to its team, the
+  // unit whose role the operating model's rule reads its owner from, and one
+  // outside to its party.
+  it('asks whose it is of every application, offering the actors of this scope', () => {
+    const ours = renderInspector(element(), { layout: 'stacked', others: [actor('p1', 'Team Orders')] });
+    fireEvent.mouseDown(screen.getByLabelText('Belongs to'));
+    fireEvent.click(screen.getByRole('option', { name: 'Team Orders' }));
+    expect(ours.updateElement).toHaveBeenLastCalledWith('e1', { partyId: 'p1' });
     cleanup();
     const { updateElement } = renderInspector(element({ outside: true }), { layout: 'stacked', others: [actor('p1', 'Globex')] });
     fireEvent.mouseDown(screen.getByLabelText('Belongs to'));

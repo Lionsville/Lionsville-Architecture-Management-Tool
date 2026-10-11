@@ -59,6 +59,8 @@ import { TitleField } from './FormParts'
 import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
 import type { Mode } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
+import { usePersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (
@@ -547,12 +549,14 @@ export function ExperimentReader(props: ExperimentReaderProps) {
     result: experiment.result ?? '',
   }), [experiment])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
+  // Who runs it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
+  const names = usePersonNames()
   const bar = experimentBar(props, mode, switchMode)
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : experiment.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
-  type Field = 'hypothesis' | 'measure' | 'where' | 'by' | 'from' | 'to' | 'result'
+  type Field = 'hypothesis' | 'measure' | 'where' | 'from' | 'to' | 'result'
   const field = (key: Field, label: string, extra: { type?: string; wide?: boolean } = {}) => (
     <TextField
       size="small" label={label} value={draft[key]} type={extra.type}
@@ -596,7 +600,10 @@ export function ExperimentReader(props: ExperimentReaderProps) {
               {field('hypothesis', s('solution.hypothesis'), { wide: true })}
               {field('measure', s('solution.measure'), { wide: true })}
               {field('where', s('solution.whereField'))}
-              {field('by', s('solution.byField'))}
+              <PersonRefField
+                label={s('solution.byField')} value={draft.by} names={names} onBlur={commit}
+                onChange={(by) => setDraft((d) => ({ ...d, by: by ?? '' }))} testId="experiment-by-field" s={s}
+              />
               {field('from', s('solution.fromField'), { type: 'date' })}
               {field('to', s('solution.toField'), { type: 'date' })}
               {field('result', s('solution.result'), { wide: true })}
@@ -626,7 +633,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
               <Term>{s('solution.hypothesis')}</Term><Value testId="experiment-hypothesis">{shown(experiment.hypothesis)}</Value>
               <Term>{s('solution.measure')}</Term><Value>{shown(experiment.measure)}</Value>
               <Term>{s('solution.whereField')}</Term><Value>{shown(experiment.where)}</Value>
-              <Term>{s('solution.byField')}</Term><Value>{shown(experiment.by)}</Value>
+              <Term>{s('solution.byField')}</Term><Value testId="experiment-by">{shown(names.text(experiment.by))}</Value>
               <Term>{s('solution.fromField')}</Term><Value>{shownDay(experiment.from)}</Value>
               <Term>{s('solution.toField')}</Term><Value>{shownDay(experiment.to)}</Value>
               <Term>{s('solution.result')}</Term><Value testId="experiment-result">{shown(experiment.result)}</Value>

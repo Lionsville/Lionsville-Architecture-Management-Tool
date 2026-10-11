@@ -31,16 +31,18 @@ export const SIGN_LABEL: Record<DuplicateSign, StringKey> = {
   familyAndInitial: 'people.signFamilyAndInitial',
 }
 
-export function AddPerson({ register, saying, onAdded, onUse, onCancel, s }: {
+export function AddPerson({ register, saying, onAdded, onUse, onCancel, initialName, s }: {
   register: PeopleRegisterAccess
   saying: Saying
   onAdded: (id: PersonId) => void
   /** Nobody added: the entry already there is the one meant. */
   onUse: (id: PersonId) => void
   onCancel: () => void
+  /** A name already typed where the person was asked for. */
+  initialName?: string
   s: Translate
 }) {
-  const [name, setName] = useState('')
+  const [name, setName] = useState(initialName?.trim() ?? '')
   const [email, setEmail] = useState('')
   const [kind, setKind] = useState<PersonKind>('internal')
   const similar = useMemo(

@@ -121,6 +121,7 @@ function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, elemen
       technology={ownership?.technology}
       parties={ownership?.parties}
       unitSection={element.kind === 'actor' ? ownership?.unitSection?.(element, inspectorReadOnly) : undefined}
+      answeredBy={ownership?.answeredBy?.(element)}
       onShowOnTechnology={diagrams.onOpenTechnologyFor
         ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
         : undefined}

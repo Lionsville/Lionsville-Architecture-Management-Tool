@@ -46,7 +46,10 @@ import type { Adr, AdrPatch, AdrSigner, AdrStatus, AdrVerdict } from '../adr'
 import type { Solution } from '../../model/observation'
 import type { Transition } from '../../model/transition'
 import { VERDICT_LABEL } from '../adrScope'
-import { Contents, FrontMatter, ReaderBar, ReaderNotices } from './AdrReaderParts'
+import { Contents, FrontMatter, ReaderBar, ReaderNotices, signerText } from './AdrReaderParts'
+import { usePersonNames } from '../../people/ui/names'
+import type { PersonNames } from '../../people/ui/names'
+import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -104,6 +107,8 @@ function copyLinkOf({ adr, onCopyLink }: AdrReaderProps): (() => void) | undefin
 
 export function AdrReader(props: AdrReaderProps) {
   const { adr, list, readOnly, s, today, elements, renderMarkdown, onUpdate, onStatus, onSelect } = props
+  // What a proposer and a signer picked from the register read as, and its picker (ADR-0036 §8).
+  const names = usePersonNames()
   const locked = isAdrLocked(adr)
   const canEdit = !readOnly && !locked
   const [mode, setMode] = useState<Mode>('read')
@@ -166,7 +171,7 @@ export function AdrReader(props: AdrReaderProps) {
         adr={adr} list={list} readOnly={readOnly} canEdit={canEdit} mode={mode} s={s} day={day}
         onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onCopyLink={copyLinkOf(props)} onMode={switchMode}
       />
-      <ReaderNotices adr={adr} list={list} readOnly={readOnly} s={s} />
+      <ReaderNotices adr={adr} list={list} readOnly={readOnly} names={names} s={s} />
 
       {/* ---- the body, or the source beside it ---- */}
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
@@ -201,7 +206,7 @@ export function AdrReader(props: AdrReaderProps) {
               {mode === 'edit' ? draft.title : adr.title}
             </Typography>
             <FrontMatter
-              adr={adr} list={list} canEdit={canEdit} s={s} day={day} onUpdate={onUpdate} onSelect={onSelect}
+              adr={adr} list={list} canEdit={canEdit} names={names} s={s} day={day} onUpdate={onUpdate} onSelect={onSelect}
               plans={props.plans} solutions={props.solutions}
             />
             <Contents headings={headings} root={contentRef} s={s} />
@@ -210,6 +215,7 @@ export function AdrReader(props: AdrReaderProps) {
               signers={adr.signers}
               editable={canEdit}
               today={today}
+              names={names}
               s={s}
               day={day}
               onChange={(signers) => onUpdate({ signers })}
@@ -227,6 +233,7 @@ type SignersTableProps = {
   signers: readonly AdrSigner[]
   editable: boolean
   today: () => string
+  names: PersonNames
   s: Translate
   /** A day as the screen says it. */
   day: (value: string) => string
@@ -234,11 +241,14 @@ type SignersTableProps = {
 }
 
 /**
- * Who the decision was put to. Name and role are typed; the verdict is picked,
- * and picking one stamps today — a signature without a date is not one.
- * Edits commit straight away: a table row is a field, not a page.
+ * Who the decision was put to. A signer is picked from the register or typed,
+ * and the role is typed; the verdict is picked, and picking one stamps today —
+ * a signature without a date is not one — and, for a person picked from the
+ * register, keeps the name they signed with (ADR-0036 §8), which the page
+ * writes beside the id. Edits commit straight away: a table row is a field,
+ * not a page; a typed name when it is left.
  */
-function SignersTable({ signers, editable, today, s, day, onChange }: SignersTableProps) {
+function SignersTable({ signers, editable, today, names, s, day, onChange }: SignersTableProps) {
   const edit = (index: number, patch: Partial<AdrSigner>) =>
     onChange(signers.map((signer, i) => (i === index ? { ...signer, ...patch } : signer)))
   const setVerdict = (index: number, verdict: AdrVerdict | 'pending') => {
@@ -271,8 +281,13 @@ function SignersTable({ signers, editable, today, s, day, onChange }: SignersTab
               <TableRow key={index}>
                 <TableCell>
                   {editable
-                    ? <TextField variant="standard" size="small" value={signer.name} aria-label={s('adr.signerName')} onChange={(e) => edit(index, { name: e.target.value })} fullWidth />
-                    : signer.name}
+                    ? (
+                      <PersonRefField
+                        value={signer.name} names={names} label={s('adr.signerName')} variant="standard" commit="blur"
+                        onChange={(name) => edit(index, { name: name ?? '' })} testId={`adr-signer-${index}`} s={s}
+                      />
+                    )
+                    : <span data-testid={`adr-signer-${index}`}>{signerText(signer, names)}</span>}
                 </TableCell>
                 <TableCell>
                   {editable
@@ -298,8 +313,8 @@ function SignersTable({ signers, editable, today, s, day, onChange }: SignersTab
                 <TableCell>{signer.signedAt ? day(signer.signedAt) : ''}</TableCell>
                 {editable && (
                   <TableCell padding="none">
-                    <Tooltip title={s('adr.removeSigner', { name: signer.name || '…' })}>
-                      <IconButton size="small" aria-label={s('adr.removeSigner', { name: signer.name || '…' })} onClick={() => onChange(signers.filter((_, i) => i !== index))}>
+                    <Tooltip title={s('adr.removeSigner', { name: signerText(signer, names) || '…' })}>
+                      <IconButton size="small" aria-label={s('adr.removeSigner', { name: signerText(signer, names) || '…' })} onClick={() => onChange(signers.filter((_, i) => i !== index))}>
                         ×
                       </IconButton>
                     </Tooltip>

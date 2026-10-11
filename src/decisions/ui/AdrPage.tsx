@@ -46,6 +46,9 @@ import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
 import { AdrRecordList, AdrTopBar, AdrTree, FromAboveBanner, MoveDialogs } from './AdrPageParts'
 import { AdrReader } from './AdrReader'
+import { signerText } from './AdrReaderParts'
+import { usePersonNames } from '../../people/ui/names'
+import type { PersonNames } from '../../people/ui/names'
 import {
   fromScope, projectScopeOf, scopeFromPath, scopeSubjectId,
 } from '../adrScope'
@@ -110,6 +113,11 @@ export type AdrPageProps = {
    */
   crumbs?: ReactNode
   windowChrome?: WindowChrome
+}
+
+/** Whether a record matches the page's search: its title, body and number, and who signed, as the page says them. */
+function recordMatches(adr: Adr, query: string, names: PersonNames): boolean {
+  return matchesQuery(query, [adr.title, adr.body, formatAdrNumber(adr.number), ...adr.signers.map((one) => signerText(one, names))])
 }
 
 /**
@@ -181,6 +189,8 @@ export function AdrPage(props: AdrPageProps) {
     open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
     initialAdrId, initialNonce, readOnly = false, s, today, makeId,
   } = props
+  // Who proposed and who signed, by the register's names, and the name a signature keeps (ADR-0036 §8).
+  const names = usePersonNames()
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const projectDecisions = useMemo(() => model.decisions ?? [], [model.decisions])
@@ -293,11 +303,10 @@ export function AdrPage(props: AdrPageProps) {
   const shown: { adr: Adr; scope: ScopeKey }[] = useMemo(() => {
     if (trimmed) {
       return allRecords
-        .filter((adr) => matchesQuery(trimmed, [adr.title, adr.body, formatAdrNumber(adr.number), ...adr.signers.map((x) => x.name)]))
-        .map((adr) => ({ adr, scope: scopeOfRecord(adr) }))
+        .filter((adr) => recordMatches(adr, trimmed, names)).map((adr) => ({ adr, scope: scopeOfRecord(adr) }))
     }
     return sortAdrs(scopedList(scope)).map((adr) => ({ adr, scope }))
-  }, [trimmed, allRecords, scopeOfRecord, scopedList, scope])
+  }, [trimmed, allRecords, scopeOfRecord, scopedList, scope, names])
 
   const chooseScope = (key: ScopeKey) => {
     setScope(key)
@@ -326,7 +335,8 @@ export function AdrPage(props: AdrPageProps) {
 
   const update = (adr: Adr, patch: AdrPatch) => {
     const key = scopeOfRecord(adr)
-    commitList(key, updateAdr(owningList(key), adr.id, patch))
+    // A verdict given to a person picked from the register writes the name they signed with (ADR-0036 §8).
+    commitList(key, updateAdr(owningList(key), adr.id, patch, names.nameOf))
   }
 
   const move = (adr: Adr, next: AdrStatus) => {

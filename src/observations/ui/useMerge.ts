@@ -21,6 +21,9 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../../i18n'
 import type { Cause, CauseStrength, Observation, ScopeAnalysis } from '../observation'
 import { OBSERVATION_IMPACTS } from '../../model/observation'
+import { personRefFromKey, personRefKey } from '../../model/person'
+import { usePersonNames } from '../../people/ui/names'
+import type { PersonRef } from '../../model/person'
 import { causeDefaults, observationDefaults, planMerge, scopesForMerge, withMergedDescriptions } from '../merge'
 import type { CauseValues, LinkChoice, MergeKind, MergeLink, MergePlan, ObservationValues, RecordAt } from '../merge'
 import {
@@ -108,7 +111,9 @@ type Chosen = Partial<ObservationValues & CauseValues>
 const same = (one: RecordAt, other: RecordAt) => one.scope === other.scope && one.id === other.id
 
 /** The value rows of a kind, as the field holds each record's. */
-function fieldsOf(kind: MergeKind, records: readonly (Observation | Cause)[], values: Chosen, deps: MergeDeps): MergeField[] {
+function fieldsOf(
+  kind: MergeKind, records: readonly (Observation | Cause)[], values: Chosen, deps: MergeDeps & { named: (ref: PersonRef | undefined) => string },
+): MergeField[] {
   const { t } = deps
   const row = (key: MergeFieldKey, label: string, read: (one: Observation & Cause) => string | undefined, say: (value: string) => string): MergeField => {
     const seen = new Set<string>()
@@ -119,7 +124,8 @@ function fieldsOf(kind: MergeKind, records: readonly (Observation | Cause)[], va
       return [{ label: recordLabel(kind, one), value, said: say(value) }]
     })
     const held = values[key]
-    return { key, label, value: held === undefined ? '' : String(held), options }
+    const value = held === undefined ? '' : key === 'by' ? personRefKey(held as PersonRef) ?? '' : String(held)
+    return { key, label, value, options }
   }
   const plain = (value: string) => value
   if (kind === 'cause') {
@@ -133,7 +139,9 @@ function fieldsOf(kind: MergeKind, records: readonly (Observation | Cause)[], va
   return [
     row('title', t('observation.titleField'), (one) => one.title, plain),
     row('where', t('observation.whereField'), (one) => one.where, plain),
-    row('by', t('observation.byField'), (one) => one.by, plain),
+    // A person picked from the register is offered by id and said by name: the value is the reference.
+    row('by', t('observation.byField'), (one) => personRefKey(one.by),
+      (value) => deps.named(personRefFromKey(value))),
     row('impact', t('observation.impactField'), (one) => one.impact, (value) => t(IMPACT_LABEL[value as Observation['impact']])),
     row('date', t('observation.mergeFirstSeen'), (one) => one.date, deps.day),
   ]
@@ -144,6 +152,7 @@ function valueOf(key: MergeFieldKey, value: string): Chosen {
   if (key === 'root') return { root: value === 'true' }
   if (key === 'impact') return OBSERVATION_IMPACTS.includes(value as Observation['impact']) ? { impact: value as Observation['impact'] } : {}
   if (key === 'state') return value === 'verified' || value === 'assumed' ? { state: value } : {}
+  if (key === 'by') return { by: personRefFromKey(value) }
   return { [key]: value }
 }
 
@@ -209,7 +218,7 @@ function screenOf(o: {
   nameAt: (at: RecordAt) => string
   blocked: string | undefined
   land: () => Promise<void>
-  deps: MergeDeps
+  deps: MergeDeps & { named: (ref: PersonRef | undefined) => string }
 }): MergeScreenState {
   const { kind, opened, plan, c, records, absorbed, survivor, values, deps } = o
   const { t, scopeLabel } = deps
@@ -256,6 +265,8 @@ function screenOf(o: {
 export function useMerge(deps: MergeDeps) {
   const { here, scopes, t, scopeLabel, today, select, commit, onChangeAcross, readOnly } = deps
   const writable = deps.writable ?? EVERY_SCOPE
+  // Who saw it, offered by reference and said as the register says it (ADR-0036 §8).
+  const names = usePersonNames()
   const c = useMergeChoices()
   const [note, setNote] = useState<string | undefined>(undefined)
   const { opened, choices, chosen } = c
@@ -322,7 +333,7 @@ export function useMerge(deps: MergeDeps) {
   }, [plan, survivorAt, here, close, setBusy, select, commit, onChangeAcross, read, request, scopeLabel, t])
 
   const state = opened && plan ? screenOf({
-    kind, opened, plan, c, hits, records, absorbed, survivor, values, rowOf, nameAt, land, deps,
+    kind, opened, plan, c, hits, records, absorbed, survivor, values, rowOf, nameAt, land, deps: { ...deps, named: names.text },
     blocked: mergeBlocked({
       plan, records: opened.picked, here, readOnly, across: Boolean(onChangeAcross), writable, scopeLabel, t,
     }),
