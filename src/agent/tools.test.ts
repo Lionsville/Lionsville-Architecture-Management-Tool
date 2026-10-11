@@ -11,6 +11,7 @@ import {
   REFUSAL_SENTENCE, TOOLS, TOOL_NAMES, checkArguments, isToolName, json, refused, toolSpec,
 } from './tools'
 import type { AgentRefusal, InputSchema } from './tools'
+import { PAGES } from './screen'
 
 describe('the tool list', () => {
   it('names every tool once, as a noun, a dot and a verb, or one camel-cased verb', () => {
@@ -101,5 +102,12 @@ describe('answers', () => {
 
   it('carries data as one indented JSON text block', () => {
     expect(json({ a: 1 })).toEqual({ ok: true, content: [{ type: 'text', text: '{\n  "a": 1\n}' }] })
+  })
+})
+
+describe('app.open', () => {
+  it('offers exactly the pages the app can be opened on', () => {
+    const page = (toolSpec('app.open').inputSchema.properties as Record<string, { enum?: readonly string[] }>).page
+    expect([...(page.enum ?? [])].sort()).toEqual([...PAGES].sort())
   })
 })

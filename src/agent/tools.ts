@@ -2162,7 +2162,7 @@ const SPECS = [
     description:
       'Move the app: open a scope, and in it a view or a page — what a person does with the tree, the tabs '
       + 'and the cards. `scope` is a path from scopes.list (default: the open one); `page` is what to show '
-      + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology (a view, by '
+      + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology / drawing (a view, by '
       + 'id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
       + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
@@ -2180,7 +2180,7 @@ const SPECS = [
           type: 'string',
           description: 'What to show there. Default: the canvas, or the home of a scope with no views.',
           enum: [
-            'home', 'board', 'sheet', 'map', 'technology',
+            'home', 'board', 'sheet', 'map', 'technology', 'drawing',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
             'platform', 'service', 'register', 'technologyRegister',
           ],
