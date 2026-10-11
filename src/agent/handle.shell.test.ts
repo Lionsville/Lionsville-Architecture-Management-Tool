@@ -66,6 +66,10 @@ const retail: HostModel = {
     id: 'tr-1', number: 1, title: 'One warehouse system', status: 'agreed', from: '2027-01-01',
     elements: [], decisions: [], milestones: [], body: '',
   }],
+  solutions: [{
+    id: 'so-1', number: 1, title: 'One picking list', state: 'idea', addresses: [], validatedWith: [], attempts: [], body: '', history: [],
+  }],
+  experiments: [{ id: 'ex-1', number: 1, title: 'Try it on one shift', tests: ['so-1'], hypothesis: 'Fewer misses', outcome: 'planned', body: '' }],
 }
 
 const DOCUMENTS: Record<string, HostModel> = { '': organisation, 'acme/finance': finance, 'acme/retail': retail }
@@ -301,6 +305,16 @@ describe('with nothing open', () => {
     expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', tab: 'analysis' })
     expect(out.page).toEqual({ page: 'observations', tab: 'analysis' })
     expect(out.arrived).toBe(true)
+  })
+
+  it('opens a solution and an experiment on the observations page, as the page does (ADR-0026)', async () => {
+    const { view, opened } = shell()
+    parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', id: 'so-1' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', id: 'so-1' })
+    parsed(await handle(call('app.open', { scope: 'acme/retail', id: 'ex-1' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', id: 'ex-1' })
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', id: 'so-9' }), undefined, view)))
+      .toBe('agent.unknownId')
   })
 
   it('refuses a tab for any page but the observations, and an unknown tab', async () => {

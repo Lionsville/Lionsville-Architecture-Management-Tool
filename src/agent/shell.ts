@@ -222,8 +222,11 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   const decision = asked.id !== undefined
     ? [...(model.decisions ?? []), ...ancestors].find((held) => held.id === asked.id)
     : undefined
+  // A solution and an experiment open on the same page, on their own tab, as
+  // the page itself opens them (ADR-0026).
   const observed = asked.id !== undefined
-    ? [...(model.observations ?? []), ...(model.causes ?? [])].find((held) => held.id === asked.id)
+    ? [...(model.observations ?? []), ...(model.causes ?? []), ...(model.solutions ?? []), ...(model.experiments ?? [])]
+      .find((held) => held.id === asked.id)
     : undefined
 
   if (asked.page === undefined) {
@@ -251,7 +254,7 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
       if (asked.id !== undefined && !decision) return refused('agent.unknownId', `decision ${asked.id} in ${where}`)
       return asked.id !== undefined ? { page, id: asked.id } : { page }
     case 'observations':
-      if (asked.id !== undefined && !observed) return refused('agent.unknownId', `observation or cause ${asked.id} in ${where}`)
+      if (asked.id !== undefined && !observed) return refused('agent.unknownId', `observation, cause, solution or experiment ${asked.id} in ${where}`)
       return asked.id !== undefined ? { page, id: asked.id } : { page }
     case 'plan':
       return plan ? { page, id: plan.id } : refused('agent.unknownId', `plan ${asked.id} in ${where}`)

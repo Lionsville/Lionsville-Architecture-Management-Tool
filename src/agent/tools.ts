@@ -2174,7 +2174,7 @@ const SPECS = [
             'platform', 'service', 'register', 'technologyRegister',
           ],
         },
-        id: { type: 'string', description: 'The view, element, plan, decision, observation or cause the page is about, where it is about one.' },
+        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution or experiment the page is about, where it is about one.' },
         tab: {
           type: 'string',
           description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',
