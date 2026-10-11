@@ -199,7 +199,7 @@ export function PlanOrganisation(props: PlanOrganisationProps) {
       <PeopleToMove {...props} facts={facts} />
       {days && <StillOpen at={facts.at} reorganisation={reorganisation} responsibilities={facts.responsibilities} names={facts.names}
         before={days.before} after={days.after} index={props.index} scope={props.scope} model={props.model}
-        scopeLabel={props.scopeLabel} onOpen={props.onOpenElement} s={s} />}
+        scopeLabel={props.scopeLabel} onOpen={props.onOpenElement} remember={`plan\u0000${props.scope}\u0000${props.plan.id}`} s={s} />}
     </Box>
   )
 }

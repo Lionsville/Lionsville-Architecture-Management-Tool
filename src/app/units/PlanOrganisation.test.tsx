@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
 import { axeFindings } from '../testing/axe'
+import { pressAction, unfoldFindings } from '../testing/findings'
 import { renderShell } from '../testing/renderShell'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -147,7 +148,12 @@ function Harness({ dispatched, opened = [], readOnly = false, manages }: { dispa
   )
 }
 
-const lines = (id: string) => screen.getAllByTestId(id).map((one) => one.textContent)
+/** The lines under a test id, what is still open unfolded first (3.6.1: the one list of findings, grouped and folded). */
+const lines = (id: string) => {
+  const open = screen.queryByTestId('plan-still-open')
+  if (open) unfoldFindings(open)
+  return screen.getAllByTestId(id).map((one) => one.textContent)
+}
 
 describe('a reorganisation on its plan\'s page', () => {
   it('lists the units it moves, and adds and takes a move away as a change to the plan', () => {
@@ -211,10 +217,13 @@ describe('a reorganisation on its plan\'s page', () => {
     const open = lines('plan-still-open')[0]
     expect(open).toContain('Release to production needs a new A')
     expect(open).toContain('Freight is short of Cluster lead')
-    // A finding about a unit opens the unit; the lost A is a line.
+    // A finding about a unit opens the unit from its explanation; the lost A is explained and opens nothing here.
     fireEvent.click(screen.getByRole('button', { name: /^Freight is short of Cluster lead/ }))
+    pressAction(screen.getByTestId('finding-explanation'), 'Open the unit')
     expect(opened).toEqual(['freight'])
-    expect(screen.queryByRole('button', { name: /Release to production/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Release to production/ }))
+    expect(within(screen.getByTestId('finding-explanation')).queryAllByTestId(/^finding-action-/)).toEqual([])
   })
 
   it('lists the interactions the new units are left to declare on the day, each opening the plan\'s unit', async () => {
@@ -225,8 +234,11 @@ describe('a reorganisation on its plan\'s page', () => {
     expect(lines('plan-open-line')).toContain(declare)
     expect(lines('plan-open-line').indexOf(declare)).toBeGreaterThan(lines('plan-open-line').findIndex((line) => line?.startsWith('Release to production')))
     fireEvent.click(screen.getByRole('button', { name: declare }))
-    expect(opened).toEqual(['parcel'])
+    const explanation = screen.getByTestId('finding-explanation')
+    expect(within(explanation).getAllByTestId(/^finding-action-/).map((one) => one.textContent)).toEqual(['Declare an interaction…', 'Open the two units'])
     expect(await axeFindings()).toEqual([])
+    pressAction(explanation, 'Declare an interaction…')
+    expect(opened).toEqual(['parcel'])
   })
 
   it('writes every end and beginning as one step, a row changed as chosen, and undo takes it all back', async () => {
