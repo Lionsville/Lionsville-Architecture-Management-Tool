@@ -88,9 +88,12 @@ Sache, in der sich die Organisation selbst widerspricht — ein Name, den zwei
 Bereiche beide definieren, eine veraltete Kopie, eine Anwendung, von der niemand
 gesagt hat, wem sie gehört, ein Dienst, der über eine Teamgrenze hinweg genutzt
 wird, ohne als geteilt markiert zu sein, ein Dienst, den keine Plattform
-liefert. Jeder Satz ist eine Schaltfläche, die den betreffenden Bereich mit
-dem ausgewählten Datensatz öffnet, sodass der Ort zum Beheben einen Klick
-entfernt ist. Der Rest von *Ein Name in der ganzen Organisation* weiter unten
+liefert, und auf dem Organisationsbildschirm selbst ein Einheitstyp, der
+nirgends hingehört, oder eine Verantwortung ohne ihre eine
+rechenschaftspflichtige Rolle. Jeder Satz ist eine Schaltfläche, die den
+betreffenden Bereich mit dem ausgewählten Datensatz öffnet — ein Befund zum
+Betriebsmodell öffnet dessen Seite, mit dem Einheitstyp oder der Verantwortung
+gewählt —, sodass der Ort zum Beheben einen Klick entfernt ist. Der Rest von *Ein Name in der ganzen Organisation* weiter unten
 sagt, was jeder bedeutet.
 
 **Bereiche in** der Organisation, darunter: eine Zeile je Bereich, die Kinder
@@ -1895,17 +1898,36 @@ Verantwortung hat einen eigenen Verlauf.
 ### Einheiten und Rollen
 
 Ein **Einheitstyp** ist das Wort der Organisation für eine Art von Einheit —
-wie auch immer sie ihre Teams, Züge oder Abteilungen nennt. Seine Karte sagt,
-wo eine Einheit dieses Typs stehen darf (ganz oben, direkt unter der
-Organisation, oder unter einer Einheit eines anderen Typs), ob sie mehr als
-eine Domäne bedienen darf, welche Rollen sie hat und wie viele von jeder, und
-wie viele Anwendungen eine Einheit davon höchstens verantworten sollte — eine
-Prüfung liest diese Zahl; nichts verweigert sie. **Neuer Einheitstyp** und
-**Neue Rolle** fügen einen hinzu; ein Druck auf eine Karte oder eine Rolle
-öffnet sie rechts zum Bearbeiten. Ein Einheitstyp, der weder ganz oben steht
-noch zu einem Einheitstyp gehört, der irgendwo steht, gehört nirgends hin:
-Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es erlaubt, und er
-steht bei dem, worin sich die Organisation selbst widerspricht.
+wie auch immer sie ihre Teams, Züge oder Abteilungen nennt. Der Reiter zeichnet
+die Einheitstypen als die Struktur, die sie bilden. Die Organisation ist Bahn
+0, links, und jeder Einheitstyp steht einmal darin, in der Bahn des längsten
+Wegs von der Organisation zu ihm, mit einer Linie von jedem Platz, an dem eine
+Einheit davon stehen darf: von der Organisation für einen Typ, der ganz oben
+stehen darf, sodass ein Typ, der ganz oben oder in einem anderen stehen darf,
+beide Linien zeigt. Eine Linie, die eine Bahn überspringt, läuft über eine
+Schiene oberhalb der Karten, wo keine Karte sie verdeckt; eine Linie zurück
+die Bahnen hinauf, wo Typen ineinander stehen dürfen, ist gestrichelt. Die
+Karte eines Typs sagt, woher er kommt (der Name der Bibliothek, oder *eigen*),
+wie viele Einheiten davon es heute gibt, welche Rollen er hat und wie viele
+von jeder, mit **führt** an einer führenden Rolle, ob eine Einheit davon mehr
+als eine Domäne bedienen darf, wie viele Anwendungen eine Einheit davon
+höchstens verantworten sollte — eine Prüfung liest diese Zahl; nichts
+verweigert sie — und seinen letzten Tag, wenn er einen hat.
+
+Ein Druck auf eine Karte wählt den Typ: die Plätze, an denen er stehen darf,
+die Typen, die in ihm stehen dürfen, und seine Rollen leuchten auf, alles
+andere tritt zurück. Ein Druck auf eine Rolle lässt die Typen aufleuchten, die
+sie haben, und ein erneuter Druck auf das Gewählte lässt es los. Das Gewählte
+öffnet sich rechts zum Bearbeiten: dort wird **Wo eine Einheit dieses Typs
+stehen darf** angehakt, und **Reihenfolge in der Bahn** schiebt den Typ **Nach
+oben** oder **Nach unten** in seiner Bahn, in einem Schritt — das Organigramm
+führt Einheiten in dieser Reihenfolge. **Neuer Einheitstyp** und **Neue Rolle**
+fügen einen hinzu. Unter den Bahnen hält **Gehört noch nirgends hin** einen
+Einheitstyp, der weder ganz oben steht noch zu einem Einheitstyp gehört, der
+irgendwo steht: Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es
+erlaubt, und er steht unter **Braucht Aufmerksamkeit** auf dem
+Organisationsbildschirm. **Rollen, die noch in keinem Einheitstyp vorkommen**
+hält die Rollen, die kein Typ hat.
 
 Eine **Rolle** hat einen Namen, einen Kurznamen für die Matrix, einen Zweck
 und einen Anteil an jeder Verantwortung. **Führt die Einheit** kennzeichnet
@@ -1921,8 +1943,11 @@ ermittelt, an dem man hinsieht; er folgt also, wer die Rolle innehat, und
 kein Name wird gespeichert.
 
 Eine Rolle zu entfernen nimmt sie in einem Schritt aus den Einheitstypen, die
-sie haben, und aus den Regeln, die sie nennen; eine Verantwortung zu
-entfernen nimmt den Anteil jeder Rolle daran mit.
+sie haben, und aus den Regeln, die sie nennen. Haben Menschen sie heute oder
+später, sagt die Frage davor, wie viele und in welchen Einheiten, denn ihre
+Zuordnungen nennten dann eine Rolle, die es nicht mehr gibt; beenden Sie die
+Rolle besser an einem Tag, stehen sie daneben mit **Die Menschen verschieben**.
+Eine Verantwortung zu entfernen nimmt den Anteil jeder Rolle daran mit.
 
 ### Verantwortungen
 

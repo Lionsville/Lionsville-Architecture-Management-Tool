@@ -80,8 +80,12 @@ zin per ding waarin de organisatie zichzelf tegenspreekt — een naam die twee
 onderdelen allebei definiëren, een verouderde kopie, een applicatie waarvan
 niemand heeft gezegd van wie ze is, een dienst die over een teamgrens wordt
 gebruikt zonder als gedeeld gemarkeerd te zijn, een dienst die geen enkel
-platform levert. Elke zin is een knop die het onderdeel opent waar het over
-gaat, met het record geselecteerd, zodat de plek om het te herstellen één klik
+platform levert, en op het organisatiescherm zelf een eenheidstype dat
+nergens onder valt of een verantwoordelijkheid zonder haar ene
+eindverantwoordelijke rol. Elke zin is een knop die het onderdeel opent waar
+het over gaat, met het record geselecteerd — een bevinding over het
+besturingsmodel opent diens pagina, met het eenheidstype of de
+verantwoordelijkheid gekozen — zodat de plek om het te herstellen één klik
 verder is. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
 elk betekent.
 
@@ -1784,17 +1788,35 @@ geschiedenis.
 ### Eenheden en rollen
 
 Een **eenheidstype** is het woord van de organisatie voor een soort eenheid —
-hoe ze haar teams, treinen of afdelingen ook noemt. De kaart zegt waar een
-eenheid van dat type onder mag vallen (bovenaan, direct onder de organisatie,
-of onder een eenheid van een ander type), of ze meer dan één domein mag
-bedienen, welke rollen ze heeft en hoeveel van elk, en van hoeveel
-applicaties een eenheid ervan hoogstens eigenaar hoort te zijn — een controle
-leest dat getal; niets weigert het. **Nieuw eenheidstype** en **Nieuwe rol**
-voegen er een toe; druk op een kaart of een rol om haar rechts te bewerken.
-Een eenheidstype dat niet bovenaan staat en niet onder een eenheidstype valt
-dat ergens staat, valt nergens onder: geen eenheid ervan kan worden ingedeeld
-waar het type dat toestaat, en het staat bij wat de organisatie zichzelf
-tegenspreekt.
+hoe ze haar teams, treinen of afdelingen ook noemt. Het tabblad tekent de
+eenheidstypen als de structuur die ze vormen. De organisatie is baan 0, links,
+en elk eenheidstype staat er één keer, in de baan van het langste pad
+ernaartoe vanaf de organisatie, met een lijn vanaf elke plek waar een eenheid
+ervan onder mag vallen: vanaf de organisatie voor een type dat bovenaan mag
+staan, zodat een type dat bovenaan of onder een ander mag vallen beide lijnen
+heeft. Een lijn die een baan overslaat loopt over een rail boven de kaarten,
+waar geen kaart haar verbergt; een lijn terug omhoog door de banen, waar
+typen onder elkaar mogen vallen, is gestippeld. De kaart van een type zegt
+waar het vandaan komt (de naam van de bibliotheek, of *eigen*), hoeveel
+eenheden ervan er vandaag zijn, welke rollen het heeft en hoeveel van elk, met
+**stuurt aan** bij een rol die aanstuurt, of een eenheid ervan meer dan één
+domein mag bedienen, van hoeveel applicaties een eenheid ervan hoogstens
+eigenaar hoort te zijn — een controle leest dat getal; niets weigert het — en
+zijn laatste dag als het die heeft.
+
+Een druk op een kaart kiest het type: de plekken waar het onder mag vallen, de
+typen die eronder mogen vallen en zijn rollen lichten op, en de rest wordt
+gedempt. Een druk op een rol laat de typen oplichten die haar hebben, en nog
+eens drukken op wat gekozen is laat het los. Wat gekozen is opent rechts om te
+bewerken: daar vink je **Waar een eenheid van dit type onder mag vallen** aan,
+en **Volgorde in de baan** zet het type **Omhoog** of **Omlaag** in zijn baan,
+in één stap — het organogram zet eenheden in die volgorde. **Nieuw
+eenheidstype** en **Nieuwe rol** voegen er een toe. Onder de banen staat in
+**Valt nog nergens onder** een eenheidstype dat niet bovenaan staat en niet
+onder een eenheidstype valt dat ergens staat: geen eenheid ervan kan worden
+ingedeeld waar het type dat toestaat, en het staat onder **Vraagt aandacht**
+op het organisatiescherm. **Rollen die nog in geen eenheidstype zitten** houdt
+de rollen die geen type heeft.
 
 Een **rol** heeft een naam, een korte naam voor de matrix, een doel, en een
 aandeel in elke verantwoordelijkheid. **Stuurt de eenheid aan** markeert een
@@ -1809,8 +1831,11 @@ in de eenheid die het bedient. De eigenaar wordt uitgerekend op de dag waarop
 je kijkt, dus hij volgt wie de rol heeft, en er wordt geen naam opgeslagen.
 
 Een rol verwijderen haalt haar in één stap uit de eenheidstypen die haar
-hebben en uit de regels die haar noemen; een verantwoordelijkheid verwijderen
-neemt het aandeel van elke rol erin mee.
+hebben en uit de regels die haar noemen. Hebben mensen haar vandaag of later,
+dan zegt de vraag ervoor hoeveel en in welke eenheden, omdat hun toewijzingen
+dan een rol noemen die er niet meer is; laat je de rol liever op een dag
+eindigen, dan staan ze ernaast met **Verplaats de mensen**. Een
+verantwoordelijkheid verwijderen neemt het aandeel van elke rol erin mee.
 
 ### Verantwoordelijkheden
 

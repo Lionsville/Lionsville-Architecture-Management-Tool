@@ -395,9 +395,16 @@ src/operating/    The operating model (ADR-0036): what is done with the records
                                       never merged
                     edit              the page's edits as commands: a role taken
                                       out of the slots and rules that name it
-                    ui/OperatingModelPage   unit types and roles as cards, the
-                                      rules, the matrix of responsibilities
-                                      against roles, the libraries
+                    ui/OperatingModelPage   unit types and roles drawn as a
+                                      structure, the rules, the matrix of
+                                      responsibilities against roles, the
+                                      libraries
+                    ui/StructureLanes the lanes, a type once in each, and the
+                                      lines measured from the cards
+                                      (`laneLines`, the rail over a lane
+                                      skipped); cards (`TypeCard`) and what a
+                                      pick lights (`structurePick`) handed in,
+                                      so a library is drawn the same way
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
                     timeline          rows and spans, in days rather than pixels;
                                       a window, and a plan's shadow run
@@ -842,7 +849,10 @@ src/app/          The shell around the editor.
                                       out of a unit type leaves
                                       (`SlotHolders`), and the people's moves
                                       landed as one step per scope
-                                      (`landPeopleMoves`)
+                                      (`landPeopleMoves`); the units of each
+                                      type today and who holds a role, for
+                                      the operating model page
+                                      (`operatingCounts`)
                                       …and the two views (§7): ChartPage and
                                       ConwayPage with its table
                                       (`ConwayTable`), drawn in the tab through

@@ -1265,6 +1265,42 @@ suggestions:
 so a slot that names a role reused from elsewhere reads as missing against
 the library's.
 
+## As built, 3.6.1: the structure drawn
+
+The amendment's first point, on the page. The *Units and roles* tab draws the
+unit types in their lanes (`operating/ui/StructureLanes.tsx`): the
+organisation's card in lane 0, each type once, in the lane `unitTypeLanes`
+gives it and in the lane's order, and a line from every place it may sit. The
+lines are measured from where the cards ended up after every layout, never
+stored (`laneLines`): across the gap to the next lane; along a rail of its own,
+in a band above the cards, where a line skips a lane; and dashed, back along a
+rail, where a loop was cut. A line to or from a type that sits nowhere is not
+drawn. The lanes draw nothing they are not handed — the cards, and how each
+line stands to what is picked — so a library's own types can be drawn the same
+way, read-only, with cards of their own.
+
+A type's card (`TypeCard`) says its name; where it came from, its library's
+name from `basedOn` or *own*; how many units of it there are today, which the
+host counts across the tree with the open scope's session over it
+(`app/units/operatingCounts.ts`), since the page knows nothing of units; its
+slots, with their counts and the managing mark; *several domains*; the limit;
+and its last day. Where it may sit is said aloud rather than drawn. Picking
+(`structurePick`) lights, for a type, the types its `within` names, the
+organisation where it may sit at the top, the types that may sit in it and its
+roles, and for a role the types that hold it; everything else dims, and
+pressing the pick again lets it go. The order in a lane is moved in the
+inspector, *Move up* and *Move down*, each one step of `moveUnitType`; cards are
+not dragged. Under the lanes, *Sits nowhere yet* and *Roles in no unit type
+yet*.
+
+Two things beside it. Removing a role that somebody holds today or later says
+first how many people hold it and in which units, as the host counts them
+(`model/units`' `holdingFrom`); the removal stays one step, and ending the role
+on a day stays the way to move them first. And the operating model's two
+findings, which no index holds, are said under *Needs attention* on the
+organisation's home off its own document (`operatingModelFindings`), each
+opening the operating model's page with the item picked rather than a board.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

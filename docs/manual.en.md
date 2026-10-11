@@ -78,8 +78,11 @@ here.
 one sentence per thing the organisation contradicts about itself — a name two
 scopes both define, a copy gone stale, an application nobody has said whose it
 is, a service used across a team boundary without being marked shared, a
-service no platform delivers. Each sentence is a button that opens the scope it
-is about with the record selected, so the place to fix it is one click away.
+service no platform delivers, and on the organisation's own home a unit type
+that sits nowhere or a responsibility without its one accountable role. Each
+sentence is a button that opens the scope it is about with the record
+selected — a finding about the operating model opens its page, with the unit
+type or the responsibility picked — so the place to fix it is one click away.
 The rest of *One name across the organisation* below says what each means.
 
 **Scopes within** the organisation, beneath: one row per scope, the children
@@ -1655,15 +1658,31 @@ history of its own.
 ### Units and roles
 
 A **unit type** is the organisation's word for a kind of unit — whatever it
-calls its teams, trains or departments. Its card says where a unit of that
-type may sit (at the top, under the organisation itself, or under a unit of
-another type), whether it may serve more than one domain, the roles it holds
-with how many of each, and how many applications a unit of it should own at
-most — a check reads that number; nothing refuses it. **New unit type** and
-**New role** add one; pressing a card or a role opens it on the right to edit.
-A unit type that is neither at the top nor in a unit type that sits anywhere
-sits nowhere: no unit of it can be placed where its type allows, and it is
-listed among what the organisation contradicts about itself.
+calls its teams, trains or departments. The tab draws the unit types as the
+structure they make. The organisation is lane 0, on the left, and each unit
+type stands once, in the lane of the longest path to it from the
+organisation, with a line from every place a unit of it may sit: from the
+organisation for a type at the top, so a type that may sit at the top or
+inside another shows both lines. A line that skips a lane runs along a rail
+above the cards, where no card hides it; a line back up the lanes, where
+types may sit in each other, is dashed. A type's card says where it came from
+(the library's name, or *own*), how many units of it there are today, the
+roles it holds with how many of each and **manages** on a managing one,
+whether a unit of it may serve more than one domain, how many applications a
+unit of it should own at most — a check reads that number; nothing refuses
+it — and its last day where it has one.
+
+Pressing a card picks the type: the places it may sit, the types that may sit
+in it and its roles light up, and everything else dims. Pressing a role lights
+the types that hold it, and pressing the pick again lets it go. What is picked
+opens on the right to edit: **Where a unit of this type may sit** is ticked
+there, and **Order in its lane** moves the type up or down its lane, one step —
+the organisation chart lists units in that order. **New unit type** and **New
+role** add one. Under the lanes, **Sits nowhere yet** holds a unit type that is
+neither at the top nor in a unit type that sits anywhere: no unit of it can be
+placed where its type allows, and it is listed under **Needs attention** on the
+organisation's home. **Roles in no unit type yet** holds the roles no type
+holds.
 
 A **role** has a name, a short name for the matrix, a purpose, and its part in
 each responsibility. **Manages its unit** marks a role whose holder manages
@@ -1677,7 +1696,10 @@ worked out on the day it is looked at, so it follows whoever holds the role
 and no name is stored.
 
 Removing a role takes it out of the unit types that hold it and the rules that
-name it, in one step; removing a responsibility takes every role's part in it
+name it, in one step. Where people hold it today or later, the question before
+it goes says how many and in which units, since their assignments would name a
+role that is gone; ending the role on a day instead lists them beside it with
+**Move the people**. Removing a responsibility takes every role's part in it
 with it.
 
 ### Responsibilities
