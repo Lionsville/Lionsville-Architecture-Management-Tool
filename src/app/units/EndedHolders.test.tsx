@@ -114,7 +114,7 @@ describe('a role taken out of a unit type', () => {
   it('lists who holds it through the type before it goes, and takes it out with their moves as one write', async () => {
     const landed: Map<string, readonly Command[]>[] = []
     showSlot(cluster, landed)
-    expect(screen.getByText('Taking Release manager out of this type')).toBeTruthy()
+    expect(screen.getByText('Taking Release manager out of this unit type')).toBeTruthy()
     expect(screen.getByText(/Their last day in it is today, 2026-10-11/)).toBeTruthy()
     const row = screen.getByTestId('move-row-as-1')
     expect(within(row).getByRole('combobox').textContent).toBe('Cluster lead, Parcel — suggested')
@@ -144,7 +144,7 @@ describe('a role taken out of a unit type', () => {
     cleanup()
     const landed: Map<string, readonly Command[]>[] = []
     showSlot({ ...cluster, slots: [cluster.slots[0]] }, landed, done)
-    expect(screen.getByText('Release manager is taken out of this type')).toBeTruthy()
+    expect(screen.getByText('Release manager is taken out of this unit type')).toBeTruthy()
     fireEvent.click(screen.getByTestId('move-write'))
     await waitFor(() => expect(landed).toHaveLength(1))
     expect(landed[0].get('')?.some((one) => one.type === 'unitType.update')).toBe(false)
