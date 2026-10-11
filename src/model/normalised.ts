@@ -42,7 +42,7 @@ import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
   OperatingRule, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
-} from './operating'
+} from './operatingModel'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */

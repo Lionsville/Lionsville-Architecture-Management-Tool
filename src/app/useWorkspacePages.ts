@@ -44,13 +44,14 @@ export function useWorkspacePages(deps: {
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
   const platformReading = usePlatformReport()
   const records = useRecordPages()
+  const operating = useOperatingPage()
   const { showDecision } = records
   const plans = usePlans({
     session, makeId, s, viewing,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
   const drawings = useDrawing({ session, makeId, s })
-  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings })
+  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, operating })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
@@ -80,10 +81,11 @@ export function useWorkspacePages(deps: {
     if (obsPage.open) return observationsPage(obsPage, obsShown)
     if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
     if (plans.roadmapOpen) return { page: 'roadmap' }
+    if (operating.page.open) return withOperatingId(operating.page.id)
     if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
-  }, [adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, platformReading.platformId, platformReading.serviceId])
+  }, [adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, platformReading.platformId, platformReading.serviceId])
   /** Has the record page that is up — the same one `page` names — said what it landed on for the latest request? */
   const settled = useCallback((): boolean => {
     if (adrPage.open) return adrShown?.nonce === adrPage.nonce
@@ -93,10 +95,29 @@ export function useWorkspacePages(deps: {
 
   return {
     adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw,
+    operatingPage: operating.page, closeOperating: operating.close,
     selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,
     decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,
   }
+}
+
+/** The operating model's page as the screen says it: on the item it was asked for, where one was. */
+function withOperatingId(id: string | undefined): ScreenPage {
+  return { page: 'operating', ...(id !== undefined ? { id } : {}) }
+}
+
+/**
+ * The operating model's page (ADR-0036): up or not, and the item it was asked
+ * to open on, with the request's number, as a record page's request carries.
+ */
+function useOperatingPage() {
+  const [page, setPage] = useState<{ open: boolean; id?: string; nonce: number }>({ open: false, nonce: 0 })
+  const show = useCallback((id?: string) => {
+    setPage((was) => ({ open: true, ...(id !== undefined ? { id } : {}), nonce: was.nonce + 1 }))
+  }, [])
+  const close = useCallback(() => setPage((was) => ({ open: false, nonce: was.nonce })), [])
+  return { page, show, close }
 }
 
 function withId(page: 'decisions' | 'observations', id: string | undefined): ScreenPage {
@@ -170,8 +191,10 @@ function usePageOpeners(deps: {
   maps: Maps
   landscapes: TechnologyLandscapes
   drawings: Drawings
+  operating: ReturnType<typeof useOperatingPage>
 }) {
   const { session, maps, landscapes, drawings } = deps
+  const { show: showOperating, close: closeOperating } = deps.operating
   const { showDecision, showObservations, closeRecords, closeObservations } = deps.records
   const { closeAll: closePlans, openRoadmap: showRoadmap } = deps.plans
   const { close: closeReport, open: showPlatform, openService: showService } = deps.platformReading
@@ -180,25 +203,36 @@ function usePageOpeners(deps: {
     closePlans()
     closeReport()
     closeObservations()
+    closeOperating()
     showDecision(adrId)
-  }, [closePlans, closeReport, closeObservations, showDecision])
+  }, [closePlans, closeReport, closeObservations, closeOperating, showDecision])
   /** The observations page (ADR-0021): the same one-at-a-time rule; on a tab where one is named. */
   const openObservations = useCallback((id?: string, tab?: ObservationTab) => {
     closePlans()
     closeReport()
+    closeOperating()
     showObservations(id, tab)
-  }, [closePlans, closeReport, showObservations])
+  }, [closePlans, closeReport, closeOperating, showObservations])
   const openRoadmap = useCallback(() => {
     closeRecords()
     closeReport()
+    closeOperating()
     showRoadmap()
-  }, [closeRecords, closeReport, showRoadmap])
+  }, [closeRecords, closeReport, closeOperating, showRoadmap])
+  /** The operating model's page (ADR-0036), the same one-at-a-time rule; on an item where one is named. */
+  const openOperating = useCallback((id?: string) => {
+    closeRecords()
+    closePlans()
+    closeReport()
+    showOperating(id)
+  }, [closeRecords, closePlans, closeReport, showOperating])
   /** Every page beside the canvas shut, so the tab shows: what opening a view does first. */
   const closePages = useCallback(() => {
     closeRecords()
     closePlans()
     closeReport()
-  }, [closeRecords, closePlans, closeReport])
+    closeOperating()
+  }, [closeRecords, closePlans, closeReport, closeOperating])
   /** A view on its tab, whichever kind: a board, a sheet, a map or a landscape (ADR-0016). */
   const openView = useCallback((id: string) => {
     closePages()
@@ -227,14 +261,16 @@ function usePageOpeners(deps: {
   const openServiceReport = useCallback((serviceId: string) => {
     closeRecords()
     closePlans()
+    closeOperating()
     showService(serviceId)
-  }, [closeRecords, closePlans, showService])
+  }, [closeRecords, closePlans, closeOperating, showService])
   const openPlatformReport = useCallback((platformId: string) => {
     closePlans()
+    closeOperating()
     showPlatform(platformId)
-  }, [closePlans, showPlatform])
+  }, [closePlans, closeOperating, showPlatform])
   return {
-    openDecisions, openObservations, openRoadmap, closePages, openView, createMap,
+    openDecisions, openObservations, openRoadmap, openOperating, closePages, openView, createMap,
     openTechnology, openTechnologyFor, createTechnology, createDrawing, createDrawingFor, openServiceReport, openPlatformReport,
   }
 }

@@ -336,6 +336,11 @@ export type InitialPage =
    */
   | { page: 'observations'; id?: string; tab?: ObservationTab }
   | { page: 'roadmap' }
+  /**
+   * The operating model (ADR-0036): kept at the organisation and opened there,
+   * on one unit type, role or responsibility when an id is given.
+   */
+  | { page: 'operating'; id?: string }
   /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
   | { page: 'platform'; id: ElementId }
   | { page: 'service'; id: ElementId }

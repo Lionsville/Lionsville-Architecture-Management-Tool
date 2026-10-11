@@ -18,7 +18,7 @@
 import type { Adr } from '../adr'
 import type { Transition } from '../transition'
 import type { Cause, Experiment, Observation, Solution } from '../observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from '../operating'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../operatingModel'
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 

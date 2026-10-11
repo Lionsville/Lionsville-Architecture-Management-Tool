@@ -14,7 +14,7 @@
 import type { DesignDiagram, DesignModel, UploadedLogo } from '.'
 import type { Adr } from './adr'
 import type { Cause, Experiment, Observation, Solution } from './observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
 
 /**

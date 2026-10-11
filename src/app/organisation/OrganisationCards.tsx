@@ -39,6 +39,7 @@ import { DecisionIcon, DeploymentIcon, DocumentIcon, ObservationIcon, RegisterIc
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
 import type { TechnologySummary } from '../../projects/technologyRegister'
+import { OperatingCard } from './OperatingCard'
 
 export type OrganisationCardsProps = {
   pages: OrganisationPages
@@ -68,7 +69,7 @@ export type OrganisationCardsProps = {
    * over what is beneath, so a scope that draws and holds nothing under it has
    * no use for it.
    */
-  shows: { business: boolean; documentation: boolean; register: boolean; technology: boolean }
+  shows: { business: boolean; documentation: boolean; register: boolean; technology: boolean; operating: boolean }
   onOpenBusiness: () => void
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
@@ -88,6 +89,8 @@ export type OrganisationCardsProps = {
   onOpenTechnologyLandscape: () => void
   /** The documentation page, as the bar opens it. */
   onOpenDocumentation?: () => void
+  /** The operating model's page (ADR-0036), at the organisation. */
+  onOpenOperating?: () => void
   /**
    * May this person change the scope? Where not, a page the scope has not been
    * given yet is not offered — *Make a sheet…* would be a write they are
@@ -176,7 +179,7 @@ function Actions({ children }: { children: ReactNode }) {
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, localObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
   onOpenDecision, onOpenObservations, onOpenRoadmap, onOpenFinding, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape,
-  onOpenDocumentation, writable = true, extra, s,
+  onOpenDocumentation, onOpenOperating, writable = true, extra, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -245,7 +248,7 @@ export function OrganisationCards({
             )}
           </Actions>
         )}
-      />}
+      />}<OperatingCard shown={shows.operating} ready={ready} counts={pages.operating} onOpen={onOpenOperating} s={s} />
 
       <OnePage
         icon={<DecisionIcon />}

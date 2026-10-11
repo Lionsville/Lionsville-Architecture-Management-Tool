@@ -31,7 +31,7 @@ import type { HostModel } from './hostModel'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'

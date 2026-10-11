@@ -110,6 +110,7 @@ function showInitialPage(page: InitialPage, by: {
     case 'decisions': pages.openDecisions(page.id); break
     case 'observations': pages.openObservations(page.id, page.tab); break
     case 'roadmap': pages.openRoadmap(); break
+    case 'operating': pages.openOperating(page.id); break
     case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)

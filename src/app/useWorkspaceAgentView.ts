@@ -145,6 +145,7 @@ export function showOn(
       // observations of the scope already open landed on the canvas.
       case 'observations': openObservations(to.id, to.tab); break
       case 'roadmap': openRoadmap(); break
+      case 'operating': pages.openOperating(to.id); break
       case 'plan': openRoadmap(); if (to.id !== undefined) openPlan(to.id); break
       case 'element': closePages(); if (to.id !== undefined) showElement(to.id); break
       case 'document': closePages(); openDocumentation(to.id); break

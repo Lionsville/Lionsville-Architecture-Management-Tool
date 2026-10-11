@@ -465,12 +465,13 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
     const cards = await screen.findByTestId('organisation-cards')
-    // The seven pages of the root, and the people register beside them (ADR-0036).
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(8))
+    // The seven pages of the root, the operating model, and the people register beside them (ADR-0036).
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(9))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
     expect(said).toContain('Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.')
     expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
     expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
+    expect(said).toContain('The kinds of unit the organisation has, the roles each holds and what each role is responsible for, in its own words.')
     expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')
     expect(screen.getByRole('button', { name: 'New domain or team…' })).toBeDefined()
     // Nothing to attend to, so no block at all — not an empty heading.

@@ -59,7 +59,7 @@ import { relative } from 'node:path'
  */
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'decisions', 'observations',
-  'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
+  'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
   'app',
 ]
 
@@ -74,6 +74,7 @@ const MAY_IMPORT = {
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   observations: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
+  operating: ['model', 'i18n', 'platform', 'widgets'],
   roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
@@ -100,6 +101,7 @@ const WHY = {
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
   observations: 'An observation is what was seen and a cause what lies behind it (ADR-0021): markdown over the model, laid out in lanes. It does not know how the model is drawn or where it is saved.',
+  operating: 'The operating model is records at the organisation (ADR-0036): the libraries it starts from, bringing them in, and the page that edits it. It does not know how the model is drawn or where it is saved.',
   roadmap: 'A roadmap is the model on a time axis, and the plans over it. It does not know how a landscape is drawn or where it is saved.',
   business: 'A sheet is laid out from the model\'s own trees, not dragged. It does not know what a canvas is, nor a project.',
   technology: 'A platform\'s report is derived from the rows that name it (ADR-0013). It is read, never drawn and never captured, so it does not know what a canvas is, nor a project.',
@@ -154,7 +156,7 @@ const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*'
  * spellings a barrel has from inside `src/` are written out instead.
  */
 const BARRELS_THAT_DRAW = [
-  'i18n', 'widgets', 'people', 'decisions', 'observations', 'roadmap', 'business', 'technology', 'search',
+  'i18n', 'widgets', 'people', 'decisions', 'observations', 'operating', 'roadmap', 'business', 'technology', 'search',
 ]
 
 /** A barrel as it is written from inside `src/`: one level up, or two from `platform/node`. */

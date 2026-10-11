@@ -58,6 +58,7 @@ export const FLOORS: ReadonlyArray<readonly [component: string, floor: Floor]> =
   ['src/documentation', { lines: 93, branches: 80 }],
   ['src/decisions', { lines: 86, branches: 75 }],
   ['src/observations', { lines: 88, branches: 79 }],
+  ['src/operating', { lines: 96, branches: 85 }],
   ['src/roadmap', { lines: 92, branches: 85 }],
   ['src/business', { lines: 93, branches: 88 }],
   ['src/technology', { lines: 90, branches: 82 }],

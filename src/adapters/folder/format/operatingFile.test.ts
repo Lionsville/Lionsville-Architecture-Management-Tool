@@ -7,7 +7,7 @@
  * brought up to 11 without a scope moving and without a question.
  */
 import { describe, expect, it } from 'vitest'
-import type { OperatingRule, Responsibility, Role, UnitType } from '../../../model/operating'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../../../model/operatingModel'
 import { bareScope, flattenScopes } from '../../../projects/scope'
 import type { ScopeSnapshot } from '../../../projects/scope'
 import { isSafeScopePath } from '../../../projects/scopePath'

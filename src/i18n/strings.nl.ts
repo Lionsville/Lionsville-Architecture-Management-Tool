@@ -12,6 +12,7 @@ import { NL as providers } from '../providers/strings/nl'
 import { NL as app } from '../app/strings/nl'
 import { NL as decisions } from '../decisions/strings/nl'
 import { NL as observations } from '../observations/strings/nl'
+import { NL as operating } from '../operating/strings/nl'
 import { NL as roadmap } from '../roadmap/strings/nl'
 import { NL as documentation } from '../documentation/strings/nl'
 import { NL as editor } from '../editor/strings/nl'
@@ -30,6 +31,7 @@ export const NL = {
   ...app,
   ...decisions,
   ...observations,
+  ...operating,
   ...roadmap,
   ...documentation,
   ...editor,

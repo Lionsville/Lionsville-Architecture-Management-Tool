@@ -11,6 +11,8 @@ import type { ComponentProps } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
+import type { OperatingModelPage as OperatingModelPageShape } from '../operating/ui/OperatingModelPage'
+import { ROOT_SCOPE } from '../projects/scopePath'
 import type { RecordLink } from '../observations/ui/ObservationsPage'
 import { flattenScopes } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
@@ -41,13 +43,51 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
   () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open },
 )
 
+/**
+ * The operating model's page (ADR-0036) is reached from the organisation's
+ * card, never the first view: its script, and its libraries, arrive when it
+ * is first opened.
+ */
+const OperatingModelPage = lazyPart<ComponentProps<typeof OperatingModelPageShape>>(
+  () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { until: (props) => props.open },
+)
+
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
   return (
     <>
       <RecordPages parts={parts} />
       <PlanPages parts={parts} />
       <ReportPages parts={parts} />
+      <OperatingPages parts={parts} />
     </>
+  )
+}
+
+/**
+ * The operating model (ADR-0036): kept at the organisation, so it is edited
+ * only where the organisation is the scope open, and read anywhere else.
+ */
+function OperatingPages({ parts }: { parts: WorkspaceParts }) {
+  const { props, session, pages, readOnly, pageChrome } = parts
+  const model = session.model
+  const lists = useMemo(() => ({
+    unitTypes: model.unitTypes ?? [], roles: model.roles ?? [],
+    responsibilities: model.responsibilities ?? [], operatingRules: model.operatingRules ?? [],
+  }), [model.unitTypes, model.roles, model.responsibilities, model.operatingRules])
+  const page = pages.operatingPage
+  return (
+    <OperatingModelPage
+      open={page.open}
+      model={lists}
+      readOnly={readOnly}
+      atOrganisation={props.project.path === ROOT_SCOPE}
+      makeId={props.shell.makeId}
+      dispatch={(command) => { session.dispatch(command) }}
+      {...(page.id !== undefined ? { initialId: page.id } : {})}
+      initialNonce={page.nonce}
+      onClose={() => { pages.closeOperating(); pages.leaveIfNothingToDraw() }}
+      windowChrome={pageChrome}
+    />
   )
 }
 

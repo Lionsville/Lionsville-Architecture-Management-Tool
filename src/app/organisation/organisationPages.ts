@@ -34,6 +34,7 @@ import { liveCauses, liveObservations, rootCauses } from '../../observations/obs
 import { isLive, rootsWithoutSolution } from '../../observations/solution'
 import { CAUSE_STATES } from '../../model/observation'
 import type { CauseState } from '../../model/observation'
+import { accountabilityGaps } from '../../model/operatingModel'
 
 /** How many of each, in the vocabulary's own order and without the zeroes. */
 export type StatusTally<T extends string> = readonly { status: T; count: number }[]
@@ -92,6 +93,14 @@ export type OrganisationPages = {
   /** The technology landscape to open (ADR-0015). Absent means there is one to make. */
   technology: {
     landscapeId?: string
+  }
+  /** The operating model (ADR-0036): kept at the organisation, counted off its own document. */
+  operating: {
+    unitTypes: number
+    roles: number
+    responsibilities: number
+    /** Responsibilities that are not exactly one role's A. */
+    unaccountable: number
   }
   /** What a landscape's home says about its pages. */
   documentation: {
@@ -169,6 +178,7 @@ export function organisationPages(
         ? { landscapeId: diagrams.find((diagram) => diagram.kind === 'technology')!.id }
         : {}),
     },
+    operating: operatingCounts(model),
     documentation: {
       described: elements.filter((element) => element.description?.trim()).length,
       elements: elements.length,
@@ -181,6 +191,18 @@ export function organisationPages(
       // landscape can still be told its plan is overdue.
       ...(model ? nextFinding(model, transitions, today, platformTree) : {}),
     },
+  }
+}
+
+/** The operating model's numbers, with nothing for a scope that holds none. */
+function operatingCounts(model: ScopeSnapshot['model'] | undefined): OrganisationPages['operating'] {
+  const roles = model?.roles ?? []
+  const responsibilities = model?.responsibilities ?? []
+  return {
+    unitTypes: model?.unitTypes?.length ?? 0,
+    roles: roles.length,
+    responsibilities: responsibilities.length,
+    unaccountable: accountabilityGaps(responsibilities, roles).length,
   }
 }
 

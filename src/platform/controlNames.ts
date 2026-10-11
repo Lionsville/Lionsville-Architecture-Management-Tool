@@ -30,6 +30,7 @@ export const CONTROL_NAMES = [
   'org.tree', 'org.tree.row', 'org.newScope', 'org.cards',
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',
   'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape', 'org.card.people',
+  'org.card.operating',
   'org.attention', 'org.attentionMore', 'org.boards', 'org.newBoard',
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
@@ -68,6 +69,12 @@ export const CONTROL_NAMES = [
   'roadmap.newPlan', 'roadmap.findings', 'plan.addElement', 'plan.milestone', 'plan.addDecision',
   // The technology landscape.
   'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',
+  // The operating model (ADR-0036): its three tabs, a new unit type, role and
+  // responsibility, the rules, the matrix and each of its cells, bringing a
+  // library in and comparing with the libraries.
+  'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
+  'operating.newResponsibility', 'operating.rules', 'operating.matrix', 'operating.cell', 'operating.bringIn',
+  'operating.compare',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

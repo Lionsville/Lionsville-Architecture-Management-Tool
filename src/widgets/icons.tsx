@@ -697,6 +697,18 @@ export function ScopeIcon({ size = 16 }: IconProps) {
   );
 }
 
+/** A small chart of boxes, one over two: the operating model (ADR-0036). */
+export function OperatingModelIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="8.5" y="3" width="7" height="5" rx="1.2" stroke="currentColor" strokeWidth="2" />
+      <rect x="3" y="16" width="7" height="5" rx="1.2" stroke="currentColor" strokeWidth="2" />
+      <rect x="14" y="16" width="7" height="5" rx="1.2" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 8v4M6.5 16v-4h11v4" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** A flask: an experiment. */
 export function ExperimentIcon({ size = 16 }: IconProps) {
   return (

@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import {
   accountabilityGaps, accountableFor, dutiesWith, isOperatingRuleKind, isRaci, nextRaci, raciOf,
   responsibilityGroups, slotRange, typesHolding,
-} from './operating'
-import type { Responsibility, Role, UnitType } from './operating'
+} from './operatingModel'
+import type { Responsibility, Role, UnitType } from './operatingModel'
 
 const role = (id: string, duties: Role['duties'] = []): Role => ({ id, name: id, duties })
 const responsibility = (id: string, group?: string): Responsibility => ({ id, name: id, ...(group ? { group } : {}) })

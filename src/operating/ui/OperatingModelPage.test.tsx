@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+// @vitest-environment jsdom
+/**
+ * The operating model's page (ADR-0036 §2), over a live writer: a library
+ * brought in as one step, a cell of the matrix pressed through its letters
+ * and the flag on a row without one A, the rules set, an item renamed and
+ * taken out — and nothing offered to change where the page only reads.
+ */
+import { useState } from 'react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
+import { renderShell } from '../../app/testing/renderShell'
+import type { Command } from '../../model/commands'
+import type { Model } from '../../model/normalised'
+import { apply } from '../../model/reducer'
+import { applyAll, empty, listsOf } from '../testing'
+import { OperatingModelPage } from './OperatingModelPage'
+
+afterEach(() => cleanup())
+
+/** The page over a model a reducer keeps, and every command it sent. */
+function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId }: {
+  start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
+}) {
+  const [model, setModel] = useState(start)
+  let n = 0
+  return (
+    <OperatingModelPage
+      open model={listsOf(model)} readOnly={readOnly} atOrganisation={atOrganisation}
+      makeId={(prefix) => `${prefix}-${Date.now().toString(36)}-${++n}`}
+      dispatch={(command) => {
+        sent.push(command)
+        setModel((held) => {
+          const result = apply(held, command)
+          return result.ok ? result.model : held
+        })
+      }}
+      {...(initialId ? { initialId, initialNonce: 1 } : {})}
+      onClose={() => {}}
+    />
+  )
+}
+
+function show(start: Model = empty(), more: Partial<Parameters<typeof Harness>[0]> = {}) {
+  const sent: Command[] = []
+  renderShell(<Harness start={start} sent={sent} {...more} />)
+  return sent
+}
+
+async function bringInScrum() {
+  fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Bring in all of Scrum' }))
+}
+
+describe('the operating model\'s page', () => {
+  it('starts empty and sends a person to the libraries', async () => {
+    show()
+    expect(screen.getByText(/No unit types, roles or responsibilities yet/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Libraries' }))
+    expect(await screen.findByTestId('library-scrum')).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('brings a library in as one step, and offers what is left', async () => {
+    const sent = show()
+    await bringInScrum()
+    expect(sent).toHaveLength(1)
+    expect(sent[0].type).toBe('transaction')
+    expect(within(screen.getByTestId('library-scrum')).getByText('Everything this library offers is in.')).toBeTruthy()
+    expect(screen.getByTestId('operating-counts').textContent).toBe('1 unit type · 3 roles · 4 responsibilities')
+    expect(screen.getByText('Everything brought in still says what its library says.')).toBeTruthy()
+  })
+
+  it('brings what a picked entry needs, and says so before it does', async () => {
+    const sent = show()
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    const scrum = await screen.findByTestId('library-scrum')
+    fireEvent.click(within(scrum).getByLabelText('Scrum Team · unit type'))
+    expect(within(scrum).getByText(/Brings with it: Product Owner, Scrum Master, Developer/)).toBeTruthy()
+    fireEvent.click(within(scrum).getByRole('button', { name: 'Bring in' }))
+    expect(sent).toHaveLength(1)
+    expect(screen.getByTestId('operating-counts').textContent).toBe('1 unit type · 3 roles · 4 responsibilities')
+  })
+
+  it('cycles a cell through the letters, and flags a row that is not exactly one role\'s A', async () => {
+    show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    const cell = () => screen.getByRole('button', { name: /^Order the backlog, Scrum Master: / })
+    expect(cell().getAttribute('aria-label')).toBe('Order the backlog, Scrum Master: none')
+    fireEvent.click(cell())
+    expect(cell().textContent).toBe('R')
+    fireEvent.click(cell())
+    expect(cell().textContent).toBe('A')
+    // Two roles now say A for it.
+    expect(screen.getByText('2 are accountable')).toBeTruthy()
+    fireEvent.click(cell())
+    fireEvent.click(cell())
+    fireEvent.click(cell())
+    expect(cell().textContent).toBe('')
+    expect(screen.queryByText('2 are accountable')).toBeNull()
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('edits a role picked from a card, and takes it out of the types that hold it', async () => {
+    const sent = show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
+    const inspector = screen.getByTestId('operating-inspector')
+    fireEvent.change(within(inspector).getByLabelText('Name'), { target: { value: 'Team coach' } })
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { name: 'Team coach' } })
+    expect(within(inspector).getByText('Based on Scrum · Scrum Master')).toBeTruthy()
+    fireEvent.click(within(inspector).getByLabelText('Manages its unit'))
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { manages: true } })
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Remove' }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Remove' })).getByRole('button', { name: 'Remove' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'transaction' })
+    expect(screen.getByTestId('operating-counts').textContent).toBe('1 unit type · 2 roles · 4 responsibilities')
+    // What it was renamed to is told apart from the library in compare.
+    fireEvent.click(await screen.findByRole('tab', { name: 'Libraries' }))
+    expect(screen.getByText(/Scrum Team — the role Scrum Master: here nothing, in the library 1/)).toBeTruthy()
+  })
+
+  it('sets a rule to a role', async () => {
+    const sent = show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    const rules = screen.getByText('Rules the model reads').parentElement!
+    fireEvent.mouseDown(within(rules).getAllByRole('combobox')[0])
+    fireEvent.click(await screen.findByRole('option', { name: 'Product Owner' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'operatingRule.add', rule: { id: 'applicationOwner' } })
+  })
+
+  it('opens on the item a request names, on its tab', async () => {
+    show(applyAll(empty(), [{ type: 'responsibility.add', responsibility: { id: 'rs-1', name: 'Release' } }]), { initialId: 'rs-1' })
+    expect(screen.getByRole('tab', { name: 'Responsibilities', selected: true })).toBeTruthy()
+    expect(within(screen.getByTestId('operating-inspector')).getByDisplayValue('Release')).toBeTruthy()
+  })
+
+  it('offers nothing to change where it only reads, and says where it is edited', async () => {
+    show(empty(), { atOrganisation: false })
+    expect(screen.getByText('The operating model is kept at the organisation, and edited there.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'New unit type' })).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    expect(screen.queryByRole('button', { name: 'Bring in all of Scrum' })).toBeNull()
+  })
+
+  it('edits a unit type: where it sits, whether it spans, its slots and its limit', async () => {
+    const sent = show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New unit type' }))
+    let inspector = screen.getByTestId('operating-inspector')
+    fireEvent.change(within(inspector).getByLabelText('Name'), { target: { value: 'Squad' } })
+    fireEvent.change(within(inspector).getByLabelText('Purpose, in the organisation\'s own words'), { target: { value: 'Builds.' } })
+    fireEvent.click(within(inspector).getByLabelText('Scrum Team'))
+    fireEvent.click(within(inspector).getByLabelText('At the top, under the organisation itself'))
+    fireEvent.click(within(inspector).getByLabelText('A unit of this type may serve more than one domain'))
+    expect(sent.slice(-3).map((one) => one.type)).toEqual(['unitType.update', 'unitType.update', 'unitType.update'])
+    fireEvent.mouseDown(within(inspector).getByLabelText('A role to add'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Developer' }))
+    inspector = screen.getByTestId('operating-inspector')
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Add role' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'unitType.update', patch: { slots: [expect.objectContaining({ min: 0, max: 1 })] } })
+    fireEvent.change(within(inspector).getByLabelText('Developer: At least'), { target: { value: '2' } })
+    fireEvent.change(within(inspector).getByLabelText('Developer: At most'), { target: { value: '' } })
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ min: 2 }] } })
+    fireEvent.change(within(inspector).getByLabelText('Owns at most this many applications'), { target: { value: '4' } })
+    expect(sent.at(-1)).toMatchObject({ patch: { limit: 4 } })
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Take Developer out of this unit type' }))
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [] } })
+    // It was made to sit at the top; that was pressed off, and Scrum Team on.
+    expect(screen.getByText('Sits in: Scrum Team')).toBeTruthy()
+  })
+
+  it('edits a responsibility picked in the matrix', async () => {
+    const sent = show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New responsibility' }))
+    const inspector = screen.getByTestId('operating-inspector')
+    fireEvent.change(within(inspector).getByLabelText('Name'), { target: { value: 'Release' } })
+    fireEvent.change(within(inspector).getByLabelText('Description'), { target: { value: 'Ship it.' } })
+    fireEvent.change(within(inspector).getByLabelText('Group, such as a value stream'), { target: { value: 'Deliver' } })
+    expect(sent.at(-1)).toMatchObject({ type: 'responsibility.update', patch: { group: 'Deliver' } })
+    expect(screen.getByText('Deliver')).toBeTruthy()
+    expect(screen.getAllByText('nobody is accountable').length).toBeGreaterThan(0)
+    expect(within(inspector).getByText('The organisation\'s own')).toBeTruthy()
+  })
+})

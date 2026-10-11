@@ -200,6 +200,7 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
     case 'decisions': return { page: 'decisions', ...id }
     case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab } : {}) }
     case 'roadmap': return { page: 'roadmap' }
+    case 'operating': return { page: 'operating', ...id }
     case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
     case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
     case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }

@@ -20,6 +20,7 @@ import { EN as providers } from '../providers/strings/en'
 import { EN as app } from '../app/strings/en'
 import { EN as decisions } from '../decisions/strings/en'
 import { EN as observations } from '../observations/strings/en'
+import { EN as operating } from '../operating/strings/en'
 import { EN as roadmap } from '../roadmap/strings/en'
 import { EN as documentation } from '../documentation/strings/en'
 import { EN as editor } from '../editor/strings/en'
@@ -38,6 +39,7 @@ export const EN = {
   ...app,
   ...decisions,
   ...observations,
+  ...operating,
   ...roadmap,
   ...documentation,
   ...editor,

@@ -28,10 +28,10 @@
  * passed over; a file that is not a list at all is said, so the scope opens to
  * be read and not written — a save would have written that list empty.
  */
-import { isOperatingRuleKind, isRaci } from '../../../model/operating'
+import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
   BasedOn, Duty, OperatingRule, Responsibility, Role, RoleSlot, UnitType,
-} from '../../../model/operating'
+} from '../../../model/operatingModel'
 import type { HostModel } from '../../../model/hostModel'
 import { parseJson, stableJson } from '../../../projects/text'
 

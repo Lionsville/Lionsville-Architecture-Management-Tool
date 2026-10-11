@@ -35,7 +35,7 @@ import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
   OperatingRule, OperatingRuleKind, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
-} from './operating'
+} from './operatingModel'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'

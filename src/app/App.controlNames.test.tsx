@@ -113,7 +113,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the organisation’s home', [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
-    'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.attention', 'org.attentionMore',
+    'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.card.operating', 'org.attention', 'org.attentionMore',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
@@ -237,6 +237,23 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision'], async () => {
     fireEvent.click((await within(screen.getByRole('dialog')).findAllByTestId('plan-band'))[0])
+  }]],
+  // The operating model, from the organisation's card: a library brought in,
+  // so the matrix has a column to press.
+  [['the operating model', [
+    'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
+    'operating.rules',
+  ], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('open-operating'))
+    await screen.findByRole('tab', { name: 'Units and roles' })
+  }],
+  ['its libraries', ['operating.bringIn', 'operating.compare'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Bring in all of Scrum' }))
+  }],
+  ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
   }]],
   [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',

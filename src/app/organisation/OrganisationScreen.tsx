@@ -295,6 +295,8 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
     onOpenFinding: (target: FindingTarget) => open(at, target),
     onOpenTechnologyLandscape: () => open(at, viewOr('technology', pages.technology.landscapeId)),
     onOpenDocumentation: () => open(at, { page: 'documentation' }),
+    // Kept at the organisation (ADR-0036), whichever home the card is on.
+    onOpenOperating: () => open(ROOT_SCOPE, { page: 'operating' }),
   } satisfies Partial<OrganisationCardsProps>
 }
 
@@ -409,7 +411,7 @@ export function OrganisationScreen({
    * register is over what is beneath, so a leaf that draws has no use for it.
    */
   const shows = {
-    business: atRoot,
+    business: atRoot, operating: atRoot,
     documentation: draws,
     register: atRoot || home.children.length > 0,
     // The technology is over the tree like the register, and beside it.

@@ -37,7 +37,7 @@ import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
 import { FIXED_ON_A_STANDIN } from './standIn'
 import type { DesignElement, DiagramSettings, Relation } from './types'
-import type { OperatingRuleKind } from './operating'
+import type { OperatingRuleKind } from './operatingModel'
 
 /** The same shape `adapters/folder/format/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }

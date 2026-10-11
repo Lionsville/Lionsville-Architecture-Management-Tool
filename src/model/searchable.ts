@@ -30,7 +30,7 @@
 import type { Adr } from './adr'
 import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
 import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
