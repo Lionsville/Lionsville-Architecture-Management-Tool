@@ -43,6 +43,8 @@ export type AttentionItem = {
   /** The scope to open, and the record to select there. */
   scope: ScopePath
   id: ElementId
+  /** The view to open instead, where the finding is about something on one (`Finding.view`). */
+  view?: string
   text: string
 }
 
@@ -72,7 +74,10 @@ export function attentionItems(
     if (!within(scope)) continue
     for (const finding of held) {
       if (finding.information) continue
-      add({ key: finding.key, scope, id: finding.id, text: findingSentence(finding, s, scopeName) })
+      add({
+        key: finding.key, scope, id: finding.id, ...(finding.view ? { view: finding.view } : {}),
+        text: findingSentence(finding, s, scopeName),
+      })
     }
   }
   for (const row of register) {

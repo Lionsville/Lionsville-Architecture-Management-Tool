@@ -29,6 +29,13 @@ const application = (over: Partial<RegisterRow> & Pick<RegisterRow, 'id' | 'name
 })
 
 describe('attentionItems', () => {
+  it('opens a shape on a drawing by its drawing, not as an element', () => {
+    const findings = new Map<string, Finding[]>([
+      ['retail', [finding({ key: 'check.drawingLinkMissing', scope: 'retail', id: 'ctx:b', view: 'ctx', name: 'Context', fields: ['gone'], detail: 'gone' })]],
+    ])
+    expect(attentionItems(findings, [], [], '', s, scopeName)).toMatchObject([{ scope: 'retail', id: 'ctx:b', view: 'ctx' }])
+  })
+
   it('says each finding as a sentence, skips information, and sorts by scope', () => {
     const findings = new Map<string, Finding[]>([
       ['retail', [

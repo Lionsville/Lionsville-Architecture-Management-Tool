@@ -529,7 +529,7 @@ export function OrganisationScreen({
           {/* What the tree contradicts about itself, once, as sentences a
               person can act on — where the cards used to count them and the
               rows used to colour them. */}
-          <NeedsAttention items={attention} onOpen={onOpenRegisterRow} s={s} />
+          <NeedsAttention items={attention} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} s={s} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —

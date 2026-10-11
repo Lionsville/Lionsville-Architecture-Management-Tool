@@ -54,11 +54,11 @@ describe('a shape that points at an element this scope does not hold', () => {
       .filter((finding) => finding.key === 'check.drawingLinkMissing')
     expect(findings).toEqual([
       {
-        key: 'check.drawingLinkMissing', scope: 'retail', id: 'ctx:b', name: 'Context',
+        key: 'check.drawingLinkMissing', scope: 'retail', id: 'ctx:b', view: 'ctx', name: 'Context',
         fields: ['gone'], detail: 'gone',
       },
       {
-        key: 'check.drawingLinkMissing', scope: 'retail', id: 'ctx:c', name: 'Context',
+        key: 'check.drawingLinkMissing', scope: 'retail', id: 'ctx:c', view: 'ctx', name: 'Context',
         fields: ['ledger'], detail: 'ledger',
       },
     ])

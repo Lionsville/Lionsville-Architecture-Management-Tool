@@ -195,6 +195,12 @@ export type Finding = {
   detail?: string
   /** True where this is worth knowing and is not a fault. See {@link CheckKey}. */
   information?: true
+  /**
+   * The view the finding is in, where it is about something on a view and not
+   * an element: a shape on a drawing (`check.drawingLinkMissing`). Opening the
+   * finding opens that view; `id` still tells one shape from another.
+   */
+  view?: string
 }
 
 /**
@@ -474,6 +480,7 @@ function drawingLinkFindings(scope: ScopePath, model: HostModel, held: ReadonlyS
         key: 'check.drawingLinkMissing',
         scope,
         id: `${diagram.id}:${link.shapeId}`,
+        view: diagram.id,
         name: diagram.name,
         fields: [link.elementId],
         detail: link.elementId,

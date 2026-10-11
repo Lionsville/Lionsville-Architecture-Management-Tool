@@ -25,10 +25,12 @@ import type { ElementId } from '../../model'
 import type { ScopePath } from '../../projects/scopePath'
 import type { AttentionItem } from './attention'
 
-export function NeedsAttention({ items, onOpen, s }: {
+export function NeedsAttention({ items, onOpen, onOpenView, s }: {
   items: readonly AttentionItem[]
   /** Open the scope with the record selected; absent where the host cannot. */
   onOpen?: (scope: ScopePath, id: ElementId) => void
+  /** Open the scope on a view, for a finding about something on one; absent where the host cannot. */
+  onOpenView?: (scope: ScopePath, viewId: string) => void
   s: Translate
 }) {
   const [unfolded, setUnfolded] = useState(false)
@@ -45,8 +47,8 @@ export function NeedsAttention({ items, onOpen, s }: {
             key={`${item.key}|${item.scope}|${item.id}`}
             component="button"
             type="button"
-            disabled={!onOpen}
-            onClick={() => onOpen?.(item.scope, item.id)}
+            disabled={item.view ? !onOpenView : !onOpen}
+            onClick={() => (item.view ? onOpenView?.(item.scope, item.view) : onOpen?.(item.scope, item.id))}
             data-testid={`attention-${item.scope}-${item.id}`}
             data-finding={item.kind}
             title={s('org.attentionOpen')}
