@@ -21,6 +21,7 @@ import type { Destination, Page, Screen } from './screen'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 import type { TreeView } from './tree'
+import type { PeopleView } from './people'
 
 /**
  * What the handler needs from the shell (ADR-0019). Absent in a test with no
@@ -29,6 +30,8 @@ import type { TreeView } from './tree'
 export type ShellView = {
   /** The tree, as the workspace hands it in too; the shell's copy is the one that is always there. */
   tree?: TreeView
+  /** The organisation's people register (ADR-0036 §13), where the host lends one. */
+  people?: PeopleView
   /** Where the app is, now. */
   screen(): Screen
   /**

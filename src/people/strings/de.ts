@@ -60,6 +60,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.heldBefore': 'Hatte zuvor inne',
   'people.noAssignmentsYet': 'Einheiten und die Rollen darin kommen mit dem Betriebsmodell; hier gibt es noch nichts zu zeigen.',
   'people.correct': 'Korrigieren…',
+  'people.do': 'Aktionen',
   'people.name': 'Name',
   'people.email': 'Arbeitsadresse, optional',
   'people.kind': 'Art',
@@ -137,4 +138,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.notForgotten': 'Nur ein vergessener Eintrag wird entfernt: Vergessen Sie ihn zuerst.',
   'people.badMerge': 'Ein Eintrag wird mit einem anderen zusammengeführt, der noch einen Namen hat.',
   'people.unwritable': 'Das Register hier lässt sich nicht lesen, oder eine spätere Version hat es geschrieben: Es wird angezeigt und nicht geändert.',
+  'people.failed': 'Das Register hat nicht geantwortet: {message}',
 }

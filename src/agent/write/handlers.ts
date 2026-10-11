@@ -40,11 +40,14 @@ import {
 /**
  * The write and see tools that are not one command: a picture, several
  * changes, taking steps back, saving — and looking, which changes nothing.
- * The session answers each of them itself.
+ * The session answers each of them itself. And the people register's two,
+ * which are no step at all (ADR-0036 §13): the shell answers them over the
+ * register (`agent/people.ts`), and no `batch` can hold one.
  */
 export const ANSWERED_BY_SESSION = [
   'image.upload', 'batch', 'undo', 'project.save',
   'diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus',
+  'person.add', 'person.leave',
 ] as const satisfies readonly ToolOfTier<'write' | 'see'>[]
 
 /** A tool whose request is built into one command here. */

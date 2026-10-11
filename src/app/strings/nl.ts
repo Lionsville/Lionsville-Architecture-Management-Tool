@@ -512,6 +512,12 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.technology': 'Technologie',
+  'org.people': 'Mensen',
+  'org.describePeople': 'Wie is wie in de organisatie: één vermelding per persoon, buiten de geschiedenis bewaard zodat een naam vergeten kan worden.',
+  'org.peopleOne': '{count} persoon',
+  'org.peopleOther': '{count} mensen',
+  'org.peopleLeftOne': '{count} vertrokken',
+  'org.peopleLeftOther': '{count} vertrokken',
   'org.nothingHere': 'Op dit niveau nog niets.',
 
   'org.tree': 'Scopes binnen {name}',

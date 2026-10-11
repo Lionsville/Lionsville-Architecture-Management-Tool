@@ -64,7 +64,7 @@ export type AppBoot = {
    * `bootLanding`'s `placeLanding`). Absent: the view, and the bare home.
    */
   initialPage?: InitialPage
-  initialHomePage?: 'register' | 'technologyRegister'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people'
   /**
    * One of the shell's own dialogs, open at the first paint because the
    * address asked for it (`bootLanding`'s `dialogAsked`) — a page elsewhere

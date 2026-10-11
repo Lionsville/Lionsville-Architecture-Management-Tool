@@ -10,6 +10,7 @@ import type { ScopePath } from '../projects/scopePath'
 import type { AppHost, AppProps } from './appProps'
 import type { IndexHook } from './useIndex'
 import type { Organisation } from './organisation/useOrganisation'
+import type { PeopleAccess } from './organisation/usePeopleRegister'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { AgentServer } from './useAgentServer'
 import type { HomeParts } from './useHomeParts'
@@ -71,4 +72,6 @@ export interface ShellParts {
   todayDay: string
   /** *Share with a Link…*: the link to the place on screen, and its dialog (ADR-0033, amended). */
   share: ShareLink
+  /** The people register (ADR-0036): the People page's and the agent's, the same one. */
+  people: PeopleAccess
 }

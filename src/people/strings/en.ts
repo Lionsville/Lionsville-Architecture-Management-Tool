@@ -70,6 +70,7 @@ export const EN = {
   'people.heldBefore': 'Held before',
   'people.noAssignmentsYet': 'Units and the roles held in them come with the operating model; there is nothing to show here yet.',
   'people.correct': 'Correct…',
+  'people.do': 'Do',
   'people.name': 'Name',
   'people.email': 'Work address, optional',
   'people.kind': 'Kind',
@@ -151,4 +152,5 @@ export const EN = {
   'people.notForgotten': 'Only a forgotten entry is removed: forget it first.',
   'people.badMerge': 'An entry is merged into another entry that still has a name.',
   'people.unwritable': 'The register here will not read, or a later version wrote it: it is shown and not changed.',
+  'people.failed': 'The register did not answer: {message}',
 } as const

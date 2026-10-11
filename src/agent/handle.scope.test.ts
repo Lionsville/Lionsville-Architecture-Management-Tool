@@ -23,7 +23,7 @@ import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { handle } from './handle'
 import type { SessionView } from './handle'
-import { ABOUT_THE_APP, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
+import { ABOUT_THE_APP, ON_THE_REGISTER, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
 
@@ -148,13 +148,13 @@ const parsed = (out: AgentAnswer): Record<string, unknown> => {
 const refusal = (out: AgentAnswer) => (out.ok ? undefined : out.refusal)
 
 describe('the vocabulary', () => {
-  it('gives every tool a scope but the ones about the whole tree or the app itself', () => {
+  it('gives every tool a scope but the ones about the whole tree, the people register or the app itself', () => {
     for (const tool of TOOLS) {
       const has = 'scope' in tool.inputSchema.properties
       // `checks.list` and `views.list` spell `scope` as a filter, and
       // `app.open` as its destination (ADR-0019); the rest take none.
       if (['checks.list', 'views.list', 'app.open'].includes(tool.name)) expect(has, tool.name).toBe(true)
-      else if (TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name)) expect(has, tool.name).toBe(false)
+      else if (TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)) expect(has, tool.name).toBe(false)
       else expect(has, tool.name).toBe(true)
     }
   })

@@ -73,6 +73,10 @@ import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
+import type { PeoplePage as PeoplePageShape } from '../../people/ui/PeoplePage'
+import { PeopleCard } from './PeopleCard'
+import type { PeopleAccess } from './usePeopleRegister'
+import type { OrgPage } from '../useShellAgent'
 import { lazyPart } from '../../widgets/lazyPart'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
@@ -99,6 +103,20 @@ const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
 const TechnologyPage = lazyPart<ComponentProps<typeof TechnologyPageShape>>(
   () => import('./RegisterPage').then((held) => held.TechnologyPage), { until: (props) => props.open },
 )
+/** The people register's page (ADR-0036), fetched the first time it is opened, as the registers are. */
+const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
+  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open },
+)
+
+/** The People page over this home, where the source keeps a register; nothing where it keeps none. */
+function PeopleDoor({ people, open, onClose, s, windowChrome }: {
+  people: PeopleAccess | undefined; open: boolean; onClose: () => void; s: Translate; windowChrome: WindowChrome
+}) {
+  if (!people) return null
+  return (
+    <PeoplePage open={open} onClose={onClose} register={people} readText={people.readText} copyText={people.copyText} s={s} windowChrome={windowChrome} />
+  )
+}
 
 export type OrganisationScreenProps = {
   organisation: Organisation
@@ -223,9 +241,14 @@ export type OrganisationScreenProps = {
    * request with a nonce, because the same page asked for twice is two
    * requests and a prop that did not change is none.
    */
-  pageRequest?: { page: 'register' | 'technologyRegister' | 'home'; nonce: number }
-  /** Which of the two pages is up, whenever that changes — so the shell can say where the app is. */
-  onPageChange?: (page: 'register' | 'technologyRegister' | undefined) => void
+  pageRequest?: { page: OrgPage | 'home'; nonce: number }
+  /** Which of the pages is up, whenever that changes — so the shell can say where the app is. */
+  onPageChange?: (page: OrgPage | undefined) => void
+  /**
+   * The people register (ADR-0036): its card on the root's home and its page
+   * over any home, where the source keeps one.
+   */
+  people?: PeopleAccess
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
   onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   /**
@@ -279,18 +302,18 @@ export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
-  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
+  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
   /**
-   * The register is a page of its own, opened from its card — state here and
-   * not in the hook, because it is the one page on this screen that neither
-   * writes nor asks a store anything.
+   * Which of this screen's pages is up over its cards — the registers, the
+   * people register — each opened from its card: state here and not in the
+   * hook, because none of them is the home's own document. One at a time.
    */
-  const [registerOpen, setRegisterOpen] = useState(false)
-  const [technologyOpen, setTechnologyOpen] = useState(false)
+  const [openPage, setOpenPage] = useState<OrgPage | undefined>(undefined)
+  const close = useCallback(() => setOpenPage(undefined), [])
   /**
    * How tall this screen's bar is, measured the way the workspace measures
    * its own: the register and the technology pages open BELOW it, so the
@@ -309,13 +332,9 @@ export function OrganisationScreen({
   // A request for either page or for neither (ADR-0019), and the answer back:
   // which one is up, said on every change and taken back when this screen goes.
   useEffect(() => {
-    if (!pageRequest) return
-    setRegisterOpen(pageRequest.page === 'register')
-    setTechnologyOpen(pageRequest.page === 'technologyRegister')
+    if (pageRequest) setOpenPage(pageRequest.page === 'home' ? undefined : pageRequest.page)
   }, [pageRequest])
-  useEffect(() => {
-    onPageChange?.(registerOpen ? 'register' : technologyOpen ? 'technologyRegister' : undefined)
-  }, [onPageChange, registerOpen, technologyOpen])
+  useEffect(() => { onPageChange?.(openPage) }, [onPageChange, openPage])
   useEffect(() => () => onPageChange?.(undefined), [onPageChange])
 
   /**
@@ -519,9 +538,10 @@ export function OrganisationScreen({
               technology={technologyCounts}
               initiatives={initiatives}
               shows={shows}
-              onOpenRegister={() => setRegisterOpen(true)}
-              onOpenTechnology={() => setTechnologyOpen(true)}
+              onOpenRegister={() => setOpenPage('register')}
+              onOpenTechnology={() => setOpenPage('technologyRegister')}
               writable={mayWrite}
+              extra={<PeopleCard people={people} atRoot={atRoot} onOpen={() => setOpenPage('people')} s={s} />}
               s={s}
             />}
           </Box>
@@ -653,8 +673,8 @@ export function OrganisationScreen({
       </Box>
 
       <RegisterPage
-        open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
+        open={openPage === 'register'}
+        onClose={close}
         rows={registerHere}
         organisation={heading}
         scopeName={registerScopeName}
@@ -666,8 +686,8 @@ export function OrganisationScreen({
         windowChrome={pageChrome}
       />
       <TechnologyPage
-        open={technologyOpen}
-        onClose={() => setTechnologyOpen(false)}
+        open={openPage === 'technologyRegister'}
+        onClose={close}
         rows={technologyHere}
         organisation={heading}
         scopeName={registerScopeName}
@@ -676,6 +696,7 @@ export function OrganisationScreen({
         s={s}
         windowChrome={pageChrome}
       />
+      <PeopleDoor open={openPage === 'people'} onClose={close} people={people} s={s} windowChrome={pageChrome} />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
         tree={orderedTree}

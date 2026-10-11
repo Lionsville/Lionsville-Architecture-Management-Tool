@@ -29,7 +29,7 @@ export const CONTROL_NAMES = [
   // A scope's home.
   'org.tree', 'org.tree.row', 'org.newScope', 'org.cards',
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',
-  'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape',
+  'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape', 'org.card.people',
   'org.attention', 'org.attentionMore', 'org.boards', 'org.newBoard',
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
@@ -39,6 +39,8 @@ export const CONTROL_NAMES = [
   'register.row', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings',
   'technologyRegister.openRow',
+  // The People page (ADR-0036): a person's row, adding someone, importing a list, and the policy.
+  'people.row', 'people.add', 'people.importCsv', 'people.policy',
   // The business architecture sheet and the enterprise map.
   'sheet.canvas', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy', 'sheet.unmapped',
   'map.grid', 'map.summary',

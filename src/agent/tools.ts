@@ -28,6 +28,8 @@
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
 import { OBSERVATION_TABS } from '../observations/tabs'
+import { PERSON_KINDS, PERSON_STATES } from '../people/person'
+import type { PeopleRefusal } from '../people/person'
 
 /**
  * Read answers from the model; write is one command; see is what only the
@@ -428,6 +430,68 @@ const SPECS = [
         information: { type: 'boolean', description: 'Include check.notDrawn. Default false.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
+      additionalProperties: false,
+    },
+  },
+
+  // --- the people register (ADR-0036 §13): outside the history, the organisation's, never forgotten from here ---
+  {
+    name: 'people.list',
+    tier: 'read',
+    description:
+      'The organisation\'s people register (ADR-0036), kept outside the history: each entry\'s id, name, kind '
+      + '(internal or external), state (active, left or forgotten) and the days it moved, and whether it has a '
+      + 'work address — never the address. `shows` says whether names are shown or, where the organisation\'s '
+      + 'policy says so, pseudonyms (Person 4K7Q; a forgotten entry is Former colleague 4K7Q). `redirects` are '
+      + 'entries a merge folded into another: an id there resolves to its mergedInto. `possibleDuplicates` are '
+      + 'pairs that may be one person — the same address, the same name, nearly the same name, or the same '
+      + 'family name and initial — for a person to merge on the People page. No tool forgets, removes or merges.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        state: { type: 'string', description: 'Only entries in this state. Default all.', enum: PERSON_STATES },
+        query: { type: 'string', description: 'Only entries whose name as shown, or id, contains every word.' },
+        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'person.add',
+    tier: 'write',
+    description:
+      'Add a person to the register (ADR-0036): active, with an id and a pseudonym drawn at random. Not a step — '
+      + 'there is no undo and no Activity line; a mistake is put right by a person on the People page. Checks '
+      + 'for a possible duplicate first, as every way in does: where somebody similar is there already the call '
+      + 'is refused with agent.possibleDuplicate and the candidates in the detail — use their id, or call again '
+      + 'with addAnyway when it is truly somebody else. Answers the entry as shown to agents.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'What they are called.' },
+        email: { type: 'string', description: 'A work address, where known. Kept, never told back.' },
+        kind: { type: 'string', description: 'Of the organisation, or from outside it. Default internal.', enum: PERSON_KINDS },
+        addAnyway: { type: 'boolean', description: 'Add even though the register holds somebody similar.' },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'person.leave',
+    tier: 'write',
+    description:
+      'Mark a person as left on their last day (ADR-0036 §10): the register says left, the name stays shown for '
+      + 'the period the organisation\'s policy sets and is then forgotten, and everything leaving does beyond the '
+      + 'register is done — `endedAssignments` says how many of their assignments ended. Not a step. Only '
+      + 'someone active leaves. Forgetting and removing are a person\'s, on the People page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('person, from people.list'),
+        on: { type: 'string', description: 'Their last day, yyyy-mm-dd. Default today.' },
+      },
+      required: ['id'],
       additionalProperties: false,
     },
   },
@@ -2166,8 +2230,8 @@ const SPECS = [
       + 'id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
       + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
-      + 'platform or service (a report, by id), register or technologyRegister (the organisation-wide '
-      + 'lists, on the home). `select` names an element to select on the board, sheet, map or technology '
+      + 'platform or service (a report, by id), register, technologyRegister or people (the organisation-wide '
+      + 'lists and the people register, on the home). `select` names an element to select on the board, sheet, map or technology '
       + 'landscape being opened; where that view does not draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
       + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
@@ -2182,7 +2246,7 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister',
+            'platform', 'service', 'register', 'technologyRegister', 'people',
           ],
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution or experiment the page is about, where it is about one.' },
@@ -2269,6 +2333,13 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list']
 
 /**
+ * About the organisation's people register rather than a scope (ADR-0036 §13):
+ * no `scope`, and no project revision to guard, because the register is
+ * outside the history and has a revision of its own.
+ */
+export const ON_THE_REGISTER: readonly string[] = ['people.list', 'person.add', 'person.leave']
+
+/**
  * About the app rather than a document (ADR-0019): `app.open` spells `scope`
  * as its destination, and the other three are about whatever is on screen.
  * No revision to guard either — none of them writes the model.
@@ -2278,8 +2349,9 @@ export const ABOUT_THE_APP: readonly string[] = ['app.current', 'app.open', 'ses
 export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
   const properties = {
     ...tool.inputSchema.properties,
-    ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
-    ...(tool.tier === 'read' || tool.tier === 'drive' || LOOKS_ONLY.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
+    ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
+    ...(tool.tier === 'read' || tool.tier === 'drive' || LOOKS_ONLY.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)
+      ? {} : { ifRevision: REVISION_GUARD }),
   }
   return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
 })
@@ -2385,6 +2457,12 @@ export type AgentRefusal =
   | 'merge.notADay'
   | 'merge.unverified'
   | 'merge.linkForbidden'
+  /** No people register answers here: the host lent the agent none (ADR-0036 §13). */
+  | 'agent.noRegister'
+  /** `person.add` met somebody similar in the register, said in the detail (ADR-0036 §9). */
+  | 'agent.possibleDuplicate'
+  /** The register's own refusals pass straight through, as the reducer's do (`people/person.ts`). */
+  | PeopleRefusal
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -2425,6 +2503,19 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'merge.notADay': 'The day the survivor was first seen is not a day: write it yyyy-mm-dd.',
   'merge.unverified': 'The survivor would be verified, and its body does not say why the team thinks so and how it was verified. Ask the person what confirmed it and write that into values.body in the same call.',
   'merge.linkForbidden': 'A link named in links may not move: the tree forbids it where the survivor lives, and the detail says why. Leave it out of links, or say move false; it stays on the absorbed record as history.',
+  'agent.noRegister': 'This app lends no people register to an agent here.',
+  'agent.possibleDuplicate':
+    'The register holds somebody who may be this person; the detail lists them. Use their id, or call again with '
+    + 'addAnyway when it is truly somebody else — a duplicate made by mistake is merged by a person, not by you.',
+  'people.unknown': 'Nobody in the register has that id. people.list says who there is.',
+  'people.merged': 'That entry was merged into another and is a redirect now; use the id it was merged into.',
+  'people.nameRequired': 'A person needs a name.',
+  'people.badEmail': 'That is not a work address: one @, something either side of it, no spaces.',
+  'people.badDay': 'That is not a day: write it yyyy-mm-dd.',
+  'people.notActive': 'Only someone active can leave; this one has left already, or been forgotten.',
+  'people.forgotten': 'That entry is forgotten: it has no name left to change.',
+  'people.notForgotten': 'Only a forgotten entry is removed, and only by a person.',
+  'people.badMerge': 'An entry is merged only into another that still has a name, and only by a person.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',

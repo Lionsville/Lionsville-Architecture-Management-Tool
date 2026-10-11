@@ -163,7 +163,7 @@ describe('with the organisation screen up', () => {
   it('closes the page over the home when the home itself is asked for', async () => {
     const { ask } = await organisationOnScreen()
     await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
-    for (const [page, bar] of [['register', 'register-topbar'], ['technologyRegister', 'technology-register-topbar']]) {
+    for (const [page, bar] of [['register', 'register-topbar'], ['technologyRegister', 'technology-register-topbar'], ['people', 'people-topbar']]) {
       expect(parsed(await ask('app.open', { scope: '', page })).page).toEqual({ page })
       expect(await screen.findByTestId(bar)).toBeDefined()
       const home = parsed(await ask('app.open', { scope: '', page: 'home' }))

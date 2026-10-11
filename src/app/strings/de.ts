@@ -513,6 +513,12 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.technology': 'Technologie',
+  'org.people': 'Personen',
+  'org.describePeople': 'Wer ist wer in der Organisation: ein Eintrag pro Person, außerhalb des Verlaufs geführt, damit ein Name vergessen werden kann.',
+  'org.peopleOne': '{count} Person',
+  'org.peopleOther': '{count} Personen',
+  'org.peopleLeftOne': '{count} ausgeschieden',
+  'org.peopleLeftOther': '{count} ausgeschieden',
   'org.nothingHere': 'Auf dieser Ebene noch nichts.',
 
   'org.tree': 'Bereiche in {name}',

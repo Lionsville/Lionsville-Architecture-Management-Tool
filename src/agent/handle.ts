@@ -48,6 +48,7 @@ import type { ChangeAcross } from './merge'
 import type { MergeKind } from '../observations/merge'
 import type { ReadTool } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
+import { answerPeople, isPeopleTool } from './people'
 import type { ShellView } from './shell'
 import { drives } from './driving'
 import { commandFor, isCommandTool } from './commandFor'
@@ -331,6 +332,11 @@ function aboutTheApp(
   const wrongFirst = (then: () => Promise<AgentAnswer> | AgentAnswer) => {
     const wrong = checkArguments(toolSpec(request.tool as ToolName).inputSchema, request.args)
     return wrong ? refused('agent.badArguments', wrong) : then()
+  }
+  // The people register is the organisation's, not a scope's: answered with or without one open (ADR-0036 §13).
+  if (isPeopleTool(request.tool)) {
+    const tool = request.tool
+    return wrongFirst(() => answerPeople(tool, request.args, shell?.people))
   }
   switch (request.tool) {
     case 'app.current': return wrongFirst(() => currentApp(session, shell))

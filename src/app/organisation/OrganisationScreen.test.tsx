@@ -465,8 +465,10 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
     const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(7))
+    // The seven pages of the root, and the people register beside them (ADR-0036).
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(8))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
+    expect(said).toContain('Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.')
     expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
     expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
     expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')

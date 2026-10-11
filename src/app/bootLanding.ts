@@ -28,7 +28,7 @@ export type BootLanding = {
   /** The page over the scope that is open, where a place in the address named one (ADR-0033). */
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
-  initialHomePage?: 'register' | 'technologyRegister'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people'
 }
 
 /**
@@ -135,7 +135,7 @@ export function placeToRead(place: Place): ScopePath | undefined {
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
   if (page !== undefined && HOME_PAGES.includes(page)) {
-    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' }) }
+    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' }) }
   }
   if (held === undefined) return {}
   const near = nearestPlace(place, { scopeIs: () => true, ...factsOf(held) })

@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * What the People page is handed (ADR-0036): the register as the shell holds
+ * it, and each change to it — declared here, in the page's own terms, so the
+ * page asks for exactly this and the shell's hook (`usePeopleRegister`)
+ * satisfies it by its shape.
+ *
+ * And the one place the page says how a change went: a refusal is a key from
+ * the register, a failure a key where it carries one, and a change made a
+ * sentence the page words — said in the page's status line, because the
+ * register keeps no Activity line to say it in.
+ */
+import { useCallback, useState } from 'react'
+import type { PersonId } from '../../model/person'
+import { ShellError } from '../../platform/errors'
+import type { Mention } from '../hold'
+import type { NewPerson, PeopleRefusal, Person, PersonPatch } from '../person'
+import type { PeoplePolicy } from '../policy'
+import type { Translate } from '../shown'
+
+export type Refused = { refused: PeopleRefusal }
+
+export type PeopleRegisterAccess = {
+  /** Every entry, redirects included; `undefined` until the register has been read. */
+  people: readonly Person[] | undefined
+  policy: PeoplePolicy
+  me: PersonId | undefined
+  readOnly: boolean
+  today: string
+  add(person: NewPerson): Promise<{ person: Person } | Refused>
+  change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>
+  leave(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
+  forget(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
+  remove(id: PersonId): Promise<{ removed: readonly PersonId[] } | Refused>
+  merge(from: PersonId, into: PersonId): Promise<{ person: Person } | Refused>
+  setPolicy(change: Partial<PeoplePolicy>): Promise<void>
+  setMe(id: PersonId | undefined): Promise<void>
+  mentionsOf(name: string): Promise<Mention[]>
+}
+
+/** What the status line says, and how loudly. */
+export type Said = { text: string; tone: 'success' | 'error' }
+
+export type Saying = {
+  said: Said | undefined
+  /**
+   * Run a change, and say how it went: `done` words a change made; a refusal
+   * and a failure are said in the register's words. Answers the change, or
+   * `undefined` where it was refused or failed.
+   */
+  run<T extends object>(work: Promise<T | Refused>, done: (answer: T) => string): Promise<T | undefined>
+}
+
+export function useSaying(s: Translate): Saying {
+  const [said, setSaid] = useState<Said | undefined>(undefined)
+  const run = useCallback(async <T extends object>(work: Promise<T | Refused>, done: (answer: T) => string) => {
+    try {
+      const answer = await work
+      if ('refused' in answer) {
+        setSaid({ text: s(answer.refused), tone: 'error' })
+        return undefined
+      }
+      setSaid({ text: done(answer as T), tone: 'success' })
+      return answer as T
+    } catch (cause) {
+      const text = cause instanceof ShellError
+        ? s(cause.key, cause.params)
+        : s('people.failed', { message: cause instanceof Error ? cause.message : String(cause) })
+      setSaid({ text, tone: 'error' })
+      return undefined
+    }
+  }, [s])
+  return { said, run }
+}

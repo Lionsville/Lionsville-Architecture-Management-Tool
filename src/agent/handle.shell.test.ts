@@ -109,7 +109,7 @@ function shell({ screen: seed, client, ...over }: Partial<Omit<ShellView, 'scree
       opened.push(to)
       const path = to.scope
       const name = NAMES[path] ?? path
-      if (to.page === undefined || to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
+      if (to.page === undefined || to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister' || to.page === 'people') {
         screen = to.page === undefined
           ? { open: { path, name, view: firstView(path) } }
           : { home: { path, name }, ...(to.page === 'home' ? {} : { page: { page: to.page } }) }

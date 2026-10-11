@@ -716,6 +716,12 @@ export const EN = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.technology': 'Technology',
+  'org.people': 'People',
+  'org.describePeople': 'Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.',
+  'org.peopleOne': '{count} person',
+  'org.peopleOther': '{count} people',
+  'org.peopleLeftOne': '{count} left',
+  'org.peopleLeftOther': '{count} left',
   'org.nothingHere': 'Nothing at this level yet.',
 
   // The tree of scopes beneath.

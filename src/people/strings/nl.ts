@@ -60,6 +60,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.heldBefore': 'Vervulde eerder',
   'people.noAssignmentsYet': 'Eenheden en de rollen daarin komen met het operationele model; hier valt nog niets te tonen.',
   'people.correct': 'Corrigeren…',
+  'people.do': 'Doen',
   'people.name': 'Naam',
   'people.email': 'Werkadres, optioneel',
   'people.kind': 'Soort',
@@ -137,4 +138,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.notForgotten': 'Alleen een vergeten vermelding wordt verwijderd: vergeet haar eerst.',
   'people.badMerge': 'Een vermelding wordt samengevoegd met een andere die nog een naam heeft.',
   'people.unwritable': 'Het register hier is niet te lezen, of een latere versie heeft het geschreven: het wordt getoond en niet gewijzigd.',
+  'people.failed': 'Het register gaf geen antwoord: {message}',
 }

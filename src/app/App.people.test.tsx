@@ -1,0 +1,139 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+// @vitest-environment jsdom
+/**
+ * The people register in the app (ADR-0036): the People page reached from
+ * the organisation's card, the agent's tools over the same register, the
+ * policy that applies itself when the organisation is opened, and a forget
+ * that reaches everything that shows a person — the page, the agent and a
+ * working file.
+ */
+import { afterEach, describe, expect, it } from 'vitest'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { unzipSync } from 'fflate'
+import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
+import type { AgentAnswer, AgentRequest } from '../agent/tools'
+import type { AgentGateway } from '../ports/AgentGateway'
+import type { Person } from '../people/person'
+import type { ScopeSnapshot } from '../projects/scope'
+import { heldRepositories } from './testing/heldRepositories'
+import type { HeldRepositories } from './testing/heldRepositories'
+import { renderApp } from './testing/renderShell'
+
+afterEach(() => cleanup())
+
+const TODAY = '2026-10-11'
+
+const root: ScopeSnapshot = {
+  path: '',
+  model: { name: 'Acme Logistics', elements: [], relations: [], diagrams: [] },
+  activeDiagramId: '',
+  logoLibrary: [],
+}
+
+/** A gateway that keeps whoever subscribed, and says a client is connected. */
+function gateway() {
+  let handler: ((request: AgentRequest) => Promise<AgentAnswer>) | undefined
+  const connected = { kind: 'connected' as const, port: 51733, token: 't'.repeat(24), client: { name: 'Claude Code', version: '2.0' } }
+  const held: AgentGateway = {
+    id: 'fake',
+    on(next) {
+      handler = next
+      return () => { if (handler === next) handler = undefined }
+    },
+    status: () => Promise.resolve(connected),
+    onStatus: () => () => {},
+    configure: () => Promise.resolve(connected),
+    newToken: () => Promise.resolve(connected),
+  }
+  let n = 0
+  const ask = async (tool: string, args: unknown = {}): Promise<Record<string, unknown>> => {
+    if (!handler) throw new Error('nobody is listening')
+    const answer = await handler({ id: `r${++n}`, tool, args })
+    if (!answer.ok || answer.content[0].type !== 'text') throw new Error(`refused: ${JSON.stringify(answer)}`)
+    return JSON.parse(answer.content[0].text) as Record<string, unknown>
+  }
+  return { gateway: held, ask, bound: () => handler !== undefined }
+}
+
+async function added(held: HeldRepositories, name: string, email?: string): Promise<Person> {
+  const answer = await held.people.add({ name, ...(email ? { email } : {}) })
+  if ('refused' in answer) throw new Error(answer.refused)
+  return answer.person
+}
+
+async function openPeople() {
+  fireEvent.click(await screen.findByTestId('open-people'))
+  return screen.findByTestId('people-table')
+}
+
+describe('the People page in the app', () => {
+  it('is a card on the organisation’s home, and what is added on it lands in the register', async () => {
+    const held = heldRepositories([root])
+    await added(held, 'Pia Schulz')
+    renderApp({ repositories: held, today: () => TODAY })
+    await waitFor(() => expect(screen.getByTestId('open-people').closest('[class*="MuiCard"]')?.textContent).toContain('1 person'))
+    await openPeople()
+    fireEvent.click(screen.getByTestId('people-add'))
+    fireEvent.change(screen.getByTestId('people-add-name'), { target: { value: 'Ruben Dekker' } })
+    fireEvent.click(screen.getByTestId('people-add-save'))
+    await waitFor(async () => expect((await held.people.list()).people.map((one) => one.name)).toEqual(['Pia Schulz', 'Ruben Dekker']))
+  })
+
+  it('opens for an agent, which reads the same register and adds to it', async () => {
+    const held = heldRepositories([root])
+    await added(held, 'Pia Schulz', 'pia@acme.example')
+    const wire = gateway()
+    renderApp({ agent: wire.gateway, repositories: held, today: () => TODAY })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    expect((await wire.ask('app.open', { scope: '', page: 'people' })).page).toEqual({ page: 'people' })
+    expect(await screen.findByTestId('people-topbar')).toBeDefined()
+    const listed = await wire.ask('people.list')
+    expect((listed.people as { name: string }[]).map((one) => one.name)).toEqual(['Pia Schulz'])
+    await act(async () => { await wire.ask('person.add', { name: 'Sara Kaya' }) })
+    await waitFor(() => expect(within(screen.getByTestId('people-table')).getByText('Sara Kaya')).toBeDefined())
+  })
+
+  it('applies the policy when the organisation is opened: a name kept past the period is forgotten', async () => {
+    const held = heldRepositories([root])
+    const gijs = await added(held, 'Gijs Mulder')
+    await held.people.leave(gijs.id, '2026-06-01')
+    const ada = await added(held, 'Ada Verbeek')
+    await held.people.leave(ada.id, '2026-10-01')
+    renderApp({ repositories: held, today: () => TODAY })
+    await waitFor(async () => expect((await held.people.read(gijs.id))?.state).toBe('forgotten'))
+    expect((await held.people.read(gijs.id))?.name).toBeUndefined()
+    expect((await held.people.read(ada.id))?.name).toBe('Ada Verbeek')
+  })
+})
+
+describe('a forget reaches everything that shows the person', () => {
+  it('the page, the agent and a working file all show the pseudonym from then on', async () => {
+    const held = heldRepositories([root])
+    const gijs = await added(held, 'Gijs Mulder', 'gijs.mulder@acme.example')
+    const wire = gateway()
+    renderApp({ agent: wire.gateway, repositories: held, today: () => TODAY })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    await openPeople()
+    expect(within(screen.getByTestId('people-table')).getByText('Gijs Mulder')).toBeDefined()
+    expect(JSON.stringify(await wire.ask('people.list'))).toContain('Gijs Mulder')
+
+    fireEvent.click(within(screen.getByTestId(`people-row-${gijs.id}`)).getByRole('button'))
+    fireEvent.click(screen.getByTestId('people-forget'))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Forget Gijs Mulder?' })).getByRole('button', { name: 'Forget now' }))
+
+    const pseudonym = `Former colleague ${gijs.pseudonym}`
+    await waitFor(() => expect(screen.getByTestId('people-person-name').textContent).toBe(pseudonym))
+    expect(screen.getByTestId('people-table').textContent).not.toMatch(/Gijs|Mulder/)
+    const listed = JSON.stringify(await wire.ask('people.list'))
+    expect(listed).toContain(pseudonym)
+    expect(listed).not.toMatch(/Gijs|Mulder/)
+
+    // A working file carried out now carries the pseudonym and nothing else of them.
+    const carried = await WORKING_FILE_INTERCHANGE.carryOut(held)
+    const register = new TextDecoder().decode(unzipSync(carried.bytes)['.lionsville-architecture/people.json'])
+    expect(register).toContain(gijs.pseudonym)
+    expect(register).not.toMatch(/Gijs|Mulder|gijs\.mulder/)
+  })
+})

@@ -37,6 +37,8 @@ import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projec
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly } from '../platform/workingSource'
+import { textFromBytes } from '../projects/text'
+import { usePeopleRegister } from './organisation/usePeopleRegister'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
   BarButtonProps, SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext,
@@ -543,10 +545,14 @@ function useShellParts(props: AppProps): ShellParts {
   const applyProjectSettings = useProjectSettings({ base, repositories })
 
   const ancestry = useScopeAncestry({ project, scopes: repositories.scopes, tree: organisation.tree, failedRef, s })
+  const people = usePeopleRegister({
+    repositories, readOnly: sourceIsReadOnly(source), today: props.today ?? localToday, failed: services.failed,
+    readText: (file) => props.documents.readBytes(file).then(textFromBytes), copyText: (text) => { void props.hostControls.copyText(text).catch((cause: unknown) => services.failed('people.copy', cause)) },
+  })
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
-    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage,
+    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, people: people.agent,
     report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
     watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined
       || props.provider?.barButton !== undefined,
@@ -564,7 +570,7 @@ function useShellParts(props: AppProps): ShellParts {
   return {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
-    commands, provider, order, savedFilters, prompts, todayDay, share: base.share,
+    commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people,
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }

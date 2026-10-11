@@ -95,10 +95,12 @@ export type OrganisationCardsProps = {
    * made where absent.
    */
   writable?: boolean
+  /** A card the screen draws itself after these: the people register's, at the root (`PeopleCard`). */
+  extra?: ReactNode
   s: Translate
 }
 
-function OnePage({ icon, title, description, count, finding, action }: {
+export function OnePage({ icon, title, description, count, finding, action }: {
   icon: ReactNode
   title: string
   /** What you find behind *Open*, in the card's own voice, above the counts. */
@@ -174,7 +176,7 @@ function Actions({ children }: { children: ReactNode }) {
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, localObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
   onOpenDecision, onOpenObservations, onOpenRoadmap, onOpenFinding, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape,
-  onOpenDocumentation, writable = true, s,
+  onOpenDocumentation, writable = true, extra, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -372,6 +374,7 @@ export function OrganisationCards({
           </Actions>
         )}
       />}
+      {extra}
     </Box>
   )
 }

@@ -221,6 +221,7 @@ function Home({ parts }: { parts: ShellParts }) {
         onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
         pageRequest={parts.agent.orgPageRequest}
         onPageChange={parts.agent.setOrgPage}
+        people={parts.people}
         writable={writableFor(parts)}
         today={parts.todayDay}
         language={prefs.language}

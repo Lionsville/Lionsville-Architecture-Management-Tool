@@ -14,6 +14,7 @@
  */
 import { nearestPlace } from '../agent/place'
 import type { Place, PlaceFacts } from '../agent/place'
+import { HOME_PAGES } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
@@ -39,7 +40,7 @@ export function factsOf(held: HeldScope): Required<Pick<PlaceFacts, 'views' | 'h
 
 /** Does where a place lands depend on what its scope holds? A home's does not, nor a bare scope's while its views are not asked. */
 export function asksTheScope(place: Place): boolean {
-  return !(place.page === 'home' || place.page === 'register' || place.page === 'technologyRegister')
+  return !(place.page !== undefined && HOME_PAGES.includes(place.page))
 }
 
 /**

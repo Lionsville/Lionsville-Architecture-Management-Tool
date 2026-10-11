@@ -113,7 +113,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the organisation’s home', [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
-    'org.card.technology', 'org.card.landscape', 'org.attention', 'org.attentionMore',
+    'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.attention', 'org.attentionMore',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
@@ -137,6 +137,13 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     show(false)
     fireEvent.click(await screen.findByTestId('open-technology'))
     await screen.findByTestId('technology-register-table')
+  }]],
+  [['the people register', ['people.row', 'people.add', 'people.importCsv', 'people.policy'], async () => {
+    const held = heldRepositories(example)
+    await held.people.add({ name: 'Pia Schulz' })
+    renderApp({ repositories: held })
+    fireEvent.click(await screen.findByTestId('open-people'))
+    await screen.findByTestId('people-table')
   }]],
   [['a landscape open on its board', [
     'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.inspector',

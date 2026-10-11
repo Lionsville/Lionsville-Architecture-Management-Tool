@@ -14,7 +14,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Place } from '../agent/place'
-import { arrived, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
+import { arrived, HOME_PAGES, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
+import type { PeopleView } from '../agent/people'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -32,11 +33,11 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister'
+export type OrgPage = 'register' | 'technologyRegister' | 'people'
 
 /**
- * What the shell asks of the organisation screen: one of its two pages, or
- * the home itself with neither over it. With a nonce, because the same thing
+ * What the shell asks of the organisation screen: one of its pages, or the
+ * home itself with none over it. With a nonce, because the same thing
  * asked for twice is two requests and a prop that did not change is none.
  */
 export type OrgPageRequest = { page: OrgPage | 'home'; nonce: number }
@@ -71,6 +72,8 @@ export function useShellAgent(deps: {
   initialHomePage?: OrgPage
   /** Somewhere to say that where a place in the history lands could not be worked out. */
   report?: (cause: unknown) => void
+  /** The people register, lent to the agent (ADR-0036 §13). */
+  people?: PeopleView
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
@@ -108,8 +111,8 @@ export function useShellAgent(deps: {
    * or a fallback onto the home that was already up with nothing over it.
    */
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
-    if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
-      homeAt(to.scope, to.page)
+    if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
+      homeAt(to.scope, to.page as OrgPage | 'home')
       return
     }
     const open = agentSessionRef.current
@@ -224,7 +227,7 @@ export function useShellAgent(deps: {
     providerMove.current = undefined
     openFor(to)
   }, [openFor])
-  const agentShell = useAgentShell({ gateway, status, tree, screen: screenNow, open: agentOpen, onStopped: agentStopped })
+  const agentShell = useAgentShell({ gateway, status, tree, people: deps.people, screen: screenNow, open: agentOpen, onStopped: agentStopped })
   const driving = agentShell.driving.session !== undefined
   agentDriving.current = driving
   // A session that ends — Stop, `session.end`, the client gone — may end in the
