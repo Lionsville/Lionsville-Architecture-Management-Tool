@@ -1873,11 +1873,28 @@ An **organisation chart** is a view: **+** in the diagram tabs, then
 **Organisation chart**, makes one, with a tab of its own. It is laid out from
 the units — nothing on it is placed by hand — as nested boxes: each unit inside
 the unit it sits in on the chart's day, a plan's moves included, the units filed in this scope and below it and the units
-that serve it from above, and at the organisation every unit there is. **Show**
-narrows it to one unit and those below it. Units beside each other stand in
-the order of their types — a type at the top first, then the types that sit
-in it — and units of one type in their own order where one is set, otherwise
-by name.
+that serve it from above, and at the organisation every unit there is. Units
+beside each other stand in the order of their types — a type at the top first,
+then the types that sit in it — and units of one type in their own order where
+one is set, otherwise by name. Every list of units keeps that order: the
+outline, the Conway map's columns and every place a unit is picked.
+
+**The outline** beside the chart lists the same units as a tree. Picking one
+there goes to it on the chart — unfolded, scrolled to and ringed — and chooses
+it where this scope keeps it. Under the outline, **Move up** and **Move down**
+move the unit picked among the units of its type in the same unit: one step in
+each scope that keeps one of them. Where they are all kept in this scope, undo
+takes the move back; where some are kept in other scopes, each scope is put
+back on its own.
+
+**A large organisation folds.** The caret beside a unit's name folds the units
+under it, and the unit then says what it hides: its units and people, and the
+vacancies and findings among them. The first time a chart of more than 30
+units is opened, everything below the second level is folded, and the page
+says so. **Fold all** and **Unfold all** are on the bar; the outline folds on
+its own. **Find a unit** goes to the first unit whose name holds every word
+typed; it, **Find me** and each line under the chart unfold the way to the
+unit they go to. A fold lasts while the app is open and is never saved.
 
 Each box says the unit's type and name, and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it
@@ -1920,8 +1937,9 @@ A **Conway map** is a view too: **+**, then **Conway map**. It puts the units
 over the applications they own — an application belongs to the unit it names
 as its owner — and draws the interfaces between them: a solid line where the
 two units have declared that they work together, a dashed one where they have
-not. **Group by** rolls the columns up to a unit type above the owners, a
-domain or a cluster, say. A table under the map counts the interfaces between
+not. The columns stand in the order the chart lists the units in. **Group
+by** rolls the columns up to a unit type above the owners, a domain or a
+cluster, say. A table under the map counts the interfaces between
 each pair of units, with a letter for every way they declared they work
 together — whether an interface runs between them or not. A cell is shaded
 where an interface has nothing declared, and shaded another way where an
@@ -1954,8 +1972,9 @@ organisation chart, where there is one.
 
 An agent makes either view with `diagram.create` (`chart`, `conway`), opens it
 with `app.open`, and reads what it draws with `diagram.inspect`: the units with
-each role's holders and vacancies on the view's day, or the columns, the
-crossings and the findings. It declares an interaction with `relation.add`,
+each role's holders and vacancies on the view's day, in the order the chart
+lists them and never folded, or the columns, the crossings and the findings.
+It declares an interaction with `relation.add`,
 type `interacts` and a `mode`.
 
 ## A drawing

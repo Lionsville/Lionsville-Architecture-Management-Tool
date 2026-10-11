@@ -1301,6 +1301,57 @@ findings, which no index holds, are said under *Needs attention* on the
 organisation's home off its own document (`operatingModelFindings`), each
 opening the operating model's page with the item picked rather than a board.
 
+## As built, 3.6.1: folds, the outline, and one order wherever units are listed
+
+The amendment's fourth point, on the screens.
+
+**The chart folds.** A unit with units under it folds by a caret beside its
+name, and then says what it hides: its units, the people in them — each once —
+and, where there are any, the vacancies and the findings about them
+(`model/orgChart`'s `rollUp`, a finding about a person counted at the first
+unit where they hold a role, as its line under the chart goes there). Its own
+roles stay: a fold hides what is below a unit. The first open of a view with
+more than thirty units folds every unit on the second level that has units
+under it (`foldedOnFirstOpen`), and the page says so until a fold is changed;
+*Fold all* and *Unfold all* are on the bar. A fold is the screen's and never
+the model's: the shell holds one memory of folds for as long as the window is
+open (`app/sessionFolds.ts`), each view's under a key of its scope and its id,
+and the scope tree's toggle is the same toggle. Nothing of it is saved, so the
+next session opens as a first open does. An agent reads the chart off the
+model (`diagram.inspect`), unfolded; a picture of the page (`diagram.render`)
+is of what is drawn, folds and all.
+
+**The outline is a tree again**, beside the chart where the first build's
+*Show* select was (`app/units/ChartOutline.tsx`): the chart's units in the
+chart's order, folding on its own — the first open folds it the same way — so
+it can be read without folding the chart. It no longer narrows the chart to
+one unit. Picking a unit there, *Find a unit* (every word of its name, the
+rule every finder reads), *Find me*, a finding and a request from outside all
+go to the unit the same way: the units above it unfolded on the chart and in
+the outline (`unitsAboveIn`), the chart scrolled to it and the unit ringed,
+and chosen where the open scope keeps it. A unit kept elsewhere is gone to
+without leaving the scope.
+
+**Order among siblings is moved in the outline.** Under it, *Move up* and
+*Move down* move the unit picked among the units of its type under the same
+parent (`siblingsOfType`, `unitMovedTo`) — buttons, which is the keyboard's
+way as much as the pointer's; there is no dragging. The rows renumber that
+list from 1 in the actor's own `order`, and each is an `element.update` in the
+scope that keeps its unit: they land as people's moves do
+(`app/units/landPeopleMoves.ts`), the other scopes in one apply, all or none,
+and the open scope's part as one step through its session. So a move is one
+step in each scope that keeps one of the siblings. Where that is the open
+scope alone, undo takes it back whole; where other scopes were written too,
+the open scope's step carries a barrier of its own (`chart.orderBarrier`), and
+the page says how many steps it was. A managing role's right never reaches
+it: who stands where is structure. A scope only read offers no move.
+
+**One order everywhere units are listed**: the chart and the outline, the
+Conway map's columns (`model/conway`, whose input now carries the unit types
+whole), a plan's moves and the units an interaction is declared with on the
+Conway map, and `diagram.inspect` of either view. A unit's inspector still
+offers the units it may declare it works with by name.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

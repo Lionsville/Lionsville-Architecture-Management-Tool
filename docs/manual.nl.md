@@ -2029,10 +2029,31 @@ niets erop wordt met de hand geplaatst — als geneste vakken: elke eenheid in
 de eenheid waarin ze op de dag van het organogram zit, de verplaatsingen van
 een plan meegerekend, de eenheden die in deze scope en eronder zijn
 ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de organisatie
-elke eenheid die er is. **Toon** beperkt het tot één eenheid en die eronder.
-Eenheden naast elkaar staan in de volgorde van hun typen — een type bovenaan
-eerst, dan de typen die eronder vallen — en eenheden van één type in hun
-eigen volgorde waar die is gezet, anders op naam.
+elke eenheid die er is. Eenheden naast elkaar staan in de volgorde van hun
+typen — een type bovenaan eerst, dan de typen die eronder vallen — en
+eenheden van één type in hun eigen volgorde waar die is gezet, anders op
+naam. Elke lijst van eenheden houdt die volgorde aan: het overzicht, de
+kolommen van de Conway-kaart en elke plek waar je een eenheid kiest.
+
+**Het overzicht** naast het organogram toont dezelfde eenheden als een boom.
+Een eenheid daar kiezen gaat ernaartoe op het organogram — opengevouwen, in
+beeld gescrold en omlijnd — en kiest haar waar deze scope haar bijhoudt.
+Onder het overzicht verplaatsen **Omhoog** en **Omlaag** de gekozen eenheid
+tussen de eenheden van haar type in dezelfde eenheid: één stap in elke scope
+die er een van bijhoudt. Waar ze allemaal in deze scope worden bijgehouden,
+neemt ongedaan maken de verplaatsing terug; waar sommige in andere scopes
+worden bijgehouden, zet je elke scope apart terug.
+
+**Een grote organisatie vouwt.** Het pijltje naast de naam van een eenheid
+vouwt de eenheden eronder dicht, en de eenheid zegt dan wat ze verbergt: haar
+eenheden en mensen, en de vacatures en bevindingen daaronder. De eerste keer
+dat een organogram met meer dan 30 eenheden wordt geopend, is alles onder het
+tweede niveau dichtgevouwen, en de pagina zegt dat. **Alles dichtvouwen** en
+**Alles openvouwen** staan in de balk; het overzicht vouwt los daarvan.
+**Zoek een eenheid** gaat naar de eerste eenheid waarvan de naam elk getypt
+woord bevat; dat, **Vind mij** en elke regel onder het organogram vouwen de weg
+open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
+is en wordt nooit bewaard.
 
 Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
 heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
@@ -2080,7 +2101,8 @@ Een **Conway-kaart** is ook een weergave: **+**, dan **Conway-kaart**. Ze zet
 de eenheden boven de applicaties die ze bezitten — een applicatie hoort bij de
 eenheid die ze als eigenaar noemt — en tekent de interfaces daartussen: een
 doorgetrokken lijn waar de twee eenheden hebben vastgelegd dat ze
-samenwerken, een gestreepte waar dat niet zo is. **Groepeer op** vat de
+samenwerken, een gestreepte waar dat niet zo is. De kolommen staan in de
+volgorde waarin het organogram de eenheden noemt. **Groepeer op** vat de
 kolommen samen tot een eenheidstype boven de eigenaars, bijvoorbeeld een
 domein of een cluster. Een tabel onder de kaart telt de interfaces tussen elk
 paar eenheden, met een letter voor elke vastgelegde vorm van samenwerking —
@@ -2120,8 +2142,9 @@ scope, waar dat er is.
 
 Een agent maakt beide weergaven met `diagram.create` (`chart`, `conway`), opent
 ze met `app.open`, en leest wat ze tekenen met `diagram.inspect`: de eenheden
-met per rol wie die vervult en wat vacant is op de dag van de weergave, of de
-kolommen, de overschrijdingen en de bevindingen. Een samenwerking legt hij
+met per rol wie die vervult en wat vacant is op de dag van de weergave, in de
+volgorde van het organogram en nooit dichtgevouwen, of de kolommen, de
+overschrijdingen en de bevindingen. Een samenwerking legt hij
 vast met `relation.add`, type `interacts` en een `mode`.
 
 ## Een tekening

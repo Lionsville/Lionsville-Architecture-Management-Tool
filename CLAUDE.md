@@ -280,7 +280,10 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       day (ADR-0036 §7): the units as a tree
                                       with each role's holders, vacancies, the
                                       people over all of their time and those
-                                      left in a unit that ended (`orgChart`);
+                                      left in a unit that ended, and what a
+                                      fold needs — what a first open folds,
+                                      what a folded unit hides (`rollUp`), the
+                                      units above one, a name found (`orgChart`);
                                       the units over the applications they own,
                                       how each interface lies against the
                                       `interacts` rows, the table's cells —
@@ -815,6 +818,10 @@ src/app/          The shell around the editor.
                                       its hooks hand the panels that draw it
                                       (Workspace*): the shape `editor/editorParts`
                                       gives the editor body
+                    sessionFolds      what is folded on a tree, for as long as
+                                      the window is open and never saved: the
+                                      scope tree's toggle, and the shell's one
+                                      memory of each view's folds, by key
                     organisation/     the first screen: the root scope's home.
                                       OrganisationScreen · OrganisationCards ·
                                       ScopeTree · useOrganisation · the four
@@ -848,7 +855,8 @@ src/app/          The shell around the editor.
                                       (`EndedHolders`) and what a role taken
                                       out of a unit type leaves
                                       (`SlotHolders`), and the people's moves
-                                      landed as one step per scope
+                                      — and a unit's place among its
+                                      siblings — landed as one step per scope
                                       (`landPeopleMoves`); the units of each
                                       type today and who holds a role, for
                                       the operating model page
@@ -857,8 +865,13 @@ src/app/          The shell around the editor.
                                       ConwayPage with its table
                                       (`ConwayTable`), drawn in the tab through
                                       `UnitViewPages`, the chart's boxes
-                                      (`ChartUnitBox`) and what a badge says
-                                      (`chartWords`); the assignment a chip
+                                      (`ChartUnitBox`) and what a badge and a
+                                      folded unit say (`chartWords`); the
+                                      chart's folds, for the session and keyed
+                                      by the view (`useChartFolds`), its
+                                      outline (`ChartOutline`) and a unit
+                                      moved among its siblings there
+                                      (`useSiblingOrder`); the assignment a chip
                                       chooses, in the inspector beside the
                                       chart (`useChartChoice`,
                                       `AssignmentInspector`, through

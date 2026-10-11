@@ -2147,11 +2147,32 @@ gesetzt — nichts darauf wird von Hand platziert — als verschachtelte Kästen
 jede Einheit in der Einheit, in der sie am Tag des Organigramms sitzt, die
 Verschiebungen eines Plans eingerechnet, die Einheiten, die in diesem
 Bereich und darunter abgelegt sind, und die Einheiten, die ihn von oben
-bedienen, und bei der Organisation jede Einheit, die es gibt. **Zeigen**
-beschränkt es auf eine Einheit und die darunter. Einheiten nebeneinander
-stehen in der Reihenfolge ihrer Typen — ein Typ ganz oben zuerst, dann die
-Typen, die zu ihm gehören — und Einheiten eines Typs in ihrer eigenen
-Reihenfolge, wo eine gesetzt ist, sonst nach Namen.
+bedienen, und bei der Organisation jede Einheit, die es gibt. Einheiten
+nebeneinander stehen in der Reihenfolge ihrer Typen — ein Typ ganz oben
+zuerst, dann die Typen, die zu ihm gehören — und Einheiten eines Typs in
+ihrer eigenen Reihenfolge, wo eine gesetzt ist, sonst nach Namen. Jede Liste
+von Einheiten hält diese Reihenfolge: die Gliederung, die Spalten der
+Conway-Karte und jede Stelle, an der eine Einheit gewählt wird.
+
+**Die Gliederung** neben dem Organigramm zeigt dieselben Einheiten als Baum.
+Eine Einheit dort zu wählen geht im Organigramm zu ihr — ausgeklappt, ins Bild
+gescrollt und umrandet — und wählt sie, wo dieser Bereich sie führt. Unter der
+Gliederung verschieben **Nach oben** und **Nach unten** die gewählte Einheit
+unter den Einheiten ihres Typs in derselben Einheit: ein Schritt in jedem
+Bereich, der eine davon führt. Wo alle in diesem Bereich geführt werden, nimmt
+Rückgängig die Verschiebung zurück; wo einige in anderen Bereichen geführt
+werden, wird jeder Bereich für sich zurückgesetzt.
+
+**Eine große Organisation klappt ein.** Der Pfeil neben dem Namen einer
+Einheit klappt die Einheiten darunter ein, und die Einheit sagt dann, was sie
+verbirgt: ihre Einheiten und Personen, und die unbesetzten Rollen und Befunde
+darunter. Wird ein Organigramm mit mehr als 30 Einheiten zum ersten Mal
+geöffnet, ist alles unterhalb der zweiten Ebene eingeklappt, und die Seite
+sagt es. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
+Gliederung klappt für sich. **Eine Einheit finden** geht zur ersten Einheit,
+deren Name jedes eingegebene Wort enthält; das, **Mich finden** und jede Zeile
+unter dem Organigramm klappen den Weg zu der Einheit aus, zu der sie gehen.
+Eine Faltung gilt, solange die App offen ist, und wird nie gespeichert.
 
 Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
 sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus
@@ -2203,8 +2224,9 @@ Eine **Conway-Karte** ist ebenfalls eine Ansicht: **+**, dann
 gehören — eine Anwendung gehört zu der Einheit, die sie als Eigentümer nennt —
 und zeichnet die Schnittstellen dazwischen: eine durchgezogene Linie, wo die
 beiden Einheiten festgehalten haben, dass sie zusammenarbeiten, eine
-gestrichelte, wo nicht. **Gruppieren nach** fasst die Spalten zu einem
-Einheitstyp über den Eigentümern zusammen, etwa einer Domäne oder einem
+gestrichelte, wo nicht. Die Spalten stehen in der Reihenfolge, in der das
+Organigramm die Einheiten nennt. **Gruppieren nach** fasst die Spalten zu
+einem Einheitstyp über den Eigentümern zusammen, etwa einer Domäne oder einem
 Cluster. Eine Tabelle unter der Karte zählt die Schnittstellen zwischen jedem
 Paar von Einheiten, mit einem Buchstaben für jede festgehaltene Form der
 Zusammenarbeit — ob eine Schnittstelle zwischen ihnen läuft oder nicht. Eine
@@ -2245,7 +2267,8 @@ an dem sie geführt wird. Ein draw.io-Kasten, der auf eine Einheit zeigt,
 Ein Agent legt beide Ansichten mit `diagram.create` an (`chart`, `conway`),
 öffnet sie mit `app.open` und liest, was sie zeichnen, mit `diagram.inspect`:
 die Einheiten mit den Inhabern jeder Rolle und den unbesetzten Stellen am Tag
-der Ansicht, oder die Spalten, die Überschreitungen und die Befunde. Eine
+der Ansicht, in der Reihenfolge des Organigramms und nie eingeklappt, oder die
+Spalten, die Überschreitungen und die Befunde. Eine
 Zusammenarbeit hält er mit `relation.add` fest, Typ `interacts` und ein
 `mode`.
 
