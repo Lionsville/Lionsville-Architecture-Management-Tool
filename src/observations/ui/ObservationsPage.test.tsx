@@ -500,6 +500,18 @@ describe('ObservationsPage', () => {
     expect(within(screen.getByTestId('observation-register')).getByTestId('observation-row-o1')).toBeTruthy()
   })
 
+  it('offers New observation where nothing is observed yet, without a second name for the guide, and not where nothing may be written', () => {
+    mount({ model: { ...model, observations: [], causes: [] } })
+    const start = within(screen.getByTestId('observation-register-empty')).getByTestId('observation-empty-new')
+    expect(start.textContent).toBe('New observation')
+    expect(start.getAttribute('data-guide')).toBeNull()
+    fireEvent.click(start)
+    expect(screen.getByRole('dialog', { name: 'New observation' })).toBeTruthy()
+    cleanup()
+    mount({ model: { ...model, observations: [], causes: [] }, readOnly: true })
+    expect(screen.queryByTestId('observation-empty-new')).toBeNull()
+  })
+
   it('marks every row for the guide, and starts the crumbs with a name, never an empty one', () => {
     mount({ groupName: '' })
     expect(screen.getByTestId('observation-row-o1').getAttribute('data-guide')).toBe('observations.row')

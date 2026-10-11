@@ -662,7 +662,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       solutions={solutionRows}
       experiments={experimentRows}
       analysisBelow={recordsBelow(below, here.scope, f.viewLocal, shows, showArchived, showMerged)}
-      empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} filtering={f.result.filtering} s={s} />}
+      empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} onNew={forms.openNew} readOnly={readOnly} filtering={f.result.filtering} s={s} />}
       selectedKey={selectedKey}
       onSelect={setSelectedKey}
       analysedInto={analysedInto}
