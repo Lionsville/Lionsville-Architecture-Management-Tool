@@ -213,6 +213,15 @@ describe('the organisation before and after', () => {
     expect(reorganisationRoots(organisation, found, EVE, SPLIT)).toEqual(['shipping'])
   })
 
+  it('draws a loop a move makes from the first of its units, rather than from none', () => {
+    const looped: Organisation = {
+      units: [unit('a', 'ut-team'), unit('b', 'ut-team', 'a')], assignments: [], roles: [], unitTypes: [team],
+      moves: [{ unitId: 'a', parentId: 'b', on: SPLIT }],
+    }
+    const moving: Transition = { ...plan, elements: [], moves: [{ unitId: 'a', parentId: 'b', on: SPLIT }] }
+    expect(reorganisationRoots(looped, planReorganisation(moving, looped), EVE, SPLIT)).toEqual(['a'])
+  })
+
   it('has the cluster and its teams before, and the two new clusters with the teams moved under them after', () => {
     const shape = (nodes: ReturnType<typeof unitTree>): unknown[] => nodes.map((node) => [node.unit.id, node.holders.map((one) => one.id), shape(node.children)])
     expect(shape(unitTree(organisation, EVE, ['shipping']))).toEqual([

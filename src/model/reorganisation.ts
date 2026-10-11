@@ -307,7 +307,12 @@ export function reorganisationRoots(organisation: Organisation, reorganisation: 
       if (!candidates.includes(top)) candidates.push(top)
     }
   }
-  return candidates.filter((id) => !days.some((on) => unitsAbove(on.units, id).some((above) => candidates.includes(above))))
+  // One candidate under another is drawn in that one's tree — but of two above each other, a loop,
+  // the first is kept, or the loop would be drawn nowhere.
+  const under = (on: Organisation, id: ElementId, other: ElementId) => unitsAbove(on.units, id).includes(other)
+  return candidates.filter((id, at) => !days.some((on) => candidates.some((other, there) => (
+    other !== id && under(on, id, other) && (!under(on, other, id) || there < at)
+  ))))
 }
 
 /** The day before a plan's first day and its last day: the two the organisation is shown on. Nothing where it has no day. */

@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, endedBy, endingFor, holdersOn, isUnit, leavingStep, loadOn, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
+  dayBefore, endedBy, endingFor, holdersOn, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
   parentTypeOf, runsOn, shareOf, slotsOf, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn, unitTypeOn,
 } from './units'
 import type { Assignment, Organisation } from './units'
@@ -128,6 +128,21 @@ describe('units, slots and holders', () => {
     expect(mayHaveParent(team, 'ut-cluster')).toBe(true)
     expect(mayHaveParent(team, undefined)).toBe(false)
     expect(mayHaveParent(cluster, undefined)).toBe(true)
+  })
+})
+
+describe('a move that would make a loop', () => {
+  const tree: Organisation = { units: [unit('a', 'ut-team'), unit('b', 'ut-team', 'a'), unit('c', 'ut-team', 'b')], assignments: [], roles, unitTypes: [team] }
+
+  it('is one under a unit below it on its day, or on a later day another move reaches, and not one before', () => {
+    expect(makesLoop(tree, { unitId: 'a', parentId: 'c', on: '2027-01-01' })).toBe(true)
+    expect(makesLoop(tree, { unitId: 'a', parentId: 'a', on: '2027-01-01' })).toBe(true)
+    expect(makesLoop(tree, { unitId: 'c', parentId: 'a', on: '2027-01-01' })).toBe(false)
+    expect(makesLoop(tree, { unitId: 'c', on: '2027-01-01' })).toBe(false)
+    // From June another plan puts c under a's sibling d; a under d from January loops only once d sits under a.
+    const later: Organisation = { ...tree, units: [...tree.units, unit('d', 'ut-team')], moves: [{ unitId: 'd', parentId: 'b', on: '2027-06-01' }] }
+    expect(makesLoop(later, { unitId: 'a', parentId: 'd', on: '2027-01-01' })).toBe(true)
+    expect(makesLoop({ ...later, moves: [] }, { unitId: 'a', parentId: 'd', on: '2027-01-01' })).toBe(false)
   })
 })
 

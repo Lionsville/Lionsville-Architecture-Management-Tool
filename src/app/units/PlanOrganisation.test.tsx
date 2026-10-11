@@ -151,6 +151,17 @@ describe('a reorganisation on its plan\'s page', () => {
     expect(dispatched[1]).toEqual({ type: 'transition.update', id: 'tr-7', patch: { moves: [{ unitId: 'tracking', parentId: 'parcel', on: SPLIT }] } })
   })
 
+  it('offers no parent below the unit on the move\'s day: that would be a loop', () => {
+    renderShell(<Harness dispatched={[]} />)
+    // Tracking moves under Parcel on the plan's day, so Parcel under Tracking then is a loop.
+    fireEvent.change(screen.getByTestId('plan-move-unit'), { target: { value: 'parcel' } })
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
+    const offered = screen.getAllByRole('option').map((one) => one.textContent)
+    expect(offered).toContain('Booking')
+    expect(offered).not.toContain('Tracking')
+    expect(offered).not.toContain('Parcel')
+  })
+
   it('says what it does, and draws the organisation the day before and on its day', () => {
     renderShell(<Harness dispatched={[]} />)
     expect(lines('plan-does')).toEqual([

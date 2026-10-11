@@ -245,6 +245,34 @@ export function organisationOn(organisation: Organisation, day: string): Organis
   }
 }
 
+/**
+ * Whether a move would put a unit under itself on some day from its own on
+ * (ADR-0036 §6): under a unit below it then, or below it on any later day the
+ * other moves reach. `organisation.moves` are the others — the move's own
+ * plan's earlier move of the unit left out — and the move is laid over them.
+ * A loop drawn would leave every unit in it with nobody above to hang from.
+ */
+export function makesLoop(organisation: Organisation, move: UnitMove): boolean {
+  if (move.parentId === undefined || !isDay(move.on)) return false
+  if (move.parentId === move.unitId) return true
+  const moves = [...organisation.moves ?? [], move]
+  const later = moves.filter((one) => isDay(one.on) && one.on > move.on).map((one) => one.on)
+  const laid = { ...organisation, moves }
+  return [move.on, ...later].some((day) => loopsAt(organisationOn(laid, day).units, move.unitId))
+}
+
+/** Whether following a unit's parents through units brings it back to itself. */
+function loopsAt(units: readonly UnitLike[], unitId: ElementId): boolean {
+  const held = byId(units)
+  const seen = new Set<ElementId>()
+  for (let at = held.get(unitId)?.parentId; at !== undefined && held.has(at); at = held.get(at)?.parentId) {
+    if (at === unitId) return true
+    if (seen.has(at)) return false
+    seen.add(at)
+  }
+  return false
+}
+
 /** The units there on `day`, under the parent each has that day, in the order the organisation lists them. */
 export function unitsOn(organisation: Organisation, day: string): UnitLike[] {
   return organisationOn(organisation, day).units.filter((unit) => isUnit(unit) && unitOn(unit, day))

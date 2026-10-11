@@ -77,6 +77,19 @@ function find(chart: { roots: readonly ChartUnit[] }, id: string): ChartUnit {
 }
 
 describe('the organisation chart', () => {
+  it('draws every unit of a loop the plans\' moves make, the first by name at the top, rather than none of them', () => {
+    const looped: Organisation = {
+      ...organisation,
+      units: [unit('a', 'A', 'ut-team'), unit('b', 'B', 'ut-team', 'a'), unit('c', 'C', 'ut-team', 'b'), unit('z', 'Z', 'ut-team')],
+      assignments: [], moves: [{ unitId: 'a', parentId: 'b', on: '2027-01-01' }],
+    }
+    expect(orgChart(looped, '2026-12-31').units).toBe(4)
+    const after = orgChart(looped, '2027-01-01')
+    expect(after.units).toBe(4)
+    expect(after.roots.map((one) => one.id)).toEqual(['a', 'z'])
+    expect(find(after, 'c').id).toBe('c')
+  })
+
   it('is the units as a tree by parentId, siblings by name, and an actor with no type is not on it', () => {
     const chart = orgChart(organisation, TODAY)
     expect(chart.roots.map((one) => one.id)).toEqual(['data', 'shipping'])

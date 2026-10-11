@@ -281,8 +281,11 @@ describe('a reorganisation at the agent (ADR-0036 §6)', () => {
     expect((await tried({ on: 'soon' }))?.[0]).toBe('agent.badArguments')
     expect((await tried({ parentId: 'webshop' }))?.[0]).toBe('agent.badArguments')
     // Parcel sits under the webshop from December, so the webshop under Parcel in January is a loop; in November it is not.
-    expect(await tried({ parentId: 'parcel' })).toEqual(['agent.badArguments', 'parcel sits below webshop on 2027-01-01: the move would make a loop'])
-    expect(await tried({ parentId: 'parcel', on: '2026-11-01' })).toBeUndefined()
+    expect(await tried({ parentId: 'parcel' }))
+      .toEqual(['agent.badArguments', 'parcel sits below webshop on 2027-01-01, or on a later day the plans\' moves reach: the move would make a loop'])
+    // And in November: from December the move already on the plan would close the loop.
+    expect((await tried({ parentId: 'parcel', on: '2026-11-01' }))?.[0]).toBe('agent.badArguments')
+    expect(await tried({ on: '2026-11-01' })).toBeUndefined()
     expect((await tried({ unitId: 'webshop', remove: true, planId: 'tr-1' }))).toBeUndefined()
   })
 

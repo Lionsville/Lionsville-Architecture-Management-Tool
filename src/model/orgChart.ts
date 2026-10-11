@@ -206,6 +206,22 @@ function treeOf(all: readonly UnitLike[], shown: ReadonlySet<ElementId>): { root
     if (parent === undefined) roots.push(unit)
     else children.set(parent, [...children.get(parent) ?? [], unit])
   }
+  // A loop the plans' moves make leaves its units under each other and none at
+  // the top: the first of them by name is drawn at the top instead, and the
+  // rest under it, so no unit drops out of the chart.
+  const reached = new Set<ElementId>()
+  const reach = (unit: UnitLike) => {
+    if (reached.has(unit.id)) return
+    reached.add(unit.id)
+    for (const child of children.get(unit.id) ?? []) reach(child)
+  }
+  roots.forEach(reach)
+  for (const unit of [...units].sort(byName)) {
+    if (reached.has(unit.id)) continue
+    for (const [parent, list] of children) children.set(parent, list.filter((one) => one.id !== unit.id))
+    roots.push(unit)
+    reach(unit)
+  }
   for (const list of children.values()) list.sort(byName)
   return { roots: roots.sort(byName), children }
 }

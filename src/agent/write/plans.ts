@@ -18,7 +18,7 @@ import type {
   Transition, TransitionElement, TransitionMilestone, TransitionMove, TransitionRole, TransitionStatus,
 } from '../../model/transition'
 import type { ElementId } from '../../model/types'
-import { isUnit, organisationOn, unitsBelow } from '../../model/units'
+import { isUnit, makesLoop } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { ReadView } from '../answer'
 import { planEntry } from '../answer'
@@ -453,8 +453,8 @@ export const moveUnit: Handler = (args, view) => {
     if (parentId === unitId) return refused('agent.badArguments', 'a unit cannot sit under itself')
     if (!units.has(parentId)) return refused('agent.unknownId', `unit ${parentId}`)
     const organisation = { units: [...units.values()], assignments: [], roles: [], unitTypes: [], moves: otherMoves(view, plan, unitId) }
-    if (unitsBelow(organisationOn(organisation, on).units, unitId).includes(parentId)) {
-      return refused('agent.badArguments', `${parentId} sits below ${unitId} on ${on}: the move would make a loop`)
+    if (makesLoop(organisation, { unitId, parentId, on })) {
+      return refused('agent.badArguments', `${parentId} sits below ${unitId} on ${on}, or on a later day the plans' moves reach: the move would make a loop`)
     }
   }
   return withMoves(plan, movesWith(plan.moves, unitId, { ...(parentId !== undefined ? { parentId } : {}), on }))
