@@ -2148,8 +2148,8 @@ dat een organogram met meer dan 30 eenheden wordt geopend, is alles onder het
 tweede niveau dichtgevouwen, en de pagina zegt dat. **Alles dichtvouwen** en
 **Alles openvouwen** staan in de balk; het overzicht vouwt los daarvan.
 **Zoek een eenheid** gaat naar de eerste eenheid waarvan de naam elk getypt
-woord bevat; dat, **Vind mij** en elke regel onder het organogram vouwen de weg
-open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
+woord bevat; dat, **Vind mij** en elke bevinding naast het organogram vouwen
+de weg open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
 is en wordt nooit bewaard.
 
 Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
@@ -2165,15 +2165,32 @@ ze begint, waar die na vandaag ligt, en de dag waarop ze eindigt, elk met het
 plan dat haar brengt of beëindigt waar een plan dat doet: *vanaf 1 jan 2027 ·
 TR-0007*.
 
+De eenheden onder een eenheid staan naast elkaar in zoveel kolommen als de
+breedte toelaat; een eenheid met eigen eenheden eronder krijgt een hele rij,
+zodat die op hun beurt de breedte hebben. Een rol die het type van de eenheid
+niet vraagt en die niemand vervult — een optionele — wordt niet getekend: het
+is een keuze, geen gat. **Optionele rollen tonen** in de balk tekent ze, elk
+met **+ toewijzen** waar je iemand mag toewijzen, en de inspector van de
+eenheid noemt altijd elke rol. Net als een vouw duurt de schakelaar zolang de
+app open is en wordt nooit bewaard.
+
 Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
 balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het
 organogram (zie *Tijd, en de dag die een bord toont*). Op een latere dag zijn de
 eenheden die een plan brengt er, en een eenheid die is opgeheven wordt nog
 getekend — gestreept, en dat zeggend — zolang er iemand aan is toegewezen,
 zodat de mensen die een reorganisatie achterliet te zien zijn waar ze zijn
-achtergelaten. Onder het organogram noemt **Op** *dag* wat de organisatie over
-deze eenheden en de mensen erin tegenspreekt; elke regel opent de eenheid
-waarover hij gaat.
+achtergelaten.
+
+**Met niets gekozen is de inspector naast het organogram de samenvatting
+ervan**: wiens organogram en op welke dag, hoeveel eenheden en mensen erop
+staan en hoeveel plaatsen vacant zijn; dan **Bevindingen**, wat de
+organisatie over deze eenheden en de mensen erin tegenspreekt, elke regel naar
+de eenheid waarover hij gaat; en **Zo lees je het** — een gestreepte **+
+vacant** is een rol die het type van de eenheid vraagt en die niemand vervult,
+een rode rand is iemand boven al zijn tijd, *stuurt aan* markeert een rol
+waarvan wie hem vervult de mensen van de eenheid aanstuurt, en een gestreept
+vak is een eenheid die is opgeheven terwijl er nog mensen in zitten.
 
 Een eenheid kiezen die deze scope bijhoudt opent haar in de inspector naast
 het organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden

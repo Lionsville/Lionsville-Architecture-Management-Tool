@@ -291,7 +291,10 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       left in a unit that ended, and what a
                                       fold needs — what a first open folds,
                                       what a folded unit hides (`rollUp`), the
-                                      units above one, a name found (`orgChart`);
+                                      units above one, a name found — and what
+                                      its layout needs: a unit that takes a
+                                      row, an empty optional role, the
+                                      vacancies counted (`orgChart`);
                                       the units over the applications they own,
                                       how each interface lies against the
                                       `interacts` rows, the table's cells —
@@ -900,9 +903,14 @@ src/app/          The shell around the editor.
                                       …and the two views (§7): ChartPage and
                                       ConwayPage with its table
                                       (`ConwayTable`), drawn in the tab through
-                                      `UnitViewPages`, the chart's boxes
-                                      (`ChartUnitBox`) and what a badge and a
-                                      folded unit say (`chartWords`); the
+                                      `UnitViewPages`, the chart's boxes in
+                                      their grid (`ChartUnitBox`) and what a
+                                      badge and a folded unit say
+                                      (`chartWords`); its summary in the
+                                      inspector while nothing is picked —
+                                      the counts, the findings, how to read
+                                      it (`ChartSummary`), read off the page's
+                                      own reading (`chartReading`); the
                                       chart's folds, for the session and keyed
                                       by the view (`useChartFolds`), its
                                       outline (`ChartOutline`) and a unit

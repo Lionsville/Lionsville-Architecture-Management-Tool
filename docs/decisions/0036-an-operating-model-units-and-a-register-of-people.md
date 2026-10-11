@@ -1488,6 +1488,40 @@ section goes: `EditorOwnership.unitSection` answers `{ section, leads }`
 editor's inspector lays itself out from that. No control name moved and none
 was added: the inspector is `board.inspector` as before.
 
+## As built, 3.6.1: the chart laid out to fit, and its summary beside it
+
+§7's chart, made less crowded (the owner, 11 October 2026: "some views are
+looking a little cluttered"). **The width is used.** A unit's units — and the
+chart's top units — share a grid of columns at least 220 pixels wide
+(`app/units/ChartUnitBox`'s `UnitGrid`), read across in the one order for
+units; a unit drawn with units under it takes a whole row
+(`model/orgChart`'s `drawsUnitsBelow`), so a cluster's teams fill its row
+instead of wrapping at a third of it, and a folded one is a cell like a team.
+**Only what needs attention is drawn.** A role whose slot asks for nobody and
+that nobody holds (`emptyOptional`) is a choice, not a gap, and is not drawn;
+a vacancy always is. *Show optional roles*, a switch on the bar, draws them,
+each with *+ assign* where the person may assign; it is kept as the folds
+are, for the session under the view's key (`useChartFolds`), never as a
+preference. A unit's inspector lists every role whatever the switch says.
+
+**What the chart says as a whole is said beside it.** While nothing is picked
+— no element selected, no assignment chosen — the inspector docked beside the
+chart shows the chart's summary (`app/units/ChartSummary`) through the same
+seam as a chosen assignment (`EditorPages.inspector`), in place of the
+editor's canvas hint: whose chart and on which day, its units, people and
+vacancies (`vacanciesIn`); the findings, moved there from under the chart;
+and *How to read it*, the legend moved there from the bar — the dashed
+vacancy, the red edge, *manages*, the dashed unit that has ended with people
+in it, and where the empty optional roles are. The page and the summary read
+the chart and its findings through one hook (`app/units/chartReading`), so
+the counts beside the chart are the boxes on it. A finding goes to its unit
+as a request from outside the page does (`selectOn`): unfolded, scrolled to,
+ringed, and selected where the open scope keeps it. The Conway map keeps its
+findings under its columns: lighting a finding's lines and declaring an
+interaction from it are the page's own, so they stay where the lines are.
+`diagram.inspect` reads every role, drawn or not; a picture of the page
+(`diagram.render`) is of what is drawn, so no longer of the findings.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

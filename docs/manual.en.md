@@ -1979,8 +1979,8 @@ vacancies and findings among them. The first time a chart of more than 30
 units is opened, everything below the second level is folded, and the page
 says so. **Fold all** and **Unfold all** are on the bar; the outline folds on
 its own. **Find a unit** goes to the first unit whose name holds every word
-typed; it, **Find me** and each line under the chart unfold the way to the
-unit they go to. A fold lasts while the app is open and is never saved.
+typed; it, **Find me** and each finding beside the chart unfold the way to
+the unit they go to. A fold lasts while the app is open and is never saved.
 
 Each box says the unit's type and name, and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it
@@ -1993,14 +1993,29 @@ one — the first two and how many more, where there are many — and says the d
 it starts, where that is after today, and the day it ends, each with the plan
 that brings or ends it where a plan does: *from 1 Jan 2027 · TR-0007*.
 
+The units under a unit stand side by side in as many columns as the width
+holds; one with units of its own under it takes a whole row, so they have the
+width in turn. A role the unit's type does not require and nobody holds — an
+optional one — is not drawn: it is a choice, not a gap. **Show optional
+roles** on the bar draws them, each with **+ assign** where you may assign
+someone, and the unit's inspector always lists every role. Like a fold, the
+switch lasts while the app is open and is never saved.
+
 The chart is drawn on a day, as a board is: the day control on the bar looks at
 any other day, and **Save** keeps that day on the chart (see *Time, and the day
 a board shows*). On a later day the units a plan brings are there, and a unit
 that has ended is still drawn — dashed, and saying so — while anybody is still
 assigned to it, so the people a reorganisation left behind are seen where they
-were left. Under the chart, **On** *day* lists what the organisation
-contradicts about these units and the people in them; each line opens the unit
-it is about.
+were left.
+
+**With nothing picked, the inspector beside the chart is its summary**: whose
+chart and on which day, how many units and people are on it and how many
+places are vacant; then **Findings**, what the organisation contradicts about
+these units and the people in them, each line going to the unit it is about;
+and **How to read it** — a dashed **+ vacant** is a role the unit's type
+requires and nobody holds, a red edge is someone over all of their time,
+*manages* marks a role whose holder manages the unit's people, and a dashed
+box is a unit that has ended with people still in it.
 
 Choosing a unit this scope keeps opens it in the inspector beside the chart —
 its people, its roles, who manages it and the units it works with. A unit kept

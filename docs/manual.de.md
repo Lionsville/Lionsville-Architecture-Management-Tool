@@ -2270,8 +2270,9 @@ darunter. Wird ein Organigramm mit mehr als 30 Einheiten zum ersten Mal
 geöffnet, ist alles unterhalb der zweiten Ebene eingeklappt, und die Seite
 sagt es. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
 Gliederung klappt für sich. **Eine Einheit finden** geht zur ersten Einheit,
-deren Name jedes eingegebene Wort enthält; das, **Mich finden** und jede Zeile
-unter dem Organigramm klappen den Weg zu der Einheit aus, zu der sie gehen.
+deren Name jedes eingegebene Wort enthält; das, **Mich finden** und jeder
+Befund neben dem Organigramm klappen den Weg zu der Einheit aus, zu der sie
+gehen.
 Eine Faltung gilt, solange die App offen ist, und wird nie gespeichert.
 
 Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
@@ -2288,16 +2289,33 @@ beginnt, wo er nach heute liegt, und den Tag, an dem sie endet, jeweils mit dem
 Plan, der sie bringt oder beendet, wo ein Plan das tut: *ab 1. Jan. 2027 ·
 TR-0007*.
 
+Die Einheiten unter einer Einheit stehen nebeneinander in so vielen Spalten,
+wie die Breite fasst; eine mit eigenen Einheiten darunter nimmt eine ganze
+Zeile, damit diese wiederum die Breite haben. Eine Rolle, die der Typ der
+Einheit nicht verlangt und die niemand innehat — eine optionale —, wird nicht
+gezeichnet: Sie ist eine Wahl, keine Lücke. **Optionale Rollen zeigen** in der
+Leiste zeichnet sie, jede mit **+ zuordnen**, wo Sie jemanden zuordnen dürfen,
+und der Inspektor der Einheit führt immer jede Rolle. Wie eine Faltung gilt
+der Schalter, solange die App offen ist, und wird nie gespeichert.
+
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
 in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
 am Organigramm fest (siehe *Zeit, und der Tag, den ein Board zeigt*). An einem späteren
 Tag sind die Einheiten da, die ein Plan bringt, und eine aufgelöste Einheit
 wird weiter gezeichnet — gestrichelt, und das sagend —, solange ihr noch
 jemand zugeordnet ist, damit die Personen, die eine Reorganisation
-zurückgelassen hat, dort zu sehen sind, wo sie zurückblieben. Unter dem
-Organigramm nennt **Am** *Tag*, was die Organisation über diese Einheiten und
-die Personen darin widerspricht; jede Zeile öffnet die Einheit, um die es
-geht.
+zurückgelassen hat, dort zu sehen sind, wo sie zurückblieben.
+
+**Ist nichts gewählt, ist der Inspektor neben dem Organigramm dessen
+Zusammenfassung**: wessen Organigramm und an welchem Tag, wie viele Einheiten
+und Personen darauf stehen und wie viele Plätze unbesetzt sind; dann
+**Befunde**, was die Organisation über diese Einheiten und die Personen darin
+widerspricht, jede Zeile zu der Einheit, um die es geht; und **So wird es
+gelesen** — ein gestricheltes **+ unbesetzt** ist eine Rolle, die der Typ der
+Einheit verlangt und die niemand innehat, ein roter Rand ist jemand über
+seiner ganzen Zeit, *führt* markiert eine Rolle, deren Inhaber die Personen
+der Einheit führt, und ein gestrichelter Kasten ist eine aufgelöste Einheit,
+der noch Personen zugeordnet sind.
 
 Eine Einheit zu wählen, die dieser Bereich führt, öffnet sie im Inspektor
 neben dem Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die
