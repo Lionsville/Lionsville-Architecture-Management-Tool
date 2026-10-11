@@ -3,14 +3,14 @@
 
 /**
  * The rows between two elements: a flow (`connect`, `connection.*`), the four
- * types the business layer needs (`relation.*`), what an application uses
- * (`technology.use`), and the interface the container lines imply
- * (`interface.accept`).
+ * types the business layer needs and the one between two units
+ * (`relation.*`), what an application uses (`technology.use`), and the
+ * interface the container lines imply (`interface.accept`).
  */
 import type { Command } from '../../model/commands'
 import { transaction } from '../../model/commands'
 import { isDay } from '../../model/lifecycle'
-import { technologyEndsRefusal } from '../../model/relations'
+import { interactsRefusal, isInteractionMode, technologyEndsRefusal } from '../../model/relations'
 import { mayBeHosted } from '../../model/hosting'
 import { acceptImplied, impliedInterfacesOn } from '../../model/implied'
 import type { EdgeLineStyle, ElementId, Relation, RelationType } from '../../model/types'
@@ -162,6 +162,10 @@ function relationEndsRefusal(type: RelationType, sourceId: string, targetId: str
   if (type === 'hostedOn' && !mayBeHosted(Object.values(model.elements), sourceId)) {
     return refused('command.hostedOnContainers', `${sourceId} has components; write the row from one of them`)
   }
+  // Two units working together (ADR-0036 §7): actor to actor, the writer's key.
+  if (interactsRefusal({ type, sourceId, targetId }, (id) => model.elements[id])) {
+    return refused('command.interactsEnds', `${sourceId} → ${targetId}`)
+  }
   return undefined
 }
 
@@ -266,7 +270,7 @@ function usedTargets(
 function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAnswer {
   const look = lineLook(args)
   if ('ok' in look) return look
-  const patch: Partial<Relation> = { ...look }
+  const patch: Partial<Relation> = { ...look, ...modePatch(args) }
   for (const key of ['label', 'protocol', 'technology'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
@@ -291,6 +295,16 @@ function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAns
   const until = 'validUntil' in patch ? patch.validUntil : held.validUntil
   if (from && until && until < from) return refused('agent.badArguments', 'validUntil must not be before validFrom')
   return patch
+}
+
+/**
+ * How two units work together (ADR-0036 §7), where the call says: one of the
+ * three modes, or null to say nothing about it. The schema has held it to
+ * the three already.
+ */
+function modePatch(args: Args): Pick<Relation, 'mode'> | Record<string, never> {
+  if (args.mode === null || args.mode === '') return { mode: undefined }
+  return isInteractionMode(args.mode) ? { mode: args.mode } : {}
 }
 
 /**

@@ -301,13 +301,16 @@ describe('apply — relations', () => {
   it.each(RELATION_TYPES)('lands a %s row and gives it back on undo, window and all', (type) => {
     // With a platform to run on: where something runs is held to its ends
     // (ADR-0014), and one type in this list is where it runs.
-    const m = ok(apply(sample(), { type: 'element.create', element: element('p', { kind: 'platform' }) })).model
+    const withPlatform = ok(apply(sample(), { type: 'element.create', element: element('p', { kind: 'platform' }) })).model
+    // And two units: two units working together is between actors (ADR-0036 §7).
+    const m = ok(apply(withPlatform, transaction([
+      { type: 'element.create', element: element('u1', { kind: 'actor', unitTypeId: 'ut-team' }) },
+      { type: 'element.create', element: element('u2', { kind: 'actor', unitTypeId: 'ut-team' }) },
+    ]))).model
     // From the component: an application with components may not say where it
     // runs (ADR-0013).
-    const row: Relation = {
-      id: `r-${type}`, type, sourceId: 'c', targetId: type === 'hostedOn' ? 'p' : 'b',
-      validFrom: '2027-03-01', validUntil: '2027-12-31',
-    }
+    const ends = type === 'interacts' ? { sourceId: 'u1', targetId: 'u2' } : { sourceId: 'c', targetId: type === 'hostedOn' ? 'p' : 'b' }
+    const row: Relation = { id: `r-${type}`, type, ...ends, validFrom: '2027-03-01', validUntil: '2027-12-31' }
     const landed = ok(apply(m, { type: 'relation.create', relation: row }))
     expect(landed.model.relations[row.id]).toEqual(row)
     expect(ok(apply(landed.model, landed.inverse)).model.relations[row.id]).toBeUndefined()
@@ -1061,6 +1064,51 @@ describe('where something runs, held to its meaning (ADR-0013, ADR-0014)', () =>
 
   it('trusts an end this scope does not hold', () => {
     expect(apply(held(), hosted('api', 'cluster-elsewhere')).ok).toBe(true)
+  })
+})
+
+describe('two units working together, held to its meaning (ADR-0036 §7)', () => {
+  const held = () => fromArrays({
+    name: 'Organisation',
+    elements: [
+      element('sales', { kind: 'actor', unitTypeId: 'ut-cluster' }),
+      element('data', { kind: 'actor', unitTypeId: 'ut-cluster' }),
+      element('crm'),
+    ],
+    relations: [],
+    diagrams: [],
+  })
+  const interacts = (sourceId: string, targetId: string, over: Partial<Relation> = {}): Command =>
+    ({ type: 'relation.create', relation: { id: 'i1', type: 'interacts', sourceId, targetId, mode: 'service', ...over } })
+
+  it('writes a row between two units with a mode and a window, and undoes it whole', () => {
+    const written = apply(held(), interacts('sales', 'data', { validFrom: '2026-01-01', validUntil: '2026-12-31' }))
+    if (!written.ok) throw new Error('not written')
+    expect(written.model.relations.i1).toMatchObject({ type: 'interacts', mode: 'service', validFrom: '2026-01-01' })
+    const undone = apply(written.model, written.inverse)
+    if (!undone.ok) throw new Error('not undone')
+    expect(undone.model.relations.i1).toBeUndefined()
+  })
+
+  it('changes the mode as a patch, and puts the old one back on undo', () => {
+    const written = apply(held(), interacts('sales', 'data'))
+    if (!written.ok) throw new Error('not written')
+    const changed = apply(written.model, { type: 'relation.update', id: 'i1', patch: { mode: 'collaboration' } })
+    if (!changed.ok) throw new Error('not changed')
+    expect(changed.model.relations.i1.mode).toBe('collaboration')
+    const undone = apply(changed.model, changed.inverse)
+    if (!undone.ok) throw new Error('not undone')
+    expect(undone.model.relations.i1.mode).toBe('service')
+  })
+
+  it('refuses a row from a unit to itself, to an application, or in a mode that is not one of the three', () => {
+    expect(apply(held(), interacts('sales', 'sales'))).toEqual({ ok: false, reason: 'command.interactsEnds' })
+    expect(apply(held(), interacts('sales', 'crm'))).toEqual({ ok: false, reason: 'command.interactsEnds' })
+    expect(apply(held(), interacts('sales', 'data', { mode: 'friendly' as never }))).toEqual({ ok: false, reason: 'command.interactsEnds' })
+  })
+
+  it('trusts a unit this scope does not hold, as every far end of a row is', () => {
+    expect(apply(held(), interacts('sales', 'unit-elsewhere')).ok).toBe(true)
   })
 })
 

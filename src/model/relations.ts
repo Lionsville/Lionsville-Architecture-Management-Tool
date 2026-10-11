@@ -19,15 +19,15 @@
  * other tools and does not change — takes its flows through `flowsOf`.
  */
 import type { StringKey } from '../i18n/strings'
-import type { DesignElement, PlatformArchetype, Relation, RelationType } from './types'
+import type { DesignElement, InteractionMode, PlatformArchetype, Relation, RelationType } from './types'
 
 /**
  * Every type, in the order the vocabulary was decided in: the line this tool
- * has always drawn, the four the business layer needs, and the two the
- * physical view needs (ADR-0013).
+ * has always drawn, the four the business layer needs, the two the physical
+ * view needs (ADR-0013), and the one between two units (ADR-0036 §7).
  */
 export const RELATION_TYPES: readonly RelationType[] = [
-  'flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn',
+  'flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn', 'interacts',
 ]
 
 /**
@@ -43,6 +43,7 @@ export const RELATION_LABEL = {
   assigned: 'relation.assigned',
   uses: 'relation.uses',
   hostedOn: 'relation.hostedOn',
+  interacts: 'relation.interacts',
 } as const satisfies Record<RelationType, StringKey>
 
 export function isRelationType(held: unknown): held is RelationType {
@@ -139,4 +140,42 @@ export function technologyEndsRefusal(
     default:
       return undefined
   }
+}
+
+// --- how units work together (ADR-0036 §7) -----------------------------------
+
+/**
+ * Team Topologies' three modes, in the order a select offers them: working
+ * side by side, providing a service, helping another learn.
+ */
+export const INTERACTION_MODES: readonly InteractionMode[] = ['collaboration', 'service', 'facilitating']
+
+/** What each mode is called — published, for the reason `RELATION_LABEL` is. */
+export const INTERACTION_MODE_LABEL = {
+  collaboration: 'interaction.collaboration',
+  service: 'interaction.service',
+  facilitating: 'interaction.facilitating',
+} as const satisfies Record<InteractionMode, StringKey>
+
+export function isInteractionMode(held: unknown): held is InteractionMode {
+  return typeof held === 'string' && (INTERACTION_MODES as readonly string[]).includes(held)
+}
+
+/**
+ * Whether this row may say that two units work together (ADR-0036 §7): an
+ * `interacts` row runs from an actor to another actor, never to itself, and
+ * a mode it names is one of the three. Judged on the ends this scope holds,
+ * as the technology rows are: an end nobody here holds is an id the tree
+ * knows, and trusted. Whether an actor is a unit — has a type — is not the
+ * writer's to hold it to: a type taken off a unit leaves its rows standing,
+ * and the Conway map reads only the rows between units.
+ */
+export function interactsRefusal(row: Pick<Relation, 'type' | 'sourceId' | 'targetId' | 'mode'>, kindOf: KindOf): boolean {
+  if (row.type !== 'interacts') return false
+  if (row.sourceId === row.targetId) return true
+  if (row.mode !== undefined && !isInteractionMode(row.mode)) return true
+  return [row.sourceId, row.targetId].some((id) => {
+    const kind = kindOf(id)?.kind
+    return kind !== undefined && kind !== 'actor'
+  })
 }

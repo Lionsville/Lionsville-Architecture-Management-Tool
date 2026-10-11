@@ -22,6 +22,7 @@ const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.refinesLevel': true,
   'command.hostedOnContainers': true,
   'command.technologyEnds': true,
+  'command.interactsEnds': true,
   'command.taken': true,
   'command.notAField': true,
   'command.ownedElsewhere': true,

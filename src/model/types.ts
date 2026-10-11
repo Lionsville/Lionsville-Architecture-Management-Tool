@@ -349,9 +349,23 @@ export type EdgeArrowhead = 'none' | 'arrow';
  * namespace, a machine, a cloud account. The distinction is the one every
  * technology model in the market makes (ArchiMate's serving against its
  * assignment), and it is the relation's to carry rather than the kind's.
+ *
+ * And one between two units since ADR-0036 §7: a unit `interacts` with
+ * another, in one of Team Topologies' three modes ({@link InteractionMode}),
+ * for the days the row holds. It is how an organisation says which of its
+ * units work together, so that an interface between their applications can
+ * be held against it (the Conway map).
  */
 export type RelationType =
-  | 'flow' | 'supports' | 'serves' | 'realises' | 'assigned' | 'uses' | 'hostedOn';
+  | 'flow' | 'supports' | 'serves' | 'realises' | 'assigned' | 'uses' | 'hostedOn' | 'interacts';
+
+/**
+ * How two units work together (ADR-0036 §7), in Team Topologies' three
+ * modes: side by side on one thing (`collaboration`), one providing what the
+ * other consumes with little to agree each time (`service`, X-as-a-Service),
+ * or one helping the other learn or adopt something (`facilitating`).
+ */
+export type InteractionMode = 'collaboration' | 'service' | 'facilitating';
 
 /**
  * A line's own fields, with nothing said about what it means.
@@ -418,6 +432,12 @@ export interface DesignConnection {
    * bidirectional if it wanted to be.
    */
   isBidirectional?: boolean;
+  /**
+   * `interacts` only: how the two units work together (ADR-0036 §7). Absent
+   * on any other type, and absent on an `interacts` row says nothing about
+   * the mode — the row still says the two work together.
+   */
+  mode?: InteractionMode;
   /**
    * Per-edge presentation overrides (U4b). Each is absent-means-inherit: the
    * stroke falls back to the theme edge token, the line to solid, the path to

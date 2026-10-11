@@ -32,6 +32,8 @@ export type CommandRefusal =
   | 'command.hostedOnContainers'
   /** A `hostedOn` that is not application | component → platform (ADR-0014). */
   | 'command.technologyEnds'
+  /** An `interacts` that is not actor → another actor, or names no mode of the three (ADR-0036 §7). */
+  | 'command.interactsEnds'
   /**
    * A create on an id the model already holds.
    *
@@ -95,6 +97,7 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.refinesLevel': true,
   'command.hostedOnContainers': true,
   'command.technologyEnds': true,
+  'command.interactsEnds': true,
   'command.taken': true,
   'command.notAField': true,
   'command.ownedElsewhere': true,

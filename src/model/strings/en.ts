@@ -28,10 +28,15 @@ export const EN = {
   'relation.assigned': 'Assigned to',
   'relation.uses': 'Uses',
   'relation.hostedOn': 'Hosted on',
+  'relation.interacts': 'Works with',
   // --- what a platform is (ADR-0014) ---------------------------------------
   'platformArchetype.place': 'Place',
   'platformArchetype.service': 'Service',
   'platformArchetype.network': 'Network',
+  // --- how two units work together (ADR-0036 §7) -------------------------
+  'interaction.collaboration': 'Collaboration',
+  'interaction.service': 'As a service',
+  'interaction.facilitating': 'Facilitating',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',
@@ -61,6 +66,7 @@ export const EN = {
   'command.refinesLevel': 'That interface is itself part of another one, and an interface lands once. Choose the application interface it is part of instead.',
   'command.hostedOnContainers': 'An application with containers runs where its containers run. Say where on the container instead.',
   'command.technologyEnds': 'Hosted on runs from an application or a container to a platform. A platform inside another is filed under it, not hosted on it.',
+  'command.interactsEnds': 'Works with runs from one unit to another, in one of three modes: collaboration, as a service or facilitating.',
   'command.taken': 'Something here already has that id — another author took it while this change was being made. Try again.',
   'command.notAField': 'That change carries a field this record does not have, so none of it was made.',
   'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it. Open that scope to change them.',

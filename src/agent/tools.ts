@@ -168,7 +168,9 @@ const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
  * {@link checkArguments} enforces have to be the same literal, and the model's
  * list is free to grow a member this build has no tool for yet.
  */
-const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn'] as const
+const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn', 'interacts'] as const
+/** Team Topologies' three modes, for an `interacts` row (ADR-0036 §7) — a protocol literal, for the reason above. */
+const INTERACTION_MODES = ['collaboration', 'service', 'facilitating'] as const
 
 /** How a line is drawn. Absent means the theme's own stroke and a solid line. */
 const LINE_FIELDS = {
@@ -184,6 +186,12 @@ const RELATION_FIELDS = {
   label: { type: 'string', description: 'What the row says, in a few words.' },
   validFrom: { type: 'string', description: 'The first day it holds, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
   validUntil: { type: 'string', description: 'The last day it holds, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
+  mode: {
+    type: 'string',
+    description: 'interacts only (ADR-0036 §7): how the two units work together — collaboration, service (one '
+      + 'provides what the other consumes, X-as-a-Service) or facilitating (one helps the other learn or adopt something).',
+    enum: INTERACTION_MODES,
+  },
 } as const satisfies Record<string, ArgumentSchema>
 
 /** What a line says and when it is there. Null clears any of them. */
@@ -1204,7 +1212,9 @@ const SPECS = [
       + 'how a platformService is delivered), assigned (an actor is responsible for a function, a step, or '
       + 'maintains a platformService or a platform), hostedOn (an application or a component runs on a '
       + 'platform — never a platform on a platform, which is parentId) or uses (an application or a '
-      + 'component consumes a platformService, or binds to one platform). Dated when it only holds for '
+      + 'component consumes a platformService, or binds to one platform), or interacts (ADR-0036 §7: one unit — an '
+      + 'actor with a unit type — works with another, in a mode: collaboration, service or facilitating; the Conway '
+      + 'map holds the interfaces between their applications against these rows). Dated when it only holds for '
       + 'a while — the roadmap draws the window. One end may be an element another scope defines, as '
       + 'long as register.list or scopes.list knows the id: an organisation\'s capability supported by a '
       + 'landscape\'s application is written on the organisation. For a flow between two applications use '
@@ -2847,6 +2857,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.refinesLevel': 'The interface named by "refines" is itself a refinement. An interface lands once; refine the application-level line instead.',
   'command.hostedOnContainers': 'An application that has components runs where those run: write the hostedOn row from the component. Only an application with no components — an outside system, a SaaS service, a bought package — says where it runs itself.',
   'command.technologyEnds': 'hostedOn runs from an application or a component to a platform, and nothing else. A platform inside another platform is filed under it with parentId; a service consumed is a uses row.',
+  'command.interactsEnds': 'interacts runs from one actor — a unit — to another, never to itself, and its mode is collaboration, service or facilitating.',
   'command.taken': 'Something in the scope already has that id, so the record you meant to add would have overwritten it. Read the scope again and add it under a free id.',
   'command.notAField': 'A patch names a field the record does not have. Nothing was changed; send only the record\'s own fields.',
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',

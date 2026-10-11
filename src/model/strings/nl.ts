@@ -30,9 +30,14 @@ export const NL: Record<keyof typeof EN, string> = {
   'relation.assigned': 'Toegewezen aan',
   'relation.uses': 'Gebruikt',
   'relation.hostedOn': 'Draait op',
+  'relation.interacts': 'Werkt samen met',
   'platformArchetype.place': 'Plek',
   'platformArchetype.service': 'Dienst',
   'platformArchetype.network': 'Netwerk',
+  // --- how two units work together (ADR-0036 §7) -------------------------
+  'interaction.collaboration': 'Samenwerking',
+  'interaction.service': 'Als dienst',
+  'interaction.facilitating': 'Faciliterend',
 
   'zone.actors': 'ACTOREN',
   'zone.inputChannels': 'INVOERKANALEN',
@@ -61,6 +66,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.refinesLevel': 'Dat koppelvlak is zelf al onderdeel van een ander, en een koppelvlak landt \u00e9\u00e9n keer. Kies in plaats daarvan het applicatiekoppelvlak waar het onderdeel van is.',
   'command.hostedOnContainers': 'Een applicatie met containers draait waar haar containers draaien. Zeg het op de container.',
   'command.technologyEnds': 'Draait op loopt van een applicatie of een container naar een platform. Een platform in een ander platform valt eronder, het draait er niet op.',
+  'command.interactsEnds': 'Werkt samen met loopt van de ene eenheid naar een andere, in een van drie vormen: samenwerking, als dienst of faciliterend.',
   'command.taken': 'Iets hier heeft dat id al — een andere auteur nam het terwijl deze wijziging werd gemaakt. Probeer het opnieuw.',
   'command.notAField': 'Deze wijziging bevat een veld dat dit record niet heeft, dus er is niets van doorgevoerd.',
   'command.ownedElsewhere': 'Dit is een verwijzing: de levenscyclus, data, eigenaar, leverancier, naam en beschrijving worden geschreven in de scope die het definieert. Open die scope om ze te wijzigen.',

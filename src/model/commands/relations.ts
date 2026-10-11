@@ -7,7 +7,7 @@ import type { Command, CommandMeta } from '../commands'
 import type { Model, RelationId } from '../normalised'
 import { routesOf } from '../normalised'
 import { mayBeHosted } from '../hosting'
-import { technologyEndsRefusal } from '../relations'
+import { interactsRefusal, technologyEndsRefusal } from '../relations'
 import { refinementRefusal } from '../refines'
 import type { Relation } from '../types'
 import { gone, taken } from './handler'
@@ -18,7 +18,7 @@ import { patchWrites } from './writes'
 /** Every field of a relation but its id: what `relation.update` may name. */
 const RELATION_FIELDS: PatchKeys<'relation.update'> = {
   type: true, sourceId: true, targetId: true, label: true, protocol: true, technology: true,
-  refines: true, validFrom: true, validUntil: true, isBidirectional: true,
+  refines: true, validFrom: true, validUntil: true, isBidirectional: true, mode: true,
   color: true, lineStyle: true, routing: true, sourceArrowhead: true, targetArrowhead: true,
 }
 
@@ -39,7 +39,7 @@ export const RELATION_COMMANDS = {
       // application. Neither end held is a row about nothing.
       if (!model.elements[relation.sourceId] && !model.elements[relation.targetId]) return gone
       if (relation.id in model.relations) return taken
-      const refused = landingRefusal(model, relation) ?? hostingRefusal(model, relation)
+      const refused = landingRefusal(model, relation) ?? hostingRefusal(model, relation) ?? unitsRefusal(model, relation)
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, relation.id, relation, at)
       return landed(
@@ -59,7 +59,7 @@ export const RELATION_COMMANDS = {
       const held = model.relations[command.id]
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
-      const refused = landingRefusal(model, row) ?? hostingRefusal(model, row)
+      const refused = landingRefusal(model, row) ?? hostingRefusal(model, row) ?? unitsRefusal(model, row)
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, command.id, row)
       return landed(
@@ -144,6 +144,15 @@ function hostingRefusal(model: Model, row: Relation): Refused | undefined {
   return mayBeHosted(Object.values(model.elements), row.sourceId)
     ? undefined
     : { ok: false, reason: 'command.hostedOnContainers' }
+}
+
+/**
+ * Whether this row may say that two units work together (ADR-0036 §7): an
+ * `interacts` row joins two actors, never one to itself, in one of the three
+ * modes where it names one (`model/relations.ts`).
+ */
+function unitsRefusal(model: Model, row: Relation): Refused | undefined {
+  return interactsRefusal(row, (id) => model.elements[id]) ? { ok: false, reason: 'command.interactsEnds' } : undefined
 }
 
 /**

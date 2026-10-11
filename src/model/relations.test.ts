@@ -11,8 +11,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, RELATION_LABEL, RELATION_TYPES,
-  flowsOf, isFlow, isPlatformArchetype, isRelationType, isTechnologyRelation, platformArchetypeOf,
+  INTERACTION_MODES, INTERACTION_MODE_LABEL, PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, RELATION_LABEL, RELATION_TYPES,
+  flowsOf, interactsRefusal, isFlow, isInteractionMode, isPlatformArchetype, isRelationType, isTechnologyRelation, platformArchetypeOf,
   technologyEndsRefusal,
 } from './relations'
 import { nodeFigure } from './kinds'
@@ -47,6 +47,28 @@ describe('the vocabulary', () => {
     expect(isTechnologyRelation({ type: 'hostedOn' })).toBe(true)
     expect(isTechnologyRelation({ type: 'flow' })).toBe(false)
     expect(isTechnologyRelation({ type: 'supports' })).toBe(false)
+  })
+})
+
+describe('how two units work together (ADR-0036 §7)', () => {
+  it('is one of Team Topologies\' three modes, each with a label', () => {
+    expect(INTERACTION_MODES).toEqual(['collaboration', 'service', 'facilitating'])
+    for (const mode of INTERACTION_MODES) {
+      expect(INTERACTION_MODE_LABEL[mode]).toBe(`interaction.${mode}`)
+      expect(isInteractionMode(mode)).toBe(true)
+    }
+    expect(isInteractionMode('as a service')).toBe(false)
+  })
+
+  it('runs from an actor to another actor, judged on the ends this scope holds', () => {
+    const kinds: Record<string, { kind: 'actor' | 'application' }> = { sales: { kind: 'actor' }, data: { kind: 'actor' }, crm: { kind: 'application' } }
+    const kindOf = (id: string) => kinds[id]
+    expect(interactsRefusal({ type: 'interacts', sourceId: 'sales', targetId: 'data', mode: 'service' }, kindOf)).toBe(false)
+    expect(interactsRefusal({ type: 'interacts', sourceId: 'sales', targetId: 'elsewhere' }, kindOf)).toBe(false)
+    expect(interactsRefusal({ type: 'interacts', sourceId: 'sales', targetId: 'sales' }, kindOf)).toBe(true)
+    expect(interactsRefusal({ type: 'interacts', sourceId: 'crm', targetId: 'data' }, kindOf)).toBe(true)
+    // Any other type is not this rule's to judge.
+    expect(interactsRefusal({ type: 'supports', sourceId: 'crm', targetId: 'crm' }, kindOf)).toBe(false)
   })
 })
 

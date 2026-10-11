@@ -30,9 +30,14 @@ export const DE: Record<keyof typeof EN, string> = {
   'relation.assigned': 'Zugewiesen an',
   'relation.uses': 'Nutzt',
   'relation.hostedOn': 'Läuft auf',
+  'relation.interacts': 'Arbeitet mit',
   'platformArchetype.place': 'Ort',
   'platformArchetype.service': 'Dienst',
   'platformArchetype.network': 'Netzwerk',
+  // --- how two units work together (ADR-0036 §7) -------------------------
+  'interaction.collaboration': 'Zusammenarbeit',
+  'interaction.service': 'Als Dienst',
+  'interaction.facilitating': 'Unterstützend',
 
   'zone.actors': 'AKTEURE',
   'zone.inputChannels': 'EINGABEKANÄLE',
@@ -61,6 +66,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'command.refinesLevel': 'Diese Schnittstelle geh\u00f6rt selbst schon zu einer anderen, und eine Schnittstelle landet einmal. W\u00e4hlen Sie stattdessen die Anwendungsschnittstelle, zu der sie geh\u00f6rt.',
   'command.hostedOnContainers': 'Eine Anwendung mit Containern läuft dort, wo ihre Container laufen. Sagen Sie es am Container.',
   'command.technologyEnds': 'Läuft auf geht von einer Anwendung oder einem Container zu einer Plattform. Eine Plattform in einer anderen ist darunter abgelegt, sie läuft nicht darauf.',
+  'command.interactsEnds': 'Arbeitet mit geht von einer Einheit zu einer anderen, in einer von drei Formen: Zusammenarbeit, als Dienst oder unterstützend.',
   'command.taken': 'Etwas hier hat diese Kennung bereits — jemand anders hat sie genommen, während diese Änderung entstand. Bitte noch einmal versuchen.',
   'command.notAField': 'Diese Änderung enthält ein Feld, das dieser Datensatz nicht hat, deshalb wurde nichts davon übernommen.',
   'command.ownedElsewhere': 'Dies ist ein Platzhalter: Lebenszyklus, Daten, Verantwortliche, Hersteller, Name und Beschreibung werden in dem Bereich geschrieben, der ihn definiert. \u00d6ffnen Sie diesen Bereich, um sie zu \u00e4ndern.',
