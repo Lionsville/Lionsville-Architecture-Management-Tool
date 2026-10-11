@@ -47,10 +47,12 @@ export function opensOnNothing(page: InitialPage | undefined): boolean {
   }
 }
 
+/** The view pages that open the scope's view of that kind when they name none. */
+const LANDS_ON_A_VIEW: readonly string[] = ['board', 'sheet', 'map', 'technology', 'chart', 'conway']
+
 /** A view's page that names no view: on a scope with no document, it lands on the scope's home. */
 function viewWithNoId(page: InitialPage | undefined): boolean {
-  return page !== undefined && (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology')
-    && page.id === undefined
+  return page !== undefined && LANDS_ON_A_VIEW.includes(page.page) && (page as { id?: string }).id === undefined
 }
 
 /**

@@ -15,6 +15,7 @@ import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
+import { unitViewPage } from './units/UnitViewPages'
 import { ErrorBoundary } from './ErrorBoundary'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
@@ -159,6 +160,10 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
     onCreateTechnology: pages.createTechnology,
     onOpenDrawing: pages.openView,
     onCreateDrawing: pages.createDrawing,
+    onOpenChart: pages.openView,
+    onCreateChart: () => pages.createUnitView('chart'),
+    onOpenConway: pages.openView,
+    onCreateConway: () => pages.createUnitView('conway'),
     onCreateDrawingFor: pages.createDrawingFor,
     onOpenTechnologyFor: pages.openTechnologyFor,
     onOpenPlatformReport: pages.openPlatformReport,
@@ -181,6 +186,10 @@ function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageVi
       return technologyPage(parts, diagram, view)
     case 'drawing':
       return drawingPage(parts, diagram, view)
+    // The organisation chart and the Conway map (ADR-0036 §7).
+    case 'chart':
+    case 'conway':
+      return unitViewPage(diagram.kind, parts, diagram, view)
     case 'layer7':
     case 'container':
       // A board is the canvas, drawn by the editor itself.

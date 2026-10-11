@@ -316,6 +316,9 @@ export type RegisteredMenu = {
   readonly menu: SourceMenu
 }
 
+/** The pages that are a view's tab: a board, and each laid-out kind and a drawing (`agent/screen`'s `VIEW_PAGES`). */
+export type ViewPageName = 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
+
 /**
  * Which page the workspace should be showing the moment it appears.
  *
@@ -352,13 +355,13 @@ export type InitialPage =
    * lands on its home, because an open never makes a view (ADR-0019, amended).
    * `select` is an element selected there where it is drawn there.
    */
-  | { page: 'board' | 'sheet' | 'map' | 'technology' | 'drawing'; id?: string; select?: ElementId }
+  | { page: ViewPageName; id?: string; select?: ElementId }
   /**
    * A new sheet, enterprise map or technology landscape, made the moment the
    * scope opens: the person's own *Make…* and *New board…* on a home, which is
    * the one way onto a view that writes one.
    */
-  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' }
+  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway' }
   /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
   | { page: 'plan'; id: string }
   /**

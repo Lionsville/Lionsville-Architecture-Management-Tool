@@ -144,6 +144,14 @@ export interface EditorDiagramActions {
     onOpenDrawing?(diagramId: string): void;
     onCreateDrawing?(): void;
     /**
+     * The organisation chart and the Conway map (ADR-0036 §7), laid out from
+     * the units: open one, and make one. As the map's.
+     */
+    onOpenChart?(diagramId: string): void;
+    onCreateChart?(): void;
+    onOpenConway?(diagramId: string): void;
+    onCreateConway?(): void;
+    /**
      * Make a drawing anchored to an element. The canvas menu and the inspector
      * both call it; a double-click never does. Absent where the host cannot,
      * and the menu's action then does nothing.

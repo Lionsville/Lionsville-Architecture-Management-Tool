@@ -51,4 +51,6 @@ export const EN = {
   'gsearch.view.map': 'Enterprise map',
   'gsearch.view.technology': 'Technology landscape',
   'gsearch.view.drawing': 'Drawing',
+  'gsearch.view.chart': 'Organisation chart',
+  'gsearch.view.conway': 'Conway map',
 } as const

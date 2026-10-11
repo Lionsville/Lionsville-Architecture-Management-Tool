@@ -18,20 +18,29 @@
  * opens on is the screen it stays on. Pure: the shell holds the state.
  */
 import { boardsDrawing } from '../model'
-import { viewFor } from '../agent/screen'
+import { VIEW_PAGES, viewFor } from '../agent/screen'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { InitialPage } from './App'
+import type { InitialPage, ViewPageName } from './App'
 
 export type PageLanding =
   | { readonly home: true }
   | { readonly page?: InitialPage; readonly activeDiagramId?: string }
+
+/** A page that is a view's tab, as `screen.ts` lists them. */
+export function isViewPageName(page: string | undefined): page is ViewPageName {
+  return page !== undefined && (VIEW_PAGES as readonly string[]).includes(page)
+}
+
+function isViewPage(page: InitialPage): page is Extract<InitialPage, { page: ViewPageName }> {
+  return isViewPageName(page.page)
+}
 
 export function pageLanding(scope: Pick<ScopeSnapshot, 'model' | 'activeDiagramId'>, page: InitialPage | undefined): PageLanding {
   // No page named is the view on the tab. A scope with no views — a domain
   // made without a board — has none, and the canvas could only say so as an
   // error: it lands on its home, empty until a board is made.
   if (page === undefined) return scope.model.diagrams.length === 0 ? { home: true } : {}
-  if (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology' || page.page === 'drawing') {
+  if (isViewPage(page)) {
     const id = viewFor(page.page, page.id, scope.model.diagrams, scope.activeDiagramId)
     if (id === undefined) return { home: true }
     return { page: { ...page, id }, activeDiagramId: id }

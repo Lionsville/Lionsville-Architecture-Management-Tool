@@ -26,6 +26,10 @@
  * it reorganises (`PlanOrganisation`, ADR-0036 §6): each finding about a unit
  * a link to that unit, and one about a person a line — the people are in the
  * list above it.
+ *
+ * And the organisation chart (`ChartPage`, ADR-0036 §7), which lists the
+ * findings about the units it draws and the people in them, each a link to the
+ * unit on the chart it is about: chosen there, brought on screen and ringed.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -51,7 +55,8 @@ describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
     expect(naming(/\bfindingSentence\b/)).toEqual([
-      'app/organisation/attention.ts', 'app/units/PlanOrganisation.tsx', 'app/units/UnitSection.tsx', 'projects/checks.ts',
+      'app/organisation/attention.ts', 'app/units/ChartPage.tsx', 'app/units/PlanOrganisation.tsx', 'app/units/UnitSection.tsx',
+      'projects/checks.ts',
     ])
   })
 })

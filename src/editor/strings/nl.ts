@@ -175,6 +175,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.newMap': 'Bedrijfskaart',
   'toolbar.newTechnology': 'Technologielandschap',
   'toolbar.newDrawing': 'Tekening',
+  'toolbar.newChart': 'Organogram',
+  'toolbar.newConway': 'Conway-kaart',
   'toolbar.readOnly': 'Alleen-lezen',
   'toolbar.undo': 'Ongedaan maken',
   'toolbar.undoTip': 'Ongedaan maken (⌘Z)',

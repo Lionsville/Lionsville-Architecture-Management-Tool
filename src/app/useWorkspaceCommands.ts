@@ -97,6 +97,24 @@ export function useInitialPage(deps: {
   }, [initialPage])
 }
 
+/** A new view of a kind the home's *Make…* names, made the moment the scope opens. */
+function make(kind: Extract<InitialPage, { page: 'make' }>['kind'], by: { pages: WorkspacePages; createSheet: Sheets['create'] }): void {
+  switch (kind) {
+    case 'sheet': by.createSheet(); return
+    case 'map': by.pages.createMap(); return
+    case 'drawing': by.pages.createDrawing(); return
+    case 'technology': by.pages.createTechnology(); return
+    case 'chart':
+    case 'conway':
+      by.pages.createUnitView(kind)
+      return
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
+
 /** One page, shown the way its door shows it. */
 function showInitialPage(page: InitialPage, by: {
   pages: WorkspacePages
@@ -106,22 +124,17 @@ function showInitialPage(page: InitialPage, by: {
   gestures: Gestures
 }): void {
   const { pages } = by
+  if (page.page === 'make') { make(page.kind, by); return }
   switch (page.page) {
     case 'decisions': pages.openDecisions(page.id); break
     case 'observations': pages.openObservations(page.id, page.tab); break
     case 'roadmap': pages.openRoadmap(); break
     case 'operating': pages.openOperating(page.id); break
-    case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
+    case 'board': case 'sheet': case 'map': case 'technology': case 'drawing': case 'chart': case 'conway':
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)
       else pages.openView(page.id)
       if (page.select !== undefined && page.page !== 'drawing') pages.selectOn(page.id, page.select)
-      break
-    case 'make':
-      if (page.kind === 'sheet') by.createSheet()
-      else if (page.kind === 'map') pages.createMap()
-      else if (page.kind === 'drawing') pages.createDrawing()
-      else pages.createTechnology()
       break
     // Over the roadmap, so closing the plan lands on the roadmap and closing
     // that leaves a scope that draws nothing, rather than on an empty board.

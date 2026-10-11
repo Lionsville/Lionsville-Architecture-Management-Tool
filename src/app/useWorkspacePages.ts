@@ -25,6 +25,8 @@ import { usePlatformReport } from './usePlatformReport'
 import type { PlatformReading } from './usePlatformReport'
 import type { TechnologyLandscapes } from './useTechnologyLandscape'
 import { useDrawing } from './useDrawing'
+import { useUnitViews } from './units/useUnitViews'
+import type { UnitViewKind, UnitViews } from './units/useUnitViews'
 import { useViewSelect } from './useViewSelect'
 
 export type WorkspacePages = ReturnType<typeof useWorkspacePages>
@@ -51,7 +53,8 @@ export function useWorkspacePages(deps: {
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
   const drawings = useDrawing({ session, makeId, s })
-  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, operating })
+  const unitViews = useUnitViews({ session, makeId, s })
+  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
@@ -191,9 +194,10 @@ function usePageOpeners(deps: {
   maps: Maps
   landscapes: TechnologyLandscapes
   drawings: Drawings
+  unitViews: UnitViews
   operating: ReturnType<typeof useOperatingPage>
 }) {
-  const { session, maps, landscapes, drawings } = deps
+  const { session, maps, landscapes, drawings, unitViews } = deps
   const { show: showOperating, close: closeOperating } = deps.operating
   const { showDecision, showObservations, closeRecords, closeObservations } = deps.records
   const { closeAll: closePlans, openRoadmap: showRoadmap } = deps.plans
@@ -248,6 +252,8 @@ function usePageOpeners(deps: {
   )
   const createTechnology = useCallback(() => { closePages(); landscapes.create() }, [closePages, landscapes.create])
   const createDrawing = useCallback(() => { closePages(); drawings.create() }, [closePages, drawings.create])
+  /** An organisation chart or a Conway map (ADR-0036 §7), made the map's way. */
+  const createUnitView = useCallback((kind: UnitViewKind) => { closePages(); unitViews.create(kind) }, [closePages, unitViews.create])
   /** A drawing anchored to an element: the menu and the inspector, one command. */
   const createDrawingFor = useCallback((elementId: string) => {
     closePages()
@@ -271,6 +277,6 @@ function usePageOpeners(deps: {
   }, [closePlans, closeOperating, showPlatform])
   return {
     openDecisions, openObservations, openRoadmap, openOperating, closePages, openView, createMap,
-    openTechnology, openTechnologyFor, createTechnology, createDrawing, createDrawingFor, openServiceReport, openPlatformReport,
+    openTechnology, openTechnologyFor, createTechnology, createDrawing, createDrawingFor, createUnitView, openServiceReport, openPlatformReport,
   }
 }

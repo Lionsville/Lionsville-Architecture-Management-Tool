@@ -50,4 +50,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'gsearch.view.map': 'Bedrijfskaart',
   'gsearch.view.technology': 'Technologielandschap',
   'gsearch.view.drawing': 'Tekening',
+  'gsearch.view.chart': 'Organogram',
+  'gsearch.view.conway': 'Conway-kaart',
 }

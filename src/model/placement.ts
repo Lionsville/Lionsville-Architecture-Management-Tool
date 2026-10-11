@@ -57,11 +57,14 @@ export function isBoardKind(kind: DesignDiagram['kind']): boolean {
     case 'layer7':
     case 'container':
       return true
-    // A sheet, a map, a technology view and a drawing are not boards.
+    // A sheet, a map, a technology view, a drawing, an organisation chart
+    // and a Conway map are not boards.
     case 'sheet':
     case 'map':
     case 'technology':
     case 'drawing':
+    case 'chart':
+    case 'conway':
       return false
     default: {
       const unexpected: never = kind
@@ -71,16 +74,19 @@ export function isBoardKind(kind: DesignDiagram['kind']): boolean {
 }
 
 /**
- * The other three: laid out from the model, no geometry (ADR-0012 §6,
- * ADR-0015). Since ADR-0016 one of these can be the active view as readily
- * as a board — it is drawn in the tab, not over it — so "is this a board"
- * and "can this be open" are two questions again, and this is the second.
+ * The others: laid out from the model, no geometry (ADR-0012 §6, ADR-0015,
+ * and the organisation chart and the Conway map of ADR-0036 §7). Since
+ * ADR-0016 one of these can be the active view as readily as a board — it is
+ * drawn in the tab, not over it — so "is this a board" and "can this be open"
+ * are two questions again, and this is the second.
  */
 export function isLaidOutKind(kind: DesignDiagram['kind']): boolean {
   switch (kind) {
     case 'sheet':
     case 'map':
     case 'technology':
+    case 'chart':
+    case 'conway':
       return true
     // A board is geometry. A drawing is the XML. Neither is laid out.
     case 'layer7':

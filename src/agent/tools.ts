@@ -484,7 +484,8 @@ const SPECS = [
     tier: 'read',
     description:
       'Every view in the organisation, scope by scope: boards (layer7 and container), business sheets, '
-      + 'enterprise maps, technology landscapes and drawings, each with its id, name and kind, and which is on the tab '
+      + 'enterprise maps, technology landscapes, drawings, organisation charts (chart) and Conway maps (conway), each with '
+      + 'its id, name and kind, and which is on the tab '
       + 'in its scope. A drawing also says the element it is anchored to, when it has one, and the element ids its '
       + 'shapes point at. The overview a person gets from the organisation screen and the tabs, in one answer; '
       + 'app.open takes a row\'s scope and id. Reads every scope that holds a view, so ask once and keep it.',
@@ -495,7 +496,7 @@ const SPECS = [
         kind: {
           type: 'string',
           description: 'Only views of this kind.',
-          enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing'],
+          enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'],
         },
         limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
       },
@@ -2163,13 +2164,16 @@ const SPECS = [
       + 'components and laid out on first open, a business architecture sheet over the journey and the '
       + 'areas this project already holds, an enterprise map — every function against the applications '
       + 'that support it, with the gaps — or a technology landscape: the applications, the services they '
-      + 'use and the platforms that deliver them, in three bands (ADR-0015). Every kind is switched to once made: '
-      + 'the laid-out three are drawn in their tab like a board (ADR-0016). Answers with the id.',
+      + 'use and the platforms that deliver them, in three bands (ADR-0015) — or, ADR-0036 §7, an organisation chart '
+      + '(chart: the units filed here and below, and those serving here, as a tree with their roles, holders and '
+      + 'vacancies on the view\'s day) or a Conway map (conway: those units over the applications they own, the '
+      + 'interfaces between them and the interactions declared between the units, with what they contradict). Every '
+      + 'kind is switched to once made: the laid-out ones are drawn in their tab like a board (ADR-0016). Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, a technology landscape, or a drawing.', enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing'] },
-        name: { type: 'string', description: 'For a landscape, a sheet, a map, a technology landscape or a drawing: its name.' },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, a technology landscape, a drawing, an organisation chart or a Conway map.', enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] },
+        name: { type: 'string', description: 'For a landscape, a sheet, a map, a technology landscape, a drawing, a chart or a Conway map: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
         elementId: { type: 'string', description: 'For a drawing: the element it is anchored to. Optional.' },
         level: { type: 'string', description: 'For a drawing: the C4 level it shows.', enum: ['context', 'container', 'component'] },
@@ -2317,7 +2321,10 @@ const SPECS = [
       + 'order with the applications supporting it, rolled up on the sections — and the columns. On a '
       + 'technology landscape it reports the three bands — the applications by the scope that answers for '
       + 'each, the services nested by parent, the platforms nested where the tree nests — and the lines '
-      + 'between them, every one a row that exists.',
+      + 'between them, every one a row that exists. On an organisation chart (ADR-0036 §7) it reports the units '
+      + 'as a tree on the view\'s day, each role with its holders by person id, their share, who is over 100% and '
+      + 'the vacancies; on a Conway map, the units over their applications, every interface that crosses between '
+      + 'units with whether an interaction covers it, the interactions that hold, and the findings.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2558,15 +2565,16 @@ const SPECS = [
     description:
       'Move the app: open a scope, and in it a view or a page — what a person does with the tree, the tabs '
       + 'and the cards. `scope` is a path from scopes.list (default: the open one); `page` is what to show '
-      + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology / drawing (a view, by '
-      + 'id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
+      + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology / drawing / chart / '
+      + 'conway (a view, by id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
       + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
       + 'platform or service (a report, by id), register, technologyRegister or people (the organisation-wide '
       + 'lists and the people register, on the home), operating (the operating model: unit types, roles, '
       + 'responsibilities and the libraries — kept at the organisation, so its scope is "" and may be left out; '
-      + 'optionally on one unit type, role or responsibility). `select` names an element to select on the board, sheet, map or technology '
-      + 'landscape being opened; where that view does not draw it, nothing is selected. Opening never '
+      + 'optionally on one unit type, role or responsibility). `select` names an element to select on the board, sheet, map, technology '
+      + 'landscape, organisation chart (a unit) or Conway map (a unit or an application) being opened; where that view does not '
+      + 'draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
       + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
       + 'person sees as a banner and can stop.',
@@ -2578,7 +2586,7 @@ const SPECS = [
           type: 'string',
           description: 'What to show there. Default: the canvas, or the home of a scope with no views.',
           enum: [
-            'home', 'board', 'sheet', 'map', 'technology', 'drawing',
+            'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
             'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
           ],
@@ -2589,7 +2597,7 @@ const SPECS = [
           description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',
           enum: OBSERVATION_TABS,
         },
-        select: { type: 'string', description: 'An element to select on the board, sheet, map or technology landscape being opened.' },
+        select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },
       },
       additionalProperties: false,
     },

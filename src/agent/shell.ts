@@ -332,8 +332,8 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
   }
   if (asked.select !== undefined) {
     // A drawing opens as a view and does not select an element on a board.
-    if (target.page !== 'board' && target.page !== 'sheet' && target.page !== 'map' && target.page !== 'technology') {
-      return refused('agent.badArguments', '"select" is for page board, sheet, map or technology')
+    if (target.page === undefined || !SELECTS.includes(target.page)) {
+      return refused('agent.badArguments', `"select" is for page ${SELECTS.join(', ')}`)
     }
     if (!model?.elements.some((element) => element.id === asked.select)) {
       return refused('agent.unknownId', `element ${asked.select} in ${where}`)
@@ -345,6 +345,14 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.select !== undefined ? { select: asked.select } : {}),
   }
 }
+
+/**
+ * The pages an element can be selected on as they open: the views that draw
+ * elements — a board, a sheet, a map, a technology landscape, and a unit or
+ * an application on an organisation chart or a Conway map. A drawing does
+ * not select.
+ */
+const SELECTS: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'chart', 'conway']
 
 /** Which page's tab a view is (`screen.ts`'s `viewPage`). */
 function pageOf(diagram: DesignDiagram): Page {

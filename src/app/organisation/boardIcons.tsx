@@ -15,7 +15,7 @@
  */
 import type { ComponentType } from 'react'
 import type { DesignDiagram } from '../../model'
-import { DeploymentIcon, LandscapeIcon, MapIcon, SheetIcon } from '../../widgets/icons'
+import { ConwayIcon, DeploymentIcon, LandscapeIcon, MapIcon, OrgChartIcon, SheetIcon } from '../../widgets/icons'
 
 interface IconProps {
   size?: number
@@ -63,6 +63,10 @@ export const BOARD_ICONS = {
   // is the same three bands, so it wears the same glyph.
   technology: DeploymentIcon,
   drawing: DrawingIcon,
+  // The organisation chart and the Conway map (ADR-0036 §7): units nested,
+  // and two units with the line between their applications.
+  chart: OrgChartIcon,
+  conway: ConwayIcon,
 } satisfies Record<DesignDiagram['kind'], ComponentType<IconProps>>
 
 /** The glyph for a board of this kind, in the colour of the text around it. */

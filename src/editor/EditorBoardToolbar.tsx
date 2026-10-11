@@ -26,6 +26,7 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       readOnly={readOnly}
       busy={layout.busy}
       laidOut={laidOut}
+      dated={isDated(diagram.kind)}
       {...diagramMenus(props, dialogs)}
       // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in
       // `useAutoLayout` can tell "laid out" from "did not", and `void` discards the
@@ -68,7 +69,8 @@ function diagramMenus(
   dialogs: EditorDialogState,
 ): Pick<EditorToolbarProps,
   | 'onActiveDiagramChange' | 'onCreateLayer7Diagram' | 'onOpenSheet' | 'onCreateSheet' | 'onOpenMap' | 'onCreateMap'
-  | 'onOpenTechnology' | 'onCreateTechnology' | 'onOpenDrawing' | 'onCreateDrawing' | 'onRenameDiagram' | 'onOpenDiagramSettings' | 'onDuplicateDiagram'
+  | 'onOpenTechnology' | 'onCreateTechnology' | 'onOpenDrawing' | 'onCreateDrawing'
+  | 'onOpenChart' | 'onCreateChart' | 'onOpenConway' | 'onCreateConway' | 'onRenameDiagram' | 'onOpenDiagramSettings' | 'onDuplicateDiagram'
   | 'onDeleteDiagram' | 'onDiagramHistory'> {
   const { diagrams } = props;
   return {
@@ -82,6 +84,10 @@ function diagramMenus(
     onCreateTechnology: diagrams.onCreateTechnology,
     onOpenDrawing: diagrams.onOpenDrawing,
     onCreateDrawing: diagrams.onCreateDrawing,
+    onOpenChart: diagrams.onOpenChart,
+    onCreateChart: diagrams.onCreateChart,
+    onOpenConway: diagrams.onOpenConway,
+    onCreateConway: diagrams.onCreateConway,
     onRenameDiagram: diagrams.onRename ? (id, name) => dialogs.setRenameDiagramTarget({ id, name }) : undefined,
     onOpenDiagramSettings: diagrams.onSettingsChange ? (id) => dialogs.setSettingsDiagramId(id) : undefined,
     onDuplicateDiagram: diagrams.onDuplicate,
@@ -110,6 +116,32 @@ function boardControls(diagram: DesignDiagram, board: BoardView): Partial<Pick<E
     return { showDeployment: board.showDeployment, onToggleDeployment: board.toggleDeployment };
   }
   return {};
+}
+
+/**
+ * Whether a view of this kind is drawn on a day: a board, and the
+ * organisation chart and the Conway map (ADR-0036 §7), which keep the day
+ * control when the canvas's other controls are put away. A sheet and a map
+ * are of the model as it is, a technology landscape of what runs now, and a
+ * drawing is a picture somebody drew.
+ */
+export function isDated(kind: DesignDiagram['kind']): boolean {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+    case 'chart':
+    case 'conway':
+      return true
+    case 'sheet':
+    case 'map':
+    case 'technology':
+    case 'drawing':
+      return false
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
 }
 
 /** The day the board is looked at, and saving that day onto it (ADR-0027). */

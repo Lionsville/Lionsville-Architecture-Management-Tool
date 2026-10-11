@@ -296,6 +296,12 @@ function laidOutKinds(kind: DesignDiagram['kind']): readonly ElementKind[] | und
       return ['actor', 'function', 'step']
     case 'map':
       return ['function']
+    // An organisation chart draws units, which are actors; a Conway map draws
+    // them over the applications they own (ADR-0036 §7).
+    case 'chart':
+      return ['actor']
+    case 'conway':
+      return ['actor', 'application']
     case 'technology':
     case 'layer7':
     case 'container':

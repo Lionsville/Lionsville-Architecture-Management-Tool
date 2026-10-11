@@ -10,8 +10,9 @@
  * places the element, because that request switches to another board that
  * does, and a view opened with something selected on it stays that view. On
  * the technology landscape, the card it is drawn as, chosen as a door
- * chooses one. On a sheet or a map, a request the page honours where it
- * draws the element. Nothing is selected where it is not drawn there.
+ * chooses one. On a sheet, a map, an organisation chart or a Conway map, a
+ * request the page honours where it draws the element. Nothing is selected
+ * where it is not drawn there.
  */
 import { useCallback, useState } from 'react'
 import { placedNode } from '../model/placement'
@@ -48,6 +49,8 @@ export function useViewSelect(deps: {
         return
       case 'sheet':
       case 'map':
+      case 'chart':
+      case 'conway':
         setRequest((was) => ({ viewId, id: elementId, nonce: (was?.nonce ?? 0) + 1 }))
         return
       case 'drawing':

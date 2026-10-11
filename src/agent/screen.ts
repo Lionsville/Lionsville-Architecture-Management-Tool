@@ -24,7 +24,7 @@ import type { ObservationTab } from '../observations/tabs'
 
 /** The pages an agent can ask for. `home` is a scope's own screen, with nothing open. */
 export const PAGES = [
-  'home', 'board', 'sheet', 'map', 'technology', 'drawing',
+  'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
 ] as const
@@ -32,13 +32,13 @@ export const PAGES = [
 export type Page = (typeof PAGES)[number]
 
 /** Pages that are a view's tab: the id is a diagram's. */
-export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'drawing']
+export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway']
 
 /**
  * Which page's tab a view is. The two drawn kinds are boards. A sheet, a map,
- * a technology landscape and a drawing are each their own page. Said once,
- * for `app.open` to check a view against and for a place to be written from
- * the view on screen (`place.ts`).
+ * a technology landscape, a drawing, an organisation chart and a Conway map
+ * are each their own page. Said once, for `app.open` to check a view against
+ * and for a place to be written from the view on screen (`place.ts`).
  */
 export function viewPage(kind: DesignDiagram['kind']): Page {
   switch (kind) {
@@ -53,6 +53,10 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
       return 'technology'
     case 'drawing':
       return 'drawing'
+    case 'chart':
+      return 'chart'
+    case 'conway':
+      return 'conway'
     default: {
       const unexpected: never = kind
       return unexpected
@@ -237,8 +241,11 @@ export function viewFor(
   return (ofKind.find((diagram) => diagram.id === onTab) ?? ofKind[0])?.id
 }
 
-const VIEW_KINDS: readonly DesignDiagram['kind'][] = ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing']
+/** Every kind of view, said as a table so a kind added to the model is a kind added here or a compile error. */
+const VIEW_KINDS: Record<DesignDiagram['kind'], true> = {
+  layer7: true, container: true, sheet: true, map: true, technology: true, drawing: true, chart: true, conway: true,
+}
 
 function isViewKind(kind: string): kind is DesignDiagram['kind'] {
-  return (VIEW_KINDS as readonly string[]).includes(kind)
+  return Object.hasOwn(VIEW_KINDS, kind)
 }

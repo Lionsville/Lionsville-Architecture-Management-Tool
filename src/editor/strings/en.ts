@@ -184,6 +184,8 @@ export const EN = {
   'toolbar.newMap': 'Enterprise map',
   'toolbar.newTechnology': 'Technology landscape',
   'toolbar.newDrawing': 'Drawing',
+  'toolbar.newChart': 'Organisation chart',
+  'toolbar.newConway': 'Conway map',
   'toolbar.readOnly': 'Read-only',
   'toolbar.undo': 'Undo',
   'toolbar.undoTip': 'Undo (⌘Z)',

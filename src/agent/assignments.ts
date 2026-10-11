@@ -39,14 +39,14 @@ export type OpenDocument = { path: string; current: HostModel; today: string }
 type Args = Record<string, unknown>
 
 /** The tree's assignments with the open scope's in place of what the index read of it. */
-function assignmentsNow(tree: TreeView | undefined, open: OpenDocument | undefined): { scope: string; assignment: Assignment }[] {
+export function assignmentsNow(tree: TreeView | undefined, open: OpenDocument | undefined): { scope: string; assignment: Assignment }[] {
   const indexed = (tree?.assignments?.() ?? []).filter((one) => one.scope !== open?.path)
   if (!open) return indexed
   return [...indexed, ...(open.current.assignments ?? []).map((assignment) => ({ scope: open.path, assignment }))]
 }
 
 /** The organisation as the read has it: the tree's units and operating model, the open scope's laid over them. */
-function organisationNow(tree: TreeView | undefined, open: OpenDocument | undefined, assignments: readonly Assignment[]): Organisation {
+export function organisationNow(tree: TreeView | undefined, open: OpenDocument | undefined, assignments: readonly Assignment[]): Organisation {
   const here = (open?.current.elements ?? []).filter((one) => one.ref === undefined && isUnit(one))
   const ids = new Set(here.map((one) => one.id))
   const units = [...(tree?.units?.() ?? []).filter((one) => !ids.has(one.unit.id) && one.scope !== open?.path).map((one) => one.unit), ...here]

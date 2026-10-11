@@ -75,8 +75,23 @@ export interface EditorToolbarProps {
   /** A drawing, listed on its own and made from the same menu. */
   onOpenDrawing?(diagramId: string): void;
   onCreateDrawing?(): void;
+  /**
+   * The organisation chart and the Conway map (ADR-0036 §7): laid out, each
+   * listed on its own, and made from the same menu.
+   */
+  onOpenChart?(diagramId: string): void;
+  onCreateChart?(): void;
+  onOpenConway?(diagramId: string): void;
+  onCreateConway?(): void;
   /** The active view is laid out (ADR-0016): the canvas's controls have nothing to act on. */
   laidOut?: boolean;
+  /**
+   * The active view is drawn on a day, laid out or not: a board, and the
+   * organisation chart and the Conway map (ADR-0036 §7). It keeps the day
+   * control — looking at another day, and saving one — when the canvas's
+   * other controls are put away.
+   */
+  dated?: boolean;
   /** Offer a business architecture beside a landscape under the `+`. */
   onCreateSheet?(): void;
   onTidy(): void;
@@ -203,12 +218,17 @@ export interface EditorToolbarProps {
  * Top bar: Layer 7 diagram tabs (breadcrumb when drilled into a container
  * diagram) and the tidy / fit / export actions.
  */
+/** The tab lists, in the order the strip shows them. */
+const TAB_LISTS = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] as const;
+type TabList = (typeof TAB_LISTS)[number];
+
 /**
- * Which tab list a view belongs on. A container view is not a tab. A drawing
- * is its own list, offered only where the host can open one — the same rule
- * as a sheet, a map and a technology landscape.
+ * Which tab list a view belongs on. A container view is not a tab. A drawing,
+ * an organisation chart and a Conway map are each their own list, offered
+ * only where the host can open one — the same rule as a sheet, a map and a
+ * technology landscape.
  */
-function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'none' {
+function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): TabList | 'none' {
   switch (kind) {
     case 'layer7':
       return 'board'
@@ -222,6 +242,10 @@ function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): 'board
       return props.onOpenTechnology ? 'technology' : 'none'
     case 'drawing':
       return props.onOpenDrawing ? 'drawing' : 'none'
+    case 'chart':
+      return props.onOpenChart ? 'chart' : 'none'
+    case 'conway':
+      return props.onOpenConway ? 'conway' : 'none'
     default: {
       const unexpected: never = kind
       return unexpected
@@ -248,6 +272,12 @@ function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarPr
     case 'drawing':
       ;(props.onOpenDrawing ?? props.onActiveDiagramChange)(id)
       return
+    case 'chart':
+      ;(props.onOpenChart ?? props.onActiveDiagramChange)(id)
+      return
+    case 'conway':
+      ;(props.onOpenConway ?? props.onActiveDiagramChange)(id)
+      return
     default: {
       const unexpected: never = kind
       return unexpected
@@ -261,11 +291,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
   // Each kind is its own list. A drawing is not dropped into a sheet's, and a
   // kind the host cannot open is not offered.
-  const sheets = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'sheet');
-  const maps = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'map');
-  const technology = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'technology');
-  const drawings = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'drawing');
-  const tabs = [...layer7Diagrams, ...sheets, ...maps, ...technology, ...drawings];
+  const tabs = TAB_LISTS.flatMap((list) => props.model.diagrams.filter((d) => tabList(d.kind, props) === list));
   const isContainer = props.activeDiagram.kind === 'container';
   // The legend is a button of its own beside the lifecycle toggle: a control
   // whose hover explained the colours and whose click did something else
@@ -279,7 +305,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
   // tab offers.
   const [tabMenu, setTabMenu] = useState<{ diagramId: string; kind: DesignDiagram['kind']; screen: Point } | null>(null);
   const [duplicateAsOf, setDuplicateAsOf] = useState<{ diagramId: string; day: string } | null>(null);
-  const [newMenu, setNewMenu] = useState<HTMLElement | null>(null);
   const platform = useMemo(() => detectPlatform(), []);
   const tabMenuItems = useMemo(
     () =>
@@ -453,49 +478,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
               </Button>
             </DialogActions>
           </Dialog>
-          {!props.readOnly && (props.onCreateSheet ? (
-            <>
-              <Tooltip title={t('toolbar.newDiagram')}>
-                <IconButton
-                  size="small"
-                  aria-label={t('toolbar.newDiagram')}
-                  aria-haspopup="menu"
-                  onClick={(event) => setNewMenu(event.currentTarget)}
-                >
-                  <AddIcon />
-                </IconButton>
-              </Tooltip>
-              <Menu anchorEl={newMenu} open={Boolean(newMenu)} onClose={() => setNewMenu(null)}>
-                <MenuItem onClick={() => { setNewMenu(null); props.onCreateLayer7Diagram(); }}>
-                  {t('toolbar.newLandscape')}
-                </MenuItem>
-                <MenuItem onClick={() => { setNewMenu(null); props.onCreateSheet?.(); }}>
-                  {t('toolbar.newSheet')}
-                </MenuItem>
-                {props.onCreateMap && (
-                  <MenuItem onClick={() => { setNewMenu(null); props.onCreateMap?.(); }}>
-                    {t('toolbar.newMap')}
-                  </MenuItem>
-                )}
-                {props.onCreateTechnology && (
-                  <MenuItem onClick={() => { setNewMenu(null); props.onCreateTechnology?.(); }}>
-                    {t('toolbar.newTechnology')}
-                  </MenuItem>
-                )}
-                {props.onCreateDrawing && (
-                  <MenuItem onClick={() => { setNewMenu(null); props.onCreateDrawing?.(); }}>
-                    {t('toolbar.newDrawing')}
-                  </MenuItem>
-                )}
-              </Menu>
-            </>
-          ) : (
-            <Tooltip title={t('toolbar.newDiagram')}>
-              <IconButton size="small" aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
-                <AddIcon />
-              </IconButton>
-            </Tooltip>
-          ))}
+          {!props.readOnly && <NewViewMenu props={props} />}
         </>
       )}
 
@@ -634,12 +617,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </IconButton>
         </span>
       </Tooltip>
-      <AsOfControl
-        asOf={props.asOf}
-        savedAsOf={props.savedAsOf}
-        onChange={props.onAsOfChange}
-        onSave={props.readOnly ? undefined : props.onSaveAsOf}
-      />
+      </>)}
+      {(!props.laidOut || props.dated) && <DayControl props={props} />}
+      {!props.laidOut && (<>
       <Tooltip title={t('toolbar.lifecycleTip')}>
         <IconButton
           size="small"
@@ -727,6 +707,68 @@ export function EditorToolbar(props: EditorToolbarProps) {
  *
  * Visible in read-only too: which language you read a board in is not a mutation.
  */
+/**
+ * The day the view is drawn on, and saving it onto the view (ADR-0027): a
+ * board's, and a laid-out view's that is drawn on a day.
+ */
+function DayControl({ props }: { props: EditorToolbarProps }) {
+  return (
+    <AsOfControl
+      asOf={props.asOf}
+      savedAsOf={props.savedAsOf}
+      onChange={props.onAsOfChange}
+      onSave={props.readOnly ? undefined : props.onSaveAsOf}
+    />
+  );
+}
+
+/**
+ * The `+` beside the tabs: a new view of each kind the host can make, or a
+ * new landscape straight away where the host makes no other kind.
+ */
+function NewViewMenu({ props }: { props: EditorToolbarProps }) {
+  const { t } = useStrings();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  if (!props.onCreateSheet) {
+    return (
+      <Tooltip title={t('toolbar.newDiagram')}>
+        <IconButton size="small" aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  }
+  const make = (create: (() => void) | undefined) => () => { setAnchor(null); create?.(); };
+  const kinds: { key: StringKey; create: (() => void) | undefined }[] = [
+    { key: 'toolbar.newLandscape', create: props.onCreateLayer7Diagram },
+    { key: 'toolbar.newSheet', create: props.onCreateSheet },
+    { key: 'toolbar.newMap', create: props.onCreateMap },
+    { key: 'toolbar.newTechnology', create: props.onCreateTechnology },
+    { key: 'toolbar.newDrawing', create: props.onCreateDrawing },
+    { key: 'toolbar.newChart', create: props.onCreateChart },
+    { key: 'toolbar.newConway', create: props.onCreateConway },
+  ];
+  return (
+    <>
+      <Tooltip title={t('toolbar.newDiagram')}>
+        <IconButton
+          size="small"
+          aria-label={t('toolbar.newDiagram')}
+          aria-haspopup="menu"
+          onClick={(event) => setAnchor(event.currentTarget)}
+        >
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+        {kinds.filter((kind) => kind.create).map((kind) => (
+          <MenuItem key={kind.key} onClick={make(kind.create)}>{t(kind.key)}</MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+}
+
 /**
  * The tab to show selected. A laid-out view is active without a tab where the
  * host draws it but offers no opener for its kind; then no tab is the answer,

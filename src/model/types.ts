@@ -692,8 +692,15 @@ export interface DesignDiagram {
    * A `drawing` is neither a board nor laid out. Its content is draw.io's
    * XML ({@link DesignDiagram.drawing}), it has no geometry file, and
    * {@link DesignDiagram.geometry} stays absent.
+   *
+   * A `chart` and a `conway` view are laid out too (ADR-0036 §7): the
+   * organisation chart — the units as a tree, the roles in each and who
+   * holds them, on the view's day — and the Conway map, the units over the
+   * applications they own and the interfaces between those. Both are read
+   * from the units, the assignments and the rows every time, and both are
+   * drawn on a day ({@link DesignDiagram.asOf}), as a board is.
    */
-  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology' | 'drawing';
+  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —

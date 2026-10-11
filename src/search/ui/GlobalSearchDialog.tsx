@@ -77,6 +77,8 @@ const VIEW_LABEL = {
   map: 'gsearch.view.map',
   technology: 'gsearch.view.technology',
   drawing: 'gsearch.view.drawing',
+  chart: 'gsearch.view.chart',
+  conway: 'gsearch.view.conway',
 } as const satisfies Record<DesignDiagram['kind'], StringKey>
 
 function isViewKind(kind: string): kind is DesignDiagram['kind'] {

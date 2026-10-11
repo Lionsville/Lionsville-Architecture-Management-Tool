@@ -264,6 +264,8 @@ function diagramKind(kind: string): DesignDiagram['kind'] {
     case 'map':
     case 'technology':
     case 'drawing':
+    case 'chart':
+    case 'conway':
       return kind
     default:
       return 'layer7'

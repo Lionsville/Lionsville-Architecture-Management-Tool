@@ -15,6 +15,7 @@ import type { DesignElement, Relation } from '../model'
 import type { ChangeAcross } from '../agent/merge'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
+import { isViewPageName } from './pageLanding'
 import { coverageOf, unmappedFunctions } from '../business'
 import { documentFindings, identityFindings, organisationFindings } from '../projects/checks'
 import { standInOf } from '../projects/library'
@@ -139,14 +140,14 @@ export function showOn(
   const openPlan = pages.plans.openPlan
   return (to: Destination & { scope: string }) => {
     if (to.page !== 'document' && to.page !== 'documentation') leaveDocumentation()
+    if (isViewPageName(to.page)) {
+      if (to.id === undefined) return
+      openView(to.id)
+      // A drawing does not select an element. selectOn no-ops there.
+      if (to.select !== undefined && to.page !== 'drawing') pages.selectOn(to.id, to.select)
+      return
+    }
     switch (to.page) {
-      case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
-        if (to.id !== undefined) {
-          openView(to.id)
-          // A drawing does not select an element. selectOn no-ops there.
-          if (to.select !== undefined && to.page !== 'drawing') pages.selectOn(to.id, to.select)
-        }
-        break
       case 'decisions': openDecisions(to.id); break
       // It fell through to closing every page, so `app.open` on the
       // observations of the scope already open landed on the canvas.

@@ -432,7 +432,7 @@ export const LONGEST_FUNCTION = 150
 /** The units over the line on 26 September 2026: each file's largest, by rule. */
 export const GROWN = {
   'src/agent/answer.ts': { complexity: 97, lines: 309 },
-  'src/agent/handle.ts': { complexity: 34 },
+  'src/agent/handle.ts': { complexity: 30 },
   'src/agent/shell.ts': { complexity: 40 },
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 211 },
@@ -449,7 +449,7 @@ export const GROWN = {
   'src/documentation/ui/DocumentSource.tsx': { lines: 193 },
   'src/documentation/ui/DocumentationPage.tsx': { complexity: 37, lines: 277 },
   'src/editor/ConnectionInspector.tsx': { complexity: 55, lines: 416 },
-  'src/editor/EditorToolbar.tsx': { complexity: 55, lines: 436 },
+  'src/editor/EditorToolbar.tsx': { complexity: 53, lines: 386 },
   'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1005 },
   'src/editor/canvas/DomainGroupLayer.tsx': { lines: 201 },
   'src/editor/canvas/ElementPalette.tsx': { lines: 479 },

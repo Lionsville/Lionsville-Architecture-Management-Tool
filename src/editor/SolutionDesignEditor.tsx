@@ -91,10 +91,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
   }
   // A board is the canvas. A laid-out view is the host's page in its place
   // (ADR-0016). A drawing is neither: the host shows its picture, and the
-  // board's tools stay put away. The technology landscape authors the layer's
-  // two kinds, so it keeps the palette and the inspector docked.
+  // board's tools stay put away. What stays docked beside the page is
+  // `docksOf`'s to say.
   const body = viewBody(activeDiagram.kind);
-  const docked = body === 'board' || activeDiagram.kind === 'technology';
+  const docks = docksOf(activeDiagram.kind);
   const shown = parts.board.shownDiagram ?? activeDiagram;
   return (
     <Box
@@ -103,9 +103,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
     >
       <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {!readOnly && docked && <PaletteDock parts={parts} diagram={activeDiagram} />}
+        {!readOnly && docks.palette && <PaletteDock parts={parts} diagram={activeDiagram} />}
         {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} />}
-        {docked && <InspectorDock parts={parts} diagram={activeDiagram} />}
+        {docks.inspector && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
       <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} />
       <InsideChoice offers={parts.clicks.offers} onClose={parts.clicks.dismissOffers} />
@@ -241,9 +241,40 @@ function viewBody(kind: DesignDiagram['kind']): 'board' | 'laidOut' | 'drawing' 
     case 'sheet':
     case 'map':
     case 'technology':
+    case 'chart':
+    case 'conway':
       return 'laidOut'
     case 'drawing':
       return 'drawing'
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
+
+/**
+ * What stays docked beside a view. A board keeps the palette and the
+ * inspector. The technology landscape authors the layer's two kinds, so it
+ * keeps both too. The organisation chart and the Conway map keep the
+ * inspector — a unit or an application chosen on them is edited there, its
+ * people assigned and its interactions declared — and no palette, because
+ * nothing is placed on them. A sheet and a map have their own inspector, and
+ * a drawing is a picture.
+ */
+function docksOf(kind: DesignDiagram['kind']): { palette: boolean; inspector: boolean } {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+    case 'technology':
+      return { palette: true, inspector: true }
+    case 'chart':
+    case 'conway':
+      return { palette: false, inspector: true }
+    case 'sheet':
+    case 'map':
+    case 'drawing':
+      return { palette: false, inspector: false }
     default: {
       const unexpected: never = kind
       return unexpected

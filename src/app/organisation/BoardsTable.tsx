@@ -30,6 +30,10 @@ function viewLabel(kind: DesignDiagram['kind']): StringKey | undefined {
       return 'org.viewTechnology'
     case 'drawing':
       return 'org.viewDrawing'
+    case 'chart':
+      return 'org.viewChart'
+    case 'conway':
+      return 'org.viewConway'
     case 'layer7':
     case 'container':
       return undefined

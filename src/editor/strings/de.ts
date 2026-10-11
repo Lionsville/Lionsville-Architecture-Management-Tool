@@ -175,6 +175,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.newMap': 'Unternehmenskarte',
   'toolbar.newTechnology': 'Technologielandschaft',
   'toolbar.newDrawing': 'Zeichnung',
+  'toolbar.newChart': 'Organigramm',
+  'toolbar.newConway': 'Conway-Karte',
   'toolbar.readOnly': 'Schreibgeschützt',
   'toolbar.undo': 'Rückgängig',
   'toolbar.undoTip': 'Rückgängig (⌘Z)',

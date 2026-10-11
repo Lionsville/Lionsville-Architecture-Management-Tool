@@ -35,7 +35,7 @@ import { documentsUsing } from '../documentation/images'
 import { imageReference } from '../model/imageName'
 import type { ImageEntry } from '../model/imageName'
 import type { NamedDocument } from '../documentation/images'
-import { expandRect, placementRect, unionRects } from '../model/placement'
+import { expandRect, isLaidOutKind, placementRect, unionRects } from '../model/placement'
 import { apply } from '../model/reducer'
 import type { Rect } from '../model/types'
 import { canvasRect } from '../model/zones'
@@ -57,6 +57,7 @@ import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
 import { inspectMap } from './inspectMap'
 import { inspectTechnology, sharedElsewhereOf } from './inspectTechnology'
+import { inspectChart, inspectConway } from './inspectUnits'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -298,19 +299,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
 
   // The report changes nothing, so it is answered like a read: while the
   // session is blocked, and without a command.
-  if (request.tool === 'diagram.inspect') {
-    const diagram = diagramOf(view.model, args, view.activeDiagramId)
-    if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
-    // A sheet or a map has no geometry to report on, so it reports the page instead.
-    if (diagram.kind === 'sheet') return json(inspectSheet(view.model, diagram, args.limit as number | undefined))
-    if (diagram.kind === 'map') {
-      return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
-    }
-    if (diagram.kind === 'technology') {
-      return json(inspectTechnology(view.model, diagram, args.limit as number | undefined, sharedElsewhereOf(session.tree, session.scopePath())))
-    }
-    return json(inspect(view.model, diagram, args.limit as number | undefined))
-  }
+  if (request.tool === 'diagram.inspect') return inspectDiagram(view.model, view.activeDiagramId, args, session)
 
   // Looking and pointing change nothing either.
   if (request.tool === 'diagram.render' || request.tool === 'focus') {
@@ -434,6 +423,32 @@ function treeWide(
     // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).
     case ASSIGNMENTS_LIST: return listAssignments(request.args, tree, openDocument(session), shell?.people)
     default: return isOperatingRead(request.tool) ? readOperating(request.tool, request.args, tree, session) : undefined
+  }
+}
+
+/**
+ * `diagram.inspect`: a layout report on a board, and on a laid-out view —
+ * which has no geometry to report on — the page it draws instead.
+ */
+function inspectDiagram(model: Model, activeDiagramId: string, args: Record<string, unknown>, session: SessionView): AgentAnswer {
+  const diagram = diagramOf(model, args, activeDiagramId)
+  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const limit = args.limit as number | undefined
+  switch (diagram.kind) {
+    case 'sheet': return json(inspectSheet(model, diagram, limit))
+    case 'map': return json(inspectMap(model, diagram, limit, session.today()))
+    case 'technology': return json(inspectTechnology(model, diagram, limit, sharedElsewhereOf(session.tree, session.scopePath())))
+    // The organisation chart and the Conway map (ADR-0036 §7): what each draws, off the tree.
+    case 'chart': return json(inspectChart(session.tree, openDocument(session)!, diagram, limit))
+    case 'conway': return json(inspectConway(session.tree, openDocument(session)!, diagram, limit))
+    case 'layer7':
+    case 'container':
+    case 'drawing':
+      return json(inspect(model, diagram, limit))
+    default: {
+      const unexpected: never = diagram.kind
+      return unexpected
+    }
   }
 }
 
@@ -742,9 +757,8 @@ async function seeing(
   const diagram = diagramOf(model, args, session.activeDiagramId())
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
 
-  if (diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology') {
-    return await seeSheet(tool, diagram, args, renderer)
-  }
+  // A laid-out view is a page, pictured through its handle; nothing on it tidies or routes.
+  if (isLaidOutKind(diagram.kind)) return await seeSheet(tool, diagram, args, renderer)
 
   try {
     await renderer.show(diagram.id)

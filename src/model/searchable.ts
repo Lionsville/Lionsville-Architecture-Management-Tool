@@ -65,8 +65,8 @@ export type SearchKind = (typeof SEARCH_KINDS)[number]
  * shell checks that they still are.
  */
 export type SearchPage =
-  | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'decisions' | 'plan' | 'observations'
-  | 'operating'
+  | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
+  | 'decisions' | 'plan' | 'observations' | 'operating'
 
 export type SearchPlace = { readonly page: SearchPage; readonly id: string }
 
@@ -157,8 +157,9 @@ function numbered(prefix: string, number: number): string {
 
 const VIEW_PAGE: Record<DesignDiagram['kind'], SearchPage> = {
   layer7: 'board', container: 'board', sheet: 'sheet', map: 'map', technology: 'technology',
-  // A drawing opens as its own view, the same way a sheet does.
-  drawing: 'drawing',
+  // A drawing opens as its own view, the same way a sheet does, and so do
+  // the organisation chart and the Conway map (ADR-0036 §7).
+  drawing: 'drawing', chart: 'chart', conway: 'conway',
 }
 
 const element: Searchable<DesignElement> = {

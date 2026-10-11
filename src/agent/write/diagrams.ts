@@ -9,6 +9,7 @@ import { isDay } from '../../model/lifecycle'
 import { seedContainerDiagram } from '../../model/containerDiagram'
 import { COLOUR_BY, isColourBy, oneColouredBy } from '../../model/overlay'
 import { seedTechnologyLandscape } from '../../model/technologyLandscape'
+import { laidOutView } from '../../model/orgChart'
 import { DEFAULT_PAPER, isSheetPaper } from '../../business/grid'
 import { seedMap } from '../../business/map'
 import { rootsOfKind, seedSheet } from '../../business/sheetDiagram'
@@ -56,6 +57,20 @@ const BY_NAME: Record<string, { what: string; make: (name: string, view: WriteVi
     make: (name, view) => {
       const landscape = seedTechnologyLandscape({ id: view.makeId('tl'), name })
       return made(landscape, { id: landscape.id, kind: 'technology', name })
+    },
+  },
+  chart: {
+    what: 'an organisation chart',
+    make: (name, view) => {
+      const chart = laidOutView('chart', view.makeId('oc'), name)
+      return made(chart, { id: chart.id, kind: 'chart', name })
+    },
+  },
+  conway: {
+    what: 'a Conway map',
+    make: (name, view) => {
+      const conway = laidOutView('conway', view.makeId('cw'), name)
+      return made(conway, { id: conway.id, kind: 'conway', name })
     },
   },
   layer7: {
