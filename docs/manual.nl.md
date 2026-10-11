@@ -1601,13 +1601,26 @@ zegt **Nog niet getekend**, en heeft geen vlakken.
 
 Op de afbeelding is elke vorm die naar een element wijst een doorzichtig vlak.
 Het vlak kiezen opent dat element. De inspector van het element noemt de
-tekeningen in deze scope die ernaar wijzen. Een vorm die naar een element wijst
+tekeningen in deze scope die ernaar wijzen; er een kiezen opent haar. Een vorm die naar een element wijst
 dat deze scope niet heeft, is een bevinding.
 
 **Bewerken** opent de editor, in de taal van de app. Het palet bevat de
 elementen van de scope — elk een vorm die naar dat element wijst — en de
-C4-vormen. Bewaren houdt de tekening als één: de XML, de afbeelding en de
-koppelingen die de vormen maken.
+C4-vormen. Als de editor opent, krijgt elke vorm die naar een element wijst
+de naam die dat element nu heeft. Bewaren houdt de tekening als één: de XML,
+de afbeelding en de koppelingen die de vormen maken. **Afsluiten** verlaat de
+editor, en vraagt het eerst als er wijzigingen zijn die nog niet bewaard
+zijn; **Opslaan & afsluiten** verlaat hem zodra het bewaren gelukt is. Bewaart
+iemand anders dezelfde tekening terwijl de editor open is, dan wordt die van
+hen samengevoegd met wat open staat.
+
+De editor en de afbeelding volgen het thema van de app: licht, donker of dat
+van het systeem. Het wisselen terwijl de editor open is, houdt wat getekend
+wordt.
+
+Een aanzicht dat niet gewijzigd mag worden, biedt geen **Bewerken**. Een
+element verwijderen houdt de tekeningen die eraan verankerd zijn, zonder het
+anker; ongedaan maken zet het terug.
 
 Waar geen adres voor de editor is gegeven, wordt de tekening nog steeds
 getoond, en **Bewerken** zegt dat de editor niet beschikbaar is.

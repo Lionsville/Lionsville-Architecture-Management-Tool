@@ -1703,13 +1703,27 @@ nicht gezeichnet**, und hat keine Flächen.
 
 Auf dem Bild ist jede Form, die auf ein Element zeigt, eine durchsichtige
 Fläche. Die Fläche wählen öffnet dieses Element. Der Inspektor des Elements
-nennt die Zeichnungen in diesem Bereich, die darauf zeigen. Eine Form, die auf
+nennt die Zeichnungen in diesem Bereich, die darauf zeigen; eine auswählen
+öffnet sie. Eine Form, die auf
 ein Element zeigt, das dieser Bereich nicht hält, ist ein Befund.
 
 **Bearbeiten** öffnet den Editor, in der Sprache der App. Die Palette enthält
 die Elemente des Bereichs — jedes eine Form, die auf dieses Element zeigt —
-und die C4-Formen. Speichern hält die Zeichnung als eines: das XML, das Bild
-und die Verweise, die die Formen setzen.
+und die C4-Formen. Wenn der Editor öffnet, trägt jede Form, die auf ein
+Element zeigt, den Namen, den dieses Element jetzt hat. Speichern hält die
+Zeichnung als eines: das XML, das Bild und die Verweise, die die Formen
+setzen. **Beenden** verlässt den Editor und fragt vorher, wenn es Änderungen
+gibt, die noch nicht gespeichert sind; **Speichern & Beenden** verlässt ihn,
+sobald das Speichern gelungen ist. Speichert jemand anderes dieselbe Zeichnung,
+während der Editor offen ist, wird deren Fassung mit dem Offenen
+zusammengeführt.
+
+Editor und Bild folgen dem Thema der App: hell, dunkel oder dem des Systems.
+Ein Wechsel, während der Editor offen ist, behält, was gezeichnet wird.
+
+Eine Ansicht, die nicht geändert werden darf, bietet kein **Bearbeiten**. Ein
+Element zu löschen behält die daran verankerten Zeichnungen, ohne den Anker;
+Rückgängig setzt ihn zurück.
 
 Wo keine Adresse für den Editor angegeben wurde, wird die Zeichnung weiterhin
 gezeigt, und **Bearbeiten** sagt, dass der Editor nicht verfügbar ist.

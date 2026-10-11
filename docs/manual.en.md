@@ -1489,13 +1489,23 @@ drawn yet**, and has no areas.
 
 On the picture, each shape that points at an element is a transparent area.
 Choosing the area opens that element. The element's inspector lists the
-drawings in this scope that point at it. A shape that points at an element
+drawings in this scope that point at it; choosing one opens it. A shape that points at an element
 this scope does not hold is a finding.
 
 **Edit** opens the editor, in the language the app is using. The palette holds
 the scope's elements — each a shape that points at that element — and the C4
-shapes. Saving keeps the drawing as one: its XML, its picture, and the links
-the shapes make.
+shapes. When the editor opens, each shape that points at an element is
+labelled with that element's name as it is now. Saving keeps the drawing as
+one: its XML, its picture, and the links the shapes make. **Exit** leaves the
+editor, and asks first when there are changes no save has kept; **Save &
+Exit** leaves once the save has landed. When somebody else saves the same
+drawing while the editor is open, theirs is merged into what is open.
+
+The editor and the picture follow the app's theme: light, dark, or the
+system's. Changing it while the editor is open keeps what is being drawn.
+
+A view that may not be changed offers no **Edit**. Deleting an element keeps
+the drawings anchored to it, without the anchor; undo puts it back.
 
 Where no address for the editor was given, the drawing is still shown, and
 **Edit** says the editor is not available.

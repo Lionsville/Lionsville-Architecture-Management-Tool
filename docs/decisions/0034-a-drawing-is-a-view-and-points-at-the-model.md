@@ -1,7 +1,10 @@
 # ADR-0034 — A drawing is a view, drawn in draw.io, and points at the model
 
-* Status: accepted, 8 October 2026; not yet built; amended 10 October 2026
-  (what the code already does, settled before the build)
+* Status: accepted, 8 October 2026; amended 10 October 2026 (what the code
+  already does, settled before the build); as built, 11 October 2026, in this
+  repository: the view kind, the editor on the desktop, the links, the
+  anchors and the documents — a provider's own drawing origin is not built
+  here (see *As built*)
 * Date: 2026-10-08
 * Deciders: Wouter Simons
 * Extends: ADR-0009 (a document that computes: a document can show a view),
@@ -347,3 +350,149 @@ so rather than a comparison the next kind falls out of. A comparison that
 is about one kind and one fact (`diagram.kind === 'container'` beside
 `applicationElementId`) stays a comparison: it is not a classification of
 every kind.
+
+## As built — 11 October 2026
+
+What landed, and where the build departed from the text above and why.
+Each part is checked by the suite and by the desktop's smoke run, which
+drives the real, pinned draw.io on `drawing://local`.
+
+### Shipping the editor
+
+* **The pin, and the files.** `drawioPin` in `build/dependencyPolicy.ts`
+  names draw.io 32.4.1, the asset `draw.war` and its sha256, beside the
+  rest of what the app is built from. `build/fetchDrawio.ts` reads that pin
+  and keeps no copy of it; the notices are written from the same pin, and a
+  test holds the three together.
+* **What is kept of the archive.** The war unpacks to 110 MB in 3318 files.
+  The file list (`DRAWIO_FILES`) is what Chromium asked for when it framed
+  the editor with the query below and loaded, saved, exported and inserted
+  a shape — sixteen files — plus the Dutch and German languages the frame's
+  `lang` asks for. About 20 MB. The image libraries, templates, other
+  languages and viewers are not needed for any of that, and C4 is in the
+  shape and stencil bundles.
+* **`extraResources`, not the asar.** `app.min.js` alone is 9.7 MB, over the
+  renderer's per-file budget, and it is not the app: the asar stays the
+  renderer's bundle, and the editor is a directory beside it that the
+  drawing scheme's handler reads with plain file reads. The web bundle never
+  contains it, so no bundle budget was raised.
+* **Fetched once, then offline.** The archive is kept in a cache outside the
+  tree, checked against the sha256 each time it is read; the pruned tree
+  carries a stamp of what it was made from and is left alone when it is the
+  pin's. After one fetch the smoke run and a pack need no network. A pack
+  is refused when the tree is missing or not the pin's.
+* **`PreConfig.js` names the drawing origin.** `stealth=1` turns off the
+  editor's integrations, but it does not retarget the addresses the editor
+  keeps for itself: with `DRAWIO_BASE_URL` and `DRAWIO_LIGHTBOX_URL` left
+  `null` the editor falls back to diagrams.net's own hosts, which a later
+  action builds an embed or a lightbox from. The pruned copy sets both to a
+  placeholder the server of the files writes its own origin over
+  (`drawing://local` on the desktop), and `EXPORT_URL` stays `null`. The
+  fetch refuses a release whose `PreConfig.js` no longer takes that
+  rewrite.
+* **No `libs=` in the frame's query.** In this build `libs=` replaces the
+  configured default libraries, so a frame opened with it shows C4 and not
+  the scope's elements. The query is `embed`, `proto=json`, `configure`,
+  `stealth`, `suppressNewWindows`, `keepmodified`, `ui=min`, `lang` and
+  `dark`.
+* **The notices** carry the Apache licence's text, which §4(a) asks to go
+  with every copy and which the archive does not ship at its top, and the
+  libraries the pruned bundles carry, as their own headers name them.
+
+### Where the editor runs
+
+* **The drawing scheme reads its own files.** §3 said the drawing scheme's
+  policy allows no `connect-src`. With `connect-src 'none'` the real editor
+  never finishes loading: it reads its languages (`resources/dia*.txt`) with
+  a request to its own origin. The policy is `connect-src 'self'`; the origin
+  serves the pruned files and nothing else, so that reaches no network, and
+  the smoke run hears no request leave the machine. `frame-ancestors
+  app://local`: only the app frames the editor.
+* **Frames the editor makes inside itself.** A navigation inside the drawing
+  frame to `about:blank`, `about:srcdoc`, its own `blob:` or `data:` is
+  allowed — documents that never leave the machine, which the editor builds
+  for a preview or a measurement. The frame the app holds stays on the
+  drawing scheme.
+* **The frame is sandboxed** to `allow-scripts allow-same-origin`: no
+  popups, no downloads, no navigation of the app. The editor loads, saves,
+  exports and exits with these alone.
+* **One drawing origin for many pages.** Nothing ties the drawing origin to
+  one app origin: a provider may hand one drawing origin to every page it
+  serves. A message is posted to the drawing origin, and one is heard only
+  when it comes from the frame's own window and from the drawing origin. On
+  the desktop the origin is always `drawing://local`, whatever a source
+  names, because the window frames nothing else.
+
+### The protocol
+
+* **The XML kept is the save's.** draw.io compresses a page unless it is
+  told not to, and its export's copy of the XML is compressed whatever it is
+  told. The configuration sends `compressXml: false`, and a save keeps the
+  XML the save event carried; a compressed one is not kept, because its
+  links would read empty. An agent's compressed XML is refused. The links
+  and the prose are read from the first page.
+* **Saves in order.** Two saves export twice; one whose export is overtaken
+  by a later one before its step is written is dropped.
+* **Leaving.** The editor's *Exit* closes it, after draw.io's own question
+  when there are changes no save kept; `keepmodified` holds that flag until
+  this side says the save landed. *Save & Exit* closes once the save has
+  landed.
+* **Labels from the model.** As §4 says, the editor opens with every
+  pointing shape labelled as its element is called now.
+
+### A refusal, and a change from somewhere else
+
+§2 and the amendment say the editor answers an overlap refusal by fetching
+the newer drawing and offering draw.io's merge. A save's command does not
+come back with a channel's refusal — that arrives later, as the model going
+back to the newer drawing. So the editor watches the drawing the model holds
+from the moment it opens, and whenever that becomes one it did not write —
+somebody else saved, before or after its own first save, or a channel
+refused its save — the newer drawing is handed to draw.io's `merge`. That is
+the one path; there is no separate answer to the refusal.
+
+### The picture
+
+* **Where a shape is on the picture.** draw.io's `xmlsvg` export does not
+  draw the page: it draws the shapes' bounding box, moved so its top left is
+  the picture's origin. The areas are laid on a frame whose origin is where
+  the shapes begin — every drawn vertex, ancestors summed, and every point an
+  edge names — and whose size is the export's viewBox. A label drawn outside
+  its shape, or a thick stroke, widens draw.io's own box a little further
+  than that, and an area is then off by as much. Held to a real export of
+  the pinned editor (`model/testing/drawio`), and in the smoke run to the
+  rectangle draw.io drew.
+* **The app's theme.** The editor opens in the app's resolved theme (`dark`)
+  and, when the theme changes while it is open, is asked for the drawing as
+  it is and loads it again in the new one, still unsaved where it was. The
+  export draws in adaptive colours, and an SVG shown as an image resolves
+  them by the image's own `color-scheme`, which is set from the app's
+  resolved theme: one picture, right in both.
+* **Kept by a folder.** A drawing's picture is
+  `images/.drawings/<digest>.svg`, named by its content address, written
+  with the step that names it and removed once no drawing in the head names
+  it. A dot folder, so the library never lists it. A working file and a
+  sealed file carry it the same way and a landing puts it before the step
+  that names it. The image repository's contract says it: bytes put, a step
+  naming the address in a drawing, and repositories made again over the same
+  store answer them by address.
+
+### The model
+
+* **Deleting an element takes the anchor off a drawing anchored to it**, in
+  the same step, and the inverse puts it back. The drawing stays: it is a
+  picture somebody drew, not a view of the element's insides, which is why
+  a container view goes and a drawing does not.
+* **A finding about a shape says its drawing** (`Finding.view`), and opening
+  it opens the drawing rather than an element that is not there.
+* **A deleted diagram's history** names both a geometry file and a `.drawio`,
+  because it may have been either.
+* **A read-only view** offers no *Edit*.
+
+### Not built here
+
+A provider that serves the editor's files on an origin of its own supplies
+that origin through `ProviderParts.drawingOrigin`; this repository's web
+build supplies none. That provider's files, host, certificate and headers
+are its own record.
+
