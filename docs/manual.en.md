@@ -1658,6 +1658,9 @@ another type), whether it may serve more than one domain, the roles it holds
 with how many of each, and how many applications a unit of it should own at
 most — a check reads that number; nothing refuses it. **New unit type** and
 **New role** add one; pressing a card or a role opens it on the right to edit.
+A unit type that is neither at the top nor in a unit type that sits anywhere
+sits nowhere: no unit of it can be placed where its type allows, and it is
+listed among what the organisation contradicts about itself.
 
 A **role** has a name, a short name for the matrix, a purpose, and its part in
 each responsibility. **Manages its unit** marks a role whose holder manages
@@ -1706,7 +1709,10 @@ names are their owners'; none of the libraries is endorsed by them.
 An agent reads the operating model with `unitTypes.list`, `roles.list` and
 `responsibilities.list`, from the organisation whatever scope is open, and
 changes it with `unitType.add`, `unitType.update`, `role.add` and
-`role.update` while the organisation is the scope open.
+`role.update` while the organisation is the scope open. `unitTypes.list`
+gives each unit type its lane — 1 at the top, and below the deepest type it
+may sit in — and lists them by lane, then by their `order` in it, then by
+name, the ones that sit nowhere last.
 
 ### Units and the people in them
 
@@ -1834,7 +1840,10 @@ An **organisation chart** is a view: **+** in the diagram tabs, then
 the units — nothing on it is placed by hand — as nested boxes: each unit inside
 the unit it sits in on the chart's day, a plan's moves included, the units filed in this scope and below it and the units
 that serve it from above, and at the organisation every unit there is. **Show**
-narrows it to one unit and those below it.
+narrows it to one unit and those below it. Units beside each other stand in
+the order of their types — a type at the top first, then the types that sit
+in it — and units of one type in their own order where one is set, otherwise
+by name.
 
 Each box says the unit's type and name, and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it

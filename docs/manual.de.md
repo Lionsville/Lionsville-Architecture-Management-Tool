@@ -1898,7 +1898,10 @@ eine Domäne bedienen darf, welche Rollen sie hat und wie viele von jeder, und
 wie viele Anwendungen eine Einheit davon höchstens verantworten sollte — eine
 Prüfung liest diese Zahl; nichts verweigert sie. **Neuer Einheitstyp** und
 **Neue Rolle** fügen einen hinzu; ein Druck auf eine Karte oder eine Rolle
-öffnet sie rechts zum Bearbeiten.
+öffnet sie rechts zum Bearbeiten. Ein Einheitstyp, der weder ganz oben steht
+noch zu einem Einheitstyp gehört, der irgendwo steht, gehört nirgends hin:
+Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es erlaubt, und er
+steht bei dem, worin sich die Organisation selbst widerspricht.
 
 Eine **Rolle** hat einen Namen, einen Kurznamen für die Matrix, einen Zweck
 und einen Anteil an jeder Verantwortung. **Führt die Einheit** kennzeichnet
@@ -1955,6 +1958,9 @@ Ein Agent liest das Betriebsmodell mit `unitTypes.list`, `roles.list` und
 `responsibilities.list` aus der Organisation, welcher Bereich auch geöffnet
 ist, und ändert es mit `unitType.add`, `unitType.update`, `role.add` und
 `role.update`, während die Organisation der geöffnete Bereich ist.
+`unitTypes.list` gibt jedem Einheitstyp seine Bahn — 1 ganz oben, und unter
+dem tiefsten Typ, zu dem er gehören darf — und nennt sie nach Bahn, dann nach
+ihrer `order` darin, dann nach Namen, die, die nirgends hingehören, zuletzt.
 
 ### Einheiten und die Personen darin
 
@@ -2103,7 +2109,10 @@ jede Einheit in der Einheit, in der sie am Tag des Organigramms sitzt, die
 Verschiebungen eines Plans eingerechnet, die Einheiten, die in diesem
 Bereich und darunter abgelegt sind, und die Einheiten, die ihn von oben
 bedienen, und bei der Organisation jede Einheit, die es gibt. **Zeigen**
-beschränkt es auf eine Einheit und die darunter.
+beschränkt es auf eine Einheit und die darunter. Einheiten nebeneinander
+stehen in der Reihenfolge ihrer Typen — ein Typ ganz oben zuerst, dann die
+Typen, die zu ihm gehören — und Einheiten eines Typs in ihrer eigenen
+Reihenfolge, wo eine gesetzt ist, sonst nach Namen.
 
 Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
 sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus

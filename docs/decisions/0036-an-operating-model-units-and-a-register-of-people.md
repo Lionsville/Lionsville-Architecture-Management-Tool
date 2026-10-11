@@ -1125,6 +1125,43 @@ is split hands its partners on to the clusters it is split into; or else the
 other end's own. Each two units once, each line a link to the plan's unit,
 whose *Works with* declares it (`app/units/PlanStillOpen.tsx`).
 
+## As built, 3.6.1: lanes, and one order for units
+
+The arithmetic under the amendment's first and fourth points: the lanes the
+structure is drawn in, said once for every screen that draws or lists them,
+and the one order units are listed in, which the chart reads already. The
+screens that draw the lanes, move a type along one and fold the chart follow.
+
+**Lanes** are `model/unitOrder.ts`, pure. The organisation is lane 0, a type
+that may sit at the top is in lane 1 at least, and a type's lane is the
+longest path from the organisation through `within` (`unitTypeLanes`): a type
+that may sit at the top and in a lane-1 type is in lane 2, below the deepest
+place it may be put. A loop in `within` — which the writer refuses no more
+than before — is cut where a walk from the organisation, in the lanes' own
+order, meets a type it is still inside, so the same model has the same lanes
+whatever order it was read in, and the lines cut are marked. Within a lane the
+types stand by a new optional `order` on the unit type, then by name. A type
+no walk reaches — not at the top, and in no type that is anywhere — sits
+nowhere: every unit of it would be misplaced, so it is a finding of its own,
+`check.unitTypeNowhere`, beside `check.accountability`. `order` is one more
+optional field in `unit-types.json`, so the format stays 11 — a build from
+before it passes the field over — and *compare* never reads it. Moving a type
+along its lane is one step that renumbers the lane (`operating/edit.ts`'s
+`moveUnitType`).
+
+**The order of units**, wherever they are listed, is their type's rank —
+lane, then `order`, then name, the types that sit nowhere last
+(`unitTypeRank`) — then the actor's own `order` among its siblings, the field
+the business tree already reads, then the name (`compareUnits`); a unit of no
+type, or of one the model does not hold, comes last. The chart reads it where
+it put siblings by name. Moving a unit among its siblings of the same type
+renumbers their `order` (`unitMovedTo`), each row an `element.update` in the
+scope that keeps that unit.
+
+**The agent's** `unitTypes.list` answers in that order, with each type's lane
+— or `sitsNowhere` — and its order; `unitType.add` and `unitType.update` take
+`order`; `checks.list` names both of the operating model's findings.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

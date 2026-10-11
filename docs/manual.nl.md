@@ -1788,6 +1788,10 @@ bedienen, welke rollen ze heeft en hoeveel van elk, en van hoeveel
 applicaties een eenheid ervan hoogstens eigenaar hoort te zijn — een controle
 leest dat getal; niets weigert het. **Nieuw eenheidstype** en **Nieuwe rol**
 voegen er een toe; druk op een kaart of een rol om haar rechts te bewerken.
+Een eenheidstype dat niet bovenaan staat en niet onder een eenheidstype valt
+dat ergens staat, valt nergens onder: geen eenheid ervan kan worden ingedeeld
+waar het type dat toestaat, en het staat bij wat de organisatie zichzelf
+tegenspreekt.
 
 Een **rol** heeft een naam, een korte naam voor de matrix, een doel, en een
 aandeel in elke verantwoordelijkheid. **Stuurt de eenheid aan** markeert een
@@ -1842,7 +1846,10 @@ door hen onderschreven.
 Een agent leest het besturingsmodel met `unitTypes.list`, `roles.list` en
 `responsibilities.list`, vanuit de organisatie welke scope er ook open is, en
 wijzigt het met `unitType.add`, `unitType.update`, `role.add` en
-`role.update` terwijl de organisatie de open scope is.
+`role.update` terwijl de organisatie de open scope is. `unitTypes.list` geeft
+elk eenheidstype zijn baan — 1 bovenaan, en onder het diepste type waaronder
+het mag vallen — en noemt ze per baan, dan op hun `order` daarin, dan op naam,
+die nergens onder vallen als laatste.
 
 ### Eenheden en de mensen erin
 
@@ -1985,6 +1992,9 @@ de eenheid waarin ze op de dag van het organogram zit, de verplaatsingen van
 een plan meegerekend, de eenheden die in deze scope en eronder zijn
 ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de organisatie
 elke eenheid die er is. **Toon** beperkt het tot één eenheid en die eronder.
+Eenheden naast elkaar staan in de volgorde van hun typen — een type bovenaan
+eerst, dan de typen die eronder vallen — en eenheden van één type in hun
+eigen volgorde waar die is gezet, anders op naam.
 
 Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
 heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
