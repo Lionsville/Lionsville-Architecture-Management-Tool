@@ -136,6 +136,32 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       expect((await repositories.people.read(one.id))?.mergedInto).toBe(three.id)
     })
 
+    /**
+     * Somebody active merged into an entry that has left (ADR-0036 §9): told
+     * which is true, never guessing. Still here clears the leaving, so the
+     * policy stops counting; left keeps it. A register that ends assignments
+     * itself answers how many a merge told *left* ended.
+     */
+    it('asks still here or left of a merge into an entry that has left, and clears the leaving where still here', async () => {
+      const { under, repositories } = await fresh()
+      const vos = entry(await repositories.people.add({ name: 'Lea Vos' }))
+      const voss = entry(await repositories.people.add({ name: 'Lea Voss' }))
+      ok(await repositories.people.leave(vos.id, '2026-03-31'))
+      expect(refusal(await repositories.people.merge(voss.id, vos.id))).toBe('people.mergeAsks')
+      expect((await repositories.people.read(voss.id))?.mergedInto).toBeUndefined()
+      const kept = entry(await repositories.people.merge(voss.id, vos.id, 'stillHere'))
+      expect([kept.id, kept.state, kept.leftOn]).toEqual([vos.id, 'active', undefined])
+      expect(await repositories.people.read(vos.id)).toEqual(kept)
+      expect((await repositories.people.read(voss.id))?.mergedInto).toBe(vos.id)
+
+      const berg = entry(await repositories.people.add({ name: 'Lars Berg' }))
+      const bergh = entry(await repositories.people.add({ name: 'Lars Bergh' }))
+      ok(await repositories.people.leave(berg.id, '2026-05-31'))
+      const left = ok(await repositories.people.merge(bergh.id, berg.id, 'left'))
+      expect(left.person).toMatchObject({ id: berg.id, state: 'left', leftOn: '2026-05-31' })
+      if (!under.repositories.people.endsAssignments) expect(left.ended).toBeUndefined()
+    })
+
     it('does not merge into a forgotten entry', async () => {
       const { repositories } = await fresh()
       const kept = entry(await repositories.people.add({ name: 'Omar Benali' }))

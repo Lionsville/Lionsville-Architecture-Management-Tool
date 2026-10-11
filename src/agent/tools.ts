@@ -2862,6 +2862,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'people.forgotten': 'That entry is forgotten: it has no name left to change.',
   'people.notForgotten': 'Only a forgotten entry is removed, and only by a person.',
   'people.badMerge': 'An entry is merged only into another that still has a name, and only by a person.',
+  'people.mergeAsks': 'An active entry merged into one that has left is told whether the person is still here or left; merging is a person\'s, on the People page.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',

@@ -16,8 +16,15 @@
  * to the People page and to the agent, so a leave means one thing whoever
  * asks. Until assignments exist the list is empty; the step that brings them
  * adds the one that ends them.
+ *
+ * **A merge told *left*** is the same path: an active entry merged into one
+ * that has left, where the person did leave on that day, has its roles ended
+ * on it as a leave would end them — first, and then the register — so no
+ * role of somebody who left runs on under a redirect, and none is ended in
+ * silence: the merge asks first (`MergeLeaving`).
  */
-import type { PeopleRefusal, Person, PersonId } from './person'
+import type { MergeLeaving, PeopleRefusal, Person, PersonId } from './person'
+import { mergeAsks } from './person'
 import { changePeople } from './register'
 
 /**
@@ -40,6 +47,11 @@ export type LeavingRegister = {
   read(id: PersonId): Promise<Person | undefined>
   leave(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
   forget(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
+}
+
+/** As much of a register as a merge needs: leaving's, and the merge. */
+export type MergingRegister = Pick<LeavingRegister, 'endsAssignments' | 'read'> & {
+  merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<{ person: Person; ended?: number } | PeopleRefused>
 }
 
 /** A leave or a forget made: the entry as it now stands, and how many things its consequences ended. */
@@ -103,6 +115,30 @@ export async function forgetPerson(
     ended = await consequencesOf(consequences, left, on)
   }
   const answer = await register.forget(id, on)
+  if ('refused' in answer) return answer
+  return { person: answer.person, ended: answer.ended ?? ended }
+}
+
+/**
+ * Merge one entry into another (ADR-0036 §9). Where an active entry goes into
+ * one that has left, `leaving` says which is true, and the register refuses
+ * without: *still here* clears the leaving; *left* ends the absorbed entry's
+ * roles on the leaving day as a leave ends them — assignments that run past
+ * it end on it, and one that only began after it is taken away, never ended
+ * on a day before it began — **first**, and merges after, as a leave marks the
+ * register after. A register that ends assignments itself does it all.
+ */
+export async function mergePerson(
+  register: MergingRegister, consequences: readonly LeaveConsequence[], from: PersonId, into: PersonId, leaving?: MergeLeaving,
+): Promise<Left | PeopleRefused> {
+  if (leaving !== 'left' || register.endsAssignments) return wholly(await register.merge(from, into, leaving))
+  const [absorbed, kept] = await Promise.all([register.read(from), register.read(into)])
+  if (!absorbed || !kept) return wholly(await register.merge(from, into, leaving))
+  // Asked of the rules before anything ends, so a refusal is said first.
+  const asked = changePeople([absorbed, kept], { kind: 'merge', from, into, leaving })
+  if ('refused' in asked) return asked
+  const ended = mergeAsks(absorbed, kept) && kept.leftOn !== undefined ? await consequencesOf(consequences, absorbed, kept.leftOn) : 0
+  const answer = await register.merge(from, into, leaving)
   if ('refused' in answer) return answer
   return { person: answer.person, ended: answer.ended ?? ended }
 }

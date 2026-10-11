@@ -21,7 +21,7 @@ import type { PersonId, Person } from '../../people/person'
 import { personFrom } from '../../people/person'
 import { changePeople } from '../../people/register'
 import type { ChangeAnswer, Changed, Minting, PeopleChange } from '../../people/register'
-import type { NewPerson, PersonPatch } from '../../people/person'
+import type { MergeLeaving, NewPerson, PersonPatch } from '../../people/person'
 import type {
   PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved, PersonWritten,
 } from '../../ports/PeopleRepository'
@@ -89,8 +89,8 @@ export class KeptPeople implements PeopleRepository {
     return this.written(await this.apply({ kind: 'leave', id, on }))
   }
 
-  async merge(from: PersonId, into: PersonId): Promise<PersonWritten | PeopleRefused> {
-    return this.written(await this.apply({ kind: 'merge', from, into }), into)
+  async merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<PersonWritten | PeopleRefused> {
+    return this.written(await this.apply({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) }), into)
   }
 
   async forget(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused> {

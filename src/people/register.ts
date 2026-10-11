@@ -18,7 +18,11 @@
  *   register — ending their assignments — is not the register's: see
  *   `leave.ts`.
  * - **Merge** keeps one entry and turns the other into a redirect with no
- *   name, so every id the history holds still resolves. Final.
+ *   name, so every id the history holds still resolves. Final. An active
+ *   entry merged into one that has left is told which is true
+ *   (`MergeLeaving`): *still here* clears the leaving, *left* keeps it — and
+ *   what leaving does to the roles of the one absorbed is `leave.ts`'s.
+ *   Told nothing, it is refused rather than guessed.
  * - **Forget** takes the name and the address away; the entry reads as its
  *   pseudonym from then on. Final: the register keeps no history of a name.
  * - **Remove** takes a forgotten entry away, and every redirect into it, after
@@ -35,9 +39,9 @@
  */
 import { isDay } from '../model/lifecycle'
 import type {
-  NewPerson, PeopleRefusal, Person, PersonId, PersonPatch, PersonState,
+  MergeLeaving, NewPerson, PeopleRefusal, Person, PersonId, PersonPatch, PersonState,
 } from './person'
-import { isEmail, isRedirect, mintPersonId, normalEmail, normalName } from './person'
+import { isEmail, isRedirect, mergeAsks, mintPersonId, normalEmail, normalName } from './person'
 import { drawPseudonym } from './pseudonym'
 
 /**
@@ -69,7 +73,7 @@ export type PeopleChange =
   | { kind: 'add'; person: NewPerson }
   | { kind: 'change'; id: PersonId; patch: PersonPatch }
   | { kind: 'leave'; id: PersonId; on: string }
-  | { kind: 'merge'; from: PersonId; into: PersonId }
+  | { kind: 'merge'; from: PersonId; into: PersonId; leaving?: MergeLeaving }
   | { kind: 'forget'; id: PersonId; on: string }
   | { kind: 'remove'; id: PersonId }
   | { kind: 'bringIn'; people: readonly Person[]; removed?: readonly PersonId[] }
@@ -88,7 +92,7 @@ export function changePeople(
     case 'add': return add(people, change.person, minting)
     case 'change': return correct(people, change.id, change.patch)
     case 'leave': return leave(people, change.id, change.on)
-    case 'merge': return merge(people, change.from, change.into)
+    case 'merge': return merge(people, change.from, change.into, change.leaving)
     case 'forget': return forget(people, change.id, change.on)
     case 'remove': return remove(people, change.id)
     case 'bringIn': return bringIn(people, change.people, change.removed ?? [], removed)
@@ -170,7 +174,7 @@ function remove(people: readonly Person[], id: PersonId): ChangeAnswer {
   return { people: people.filter((person) => !gone.has(person.id)), changed: [], removed: [...gone], tombstones: [...gone] }
 }
 
-function merge(people: readonly Person[], from: PersonId, into: PersonId): ChangeAnswer {
+function merge(people: readonly Person[], from: PersonId, into: PersonId, leaving: MergeLeaving | undefined): ChangeAnswer {
   const absorbed = find(people, from)
   if ('refused' in absorbed) return absorbed
   const kept = find(people, into)
@@ -178,14 +182,21 @@ function merge(people: readonly Person[], from: PersonId, into: PersonId): Chang
   // A forgotten entry is merged into nobody, as nobody is merged into one: its records
   // would read as the name of the entry kept, and the forget would be undone.
   if (from === into || kept.state === 'forgotten' || absorbed.state === 'forgotten') return refused('people.badMerge')
+  // Somebody active going into an entry that has left is still here, or left: told, never guessed.
+  const asks = mergeAsks(absorbed, kept)
+  if (asks && leaving === undefined) return refused('people.mergeAsks')
   const redirect: Person = { id: from, pseudonym: absorbed.pseudonym, kind: absorbed.kind, state: absorbed.state, mergedInto: into }
+  // Still here: the entry kept is active again, and nothing of its leaving is kept for the policy to count from.
+  const { leftOn: _left, ...here } = kept
+  const back = asks && leaving === 'stillHere'
   // A redirect into the one absorbed now points at the one kept, so no chain is ever longer than one.
   const repointed = people.filter((person) => person.mergedInto === from).map((person) => person.id)
   const next = people.map((person) => {
     if (person.id === from) return redirect
+    if (back && person.id === into) return { ...here, state: 'active' as const }
     return person.mergedInto === from ? { ...person, mergedInto: into } : person
   })
-  return { people: next, changed: [from, ...repointed], removed: [], tombstones: [] }
+  return { people: next, changed: [from, ...repointed, ...(back ? [into] : [])], removed: [], tombstones: [] }
 }
 
 /**

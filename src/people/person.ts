@@ -98,9 +98,28 @@ export const PEOPLE_REFUSALS = [
   'people.notForgotten',
   /** An entry is not merged into itself, and not into one that is a redirect or forgotten. */
   'people.badMerge',
+  /** An active entry merged into one that has left: the merge is told which is true, still here or left. */
+  'people.mergeAsks',
 ] as const
 
 export type PeopleRefusal = (typeof PEOPLE_REFUSALS)[number]
+
+/**
+ * What is true of a person whose active entry is merged into one that has
+ * left (ADR-0036 §9), which the merge is told rather than guesses:
+ *
+ * - `stillHere`: they are here; the leaving is cleared, the entry kept is
+ *   active again and the policy's clock stops;
+ * - `left`: they left on the leaving day; the roles of the entry absorbed end
+ *   on it, as leaving ends them (`leave.ts`).
+ */
+export const MERGE_LEAVINGS = ['stillHere', 'left'] as const
+export type MergeLeaving = (typeof MERGE_LEAVINGS)[number]
+
+/** Whether a merge must be told which is true: an active entry going into one that has left. */
+export function mergeAsks(absorbed: Pick<Person, 'state' | 'mergedInto'>, kept: Pick<Person, 'state' | 'mergedInto'>): boolean {
+  return absorbed.state === 'active' && absorbed.mergedInto === undefined && kept.state === 'left' && kept.mergedInto === undefined
+}
 
 /**
  * The changes a person makes to the register, one kind at a time: what a

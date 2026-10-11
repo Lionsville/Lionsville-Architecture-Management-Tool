@@ -13,8 +13,11 @@
  * than a button that is absent — you can see *why* it cannot be done.
  *
  * The buttons are in sentence case, as in every other dialog. The answer is
- * drawn as a danger unless `tone` says the step takes nothing away.
+ * drawn as a danger unless `tone` says the step takes nothing away. What the
+ * question needs answered besides yes — a choice between two things that may
+ * be true — goes under the body as `children`.
  */
+import type { ReactNode } from 'react'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -33,16 +36,19 @@ export type ConfirmDialogProps = {
   tone?: 'danger' | 'primary'
   onCancel: () => void
   onConfirm: () => void
+  /** What the question asks besides yes, under the body. */
+  children?: ReactNode
 }
 
 export function ConfirmDialog({
-  open, title, body, confirmLabel, cancelLabel, confirmDisabled = false, tone = 'danger', onCancel, onConfirm,
+  open, title, body, confirmLabel, cancelLabel, confirmDisabled = false, tone = 'danger', onCancel, onConfirm, children,
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 14 }}>{body}</DialogContentText>
+        {children}
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{cancelLabel}</Button>

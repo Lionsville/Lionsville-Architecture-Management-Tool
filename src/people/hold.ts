@@ -42,6 +42,19 @@ export function heldOn(held: readonly HeldAssignment[], day: string): {
   return { now, later, before }
 }
 
+/**
+ * What leaving on `lastDay` would do to these assignments, as leaving does it
+ * (`model/units.endingFor`): how many run past the day and would end on it,
+ * and how many only began after it and would be taken away — a role is never
+ * ended on a day before it began. What a merge into an entry that has left
+ * says before it asks *still here* or *left* (ADR-0036 §9).
+ */
+export function leavingOn(held: readonly HeldAssignment[], lastDay: string): { ends: number; later: number } {
+  const later = held.filter((one) => one.from !== undefined && one.from > lastDay).length
+  const ends = held.filter((one) => !(one.from !== undefined && one.from > lastDay) && (one.until === undefined || one.until > lastDay)).length
+  return { ends, later }
+}
+
 /** One assignment as a line of *What we hold*: role, unit, where, and when. English, as a protocol answer is. */
 export function heldLine(one: HeldAssignment): string {
   const share = one.share !== undefined && one.share < 1 ? `, ${Math.round(one.share * 100)}%` : ''

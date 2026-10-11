@@ -22,7 +22,7 @@
  * is everyone lost.
  */
 import { ShellError } from '../../platform/errors'
-import type { NewPerson, Person, PersonId, PersonPatch } from '../../people/person'
+import type { MergeLeaving, NewPerson, Person, PersonId, PersonPatch } from '../../people/person'
 import { changePeople } from '../../people/register'
 import type { ChangeAnswer, Minting, PeopleChange } from '../../people/register'
 import { fingerprint } from '../../projects/revision'
@@ -87,8 +87,8 @@ export class FolderPeopleRepository implements PeopleRepository {
     return written(await this.apply({ kind: 'leave', id, on }))
   }
 
-  async merge(from: PersonId, into: PersonId): Promise<PersonWritten | PeopleRefused> {
-    return written(await this.apply({ kind: 'merge', from, into }), into)
+  async merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<PersonWritten | PeopleRefused> {
+    return written(await this.apply({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) }), into)
   }
 
   async forget(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused> {

@@ -141,6 +141,25 @@ describe('the changes', () => {
     expect(changePeople(forgotten.people, { kind: 'merge', from: a.id, into: b.id })).toEqual({ refused: 'people.badMerge' })
   })
 
+  /** Somebody active going into an entry that has left is still here, or left: told, never guessed (ADR-0036 §9). */
+  it('asks which is true when somebody active is merged into an entry that has left, and clears the leaving where still here', () => {
+    const a = added([], 'Lea Vos')
+    const b = added(a.people, 'Lea Voss')
+    const left = done(changePeople(b.people, { kind: 'leave', id: a.id, on: '2026-03-31' })).people
+    expect(changePeople(left, { kind: 'merge', from: b.id, into: a.id })).toEqual({ refused: 'people.mergeAsks' })
+    const here = done(changePeople(left, { kind: 'merge', from: b.id, into: a.id, leaving: 'stillHere' }))
+    const kept = here.people.find((one) => one.id === a.id)!
+    expect([kept.state, kept.leftOn]).toEqual(['active', undefined])
+    expect(here.changed).toEqual([b.id, a.id])
+    const gone = done(changePeople(left, { kind: 'merge', from: b.id, into: a.id, leaving: 'left' }))
+    expect(gone.people.find((one) => one.id === a.id)).toMatchObject({ state: 'left', leftOn: '2026-03-31' })
+    expect(gone.people.find((one) => one.id === b.id)).toMatchObject({ mergedInto: a.id })
+    // Asked only of somebody active going into somebody who left: the other way round, nothing is asked or cleared.
+    const back = done(changePeople(left, { kind: 'merge', from: a.id, into: b.id, leaving: 'stillHere' }))
+    expect(back.people.find((one) => one.id === b.id)).toMatchObject({ state: 'active' })
+    expect(back.changed).toEqual([a.id])
+  })
+
   it('remembers what it removed, and brings none of it back: removed, forgotten, merged, left, active', () => {
     const a = added([], 'Ada Verbeek', 'ada@acme.example')
     const twin = added(a.people, 'Ada Verbek')

@@ -71,7 +71,7 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding,
     leave: (id, on) => change({ kind: 'leave', id, on }),
     forget: (id, on) => change({ kind: 'forget', id, on }),
     remove: (id) => change({ kind: 'remove', id }),
-    merge: (from, into) => change({ kind: 'merge', from, into }, into),
+    merge: (from, into, leaving) => { merges.push(leaving); return change({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) }, into) },
     setPolicy: (patch) => { onPolicy?.(patch); setPolicy((was) => ({ ...was, ...patch })); return Promise.resolve() },
     setMe: (id) => { setWho(id); return Promise.resolve() },
     mentionsOf: () => Promise.resolve(mentions),
@@ -83,6 +83,10 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding,
   const look = { ...(day !== undefined ? { day } : {}), onDay: setDay }
   return <PeoplePage open onClose={() => {}} register={register} copyText={() => {}} s={s} {...(looking ? { look } : {})} />
 }
+
+/** What each merge was told, in order: still here, left, or nothing. */
+const merges: (string | undefined)[] = []
+afterEach(() => { merges.length = 0 })
 
 const row = (id: string) => screen.getByTestId(`people-row-${id}`)
 const pick = (id: string) => fireEvent.click(within(row(id)).getByRole('button'))
@@ -138,6 +142,58 @@ describe('the People page', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
     await waitFor(() => expect(screen.queryByTestId('people-row-pe-evt')).toBeNull())
     expect(screen.queryByTestId('people-duplicates')).toBeNull()
+  })
+
+  /**
+   * Somebody active merged into an entry that has left (ADR-0036 §9): the
+   * merge asks which is true, and starts from what their roles say.
+   */
+  describe('merging somebody active into an entry that has left', () => {
+    const gim = person('pe-gim', 'Gijs Mulders')
+    const role = (id: string, from: string): HeldAssignment => ({ id, scope: 'customer', unit: 'Webshop', role: 'Developer', from })
+    const mergeIntoGijs = async (held: HeldAssignment[]) => {
+      renderShell(<Harness start={[...START, gim]} held={{ 'pe-gim': held }} />)
+      pick('pe-gim')
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: 'The entry to keep' }))
+      fireEvent.click(await screen.findByRole('option', { name: 'Gijs Mulder' }))
+      fireEvent.click(screen.getByTestId('people-merge-with'))
+      return screen.findByRole('dialog', { name: 'Merge Gijs Mulders into Gijs Mulder?' })
+    }
+    const checked = (dialog: HTMLElement, name: string) => (within(dialog).getByRole('radio', { name }) as HTMLInputElement).checked
+
+    it('chooses still here where a role began after the leaving day, and clears the leaving', async () => {
+      const dialog = await mergeIntoGijs([role('as-back', '2026-09-01')])
+      expect(dialog.textContent).toContain('Gijs Mulder left on 2026-08-14, and Gijs Mulders is active. Which is true?')
+      expect(within(dialog).getByTestId('people-merge-later').textContent).toContain('began after 2026-08-14')
+      expect(checked(dialog, 'Still here: clear the leaving')).toBe(true)
+      expect(within(dialog).getByTestId('people-merge-left-help').textContent)
+        .toContain('1 began after 2026-08-14 and is taken away: a role is never ended before it began.')
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
+      await waitFor(() => expect(screen.getByTestId('people-said').textContent).toContain('who is active again'))
+      expect(merges).toEqual(['stillHere'])
+      expect(screen.getByTestId('people-counts').textContent).toBe('4 active · 0 left · 1 forgotten')
+    })
+
+    it('chooses left where every role began before it, says what ends, and the answer can be changed', async () => {
+      const dialog = await mergeIntoGijs([role('as-run', '2026-01-01')])
+      expect(checked(dialog, 'Left: end these roles on 2026-08-14')).toBe(true)
+      expect(within(dialog).queryByTestId('people-merge-later')).toBeNull()
+      expect(within(dialog).getByTestId('people-merge-left-help').textContent).toBe('1 role of Gijs Mulders runs past 2026-08-14 and ends on it.')
+      fireEvent.click(within(dialog).getByRole('radio', { name: 'Still here: clear the leaving' }))
+      fireEvent.click(within(dialog).getByRole('radio', { name: 'Left: end these roles on 2026-08-14' }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
+      await waitFor(() => expect(merges).toEqual(['left']))
+      expect(screen.getByTestId('people-counts').textContent).toBe('3 active · 1 left · 1 forgotten')
+    })
+
+    it('asks nothing where the one kept is active: the merge is as it always was', async () => {
+      renderShell(<Harness />)
+      fireEvent.click(within(screen.getByTestId('people-duplicates')).getByRole('button', { name: 'Merge Eva Lindt into Eva Lind' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Merge Eva Lindt into Eva Lind?' })
+      expect(within(dialog).queryByTestId('people-merge-leaving')).toBeNull()
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
+      await waitFor(() => expect(merges).toEqual([undefined]))
+    })
   })
 
   it('marks someone as left on their last day, and says when the name goes', async () => {

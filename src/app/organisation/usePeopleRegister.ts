@@ -33,10 +33,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
 import type { PersonId } from '../../model/person'
-import { forgetPerson, leavePerson } from '../../people/leave'
+import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
 import type { Left } from '../../people/leave'
 import { meOf, mePatch } from '../../people/me'
-import type { NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
+import type { MergeLeaving, NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
 import { DEFAULT_POLICY, dueOn, policyOf, policyPatch } from '../../people/policy'
 import type { PeoplePolicy } from '../../people/policy'
 import type { Mention } from '../../people/hold'
@@ -77,7 +77,7 @@ export type PeopleAccess = {
   leave: (id: PersonId, on: string) => Promise<Left | PeopleRefused>
   forget: (id: PersonId, on: string) => Promise<Left | PeopleRefused>
   remove: (id: PersonId) => Promise<PersonRemoved | PeopleRefused>
-  merge: (from: PersonId, into: PersonId) => Promise<PersonWritten | PeopleRefused>
+  merge: (from: PersonId, into: PersonId, leaving?: MergeLeaving) => Promise<Left | PeopleRefused>
   setPolicy: (change: Partial<PeoplePolicy>) => Promise<void>
   setMe: (id: PersonId | undefined) => Promise<void>
   /** Records across the tree whose text holds a name: what a forget cannot reach. */
@@ -228,7 +228,7 @@ export function usePeopleRegister(deps: {
     leave: (id, on) => changed(leavePerson(repositories.people, consequences, id, on)),
     forget: (id, on) => changed(forgetPerson(repositories.people, consequences, id, on)),
     remove: (id) => changed(repositories.people.remove(id)),
-    merge: (from, into) => changed(repositories.people.merge(from, into)),
+    merge: (from, into, leaving) => changed(mergePerson(repositories.people, consequences, from, into, leaving)),
     setPolicy: (change) => changed(repositories.settings.write({ of: 'organisation' }, policyPatch(change)).then(() => undefined)),
     setMe: (id) => changed(repositories.settings.write({ of: 'person' }, mePatch(id)).then(() => undefined)),
     mentionsOf: async (name) => searchAll({ sources: await everyModel(repositories.scopes), query: name, limitPerKind: 1000 })

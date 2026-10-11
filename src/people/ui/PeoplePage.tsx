@@ -13,7 +13,9 @@
  * **Not a command.** Nothing on this page is a step: there is no undo and no
  * line in the Activity list, because the register is kept outside the
  * history — which is what lets a name be forgotten. The page says so, and
- * the three changes that are final — merge, forget, remove — ask first.
+ * the three changes that are final — merge, forget, remove — ask first. A
+ * merge of somebody active into an entry that has left asks which is true,
+ * still here or left (`MergeLeaving.tsx`), and never ends a role in silence.
  *
  * A full-window page like the registers: it takes the window chrome, works
  * in both themes, and `readOnly` hides everything that changes the register.
@@ -41,14 +43,15 @@ import { useLocatedIn } from '../../widgets/useLocated'
 import { duplicatePairs } from '../duplicates'
 import type { DuplicatePair } from '../duplicates'
 import { meIn } from '../me'
-import type { Person, PersonState } from '../person'
-import { entriesOf } from '../person'
+import type { MergeLeaving, Person, PersonState } from '../person'
+import { entriesOf, mergeAsks } from '../person'
 import { registerOf, shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
 import { mayDo, useSaying } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { AddPerson, SIGN_LABEL } from './AddPerson'
 import { CsvImport } from './CsvImport'
+import { MergeLeavingChoice, mergeLeavingFirst } from './MergeLeaving'
 import { KIND_LABEL, SHOW_LABEL } from './parts'
 import { PersonPanel } from './PersonPanel'
 import type { PeopleLook } from './PersonPanel'
@@ -73,9 +76,13 @@ export type PeoplePageProps = {
 
 type Show = PersonState | 'all'
 
-/** One of the three changes that are final, waiting for the person's yes. */
+/**
+ * One of the three changes that are final, waiting for the person's yes. A
+ * merge that asks whether the person is still here carries the answer
+ * chosen so far, and the day the entry kept left.
+ */
 type Asking =
-  | { kind: 'merge'; from: Person; into: Person }
+  | { kind: 'merge'; from: Person; into: Person; leaving?: { answer: MergeLeaving; leftOn: string } }
   | { kind: 'forget'; person: Person }
   | { kind: 'remove'; person: Person }
 
@@ -92,9 +99,15 @@ function asked(asking: Asking, register: PeopleRegisterAccess, saying: Saying, s
   const name = (person: Person) => shownText(shownEntry(person), s)
   if (asking.kind === 'merge') {
     const words = { drop: name(asking.from), keep: name(asking.into) }
+    const leaving = asking.leaving
+    const done = (merged: { ended: number }) => {
+      if (leaving?.answer === 'stillHere') return s('people.mergeDoneHere', words)
+      if (leaving?.answer === 'left') return s('people.mergeDoneLeft', { ...words, count: merged.ended, day: leaving.leftOn })
+      return s('people.mergeDone', words)
+    }
     return {
       title: s('people.mergeTitle', words), body: s('people.mergeBody', words), confirm: s('people.mergeConfirm'),
-      run: () => saying.run(register.merge(asking.from.id, asking.into.id), () => s('people.mergeDone', words)),
+      run: () => saying.run(register.merge(asking.from.id, asking.into.id, leaving?.answer), done),
     }
   }
   if (asking.kind === 'forget') {
@@ -109,6 +122,40 @@ function asked(asking: Asking, register: PeopleRegisterAccess, saying: Saying, s
     title: s('people.removeTitle', words), body: s('people.removeBody'), confirm: s('people.remove'),
     run: () => saying.run(register.remove(asking.person.id), () => s('people.removeDone')),
   }
+}
+
+/**
+ * The question a final change asks, and — for a merge of somebody active into
+ * an entry that has left — which is true, still here or left.
+ */
+function Asked({ asking, onAsking, register, saying, s }: {
+  asking: Asking | undefined; onAsking: (next: Asking | undefined) => void; register: PeopleRegisterAccess; saying: Saying; s: Translate
+}) {
+  const asks = asking && asked(asking, register, saying, s)
+  const merging = asking?.kind === 'merge' ? asking : undefined
+  const leaving = merging?.leaving
+  return (
+    <ConfirmDialog
+      open={asks !== undefined}
+      title={asks?.title ?? ''}
+      body={asks?.body ?? ''}
+      confirmLabel={asks?.confirm ?? ''}
+      cancelLabel={s('people.cancel')}
+      onCancel={() => onAsking(undefined)}
+      onConfirm={() => {
+        if (asks) void asks.run()
+        onAsking(undefined)
+      }}
+    >
+      {merging && leaving && (
+        <MergeLeavingChoice
+          drop={shownText(shownEntry(merging.from), s)} keep={shownText(shownEntry(merging.into), s)}
+          leftOn={leaving.leftOn} held={register.assignmentsOf?.(merging.from.id) ?? []} value={leaving.answer}
+          onChange={(answer) => onAsking({ ...merging, leaving: { leftOn: leaving.leftOn, answer } })} s={s}
+        />
+      )}
+    </ConfirmDialog>
+  )
 }
 
 function Duplicates({ pairs, onMerge, s }: { pairs: readonly DuplicatePair[]; onMerge: (from: Person, into: Person) => void; s: Translate }) {
@@ -242,8 +289,15 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
     left: entries.filter((one) => one.state === 'left').length,
     forgotten: entries.filter((one) => one.state === 'forgotten').length,
   })
-  const asks = asking && asked(asking, register, saying, s)
   const pick = (id: PersonId) => { setSelected(id); setAdding(false) }
+  // Somebody active into an entry that has left: still here or left, chosen to start with by their roles.
+  const askMerge = (from: Person, into: Person) => {
+    const leftOn = into.leftOn
+    const leaving = mergeAsks(from, into) && leftOn !== undefined
+      ? { answer: mergeLeavingFirst(register.assignmentsOf?.(from.id) ?? [], leftOn), leftOn }
+      : undefined
+    setAsking({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) })
+  }
   const located = useFindMe(me, pick, () => { setShow('all'); setQuery('') })
 
   return (
@@ -256,7 +310,7 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
           <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 2 }} data-testid="people-not-a-step">
             {s(register.readOnly ? 'people.readOnly' : 'people.notAStep')}
           </Typography>
-          {pairs.length > 0 && mayDo(register, 'merge') && <Duplicates pairs={pairs} onMerge={(from, into) => setAsking({ kind: 'merge', from, into })} s={s} />}
+          {pairs.length > 0 && mayDo(register, 'merge') && <Duplicates pairs={pairs} onMerge={askMerge} s={s} />}
           {entries.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.empty')}</Typography>}
           {entries.length > 0 && shown.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.searchEmpty', { query: query.trim() })}</Typography>}
           {shown.length > 0 && <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} onSelect={pick} s={s} />}
@@ -272,24 +326,13 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
             <PersonPanel person={person} register={register} saying={saying} copyText={copyText} s={s} look={look}
               onForget={(one) => setAsking({ kind: 'forget', person: one })}
               onRemove={(one) => setAsking({ kind: 'remove', person: one })}
-              onMerge={(from, into) => setAsking({ kind: 'merge', from, into })} />
+              onMerge={askMerge} />
           )}
           {!adding && !person && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('people.noneSelected')}</Typography>}
           <PolicyPanel register={register} saying={saying} s={s} />
         </Box>
       </Box>
-      <ConfirmDialog
-        open={asks !== undefined}
-        title={asks?.title ?? ''}
-        body={asks?.body ?? ''}
-        confirmLabel={asks?.confirm ?? ''}
-        cancelLabel={s('people.cancel')}
-        onCancel={() => setAsking(undefined)}
-        onConfirm={() => {
-          if (asks) void asks.run()
-          setAsking(undefined)
-        }}
-      />
+      <Asked asking={asking} onAsking={setAsking} register={register} saying={saying} s={s} />
       <CsvImport open={importing} register={register} saying={saying} readText={readText} onClose={() => setImporting(false)} s={s} />
     </PageDialog>
   )

@@ -16,7 +16,7 @@ import { fromArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { apply } from '../../model/reducer'
 import type { Assignment } from '../../model/units'
-import { forgetPerson, leavePerson } from '../../people/leave'
+import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
 import type { Repositories } from '../../ports/Repositories'
 import { placeWhole, readScope } from '../../projects/scopeAccess'
 import { emptyContent } from '../../projects/scopeState'
@@ -163,5 +163,53 @@ describe('leaving ends a person\'s assignments', () => {
     const { bram } = await entries(repositories)
     const left = await leavePerson(repositories.people, leaveConsequences({ repositories }), bram, '2026-10-31')
     expect(left).toMatchObject({ ended: 0 })
+  })
+})
+
+/**
+ * Somebody active merged into an entry that has left (ADR-0036 §9), told
+ * *left*: the absorbed entry's roles end on the leaving day by leaving's own
+ * path, the scopes first and the register after — one that ran past it ends on
+ * it, one that began after it is taken away and never ended before it began,
+ * one already over is left as it was. Told *still here*, no scope moves.
+ */
+describe('a merge into an entry that has left', () => {
+  async function merging() {
+    const repositories = memoryRepositories()
+    await placeWhole(repositories.scopes, '', content('Acme'))
+    const vos = (await repositories.people.add({ name: 'Lea Vos' }))
+    const voss = (await repositories.people.add({ name: 'Lea Voss' }))
+    if ('refused' in vos || 'refused' in voss) throw new Error('refused')
+    await repositories.people.leave(vos.person.id, '2026-03-31')
+    await placeWhole(repositories.scopes, 'customer', content('Customer', {
+      assignments: [
+        as('as-run', 'webshop', voss.person.id, { from: '2025-01-01' }),
+        as('as-back', 'webshop', voss.person.id, { from: '2026-06-01' }),
+        as('as-over', 'webshop', voss.person.id, { from: '2025-01-01', until: '2025-12-31' }),
+      ],
+    }))
+    return { repositories, kept: vos.person.id, absorbed: voss.person.id }
+  }
+
+  it('ends the absorbed entry\'s roles on the leaving day first, takes away one that began after it, and merges after', async () => {
+    const { repositories, kept, absorbed } = await merging()
+    const merged = await mergePerson(repositories.people, leaveConsequences({ repositories }), absorbed, kept, 'left')
+    expect(merged).toMatchObject({ person: { id: kept, state: 'left', leftOn: '2026-03-31' }, ended: 2 })
+    const held = (await readScope(repositories.scopes, 'customer'))!.model.assignments!
+    expect(held).toEqual([
+      as('as-run', 'webshop', absorbed, { from: '2025-01-01', until: '2026-03-31' }),
+      as('as-over', 'webshop', absorbed, { from: '2025-01-01', until: '2025-12-31' }),
+    ])
+    expect(held.every((one) => one.until === undefined || one.from === undefined || one.until >= one.from)).toBe(true)
+    expect((await repositories.people.read(absorbed))?.mergedInto).toBe(kept)
+  })
+
+  it('moves no scope when told still here, and the person is active again', async () => {
+    const { repositories, kept, absorbed } = await merging()
+    const before = (await readScope(repositories.scopes, 'customer'))!
+    const merged = await mergePerson(repositories.people, leaveConsequences({ repositories }), absorbed, kept, 'stillHere')
+    expect(merged).toMatchObject({ person: { id: kept, state: 'active' }, ended: 0 })
+    expect((await repositories.people.read(kept))?.leftOn).toBeUndefined()
+    expect((await readScope(repositories.scopes, 'customer'))!.revision).toBe(before.revision)
   })
 })

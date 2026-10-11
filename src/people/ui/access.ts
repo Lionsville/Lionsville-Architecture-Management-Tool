@@ -16,7 +16,7 @@ import { useCallback, useState } from 'react'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
 import type { HeldAssignment, Mention, PointsAt } from '../hold'
-import type { NewPerson, PeopleAction, PeopleRefusal, Person, PersonPatch, PolicyHold } from '../person'
+import type { MergeLeaving, NewPerson, PeopleAction, PeopleRefusal, Person, PersonPatch, PolicyHold } from '../person'
 import type { PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
 
@@ -45,7 +45,8 @@ export type PeopleRegisterAccess = {
   leave(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
   forget(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
   remove(id: PersonId): Promise<{ removed: readonly PersonId[] } | Refused>
-  merge(from: PersonId, into: PersonId): Promise<{ person: Person } | Refused>
+  /** Where an active entry goes into one that has left, `leaving` says which is true (`MergeLeaving`). */
+  merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<{ person: Person; ended: number } | Refused>
   setPolicy(change: Partial<PeoplePolicy>): Promise<void>
   setMe(id: PersonId | undefined): Promise<void>
   mentionsOf(name: string): Promise<Mention[]>

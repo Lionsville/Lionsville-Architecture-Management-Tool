@@ -197,7 +197,7 @@ export function over(under: RepositoriesUnderTest) {
       add: (person) => settled(people.add(person)),
       change: (id, patch) => settled(people.change(id, patch)),
       leave: (id, on) => settled(people.leave(id, on)),
-      merge: (from, into) => settled(people.merge(from, into)),
+      merge: (from, into, leaving?) => settled(people.merge(from, into, leaving)),
       forget: (id, on) => settled(people.forget(id, on)),
       remove: (id) => settled(people.remove(id)),
       bringIn: (entries, removed?: readonly string[]) => settled(people.bringIn(entries, removed)),

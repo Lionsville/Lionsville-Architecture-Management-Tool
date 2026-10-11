@@ -28,7 +28,7 @@
  * `PeopleRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
-import type { NewPerson, PeopleRefusal, Person, PersonId, PersonPatch } from '../people/person'
+import type { MergeLeaving, NewPerson, PeopleRefusal, Person, PersonId, PersonPatch } from '../people/person'
 import type { Revision } from '../projects/scopeState'
 
 /**
@@ -55,10 +55,11 @@ export type PeopleChanges = {
 
 /**
  * A change made: the register's revision after it, and the entry as it now
- * is. A leave or a forget of somebody still active may say `ended`: how many
- * things leaving ended, where the repository does what leaving does beyond the
- * register itself — a server that ends a leaver's assignments as it marks them
- * — and the caller then ends nothing more (`people/leave.ts`).
+ * is. A leave or a forget of somebody still active, and a merge told *left*,
+ * may say `ended`: how many things leaving ended, where the repository does
+ * what leaving does beyond the register itself — a server that ends a
+ * leaver's assignments as it marks them — and the caller then ends nothing
+ * more (`people/leave.ts`).
  */
 export type PersonWritten = { revision: Revision; person: Person; ended?: number }
 
@@ -78,7 +79,8 @@ export interface PeopleRepository {
   /**
    * This repository does what leaving does beyond the register itself — a
    * server that ends a leaver's assignments as it marks them, with its own
-   * authority and in one go — and its `leave` and `forget` answer `ended`.
+   * authority and in one go — and its `leave`, `forget` and a `merge` told
+   * *left* answer `ended`.
    * The app then ends nothing itself. Absent, the app ends them first and
    * marks the leave after (`people/leave.ts`).
    */
@@ -107,8 +109,16 @@ export interface PeopleRepository {
   /**
    * One entry kept and the other made a redirect into it, with no name and no
    * address. Final. The answer is the entry kept.
+   *
+   * An active entry merged into one that has left is told which is true
+   * (`MergeLeaving`), and refused `people.mergeAsks` without: *still here*
+   * makes the entry kept active again, with no `leftOn`; *left* keeps the
+   * leaving, and what leaving does to the roles of the entry absorbed — ended
+   * on the leaving day — is the caller's (`people/leave.ts`), unless the
+   * repository says {@link endsAssignments}: then it ends them itself, before
+   * the merge, and answers how many in `ended`.
    */
-  merge(from: PersonId, into: PersonId): Promise<PersonWritten | PeopleRefused>
+  merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<PersonWritten | PeopleRefused>
 
   /** The name and the address taken away, on a day. Final. */
   forget(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused>

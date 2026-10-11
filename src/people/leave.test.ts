@@ -7,12 +7,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import { holdText, keptName, pointerLine, ruleLine, whatWeHold } from './hold'
-import { forgetPerson, leavePerson } from './leave'
-import type { LeaveConsequence, LeavingRegister } from './leave'
+import { forgetPerson, leavePerson, mergePerson } from './leave'
+import type { LeaveConsequence, LeavingRegister, MergingRegister } from './leave'
 import type { Person } from './person'
 import { changePeople } from './register'
 
-function registerOver(start: Person[]): LeavingRegister & { people: () => Person[] } {
+function registerOver(start: Person[]): LeavingRegister & MergingRegister & { people: () => Person[] } {
   let people = start
   const run = (change: Parameters<typeof changePeople>[1], id: string) => {
     const answer = changePeople(people, change)
@@ -25,6 +25,7 @@ function registerOver(start: Person[]): LeavingRegister & { people: () => Person
     read: (id) => Promise.resolve(people.find((one) => one.id === id)),
     leave: (id, on) => run({ kind: 'leave', id, on }, id),
     forget: (id, on) => run({ kind: 'forget', id, on }, id),
+    merge: (from, into, leaving) => run({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) }, into),
   }
 }
 
@@ -75,6 +76,62 @@ describe('leaving', () => {
     expect(await leavePerson(register, [consequence], 'pe-ada', '2026-10-31')).toMatchObject({ person: { state: 'left' }, ended: 3 })
     expect(await forgetPerson(register, [consequence], 'pe-bo', '2026-10-31')).toMatchObject({ person: { state: 'forgotten' }, ended: 2 })
     expect(ran).toBe(0)
+  })
+})
+
+/**
+ * A merge of somebody active into an entry that has left (ADR-0036 §9): told
+ * *left*, the absorbed entry's roles end on the leaving day by leaving's own
+ * consequences — first, and the register after — and told *still here*, nothing
+ * ends and the leaving is cleared.
+ */
+describe('merging into an entry that has left', () => {
+  const gone: Person = { ...ada, id: 'pe-gone', state: 'left', leftOn: '2026-03-31' }
+  const twin: Person = { ...ada, id: 'pe-twin', name: 'Ada Verbeek-Smit', email: undefined, pseudonym: 'GHJK' }
+
+  it('ends the absorbed entry\'s roles on the leaving day first, then merges, when told left', async () => {
+    const register = registerOver([gone, twin])
+    const seen: string[] = []
+    const ends: LeaveConsequence = (person, lastDay) => {
+      seen.push(`${person.id} ${lastDay} ${register.people().find((one) => one.id === 'pe-twin')?.mergedInto ?? 'not yet merged'}`)
+      return Promise.resolve(2)
+    }
+    expect(await mergePerson(register, [ends], 'pe-twin', 'pe-gone', 'left')).toMatchObject({ person: { id: 'pe-gone', state: 'left' }, ended: 2 })
+    expect(seen).toEqual(['pe-twin 2026-03-31 not yet merged'])
+  })
+
+  it('ends nothing when told still here, and the leaving is cleared', async () => {
+    const register = registerOver([gone, twin])
+    let ran = false
+    const answer = await mergePerson(register, [() => { ran = true; return Promise.resolve(1) }], 'pe-twin', 'pe-gone', 'stillHere')
+    expect(answer).toMatchObject({ person: { id: 'pe-gone', state: 'active' }, ended: 0 })
+    expect(ran).toBe(false)
+  })
+
+  it('ends nothing where the register refuses, and is refused where it is told nothing', async () => {
+    const register = registerOver([gone, twin])
+    let ran = false
+    const consequence: LeaveConsequence = () => { ran = true; return Promise.resolve(1) }
+    expect(await mergePerson(register, [consequence], 'pe-twin', 'pe-gone')).toEqual({ refused: 'people.mergeAsks' })
+    expect(await mergePerson(register, [consequence], 'pe-twin', 'pe-twin', 'left')).toEqual({ refused: 'people.badMerge' })
+    expect(ran).toBe(false)
+  })
+
+  it('leaves the ending to a register that ends assignments itself', async () => {
+    const inner = registerOver([gone, twin])
+    const told: (string | undefined)[] = []
+    const register: MergingRegister = {
+      endsAssignments: true,
+      read: inner.read,
+      merge: async (from, into, leaving) => {
+        told.push(leaving)
+        const answer = await inner.merge(from, into, leaving)
+        return 'refused' in answer ? answer : { ...answer, ended: 4 }
+      },
+    }
+    let ran = 0
+    expect(await mergePerson(register, [() => { ran += 1; return Promise.resolve(9) }], 'pe-twin', 'pe-gone', 'left')).toMatchObject({ ended: 4 })
+    expect([ran, told]).toEqual([0, ['left']])
   })
 })
 
