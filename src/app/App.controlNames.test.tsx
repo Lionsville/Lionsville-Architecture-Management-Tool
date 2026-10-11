@@ -281,8 +281,8 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
   }]],
   // An organisation chart, made on a landscape's home: the example has no
-  // units, and the outline and the bar are drawn all the same.
-  [['an organisation chart', ['chart.outline', 'chart.foldAll', 'chart.unfoldAll'], async () => {
+  // units, and the outline, the bar and the summary beside it are drawn all the same.
+  [['an organisation chart', ['chart.outline', 'chart.foldAll', 'chart.unfoldAll', 'chart.showOptional', 'chart.summary'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     fireEvent.click(await screen.findByTestId('new-board'))

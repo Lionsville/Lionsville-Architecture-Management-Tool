@@ -89,6 +89,8 @@ export const CONTROL_NAMES = [
   'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
   // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.
   'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
+  // …the switch that draws its empty optional roles, and its summary in the inspector while nothing is picked (3.6.1).
+  'chart.showOptional', 'chart.summary',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

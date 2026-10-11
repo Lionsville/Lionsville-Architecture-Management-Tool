@@ -13,7 +13,9 @@
  *
  * A folded unit counts, because it stands for what it hides: its units, the
  * people in them, and — only where there are any — the vacancies and the
- * findings, which are what a reader unfolds it for.
+ * findings, which are what a reader unfolds it for. The chart's summary
+ * counts the same way, for the whole chart, and lists its findings rather
+ * than counting them.
  */
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
@@ -88,4 +90,13 @@ export function rollUpWords(rolled: ChartRollUp, t: Translate): RollUpPart[] {
   if (rolled.vacant > 0) parts.push({ key: 'vacant', text: plural(t, { one: 'chart.rollVacantOne', other: 'chart.rollVacantOther' }, rolled.vacant), warn: true })
   if (rolled.findings > 0) parts.push({ key: 'findings', text: plural(t, { one: 'chart.rollFindingsOne', other: 'chart.rollFindingsOther' }, rolled.findings), warn: true })
   return parts
+}
+
+/**
+ * What a whole chart holds, in words, for its summary beside it (3.6.1): its
+ * units and people always, its vacancies where there are any — the findings
+ * are listed under it, so they are not counted.
+ */
+export function summaryWords(held: Pick<ChartRollUp, 'units' | 'people' | 'vacant'>, t: Translate): RollUpPart[] {
+  return rollUpWords({ ...held, findings: 0 }, t)
 }

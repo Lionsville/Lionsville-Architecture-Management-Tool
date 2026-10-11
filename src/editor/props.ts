@@ -68,7 +68,8 @@ export interface EditorPages {
   /**
    * What the inspector beside a laid-out view shows while the editor has
    * nothing selected: the page's own choice of something that is not an
-   * element — an assignment chosen on the organisation chart (ADR-0036 §7).
+   * element — an assignment chosen on the organisation chart — or what the
+   * page says as a whole, as the chart's summary does (ADR-0036 §7, 3.6.1).
    * Handed the view as it is drawn, on the day it is looked at. Nothing, or
    * absent, and the inspector says what it says with nothing chosen.
    */

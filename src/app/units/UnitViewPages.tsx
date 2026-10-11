@@ -7,7 +7,8 @@
  * scope's session, the register — with the organisation worked out once per
  * change of those, not per render of the editor. And what the inspector
  * beside a chart shows while the editor has nothing selected: the assignment
- * chosen on it (`AssignmentInspector`).
+ * chosen on it (`AssignmentInspector`), or — with none chosen — what the
+ * chart says as a whole (`ChartSummary`, 3.6.1).
  */
 import { useMemo } from 'react'
 import type { ComponentProps, ReactElement, ReactNode } from 'react'
@@ -19,6 +20,7 @@ import type { WorkspaceParts } from '../workspaceParts'
 import type { ChartPage as ChartPageShape } from './ChartPage'
 import type { ConwayPage as ConwayPageShape } from './ConwayPage'
 import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
+import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
 import { unitViewsHere } from './unitViewsHere'
 
 /**
@@ -35,6 +37,10 @@ const ConwayPage = lazyPart<ComponentProps<typeof ConwayPageShape>>(
 /** An assignment in the inspector arrives with the first one chosen. */
 const AssignmentInspector = lazyPart<ComponentProps<typeof AssignmentInspectorShape>>(
   () => import('./AssignmentInspector').then((held) => held.AssignmentInspector),
+)
+/** The chart's summary arrives with the first chart whose inspector is open with nothing picked. */
+const ChartSummary = lazyPart<ComponentProps<typeof ChartSummaryShape>>(
+  () => import('./ChartSummary').then((held) => held.ChartSummary),
 )
 
 type Kind = 'chart' | 'conway'
@@ -81,14 +87,22 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
 
 /**
  * The inspector beside an organisation chart while the editor has nothing
- * selected: the assignment chosen on it, where it is still there — a removed
- * one leaves the inspector to say what it says with nothing chosen.
+ * selected: the assignment chosen on it, where it is still there; otherwise —
+ * nothing chosen, or a removed one — the chart's own summary, whose findings
+ * go to their units on the chart as a request from outside does.
  */
 export function unitViewInspector(parts: WorkspaceParts, diagram: DesignDiagram): ReactNode {
   if (diagram.kind !== 'chart') return undefined
   const { props, session } = parts
   const chosen = parts.pages.chartChoice.chosenOn(diagram.id)
-  if (chosen === undefined || !(session.model.assignments ?? []).some((one) => one.id === chosen)) return undefined
+  if (chosen === undefined || !(session.model.assignments ?? []).some((one) => one.id === chosen)) {
+    return (
+      <ChartSummary
+        diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model} today={parts.todayDay}
+        scopeLabel={parts.readings.scopeLabel} onGoTo={(unitId) => parts.pages.selectOn(diagram.id, unitId)}
+      />
+    )
+  }
   const onOpenPeople = props.navigation.onOpenPeople
   return (
     <AssignmentInspector

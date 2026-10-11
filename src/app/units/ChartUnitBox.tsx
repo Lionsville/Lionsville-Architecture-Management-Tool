@@ -18,6 +18,15 @@
  * hides the units under it, and the unit says what it hides — its units and
  * people, and its vacancies and findings where there are any. Its own roles
  * stay: a fold hides what is below a unit, never the unit.
+ *
+ * **The width is used, and only what needs attention is drawn** (3.6.1). A
+ * unit's units share a grid of columns at least 220 pixels wide
+ * (`UnitGrid`), so a cluster's teams fill the row instead of wrapping at a
+ * third of it; one drawn with units under it takes a whole row, so its own
+ * have the width in turn. A role nobody holds and nobody needs to — an
+ * optional one — is not drawn until *Show optional roles* is on: it is a
+ * choice, not a gap, and the unit's inspector always lists it. A vacancy is
+ * always drawn.
  */
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
@@ -27,6 +36,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../../i18n'
 import type { Role } from '../../model/operatingModel'
+import { drawsUnitsBelow, emptyOptional } from '../../model/orgChart'
 import type { ChartHolder, ChartRollUp, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
@@ -63,6 +73,8 @@ export type Drawing = {
   mayAssign: (unit: ChartUnit, roleId: string) => boolean
   /** The chart's folds: absent, every unit is drawn open. */
   folds?: ChartBoxFolds
+  /** Whether a role nobody holds and nobody needs to is drawn: *Show optional roles*. */
+  optional: boolean
 }
 
 /** What the boxes read of the chart's folds. */
@@ -73,18 +85,39 @@ export type ChartBoxFolds = {
   rollUp: (unit: ChartUnit) => ChartRollUp
 }
 
-/** One unit, its roles and the units under it. */
-export function UnitBox({ unit, depth, drawing }: { unit: ChartUnit; depth: number; drawing: Drawing }) {
+const NONE_FOLDED: ReadonlySet<ElementId> = new Set()
+
+/**
+ * Units beside each other — the chart's top units, or a unit's own — in a
+ * grid that uses the width: as many columns of at least 220 pixels as fit,
+ * each a unit drawn without units under it, and a whole row for each one
+ * drawn with them. In the chart's order, read across.
+ */
+export function UnitGrid({ units, depth, drawing }: { units: readonly ChartUnit[]; depth: number; drawing: Drawing }) {
+  const folded = drawing.folds?.folded ?? NONE_FOLDED
+  return (
+    <Box
+      data-testid="chart-units"
+      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: depth === 0 ? 1.5 : 1, alignItems: 'start', mt: depth === 0 ? 0 : 1 }}
+    >
+      {units.map((unit) => <UnitBox key={unit.id} unit={unit} depth={depth} drawing={drawing} wide={drawsUnitsBelow(unit, folded)} />)}
+    </Box>
+  )
+}
+
+/** One unit, its roles and the units under it; `wide` where it takes a whole row of its grid. */
+function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: number; drawing: Drawing; wide: boolean }) {
   const { t, folds } = drawing
   const selected = drawing.selectedId === unit.id
   const folded = folds !== undefined && unit.children.length > 0 && folds.folded.has(unit.id)
   return (
     <Box
       data-testid="chart-unit" data-element-id={unit.id} data-ended={unit.ended ? 'true' : undefined} data-folded={folded ? 'true' : undefined}
+      data-wide={wide ? 'true' : undefined}
       sx={{
-        border: 1, borderRadius: 1.5, p: 1, minWidth: 220, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
+        border: 1, borderRadius: 1.5, p: 1, minWidth: 0, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
         borderColor: selected ? 'primary.main' : 'divider', borderStyle: unit.ended ? 'dashed' : 'solid',
-        boxShadow: selected ? 2 : 0,
+        boxShadow: selected ? 2 : 0, ...(wide ? { gridColumn: '1 / -1' } : {}),
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
@@ -115,11 +148,7 @@ export function UnitBox({ unit, depth, drawing }: { unit: ChartUnit; depth: numb
           ))}
         </Box>
       )}
-      {unit.children.length > 0 && !folded && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-          {unit.children.map((child) => <UnitBox key={child.id} unit={child} depth={depth + 1} drawing={drawing} />)}
-        </Box>
-      )}
+      {unit.children.length > 0 && !folded && <UnitGrid units={unit.children} depth={depth + 1} drawing={drawing} />}
     </Box>
   )
 }
@@ -151,9 +180,10 @@ function UnitBadges({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   )
 }
 
-/** One role of a unit: who holds it, and what its slot still asks for. */
+/** One role of a unit: who holds it, and what its slot still asks for. Nothing, for an empty optional one the chart is not showing. */
 function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing }) {
   const { t } = drawing
+  if (!drawing.optional && emptyOptional(slot)) return null
   const role = drawing.roles.get(slot.roleId)
   const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
   return (

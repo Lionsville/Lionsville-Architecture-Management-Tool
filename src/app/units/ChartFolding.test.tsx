@@ -8,7 +8,8 @@
  * teams. A first open folds below the second level and says so; a folded
  * unit says what it hides; a caret folds one, *Fold all* and *Unfold all*
  * fold every one; *Find* and the outline unfold the way to a unit; the outline
- * folds on its own; and the folds last for the session, keyed by the view.
+ * folds on its own; and the folds — and *Show optional roles* — last for the
+ * session, keyed by the view.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
@@ -30,8 +31,13 @@ const TODAY = '2026-10-11'
 
 const domain: UnitType = { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [] }
 const cluster: UnitType = { id: 'ut-cluster', name: 'Cluster', top: true, within: ['ut-domain'], slots: [] }
-const team: UnitType = { id: 'ut-team', name: 'Team', within: ['ut-cluster'], slots: [{ role: 'ro-po', min: 1, max: 1 }, { role: 'ro-dev', min: 2 }] }
-const roles: Role[] = [{ id: 'ro-po', name: 'Product owner', duties: [], manages: true }, { id: 'ro-dev', name: 'Developer', duties: [] }]
+const team: UnitType = {
+  id: 'ut-team', name: 'Team', within: ['ut-cluster'], slots: [{ role: 'ro-po', min: 1, max: 1 }, { role: 'ro-dev', min: 2 }, { role: 'ro-lead', min: 0, max: 1 }],
+}
+const roles: Role[] = [
+  { id: 'ro-po', name: 'Product owner', duties: [], manages: true }, { id: 'ro-dev', name: 'Developer', duties: [] },
+  { id: 'ro-lead', name: 'Team lead', duties: [] },
+]
 
 const actor = (id: string, name: string, unitTypeId: string, parentId?: string): DesignElement => ({
   id, kind: 'actor', name, lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId, ...(parentId ? { parentId } : {}),
@@ -83,10 +89,8 @@ describe('a large organisation on its chart', () => {
     expect(drawn()).toHaveLength(18)
     expect(drawn().filter((id) => id!.includes('t'))).toEqual([])
     expect(box('d0c0').getAttribute('data-folded')).toBe('true')
-    // Each team is short of its developers, which the organisation's findings say of each.
+    // Each team is short of its developers, which the organisation's findings say of each — listed in the summary beside the chart (3.6.1).
     expect(within(box('d0c0')).getByTestId('chart-rollup').textContent).toBe('3 units · 3 people · 6 vacant · 3 to look at')
-    const findings = screen.getAllByTestId('chart-finding').filter((line) => line.textContent?.includes('Team 0.0.'))
-    expect(findings).toHaveLength(3)
     expect(screen.getByTestId('chart-folded-note').textContent).toMatch(/More than 30 units: folded below the second level for this session/)
     // The outline folds the same on a first open.
     expect(outlined()).toHaveLength(18)
@@ -179,5 +183,23 @@ describe('a large organisation on its chart', () => {
     renderShell(<Harness folds={folds} viewId="oc-2" />)
     expect(drawn()).not.toContain('d1c0t0')
     expect(screen.getByTestId('chart-folded-note')).toBeTruthy()
+  })
+
+  it('keeps Show optional roles for the session, keyed by the view, as it keeps the folds', () => {
+    const folds = new SessionFolds()
+    const leads = () => screen.queryAllByTestId('chart-slot-ro-lead')
+    renderShell(<Harness folds={folds} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Unfold all' }))
+    // Every team's lead is optional and nobody holds one: none is drawn.
+    expect(leads()).toEqual([])
+    fireEvent.click(screen.getByRole('switch', { name: 'Show optional roles' }))
+    expect(leads()).toHaveLength(36)
+    cleanup()
+    renderShell(<Harness folds={folds} />)
+    expect((screen.getByRole('switch', { name: 'Show optional roles' }) as HTMLInputElement).checked).toBe(true)
+    expect(leads()).toHaveLength(36)
+    cleanup()
+    renderShell(<Harness folds={folds} viewId="oc-2" />)
+    expect((screen.getByRole('switch', { name: 'Show optional roles' }) as HTMLInputElement).checked).toBe(false)
   })
 })

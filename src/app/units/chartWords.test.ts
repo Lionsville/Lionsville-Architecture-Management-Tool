@@ -4,11 +4,11 @@
 /**
  * What the chart says beside a unit (ADR-0036 §7): the domains it serves by
  * name, its days with the plan that brings or ends it, and what it hides when
- * it is folded.
+ * it is folded; and what the whole chart holds, for its summary.
  */
 import { describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
-import { rollUpWords, servesBadge, unitBadges } from './chartWords'
+import { rollUpWords, servesBadge, summaryWords, unitBadges } from './chartWords'
 import type { BadgeReading } from './chartWords'
 
 const t = translator('en')
@@ -71,5 +71,17 @@ describe('what a folded unit hides', () => {
     const rolled = { units: 3, people: 9, vacant: 1, findings: 2 }
     expect(rollUpWords(rolled, translator('nl')).map((part) => part.text)).toEqual(['3 eenheden', '9 mensen', '1 vacature', '2 om naar te kijken'])
     expect(rollUpWords(rolled, translator('de')).map((part) => part.text)).toEqual(['3 Einheiten', '9 Personen', '1 unbesetzt', '2 zum Ansehen'])
+  })
+})
+
+describe('what a whole chart holds, for its summary', () => {
+  it('says its units and people, its vacancies where there are any, and never counts the findings it lists', () => {
+    expect(summaryWords({ units: 13, people: 37, vacant: 0 }, t)).toEqual([
+      { key: 'units', text: '13 units', warn: false }, { key: 'people', text: '37 people', warn: false },
+    ])
+    expect(summaryWords({ units: 1, people: 1, vacant: 2 }, t).map((part) => [part.text, part.warn])).toEqual([
+      ['1 unit', false], ['1 person', false], ['2 vacant', true],
+    ])
+    expect(summaryWords({ units: 2, people: 3, vacant: 1 }, translator('nl')).map((part) => part.text)).toEqual(['2 eenheden', '3 mensen', '1 vacature'])
   })
 })

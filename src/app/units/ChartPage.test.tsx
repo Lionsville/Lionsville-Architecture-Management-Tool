@@ -9,7 +9,10 @@
  * a unit opened where it is kept, and a vacancy filled — the chart changing
  * as the assignment lands; a person's chip choosing their assignment, *ext*
  * on someone from outside, and the badges naming the domains a unit serves
- * and the plans that bring and end it.
+ * and the plans that bring and end it. Laid out to fit (3.6.1): the units in
+ * a grid, a whole row for one drawn with units under it, an optional role
+ * nobody holds drawn only under *Show optional roles*, and the findings and
+ * the legend gone from the page to the summary beside it (`ChartSummary`).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -23,6 +26,7 @@ import { fromArrays, toArrays } from '../../model/normalised'
 import type { Role, UnitType } from '../../model/operatingModel'
 import { apply } from '../../model/reducer'
 import type { DesignDiagram, DesignElement } from '../../model/types'
+import type { SelectRequest } from '../../widgets/useSelectRequest'
 import type { Assignment } from '../../model/units'
 import type { Person } from '../../people/person'
 import { DEFAULT_POLICY } from '../../people/policy'
@@ -39,13 +43,16 @@ afterEach(() => cleanup())
 const TODAY = '2026-10-11'
 
 const domain: UnitType = { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [{ role: 'ro-owner', min: 1, max: 1 }] }
-const cluster: UnitType = { id: 'ut-cluster', name: 'Cluster', top: true, within: ['ut-domain'], spans: true, slots: [{ role: 'ro-lead', min: 1, max: 1 }] }
+const cluster: UnitType = {
+  id: 'ut-cluster', name: 'Cluster', top: true, within: ['ut-domain'], spans: true, slots: [{ role: 'ro-lead', min: 1, max: 1 }, { role: 'ro-coach', min: 0, max: 1 }],
+}
 const team: UnitType = { id: 'ut-team', name: 'Team', within: ['ut-cluster'], slots: [{ role: 'ro-po', min: 1, max: 1 }, { role: 'ro-dev', min: 2 }] }
 const roles: Role[] = [
   { id: 'ro-owner', name: 'Domain owner', duties: [], manages: true },
   { id: 'ro-lead', name: 'Cluster lead', duties: [], manages: true },
   { id: 'ro-po', name: 'Product owner', duties: [], manages: true },
   { id: 'ro-dev', name: 'Developer', duties: [] },
+  { id: 'ro-coach', name: 'Agile coach', duties: [] },
 ]
 const actor = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
   id, kind: 'actor', name, lifecycle: 'live', isManaged: false, aspects: {}, ...over,
@@ -96,10 +103,10 @@ const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', nam
 const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
 
 /** The chart over the shipping scope's session, changed by the model's own writer, with the editor's selection and the chart's choice held as the workspace holds them. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true }: {
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select }: {
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
-  readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean
+  readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean; select?: SelectRequest
 }) {
   const [chosen, setChosen] = useState<string | undefined>(undefined)
   const [model, setModel] = useState(scope === '' ? ROOT : shipping)
@@ -121,7 +128,7 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     <ChartPage
       diagram={view(asOf)} here={here} today={TODAY} readOnly={readOnly} people={people}
       scopeLabel={(path) => LABELS[path] ?? path} {...(selectedId !== undefined ? { selectedId } : {})}
-      onSelect={onSelect} onOpenElsewhere={onOpenElsewhere}
+      onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} {...(select ? { select } : {})}
       {...(choosing ? { onChoose: setChosen, ...(chosen !== undefined ? { chosen } : {}) } : {})}
       assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
     />
@@ -149,8 +156,41 @@ describe('the organisation chart', () => {
     expect(holders.map((one) => one.textContent)).toEqual(['Sara Kaya · 60% · you', 'Sara Kaya · 60% · you'])
     expect(holders.every((one) => one.getAttribute('data-you') === 'true' && one.getAttribute('data-over') === 'true')).toBe(true)
     expect(within(within(tt).getByTestId('chart-slot-ro-dev')).getAllByTestId('chart-vacant')).toHaveLength(1)
-    const said = screen.getAllByTestId('chart-finding').map((line) => line.textContent)
-    expect(said.some((line) => line?.includes('Sara Kaya'))).toBe(true)
+  })
+
+  /** Moved on purpose (3.6.1): the findings and the legend are the summary's, in the inspector beside the chart. */
+  it('says no findings under the chart and no legend on its bar', () => {
+    renderShell(<Harness commands={[]} />)
+    expect(screen.queryByTestId('chart-findings')).toBeNull()
+    expect(screen.queryByTestId('chart-finding')).toBeNull()
+    expect(within(screen.getByTestId('chart-bar')).queryByText(/Dashed/)).toBeNull()
+  })
+
+  it('draws an optional role nobody holds only under Show optional roles, and a vacancy always', async () => {
+    renderShell(<Harness commands={[]} />)
+    // Parcel & Freight has a lead and no coach, who is optional; Track & Trace is a developer short.
+    expect(within(unitBox('pf')).queryByTestId('chart-slot-ro-coach')).toBeNull()
+    expect(within(unitBox('tt')).getByTestId('chart-vacant')).toBeTruthy()
+    const shown = screen.getByRole('switch', { name: 'Show optional roles' })
+    expect((shown as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(shown)
+    const coach = within(unitBox('pf')).getByTestId('chart-slot-ro-coach')
+    expect(coach.textContent).toBe('Agile coach+ assign')
+    expect(within(coach).getByTestId('chart-assign')).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(shown)
+    expect(within(unitBox('pf')).queryByTestId('chart-slot-ro-coach')).toBeNull()
+  })
+
+  it('lays the units out in a grid that uses the width, a whole row for each one drawn with units under it', () => {
+    renderShell(<Harness commands={[]} />)
+    // Shipping and Parcel & Freight have units under them; Track & Trace and Data & Integration do not.
+    expect(screen.getAllByTestId('chart-unit').filter((box) => box.getAttribute('data-wide') === 'true').map((box) => box.getAttribute('data-element-id')))
+      .toEqual(['shipping', 'pf'])
+    expect(within(unitBox('pf')).getByTestId('chart-units').contains(unitBox('tt'))).toBe(true)
+    // Folded, a unit takes one cell like a team, and says what it hides.
+    fireEvent.click(within(unitBox('pf')).getByRole('button', { name: 'Fold Parcel & Freight' }))
+    expect(unitBox('pf').getAttribute('data-wide')).toBeNull()
   })
 
   it('is on its day: a unit ended with somebody still in it is drawn ended, its badge says when', () => {
@@ -250,12 +290,15 @@ describe('the organisation chart', () => {
     expect(within(unitBox('pf')).getByTestId('chart-badge-ended').textContent).toBe('ended 31 Dec 2026 · TR-0007 · people still assigned')
   })
 
-  it('says each finding as a link to the unit on the chart it is about', () => {
+  /** A finding in the summary beside the chart goes to its unit this way (3.6.1): the request the workspace hands the page. */
+  it('goes to a unit asked for from outside: unfolded, and chosen where this scope keeps it', () => {
     const onSelect = vi.fn()
-    renderShell(<Harness commands={[]} onSelect={onSelect} />)
-    const over = screen.getAllByTestId('chart-finding').find((line) => line.textContent?.includes('Sara Kaya'))!
-    fireEvent.click(over)
-    expect(onSelect).toHaveBeenCalledWith('tt')
+    const { rerender } = renderShell(<Harness commands={[]} onSelect={onSelect} />)
+    fireEvent.click(within(unitBox('pf')).getByRole('button', { name: 'Fold Parcel & Freight' }))
+    expect(screen.queryAllByTestId('chart-unit').some((box) => box.getAttribute('data-element-id') === 'tt')).toBe(false)
+    rerender(<Harness commands={[]} onSelect={onSelect} select={{ id: 'tt', nonce: 1 }} />)
+    expect(units()).toContain('tt')
+    expect(onSelect).toHaveBeenLastCalledWith('tt')
   })
 
   /** The outline replaced 3.6.0's *Show* select (3.6.1): it goes to a unit and leaves the chart whole. */
@@ -273,7 +316,11 @@ describe('the organisation chart', () => {
     const people: Person[] = [...PEOPLE, { id: 'pe-noor2', pseudonym: 'KLMN', kind: 'internal', state: 'active', mergedInto: 'pe-noor' }]
     const shipping: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'pf', 'ro-dev', 'pe-noor2', { share: 0.5 })] }
     renderShell(<Harness commands={[]} shipping={shipping} people={people} />)
-    expect(within(screen.getByTestId('chart-findings')).getByText(/Noor Haddad holds 150% across their roles/)).toBeTruthy()
+    // Noor holds the domain, and Parcel & Freight's developer role under the id merged into hers: one person, at 150%.
+    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people')
+    const noor = screen.getAllByTestId('chart-holder').filter((chip) => chip.textContent?.includes('Noor Haddad'))
+    expect(noor).toHaveLength(2)
+    expect(noor.every((chip) => chip.getAttribute('data-over') === 'true')).toBe(true)
   })
 
   it('fills a vacancy on a day still to come from that day', async () => {

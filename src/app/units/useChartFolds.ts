@@ -21,6 +21,11 @@
  * **Going somewhere unfolds the way.** *Find*, *Find me*, a finding, a pick in
  * the outline and a request from outside unfold every unit above the one they
  * go to, on both, so it is on screen when it is scrolled to.
+ *
+ * **Empty optional roles are folded away too** (3.6.1): a role nobody holds
+ * and nobody needs to is a choice, not a gap, so the chart leaves it out
+ * until *Show optional roles* is on — kept the way the folds are, for the
+ * session and under the view's key, never as a preference.
  */
 import { useCallback, useEffect, useState } from 'react'
 import { foldable, foldedOnFirstOpen, unitsAboveIn } from '../../model/orgChart'
@@ -42,10 +47,16 @@ export type ChartFolds = {
   unfoldAll: () => void
   /** Unfold every unit above this one, on the chart and in the outline. */
   reveal: (id: ElementId) => void
+  /** Whether the chart draws the optional roles nobody holds. */
+  optional: boolean
+  toggleOptional: () => void
 }
 
-/** Where a view's two trees are kept in the memory. */
-export type FoldKeys = { chart: string; outline: string }
+/** Where a view's two trees, and whether it shows its empty optional roles, are kept in the memory. */
+export type FoldKeys = { chart: string; outline: string; optional: string }
+
+/** What the memory holds under a view's `optional` key while the chart shows them: a set, as everything it keeps is. */
+const SHOWN = 'shown'
 
 type Held = { chart: ReadonlySet<ElementId>; outline: ReadonlySet<ElementId>; foldedOnOpen: boolean; decided: boolean }
 
@@ -82,5 +93,11 @@ export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldK
       return next.chart === was.chart && next.outline === was.outline ? was : next
     })
   }, [chart])
-  return { folded: held.chart, outline: held.outline, foldedOnOpen: held.foldedOnOpen, toggle, toggleOutline, foldAll, unfoldAll, reveal }
+  const [optional, setOptional] = useState(() => memory.recall(keys.optional)?.has(SHOWN) ?? false)
+  useEffect(() => memory.keep(keys.optional, new Set(optional ? [SHOWN] : [])), [optional, memory, keys])
+  const toggleOptional = useCallback(() => setOptional((was) => !was), [])
+  return {
+    folded: held.chart, outline: held.outline, foldedOnOpen: held.foldedOnOpen, toggle, toggleOutline, foldAll, unfoldAll, reveal,
+    optional, toggleOptional,
+  }
 }

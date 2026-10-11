@@ -28,6 +28,12 @@
  * is above a unit to unfold (`unitsAboveIn`) and which units a name finds.
  * The folds themselves are the screen's, kept for the session (3.6.1).
  *
+ * **Laid out to fit** (3.6.1): what the page needs to use its width and say
+ * less — a unit drawn with units under it takes a row (`drawsUnitsBelow`),
+ * an optional role nobody holds is not drawn unless asked for
+ * (`emptyOptional`), and the chart's vacancies are counted once for its
+ * summary (`vacanciesIn`).
+ *
  * Pure, with no words: who a person is, is the register's to say, and the
  * page asks it for each name as it draws.
  */
@@ -218,6 +224,34 @@ export function rollUp(unit: ChartUnit, findings: ReadonlyMap<ElementId, number>
     found += findings.get(below.id) ?? 0
   }
   return { units, people: people.size, vacant, findings: found }
+}
+
+/** How many people the roles of every unit drawn still ask for on the chart's day: what its summary says beside the units and the people. */
+export function vacanciesIn(chart: OrgChart): number {
+  let vacant = 0
+  for (const unit of walk(chart.roots)) for (const slot of unit.slots) vacant += slot.vacant
+  return vacant
+}
+
+/**
+ * Whether a role is optional and nobody holds it on the day (3.6.1): a slot
+ * whose minimum asks for nobody, with nobody in it. That is a choice the
+ * organisation made, not a gap, so the chart draws it only when asked to and
+ * the unit's inspector always lists it; a vacancy — a minimum not met — is
+ * always drawn.
+ */
+export function emptyOptional(slot: Pick<ChartSlot, 'holders' | 'vacant'>): boolean {
+  return slot.holders.length === 0 && slot.vacant === 0
+}
+
+/**
+ * Whether a unit is drawn with units under it (3.6.1): it has some, and it is
+ * not folded. Such a box takes a whole row of the grid its siblings share, so
+ * its own units have the width to sit beside each other; one drawn without —
+ * a team, or a cluster folded — takes one cell of it.
+ */
+export function drawsUnitsBelow(unit: Pick<ChartUnit, 'id' | 'children'>, folded: ReadonlySet<ElementId>): boolean {
+  return unit.children.length > 0 && !folded.has(unit.id)
 }
 
 /** How many units a chart draws before its first open is folded. */

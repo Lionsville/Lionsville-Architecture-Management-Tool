@@ -36,11 +36,20 @@
  * its own, and moves a unit among its siblings (`useSiblingOrder`). Going to
  * a unit — a pick in the outline, *Find*, *Find me*, a finding, a request
  * from outside — unfolds the way to it and scrolls to it.
+ *
+ * **Each thing in one place** (3.6.1). The chart draws the units, in a grid
+ * that uses the width, and what needs attention in them; an optional role
+ * nobody holds waits for *Show optional roles* on the bar. What the chart
+ * says as a whole — the day, the counts, the findings and how to read it —
+ * is the inspector's while nothing is picked (`ChartSummary`, through
+ * `EditorPages.inspector`); a finding there goes to its unit here as any
+ * request from outside does (`select`).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import ButtonBase from '@mui/material/ButtonBase'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Switch from '@mui/material/Switch'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -48,9 +57,8 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
-import { FOLD_OVER, findingsByUnit, orgChart, rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
+import { FOLD_OVER, rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
 import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
-import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { dayBefore, loadOn } from '../../model/units'
@@ -58,10 +66,7 @@ import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { registerOf, resolvePerson } from '../../people/shown'
 import { usePersonNames } from '../../people/ui/names'
-import type { PersonNames } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
-import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
-import type { Finding } from '../../projects/checks'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
@@ -72,8 +77,9 @@ import { foldKey, SessionFolds } from '../sessionFolds'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { ChartOutline } from './ChartOutline'
-import { UnitBox } from './ChartUnitBox'
+import { UnitGrid } from './ChartUnitBox'
 import type { Drawing } from './ChartUnitBox'
+import { useChartReading } from './chartReading'
 import type { LandPeopleMoves } from './landPeopleMoves'
 import type { UnitViewsHere } from './unitViewsHere'
 import { useChartFolds } from './useChartFolds'
@@ -118,13 +124,9 @@ export function ChartPage(props: ChartPageProps) {
   const [note, setNote] = useState<string | undefined>(undefined)
   const names = usePersonNames()
   const canonical = names.canonical
-  const chart = useMemo(
-    () => orgChart(here.at.organisation, day, { include: here.includes, canonical }),
-    [here, day, canonical],
-  )
+  const { chart, byUnit } = useChartReading(here, day, canonical)
   const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
   const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
-  const findings = useChartFindings(here, chart, day, canonical)
   const folds = useFoldsOf(chart, props.scope ?? '', diagram.id, props.folds)
   const page = useRef<HTMLDivElement | null>(null)
   const open = useCallback((id: ElementId) => {
@@ -181,7 +183,8 @@ export function ChartPage(props: ChartPageProps) {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
       else open(unit.id)
     } : undefined,
-    folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, findings.byUnit) },
+    folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, byUnit) },
+    optional: folds.optional,
   }
   return (
     <Box data-testid="chart-page" sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -193,8 +196,7 @@ export function ChartPage(props: ChartPageProps) {
         <Box ref={page} data-testid="chart-body" sx={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, overflow: 'auto', p: 2, bgcolor: 'background.default', ...locatedRing(locatedId) }}>
           {chart.roots.length === 0
             ? <Typography sx={{ fontSize: 12.5, color: 'text.secondary', py: 6, textAlign: 'center' }}>{t('chart.empty', { day: formatDay(day, language) })}</Typography>
-            : <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>{chart.roots.map((unit) => <UnitBox key={unit.id} unit={unit} depth={0} drawing={drawing} />)}</Box>}
-          <ChartFindings findings={findings.listed} scopeLabel={props.scopeLabel} chart={chart} day={day} names={names} onFinding={goTo} />
+            : <UnitGrid units={chart.roots} depth={0} drawing={drawing} />}
         </Box>
       </Box>
       {assigning && people && props.assign && (
@@ -211,26 +213,13 @@ export function ChartPage(props: ChartPageProps) {
   )
 }
 
-/**
- * What the organisation contradicts on the day about the units drawn and the
- * people in them: the lines said under the chart, and how many are about each
- * unit, for what a folded unit says it hides.
- */
-function useChartFindings(here: UnitViewsHere, chart: OrgChart, day: string, canonical: (id: PersonId) => PersonId) {
-  return useMemo(() => {
-    const units = new Set([...walk(chart.roots)].map((unit) => unit.id))
-    const persons = new Set([...walk(chart.roots)].flatMap((unit) => [...unit.slots.flatMap((slot) => slot.holders), ...unit.others].map((one) => canonical(one.person))))
-    const listed = findingsOfOrganisation(here.at, day, canonical)
-      .filter((finding) => (finding.person !== undefined ? persons.has(canonical(finding.person)) : units.has(finding.id)))
-    return { listed, byUnit: findingsByUnit(chart, listed, canonical) }
-  }, [here, chart, day, canonical])
-}
-
 /** The chart's folds, kept where the shell keeps them for the session, or — where it keeps none — for as long as the page is up. */
 function useFoldsOf(chart: OrgChart, scope: ScopePath, viewId: string, kept: SessionFolds | undefined): ChartFolds {
   const [own] = useState(() => new SessionFolds())
   const memory = kept ?? own
-  const keys = useMemo(() => ({ chart: foldKey(scope, viewId, 'chart'), outline: foldKey(scope, viewId, 'outline') }), [scope, viewId])
+  const keys = useMemo(() => ({
+    chart: foldKey(scope, viewId, 'chart'), outline: foldKey(scope, viewId, 'outline'), optional: foldKey(scope, viewId, 'optional'),
+  }), [scope, viewId])
   return useChartFolds(chart, memory, keys)
 }
 
@@ -275,8 +264,9 @@ function usePageHandle(
 
 /**
  * The bar over the chart: how much is on it, *Find* a unit by name, *Find me*,
- * and *Fold all* and *Unfold all* — and, under it, why a first open of a large
- * chart is folded, until a fold is changed.
+ * *Show optional roles*, and *Fold all* and *Unfold all* — and, under it, why
+ * a first open of a large chart is folded, until a fold is changed. How to
+ * read the chart is said in its summary, beside it.
  */
 function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
   chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; t: Translate
@@ -298,9 +288,14 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
         <Button size="small" variant="outlined" onClick={onFindMe} data-testid="chart-find-me">{t('chart.findMe')}</Button>
         {note && <Typography data-testid="chart-note" role="status" sx={{ fontSize: 11.5, color: 'warning.main' }}>{note}</Typography>}
         <Box sx={{ flex: 1 }} />
+        <FormControlLabel
+          data-guide="chart.showOptional" data-testid="chart-show-optional"
+          control={<Switch size="small" checked={folds.optional} onChange={folds.toggleOptional} />}
+          label={<Typography sx={{ fontSize: 12 }}>{t('chart.showOptional')}</Typography>}
+          sx={{ mr: 0.5 }}
+        />
         <Button size="small" onClick={folds.foldAll} data-testid="chart-fold-all" data-guide="chart.foldAll">{t('chart.foldAll')}</Button>
         <Button size="small" onClick={folds.unfoldAll} data-testid="chart-unfold-all" data-guide="chart.unfoldAll">{t('chart.unfoldAll')}</Button>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('chart.legend')}</Typography>
       </Box>
       {folds.foldedOnOpen && (
         <Typography data-testid="chart-folded-note" sx={{ fontSize: 12, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', color: 'text.secondary' }}>
@@ -308,38 +303,5 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
         </Typography>
       )}
     </>
-  )
-}
-
-/**
- * What the organisation contradicts on the day, about the units drawn and the
- * people in them — each a link to what it is about on the chart: the unit, or
- * the first unit the person holds a role in, unfolded to where it is.
- */
-function ChartFindings({ findings, scopeLabel, chart, day, names, onFinding }: {
-  findings: readonly Finding[]; scopeLabel: (path: ScopePath) => string; chart: OrgChart; day: string; names: PersonNames
-  onFinding: (unitId: ElementId) => void
-}) {
-  const { t, language } = useStrings()
-  const name = (person: string) => names.text(pickedPerson(person))
-  return (
-    <Box data-testid="chart-findings" sx={{ mt: 3 }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{t('chart.on', { day: formatDay(day, language) })}</Typography>
-      {findings.length === 0
-        ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('chart.nothing')}</Typography>
-        : findings.map((finding, at) => {
-          const about = finding.person !== undefined
-            ? unitsHolding(chart, names.canonical(finding.person))[0]
-            : finding.id
-          return (
-            <ButtonBase
-              key={`${finding.key}/${finding.id}/${at}`} data-testid="chart-finding" onClick={() => { if (about !== undefined) onFinding(about) }}
-              sx={{ display: 'block', textAlign: 'left', fontSize: 12, color: 'warning.main', '&:hover': { textDecoration: 'underline' } }}
-            >
-              {findingSentence(finding, t, scopeLabel, name)}
-            </ButtonBase>
-          )
-        })}
-    </Box>
   )
 }
