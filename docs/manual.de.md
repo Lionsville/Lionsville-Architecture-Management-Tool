@@ -327,12 +327,19 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   unterzeichnet wurde.
 - **Jetzt entfernen** nimmt einen bereits vergessenen Eintrag aus dem
   Register; was darauf zeigte, lautet *eine ehemalige Person*.
+- **Verweist auf sie** nennt jeden Datensatz, dessen Felder die Person per ID
+  nennen — ein Element oder einen Plan, für den sie verantwortlich ist, eine
+  Beobachtung, die sie gemacht hat, ein Experiment, das sie durchführt, eine
+  Entscheidung, die sie vorgeschlagen oder unterzeichnet hat — mit dem
+  Bereich, der ihn führt, und was die Regeln des Betriebsmodells ihr heute
+  zuordnen (siehe *Felder, die eine Person nennen*). Eine Unterschrift, die
+  ihren Namen behielt, nennt den Namen, mit dem unterzeichnet wurde.
 - **Was wir speichern** zeigt alles, was das Register über eine Person führt,
   und was auf sie zeigt, als ein Dokument zum Kopieren: die Antwort auf ein
   Auskunftsersuchen. Ein Ersuchen um Löschung beantworten Sie mit **Jetzt
   vergessen**. Es sagt auch, wie viele Datensätze die Person in ihrem Text
-  nennen — Wörter, die eingegeben wurden, bevor es das Register gab, die
-  Vergessen nicht erreicht und die Suche findet.
+  nennen — Wörter, die in ein Feld eingegeben statt einer gewählten Person
+  geschrieben wurden, die Vergessen nicht erreicht und die Suche findet.
 
 **Die Richtlinie** unten auf der Seite ist eine Einstellung der Organisation,
 kein Schritt: wie lange der Name Ausgeschiedener behalten wird (90 Tage, wenn
@@ -357,6 +364,52 @@ Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal
 eingegebenes `git add` lässt sie ebenfalls aus, denn ein Name in einem Commit
 ist ein Name, den nichts vergessen kann. Eine Kopie des Ordners über git
 enthält deshalb IDs und keine Namen; die Arbeitsdatei nimmt das Register mit.
+
+### Felder, die eine Person nennen
+
+Sechs Felder nennen eine Person: der **Verantwortliche** eines Elements, der
+**Verantwortlich** eines Plans, wer eine Beobachtung gemacht hat
+(**Beobachtet von**), wer ein Experiment durchführt (**Von**), und wer eine
+Entscheidung vorgeschlagen (**Vorgeschlagen von**) und unterzeichnet hat
+(**Prüfer und Unterschriften**). Jedes nimmt eine Person aus dem Register
+oder Text wie bisher — einen Namen, Initialen, ein Team.
+
+- **Aus dem Register …** neben dem Feld öffnet die Auswahl des Registers:
+  nach Namen suchen, jemanden wählen oder **Neue Person …**, das zuerst nach
+  jemandem sucht, der dieselbe Person sein könnte, wie **Person hinzufügen**
+  es tut. Während Sie einen Namen eingeben, bietet das Feld unter **Im
+  Register:** die Einträge an, die es sein könnten; wählen Sie einen, um auf
+  die Person zu verweisen, statt den Namen zu schreiben.
+- **Eine gewählte Person** wird als ID geführt. Das Feld zeigt, was das
+  Register sagt: den Namen, oder *Ehemalige Person 7KQM*, sobald sie
+  vergessen ist, oder *eine ehemalige Person*, sobald der Eintrag entfernt
+  ist. Ein zusammengeführter Eintrag zeigt den, in den er aufging. Das Kreuz
+  nimmt die Person aus dem Feld.
+- **Text** bleibt Text. Text, der geschrieben wurde, bevor es das Register
+  gab, steht weiter da, wird angezeigt wie eingegeben und von der Suche
+  gefunden; Vergessen erreicht ihn nicht, und **Was wir speichern** zählt
+  ihn.
+- **Eine Unterschrift behält ihren Namen.** Gibt eine als Unterzeichner
+  gewählte Person ein Votum ab, wird der Name, den sie an dem Tag im Register
+  hatte, neben die ID geschrieben, und der Name dessen, der vorgeschlagen
+  hat, wird auf dieselbe Weise festgehalten, sobald jemand unterzeichnet hat.
+  Dieser Name gehört zum Entscheidungsdatensatz: Die Entscheidung zeigt ihn
+  auch, nachdem die Person vergessen ist, wo jede andere Ansicht das
+  Pseudonym zeigt.
+- **Der Verantwortliche einer Anwendung kann einer Rolle folgen.** Hat das
+  Betriebsmodell die Regel *der Verantwortliche einer Anwendung ist eine
+  Rolle ihres Teams* (siehe *Das Betriebsmodell*), zeigt eine Anwendung,
+  bei der niemand einen Verantwortlichen eingetragen hat, die Personen, die
+  diese Rolle heute in der Einheit unter **Gehört zu** innehaben — am Tag
+  abgeleitet und nie gespeichert, er ändert sich also, wenn die Person in
+  der Rolle wechselt. Ein in **Verantwortlicher** eingetragener Name geht
+  vor. **Gehört zu** wird bei jeder Anwendung gefragt: bei einer eigenen
+  Anwendung der Organisation ist es die Einheit, zu der sie gehört.
+- **Ein Stellvertreter** führt keinen eigenen Verantwortlichen; er zeigt den,
+  den sein Master nennt, mit derselben ID.
+- **Die Suche** findet eine Person über das Register: Ein Name findet die
+  Datensätze, die auf die Person verweisen, und eine vergessene Person wird
+  über ihr Pseudonym gefunden und nicht mehr über ihren Namen.
 
 ## Wo Ihre Arbeit aufbewahrt wird
 

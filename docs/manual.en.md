@@ -290,11 +290,18 @@ so when a name goes from the register, it goes from every screen at once.
   signed decision keeps the name it was signed with.
 - **Remove now**, on an entry already forgotten, takes it out of the register;
   whatever pointed at it reads *a former colleague*.
+- **Points at them** lists every record whose fields name the person by id —
+  an element or a plan they own, an observation they saw, an experiment they
+  run, a decision they proposed or signed — with the scope that keeps it, and
+  what the operating model's rules make them own today (see *Fields that name
+  a person*). A signature that kept their name says the name it was signed
+  with.
 - **What we hold** shows everything the register holds about a person, and
   what points at them, as one document to copy: the answer to a request for
   access. A request to erase it is answered with **Forget now**. It also says
-  how many records name the person in their text — words typed before the
-  register existed, which a forget cannot reach and a search finds.
+  how many records name the person in their text — words typed into a field
+  rather than a person picked, which a forget cannot reach and a search
+  finds.
 
 **The policy**, at the foot of the page, is a setting of the organisation's,
 not a step: how long a leaver's name is kept (90 days unless you change it),
@@ -315,6 +322,45 @@ in your folder. **It is never in the folder's history**: no snapshot takes it,
 and a `git add` typed in a terminal leaves it out too, because a name in a
 commit is a name nothing can forget. A copy of the folder taken through git
 therefore carries ids and no names; the working file carries the register.
+
+### Fields that name a person
+
+Six fields name a person: an element's **Owner**, a plan's **Owner**, who saw
+an observation (**Observed by**), who runs an experiment (**By**), and who
+proposed a decision (**Proposed by**) and who signed it (**Reviewers and
+signatures**). Each takes a person from the register, or text as it always
+did — a name, initials, a team.
+
+- **From the register…** beside the field opens the register's picker:
+  search by name, pick someone, or **New person…**, which looks for somebody
+  who may be the same person before anyone is added, as **Add person** does.
+  While you type a name, the field offers the entries it may be under **In
+  the register:**; pick one to point at them rather than write the name.
+- **A person picked** is kept as their id. The field shows what the register
+  says: their name, or *Former colleague 7KQM* once they are forgotten, or *a
+  former colleague* once the entry is removed. A merged entry shows the one it
+  went into. The cross takes the person off the field.
+- **Text** stays text. Text written before the register existed is still
+  there, still shown as typed, and still found by a search; a forget does not
+  reach it, and **What we hold** counts it.
+- **A signature keeps its name.** When a person picked as a signer gives a
+  verdict, the name they had that day is written beside their id, and the
+  proposer's name is fixed the same way once anybody has signed. That name is
+  part of the decision record: the decision shows it after the person is
+  forgotten, where every other screen shows the pseudonym.
+- **An application's owner can follow a role.** Where the operating model
+  has the rule *an application's owner is a role of its team* (see *The
+  operating model*), an application nobody wrote an owner on shows the
+  people who hold that role, today, in the unit it **Belongs to** — worked out
+  on the day and never stored, so it changes when the person in the role
+  does. A name written in **Owner** wins. **Belongs to** is asked of every
+  application: for one of the organisation's own, it is the unit it belongs
+  to.
+- **A stand-in** carries no owner of its own; it shows the owner its master
+  names, by the same id.
+- **Search** finds a person through the register: a name finds the records
+  that point at the person, and a forgotten person is found by their
+  pseudonym and no longer by their name.
 
 ## Where your work is kept
 

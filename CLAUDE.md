@@ -231,7 +231,15 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       `PersonRef`, `{ person: id }` into the
                                       register or text as before, and
                                       `personIdsIn`, every id a value names
-                                      (ADR-0036)
+                                      (ADR-0036); `personRefOf`, how a name
+                                      field keeps one, and `refText`, the only
+                                      words a search folds of it
+                    owners · pointers   an owner worked out on the day from
+                                      the operating model's rules, never stored
+                                      (`applicationOwnersOn`, `domainOwnersOn`);
+                                      the records whose fields point at a
+                                      person, and the names signatures kept
+                                      (ADR-0036 §2, §8)
                     units             the organisation as it is, on a day
                                       (ADR-0036 §3, §4, §12): an assignment, a
                                       unit's slots and holders, a person's load,
@@ -277,6 +285,12 @@ src/people/       The people register (ADR-0036): who the organisation's people
                     ui/PersonPicker   a person picked wherever one is asked
                                       for; *New person…* is the page's own form,
                                       so the four signs are asked first
+                    ui/PersonRefField · ui/names   a field that names a person
+                                      — picked or typed — and the register's
+                                      names every page reads through, provided
+                                      once by the shell (`PersonNamesProvider`,
+                                      `usePersonNames`), with the register's
+                                      half of a search (`matching`)
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
@@ -416,6 +430,9 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                                       address in the fragment and back, what a
                                       move does to the history, and where a
                                       place that is gone lands (ADR-0033)
+                    persons           every answer says a picked person by name
+                                      or pseudonym, as it leaves the handler
+                                      (ADR-0036 §8, §13)
 src/i18n/         The registry. Each module owns `strings/en.ts`,
 `strings/nl.ts`
                   and `strings/de.ts`; `strings.en.ts` composes them and is the
@@ -1209,6 +1226,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `views.list` `register.list` `technology.list` `checks.list` |
 | Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says, and — amended — `tab`, one of the observations page's `register` · `analysis` · `solutions`, and `select`, an element selected on the board, sheet, map or technology landscape opened where that view draws it), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
+| Fields that name a person (ADR-0036 §8) | `owner` on an element and a plan, `by` on an observation and an experiment, a decision's `proposedBy` and each signer's `name` take a `PersonRef`: `{ "person": "pe-…" }` picked from the register, or text; `validatedWith` and a view's `author` stay text. A verdict given to a picked signer writes `signedAs` beside the id, and once anybody has signed the proposer's is fixed as `proposedAs` (`decisions/withSignedNames`) — the one register name in the history, on purpose. On disk an id is written under the field's key with `Person` after it (`ownerPerson:`, `byPerson:`, `proposedByPerson:`; a signer row's `person:` with `signedAs:`), text under the key as before (`fileText.personFrontMatter`), all at format 11. A search record carries `people` (ids) and folds only text (`refText`); `searchAll`'s `people` is the register's half (`PeopleMatch`). An index entry carries its master's `owner` as a reference |
 | Agent tools, people (ADR-0036 §13) | `people.list` (with possible duplicates) `person.add` (refused `agent.possibleDuplicate` unless `addAnyway`) `person.leave` — no `scope` and no `ifRevision` (`ON_THE_REGISTER`), answered with nothing open; names or pseudonyms as the policy says, never an address. **No tool forgets, removes or merges a person**, and none changes the policy |
 | The people register (ADR-0036) | `PeopleRepository`, the sixth repository, outside the history; an entry's id is `pe-` and 64 random bits, its pseudonym four characters of `PSEUDONYM_ALPHABET`, read *Former colleague 7KQM*; the folder keeps it at `.lionsville-architecture/people.json` (`OUT_OF_HISTORY`, with `local.json`: no commit, and `.git/info/exclude`); the working file carries it at the same path from the zip's root, outside the manifest; the policy is `people` in the organisation's settings, *This is me* `people.me` in the person's |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open` |
@@ -1270,6 +1288,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, observations (ADR-0021, ADR-0032 §10) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.merge` `merge.plan` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` — `observation.record` requires `where` and `by` and takes the day as today; `observation.update` has no `shared` and never blanks a title, where or who; `observations.list` takes `below: true` for the observations of the scopes below instead of its own, each with its scope, and has no `fromBelow`; `cause.add` and `cause.update` take `root`; `cause.link` and `cause.unlink` name a cause below by `explainsScope`; `causes.list`'s `root` reads the field; `observation.merge` and `cause.merge` take `into`, `absorb` (each with its scope), `values` and `links` by `merge.plan`'s keys, and land on another scope only through `SessionView.changeAcross` (ADR-0035 §6) |
 | Agent tools, solutions (ADR-0026) | `solutions.list` `solution.read` `experiments.list` `experiment.read` `solution.propose` `solution.update` `solution.address` `solution.unaddress` `solution.move` `solution.waive` `solution.drop` `solution.restore` `solution.decide` `solution.plan` `solution.remove` `experiment.plan` `experiment.update` `experiment.conclude` `experiment.remove` |
 | Agent tools, the operating model (ADR-0036) | `unitTypes.list` `roles.list` `responsibilities.list` — answered from the organisation whatever scope is open — and `unitType.add` `unitType.update` `role.add` `role.update` — each taking `from`, `until` and `successors` — refused `agent.scopeNotOpen` unless the organisation is the scope open; `app.open` takes `page: 'operating'`, at the organisation only |
+| Agent tools, names (ADR-0036 §8) | every argument that names a person — `owner` (`element.add`/`update`, `plan.create`/`update`), `by` (`observation.record`/`update`, `experiment.plan`/`update`, `observation.merge`'s `values`), `proposedBy` and each signer's `name` (`decision.propose`/`update`) — takes text or `{ "person": id }` (`personArgument`, an `anyOf`); an id the register does not hold is refused `agent.unknownId`, a merged one written as the entry kept; every answer says a picked person as `{ person, name }`, the name or the pseudonym the policy gives (`agent/persons.ts`), and `search` and `project.export` ask the register first |
 | Agent tools, units and assignments (ADR-0036 §3, §4) | units through `element.add` / `element.update` (`unitTypeId`, `scopes`, `extraSlots`); `assignments.list` over the whole tree — its `scope` a filter (`TREE_WIDE`), the open scope as it is now, names or pseudonyms as the policy says, and for one unit its slots, its parent and who manages it, all on its `on` day with every plan's moves of that day — and `assignment.add` (a person by register id; one who has left is refused) and `assignment.end` in the scope that keeps the unit; `checks.list` takes `on` for the organisation's findings. An agent assigns and adds people; it never forgets, removes or merges one |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | A drawing's picture on disk | `images/.drawings/<digest>.svg`, named by its content address; a dot folder, so never a picture of the library (ADR-0034) |

@@ -4,8 +4,10 @@
   (§8–§11, §13's three tools for it), the operating model (§1's
   `_operating/`, §2, §5, §13's seven tools for it), units and
   assignments (§1's `_assignments/`, §3, §4, §10's leaving, §12's who
-  manages, §13's three tools for them), and change over time (§6, §13's
-  `plan.move`), 11 October 2026 — *As built*, below
+  manages, §13's three tools for them), change over time (§6, §13's
+  `plan.move`), and names as references (§8's fields, the signature that
+  keeps its name, §2's owner worked out from a rule, search through the
+  register), 11 October 2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -724,6 +726,94 @@ unit's parent on that day among what it says — and `checks.list` takes `on`
 for the organisation's findings. `plans.list` and `plan.read` say a plan's
 moves. Moving the people is the page's: an agent ends and assigns with
 `assignment.end` and `assignment.add`, in one `batch` where it wants one step.
+## As built, 11 October 2026: names become references
+
+The part that turns §8's name fields into references: `PersonRef` on every
+field of default 6, the signature that keeps its name, the owner worked out
+from a rule, search through the register, and what points at a person.
+
+**The fields.** An element's and a plan's `owner`, an observation's and an
+experiment's `by`, a decision's `proposedBy` and each signer's `name` take a
+`PersonRef` (`model/person.ts`): `{ person: id }` picked from the register,
+or text as before, which stays valid with no migration. `personRefOf` is how
+every writer keeps one — text trimmed, a blank removed — and `refText` the
+only words of one a search or a filter folds. `validatedWith` and a view's
+`author` stay text. A plan made by *Replace…* carries the replaced thing's
+owner as it is, an id or text.
+
+**A signature keeps its name** (`decisions/adr.ts`, `withSignedNames`): a
+verdict given to a signer picked from the register writes `signedAs`, the
+name the register has that day, beside the id; once anybody has signed, the
+proposer's is fixed the same way as `proposedAs`. A name written stays while
+the same person's verdict of the same day does, so a later change of the
+register's name, or a forget, does not reach it; a verdict taken back, or
+another person put in the row, takes it off. A person already forgotten
+signs with nothing beside the id. The decisions page writes them through
+`updateAdr`'s `nameOf`, the agent through `decision.propose` and
+`decision.update`. A signed name is read where the record is shown — the
+signer, the deciders, the proposer — and the register everywhere else.
+
+**On disk**, at format 11 with no step in it: a picked person is written
+under the field's key with `Person` after it — `ownerPerson:`, `byPerson:`,
+`proposedByPerson:`, and a signer row's `person:` with its `signedAs:` — and
+text under the key as before (`adapters/folder/format/fileText.ts`,
+`personFrontMatter`, `personRow`), so a file from before reads as text and
+holds no register name. Element records in `model.json` hold the reference
+as JSON.
+
+**Search matches the register first and then the ids**
+(`model/searchable.ts`, `search/search.ts`): a record says the ids it names
+in `people` and folds only text, so no index row holds a register name; a
+search is handed `PeopleMatch` — for each word of the query, the ids whose
+entry reads with it, the name or, once forgotten or withheld, the pseudonym
+(`people/matching.ts`) — and a record matches a word through its text or
+through one of its ids. The page's search and the agent's `search` both ask
+the register; *What we hold*'s search for a name reads text alone, which is
+what a forget cannot reach. A signature's kept name is the record's own text
+and is found as such.
+
+**The index carries the master's `owner`** as a reference, so a stand-in,
+which carries no owner of its own (ADR-0012 §3), shows its master's by the
+same id.
+
+**Readers.** One object, `PersonNames` (`people/ui/names.tsx`), built from
+the shell's register and provided once around the app
+(`PersonNamesProvider`, `usePersonNames`): what a reference reads as, the
+name a signature takes, the id a merge kept, *you*, and the search's match.
+Every page with one of these fields reads through it — the element's record
+and the panel's line, the plan, the observation, the experiment, the
+decision, the merge screen and the picture's filters — so a forget reaches
+them all at once. The modules that draw them (`editor`, `decisions`,
+`observations`, `roadmap`) may import `people` for it. Every editor of these
+fields is `PersonRefField`: a person picked, shown by the register with a
+cross to take them off, or text, with *From the register…* — the picker, whose
+*New person…* asks the four signs — and, while a name is typed, the entries
+it may be.
+
+**The owner worked out from a rule** (`model/owners.ts`): where the
+organisation has the `applicationOwner` rule, an application with no owner
+written is owned, on the day, by whoever holds the rule's role in the unit it
+belongs to (`partyId`), the unit there and the role running; `domainOwner`
+likewise for a scope, through the units that serve it. Never stored. The
+host works it out for the record (`EditorOwnership.answeredBy`, over the
+tree with the open scope's session laid over it, today) and the record says
+it under its owner field and in the panel's line. *Belongs to* is now asked
+of every application, as the unit it belongs to for one of the
+organisation's own: the rule reads its owner from there.
+
+**Points at them** (`model/pointers.ts`, `pointersIn`): every record across
+the tree whose fields hold the person's id or one merged into it, by field,
+with the names signatures kept; and what the rules make them own today
+(`app/units/held.ownedByRule`). The People page lists them under *Points at
+them*, and *What we hold* says them as `namedIn`, `signed` and `derived`.
+
+**The agent** (`agent/persons.ts`): every argument that names a person takes
+text or `{ "person": id }` (`personArgument`, an `anyOf` in the schema); an
+id the register does not hold is refused, a merged one written as the entry
+kept. Every answer says a picked person as `{ person, name }`, the name or
+the pseudonym the policy gives, done once as the answer leaves the handler
+and only where an answer names somebody; `search` and `project.export` ask
+the register before they answer.
 
 ## Open
 

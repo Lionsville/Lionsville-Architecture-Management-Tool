@@ -304,12 +304,19 @@ verdwijnt hij in één keer van elk scherm.
   ondertekend besluit houdt de naam waarmee het is ondertekend.
 - **Nu verwijderen**, bij een vermelding die al vergeten is, haalt haar uit
   het register; wat ernaar wees leest *een oud-collega*.
+- **Verwijst naar hen** noemt elke vastlegging waarvan een veld de persoon
+  bij id noemt — een element of plan waarvan ze eigenaar zijn, een
+  waarneming die ze deden, een experiment dat ze uitvoeren, een besluit dat
+  ze voorstelden of ondertekenden — met het onderdeel dat haar bewaart, en
+  wat de regels van het besturingsmodel hen vandaag in eigendom geven (zie
+  *Velden die een persoon noemen*). Een handtekening die haar naam hield,
+  zegt de naam waarmee getekend is.
 - **Wat we bewaren** toont alles wat het register over iemand bewaart, en wat
   naar die persoon wijst, als één document om te kopiëren: het antwoord op
   een inzageverzoek. Een verzoek om te wissen beantwoord je met **Nu
   vergeten**. Het zegt ook hoeveel vastleggingen de persoon in hun tekst
-  noemen — woorden die getypt zijn voordat het register bestond, die vergeten
-  niet bereikt en zoeken wel vindt.
+  noemen — woorden die in een veld zijn getypt in plaats van een gekozen
+  persoon, die vergeten niet bereikt en zoeken wel vindt.
 
 **Het beleid**, onderaan de pagina, is een instelling van de organisatie en
 geen stap: hoe lang de naam van wie vertrekt bewaard blijft (90 dagen, tenzij
@@ -333,6 +340,49 @@ geschiedenis van de map**: geen momentopname neemt het mee, en een
 `git add` die je in een terminal typt laat het ook weg, omdat een naam in een
 commit een naam is die niets kan vergeten. Een kopie van de map via git
 bevat daarom id's en geen namen; het werkbestand neemt het register mee.
+
+### Velden die een persoon noemen
+
+Zes velden noemen een persoon: de **Eigenaar** van een element, de
+**Eigenaar** van een plan, wie een waarneming deed (**Waargenomen door**),
+wie een experiment uitvoert (**Door**), en wie een besluit voorstelde
+(**Voorgesteld door**) en ondertekende (**Beoordelaars en ondertekening**).
+Elk neemt een persoon uit het register, of tekst zoals altijd — een naam,
+initialen, een team.
+
+- **Uit het register…** naast het veld opent de kiezer van het register:
+  zoek op naam, kies iemand, of **Nieuwe persoon…**, dat eerst zoekt naar
+  iemand die dezelfde persoon kan zijn, zoals **Persoon toevoegen** doet.
+  Terwijl je een naam typt, biedt het veld onder **In het register:** de
+  vermeldingen aan die het kunnen zijn; kies er een om naar die persoon te
+  verwijzen in plaats van de naam te schrijven.
+- **Een gekozen persoon** wordt bewaard als id. Het veld toont wat het
+  register zegt: de naam, of *Oud-collega 7KQM* zodra de persoon vergeten
+  is, of *een oud-collega* zodra de vermelding verwijderd is. Een
+  samengevoegde vermelding toont de vermelding waarin ze opging. Het kruisje
+  haalt de persoon uit het veld.
+- **Tekst** blijft tekst. Tekst die geschreven is voordat het register
+  bestond, staat er nog, wordt getoond zoals getypt en gevonden door zoeken;
+  vergeten bereikt haar niet, en **Wat we bewaren** telt haar.
+- **Een handtekening houdt haar naam.** Als een als ondertekenaar gekozen
+  persoon een oordeel geeft, wordt de naam die die dag in het register stond
+  naast het id geschreven, en de naam van wie het voorstelde ligt op dezelfde
+  manier vast zodra iemand heeft getekend. Die naam hoort bij het
+  besluitrecord: het besluit toont haar ook nadat de persoon vergeten is,
+  waar elk ander scherm het pseudoniem toont.
+- **De eigenaar van een applicatie kan een rol volgen.** Als het
+  besturingsmodel de regel heeft *de eigenaar van een applicatie is een rol
+  van haar team* (zie *Het besturingsmodel*), toont een applicatie waarop
+  niemand een eigenaar schreef de mensen die die rol vandaag vervullen in de
+  eenheid uit **Hoort bij** — op de dag afgeleid en nooit opgeslagen, dus de
+  eigenaar verandert als de persoon in de rol verandert. Een naam in **Eigenaar**
+  gaat voor. **Hoort bij** wordt bij elke applicatie gevraagd: bij een
+  applicatie van de organisatie zelf is het de eenheid waar ze bij hoort.
+- **Een stand-in** heeft geen eigen eigenaar; ze toont de eigenaar die haar
+  master noemt, met hetzelfde id.
+- **Zoeken** vindt een persoon via het register: een naam vindt de
+  vastleggingen die naar die persoon verwijzen, en een vergeten persoon wordt
+  gevonden aan het pseudoniem en niet meer aan de naam.
 
 ## Waar je werk wordt bewaard
 
