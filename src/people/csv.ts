@@ -111,8 +111,11 @@ export function newPersonOf(row: CsvRow): NewPerson {
 
 /**
  * Each row against the register and the rows before it. A row the same as an
- * earlier new one in the list is matched to nobody yet and flagged, so the
- * person importing sees the list names them twice.
+ * earlier one in the list — new, or flagged and so perhaps added — is matched
+ * to nobody yet and flagged, so the person importing sees the list names them
+ * twice. A row is matched to an entry only where it can be nobody else: the
+ * same address, or the same name with no other address beside it; two people
+ * may share a name, and a different address says they may.
  */
 export function matchRows(rows: readonly CsvRow[], people: readonly Person[]): RowMatch[] {
   const earlier: Person[] = []
@@ -124,13 +127,14 @@ export function matchRows(rows: readonly CsvRow[], people: readonly Person[]): R
     const there = candidates.filter((one) => !earlier.includes(one.person))
     const sameEmail = there.filter((one) => one.sign === 'sameEmail')
     const sameName = there.filter((one) => one.sign === 'sameName')
-    const sure = sameEmail.length === 1 ? sameEmail[0] : sameEmail.length === 0 && sameName.length === 1 ? sameName[0] : undefined
+    const otherAddress = (one: PossibleDuplicate) => Boolean(row.email && one.person.email && normalEmail(row.email) !== one.person.email)
+    const sure = sameEmail.length === 1 ? sameEmail[0]
+      : sameEmail.length === 0 && sameName.length === 1 && !otherAddress(sameName[0]) ? sameName[0] : undefined
     if (fromList.length === 0 && sure) return { row, as: 'matched', person: sure.person }
-    if (candidates.length > 0) return { row, as: 'flagged', candidates }
     earlier.push({
       id: `row-${row.line}`, name: row.name, pseudonym: '', kind: row.kind ?? 'internal', state: 'active',
       ...(row.email ? { email: normalEmail(row.email) } : {}),
     })
-    return { row, as: 'new' }
+    return candidates.length > 0 ? { row, as: 'flagged', candidates } : { row, as: 'new' }
   })
 }

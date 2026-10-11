@@ -56,6 +56,15 @@ describe('each row against the register', () => {
     expect(matched[7].as === 'invalid' && matched[7].why).toBe('badEmail')
   })
 
+  it('flags a row of a name the register holds under another address, and a row the list names twice though both resemble somebody', () => {
+    const rows = readCsv('name,email\nPia Schulz,p.schulz@other.example\nPia Schultz,\nPia Schultz,\nKees Vos,\n')
+    const matched = matchRows(rows, register)
+    expect(matched.map((one) => one.as)).toEqual(['flagged', 'flagged', 'flagged', 'matched'])
+    expect(matched[0].as === 'flagged' && matched[0].candidates.map((one) => one.person.id)).toEqual(['pe-pia'])
+    // The second of the two is flagged against the first, which may be added.
+    expect(matched[2].as === 'flagged' && matched[2].candidates.map((one) => one.person.id)).toContain('row-3')
+  })
+
   it('makes a row the register’s kind of newcomer', () => {
     expect(newPersonOf({ line: 1, name: 'Ada', email: 'ada@acme.example', kind: 'external' })).toEqual({ name: 'Ada', email: 'ada@acme.example', kind: 'external' })
     expect(newPersonOf({ line: 1, name: 'Ada' })).toEqual({ name: 'Ada' })
