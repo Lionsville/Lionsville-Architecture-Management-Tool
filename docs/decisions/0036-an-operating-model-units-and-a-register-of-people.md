@@ -1261,9 +1261,27 @@ suggestions:
   Anything else, and an organisation with no such type, is placed as in the
   library.
 
-*Compare* is unchanged: it reads a slot by the library its role came from,
-so a slot that names a role reused from elsewhere reads as missing against
-the library's.
+**What a step records** beside what it makes. A name chosen that is not the
+library's term in the language brought in is kept as `basedOn.name`, and
+*compare* reads the item's name against it: a rename on the way in is no
+difference, and a rename since is one, with the library's term and the name
+chosen beside it. A reuse is recorded on the item reused, in `alsoBasedOn` —
+the entries a bring-in matched it to — rather than on a type whose slot names
+it, because a role ticked on its own has no such type. It is an update in the
+same transaction, after the adds, so one undo takes it out with the rest, and
+a step that only matches is a step of its own (*Matched 2 items of a library
+to your own*). Both are records, so whatever asks what stands for an entry
+reads them and guesses nothing: `broughtFrom` finds the item brought in from
+an entry, else one matched to it, so a library opened again shows a matched
+entry as in the model, *matched*, and neither offers nor suggests it again;
+`suggestedReuse` reads a match as it reads what came in; and *compare* reads a
+slot or a `within` naming a matched item as the entry it was matched to.
+*What came in* (`operating/cameIn.ts`) is, per library, the items made from
+it — the library's term, the name now, and what *compare* says has changed
+since — and the organisation's items matched to it. The folder format stays
+11: a 3.6.0 build passes both fields over and its next save drops them, after
+which a name chosen on the way in reads as a rename and a matched entry is
+offered again.
 
 ## As built, 3.6.1: the structure drawn
 
