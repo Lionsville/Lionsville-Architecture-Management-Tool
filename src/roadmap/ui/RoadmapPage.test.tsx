@@ -341,6 +341,15 @@ describe('a plan', () => {
     expect(actions2.addTransition).toHaveBeenCalledWith('Move billing')
   })
 
+  it('takes the Enter that names it for its own: closing hands the focus back to New plan, which the key must not press again', () => {
+    const { actions } = setup()
+    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
+    const name = screen.getByRole('textbox', { name: 'What is the plan called?' })
+    fireEvent.change(name, { target: { value: 'Move billing' } })
+    // false: the key's default — the press a browser makes of whatever holds the focus next — is cancelled.
+    expect(fireEvent.keyDown(name, { key: 'Enter' })).toBe(false)
+    expect(actions.addTransition).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('the window', () => {

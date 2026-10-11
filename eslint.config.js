@@ -470,7 +470,7 @@ export const GROWN = {
   'src/observations/ui/SolutionReaders.tsx': { complexity: 48, lines: 253 },
   'src/projects/documentSession.ts': { complexity: 34 },
   'src/adapters/folder/format/folderFormat.ts': { complexity: 35 },
-  'src/roadmap/ui/RoadmapPage.tsx': { lines: 315 },
+  'src/roadmap/ui/RoadmapPage.tsx': { lines: 286 },
   'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 351 },
 }
 

@@ -457,37 +457,46 @@ export function RoadmapPage(props: RoadmapPageProps) {
 
       </Box>
 
-      <Dialog open={newTitle !== null} onClose={() => setNewTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography id="lv-new-plan-title" sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
-          <TextField
-            size="small"
-            autoFocus slotProps={{ htmlInput: { 'aria-labelledby': 'lv-new-plan-title' } }}
-            value={newTitle ?? ''}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newTitle?.trim()) {
-                actions.addTransition(newTitle.trim())
-                setNewTitle(null)
-              }
-            }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setNewTitle(null)}>{t('common.cancel')}</Button>
-            <Button
-              variant="contained"
-              disabled={!newTitle?.trim()}
-              onClick={() => {
-                if (newTitle?.trim()) actions.addTransition(newTitle.trim())
-                setNewTitle(null)
-              }}
-            >
-              {t('roadmap.newPlan')}
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
+      <NamePlanDialog title={newTitle} onTitle={setNewTitle} onMake={(title) => actions.addTransition(title)} />
     </PageDialog>
+  )
+}
+
+/**
+ * *What is the plan called?*: the plan made from its name, by the button or
+ * by Enter. The Enter is the field's own: closing gives the focus back to
+ * *New plan*, and a key let go on would press that again — the dialog back,
+ * behind the plan's page it had just opened.
+ */
+function NamePlanDialog({ title, onTitle, onMake }: {
+  title: string | null; onTitle: (title: string | null) => void; onMake: (title: string) => void
+}) {
+  const { t } = useStrings()
+  const make = () => {
+    if (title?.trim()) onMake(title.trim())
+    onTitle(null)
+  }
+  return (
+    <Dialog open={title !== null} onClose={() => onTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography id="lv-new-plan-title" sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
+        <TextField
+          size="small"
+          autoFocus slotProps={{ htmlInput: { 'aria-labelledby': 'lv-new-plan-title' } }}
+          value={title ?? ''}
+          onChange={(e) => onTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' || !title?.trim()) return
+            e.preventDefault()
+            make()
+          }}
+        />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Button onClick={() => onTitle(null)}>{t('common.cancel')}</Button>
+          <Button variant="contained" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
+        </Box>
+      </Box>
+    </Dialog>
   )
 }
 
