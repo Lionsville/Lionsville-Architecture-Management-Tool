@@ -7,7 +7,9 @@
   on the screens (*As built*, below); implemented, 11 October 2026. What a
   build with accounts adds (§14) is that build's own. Amended, 11 October
   2026: the structure drawn, libraries brought in as a choice, links from
-  either end, and a large organisation (*Amended*, below); not yet built
+  either end, and a large organisation (*Amended*, below); as built and
+  implemented, 11 October 2026, with the screens brought to what this
+  record's design drew (*As built, 3.6.1*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1064,8 +1066,9 @@ type does not hold. A slot nobody holds that way goes at once, as before.
 
 ## Amended, 11 October 2026 — the structure drawn, libraries brought in as a choice, links from either end, and a large organisation
 
-*Accepted 11 October 2026; not yet built.* A look at the screens of what was
-built found the model right and the pages short of it: the unit types sat in
+*Accepted 11 October 2026, and built the same day: the As built, 3.6.1
+sections below.* A look at the screens of what was built found the model
+right and the pages short of it: the unit types sat in
 a grid in the order they arrived, with where each may sit said only in a
 caption; a library was a list of tick boxes, with nothing to say what a type
 holds or where it lands; a scope and a capability could be tied to a unit

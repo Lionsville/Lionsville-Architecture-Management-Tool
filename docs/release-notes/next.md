@@ -16,16 +16,37 @@ I; a responsibility with no A, or with several, says so and is a finding.
 Every change is a step, with ⌘Z, a line in Activity and a history of its own.
 Opened over any other scope, the page only reads.
 
-**Four libraries to start from.** The **Libraries** tab offers **Scrum**,
+**Units and roles draws the organisation's structure.** Each unit type stands
+in a lane by how deep it may sit, the organisation first, with a line from
+every place it may sit — a line that skips a lane runs along a rail above the
+cards, so a type that may sit at the top or inside another shows both. A card
+says where the type came from, how many units it has today, its roles with
+how many of each and which one manages, and its limits. Picking a type lights
+where it may sit, what may sit in it and its roles; picking a role lights the
+types that hold it. A type that sits nowhere, and a role no type holds, wait
+in trays of their own under the lanes, and a type that sits nowhere is a
+finding, since no unit can be made of it. **Move up** and **Move down** in the
+inspector order a lane, and that is the order units are listed in everywhere.
+
+**Four libraries to start from, brought in as a choice.** **Scrum**,
 **SAFe**, the **IT4IT** value streams (the seven of its version 3.0) and
-**Team Topologies**, each with a version, in English, Dutch and German and in
-this app's own words. Tick what you want and press **Bring in**: what an entry
-needs comes with it and the tab says so first, nothing comes in twice, and it
-is one step that ⌘Z takes out again. What comes in is the organisation's to
-rename, rewrite or cut. **Compare with the libraries** says how it differs
-from the library as it ships now, and when a library has moved on to a later
-version; nothing is ever merged in. The frameworks' names are their owners',
-and none of them endorses the libraries.
+**Team Topologies** ship with a version, in English, Dutch and German and in
+this app's own words. **From a library…**, beside **New unit type** and **New
+role** — or **Start from a library** on an empty model — opens them: the
+library you pick is drawn in its own lanes, each type with its purpose and the
+roles it holds, and ticking a type shows what comes along with it. **What will
+come in** shows the step before it is written: every name can be changed;
+each unit type has **Sits in** — as in the library, at the top, or beside or
+inside one of your own types, and beside your deepest team type to start with
+— and each role **Bring in**, or **Use your …** where you already have one
+like it. **Bring in** is one step: what came in is marked *new* until you
+leave the page, and the notice offers **Undo**. On the **Libraries** tab each
+library lists what came in, what it is called here — renamed in place — and
+what has changed since; a name or a place chosen on the way in is not a
+change, and a role matched to your own says *used your …*. **Compare with the
+libraries** says how the organisation's model differs from the library as it
+ships now, and when a library has moved on; nothing is ever merged in. The
+frameworks' names are their owners', and none of them endorses the libraries.
 
 **A unit is an actor with a unit type.** Choose a type under **Unit** in an
 actor's inspector and it is a unit; **Not a unit** makes it a party again. Its
@@ -45,8 +66,10 @@ its assignments with it, in the same step.
 itself is listed with the rest: a role short of people or over its maximum, a
 unit filed where its type may not sit, one serving more domains than its type
 allows or owning more applications than its limit, someone still in a unit or
-a role that has ended, a unit still of a type that has ended, and anyone whose
-shares add up to more than all of their time. A unit's section shows those
+a role that has ended, a unit still of a type that has ended, anyone whose
+shares add up to more than all of their time, a unit type that sits nowhere,
+a responsibility without exactly one accountable role, and a capability
+assigned to a unit that does not serve its domain. A unit's section shows those
 about the unit, a chart those about the units it draws, and the organisation's
 home all of them, for every scope.
 
@@ -60,7 +83,9 @@ successor — which you accept or change. Nobody's new place is guessed. **Write
 as one step** ends each old assignment on its last day and begins each new one
 the day after, in every scope that keeps one, together. Unit types and roles
 have **From**, **Until** and **Followed by**, and the operating model page
-lists what an ending leaves to decide. Looking at another day shows the
+lists what an ending leaves to decide. Taking a role out of a unit type lists
+the people it leaves under **Move the people** before it goes, and removing a
+role says who holds it first. Looking at another day shows the
 organisation on that day: a unit's section reads the day its board is looked
 at, and **Look at** on the People page says what a person holds then.
 
@@ -81,6 +106,34 @@ in one of three ways — **Collaboration**, **As a service** or **Facilitating**
 — for the days it holds. A draw.io box that points at a unit opens it on the
 scope's chart.
 
+**A chart for a large organisation.** A unit with units under it folds at its
+caret and says what it hides — units, people, vacancies and findings; a chart
+of more than 30 units opens folded below its second level, and **Fold all**
+and **Unfold all** are on its bar. Beside it, an outline of the units folds on
+its own, and picking a unit there, **Find a unit** or **Find me** unfolds the
+way to it and goes there. Units are listed in one order wherever they appear
+— their type's place in the operating model, then their own order among
+siblings of that type, moved with **Move up** and **Move down** under the
+outline, then their name. Pressing a person on the chart opens their
+assignment beside it: its days and share, a note when they hold more than all
+of their time, **End on** a day you choose, **Correct…** and **Open in
+People**. A badge names the domains a unit serves and the plan that brings or
+ends it, and *ext* marks somebody from outside. The Conway map's table marks
+every declared interaction, and shades the cells where an interface has none
+declared and where one is declared that no interface needs; a plan's **Still
+open** says which interactions its units are left to declare.
+
+**Who serves a scope, and who answers for a capability, from either end.**
+**Served by**, on a domain's home and in its settings, lists the units that
+serve it, each with who manages it today, and works out the domain owner from
+the operating model's rule. **+ Unit** picks one from anywhere in the
+organisation, grouped by type and saying where each is filed, and is written
+as a step where the unit is kept. On a business sheet, a function's **Assigned
+to** picks a unit the same way, and **Show who is responsible** puts the unit
+on every area, grouping and capability, marking those nobody answers for. A
+unit's **Serves** and **Responsible for** have a **+** each, so either end
+says the same thing.
+
 **A register of people, kept outside the history.** **People** on the
 organisation's home holds one entry per person: a name, a work address where
 you know one, and whether they are of the organisation or from outside it. A
@@ -92,8 +145,9 @@ the same person: the same address, the same name, a name within two letters,
 or the same family name and first initial. **Possible duplicates** lists the
 pairs already there, and **Merge** asks first and is final; merging somebody
 active into an entry that has left asks which is true, **Still here** or
-**Left**. A person's page says what they hold today, will hold and held
-before, and **Points at them** lists every record that names them. **This is
+**Left**. The list says each person's roles on the day looked at, and *none*
+where they hold nothing. A person's page says what they hold today, will hold
+and held before, and **Points at them** lists every record that names them. **This is
 me** tells this install which entry is you, so you are marked wherever you
 appear, and **Find me** goes to your entry; it is kept with the install, or in
 the browser for a folder opened in one, and never in your folder or an export.
