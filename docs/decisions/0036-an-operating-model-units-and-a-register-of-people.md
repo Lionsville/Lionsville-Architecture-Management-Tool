@@ -1,7 +1,9 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
 * Status: accepted, 11 October 2026; built in part: the register of people
-  (§8–§11, §13's three tools for it), 11 October 2026 — *As built*, below
+  (§8–§11, §13's three tools for it) and the operating model (§1's
+  `_operating/`, §2, §5, §13's seven tools for it), 11 October 2026 — *As
+  built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -486,6 +488,68 @@ brings the entries the folder does not hold.
 home and `app.open`'s page `people`; it says that nothing on it is a step.
 **The tools** are `agent/people.ts`: `people.list`, `person.add` and
 `person.leave`, with no `scope` and no `ifRevision`.
+
+## As built, 11 October 2026: the operating model
+
+The second part: §1's `_operating/`, §2 and §5, and §13's seven tools for
+the operating model. Units, assignments, the checks over them and change
+over time follow.
+
+**The records** are `model/operatingModel.ts`: a unit type (`top` and
+`within` for where a unit of it may sit — the organisation itself, or under
+the types named — `spans`, `slots` of a role with `min` and an optional
+`max`, `limit`), a role (`short`, `purpose`, `duties`, `manages`), a
+responsibility (`description`, `group`) and an operating rule, one per kind
+(`applicationOwner`, `domainOwner`), whose kind is its id. `from`, `until`
+and `successors` are declared and read by nothing yet. Each item brought
+from a library keeps `basedOn`: the library, the entry, the version and the
+language its words were taken in. They are four lists on the model
+(`unitTypes`, `roles`, `responsibilities`, `operatingRules`), each with
+`add`, `update` and `remove` commands, inverses and write keys
+(`model/commands/operatingModel.ts`), in the diff, a thing's history, a
+restore, the Activity list and search. The writer refuses nothing about
+what one record says of another; taking a role out of the slots and rules
+that name it is the page's transaction (`operating/edit.ts`).
+
+**On disk** they are one JSON list per list under `_operating/` at the
+organisation — `unit-types.json`, `roles.json`, `responsibilities.json`,
+`rules.json` — in the organisation's own order
+(`adapters/folder/format/operatingFile.ts`). The scope format is 11. A 10
+reads as an 11 with no operating model, the format pass rewrites the header
+and moves no scope, and a list file that is not a list opens the scope to be
+read and not written. Browser storage keeps the lists inside the model, so
+its content format stays 2.
+
+**The check** is `check.accountability` among a document's findings
+(`projects/checks.ts`): a responsibility that is not exactly one role's A,
+naming the roles where there are several.
+
+**The libraries** ship in `operating/libraries/`: Scrum (one team type,
+three roles, four responsibilities), SAFe (portfolio, Agile Release Train
+and Agile Team, nine roles, six responsibilities), the IT4IT value streams
+(ten responsibilities grouped by the seven value streams of version 3.0,
+three roles) and Team Topologies (its four kinds of team), each at version
+1, in three languages, every word this project's own. Bringing entries in
+(`operating/bringIn.ts`) is one transaction with what they need — a unit
+type brings the roles of its slots and the types it may sit in, a role the
+responsibilities of its duties — nothing twice, and every id made distinct
+from what the organisation holds. *Compare* (`operating/compare.ts`) reads
+each item against its library as it ships now, in the item's own language,
+and says a later version, a field, a slot, a place or a duty that differs;
+it merges nothing. The frameworks' names are in `NOTICE`.
+
+**The page** is `operating/ui/OperatingModelPage.tsx`: a card on the
+organisation's home, `app.open`'s page `operating` (at the organisation
+only), a search hit and a link. Three tabs: the unit types as cards with the
+roles and the rules, the matrix of responsibilities against roles — a press
+takes a cell through R, A, C and I — and the libraries with *compare*.
+Opened over any other scope it reads.
+
+**The tools** are `agent/operatingModel.ts` and `agent/write/operatingModel.ts`:
+`unitTypes.list`, `roles.list` and `responsibilities.list` answer from the
+organisation whatever scope is open; `unitType.add`, `unitType.update`,
+`role.add` and `role.update` are commands under the agent's name, refused
+`agent.scopeNotOpen` unless the organisation is the scope open.
 
 ## Open
 
