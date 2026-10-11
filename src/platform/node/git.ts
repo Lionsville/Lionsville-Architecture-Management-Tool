@@ -39,10 +39,11 @@
  *   refusal the app can name.
  * - An identity only when the machine has none configured, so a snapshot works
  *   on a fresh laptop and uses the person's real name everywhere else.
- * - `.lionsville-architecture/local.json` is never committed: the snapshot's
- *   `add` excludes it, and `.git/info/exclude` keeps a `git add -A` typed in a
- *   terminal from picking it up either — without touching the user's own
- *   `.gitignore`, which is theirs.
+ * - `.lionsville-architecture/local.json` and the people register beside it
+ *   (`people.json`, ADR-0036) are never committed (`OUT_OF_HISTORY`): the
+ *   snapshot's `add` excludes them, and `.git/info/exclude` keeps a
+ *   `git add -A` typed in a terminal from picking them up either — without
+ *   touching the user's own `.gitignore`, which is theirs.
  *
  * And one rule the whole file keeps: **this folder, never an ancestor.** Git
  * walks up until it finds a repository, so every command here first asks
@@ -68,7 +69,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { GitRefused, gitEnvironment, guardedFlags, refuseAddressInside } from './gitGuard'
 import { largeFilesFirst } from './gitLfs'
-import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
+import { OUT_OF_HISTORY } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
 import { BEFORE_SYNC_BRANCH_PREFIX } from '../sync'
@@ -194,10 +195,11 @@ export async function initRepository(root: string): Promise<void> {
 }
 
 /**
- * Keep the machine's old settings file out of history without touching the
- * user's `.gitignore`: `.git/info/exclude` is git's own local, uncommitted
- * ignore list. The desktop no longer writes that file (ADR-0023) but a folder
- * an older build opened may still carry one, and it must not travel.
+ * Keep the files a folder's history never holds out of it without touching
+ * the user's `.gitignore`: `.git/info/exclude` is git's own local, uncommitted
+ * ignore list. The machine's old settings file — the desktop no longer writes
+ * it (ADR-0023), but a folder an older build opened may still carry one — and
+ * the people register (ADR-0036), whose names must never be in a commit.
  * Idempotent, and nothing when the folder keeps no history.
  */
 export async function excludeLocalSettings(root: string): Promise<void> {
@@ -205,10 +207,12 @@ export async function excludeLocalSettings(root: string): Promise<void> {
   const info = join(root, '.git', 'info')
   const exclude = join(info, 'exclude')
   const held = await readFile(exclude, 'utf8').catch(() => '')
-  if (held.split(/\r?\n/).includes(LOCAL_SETTINGS_PATH)) return
+  const lines = held.split(/\r?\n/)
+  const missing = OUT_OF_HISTORY.filter((path) => !lines.includes(path))
+  if (missing.length === 0) return
   await mkdir(info, { recursive: true })
   const separator = held.length === 0 || held.endsWith('\n') ? '' : '\n'
-  await writeFile(exclude, `${held}${separator}${LOCAL_SETTINGS_PATH}\n`, 'utf8')
+  await writeFile(exclude, `${held}${separator}${missing.map((path) => `${path}\n`).join('')}`, 'utf8')
 }
 
 async function hasIdentity(root: string): Promise<boolean> {
@@ -254,7 +258,7 @@ export async function snapshot(root: string, message: string): Promise<string | 
   // that names an ignored path with an error about adding ignored files, and
   // `.git/info/exclude` makes the path ignored on every folder we started.
   await git(root, ['add', '-A'])
-  await git(root, ['reset', '-q', '--', LOCAL_SETTINGS_PATH])
+  await git(root, ['reset', '-q', '--', ...OUT_OF_HISTORY])
   try {
     await git(root, ['diff', '--cached', '--quiet', '--no-ext-diff'])
     return undefined // exit 0 from --quiet means no staged changes

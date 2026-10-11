@@ -19,7 +19,7 @@ import { execFile } from 'node:child_process'
 import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
-import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
+import { isOutOfHistory } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel } from '../../projects/label'
 import { git, gitArgs, gitEnvironment, gitFailure, identityArgs, initRepository, isRepository } from './git'
 
@@ -60,7 +60,7 @@ export async function changes(root: string): Promise<GitChange[]> {
   for (const row of out.split('\0')) {
     if (row.length < 4) continue
     const path = row.slice(3)
-    if (path === LOCAL_SETTINGS_PATH) continue
+    if (isOutOfHistory(path)) continue
     found.push({ path, deleted: row[0] === 'D' || row[1] === 'D' })
   }
   return found
@@ -133,7 +133,7 @@ export async function readiness(root: string): Promise<HistoryReadiness> {
  * standard input, and nothing of ours is written into `.git`.
  */
 export async function commitPaths(root: string, paths: readonly string[], message: string): Promise<string | undefined> {
-  const wanted = paths.filter(isInside).filter((path) => path !== LOCAL_SETTINGS_PATH)
+  const wanted = paths.filter(isInside).filter((path) => !isOutOfHistory(path))
   if (wanted.length === 0) return undefined
   await startHistory(root)
   const ready = await readiness(root)

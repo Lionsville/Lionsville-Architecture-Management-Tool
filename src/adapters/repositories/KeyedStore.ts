@@ -7,7 +7,7 @@
  * database (`adapters/webStorage/IndexedDbStore.ts`) each answer it.
  *
  * As little as the repositories need, for the reason `KeyValueStorage` is
- * four lines rather than all of `Storage`: the arithmetic of five repositories
+ * four lines rather than all of `Storage`: the arithmetic of six repositories
  * is written once and tested once, and what differs between memory and the
  * browser is only where the values sit.
  *
@@ -67,6 +67,10 @@ export const REPOSITORY_SHELVES = [
   'indexLog',
   /** Settings, by whose they are. */
   'settings',
+  /** The people register, one entry per id: the only shelf a name is kept on (ADR-0036). */
+  'people',
+  /** What changed in the register at each of its revisions, by sequence. */
+  'peopleLog',
 ] as const
 
 /**

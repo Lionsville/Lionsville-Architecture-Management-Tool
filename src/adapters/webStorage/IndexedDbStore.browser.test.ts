@@ -21,6 +21,7 @@ import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contrac
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../../ports/PeopleRepository.contract'
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
 import { REPOSITORY_SHELVES, SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
@@ -100,6 +101,7 @@ describeOrganisationIndex(`browser storage in ${server.browser}`, repositories)
 describeHistoryRepository(`browser storage in ${server.browser}`, repositories)
 describeImageRepository(`browser storage in ${server.browser}`, repositories)
 describeSettingsRepository(`browser storage in ${server.browser}`, repositories)
+describePeopleRepository(`browser storage in ${server.browser}`, repositories)
 
 describe(`IndexedDbStore in ${server.browser}`, () => {
   it('lands a transaction whose work awaits a digest whole or not at all', async () => {
@@ -206,7 +208,7 @@ describe(`IndexedDbStore in ${server.browser}`, () => {
     })
     expect(await store.transaction(['folderData'], 'read', (tx) => tx.get('folderData', 'k\u0000step\u0000one'))).toEqual(['s-1', 1])
     const now = await holdOpen(thisPage(), name, DATABASE_VERSION)
-    expect([now.version, [...now.objectStoreNames].sort()]).toEqual([3, [...SHELVES].sort()])
+    expect([now.version, [...now.objectStoreNames].sort()]).toEqual([4, [...SHELVES].sort()])
     now.close()
   })
 

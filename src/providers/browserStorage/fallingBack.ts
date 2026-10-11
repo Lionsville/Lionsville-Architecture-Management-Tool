@@ -67,6 +67,6 @@ function answeredBy(shape: Repositories, choose: () => Promise<Repositories>): R
   })
   return {
     scopes: through('scopes'), index: through('index'), history: through('history'),
-    images: through('images'), settings: through('settings'),
+    images: through('images'), settings: through('settings'), people: through('people'),
   }
 }

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The five repositories over one folder (ADR-0031 §2): what the composition
+ * The six repositories over one folder (ADR-0031 §2): what the composition
  * root builds for a folder and hands the app as one value.
  *
  * One folder handle, one history and one place for the person's own settings
@@ -20,6 +20,7 @@ import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FolderHistory } from './FolderHistory'
 import { FolderImageRepository } from './FolderImageRepository'
 import { FolderIndex } from './FolderIndex'
+import { FolderPeopleRepository } from './FolderPeopleRepository'
 import { PictureStaging } from './folderPictures'
 import type { StampCache } from './folderPictures'
 import { FolderScopeRepository } from './FolderScopeRepository'
@@ -64,5 +65,7 @@ export function folderRepositories(opening: FolderOpening): Repositories {
     history,
     images: new FolderImageRepository(folder, staging),
     settings: new FolderSettingsRepository(folder, opening.person ?? personSettingsInMemory()),
+    // The register, beside the organisation's settings and out of the history (ADR-0036).
+    people: new FolderPeopleRepository(folder),
   }
 }

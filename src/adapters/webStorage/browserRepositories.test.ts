@@ -14,6 +14,7 @@ import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contrac
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../../ports/PeopleRepository.contract'
 import { spoilKept } from '../repositories/testing/spoil'
 import { browserRepositories } from './browserRepositories'
 import { IndexedDbStore } from './IndexedDbStore'
@@ -37,9 +38,11 @@ describeOrganisationIndex('browser storage', make)
 describeHistoryRepository('browser storage', make)
 describeImageRepository('browser storage', make)
 describeSettingsRepository('browser storage', make)
+describePeopleRepository('browser storage', make)
 
 describeScopeRepository('browser storage, fake-indexeddb', makeOverFakeIndexedDb)
 describeOrganisationIndex('browser storage, fake-indexeddb', makeOverFakeIndexedDb)
 describeHistoryRepository('browser storage, fake-indexeddb', makeOverFakeIndexedDb)
 describeImageRepository('browser storage, fake-indexeddb', makeOverFakeIndexedDb)
 describeSettingsRepository('browser storage, fake-indexeddb', makeOverFakeIndexedDb)
+describePeopleRepository('browser storage, fake-indexeddb', makeOverFakeIndexedDb)

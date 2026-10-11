@@ -19,6 +19,7 @@ import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { sampleScope } from './ScopeStore.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../../ports/PeopleRepository.contract'
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
@@ -73,11 +74,13 @@ describeOrganisationIndex('folder', overFakeFolder)
 describeHistoryRepository('folder', overFakeFolder)
 describeImageRepository('folder', overFakeFolder)
 describeSettingsRepository('folder', overFakeFolder)
+describePeopleRepository('folder', overFakeFolder)
 describeScopeRepository('folder in a browser', overBrowserFolder)
 describeOrganisationIndex('folder in a browser', overBrowserFolder)
 describeHistoryRepository('folder in a browser', overBrowserFolder)
 describeImageRepository('folder in a browser', overBrowserFolder)
 describeSettingsRepository('folder in a browser', overBrowserFolder)
+describePeopleRepository('folder in a browser', overBrowserFolder)
 
 /** A picture's bytes: a PNG's header, 64 by 32, and a tail that tells two apart. */
 function png(tail: number): Uint8Array {
@@ -113,6 +116,17 @@ async function folderOfToday(): Promise<FakeDirectory> {
 }
 
 describe('the folder, beyond what the suites say', () => {
+  it('keeps the register beside the organisation’s settings, and refuses to write over one a later build wrote', async () => {
+    const root = new FakeDirectory()
+    const repositories = folderRepositories({ root, git: memoryGit(root) })
+    const pia = ok(await repositories.people.add({ name: 'Pia Schulz' })).person
+    expect(JSON.parse((await textAt(root, '.lionsville-architecture/people.json'))!)).toEqual({ version: 1, people: [pia] })
+    await writeAt(root, '.lionsville-architecture/people.json', JSON.stringify({ version: 99, people: [pia] }))
+    expect((await repositories.people.list()).people).toEqual([pia])
+    await expect(repositories.people.add({ name: 'Ada Verbeek' })).rejects.toMatchObject({ key: 'people.unwritable' })
+    expect(JSON.parse((await textAt(root, '.lionsville-architecture/people.json'))!).version).toBe(99)
+  })
+
   it('keeps a drawing\'s picture as a file named by its address, and lets it go when no drawing names it', async () => {
     const root = new FakeDirectory()
     const repositories = folderRepositories({ root, git: memoryGit(root) })

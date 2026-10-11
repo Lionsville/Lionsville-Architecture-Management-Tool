@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * What the five repository suites share: the maker every implementation
+ * What the six repository suites share: the maker every implementation
  * hands them, and the few lines each clause is written with.
  *
- * One maker for all five, because a source brings its repositories as one
+ * One maker for all six, because a source brings its repositories as one
  * value (`Repositories`) and they answer over the same scopes: a step applied
  * through one is what the others follow. Each suite is its own `describe…`,
  * so an implementation runs them one by one and a failure says which seam it
@@ -18,6 +18,7 @@
  * describeHistoryRepository('somewhere', makeSomewhere)
  * describeImageRepository('somewhere', makeSomewhere)
  * describeSettingsRepository('somewhere', makeSomewhere)
+ * describePeopleRepository('somewhere', makeSomewhere)
  * ```
  *
  * **The maker may be async, and the repositories may say when they have
@@ -38,6 +39,7 @@ import type { DesignElement } from '../model/types'
 import type { Revision, ScopeAddress, ScopeCommand, ScopeId, ScopeState, ScopeStep } from '../projects/scopeState'
 import type { HistoryRepository } from './HistoryRepository'
 import type { ImageRepository } from './ImageRepository'
+import type { PeopleRepository } from './PeopleRepository'
 import type { Repositories } from './Repositories'
 import type {
   Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, StepsFor,
@@ -145,12 +147,12 @@ export function held(state: ScopeState | undefined): Omit<ScopeState, 'revision'
 /**
  * The repositories under test with a settle folded into every write — a step,
  * a change to the tree, a record, a label, bytes put, settings written, a
- * scope spoiled — so that a clause looks only once the write has reached
+ * change to the register, a scope spoiled — so that a clause looks only once the write has reached
  * everything that follows it. Every clause reaches the repositories through
  * this, and never through `under.repositories`.
  */
 export function over(under: RepositoriesUnderTest) {
-  const { scopes, index, history, images, settings } = under.repositories
+  const { scopes, index, history, images, settings, people } = under.repositories
   const settle = (): Promise<void> => Promise.resolve(under.settled?.())
   const settled = async <T>(answer: Promise<T>): Promise<T> => {
     const value = await answer
@@ -188,6 +190,19 @@ export function over(under: RepositoriesUnderTest) {
       read: (of) => settings.read(of),
       write: (of, patch) => settled(settings.write(of, patch)),
     } satisfies SettingsRepository,
+    people: {
+      id: people.id,
+      list: () => people.list(),
+      read: (id) => people.read(id),
+      add: (person) => settled(people.add(person)),
+      change: (id, patch) => settled(people.change(id, patch)),
+      leave: (id, on) => settled(people.leave(id, on)),
+      merge: (from, into) => settled(people.merge(from, into)),
+      forget: (id, on) => settled(people.forget(id, on)),
+      remove: (id) => settled(people.remove(id)),
+      bringIn: (entries) => settled(people.bringIn(entries)),
+      since: (revision) => people.since(revision),
+    } satisfies PeopleRepository,
   }
   return {
     ...written, index, settle,

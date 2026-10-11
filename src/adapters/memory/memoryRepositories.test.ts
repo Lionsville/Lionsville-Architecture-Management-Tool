@@ -11,6 +11,7 @@ import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contrac
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../../ports/PeopleRepository.contract'
 import { spoilKept } from '../repositories/testing/spoil'
 import { memoryRepositories } from './memoryRepositories'
 import { MemoryStore } from './MemoryStore'
@@ -33,3 +34,4 @@ describeOrganisationIndex('memory', make)
 describeHistoryRepository('memory', make)
 describeImageRepository('memory', make)
 describeSettingsRepository('memory', make)
+describePeopleRepository('memory', make)

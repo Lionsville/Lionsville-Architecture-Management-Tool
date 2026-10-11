@@ -5,7 +5,7 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
 import { ShellError } from '../../platform/errors'
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
-import { prefix, REPOSITORY_SHELVES } from '../repositories/KeyedStore'
+import { prefix, REPOSITORY_SHELVES, SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
 import { DATABASE_NAME, DATABASE_VERSION, IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb, Standing, StorageManagerLike } from './IndexedDbStore'
@@ -274,6 +274,29 @@ describe('IndexedDbStore, beside another tab', () => {
 })
 
 describe('IndexedDbStore, a database laid out by an earlier build', () => {
+  it('lays out the people register’s shelves over one at version 3, and keeps what was held there', async () => {
+    const indexedDb = fullFake()
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDb.factory.open(DATABASE_NAME, 3)
+      request.onupgradeneeded = () => {
+        for (const shelf of SHELVES.filter((one) => one !== 'people' && one !== 'peopleLog')) request.result.createObjectStore(shelf)
+        request.transaction!.objectStore('settings').put({ kept: true }, 'organisation')
+      }
+      request.onsuccess = () => {
+        request.result.close()
+        resolve()
+      }
+      request.onerror = () => reject(request.error ?? new Error('would not open'))
+    })
+    const store = new IndexedDbStore(indexedDb)
+    expect(await store.transaction(['settings'], 'read', (tx) => tx.get('settings', 'organisation'))).toEqual({ kept: true })
+    await store.transaction(['people', 'peopleLog'], 'write', (tx) => {
+      tx.put('people', 'pe-1', { id: 'pe-1' })
+      return Promise.resolve()
+    })
+    expect(await store.transaction(['people'], 'read', (tx) => tx.get('people', 'pe-1'))).toEqual({ id: 'pe-1' })
+  })
+
   it('lays out a folder’s shelves over one at version 2, and keeps what the repositories held there', async () => {
     const indexedDb = fullFake()
     await new Promise<void>((resolve, reject) => {
@@ -289,7 +312,7 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
       request.onerror = () => reject(request.error ?? new Error('would not open'))
     })
     const store = new IndexedDbStore(indexedDb)
-    expect(DATABASE_VERSION).toBe(3)
+    expect(DATABASE_VERSION).toBe(4)
     expect(await store.transaction(['meta'], 'read', read)).toBe('before')
     await store.transaction(['folders', 'folderData'], 'write', (tx) => {
       tx.put('folders', 'k', { handle: {} })

@@ -25,6 +25,7 @@ import { describeOrganisationIndex } from '../ports/OrganisationIndex.contract'
 import type { MakeRepositories } from '../ports/Repositories.contract'
 import { describeScopeRepository } from '../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../ports/PeopleRepository.contract'
 import { BROWSER_STORAGE_SOURCE } from './browserStorage/browserStorageSource'
 import { openFolder } from './folder/openFolder'
 import { MEMORY_SOURCE } from './memory/memorySource'
@@ -87,4 +88,5 @@ for (const [name, make] of MAKERS) {
   describeHistoryRepository(name, make)
   describeImageRepository(name, make)
   describeSettingsRepository(name, make)
+  describePeopleRepository(name, make)
 }

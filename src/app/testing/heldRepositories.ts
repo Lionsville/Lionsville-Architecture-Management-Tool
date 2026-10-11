@@ -53,6 +53,7 @@ export function heldRepositories(scopes: readonly ScopeSnapshot[] = []): HeldRep
     history: waiting(held.history, ready),
     images: waiting(held.images, ready),
     settings: waiting(held.settings, ready),
+    people: waiting(held.people, ready),
   }
   return { ...repositories, ready, read: (path) => readScope(repositories.scopes, path) }
 }

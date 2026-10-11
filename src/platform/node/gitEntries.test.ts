@@ -227,6 +227,14 @@ describe.skipIf(!available)('a folder that keeps no history, and what is not ask
     expect(await commitPaths(root, ['.lionsville-architecture/local.json'], 'settings')).toBeUndefined()
   })
 
+  it('never commits the people register, whatever is asked', async () => {
+    await startHistory(root)
+    await put('.lionsville-architecture/people.json', '{"version":1,"people":[]}')
+    await put('model.json', '{}')
+    expect((await changes(root)).map((change) => change.path)).not.toContain('.lionsville-architecture/people.json')
+    expect(await commitPaths(root, ['.lionsville-architecture/people.json'], 'people')).toBeUndefined()
+  })
+
   it('reads a tag a person made without words as its name alone', async () => {
     await startHistory(root)
     await put('model.json', '{}')

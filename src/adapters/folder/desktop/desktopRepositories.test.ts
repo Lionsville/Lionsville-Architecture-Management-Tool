@@ -31,6 +31,7 @@ import { addCrews, ok, over, refusal, renameCrews, step } from '../../../ports/R
 import type { RepositoriesUnderTest } from '../../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../../ports/SettingsRepository.contract'
+import { describePeopleRepository } from '../../../ports/PeopleRepository.contract'
 import type { DesktopFiles, DesktopHistory } from '../../desktop/channel'
 import { folderRepositories } from '../folderRepositories'
 import { DesktopFolderGit } from './DesktopFolderGit'
@@ -121,6 +122,7 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
   describeHistoryRepository('desktop folder with git', () => onTheDesktop())
   describeImageRepository('desktop folder with git', () => onTheDesktop())
   describeSettingsRepository('desktop folder with git', () => onTheDesktop())
+  describePeopleRepository('desktop folder with git', () => onTheDesktop())
 
   it('records a scope as a commit git shows a person, and nothing of the scopes under it', async () => {
     const folder = freshFolder()

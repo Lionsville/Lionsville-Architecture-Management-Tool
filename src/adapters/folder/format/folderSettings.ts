@@ -46,6 +46,25 @@ export const LOCAL_SETTINGS_FILE = 'local.json'
 export const FOLDER_SETTINGS_PATH = `${SETTINGS_FOLDER}/${FOLDER_SETTINGS_FILE}`
 export const LOCAL_SETTINGS_PATH = `${SETTINGS_FOLDER}/${LOCAL_SETTINGS_FILE}`
 
+/** The people register (ADR-0036, `peopleFile.ts`): beside the organisation's settings, and never in the history. */
+export const PEOPLE_FILE = 'people.json'
+export const PEOPLE_PATH = `${SETTINGS_FOLDER}/${PEOPLE_FILE}`
+
+/**
+ * The files of a folder its history never holds, by their paths from the
+ * root: the machine's old settings file, which is nobody's to share, and the
+ * people register, whose names a commit would keep where nothing can forget
+ * them. Every git the app runs leaves them out of a commit, and
+ * `.git/info/exclude` keeps them out of one typed in a terminal
+ * (`platform/node/git.ts`).
+ */
+export const OUT_OF_HISTORY: readonly string[] = [LOCAL_SETTINGS_PATH, PEOPLE_PATH]
+
+/** Whether a path from the folder's root is one its history never holds. */
+export function isOutOfHistory(path: string): boolean {
+  return OUT_OF_HISTORY.includes(path)
+}
+
 /** The format of `local.json` this build writes, where a source still keeps one. */
 export const LOCAL_SETTINGS_VERSION = 1
 

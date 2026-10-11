@@ -32,5 +32,8 @@ describe('whose a path is, however a folder’s name is spelled back', () => {
     expect(ownerOf('model.json', ['', 'acme'])).toBe('')
     expect(ownerOf('acme-2/model.json', ['', 'acme'])).toBe('')
     expect(ownerOf('.lionsville-architecture/local.json', [''])).toBeUndefined()
+    // The people register is nobody's scope's file: no entry of any history holds it (ADR-0036 §8).
+    expect(ownerOf('.lionsville-architecture/people.json', [''])).toBeUndefined()
+    expect(ownerOf('.lionsville-architecture/organisation.json', [''])).toBe('')
   })
 })

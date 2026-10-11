@@ -20,7 +20,7 @@
  * one is an entry of each scope whose own files it changed, where they are.
  */
 import { SCOPE_FILE, SCOPE_FOLDERS } from './format/folderFormat'
-import { SETTINGS_FOLDER, LOCAL_SETTINGS_PATH } from './format/folderSettings'
+import { SETTINGS_FOLDER, isOutOfHistory } from './format/folderSettings'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../projects/scopeState'
 
@@ -189,7 +189,8 @@ export function within(address: ScopeAddress, path: string): string | undefined 
  * folder holds it. A scope's own files are everything in its folder but the
  * scopes filed under it — its format's files, its pictures, its settings and
  * whatever a person keeps beside them. The machine's settings file an older
- * build left at the root is nobody's: it never travels.
+ * build left at the root and the people register are nobody's: they never
+ * travel (`OUT_OF_HISTORY`).
  */
 /** How many folders down an address is: none for the organisation. */
 function depth(address: ScopeAddress): number {
@@ -197,7 +198,7 @@ function depth(address: ScopeAddress): number {
 }
 
 export function ownerOf(path: string, addresses: Iterable<ScopeAddress>): ScopeAddress | undefined {
-  if (path === LOCAL_SETTINGS_PATH) return undefined
+  if (isOutOfHistory(path)) return undefined
   let found: ScopeAddress | undefined
   for (const address of addresses) {
     if (within(address, path) === undefined) continue

@@ -238,7 +238,7 @@ describe.skipIf(!available)('git in a working directory', () => {
 import {
   excludeLocalSettings, gitEnvironment, pull, push, remote, resolve,
 } from './git'
-import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
+import { LOCAL_SETTINGS_PATH, PEOPLE_PATH } from '../../adapters/folder/format/folderSettings'
 
 const sh = (cwd: string, args: string[]) => run('git', args, {
   cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
@@ -466,6 +466,33 @@ describe.skipIf(!available)('this machine\'s settings file', () => {
     expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('secrets/\n')
     const exclude = await readFile(join(root, '.git/info/exclude'), 'utf8')
     expect(exclude.split('\n').filter((line) => line === LOCAL_SETTINGS_PATH)).toHaveLength(1)
+  })
+
+  it('keeps the people register out of a snapshot and out of a git add -A, as it does the machine’s file', async () => {
+    await initRepository(root)
+    await mkdir(join(root, '.lionsville-architecture'), { recursive: true })
+    await writeFile(join(root, PEOPLE_PATH), '{"version":1,"people":[{"id":"pe-1","name":"Pia Schulz","pseudonym":"4K7Q"}]}', 'utf8')
+    await writeFile(join(root, '.lionsville-architecture/organisation.json'), '{"people":{"keepNameDays":90}}', 'utf8')
+    await project('scope.json', '{}')
+    const sha = await snapshot(root, 'With the register beside it')
+    const listed = await sh(root, ['ls-tree', '-r', '--name-only', sha!])
+    expect(listed).not.toContain('people.json')
+    expect(listed).toContain('.lionsville-architecture/organisation.json')
+    expect(await sh(root, ['log', '-p', '--all'])).not.toContain('Pia Schulz')
+
+    await sh(root, ['add', '-A'])
+    expect(await sh(root, ['diff', '--cached', '--name-only'])).toBe('')
+    const exclude = (await readFile(join(root, '.git/info/exclude'), 'utf8')).split('\n')
+    expect(exclude).toEqual(expect.arrayContaining([LOCAL_SETTINGS_PATH, PEOPLE_PATH]))
+  })
+
+  it('adds the register to an exclude an older build wrote with the machine’s file alone', async () => {
+    await initRepository(root)
+    await writeFile(join(root, '.git/info/exclude'), `# git ls-files --others --exclude-from=.git/info/exclude\n${LOCAL_SETTINGS_PATH}`, 'utf8')
+    await excludeLocalSettings(root)
+    const exclude = (await readFile(join(root, '.git/info/exclude'), 'utf8')).split('\n')
+    expect(exclude.filter((line) => line === LOCAL_SETTINGS_PATH)).toHaveLength(1)
+    expect(exclude.filter((line) => line === PEOPLE_PATH)).toHaveLength(1)
   })
 
   it('is nothing on a folder that keeps no history', async () => {

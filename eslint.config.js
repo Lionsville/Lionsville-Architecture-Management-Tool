@@ -58,7 +58,7 @@ import { relative } from 'node:path'
  * so `platform`'s shorter row must not be the one left standing.
  */
 const MODULES = [
-  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'documentation', 'decisions', 'observations',
+  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'decisions', 'observations',
   'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
   'app',
 ]
@@ -70,6 +70,7 @@ const MAY_IMPORT = {
   platform: ['i18n'],
   'platform/node': ['model', 'i18n', 'platform', 'projects'],
   widgets: ['i18n'],
+  people: ['model', 'i18n', 'platform', 'widgets'],
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   observations: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
@@ -77,12 +78,12 @@ const MAY_IMPORT = {
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'roadmap'],
-  projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports'],
+  projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports', 'people'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
-  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
-  ports: ['model', 'platform', 'projects', 'agent'],
-  adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations'],
-  providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters'],
+  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people'],
+  ports: ['model', 'platform', 'projects', 'agent', 'people'],
+  adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations', 'people'],
+  providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters', 'people'],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node'),
@@ -95,6 +96,7 @@ const WHY = {
   platform: 'A refusal, a diagnostic, the window. Everything may read it, so it may read almost nothing.',
   'platform/node': 'Node and nothing else: `node:` lives here, so this folder may read the pure modules — and, of the implementations, only the folder\'s own format (`adapters/folder/format/`, ADR-0031 §4) — and is imported by no module at all: only by a process that has a node under it (electron/main, or a build composed from this one).',
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
+  people: 'The register of people is kept outside the history (ADR-0036): its rules, what a reference reads as, and its page. It reads the model\'s shape of a reference and nothing a scope holds, and every module that shows a person asks it for the name.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
   observations: 'An observation is what was seen and a cause what lies behind it (ADR-0021): markdown over the model, laid out in lanes. It does not know how the model is drawn or where it is saved.',
@@ -152,7 +154,7 @@ const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*'
  * spellings a barrel has from inside `src/` are written out instead.
  */
 const BARRELS_THAT_DRAW = [
-  'i18n', 'widgets', 'decisions', 'observations', 'roadmap', 'business', 'technology', 'search',
+  'i18n', 'widgets', 'people', 'decisions', 'observations', 'roadmap', 'business', 'technology', 'search',
 ]
 
 /** A barrel as it is written from inside `src/`: one level up, or two from `platform/node`. */

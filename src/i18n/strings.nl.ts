@@ -22,6 +22,7 @@ import { NL as projects } from '../projects/strings/nl'
 import { NL as search } from '../search/strings/nl'
 import { NL as business } from '../business/strings/nl'
 import { NL as technology } from '../technology/strings/nl'
+import { NL as people } from '../people/strings/nl'
 
 export const NL = {
   ...adapters,
@@ -39,4 +40,5 @@ export const NL = {
   ...search,
   ...business,
   ...technology,
+  ...people,
 } as const

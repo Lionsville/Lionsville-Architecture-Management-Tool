@@ -26,7 +26,7 @@
  */
 import { ShellError } from '../../../platform/errors'
 import { isBinaryPath } from '../format/folderFormat'
-import { LOCAL_SETTINGS_PATH } from '../format/folderSettings'
+import { isOutOfHistory } from '../format/folderSettings'
 import type { DirectoryHandleLike } from '../DirectoryHandle'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'
 import { filesUnder, textAt } from '../handles'
@@ -109,7 +109,7 @@ async function workingIn(root: DirectoryHandleLike, kept: Iterable<string>): Pro
   const files = await filesUnder(root, (name, within) => rule.skipsFolder(within ? `${within}/${name}` : name))
   const found = new Map<string, Working>()
   for (const { path, handle } of files) {
-    if (path === LOCAL_SETTINGS_PATH || rule.skipsFile(path)) continue
+    if (isOutOfHistory(path) || rule.skipsFile(path)) continue
     const file = await handle.getFile()
     found.set(path, { path, size: file.size, lastModified: file.lastModified, read: async () => new Uint8Array(await file.arrayBuffer()) })
   }
