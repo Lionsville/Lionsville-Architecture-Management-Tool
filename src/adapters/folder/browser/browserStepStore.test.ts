@@ -19,7 +19,7 @@ import { fakeIndexedDb } from '../../webStorage/testing/fakeIndexedDb'
 import { StepMemory } from '../stepMemory'
 import { BrowserFolder } from './browserFolder'
 import type { SameFolder } from './browserFolder'
-import { browserPlaceStore, browserStampCache, browserStepStore } from './browserStepStore'
+import { browserPersonSettings, browserPlaceStore, browserStampCache, browserStepStore } from './browserStepStore'
 
 const same: SameFolder = (kept, mine) => Promise.resolve((kept as { folder: string }).folder === (mine as { folder: string }).folder)
 
@@ -57,6 +57,18 @@ describe('what a browser keeps for a folder', () => {
     expect(await browserPlaceStore(again).read()).toEqual({ 's-1': 'acme' })
     expect(await browserStampCache(again).read()).toEqual({ 'acme\u0000map.png': found })
     expect(await browserStepStore(again).read()).toBeUndefined()
+  })
+
+  /** *This is me* (ADR-0036 §11) is the person's, kept with this browser as the desktop keeps it with the install. */
+  it('keeps the person’s own settings about the folder through a reload, and another folder’s apart', async () => {
+    const store = new IndexedDbStore(fakeIndexedDb())
+    const acme = () => new BrowserFolder(store, { folder: 'acme' }, same)
+    expect(await browserPersonSettings(acme()).read()).toEqual({})
+    await browserPersonSettings(acme()).write({ people: { me: 'pe-ada' } })
+    expect(await browserPersonSettings(acme()).read()).toEqual({ people: { me: 'pe-ada' } })
+    expect(await browserPersonSettings(new BrowserFolder(store, { folder: 'globex' }, same)).read()).toEqual({})
+    await browserPersonSettings(acme()).write({})
+    expect(await browserPersonSettings(acme()).read()).toEqual({})
   })
 
   it('settles two tabs opening a new folder at once on one key, so neither’s steps are kept where the other never looks', async () => {

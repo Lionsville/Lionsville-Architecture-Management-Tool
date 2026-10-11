@@ -10,7 +10,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { FakeDirectory } from '../../adapters/folder/fakeDirectory'
 import { PEOPLE_PATH, readPeopleFile } from '../../adapters/folder/format/peopleFile'
+import { folderRepositories } from '../../adapters/folder/folderRepositories'
 import { textAt } from '../../adapters/folder/handles'
+import { meOf, mePatch } from '../../people/me'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { browserOpening, destinationIn } from './openings'
 
@@ -28,7 +30,24 @@ describe('a folder in a tab', () => {
     Object.assign(globalThis, { indexedDB: new IDBFactory(), IDBKeyRange })
     const opening = browserOpening(new FakeDirectory('Architecture'))
     expect([opening.name, opening.root, opening.historyNoteKey]).toEqual(['Architecture', 'Architecture', 'folder.historyNoteBrowser'])
-    expect([opening.git, opening.steps, opening.places, opening.stamps].every(Boolean)).toBe(true)
+    expect([opening.git, opening.steps, opening.places, opening.stamps, opening.person].every(Boolean)).toBe(true)
+  })
+
+  /**
+   * *This is me* is kept in this browser's database beside the folder's
+   * handle (`browserStepStore.test.ts` reads it back after a reload), and
+   * nothing of it is written into the folder (ADR-0036 §11).
+   */
+  it('keeps who you are in this browser, never in the folder', async () => {
+    Object.assign(globalThis, { indexedDB: new IDBFactory(), IDBKeyRange })
+    const handle = new FakeDirectory('Architecture')
+    const opening = browserOpening(handle)
+    const settings = () => folderRepositories({ root: opening.handle, git: opening.git!, person: opening.person! }).settings
+    await settings().write({ of: 'person' }, mePatch('pe-ada'))
+    expect(meOf(await settings().read({ of: 'person' }))).toBe('pe-ada')
+    const written: string[] = []
+    for await (const entry of handle.values()) written.push(entry.name)
+    expect(written).toEqual([])
   })
 
   it('keeps nothing beside the folder in a browser with no database', () => {

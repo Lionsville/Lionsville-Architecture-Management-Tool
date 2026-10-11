@@ -12,7 +12,9 @@ import { desktopHistory, desktopSettings } from '../../adapters/desktop/desktopF
 import { rememberingWrites } from '../../adapters/desktop/rememberingWrites'
 import { BrowserFolder } from '../../adapters/folder/browser/browserFolder'
 import { browserFolderGit } from '../../adapters/folder/browser/browserFolderGit'
-import { browserPlaceStore, browserStampCache, browserStepStore } from '../../adapters/folder/browser/browserStepStore'
+import {
+  browserPersonSettings, browserPlaceStore, browserStampCache, browserStepStore,
+} from '../../adapters/folder/browser/browserStepStore'
 import { DesktopFolderGit } from '../../adapters/folder/desktop/DesktopFolderGit'
 import { desktopPlaceStore, desktopStampCache, desktopStepStore } from '../../adapters/folder/desktop/desktopStepStore'
 import { IpcDirectoryHandle } from '../../adapters/folder/desktop/IpcDirectoryHandle'
@@ -59,8 +61,9 @@ export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory)
 
 /**
  * A folder a browser tab was given: its history, the step ids its
- * repositories applied and what it has learnt about the folder, kept in this
- * browser's database under the folder's handle — so they outlive the tab.
+ * repositories applied, what it has learnt about the folder and the person's
+ * own settings about it (*This is me*), kept in this browser's database under
+ * the folder's handle — so they outlive the tab, and never enter the folder.
  */
 export function browserOpening(handle: DirectoryHandleLike): FolderOpening {
   const opening: FolderOpening = { handle, name: handle.name, root: handle.name }
@@ -74,6 +77,7 @@ export function browserOpening(handle: DirectoryHandleLike): FolderOpening {
     steps: browserStepStore(folder),
     places: browserPlaceStore(folder),
     stamps: browserStampCache(folder),
+    person: browserPersonSettings(folder),
   }
 }
 
