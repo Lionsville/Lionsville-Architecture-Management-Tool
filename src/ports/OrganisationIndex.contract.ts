@@ -99,6 +99,23 @@ export function describeOrganisationIndex(name: string, make: MakeRepositories):
       expect(held?.causes?.map((one) => [one.id, one.root])).toEqual([['ca-late', true]])
     })
 
+    /**
+     * A finding marked as intended in a scope below is silenced where the
+     * organisation lists the whole tree (ADR-0036, amended 11 October 2026),
+     * off the index: an index that left the marks out would list again what a
+     * scope accepted.
+     */
+    it('holds every scope’s findings marked as intended, as its steps left them', async () => {
+      const repositories = await fresh()
+      const claims = await repositories.scope('claims', 'Claims')
+      await repositories.steps(claims,
+        { type: 'checkMark.add', mark: { check: 'check.notDrawn', key: 'crews', reason: 'A record, on no board yet', on: '2026-10-11' } },
+        { type: 'checkMark.add', mark: { check: 'check.roleVacant', key: 'crews ro-po', on: '2026-10-12' } })
+      const held = part((await repositories.index.read()).scopes, claims)?.model
+      expect(held?.checkMarks).toEqual((await repositories.state(claims)).model.checkMarks)
+      expect(held?.checkMarks?.map((mark) => mark.check)).toEqual(['check.notDrawn', 'check.roleVacant'])
+    })
+
     it('answers one revision while nothing changes, and another once a step lands', async () => {
       const repositories = await fresh()
       const acme = await repositories.scope('acme', 'Acme Logistics')

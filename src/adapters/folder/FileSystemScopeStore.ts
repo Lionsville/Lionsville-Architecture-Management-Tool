@@ -69,6 +69,7 @@ import type { Transition } from '../../model/transition'
 import { transitionFromFile } from './format/transitionFile'
 import { OPERATING_FILES, operatingFrom } from './format/operatingFile'
 import { ASSIGNMENT_FILES, assignmentsFrom } from './format/assignmentFile'
+import { CHECK_MARK_FILES, checkMarksFrom } from './format/checkMarkFile'
 
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
@@ -182,7 +183,7 @@ export const SET_ASIDE = '.unread'
 
 /** The four lists of a scope's analysis, as a store reads them for the index. */
 type AnalysisList = 'observations' | 'causes' | 'solutions' | 'experiments'
-type OrganisationList = 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments'
+type OrganisationList = 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks'
 
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
@@ -476,12 +477,13 @@ export class FileSystemScopeStore implements ScopeStore {
   /**
    * The operating model and the assignments (ADR-0036), which the index reads
    * across the tree: who holds which role is asked of every scope at once, and
-   * the organisation's roles are found from any of them. A list file that will
-   * not read is left out, as an unreadable plan is.
+   * the organisation's roles are found from any of them — and the findings
+   * marked as intended, which the organisation's list reads of every scope. A
+   * list file that will not read is left out, as an unreadable plan is.
    */
   private async organisationIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], OrganisationList>> {
     const texts = new Map<string, string>()
-    for (const path of [...OPERATING_FILES, ...ASSIGNMENT_FILES]) {
+    for (const path of [...OPERATING_FILES, ...ASSIGNMENT_FILES, ...CHECK_MARK_FILES]) {
       const [under, name] = path.split('/')
       const held = await folder.getDirectoryHandle(under).catch(this.orAbsent(`the ${under} folder`))
       const handle = await held?.getFileHandle(name).catch(this.orAbsent('a list of the organisation'))
@@ -489,7 +491,7 @@ export class FileSystemScopeStore implements ScopeStore {
       if (text !== undefined) texts.set(path, text)
     }
     const textAt = (path: string) => texts.get(path)
-    return { ...operatingFrom(textAt), ...assignmentsFrom(textAt) }
+    return { ...operatingFrom(textAt), ...assignmentsFrom(textAt), ...checkMarksFrom(textAt) }
   }
 
   /** The records one folder holds, by number. A file that will not read is left out. */

@@ -61,6 +61,7 @@ import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { isUnit } from '../model/units'
 import type { Assignment, Organisation, UnitMove } from '../model/units'
+import type { KeptCheckMark } from '../model/checkMarks'
 import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -216,6 +217,12 @@ export type IndexedUnit = { scope: ScopePath; unit: DesignElement }
 /** An assignment, and the scope that keeps it: its unit's (ADR-0036 §4). */
 export type IndexedAssignment = { scope: ScopePath; assignment: Assignment }
 
+/**
+ * A finding marked as intended, and the scope that keeps it: the scope the
+ * finding is about (ADR-0036, amended). `model/checkMarks`'s `KeptCheckMark`.
+ */
+export type IndexedCheckMark = KeptCheckMark
+
 /** A unit put under another parent on a day by a plan (ADR-0036 §6), and the plan that does it and the scope that keeps that plan. */
 export type IndexedMove = { scope: ScopePath; plan: { id: string; number: number }; move: UnitMove }
 
@@ -349,6 +356,13 @@ export type ScopeIndex = {
    */
   assignments(): IndexedAssignment[]
   /**
+   * Every finding marked as intended in the organisation (ADR-0036, amended),
+   * scope by scope in path order and in each scope's own order: what a list
+   * of findings is split by (`model/checkMarks.splitMarked`), so a mark kept
+   * in a scope below silences the finding where the organisation lists it.
+   */
+  checkMarks(): IndexedCheckMark[]
+  /**
    * The operating model (ADR-0036 §2), as the organisation — the root scope
    * — keeps it; empty lists where it keeps none, or was not read.
    */
@@ -445,6 +459,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const fromAbove = new Map<ScopePath, Map<string, CauseAbove[]>>()
   const unitDefinitions: IndexedUnit[] = []
   const assignments: IndexedAssignment[] = []
+  const checkMarks: IndexedCheckMark[] = []
   const moves: IndexedMove[] = []
   const unitPlans: IndexedUnitPlan[] = []
   let operating = NO_OPERATING_MODEL
@@ -487,6 +502,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       readAcross(analysis, absorptions, fromAbove)
     }
     for (const assignment of model.assignments ?? []) assignments.push({ scope: path, assignment })
+    checkMarks.push(...checkMarksOf(path, model))
     moves.push(...movesOf(path, model))
     unitPlans.push(...unitPlansOf(path, model))
     if (path === '') operating = operatingOf(model)
@@ -562,12 +578,18 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     },
     units: () => [...units],
     assignments: () => [...assignments],
+    checkMarks: () => [...checkMarks],
     operatingModel: () => operating,
     moves: () => [...moves],
     unitPlans: () => [...unitPlans],
     organisation: () => organisation,
     scopes: () => [...paths],
   }
+}
+
+/** A scope's findings marked as intended, each with the scope that keeps it, in the scope's order. */
+function checkMarksOf(path: ScopePath, model: ScopeModel['model']): IndexedCheckMark[] {
+  return (model.checkMarks ?? []).map((mark) => ({ scope: path, mark }))
 }
 
 /** The plans a scope flags as initiatives, by number, each with the elements it names as the scope holds them. */

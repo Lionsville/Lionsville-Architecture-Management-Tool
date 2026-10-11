@@ -28,6 +28,7 @@ import type { ImageEntry } from '../model/imageName'
 import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
+import type { CheckMark } from '../model/checkMarks'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -281,6 +282,12 @@ export type ScopeModel = {
     responsibilities?: readonly Responsibility[]
     operatingRules?: readonly OperatingRule[]
     assignments?: readonly Assignment[]
+    /**
+     * The findings about the scope marked as intended (ADR-0036, amended):
+     * read with the model so a list of the whole tree's findings — the
+     * organisation's — leaves out what a scope below accepted.
+     */
+    checkMarks?: readonly CheckMark[]
   }
 }
 

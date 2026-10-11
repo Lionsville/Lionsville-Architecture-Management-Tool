@@ -71,13 +71,13 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
 
 /**
  * What the index reads of a scope: its records and rows, its analysis, the
- * organisation's operating model and the scope's assignments, and nothing
- * written in prose.
+ * organisation's operating model, the scope's assignments and its marks, and
+ * nothing written in prose.
  */
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
   const {
     elements, relations, transitions, observations, causes, solutions, experiments,
-    unitTypes, roles, responsibilities, operatingRules, assignments,
+    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks,
   } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
@@ -96,6 +96,8 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
       ...(responsibilities ? { responsibilities } : {}),
       ...(operatingRules ? { operatingRules } : {}),
       ...(assignments ? { assignments } : {}),
+      // The findings marked as intended, which the organisation's list reads of every scope.
+      ...(checkMarks ? { checkMarks } : {}),
     },
   }
 }
