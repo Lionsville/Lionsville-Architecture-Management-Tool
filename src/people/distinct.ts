@@ -23,7 +23,7 @@
  * here, or one a file never carried — is dropped with it.
  */
 import type { Person, PersonId } from './person'
-import { endOf } from './person'
+import { redirectEnd } from './person'
 
 export type DistinctPair = {
   /** The lower of the two ids. */
@@ -86,7 +86,7 @@ export function tidyDistinct(distinct: readonly DistinctPair[], people: readonly
   const byId = new Map(people.map((person) => [person.id, person]))
   const kept = new Map<string, DistinctPair>()
   for (const pair of distinct) {
-    const [one, other] = [endOf(byId, pair.a), endOf(byId, pair.b)]
+    const [one, other] = [redirectEnd(byId, pair.a), redirectEnd(byId, pair.b)]
     const held = [byId.get(one), byId.get(other)]
     if (one === other || held.some((person) => person === undefined || person.state === 'forgotten' || person.mergedInto !== undefined)) continue
     const key = pairKey(one, other)

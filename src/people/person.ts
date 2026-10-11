@@ -148,7 +148,7 @@ export function isRedirect(person: Person): boolean {
 }
 
 /** Where a redirect ends: the first id along it that is no redirect, or that the register does not hold. */
-export function endOf(byId: ReadonlyMap<PersonId, Person>, id: PersonId): PersonId {
+export function redirectEnd(byId: ReadonlyMap<PersonId, Person>, id: PersonId): PersonId {
   const seen = new Set<PersonId>()
   let at = id
   for (let held = byId.get(at); held?.mergedInto !== undefined && !seen.has(at); held = byId.get(at)) {

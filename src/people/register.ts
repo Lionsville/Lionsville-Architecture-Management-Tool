@@ -48,7 +48,7 @@ import { isDay } from '../model/lifecycle'
 import type {
   MergeLeaving, NewPerson, PeopleRefusal, Person, PersonId, PersonPatch, PersonState,
 } from './person'
-import { endOf, isEmail, isRedirect, mergeAsks, mintPersonId, normalEmail, normalName } from './person'
+import { isEmail, isRedirect, mergeAsks, mintPersonId, normalEmail, normalName, redirectEnd } from './person'
 import { distinctPair, pairKey, sameDistinct, tidyDistinct } from './distinct'
 import type { DistinctPair } from './distinct'
 import { drawPseudonym } from './pseudonym'
@@ -329,14 +329,14 @@ function bringIn(
     const next = held ? broughtOver(held, entry) : entry
     if (held && samePerson(held, next)) continue
     // A redirect that would lead back to its own entry is a loop, and both would read as nobody: what is held stays.
-    if (next.mergedInto !== undefined && next !== held && endOf(byId, next.mergedInto) === entry.id) continue
+    if (next.mergedInto !== undefined && next !== held && redirectEnd(byId, next.mergedInto) === entry.id) continue
     byId.set(entry.id, next)
     changed.add(entry.id)
   }
   // Every redirect one step long again, and none into an entry removed here.
   for (const person of [...byId.values()]) {
     if (person.mergedInto === undefined) continue
-    const end = endOf(byId, person.mergedInto)
+    const end = redirectEnd(byId, person.mergedInto)
     if (removedHere.has(end) || tombstones.has(end)) takeAway(person.id)
     else if (end !== person.mergedInto) {
       byId.set(person.id, { ...person, mergedInto: end })
