@@ -1901,6 +1901,18 @@ haalt toewijzingen weg die pas daarna zouden beginnen.
 Een eenheid die een andere scope bijhoudt wordt hier getoond en daar
 gewijzigd.
 
+**Waar een aansturende rol een recht geeft.** De app geeft zelf geen rechten
+aan wie een eenheid aanstuurt; een bron die weet wie zich aanmeldt mag dat wel,
+en zegt het. Daar wijzigt iemand die aan een vermelding gekoppeld is en
+vandaag een aansturende rol vervult de mensen van die eenheid en van de
+eenheden eronder, ook in een scope die hij alleen mag lezen: **Toewijzen**,
+een correctie, **Beëindigen op** en verwijderen — een aansturende rol alleen
+in een eenheid onder de eigen. Verder verandert er niets aan de eenheid.
+Hetzelfde geldt voor een vacature op het organogram, voor **Nieuwe persoon…**
+en **Markeren als vertrokken** op de pagina Mensen waar de bron dat zegt, en
+voor *Verplaats de mensen*, dat dan hun rijen schrijft en de andere laat zoals
+ze zijn.
+
 Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
 `scopes`, `extraSlots`), vraagt met `assignments.list` wie wat vervult — over
 de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst

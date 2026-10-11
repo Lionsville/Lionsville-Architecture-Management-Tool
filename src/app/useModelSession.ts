@@ -277,6 +277,14 @@ export type ModelSessionDeps = {
   /** Nothing may be changed here (`ModelSession.readOnly`). Absent is `false`. */
   readOnly?: boolean
   /**
+   * A command a read-only session takes all the same: one the source grants
+   * by a right of the person's own — the people of a unit they manage
+   * (ADR-0036 §12; `model/managing.ts`) — asked of the model as it stands
+   * before it. The source's own door decides it again. Absent, a read-only
+   * session takes nothing.
+   */
+  letThrough?: (command: Command, model: Model) => boolean
+  /**
    * Keep the changes made here for a writer to take (`SessionJournal`). Absent
    * where nothing writes them — a source whose steps travel elsewhere, a test
    * — and then nothing is kept, rather than a list that only grows.
@@ -291,7 +299,7 @@ export type ModelSessionDeps = {
 }
 
 export function useModelSession(deps: ModelSessionDeps): ModelSession {
-  const { initialProject, notify, s, takenInTree, readOnly = false, journaling = false, problem } = deps
+  const { initialProject, notify, s, takenInTree, readOnly = false, journaling = false, problem, letThrough } = deps
 
   const [model, setModel]
  = useState<Model>(() => fromArrays(initialProject.model))
@@ -307,10 +315,11 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
    * author did, and a document adopted in place of this one, do not.
    */
   const mayChange = useCallback((command?: Command): boolean => {
-    if (!readOnly) return true
+    // Where the scope is only read, a change the source grants by a right of the person's own (`letThrough`).
+    if (!readOnly || (command !== undefined && letThrough?.(command, modelRef.current) === true)) return true
     notify(s('shell.readOnlyRefused'), 'warning', ...offerFor(problem, { where: 'session.readOnly', key: 'shell.readOnlyRefused', command: command?.type }))
     return false
-  }, [readOnly, notify, s, problem])
+  }, [readOnly, notify, s, problem, letThrough])
   const guardedLogos = useCallback<ModelSession['setLogoLibrary']>((next) => {
     if (mayChange()) setLogoLibrary(next)
   }, [mayChange])

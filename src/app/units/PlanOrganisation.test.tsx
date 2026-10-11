@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { renderShell } from '../testing/renderShell'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
+import type { ManagesPeople } from '../../model/managing'
 import type { HostModel } from '../../model/hostModel'
 import { fromArrays, toArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
@@ -97,7 +98,7 @@ const index = indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model:
 let made = 0
 
 /** The plan's two parts over a session held here, written by the model's own writer, with an undo. */
-function Harness({ dispatched, opened = [] }: { dispatched: Command[]; opened?: string[] }) {
+function Harness({ dispatched, opened = [], readOnly = false, manages }: { dispatched: Command[]; opened?: string[]; readOnly?: boolean; manages?: ManagesPeople }) {
   const [model, setModel] = useState<Model>(fromArrays(SHIPPING))
   const [undo, setUndo] = useState<Command[]>([])
   const held = { current: model }
@@ -117,7 +118,8 @@ function Harness({ dispatched, opened = [] }: { dispatched: Command[]; opened?: 
   const host = toArrays(model)
   const plan = host.transitions!.find((one) => one.id === 'tr-7')!
   const props = {
-    plan, scope: 'shipping', model: host, index, people: register, readOnly: false, dispatch, makeId: (prefix: string) => `${prefix}-new-${(made += 1)}`,
+    plan, scope: 'shipping', model: host, index, people: manages ? { ...register, manages } : register, readOnly, dispatch,
+    makeId: (prefix: string) => `${prefix}-new-${(made += 1)}`,
     land, scopeLabel: (path: string) => path || 'Acme Logistics', onOpenElement: (id: string) => { opened.push(id) }, s,
   }
   return (
@@ -212,5 +214,31 @@ describe('a reorganisation on its plan\'s page', () => {
     // Every assignment runs past the day again, and nothing new is left behind.
     await waitFor(() => expect(screen.getAllByTestId(/^move-row-/)).toHaveLength(3))
     expect(within(screen.getByTestId('plan-after')).getByTestId('plan-after-parcel').textContent).not.toContain('Omar Haddad')
+  })
+
+  /** A manager where the scope is only read and the source grants that right (ADR-0036 §12). */
+  it('moves a manager\'s rows to places in their units where the scope is only read, and leaves every other row as it is', async () => {
+    const dispatched: Command[] = []
+    const manages: ManagesPeople = { held: ['shipping'], units: new Set(['pf', 'parcel']), below: new Set(), managing: new Set(['ro-lead']) }
+    renderShell(<Harness dispatched={dispatched} readOnly manages={manages} />)
+    // Their own unit's managing role is a manager above's to move.
+    expect(within(screen.getByTestId('move-row-as-1')).getByRole('combobox').getAttribute('aria-disabled')).toBe('true')
+    // A suggestion out of their reach is not taken: the row only ends, and no place outside their units is offered.
+    expect(within(screen.getByTestId('move-row-as-3')).getByRole('combobox').textContent).toBe('Ends on 2026-12-31, nothing after')
+    fireEvent.mouseDown(within(screen.getByTestId('move-row-as-2')).getByRole('combobox'))
+    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).not.toContain('Product manager, Freight')
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    fireEvent.click(screen.getByTestId('move-write'))
+    await waitFor(() => expect(screen.getByTestId('move-said').textContent).toContain('2 ended'))
+    const step = dispatched[0]
+    const commands = step.type === 'transaction' ? step.commands : [step]
+    expect(commands.map((one) => (one.type === 'assignment.add' ? `add ${one.assignment.person.person} ${one.assignment.unitId}` : `${one.type} ${(one as { id: string }).id}`)))
+      .toEqual(['assignment.update as-2', 'add pe-sanne parcel', 'assignment.update as-3'])
+  })
+
+  it('offers a reader who manages nothing no write at all', () => {
+    renderShell(<Harness dispatched={[]} readOnly />)
+    expect(screen.queryByTestId('move-write')).toBeNull()
+    expect(within(screen.getByTestId('move-row-as-3')).getByRole('combobox').textContent).toBe('Cluster lead, Parcel — suggested')
   })
 })

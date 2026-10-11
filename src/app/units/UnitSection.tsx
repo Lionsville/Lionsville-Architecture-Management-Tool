@@ -21,6 +21,12 @@
  * read here and its people are changed in the scope that answers for it; the
  * assignments are that scope's records. A person is named by the register,
  * and *you* is marked where this install says who you are.
+ *
+ * **A manager changes their units' people where the scope is only read**
+ * (ADR-0036 §12), where the source grants that right
+ * (`PeopleRegisterAccess.manages`): *Assign*, a holder's correction, end and
+ * removal on a unit they manage — a managing role's only strictly below one
+ * they hold — and nothing else of the unit.
  */
 import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -37,6 +43,7 @@ import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
 import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
 import type { Assignment } from '../../model/units'
+import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
@@ -130,6 +137,10 @@ export function UnitSection(props: UnitSectionProps) {
   const [assigning, setAssigning] = useState<Assigning | undefined>(undefined)
   const standIn = element.ref !== undefined
   const editable = !readOnly && !standIn
+  // The unit's people: wherever the scope may be written, and — where it is only
+  // read — a unit the person manages, a managing role's only strictly below one they hold.
+  const peopleHere = people !== undefined && !standIn && (!readOnly || (people.manages?.units.has(element.id) ?? false))
+  const mayRole = (roleId: string) => peopleHere && (!readOnly || mayChangeIn(people?.manages, element.id, roleId))
   const name = (person: string) => personText(pickedPerson(person), facts.register, s)
   const update = (patch: Partial<DesignElement>) => dispatch({ type: 'element.update', id: element.id, patch })
   return (
@@ -151,7 +162,7 @@ export function UnitSection(props: UnitSectionProps) {
               <Typography sx={LINE}>{facts.answersFor.join(', ')}</Typography>
             </>
           )}
-          <Slots {...props} today={today} looking={today !== props.today} facts={facts} editable={editable && people !== undefined} name={name} onAssign={setAssigning} />
+          <Slots {...props} today={today} looking={today !== props.today} facts={facts} mayRole={mayRole} name={name} onAssign={setAssigning} />
           {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
           <Managers {...props} today={today} looking={today !== props.today} facts={facts} name={name} />
           <OverTime element={element} facts={facts} s={s} />
@@ -171,7 +182,7 @@ export function UnitSection(props: UnitSectionProps) {
       {assigning && people && (
         <AssignDialog
           assigning={assigning} unit={{ id: element.id, name: element.name }}
-          roles={slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? [])}
+          roles={slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? []).filter((role) => mayRole(role.id))}
           register={people} today={assignFrom} endOn={endOn} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
           loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today, facts.canonical) * 100), day: today })}
           onClose={() => setAssigning(undefined)} s={s}
@@ -233,8 +244,8 @@ function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, 
 type Facts = ReturnType<typeof useUnitFacts>
 
 /** The roles it holds and who holds them on the day, with the vacancies a slot's minimum leaves. */
-function Slots({ element, today, looking, facts, editable, name, onAssign, s }: UnitSectionProps & {
-  looking: boolean; facts: Facts; editable: boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
+function Slots({ element, today, looking, facts, mayRole, name, onAssign, s }: UnitSectionProps & {
+  looking: boolean; facts: Facts; mayRole: (roleId: string) => boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
 }) {
   const slots = slotsOf(element, facts.type)
   const inSlots = new Set(slots.map((slot) => slot.role))
@@ -245,14 +256,14 @@ function Slots({ element, today, looking, facts, editable, name, onAssign, s }: 
       {slots.length === 0 && <Typography sx={QUIET}>{s('unit.rolesNone')}</Typography>}
       {slots.map((slot) => (
         <SlotLine key={slot.role} slot={slot} role={facts.roles.get(slot.role)} element={element} facts={facts} today={today}
-          editable={editable} name={name} onAssign={onAssign} s={s} />
+          editable={mayRole(slot.role)} name={name} onAssign={onAssign} s={s} />
       ))}
       {others.length > 0 && (
         <Box sx={{ mt: 0.5 }}>
           <Typography sx={QUIET}>{s('unit.otherRoles')}</Typography>
           {others.map((one, at) => (
             <Holder key={`${one.id}/${at}`} assignment={one} label={`${facts.roles.get(one.roleId)?.name ?? one.roleId}: ${name(personOf(one))}`}
-              you={facts.isMe(personOf(one))} editable={editable} onAssign={onAssign} s={s} />
+              you={facts.isMe(personOf(one))} editable={mayRole(one.roleId)} onAssign={onAssign} s={s} />
           ))}
         </Box>
       )}

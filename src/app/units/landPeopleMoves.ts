@@ -25,6 +25,12 @@
  * **What was read is what is written.** An assignment ended or taken away
  * since the list was drawn is passed over rather than refused, and an id
  * taken since is not written twice.
+ *
+ * **A manager** (ADR-0036 §12) writes a scope only read to them where every
+ * command of its part changes the people of a unit they manage
+ * (`model/managing.onlyPeopleIn`), asked of that scope as it is read: the
+ * source's door decides it again, and a part outside their units refuses the
+ * whole before anything is written.
  */
 import { useCallback } from 'react'
 import { isDay } from '../../model/lifecycle'
@@ -35,6 +41,8 @@ import type { Command } from '../../model/commands'
 import { apply } from '../../model/reducer'
 import type { StringKey } from '../../i18n'
 import { ShellError } from '../../platform/errors'
+import { onlyPeopleIn } from '../../model/managing'
+import type { ManagesPeople } from '../../model/managing'
 import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeCommand } from '../../projects/scopeState'
@@ -55,6 +63,8 @@ export type MovePeopleDeps = {
   /** The source carries every step of the open scope: its dispatch is its write. */
   published?: boolean
   onTreeChanged?: () => void
+  /** Whose people the person manages, where the source grants that right: a scope only read to them takes their part. */
+  manages?: ManagesPeople
 }
 
 /** Where the moves went: the scopes written and how many ended and began, or why nothing was. */
@@ -103,13 +113,17 @@ function counted(steps: readonly Command[]): { ended: number; begun: number } {
  */
 export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<ScopePath, readonly Command[]>): Promise<PeopleMoved> {
   const paths = [...steps.keys()]
-  const refusedHere = paths.find((path) => !deps.writable(path))
+  const { manages } = deps
+  /** Whether a part may be written in a scope only read here: a manager's, of their units' people alone. */
+  const theirs = (model: Model, step: Command) => manages !== undefined && onlyPeopleIn(model, [step], manages, manages.managing)
+  const refusedHere = paths.find((path) => !deps.writable(path) && manages === undefined)
   if (refusedHere !== undefined) return { ok: false, reason: 'shell.scopeReadOnly', scope: refusedHere }
   const ownCommands = steps.get(deps.scope)
   const own = ownCommands ? stepIn(deps.session.indexed(), ownCommands) : undefined
   if (own) {
     const asked = apply(deps.session.indexed(), own)
     if (!asked?.ok) return { ok: false, reason: asked?.reason ?? 'unchanged', scope: deps.scope }
+    if (!deps.writable(deps.scope) && !theirs(deps.session.indexed(), own)) return { ok: false, reason: 'shell.scopeReadOnly', scope: deps.scope }
   }
   const others = paths.filter((path) => path !== deps.scope)
   const written: Command[] = []
@@ -121,8 +135,10 @@ export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<S
         changed.length = 0
         const out = new Map<ScopePath, ScopeCommand[]>()
         for (const [path, scope] of held) {
-          const step = stepIn(fromArrays(scope.model), steps.get(path) ?? [])
+          const model = fromArrays(scope.model)
+          const step = stepIn(model, steps.get(path) ?? [])
           if (!step) continue
+          if (!deps.writable(path) && !theirs(model, step)) throw new ShellError('shell.scopeReadOnly')
           out.set(path, [step])
           written.push(step)
           changed.push(path)
@@ -159,13 +175,14 @@ export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<S
 /** The people's moves as the screens land them: nothing where the scope open may not be changed. */
 export type LandPeopleMoves = (steps: ReadonlyMap<ScopePath, readonly Command[]>) => Promise<PeopleMoved>
 
-/** {@link landPeopleMoves}, asked first whether anything may be written here. */
+/** {@link landPeopleMoves}, asked first whether anything may be written here — by scope rights, or a manager's part. */
 export function useLandPeopleMoves(deps: MovePeopleDeps & { mayChange: () => boolean }): LandPeopleMoves {
-  const { scope, scopes, session, writable, save, published, onTreeChanged, mayChange } = deps
+  const { scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages } = deps
   return useCallback(async (steps) => {
-    if (!mayChange()) return { ok: false, reason: 'readOnly' }
+    if (manages === undefined && !mayChange()) return { ok: false, reason: 'readOnly' }
     return landPeopleMoves({
       scope, scopes, session, writable, save, ...(published !== undefined ? { published } : {}), ...(onTreeChanged ? { onTreeChanged } : {}),
+      ...(manages ? { manages } : {}),
     }, steps)
-  }, [scope, scopes, session, writable, save, published, onTreeChanged, mayChange])
+  }, [scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages])
 }

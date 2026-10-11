@@ -2015,6 +2015,18 @@ und entfernt Zuordnungen, die erst danach begonnen hätten.
 Eine Einheit, die ein anderer Bereich führt, wird hier gezeigt und dort
 geändert.
 
+**Wo eine führende Rolle ein Recht gibt.** Die App gewährt selbst nichts
+daraus, wer eine Einheit führt; eine Quelle, die weiß, wer sich anmeldet, darf
+es und sagt es. Dort ändert, wer mit einem Eintrag verknüpft ist und heute eine
+führende Rolle innehat, die Personen dieser Einheit und der Einheiten darunter,
+auch in einem Bereich, den er nur lesen darf: **Zuordnen**, eine Korrektur,
+**Beenden am** und Entfernen — eine führende Rolle nur in einer Einheit unter
+der eigenen. Sonst ändert sich an der Einheit nichts. Dasselbe gilt für eine
+unbesetzte Stelle im Organigramm, für **Neue Person …** und **Als
+ausgeschieden markieren** auf der Seite Personen, wo die Quelle es sagt, und für
+*Die Menschen verschieben*, das dann ihre Zeilen schreibt und die anderen
+lässt, wie sie sind.
+
 Ein Agent macht einen Akteur mit `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`) zur Einheit, fragt mit `assignments.list`, wer was innehat — über
 den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und

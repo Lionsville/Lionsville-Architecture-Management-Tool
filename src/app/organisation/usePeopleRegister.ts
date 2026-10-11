@@ -32,8 +32,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
+import { managesPeople } from '../../model/managing'
+import type { ManagesPeople } from '../../model/managing'
 import type { PersonId } from '../../model/person'
 import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
+import { registerOf, resolvePerson } from '../../people/shown'
 import type { Left } from '../../people/leave'
 import { meOf, mePatch } from '../../people/me'
 import type { MergeLeaving, NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
@@ -70,6 +73,8 @@ export type PeopleAccess = {
   withheld?: (id: PersonId) => boolean
   /** Why the source's schedule held an entry back from being forgotten; where the source says. */
   held?: (id: PersonId) => PolicyHold | undefined
+  /** Whose people this person may change by a managing role, where the source grants that right (`SourcePeople.managingRight`). */
+  manages?: ManagesPeople
   today: string
   refresh: () => void
   add: (person: NewPerson) => Promise<PersonWritten | PeopleRefused>
@@ -143,13 +148,28 @@ export function usePeopleRegister(deps: {
   /** A leave wrote scopes other than the open one: the tree's index is to be read again. */
   onTreeChanged?: () => void
 }): PeopleAccess {
-  const { repositories, readOnly, failed, source } = deps
+  const { repositories, failed, source } = deps
   const [held, setHeld] = useState<Held>({ people: undefined, policy: DEFAULT_POLICY, me: undefined })
   const [today, setToday] = useState(deps.today)
   useEffect(() => {
     const ticking = setInterval(() => setToday(deps.today()), HOUR)
     return () => clearInterval(ticking)
   }, [deps.today])
+  /**
+   * Whose people this person may change by a managing role (ADR-0036 §12):
+   * only where the source grants that right and says who the person is — an
+   * account linked to an entry, never *This is me* — worked out over the
+   * organisation today, one person under every id a merge left.
+   */
+  const { index } = deps
+  const managingRight = source?.managingRight === true && source.me !== undefined
+  const manages = useMemo<ManagesPeople | undefined>(() => {
+    if (!managingRight || !index || held.me === undefined) return undefined
+    const register = registerOf(held.people ?? [])
+    return managesPeople(index.organisation(), held.me, today, (id) => resolvePerson(id, register)?.id ?? id)
+  }, [managingRight, index, held.me, held.people, today])
+  /** The register is written by whoever the source lets write, and by a manager through the source's own `may`. */
+  const readOnly = deps.readOnly && manages === undefined
   const failedRef = useRef(failed)
   failedRef.current = failed
 
@@ -164,7 +184,7 @@ export function usePeopleRegister(deps: {
     void read().then(setHeld, (cause: unknown) => failedRef.current('people.read', cause))
   }, [read])
 
-  const { openScope, index } = deps
+  const { openScope } = deps
   // Read through a ref: a shell hands a new function on every render, and the consequences are made once.
   const treeChanged = useRef(deps.onTreeChanged)
   treeChanged.current = deps.onTreeChanged
@@ -221,6 +241,7 @@ export function usePeopleRegister(deps: {
     ...(source?.may ? { may: source.may } : {}),
     ...(source?.withheld ? { withheld: source.withheld } : {}),
     ...(source?.held ? { held: source.held } : {}),
+    ...(manages ? { manages } : {}),
     today,
     refresh,
     add: (person) => changed(repositories.people.add(person)),
@@ -238,6 +259,6 @@ export function usePeopleRegister(deps: {
     pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
-  }), [held, source, readOnly, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
+  }), [held, source, readOnly, manages, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
 }
 

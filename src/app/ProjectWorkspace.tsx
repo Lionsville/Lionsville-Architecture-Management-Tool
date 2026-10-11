@@ -51,6 +51,9 @@ import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 import { flattenScopes } from '../projects/scope'
+import { onlyPeopleIn } from '../model/managing'
+import type { Command } from '../model/commands'
+import type { Model } from '../model/normalised'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
   const { parts, toolbarRef } = useWorkspaceParts(props)
@@ -170,6 +173,9 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   // is: the id policy is minted once for the life of the session.
   const indexRef = useRef(tree.index)
   indexRef.current = tree.index
+  // Whose people this person may change by a managing role (ADR-0036 §12), read per ask.
+  const peopleRef = useRef(shell.people)
+  peopleRef.current = shell.people
   const session = useModelSession({
     initialProject: project,
     notify,
@@ -182,6 +188,12 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     // The one place it is decided: every change from here on is refused at
     // the session, and what is handed `readOnly` below only hides what would be.
     readOnly,
+    // But for the people of a unit the person manages, where the source grants
+    // that right: those steps go through, and the source's door decides them.
+    letThrough: useCallback((command: Command, model: Model) => {
+      const manages = peopleRef.current?.manages
+      return manages !== undefined && onlyPeopleIn(model, [command], manages, manages.managing)
+    }, []),
     // What is done here is written as the steps it was, where nothing else
     // carries them (`Shell.publishesSteps`).
     journaling: !readOnly && !(source.publishesSteps ?? false),
@@ -313,6 +325,8 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
     writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
     published: source.publishesSteps ?? false, onTreeChanged,
+    // A manager's part in scopes only read to them (ADR-0036 §12).
+    ...(shell.people?.manages ? { manages: shell.people.manages } : {}),
   })
   return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves }
 }

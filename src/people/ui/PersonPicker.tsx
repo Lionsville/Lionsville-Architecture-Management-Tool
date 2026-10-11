@@ -26,6 +26,7 @@ import { entriesOf } from '../person'
 import type { Person } from '../person'
 import { registerOf, resolvePerson, shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
+import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { AddPerson } from './AddPerson'
 
@@ -95,7 +96,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.searchEmpty', { query })}</Typography>
         )}
       </Box>
-      {!register.readOnly && (
+      {mayDo(register, 'add') && (
         <Button size="small" variant="outlined" onClick={() => setAdding(true)} data-testid="person-picker-new">
           {s('people.newPerson')}
         </Button>

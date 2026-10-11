@@ -1760,6 +1760,16 @@ that would only have begun after it.
 
 A unit kept in another scope is shown here and changed where it is kept.
 
+**Where a role that manages gives a right.** The app grants nothing from who
+manages a unit; a source that knows who signs in may, and says so. There, a
+person linked to an entry who holds a managing role today changes the people
+of that unit and of the units below it even in a scope they may only read:
+**Assign**, a holder's correction, **End on** and removal — a role that
+manages only in a unit below their own. Nothing else of the unit changes. The
+same goes for a vacancy on the organisation chart, for **New person…** and
+**Mark as left** on the People page where the source says so, and for *Move
+the people*, which then writes their rows and leaves the others as they are.
+
 An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`), lists who holds what with `assignments.list` — across the tree,
 and for one unit its roles and who manages it — and assigns and ends with

@@ -89,7 +89,8 @@ export function EndedHolders(props: EndedHoldersProps) {
   return (
     <Box data-testid="operating-ended">
       <Typography sx={HEADING}>{s('move.roleEnds', { day: until })}</Typography>
-      <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s} />
+      <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s}
+        {...(people?.manages ? { manages: people.manages } : {})} />
     </Box>
   )
 }

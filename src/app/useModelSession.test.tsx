@@ -1048,6 +1048,38 @@ describe('useModelSession — a scope that is only read', () => {
     expect(notify).toHaveBeenCalledWith(refusal, 'warning')
   })
 
+  /**
+   * A manager where the source grants that right (ADR-0036 §12): what the
+   * source lets through lands, as a step of this session's, and everything
+   * else is still refused at the door.
+   */
+  it('takes what the source lets through, asked of the model before it, and refuses the rest', () => {
+    const notify = vi.fn()
+    const asked: string[] = []
+    let session!: ModelSession
+    function Host() {
+      session = useModelSession({
+        initialProject: project(), notify, s: translator('en'), readOnly: true,
+        letThrough: (command, before) => {
+          asked.push(`${command.type}:${Object.keys(before.elements).join(',')}`)
+          return command.type === 'assignment.add'
+        },
+      })
+      return null
+    }
+    render(<Host />)
+    act(() => {
+      session.dispatch({ type: 'assignment.add', assignment: { id: 'as-1', unitId: 'billing', roleId: 'ro-dev', person: { person: 'pe-ada' } } })
+    })
+    expect(session.current().assignments).toEqual([expect.objectContaining({ id: 'as-1' })])
+    expect(session.history()).toHaveLength(1)
+    act(() => { session.dispatch(rename('Renamed')) })
+    expect(session.current().elements[0].name).toBe('Billing')
+    expect(asked).toEqual(['assignment.add:billing', 'element.update:billing'])
+    expect(notify).toHaveBeenCalledWith(refusal, 'warning')
+    expect(session.readOnly).toBe(true)
+  })
+
   /** A viewer still sees what everybody else does: their steps land. */
   it('still lands a step another author made', () => {
     const { session, notify } = readOnly()

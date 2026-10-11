@@ -14,6 +14,8 @@ import { useRef, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
+import { managesPeople } from '../../model/managing'
+import type { ManagesPeople } from '../../model/managing'
 import type { HostModel } from '../../model/hostModel'
 import { fromArrays, toArrays } from '../../model/normalised'
 import type { Role, UnitType } from '../../model/operatingModel'
@@ -84,9 +86,9 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke' }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
-  register?: readonly Person[]; me?: string
+  register?: readonly Person[]; me?: string; manages?: ManagesPeople
 }) {
   const [model, setModel] = useState(start)
   const [people, setPeople] = useState<readonly Person[]>(held)
@@ -108,7 +110,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
     return Promise.resolve({ person: answer.people.find((one) => one.id === answer.changed[0])!, ended: 0, removed: [] })
   }
   const register: PeopleRegisterAccess = {
-    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY,
+    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY, ...(manages ? { manages } : {}),
     add: (one) => change({ kind: 'add', person: one }),
     change: (id, patch) => change({ kind: 'change', id, patch }),
     leave: (id, on) => change({ kind: 'leave', id, on }),
@@ -295,6 +297,50 @@ describe('a unit in its inspector', () => {
     const standIn: HostModel = { ...CUSTOMER, elements: [actor('webshop', 'Webshop', { ref: 'customer', unitTypeId: 'ut-team' })] }
     renderShell(<Harness model={standIn} scope="customer/web" commands={[]} />)
     expect(screen.getByText('Kept in Customer: its people are changed there.')).toBeTruthy()
+  })
+})
+
+/**
+ * A manager where the scope is only read and the source grants a managing
+ * role's right (ADR-0036 §12): the people of the units they manage, and
+ * nothing else of them; a managing role only strictly below their own.
+ */
+describe('a unit a manager changes the people of, where the scope is only read', () => {
+  const index = indexScopes([{ path: '', model: ROOT }, { path: 'customer', model: CUSTOMER }])
+  const ada = () => managesPeople(index.organisation(), 'pe-ada', TODAY)
+
+  it('assigns, corrects and ends in a unit below their own, a managing role there too, and changes nothing else of it', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness readOnly manages={ada()} commands={commands} />)
+    expect(screen.queryByTestId('unit-extra-role')).toBeNull()
+    expect(within(screen.getByTestId('unit-type')).queryByRole('combobox')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    fireEvent.mouseDown(within(dialog).getByRole('combobox'))
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Product owner', 'Developer'])
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    fireEvent.click(within(dialog).getByTestId('person-pick-pe-ivo'))
+    fireEvent.click(within(dialog).getByTestId('assign-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.add', assignment: { id: 'as-new', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-ivo' }, from: TODAY },
+    }])
+    await waitFor(() => expect(screen.queryByTestId('assign-dialog')).toBeNull())
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-po')).getByTestId('unit-holder'))
+    fireEvent.click(await screen.findByTestId('assign-end'))
+    expect(commands.at(-1)).toEqual({ type: 'assignment.update', id: 'as-2', patch: { until: TODAY } })
+  })
+
+  it('hands out no managing role in their own unit, and offers nothing in a unit they do not manage', () => {
+    renderShell(<Harness unit="customer" readOnly manages={ada()} commands={[]} />)
+    const owner = screen.getByTestId('unit-slot-ro-owner')
+    expect(within(owner).queryByTestId('unit-assign')).toBeNull()
+    fireEvent.click(within(owner).getByTestId('unit-holder'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
+    cleanup()
+    const femke = managesPeople(index.organisation(), 'pe-femke', TODAY)
+    renderShell(<Harness unit="customer" readOnly manages={femke} commands={[]} />)
+    expect(screen.queryByTestId('unit-vacant')).toBeNull()
+    expect(screen.queryByTestId('unit-assign')).toBeNull()
   })
 })
 

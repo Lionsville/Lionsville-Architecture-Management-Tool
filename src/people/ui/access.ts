@@ -13,6 +13,7 @@
  * register keeps no Activity line to say it in.
  */
 import { useCallback, useState } from 'react'
+import type { ManagesPeople } from '../../model/managing'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
 import type { HeldAssignment, Mention, PointsAt } from '../hold'
@@ -39,6 +40,14 @@ export type PeopleRegisterAccess = {
   withheld?(id: PersonId): boolean
   /** Why the source's own schedule held an entry back from being forgotten. */
   held?(id: PersonId): PolicyHold | undefined
+  /**
+   * Whose people this person may change by a managing role where the source
+   * grants that right (ADR-0036 §12; `SourcePeople.managingRight`): the units
+   * reached today, and the roles that manage. A scope only read to them still
+   * offers the people of these units — assign, correct, end — and nothing
+   * else of it. Absent, scope rights decide alone.
+   */
+  manages?: ManagesPeople
   today: string
   add(person: NewPerson): Promise<{ person: Person } | Refused>
   change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>

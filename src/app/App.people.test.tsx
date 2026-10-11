@@ -201,5 +201,35 @@ describe('a source that does more about its people than keep them', () => {
     fireEvent.click(within(screen.getByTestId(`people-row-${gijs.id}`)).getByRole('button'))
     expect((await screen.findByTestId('people-held-back')).textContent).toMatch(/signed in after their last day/)
   })
+
+  /**
+   * A source only read to this person that grants a right from a managing
+   * role (ADR-0036 §12): the person it says is using the app, holding one
+   * today, may change the register as its `may` says; nobody else may.
+   */
+  it('lets a person who manages a unit change what the source says they may, where the source is otherwise only read', async () => {
+    const organisation: ScopeSnapshot = {
+      ...root,
+      model: {
+        ...root.model,
+        elements: [{ id: 'webshop', kind: 'actor', name: 'Webshop', lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId: 'ut-team' }],
+        unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-lead', min: 1, max: 1 }] }],
+        roles: [{ id: 'ro-lead', name: 'Team lead', duties: [], manages: true }],
+        assignments: [{ id: 'as-1', unitId: 'webshop', roleId: 'ro-lead', person: { person: 'pe-pia' } }],
+      },
+    }
+    const held = heldRepositories([organisation])
+    await held.people.bringIn([{ id: 'pe-pia', name: 'Pia Schulz', pseudonym: 'BCDF', kind: 'internal', state: 'active' }])
+    const source = { provider: 'browserStorage', name: 'This browser', key: 'browser', readOnly: true } as const
+    const people = { appliesPolicy: true, me: () => 'pe-pia', may: (action: string) => action === 'add' }
+    renderApp({ repositories: held, today: () => TODAY, source, provider: { people: { ...people, managingRight: true } } })
+    await openPeople()
+    expect(await screen.findByTestId('people-add')).toBeDefined()
+    cleanup()
+    // Without the right, or with nobody said to be using the app, a source only read offers nothing.
+    renderApp({ repositories: held, today: () => TODAY, source, provider: { people } })
+    await openPeople()
+    expect(screen.queryByTestId('people-add')).toBeNull()
+  })
 })
 

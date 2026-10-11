@@ -156,6 +156,18 @@ export type SourcePeople = {
    */
   readonly may?: (action: PeopleAction, id?: PersonId) => boolean
   /**
+   * The source grants a right from holding a managing role (ADR-0036 §12):
+   * the person it says is using the app ({@link me}) may change the people of
+   * every unit they hold a managing role in today, and of every unit below
+   * it — an assignment there added, corrected, ended or taken away, a managing
+   * role's only strictly below — where the scope is otherwise only read to
+   * them (`model/managing.ts`). The app then offers those changes on those
+   * units and lets their steps through a scope it otherwise reads, and the
+   * register's changes through {@link may}; the source's own doors decide each
+   * one. Absent, scope rights decide alone.
+   */
+  readonly managingRight?: boolean
+  /**
    * Whether an entry has a work address that is not shown to this person: the
    * page says so, rather than that there is none.
    */

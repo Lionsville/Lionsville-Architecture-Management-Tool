@@ -280,7 +280,10 @@ function PeopleToMove(props: PlanOrganisationProps & { facts: PlanFacts }) {
   const write = (rows: { move: PeopleMove; choice: PeopleChoice }[]) => land(peopleMoveSteps(rows, {
     scopeOfAssignment: at.assignmentAt, scopeOfUnit: (id) => at.unitAt(id)?.scope, makeId, canonical: facts.names.canonical,
   }))
-  return <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s} />
+  return (
+    <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s}
+      {...(props.people?.manages ? { manages: props.people.manages } : {})} />
+  )
 }
 
 /**

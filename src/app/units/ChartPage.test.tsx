@@ -14,6 +14,8 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { useMemo, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
 import type { Command } from '../../model/commands'
+import { managesPeople } from '../../model/managing'
+import type { ManagesPeople } from '../../model/managing'
 import type { HostModel } from '../../model/hostModel'
 import { fromArrays, toArrays } from '../../model/normalised'
 import type { Role, UnitType } from '../../model/operatingModel'
@@ -89,9 +91,10 @@ function register(me: string | undefined, people: readonly Person[] = PEOPLE): P
 const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', name: 'Organisation', members: [], ...(asOf ? { asOf } : {}) })
 
 /** The chart over the shipping scope's session, changed by the model's own writer. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE }: {
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages }: {
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
+  readOnly?: boolean; manages?: ManagesPeople
 }) {
   const [model, setModel] = useState(scope === '' ? ROOT : shipping)
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
@@ -104,13 +107,13 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     setModel(next)
     return next
   }
-  const people = register(me ?? undefined, held)
+  const people = { ...register(me ?? undefined, held), ...(manages ? { manages } : {}) }
   // The names the shell provides at its root (`people/ui/names`): the register's, *you* among them.
   const names = useMemo(() => personNames(people, translator('en')), [people])
   return (
     <PersonNamesProvider names={names}>
     <ChartPage
-      diagram={view(asOf)} here={here} today={TODAY} readOnly={false} people={people}
+      diagram={view(asOf)} here={here} today={TODAY} readOnly={readOnly} people={people}
       scopeLabel={(path) => (path === '' ? 'the organisation' : 'Shipping')}
       onSelect={onSelect} onOpenElsewhere={onOpenElsewhere}
       assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
@@ -226,5 +229,27 @@ describe('the organisation chart', () => {
     expect(devs.getAllByTestId('chart-holder').map((one) => one.textContent)).toContain('Tim de Boer')
     expect(devs.queryByTestId('chart-vacant')).toBeNull()
     expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 5 people')
+  })
+
+  /** A manager where the scope is only read and the source grants that right (ADR-0036 §12). */
+  it('fills a vacancy in a unit the person manages where the scope is only read, and none elsewhere', async () => {
+    const index = indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }])
+    const commands: Command[] = []
+    renderShell(<Harness commands={commands} readOnly manages={managesPeople(index.organisation(), 'pe-omar', TODAY)} />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    fireEvent.click(within(dialog).getByTestId('person-pick-pe-tim'))
+    fireEvent.click(within(dialog).getByTestId('assign-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.add', assignment: { id: 'as-new', unitId: 'tt', roleId: 'ro-dev', person: { person: 'pe-tim' }, from: TODAY },
+    }])
+    cleanup()
+    renderShell(<Harness commands={commands} readOnly manages={managesPeople(index.organisation(), 'pe-kees', TODAY)} />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
+    cleanup()
+    renderShell(<Harness commands={commands} readOnly />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
   })
 })

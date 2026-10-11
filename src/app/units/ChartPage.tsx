@@ -42,6 +42,7 @@ import type { ChartHolder, ChartSlot, ChartUnit, OrgChart } from '../../model/or
 import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { dayBefore, loadOn } from '../../model/units'
+import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { registerOf } from '../../people/shown'
 import { usePersonNames } from '../../people/ui/names'
@@ -90,6 +91,8 @@ type Drawing = {
   selectedId: ElementId | undefined
   open: (id: ElementId) => void
   vacancy: ((unit: ChartUnit, roleId: string) => void) | undefined
+  /** Whether a vacancy of this unit and role is one to press: every one where the scope may be written, a managed unit's where it is only read. */
+  mayAssign: (unit: ChartUnit, roleId: string) => boolean
 }
 
 export function ChartPage(props: ChartPageProps) {
@@ -131,10 +134,15 @@ export function ChartPage(props: ChartPageProps) {
   }
   const roles = new Map(here.at.organisation.roles.map((role) => [role.id, role]))
   const types = new Map(here.at.organisation.unitTypes.map((type) => [type.id, type.name]))
-  const editable = !props.readOnly && props.assign !== undefined && people !== undefined && !people.readOnly
+  const writes = props.assign !== undefined && people !== undefined && !people.readOnly
+  // Where the scope is only read, a vacancy in a unit kept here that the person manages
+  // still assigns — a managing role's only strictly below one they hold (ADR-0036 §12).
+  const manages = people?.manages
+  const editable = writes && (!props.readOnly || manages !== undefined)
+  const mayAssign = (unit: ChartUnit, roleId: string) => !props.readOnly || (here.heldHere(unit.id) && mayChangeIn(manages, unit.id, roleId))
   const drawing: Drawing = {
     chart: shown, roles, typeName: (id) => types.get(id ?? '') ?? '', names, day, today, language, t,
-    selectedId: props.selectedId, open,
+    selectedId: props.selectedId, open, mayAssign,
     vacancy: editable ? (unit, roleId) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
       else open(unit.id)
@@ -152,7 +160,7 @@ export function ChartPage(props: ChartPageProps) {
       {assigning && people && props.assign && (
         <AssignDialog
           assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
-          roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? [])}
+          roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? []).filter((role) => mayAssign(assigning.unit, role.id))}
           register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
           makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
           loadOf={(person) => t('assign.load', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100), day })}
@@ -274,7 +282,7 @@ function UnitBadges({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
 function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing }) {
   const { t } = drawing
   const role = drawing.roles.get(slot.roleId)
-  const vacancy = drawing.vacancy
+  const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
   return (
     <Box data-testid={`chart-slot-${slot.roleId}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
       <Typography sx={{ fontSize: 11.5, minWidth: 110, color: 'text.secondary' }}>

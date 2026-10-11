@@ -10,6 +10,11 @@
  * every row may be put anywhere the units on offer hold a role that day.
  * Nothing is written until *Write as one step*. The list is the plan page's
  * and the operating model page's alike; each says which ends it lists.
+ *
+ * **A manager where the scope is only read** (ADR-0036 §12): the rows of
+ * the units they manage are theirs to move — to places in those units, a
+ * managing role only strictly below one they hold — and only those are
+ * written; every other row is shown and left as it is.
  */
 import { useState } from 'react'
 import Box from '@mui/material/Box'
@@ -19,6 +24,8 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { addDays } from '../../model/transition'
+import { mayChangeIn } from '../../model/managing'
+import type { ManagesPeople } from '../../model/managing'
 import { samePlace } from '../../model/reorganisation'
 import type { PeopleChoice, PeopleMove, Place } from '../../model/reorganisation'
 import { personOf, shareOf } from '../../model/units'
@@ -39,6 +46,8 @@ export type MovePeopleProps = {
   placesFor: (move: PeopleMove) => readonly Place[]
   names: MoveNames
   readOnly: boolean
+  /** Whose people the person manages, where the scope is only read to them: their rows are still theirs to move. */
+  manages?: ManagesPeople
   /** Write the rows as one step; answers where it went. */
   onWrite: (rows: { move: PeopleMove; choice: PeopleChoice }[]) => Promise<PeopleMoved>
   s: Translate
@@ -54,18 +63,24 @@ function choiceOf(value: string): PeopleChoice {
   return { unitId, roleId }
 }
 
-/** A row's choice: what the person chose, or the suggestion, or only the end. */
-function chosen(move: PeopleMove, choices: ReadonlyMap<string, PeopleChoice>): PeopleChoice {
-  return choices.get(move.assignment.id) ?? move.suggestion ?? END
+/** A row's choice: what the person chose, or the suggestion where it may be taken, or only the end. */
+function chosen(move: PeopleMove, choices: ReadonlyMap<string, PeopleChoice>, placeable: (place: Place) => boolean): PeopleChoice {
+  return choices.get(move.assignment.id) ?? (move.suggestion && placeable(move.suggestion) ? move.suggestion : END)
 }
 
-export function MovePeople({ moves, placesFor, names, readOnly, onWrite, s }: MovePeopleProps) {
+export function MovePeople({ moves, placesFor, names, readOnly, manages, onWrite, s }: MovePeopleProps) {
   const [choices, setChoices] = useState<ReadonlyMap<string, PeopleChoice>>(new Map())
   const [said, setSaid] = useState<{ text: string; tone: 'ok' | 'error' } | undefined>(undefined)
   const [writing, setWriting] = useState(false)
+  // Everything where the scope may be written; a manager's own units' where it is only read.
+  const placeable = (place: Place) => !readOnly || mayChangeIn(manages, place.unitId, place.roleId)
+  const movable = (move: PeopleMove) => placeable({ unitId: move.assignment.unitId, roleId: move.assignment.roleId })
+  const writable = moves.some(movable)
+  // A row shown and not moved says its suggestion as it is; one that is moved takes only a place that may be.
+  const choiceFor = (move: PeopleMove) => chosen(move, choices, movable(move) ? placeable : () => true)
   const write = async () => {
     setWriting(true)
-    const answer = await onWrite(moves.map((move) => ({ move, choice: chosen(move, choices) })))
+    const answer = await onWrite(moves.filter(movable).map((move) => ({ move, choice: choiceFor(move) })))
     setWriting(false)
     setChoices(new Map())
     if (!answer.ok) {
@@ -85,13 +100,15 @@ export function MovePeople({ moves, placesFor, names, readOnly, onWrite, s }: Mo
           </thead>
           <tbody>
             {moves.map((move) => (
-              <Row key={move.assignment.id} move={move} choice={chosen(move, choices)} places={placesFor(move)} names={names} readOnly={readOnly}
+              <Row key={move.assignment.id} move={move} choice={choiceFor(move)} names={names}
+                places={movable(move) ? placesFor(move).filter(placeable) : placesFor(move)}
+                readOnly={!movable(move)} placeable={placeable}
                 onChoose={(choice) => setChoices((was) => new Map(was).set(move.assignment.id, choice))} s={s} />
             ))}
           </tbody>
         </Box>
       )}
-      {!readOnly && moves.length > 0 && (
+      {writable && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
           <Button size="small" onClick={() => setChoices(new Map())} data-testid="move-accept">{s('move.acceptAll')}</Button>
           <Button size="small" variant="contained" disabled={writing} onClick={() => { void write() }} data-testid="move-write">{s('move.write')}</Button>
@@ -114,11 +131,12 @@ const TABLE = {
   '& .MuiSelect-select': { fontSize: 12, py: 0.25 },
 } as const
 
-function Row({ move, choice, places, names, readOnly, onChoose, s }: {
+function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: {
   move: PeopleMove; choice: PeopleChoice; places: readonly Place[]; names: MoveNames; readOnly: boolean
-  onChoose: (choice: PeopleChoice) => void; s: Translate
+  placeable: (place: Place) => boolean; onChoose: (choice: PeopleChoice) => void; s: Translate
 }) {
-  const { assignment, lastDay, suggestion } = move
+  const { assignment, lastDay } = move
+  const suggestion = move.suggestion && (readOnly || placeable(move.suggestion)) ? move.suggestion : undefined
   const share = shareOf(assignment)
   const offered = suggestion && !places.some((one) => samePlace(one, suggestion)) ? [suggestion, ...places] : [...places]
   const label = (place: Place) => s('move.place', { role: names.role(place.roleId), unit: names.unit(place.unitId) })

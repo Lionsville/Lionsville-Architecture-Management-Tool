@@ -112,6 +112,27 @@ describe('writing the people\'s moves', () => {
     expect(open.dispatched).toEqual([])
   })
 
+  /** A manager where the source grants that right (ADR-0036 §12): their units' people, in scopes only read to them. */
+  it('writes a manager\'s part where the scopes are only read, and nothing where a part is outside their units', async () => {
+    const unit = (id: string) => ({ id, kind: 'actor' as const, name: id, lifecycle: 'live' as const, isManaged: false, aspects: {}, unitTypeId: 'ut-team' })
+    const shipping: HostModel = { ...SHIPPING, elements: [unit('parcel-freight'), unit('parcel')] }
+    const manages = { held: ['parcel-freight'], units: new Set(['parcel-freight', 'parcel']), below: new Set(['parcel']), managing: new Set<string>() }
+    const open = session(shipping)
+    const theirs = await deps(open, { writable: () => false, manages })
+    expect(await landPeopleMoves(theirs, new Map([['shipping', [ends('as-1'), begins('as-new-1', 'pe-omar')]]])))
+      .toEqual({ ok: true, changed: ['shipping'], ended: 1, begun: 1 })
+    // A part in a unit they do not manage — here the organisation's — refuses the whole, and the open scope's part is not written.
+    const again = session(shipping)
+    const across = await deps(again, { writable: () => false, manages })
+    expect(await landPeopleMoves(across, new Map([['shipping', [ends('as-2')]], ['', [ends('as-9')]]])))
+      .toEqual({ ok: false, reason: 'shell.scopeReadOnly' })
+    expect(again.dispatched).toEqual([])
+    const outside = session(shipping)
+    expect(await landPeopleMoves(await deps(outside, { writable: () => false, manages: { ...manages, units: new Set(['parcel']) } }),
+      new Map([['shipping', [ends('as-1')]]]))).toEqual({ ok: false, reason: 'shell.scopeReadOnly', scope: 'shipping' })
+    expect(outside.dispatched).toEqual([])
+  })
+
   it('passes over what is gone since the list was drawn, and says when nothing was left', async () => {
     const model = fromArrays(SHIPPING)
     expect(stepIn(model, [ends('as-7'), begins('as-1', 'pe-omar')])).toBeUndefined()
