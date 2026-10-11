@@ -21,6 +21,7 @@ import type { PersonId, PersonRef } from '../../model/person'
 import { personIdOf, personRefOf } from '../../model/person'
 import type { Person } from '../person'
 import { peopleMatching } from '../matching'
+import { meIn } from '../me'
 import { registerOf, resolvePerson, shownPerson, shownText } from '../shown'
 import type { Translate } from '../shown'
 import type { PeopleRegisterAccess } from './access'
@@ -55,6 +56,8 @@ export function personNames(access: PeopleRegisterAccess | undefined, t: Transla
   const people: readonly Person[] | undefined = access?.people
   const register = registerOf(people ?? [])
   const canonical = (id: PersonId) => resolvePerson(id, register)?.id ?? id
+  // *You* through a merge, and nobody once forgotten: a forgotten entry is nobody's to be (`me.ts`).
+  const me = meIn(access?.me, register)?.id
   return {
     text: (ref) => {
       const held = personRefOf(ref)
@@ -70,7 +73,7 @@ export function personNames(access: PeopleRegisterAccess | undefined, t: Transla
     match: peopleMatching(people ?? [], (shown) => shownText(shown, t)),
     isMe: (ref) => {
       const id = personIdOf(ref)
-      return id !== undefined && access?.me !== undefined && canonical(id) === canonical(access.me)
+      return id !== undefined && me !== undefined && canonical(id) === me
     },
     ...(access ? { access } : {}),
   }

@@ -112,6 +112,12 @@ describe('the names a page reads people with', () => {
     expect(names.isMe({ person: 'pe-old' })).toBe(true)
   })
 
+  it('marks nobody as you once the entry this install said is forgotten: it is nobody\'s to be', () => {
+    const forgotten = personNames(access([EVA, GONE, OLD], { me: 'pe-gone' }), s)
+    expect(forgotten.isMe({ person: 'pe-gone' })).toBe(false)
+    expect(personNames(access([EVA, GONE, OLD], { me: 'pe-old' }), s).isMe({ person: 'pe-eva' })).toBe(true)
+  })
+
   it('matches a word of a search to the ids it names', () => {
     expect([...names.match('lind')].sort()).toEqual(['pe-eva', 'pe-old'])
     expect([...names.match('7kqm')]).toEqual(['pe-gone'])

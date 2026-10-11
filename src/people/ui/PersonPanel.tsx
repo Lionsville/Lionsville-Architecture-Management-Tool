@@ -25,6 +25,7 @@ import type { HeldAssignment, Mention, OwnedByRule, PointedAt, PointsAt } from '
 import type { StringKey } from '../../i18n/table'
 import type { Person, PersonKind, PolicyHold } from '../person'
 import { entriesOf, PERSON_KINDS } from '../person'
+import { meIdIn } from '../me'
 import { forgetDay, removeDay } from '../policy'
 import type { PeoplePolicy } from '../policy'
 import { shownEntry, shownText } from '../shown'
@@ -182,7 +183,7 @@ function Holding({ person, register, found, copyText, s }: {
   }, [mentionsOf, person.name])
   const assignments = (register.assignmentsOf?.(person.id) ?? []).map(heldLine)
   const held = whatWeHold(person, register.people ?? [], {
-    thisIsMe: register.me === person.id, assignments, ...(mentions ? { mentions } : {}),
+    thisIsMe: meIdIn(register.me, register.people) === person.id, assignments, ...(mentions ? { mentions } : {}),
     ...(found ? {
       namedIn: found.pointers.filter((one) => !keptName(one)).map(pointerLine),
       signed: found.pointers.filter(keptName).map(pointerLine),
@@ -312,7 +313,8 @@ export function PersonPanel(props: PersonPanelProps) {
   const [correcting, setCorrecting] = useState(false)
   const [holding, setHolding] = useState(false)
   const named = person.state !== 'forgotten'
-  const isMe = register.me === person.id
+  // *You* through a merge: the entry kept is who *This is me* said, under whichever of its ids.
+  const isMe = meIdIn(register.me, register.people) === person.id
   const found = usePointsAt(person, register)
   const setMe = (id: string | undefined) => {
     void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))

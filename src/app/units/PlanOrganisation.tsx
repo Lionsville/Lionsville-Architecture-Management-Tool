@@ -45,7 +45,7 @@ import { addDays, movesWith } from '../../model/transition'
 import type { Transition } from '../../model/transition'
 import { isUnit, personOf, runsOn } from '../../model/units'
 import type { Organisation } from '../../model/units'
-import { personText, registerOf } from '../../people/shown'
+import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
 import type { OrganisationAt } from '../../projects/checks'
@@ -90,6 +90,7 @@ function usePlanFacts(props: PlanOrganisationProps) {
     const register = registerOf(people?.people ?? [])
     const names: MoveNames = {
       person: (id) => personText(pickedPerson(id), register, s),
+      canonical: (id) => resolvePerson(id, register)?.id ?? id,
       unit: (id) => organisation.units.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id,
       role: (id) => organisation.roles.find((one) => one.id === id)?.name ?? id,
     }
@@ -302,9 +303,9 @@ function stillOpen(
   const walk = (nodes: readonly UnitNode[]): string[] => nodes.flatMap((node) => [node.unit.id, ...walk(node.children)])
   const units = new Set(walk(unitTree(at.organisation, days.after, roots)))
   const persons = new Set(at.organisation.assignments
-    .filter((one) => units.has(one.unitId) && runsOn(one, days.after)).map(personOf))
+    .filter((one) => units.has(one.unitId) && runsOn(one, days.after)).map((one) => names.canonical(personOf(one))))
   const said = new Set<string>()
-  const found = findingsOfOrganisation(at, days.after)
+  const found = findingsOfOrganisation(at, days.after, names.canonical)
     .filter((one) => (one.person !== undefined ? persons.has(one.person) : units.has(one.id)))
     .map((one) => ({ text: findingSentence(one, s, scopeLabel, names.person), ...(one.person === undefined ? { unitId: one.id } : {}) }))
   const lost = lostAccountability(responsibilities, at.organisation, days.before, days.after)

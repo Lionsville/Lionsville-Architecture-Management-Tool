@@ -13,7 +13,7 @@
  */
 import type { PersonId } from '../model/person'
 import type { Person } from './person'
-import { resolvePerson } from './shown'
+import { registerOf, resolvePerson } from './shown'
 import type { Register } from './shown'
 
 /** The key *This is me* is kept under in the person's own settings. */
@@ -40,4 +40,9 @@ export function meIn(me: PersonId | undefined, register: Register): Person | und
   if (me === undefined) return undefined
   const person = resolvePerson(me, register)
   return person && person.state !== 'forgotten' ? person : undefined
+}
+
+/** The id of the entry that is *you* in a register as it is listed: {@link meIn}, for a screen comparing entries by id. */
+export function meIdIn(me: PersonId | undefined, people: readonly Person[] | undefined): PersonId | undefined {
+  return me === undefined ? undefined : meIn(me, registerOf(people ?? []))?.id
 }

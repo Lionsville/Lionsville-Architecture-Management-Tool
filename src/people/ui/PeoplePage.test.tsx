@@ -42,18 +42,19 @@ const START: Person[] = [
 ]
 
 /** A register held in React state and changed by the register's own rules, as the shell's hook would. */
-function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt, source }: {
+function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt, source, start = START }: {
   readOnly?: boolean; me?: PersonId; onPolicy?: (change: Partial<PeoplePolicy>) => void; mentions?: { scope: string; kind: string; id: string; title: string }[]
   held?: Record<PersonId, HeldAssignment[]>; looking?: boolean; pointsAt?: Record<PersonId, PointsAt> | 'unreadable'
   /** What a source that knows who may do what says (`SourcePeople.may`, `withheld`, `held`). */
   source?: Pick<PeopleRegisterAccess, 'may' | 'withheld' | 'held'>
+  start?: readonly Person[]
 }) {
   const [day, setDay] = useState<string | undefined>(undefined)
-  const [people, setPeople] = useState<readonly Person[]>(START)
+  const [people, setPeople] = useState<readonly Person[]>(start)
   const [policy, setPolicy] = useState(DEFAULT_POLICY)
   const [who, setWho] = useState<PersonId | undefined>(me)
   // The latest register, written as each change lands: a run of changes in one handler reads what the last left.
-  const held = useRef<readonly Person[]>(START)
+  const held = useRef<readonly Person[]>(start)
   const change = (work: PeopleChange, show?: string) => {
     const count = held.current.length
     const answer = changePeople(held.current, work, { id: () => `pe-new${count}`, pseudonym: () => `N${count}ZZ` })
@@ -232,6 +233,12 @@ describe('the People page', () => {
     fireEvent.click(screen.getByTestId('people-me'))
     await waitFor(() => expect(screen.getByTestId('people-this-is-you')).toBeDefined())
     expect(within(row('pe-eva')).getByText('you')).toBeDefined()
+  })
+
+  it('says This is you on the entry a merge kept, where This is me named the one merged into it', () => {
+    renderShell(<Harness me="pe-lindt" start={[...START, { id: 'pe-lindt', pseudonym: 'GHJK', kind: 'internal', state: 'active', mergedInto: 'pe-pia' }]} />)
+    pick('pe-pia')
+    expect(screen.getByTestId('people-this-is-you')).toBeDefined()
   })
 
   it('finds you: the whole list, and your entry chosen (ADR-0036 §11)', async () => {

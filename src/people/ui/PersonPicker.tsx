@@ -21,6 +21,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { matchesQuery } from '../../model/textSearch'
 import type { PersonId } from '../../model/person'
+import { meIdIn } from '../me'
 import { entriesOf } from '../person'
 import type { Person } from '../person'
 import { registerOf, resolvePerson, shownEntry, shownText } from '../shown'
@@ -56,6 +57,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
   const people = useMemo(() => register.people ?? [], [register.people])
   const found = useMemo(() => pickable(people, query), [people, query])
   const picked = value === undefined ? undefined : resolvePerson(value, registerOf(people))
+  const me = meIdIn(register.me, people)
   const pick = (id: PersonId) => {
     onChange(id)
     setAdding(false)
@@ -70,7 +72,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
         <Box>
           <Chip
             size="small" color="primary" data-testid="person-picked"
-            label={`${shownText(shownEntry(picked), s)}${picked.id === register.me ? ` · ${s('people.you')}` : ''}`}
+            label={`${shownText(shownEntry(picked), s)}${picked.id === me ? ` · ${s('people.you')}` : ''}`}
             onDelete={() => onChange(undefined)}
           />
         </Box>
@@ -85,7 +87,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
             key={person.id} size="small" onClick={() => pick(person.id)} data-testid={`person-pick-${person.id}`}
             sx={{ justifyContent: 'space-between', textTransform: 'none', fontWeight: person.id === value ? 700 : 400 }}
           >
-            <span>{shownText(shownEntry(person), s)}{person.id === register.me ? ` · ${s('people.you')}` : ''}</span>
+            <span>{shownText(shownEntry(person), s)}{person.id === me ? ` · ${s('people.you')}` : ''}</span>
             {note?.(person) && <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>{note(person)}</Typography>}
           </Button>
         ))}

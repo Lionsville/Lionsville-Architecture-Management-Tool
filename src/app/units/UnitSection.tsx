@@ -37,7 +37,8 @@ import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
 import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
 import type { Assignment } from '../../model/units'
-import { personText, registerOf } from '../../people/shown'
+import { meIn } from '../../people/me'
+import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
@@ -91,6 +92,10 @@ function useUnitFacts(props: UnitSectionProps) {
     const type = types.find((one) => one.id === element.unitTypeId)
     const roles = new Map(organisation.roles.map((role) => [role.id, role]))
     const register = registerOf(people?.people ?? [])
+    // A merged id is the entry it went into: one person, counted once and marked once (ADR-0036 §9).
+    const canonical = (id: string) => resolvePerson(id, register)?.id ?? id
+    const me = meIn(people?.me, register)?.id
+    const isMe = (id: string) => me !== undefined && canonical(id) === me
     const unitName = (id: string) => organisation.units.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id
     const owns = [
       ...index.register().filter((entry) => entry.partyId === element.id && entry.master !== scope).map((entry) => entry.name),
@@ -101,15 +106,15 @@ function useUnitFacts(props: UnitSectionProps) {
       ...index.rowsOf(element.id).filter(({ scope: kept, relation }) => kept !== scope && relation.type === 'assigned' && relation.sourceId === element.id)
         .map(({ relation }) => relation.targetId),
     ].map((id) => model.elements.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id)
-    const findings = findingsOfOrganisation(at, today)
-    const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map(personOf))
+    const findings = findingsOfOrganisation(at, today, canonical)
+    const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map((one) => canonical(personOf(one))))
     const said = findings.filter((one) => (one.person !== undefined ? holders.has(one.person) : one.id === element.id))
     // Its moves, each with the plan that makes it: the open scope's plans as the session holds them, the tree's for the rest.
     const moves = [...index.moves().filter((one) => one.scope !== scope), ...movesOf(scope, model)]
       .filter((one) => one.move.unitId === element.id)
       .sort((a, b) => a.move.on.localeCompare(b.move.on))
     const parent = parentOn(element, organisation.moves, today)
-    return { organisation, types, type, roles, register, unitName, owns, answersFor, said, moves, parent }
+    return { organisation, types, type, roles, register, canonical, isMe, unitName, owns, answersFor, said, moves, parent }
   }, [element, scope, model, index, people?.people, today])
 }
 
@@ -168,7 +173,7 @@ export function UnitSection(props: UnitSectionProps) {
           assigning={assigning} unit={{ id: element.id, name: element.name }}
           roles={slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? [])}
           register={people} today={assignFrom} endOn={endOn} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
-          loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today) * 100), day: today })}
+          loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today, facts.canonical) * 100), day: today })}
           onClose={() => setAssigning(undefined)} s={s}
         />
       )}
@@ -228,7 +233,7 @@ function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, 
 type Facts = ReturnType<typeof useUnitFacts>
 
 /** The roles it holds and who holds them on the day, with the vacancies a slot's minimum leaves. */
-function Slots({ element, today, looking, people, facts, editable, name, onAssign, s }: UnitSectionProps & {
+function Slots({ element, today, looking, facts, editable, name, onAssign, s }: UnitSectionProps & {
   looking: boolean; facts: Facts; editable: boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
 }) {
   const slots = slotsOf(element, facts.type)
@@ -240,14 +245,14 @@ function Slots({ element, today, looking, people, facts, editable, name, onAssig
       {slots.length === 0 && <Typography sx={QUIET}>{s('unit.rolesNone')}</Typography>}
       {slots.map((slot) => (
         <SlotLine key={slot.role} slot={slot} role={facts.roles.get(slot.role)} element={element} facts={facts} today={today}
-          me={people?.me} editable={editable} name={name} onAssign={onAssign} s={s} />
+          editable={editable} name={name} onAssign={onAssign} s={s} />
       ))}
       {others.length > 0 && (
         <Box sx={{ mt: 0.5 }}>
           <Typography sx={QUIET}>{s('unit.otherRoles')}</Typography>
           {others.map((one, at) => (
             <Holder key={`${one.id}/${at}`} assignment={one} label={`${facts.roles.get(one.roleId)?.name ?? one.roleId}: ${name(personOf(one))}`}
-              me={people?.me} editable={editable} onAssign={onAssign} s={s} />
+              you={facts.isMe(personOf(one))} editable={editable} onAssign={onAssign} s={s} />
           ))}
         </Box>
       )}
@@ -255,8 +260,8 @@ function Slots({ element, today, looking, people, facts, editable, name, onAssig
   )
 }
 
-function SlotLine({ slot, role, element, facts, today, me, editable, name, onAssign, s }: {
-  slot: RoleSlot; role: Role | undefined; element: DesignElement; facts: Facts; today: string; me: string | undefined
+function SlotLine({ slot, role, element, facts, today, editable, name, onAssign, s }: {
+  slot: RoleSlot; role: Role | undefined; element: DesignElement; facts: Facts; today: string
   editable: boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void; s: Translate
 }) {
   const holders = holdersOn(facts.organisation.assignments, element.id, slot.role, today)
@@ -268,7 +273,9 @@ function SlotLine({ slot, role, element, facts, today, me, editable, name, onAss
         {role?.name ?? slot.role} <Box component="span" sx={{ color: 'text.secondary' }}>{slotRange(slot)}</Box>
         {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'text.secondary' }}>{s('unit.managesBadge')}</Box>}
       </Typography>
-      {holders.map((one, at) => <Holder key={`${one.id}/${at}`} assignment={one} label={name(personOf(one))} me={me} editable={editable} onAssign={onAssign} s={s} />)}
+      {holders.map((one, at) => (
+        <Holder key={`${one.id}/${at}`} assignment={one} label={name(personOf(one))} you={facts.isMe(personOf(one))} editable={editable} onAssign={onAssign} s={s} />
+      ))}
       {Array.from({ length: vacant }, (_, at) => (
         <Chip key={`vacant-${at}`} size="small" variant="outlined" color="warning" label={s('unit.vacant')} data-testid="unit-vacant"
           {...(editable ? { onClick: () => onAssign({ mode: 'new', roleId: slot.role }) } : {})} />
@@ -281,18 +288,18 @@ function SlotLine({ slot, role, element, facts, today, me, editable, name, onAss
 }
 
 /** One person in a role: their name, their share where it is not all of their time, acting, and *you*. */
-function Holder({ assignment, label, me, editable, onAssign, s }: {
-  assignment: Assignment; label: string; me: string | undefined; editable: boolean; onAssign: (assigning: Assigning) => void; s: Translate
+function Holder({ assignment, label, you, editable, onAssign, s }: {
+  assignment: Assignment; label: string; you: boolean; editable: boolean; onAssign: (assigning: Assigning) => void; s: Translate
 }) {
   const share = shareOf(assignment)
   const text = [
     label,
     share < 1 ? `${Math.round(share * 100)}%` : undefined,
     assignment.acting ? s('unit.acting') : undefined,
-    me !== undefined && personOf(assignment) === me ? s('unit.you') : undefined,
+    you ? s('unit.you') : undefined,
   ].filter(Boolean).join(' · ')
   return (
-    <Chip size="small" label={text} data-testid="unit-holder" color={me !== undefined && personOf(assignment) === me ? 'primary' : 'default'}
+    <Chip size="small" label={text} data-testid="unit-holder" color={you ? 'primary' : 'default'}
       {...(editable ? { onClick: () => onAssign({ mode: 'edit', assignment }) } : {})} />
   )
 }
@@ -348,7 +355,7 @@ function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: bo
 }
 
 /** Who manages it on the day (§12): the holders of a managing role in it or above it. Core grants nothing from it. */
-function Managers({ element, today, looking, people, facts, name, s }: UnitSectionProps & {
+function Managers({ element, today, looking, facts, name, s }: UnitSectionProps & {
   looking: boolean; facts: Facts; name: (person: string) => string
 }) {
   const managers = managersOf(facts.organisation, element.id, today)
@@ -361,7 +368,7 @@ function Managers({ element, today, looking, people, facts, name, s }: UnitSecti
           {s('unit.managedByLine', {
             person: name(one.person), role: facts.roles.get(one.roleId)?.name ?? one.roleId, unit: facts.unitName(one.unitId),
           })}
-          {people?.me !== undefined && one.person === people.me ? ` · ${s('unit.you')}` : ''}
+          {facts.isMe(one.person) ? ` · ${s('unit.you')}` : ''}
         </Typography>
       ))}
       <Typography sx={QUIET}>{s('unit.managedByNote')}</Typography>

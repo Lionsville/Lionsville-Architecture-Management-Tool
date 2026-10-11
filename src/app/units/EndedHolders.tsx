@@ -28,7 +28,7 @@ import { peopleMoveSteps, peopleToMove, placesIn, roleEnding, unitsOfEndedType }
 import type { PeopleChoice, PeopleMove } from '../../model/reorganisation'
 import { addDays } from '../../model/transition'
 import { personOf } from '../../model/units'
-import { personText, registerOf } from '../../people/shown'
+import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -58,6 +58,7 @@ export function EndedHolders(props: EndedHoldersProps) {
     const register = registerOf(people?.people ?? [])
     const names: MoveNames = {
       person: (id) => personText(pickedPerson(id), register, s),
+      canonical: (id) => resolvePerson(id, register)?.id ?? id,
       unit: (id) => at.organisation.units.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id,
       role: (id) => at.organisation.roles.find((one) => one.id === id)?.name ?? id,
     }

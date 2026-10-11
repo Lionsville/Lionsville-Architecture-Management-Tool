@@ -84,12 +84,13 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke' }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
+  register?: readonly Person[]; me?: string
 }) {
   const [model, setModel] = useState(start)
-  const [people, setPeople] = useState<readonly Person[]>(PEOPLE)
-  const heldPeople = useRef<readonly Person[]>(PEOPLE)
+  const [people, setPeople] = useState<readonly Person[]>(held)
+  const heldPeople = useRef<readonly Person[]>(held)
   const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }])
   const dispatch = (command: Command) => {
     commands.push(command)
@@ -107,7 +108,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
     return Promise.resolve({ person: answer.people.find((one) => one.id === answer.changed[0])!, ended: 0, removed: [] })
   }
   const register: PeopleRegisterAccess = {
-    people, policy: DEFAULT_POLICY, me: 'pe-femke', readOnly: false, today: TODAY,
+    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY,
     add: (one) => change({ kind: 'add', person: one }),
     change: (id, patch) => change({ kind: 'change', id, patch }),
     leave: (id, on) => change({ kind: 'leave', id, on }),
@@ -154,6 +155,21 @@ describe('a unit in its inspector', () => {
     expect(screen.getAllByTestId('unit-manager').map((line) => line.textContent)).toEqual([
       'Femke Bos — Product owner, Webshop · you', 'Ada Verbeek — Domain owner, Customer',
     ])
+  })
+
+  it('takes an id merged into an entry as that entry: you, a person\'s load and the checks count them as one', async () => {
+    const merged: Person[] = [...PEOPLE, { id: 'pe-femke2', pseudonym: 'KLMN', kind: 'internal', state: 'active', mergedInto: 'pe-femke' }]
+    const model: HostModel = { ...CUSTOMER, assignments: [...CUSTOMER.assignments!, as('as-5', 'webshop', 'ro-dev', 'pe-femke2', { share: 0.6 })] }
+    renderShell(<Harness commands={[]} model={model} register={merged} me="pe-femke2" />)
+    const holders = screen.getAllByTestId('unit-holder').map((chip) => chip.textContent)
+    expect(holders).toContain('Femke Bos · you')
+    expect(holders).toContain('Femke Bos · 60% · you')
+    expect(screen.getAllByTestId('unit-manager')[0].textContent).toContain('· you')
+    expect(screen.getAllByTestId('unit-finding').map((line) => line.textContent)).toContain('Femke Bos holds 160% across their roles')
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-assign'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    expect(within(dialog).getByTestId('person-pick-pe-femke').textContent).toContain('160%')
+    expect(within(dialog).getByTestId('person-pick-pe-femke').textContent).toContain('you')
   })
 
   it('says what the checks find in it', () => {

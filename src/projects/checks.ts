@@ -644,8 +644,13 @@ export function organisationAt(index: ScopeIndex): OrganisationAt {
   }
 }
 
-/** Every finding of an organisation on a day, each about the scope that answers for what it is about. */
-export function findingsOfOrganisation(at: OrganisationAt, day: string): Finding[] {
+/**
+ * Every finding of an organisation on a day, each about the scope that
+ * answers for what it is about. `canonical` maps a register id to the entry
+ * a merge kept, where the caller holds the register, so a person kept under
+ * two ids is one person over all of their time (ADR-0036 §9).
+ */
+export function findingsOfOrganisation(at: OrganisationAt, day: string, canonical?: (id: string) => string): Finding[] {
   const { organisation } = at
   if (organisation.units.length === 0 && organisation.assignments.length === 0) return []
   const said: Said = {
@@ -653,7 +658,7 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string): Finding
     typeName: new Map(organisation.unitTypes.map((type) => [type.id, type.name])),
     roleName: new Map(organisation.roles.map((role) => [role.id, role.name])),
   }
-  return unitFindings(organisation, day, { owns: at.owns }).flatMap((one) => organisationFinding(one, said))
+  return unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said))
 }
 
 /** What a finding of the organisation is said with: where each unit and assignment is kept, and what things are called. */

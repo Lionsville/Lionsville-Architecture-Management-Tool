@@ -41,7 +41,7 @@ import { orgChart, unitsHolding, walk } from '../../model/orgChart'
 import type { ChartHolder, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
-import { loadOn } from '../../model/units'
+import { dayBefore, loadOn } from '../../model/units'
 import { meIn } from '../../people/me'
 import { registerOf } from '../../people/shown'
 import { usePersonNames } from '../../people/ui/names'
@@ -153,8 +153,9 @@ export function ChartPage(props: ChartPageProps) {
         <AssignDialog
           assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
           roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? [])}
-          register={people} today={today} makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
-          loadOf={(person) => t('assign.load', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day) * 100), day })}
+          register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
+          makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
+          loadOf={(person) => t('assign.load', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100), day })}
           onClose={() => setAssigning(undefined)} s={t}
         />
       )}
@@ -325,8 +326,8 @@ function ChartFindings({ here, scopeLabel, chart, day, names, onFinding }: Chart
 }) {
   const { t, language } = useStrings()
   const units = new Set([...walk(chart.roots)].map((unit) => unit.id))
-  const persons = new Set([...walk(chart.roots)].flatMap((unit) => [...unit.slots.flatMap((slot) => slot.holders), ...unit.others].map((one) => one.person)))
-  const findings = findingsOfOrganisation(here.at, day)
+  const persons = new Set([...walk(chart.roots)].flatMap((unit) => [...unit.slots.flatMap((slot) => slot.holders), ...unit.others].map((one) => names.canonical(one.person))))
+  const findings = findingsOfOrganisation(here.at, day, names.canonical)
     .filter((finding) => (finding.person !== undefined ? persons.has(names.canonical(finding.person)) : units.has(finding.id)))
   const name = (person: string) => names.text(pickedPerson(person))
   return (

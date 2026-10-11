@@ -77,10 +77,10 @@ const PEOPLE: Person[] = [
   { id: 'pe-tim', name: 'Tim de Boer', pseudonym: 'GHJK', kind: 'internal', state: 'active' },
 ]
 
-function register(me: string | undefined): PeopleRegisterAccess {
+function register(me: string | undefined, people: readonly Person[] = PEOPLE): PeopleRegisterAccess {
   const refused = () => Promise.resolve({ refused: 'people.unknown' as const })
   return {
-    people: PEOPLE, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY,
+    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY,
     add: refused, change: refused, leave: refused, forget: refused, remove: refused, merge: refused,
     setPolicy: () => Promise.resolve(), setMe: () => Promise.resolve(), mentionsOf: () => Promise.resolve([]),
   }
@@ -89,11 +89,11 @@ function register(me: string | undefined): PeopleRegisterAccess {
 const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', name: 'Organisation', members: [], ...(asOf ? { asOf } : {}) })
 
 /** The chart over the shipping scope's session, changed by the model's own writer. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping' }: {
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE }: {
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
-  onOpenElsewhere?: (scope: string, id: string) => void; scope?: string
+  onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
 }) {
-  const [model, setModel] = useState(scope === '' ? ROOT : SHIPPING)
+  const [model, setModel] = useState(scope === '' ? ROOT : shipping)
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
   const dispatch = (command: Command) => {
@@ -104,7 +104,7 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     setModel(next)
     return next
   }
-  const people = register(me ?? undefined)
+  const people = register(me ?? undefined, held)
   // The names the shell provides at its root (`people/ui/names`): the register's, *you* among them.
   const names = useMemo(() => personNames(people, translator('en')), [people])
   return (
@@ -188,6 +188,26 @@ describe('the organisation chart', () => {
     fireEvent.mouseDown(within(screen.getByTestId('chart-bar')).getByRole('combobox'))
     fireEvent.click(await screen.findByRole('option', { name: 'Parcel & Freight' }))
     expect(units()).toEqual(['pf', 'tt'])
+  })
+
+  it('counts a person kept under an id merged into theirs as one person over all of their time', () => {
+    const people: Person[] = [...PEOPLE, { id: 'pe-noor2', pseudonym: 'KLMN', kind: 'internal', state: 'active', mergedInto: 'pe-noor' }]
+    const shipping: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'pf', 'ro-dev', 'pe-noor2', { share: 0.5 })] }
+    renderShell(<Harness commands={[]} shipping={shipping} people={people} />)
+    expect(within(screen.getByTestId('chart-findings')).getByText(/Noor Haddad holds 150% across their roles/)).toBeTruthy()
+  })
+
+  it('fills a vacancy on a day still to come from that day', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness commands={commands} asOf="2026-12-01" />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    fireEvent.click(within(dialog).getByTestId('person-pick-pe-tim'))
+    fireEvent.click(within(dialog).getByTestId('assign-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.add',
+      assignment: { id: 'as-new', unitId: 'tt', roleId: 'ro-dev', person: { person: 'pe-tim' }, from: '2026-12-01' },
+    }])
   })
 
   it('fills a vacancy as one step, and the chart changes with it', async () => {

@@ -29,6 +29,8 @@ export type MoveNames = {
   person: (id: string) => string
   unit: (id: string) => string
   role: (id: string) => string
+  /** The id that answers for an id: the entry a merge kept (ADR-0036 §9). */
+  canonical: (id: string) => string
 }
 
 export type MovePeopleProps = {
