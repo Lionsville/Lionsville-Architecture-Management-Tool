@@ -9,13 +9,15 @@
  * bytes are read from its file when they are asked for, which is when it is
  * shown. Bytes put are held until a step adds them (`PictureStaging`), and
  * one whose entry was added before they were written answers them from
- * there.
+ * there. A drawing's picture is a file named by its content address,
+ * `images/.drawings/<digest>.svg`, written when a step names it in a drawing,
+ * so it is read back by address after the repository is made again.
  */
 import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal, mediaTypeOfBytes } from '../../model/imageName'
 import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import type { ScopeId } from '../../projects/scopeState'
 import type { ImageBytes, ImageListing, ImageRepository, Put } from '../../ports/ImageRepository'
-import { picturePath } from './folderPictures'
+import { drawingPictureFile, picturePath } from './folderPictures'
 import type { PictureStaging } from './folderPictures'
 import type { FolderScopes } from './folderScopes'
 import { bytesAt as fileBytes } from './handles'
@@ -68,9 +70,15 @@ export class FolderImageRepository implements ImageRepository {
     const staged = this.staging.get(scope, address)
     if (staged) return { mediaType: mediaTypeOfBytes(staged), bytes: staged }
     const held = await this.folder.libraryAt(scope)
-    const found = held?.library.find((kept) => kept.entry.contentAddress === address)
-    if (!held || !found) return undefined
-    const bytes = await fileBytes(this.folder.root, picturePath(held.node.address, found.file))
-    return bytes ? { mediaType: found.entry.mediaType, bytes } : undefined
+    if (!held) return undefined
+    const found = held.library.find((kept) => kept.entry.contentAddress === address)
+    if (found) {
+      const bytes = await fileBytes(this.folder.root, picturePath(held.node.address, found.file))
+      if (bytes) return { mediaType: found.entry.mediaType, bytes }
+    }
+    const drawn = drawingPictureFile(address)
+    const bytes = drawn ? await fileBytes(this.folder.root, picturePath(held.node.address, drawn)).catch(() => undefined) : undefined
+    // The name is the address; bytes that are not what it says are not answered as it.
+    return bytes && await contentAddressOf(bytes) === address ? { mediaType: 'image/svg+xml', bytes } : undefined
   }
 }

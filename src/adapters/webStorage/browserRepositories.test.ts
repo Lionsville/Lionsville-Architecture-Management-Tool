@@ -24,6 +24,7 @@ import { fakeIndexedDb } from './testing/fakeIndexedDb'
 function over(indexedDb: IndexedDb): RepositoriesUnderTest {
   return {
     repositories: browserRepositories(indexedDb).repositories,
+    reopen: () => browserRepositories(indexedDb).repositories,
     spoil: (scope, how) => spoilKept(new IndexedDbStore(indexedDb), scope, how),
   }
 }

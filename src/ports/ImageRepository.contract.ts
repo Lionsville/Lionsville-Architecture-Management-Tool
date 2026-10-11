@@ -16,6 +16,8 @@ import { imageMediaType } from '../model/documentImage'
 import { contentAddressOf } from '../model/imageName'
 import type { ImageEntry, ImageName } from '../model/imageName'
 import type { ScopeId } from '../projects/scopeState'
+import type { DesignDiagram } from '../model/types'
+import { toDiagram } from '../model/normalised'
 import { ok, over, refusal, step } from './Repositories.contract'
 import type { MakeRepositories, Over } from './Repositories.contract'
 
@@ -38,8 +40,9 @@ async function add(repositories: Over, scope: ScopeId, name: ImageName, held: Ui
 export function describeImageRepository(name: string, make: MakeRepositories): void {
   describe(`ImageRepository contract — ${name}`, () => {
     const fresh = async () => {
-      const repositories = over(await make())
-      return { repositories, acme: await repositories.scope('acme', 'Acme Logistics') }
+      const under = await make()
+      const repositories = over(under)
+      return { under, repositories, acme: await repositories.scope('acme', 'Acme Logistics') }
     }
 
     it('names itself', async () => {
@@ -79,6 +82,24 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       const answered = held!
       answered.bytes[0] = 9
       expect((await repositories.images.bytesAt(acme, put.contentAddress))?.bytes).toEqual(bytes(1, 2, 3))
+    })
+
+    it('keeps a drawing\'s picture once a step names it, and answers it by address after the repositories are made again', async () => {
+      const { under, repositories, acme } = await fresh()
+      const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"/>')
+      const put = ok(await repositories.images.put(acme, 'drawing.svg', svg))
+      const drawing: DesignDiagram = {
+        id: 'context', kind: 'drawing', name: 'Context', members: [],
+        drawing: { xml: '<mxGraphModel><root/></mxGraphModel>', picture: put.contentAddress, links: [] },
+      }
+      await repositories.steps(acme, { type: 'diagram.create', diagram: toDiagram(drawing) })
+      await repositories.settle()
+      const again = under.reopen ? await under.reopen() : under.repositories
+      const held = await again.images.bytesAt(acme, put.contentAddress)
+      expect(held?.bytes).toEqual(svg)
+      expect(held?.mediaType).toBe('image/svg+xml')
+      // A drawing's picture is no picture of the library: no name answers it.
+      expect((await again.images.list(acme, '')).images).toEqual([])
     })
 
     it('answers nothing by name for bytes put and never added to the library', async () => {

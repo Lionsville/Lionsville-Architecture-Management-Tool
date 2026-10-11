@@ -46,7 +46,9 @@ import type {
   Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
 } from '../../ports/ScopeRepository'
 import { usablePath } from './FileSystemScopeStore'
-import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor, rowsOf } from './folderPictures'
+import {
+  DRAWING_PICTURES, drawingPictureAddress, drawingPictureFile, fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor, rowsOf,
+} from './folderPictures'
 import type { KeptPicture, PictureStaging } from './folderPictures'
 import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
@@ -329,12 +331,13 @@ export class FolderScopeRepository implements ScopeRepository {
       ...(whole ? { whole } : {}),
     }))
     const undo: Undo[] = []
-    for (const { read, library } of planned) {
+    for (const { read, library, snapshot } of planned) {
       const refused = await this.picturesIn(read, library, undo)
       if (refused) {
         await this.undo(undo)
         return refused
       }
+      await this.drawingPicturesIn(read, snapshot, undo)
     }
     let setAside: readonly string[]
     try {
@@ -346,7 +349,9 @@ export class FolderScopeRepository implements ScopeRepository {
       return refused
     }
     for (const { read, library, snapshot } of planned) {
-      await this.picturesOut(read, library, new Set(drawingPictureAddresses(snapshot.model.diagrams)))
+      const drawings = new Set(drawingPictureAddresses(snapshot.model.diagrams))
+      await this.picturesOut(read, library, drawings)
+      await this.drawingPicturesOut(read, drawings)
     }
     return { setAside }
   }
@@ -386,6 +391,47 @@ export class FolderScopeRepository implements ScopeRepository {
       await this.folder.written(address, file, entry)
     }
     return undefined
+  }
+
+  /**
+   * The pictures the drawings about to be written name, each as a file named
+   * by its content address, from the bytes put for it or a library picture
+   * with the same bytes. One already there is those bytes, by its name. An
+   * address whose bytes are nowhere is left: the drawing says *not drawn yet*
+   * until somebody saves it again, the same as one an agent wrote.
+   */
+  private async drawingPicturesIn(read: ReadScope, snapshot: ScopeSnapshot, undo: Undo[]): Promise<void> {
+    const { address, id } = read.node
+    for (const named of new Set(drawingPictureAddresses(snapshot.model.diagrams))) {
+      const file = drawingPictureFile(named)
+      if (!file) continue
+      const library = read.library.find((kept) => kept.entry.contentAddress === named)
+      const bytes = this.staging.get(id, named)
+        ?? (library ? await bytesAt(this.folder.root, picturePath(address, library.file)).catch(() => undefined) : undefined)
+      if (!bytes) continue
+      const path = picturePath(address, file)
+      if (await createAt(this.folder.root, path, bytes)) undo.push({ path })
+    }
+  }
+
+  /**
+   * The drawings' pictures no drawing in the head names any more, removed:
+   * the sweep of a drawing's picture, as `picturesOut` is the library's. One
+   * that will not go is said, and the scope's files are already right.
+   */
+  private async drawingPicturesOut(read: ReadScope, named: ReadonlySet<string>): Promise<void> {
+    const folder = await folderAt(this.folder.root, picturePath(read.node.address, DRAWING_PICTURES)).catch(() => undefined)
+    if (!folder) return
+    try {
+      for (const { path } of await filesUnder(folder, () => true)) {
+        const address = drawingPictureAddress(path)
+        if (address !== undefined && named.has(address)) continue
+        if (address === undefined) continue
+        await removeAt(this.folder.root, picturePath(read.node.address, `${DRAWING_PICTURES}/${path}`))
+      }
+    } catch (cause) {
+      this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a drawing's picture could not be let go: ${reasonOf(cause)}`, cause })
+    }
   }
 
   /** What a refused write wrote, put back: a file it made removed, one it wrote over as it was. */

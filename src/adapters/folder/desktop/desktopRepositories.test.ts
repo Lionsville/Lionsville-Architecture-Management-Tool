@@ -104,6 +104,9 @@ function onTheDesktop(folder = freshFolder()): RepositoriesUnderTest {
   const repositories = folderRepositories({ root, git: new DesktopFolderGit(historyOver(), folder) })
   return {
     repositories,
+    reopen: () => folderRepositories({
+      root: new IpcDirectoryHandle(filesOver(folder), folder, basename(folder)), git: new DesktopFolderGit(historyOver(), folder),
+    }),
     // Half a write of a model, or a later version's header, on the disk (`testing/spoil.ts`).
     spoil: (scope, how) => spoilFolder(repositories, {
       read: (path) => readOnDisk(join(folder, path), 'utf8').catch(() => undefined),

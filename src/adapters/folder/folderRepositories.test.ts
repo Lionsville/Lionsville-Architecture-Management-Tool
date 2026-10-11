@@ -7,6 +7,8 @@
  * machine's own git beside the desktop's handle (`desktop/`).
  */
 import { describe, expect, it } from 'vitest'
+import type { Command } from '../../model/commands'
+import { toDiagram } from '../../model/normalised'
 import { contentAddressOf } from '../../model/imageName'
 import { dataUrl } from '../../projects/dataUrl'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
@@ -39,6 +41,8 @@ function overFakeFolder(): RepositoriesUnderTest {
   const repositories = folderRepositories({ root, git: memoryGit(root) })
   return {
     repositories,
+    // The same folder, read by repositories that hold nothing of these.
+    reopen: () => folderRepositories({ root, git: memoryGit(root) }),
     // A model.json that is not a model, or a header a later version wrote (`testing/spoil.ts`).
     spoil: (scope: ScopeId, how) => spoilFolder(repositories, { read: (path) => textAt(root, path), write: (path, text) => writeAt(root, path, text) }, scope, how),
   }
@@ -52,12 +56,14 @@ function overBrowserFolder(): RepositoriesUnderTest {
   const root = new FakeDirectory()
   const folder = new BrowserFolder(new IndexedDbStore(fakeIndexedDb()), { folder: 'acme' },
     (kept, mine) => Promise.resolve((kept as { folder: string }).folder === (mine as { folder: string }).folder))
-  const repositories = folderRepositories({
+  const made = () => folderRepositories({
     root, git: browserFolderGit(folder, root),
     steps: browserStepStore(folder), places: browserPlaceStore(folder), stamps: browserStampCache(folder),
   })
+  const repositories = made()
   return {
     repositories,
+    reopen: made,
     spoil: (scope: ScopeId, how) => spoilFolder(repositories, { read: (path) => textAt(root, path), write: (path, text) => writeAt(root, path, text) }, scope, how),
   }
 }
@@ -107,6 +113,30 @@ async function folderOfToday(): Promise<FakeDirectory> {
 }
 
 describe('the folder, beyond what the suites say', () => {
+  it('keeps a drawing\'s picture as a file named by its address, and lets it go when no drawing names it', async () => {
+    const root = new FakeDirectory()
+    const repositories = folderRepositories({ root, git: memoryGit(root) })
+    const acme = ok(await repositories.scopes.create('acme', { name: 'Acme' })).id
+    const svg = (n: number) => new TextEncoder().encode(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}"/>`)
+    const put = async (n: number) => ok(await repositories.images.put(acme, 'drawing.svg', svg(n))).contentAddress
+    const drawn = (picture: string): Command => ({
+      type: 'diagram.create',
+      diagram: toDiagram({ id: 'ctx', kind: 'drawing', name: 'Context', members: [], drawing: { xml: '<mxGraphModel/>', picture, links: [] } }),
+    })
+    const first = await put(1)
+    ok(await repositories.scopes.apply([{ scope: acme, steps: [step(drawn(first))] }]))
+    const file = (address: string) => `acme/images/.drawings/${address.slice('sha256:'.length)}.svg`
+    expect(await bytesAt(root, file(first))).toEqual(svg(1))
+    // Not a picture of the library: a document cannot name it.
+    expect((await repositories.images.list(acme, '')).images).toEqual([])
+
+    const second = await put(2)
+    const redrawn: Command = { type: 'diagram.update', id: 'ctx', patch: { drawing: { xml: '<mxGraphModel/>', picture: second, links: [] } } }
+    ok(await repositories.scopes.apply([{ scope: acme, steps: [step(redrawn)] }]))
+    expect(await bytesAt(root, file(second))).toEqual(svg(2))
+    expect(await bytesAt(root, file(first))).toBeUndefined()
+  })
+
   it('reads a folder of today without writing anything to it', async () => {
     const root = await folderOfToday()
     const before = await contents(root)

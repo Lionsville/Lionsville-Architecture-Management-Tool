@@ -70,6 +70,13 @@ export type RepositoriesUnderTest = {
    * has anything to show about it.
    */
   spoil?(scope: ScopeId, how: Spoiled): void | boolean | Promise<void | boolean>
+  /**
+   * Repositories made again over the same store, as the next start of the
+   * app makes them: nothing held in this process carried over. Optional: an
+   * implementation whose store is its process has nothing to make again, and
+   * the clauses that ask read the same repositories once more.
+   */
+  reopen?(): Repositories | Promise<Repositories>
 }
 
 /** How a scope is made one an implementation cannot read whole (`RepositoriesUnderTest.spoil`). */

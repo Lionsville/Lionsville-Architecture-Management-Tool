@@ -23,6 +23,7 @@
  * observations/solutions/NNNN-<slug>.md    what is done about it, and how far it got
  * observations/experiments/NNNN-<slug>.md  what was tried to find out whether it works
  * images/<file>.png | .jpg | .svg   pictures the documents show
+ * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
  * <child>/                          a scope under this one: the same files again
  * ```
