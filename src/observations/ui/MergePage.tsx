@@ -32,6 +32,7 @@ import { OBSERVATION_IMPACTS } from '../../model/observation'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
+import { CloseIcon } from '../../widgets/icons'
 import { IMPACT_LABEL, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { MERGE_LINK_REFUSAL } from '../mergeScreen'
 import type { MergeLink, RecordAt } from '../merge'
@@ -100,7 +101,7 @@ function WhatToMerge({ state, s }: { state: MergeScreenState; s: Translate }) {
             {state.picked.length > 1 && (
               <Tooltip title={s('observation.mergeRemove', { label: row.label })}>
                 <IconButton size="small" aria-label={s('observation.mergeRemove', { label: row.label })} onClick={() => state.toggle(row.at)}>
-                  <Box component="span" aria-hidden sx={{ fontSize: 14, lineHeight: 1, width: 14 }}>✕</Box>
+                  <CloseIcon size={14} />
                 </IconButton>
               </Tooltip>
             )}
