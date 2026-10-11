@@ -179,7 +179,11 @@ describe('the Solutions tab', () => {
     }, { initialId: 'ex:e1' })
     fireEvent.click(screen.getByTestId('experiment-outcome-running'))
     expect(screen.getByRole('dialog').textContent).toContain('SO-0001 is proven on this experiment; reopening it withdraws that proof.')
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Reopen' }))
+    // Reopening takes nothing away, so it is not drawn as a danger; and it is in sentence case.
+    const reopen = within(screen.getByRole('dialog')).getByRole('button', { name: 'Reopen' })
+    expect(reopen.className.split(' ')).toContain('MuiButton-colorPrimary')
+    expect(getComputedStyle(reopen).textTransform).toBe('none')
+    fireEvent.click(reopen)
     expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'running', result: 'Halved' })
     expect(lastChange(onChange).experiments[0]).not.toHaveProperty('to')
   })

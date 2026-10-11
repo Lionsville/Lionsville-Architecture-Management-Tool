@@ -11,6 +11,9 @@
  * the answer may not be given: deleting the last landscape would leave a shell
  * with nothing to work on, and a dialog with a dead button is then more honest
  * than a button that is absent — you can see *why* it cannot be done.
+ *
+ * The buttons are in sentence case, as in every other dialog. The answer is
+ * drawn as a danger unless `tone` says the step takes nothing away.
  */
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -26,12 +29,14 @@ export type ConfirmDialogProps = {
   confirmLabel: string
   cancelLabel: string
   confirmDisabled?: boolean
+  /** `danger` (the default) for a step that removes something; `primary` for one that does not. */
+  tone?: 'danger' | 'primary'
   onCancel: () => void
   onConfirm: () => void
 }
 
 export function ConfirmDialog({
-  open, title, body, confirmLabel, cancelLabel, confirmDisabled = false, onCancel, onConfirm,
+  open, title, body, confirmLabel, cancelLabel, confirmDisabled = false, tone = 'danger', onCancel, onConfirm,
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
@@ -40,8 +45,11 @@ export function ConfirmDialog({
         <DialogContentText sx={{ fontSize: 14 }}>{body}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{cancelLabel}</Button>
-        <Button color="error" variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
+        <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{cancelLabel}</Button>
+        <Button
+          color={tone === 'danger' ? 'error' : 'primary'} variant="contained" disabled={confirmDisabled} onClick={onConfirm}
+          sx={{ textTransform: 'none' }}
+        >
           {confirmLabel}
         </Button>
       </DialogActions>

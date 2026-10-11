@@ -124,6 +124,7 @@ export function useLifecycle(args: {
         body={reopenBody(withdraws, s)}
         confirmLabel={s('solution.reopenConfirm')}
         cancelLabel={s('common.cancel')}
+        tone="primary"
         onCancel={() => setReopening(undefined)}
         onConfirm={() => {
           if (reopening) conclude(reopening.id, 'running')
