@@ -290,7 +290,9 @@ verdwijnt hij in één keer van elk scherm.
 - **Een persoon** laat zien wie het is, hoe ver iemand is met vertrekken, en
   wat iemand in de organisatie vervult: **Vervult vandaag**, **Gaat
   vervullen** en **Vervulde eerder**, elk een rol in een eenheid (zie
-  *Eenheden en de mensen erin*). **Dit ben ik** vertelt deze installatie
+  *Eenheden en de mensen erin*). **Bekijk op** zegt hetzelfde op een andere
+  dag — na een reorganisatie bijvoorbeeld — en **Terug naar vandaag** keert
+  terug; kijken schrijft niets. **Dit ben ik** vertelt deze installatie
   welke vermelding jij bent, zodat je overal gemarkeerd wordt waar je
   voorkomt; dat wordt bij de installatie bewaard, niet in je map.
   **Corrigeren…** wijzigt de naam, het adres of de soort.
@@ -1317,8 +1319,10 @@ plan blijft bewerkbaar: een besluit legt een moment vast, een plan beschrijft
 werk. Wat het plan vorige maand zei staat in de historie van de map.
 
 **Verschuiven…** verplaatst een plan met een aantal dagen — het venster, elke
-mijlpaal, en de levenscyclusdatums van de applicaties die het invoert en
-uitfaseert — in één stap, want een plan dat uitloopt is één ding dat gebeurde.
+mijlpaal, de dag van elke eenheid die het verplaatst, en de levenscyclusdatums
+van de applicaties die het invoert en uitfaseert — in één stap, want een plan
+dat uitloopt is één ding dat gebeurde. Een plan dat eenheden reorganiseert,
+zegt wat dat doet met de mensen erin (zie *Verandering in de tijd*).
 
 Elk plan is één markdownbestand in `transitions/` in uw projectmap, genummerd
 vanaf `TR-0001`.
@@ -1772,6 +1776,15 @@ Het onderdeel van een eenheid zegt:
   van het type…** voegt alleen aan deze eenheid een optionele rol toe.
 - **Wie haar aanstuurt**: wie vandaag een aansturende rol vervult, in deze
   eenheid of een erboven. De app zegt het en geeft er geen rechten mee.
+- **In de tijd**: de dag vanaf wanneer ze er is, haar laatste dag, en elke
+  verplaatsing die een plan van haar maakt (zie *Verandering in de tijd*).
+
+Het onderdeel leest de dag waarop het bord ernaast wordt bekeken. Op een bord
+dat een andere dag toont — zijn eigen opgeslagen dag, of een dag gekozen onder
+**Toont** of met de schuifregelaar van de roadmap — zegt het onderdeel *Zoals
+op* die dag, en wie de rollen vervult, wie haar aanstuurt en de controles zijn
+die van die dag, de verplaatsingen van plannen op die dag inbegrepen. Wat je
+van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
 - **Controles**: wat de organisatie vandaag over deze eenheid tegenspreekt —
   een rol met te weinig mensen of boven het maximum, een eenheid ingedeeld
   waar haar type niet mag staan, een die meer domeinen bedient dan het type
@@ -1801,6 +1814,58 @@ Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
 de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst
 toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
 eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
+
+### Verandering in de tijd
+
+Een correctie is een bewerking; een verandering heeft een dag. Een eenheid, een
+rol of een eenheidstype hernoemen is een bewerking, en een eenheid buiten een
+plan onder een andere eenheid zetten ook: het was altijd zo, en de historie
+zegt wanneer het werd gecorrigeerd. Een eenheid begint en eindigt op haar
+levenscyclusdata; een toewijzing op haar eerste en laatste dag; een
+eenheidstype en een rol op de hunne.
+
+**Op de pagina van het besturingsmodel** heeft een eenheidstype en een rol
+**Vanaf**, **Tot en met** en **Gevolgd door** onder *In de tijd*. Een rol die
+eindigt toont haar mensen na de laatste dag — de opvolger van de rol in
+dezelfde eenheid is het voorstel voor elk — met *Verplaats de mensen* eronder
+(zie hieronder). Een eenheidstype dat eindigt toont de eenheden die er daarna
+nog zijn, met wie er een rol in vervult: wat elk nu is, beslis jij, door haar
+een ander type te geven of haar te beëindigen. Een eenheid die nog van een
+beëindigd type is, is een bevinding.
+
+**Een reorganisatie is een plan.** Op de pagina van een plan zet *Eenheden die
+het verplaatst* een eenheid op een dag onder een nieuwe bovenliggende eenheid
+— of bovenaan, onder de organisatie zelf — elk één stap. **Verschuiven…**
+verplaatst die dagen met de rest van het plan. Vanaf haar dag geldt de
+verplaatsing overal waar de organisatie wordt gelezen: het onderdeel van een
+eenheid, de controles, wie een eenheid aanstuurt. Een gestaakt plan
+verplaatst niets. Boven de interfaces van het plan zegt de pagina, waar het
+plan eenheden raakt:
+
+- **Wat het met de organisatie doet**: de eenheden die het invoert en opheft,
+  elk met haar dag, de verplaatsingen, en de rollen die de dag ervoor
+  eindigen, met wat erop volgt.
+- **De dag ervoor** en **op** de dag: de eenheden onder de kleinste bomen die
+  de hele verandering bevatten, met wie er een rol in vervult — *eindigt*,
+  *nieuw* en *verplaatst* gemarkeerd.
+- **Verplaats de mensen**: elke toewijzing in een eenheid of rol die eindigt,
+  elk met een voorstel — waar de eenheid heen ging (haar opvolger), of de
+  opvolger van de rol — dat je overneemt of wijzigt; een team dat verhuist
+  neemt zijn mensen mee, dus het staat er niet in. Niemands nieuwe plek wordt
+  geraden: een rij zonder voorstel eindigt alleen. **Neem elk voorstel over**
+  zet elke rij terug op haar voorstel, en **Schrijf als één stap** schrijft
+  elk einde op de laatste dag en elk begin de dag erna, in elke scope die er
+  een bijhoudt, tegelijk. Waar alleen de scope van het plan wordt geschreven,
+  neemt ⌘Z de hele stap terug; waar ook andere scopes werden geschreven, wordt
+  het in elk daarvan teruggezet.
+- **Nog open op** de dag: wat de controles dan in die eenheden vinden — elk een
+  link naar de eenheid — en elke verantwoordelijkheid die haar A kwijtraakt
+  omdat de rol die er verantwoording voor aflegt eindigt.
+
+Een agent zet een eenheid op de dag van een plan onder een nieuwe
+bovenliggende eenheid met `plan.move`, dateert een eenheidstype of rol met
+`unitType.update` en `role.update` (`from`, `until`, `successors`), en leest
+de organisatie van een dag met `assignments.list` en `checks.list` (`on`).
 
 ## Een tekening
 

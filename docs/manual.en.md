@@ -277,6 +277,8 @@ so when a name goes from the register, it goes from every screen at once.
 - **A person** shows who they are and where they are in leaving, and what
   they hold across the organisation: **Holds today**, **Will hold** and
   **Held before**, each a role in a unit (see *Units and the people in them*).
+  **Look at** says the same on another day — after a reorganisation, say —
+  and **Back to today** returns; looking writes nothing.
   **This is me** tells this install which entry is you, so you are marked
   wherever you appear; it is kept with the install, not in your folder.
   **Correct…** changes the name, the address or the kind.
@@ -1214,9 +1216,11 @@ those. Unlike a decision record, every step can be taken back and a finished pla
 can still be edited: a decision records a moment, and a plan describes work. What
 the plan said last month is in the folder's history.
 
-**Move by…** shifts a plan by a number of days — its window, every milestone, and
-the lifecycle dates on the applications it introduces and retires — in a single
-step, because a plan slipping is one thing that happened.
+**Move by…** shifts a plan by a number of days — its window, every milestone, the
+day of every unit it moves, and the lifecycle dates on the applications it
+introduces and retires — in a single step, because a plan slipping is one thing
+that happened. A plan that reorganises units says what that does to the people
+in them (see *Change over time*).
 
 Each plan is one markdown file in `transitions/` in your project folder, numbered
 `TR-0001` upwards.
@@ -1642,6 +1646,15 @@ A unit's section says:
   optional role to this unit only.
 - **Who manages it**: whoever holds a role that manages, in this unit or a unit
   above it, today. The app says so and grants nothing from it.
+- **Over time**: the day it is there from, its last day, and every move a plan
+  makes of it (see *Change over time*).
+
+The section reads the day the board beside it is looked at. On a board that
+shows another day — its own saved day, or a day picked under **Showing** or
+on the roadmap's slider — the section says *As on* that day, and its holders,
+who manages it and its checks are that day's, a plan's moves of that day
+included. Something assigned or ended from there starts on that day where it
+is still to come.
 - **Checks**: what the organisation contradicts about this unit today — a
   role short of people or over its maximum, a unit filed where its type may
   not sit, one serving more domains than its type allows or owning more
@@ -1668,6 +1681,53 @@ An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 and for one unit its roles and who manages it — and assigns and ends with
 `assignment.add` and `assignment.end` in the scope that keeps the unit. It
 never forgets, removes or merges anyone.
+
+### Change over time
+
+A correction is an edit; a change has a day. Renaming a unit, a role or a unit
+type is an edit, and so is putting a unit under another parent outside a plan:
+it was always so, and the history says when it was corrected. A unit that
+starts or ends does so on its lifecycle dates; an assignment on its first and
+last day; a unit type and a role on theirs.
+
+**On the operating model page**, a unit type and a role have **From**,
+**Until** and **Followed by** under *Over time*. A role that ends lists its
+people after its last day — the role's successor in the same unit is the
+suggestion for each — with *Move the people* below (see below). A unit type
+that ends lists its units still there afterwards, with who holds a role in
+each: what each is now is for you to decide, by giving it another type or
+ending it. A unit still of a type that has ended is a finding.
+
+**A reorganisation is a plan.** On a plan's page, *Units it moves* puts a unit
+under a new parent on a day — or at the top, under the organisation itself —
+one step each. **Move by…** shifts those days with the rest of the plan. From
+its day the move holds wherever the organisation is read: a unit's section,
+the checks, who manages a unit. An abandoned plan moves nothing. Above the
+plan's interfaces, where the plan touches units, the page says:
+
+- **What it does to the organisation**: the units it introduces and retires,
+  each with its day, the moves, and the roles that end the day before its
+  day, with what follows them.
+- **The day before** and **on** its day: the units under the smallest trees
+  that hold the whole change, with who holds a role in each — *ends*, *new* and
+  *moved* marked.
+- **Move the people**: every assignment in a unit or a role that ends, each
+  with a suggestion — where the unit went (its successor), or the role's
+  successor — which you accept or change; a team that moves takes its people
+  with it, so it is not listed. Nobody's new place is guessed: a row with no
+  suggestion only ends. **Accept every suggestion** sets every row back to its
+  suggestion, and **Write as one step** writes every end on its last day and
+  every beginning the day after, in every scope that keeps one, together.
+  Where the plan's scope is the only one written, ⌘Z takes the whole step
+  back; where other scopes were written too, it is put back in each.
+- **Still open on** its day: what the checks find in those units then — each a
+  link to the unit — and every responsibility that loses its A because the role
+  accountable for it ends.
+
+An agent puts a unit under a new parent on a plan's day with `plan.move`,
+dates a unit type or a role with `unitType.update` and `role.update` (`from`,
+`until`, `successors`), and reads the organisation of a day with
+`assignments.list` and `checks.list` (`on`).
 
 ## A drawing
 

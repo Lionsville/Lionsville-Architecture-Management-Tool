@@ -2,9 +2,10 @@
 
 * Status: accepted, 11 October 2026; built in part: the register of people
   (§8–§11, §13's three tools for it), the operating model (§1's
-  `_operating/`, §2, §5, §13's seven tools for it), and units and
+  `_operating/`, §2, §5, §13's seven tools for it), units and
   assignments (§1's `_assignments/`, §3, §4, §10's leaving, §12's who
-  manages, §13's three tools for them), 11 October 2026 — *As built*, below
+  manages, §13's three tools for them), and change over time (§6, §13's
+  `plan.move`), 11 October 2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -642,6 +643,87 @@ person by register id, someone who has left refused, a merged id written as
 the entry it went into) and `assignment.end`, in the scope that keeps the
 unit. `element.add` and `element.update` take `unitTypeId`, `scopes` and
 `extraSlots`. The share is in per cent at the agent, a fraction in the record.
+
+## As built, 11 October 2026: change over time
+
+The fourth part: §6, and §13's `plan.move`. The two views and the name fields
+follow.
+
+**A plan moves units.** `Transition.moves` (`model/transition.ts`) is a list
+of `{ unitId, parentId?, on }` — a unit under a new parent from a day, or at
+the top where no parent is said — one per unit and plan (`movesWith`).
+`shiftDays` moves their days with the window and the milestones, so the
+page's *Move by…* moves them too, and `transitionDays` counts them. The plan's
+file writes them as rows under `moves:` only where there are any, so a plan
+from before reads and writes the same bytes. A move outside a plan is still
+an edit of `parentId`. An abandoned plan moves nothing.
+
+**The organisation on a day** is one pure function, `organisationOn`
+(`model/units.ts`): every unit under the parent the latest move on or before
+the day gives it (`parentOn`). It takes nothing else away — an ended unit, a
+role past its day and an assignment that is over are read by the questions
+themselves — so `managersOf`, `managedBy` and `unitFindings` each ask it of
+their day, and a server that imports them by path answers the same. A unit
+type's days count as a role's: one that does not run on the day asks for
+nobody in its slots, and a unit still of a type that has ended is
+`check.unitTypeEnded`. `unitsOn` lists the units there on a day. The index
+gathers every plan's moves but an abandoned one's (`moves()`, each with its
+plan and scope) into `organisation().moves`; the open scope's plans are laid
+over it as its session holds them (`app/units/organisationHere`).
+
+**Which day.** Looking at another day is ADR-0027's look and nothing else: the
+workspace holds it per board (`useShownDays`), and `editor/dayShown` turns the
+active board's look, its own day or today into the day a unit's section is
+read on — its holders, who manages it, its checks and *Over time* (its first
+and last day, and every plan's move of it). What the section writes starts on
+that day where it is still to come. The People page has no board, so its look
+is the same hook keyed for the page, whose own day is today; *Look at* says
+what a person holds, will hold and held before on it. The organisation home's
+findings stay today's.
+
+**What a plan does to the organisation** is `model/reorganisation.ts`, pure:
+`planReorganisation` reads the units the plan introduces (from their live
+day) and retires (to their last day), its moves, and the roles whose last day
+is the day before one of those days. `peopleToMove` lists every assignment
+that runs past the last day of its unit or its role — not one in a unit that
+only moves, which takes its people with it — each with a suggestion: the
+unit's successor where its unit ends, the role's first successor that runs
+the day after where its role does, and nothing where either ends with no
+successor. `peopleMoveSteps` makes each scope's commands: an end on the last
+day (or, for one not yet begun, its removal) where the old assignment is
+kept, and a new assignment from the day after — the same person, share,
+acting and later last day — where the new unit is kept.
+`reorganisationRoots` and `unitTree` draw the organisation the day before the
+plan's first day and on its last, under the smallest trees that hold the
+change; `lostAccountability` finds a responsibility that loses its only A.
+
+**The pages.** A plan's page holds a slot the host draws
+(`PlanPageProps.organisation`, `app/units/PlanOrganisation.tsx`): *Units it
+moves* among the facts, and above the interfaces what the plan does, before
+and after, *Move the people* (`app/units/MovePeople.tsx`) and what is still
+open on the day — the findings about a unit as links to it. *Write as one
+step* lands every scope's part as that scope's one step together
+(`app/units/landPeopleMoves.ts`): the other scopes in one `apply` through
+`changeScopes`, the open scope's through its session after the reducer has
+been asked. Where only the open scope is written it is one step that undo
+takes back whole; where others were written too, its step carries a barrier,
+since undoing one scope's part would leave the organisation half moved. The
+operating model page edits a unit type's and a role's `from`, `until` and
+`successors` (`operating/edit.setDay`, `setSuccessors`), and beside the item
+the host draws what an ending leaves to decide (`OperatingModelPageProps.aside`,
+`app/units/EndedHolders.tsx`): a role's people with *Move the people*, the
+role's successor in the same unit suggested; a unit type's units still there
+after it, listed, nothing guessed.
+
+**The agent.** `plan.move` puts a unit under a new parent on a day on a plan,
+changes the move when given again, takes it off with `remove`, and refuses a
+parent below the unit on that day. `unitType.add`, `unitType.update`,
+`role.add` and `role.update` take `from`, `until` and `successors`, and the
+lists say them. `assignments.list` reads the organisation of its day — a
+unit's parent on that day among what it says — and `checks.list` takes `on`
+for the organisation's findings. `plans.list` and `plan.read` say a plan's
+moves. Moving the people is the page's: an agent ends and assigns with
+`assignment.end` and `assignment.add`, in one `batch` where it wants one step.
 
 ## Open
 

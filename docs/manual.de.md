@@ -312,7 +312,9 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
 - **Eine Person** zeigt, wer sie ist, wie weit sie im Ausscheiden ist und was
   sie in der Organisation innehat: **Hat heute inne**, **Wird innehaben** und
   **Hatte zuvor inne**, jeweils eine Rolle in einer Einheit (siehe *Einheiten
-  und die Personen darin*). **Das bin ich** sagt dieser Installation, welcher
+  und die Personen darin*). **Ansehen am** sagt dasselbe an einem anderen
+  Tag — nach einer Umorganisation etwa —, und **Zurück zu heute** kehrt
+  zurück; Ansehen schreibt nichts. **Das bin ich** sagt dieser Installation, welcher
   Eintrag Sie sind, damit Sie überall markiert werden, wo Sie vorkommen; das
   wird bei der Installation geführt, nicht in Ihrem Ordner. **Korrigieren…**
   ändert Name, Adresse oder Art.
@@ -1392,9 +1394,11 @@ beschreibt Arbeit. Was der Plan letzten Monat sagte, steht im Verlauf des
 Ordners.
 
 **Verschieben…** verschiebt einen Plan um eine Anzahl Tage — sein Zeitfenster,
-jeden Meilenstein und die Lebenszyklusdaten der Anwendungen, die er einführt und
-abschaltet — in einem einzigen Schritt, denn ein Plan, der sich verzögert, ist
-ein Ereignis.
+jeden Meilenstein, den Tag jeder Einheit, die er verschiebt, und die
+Lebenszyklusdaten der Anwendungen, die er einführt und abschaltet — in einem
+einzigen Schritt, denn ein Plan, der sich verzögert, ist ein Ereignis. Ein Plan,
+der Einheiten umorganisiert, sagt, was das mit den Menschen darin macht (siehe
+*Veränderung über die Zeit*).
 
 Jeder Plan ist eine Markdown-Datei in `transitions/` in Ihrem Projektordner,
 nummeriert ab `TR-0001` aufwärts.
@@ -1879,6 +1883,16 @@ Der Abschnitt einer Einheit sagt:
   hinzu.
 - **Wer sie führt**: wer heute eine führende Rolle innehat, in dieser Einheit
   oder einer darüber. Die App sagt es und gewährt daraus nichts.
+- **Im Lauf der Zeit**: der Tag, ab dem sie besteht, ihr letzter Tag und jede
+  Verschiebung, die ein Plan mit ihr macht (siehe *Veränderung über die Zeit*).
+
+Der Abschnitt liest den Tag, an dem das Board daneben betrachtet wird. Auf
+einem Board, das einen anderen Tag zeigt — seinen gespeicherten Tag oder einen
+unter **Zeigt** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt der
+Abschnitt *Wie am* diesem Tag, und wer die Rollen innehat, wer sie führt und
+die Prüfungen sind die dieses Tages, die Verschiebungen der Pläne an diesem Tag
+eingeschlossen. Was Sie von dort zuordnen oder beenden, beginnt an diesem Tag,
+wenn er noch kommt.
 - **Prüfungen**: was die Organisation heute über diese Einheit widerspricht —
   eine Rolle mit zu wenigen Personen oder über ihrem Maximum, eine Einheit, wo
   ihr Typ nicht stehen darf, eine, die mehr Domänen bedient, als ihr Typ
@@ -1909,6 +1923,60 @@ den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
 ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
 der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
 zusammen.
+
+### Veränderung über die Zeit
+
+Eine Korrektur ist eine Bearbeitung; eine Veränderung hat einen Tag. Eine
+Einheit, eine Rolle oder einen Einheitstyp umzubenennen ist eine Bearbeitung,
+und eine Einheit außerhalb eines Plans unter eine andere zu stellen ebenso: Es
+war immer so, und der Verlauf sagt, wann es korrigiert wurde. Eine Einheit
+beginnt und endet an ihren Lebenszyklusdaten; eine Zuordnung an ihrem ersten
+und letzten Tag; ein Einheitstyp und eine Rolle an den ihren.
+
+**Auf der Seite des Betriebsmodells** haben ein Einheitstyp und eine Rolle
+**Ab**, **Bis einschließlich** und **Gefolgt von** unter *Im Lauf der Zeit*.
+Eine Rolle, die endet, zeigt ihre Menschen nach ihrem letzten Tag — die
+Nachfolge der Rolle in derselben Einheit ist der Vorschlag für jede Person —
+mit *Die Menschen verschieben* darunter (siehe unten). Ein Einheitstyp, der
+endet, zeigt seine Einheiten, die danach noch bestehen, mit wer darin eine
+Rolle innehat: Was jede jetzt ist, entscheiden Sie, indem Sie ihr einen anderen
+Typ geben oder sie beenden. Eine Einheit, die noch von einem beendeten Typ ist,
+ist ein Befund.
+
+**Eine Umorganisation ist ein Plan.** Auf der Seite eines Plans stellt
+*Einheiten, die er verschiebt* eine Einheit an einem Tag unter eine neue
+übergeordnete Einheit — oder ganz nach oben, unter die Organisation selbst —,
+jede ein Schritt. **Verschieben…** verschiebt diese Tage mit dem Rest des Plans.
+Ab ihrem Tag gilt die Verschiebung überall, wo die Organisation gelesen wird:
+im Abschnitt einer Einheit, in den Prüfungen, bei wer eine Einheit führt. Ein
+aufgegebener Plan verschiebt nichts. Über den Schnittstellen des Plans sagt die
+Seite, wo der Plan Einheiten berührt:
+
+- **Was er mit der Organisation macht**: die Einheiten, die er einführt und
+  auflöst, jede mit ihrem Tag, die Verschiebungen und die Rollen, die am Tag
+  davor enden, mit dem, was ihnen folgt.
+- **Am Tag davor** und **am** Tag: die Einheiten unter den kleinsten Bäumen,
+  die die ganze Veränderung enthalten, mit wer darin eine Rolle innehat —
+  *endet*, *neu* und *verschoben* markiert.
+- **Die Menschen verschieben**: jede Zuordnung in einer Einheit oder Rolle, die
+  endet, jede mit einem Vorschlag — wohin die Einheit ging (ihre Nachfolge)
+  oder die Nachfolge der Rolle —, den Sie übernehmen oder ändern; ein Team, das
+  verschoben wird, nimmt seine Menschen mit und steht deshalb nicht darin.
+  Niemandes neuer Platz wird geraten: Eine Zeile ohne Vorschlag endet nur.
+  **Jeden Vorschlag übernehmen** setzt jede Zeile auf ihren Vorschlag zurück,
+  und **Als einen Schritt schreiben** schreibt jedes Ende an seinem letzten Tag
+  und jeden Beginn am Tag danach, in jedem Bereich, der eine führt, zusammen.
+  Wo nur der Bereich des Plans geschrieben wird, nimmt ⌘Z den ganzen Schritt
+  zurück; wo auch andere Bereiche geschrieben wurden, wird er in jedem davon
+  zurückgesetzt.
+- **Noch offen am** Tag: was die Prüfungen dann in diesen Einheiten finden —
+  jedes ein Link zur Einheit — und jede Verantwortung, die ihr A verliert, weil
+  die Rolle endet, die dafür rechenschaftspflichtig ist.
+
+Ein Agent stellt eine Einheit am Tag eines Plans mit `plan.move` unter eine
+neue übergeordnete Einheit, datiert einen Einheitstyp oder eine Rolle mit
+`unitType.update` und `role.update` (`from`, `until`, `successors`) und liest
+die Organisation eines Tages mit `assignments.list` und `checks.list` (`on`).
 
 ## Eine Zeichnung
 
