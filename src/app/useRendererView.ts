@@ -77,6 +77,7 @@ export function useRendererView(session: ModelSession, focusElement: (id: string
         return new Uint8Array(await blob.arrayBuffer())
       },
       focus: focusElement,
+      selected: () => editorHandle.current?.selectedElementId,
       drawn: (diagramId) => {
         const held = editorHandle.current
         return held?.activeDiagramId === diagramId && held.drawn ? toDiagram(held.drawn) : undefined

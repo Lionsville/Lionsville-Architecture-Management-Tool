@@ -155,6 +155,16 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'sheet' })).toEqual({ initialHome: 'acme/rail' })
   })
 
+  it('selects the element a link names on the view it opens, where the link said one (ADR-0033, amended)', () => {
+    const landed = placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two', select: 'app-1' })
+    expect(landed.initialProject?.activeDiagramId).toBe('two')
+    expect(landed.initialPage).toEqual({ page: 'board', id: 'two', select: 'app-1' })
+    // A view's page with no id selects on the one it opens.
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', select: 'app-1' }).initialPage)
+      .toEqual({ page: 'board', id: 'one', select: 'app-1' })
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two' }).initialPage).toBeUndefined()
+  })
+
   it('opens the observations page on the tab a place names', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'observations', tab: 'analysis' }).initialPage)
       .toEqual({ page: 'observations', tab: 'analysis' })

@@ -30,6 +30,17 @@ describe('the link to a screen', () => {
       .toEqual({ link: 'https://work.example/#place?scope=acme&page=observations&id=ob-1&tab=analysis' })
   })
 
+  it('selects again the element selected on a view, and only on a view (ADR-0033, amended)', () => {
+    const onBoard: Screen = { open: { path: 'acme', name: 'Acme', view: { id: 'b1', name: 'Board', kind: 'layer7' } } }
+    expect(shareLinkOf('https://work.example/', onBoard, 'app-1'))
+      .toEqual({ link: 'https://work.example/#place?scope=acme&page=board&id=b1&select=app-1' })
+    expect(shareLinkOf('https://work.example/', onBoard))
+      .toEqual({ link: 'https://work.example/#place?scope=acme&page=board&id=b1' })
+    // A record's page names its record as the place's id; a board's selection behind it is not the point.
+    expect(shareLinkOf('https://work.example/', onDecision, 'app-1'))
+      .toEqual({ link: 'https://work.example/#place?scope=acme%2Frail&page=decisions&id=adr-2' })
+  })
+
   it('is refused where the source has no address, whatever is on screen', () => {
     expect(shareLinkOf(undefined, onDecision)).toEqual({ refused: 'share.noAddress' })
     expect(shareLinkOf('', onDecision)).toEqual({ refused: 'share.noAddress' })

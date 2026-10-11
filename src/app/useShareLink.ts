@@ -25,6 +25,7 @@
  */
 import { useCallback, useState } from 'react'
 import { linkTo, placeOf } from '../agent/place'
+import { VIEW_PAGES } from '../agent/screen'
 import type { Screen } from '../agent/screen'
 import type { Translate } from '../i18n'
 import type { Diagnostics } from '../ports/Diagnostics'
@@ -43,12 +44,18 @@ export type ShareAnswer = { readonly link: string } | { readonly refused: ShareR
  * The link to a screen, from the address a link to the source starts from.
  * The address is asked first: a folder has no link whatever is on screen, and
  * saying *there is no place yet* about one would promise a link a moment later.
+ *
+ * An element selected on the view on screen rides along as `select`
+ * (ADR-0033, amended 11 October 2026), so the other end opens the view with
+ * it selected and marked. Only on a view: a record's page names its record
+ * as the place's id already.
  */
-export function shareLinkOf(address: string | undefined, screen: Screen | undefined): ShareAnswer {
+export function shareLinkOf(address: string | undefined, screen: Screen | undefined, selected?: string): ShareAnswer {
   if (address === undefined || address === '') return { refused: 'share.noAddress' }
   const place = screen === undefined ? undefined : placeOf(screen)
   if (place === undefined) return { refused: 'share.noPlace' }
-  return { link: linkTo(address, place) }
+  const onView = place.page !== undefined && VIEW_PAGES.includes(place.page)
+  return { link: linkTo(address, onView && selected !== undefined ? { ...place, select: selected } : place) }
 }
 
 export type ShareLink = {
@@ -64,12 +71,14 @@ export type ShareLink = {
 export function useShareLink(deps: {
   address: (() => string | undefined) | undefined
   screen: () => Screen | undefined
+  /** The element selected on the view on screen, where one is. */
+  selected?: () => string | undefined
   copyText: (text: string) => Promise<void>
   diagnostics: Trail
   notify: Notify
   s: Translate
 }): ShareLink {
-  const { address, screen, copyText, diagnostics, notify, s } = deps
+  const { address, screen, selected, copyText, diagnostics, notify, s } = deps
   const [answer, setAnswer] = useState<ShareAnswer | undefined>(undefined)
 
   const copyLink = useCallback((link: string) => {
@@ -90,10 +99,10 @@ export function useShareLink(deps: {
       // A provider that falls over asking costs the link, not the window.
       diagnostics.report({ level: 'warn', where: 'share', message: 'the source could not say its address', cause })
     }
-    const next = shareLinkOf(said, screen())
+    const next = shareLinkOf(said, screen(), selected?.())
     setAnswer(next)
     if ('link' in next) copyLink(next.link)
-  }, [address, screen, diagnostics, copyLink])
+  }, [address, screen, selected, diagnostics, copyLink])
 
   const copy = useCallback(() => {
     if (answer && 'link' in answer) copyLink(answer.link)

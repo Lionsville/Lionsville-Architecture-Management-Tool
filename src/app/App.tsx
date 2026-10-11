@@ -550,6 +550,7 @@ function useShellParts(props: AppProps): ShellParts {
       || props.provider?.barButton !== undefined,
   })
   base.screenRef.current = shellAgent.screenNow
+  base.selectedRef.current = shellAgent.selectedNow
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
     home: nav.home, homeName: home.name,
@@ -616,6 +617,8 @@ function useShellBase(props: AppProps) {
   const host: AppHost = props.host ?? NOTHING
   /** Where the app is, once the agent's half of the shell below can say it: what a problem says it happened on. */
   const screenRef = useRef<() => Screen | undefined>(() => undefined)
+  /** The element selected on the view on screen, likewise: what a link selects again (ADR-0033, amended). */
+  const selectedRef = useRef<() => string | undefined>(() => undefined)
   const services = useShellServices({
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
     keepFailure: props.provider?.keepFailure, diagnostics, problemAction: props.provider?.problemAction,
@@ -650,8 +653,9 @@ function useShellBase(props: AppProps) {
   const copyText = useCallback((text: string) => hostControls.copyText(text), [hostControls])
   // Through the ref, so the command's subscription does not follow every render.
   const screenNow = useCallback(() => screenRef.current(), [])
+  const selectedNow = useCallback(() => selectedRef.current(), [])
   const share = useShareLink({
-    address: props.provider?.shareAddress, screen: screenNow, copyText, diagnostics,
+    address: props.provider?.shareAddress, screen: screenNow, selected: selectedNow, copyText, diagnostics,
     notify: toasts.notify, s,
   })
   const machine = useMachineSettings({
@@ -696,6 +700,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef, share,
+    savedFilters, organisation, refreshTree, screenRef, selectedRef, share,
   }
 }

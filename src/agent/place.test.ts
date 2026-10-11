@@ -230,3 +230,26 @@ describe('a link to a place', () => {
     expect(readPlace(new URL(link).hash)).toEqual({ scope: 'acme', page: 'observations', id: 'OB-1', tab: 'analysis' })
   })
 })
+
+/** ADR-0033, amended 11 October 2026: an element to select rides in a link, and is no part of a place. */
+describe('an element selected, in a link', () => {
+  const withSelect: Place = { scope: 'acme/rail', page: 'board', id: 'landscape', select: 'app & co #1' }
+
+  it('is written and read back with the place it is selected on', () => {
+    const link = linkTo('https://work.example/', withSelect)
+    expect(link).toBe('https://work.example/#place?scope=acme%2Frail&page=board&id=landscape&select=app+%26+co+%231')
+    expect(readPlace(new URL(link).hash)).toEqual(withSelect)
+  })
+
+  it('is nothing where it is said empty, and no place where it is said twice', () => {
+    expect(readPlace('#place?scope=acme&page=board&select=')).toEqual({ scope: 'acme', page: 'board' })
+    expect(readPlace('#place?scope=acme&page=board&select=a&select=b')).toBeUndefined()
+  })
+
+  it('is no part of the place: the same place, no step, and never kept in a history entry', () => {
+    const plain: Place = { scope: 'acme/rail', page: 'board', id: 'landscape' }
+    expect(samePlace(withSelect, plain)).toBe(true)
+    expect(stepBetween(plain, withSelect)).toBe('none')
+    expect(placeInState({ [PLACE_STATE_KEY]: withSelect })).toEqual(plain)
+  })
+})

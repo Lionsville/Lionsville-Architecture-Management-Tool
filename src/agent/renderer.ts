@@ -73,6 +73,11 @@ export type RendererView = {
   /** Select an element and bring it into view, so the person sees which one is meant. */
   focus(elementId: string): void
   /**
+   * The one element selected on the view on screen, where one is. Optional:
+   * a host with no selection to speak of need not say.
+   */
+  selected?(): string | undefined
+  /**
    * A laid-out view as a PNG (ADR-0012 §6): open the page and hand over what
    * it draws.
    *

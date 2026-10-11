@@ -25,6 +25,12 @@
  * carry `tab` as well (ADR-0019, amended): a reload stays on the tab, and a
  * change of tab is another record on the same page as far as a step goes.
  *
+ * A link may also carry `select` (ADR-0033, amended 11 October 2026): an
+ * element to select and mark on the view the link opens. It is read on
+ * arrival and nowhere else — it is no part of a place, so `samePlace`,
+ * `placeOf` and the history's state never hold it, and choosing another
+ * element is never a step.
+ *
  * The prefix is what tells a place from anything else a fragment may carry: a
  * source provider reads the address too (`SourceConnect.fromLocation`), and a
  * fragment that is not a place is left alone for whoever wrote it. The rest is
@@ -49,7 +55,7 @@ export const PLACE_PREFIX = 'place?'
 /** The key a place is kept under in a history entry's state, beside whatever other code keeps there. */
 export const PLACE_STATE_KEY = 'lvarch.place'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select'])
 
 /** The fragment for a place, with its `#`. */
 export function writePlace(place: Place): string {
@@ -58,6 +64,7 @@ export function writePlace(place: Place): string {
   if (place.page !== undefined) query.set('page', place.page)
   if (place.id !== undefined) query.set('id', place.id)
   if (place.tab !== undefined) query.set('tab', place.tab)
+  if (place.select !== undefined) query.set('select', place.select)
   return `#${PLACE_PREFIX}${query.toString()}`
 }
 
@@ -97,7 +104,11 @@ export function readPlace(hash: string): Place | undefined {
   const id = query.get('id')
   const tab = query.get('tab')
   if (tab !== null && !isObservationTab(tab)) return undefined
-  return { scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}), ...(tab !== null ? { tab } : {}) }
+  const select = query.get('select')
+  return {
+    scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}), ...(tab !== null ? { tab } : {}),
+    ...(select !== null && select !== '' ? { select } : {}),
+  }
 }
 
 function isPage(value: string): value is Page {

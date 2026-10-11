@@ -219,6 +219,12 @@ export interface EditorHandle {
   /** The diagram on screen. */
   readonly activeDiagramId: string | undefined;
   /**
+   * The one element selected on it, where one is: what a link to the place
+   * on screen selects again at the other end (ADR-0033, amended 11 October
+   * 2026).
+   */
+  readonly selectedElementId?: string;
+  /**
    * A layout pass is running; `tidy` and `routeEdges` refuse meanwhile. A
    * reader's pass over a board nobody has laid out counts too: it lands
    * nothing, but it changes what is drawn.

@@ -41,6 +41,7 @@ export function useEditorHandle(args: HandleArgs) {
     if (!onHandle) return;
     const handle: EditorHandle = {
       activeDiagramId: diagram?.id,
+      ...(state.selectedElement ? { selectedElementId: state.selectedElement.id } : {}),
       busy,
       ...(drawn ? { drawn } : {}),
       tidy: (meta) => (busy ? Promise.reject(new EditorRefused('busy')) : tidy(meta)),

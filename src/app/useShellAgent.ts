@@ -100,6 +100,8 @@ export function useShellAgent(deps: {
     (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
     [project, home, homeName, organisationName, orgPage],
   )
+  /** The element selected on the view on screen, where one is: what a link selects again (ADR-0033, amended). */
+  const selectedNow = useCallback(() => agentSessionRef.current?.renderer?.selected?.(), [])
   /**
    * Open a destination; `nothing` is told where the open ended without
    * moving the app — nothing there to open, a scope that could not be read,
@@ -247,7 +249,7 @@ export function useShellAgent(deps: {
   }, [registerAgent])
   return {
     orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
-    screen: where?.screen, movedBy: where?.by ?? 'person', screenNow,
+    screen: where?.screen, movedBy: where?.by ?? 'person', screenNow, selectedNow,
   }
 }
 
