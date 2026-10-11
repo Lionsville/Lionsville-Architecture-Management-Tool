@@ -656,7 +656,11 @@ person's — under their id and every id merged into theirs — that runs past
 the last day, and removes one that would begin after it: one step per scope
 (`model/units.leavingStep`, pure, so a server that applies a leave itself
 makes the same step), the others written together through the repositories,
-the open scope's through its session, an agent's under its name.
+the open scope's through its session, an agent's under its name. The ends are
+made before the register marks the leave, and the open scope's part is asked
+of its session first: where a scope will not take its part, nobody is marked
+as left and the leave can be asked again. The open scope's step carries a
+barrier, since the register does not take a leave back.
 
 **The tools** are `agent/assignments.ts` and `agent/write/assignments.ts`:
 `assignments.list` over the whole tree, the open scope as it is now, its

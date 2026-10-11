@@ -75,6 +75,15 @@ export interface PeopleRepository {
   /** Which repository this is, in plain words, for a message and the trail to name. */
   readonly id: string
 
+  /**
+   * This repository does what leaving does beyond the register itself — a
+   * server that ends a leaver's assignments as it marks them, with its own
+   * authority and in one go — and its `leave` and `forget` answer `ended`.
+   * The app then ends nothing itself. Absent, the app ends them first and
+   * marks the leave after (`people/leave.ts`).
+   */
+  readonly endsAssignments?: boolean
+
   /** Every entry, and the revision. Equal revisions are the same register. */
   list(): Promise<PeopleRead>
 
@@ -90,7 +99,8 @@ export interface PeopleRepository {
   /**
    * Marked as left, with their last day. Only someone active leaves. What
    * leaving does beyond the register is the caller's (`people/leave.ts`) —
-   * unless the answer says `ended`, which is the repository having done it.
+   * unless the repository says {@link endsAssignments}, and then its answer's
+   * `ended` is the repository having done it.
    */
   leave(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused>
 

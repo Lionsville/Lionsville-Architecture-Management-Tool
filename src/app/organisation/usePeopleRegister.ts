@@ -140,6 +140,8 @@ export function usePeopleRegister(deps: {
   copyText?: (text: string) => void
   /** What the source does about the register beyond keeping it, where it does more (`ProviderParts.people`). */
   source?: SourcePeople
+  /** A leave wrote scopes other than the open one: the tree's index is to be read again. */
+  onTreeChanged?: () => void
 }): PeopleAccess {
   const { repositories, readOnly, failed, source } = deps
   const [held, setHeld] = useState<Held>({ people: undefined, policy: DEFAULT_POLICY, me: undefined })
@@ -163,9 +165,16 @@ export function usePeopleRegister(deps: {
   }, [read])
 
   const { openScope, index } = deps
-  const consequences = useMemo(() => leaveConsequences({ repositories, openScope }), [repositories, openScope])
+  // Read through a ref: a shell hands a new function on every render, and the consequences are made once.
+  const treeChanged = useRef(deps.onTreeChanged)
+  treeChanged.current = deps.onTreeChanged
+  const consequences = useMemo(
+    () => leaveConsequences({ repositories, openScope, onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
+  )
   /** The agent's leave ends the same assignments, each step under the agent's name. */
-  const agentConsequences = useMemo(() => leaveConsequences({ repositories, openScope, origin: 'agent' }), [repositories, openScope])
+  const agentConsequences = useMemo(
+    () => leaveConsequences({ repositories, openScope, origin: 'agent', onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
+  )
 
   /** A change made, and the register read again: what every write below ends with. */
   const changed = useCallback(<T>(work: Promise<T>): Promise<T> => work.finally(refresh), [refresh])

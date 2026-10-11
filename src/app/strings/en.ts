@@ -971,6 +971,7 @@ export const EN = {
   'move.refused': 'Nothing was written: a scope it writes changed in between, or refused it. Look again and write it again.',
   'move.refusedReadOnly': 'Nothing was written: a scope it writes may only be read here.',
   'move.barrier': 'That step moved people in other scopes as well, so it cannot be taken back here. Put each scope back on its own.',
+  'leave.barrier': 'That step ended the assignments of someone who left, and the register does not take a leave back. Change the assignments themselves where one should go on.',
   'move.stillOpen': 'Still open on {day}',
   'move.stillOpenNone': 'Nothing.',
   'move.lostA': '{responsibility} needs a new A: the role accountable for it ends.',

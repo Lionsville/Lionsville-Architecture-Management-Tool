@@ -65,6 +65,7 @@ describe('leaving', () => {
     // A register that ends a leaver's assignments as it marks them, as a server may, says so with `ended`.
     const inner = registerOver([ada, { ...ada, id: 'pe-bo', name: 'Bo Visser' }])
     const register: LeavingRegister = {
+      endsAssignments: true,
       read: inner.read,
       leave: async (id, on) => { const answer = await inner.leave(id, on); return 'refused' in answer ? answer : { ...answer, ended: 3 } },
       forget: async (id, on) => { const answer = await inner.forget(id, on); return 'refused' in answer ? answer : { ...answer, ended: 2 } },

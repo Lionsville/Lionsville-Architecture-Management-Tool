@@ -750,6 +750,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'move.refused': 'Er is niets geschreven: een scope die het schrijft is intussen gewijzigd, of weigerde het. Kijk opnieuw en schrijf het opnieuw.',
   'move.refusedReadOnly': 'Er is niets geschreven: een scope die het schrijft kan hier alleen worden gelezen.',
   'move.barrier': 'Die stap verplaatste ook mensen in andere scopes, dus hier kan hij niet worden teruggenomen. Zet elke scope apart terug.',
+  'leave.barrier': 'Die stap beëindigde de toewijzingen van iemand die vertrokken is, en het register neemt een vertrek niet terug. Wijzig de toewijzingen zelf waar er een door moet lopen.',
   'move.stillOpen': 'Nog open op {day}',
   'move.stillOpenNone': 'Niets.',
   'move.lostA': '{responsibility} heeft een nieuwe A nodig: de rol die er verantwoording voor aflegt, eindigt.',

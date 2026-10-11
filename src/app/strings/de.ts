@@ -751,6 +751,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'move.refused': 'Es wurde nichts geschrieben: Ein Bereich, den er schreibt, hat sich inzwischen geändert oder hat ihn abgelehnt. Sehen Sie erneut nach und schreiben Sie ihn erneut.',
   'move.refusedReadOnly': 'Es wurde nichts geschrieben: Ein Bereich, den er schreibt, kann hier nur gelesen werden.',
   'move.barrier': 'Dieser Schritt hat auch Menschen in anderen Bereichen verschoben und kann hier nicht zurückgenommen werden. Setzen Sie jeden Bereich für sich zurück.',
+  'leave.barrier': 'Dieser Schritt hat die Zuordnungen einer Person beendet, die gegangen ist, und das Register nimmt ein Gehen nicht zurück. Ändern Sie die Zuordnungen selbst, wo eine weiterlaufen soll.',
   'move.stillOpen': 'Noch offen am {day}',
   'move.stillOpenNone': 'Nichts.',
   'move.lostA': '{responsibility} braucht ein neues A: Die Rolle, die dafür rechenschaftspflichtig ist, endet.',

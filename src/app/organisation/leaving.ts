@@ -24,9 +24,19 @@
  * Which scopes keep one is read off the organisation's index, which lists
  * every assignment with its scope; the open scope is asked as well, since it
  * may hold one the index has not seen yet.
+ *
+ * **Asked before written.** The open scope's part is put to its reducer, and
+ * the session asked whether it may be changed at all, before any scope is
+ * written; a scope that refuses throws, and `people/leave.ts` then marks
+ * nobody. **Not undone here.** The open scope's step carries a barrier: the
+ * register keeps no history, so taking the ends back would leave someone who
+ * has left holding everything they held.
  */
+import type { StringKey } from '../../i18n'
 import type { Command } from '../../model/commands'
 import { assignmentList, fromArrays } from '../../model/normalised'
+import { apply } from '../../model/reducer'
+import { ShellError } from '../../platform/errors'
 import type { Model } from '../../model/normalised'
 import type { PersonId } from '../../model/person'
 import { endingFor, leavingStep } from '../../model/units'
@@ -36,12 +46,17 @@ import type { Repositories } from '../../ports/Repositories'
 import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopeCommand } from '../../projects/scopeState'
 
+/** Why the open scope's part of a leave cannot be undone there. */
+export const LEAVE_BARRIER: StringKey = 'leave.barrier'
+
 /** The scope open in this window, as leaving reads and writes it: through its session. */
 export type OpenScope = {
   scopePath(): string
   indexed(): Model
   /** The one way in. Answers nothing where the reducer refused. */
   dispatch(command: Command): unknown
+  /** Why nothing may be changed here now — the scope is only read, or has moved on — where a session says. */
+  blocked?(): string | undefined
 }
 
 export type LeavingDeps = {
@@ -50,6 +65,8 @@ export type LeavingDeps = {
   openScope?: () => OpenScope | undefined
   /** Whose steps these are, where not the person's: an agent's leave marks every step its own. */
   origin?: 'agent'
+  /** Scopes other than the open one were written: the tree's index is to be read again. */
+  onTreeChanged?: () => void
 }
 
 export function leaveConsequences(deps: LeavingDeps): readonly LeaveConsequence[] {
@@ -68,6 +85,12 @@ function endAssignments(deps: LeavingDeps): LeaveConsequence {
     const meta = deps.origin ? { origin: deps.origin } : {}
     const open = deps.openScope?.()
     const openPath = open?.scopePath()
+    const here = open ? leavingStep(assignmentList(open.indexed()), ids, lastDay, meta) : undefined
+    if (open && here) {
+      const blocked = open.blocked?.()
+      if (blocked !== undefined) throw new ShellError(blocked === 'agent.conflict' ? 'shell.scopeMoved' : 'shell.scopeReadOnly')
+      if (!apply(open.indexed(), here.command)?.ok) throw new ShellError('shell.scopeReadOnly')
+    }
     const read = await deps.repositories.index.read()
     const others = read.scopes
       .filter((scope) => scope.address !== openPath && endingFor(scope.model.assignments ?? [], ids, lastDay).length > 0)
@@ -85,9 +108,13 @@ function endAssignments(deps: LeavingDeps): LeaveConsequence {
         }
         return steps
       })
+      if (ended > 0) deps.onTreeChanged?.()
     }
-    const here = open ? leavingStep(assignmentList(open.indexed()), ids, lastDay, meta) : undefined
-    if (open && here && open.dispatch(here.command) !== undefined) ended += here.ended
+    if (open && here) {
+      // Read again: the session may have moved while the other scopes were written.
+      const now = leavingStep(assignmentList(open.indexed()), ids, lastDay, meta)
+      if (now && open.dispatch({ ...now.command, barrier: LEAVE_BARRIER }) !== undefined) ended += now.ended
+    }
     return ended
   }
 }

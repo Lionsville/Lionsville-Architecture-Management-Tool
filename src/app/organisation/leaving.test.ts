@@ -121,6 +121,43 @@ describe('leaving ends a person\'s assignments', () => {
     expect(open.model().assignments?.['as-3']).toBeUndefined()
   })
 
+  it('marks nobody as left where a scope will not take its part, so the leave can be asked again', async () => {
+    const repositories = await tree()
+    const { femke, old, bram } = await entries(repositories)
+    await withIds(repositories, { 'pe-femke': femke, 'pe-old': old, 'pe-bram': bram })
+    const scopes = new Proxy(repositories.scopes, {
+      get: (held, key) => (key === 'apply'
+        ? () => Promise.resolve({ refused: 'shell.scopeReadOnly' })
+        : (Reflect.get(held, key, held) as (...args: unknown[]) => unknown).bind(held)),
+    })
+    const refusing = { ...repositories, scopes }
+    await expect(leavePerson(refusing.people, leaveConsequences({ repositories: refusing }), femke, '2026-10-31'))
+      .rejects.toMatchObject({ key: 'shell.scopeReadOnly' })
+    expect((await repositories.people.read(femke))?.state).toBe('active')
+    expect((await readScope(repositories.scopes, 'customer'))!.model.assignments?.[0].until).toBeUndefined()
+    // An open scope that may not be changed refuses it before any other scope is written.
+    const held = (await readScope(repositories.scopes, 'customer'))!
+    const open = { ...openOver('customer', held.model), blocked: () => 'agent.readOnly' }
+    await expect(forgetPerson(repositories.people, leaveConsequences({ repositories, openScope: () => open }), femke, '2026-10-31'))
+      .rejects.toMatchObject({ key: 'shell.scopeReadOnly' })
+    expect((await repositories.people.read(femke))?.state).toBe('active')
+    expect((await readScope(repositories.scopes, 'shipping'))!.model.assignments?.[0].until).toBeUndefined()
+    // Asked again where it can be written, it is made.
+    expect(await leavePerson(repositories.people, leaveConsequences({ repositories }), femke, '2026-10-31')).toMatchObject({ ended: 3 })
+  })
+
+  it('puts a barrier on the open scope\'s part, and has the tree read again where it wrote other scopes', async () => {
+    const repositories = await tree()
+    const { femke, old, bram } = await entries(repositories)
+    await withIds(repositories, { 'pe-femke': femke, 'pe-old': old, 'pe-bram': bram })
+    const held = (await readScope(repositories.scopes, 'customer'))!
+    const open = openOver('customer', held.model)
+    let changed = 0
+    await leavePerson(repositories.people, leaveConsequences({ repositories, openScope: () => open, onTreeChanged: () => { changed += 1 } }), femke, '2026-10-31')
+    expect(open.dispatched[0]).toMatchObject({ barrier: 'leave.barrier' })
+    expect(changed).toBe(1)
+  })
+
   it('ends nothing for someone who holds nothing', async () => {
     const repositories = await tree()
     const { bram } = await entries(repositories)

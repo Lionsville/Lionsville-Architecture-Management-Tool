@@ -564,6 +564,7 @@ function useShellParts(props: AppProps): ShellParts {
   const openScope = useCallback(() => openScopeRef.current(), [])
   const people = usePeopleRegister({
     repositories, openScope, index: tree.index, readOnly: sourceIsReadOnly(source), today: props.today ?? localToday, failed: services.failed,
+    onTreeChanged: tree.refresh,
     ...(props.provider?.people ? { source: props.provider.people } : {}),
     readText: (file) => props.documents.readBytes(file).then(textFromBytes), copyText: (text) => { void props.hostControls.copyText(text).catch((cause: unknown) => services.failed('people.copy', cause)) },
   })
