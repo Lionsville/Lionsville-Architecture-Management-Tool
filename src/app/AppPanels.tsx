@@ -149,6 +149,8 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       navigation={{
         crumbs: ancestry.crumbs, onGoHome: nav.goHome, onOpenScope: nav.openScopeAt, onReload: nav.reloadOpenProject, initialPage: nav.initialPage,
         onShareLink: parts.share.shareTo,
+        // The People page is the organisation's, on its home: an assignment's *Open in People* goes there with the person picked.
+        ...(parts.people ? { onOpenPeople: (person: string) => parts.agent.openSomewhere({ scope: '', page: 'people', select: person }) } : {}),
       }}
       settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}
       host={{

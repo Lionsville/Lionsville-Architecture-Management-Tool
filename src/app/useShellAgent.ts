@@ -39,8 +39,10 @@ export type OrgPage = 'register' | 'technologyRegister' | 'people'
  * What the shell asks of the organisation screen: one of its pages, or the
  * home itself with none over it. With a nonce, because the same thing
  * asked for twice is two requests and a prop that did not change is none.
+ * `select` is the person the People page picks, where one was asked for:
+ * not part of the place, as an element selected on a view is not.
  */
-export type OrgPageRequest = { page: OrgPage | 'home'; nonce: number }
+export type OrgPageRequest = { page: OrgPage | 'home'; nonce: number; select?: string }
 
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
 const NOBODY = () => {}
@@ -88,9 +90,9 @@ export function useShellAgent(deps: {
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home') => {
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string) => {
     goHome(scope)
-    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1 }))
+    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1, ...(page === 'people' && select !== undefined ? { select } : {}) }))
   }, [goHome])
   // A request is for the screen that is up. Once a scope is open that screen
   // is gone, and the home that comes back later — by a crumb, or a scope with
@@ -114,7 +116,7 @@ export function useShellAgent(deps: {
    */
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
-      homeAt(to.scope, to.page as OrgPage | 'home')
+      homeAt(to.scope, to.page as OrgPage | 'home', to.select)
       return
     }
     const open = agentSessionRef.current

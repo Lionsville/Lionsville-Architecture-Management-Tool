@@ -88,7 +88,9 @@ export type Destination = {
   /**
    * An element to select on the board, sheet, map or technology landscape
    * being opened. Not part of the place: where it is not drawn there, the
-   * view opens with nothing selected.
+   * view opens with nothing selected. The shell's own *Open in People* names
+   * the person the People page picks with it; `app.open` takes it for a view
+   * only.
    */
   readonly select?: string
 }

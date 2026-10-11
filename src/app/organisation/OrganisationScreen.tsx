@@ -117,11 +117,17 @@ const PEOPLE_LOOK = 'people'
  * The People page over this home, where the source keeps a register; nothing
  * where it keeps none. The day it is looked at is a look the window holds, as
  * a board's is (ADR-0027): moving it writes nothing, and back on today it
- * forgets itself.
+ * forgets itself. A request that names a person — *Open in People* on the
+ * organisation chart — picks them, and closing the page lets that go, so the
+ * card opens it on whoever the page last showed.
  */
-function PeopleDoor({ people, open, onClose, s, windowChrome }: {
-  people: PeopleAccess | undefined; open: boolean; onClose: () => void; s: Translate; windowChrome: WindowChrome
+function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
+  people: PeopleAccess | undefined; open: boolean; onClose: () => void
+  request: { page: OrgPage | 'home'; select?: string } | undefined; s: Translate; windowChrome: WindowChrome
 }) {
+  const [asked, setAsked] = useState<string | undefined>(undefined)
+  useEffect(() => { setAsked(request?.page === 'people' ? request.select : undefined) }, [request])
+  const close = useCallback(() => { setAsked(undefined); onClose() }, [onClose])
   const viewing = useShownDays(NO_SAVED_DAY)
   const day = viewing.days[PEOPLE_LOOK]?.day
   const look = useMemo(() => ({
@@ -130,8 +136,8 @@ function PeopleDoor({ people, open, onClose, s, windowChrome }: {
   }), [day, viewing])
   if (!people) return null
   return (
-    <PeoplePage open={open} onClose={onClose} register={people} readText={people.readText} copyText={people.copyText} look={look} s={s}
-      windowChrome={windowChrome} />
+    <PeoplePage open={open} onClose={close} register={people} {...(asked !== undefined ? { select: asked } : {})} readText={people.readText}
+      copyText={people.copyText} look={look} s={s} windowChrome={windowChrome} />
   )
 }
 
@@ -258,7 +264,7 @@ export type OrganisationScreenProps = {
    * request with a nonce, because the same page asked for twice is two
    * requests and a prop that did not change is none.
    */
-  pageRequest?: { page: OrgPage | 'home'; nonce: number }
+  pageRequest?: { page: OrgPage | 'home'; nonce: number; select?: string }
   /** Which of the pages is up, whenever that changes — so the shell can say where the app is. */
   onPageChange?: (page: OrgPage | undefined) => void
   /**
@@ -712,7 +718,7 @@ export function OrganisationScreen({
         s={s}
         windowChrome={pageChrome}
       />
-      <PeopleDoor open={openPage === 'people'} onClose={close} people={people} s={s} windowChrome={pageChrome} />
+      <PeopleDoor open={openPage === 'people'} onClose={close} people={people} request={pageRequest} s={s} windowChrome={pageChrome} />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
         tree={orderedTree}

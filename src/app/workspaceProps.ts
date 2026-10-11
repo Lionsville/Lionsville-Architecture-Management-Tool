@@ -14,6 +14,7 @@
  */
 import type { ReactNode } from 'react'
 import type { PeopleRegisterAccess } from '../people/ui/access'
+import type { PersonId } from '../model/person'
 import type { Language, Translate } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { SavedFilters } from '../observations/filter'
@@ -224,6 +225,13 @@ export type WorkspaceNavigation = {
    * drawn rather than drawn and dead.
    */
   onOpenScope?: (path: ScopePath, page?: InitialPage) => void
+  /**
+   * The People page, with one person picked (ADR-0036 §7): an assignment's
+   * *Open in People* on the organisation chart. The page is the
+   * organisation's, on its home, so this leaves the scope as a crumb does.
+   * Absent where the shell has nowhere to go, and the button is not drawn.
+   */
+  onOpenPeople?: (person: PersonId) => void
   /**
    * Read this scope again and start over from what is kept, nothing carried
    * over: what a scope that could not be read whole is opened with once it
