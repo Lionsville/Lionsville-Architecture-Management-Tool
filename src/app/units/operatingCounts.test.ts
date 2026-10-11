@@ -4,14 +4,14 @@
 /**
  * What the operating model's page is told, over Acme Logistics: the units of
  * each type there today, across the tree with the open scope's own units as
- * its session has them.
+ * its session has them, and who holds a role before it is removed.
  */
 import { describe, expect, it } from 'vitest'
 import type { HostModel } from '../../model/hostModel'
 import type { DesignElement } from '../../model/types'
 import type { Assignment } from '../../model/units'
 import { indexScopes } from '../../projects/scopeIndex'
-import { unitCountsHere } from './operatingCounts'
+import { roleHoldersHere, unitCountsHere } from './operatingCounts'
 
 const TODAY = '2026-10-11'
 const actor = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
@@ -53,5 +53,11 @@ describe('what the operating model\'s page is told', () => {
   it('counts a unit the open scope\'s session has made a moment ago', () => {
     const now: HostModel = { ...SHIPPING, elements: [...SHIPPING.elements, actor('returns', 'Returns', { unitTypeId: 'ut-team', parentId: 'parcel' })] }
     expect(unitCountsHere(index, 'shipping', now, TODAY).get('ut-team')).toBe(2)
+  })
+
+  it('says who holds a role today or later: each person once, and the units by name', () => {
+    expect(roleHoldersHere(index, '', ROOT, 'ro-dev', TODAY)).toEqual({ people: 2, units: ['Tracking', 'Parcel'] })
+    expect(roleHoldersHere(index, '', ROOT, 'ro-lead', TODAY)).toEqual({ people: 1, units: ['Data & Integration'] })
+    expect(roleHoldersHere(index, '', ROOT, 'ro-none', TODAY)).toEqual({ people: 0, units: [] })
   })
 })

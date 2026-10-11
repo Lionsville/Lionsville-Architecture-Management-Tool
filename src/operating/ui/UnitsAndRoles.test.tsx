@@ -7,7 +7,8 @@
  * October 2026), over Acme Logistics' own model: each unit type once in its
  * lane, each card saying what the type is, a line from every place it may
  * sit — along the rail where it skips a lane — picking that lights and dims,
- * the order in a lane moved from the inspector, and the two trays.
+ * the order in a lane moved from the inspector, the two trays, and a role
+ * somebody holds said before it is removed.
  */
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -16,10 +17,11 @@ import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import type { Command } from '../../model/commands'
 import type { Model } from '../../model/normalised'
-import type { UnitTypeId } from '../../model/operatingModel'
+import type { RoleId, UnitTypeId } from '../../model/operatingModel'
 import { apply } from '../../model/reducer'
 import { applyAll, empty, listsOf } from '../testing'
 import { OperatingModelPage } from './OperatingModelPage'
+import type { RoleHolders } from './RemoveConfirm'
 
 afterEach(() => {
   cleanup()
@@ -55,7 +57,9 @@ function acme(): Model {
 
 const COUNTS = new Map<UnitTypeId, number>([['ut-domain', 3], ['ut-cluster', 4], ['ut-team', 9], ['ut-platform', 1]])
 
-function Harness({ start, sent, atOrganisation = true }: { start: Model; sent: Command[]; atOrganisation?: boolean }) {
+function Harness({ start, sent, atOrganisation = true, roleHolders }: {
+  start: Model; sent: Command[]; atOrganisation?: boolean; roleHolders?: (roleId: RoleId) => RoleHolders
+}) {
   const [model, setModel] = useState(start)
   return (
     <OperatingModelPage
@@ -68,6 +72,7 @@ function Harness({ start, sent, atOrganisation = true }: { start: Model; sent: C
         })
       }}
       unitCounts={COUNTS}
+      {...(roleHolders ? { roleHolders } : {})}
       onClose={() => {}}
     />
   )
@@ -187,6 +192,27 @@ describe('the units and roles drawn as a structure', () => {
     const lit = [...stage.querySelectorAll<SVGPathElement>('path')].map((one) => one.dataset.look)
     expect(lit.filter((one) => one === 'lit')).toHaveLength(1)
     expect(lit.filter((one) => one === 'dim')).toHaveLength(4)
+  })
+
+  it('says how many people hold a role, and where, before it is removed', async () => {
+    const asked: RoleId[] = []
+    const sent = show({ roleHolders: (roleId) => { asked.push(roleId); return { people: 3, units: ['Webshop', 'Tracking'] } } })
+    fireEvent.click(within(card('ut-team')).getByTestId('role-ro-dev'))
+    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByRole('button', { name: 'Remove' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Remove' })
+    expect(dialog.textContent).toContain('3 people hold it today or later, in Webshop, Tracking.')
+    expect(dialog.textContent).toContain('end the role on a day instead')
+    expect(asked).toContain('ro-dev')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'transaction' })
+  })
+
+  it('says nothing of holders where nobody holds the role', async () => {
+    show({ roleHolders: () => ({ people: 0, units: [] }) })
+    fireEvent.click(within(screen.getByTestId('tray-loose')).getByTestId('role-ro-inc'))
+    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByRole('button', { name: 'Remove' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Remove' })
+    expect(dialog.textContent).toBe('RemoveRemove Incident manager? It leaves the unit types that hold it and the rules that name it.CancelRemove')
   })
 
   it('offers no way to add or move where it only reads, and still picks', () => {

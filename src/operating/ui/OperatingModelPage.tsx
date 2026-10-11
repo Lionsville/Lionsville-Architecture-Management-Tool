@@ -40,6 +40,7 @@ import { Inspector } from './Inspector'
 import { LibrariesPanel } from './LibrariesPanel'
 import { RaciMatrix } from './RaciMatrix'
 import { RemoveConfirm } from './RemoveConfirm'
+import type { RoleHolders } from './RemoveConfirm'
 import { UnitsAndRoles } from './UnitsAndRoles'
 
 export type OperatingTab = 'units' | 'raci' | 'libraries'
@@ -86,6 +87,8 @@ export type OperatingModelPageProps = {
   slotTakeOut?: SlotTakeOut
   /** How many units of each type there are today, as the host counts them across the tree; each card says so where given. */
   unitCounts?: ReadonlyMap<UnitTypeId, number>
+  /** Who holds a role today or later, as the host counts them: said before the role is removed. */
+  roleHolders?: (roleId: RoleId) => RoleHolders
 }
 
 /** Which tab an item is edited on. */
@@ -201,7 +204,10 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           </Box>
         )}
       </Box>
-      <RemoveConfirm item={toRemove} onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove} />
+      <RemoveConfirm
+        item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
+        onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
+      />
     </PageDialog>
   )
 }

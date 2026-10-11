@@ -27,7 +27,7 @@ import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape
 import { organisationHere } from './units/organisationHere'
 import { heldThroughType } from '../model/units'
 import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
-import { unitCountsHere } from './units/operatingCounts'
+import { roleHoldersHere, unitCountsHere } from './units/operatingCounts'
 import type {
   PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
 } from './units/PlanOrganisation'
@@ -127,6 +127,8 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
       }))}
       slotTakeOut={slotTakeOut(parts)}
       {...(unitCounts ? { unitCounts } : {})}
+      // Who holds a role, said before it is removed (ADR-0036 §6).
+      roleHolders={(roleId) => roleHoldersHere(props.tree.index, scope, model, roleId, todayDay)}
     />
   )
 }
