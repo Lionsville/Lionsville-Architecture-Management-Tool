@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useRef, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
+import { pressAction, unfoldFindings } from '../testing/findings'
 import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -35,6 +36,12 @@ import { UnitSection } from './UnitSection'
 import type { WriteIn } from './writeIn'
 
 afterEach(() => cleanup())
+
+/** What the checks find in the unit, the one list unfolded (3.6.1: grouped and folded, the notes hidden). */
+function unitFindings(): HTMLElement[] {
+  unfoldFindings(screen.getByTestId('unit-findings'))
+  return screen.getAllByTestId('unit-finding')
+}
 
 const s = translator('en')
 const TODAY = '2026-10-11'
@@ -198,7 +205,7 @@ describe('a unit in its inspector', () => {
     expect(holders).toContain('Femke Bos · you')
     expect(holders).toContain('Femke Bos · 60% · you')
     expect(screen.getAllByTestId('unit-manager')[0].textContent).toContain('· you')
-    expect(screen.getAllByTestId('unit-finding').map((line) => line.textContent)).toContain('Femke Bos holds 160% across their roles')
+    expect(unitFindings().map((line) => line.textContent)).toContain('Femke Bos holds 160% across their roles')
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-assign'))
     const dialog = await screen.findByTestId('assign-dialog')
     expect(within(dialog).getByTestId('person-pick-pe-femke').textContent).toContain('160%')
@@ -207,9 +214,38 @@ describe('a unit in its inspector', () => {
 
   it('says what the checks find in it', () => {
     renderShell(<Harness commands={[]} />)
-    const said = screen.getAllByTestId('unit-finding').map((line) => line.textContent)
+    const said = unitFindings().map((line) => line.textContent)
     expect(said).toContain('Webshop is short of Developer: 1 hold the role, and its type asks for at least 2')
     expect(said).toContain('Webshop owns 2 applications, and a Team owns at most 1')
+  })
+
+  it('assigns someone to a role short of people from its explanation, where the role\'s people may be changed here', async () => {
+    renderShell(<Harness commands={[]} />)
+    const list = screen.getByTestId('unit-findings')
+    unfoldFindings(list)
+    fireEvent.click(within(list).getByText(/^Webshop is short of Developer/))
+    const explanation = within(list).getByTestId('finding-explanation')
+    expect(within(explanation).getByTestId('finding-why').textContent).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+    pressAction(explanation, 'Assign…')
+    expect(within(await screen.findByTestId('assign-dialog')).getByText('Developer in Webshop')).toBeTruthy()
+    cleanup()
+    // Only read, and not a unit this person manages: the explanation, and nothing to press.
+    renderShell(<Harness commands={[]} readOnly />)
+    unfoldFindings(screen.getByTestId('unit-findings'))
+    fireEvent.click(screen.getByText(/^Webshop is short of Developer/))
+    expect(within(screen.getByTestId('finding-explanation')).queryAllByTestId(/^finding-action-/)).toEqual([])
+  })
+
+  it('ends an assignment that outlives its role from its explanation, in the dialog that ends one', async () => {
+    const root: HostModel = { ...ROOT, roles: roles.map((role) => (role.id === 'ro-coach' ? { ...role, until: '2026-06-30' } : role)) }
+    renderShell(<Harness commands={[]} root={root} />)
+    const list = screen.getByTestId('unit-findings')
+    unfoldFindings(list)
+    fireEvent.click(within(list).getByText(/^Someone still holds Team coach in Webshop/))
+    pressAction(within(list).getByTestId('finding-explanation'), 'End the assignment…')
+    const dialog = await screen.findByTestId('assign-dialog')
+    expect(within(dialog).getByText('An assignment as Team coach in Webshop')).toBeTruthy()
   })
 
   it('puts someone in a vacant role as one step: an assignment holding their id', async () => {
@@ -448,7 +484,7 @@ describe('a unit on the day the board is looked at', () => {
     // Moved to the top, it is no longer under the customer domain's owner.
     expect(screen.getAllByTestId('unit-manager').map((line) => line.textContent)).toEqual(['Femke Bos — Product owner, Webshop · you'])
     expect(screen.getByText('On this day it sits under the organisation itself: a plan moved it. Its own parent is where it sat before.')).toBeTruthy()
-    expect(screen.getAllByTestId('unit-finding').map((line) => line.textContent)).toContain('Webshop is a Team and may not sit where it is filed')
+    expect(unitFindings().map((line) => line.textContent)).toContain('Webshop is a Team and may not sit where it is filed')
   })
 
   it('starts what it writes on the day looked at where that is still to come', async () => {
@@ -546,7 +582,7 @@ describe('what a unit is responsible for, from its own inspector', () => {
     }
     renderShell(<Harness more={[{ path: 'shipping', model: shipping }]} commands={[]} />)
     expect(screen.getAllByTestId('unit-answers-for-row').map((one) => one.textContent)).toEqual(['Sell online', 'Price freight · kept in shipping'])
-    expect(screen.getAllByTestId('unit-finding').map((one) => one.textContent))
+    expect(unitFindings().map((one) => one.textContent))
       .toContain('Webshop is responsible for Price freight, but neither it nor a unit above it serves shipping')
   })
 })

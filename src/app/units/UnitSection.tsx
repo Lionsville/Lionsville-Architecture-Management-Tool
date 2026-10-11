@@ -63,7 +63,10 @@ import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
+import { CHECK_LIST_WORDS, groupByCheck } from '../../model/checkCatalogue'
+import type { CheckAction } from '../../model/checkCatalogue'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
+import type { Finding } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -78,6 +81,8 @@ import { refusalKey } from './writeIn'
 import type { WriteIn } from './writeIn'
 import { scopesServed, scopesWith, scopesWithout } from '../../model/serving'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
+import { FindingsList } from '../../widgets/FindingsList'
+import type { FindingActions } from '../../widgets/FindingsList'
 import { PickToAdd } from '../../widgets/PickToAdd'
 
 export type UnitSectionProps = {
@@ -193,7 +198,7 @@ export function UnitSection(props: UnitSectionProps) {
       {assigning && people && (
         <AssignDialog
           assigning={assigning} unit={{ id: element.id, name: element.name }}
-          roles={slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? []).filter((role) => mayRole(role.id))}
+          roles={dialogRoles(element, facts, assigning).filter((role) => mayRole(role.id))}
           register={people} today={assignFrom} endOn={endOn} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
           loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today, facts.canonical) * 100), day: today })}
           onClose={() => setAssigning(undefined)} s={s}
@@ -201,6 +206,18 @@ export function UnitSection(props: UnitSectionProps) {
       )}
     </Box>
   )
+}
+
+/**
+ * The roles the assignment dialog offers: the unit's slots, in their order,
+ * and the role of an assignment being changed where it holds no slot for it —
+ * a holder of a role the unit does not hold, ended there from a finding.
+ */
+function dialogRoles(element: DesignElement, facts: Facts, assigning: Assigning): Role[] {
+  const held = slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? [])
+  const roleId = assigning.mode === 'edit' ? assigning.assignment.roleId : undefined
+  const role = roleId === undefined || held.some((one) => one.id === roleId) ? undefined : facts.roles.get(roleId)
+  return role ? [...held, role] : held
 }
 
 /**
@@ -213,7 +230,7 @@ function UnitParts(props: UnitSectionProps & {
   looking: boolean; facts: Facts; editable: boolean; mayRole: (roleId: string) => boolean
   name: (person: string) => string; onAssign: (assigning: Assigning) => void; update: (patch: Partial<DesignElement>) => void
 }) {
-  const { element, facts, editable, name, update, scopeLabel, s } = props
+  const { element, facts, editable, update, scopeLabel, s } = props
   return (
     <>
       <Slots {...props} />
@@ -229,14 +246,41 @@ function UnitParts(props: UnitSectionProps & {
       {facts.said.length > 0 && (
         <>
           <Typography sx={SECTION}>{s('unit.checks')}</Typography>
-          {facts.said.map((finding, at) => (
-            <Typography key={`${finding.key}/${finding.id}/${at}`} sx={{ fontSize: 12, color: 'warning.main' }} data-testid="unit-finding">
-              {findingSentence(finding, s, scopeLabel, name)}
-            </Typography>
-          ))}
+          <UnitChecks {...props} scopeLabel={scopeLabel} />
         </>
       )}
     </>
+  )
+}
+
+/**
+ * What the checks find in the unit and in the people holding its roles, in
+ * the one list of findings (ADR-0036, amended 11 October 2026). What it is
+ * about is what the person is looking at, so no action opens the unit; the
+ * ones a unit's own section does are offered — *Assign…* a role short of
+ * people, *End the assignment…* that outlives its unit or role — where the
+ * person may change that role's people here.
+ */
+function UnitChecks({ element, facts, mayRole, name, onAssign, scope, scopeLabel, s }: UnitSectionProps & {
+  facts: Facts; mayRole: (roleId: string) => boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
+}) {
+  const groups = useMemo(() => groupByCheck(facts.said), [facts.said])
+  const actions: FindingActions<Finding, CheckAction> = {
+    assign: (finding) => {
+      const roleId = finding.fields?.[0]
+      return finding.key === 'check.roleVacant' && roleId !== undefined && mayRole(roleId) ? () => onAssign({ mode: 'new', roleId }) : undefined
+    },
+    endAssignment: (finding) => {
+      const assignment = facts.organisation.assignments.find((one) => one.id === finding.fields?.[0])
+      return finding.key === 'check.assignmentEnded' && assignment && mayRole(assignment.roleId) ? () => onAssign({ mode: 'edit', assignment }) : undefined
+    },
+  }
+  return (
+    <FindingsList
+      groups={groups} words={CHECK_LIST_WORDS} sentence={(finding) => findingSentence(finding, s, scopeLabel, name)} actions={actions}
+      keyOf={(finding) => [finding.key, finding.scope, finding.id, finding.person ?? '', ...(finding.fields ?? [])].join('|')}
+      attributesOf={() => ({ 'data-testid': 'unit-finding' })} remember={`unit\u0000${scope}\u0000${element.id}`} testId="unit-findings"
+    />
   )
 }
 
