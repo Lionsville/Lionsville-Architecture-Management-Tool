@@ -1,18 +1,11 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
-* Status: accepted, 11 October 2026; built in part: the register of people
-  (§8–§11, §13's three tools for it), the operating model (§1's
-  `_operating/`, §2, §5, §13's seven tools for it), units and
-  assignments (§1's `_assignments/`, §3, §4, §10's leaving, §12's who
-  manages, §13's three tools for them), change over time (§6, §13's
-  `plan.move`), names as references (§8's fields, the signature that keeps
-  its name, §2's owner worked out from a rule, search through the register),
-  and the two views and the `interacts` row (§7, §11's *Find me*), and the
-  calls a review left open (a unit moved between scopes, a merge into an
-  entry that has left, a signature apart from a forgotten entry, *This is me*
-  in a browser's folder, the Conway map's applications on its day), and the
-  screens of a source that grants a managing role's right (§12), 11 October
-  2026 — *As built*, below
+* Status: accepted, 11 October 2026; as built, 11 October 2026, in eight
+  parts — the register of people, the operating model, units and
+  assignments, change over time, names as references, the two views and the
+  `interacts` row, the calls a review left open, and a managing role's right
+  on the screens (*As built*, below); implemented, 11 October 2026. What a
+  build with accounts adds (§14) is that build's own
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
