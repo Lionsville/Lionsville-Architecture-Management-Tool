@@ -9,14 +9,16 @@
 import { createElement, useMemo } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import { shownAsOf } from '../editor'
-import { AdrPage } from '../decisions/ui/AdrPage'
+import type { AdrPage as AdrPageShape } from '../decisions/ui/AdrPage'
 import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
 import type { OperatingModelPage as OperatingModelPageShape } from '../operating/ui/OperatingModelPage'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { RecordLink } from '../observations/ui/ObservationsPage'
 import { flattenScopes } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
-import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
+import type { PlanPage as PlanPageShape } from '../roadmap/ui/PlanPage'
+import type { ReplaceDialog as ReplaceDialogShape } from '../roadmap/ui/ReplaceDialog'
+import type { RoadmapPage as RoadmapPageShape } from '../roadmap/ui/RoadmapPage'
 import { Crumbs } from './ShellToolbar'
 import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
@@ -49,6 +51,25 @@ const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
  */
 const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
   () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open },
+)
+
+/**
+ * The decisions page, the roadmap and a plan on it are reached from a card, a
+ * tab's menu or a link, never the first view, and a replacement starts from
+ * an element's *Replace…*: each script arrives with the first of its kind
+ * opened, the pages' readers, rows and dialogs with it.
+ */
+const AdrPage = lazyPart<ComponentProps<typeof AdrPageShape>>(
+  () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { until: (props) => props.open },
+)
+const RoadmapPage = lazyPart<ComponentProps<typeof RoadmapPageShape>>(
+  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open },
+)
+const PlanPage = lazyPart<ComponentProps<typeof PlanPageShape>>(
+  () => import('../roadmap/ui/PlanPage').then((held) => held.PlanPage), { until: (props) => props.open },
+)
+const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
+  () => import('../roadmap/ui/ReplaceDialog').then((held) => held.ReplaceDialog), { until: (props) => props.subject !== undefined },
 )
 
 /**
