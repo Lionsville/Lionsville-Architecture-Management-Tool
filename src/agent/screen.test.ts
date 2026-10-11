@@ -90,5 +90,15 @@ describe('the view a destination opens', () => {
     expect(viewPage('container')).toBe('board')
     expect(viewPage('technology')).toBe('technology')
     expect(viewPage('drawing')).toBe('drawing')
+    // The organisation chart and the Conway map (ADR-0036 §7).
+    expect(viewPage('chart')).toBe('chart')
+    expect(viewPage('conway')).toBe('conway')
+  })
+
+  it('opens the scope\'s organisation chart or Conway map by page, as any laid-out view', () => {
+    const unitViews = [...views, { id: 'oc', kind: 'chart' }, { id: 'cw', kind: 'conway' }]
+    expect(viewFor('chart', undefined, unitViews, 'b1')).toBe('oc')
+    expect(viewFor('conway', undefined, unitViews, 'b1')).toBe('cw')
+    expect(viewFor('chart', undefined, views, 'b1')).toBeUndefined()
   })
 })
