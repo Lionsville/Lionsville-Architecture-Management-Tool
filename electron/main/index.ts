@@ -35,7 +35,7 @@ import { isThemeMode } from '../../src/platform/theme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { contentSecurityPolicy, pageOrigins } from './csp'
-import { drawingDirectory, drawingFileResponse, frameNavigationCancelled, withinRoot } from './drawing'
+import { drawingDirectory, drawingFileResponse, drawingFilesMissing, frameNavigationCancelled, withinRoot } from './drawing'
 import { hookOrigins } from '../../src/platform/desktopHook'
 import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
@@ -177,6 +177,8 @@ function serveDrawing(): void {
     resourcesPath: process.resourcesPath,
     moduleDir: __dirname,
   })
+  const missing = drawingFilesMissing(root)
+  if (missing) log('main', missing)
   protocol.handle('drawing', (request) => drawingFileResponse(root, request.url))
 }
 
@@ -226,10 +228,11 @@ function createWindow(): BrowserWindow {
   window.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(RENDERER_URL)) event.preventDefault()
   })
-  // A frame stays on the drawing scheme. The main frame is the app, and the
-  // listener above already keeps it there.
+  // A frame stays on the drawing scheme, and a frame the editor makes inside
+  // itself on a document that never leaves the machine. The main frame is the
+  // app, and the listener above already keeps it there.
   window.webContents.on('will-frame-navigate', (event) => {
-    if (frameNavigationCancelled(event.url, event.isMainFrame)) event.preventDefault()
+    if (frameNavigationCancelled(event.url, event.isMainFrame, event.frame?.parent?.url)) event.preventDefault()
   })
   // The trackpad's swipe between pages (ADR-0033), on macOS where the system
   // is set to swipe between pages: Back and Forward, as the Go menu sends

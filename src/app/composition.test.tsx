@@ -706,13 +706,15 @@ describe('the shell over what a source just opened', () => {
     expect(server.drawingOrigin?.()).toBe('https://draw.after.example')
   })
 
-  it('gives the desktop its scheme when the source names none, and leaves a named origin and a browser alone', () => {
+  it('gives the desktop its scheme over any origin a source names, and leaves a browser alone', () => {
     const repositories = memoryRepositories()
     const shell = { repositories, source: { kind: 'browser' } } as unknown as Shell
     const desktop = withDesktopDrawing(shell, true)
     expect(desktop.drawingOrigin?.()).toBe('drawing://local')
     const named = withDesktopDrawing({ ...shell, drawingOrigin: () => 'https://draw.example' } as unknown as Shell, true)
-    expect(named.drawingOrigin?.()).toBe('https://draw.example')
+    expect(named.drawingOrigin?.()).toBe('drawing://local')
     expect(withDesktopDrawing(shell, false).drawingOrigin).toBeUndefined()
+    const browser = withDesktopDrawing({ ...shell, drawingOrigin: () => 'https://draw.example' } as unknown as Shell, false)
+    expect(browser.drawingOrigin?.()).toBe('https://draw.example')
   })
 })

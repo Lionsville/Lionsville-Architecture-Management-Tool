@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   allowsDrawingNavigation, drawingContentSecurityPolicy, drawingDirectory, drawingFileResponse,
-  frameNavigationCancelled, locateWithin, withDrawingOrigin, withinRoot, DRAWING_ORIGIN_TOKEN,
+  drawingFilesMissing, frameNavigationCancelled, locateWithin, withDrawingOrigin, withinRoot, DRAWING_ORIGIN_TOKEN,
 } from './drawing'
 
 describe('a frame stays on the drawing scheme', () => {
@@ -28,6 +28,18 @@ describe('a frame stays on the drawing scheme', () => {
     expect(frameNavigationCancelled('drawing://local/index.html', false)).toBe(false)
     expect(frameNavigationCancelled('app://local/', true)).toBe(false)
     expect(frameNavigationCancelled('https://app.diagrams.net/', true)).toBe(false)
+  })
+
+  it('lets the editor hold a blank, written or made document inside itself, and nothing on the network', () => {
+    const editor = 'drawing://local/?embed=1'
+    for (const url of ['about:blank', 'about:srcdoc', 'blob:drawing://local/5d1e', 'data:text/html,<p>print</p>']) {
+      expect(frameNavigationCancelled(url, false, editor)).toBe(false)
+    }
+    expect(frameNavigationCancelled('https://app.diagrams.net/', false, editor)).toBe(true)
+    expect(frameNavigationCancelled('blob:https://example.com/5d1e', false, editor)).toBe(true)
+    // The frame the app holds is the editor itself, and stays on its scheme.
+    expect(frameNavigationCancelled('about:blank', false, 'app://local/')).toBe(true)
+    expect(frameNavigationCancelled('data:text/html,x', false)).toBe(true)
   })
 })
 
@@ -49,12 +61,20 @@ describe('a path stays inside the directory', () => {
 })
 
 describe('the files are served closed off', () => {
-  it('allows no network and names no frame', () => {
+  it('reaches only its own files, names no frame, and is framed by the app alone', () => {
     const policy = drawingContentSecurityPolicy()
-    expect(policy).toContain("connect-src 'none'")
+    expect(policy).toContain("connect-src 'self'")
+    expect(policy).toContain('frame-ancestors app://local')
     expect(policy).not.toContain('frame-src')
     expect(policy).not.toContain('https:')
     expect(policy).not.toContain('diagrams.net')
+  })
+
+  it('says where the files are missing, and nothing when they are there', () => {
+    const root = mkdtempSync(join(tmpdir(), 'drawio-'))
+    expect(drawingFilesMissing(root)).toContain('node build/fetchDrawio.ts')
+    writeFileSync(join(root, 'index.html'), '<html></html>')
+    expect(drawingFilesMissing(root)).toBeUndefined()
   })
 
   it('keeps the packaged files under resources and the unpackaged ones beside the bundle', () => {

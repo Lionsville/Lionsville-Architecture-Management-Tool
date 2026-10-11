@@ -657,14 +657,16 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
 }
 
 /**
- * The desktop serves the editor on its own scheme.
+ * The desktop serves the editor on its own scheme, whatever the source says.
  *
- * A source that names an origin keeps it. One that names none, opened on the
- * desktop, is given the scheme. A browser has no desktop and supplies none:
- * drawings still show, and Edit says the editor is not available.
+ * The window's policy frames `drawing://local` and nothing else, so an origin
+ * a source names — a server's, for its web pages — would be a frame the
+ * desktop refuses. On the desktop the scheme wins. A browser has no desktop
+ * and keeps what the source supplies: nothing, and Edit says the editor is
+ * not available.
  */
 export function withDesktopDrawing(shell: Shell, desktop: boolean): Shell {
-  if (!desktop || shell.drawingOrigin) return shell
+  if (!desktop) return shell
   return { ...shell, drawingOrigin: () => DESKTOP_DRAWING_ORIGIN }
 }
 
