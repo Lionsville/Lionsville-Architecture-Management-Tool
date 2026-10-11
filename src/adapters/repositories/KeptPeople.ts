@@ -13,7 +13,9 @@
  * the lines after it, as it is for the index (`KeptIndex.ts`).
  *
  * The rules are `people/register.ts`'s: an entry is read, the change worked
- * out over every entry, and only what changed is written back.
+ * out over every entry, and only what changed is written back. Every id it
+ * removes is kept on a shelf of its own (`peopleRemoved`), the id alone, so
+ * nothing brought in later gives the entry back.
  */
 import type { PersonId, Person } from '../../people/person'
 import { personFrom } from '../../people/person'
@@ -42,6 +44,10 @@ async function seqOf(tx: Transaction): Promise<number> {
   return (await tx.get<PeopleMeta>('meta', PEOPLE_META_KEY))?.seq ?? 0
 }
 
+async function removedIds(tx: Transaction): Promise<PersonId[]> {
+  return (await tx.range<unknown>('peopleRemoved', {})).map(({ key }) => key)
+}
+
 async function everyone(tx: Transaction): Promise<Person[]> {
   return (await tx.range<unknown>('people', {})).flatMap(({ value }) => {
     const person = personFrom(value)
@@ -62,7 +68,9 @@ export class KeptPeople implements PeopleRepository {
   }
 
   list(): Promise<PeopleRead> {
-    return this.source.read(async (tx) => ({ revision: await this.revision(tx), people: await everyone(tx) }))
+    return this.source.read(async (tx) => ({
+      revision: await this.revision(tx), people: await everyone(tx), removed: await removedIds(tx),
+    }))
   }
 
   read(id: PersonId): Promise<Person | undefined> {
@@ -95,8 +103,8 @@ export class KeptPeople implements PeopleRepository {
     return { revision: revision!, removed: answer.removed }
   }
 
-  async bringIn(people: readonly Person[]): Promise<PeopleBrought> {
-    const { answer, revision } = await this.apply({ kind: 'bringIn', people })
+  async bringIn(people: readonly Person[], removed: readonly PersonId[] = []): Promise<PeopleBrought> {
+    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed })
     if ('refused' in answer) throw new Error(`bringing people in was refused: ${answer.refused}`)
     return { revision: revision!, changed: answer.changed }
   }
@@ -128,7 +136,8 @@ export class KeptPeople implements PeopleRepository {
   /** One change, worked out over every entry and kept in one transaction; a refusal writes nothing. */
   private apply(change: PeopleChange): Promise<Answered> {
     return this.source.write(async (tx) => {
-      const answer = changePeople(await everyone(tx), change, this.minting)
+      const removed = change.kind === 'bringIn' ? new Set(await removedIds(tx)) : undefined
+      const answer = changePeople(await everyone(tx), change, this.minting, removed)
       if ('refused' in answer) return { answer }
       return { answer, revision: await this.land(tx, answer) }
     })
@@ -143,8 +152,10 @@ export class KeptPeople implements PeopleRepository {
     const byId = new Map(answer.people.map((person) => [person.id, person]))
     for (const id of answer.changed) tx.put('people', id, byId.get(id))
     for (const id of answer.removed) tx.delete('people', id)
-    const seq = await seqOf(tx) + (answer.changed.length + answer.removed.length > 0 ? 1 : 0)
-    if (answer.changed.length + answer.removed.length > 0) {
+    for (const id of answer.tombstones) tx.put('peopleRemoved', id, true)
+    const moved = answer.changed.length + answer.removed.length + answer.tombstones.length > 0
+    const seq = await seqOf(tx) + (moved ? 1 : 0)
+    if (moved) {
       tx.put('meta', PEOPLE_META_KEY, { seq } satisfies PeopleMeta)
       tx.put('peopleLog', sequenceKey(seq), { changed: answer.changed, removed: answer.removed } satisfies Logged)
       if (seq > LOG_KEPT) tx.deleteRange('peopleLog', { below: sequenceKey(seq - LOG_KEPT + 1) })

@@ -21,6 +21,14 @@ describe('the people file', () => {
     expect(readPeopleFile(text)).toEqual({ kind: 'read', people: [gone, pia] })
   })
 
+  it('keeps the ids the register removed, in id order and only where there are any', () => {
+    const text = peopleFileText([pia], ['pe-z', 'pe-c', 'pe-z'])
+    expect(JSON.parse(text)).toEqual({ version: PEOPLE_FILE_VERSION, people: [pia], removed: ['pe-c', 'pe-z'] })
+    expect(readPeopleFile(text)).toEqual({ kind: 'read', people: [pia], removed: ['pe-c', 'pe-z'] })
+    expect(readPeopleFile('{"version":1,"people":[],"removed":["pe-c",7,""]}')).toEqual({ kind: 'read', people: [], removed: ['pe-c'] })
+    expect(peopleFileText([pia], [])).toBe(peopleFileText([pia]))
+  })
+
   it('reads a file that is not there as absent, and an entry that does not read as nobody', () => {
     expect(readPeopleFile(undefined)).toEqual({ kind: 'absent' })
     expect(readPeopleFile('{"people":[{"id":"pe-x"},{"id":"pe-b","pseudonym":"4K7Q","name":"Pia Schulz"}]}'))

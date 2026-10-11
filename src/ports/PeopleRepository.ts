@@ -31,10 +31,16 @@
 import type { NewPerson, PeopleRefusal, Person, PersonId, PersonPatch } from '../people/person'
 import type { Revision } from '../projects/scopeState'
 
-/** The whole register, at a revision: every entry, the redirects a merge left included. */
+/**
+ * The whole register, at a revision: every entry, the redirects a merge left
+ * included — and every id it has removed. A removed id is kept, the id alone
+ * (random, naming nobody), so that nothing carried in later brings the entry
+ * back; a working file carries them, so a removal travels as a forgetting does.
+ */
 export type PeopleRead = {
   revision: Revision
   people: readonly Person[]
+  removed: readonly PersonId[]
 }
 
 /**
@@ -97,15 +103,21 @@ export interface PeopleRepository {
   /** The name and the address taken away, on a day. Final. */
   forget(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused>
 
-  /** A forgotten entry taken away, with every redirect into it. */
+  /**
+   * A forgotten entry taken away, with every redirect into it, and each id
+   * remembered as removed ({@link PeopleRead.removed}).
+   */
   remove(id: PersonId): Promise<PersonRemoved | PeopleRefused>
 
   /**
    * Entries carried in from elsewhere — a working file — each under its own
-   * id. Never gives a name back to an entry forgotten here, never undoes a
-   * merge, and never takes an entry away (`people/register.ts`).
+   * id, and the ids removed there. Whichever is further gone wins: removed,
+   * forgotten, merged, left, active (`people/register.ts`). So it never gives
+   * a name, an address or an active state back, never undoes a merge, and
+   * never brings back an id it removed; a forgetting or a removal carried in
+   * is made here too, and the ids removed are remembered.
    */
-  bringIn(people: readonly Person[]): Promise<PeopleBrought>
+  bringIn(people: readonly Person[], removed?: readonly PersonId[]): Promise<PeopleBrought>
 
   /**
    * What changed since `revision`, which this register answered with before.

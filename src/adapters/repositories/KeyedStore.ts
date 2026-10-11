@@ -71,6 +71,8 @@ export const REPOSITORY_SHELVES = [
   'people',
   /** What changed in the register at each of its revisions, by sequence. */
   'peopleLog',
+  /** Every id the register has removed, by id: the id alone, so nothing carried in brings the entry back. */
+  'peopleRemoved',
 ] as const
 
 /**

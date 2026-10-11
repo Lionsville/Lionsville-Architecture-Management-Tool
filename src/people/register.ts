@@ -22,9 +22,16 @@
  * - **Forget** takes the name and the address away; the entry reads as its
  *   pseudonym from then on. Final: the register keeps no history of a name.
  * - **Remove** takes a forgotten entry away, and every redirect into it, after
- *   which a reference to it reads *a former colleague*.
+ *   which a reference to it reads *a former colleague*. The register keeps
+ *   each id it removed — the id alone, random and naming nobody — so that
+ *   nothing carried in later brings the entry back.
  * - **Bring in** takes entries carried from elsewhere — a working file — by
- *   their ids, and never gives a name back to an entry forgotten here.
+ *   their ids, and the ids removed there. Whichever is further gone wins:
+ *   removed, then forgotten, then merged, then left, then active. So a file
+ *   never gives a name, an address or an active state back, never undoes a
+ *   merge and never brings back an entry removed here — and a forgetting or
+ *   a removal carried in applies here too: forgetting travels, un-forgetting
+ *   does not.
  */
 import { isDay } from '../model/lifecycle'
 import type {
@@ -33,11 +40,17 @@ import type {
 import { isEmail, isRedirect, mintPersonId, normalEmail, normalName } from './person'
 import { drawPseudonym } from './pseudonym'
 
-/** A change made: the register as it now is, and which ids it changed or took away. */
+/**
+ * A change made: the register as it now is, which ids it changed or took
+ * away, and which ids are to be remembered as removed from now on — those it
+ * removed, and those a file carried in said were removed there.
+ */
 export type Changed = {
   people: Person[]
   changed: PersonId[]
   removed: PersonId[]
+  /** Ids to keep as removed (the ids alone): what a later bring-in is held to. */
+  tombstones: PersonId[]
 }
 
 /** A change refused, and nothing changed. */
@@ -59,12 +72,18 @@ export type PeopleChange =
   | { kind: 'merge'; from: PersonId; into: PersonId }
   | { kind: 'forget'; id: PersonId; on: string }
   | { kind: 'remove'; id: PersonId }
-  | { kind: 'bringIn'; people: readonly Person[] }
+  | { kind: 'bringIn'; people: readonly Person[]; removed?: readonly PersonId[] }
 
 const refused = (key: PeopleRefusal): RefusedChange => ({ refused: key })
 
-/** The change applied to the register, or the refusal. Neither argument is changed. */
-export function changePeople(people: readonly Person[], change: PeopleChange, minting: Minting = {}): ChangeAnswer {
+/**
+ * The change applied to the register, or the refusal. No argument is changed.
+ * `removed` is every id the register has removed and remembers: what a bring-in
+ * never brings back.
+ */
+export function changePeople(
+  people: readonly Person[], change: PeopleChange, minting: Minting = {}, removed: ReadonlySet<PersonId> = new Set(),
+): ChangeAnswer {
   switch (change.kind) {
     case 'add': return add(people, change.person, minting)
     case 'change': return correct(people, change.id, change.patch)
@@ -72,7 +91,7 @@ export function changePeople(people: readonly Person[], change: PeopleChange, mi
     case 'merge': return merge(people, change.from, change.into)
     case 'forget': return forget(people, change.id, change.on)
     case 'remove': return remove(people, change.id)
-    case 'bringIn': return bringIn(people, change.people)
+    case 'bringIn': return bringIn(people, change.people, change.removed ?? [], removed)
     default: {
       const unexpected: never = change
       return unexpected
@@ -108,7 +127,7 @@ function add(people: readonly Person[], input: NewPerson, minting: Minting): Cha
     id, name, pseudonym: (minting.pseudonym ?? drawPseudonym)(codes), kind: input.kind ?? 'internal', state: 'active',
     ...(email !== undefined ? { email: normalEmail(email) } : {}),
   }
-  return { people: [...people, person], changed: [id], removed: [] }
+  return { people: [...people, person], changed: [id], removed: [], tombstones: [] }
 }
 
 function correct(people: readonly Person[], id: PersonId, patch: PersonPatch): ChangeAnswer {
@@ -121,7 +140,7 @@ function correct(people: readonly Person[], id: PersonId, patch: PersonPatch): C
   const { email: _was, ...rest } = found
   const email = patch.email === undefined ? found.email : patch.email?.trim() ? normalEmail(patch.email) : undefined
   const next: Person = { ...rest, name, kind: patch.kind ?? found.kind, ...(email !== undefined ? { email } : {}) }
-  return { people: replaced(people, next), changed: [id], removed: [] }
+  return { people: replaced(people, next), changed: [id], removed: [], tombstones: [] }
 }
 
 function leave(people: readonly Person[], id: PersonId, on: string): ChangeAnswer {
@@ -129,7 +148,7 @@ function leave(people: readonly Person[], id: PersonId, on: string): ChangeAnswe
   const found = find(people, id)
   if ('refused' in found) return found
   if (found.state !== 'active') return refused('people.notActive')
-  return { people: replaced(people, { ...found, state: 'left', leftOn: on }), changed: [id], removed: [] }
+  return { people: replaced(people, { ...found, state: 'left', leftOn: on }), changed: [id], removed: [], tombstones: [] }
 }
 
 function forget(people: readonly Person[], id: PersonId, on: string): ChangeAnswer {
@@ -139,7 +158,7 @@ function forget(people: readonly Person[], id: PersonId, on: string): ChangeAnsw
   if (found.state === 'forgotten') return refused('people.forgotten')
   const { name: _name, email: _email, ...rest } = found
   const next: Person = { ...rest, state: 'forgotten', leftOn: found.leftOn ?? on, forgottenOn: on }
-  return { people: replaced(people, next), changed: [id], removed: [] }
+  return { people: replaced(people, next), changed: [id], removed: [], tombstones: [] }
 }
 
 function remove(people: readonly Person[], id: PersonId): ChangeAnswer {
@@ -148,7 +167,7 @@ function remove(people: readonly Person[], id: PersonId): ChangeAnswer {
   if (found.state !== 'forgotten') return refused('people.notForgotten')
   // Every redirect into it goes with it: nothing is left to connect what pointed at either.
   const gone = new Set([id, ...people.filter((person) => person.mergedInto === id).map((person) => person.id)])
-  return { people: people.filter((person) => !gone.has(person.id)), changed: [], removed: [...gone] }
+  return { people: people.filter((person) => !gone.has(person.id)), changed: [], removed: [...gone], tombstones: [...gone] }
 }
 
 function merge(people: readonly Person[], from: PersonId, into: PersonId): ChangeAnswer {
@@ -156,7 +175,9 @@ function merge(people: readonly Person[], from: PersonId, into: PersonId): Chang
   if ('refused' in absorbed) return absorbed
   const kept = find(people, into)
   if ('refused' in kept) return kept
-  if (from === into || kept.state === 'forgotten') return refused('people.badMerge')
+  // A forgotten entry is merged into nobody, as nobody is merged into one: its records
+  // would read as the name of the entry kept, and the forget would be undone.
+  if (from === into || kept.state === 'forgotten' || absorbed.state === 'forgotten') return refused('people.badMerge')
   const redirect: Person = { id: from, pseudonym: absorbed.pseudonym, kind: absorbed.kind, state: absorbed.state, mergedInto: into }
   // A redirect into the one absorbed now points at the one kept, so no chain is ever longer than one.
   const repointed = people.filter((person) => person.mergedInto === from).map((person) => person.id)
@@ -164,25 +185,35 @@ function merge(people: readonly Person[], from: PersonId, into: PersonId): Chang
     if (person.id === from) return redirect
     return person.mergedInto === from ? { ...person, mergedInto: into } : person
   })
-  return { people: next, changed: [from, ...repointed], removed: [] }
+  return { people: next, changed: [from, ...repointed], removed: [], tombstones: [] }
 }
 
-const RANK: Record<PersonState, number> = { active: 0, left: 1, forgotten: 2 }
+/**
+ * How far gone an entry is, for a bring-in: whichever of two is further wins.
+ * A redirect is past leaving and short of forgetting — a merge is undone by
+ * nothing, but a forgetting carried in still reaches it. A removal, the
+ * furthest, is not an entry: it is an id the register remembers.
+ */
+const RANK: Record<PersonState | 'merged', number> = { active: 0, left: 1, merged: 2, forgotten: 3 }
+
+function rankOf(person: Person): number {
+  return isRedirect(person) ? RANK.merged : RANK[person.state]
+}
 
 /**
- * One entry carried in, against the one held under its id. Whichever is
- * further along wins — a redirect over anything, forgotten over left, left
- * over active — so a file never gives a name back, never undoes a merge and
- * never brings back someone who left. At the same point the one carried in
- * wins, as a working file's scope replaces the one at its address; but a name
- * is never replaced by none, so a file made without names brought back into
- * the register it came from leaves the names standing.
+ * One entry carried in, against the one held under its id: whichever is
+ * further gone wins, so a file never gives a name, an address or an active
+ * state back and never undoes a merge. At the same point the one carried in
+ * wins, as a working file's scope replaces the one at its address — but a
+ * name is never replaced by none, so a file made without names, brought back
+ * into the register it came from, leaves the names standing; a redirect held
+ * stays as it is.
  */
 function broughtOver(held: Person, carried: Person): Person {
-  if (isRedirect(held)) return held
-  if (isRedirect(carried)) return carried
-  if (RANK[held.state] > RANK[carried.state]) return held
-  if (RANK[carried.state] > RANK[held.state] || carried.name !== undefined) return carried
+  const rank = { held: rankOf(held), carried: rankOf(carried) }
+  if (rank.held > rank.carried) return held
+  if (rank.held === rank.carried && isRedirect(held)) return held
+  if (rank.carried === RANK.forgotten || isRedirect(carried) || carried.name !== undefined) return carried
   return {
     ...carried,
     ...(held.name !== undefined ? { name: held.name } : {}),
@@ -197,15 +228,56 @@ export function samePerson(one: Person, other: Person): boolean {
   return FIELDS.every((field) => one[field] === other[field])
 }
 
-function bringIn(people: readonly Person[], carried: readonly Person[]): ChangeAnswer {
+/** Where a redirect ends: the first id along it that is no redirect, or that the register does not hold. */
+function endOf(byId: ReadonlyMap<PersonId, Person>, id: PersonId): PersonId {
+  const seen = new Set<PersonId>()
+  let at = id
+  for (let held = byId.get(at); held?.mergedInto !== undefined && !seen.has(at); held = byId.get(at)) {
+    seen.add(at)
+    at = held.mergedInto
+  }
+  return at
+}
+
+function bringIn(
+  people: readonly Person[], carried: readonly Person[], carriedRemoved: readonly PersonId[], removedHere: ReadonlySet<PersonId>,
+): ChangeAnswer {
   const byId = new Map(people.map((person) => [person.id, person]))
-  const changed: PersonId[] = []
+  const changed = new Set<PersonId>()
+  const gone = new Set<PersonId>()
+  const tombstones = new Set<PersonId>()
+  const heldBefore = new Set(byId.keys())
+  const takeAway = (id: PersonId) => {
+    byId.delete(id)
+    changed.delete(id)
+    if (heldBefore.has(id)) gone.add(id)
+    tombstones.add(id)
+  }
+  // A removal carried in is a removal here: the entry goes, and every redirect into it.
+  for (const id of carriedRemoved) {
+    if (removedHere.has(id) || tombstones.has(id)) continue
+    tombstones.add(id)
+    for (const held of [...byId.values()]) if (held.id === id || held.mergedInto === id) takeAway(held.id)
+  }
   for (const entry of carried) {
+    if (removedHere.has(entry.id) || tombstones.has(entry.id)) continue
     const held = byId.get(entry.id)
     const next = held ? broughtOver(held, entry) : entry
     if (held && samePerson(held, next)) continue
+    // A redirect that would lead back to its own entry is a loop, and both would read as nobody: what is held stays.
+    if (next.mergedInto !== undefined && next !== held && endOf(byId, next.mergedInto) === entry.id) continue
     byId.set(entry.id, next)
-    changed.push(entry.id)
+    changed.add(entry.id)
   }
-  return { people: [...byId.values()], changed, removed: [] }
+  // Every redirect one step long again, and none into an entry removed here.
+  for (const person of [...byId.values()]) {
+    if (person.mergedInto === undefined) continue
+    const end = endOf(byId, person.mergedInto)
+    if (removedHere.has(end) || tombstones.has(end)) takeAway(person.id)
+    else if (end !== person.mergedInto) {
+      byId.set(person.id, { ...person, mergedInto: end })
+      changed.add(person.id)
+    }
+  }
+  return { people: [...byId.values()], changed: [...changed], removed: [...gone], tombstones: [...tombstones] }
 }

@@ -279,7 +279,7 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
     await new Promise<void>((resolve, reject) => {
       const request = indexedDb.factory.open(DATABASE_NAME, 3)
       request.onupgradeneeded = () => {
-        for (const shelf of SHELVES.filter((one) => one !== 'people' && one !== 'peopleLog')) request.result.createObjectStore(shelf)
+        for (const shelf of SHELVES.filter((one) => !one.startsWith('people'))) request.result.createObjectStore(shelf)
         request.transaction!.objectStore('settings').put({ kept: true }, 'organisation')
       }
       request.onsuccess = () => {
@@ -290,11 +290,13 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
     })
     const store = new IndexedDbStore(indexedDb)
     expect(await store.transaction(['settings'], 'read', (tx) => tx.get('settings', 'organisation'))).toEqual({ kept: true })
-    await store.transaction(['people', 'peopleLog'], 'write', (tx) => {
+    await store.transaction(['people', 'peopleLog', 'peopleRemoved'], 'write', (tx) => {
       tx.put('people', 'pe-1', { id: 'pe-1' })
+      tx.put('peopleRemoved', 'pe-2', true)
       return Promise.resolve()
     })
     expect(await store.transaction(['people'], 'read', (tx) => tx.get('people', 'pe-1'))).toEqual({ id: 'pe-1' })
+    expect(await store.transaction(['peopleRemoved'], 'read', (tx) => tx.get('peopleRemoved', 'pe-2'))).toBe(true)
   })
 
   it('lays out a folder’s shelves over one at version 2, and keeps what the repositories held there', async () => {
@@ -312,7 +314,7 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
       request.onerror = () => reject(request.error ?? new Error('would not open'))
     })
     const store = new IndexedDbStore(indexedDb)
-    expect(DATABASE_VERSION).toBe(4)
+    expect(DATABASE_VERSION).toBe(5)
     expect(await store.transaction(['meta'], 'read', read)).toBe('before')
     await store.transaction(['folders', 'folderData'], 'write', (tx) => {
       tx.put('folders', 'k', { handle: {} })

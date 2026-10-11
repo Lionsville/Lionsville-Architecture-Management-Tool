@@ -36,6 +36,7 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       const { repositories } = await fresh()
       expect(repositories.people.id).toMatch(/\S/)
       expect((await repositories.people.list()).people).toEqual([])
+      expect((await repositories.people.list()).removed).toEqual([])
     })
 
     it('adds an active entry with an id and a pseudonym of its own, and reads it back', async () => {
@@ -63,7 +64,7 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       const before = (await repositories.people.list()).revision
       expect(refusal(await repositories.people.add({ name: '   ' }))).toBe('people.nameRequired')
       expect(refusal(await repositories.people.add({ name: 'Ada Verbeek', email: 'not an address' }))).toBe('people.badEmail')
-      expect(await repositories.people.list()).toEqual({ revision: before, people: [] })
+      expect(await repositories.people.list()).toEqual({ revision: before, people: [], removed: [] })
     })
 
     it('corrects a name, an address and a kind, and takes an address out for `null`', async () => {
@@ -190,6 +191,40 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       expect(await repositories.people.read(kees.id)).toEqual(kees)
       expect(await repositories.people.read(lotte.id)).toMatchObject({ state: 'forgotten', forgottenOn: '2026-10-01' })
       expect((await repositories.people.read(lotte.id))?.name).toBeUndefined()
+    })
+
+    it('remembers every id it removed, and brings none back: a file from before the erasure gives nobody back', async () => {
+      const { under, repositories } = await fresh()
+      const ada = entry(await repositories.people.add({ name: 'Ada Verbeek', email: 'ada.verbeek@acme.example' }))
+      const twin = entry(await repositories.people.add({ name: 'Ada Verbek' }))
+      ok(await repositories.people.merge(twin.id, ada.id))
+      ok(await repositories.people.forget(ada.id, '2026-10-11'))
+      ok(await repositories.people.remove(ada.id))
+      expect([...(await repositories.people.list()).removed].sort()).toEqual([ada.id, twin.id].sort())
+      const again = under.reopen ? await under.reopen() : under.repositories
+      expect([...(await again.people.list()).removed].sort()).toEqual([ada.id, twin.id].sort())
+      expect((await again.people.bringIn([ada, twin])).changed).toEqual([])
+      expect(await again.people.read(ada.id)).toBeUndefined()
+      expect(await again.people.read(twin.id)).toBeUndefined()
+      expect(JSON.stringify(await again.people.list())).not.toMatch(/Ada|Verbe/)
+    })
+
+    it('takes a forgetting and a removal carried in, removal and redirects alike, and remembers the removal', async () => {
+      const { repositories } = await fresh()
+      const sara = entry(await repositories.people.add({ name: 'Sara Kaya', email: 'sara.kaya@acme.example' }))
+      const omar = entry(await repositories.people.add({ name: 'Omar Benali' }))
+      const omarToo = entry(await repositories.people.add({ name: 'Omar Benalli' }))
+      ok(await repositories.people.merge(omarToo.id, omar.id))
+      const { name: _name, email: _email, ...nameless } = sara
+      await repositories.people.bringIn([{ ...nameless, state: 'forgotten', leftOn: '2026-09-30', forgottenOn: '2026-10-01' }], [omar.id])
+      expect(await repositories.people.read(sara.id)).toMatchObject({ state: 'forgotten', forgottenOn: '2026-10-01' })
+      expect((await repositories.people.read(sara.id))?.name).toBeUndefined()
+      expect(await repositories.people.read(omar.id)).toBeUndefined()
+      expect(await repositories.people.read(omarToo.id)).toBeUndefined()
+      expect([...(await repositories.people.list()).removed].sort()).toEqual([omar.id, omarToo.id].sort())
+      await repositories.people.bringIn([omar, sara])
+      expect(await repositories.people.read(omar.id)).toBeUndefined()
+      expect((await repositories.people.read(sara.id))?.name).toBeUndefined()
     })
 
     it('answers one revision while nothing changes, another after each change, and the same after a refusal', async () => {

@@ -21,7 +21,10 @@
  *
  * **The people register comes along too** (ADR-0036), where both places keep
  * one: every entry the destination does not hold, by its id. An entry it
- * holds already is its own, and stays as it is.
+ * holds already is its own, and stays as it is — but a forgetting and a
+ * removal go with the work, because forgetting travels and un-forgetting does
+ * not: a forgotten entry is brought over whether held or not, and every id
+ * removed here, which the destination then never brings back.
  */
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { PeopleRepository } from '../ports/PeopleRepository'
@@ -53,12 +56,13 @@ type Into = {
   people?: Pick<PeopleRepository, 'list' | 'bringIn'>
 }
 
-/** Every entry of the register the destination does not hold yet; nothing it holds is changed. */
+/** Every entry of the register the destination does not hold yet, and every forgetting and removal. */
 async function copyPeople(from: From, into: Into): Promise<void> {
   if (!from.people || !into.people) return
   const there = new Set((await into.people.list()).people.map((person) => person.id))
-  const missing = (await from.people.list()).people.filter((person) => !there.has(person.id))
-  if (missing.length) await into.people.bringIn(missing)
+  const { people, removed } = await from.people.list()
+  const carried = people.filter((person) => !there.has(person.id) || person.state === 'forgotten')
+  if (carried.length || removed.length) await into.people.bringIn(carried, removed)
 }
 
 /**

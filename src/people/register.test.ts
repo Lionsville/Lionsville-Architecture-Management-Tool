@@ -128,9 +128,66 @@ describe('the changes', () => {
     expect(brought.people[0].name).toBeUndefined()
     const left: Person = { ...forgotten.people[0], state: 'left' }
     expect(done(changePeople(forgotten.people, { kind: 'bringIn', people: [left] })).changed).toEqual([])
+    // A forgotten entry is further gone than a merge: a redirect carried in would read it as somebody's name.
     const redirect: Person = { id: a.id, pseudonym: 'BCDF', kind: 'internal', state: 'active', mergedInto: 'pe-other' }
-    expect(done(changePeople(forgotten.people, { kind: 'bringIn', people: [redirect] })).people[0].mergedInto).toBe('pe-other')
+    expect(done(changePeople(forgotten.people, { kind: 'bringIn', people: [redirect] })).people[0]).toEqual(forgotten.people[0])
     expect(changePeople(a.people, { kind: 'merge', from: a.id, into: a.id })).toEqual({ refused: 'people.badMerge' })
+  })
+
+  it('merges no forgotten entry into anybody: its records would read as the name of the one kept', () => {
+    const a = added([], 'Omar Benali')
+    const b = added(a.people, 'Omar Benalli')
+    const forgotten = done(changePeople(b.people, { kind: 'forget', id: a.id, on: '2026-10-11' }))
+    expect(changePeople(forgotten.people, { kind: 'merge', from: a.id, into: b.id })).toEqual({ refused: 'people.badMerge' })
+  })
+
+  it('remembers what it removed, and brings none of it back: removed, forgotten, merged, left, active', () => {
+    const a = added([], 'Ada Verbeek', 'ada@acme.example')
+    const twin = added(a.people, 'Ada Verbek')
+    const merged = done(changePeople(twin.people, { kind: 'merge', from: twin.id, into: a.id }))
+    const forgotten = done(changePeople(merged.people, { kind: 'forget', id: a.id, on: '2026-10-11' }))
+    const removed = done(changePeople(forgotten.people, { kind: 'remove', id: a.id }))
+    expect([...removed.tombstones].sort()).toEqual([a.id, twin.id].sort())
+    const gone = new Set(removed.tombstones)
+    const brought = done(changePeople(removed.people, { kind: 'bringIn', people: [...a.people, ...twin.people] }, {}, gone))
+    expect(brought).toEqual({ people: [], changed: [], removed: [], tombstones: [] })
+  })
+
+  it('takes a removal carried in, with every redirect into it, and remembers it and the ids nobody here held', () => {
+    const a = added([], 'Sara Kaya')
+    const b = added(a.people, 'Sara Kaja')
+    const merged = done(changePeople(b.people, { kind: 'merge', from: b.id, into: a.id }))
+    const brought = done(changePeople(merged.people, { kind: 'bringIn', people: [], removed: [a.id, 'pe-elsewhere'] }))
+    expect(brought.people).toEqual([])
+    expect([...brought.removed].sort()).toEqual([a.id, b.id].sort())
+    expect([...brought.tombstones].sort()).toEqual([a.id, b.id, 'pe-elsewhere'].sort())
+  })
+
+  it('takes a forgetting carried in over a redirect, and a merge carried in over someone who left, but keeps the names a nameless file lacks', () => {
+    const a = added([], 'Lotte Jansen', 'lotte@acme.example')
+    const b = added(a.people, 'Lotte Janssen')
+    const merged = done(changePeople(b.people, { kind: 'merge', from: b.id, into: a.id }))
+    const forgottenThere: Person = { id: b.id, pseudonym: 'BCDF', kind: 'internal', state: 'forgotten', leftOn: '2026-09-01', forgottenOn: '2026-10-01' }
+    expect(done(changePeople(merged.people, { kind: 'bringIn', people: [forgottenThere] })).people.find((one) => one.id === b.id)).toEqual(forgottenThere)
+    const { name: _name, email: _email, ...nameless } = a.people[0]
+    const leftThere: Person = { ...nameless, state: 'left', leftOn: '2026-09-30' }
+    expect(done(changePeople(a.people, { kind: 'bringIn', people: [leftThere] })).people[0])
+      .toEqual({ ...a.people[0], state: 'left', leftOn: '2026-09-30' })
+  })
+
+  it('keeps every redirect one step long after a bring-in, and lets in no loop that would read both as nobody', () => {
+    const a = added([], 'Noor Haddad')
+    const b = added(a.people, 'Noor Hadad')
+    const c = added(b.people, 'N. Haddad')
+    // Here b went into c; a file says a went into b.
+    const here = done(changePeople(c.people, { kind: 'merge', from: b.id, into: c.id }))
+    const chain = done(changePeople(here.people, { kind: 'bringIn', people: [{ ...here.people[0], name: undefined, mergedInto: b.id }] }))
+    expect(chain.people.find((one) => one.id === a.id)?.mergedInto).toBe(c.id)
+    // Here b went into a; a file says a went into b.
+    const there = done(changePeople(c.people, { kind: 'merge', from: b.id, into: a.id }))
+    const loop = done(changePeople(there.people, { kind: 'bringIn', people: [{ id: a.id, pseudonym: 'BCDF', kind: 'internal', state: 'active', mergedInto: b.id }] }))
+    expect(entriesOf(loop.people).map((one) => one.id).sort()).toEqual([a.id, c.id].sort())
+    expect(loop.people.find((one) => one.id === a.id)?.name).toBe('Noor Haddad')
   })
 
   it('takes the further state carried in, and an entry carried in at the same state as it comes', () => {

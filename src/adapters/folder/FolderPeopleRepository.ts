@@ -47,6 +47,11 @@ function peopleOf(read: PeopleFileRead): Person[] {
   return read.kind === 'absent' ? [] : read.people
 }
 
+/** The ids the register removed, which the file keeps so nothing brings them back. */
+function removedOf(read: PeopleFileRead): PersonId[] {
+  return read.kind === 'absent' ? [] : read.removed ?? []
+}
+
 export class FolderPeopleRepository implements PeopleRepository {
   readonly id = 'folder'
   /** Each revision answered with, and each entry then, by id. */
@@ -62,7 +67,7 @@ export class FolderPeopleRepository implements PeopleRepository {
 
   async list(): Promise<PeopleRead> {
     const held = await this.held()
-    return { revision: held.revision, people: peopleOf(held.read) }
+    return { revision: held.revision, people: peopleOf(held.read), removed: removedOf(held.read) }
   }
 
   async read(id: PersonId): Promise<Person | undefined> {
@@ -95,8 +100,8 @@ export class FolderPeopleRepository implements PeopleRepository {
     return { revision: revision!, removed: answer.removed }
   }
 
-  async bringIn(people: readonly Person[]): Promise<PeopleBrought> {
-    const { answer, revision } = await this.apply({ kind: 'bringIn', people })
+  async bringIn(people: readonly Person[], removed: readonly PersonId[] = []): Promise<PeopleBrought> {
+    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed })
     if ('refused' in answer) throw new Error(`bringing people in was refused: ${answer.refused}`)
     return { revision: revision!, changed: answer.changed }
   }
@@ -125,10 +130,13 @@ export class FolderPeopleRepository implements PeopleRepository {
     return this.folder.serial(async () => {
       const { read } = await this.held()
       if (read.kind === 'unwritable') throw new ShellError('people.unwritable')
-      const answer = changePeople(peopleOf(read), change, this.minting)
+      const removed = removedOf(read)
+      const answer = changePeople(peopleOf(read), change, this.minting, new Set(removed))
       if ('refused' in answer) return { answer }
-      if (answer.changed.length + answer.removed.length === 0) return { answer, revision: (await this.held()).revision }
-      await writeAt(this.folder.root, PEOPLE_PATH, peopleFileText(answer.people))
+      if (answer.changed.length + answer.removed.length + answer.tombstones.length === 0) {
+        return { answer, revision: (await this.held()).revision }
+      }
+      await writeAt(this.folder.root, PEOPLE_PATH, peopleFileText(answer.people, [...removed, ...answer.tombstones]))
       return { answer, revision: (await this.held()).revision }
     })
   }

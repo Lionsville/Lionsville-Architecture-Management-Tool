@@ -2256,7 +2256,10 @@ Zwei Wege hinaus, für zwei Zwecke.
   Festlegen des Passworts **Ohne Namen** an, und alle Personen gehen als ihr
   Pseudonym in die Kopie, ohne Adresse — für eine Kopie, die die Organisation
   verlässt. Das Öffnen einer Datei gibt jemandem, der hier vergessen ist, nie
-  einen Namen zurück, und eine Datei ohne Namen nimmt keinen weg.
+  einen Namen zurück, bringt niemanden zurück, der hier entfernt wurde, und
+  eine Datei ohne Namen nimmt keinen Namen weg. Wer dort, wo die Datei
+  entstand, vergessen oder entfernt wurde, ist es hier auch: das Vergessen
+  reist mit der Arbeit.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
   unabhängig von dem auf dem Bildschirm, mit der Beschriftung jeder Linie oder

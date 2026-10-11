@@ -70,6 +70,32 @@ describe('work brought from one place into another', () => {
     expect((await from.people.list()).people).toHaveLength(2)
   })
 
+  it('brings nobody back the destination removed, and takes a forgetting and a removal along', async () => {
+    const from = memoryRepositories()
+    const into = memoryRepositories()
+    const named = async (name: string) => {
+      const answer = await from.people.add({ name })
+      if ('refused' in answer) throw new Error(answer.refused)
+      return answer.person
+    }
+    const pia = await named('Pia Schulz')
+    const ada = await named('Ada Verbeek')
+    const kees = await named('Kees Vos')
+    await into.people.bringIn((await from.people.list()).people)
+    // The destination erased Pia; the source forgot Ada and erased Kees.
+    await into.people.forget(pia.id, '2026-10-11')
+    await into.people.remove(pia.id)
+    await from.people.forget(ada.id, '2026-10-11')
+    await from.people.forget(kees.id, '2026-10-11')
+    await from.people.remove(kees.id)
+    await copyScopes(from, into)
+    expect(await into.people.read(pia.id)).toBeUndefined()
+    expect(await into.people.read(ada.id)).toMatchObject({ state: 'forgotten' })
+    expect((await into.people.read(ada.id))?.name).toBeUndefined()
+    expect(await into.people.read(kees.id)).toBeUndefined()
+    expect([...(await into.people.list()).removed].sort()).toEqual([kees.id, pia.id].sort())
+  })
+
   it('takes nothing from where it was', async () => {
     const from = await holding(scope('acme', 'Acme Logistics'))
     await copyScopes(from, memoryRepositories())

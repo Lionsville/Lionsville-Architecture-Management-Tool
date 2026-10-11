@@ -234,6 +234,27 @@ describe('the people register in a working file (ADR-0036 §8)', () => {
     expect((await source.people.read(kees.id))?.name).toBe('Kees Vos')
   })
 
+  it('from before an erasure gives nobody back, and carries a removal to where it lands: forgetting travels', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const pia = added(await source.people.add({ name: 'Pia Schulz', email: 'pia@acme.example' }))
+    const lastMonth = (await writeWorkingFile(source)).bytes
+    const copy = memoryRepositories()
+    await readWorkingFile(copy, lastMonth)
+    expect((await copy.people.read(pia.id))?.name).toBe('Pia Schulz')
+
+    added(await source.people.forget(pia.id, '2026-10-11'))
+    const removed = await source.people.remove(pia.id)
+    if ('refused' in removed) throw new Error(removed.refused)
+    await readWorkingFile(source, lastMonth)
+    expect(await source.people.read(pia.id)).toBeUndefined()
+    expect(JSON.stringify(await source.people.list())).not.toMatch(/Pia|Schulz|pia@/)
+
+    await readWorkingFile(copy, (await writeWorkingFile(source)).bytes)
+    expect(await copy.people.read(pia.id)).toBeUndefined()
+    expect((await copy.people.list()).removed).toContain(pia.id)
+  })
+
   it('from an address carries the entries those scopes name, and the ones they were merged into', async () => {
     const source = memoryRepositories()
     const [, landscape] = organisation()

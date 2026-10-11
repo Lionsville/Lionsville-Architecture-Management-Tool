@@ -46,7 +46,7 @@ import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
 import type { ScopePath } from '../../../projects/scopePath'
 import { MANIFEST_FILE, manifestText, readManifest } from './workingFileManifest'
 import type { WorkingFileManifest } from './workingFileManifest'
-import type { Person } from '../../../people/person'
+import type { Person, PersonId } from '../../../people/person'
 import { PEOPLE_PATH, peopleFileText, readPeopleFile } from './peopleFile'
 
 export { WORKING_FILE_EXTENSION }
@@ -114,6 +114,11 @@ export type OpenResult =
      * that carries none, which is every file written before there was one.
      */
     people?: readonly Person[]
+    /**
+     * The ids the register the file came from removed, so they are removed
+     * where it lands too: forgetting travels (ADR-0036 §10). Absent where none.
+     */
+    removed?: readonly PersonId[]
     relayout: boolean
     kind: 'workingFile'
   }
@@ -193,12 +198,16 @@ export function isZip(bytes: Uint8Array): boolean {
  * people.json`. A build from before the register reads past it, and the
  * manifest does not list it, so such a build is not told a part went
  * missing. A register with nobody in it is not written, so a file from an
- * organisation that keeps none is the bytes it always was.
+ * organisation that keeps none is the bytes it always was. `removed`, the ids
+ * the register took away, go with it, so a removal is made where the file
+ * lands as well.
  */
-export function workingFileBytes(scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest, people: readonly Person[] = []): Uint8Array {
+export function workingFileBytes(
+  scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest, people: readonly Person[] = [], removed: readonly PersonId[] = [],
+): Uint8Array {
   const entries: Record<string, [Uint8Array, { mtime: Date }]> = {}
   if (manifest) entries[MANIFEST_FILE] = [bytesFromText(manifestText(manifest)), { mtime: FIXED_MTIME }]
-  if (people.length) entries[PEOPLE_PATH] = [bytesFromText(peopleFileText(people)), { mtime: FIXED_MTIME }]
+  if (people.length || removed.length) entries[PEOPLE_PATH] = [bytesFromText(peopleFileText(people, removed)), { mtime: FIXED_MTIME }]
   const top = scopes.length ? scopes[0].path : ''
   const under = top ? `${top}/` : ''
   for (const scope of scopes) {
@@ -309,6 +318,7 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
     const register = held.find((file) => file.path === PEOPLE_PATH)
     const read = register && 'text' in register ? readPeopleFile(register.text) : undefined
     const people = read && read.kind !== 'absent' ? read.people : undefined
+    const removed = read && read.kind !== 'absent' ? read.removed : undefined
     const files = held.filter((file) => file.path !== MANIFEST_FILE && file.path !== PEOPLE_PATH)
     const roots = scopeRootsIn(files)
     // No `scope.json` anywhere: an older zip, which is one scope and has no
@@ -342,6 +352,7 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
       ...(manifest ? { manifest } : {}),
       ...(unopened.length ? { unopened } : {}),
       ...(people?.length ? { people } : {}),
+      ...(removed?.length ? { removed } : {}),
     }
   }
   const opened = openScopeDocument(parseJson(textFromBytes(bytes)), into)

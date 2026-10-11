@@ -454,7 +454,14 @@ agent the policy gives pseudonyms, and in a file made without names. A
 forgotten entry and a redirect hold no name and no address. Forgetting
 someone still active is their leaving that day too. Only a forgotten entry
 is removed, and its redirects go with it. A merge keeps every redirect one
-step long.
+step long, and merges no forgotten entry, either way. The register
+remembers each id it removed — the id alone, random and naming nobody — and
+a bring-in takes, of two entries under one id, whichever is further gone:
+removed, forgotten, merged, left, active. So a file never gives back a name,
+an address, an active state or an entry removed here, and a forgetting or a
+removal carried in is made here too: forgetting travels, un-forgetting does
+not. A name is never replaced by none short of forgetting, every redirect
+stays one step long after a bring-in, and none is let in that would loop.
 
 **What a reference reads as** is said once, `people/shown.ts`
 (`personText`, over `resolvePerson`): the name; the pseudonym once
@@ -500,12 +507,14 @@ ending a person's assignments is the step that brings them.
 `OUT_OF_HISTORY` lists it beside `local.json`, so no commit the app makes
 holds it, `.git/info/exclude` keeps it out of one typed in a terminal, and no
 scope's history answers for it. Browser storage keeps it on shelves of its
-own (`people`, `peopleLog`; the database is at version 4). The working file
+own (`people`, `peopleLog`, and `peopleRemoved` for the ids it removed; the
+database is at version 5), and the folder's file lists them under `removed`. The working file
 carries it at the same path from the zip's root, outside the manifest, so a
 build from before reads past it and no format moved; the whole organisation
 carries all of it, part of the tree the entries it names. The sealing
 dialog asks *Without names*. Work brought from this browser into a folder
-brings the entries the folder does not hold.
+brings the entries the folder does not hold, and every forgetting and
+removal.
 
 **The page** is `people/ui/PeoplePage.tsx`, a card on the organisation's
 home and `app.open`'s page `people`; it says that nothing on it is a step.

@@ -24,7 +24,7 @@ import type {
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
 import { personIdsIn } from '../../../model/person'
-import type { Person } from '../../../people/person'
+import type { Person, PersonId } from '../../../people/person'
 import { withoutNames } from '../../../people/shown'
 import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from './workingFile'
 import {
@@ -59,19 +59,22 @@ export async function carryOut(
     .map((scope) => pictured(from, scope, read.find((one) => one.path === scope.path))))
   const scopes = withHeld(read, held).map(saysWhatItLacks)
   const carried = scopes.length ? scopes : [bareScope(ROOT_SCOPE, (await from.scopes.tree()).root.name)]
-  return carryScopes(carried, await peopleCarried(from, carried, at === ROOT_SCOPE, options.withoutNames ?? false))
+  const register = await peopleCarried(from, carried, at === ROOT_SCOPE, options.withoutNames ?? false)
+  return carryScopes(carried, register.people, register.removed)
 }
 
 /**
  * The register a working file carries: all of it with the whole organisation,
  * and with part of it the entries those scopes name — and the entries those
- * were merged into, so every id resolves. Without names where asked.
+ * were merged into, so every id resolves. Without names where asked. Every id
+ * the register removed goes with either, the ids alone, so a removal is made
+ * wherever the file lands.
  */
 async function peopleCarried(
   from: CarriedFrom, scopes: readonly ScopeSnapshot[], whole: boolean, nameless: boolean,
-): Promise<Person[]> {
-  if (!from.people) return []
-  const { people } = await from.people.list()
+): Promise<{ people: Person[]; removed: readonly PersonId[] }> {
+  if (!from.people) return { people: [], removed: [] }
+  const { people, removed } = await from.people.list()
   let carried = [...people]
   if (!whole) {
     const named = new Set<string>()
@@ -79,7 +82,7 @@ async function peopleCarried(
     for (const person of people) if (named.has(person.id) && person.mergedInto) named.add(person.mergedInto)
     carried = people.filter((person) => named.has(person.id))
   }
-  return nameless ? withoutNames(carried) : carried
+  return { people: nameless ? withoutNames(carried) : carried, removed }
 }
 
 /**
@@ -87,12 +90,14 @@ async function peopleCarried(
  * after it by address — one order, whatever order a source lists its tree
  * in, so two sources holding the same organisation write the same bytes.
  */
-export async function carryScopes(scopes: readonly ScopeSnapshot[], people: readonly Person[] = []): Promise<CarriedOut> {
+export async function carryScopes(
+  scopes: readonly ScopeSnapshot[], people: readonly Person[] = [], removed: readonly PersonId[] = [],
+): Promise<CarriedOut> {
   const ordered = [...scopes].sort((one, other) => byAddress(one.path, other.path))
   const manifest = await manifestOf(ordered)
   return {
     name: workingFileName(ordered[0]),
-    bytes: workingFileBytes(ordered, manifest, people),
+    bytes: workingFileBytes(ordered, manifest, people, removed),
     mediaType: WORKING_FILE_MEDIA_TYPE,
     without: ordered.flatMap((scope) => (scope.unread ?? []).map((file) => (scope.path ? `${scope.path}/${file}` : file))),
   }
@@ -163,6 +168,7 @@ export async function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened 
     unopened: opened.unopened ?? [],
     ...(account ? { account } : {}),
     ...(opened.people ? { people: opened.people } : {}),
+    ...(opened.removed ? { removed: opened.removed } : {}),
   }
 }
 
@@ -247,7 +253,7 @@ export async function bringIn(
   })))
   if (options.subject) await into.history.record({ scopes: await idsAt(into, addresses), subject: options.subject })
   // The register after the scopes: a landing refused lands none of it.
-  if (into.people && opened.people?.length) await into.people.bringIn(opened.people)
+  if (into.people && (opened.people?.length || opened.removed?.length)) await into.people.bringIn(opened.people ?? [], opened.removed ?? [])
   return { setAside }
 }
 

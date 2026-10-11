@@ -1968,8 +1968,10 @@ Two ways out, for two purposes.
   The file carries the **people register** too. Tick **Without names** when
   you set the password, and every person goes into the copy as their
   pseudonym, with no address — for a copy that leaves the organisation.
-  Opening a file never gives a name back to someone forgotten here, and a
-  file made without names takes none away.
+  Opening a file never gives a name back to someone forgotten here, never
+  brings back anyone removed here, and a file made without names takes no
+  name away. Someone forgotten or removed where the file was made is
+  forgotten or removed here too: forgetting travels with the work.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or

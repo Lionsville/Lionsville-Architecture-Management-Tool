@@ -200,7 +200,7 @@ export function over(under: RepositoriesUnderTest) {
       merge: (from, into) => settled(people.merge(from, into)),
       forget: (id, on) => settled(people.forget(id, on)),
       remove: (id) => settled(people.remove(id)),
-      bringIn: (entries) => settled(people.bringIn(entries)),
+      bringIn: (entries, removed?: readonly string[]) => settled(people.bringIn(entries, removed)),
       since: (revision) => people.since(revision),
     } satisfies PeopleRepository,
   }

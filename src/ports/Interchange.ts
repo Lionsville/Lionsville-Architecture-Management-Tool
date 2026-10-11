@@ -29,7 +29,7 @@
  * entries are taken by their ids once the scopes have landed, and never give
  * a name back to an entry forgotten where they land.
  */
-import type { Person } from '../people/person'
+import type { Person, PersonId } from '../people/person'
 import type { OpenRefusal, ScopeSnapshot } from '../projects/scope'
 import type { ScopeAddress } from '../projects/scopeState'
 import type { Repositories } from './Repositories'
@@ -85,6 +85,8 @@ export type Opened = {
   account?: unknown
   /** The people register it carries; absent where it carries none. */
   people?: readonly Person[]
+  /** The ids that register removed, to be removed where it lands too; absent where none. */
+  removed?: readonly PersonId[]
 }
 
 /** A scope that did not arrive whole: by its address under the parcel's top. */
