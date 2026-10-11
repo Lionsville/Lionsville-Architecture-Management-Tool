@@ -119,9 +119,9 @@ export function MapPage(props: MapPageProps) {
   useEffect(() => {
     if (!onHandle) return undefined
     if (!props.open || mapId === undefined) { onHandle(undefined); return undefined }
-    onHandle({ diagramId: mapId, capture })
+    onHandle({ diagramId: mapId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
     return () => onHandle(undefined)
-  }, [onHandle, props.open, mapId, capture])
+  }, [onHandle, props.open, mapId, capture, selectedId])
 
   const laidOut = useMemo(
     () => (map

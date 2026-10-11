@@ -12,7 +12,7 @@
  * when the systems are somebody else's, and that a row opens the inspector.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MapPage } from './MapPage'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
@@ -152,5 +152,27 @@ describe('a selection asked for', () => {
     // A system is a column, not a row: nothing is selected for it.
     open({ select: { id: 'wms', nonce: 1 }, onOpenDocumentation: vi.fn() })
     expect(screen.queryByTestId('sheet-open-page')).toBeNull()
+  })
+})
+
+/** ADR-0033, amended 11 October 2026: a link's selection, located on the map; and what the map says it has selected. */
+describe('a link to a row', () => {
+  it('rings the row it selects and brings it on screen', async () => {
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled
+    open({ select: { id: 'dunning', nonce: 1 }, onOpenDocumentation: vi.fn() })
+    const name = within(screen.getByTestId('map-row-dunning')).getByRole('button')
+    expect(name.getAttribute('data-element-id')).toBe('dunning')
+    await waitFor(() => expect(scrolled).toHaveBeenCalled())
+    expect(getComputedStyle(name).outline).toContain('solid')
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+  })
+
+  it('says in its handle what is selected on it, for a link to select again', () => {
+    const onHandle = vi.fn()
+    open({ onHandle })
+    expect(onHandle.mock.calls.at(-1)?.[0]?.selectedId).toBeUndefined()
+    fireEvent.click(within(screen.getByTestId('map-row-dunning')).getByRole('button'))
+    expect(onHandle.mock.calls.at(-1)?.[0]?.selectedId).toBe('dunning')
   })
 })

@@ -49,6 +49,12 @@ export type PageCaptureOptions = {
 export type PageHandle = {
   /** Which view is on screen, so a caller can tell it is the one it asked for. */
   readonly diagramId: string
+  /**
+   * The one thing selected on the page, by element id, where one is: what a
+   * link to the view selects again (ADR-0033, amended 11 October 2026). A
+   * laid-out page keeps its own selection, so it says it itself.
+   */
+  readonly selectedId?: string
   capture(options: PageCaptureOptions): Promise<SheetShot>
 }
 

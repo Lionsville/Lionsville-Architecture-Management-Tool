@@ -70,3 +70,49 @@ describe('the renderer view over the editor’s handle', () => {
     expect(shown).toBe(true)
   })
 })
+
+/** ADR-0033, amended 11 October 2026: what a link made from the view up selects again. */
+describe('the selection a link carries', () => {
+  const kinds = { b1: 'layer7', s1: 'sheet', m1: 'map', t1: 'technology' } as const
+  function seamOn(first: keyof typeof kinds) {
+    let active: string = first
+    const session = {
+      currentActiveId: () => active,
+      setActiveDiagramId: (id: string) => { active = id },
+      current: () => ({ diagrams: Object.entries(kinds).map(([id, kind]) => ({ id, kind })) }),
+    } as unknown as ModelSession
+    const seam = renderHook(() => useRendererView(session, () => {})).result.current
+    return { seam, show: (id: keyof typeof kinds) => { active = id } }
+  }
+  const page = (diagramId: string, selectedId?: string) => ({
+    diagramId, capture: async () => ({ png: new Uint8Array(), width: 1, height: 1 }), ...(selectedId ? { selectedId } : {}),
+  }) as never
+
+  it('is the board’s, while a board is up', () => {
+    const { seam } = seamOn('b1')
+    seam.onEditorHandle(handleWith({ activeDiagramId: 'b1', selectedElementId: 'crm' }))
+    expect(seam.renderer.selected?.()).toBe('crm')
+  })
+
+  it('is a sheet’s, a map’s and the landscape’s own, never the board’s left behind', () => {
+    const { seam, show } = seamOn('b1')
+    seam.onEditorHandle(handleWith({ activeDiagramId: 'b1', selectedElementId: 'crm' }))
+    for (const id of ['s1', 'm1', 't1'] as const) {
+      show(id)
+      // The editor still says the board's selection, now under the page's id.
+      seam.onEditorHandle(handleWith({ activeDiagramId: id, selectedElementId: 'crm' }))
+      seam.onSheetHandle(page(id))
+      expect(seam.renderer.selected?.()).toBeUndefined()
+      seam.onSheetHandle(page(id, `chosen-on-${id}`))
+      expect(seam.renderer.selected?.()).toBe(`chosen-on-${id}`)
+    }
+  })
+
+  it('is nothing while the page up has not handed its handle over yet', () => {
+    const { seam, show } = seamOn('b1')
+    seam.onSheetHandle(page('s1', 'old'))
+    show('m1')
+    seam.onEditorHandle(handleWith({ activeDiagramId: 'm1', selectedElementId: 'crm' }))
+    expect(seam.renderer.selected?.()).toBeUndefined()
+  })
+})

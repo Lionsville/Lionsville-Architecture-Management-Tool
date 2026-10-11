@@ -67,6 +67,8 @@ function open(over: {
   elsewhere?: readonly Relation[]
   onOpenDocumentation?: (id: string) => void
   onSave?: (doc: { name: string; bytes: Uint8Array }) => void
+  select?: { id: string; nonce: number }
+  onHandle?: (handle: unknown) => void
 } = {}) {
   const acts = actions()
   const result = renderShell(
@@ -79,6 +81,8 @@ function open(over: {
       elsewhere={over.elsewhere}
       onOpenDocumentation={over.onOpenDocumentation}
       onSave={over.onSave}
+      {...(over.select ? { select: over.select } : {})}
+      {...(over.onHandle ? { onHandle: over.onHandle } : {})}
       onClose={() => {}}
     />,
   )
@@ -555,5 +559,17 @@ describe('the dialogs the page opens', () => {
     fireEvent.click(screen.getByLabelText('What this sheet draws'))
     fireEvent.click(screen.getByLabelText('Draw Billing'))
     expect(acts.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment'] })
+  })
+})
+
+/** ADR-0033, amended 11 October 2026: a link's selection, located on the sheet; and what the sheet says it has selected. */
+describe('a link to a card', () => {
+  it('rings the card a select request names, and says it in the handle for a link to select again', () => {
+    const onHandle = vi.fn()
+    open({ select: { id: 'dunning', nonce: 1 }, onHandle })
+    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Chase a late payment')).toBeTruthy()
+    const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
+    expect(rules).toContain('[data-element-id="dunning"]')
+    expect((onHandle.mock.calls.at(-1)?.[0] as { selectedId?: string } | undefined)?.selectedId).toBe('dunning')
   })
 })

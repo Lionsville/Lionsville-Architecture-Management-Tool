@@ -228,9 +228,9 @@ export function SheetPage(props: SheetPageProps) {
   useEffect(() => {
     if (!onHandle) return undefined
     if (!props.open || sheetId === undefined) { onHandle(undefined); return undefined }
-    onHandle({ diagramId: sheetId, capture })
+    onHandle({ diagramId: sheetId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
     return () => onHandle(undefined)
-  }, [onHandle, props.open, sheetId, capture])
+  }, [onHandle, props.open, sheetId, capture, selectedId])
 
   const laidOut = useMemo(
     () => (sheet ? sheetPage(model, sheet, props.elsewhere) : undefined),

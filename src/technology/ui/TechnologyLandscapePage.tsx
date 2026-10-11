@@ -302,9 +302,9 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   useEffect(() => {
     if (!onHandle) return undefined
     if (!props.open || diagramId === undefined) { onHandle(undefined); return undefined }
-    onHandle({ diagramId, capture })
+    onHandle({ diagramId, capture, ...selectedOf(selected) })
     return () => onHandle(undefined)
-  }, [onHandle, props.open, diagramId, capture])
+  }, [onHandle, props.open, diagramId, capture, selected])
 
   // --- the lines, measured off the cards --------------------------------------
   const [paths, setPaths] = useState<Drawn[]>([])
@@ -668,6 +668,12 @@ function Band({ title, note, action, testId, last, strip, children }: {
 
 function Empty({ text }: { text: string }) {
   return <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{text}</Typography>
+}
+
+/** The element a chosen card is, as a handle says it for a link to select again; a folded group of applications is none. */
+function selectedOf(key: NodeKey | undefined): { selectedId?: string } {
+  if (key === undefined || key.startsWith('group:')) return {}
+  return { selectedId: key.slice(key.indexOf(':') + 1) }
 }
 
 /** The look a card shares: chosen, dimmed, or hidden. */

@@ -375,6 +375,14 @@ without it. A link from a record's page carries none: the record is the
 place's `id` already. `readPlace` reads a `select` said once and refuses one
 said twice, as it refuses every key said twice.
 
+Whichever view is up says what is selected on it: a sheet, a map and the
+technology landscape keep their own selection and say it in their handle
+(`PageHandle.selectedId`), and the editor's selection is read only while a
+board is the view up, so a selection left on a board never rides on a link
+made from a sheet. A link pasted into a window that is already open reaches
+it as a move of the history: it is opened with its selection, and the entry
+is written without it.
+
 **What a link opens on is located.** Selected, brought into view and ringed
 for a moment — the mark the sheet's finder had — wherever it is drawn: the
 decisions list, the observations register and both of its pictures, the sheet

@@ -77,7 +77,18 @@ export function useRendererView(session: ModelSession, focusElement: (id: string
         return new Uint8Array(await blob.arrayBuffer())
       },
       focus: focusElement,
-      selected: () => editorHandle.current?.selectedElementId,
+      // Whichever view is up says what is selected on it: a laid-out page
+      // keeps its own selection, and the editor's is the board's — read only
+      // while a board is the view up, so a selection left on the board
+      // never rides on a link made from a sheet (ADR-0033, amended).
+      selected: () => {
+        const active = session.currentActiveId()
+        const page = sheetHandle.current
+        if (page?.diagramId === active) return page.selectedId
+        const kind = session.current().diagrams.find((diagram) => diagram.id === active)?.kind
+        const held = editorHandle.current
+        return (kind === 'layer7' || kind === 'container') && held?.activeDiagramId === active ? held.selectedElementId : undefined
+      },
       drawn: (diagramId) => {
         const held = editorHandle.current
         return held?.activeDiagramId === diagramId && held.drawn ? toDiagram(held.drawn) : undefined
