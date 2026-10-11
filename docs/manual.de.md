@@ -295,9 +295,13 @@ behält die ID einer Person, nie ihren Namen, und jede Ansicht fragt das
 Register nach dem Namen, wenn sie einen zeigt — verschwindet ein Name aus dem
 Register, verschwindet er also auf einmal aus jeder Ansicht.
 
-- **Alle** stehen mit Art und Status in der Liste und lassen sich nach Name
-  oder Adresse suchen; **Zeigen** grenzt die Liste auf aktive, ausgeschiedene
-  oder vergessene Personen ein.
+- **Alle** stehen mit Art, Status und den **Rollen heute**, die sie innehaben,
+  in der Liste — jede Rolle in ihrer Einheit, die ersten zwei und wie viele
+  noch, und *keine* bei allen, die nichts innehaben, damit sie auffallen — und
+  lassen sich nach Name, Adresse oder einer Rolle oder Einheit suchen, die sie
+  innehaben; **Zeigen** grenzt die Liste auf aktive, ausgeschiedene oder
+  vergessene Personen ein. Die Spalte liest den Tag, an dem die Seite
+  angesehen wird (**Ansehen am**, unten).
 - **Person hinzufügen** fragt nach einem Namen, einer Adresse und der Art.
   Bevor jemand hinzugefügt wird, sucht es nach jemandem, der dieselbe Person
   sein könnte: dieselbe Adresse, derselbe Name (Groß- und Kleinschreibung,
@@ -2058,6 +2062,16 @@ endet, zeigt seine Einheiten, die danach noch bestehen, mit wer darin eine
 Rolle innehat: Was jede jetzt ist, entscheiden Sie, indem Sie ihr einen anderen
 Typ geben oder sie beenden. Eine Einheit, die noch von einem beendeten Typ ist,
 ist ein Befund.
+
+**Eine Rolle aus einem Einheitstyp nehmen** — das ✕ daneben unter *Rollen, die
+er hat* — zeigt zuerst, wer diese Rolle in einer Einheit des Typs innehat, wo
+die Einheit keinen eigenen Platz dafür hat: *Die Menschen verschieben*, unter
+den Rollen, jede Person mit der Nachfolge der Rolle, die die Einheit noch hat,
+als Vorschlag, ihr letzter Tag darin heute. **Als einen Schritt schreiben**
+nimmt die Rolle zusammen mit ihren Enden und Anfängen aus dem Typ, alles oder
+nichts, damit niemand in einer Rolle bleibt, die der Typ seiner Einheit nicht
+hat; **… behalten**, mit dem Namen der Rolle, lässt den Typ, wie er ist. Eine
+Rolle, die so niemand innehat, geht sofort.
 
 **Eine Umorganisation ist ein Plan.** Auf der Seite eines Plans stellt
 *Einheiten, die er verschiebt* eine Einheit an einem Tag unter eine neue

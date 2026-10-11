@@ -1037,6 +1037,31 @@ not wherever the register may be written. And a unit's section says who
 manages it may change its people, where the source grants the right
 (`PeopleRegisterAccess.managingRight`), rather than that it grants nothing.
 
+## As built, 3.6.1: what each person holds, and a role taken out of a unit type
+
+**The People page says what each person holds** on the page's day, in a
+column of its own — *Roles today*, or *Roles on* the day the page is looked
+at: each role in its unit once, the first two and how many more, and *none*
+said as such, so whoever holds nothing stands out (`people/hold.rolesOn`). It
+reads what the person's *Holds today* reads, `PeopleRegisterAccess.assignmentsOf`,
+once per day and register; the search finds a person by a role or a unit they
+hold; and where the shell has no tree to read there is no column. An account
+is a build's own (§14), not a column of core's.
+
+**A role taken out of a unit type** is §6's *when the model itself changes*.
+Where anybody holds the role in a unit of the type through the type alone
+(`model/units.heldThroughType`; a unit's own extra slot for it keeps its
+people), the slot does not go at once: the page asks the host
+(`OperatingModelPageProps.slotTakeOut`), since it knows nobody's name, and
+draws what the host says under the slots — *Move the people*
+(`app/units/EndedHolders.SlotHolders`, `model/reorganisation.slotEnding`),
+each row with the role's first successor the unit still holds as the
+suggestion. A slot has no days, so it goes today, and today is the people's
+last day in it. *Write as one step* lands the type's step at the organisation
+with their ends and beginnings in every scope that keeps one, through
+`landPeopleMoves`: all of it or none, so nobody is left in a role their unit's
+type does not hold. A slot nobody holds that way goes at once, as before.
+
 ## Amended, 11 October 2026 — the structure drawn, libraries brought in as a choice, links from either end, and a large organisation
 
 *Accepted 11 October 2026; not yet built.* A look at the screens of what was

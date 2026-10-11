@@ -274,9 +274,12 @@ van een persoon, nooit de naam, en elk scherm vraagt het register om de naam
 wanneer het er een toont — dus als een naam uit het register verdwijnt,
 verdwijnt hij in één keer van elk scherm.
 
-- **Iedereen** staat in de lijst met soort en status, en is te zoeken op naam
-  of adres; **Toon** beperkt de lijst tot wie actief is, wie vertrokken is of
-  wie vergeten is.
+- **Iedereen** staat in de lijst met soort, status en de **rollen vandaag**
+  die ze vervullen — elke rol in haar eenheid, de eerste twee en hoeveel er
+  nog zijn, en *geen* voor wie niets vervult, zodat die opvalt — en is te
+  zoeken op naam, adres, of een rol of eenheid die ze vervullen; **Toon**
+  beperkt de lijst tot wie actief is, wie vertrokken is of wie vergeten is. De
+  kolom leest de dag waarop de pagina bekeken wordt (**Bekijk op**, hieronder).
 - **Persoon toevoegen** vraagt om een naam, een adres en de soort. Voordat er
   iemand wordt toegevoegd, zoekt het naar iemand die dezelfde persoon kan
   zijn: hetzelfde adres, dezelfde naam (hoofdletters, accenten en spaties
@@ -1943,6 +1946,16 @@ dezelfde eenheid is het voorstel voor elk — met *Verplaats de mensen* eronder
 nog zijn, met wie er een rol in vervult: wat elk nu is, beslis jij, door haar
 een ander type te geven of haar te beëindigen. Een eenheid die nog van een
 beëindigd type is, is een bevinding.
+
+**Een rol uit een eenheidstype halen** — het ✕ ernaast onder *Rollen die het
+heeft* — toont eerst wie die rol vervult in een eenheid van het type, waar de
+eenheid er geen eigen plek voor heeft: *Verplaats de mensen*, onder de rollen,
+elk met de opvolger van de rol die de eenheid nog heeft als voorstel, hun
+laatste dag erin vandaag. **Schrijf als één stap** haalt de rol uit het type
+samen met hun einden en begins, alles of niets, zodat niemand achterblijft in
+een rol die het type van de eenheid niet heeft; **… houden**, met de naam van
+de rol, laat het type zoals het is. Een rol die zo niemand vervult, gaat er
+meteen uit.
 
 **Een reorganisatie is een plan.** Op de pagina van een plan zet *Eenheden die
 het verplaatst* een eenheid op een dag onder een nieuwe bovenliggende eenheid

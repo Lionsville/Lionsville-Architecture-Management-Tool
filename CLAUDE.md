@@ -833,7 +833,9 @@ src/app/          The shell around the editor.
                                       `MovePeople`, `PlanStillOpen`), what an
                                       ending leaves to
                                       decide on the operating model page
-                                      (`EndedHolders`), and the people's moves
+                                      (`EndedHolders`) and what a role taken
+                                      out of a unit type leaves
+                                      (`SlotHolders`), and the people's moves
                                       landed as one step per scope
                                       (`landPeopleMoves`)
                                       …and the two views (§7): ChartPage and

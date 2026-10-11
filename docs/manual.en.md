@@ -262,9 +262,12 @@ what lets a name be forgotten. The history keeps a person's id, never their
 name, and every screen asks the register for the name when it draws one —
 so when a name goes from the register, it goes from every screen at once.
 
-- **Everyone** is listed with their kind and state, and searched by name or
-  address; **Show** narrows the list to who is active, who has left, or who
-  is forgotten.
+- **Everyone** is listed with their kind, their state and the **roles
+  today** they hold — each role in its unit, the first two and how many more,
+  and *none* for whoever holds nothing, so they stand out — and searched by
+  name, address, or a role or unit they hold; **Show** narrows the list to who
+  is active, who has left, or who is forgotten. The column reads the day the
+  page is looked at (**Look at**, below).
 - **Add person** asks for a name, an address and the kind. Before anyone is
   added it looks for somebody who may be the same person: the same address,
   the same name (whatever the case, accents or spacing), a name within two
@@ -1797,6 +1800,15 @@ suggestion for each — with *Move the people* below (see below). A unit type
 that ends lists its units still there afterwards, with who holds a role in
 each: what each is now is for you to decide, by giving it another type or
 ending it. A unit still of a type that has ended is a finding.
+
+**Taking a role out of a unit type** — the ✕ beside it under *Roles it holds*
+— first lists who holds that role in a unit of the type, where the unit has no
+slot of its own for it: *Move the people*, under the slots, each with the
+role's successor the unit still holds as the suggestion, their last day in it
+today. **Write as one step** takes the role out of the type together with
+their ends and beginnings, all of it or none of it, so nobody is left in a
+role their unit's type does not hold; **Keep**, with the role's name, leaves
+the type as it is. A role nobody holds that way goes at once.
 
 **A reorganisation is a plan.** On a plan's page, *Units it moves* puts a unit
 under a new parent on a day — or at the top, under the organisation itself —
