@@ -4,27 +4,23 @@
 /**
  * A picture kept by its content address, as an address a browser can draw.
  *
- * This is the path a drawing's picture takes (`DrawingView`): the bytes are
- * asked for by address, not by a library name, and shown as an image so
- * nothing inside them runs. `bytesAt` is the repository's. Absent bytes are
- * `'absent'`, so a caller can say the drawing has not been drawn; `undefined`
- * is still waiting, or there was no address to ask for.
+ * The one path a drawing's picture takes, for its view and for a document:
+ * the bytes are asked for by address, not by a library name, and shown as an
+ * image so nothing inside them runs. `bytesAt` is the repository's. Absent
+ * bytes are `'absent'`, so a caller can say the drawing has not been drawn;
+ * `undefined` is still waiting, or there was no address to ask for.
  */
 import { useEffect, useState } from 'react'
+import { svgFrame } from '../../model/drawing'
+import type { PictureFrame } from '../../model/drawing'
 import { mediaTypeOfBytes } from '../../model/imageName'
 
-/** The box a picture is laid out in, so a link's area can be placed over it. */
-export type PictureFrame = { minX: number; minY: number; width: number; height: number }
-
+/** The picture, and the box its SVG names: draw.io's export, in its own units. */
 export type ContentPicture = { url: string; frame?: PictureFrame }
 
 export type PictureBytes = { mediaType?: string; bytes: Uint8Array }
 
-/**
- * `bytesAt` must be stable: a new function is a new ask. The frame is read
- * off an SVG's `viewBox` — draw.io's export — so a shape's area, which is in
- * that coordinate space, lands on the picture.
- */
+/** `bytesAt` must be stable: a new function is a new ask. */
 export function useContentPicture(
   bytesAt: ((address: string) => Promise<PictureBytes | undefined>) | undefined,
   address: string | undefined,
@@ -37,6 +33,7 @@ export function useContentPicture(
     }
     let gone = false
     let objectUrl: string | undefined
+    setShown(undefined)
     void bytesAt(address).then((held) => {
       if (gone) return
       if (!held) {
@@ -46,7 +43,8 @@ export function useContentPicture(
       const type = held.mediaType && held.mediaType !== 'application/octet-stream' ? held.mediaType : mediaTypeOfBytes(held.bytes)
       const copy = new Uint8Array(held.bytes)
       objectUrl = URL.createObjectURL(new Blob([copy], { type }))
-      if (!gone) setShown({ url: objectUrl, frame: frameOf(copy, type) })
+      const frame = type === 'image/svg+xml' ? svgFrame(new TextDecoder().decode(copy)) : undefined
+      setShown({ url: objectUrl, ...(frame ? { frame } : {}) })
     }).catch(() => {
       if (!gone) setShown('absent')
     })
@@ -56,21 +54,4 @@ export function useContentPicture(
     }
   }, [bytesAt, address])
   return shown
-}
-
-/** An SVG's page box, from its `viewBox` or its width and height. Anything else has none. */
-function frameOf(bytes: Uint8Array, mediaType: string): PictureFrame | undefined {
-  if (mediaType !== 'image/svg+xml') return undefined
-  const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 4096)))
-  const viewBox = /viewBox=["']([^"']+)["']/.exec(head)?.[1]
-  if (viewBox) {
-    const n = viewBox.trim().split(/[\s,]+/).map(Number)
-    if (n.length === 4 && n.every((part) => Number.isFinite(part)) && n[2] > 0 && n[3] > 0) {
-      return { minX: n[0], minY: n[1], width: n[2], height: n[3] }
-    }
-  }
-  const width = Number(/width=["']([\d.]+)/.exec(head)?.[1])
-  const height = Number(/height=["']([\d.]+)/.exec(head)?.[1])
-  if (width > 0 && height > 0) return { minX: 0, minY: 0, width, height }
-  return undefined
 }

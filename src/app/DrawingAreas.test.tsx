@@ -51,7 +51,7 @@ describe('the palette shape', () => {
 })
 
 describe('areas on the picture', () => {
-  it('opens the element the area points at, scaled onto the model page when the picture names no box', async () => {
+  it('opens the element the area points at, laid on the shapes\' own box when the picture names no size', async () => {
     const onOpen = vi.fn()
     renderShell(
       <DrawingView
@@ -65,15 +65,15 @@ describe('areas on the picture', () => {
     )
     const area = await screen.findByTestId('drawing-area-2')
     expect(area.getAttribute('aria-label')).toBe('Open Billing')
-    expect((area as HTMLButtonElement).style.left).toBe('5%')
-    expect((area as HTMLButtonElement).style.top).toBe('20%')
-    expect((area as HTMLButtonElement).style.width).toBe('20%')
-    expect((area as HTMLButtonElement).style.height).toBe('30%')
+    expect((area as HTMLButtonElement).style.left).toBe('0%')
+    expect((area as HTMLButtonElement).style.top).toBe('0%')
+    expect((area as HTMLButtonElement).style.width).toBe('100%')
+    expect((area as HTMLButtonElement).style.height).toBe('100%')
     fireEvent.click(area)
     expect(onOpen).toHaveBeenCalledWith({ page: 'element', id: 'billing' })
   })
 
-  it('scales the area to the picture\'s viewBox', async () => {
+  it('scales the area to the picture\'s viewBox, from where the shapes begin: draw.io crops its export to them', async () => {
     renderShell(
       <DrawingView
         diagram={drawing('sha256:aa')}
@@ -84,8 +84,8 @@ describe('areas on the picture', () => {
       />,
     )
     const area = await screen.findByTestId('drawing-area-2') as HTMLButtonElement
-    expect(area.style.left).toBe('2.5%')
-    expect(area.style.top).toBe('10%')
+    expect(area.style.left).toBe('0%')
+    expect(area.style.top).toBe('0%')
     expect(area.style.width).toBe('10%')
     expect(area.style.height).toBe('15%')
   })

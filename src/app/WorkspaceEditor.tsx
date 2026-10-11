@@ -6,7 +6,7 @@
  * it throws, and the laid-out views it draws in the tab.
  */
 import { useCallback, useMemo } from 'react'
-import type { ComponentProps, ReactNode } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
 import type { PageView } from '../editor'
@@ -180,20 +180,7 @@ function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageVi
     case 'technology':
       return technologyPage(parts, diagram, view)
     case 'drawing':
-      return (
-        <DrawingView
-          diagram={diagram}
-          scope={parts.props.project.id}
-          images={parts.props.source.repositories.images}
-          elements={parts.session.model.elements.map((element) => ({ id: element.id, name: element.name }))}
-          origin={parts.props.shell.drawingOrigin}
-          language={parts.props.shell.language}
-          dispatch={parts.session.dispatch}
-          notify={parts.props.shell.notify}
-          onOpen={(to) => parts.show({ ...to, scope: parts.props.project.path })}
-          s={parts.props.shell.s}
-        />
-      )
+      return drawingPage(parts, diagram, view)
     case 'layer7':
     case 'container':
       // A board is the canvas, drawn by the editor itself.
@@ -272,6 +259,34 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onOpenServiceReport={pages.openServiceReport}
       onOpenPlatformReport={pages.openPlatformReport}
+    />
+  )
+}
+
+/**
+ * A drawing's page, keyed by the drawing: one drawing per mount, so an editor
+ * open on one drawing's tab is gone when another drawing's tab is up, and its
+ * next save cannot write into that one.
+ */
+export function drawingPage(
+  parts: Pick<WorkspaceParts, 'props' | 'session' | 'show'>,
+  diagram: DesignDiagram,
+  view: Pick<PageView, 'readOnly'>,
+): ReactElement {
+  return (
+    <DrawingView
+      key={diagram.id}
+      diagram={diagram}
+      scope={parts.props.project.id}
+      images={parts.props.source.repositories.images}
+      elements={parts.session.model.elements.map((element) => ({ id: element.id, name: element.name }))}
+      origin={parts.props.shell.drawingOrigin}
+      language={parts.props.shell.language}
+      readOnly={view.readOnly}
+      dispatch={parts.session.dispatch}
+      notify={parts.props.shell.notify}
+      onOpen={(to) => parts.show({ ...to, scope: parts.props.project.path })}
+      s={parts.props.shell.s}
     />
   )
 }

@@ -14,11 +14,12 @@
 import { createContext, useCallback, useContext, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import type { DesignDiagram, DrawingLink } from '../../model/types'
+import type { DesignDiagram } from '../../model/types'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { ViewSource } from '../viewRef'
+import { DrawingPicture } from './DrawingPicture'
 import { useContentPicture } from './useContentPicture'
-import type { PictureBytes, PictureFrame } from './useContentPicture'
+import type { PictureBytes } from './useContentPicture'
 
 type ViewEmbeds = {
   view(id: string): DesignDiagram | undefined
@@ -97,72 +98,16 @@ function DrawingEmbed({ diagram, caption, embeds }: {
     return <ViewWords caption={caption || diagram.name} words={t('doc.viewNotDrawn')} testId="view-not-drawn" />
   }
   if (!shown) return <Box component="span" data-testid="view-embed" data-view={diagram.id} data-state="loading" />
-  const frame = shown.frame
-  const links = diagram.drawing?.links ?? []
   return (
-    <Box
-      component="span"
-      data-testid="view-embed"
-      data-view={diagram.id}
-      sx={{
-        display: 'block',
-        position: 'relative',
-        width: '100%',
-        maxWidth: '100%',
-        ...(frame ? { aspectRatio: `${frame.width} / ${frame.height}` } : {}),
-      }}
-    >
-      <Box
-        component="img"
-        src={shown.url}
-        alt={caption || diagram.name}
-        data-testid="view-picture"
-        sx={{
-          display: 'block',
-          width: '100%',
-          height: frame ? '100%' : 'auto',
-          ...(frame ? { position: 'absolute', inset: 0, objectFit: 'fill' } : {}),
-        }}
-      />
-      {frame && links.map((link) => (
-        <AreaButton key={link.shapeId} link={link} frame={frame} name={embeds.nameOf(link.elementId)} onOpen={embeds.openElement} />
-      ))}
-    </Box>
-  )
-}
-
-/** One transparent button over a shape that points at an element. */
-function AreaButton({ link, frame, name, onOpen }: {
-  link: DrawingLink
-  frame: PictureFrame
-  name: string
-  onOpen: (elementId: string) => void
-}) {
-  const { t } = useStrings()
-  const { area } = link
-  return (
-    <Box
-      component="button"
-      type="button"
-      data-testid="view-area"
-      data-element={link.elementId}
-      aria-label={t('doc.openShape', { name })}
-      onClick={() => onOpen(link.elementId)}
-      style={{
-        position: 'absolute',
-        left: percent(area.x - frame.minX, frame.width),
-        top: percent(area.y - frame.minY, frame.height),
-        width: percent(area.width, frame.width),
-        height: percent(area.height, frame.height),
-        padding: 0,
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-      }}
+    <DrawingPicture
+      url={shown.url}
+      picture={shown.frame}
+      xml={diagram.drawing?.xml ?? ''}
+      links={diagram.drawing?.links ?? []}
+      alt={caption || diagram.name}
+      label={(elementId) => t('doc.openShape', { name: embeds.nameOf(elementId) })}
+      onOpen={embeds.openElement}
+      testIds={{ frame: 'view-embed', picture: 'view-picture', area: () => 'view-area' }}
     />
   )
-}
-
-function percent(part: number, whole: number): string {
-  return `${(part / whole) * 100}%`
 }

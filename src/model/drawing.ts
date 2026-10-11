@@ -11,19 +11,25 @@
  * parent, so the absolute area is the sum of the ancestors. The labels —
  * a cell's `value`, a UserObject's `label` — are the prose a search
  * indexes. Nothing here draws, and nothing here changes the model.
+ *
+ * **One page.** A file draw.io saves may hold several `<diagram>` pages; the
+ * picture the editor exports is the first, and so the links and the prose
+ * are read from the first page alone. A page draw.io kept compressed holds
+ * no cells this can read: {@link isCompressedDrawing} says so, and the agent
+ * refuses one rather than keeping a drawing whose links read empty.
  */
 import type { ContentAddress } from './imageName'
 import type { DesignDiagram, DrawingLink, ElementId } from './types'
 
 const ELEMENT_LINK = /^element:(.+)$/
 
-/** draw.io's page, when the model does not name one. */
-const PAGE_WIDTH = 850
-const PAGE_HEIGHT = 1100
+/** The largest code point there is; a reference past it is not a character. */
+const LAST_CODE_POINT = 0x10ffff
 
 /**
  * The coordinate frame a picture is drawn in: model units, origin included.
- * A viewBox is the export's; a page is the model's, origin at 0.
+ * A viewBox is the export's; a picture's frame says where that box sits in
+ * the model.
  */
 export type PictureFrame = { x: number; y: number; width: number; height: number }
 
@@ -31,12 +37,26 @@ type Attrs = Record<string, string>
 
 type El = { tag: string; attrs: Attrs; children: El[] }
 
+type Box = { x: number; y: number; width: number; height: number }
+
 /** One cell that can point, or hold a child: its id, its parent, its words, its box. */
 type Cell = {
   id: string
   parent?: string
   link?: string
   label?: string
+  /** The label is HTML (`html=1` in the style), so its text is read as HTML. */
+  html: boolean
+  vertex: boolean
+  edge: boolean
+  /** `visible="0"`: drawn by nobody, and in no picture. */
+  hidden: boolean
+  /** The geometry is placed against the parent (an edge's label), not a box of its own. */
+  relative: boolean
+  /** Has an `mxGeometry` at all; a layer has none. */
+  placed: boolean
+  /** An edge's own points: its ends where they float, and its waypoints. */
+  points: { x: number; y: number }[]
   x: number
   y: number
   width: number
@@ -63,17 +83,12 @@ export function linksFromXml(xml: string): DrawingLink[] {
  */
 export function drawingProse(xml: string): string {
   const lines = cellsIn(xml).flatMap((cell) => {
-    const text = plain(cell.label)
+    const text = labelText(cell.label, cell.html)
     return text ? [text] : []
   })
   return lines.join('\n')
 }
 
-/**
- * Every content address a drawing in this list names. The sweep keeps these
- * the way it keeps an address the history names: a drawing's picture has no
- * library name of its own.
- */
 /**
  * The drawings anchored to one element, in the order the scope keeps its
  * views. A drawing with no element is of the scope itself and is not among
@@ -90,6 +105,11 @@ export function drawingsAnchoredTo(
   return found
 }
 
+/**
+ * Every content address a drawing in this list names. The sweep keeps these
+ * the way it keeps an address the history names: a drawing's picture has no
+ * library name of its own.
+ */
 export function drawingPictureAddresses(
   diagrams: readonly { kind: string; drawing?: { picture?: string } }[],
 ): ContentAddress[] {
@@ -103,20 +123,65 @@ export function drawingPictureAddresses(
 }
 
 /**
- * The page the model draws on.
+ * Where the drawing's shapes are, in model coordinates: every vertex that is
+ * drawn, ancestors summed, and every point an edge names. Absent for a
+ * drawing with nothing on it.
  *
- * Origin at 0. The size is what `mxGraphModel` names, and draw.io's own page
- * where it names none — that is the frame an export uses when the picture
- * itself does not say.
+ * This is the box draw.io crops an export to. Its `xmlsvg` export does not
+ * draw the page: it draws the shapes' bounding box, moved so that its top
+ * left is the picture's (0, 0). A label drawn outside its shape, or a thick
+ * stroke, widens draw.io's own box by a little more than this reads; a
+ * shape's place on the picture is then off by that much, and no more.
  */
-export function modelFrame(xml: string): PictureFrame {
-  const tag = /<mxGraphModel\b([^>]*)>/i.exec(xml)?.[1] ?? ''
-  return {
-    x: 0,
-    y: 0,
-    width: positive(attr(tag, 'pageWidth')) ?? PAGE_WIDTH,
-    height: positive(attr(tag, 'pageHeight')) ?? PAGE_HEIGHT,
+export function drawingBounds(xml: string): Box | undefined {
+  const cells = cellsIn(xml)
+  const byId = new Map(cells.map((cell) => [cell.id, cell]))
+  const hidden = hiddenCells(cells, byId)
+  let box: { left: number; top: number; right: number; bottom: number } | undefined
+  const take = (left: number, top: number, right: number, bottom: number) => {
+    box = box
+      ? { left: Math.min(box.left, left), top: Math.min(box.top, top), right: Math.max(box.right, right), bottom: Math.max(box.bottom, bottom) }
+      : { left, top, right, bottom }
   }
+  for (const cell of cells) {
+    if (hidden.has(cell.id) || !cell.placed) continue
+    if (cell.edge) {
+      const origin = offsetOf(cell.parent, byId)
+      for (const point of cell.points) take(origin.x + point.x, origin.y + point.y, origin.x + point.x, origin.y + point.y)
+      continue
+    }
+    if (!cell.vertex || cell.relative) continue
+    const area = absoluteArea(cell, byId)
+    take(area.x, area.y, area.x + area.width, area.y + area.height)
+  }
+  const found = box as { left: number; top: number; right: number; bottom: number } | undefined
+  return found ? { x: found.left, y: found.top, width: found.right - found.left, height: found.bottom - found.top } : undefined
+}
+
+/**
+ * The picture's frame in model coordinates: where the export's box sits.
+ *
+ * The origin is where the shapes begin ({@link drawingBounds}) — draw.io
+ * moved them there — and the size is the export's own viewBox, at the scale
+ * it was exported at, one model unit to one picture unit. Without a viewBox
+ * it is the shapes' box; without shapes, the viewBox from the origin.
+ */
+export function pictureFrame(xml: string, picture: PictureFrame | undefined): PictureFrame | undefined {
+  const bounds = drawingBounds(xml)
+  if (!picture) return bounds && bounds.width > 0 && bounds.height > 0 ? bounds : undefined
+  return { x: bounds?.x ?? 0, y: bounds?.y ?? 0, width: picture.width, height: picture.height }
+}
+
+/**
+ * Whether the first page is kept compressed: a `<diagram>` holding text and
+ * no `mxGraphModel`. draw.io writes that unless it is told not to, and the
+ * cells in it are not readable as XML.
+ */
+export function isCompressedDrawing(xml: string): boolean {
+  const page = /<diagram\b[^>]*>([\s\S]*?)<\/diagram>/i.exec(xml)
+  if (!page) return false
+  const inside = page[1].trim()
+  return inside.length > 0 && !/<mxGraphModel\b/i.test(inside)
 }
 
 /**
@@ -193,10 +258,48 @@ function absoluteArea(cell: Cell, byId: ReadonlyMap<string, Cell>): DrawingLink[
   return { x, y, width: cell.width, height: cell.height }
 }
 
+/** Where a cell's children are placed from: its own place, ancestors summed. A layer is at 0. */
+function offsetOf(id: string | undefined, byId: ReadonlyMap<string, Cell>): { x: number; y: number } {
+  const cell = id ? byId.get(id) : undefined
+  if (!cell) return { x: 0, y: 0 }
+  const area = absoluteArea(cell, byId)
+  return { x: area.x, y: area.y }
+}
+
+/** The cells no picture draws: hidden ones, and everything inside one. */
+function hiddenCells(cells: readonly Cell[], byId: ReadonlyMap<string, Cell>): Set<string> {
+  const hidden = new Set<string>()
+  for (const cell of cells) {
+    const seen = new Set<string>()
+    let at: Cell | undefined = cell
+    while (at && !seen.has(at.id)) {
+      if (at.hidden) {
+        hidden.add(cell.id)
+        break
+      }
+      seen.add(at.id)
+      at = at.parent ? byId.get(at.parent) : undefined
+    }
+  }
+  return hidden
+}
+
+/** The cells of the first page, or of the whole document where it has no pages. */
 function cellsIn(xml: string): Cell[] {
   const cells: Cell[] = []
-  walk(parseElements(xml), cells)
+  walk(firstPage(parseElements(xml)), cells)
   return cells
+}
+
+/** The first `<diagram>` found, as the list to walk; the document itself where there is none. */
+function firstPage(nodes: El[]): El[] {
+  const queue = [...nodes]
+  while (queue.length > 0) {
+    const node = queue.shift()!
+    if (node.tag === 'diagram') return [node]
+    queue.push(...node.children)
+  }
+  return nodes
 }
 
 function walk(nodes: readonly El[], into: Cell[]): void {
@@ -221,44 +324,50 @@ function cellOf(node: El, inner?: El): Cell | undefined {
   const id = node.attrs.id || inner?.attrs.id
   if (!id) return undefined
   const source = inner ?? node
-  const geometry = geometryOf(source) ?? geometryOf(node)
-  const link = pointedAt(
-    node.attrs.link || source.attrs.link,
-    node.attrs.lvElement || source.attrs.lvElement,
-  )
+  // The inner cell's word first, the wrapper's where it has none.
+  const pick = (name: string): string | undefined => source.attrs[name] || node.attrs[name] || undefined
+  const geometryNode = source.children.find((child) => child.tag === 'mxGeometry') ?? node.children.find((child) => child.tag === 'mxGeometry')
+  const geometry = geometryNode ? geometryOf(geometryNode) : { x: 0, y: 0, width: 0, height: 0 }
+  const link = pointedAt(node.attrs.link || source.attrs.link, node.attrs.lvElement || source.attrs.lvElement)
   const label = node.attrs.label || node.attrs.value || source.attrs.value || source.attrs.label
+  const parent = pick('parent')
   return {
     id,
-    ...(source.attrs.parent || node.attrs.parent ? { parent: source.attrs.parent || node.attrs.parent } : {}),
+    ...(parent ? { parent } : {}),
     ...(link ? { link } : {}),
     ...(label ? { label } : {}),
-    x: geometry?.x ?? 0,
-    y: geometry?.y ?? 0,
-    width: geometry?.width ?? 0,
-    height: geometry?.height ?? 0,
+    html: /(?:^|;)\s*html=1\s*(?:;|$)/.test(pick('style') ?? ''),
+    vertex: pick('vertex') === '1',
+    edge: pick('edge') === '1',
+    hidden: pick('visible') === '0',
+    relative: geometryNode?.attrs.relative === '1',
+    placed: geometryNode !== undefined,
+    points: geometryNode ? pointsOf(geometryNode) : [],
+    ...geometry,
   }
 }
 
-function geometryOf(node: El): { x: number; y: number; width: number; height: number } | undefined {
-  const geometry = node.children.find((child) => child.tag === 'mxGeometry')
-  if (!geometry) return undefined
+/** An edge geometry's points: a floating end (`sourcePoint`, `targetPoint`) and each waypoint. */
+function pointsOf(geometry: El): { x: number; y: number }[] {
+  const points: { x: number; y: number }[] = []
+  for (const child of geometry.children) {
+    if (child.tag === 'mxPoint') points.push({ x: numberOf(child.attrs.x), y: numberOf(child.attrs.y) })
+    if (child.tag === 'Array') {
+      for (const point of child.children) {
+        if (point.tag === 'mxPoint') points.push({ x: numberOf(point.attrs.x), y: numberOf(point.attrs.y) })
+      }
+    }
+  }
+  return points
+}
+
+function geometryOf(geometry: El): Box {
   return {
     x: numberOf(geometry.attrs.x),
     y: numberOf(geometry.attrs.y),
     width: numberOf(geometry.attrs.width),
     height: numberOf(geometry.attrs.height),
   }
-}
-
-function attr(raw: string, name: string): string | undefined {
-  const match = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(raw)
-  return match?.[1] ?? match?.[2]
-}
-
-function positive(value: string | undefined): number | undefined {
-  if (value === undefined || value === '') return undefined
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
 function numberOf(value: string | undefined): number {
@@ -294,25 +403,47 @@ function parseElements(xml: string): El[] {
 }
 
 function attributes(raw: string): Attrs {
-  const attrs: Attrs = {}
+  // No prototype: an attribute called `constructor` or `__proto__` is an
+  // attribute like any other, not a property of every object.
+  const attrs = Object.create(null) as Attrs
   const re = /([A-Za-z_][\w:.-]*)\s*=\s*("([^"]*)"|'([^']*)')/g
   let match: RegExpExecArray | null
   while ((match = re.exec(raw))) attrs[match[1]] = decode(match[3] ?? match[4] ?? '')
   return attrs
 }
 
-function decode(value: string): string {
-  return value
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)))
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, '&')
+/** One character reference as its character; one past the last code point, or a surrogate, as U+FFFD. */
+function character(code: number): string {
+  if (!Number.isFinite(code) || code < 0 || code > LAST_CODE_POINT || (code >= 0xd800 && code <= 0xdfff)) return '\ufffd'
+  return String.fromCodePoint(code)
 }
 
-function plain(label: string | undefined): string {
+/** XML's five entities and its character references, once. */
+function decode(value: string): string {
+  return value.replace(/&(?:#x([0-9a-fA-F]+)|#(\d+)|(lt|gt|quot|apos|amp));/g, (_, hex?: string, dec?: string, named?: string) => {
+    if (hex !== undefined) return character(Number.parseInt(hex, 16))
+    if (dec !== undefined) return character(Number.parseInt(dec, 10))
+    return NAMED[named as keyof typeof NAMED]
+  })
+}
+
+const NAMED = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' } as const
+
+/** HTML's entities a label is likely to hold, beside XML's: what draw.io's editor writes. */
+function decodeHtml(value: string): string {
+  return decode(value.replace(/&nbsp;/g, '\u00a0'))
+}
+
+/**
+ * A label's words. The attribute is already decoded once, as XML. An HTML
+ * label is HTML: its tags are taken out — a line break as a space — and its
+ * entities decoded, once more and no more. A plain label is its text, tags
+ * a person typed included as words would be, entities left as they read.
+ */
+export function labelText(label: string | undefined, html: boolean): string {
   if (!label) return ''
-  return decode(label).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+  const text = html
+    ? decodeHtml(label.replace(/<(?:br|\/?(?:div|p|li))\b[^>]*>/gi, ' ').replace(/<[^>]*>/g, ''))
+    : label.replace(/<[^>]*>/g, '')
+  return text.replace(/\s+/g, ' ').trim()
 }

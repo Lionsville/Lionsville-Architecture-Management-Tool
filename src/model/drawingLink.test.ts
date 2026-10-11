@@ -3,11 +3,26 @@
 
 /**
  * A shape's point at an element, read from `link` and from `lvElement`, and
- * where that area sits on the picture.
+ * where that area sits on the picture — held to a real export: the XML and
+ * the `xmlsvg` the pinned draw.io (32.4.1) made of it, run headless on the
+ * drawing scheme (`testing/drawio/`).
  */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { DesignDiagram } from './types'
-import { areaOnPicture, drawingsPointingAt, linksFromXml, modelFrame, svgFrame } from './drawing'
+import { areaOnPicture, drawingBounds, drawingsPointingAt, linksFromXml, pictureFrame, svgFrame } from './drawing'
+
+const EXPORTED_XML = readFileSync(new URL('./testing/drawio/nested-groups.drawio', import.meta.url), 'utf8')
+const EXPORTED_SVG = readFileSync(new URL('./testing/drawio/nested-groups.svg', import.meta.url), 'utf8')
+
+/** The rectangle draw.io drew for a cell, in the picture's own units, read off the SVG. */
+function drawnRect(svg: string, cellId: string): { x: number; y: number; width: number; height: number } {
+  const from = svg.indexOf(`data-cell-id="${cellId}"`)
+  const rect = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(svg.slice(from))
+  if (from < 0 || !rect) throw new Error(`no rect for ${cellId}`)
+  const [x, y, width, height] = rect.slice(1).map(Number)
+  return { x, y, width, height }
+}
 
 const cell = (attrs: string, geometry = 'x="10" y="20" width="40" height="30"') =>
   `<mxGraphModel pageWidth="200" pageHeight="100"><root><mxCell id="0"/><mxCell id="1" parent="0"/>`
@@ -37,10 +52,35 @@ describe('lvElement', () => {
 })
 
 describe('the picture\'s frame', () => {
-  it('uses the page the model names, and draw.io\'s page when it names none', () => {
-    expect(modelFrame('<mxGraphModel pageWidth="200" pageHeight="100">')).toEqual({ x: 0, y: 0, width: 200, height: 100 })
-    expect(modelFrame('<mxGraphModel>')).toEqual({ x: 0, y: 0, width: 850, height: 1100 })
-    expect(modelFrame('')).toEqual({ x: 0, y: 0, width: 850, height: 1100 })
+  it('lays each link on the shape draw.io drew for it, in a real export', () => {
+    const picture = svgFrame(EXPORTED_SVG)!
+    const frame = pictureFrame(EXPORTED_XML, picture)!
+    const links = linksFromXml(EXPORTED_XML)
+    expect(links.map((link) => link.shapeId)).toEqual(['a', 'b'])
+    for (const link of links) {
+      const place = areaOnPicture(link.area, frame)!
+      const drawn = drawnRect(EXPORTED_SVG, link.shapeId)
+      // Within a unit of the picture: draw.io draws on half-unit lines.
+      expect(Math.abs(place.left * picture.width - drawn.x)).toBeLessThanOrEqual(1)
+      expect(Math.abs(place.top * picture.height - drawn.y)).toBeLessThanOrEqual(1)
+      expect(place.width * picture.width).toBeCloseTo(drawn.width, 0)
+      expect(place.height * picture.height).toBeCloseTo(drawn.height, 0)
+    }
+  })
+
+  it('finds the shapes\' box: nested groups summed, an edge\'s waypoint in, a hidden shape out', () => {
+    // draw.io said this export's box was x 199.5, y 139.5, 581 by 389: the
+    // shapes' box and half a stroke around it.
+    expect(drawingBounds(EXPORTED_XML)).toEqual({ x: 200, y: 140, width: 580, height: 380 })
+    const hidden = cell('', 'x="10" y="20" width="40" height="30"').replace('<mxCell id="2"', '<mxCell id="2" visible="0"')
+    expect(drawingBounds(hidden)).toBeUndefined()
+    expect(drawingBounds('')).toBeUndefined()
+  })
+
+  it('takes the export\'s size and the shapes\' origin, and the shapes\' box where the picture names no size', () => {
+    expect(pictureFrame(cell(''), { x: 0, y: 0, width: 41, height: 31 })).toEqual({ x: 10, y: 20, width: 41, height: 31 })
+    expect(pictureFrame(cell(''), undefined)).toEqual({ x: 10, y: 20, width: 40, height: 30 })
+    expect(pictureFrame('', undefined)).toBeUndefined()
   })
 
   it('reads an SVG viewBox, origin included', () => {

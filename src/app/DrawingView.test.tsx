@@ -2,12 +2,14 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { translator } from '../i18n'
 import type { DesignDiagram } from '../model'
 import { renderShell } from './testing/renderShell'
 import { DrawingView } from './DrawingView'
+import { drawingPage } from './WorkspaceEditor'
 
 afterEach(() => cleanup())
 
@@ -41,5 +43,75 @@ describe('DrawingView', () => {
     cleanup()
     renderShell(<DrawingView diagram={drawing('sha256:gone')} scope="acme" images={images} s={s} />)
     expect(await screen.findByTestId('drawing-not-drawn')).toBeTruthy()
+  })
+
+  it('offers no Edit on a read-only view, and puts nothing', async () => {
+    const put = vi.fn()
+    const images = { bytesAt: () => Promise.resolve({ mediaType: 'image/svg+xml', bytes: svg }), put }
+    renderShell(
+      <DrawingView
+        diagram={drawing('sha256:aa')} scope="acme" images={images} readOnly
+        origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+      />,
+    )
+    expect(await screen.findByTestId('drawing-picture')).toBeTruthy()
+    expect(screen.queryByTestId('drawing-edit')).toBeNull()
+    expect(screen.queryByTestId('drawing-editor-unavailable')).toBeNull()
+    expect(put).not.toHaveBeenCalled()
+  })
+})
+
+describe('the app\'s look, as its theme resolves it', () => {
+  const images = { bytesAt: () => Promise.resolve({ mediaType: 'image/svg+xml', bytes: svg }), put: vi.fn() }
+  const view = () => (
+    <DrawingView
+      diagram={drawing('sha256:aa')} scope="acme" images={images}
+      origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+    />
+  )
+
+  it('draws the picture in the theme\'s colour scheme, and opens the editor in the theme\'s look', async () => {
+    for (const mode of ['light', 'dark'] as const) {
+      renderShell(view(), { mode })
+      const picture = await screen.findByTestId('drawing-picture')
+      expect(picture.style.colorScheme).toBe(mode)
+      fireEvent.click(screen.getByTestId('drawing-edit'))
+      expect(screen.getByTestId('drawing-frame').getAttribute('src')).toContain(`&dark=${mode === 'dark' ? 1 : 0}`)
+      cleanup()
+    }
+  })
+})
+
+describe('one drawing per mount', () => {
+  it('keys a drawing\'s page by the drawing, so an open editor is gone when another drawing is up', () => {
+    const parts = {
+      props: {
+        project: { id: 'acme', path: 'acme' },
+        source: { repositories: { images: undefined } },
+        shell: { drawingOrigin: () => 'drawing://local', language: 'en', notify: vi.fn(), s },
+      },
+      session: { model: { elements: [] }, dispatch: vi.fn() },
+      show: vi.fn(),
+    } as unknown as Parameters<typeof drawingPage>[0]
+    const one = drawingPage(parts, { ...drawing(), id: 'one' }, { readOnly: false }) as ReactElement
+    const other = drawingPage(parts, { ...drawing(), id: 'other' }, { readOnly: true }) as ReactElement<{ readOnly?: boolean }>
+    expect(one.key).toBe('one')
+    expect(other.key).toBe('other')
+    expect(other.props.readOnly).toBe(true)
+  })
+
+  it('closes the editor when the view below it is another drawing', () => {
+    const images = { bytesAt: () => Promise.resolve(undefined), put: vi.fn() }
+    const page = (id: string) => (
+      <DrawingView
+        key={id} diagram={{ ...drawing(), id }} scope="acme" images={images}
+        origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+      />
+    )
+    const shown = renderShell(page('one'))
+    fireEvent.click(screen.getByTestId('drawing-edit'))
+    expect(screen.getByTestId('drawing-frame')).toBeTruthy()
+    shown.rerender(page('other'))
+    expect(screen.queryByTestId('drawing-frame')).toBeNull()
   })
 })
