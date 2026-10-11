@@ -318,6 +318,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.bulkDomainGroup': 'Domeingroep',
   'inspector.bulkNoChange': 'Ongewijzigd laten',
   'inspector.bulkNote': 'Elke wijziging is één stap in Ongedaan maken over de hele selectie.',
+  'inspector.more': 'Meer',
+  'inspector.element': 'Element',
+  'inspector.elementHolds': 'algemeen, weergave, gegevens, levenscyclus, beschrijving',
 
   'field.name': 'Naam',
   'field.category': 'Categorie',

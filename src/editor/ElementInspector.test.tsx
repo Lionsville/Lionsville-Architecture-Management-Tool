@@ -99,8 +99,12 @@ function renderInspector(
     onCreateContainer?: (id: string) => void;
     /** The door to the technology landscape (ADR-0020). */
     onShowOnTechnology?: (id: string) => void;
-    /** An actor's unit section, as the host draws it (ADR-0036 §3). */
+    /** An actor's unit section, as the host draws it (ADR-0036 §3), and whether it leads. */
     unitSection?: ElementInspectorProps['unitSection'];
+    /** The way to move the record to another scope (ADR-0012 §10). */
+    move?: ElementInspectorProps['move'];
+    /** Make a drawing anchored to the element. */
+    onCreateDrawing?: (id: string) => void;
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -130,6 +134,8 @@ function renderInspector(
         parties={opts.parties}
         onShowOnTechnology={opts.onShowOnTechnology}
         unitSection={opts.unitSection}
+        move={opts.move}
+        onCreateDrawing={opts.onCreateDrawing}
       />
     </ThemeProvider>,
   );
@@ -202,16 +208,109 @@ describe('ElementInspector — tab structure (U7a)', () => {
   });
 });
 
-describe('ElementInspector — an actor as a unit (ADR-0036 §3)', () => {
-  it('draws the host\'s unit section under General, beside the canvas and on the page', () => {
-    const actor = element({ kind: 'actor', name: 'Webshop', unitTypeId: 'ut-team' });
-    renderInspector(actor, { unitSection: <div data-testid="the-unit-section">Unit</div> });
+describe('ElementInspector — an actor as a unit (ADR-0036 §3; unit first, as built 3.6.1)', () => {
+  const actor = element({ kind: 'actor', name: 'Carriers', unitTypeId: 'ut-cluster' });
+  const section = <div data-testid="the-unit-section">Unit</div>;
+  const move = { label: 'Move…', tip: 'Move this record to another scope', onMove: vi.fn() };
+  /** Whether `a` comes before `b` in the document. */
+  const before = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+  const fold = () => screen.getByTestId('element-fold');
+  /** What the fold holds: the region its button controls. */
+  const folded = () => document.getElementById(fold().getAttribute('aria-controls')!)!;
+
+  // Pinned on purpose since 3.6.1: an actor whose section does not lead — one
+  // without a type — keeps the element's order exactly, the section under
+  // General, Move… a strip of its own, and no ⋯ and no fold.
+  it('draws a section that does not lead under General, beside the canvas and on the page, as the element\'s order always had it', () => {
+    const party = element({ kind: 'actor', name: 'Stakeholders' });
+    renderInspector(party, { unitSection: { section, leads: false }, move, onCreateDrawing: vi.fn() });
     expect(screen.getByTestId('the-unit-section')).toBeTruthy();
+    expect(screen.getByTestId('move-record')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create drawing' })).toBeTruthy();
+    expect(screen.queryByTestId('inspector-more')).toBeNull();
+    expect(screen.queryByTestId('element-fold')).toBeNull();
+    expect(before(screen.getByRole('tablist'), screen.getByTestId('the-unit-section'))).toBe(true);
     openTab('Data');
     expect(screen.queryByTestId('the-unit-section')).toBeNull();
     cleanup();
-    renderInspector(actor, { layout: 'stacked', unitSection: <div data-testid="the-unit-section">Unit</div> });
+    renderInspector(party, { layout: 'stacked', unitSection: { section, leads: false } });
+    expect(before(screen.getByText('General'), screen.getByTestId('the-unit-section'))).toBe(true);
+  });
+
+  it('puts a unit first: its section under the name, the element\'s own fields folded under Element below it', async () => {
+    renderInspector(actor, { unitSection: { section, leads: true }, move, onCreateDrawing: vi.fn(), onOpenDocumentation: vi.fn() });
+    const unit = screen.getByTestId('the-unit-section');
+    expect(before(screen.getByLabelText('Name'), unit)).toBe(true);
+    expect(before(unit, fold())).toBe(true);
+    // Folded on arrival, and what it holds is said on it: the record's line, the tabs and General's fields are inside.
+    expect(fold().getAttribute('aria-expanded')).toBe('false');
+    expect(fold().textContent).toBe('Elementgeneral, appearance, data, lifecycle, description');
+    expect(folded().contains(screen.getByTestId('record-summary'))).toBe(true);
+    expect(folded().contains(screen.getByRole('tablist', { hidden: true }))).toBe(true);
+    expect(within(folded()).getAllByText('Lifecycle').length).toBeGreaterThan(0);
+    // Move… and Create drawing are not drawn between the name and the unit: they are in the ⋯.
+    expect(screen.queryByTestId('move-record')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Create drawing', hidden: true })).toBeNull();
+    fireEvent.click(fold());
+    expect(fold().getAttribute('aria-expanded')).toBe('true');
+    // The unit stays whichever tab is chosen: it is not General's any more.
+    openTab('Data');
     expect(screen.getByTestId('the-unit-section')).toBeTruthy();
+    expect(await axeFindings()).toEqual([]);
+  });
+
+  it('folds the element\'s fields again for the next unit picked', () => {
+    const { rerender } = renderInspector(actor, { unitSection: { section, leads: true } });
+    fireEvent.click(fold());
+    expect(fold().getAttribute('aria-expanded')).toBe('true');
+    const next = { ...actor, id: 'e2', name: 'Fulfilment' };
+    rerender(
+      <ThemeProvider theme={testTheme}>
+        <ElementInspector
+          element={next} model={model(next, diagram())} diagram={diagram()} readOnly={false}
+          actions={makeActions().actions} onRequestDelete={vi.fn()} unitSection={{ section, leads: true }}
+        />
+      </ThemeProvider>,
+    );
+    expect(fold().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps Move… and Create drawing in the ⋯ beside the name, reached by the keyboard', async () => {
+    const onCreateDrawing = vi.fn();
+    const onMove = vi.fn();
+    renderInspector(actor, { unitSection: { section, leads: true }, move: { ...move, onMove }, onCreateDrawing });
+    const more = screen.getByRole('button', { name: 'More' });
+    // Native buttons, each in the tab order: the ⋯ and the fold.
+    expect(more.tagName).toBe('BUTTON');
+    expect(fold().tagName).toBe('BUTTON');
+    expect(more.getAttribute('aria-haspopup')).toBe('menu');
+    fireEvent.click(more);
+    const menu = await screen.findByRole('menu', { name: 'More' });
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    const items = within(menu).getAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual(['Move…Move this record to another scope', 'Create drawing']);
+    // The menu takes the focus, and the arrows move it.
+    await vi.waitFor(() => expect(document.activeElement).toBe(items[0]));
+    fireEvent.keyDown(items[0], { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[1]);
+    expect(await axeFindings()).toEqual([]);
+    fireEvent.click(items[1]);
+    expect(onCreateDrawing).toHaveBeenCalledWith('e1');
+    fireEvent.click(more);
+    fireEvent.click(await screen.findByTestId('move-record'));
+    expect(onMove).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no ⋯ where nothing in it may be done, and lays the element\'s fields out under the unit on the page', () => {
+    renderInspector(actor, { unitSection: { section, leads: true }, move, onCreateDrawing: vi.fn(), readOnly: true });
+    expect(screen.queryByTestId('inspector-more')).toBeNull();
+    expect(fold().getAttribute('aria-expanded')).toBe('false');
+    cleanup();
+    renderInspector(actor, { layout: 'stacked', unitSection: { section, leads: true }, move, onCreateDrawing: vi.fn() });
+    expect(screen.queryByTestId('element-fold')).toBeNull();
+    expect(screen.getByTestId('inspector-more')).toBeTruthy();
+    expect(before(screen.getByTestId('the-unit-section'), screen.getByText('Record'))).toBe(true);
+    expect(before(screen.getByTestId('the-unit-section'), screen.getByText('General'))).toBe(true);
   });
 });
 

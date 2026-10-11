@@ -17,6 +17,7 @@ import type { DesignElement } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { isBlankRef } from '../model/person'
 import { applicationOwnersOn } from '../model/owners'
+import { isUnit } from '../model/units'
 import { organisationHere } from './units/organisationHere'
 import { platformTreeOf } from './platformTree'
 import type { Relation } from '../model'
@@ -126,12 +127,17 @@ export function useWorkspaceOwnership(deps: {
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: addExisting,
-    // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the organisation's.
-    unitSection: (element, readOnly) => createElement(UnitSection, {
-      element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
-      newRowId: () => session.ids.connection(),
-      people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
-      ...(units.writeIn ? { writeIn: units.writeIn } : {}),
+    // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the
+    // organisation's — and first in its inspector where it is one, an actor
+    // with a type (as built 3.6.1); an actor without one keeps the element's order.
+    unitSection: (element, readOnly) => ({
+      section: createElement(UnitSection, {
+        element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
+        newRowId: () => session.ids.connection(),
+        people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
+        ...(units.writeIn ? { writeIn: units.writeIn } : {}),
+      }),
+      leads: isUnit(element),
     }),
     // Who answers for a record beyond its own field (ADR-0036 §8): a stand-in's master, and the rule.
     answeredBy: (element) => answeredByOf(element, { session, scope, index, today: units.today }),

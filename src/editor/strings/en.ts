@@ -329,6 +329,10 @@ export const EN = {
   'inspector.bulkDomainGroup': 'Domain group',
   'inspector.bulkNoChange': 'Leave unchanged',
   'inspector.bulkNote': 'Each change is one undo step over the whole selection.',
+  // A unit's inspector, unit first (ADR-0036, as built 3.6.1): the menu beside the name, and the element's own fields folded.
+  'inspector.more': 'More',
+  'inspector.element': 'Element',
+  'inspector.elementHolds': 'general, appearance, data, lifecycle, description',
 
   'field.name': 'Name',
   'field.category': 'Category',

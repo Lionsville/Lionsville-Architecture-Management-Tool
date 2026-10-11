@@ -318,6 +318,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.bulkDomainGroup': 'Domänengruppe',
   'inspector.bulkNoChange': 'Unverändert lassen',
   'inspector.bulkNote': 'Jede Änderung ist ein Rückgängig-Schritt über die ganze Auswahl.',
+  'inspector.more': 'Mehr',
+  'inspector.element': 'Element',
+  'inspector.elementHolds': 'Allgemein, Darstellung, Daten, Lebenszyklus, Beschreibung',
 
   'field.name': 'Name',
   'field.category': 'Kategorie',

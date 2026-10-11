@@ -487,6 +487,23 @@ export interface PartyElsewhere {
 }
 
 /**
+ * An actor's unit section as the host draws it, and where it goes
+ * (`EditorOwnership.unitSection`).
+ *
+ * Where is the host's word as much as what: whether an actor is a unit is
+ * the organisation's question, not the canvas's. A section that `leads` comes
+ * first, under the name, and the element's own fields — the record, General,
+ * Appearance and Data — fold under *Element* below it, with *Move…* and
+ * *Create drawing* in the name's *⋯* menu (ADR-0036, as built 3.6.1: a
+ * unit's inspector, unit first). One that does not sits under the General
+ * tab, as it always has.
+ */
+export interface UnitSlot {
+  section: ReactNode;
+  leads: boolean;
+}
+
+/**
  * Who answers for a record beyond what it says itself (ADR-0036 §8): the
  * owner its master names, for a stand-in — an id the register names, or
  * text — and, for an application nobody wrote an owner on, the people the
@@ -633,11 +650,12 @@ export interface EditorOwnership {
   /**
    * An actor as a unit (ADR-0036 §3): its type, the domains it serves, what
    * it owns, its roles and who holds them, who manages it and what the
-   * checks say — drawn by the host under the actor's General tab, because
-   * every part of it is the organisation's (the operating model, the
-   * register, the tree) and none of it the canvas's. Absent = no section.
+   * checks say — drawn by the host, because every part of it is the
+   * organisation's (the operating model, the register, the tree) and none of
+   * it the canvas's; and the host says whether it leads the inspector or sits
+   * under the General tab ({@link UnitSlot}). Absent = no section.
    */
-  unitSection?(element: DesignElement, readOnly: boolean): ReactNode;
+  unitSection?(element: DesignElement, readOnly: boolean): UnitSlot | undefined;
   /** See {@link AnsweredBy}. Absent = the record's own owner field only. */
   answeredBy?(element: DesignElement): AnsweredBy | undefined;
 }

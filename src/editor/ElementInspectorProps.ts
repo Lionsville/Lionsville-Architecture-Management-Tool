@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import type { ReactNode } from 'react';
-import type { AnsweredBy, EditorOwnership, PartyElsewhere } from './props';
+import type { AnsweredBy, EditorOwnership, PartyElsewhere, UnitSlot } from './props';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { LeverageLine } from '../model/leverage';
@@ -125,8 +125,12 @@ export interface ElementInspectorProps {
    * rows, which is the answer a shell with no tree can give.
    */
   leverage?: LeverageLine;
-  /** An actor's unit section, drawn by the host (`EditorOwnership.unitSection`): under the General tab. */
-  unitSection?: ReactNode;
+  /**
+   * An actor's unit section, drawn by the host (`EditorOwnership.unitSection`):
+   * under the General tab, or leading the inspector, the element's own fields
+   * folded below it (`UnitSlot`).
+   */
+  unitSection?: UnitSlot;
   /** Who answers for the record beyond its own field (`EditorOwnership.answeredBy`). */
   answeredBy?: AnsweredBy;
 }

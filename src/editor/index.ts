@@ -44,6 +44,7 @@ export { SolutionDesignEditor } from './SolutionDesignEditor'
 export type {
   EditorDiagramActions, EditorDocument, EditorEditing, EditorHistory, EditorLanguage,
   AnsweredBy, EditorLayoutReports, EditorLogos, EditorOwnership, PartyElsewhere, PageView, EditorPages, EditorPlans, EditorPreferencesSeam,
+  UnitSlot,
   EditorRequests,
   EditorHandle, EditorRefusal, ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
 } from './props'

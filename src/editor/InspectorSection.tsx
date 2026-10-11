@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Collapse from '@mui/material/Collapse';
@@ -16,20 +16,28 @@ import Typography from '@mui/material/Typography';
 export function InspectorSection({
   title,
   badge,
+  note,
+  testId,
   defaultOpen = false,
   children,
 }: {
   title: string;
   /** Small counter shown next to the title (e.g. "3/5" aspects set). */
   badge?: string;
+  /** What the section holds, said quietly after the title while it is folded and open alike. */
+  note?: string;
+  testId?: string;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const id = useId();
   return (
     <Box>
       <ButtonBase
         onClick={() => setOpen((v) => !v)}
+        data-testid={testId}
+        aria-controls={id}
         sx={{
           width: '100%',
           justifyContent: 'flex-start',
@@ -63,13 +71,18 @@ export function InspectorSection({
         <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: 0.6 }}>
           {title}
         </Typography>
+        {note && (
+          <Typography variant="caption" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {note}
+          </Typography>
+        )}
         {badge && (
           <Typography variant="caption" sx={{ ml: 'auto', mr: 0.5 }}>
             {badge}
           </Typography>
         )}
       </ButtonBase>
-      <Collapse in={open} unmountOnExit={false}>
+      <Collapse in={open} unmountOnExit={false} id={id}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5, pb: 1 }}>
           {children}
         </Box>

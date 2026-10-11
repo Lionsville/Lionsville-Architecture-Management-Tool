@@ -4,17 +4,24 @@
 /**
  * The element inspector above its tabs: the kind and the name, and the three
  * strips that are about the whole record rather than one of its groups —
- * where it is defined, where it could move, and its record in one line.
+ * where it is defined, where it could move, and its record in one line. Where
+ * a unit leads the inspector, the moves on the whole record are a *⋯* menu
+ * beside the name instead (`ElementMore`).
  */
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import type { RefObject } from 'react';
+import { useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type { DesignElement, DesignModel, ElementId } from '../model/types';
 import { kindLabel } from '../model/kinds';
 import { useStrings } from '../i18n/LanguageContext';
@@ -26,15 +33,26 @@ import { usePersonNames } from '../people/ui/names';
 
 const STRIP = { px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover' } as const;
 
-/** The kind, the way to the page beside it, and the name. */
-export function InspectorHeader({ field, stacked, nameRef, onOpenDocumentation }: {
+/** The kind, the way to the page beside it, and the name — with `more` beside it where there is one. */
+export function InspectorHeader({ field, stacked, nameRef, onOpenDocumentation, more }: {
   field: InspectorField;
   stacked: boolean;
   nameRef: RefObject<HTMLInputElement | null>;
   onOpenDocumentation?(elementId: ElementId): void;
+  more?: ReactNode;
 }) {
   const { t } = useStrings();
   const { element } = field;
+  const name = (
+    <TextField
+      label={t('field.name')}
+      value={element.name}
+      fullWidth
+      disabled={field.readOnly || field.owned('name')}
+      inputRef={nameRef}
+      onChange={(e) => field.typed('name', { name: e.target.value })}
+    />
+  );
   return (
     <Box sx={{ pb: 0.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
@@ -61,15 +79,63 @@ export function InspectorHeader({ field, stacked, nameRef, onOpenDocumentation }
           </Tooltip>
         )}
       </Box>
-      <TextField
-        label={t('field.name')}
-        value={element.name}
-        fullWidth
-        disabled={field.readOnly || field.owned('name')}
-        inputRef={nameRef}
-        onChange={(e) => field.typed('name', { name: e.target.value })}
-      />
+      {more ? <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{name}{more}</Box> : name}
     </Box>
+  );
+}
+
+/**
+ * *Move…* and *Create drawing*, in a *⋯* menu beside the name: where a unit
+ * leads the inspector, what is done to the whole record steps aside for the
+ * unit rather than stand between the name and it. Nothing, where neither is
+ * offered — read-only, or a host that offers neither.
+ */
+export function ElementMore({ inspector }: { inspector: ElementInspectorProps }) {
+  const { t } = useStrings();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const { element, readOnly } = inspector;
+  const move = readOnly ? undefined : inspector.move;
+  const onCreateDrawing = readOnly ? undefined : inspector.onCreateDrawing;
+  if (!move && !onCreateDrawing) return null;
+  const choose = (then: () => void) => () => { setAnchor(null); then(); };
+  return (
+    <>
+      <Tooltip title={t('inspector.more')}>
+        <IconButton
+          size="small"
+          aria-label={t('inspector.more')}
+          aria-haspopup="menu"
+          aria-expanded={anchor !== null}
+          data-testid="inspector-more"
+          onClick={(e) => setAnchor(e.currentTarget)}
+          sx={{ color: 'text.secondary', fontSize: 16, width: 30, height: 30, flexShrink: 0 }}
+        >
+          ⋯
+        </IconButton>
+      </Tooltip>
+      <Menu
+        open={anchor !== null}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        slotProps={{ list: { dense: true, 'aria-label': t('inspector.more') } }}
+      >
+        {move && (
+          // The tip said on hover beside the canvas is said here, under the word: a menu has no hover to wait for.
+          <MenuItem data-testid="move-record" onClick={choose(move.onMove)} sx={{ maxWidth: 300 }}>
+            <ListItemText
+              primary={move.label}
+              secondary={move.tip}
+              slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11, whiteSpace: 'normal' } } }}
+            />
+          </MenuItem>
+        )}
+        {onCreateDrawing && (
+          <MenuItem data-testid="create-drawing" onClick={choose(() => onCreateDrawing(element.id))}>
+            <ListItemText primary={t('menu.createDrawing')} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
+          </MenuItem>
+        )}
+      </Menu>
+    </>
   );
 }
 
