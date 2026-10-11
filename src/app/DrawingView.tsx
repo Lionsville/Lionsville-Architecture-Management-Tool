@@ -160,10 +160,12 @@ function keeperFor(
   dispatch: Dispatch | undefined,
 ): DrawingKeeper | undefined {
   if (!scope || !images?.put || !dispatch) return undefined
-  const put = images.put
+  const held = images as Pick<ImageRepository, 'put'>
   return {
     put: async (bytes) => {
-      const answer = await put(scope, imageName('drawing.svg'), bytes)
+      // Called on the repository, never taken off it: an implementation's
+      // `put` may be a method that reads its own fields.
+      const answer = await held.put(scope, imageName('drawing.svg'), bytes)
       if ('refused' in answer) return { refused: answer.refused }
       return { contentAddress: answer.contentAddress }
     },

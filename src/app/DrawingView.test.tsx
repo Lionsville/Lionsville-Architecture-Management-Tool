@@ -61,6 +61,36 @@ describe('DrawingView', () => {
   })
 })
 
+describe('saving a drawing', () => {
+  it('calls the repository\'s put on the repository, so a put that reads its own fields works', async () => {
+    class Kept {
+      readonly connection = { kept: [] as Uint8Array[] }
+      bytesAt() { return Promise.resolve(undefined) }
+      put(_scope: string, _name: string, bytes: Uint8Array) {
+        this.connection.kept.push(bytes)
+        return Promise.resolve({ contentAddress: `sha256:${'cd'.repeat(32)}` })
+      }
+    }
+    const images = new Kept()
+    const dispatch = vi.fn(() => true)
+    renderShell(
+      <DrawingView
+        diagram={drawing()} scope="acme" images={images}
+        origin={() => 'drawing://local'} dispatch={dispatch} notify={vi.fn()} s={s}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('drawing-edit'))
+    const frame = screen.getByTestId('drawing-frame') as HTMLIFrameElement
+    const win = frame.contentWindow!
+    win.postMessage = (() => {}) as Window['postMessage']
+    const hear = (data: unknown) => window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(data), source: win, origin: 'drawing://local' }))
+    hear({ event: 'save', xml: '<mxGraphModel><root/></mxGraphModel>' })
+    hear({ event: 'export', format: 'svg', data: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg"/>')}` })
+    await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1))
+    expect(images.connection.kept).toHaveLength(1)
+  })
+})
+
 describe('the app\'s look, as its theme resolves it', () => {
   const images = { bytesAt: () => Promise.resolve({ mediaType: 'image/svg+xml', bytes: svg }), put: vi.fn() }
   const view = () => (
