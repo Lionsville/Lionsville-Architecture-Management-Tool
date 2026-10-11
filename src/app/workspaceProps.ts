@@ -19,6 +19,7 @@ import type { SavedFilters } from '../observations/filter'
 import type { AncestorRecords } from '../decisions/adrScope'
 import type { Place } from '../agent/place'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { CarryChoice } from './workingFileFlows'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { SourceRecentActivity, SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
@@ -182,7 +183,7 @@ export type WorkspaceTree = {
    * that one is the thin read the index wants, this is the whole thing the
    * working file is made of.
    */
-  carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
+  carryOut: (held: readonly ScopeSnapshot[], choice?: CarryChoice) => Promise<CarriedOut>
   /**
    * Write the scopes an opened working file brought with it (ADR-0018). The
    * shell's, because it owns the store; absent where there is none, and such a

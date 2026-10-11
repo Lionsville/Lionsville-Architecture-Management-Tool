@@ -20,9 +20,12 @@ import {
 import { isWithinScope, joinScopePath, ROOT_SCOPE } from '../../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../../projects/scopeState'
 import type {
-  Arrival, BringOptions, BroughtIn, CarriedOut, CarryOptions, Interchange, Opened, ReadBack,
+  Arrival, BringInto, BringOptions, BroughtIn, CarriedOut, CarryFrom, CarryOptions, Interchange, Opened, ReadBack,
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
+import { personIdsIn } from '../../../model/person'
+import type { Person } from '../../../people/person'
+import { withoutNames } from '../../../people/shown'
 import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from './workingFile'
 import {
   compareManifests, manifestOf, manifestTotals, MANIFEST_TYPE,
@@ -33,11 +36,11 @@ import { imageNameKey, isImageName } from '../../../model/imageName'
 import type { ImageName } from '../../../model/imageName'
 import { WORKING_FILE_ACCEPTS } from './workingFileKinds'
 
-/** What a working file is read out of: a source's scopes, and its pictures' bytes. */
-export type CarriedFrom = Pick<Repositories, 'scopes' | 'images'>
+/** What a working file is read out of: a source's scopes, its pictures' bytes, and its register where it keeps one. */
+export type CarriedFrom = CarryFrom
 
 /** What one is brought into: the same, and the history a landing may record in. */
-export type BroughtInto = Pick<Repositories, 'scopes' | 'images' | 'history'>
+export type BroughtInto = BringInto
 
 export type { Arrival, BringOptions, BroughtIn, CarriedOut, CarryOptions, Opened } from '../../../ports/Interchange'
 
@@ -55,9 +58,28 @@ export async function carryOut(
     .filter((scope) => isWithinScope(scope.path, at))
     .map((scope) => pictured(from, scope, read.find((one) => one.path === scope.path))))
   const scopes = withHeld(read, held).map(saysWhatItLacks)
-  if (scopes.length) return carryScopes(scopes)
-  const tree = await from.scopes.tree()
-  return carryScopes([bareScope(ROOT_SCOPE, tree.root.name)])
+  const carried = scopes.length ? scopes : [bareScope(ROOT_SCOPE, (await from.scopes.tree()).root.name)]
+  return carryScopes(carried, await peopleCarried(from, carried, at === ROOT_SCOPE, options.withoutNames ?? false))
+}
+
+/**
+ * The register a working file carries: all of it with the whole organisation,
+ * and with part of it the entries those scopes name — and the entries those
+ * were merged into, so every id resolves. Without names where asked.
+ */
+async function peopleCarried(
+  from: CarriedFrom, scopes: readonly ScopeSnapshot[], whole: boolean, nameless: boolean,
+): Promise<Person[]> {
+  if (!from.people) return []
+  const { people } = await from.people.list()
+  let carried = [...people]
+  if (!whole) {
+    const named = new Set<string>()
+    for (const scope of scopes) personIdsIn(scope.model, named)
+    for (const person of people) if (named.has(person.id) && person.mergedInto) named.add(person.mergedInto)
+    carried = people.filter((person) => named.has(person.id))
+  }
+  return nameless ? withoutNames(carried) : carried
 }
 
 /**
@@ -65,12 +87,12 @@ export async function carryOut(
  * after it by address — one order, whatever order a source lists its tree
  * in, so two sources holding the same organisation write the same bytes.
  */
-export async function carryScopes(scopes: readonly ScopeSnapshot[]): Promise<CarriedOut> {
+export async function carryScopes(scopes: readonly ScopeSnapshot[], people: readonly Person[] = []): Promise<CarriedOut> {
   const ordered = [...scopes].sort((one, other) => byAddress(one.path, other.path))
   const manifest = await manifestOf(ordered)
   return {
     name: workingFileName(ordered[0]),
-    bytes: workingFileBytes(ordered, manifest),
+    bytes: workingFileBytes(ordered, manifest, people),
     mediaType: WORKING_FILE_MEDIA_TYPE,
     without: ordered.flatMap((scope) => (scope.unread ?? []).map((file) => (scope.path ? `${scope.path}/${file}` : file))),
   }
@@ -140,6 +162,7 @@ export async function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened 
     rest: named.slice(1),
     unopened: opened.unopened ?? [],
     ...(account ? { account } : {}),
+    ...(opened.people ? { people: opened.people } : {}),
   }
 }
 
@@ -223,6 +246,8 @@ export async function bringIn(
     ...(options.putBack && scope === opened.top ? { putBack: options.putBack } : {}),
   })))
   if (options.subject) await into.history.record({ scopes: await idsAt(into, addresses), subject: options.subject })
+  // The register after the scopes: a landing refused lands none of it.
+  if (into.people && opened.people?.length) await into.people.bringIn(opened.people)
   return { setAside }
 }
 

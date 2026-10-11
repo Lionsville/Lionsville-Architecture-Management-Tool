@@ -21,7 +21,15 @@
  * **What arrived is checked.** The bytes carry an account of what they hold,
  * and what landed is read back and held to it, so a person is told which
  * scope, view or part did not arrive rather than *done*.
+ *
+ * **The people register travels with the scopes** (ADR-0036 §8), where the
+ * repositories carried out from keep one: the whole register with the whole
+ * organisation, and the entries the scopes name with part of it. Made
+ * *without names*, every entry is carried as its pseudonym. Brought in, the
+ * entries are taken by their ids once the scopes have landed, and never give
+ * a name back to an entry forgotten where they land.
  */
+import type { Person } from '../people/person'
 import type { OpenRefusal, ScopeSnapshot } from '../projects/scope'
 import type { ScopeAddress } from '../projects/scopeState'
 import type { Repositories } from './Repositories'
@@ -52,7 +60,18 @@ export type CarryOptions = {
    * yet. One with no scope read at its address goes first.
    */
   held?: readonly ScopeSnapshot[]
+  /**
+   * Carry the people register with no name and no address in it: every entry
+   * as its pseudonym (ADR-0036 §8).
+   */
+  withoutNames?: boolean
 }
+
+/** Where the scopes are read from, and the register where the source keeps one. */
+export type CarryFrom = Pick<Repositories, 'scopes' | 'images'> & Partial<Pick<Repositories, 'people'>>
+
+/** Where the scopes land, the history a landing may record in, and the register where the source keeps one. */
+export type BringInto = Pick<Repositories, 'scopes' | 'images' | 'history'> & Partial<Pick<Repositories, 'people'>>
 
 /** What a parcel holds, placed at the address it was opened at. */
 export type Opened = {
@@ -64,6 +83,8 @@ export type Opened = {
   unopened: readonly ScopeAddress[]
   /** What the parcel says of itself, which only the implementation that opened it reads. */
   account?: unknown
+  /** The people register it carries; absent where it carries none. */
+  people?: readonly Person[]
 }
 
 /** A scope that did not arrive whole: by its address under the parcel's top. */
@@ -126,7 +147,7 @@ export interface Interchange {
    * a `ShellError`, where a scope could not be read: a parcel without one of
    * its scopes, handed over as the organisation, is the loss this refuses.
    */
-  carryOut(from: Pick<Repositories, 'scopes' | 'images'>, options?: CarryOptions): Promise<CarriedOut>
+  carryOut(from: CarryFrom, options?: CarryOptions): Promise<CarriedOut>
 
   /** What bytes hold, the top placed at `at`; or the key for bytes that are no parcel of this kind. */
   open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened | { refused: OpenRefusal }>
@@ -135,8 +156,9 @@ export interface Interchange {
    * What was opened, landed: the scopes not there made, each picture's bytes
    * put, then one `scope.replace` step per scope in one apply. Every scope or
    * none; the scopes made to hold them go again where the apply is refused.
+   * Then the people it carries, into the register where there is one.
    */
-  bringIn(into: Pick<Repositories, 'scopes' | 'images' | 'history'>, opened: Opened, options?: BringOptions): Promise<BroughtIn>
+  bringIn(into: BringInto, opened: Opened, options?: BringOptions): Promise<BroughtIn>
 
   /** What landed, read back through `read`, held to what the parcel says it holds. */
   check(opened: Opened, read: ReadBack): Promise<Arrival>

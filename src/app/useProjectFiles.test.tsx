@@ -67,7 +67,7 @@ function fakeSession(readOnly = false) {
 
 /** The dialog, answered without a person: the same password every time. */
 const PASSWORD = 'correct horse'
-const typed: AskPassword = () => Promise.resolve(PASSWORD)
+const typed: AskPassword = () => Promise.resolve({ password: PASSWORD, withoutNames: false })
 /** The landing question, answered "here" without a person (ADR-0025). */
 const here: LandingPrompts = {
   askDestination: () => Promise.resolve('here'),
@@ -316,7 +316,7 @@ describe('opening a file', () => {
     const askPassword: AskPassword = (_mode, error) => {
       asked.push(error)
       attempt += 1
-      return Promise.resolve(attempt === 1 ? 'incorrect horse' : PASSWORD)
+      return Promise.resolve({ password: attempt === 1 ? 'incorrect horse' : PASSWORD, withoutNames: false })
     }
     const { files, notify, session } = mount(
       { readBytes: () => Promise.resolve(sealed) }, undefined, undefined, askPassword,

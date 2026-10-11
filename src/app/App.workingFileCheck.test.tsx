@@ -164,6 +164,26 @@ describe('a working file saved from a home', () => {
     expect(view.documents.saved).toHaveLength(0)
   })
 
+  it('carries the people register, and with *without names* ticked, every entry as its pseudonym (ADR-0036 §8)', async () => {
+    const held = heldRepositories([project()])
+    await held.people.add({ name: 'Pia Schulz', email: 'pia.schulz@acme.example' })
+    const view = show(held)
+    await goHome()
+    const register = async (withoutNames: boolean, count: number): Promise<string> => {
+      view.send({ type: 'export' })
+      await waitFor(() => expect(screen.getByTestId('password')).toBeDefined())
+      if (withoutNames) fireEvent.click(screen.getByTestId('password-without-names'))
+      await seal('correct horse')
+      await waitFor(() => expect(view.documents.saved).toHaveLength(count))
+      const plain = await unsealBytes(view.documents.saved[count - 1].bytes as Uint8Array, 'correct horse')
+      return new TextDecoder().decode(unzipSync(plain!)['.lionsville-architecture/people.json'])
+    }
+    expect(await register(false, 1)).toContain('Pia Schulz')
+    const nameless = await register(true, 2)
+    expect(nameless).not.toMatch(/Pia|Schulz|pia\.schulz/)
+    expect(JSON.parse(nameless).people).toHaveLength(1)
+  })
+
   it('carries a manifest of what it holds', async () => {
     const view = show(heldRepositories([project()]))
     await goHome()

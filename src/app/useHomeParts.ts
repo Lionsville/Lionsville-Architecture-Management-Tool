@@ -13,6 +13,7 @@ import { fromArrays } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { CarryChoice } from './workingFileFlows'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import { scopeDisplayName } from '../projects/scopeLabel'
@@ -55,7 +56,7 @@ export function useHomeParts(deps: {
   restore: (command: Command) => void
   documents: ProjectFileChannel
   /** The organisation, carried out as one working file on the gesture. */
-  carryOut: () => Promise<CarriedOut>
+  carryOut: (held?: readonly ScopeSnapshot[], choice?: CarryChoice) => Promise<CarriedOut>
   /** What reads a working file, and holds a landing to it. */
   interchange: Pick<Interchange, 'accepts' | 'open' | 'check'>
   adopt: (opened: OpenedWorkingFile) => Promise<void>

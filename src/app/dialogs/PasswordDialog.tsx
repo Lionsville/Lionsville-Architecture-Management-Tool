@@ -13,18 +13,27 @@
  *
  * Confirm is disabled rather than refused: an empty password is not a
  * sealed file, and the field says so by not offering the button.
+ *
+ * *Set* also asks whether the copy leaves **without names** (ADR-0036 §8):
+ * every person in the register carried as their pseudonym, with no address.
+ * The last moment anybody is looking at what leaves is this one.
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import TextField from '@mui/material/TextField'
 import type { Translate } from '../../i18n'
 
 export type PasswordMode = 'set' | 'enter'
+
+/** The password, and — when setting one — whether the copy leaves without names. */
+export type PasswordAnswer = { password: string; withoutNames: boolean }
 
 export type PasswordDialogProps = {
   open: boolean
@@ -32,18 +41,19 @@ export type PasswordDialogProps = {
   /** What went wrong with the last answer, under the field. */
   error?: string
   onCancel: () => void
-  onConfirm: (password: string) => void
+  onConfirm: (answer: PasswordAnswer) => void
   s: Translate
 }
 
 export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: PasswordDialogProps) {
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')
-  useEffect(() => { if (open) { setPassword(''); setRepeat('') } }, [open, mode])
+  const [withoutNames, setWithoutNames] = useState(false)
+  useEffect(() => { if (open) { setPassword(''); setRepeat(''); setWithoutNames(false) } }, [open, mode])
 
   const mismatch = mode === 'set' && repeat.length > 0 && repeat !== password
   const ready = password.length > 0 && (mode === 'enter' || repeat === password)
-  const confirm = () => { if (ready) onConfirm(password) }
+  const confirm = () => { if (ready) onConfirm({ password, withoutNames: mode === 'set' && withoutNames }) }
   /**
    * *Enter* confirms, and its default is prevented: the dialog closes inside
    * this keydown and hands the focus back to whatever opened it — the ⋯
@@ -90,6 +100,19 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
             onKeyDown={confirmOnEnter}
             slotProps={{ htmlInput: { 'data-testid': 'password-repeat' } }}
             sx={{ mt: 2 }}
+          />
+        )}
+        {mode === 'set' && (
+          <FormControlLabel
+            sx={{ mt: 1.5, alignItems: 'flex-start', '& .MuiFormControlLabel-label': { fontSize: 13, pt: 1 } }}
+            control={(
+              <Checkbox
+                checked={withoutNames}
+                onChange={(event) => setWithoutNames(event.target.checked)}
+                slotProps={{ input: { 'data-testid': 'password-without-names' } as object }}
+              />
+            )}
+            label={s('seal.withoutNames')}
           />
         )}
       </DialogContent>

@@ -30,10 +30,15 @@ export type { Arrival, CarriedOut }
  * there and every scope under it — as a working file: its bytes, the name to
  * give it, its media type, and what it was made without. Rejects with a
  * `ShellError` where a scope will not read (`shell.exportUnreadable`) or
- * `from` names none (`shell.scopeGone`).
+ * `from` names none (`shell.scopeGone`). The people register goes with it
+ * where the repositories keep one, and `withoutNames` carries it as
+ * pseudonyms (ADR-0036 §8).
  */
-export function writeWorkingFile(repositories: CarriedFrom, options: { from?: ScopePath } = {}): Promise<CarriedOut> {
-  return carryOut(repositories, options.from !== undefined ? { from: options.from } : {})
+export function writeWorkingFile(repositories: CarriedFrom, options: { from?: ScopePath; withoutNames?: boolean } = {}): Promise<CarriedOut> {
+  return carryOut(repositories, {
+    ...(options.from !== undefined ? { from: options.from } : {}),
+    ...(options.withoutNames ? { withoutNames: true } : {}),
+  })
 }
 
 /** What reading one in may also do. */

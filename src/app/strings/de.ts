@@ -73,6 +73,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'seal.wrong': 'Das ist nicht das Passwort, mit dem diese Datei versiegelt wurde, oder die Datei ist beschädigt.',
   'seal.confirmSet': 'Speichern',
   'seal.confirmEnter': 'Öffnen',
+  'seal.withoutNames': 'Ohne Namen: Alle Personen im Personenregister gehen als ihr Pseudonym mit, ohne Adresse.',
   'openInto.title': 'Wohin soll „{name}“?',
   'openInto.body': 'Eine Arbeitsdatei ist eine ganze Organisation. Sie kann ein eigener Arbeitsordner werden oder ersetzen, was hier geöffnet ist.',
   'openInto.hereWarning': 'Ersetzen überschreibt „{scope}“ und jeden Bereich darunter. Wo hier ein Verlauf geführt wird, wird zuerst eine Momentaufnahme festgehalten, aus der sich das Jetzige wiederherstellen lässt; wo nicht, ist das Jetzige verloren.',

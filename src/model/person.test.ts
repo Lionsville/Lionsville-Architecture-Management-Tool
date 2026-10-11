@@ -3,7 +3,7 @@
 
 /** A person as the model names one: an id into the register, or text (ADR-0036 §8). */
 import { describe, expect, it } from 'vitest'
-import { isPersonRef, isPicked, personIdOf, pickedPerson } from './person'
+import { isPersonRef, isPicked, personIdOf, personIdsIn, pickedPerson } from './person'
 
 describe('a reference to a person', () => {
   it('is picked when it names an entry, and text otherwise', () => {
@@ -28,5 +28,16 @@ describe('a reference to a person', () => {
     expect(isPersonRef(['pe-1'])).toBe(false)
     expect(isPersonRef(null)).toBe(false)
     expect(isPersonRef(7)).toBe(false)
+  })
+})
+
+describe('the register ids a value names', () => {
+  it('finds a reference wherever it sits, and nothing that only looks like one', () => {
+    const model = {
+      elements: [{ id: 'crm', owner: { person: 'pe-1' } }, { id: 'wms', owner: 'Operations' }],
+      decisions: [{ id: 'ad-1', signers: [{ person: 'pe-2' }, 'Board'], note: { person: 'pe-3', name: 'x' } }],
+    }
+    expect([...personIdsIn(model)].sort()).toEqual(['pe-1', 'pe-2'])
+    expect(personIdsIn('pe-1').size).toBe(0)
   })
 })

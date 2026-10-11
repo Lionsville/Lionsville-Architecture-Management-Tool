@@ -26,6 +26,7 @@ import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
 import { flattenScopes, namesUnder } from '../projects/scope'
 import type { ScopeKind, ScopeSnapshot } from '../projects/scope'
+import type { CarryChoice } from './workingFileFlows'
 import {
   modelsOf, moveScope, readWhole, refusedError, stepOf, summaryOf,
 } from '../projects/scopeAccess'
@@ -484,7 +485,8 @@ function useShellParts(props: AppProps): ShellParts {
    * carried out by the interchange (`ports/Interchange.ts`).
    */
   const carryOut = useCallback(
-    (held: readonly ScopeSnapshot[] = []) => props.interchange.carryOut(repositories, { held }),
+    (held: readonly ScopeSnapshot[] = [], choice: CarryChoice = {}) =>
+      props.interchange.carryOut(repositories, { held, ...(choice.withoutNames ? { withoutNames: true } : {}) }),
     [props.interchange, repositories],
   )
   /**

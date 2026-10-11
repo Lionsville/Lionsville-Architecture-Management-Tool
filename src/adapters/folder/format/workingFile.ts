@@ -46,6 +46,8 @@ import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
 import type { ScopePath } from '../../../projects/scopePath'
 import { MANIFEST_FILE, manifestText, readManifest } from './workingFileManifest'
 import type { WorkingFileManifest } from './workingFileManifest'
+import type { Person } from '../../../people/person'
+import { PEOPLE_PATH, peopleFileText, readPeopleFile } from './peopleFile'
 
 export { WORKING_FILE_EXTENSION }
 
@@ -107,6 +109,11 @@ export type OpenResult =
     manifest?: WorkingFileManifest
     /** Scopes in the file, relative to its top, whose folders would not open. */
     unopened?: readonly ScopePath[]
+    /**
+     * The people register the file carries (ADR-0036 §8); absent for a file
+     * that carries none, which is every file written before there was one.
+     */
+    people?: readonly Person[]
     relayout: boolean
     kind: 'workingFile'
   }
@@ -180,10 +187,18 @@ export function isZip(bytes: Uint8Array): boolean {
  * {@link MANIFEST_FILE} beside the top scope's header, so whoever opens it can
  * be told whether all of it arrived. The caller makes it, because a hash is
  * asynchronous and this is not.
+ *
+ * With `people`, the file carries the register too (ADR-0036 §8), at the
+ * path the folder keeps it, from the top: `.lionsville-architecture/
+ * people.json`. A build from before the register reads past it, and the
+ * manifest does not list it, so such a build is not told a part went
+ * missing. A register with nobody in it is not written, so a file from an
+ * organisation that keeps none is the bytes it always was.
  */
-export function workingFileBytes(scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest): Uint8Array {
+export function workingFileBytes(scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest, people: readonly Person[] = []): Uint8Array {
   const entries: Record<string, [Uint8Array, { mtime: Date }]> = {}
   if (manifest) entries[MANIFEST_FILE] = [bytesFromText(manifestText(manifest)), { mtime: FIXED_MTIME }]
+  if (people.length) entries[PEOPLE_PATH] = [bytesFromText(peopleFileText(people)), { mtime: FIXED_MTIME }]
   const top = scopes.length ? scopes[0].path : ''
   const under = top ? `${top}/` : ''
   for (const scope of scopes) {
@@ -289,7 +304,12 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
     // scope: taken out here, and handed on for the landing to be held to.
     const said = held.find((file) => file.path === MANIFEST_FILE)
     const manifest = said && 'text' in said ? readManifest(said.text) : undefined
-    const files = held.filter((file) => file.path !== MANIFEST_FILE)
+    // The register is the organisation's, not a file of the top scope: the
+    // same, taken out and handed on whole.
+    const register = held.find((file) => file.path === PEOPLE_PATH)
+    const read = register && 'text' in register ? readPeopleFile(register.text) : undefined
+    const people = read && read.kind !== 'absent' ? read.people : undefined
+    const files = held.filter((file) => file.path !== MANIFEST_FILE && file.path !== PEOPLE_PATH)
     const roots = scopeRootsIn(files)
     // No `scope.json` anywhere: an older zip, which is one scope and has no
     // header to find. `openScopeFolder` is the reader that folds it forward.
@@ -321,6 +341,7 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
       ...(rest.length ? { rest } : {}),
       ...(manifest ? { manifest } : {}),
       ...(unopened.length ? { unopened } : {}),
+      ...(people?.length ? { people } : {}),
     }
   }
   const opened = openScopeDocument(parseJson(textFromBytes(bytes)), into)

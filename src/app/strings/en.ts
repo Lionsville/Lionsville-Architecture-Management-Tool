@@ -141,6 +141,7 @@ export const EN = {
   'seal.wrong': 'That is not the password this file was sealed under, or the file is damaged.',
   'seal.confirmSet': 'Save',
   'seal.confirmEnter': 'Open',
+  'seal.withoutNames': 'Without names: every person in the people register leaves as their pseudonym, with no address.',
   /**
    * Where a working file goes (ADR-0025): a folder of its own, or over what
    * is open here — said before anything is written, every time.

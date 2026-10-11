@@ -20,22 +20,36 @@ import { ShellError } from '../platform/errors'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 
+/** What a person chose about a copy before it is made: with the register's names, or without (ADR-0036 §8). */
+export type CarryChoice = { withoutNames?: boolean }
+
 /**
  * The working set as a sealed file, under a password the person is asked for
  * now. Nothing leaves unsealed: the whole organisation is what this holds,
  * and the save dialog is the last moment anybody is looking. What it holds,
  * and what it says it holds (ADR-0023, amended), is the interchange's
  * (`ports/Interchange.ts`); the seal is the app's.
+ *
+ * Carried before anybody is asked, so a copy that cannot be made is said
+ * before a password is typed; and carried again where the person says, in
+ * the same dialog, that it leaves *without names*: every person in the
+ * register as their pseudonym (ADR-0036 §8). The file answered is the one
+ * handed over, with what it was made without.
  */
 export async function sealedWorkingFile(
-  carried: CarriedOut, askPassword: AskPassword,
-): Promise<SavedDocument | undefined> {
-  const password = await askPassword('set')
-  if (password === undefined) return undefined
+  carry: (choice: CarryChoice) => Promise<CarriedOut>, askPassword: AskPassword,
+): Promise<{ doc: SavedDocument; carried: CarriedOut } | undefined> {
+  const named = await carry({})
+  const answer = await askPassword('set')
+  if (answer === undefined) return undefined
+  const carried = answer.withoutNames ? await carry({ withoutNames: true }) : named
   return {
-    name: carried.name,
-    bytes: await sealBytes(carried.bytes, password),
-    mediaType: SEALED_FILE_MEDIA_TYPE,
+    carried,
+    doc: {
+      name: carried.name,
+      bytes: await sealBytes(carried.bytes, answer.password),
+      mediaType: SEALED_FILE_MEDIA_TYPE,
+    },
   }
 }
 
@@ -65,9 +79,9 @@ export async function unsealedBytes(
   if (!isSealed(bytes)) return bytes
   let error: string | undefined
   for (;;) {
-    const password = await askPassword('enter', error)
-    if (password === undefined) return undefined
-    const plain = await unsealBytes(bytes, password)
+    const answer = await askPassword('enter', error)
+    if (answer === undefined) return undefined
+    const plain = await unsealBytes(bytes, answer.password)
     if (plain) return plain
     error = wrong
   }

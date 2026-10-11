@@ -72,6 +72,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'seal.wrong': 'Dit is niet het wachtwoord waarmee dit bestand is verzegeld, of het bestand is beschadigd.',
   'seal.confirmSet': 'Bewaren',
   'seal.confirmEnter': 'Openen',
+  'seal.withoutNames': 'Zonder namen: iedereen in het personenregister gaat mee als pseudoniem, zonder adres.',
   'openInto.title': 'Waar moet “{name}” heen?',
   'openInto.body': 'Een werkbestand is een hele organisatie. Het kan een eigen werkmap worden, of vervangen wat hier open staat.',
   'openInto.hereWarning': 'Vervangen schrijft over “{scope}” en elke scope eronder heen. Waar hier een geschiedenis wordt bijgehouden, wordt eerst een momentopname gemaakt en kan wat er nu staat daaruit teruggezet worden; waar niet, is wat er nu staat weg.',

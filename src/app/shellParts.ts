@@ -5,6 +5,7 @@ import type { SavedFilters } from '../observations/filter'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
+import type { CarryChoice } from './workingFileFlows'
 import type { ScopePath } from '../projects/scopePath'
 import type { AppHost, AppProps } from './appProps'
 import type { IndexHook } from './useIndex'
@@ -60,7 +61,7 @@ export interface ShellParts {
   /** What the open workspace is handed to write through: the shell's side of each write it asks for. */
   writes: {
     readTreeModels: () => Promise<ScopeModel[]>
-    carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
+    carryOut: (held: readonly ScopeSnapshot[], choice?: CarryChoice) => Promise<CarriedOut>
     adoptScopes: AdoptScopes
     readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void

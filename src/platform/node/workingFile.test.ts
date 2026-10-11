@@ -17,6 +17,8 @@ import { bringIn, open } from '../../adapters/folder/format/interchange'
 import type { Spoiled } from '../../ports/Repositories.contract'
 import { slug } from '../../model/keys'
 import { readWorkingFile, writeWorkingFile } from './workingFile'
+import { unzipSync } from 'fflate'
+import type { Person } from '../../people/person'
 
 /** The repositories, with every picture put and every run applied written down, in order. */
 function watched(repositories: Repositories): { repositories: Repositories; said: string[] } {
@@ -177,6 +179,89 @@ describe('the working file, from node', () => {
  * where a person asked for it to put that scope back — and never over one a
  * later version wrote, asked or not.
  */
+/** Every entry a register holds, as it holds them. */
+async function everyone(repositories: Repositories): Promise<readonly Person[]> {
+  return (await repositories.people.list()).people
+}
+
+function added(answer: { person: Person } | { refused: string }): Person {
+  if ('refused' in answer) throw new Error(answer.refused)
+  return answer.person
+}
+
+describe('the people register in a working file (ADR-0036 §8)', () => {
+  it('goes with the whole organisation, and lands by its ids', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const pia = added(await source.people.add({ name: 'Pia Schulz', email: 'pia@acme.example' }))
+    const gijs = added(await source.people.add({ name: 'Gijs Mulder' }))
+    added(await source.people.leave(gijs.id, '2026-08-14'))
+    const { bytes } = await writeWorkingFile(source)
+
+    const target = memoryRepositories()
+    const read = await readWorkingFile(target, bytes)
+    if ('refused' in read) throw new Error(read.refused)
+    expect(read.arrival.short).toBeUndefined()
+    expect(await everyone(target)).toEqual(await everyone(source))
+    expect((await target.people.read(pia.id))?.email).toBe('pia@acme.example')
+  })
+
+  it('made without names holds no name and no address, and reads as pseudonyms where it lands', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const pia = added(await source.people.add({ name: 'Pia Schulz', email: 'pia.schulz@acme.example' }))
+    const { bytes } = await writeWorkingFile(source, { withoutNames: true })
+    const text = Object.values(unzipSync(bytes)).map((held) => new TextDecoder().decode(held)).join('\n')
+    expect(text).not.toMatch(/Pia|Schulz|pia\.schulz/)
+    expect(text).toContain(pia.pseudonym)
+
+    const target = memoryRepositories()
+    await readWorkingFile(target, bytes)
+    expect(await target.people.read(pia.id)).toEqual({ id: pia.id, pseudonym: pia.pseudonym, kind: 'internal', state: 'active' })
+  })
+
+  it('brought back where it came from, gives no name back to an entry forgotten meanwhile, and takes no name away', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const pia = added(await source.people.add({ name: 'Pia Schulz' }))
+    const kees = added(await source.people.add({ name: 'Kees Vos' }))
+    const named = (await writeWorkingFile(source)).bytes
+    const nameless = (await writeWorkingFile(source, { withoutNames: true })).bytes
+    added(await source.people.forget(pia.id, '2026-10-11'))
+    await readWorkingFile(source, named)
+    await readWorkingFile(source, nameless)
+    expect((await source.people.read(pia.id))?.name).toBeUndefined()
+    expect((await source.people.read(kees.id))?.name).toBe('Kees Vos')
+  })
+
+  it('from an address carries the entries those scopes name, and the ones they were merged into', async () => {
+    const source = memoryRepositories()
+    const [, landscape] = organisation()
+    const lindt = added(await source.people.add({ name: 'Eva Lindt' }))
+    const lind = added(await source.people.add({ name: 'Eva Lind' }))
+    added(await source.people.add({ name: 'Kees Vos' }))
+    added(await source.people.merge(lindt.id, lind.id))
+    const owned = {
+      ...landscape,
+      model: { ...landscape.model, elements: landscape.model.elements.map((element, at) => (at === 0 ? { ...element, owner: { person: lindt.id } as unknown as string } : element)) },
+    }
+    await seed(source, [organisation()[0], owned])
+    const { bytes } = await writeWorkingFile(source, { from: 'application-landscape' })
+    const target = memoryRepositories()
+    await readWorkingFile(target, bytes, { at: 'elsewhere' })
+    expect((await everyone(target)).map((person) => person.id).sort()).toEqual([lind.id, lindt.id].sort())
+  })
+
+  it('is no part of a file from an organisation that keeps nobody', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const { bytes } = await writeWorkingFile(source)
+    expect(Object.keys(unzipSync(bytes))).not.toContain('.lionsville-architecture/people.json')
+    const opened = await open(bytes, '')
+    expect('refused' in opened ? opened : opened.people).toBeUndefined()
+  })
+})
+
 describe('a working file over a scope that could not be read whole', () => {
   async function spoiledTarget(how: Spoiled) {
     const store = new MemoryStore()

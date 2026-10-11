@@ -29,6 +29,7 @@ import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import type { CarryChoice } from './workingFileFlows'
 import type { AdoptScopes, ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 import { putBackSaid } from './history/useProjectHistory'
 
@@ -87,7 +88,7 @@ export type ProjectFilesDeps = {
    * tree in memory is what ADR-0004 keeps catching, and an export is a decision
    * rather than a keystroke.
    */
-  carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
+  carryOut: (held: readonly ScopeSnapshot[], choice?: CarryChoice) => Promise<CarriedOut>
   /** What reads a working file, and holds a landing to it (`ports/Interchange.ts`). */
   interchange: Pick<Interchange, 'open' | 'check'>
   /**
@@ -181,10 +182,9 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    * cancelled dialog is no file and no toast.
    */
   const saveWorkingFile = useCallback(() => {
-    void carryOut([session.snapshot()]).then(
-      async (carried) => {
-        const doc = await sealedWorkingFile(carried, askPassword)
-        if (doc) handOver(doc, s('shell.savedWorkingFile'), savedWithout(carried.without, s))
+    void sealedWorkingFile((choice) => carryOut([session.snapshot()], choice), askPassword).then(
+      (sealed) => {
+        if (sealed) handOver(sealed.doc, s('shell.savedWorkingFile'), savedWithout(sealed.carried.without, s))
       },
     ).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)

@@ -18,21 +18,23 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import { PasswordDialog } from './dialogs/PasswordDialog'
-import type { PasswordMode } from './dialogs/PasswordDialog'
+import type { PasswordAnswer, PasswordMode } from './dialogs/PasswordDialog'
 
-export type AskPassword = (mode: PasswordMode, error?: string) => Promise<string | undefined>
+export type { PasswordAnswer }
+
+export type AskPassword = (mode: PasswordMode, error?: string) => Promise<PasswordAnswer | undefined>
 
 type Asking = { mode: PasswordMode; error?: string }
 
 export function usePasswordPrompt(s: Translate): { askPassword: AskPassword; dialog: React.ReactElement } {
   const [asking, setAsking] = useState<Asking | undefined>(undefined)
-  const resolveRef = useRef<((password: string | undefined) => void) | undefined>(undefined)
+  const resolveRef = useRef<((answer: PasswordAnswer | undefined) => void) | undefined>(undefined)
 
-  const settle = useCallback((password: string | undefined) => {
+  const settle = useCallback((answer: PasswordAnswer | undefined) => {
     const resolve = resolveRef.current
     resolveRef.current = undefined
     setAsking(undefined)
-    resolve?.(password)
+    resolve?.(answer)
   }, [])
 
   const askPassword = useCallback<AskPassword>((mode, error) => {

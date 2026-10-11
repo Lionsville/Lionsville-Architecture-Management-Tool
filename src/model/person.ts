@@ -56,3 +56,20 @@ export function isPersonRef(value: unknown): value is PersonRef {
   return keys.length === 1 && keys[0] === 'person' && typeof (value as PickedPerson).person === 'string'
     && (value as PickedPerson).person.length > 0
 }
+
+/**
+ * Every register id a value names, wherever in it a reference sits: a model,
+ * a record, a step. Read by shape rather than by field, so a field that takes
+ * a person later is found without this learning its name — what lets a
+ * working file made from part of the tree carry the entries that part names,
+ * and a test say that no step holds anything but an id.
+ */
+export function personIdsIn(value: unknown, into: Set<PersonId> = new Set()): Set<PersonId> {
+  if (Array.isArray(value)) {
+    for (const item of value) personIdsIn(item, into)
+  } else if (typeof value === 'object' && value !== null) {
+    if (isPersonRef(value)) into.add((value as PickedPerson).person)
+    else for (const item of Object.values(value)) personIdsIn(item, into)
+  }
+  return into
+}

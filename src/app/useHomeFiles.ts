@@ -25,6 +25,7 @@ import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import type { CarryChoice } from './workingFileFlows'
 import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 
 export type HomeFiles = {
@@ -36,7 +37,7 @@ export type HomeFiles = {
 export function useHomeFiles(deps: {
   documents: ProjectFileChannel
   /** Every scope in the store, read on the gesture and carried out as one file. */
-  carryOut: () => Promise<CarriedOut>
+  carryOut: (held?: readonly ScopeSnapshot[], choice?: CarryChoice) => Promise<CarriedOut>
   /** What reads a working file, and holds a landing to it (`ports/Interchange.ts`). */
   interchange: Pick<Interchange, 'open' | 'check'>
   /** The scope this home is about, as it stands — bare where nothing is written yet. */
@@ -61,11 +62,10 @@ export function useHomeFiles(deps: {
   const { documents, carryOut, interchange, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s } = deps
 
   const exportWorkingFile = useCallback(() => {
-    void carryOut().then(async (carried) => {
-      const doc = await sealedWorkingFile(carried, askPassword)
-      if (!doc) return
-      await documents.save(doc)
-      const without = savedWithout(carried.without, s)
+    void sealedWorkingFile((choice) => carryOut([], choice), askPassword).then(async (sealed) => {
+      if (!sealed) return
+      await documents.save(sealed.doc)
+      const without = savedWithout(sealed.carried.without, s)
       notify(without ?? s('shell.savedWorkingFile'), without ? 'warning' : 'success')
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)

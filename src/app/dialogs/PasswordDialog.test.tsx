@@ -35,7 +35,17 @@ describe('PasswordDialog', () => {
     fireEvent.change(screen.getByTestId('password-repeat'), { target: { value: 'correct horse' } })
     expect(confirm.disabled).toBe(false)
     fireEvent.click(confirm)
-    expect(onConfirm).toHaveBeenCalledWith('correct horse')
+    expect(onConfirm).toHaveBeenCalledWith({ password: 'correct horse', withoutNames: false })
+  })
+
+  it('asks, when setting one, whether the copy leaves without names', () => {
+    const onConfirm = vi.fn()
+    renderShell(<PasswordDialog open mode="set" onCancel={() => {}} onConfirm={onConfirm} s={s} />)
+    fireEvent.change(screen.getByTestId('password'), { target: { value: 'correct horse' } })
+    fireEvent.change(screen.getByTestId('password-repeat'), { target: { value: 'correct horse' } })
+    fireEvent.click(screen.getByTestId('password-without-names'))
+    fireEvent.click(screen.getByTestId('password-confirm'))
+    expect(onConfirm).toHaveBeenCalledWith({ password: 'correct horse', withoutNames: true })
   })
 
   it('asks once when opening, carries the last verdict under the field, and confirms on Enter', () => {
@@ -48,7 +58,8 @@ describe('PasswordDialog', () => {
     expect(screen.getByText(/not the password/)).toBeDefined()
     fireEvent.change(screen.getByTestId('password'), { target: { value: 'correct horse' } })
     fireEvent.keyDown(screen.getByTestId('password'), { key: 'Enter' })
-    expect(onConfirm).toHaveBeenCalledWith('correct horse')
+    expect(onConfirm).toHaveBeenCalledWith({ password: 'correct horse', withoutNames: false })
+    expect(screen.queryByTestId('password-without-names')).toBeNull()
   })
 
   it('never confirms an empty password, and Enter on an empty field does nothing', () => {
