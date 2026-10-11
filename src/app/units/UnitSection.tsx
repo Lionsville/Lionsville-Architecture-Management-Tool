@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * An actor as a unit, in its inspector (ADR-0036 §3, §4, §12): its type, where
- * it is filed and the domains it serves, what it owns and answers for, the
- * roles it holds and who holds them on the day, who manages it, what the
- * checks say of it, and how it changes over time.
+ * An actor as a unit, in its inspector (ADR-0036 §3, §4, §7, §12): its type,
+ * where it is filed and the domains it serves, what it owns and answers for,
+ * the roles it holds and who holds them on the day, who manages it, the units
+ * it works with, what the checks say of it, and how it changes over time.
  *
  * **Everything here is the model's, read on the day the board is looked at**
  * (ADR-0027, ADR-0036 §6): the board's look where somebody is looking at
@@ -46,6 +46,8 @@ import type { ScopePath } from '../../projects/scopePath'
 import { transitionLabel } from '../../model/transition'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
+import { InteractDialog, InteractionsSection } from './Interactions'
+import type { Interacting, InteractionLine } from './Interactions'
 import { organisationHere } from './organisationHere'
 
 export type UnitSectionProps = {
@@ -58,6 +60,8 @@ export type UnitSectionProps = {
   index: ScopeIndex
   dispatch: (command: Command) => unknown
   makeId: (prefix: string) => string
+  /** A new row's id, from the scope's own id policy: what an interaction is written under. */
+  newRowId: () => string
   people: PeopleRegisterAccess | undefined
   today: string
   /**
@@ -146,6 +150,7 @@ export function UnitSection(props: UnitSectionProps) {
           {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
           <Managers {...props} today={today} looking={today !== props.today} facts={facts} name={name} />
           <OverTime element={element} facts={facts} s={s} />
+          <UnitInteractions {...props} facts={facts} editable={editable} />
           {facts.said.length > 0 && (
             <>
               <Typography sx={SECTION}>{s('unit.checks')}</Typography>
@@ -305,6 +310,40 @@ function ExtraRole({ element, type, roles, onAdd, s }: {
       slotProps={{ htmlInput: { 'data-testid': 'unit-extra-role' } }}>
       {free.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
     </TextField>
+  )
+}
+
+/**
+ * The units it works with (§7): every `interacts` row it is an end of, this
+ * scope's to change and another's listed with where it is kept, and the way
+ * to declare one.
+ */
+function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: boolean }) {
+  const { element, model, index, scope, scopeLabel, facts, editable, s } = props
+  const [interacting, setInteracting] = useState<Interacting | undefined>(undefined)
+  const touches = (row: { sourceId: string; targetId: string }) => row.sourceId === element.id || row.targetId === element.id
+  const other = (row: { sourceId: string; targetId: string }) => facts.unitName(row.sourceId === element.id ? row.targetId : row.sourceId)
+  const lines: InteractionLine[] = [
+    ...model.relations.filter((row) => row.type === 'interacts' && touches(row)).map((row) => ({ row, other: other(row), editable })),
+    ...index.rowsOf(element.id).filter(({ scope: kept, relation }) => kept !== scope && relation.type === 'interacts')
+      .map(({ scope: kept, relation }) => ({ row: relation, other: other(relation), keptIn: scopeLabel(kept), editable: false })),
+  ]
+  const from = { id: element.id, name: element.name }
+  const units = facts.organisation.units.filter((unit) => isUnit(unit)).map((unit) => ({ id: unit.id, name: unit.name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  return (
+    <>
+      <InteractionsSection
+        lines={lines} s={s} onEdit={(row) => setInteracting({ mode: 'edit', row, from })}
+        {...(editable ? { onDeclare: () => setInteracting({ mode: 'new', from }) } : {})}
+      />
+      {interacting && (
+        <InteractDialog
+          interacting={interacting} units={units} newRowId={props.newRowId} dispatch={props.dispatch}
+          scopeName={scopeLabel(scope)} onClose={() => setInteracting(undefined)} s={s}
+        />
+      )}
+    </>
   )
 }
 

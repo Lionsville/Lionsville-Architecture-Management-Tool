@@ -122,7 +122,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
   return (
     <UnitSection
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
-      makeId={(prefix) => `${prefix}-new`} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
+      makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
       scopeLabel={(path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
       scopes={['', 'customer', 'shipping']} s={s}
     />
@@ -220,6 +220,48 @@ describe('a unit in its inspector', () => {
     expect(within(screen.getByTestId('unit-slot-ro-coach')).getAllByTestId('unit-holder')).toHaveLength(1)
     fireEvent.click(within(screen.getByTestId('unit-serves')).getAllByTestId('CancelIcon')[1])
     expect(commands[3]).toEqual({ type: 'element.update', id: 'webshop', patch: { scopes: ['customer'] } })
+  })
+
+  it('declares an interaction with another unit as one row, and corrects and removes one kept here (ADR-0036 §7)', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness commands={commands} />)
+    expect(text('unit-interactions')).toContain('No interaction declared')
+    fireEvent.click(screen.getByTestId('unit-interaction-add'))
+    const dialog = await screen.findByTestId('interact-dialog')
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
+    fireEvent.click(await screen.findByRole('option', { name: 'Customer' }))
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByRole('option', { name: 'As a service' }))
+    fireEvent.change(within(dialog).getByTestId('interact-from'), { target: { value: '2026-11-01' } })
+    fireEvent.click(within(dialog).getByTestId('interact-save'))
+    expect(commands).toEqual([{
+      type: 'relation.create',
+      relation: { id: 'i-new', type: 'interacts', sourceId: 'webshop', targetId: 'customer', mode: 'service', validFrom: '2026-11-01' },
+    }])
+    await waitFor(() => expect(screen.queryByTestId('interact-dialog')).toBeNull())
+    expect(screen.getByTestId('unit-interaction').textContent).toBe('Customer · As a service · 2026-11-01 – …')
+    fireEvent.click(screen.getByTestId('unit-interaction'))
+    const again = await screen.findByTestId('interact-dialog')
+    fireEvent.mouseDown(within(again).getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByRole('option', { name: 'Facilitating' }))
+    fireEvent.click(within(again).getByTestId('interact-save'))
+    expect(commands[1]).toEqual({ type: 'relation.update', id: 'i-new', patch: { mode: 'facilitating' } })
+    await waitFor(() => expect(screen.queryByTestId('interact-dialog')).toBeNull())
+    fireEvent.click(screen.getByTestId('unit-interaction'))
+    fireEvent.click(await screen.findByTestId('interact-remove'))
+    expect(commands[2]).toEqual({ type: 'relation.delete', id: 'i-new' })
+  })
+
+  it('lists an interaction another scope keeps with where it is kept, and does not change it here', () => {
+    const root: HostModel = { ...ROOT, relations: [{ id: 'i-9', type: 'interacts', sourceId: 'data', targetId: 'webshop', mode: 'collaboration' }] }
+    const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }])
+    const lines = index.rowsOf('webshop').filter(({ relation }) => relation.type === 'interacts')
+    expect(lines.map(({ scope }) => scope)).toEqual([''])
+    renderShell(<Harness root={root} commands={[]} />)
+    // The harness indexes its own root; the row kept there is listed and is not a button.
+    const chip = screen.getByTestId('unit-interaction')
+    expect(chip.textContent).toContain('kept in the organisation')
+    expect(chip.getAttribute('role')).not.toBe('button')
   })
 
   it('makes a stakeholder a unit by giving it a type, and says what a unit is until then', async () => {

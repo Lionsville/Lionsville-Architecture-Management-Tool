@@ -115,6 +115,7 @@ export function useWorkspaceOwnership(deps: {
     // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the organisation's.
     unitSection: (element, readOnly) => createElement(UnitSection, {
       element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
+      newRowId: () => session.ids.connection(),
       people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
     }),
     // Who answers for a record beyond its own field (ADR-0036 §8): a stand-in's master, and the rule.
