@@ -43,6 +43,7 @@ import { useWorkspaceFiles } from './useWorkspaceFiles'
 import { useChangeAcross } from './useChangeAcross'
 import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
+import { useLandPeopleMoves } from './units/landPeopleMoves'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
@@ -307,7 +308,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
     published: source.publishesSteps ?? false, origin: 'agent', onTreeChanged,
   })
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing }
+  /** The people a reorganisation moves, written as one step in every scope they are kept in (ADR-0036 §6). */
+  const landMoves = useLandPeopleMoves({
+    scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
+    published: source.publishesSteps ?? false, onTreeChanged,
+  })
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */

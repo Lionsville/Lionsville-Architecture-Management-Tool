@@ -128,6 +128,7 @@ function TypeCard({ type, model, selected, onSelect }: { type: UnitType; model: 
       {type.limit !== undefined && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{t('operating.limitLine', { count: type.limit })}</Typography>
       )}
+      {type.until && <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>{t('operating.untilLine', { day: type.until })}</Typography>}
     </Box>
   )
 }
@@ -142,6 +143,7 @@ function RoleChip({ role, selected, onSelect }: { role: Role; selected: boolean;
       {role.name}
       {role.short && <Box component="span" sx={{ ml: 0.75, fontSize: 11 }}>{role.short}</Box>}
       {role.manages && <Box component="span" sx={{ ml: 0.75, fontSize: 10 }}>{t('operating.managesBadge')}</Box>}
+      {role.until && <Box component="span" sx={{ ml: 0.75, fontSize: 10 }}>{t('operating.untilLine', { day: role.until })}</Box>}
     </Button>
   )
 }

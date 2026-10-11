@@ -6,8 +6,14 @@
  * slots and limit; a role's names, purpose and whether it manages its unit; a
  * responsibility's name, description and group. Every keystroke is live and
  * one undo step per field (`edit.ts`).
+ *
+ * **Over time** (ADR-0036 §6): a unit type and a role have a first and a last
+ * day and name what follows them. A new name is an edit; a thing that stops
+ * existing ends on a day. The people that leaves to decide are the host's to
+ * say (`aside`), since this page knows the model and nobody's name.
  */
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -22,7 +28,7 @@ import type { BasedOn, Responsibility, Role, UnitType } from '../../model/operat
 import { useStrings } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
 import {
-  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setFlag, setLimit, setSlot, setWithin,
+  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setSlot, setSuccessors, setWithin,
 } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
@@ -34,11 +40,13 @@ type Props = {
   readOnly: boolean
   dispatch(command: Command): void
   onRemove(id: string): void
+  /** What the host says beside the item: for one that ends, the people it leaves to decide. */
+  aside?: ReactNode
 }
 
 const heading = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 0.5 } as const
 
-export function Inspector({ model, picked, readOnly, dispatch, onRemove }: Props) {
+export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside }: Props) {
   const { t } = useStrings()
   if (!picked) return <Typography variant="body2" color="text.secondary">{t('operating.pick')}</Typography>
   const kindWord = { unitType: 'operating.unitType', role: 'operating.role', responsibility: 'operating.responsibility' } as const
@@ -48,6 +56,10 @@ export function Inspector({ model, picked, readOnly, dispatch, onRemove }: Props
       {picked.kind === 'unitType' && <UnitTypeFields type={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />}
       {picked.kind === 'role' && <RoleFields role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />}
       {picked.kind === 'responsibility' && <ResponsibilityFields responsibility={picked.item} readOnly={readOnly} dispatch={dispatch} />}
+      {picked.kind !== 'responsibility' && (
+        <OverTime kind={picked.kind} item={picked.item} others={picked.kind === 'role' ? model.roles : model.unitTypes} readOnly={readOnly} dispatch={dispatch} />
+      )}
+      {aside}
       <BasedOnLine basedOn={picked.item.basedOn} />
       {!readOnly && (
         <Button color="error" size="small" sx={{ mt: 2, textTransform: 'none', px: 0 }} onClick={() => onRemove(picked.item.id)}>
@@ -190,6 +202,47 @@ function ResponsibilityFields({ responsibility, readOnly, dispatch }: { responsi
         onChange={(event) => dispatch(editResponsibility(responsibility.id, 'description', event.target.value))} />
       <TextField fullWidth size="small" margin="dense" label={t('operating.group')} value={responsibility.group ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editResponsibility(responsibility.id, 'group', event.target.value))} />
+    </Box>
+  )
+}
+
+/**
+ * A unit type's or a role's days and what follows it (ADR-0036 §6): the first
+ * day, the last day, and the successors a reorganisation suggests in its
+ * place. Each change is one step.
+ */
+function OverTime({ kind, item, others, readOnly, dispatch }: {
+  kind: 'unitType' | 'role'
+  item: UnitType | Role
+  others: readonly { id: string; name: string }[]
+  readOnly: boolean
+  dispatch(command: Command): void
+}) {
+  const { t } = useStrings()
+  const candidates = others.filter((one) => one.id !== item.id)
+  const successors = item.successors ?? []
+  return (
+    <Box data-testid="operating-over-time">
+      <Typography sx={heading}>{t('operating.overTime')}</Typography>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <TextField size="small" type="date" label={t('operating.from')} value={item.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          onChange={(event) => dispatch(setDay(kind, item.id, 'from', event.target.value))}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'operating-from' } }} />
+        <TextField size="small" type="date" label={t('operating.until')} value={item.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          onChange={(event) => dispatch(setDay(kind, item.id, 'until', event.target.value))}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'operating-until' } }} />
+      </Box>
+      {candidates.length > 0 && (
+        <TextField select size="small" fullWidth margin="dense" label={t('operating.successors')} value={successors} disabled={readOnly}
+          onChange={(event) => {
+            const value = event.target.value as unknown
+            dispatch(setSuccessors(kind, item.id, Array.isArray(value) ? value as string[] : String(value).split(',')))
+          }}
+          slotProps={{ select: { multiple: true }, htmlInput: { 'data-testid': 'operating-successors' } }}>
+          {candidates.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+        </TextField>
+      )}
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{t('operating.overTimeHint')}</Typography>
     </Box>
   )
 }

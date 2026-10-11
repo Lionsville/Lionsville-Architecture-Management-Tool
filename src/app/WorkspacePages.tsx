@@ -6,8 +6,8 @@
  * decisions and the observations, the roadmap and a plan on it, and a
  * platform's report and a service's.
  */
-import { useMemo } from 'react'
-import type { ComponentProps } from 'react'
+import { createElement, useMemo } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
@@ -23,6 +23,9 @@ import type {
 } from '../technology/ui/ReportPage'
 import { lazyPart } from '../widgets/lazyPart'
 import type { WorkspaceParts } from './workspaceParts'
+import { EndedHolders } from './units/EndedHolders'
+import { PlanMoves, PlanOrganisation } from './units/PlanOrganisation'
+import type { PlanOrganisationProps } from './units/PlanOrganisation'
 
 /**
  * A platform's report and a service's are pages reached from a card, never the
@@ -68,7 +71,7 @@ export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
  * only where the organisation is the scope open, and read anywhere else.
  */
 function OperatingPages({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, pages, readOnly, pageChrome } = parts
+  const { props, session, pages, readOnly, pageChrome, landMoves } = parts
   const model = session.model
   const lists = useMemo(() => ({
     unitTypes: model.unitTypes ?? [], roles: model.roles ?? [],
@@ -87,6 +90,11 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
       initialNonce={page.nonce}
       onClose={() => { pages.closeOperating(); pages.leaveIfNothingToDraw() }}
       windowChrome={pageChrome}
+      // What a unit type or a role that ends leaves to decide (ADR-0036 §6): the organisation's, so the host's.
+      aside={(item) => (item.kind === 'responsibility' ? undefined : createElement(EndedHolders, {
+        item, scope: props.project.path, model, index: props.tree.index, people: props.shell.people,
+        readOnly: readOnly || props.project.path !== ROOT_SCOPE, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
+      }))}
     />
   )
 }
@@ -242,9 +250,20 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         windowChrome={pageChrome}
         initiativeToggle={props.project.path !== ''}
         describe={readings.describeForMap}
+        {...(plans.plan ? { organisation: planOrganisation(parts, plans.plan) } : {})}
       />
     </>
   )
+}
+
+/** What a plan does to the organisation (ADR-0036 §6), drawn here because all of it is the organisation's. */
+function planOrganisation(parts: WorkspaceParts, plan: NonNullable<WorkspaceParts['pages']['plans']['plan']>): { facts: ReactNode; main: ReactNode } {
+  const { props, session, readOnly, readings, landMoves } = parts
+  const shared: PlanOrganisationProps = {
+    plan, scope: props.project.path, model: session.model, index: props.tree.index, people: props.shell.people, readOnly,
+    dispatch: session.dispatch, makeId: props.shell.makeId, land: landMoves, scopeLabel: readings.scopeLabel, s: props.shell.s,
+  }
+  return { facts: createElement(PlanMoves, shared), main: createElement(PlanOrganisation, shared) }
 }
 
 /** A service's report and a platform's (ADR-0013, ADR-0014): derived, read only. */

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { apply } from '../model/reducer'
 import {
   addSlot, cycleRaci, editResponsibility, editRole, editUnitType, itemOf, newResponsibility, newRole, newUnitType,
-  removeResponsibility, removeRole, removeSlot, removeUnitType, setFlag, setLimit, setRule, setSlot, setWithin,
+  removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors, setWithin,
 } from './edit'
 import { applyAll, empty, listsOf } from './testing'
 
@@ -43,6 +43,20 @@ describe('the operating model\'s page, said as commands', () => {
     expect(editRole('ro-1', 'name', '')).toMatchObject({ patch: { name: '' } })
     expect(editUnitType('ut-1', 'name', 'Tribe')).toMatchObject({ patch: { name: 'Tribe' }, coalesce: 'field:ut-1:name' })
     expect(editResponsibility('rs-1', 'group', 'Deliver')).toMatchObject({ patch: { group: 'Deliver' } })
+  })
+
+  it('dates a unit type and a role, names what follows each, and takes either away again', () => {
+    const after = applyAll(small(), [
+      setDay('role', 'ro-2', 'until', '2026-12-31'),
+      setSuccessors('role', 'ro-2', ['ro-1', 'ro-2', 'ro-1']),
+      setDay('unitType', 'ut-2', 'from', '2025-01-01'),
+      setSuccessors('unitType', 'ut-2', ['ut-1']),
+    ])
+    expect(listsOf(after).roles[1]).toMatchObject({ until: '2026-12-31', successors: ['ro-1'] })
+    expect(listsOf(after).unitTypes[1]).toMatchObject({ from: '2025-01-01', successors: ['ut-1'] })
+    const undated = applyAll(after, [setDay('role', 'ro-2', 'until', ''), setSuccessors('role', 'ro-2', [])])
+    expect(listsOf(undated).roles[1]).not.toHaveProperty('until')
+    expect(listsOf(undated).roles[1]).not.toHaveProperty('successors')
   })
 
   it('cycles a cell of the matrix through the letters', () => {

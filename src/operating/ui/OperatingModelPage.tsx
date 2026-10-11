@@ -15,6 +15,7 @@
  * does: the shell toolbar's drag strip stays live underneath.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Tab from '@mui/material/Tab'
@@ -30,7 +31,7 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { itemOf, removeResponsibility, removeRole, removeUnitType } from '../edit'
-import type { OperatingModel } from '../edit'
+import type { OperatingItem, OperatingModel } from '../edit'
 import type { Library } from '../library'
 import { LIBRARIES } from '../libraries'
 import { countsLine } from './countsLine'
@@ -57,6 +58,12 @@ export type OperatingModelPageProps = {
   windowChrome?: WindowChrome
   /** The libraries offered; the ones that ship where not said. */
   libraries?: readonly Library[]
+  /**
+   * What the host says beside a picked item (ADR-0036 §6): for a unit type or
+   * a role that ends, the people it leaves to decide. This page knows the
+   * model and nobody's name.
+   */
+  aside?: (item: OperatingItem) => ReactNode
 }
 
 /** Which tab an item is edited on. */
@@ -152,7 +159,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
             component="aside" aria-label={t('operating.pick')}
             sx={{ width: 340, flexShrink: 0, borderLeft: 1, borderColor: 'divider', overflow: 'auto', p: 2, bgcolor: 'background.paper' }}
           >
-            <Inspector model={model} picked={picked} readOnly={readOnly} dispatch={dispatch} onRemove={setRemoving} />
+            <Inspector model={model} picked={picked} readOnly={readOnly} dispatch={dispatch} onRemove={setRemoving} aside={picked && props.aside?.(picked)} />
           </Box>
         )}
       </Box>

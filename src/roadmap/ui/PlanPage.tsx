@@ -110,6 +110,13 @@ export type PlanPageProps = {
    * say so. Absent in a shell with no tree.
    */
   describe?: DescribeElsewhere
+  /**
+   * What the plan does to the organisation (ADR-0036 §6), drawn by the host,
+   * which knows the units and the people: the units it moves, among the
+   * facts; the organisation before and after and the people to move, above
+   * the interfaces. Absent in a shell with no organisation.
+   */
+  organisation?: { facts?: ReactNode; main?: ReactNode }
 }
 
 export function PlanPage(props: PlanPageProps) {
@@ -185,7 +192,7 @@ export function PlanPage(props: PlanPageProps) {
             <Facts
               plan={plan} model={model} decisions={props.decisions ?? []} decidedAbove={props.ancestorDecisions ?? []}
               today={props.today} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true}
-              describe={props.describe}
+              describe={props.describe} organisation={props.organisation?.facts}
             />
           )}
           {/* The table scrolls inside a height of its own, dragged from the
@@ -194,6 +201,7 @@ export function PlanPage(props: PlanPageProps) {
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {!fullPage && (
               <>
+                {props.organisation?.main}
                 <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} height={interfacesHeight} />
                 <SeamResizer
                   orientation="horizontal"
@@ -244,7 +252,7 @@ function Heading({ children }: { children: ReactNode }) {
   )
 }
 
-function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle, describe }: {
+function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle, describe, organisation }: {
   plan: Transition
   model: DesignModel
   decisions: readonly Adr[]
@@ -254,13 +262,13 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
   actions: PlanActions
   initiativeToggle: boolean
   describe?: DescribeElsewhere
+  /** The units the plan moves (ADR-0036 §6), the host's. */
+  organisation?: ReactNode
 }) {
   const { t } = useStrings()
   const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
   const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const [shiftBy, setShiftBy] = useState('')
   const [addingDecision, setAddingDecision] = useState('')
-  const days = Number(shiftBy)
   const restsOn = new Set(plan.decisions)
   const decisionCandidates = decisions.filter((adr) => !restsOn.has(adr.id))
 
@@ -321,6 +329,7 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       {!readOnly && (
         <AddElement plan={plan} model={model} onAdd={(row) => setElements([...plan.elements, row])} />
       )}
+      {organisation}
 
       {/* ---- milestones ---- */}
       <Heading>{t('roadmap.milestones')}</Heading>
@@ -391,22 +400,30 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       )}
 
       {/* ---- moving the whole thing ---- */}
-      {!readOnly && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-          <TextField
-            size="small" type="number" label={t('roadmap.shiftDays')} value={shiftBy}
-            onChange={(e) => setShiftBy(e.target.value)}
-            helperText={t('roadmap.shiftHelp')}
-          />
-          <Button
-            size="small"
-            disabled={!Number.isFinite(days) || days === 0}
-            onClick={() => { actions.shiftTransition(plan.id, days); setShiftBy('') }}
-          >
-            {t('roadmap.shift')}
-          </Button>
-        </Box>
-      )}
+      {!readOnly && <Shift onShift={(days) => actions.shiftTransition(plan.id, days)} />}
+    </Box>
+  )
+}
+
+/** Move the plan and every date it owns by a number of days, as one step. */
+function Shift({ onShift }: { onShift(days: number): void }) {
+  const { t } = useStrings()
+  const [shiftBy, setShiftBy] = useState('')
+  const days = Number(shiftBy)
+  return (
+    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
+      <TextField
+        size="small" type="number" label={t('roadmap.shiftDays')} value={shiftBy}
+        onChange={(e) => setShiftBy(e.target.value)}
+        helperText={t('roadmap.shiftHelp')}
+      />
+      <Button
+        size="small"
+        disabled={!Number.isFinite(days) || days === 0}
+        onClick={() => { onShift(days); setShiftBy('') }}
+      >
+        {t('roadmap.shift')}
+      </Button>
     </Box>
   )
 }

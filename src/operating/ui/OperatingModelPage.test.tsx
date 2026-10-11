@@ -9,8 +9,9 @@
  * taken out — and nothing offered to change where the page only reads.
  */
 import { useState } from 'react'
+import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import type { Command } from '../../model/commands'
@@ -22,8 +23,9 @@ import { OperatingModelPage } from './OperatingModelPage'
 afterEach(() => cleanup())
 
 /** The page over a model a reducer keeps, and every command it sent. */
-function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId }: {
+function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside }: {
   start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
+  aside?: ComponentProps<typeof OperatingModelPage>['aside']
 }) {
   const [model, setModel] = useState(start)
   let n = 0
@@ -39,6 +41,7 @@ function Harness({ start, readOnly = false, atOrganisation = true, sent, initial
         })
       }}
       {...(initialId ? { initialId, initialNonce: 1 } : {})}
+      {...(aside ? { aside } : {})}
       onClose={() => {}}
     />
   )
@@ -123,6 +126,29 @@ describe('the operating model\'s page', () => {
     // What it was renamed to is told apart from the library in compare.
     fireEvent.click(await screen.findByRole('tab', { name: 'Libraries' }))
     expect(screen.getByText(/Scrum Team — the role Scrum Master: here nothing, in the library 1/)).toBeTruthy()
+  })
+
+  it('dates a role, names what follows it, and shows beside it what the host says it leaves to decide', async () => {
+    const sent = show(empty(), { aside: (item) => <span data-testid="aside">{item.kind}: {item.kind === 'responsibility' ? '' : item.item.until ?? 'no end'}</span> })
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
+    let inspector = screen.getByTestId('operating-inspector')
+    expect(within(inspector).getByTestId('aside').textContent).toBe('role: no end')
+    fireEvent.change(within(inspector).getByTestId('operating-until'), { target: { value: '2026-12-31' } })
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { until: '2026-12-31' } })
+    inspector = screen.getByTestId('operating-inspector')
+    expect(within(inspector).getByTestId('aside').textContent).toBe('role: 2026-12-31')
+    fireEvent.mouseDown(within(inspector).getByLabelText('Followed by'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Product Owner' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { successors: [expect.any(String)] } })
+    // A list that takes several stays open until it is closed.
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    const chip = screen.getAllByTestId(/^role-/).find((one) => one.textContent?.startsWith('Scrum Master'))
+    expect(chip?.textContent).toContain('until 2026-12-31')
+    fireEvent.change(within(screen.getByTestId('operating-inspector')).getByTestId('operating-until'), { target: { value: '' } })
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { until: undefined } })
   })
 
   it('sets a rule to a role', async () => {

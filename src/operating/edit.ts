@@ -75,6 +75,23 @@ export function setFlag(kind: 'unitType' | 'role', id: string, field: 'top' | 's
     : { type: 'unitType.update', id, patch: { [field]: value } }
 }
 
+/**
+ * A day a unit type or a role starts or ends (ADR-0036 §6): a change with a
+ * day, set as a field — an empty day takes it away. A new name is an edit;
+ * a thing that stops existing ends on a day and names what follows it.
+ */
+export function setDay(kind: 'unitType' | 'role', id: string, field: 'from' | 'until', day: string): Command {
+  const patch = { [field]: day === '' ? undefined : day }
+  return kind === 'role' ? { type: 'role.update', id, patch } : { type: 'unitType.update', id, patch }
+}
+
+/** What follows a unit type or a role when it ends, by id: none takes the list away. Never itself. */
+export function setSuccessors(kind: 'unitType' | 'role', id: string, successors: readonly string[]): Command {
+  const list = [...new Set(successors.filter((one) => one !== id))]
+  const patch = { successors: list.length ? list : undefined }
+  return kind === 'role' ? { type: 'role.update', id, patch } : { type: 'unitType.update', id, patch }
+}
+
 /** The types a unit type may sit in, with one put in or taken out. */
 export function setWithin(type: UnitType, other: string, on: boolean): Command {
   const within = on ? [...new Set([...type.within, other])] : type.within.filter((id) => id !== other)

@@ -24,6 +24,7 @@ import type { WorkspaceDialogState } from './WorkspaceDialogs'
 import type { WorkspaceDocument } from './useWorkspaceDocument'
 import type { WorkspacePages } from './useWorkspacePages'
 import type { WorkspaceRequests } from './useWorkspaceRequests'
+import type { LandPeopleMoves } from './units/landPeopleMoves'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 
 /**
@@ -77,6 +78,8 @@ export interface WorkspaceParts {
   changeBelow: ChangeBelow
   /** A change to several scopes as one, a merge across the tree (ADR-0035 §5). */
   changeAcross: ChangeAcross
+  /** The people a reorganisation moves, written as one step per scope, together (ADR-0036 §6). */
+  landMoves: LandPeopleMoves
   dialogs: WorkspaceDialogState
   /** The day each board is being looked at, which is nobody's write (ADR-0027). */
   viewing: ShownDays

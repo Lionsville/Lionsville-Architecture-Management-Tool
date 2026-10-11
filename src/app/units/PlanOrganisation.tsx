@@ -1,0 +1,298 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * What a plan does to the organisation, on its page (ADR-0036 §6): a
+ * reorganisation is a plan.
+ *
+ * - **The units it moves**, in the facts beside the plan's other lists: a
+ *   unit put under a new parent on a day, each one step, and shifted with the
+ *   plan. A move outside a plan is a correction — an edit of the unit's
+ *   parent in its inspector.
+ * - **What it does**, said in a line each: the units it introduces and
+ *   retires, the moves, and the roles that end the day before its day.
+ * - **Before and after**: the organisation the day before its first day and
+ *   on its last, the units under the smallest trees that hold the change,
+ *   with who holds a role in each.
+ * - **Move the people**: every assignment in a unit or a role that ends, each
+ *   with a suggestion, written as one step.
+ * - **Still open on the day**: what the checks find in those units then, and
+ *   every responsibility that loses its *A*.
+ *
+ * Drawn by the host, because all of it is the organisation's: the units kept
+ * across the tree, the register's names, and the scopes the people's moves
+ * are written to. The plan's page holds the slot.
+ */
+import { useMemo, useState } from 'react'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
+import MenuItem from '@mui/material/MenuItem'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import type { Translate } from '../../i18n'
+import type { Command } from '../../model/commands'
+import type { HostModel } from '../../model/hostModel'
+import { isDay } from '../../model/lifecycle'
+import { pickedPerson } from '../../model/person'
+import {
+  beforeAndAfter, lostAccountability, peopleMoveSteps, peopleToMove, placesIn, planReorganisation, reorganisationRoots, unitTree,
+} from '../../model/reorganisation'
+import type { PeopleChoice, PeopleMove, PlanReorganisation, UnitNode } from '../../model/reorganisation'
+import { addDays, movesWith } from '../../model/transition'
+import type { Transition } from '../../model/transition'
+import { isUnit, personOf, runsOn } from '../../model/units'
+import type { Organisation } from '../../model/units'
+import { personText, registerOf } from '../../people/shown'
+import type { PeopleRegisterAccess } from '../../people/ui/access'
+import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
+import type { OrganisationAt } from '../../projects/checks'
+import type { ScopeIndex } from '../../projects/scopeIndex'
+import type { ScopePath } from '../../projects/scopePath'
+import { CloseIcon } from '../../widgets/icons'
+import { MovePeople } from './MovePeople'
+import type { MoveNames } from './MovePeople'
+import type { PeopleMoved } from './landPeopleMoves'
+import { organisationHere } from './organisationHere'
+
+export type PlanOrganisationProps = {
+  plan: Transition
+  /** The scope open, which keeps the plan. */
+  scope: ScopePath
+  /** The open scope's model as its session holds it now. */
+  model: HostModel
+  index: ScopeIndex
+  people: PeopleRegisterAccess | undefined
+  readOnly: boolean
+  dispatch: (command: Command) => unknown
+  makeId: (prefix: string) => string
+  /** Write the people's moves, one step per scope, together. */
+  land: (steps: ReadonlyMap<ScopePath, readonly Command[]>) => Promise<PeopleMoved>
+  scopeLabel: (path: ScopePath) => string
+  s: Translate
+}
+
+const HEADING = { fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.5 } as const
+const LINE = { fontSize: 13 } as const
+const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+
+/** What the plan's organisation is worked out from, once per render. */
+function usePlanFacts(props: PlanOrganisationProps) {
+  const { plan, scope, model, index, people, s } = props
+  return useMemo(() => {
+    const at = organisationHere(index, scope, model)
+    const { organisation } = at
+    const reorganisation = planReorganisation(plan, organisation)
+    const register = registerOf(people?.people ?? [])
+    const names: MoveNames = {
+      person: (id) => personText(pickedPerson(id), register, s),
+      unit: (id) => organisation.units.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id,
+      role: (id) => organisation.roles.find((one) => one.id === id)?.name ?? id,
+    }
+    const typeName = (id: string | undefined) => organisation.unitTypes.find((one) => one.id === id)?.name ?? ''
+    const responsibilities = scope === '' ? model.responsibilities ?? [] : index.operatingModel().responsibilities
+    return { at, organisation, reorganisation, names, typeName, responsibilities }
+  }, [plan, scope, model, index, people?.people, s])
+}
+
+type PlanFacts = ReturnType<typeof usePlanFacts>
+
+/** The units the plan moves, in the plan's facts: each one step, and a move added on a day. */
+export function PlanMoves(props: PlanOrganisationProps) {
+  const { plan, readOnly, dispatch, s } = props
+  const facts = usePlanFacts(props)
+  const moves = plan.moves ?? []
+  const set = (next: Transition['moves']) => dispatch({ type: 'transition.update', id: plan.id, patch: { moves: next } })
+  const parentName = (id: string | undefined) => (id === undefined ? s('unit.top') : facts.names.unit(id))
+  return (
+    <Box data-testid="plan-moves">
+      <Typography sx={HEADING}>{s('move.moves')}</Typography>
+      {moves.length === 0 && <Typography sx={QUIET}>{s('move.movesNone')}</Typography>}
+      {moves.map((move) => (
+        <Box key={move.unitId} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }} data-testid={`plan-move-${move.unitId}`}>
+          <Typography sx={{ ...LINE, flex: 1 }}>
+            {s('move.moveLine', { unit: facts.names.unit(move.unitId), parent: parentName(move.parentId), day: move.on })}
+          </Typography>
+          {!readOnly && (
+            <IconButton size="small" aria-label={s('move.moveRemove', { unit: facts.names.unit(move.unitId) })}
+              onClick={() => set(movesWith(moves, move.unitId, undefined))}>
+              <CloseIcon />
+            </IconButton>
+          )}
+        </Box>
+      ))}
+      {!readOnly && <AddMove units={facts.organisation.units.filter(isUnit)} on={plan.to ?? ''} parentName={parentName}
+        onAdd={(unitId, parentId, on) => set(movesWith(moves, unitId, { ...(parentId ? { parentId } : {}), on }))} s={s} />}
+      <Typography sx={QUIET}>{s('move.movesHint')}</Typography>
+    </Box>
+  )
+}
+
+const TOP = ''
+
+/** A unit, the unit it moves under — or the top — and the day. */
+function AddMove({ units, on: start, parentName, onAdd, s }: {
+  units: Organisation['units']; on: string; parentName: (id: string | undefined) => string
+  onAdd: (unitId: string, parentId: string | undefined, on: string) => void; s: Translate
+}) {
+  const [unitId, setUnitId] = useState('')
+  const [parentId, setParentId] = useState(TOP)
+  const [on, setOn] = useState(start)
+  const sorted = [...units].sort((a, b) => a.name.localeCompare(b.name))
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mt: 0.75 }}>
+      <TextField select size="small" label={s('move.unit')} value={unitId} onChange={(event) => setUnitId(event.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'plan-move-unit' } }}>
+        {sorted.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+      </TextField>
+      <TextField select size="small" label={s('move.parent')} value={parentId} onChange={(event) => setParentId(event.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'plan-move-parent' } }}>
+        <MenuItem value={TOP}>{parentName(undefined)}</MenuItem>
+        {sorted.filter((one) => one.id !== unitId).map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+      </TextField>
+      <TextField size="small" type="date" label={s('move.on')} value={on} onChange={(event) => setOn(event.target.value)}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'plan-move-on' } }} />
+      <Button size="small" variant="outlined" disabled={!unitId || !isDay(on)} data-testid="plan-move-add"
+        onClick={() => { onAdd(unitId, parentId === TOP ? undefined : parentId, on); setUnitId(''); setParentId(TOP) }}>
+        {s('move.add')}
+      </Button>
+    </Box>
+  )
+}
+
+/**
+ * The plan's organisation beside its facts: what it does, before and after,
+ * the people to move and what is still open on its day. Nothing where the
+ * plan touches no unit.
+ */
+export function PlanOrganisation(props: PlanOrganisationProps) {
+  const { s } = props
+  const facts = usePlanFacts(props)
+  const days = beforeAndAfter(facts.reorganisation)
+  const { reorganisation } = facts
+  const touches = reorganisation.introduces.length + reorganisation.retires.length + reorganisation.moves.length + reorganisation.roles.length > 0
+  if (!touches) return null
+  return (
+    <Box data-testid="plan-organisation" sx={{ px: 3, py: 1.5, borderBottom: 1, borderColor: 'divider', maxHeight: '55%', overflow: 'auto', flexShrink: 0 }}>
+      <Typography sx={{ ...HEADING, mt: 0 }}>{s('move.does')}</Typography>
+      <Does facts={facts} s={s} />
+      {days && <BeforeAndAfter facts={facts} before={days.before} after={days.after} s={s} />}
+      <Typography sx={HEADING}>{s('move.people')}</Typography>
+      <PeopleToMove {...props} facts={facts} />
+      {days && <StillOpen facts={facts} before={days.before} after={days.after} scopeLabel={props.scopeLabel} s={s} />}
+    </Box>
+  )
+}
+
+/** One line for each thing the plan does to the organisation. */
+function Does({ facts, s }: { facts: PlanFacts; s: Translate }) {
+  const { reorganisation: r, names, organisation } = facts
+  const typeOf = (id: string) => facts.typeName(organisation.units.find((one) => one.id === id)?.unitTypeId)
+  const role = (id: string) => organisation.roles.find((one) => one.id === id)
+  const lines = [
+    ...r.introduces.map((one) => s(one.on ? 'move.doesIntroduceOn' : 'move.doesIntroduce', { unit: names.unit(one.unitId), type: typeOf(one.unitId), day: one.on ?? '' })),
+    ...r.retires.map((one) => s('move.doesRetire', { unit: names.unit(one.unitId), day: one.lastDay })),
+    ...r.moves.map((one) => s('move.moveLine', { unit: names.unit(one.unitId), parent: one.parentId ? names.unit(one.parentId) : s('unit.top'), day: one.on })),
+    ...r.roles.map((one) => {
+      const successors = (role(one.roleId)?.successors ?? []).map(names.role)
+      return s(successors.length ? 'move.doesEndRoleFor' : 'move.doesEndRole', { role: names.role(one.roleId), day: one.lastDay, successors: successors.join(', ') })
+    }),
+  ]
+  return <>{lines.map((line) => <Typography key={line} sx={LINE} data-testid="plan-does">{line}</Typography>)}</>
+}
+
+/** The organisation the day before the plan and on its day, side by side. */
+function BeforeAndAfter({ facts, before, after, s }: { facts: PlanFacts; before: string; after: string; s: Translate }) {
+  const roots = reorganisationRoots(facts.organisation, facts.reorganisation, before, after)
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 2, mt: 1 }}>
+      {([['before', before], ['after', after]] as const).map(([when, day]) => (
+        <Box key={when} data-testid={`plan-${when}`}>
+          <Typography sx={HEADING}>{s(when === 'before' ? 'move.before' : 'move.after', { day })}</Typography>
+          <Tree nodes={unitTree(facts.organisation, day, roots)} when={when} facts={facts} s={s} />
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+function Tree({ nodes, when, facts, s }: { nodes: readonly UnitNode[]; when: 'before' | 'after'; facts: PlanFacts; s: Translate }) {
+  const r = facts.reorganisation
+  const mark = (id: string) => {
+    if (when === 'before' && r.retires.some((one) => one.unitId === id)) return s('move.markGone')
+    if (when === 'after' && r.introduces.some((one) => one.unitId === id)) return s('move.markNew')
+    if (when === 'after' && r.moves.some((one) => one.unitId === id)) return s('move.markMoved')
+    return undefined
+  }
+  if (nodes.length === 0) return null
+  return (
+    <Box component="ul" sx={{ listStyle: 'none', pl: 1.5, m: 0, borderLeft: 1, borderColor: 'divider' }}>
+      {nodes.map((node) => (
+        <Box component="li" key={node.unit.id} sx={{ my: 0.25 }} data-testid={`plan-${when}-${node.unit.id}`}>
+          <Typography component="div" sx={LINE}>
+            <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>{facts.typeName(node.unit.unitTypeId)}</Box>
+            {node.unit.name}
+            {mark(node.unit.id) && <Chip size="small" label={mark(node.unit.id)} sx={{ ml: 0.75, height: 18, fontSize: 10 }} />}
+          </Typography>
+          {node.holders.length > 0 && <Typography sx={QUIET}>{holdersLine(node, facts)}</Typography>}
+          <Tree nodes={node.children} when={when} facts={facts} s={s} />
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/** Who holds which role in a unit on the day: "Cluster lead: Omar · Product manager: Sanne". */
+function holdersLine(node: UnitNode, facts: PlanFacts): string {
+  const byRole = new Map<string, string[]>()
+  for (const one of node.holders) byRole.set(one.roleId, [...byRole.get(one.roleId) ?? [], facts.names.person(personOf(one))])
+  return [...byRole].map(([role, persons]) => `${facts.names.role(role)}: ${persons.join(', ')}`).join(' · ')
+}
+
+/** Every assignment that ends under the plan, with its suggestion, written as one step. */
+function PeopleToMove(props: PlanOrganisationProps & { facts: PlanFacts }) {
+  const { facts, readOnly, makeId, land, s } = props
+  const { organisation, reorganisation: r, at } = facts
+  const moves = peopleToMove(organisation, { units: r.retires, roles: r.roles })
+  const offered = [...r.introduces.map((one) => one.unitId), ...r.moves.map((one) => one.parentId).filter((id): id is string => id !== undefined)]
+  const placesFor = (move: PeopleMove) => placesIn(organisation, [
+    ...(move.suggestion ? [move.suggestion.unitId] : []), ...offered, move.assignment.unitId,
+  ], addDays(move.lastDay, 1))
+  const write = (rows: { move: PeopleMove; choice: PeopleChoice }[]) => land(peopleMoveSteps(rows, {
+    scopeOfAssignment: at.assignmentAt, scopeOfUnit: (id) => at.unitAt(id)?.scope, makeId,
+  }))
+  return <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s} />
+}
+
+/** What the checks find on the plan's day in the units it touches, and every responsibility that loses its A. */
+function StillOpen({ facts, before, after, scopeLabel, s }: {
+  facts: PlanFacts; before: string; after: string; scopeLabel: (path: ScopePath) => string; s: Translate
+}) {
+  const lines = stillOpen(facts.at, facts.reorganisation, facts.responsibilities, { before, after }, scopeLabel, facts.names, s)
+  return (
+    <Box data-testid="plan-still-open">
+      <Typography sx={HEADING}>{s('move.stillOpen', { day: after })}</Typography>
+      {lines.length === 0 && <Typography sx={QUIET}>{s('move.stillOpenNone')}</Typography>}
+      {lines.map((line, at) => <Typography key={`${at}/${line}`} sx={{ fontSize: 12, color: 'warning.main' }}>{line}</Typography>)}
+    </Box>
+  )
+}
+
+/** The sentences of what is still open: the checks of the day in the units under the change, then the responsibilities without their A. */
+function stillOpen(
+  at: OrganisationAt, r: PlanReorganisation, responsibilities: Parameters<typeof lostAccountability>[0], days: { before: string; after: string },
+  scopeLabel: (path: ScopePath) => string, names: MoveNames, s: Translate,
+): string[] {
+  const roots = reorganisationRoots(at.organisation, r, days.before, days.after)
+  const walk = (nodes: readonly UnitNode[]): string[] => nodes.flatMap((node) => [node.unit.id, ...walk(node.children)])
+  const units = new Set(walk(unitTree(at.organisation, days.after, roots)))
+  const persons = new Set(at.organisation.assignments
+    .filter((one) => units.has(one.unitId) && runsOn(one, days.after)).map(personOf))
+  const found = findingsOfOrganisation(at, days.after)
+    .filter((one) => (one.person !== undefined ? persons.has(one.person) : units.has(one.id)))
+    .map((one) => findingSentence(one, s, scopeLabel, names.person))
+  const lost = lostAccountability(responsibilities, at.organisation, days.before, days.after)
+    .map((one) => s('move.lostA', { responsibility: one.name }))
+  return [...new Set([...found, ...lost])]
+}
