@@ -707,6 +707,16 @@ export function ExperimentIcon({ size = 16 }: IconProps) {
   );
 }
 
+/** Two sheets, one over the other: copy a link to this record. */
+export function CopyIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M15 5.5V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** A cross: take this off, or refuted. */
 export function CloseIcon({ size = 16 }: IconProps) {
   return (

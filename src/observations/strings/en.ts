@@ -359,6 +359,7 @@ export const EN = {
   'observation.tipLocal': 'Link a cause of a scope below that this cause explains. The link is kept on this cause.',
   'observation.tipRestore': 'Bring it back into the analysis.',
   'observation.tipOpenScope': 'Open the observations of {scope}, where this record lives.',
+  'observation.tipCopyLink': 'Copy a link that opens this record on this page, to paste wherever it is needed.',
   'observation.tipUnlink': 'Unlink: {from} no longer explains {to}.',
   'observation.makeRootAsk': 'Make {label} a root cause? It becomes {next}. The chain ends here: nothing can be linked behind it, and solutions may address it.',
   'observation.makeCauseAsk': 'Make {label} a cause again? It becomes {next}, and a deeper cause can be linked behind it.',

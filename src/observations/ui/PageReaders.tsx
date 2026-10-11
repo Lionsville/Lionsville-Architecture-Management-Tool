@@ -162,19 +162,26 @@ export type ReaderContext = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** *Copy link* to the record on show, where the host can make one (ADR-0033): every reader offers it, read-only too. */
+  copyLink?: ((selected: Selected) => void) | undefined
 }
+
+/** What a reader is handed to copy a link to the record it reads. */
+type Link = { onCopyLink?: () => void }
 
 export function RecordReader({ selected, selectedKey, ctx }: { selected: Selected | undefined; selectedKey: string | undefined; ctx: ReaderContext }) {
   if (!selected) return <Box sx={{ p: 5, color: 'text.secondary' }}><Typography>{ctx.s('observation.noneSelected')}</Typography></Box>
+  const copy = ctx.copyLink
+  const link: Link = copy ? { onCopyLink: () => copy(selected) } : {}
   switch (selected.kind) {
-    case 'solution': return solutionReader(selected.solution, ctx)
-    case 'solutionBelow': return solutionBelowReader(selected.solution, selected.scope, ctx)
-    case 'experiment': return experimentReader(selected.experiment, ctx)
-    case 'experimentBelow': return experimentBelowReader(selected.experiment, selected.scope, ctx)
-    case 'cause': return causeReader(selected.cause, undefined, ctx)
-    case 'causeBelow': return causeReader(selected.cause, selected.scope, ctx)
-    case 'below': return observationReader(selected.observation, selected.scope, selectedKey, ctx)
-    case 'observation': return observationReader(selected.observation, undefined, selectedKey, ctx)
+    case 'solution': return solutionReader(selected.solution, ctx, link)
+    case 'solutionBelow': return solutionBelowReader(selected.solution, selected.scope, ctx, link)
+    case 'experiment': return experimentReader(selected.experiment, ctx, link)
+    case 'experimentBelow': return experimentBelowReader(selected.experiment, selected.scope, ctx, link)
+    case 'cause': return causeReader(selected.cause, undefined, ctx, link)
+    case 'causeBelow': return causeReader(selected.cause, selected.scope, ctx, link)
+    case 'below': return observationReader(selected.observation, selected.scope, selectedKey, ctx, link)
+    case 'observation': return observationReader(selected.observation, undefined, selectedKey, ctx, link)
   }
 }
 
@@ -209,8 +216,8 @@ function nameWithin(scope: string, ctx: ReaderContext): (id: string, at?: string
   }
 }
 
-function observationReader(one: Observation, scope: string | undefined, selectedKey: string | undefined, ctx: ReaderContext) {
-  return <ObservationReader key={selectedKey} {...observationProps(one, scope, selectedKey, ctx)} />
+function observationReader(one: Observation, scope: string | undefined, selectedKey: string | undefined, ctx: ReaderContext, link: Link) {
+  return <ObservationReader key={selectedKey} {...observationProps(one, scope, selectedKey, ctx)} {...link} />
 }
 
 /** An observation's reader, wired: what the pane draws and what the right-click offers are read off these. */
@@ -313,8 +320,8 @@ function explainedFromOf(cause: Cause, scope: string | undefined, above: readonl
   }))
 }
 
-function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
-  return <CauseReader key={nodeKey(cause.id, scope)} {...causeProps(cause, scope, ctx)} />
+function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext, link: Link) {
+  return <CauseReader key={nodeKey(cause.id, scope)} {...causeProps(cause, scope, ctx)} {...link} />
 }
 
 /** A cause's reader, wired: what the pane draws and what the right-click offers are read off these. */
@@ -366,8 +373,8 @@ function causeProps(cause: Cause, scope: string | undefined, ctx: ReaderContext)
   }
 }
 
-function solutionReader(one: Solution, ctx: ReaderContext) {
-  return <SolutionReader key={one.id} {...solutionProps(one, ctx)} />
+function solutionReader(one: Solution, ctx: ReaderContext, link: Link) {
+  return <SolutionReader key={one.id} {...solutionProps(one, ctx)} {...link} />
 }
 
 /** A solution's reader, wired: what the pane draws and what the right-click offers are read off these. */
@@ -438,7 +445,7 @@ function solutionProps(one: Solution, ctx: ReaderContext): SolutionReaderProps {
  * drawn here that could not say where it stands. The strip says where it
  * lives and opens that scope.
  */
-function solutionBelowReader(one: Solution, scope: string, ctx: ReaderContext) {
+function solutionBelowReader(one: Solution, scope: string, ctx: ReaderContext, link: Link) {
   const lists = listsOf(scope, ctx)
   const nameOf = nameWithin(scope, ctx)
   const openScope = ctx.openScope
@@ -470,13 +477,14 @@ function solutionBelowReader(one: Solution, scope: string, ctx: ReaderContext) {
         onPlanExperiment={nothing} onDrop={nothing} onRestore={nothing} onDelete={nothing}
         onOpen={ctx.openKey}
         images={ctx.images}
+        {...link}
       />
     </Box>
   )
 }
 
 /** An experiment of a scope below, read and not changed, as a solution below is: it is concluded in its own scope. */
-function experimentBelowReader(one: Experiment, scope: string, ctx: ReaderContext) {
+function experimentBelowReader(one: Experiment, scope: string, ctx: ReaderContext, link: Link) {
   const nameOf = nameWithin(scope, ctx)
   const openScope = ctx.openScope
   const label = ctx.scopeLabel(scope)
@@ -497,13 +505,14 @@ function experimentBelowReader(one: Experiment, scope: string, ctx: ReaderContex
         onUpdate={nothing} onMove={nothing} onDelete={nothing}
         onOpen={ctx.openKey}
         images={ctx.images}
+        {...link}
       />
     </Box>
   )
 }
 
-function experimentReader(one: Experiment, ctx: ReaderContext) {
-  return <ExperimentReader key={one.id} {...experimentProps(one, ctx)} />
+function experimentReader(one: Experiment, ctx: ReaderContext, link: Link) {
+  return <ExperimentReader key={one.id} {...experimentProps(one, ctx)} {...link} />
 }
 
 /** An experiment's reader, wired: what the pane draws and what the right-click offers are read off these. */

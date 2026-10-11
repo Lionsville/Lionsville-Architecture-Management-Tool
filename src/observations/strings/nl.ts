@@ -340,6 +340,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.tipLocal': 'Koppel een oorzaak van een scope eronder die deze oorzaak verklaart. De koppeling staat op deze oorzaak.',
   'observation.tipRestore': 'Haal haar terug in de analyse.',
   'observation.tipOpenScope': 'De waarnemingen van {scope} openen, waar dit record thuishoort.',
+  'observation.tipCopyLink': 'Een link kopiëren die dit record op deze pagina opent, om te plakken waar hij nodig is.',
   'observation.tipUnlink': 'Ontkoppelen: {from} verklaart {to} niet meer.',
   'observation.makeRootAsk': '{label} tot grondoorzaak maken? Ze wordt {next}. De keten houdt hier op: er kan niets achter gekoppeld worden, en oplossingen mogen haar aanpakken.',
   'observation.makeCauseAsk': '{label} weer tot oorzaak maken? Ze wordt {next}, en er kan een diepere oorzaak achter gekoppeld worden.',

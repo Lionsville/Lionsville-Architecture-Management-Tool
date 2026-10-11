@@ -53,7 +53,7 @@ import {
   GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
 import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
-import { ReaderActions } from './ActionButton'
+import { BarActions, ReaderActions } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
 import { TitleField } from './FormParts'
 import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
@@ -142,6 +142,8 @@ export type SolutionReaderProps = {
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** *Copy link* to this record, where the page can make one: offered read-only too. */
+  onCopyLink?: (() => void) | undefined
 }
 
 /**
@@ -211,7 +213,7 @@ export function SolutionReader(props: SolutionReaderProps) {
           <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
         </Box>
-        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
+        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
@@ -519,6 +521,8 @@ export type ExperimentReaderProps = {
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** *Copy link* to this record, where the page can make one: offered read-only too. */
+  onCopyLink?: (() => void) | undefined
 }
 
 /** An experiment's moves from where it stands, and what the bar offers beside them; none where it is read only. */
@@ -569,12 +573,12 @@ export function ExperimentReader(props: ExperimentReaderProps) {
           <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
         </Box>
-        {canEdit && (
+        {(canEdit || props.onCopyLink) && (
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* The moves from here, and only those: planned starts, running
                 goes back or is concluded, a concluded one is reopened. */}
-            <ReaderActions label={s('solution.experimentMoves')} moreLabel={s('observation.more')} actions={bar.moves} />
-            <ReaderActions label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} actions={bar.actions} />
+            {canEdit && <ReaderActions label={s('solution.experimentMoves')} moreLabel={s('observation.more')} actions={bar.moves} />}
+            <BarActions actions={bar.actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
           </Box>
         )}
       </Box>

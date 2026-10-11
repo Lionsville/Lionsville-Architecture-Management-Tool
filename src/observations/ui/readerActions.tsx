@@ -18,7 +18,7 @@
  */
 import type { Translate } from '../../i18n'
 import {
-  ArchiveIcon, BackIcon, CheckIcon, CloseIcon, DeeperIcon, DocGlyph, ExperimentIcon, EyeIcon, GlobeIcon, LinkIcon,
+  ArchiveIcon, BackIcon, CheckIcon, CloseIcon, CopyIcon, DeeperIcon, DocGlyph, ExperimentIcon, EyeIcon, GlobeIcon, LinkIcon,
   MakeCauseIcon, MakeRootIcon, MergeIcon, MinusIcon, PencilIcon, RootCauseIcon, ScopeIcon, SolutionIcon, TrashIcon, UndoIcon,
 } from '../../widgets/icons'
 import type { ExperimentOutcome } from '../solution'
@@ -101,6 +101,15 @@ export function restoreAction(tip: string, onClick: () => void, testId: string, 
 }
 
 /** Open the page of the scope a record lives in. */
+/**
+ * *Copy link*, where a reader's bar ends (ADR-0033): offered read-only too,
+ * since reading is what a link is for. It is not one of the bar's builders'
+ * actions — the right-click adds its own, after what the reader offers.
+ */
+export function copyLinkAction(onClick: () => void, s: Translate): ReaderAction {
+  return { key: 'copy-link', icon: <CopyIcon size={14} />, label: s('common.copyLink'), tip: s('observation.tipCopyLink'), onClick, testId: 'reader-copy-link' }
+}
+
 export function openScopeAction(scope: string, onClick: () => void, s: Translate): ReaderAction {
   return {
     key: 'open-scope', icon: <ScopeIcon size={14} />, label: s('observation.openScope', { scope }),

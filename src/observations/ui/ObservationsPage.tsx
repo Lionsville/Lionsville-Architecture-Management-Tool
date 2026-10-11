@@ -696,6 +696,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
     onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
+    copyLink: copyLinkOf(props, tab),
   }
 
   // --- the analysis ----------------------------------------------------------------------

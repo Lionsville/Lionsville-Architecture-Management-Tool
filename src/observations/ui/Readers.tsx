@@ -48,7 +48,7 @@ import type {
 } from '../observation'
 import { observationProblems } from '../form'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
-import { COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
+import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
 import { ExampleField, TitleField } from './FormParts'
 import { exampleFor, problemText } from './ObservationForm'
@@ -247,6 +247,8 @@ export type ObservationReaderProps = {
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** *Copy link* to this record, where the page can make one: offered read-only too. */
+  onCopyLink?: (() => void) | undefined
 }
 
 /**
@@ -313,7 +315,7 @@ export function ObservationReader(props: ObservationReaderProps) {
           {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
           <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
         </Box>
-        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
+        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
 
       {fromScope && (
@@ -529,6 +531,8 @@ export type CauseReaderProps = {
   asked?: { panel: CausePanel }
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** *Copy link* to this record, where the page can make one: offered read-only too. */
+  onCopyLink?: (() => void) | undefined
 }
 
 /** What a cause's reader asks, or refuses, under its actions. */
@@ -596,7 +600,7 @@ export function CauseReader(props: CauseReaderProps) {
           {root && <Chip size="small" color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
           <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
         </Box>
-        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
+        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
       {panel === 'root' && props.onRoot && (
         <RootPanel

@@ -15,7 +15,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { translator } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { HostModel } from '../../model/hostModel'
-import type { Cause, Observation } from '../observation'
+import type { Cause, Observation, ScopeAnalysis } from '../observation'
 import type { Experiment, Solution } from '../solution'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
@@ -393,5 +393,73 @@ describe('the record a link opens on', () => {
     mount({ ...base }, { initialId: 'c1', initialTab: 'analysis', initialNonce: 1 })
     expect(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')).not.toBeNull()
     expect(ringed('c1')).toBe(true)
+  })
+})
+
+/** ADR-0033, amended 11 October 2026: *Copy link* where each reader's bar ends, read-only too. */
+describe('a link to a record, from its reader', () => {
+  const copyLink = () => fireEvent.click(screen.getByTestId('reader-copy-link'))
+
+  it('copies an observation from its reader, read-only too, on the tab it is read on', () => {
+    const onCopyLink = vi.fn()
+    mount(base, { readOnly: true, onCopyLink, initialId: 'o1' })
+    expect(screen.queryByTestId('reader-edit')).toBeNull()
+    expect(within(screen.getByTestId('observation-reader')).getByTestId('reader-copy-link').textContent).toBe('Copy link')
+    copyLink()
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 'o1', tab: 'register' })
+  })
+
+  it('copies a cause from its reader, after what the bar offers', () => {
+    const onCopyLink = vi.fn()
+    mount(base, { onCopyLink, initialId: 'c1' })
+    const bar = within(screen.getByTestId('cause-reader')).getByTestId('reader-copy-link').parentElement!
+    expect(bar.lastElementChild?.getAttribute('data-testid')).toBe('reader-copy-link')
+    copyLink()
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 'c1', tab: 'register' })
+  })
+
+  it('copies a solution from its reader by its own id', () => {
+    const onCopyLink = vi.fn()
+    mount({ ...base, solutions: [solution({})] }, { onCopyLink, initialId: 'so:s1' })
+    within(screen.getByTestId('solution-reader')).getByTestId('reader-copy-link').click()
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 's1' })
+  })
+
+  it('copies an experiment from its reader, read-only too, where it has no moves', () => {
+    const onCopyLink = vi.fn()
+    mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] }, { readOnly: true, onCopyLink, initialId: 'ex:e1' })
+    expect(screen.queryByTestId('reader-edit')).toBeNull()
+    within(screen.getByTestId('experiment-reader')).getByTestId('reader-copy-link').click()
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 'e1' })
+  })
+
+  it('copies a record of a scope below from its reader, in the scope it lives in', () => {
+    const onCopyLink = vi.fn()
+    const scope = 'acme/delivery/intake'
+    const below: ScopeAnalysis[] = [{
+      scope,
+      observations: [observation({ id: 'ob1', title: 'Intake closes early' })],
+      causes: [cause({ id: 'cb1', title: 'Intake waits on the batch', explains: [{ id: 'ob1', strength: 'normal' }] })],
+      solutions: [solution({ id: 'sb1', title: 'Intake starts later', addresses: [{ id: 'cb1', strength: 'normal' }] })],
+      experiments: [experiment({ id: 'eb1', title: 'Start at ten for a week', tests: ['sb1'] })],
+    }]
+    mount(base, { readOnly: true, onCopyLink, below, path: 'acme/delivery', scopeLabel: (path) => path })
+    const open = (testId: string) => { fireEvent.click(screen.getByTestId(testId)); copyLink() }
+    open(`observation-row-${scope}#ob1`)
+    open(`cause-row-${scope}#cb1`)
+    open(`solution-row-${scope}#so:sb1`)
+    fireEvent.click(within(screen.getByTestId('experiment-list')).getByText('EX-0001 Start at ten for a week'))
+    copyLink()
+    expect(onCopyLink.mock.calls.map(([link]) => link)).toEqual([
+      { id: 'ob1', scope, tab: 'register' },
+      { id: 'cb1', scope, tab: 'register' },
+      { id: 'sb1', scope },
+      { id: 'eb1', scope },
+    ])
+  })
+
+  it('offers none where the host makes no links', () => {
+    mount(base, { initialId: 'o1' })
+    expect(screen.queryByTestId('reader-copy-link')).toBeNull()
   })
 })

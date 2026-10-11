@@ -25,7 +25,8 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction } from './PictureMenu'
-import { toMenu } from './readerActions'
+import { copyLinkAction, toMenu } from './readerActions'
+import type { Translate } from '../../i18n'
 
 /** Below this the reader is compact: a query on the reader's own width. */
 export const COMPACT = '@container reader (max-width: 559px)'
@@ -124,6 +125,25 @@ export function ReaderActions({ actions, label, moreLabel, children }: {
       <OverflowActions actions={occasional} label={moreLabel} />
       {children}
     </Box>
+  )
+}
+
+/**
+ * A reader's own row, with *Copy link* where it ends (ADR-0033): drawn even
+ * where the record offers nothing else, read-only included, since reading is
+ * what a link is for.
+ */
+export function BarActions({ actions, label, s, onCopyLink }: {
+  actions: readonly ReaderAction[]
+  label: string
+  s: Translate
+  onCopyLink?: (() => void) | undefined
+}) {
+  if (actions.length === 0 && !onCopyLink) return null
+  return (
+    <ReaderActions actions={actions} label={label} moreLabel={s('observation.more')}>
+      {onCopyLink && <ActionButton action={copyLinkAction(onCopyLink, s)} />}
+    </ReaderActions>
   )
 }
 

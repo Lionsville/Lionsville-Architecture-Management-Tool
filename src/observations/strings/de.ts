@@ -340,6 +340,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.tipLocal': 'Eine Ursache eines Scopes darunter verknüpfen, die diese Ursache erklärt. Die Verknüpfung liegt bei dieser Ursache.',
   'observation.tipRestore': 'Zurück in die Analyse holen.',
   'observation.tipOpenScope': 'Die Beobachtungen von {scope} öffnen, wo dieser Datensatz liegt.',
+  'observation.tipCopyLink': 'Einen Link kopieren, der diesen Datensatz auf dieser Seite öffnet, zum Einfügen, wo er gebraucht wird.',
   'observation.tipUnlink': 'Verknüpfung lösen: {from} erklärt {to} nicht mehr.',
   'observation.makeRootAsk': '{label} zur Grundursache machen? Sie wird {next}. Die Kette endet hier: Nichts kann dahinter verknüpft werden, und Lösungen dürfen sie angehen.',
   'observation.makeCauseAsk': '{label} wieder zur Ursache machen? Sie wird {next}, und eine tiefere Ursache kann dahinter verknüpft werden.',
