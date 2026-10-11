@@ -60,7 +60,11 @@ acting. The person picker searches the register and marks you, and its **New
 person…** looks for somebody who may be the same person before anyone is
 added. Press a holder to correct the assignment, end it with **End on**, or
 remove one made by mistake. Promoting, demoting or transferring a unit takes
-its assignments with it, in the same step.
+its assignments with it, in the same step. A unit's inspector reads unit
+first: its name with **Move…** and **Create drawing** in a **⋯** menu, its
+type, the roles today, who manages it — the reason behind **why?** — what it
+serves, owns, answers for and works with, and the element's own fields last,
+folded under **Element**.
 
 **The checks read the organisation.** What the organisation contradicts about
 itself is listed with the rest: a role short of people or over its maximum, a
@@ -70,8 +74,8 @@ a role that has ended, a unit still of a type that has ended, anyone whose
 shares add up to more than all of their time, a unit type that sits nowhere,
 a responsibility without exactly one accountable role, and a capability
 assigned to a unit that does not serve its domain. A unit's section shows those
-about the unit, a chart those about the units it draws, and the organisation's
-home all of them, for every scope.
+about the unit, a chart those about the units it draws, and the **Checks**
+page all of them, for every scope.
 
 **A correction is an edit; a change has a day.** A reorganisation is a plan.
 On a plan's page, *Units it moves* puts a unit under a new parent on a day,
@@ -106,7 +110,11 @@ in one of three ways — **Collaboration**, **As a service** or **Facilitating**
 — for the days it holds. A draw.io box that points at a unit opens it on the
 scope's chart.
 
-**A chart for a large organisation.** A unit with units under it folds at its
+**A chart for a large organisation.** A unit's units sit in a grid that uses
+the width, and a role nobody need hold is left off until **Show optional
+roles** — a required one nobody holds is always there, dashed. With nothing
+picked, the inspector beside the chart says the day, how many units, people and
+vacancies it shows, its findings, and how to read it. A unit with units under it folds at its
 caret and says what it hides — units, people, vacancies and findings; a chart
 of more than 30 units opens folded below its second level, and **Fold all**
 and **Unfold all** are on its bar. Beside it, an outline of the units folds on
@@ -134,6 +142,23 @@ on every area, grouping and capability, marking those nobody answers for. A
 unit's **Serves** and **Responsible for** have a **+** each, so either end
 says the same thing.
 
+**Findings you can act on.** Every check the app makes has a name, a
+category and a weight — **fix** where the model contradicts itself, **review**
+for a gap or a risk worth a look, **note** for something that may well be
+intended — and says why it matters and how to fix it. Every list of findings,
+on a home, a unit, the chart, the Conway map, a plan or the roadmap, groups
+them by check with a count, folded, fixes first, with notes behind **Show
+notes**. Pressing one opens its explanation and the buttons that fix it there
+— on the Conway map, for an interaction no interface uses, **Remove the
+declaration**, **Model the missing interface…** or **Open the two units**. A
+review or a note can be **marked as intended**, with a reason: it is a step
+like any other, kept with the model, it leaves the list for **Accepted**,
+where **Take back** brings it back, and it returns by itself when what it is
+about changes. The organisation's home says how many there are of each weight,
+and the **Checks** page lists every check by category with its explanation and
+every instance across the tree. An agent reads what was marked and never marks
+anything.
+
 **A register of people, kept outside the history.** **People** on the
 organisation's home holds one entry per person: a name, a work address where
 you know one, and whether they are of the organisation or from outside it. A
@@ -142,8 +167,12 @@ keeps a person's id and never their name, so a name that goes from the
 register goes from every screen at once. **Add person**, a picker's **New
 person…** and each row of **Import CSV…** look first for somebody who may be
 the same person: the same address, the same name, a name within two letters,
-or the same family name and first initial. **Possible duplicates** lists the
-pairs already there, and **Merge** asks first and is final; merging somebody
+or the same family name and first initial. **Possible duplicates** is one
+folded line until you open it — how many pairs, and by which sign — and then a
+row per pair with what tells the two apart, **Merge…**, which asks which entry
+to keep, and **Not the same person**, which is kept with the register and stops
+the pair being shown anywhere; the pairs answered so are listed beneath, each
+with **Take back**. **Merge** asks first and is final; merging somebody
 active into an entry that has left asks which is true, **Still here** or
 **Left**. The list says each person's roles on the day looked at, and *none*
 where they hold nothing. A person's page says what they hold today, will hold
@@ -203,13 +232,14 @@ similar is there — and marks someone as left with `person.leave`. It sees
 names, or pseudonyms where the policy says so, is never told an address, and
 cannot forget, remove or merge anyone, or change the policy.
 
-**The folder format is 11.** The operating model is kept under `_operating/`
-at the organisation, and each scope's assignments under `_assignments/`.
-Opening an older folder brings it up to 11 and moves no scope, so every link
-and every path in the history still points where it did; a scope from before
-reads as one with no operating model and no assignments. An earlier version of
-the app opens a scope written at 11 to be looked at and not changed, and says
-to update.
+**The folder format is 12.** The operating model is kept under `_operating/`
+at the organisation, each scope's assignments under `_assignments/`, and the
+findings marked as intended under `_checks/`. Opening an older folder brings it
+up to 12 and moves no scope, so every link and every path in the history still
+points where it did; a scope from before reads as one with no operating model,
+no assignments and nothing marked. An earlier version of the app opens a scope
+written at 12 to be looked at and not changed, and says to update. The people
+register keeps the pairs answered *not the same person* beside its entries.
 
 **Share with a link.** *File → Share with a Link…*, and in a browser the same
 item in the **⋯** menu, copies a link to the place you are on and shows it to
@@ -289,3 +319,9 @@ a landscape board* in the new-scope dialog made the scope, but then opened it
 on a canvas with nothing to draw and an error about a missing diagram id. Now
 the scope is filed empty and you land on its home, where a board can be added
 when you want one.
+
+**A stable control name is gone.** `org.attentionMore` — *Show all* under
+*Needs attention* — went with the list it lengthened: the home now says how
+many findings there are of each weight (`org.attentionCount`), and the
+**Checks** page lists them all. A script that pressed it presses a count, or
+opens the Checks page (`page: 'checks'`).

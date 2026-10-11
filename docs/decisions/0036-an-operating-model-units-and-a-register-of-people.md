@@ -14,7 +14,9 @@
   (*As built, 3.6.1: a catalogue of checks*, below), a finding marked as
   intended with the scope format at 12 (*As built, 3.6.1: marked as
   intended*, below), and every list of findings grouped, folded and explained
-  (*As built, 3.6.1: one list of findings*, below)
+  (*As built, 3.6.1: one list of findings*, below), with marking and the
+  Checks page on the screens (*As built, 3.6.1: marked as intended on
+  screen, and the Checks page*, below); implemented, 12 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
