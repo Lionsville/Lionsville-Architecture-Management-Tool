@@ -126,6 +126,35 @@ describe('the plans\' moves in the index', () => {
   })
 })
 
+describe('the plans that bring and end units, in the index', () => {
+  /** The customer domain's plan brings the webshop and ends the customer unit; an abandoned one would retire the webshop. */
+  function planned(): ScopeModel[] {
+    const held = tree()
+    const plan = (id: string, number: number, status: 'agreed' | 'abandoned', elements: { elementId: string; role: 'introduces' | 'retires' | 'changes' }[]) => ({
+      id, number, title: id, status, elements, decisions: [], milestones: [], body: '',
+    })
+    held[1].model = {
+      ...held[1].model,
+      transitions: [
+        plan('tr-1', 1, 'agreed', [
+          { elementId: 'webshop', role: 'introduces' }, { elementId: 'customer', role: 'retires' },
+          { elementId: 'shop', role: 'introduces' }, { elementId: 'orders', role: 'changes' },
+        ]),
+        plan('tr-2', 2, 'abandoned', [{ elementId: 'webshop', role: 'retires' }]),
+      ],
+    }
+    return held
+  }
+
+  it('lists the actors a plan introduces and retires, with the plan and the scope, and nothing an abandoned plan names', () => {
+    expect(indexScopes(planned()).unitPlans()).toEqual([
+      { scope: 'customer', plan: { id: 'tr-1', number: 1 }, unitId: 'webshop', role: 'introduces' },
+      { scope: 'customer', plan: { id: 'tr-1', number: 1 }, unitId: 'customer', role: 'retires' },
+    ])
+    expect(indexScopes(tree()).unitPlans()).toEqual([])
+  })
+})
+
 describe('what the organisation contradicts, from the index', () => {
   const index = indexScopes(tree())
 

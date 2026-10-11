@@ -47,6 +47,32 @@ describe('what a view in a scope is of', () => {
   })
 })
 
+describe('the plans that bring a unit and end it', () => {
+  const plan = (id: string, number: number, elements: { elementId: string; role: 'introduces' | 'retires' }[], status: 'agreed' | 'abandoned' = 'agreed') => ({
+    id, number, title: id, status, elements, decisions: [], milestones: [], body: '',
+  })
+
+  it('reads the open scope\'s plans off its session and every other scope\'s off the index, the first of each', () => {
+    const root: HostModel = { ...ROOT, transitions: [plan('tr-r', 3, [{ elementId: 'data', role: 'retires' }])] }
+    // What the index read of this scope is the session's to say: a plan taken off since is not read.
+    const read: HostModel = { ...SHIPPING, transitions: [plan('tr-old', 9, [{ elementId: 'shipping', role: 'introduces' }])] }
+    const tree = indexScopes([{ path: '', model: root }, { path: 'shipping', model: read }])
+    const session: HostModel = {
+      ...SHIPPING,
+      transitions: [plan('tr-1', 1, [{ elementId: 'shipping', role: 'introduces' }, { elementId: 'shipping', role: 'retires' }]), plan('tr-2', 2, [{ elementId: 'shipping', role: 'retires' }])],
+    }
+    const here = unitViewsHere(tree, 'shipping', session)
+    expect(here.plansOf('shipping')).toEqual({ introduces: { id: 'tr-1', number: 1 }, retires: { id: 'tr-1', number: 1 } })
+    expect(here.plansOf('data')).toEqual({ retires: { id: 'tr-r', number: 3 } })
+    expect(here.plansOf('board')).toEqual({})
+  })
+
+  it('takes nothing from an abandoned plan', () => {
+    const session: HostModel = { ...SHIPPING, transitions: [plan('tr-1', 1, [{ elementId: 'shipping', role: 'introduces' }], 'abandoned')] }
+    expect(unitViewsHere(index, 'shipping', session).plansOf('shipping')).toEqual({})
+  })
+})
+
 /**
  * A Conway map reads each application's lifecycle on its day (ADR-0009),
  * whichever scope keeps it — the index carries the master's — and counts what

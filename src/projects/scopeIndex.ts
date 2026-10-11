@@ -219,6 +219,14 @@ export type IndexedAssignment = { scope: ScopePath; assignment: Assignment }
 /** A unit put under another parent on a day by a plan (ADR-0036 §6), and the plan that does it and the scope that keeps that plan. */
 export type IndexedMove = { scope: ScopePath; plan: { id: string; number: number }; move: UnitMove }
 
+/**
+ * An actor a plan introduces or retires (ADR-0036 §6), the plan and the scope
+ * that keeps it: what the organisation chart names beside a unit's first and
+ * last day. Actors only — a unit is an actor with a type — so the index does
+ * not carry every element every plan names.
+ */
+export type IndexedUnitPlan = { scope: ScopePath; plan: { id: string; number: number }; unitId: ElementId; role: 'introduces' | 'retires' }
+
 /** The operating model as the organisation keeps it (ADR-0036 §2): each list, in the organisation's order. */
 export type IndexedOperatingModel = {
   unitTypes: readonly UnitType[]
@@ -352,6 +360,12 @@ export type ScopeIndex = {
    */
   moves(): IndexedMove[]
   /**
+   * Every actor a plan introduces or retires (ADR-0036 §6), plan by plan in
+   * each scope's own order, scope by scope in path order: every plan's but
+   * an abandoned one's.
+   */
+  unitPlans(): IndexedUnitPlan[]
+  /**
    * The units, the assignments, the operating model and the plans' moves
    * together: what `model/units.ts` asks its questions of — who manages a
    * unit, what the organisation contradicts on a day — and what
@@ -432,6 +446,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const unitDefinitions: IndexedUnit[] = []
   const assignments: IndexedAssignment[] = []
   const moves: IndexedMove[] = []
+  const unitPlans: IndexedUnitPlan[] = []
   let operating = NO_OPERATING_MODEL
 
   const at = (id: ElementId): Held => {
@@ -473,6 +488,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     }
     for (const assignment of model.assignments ?? []) assignments.push({ scope: path, assignment })
     moves.push(...movesOf(path, model))
+    unitPlans.push(...unitPlansOf(path, model))
     if (path === '') operating = operatingOf(model)
   }
 
@@ -548,6 +564,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     assignments: () => [...assignments],
     operatingModel: () => operating,
     moves: () => [...moves],
+    unitPlans: () => [...unitPlans],
     organisation: () => organisation,
     scopes: () => [...paths],
   }
@@ -587,6 +604,18 @@ export function movesOf(path: ScopePath, model: Pick<ScopeModel['model'], 'trans
     .flatMap((transition) => (transition.moves ?? []).map((move) => ({
       scope: path, plan: { id: transition.id, number: transition.number }, move,
     })))
+}
+
+/** The actors a scope's plans introduce and retire (ADR-0036 §6): every plan's but an abandoned one's, in the scope's order. */
+export function unitPlansOf(path: ScopePath, model: Pick<ScopeModel['model'], 'transitions' | 'elements'>): IndexedUnitPlan[] {
+  const plans = (model.transitions ?? []).filter((transition) => transition.status !== 'abandoned')
+  if (plans.length === 0) return []
+  const actors = new Set(model.elements.filter((element) => element.kind === 'actor').map((element) => element.id))
+  return plans.flatMap((transition) => transition.elements.flatMap(({ elementId, role }) => (
+    (role === 'introduces' || role === 'retires') && actors.has(elementId)
+      ? [{ scope: path, plan: { id: transition.id, number: transition.number }, unitId: elementId, role }]
+      : []
+  )))
 }
 
 /** The organisation's operating model, off its thin read. */

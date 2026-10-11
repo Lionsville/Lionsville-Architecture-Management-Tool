@@ -17,6 +17,9 @@
  * changes, across the whole organisation (`conwayInputAround`).
  *
  * Off the index the shell already holds and the session: nothing loads for it.
+ * The plans that bring a unit and end it are read the same way — the open
+ * scope's as its session has them, the rest the index's — so the chart names
+ * the plan beside a unit's first and last day.
  */
 import { conwayApplication } from '../../model/conway'
 import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from '../../model/conway'
@@ -25,6 +28,7 @@ import type { ElementId, Relation } from '../../model/types'
 import { isUnit, organisationOn, unitsBelow } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { OrganisationAt } from '../../projects/checks'
+import { unitPlansOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import { isWithinScope } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
@@ -41,13 +45,28 @@ export type UnitViewsHere = {
   heldHere: (id: ElementId) => boolean
   /** What to call a unit, a party or an application. */
   name: (id: ElementId) => string
+  /** The plans that bring a unit and end it, where one does: the first of each the tree names. */
+  plansOf: (id: ElementId) => UnitPlans
 }
+
+/** A plan, as a badge names it: by its number, `TR-0007`. */
+export type PlanNamed = { id: string; number: number }
+
+/** The plan that introduces a unit and the one that retires it. */
+export type UnitPlans = { introduces?: PlanNamed; retires?: PlanNamed }
+
+const NO_PLANS: UnitPlans = {}
 
 export function unitViewsHere(index: ScopeIndex, scope: ScopePath, model: HostModel): UnitViewsHere {
   const at = organisationHere(index, scope, model)
   const held = new Set(model.elements.filter((element) => element.ref === undefined).map((element) => element.id))
   const scopeOf = (id: ElementId): ScopePath | undefined => (held.has(id) ? scope : at.unitAt(id)?.scope ?? index.lookup(id)?.master)
   const names = new Map(model.elements.map((element) => [element.id, element.name]))
+  const plans = new Map<ElementId, UnitPlans>()
+  for (const { unitId, role, plan } of [...index.unitPlans().filter((one) => one.scope !== scope), ...unitPlansOf(scope, model)]) {
+    const held = plans.get(unitId) ?? {}
+    if (held[role] === undefined) plans.set(unitId, { ...held, [role]: plan })
+  }
   return {
     at,
     includes: (unit) => {
@@ -57,6 +76,7 @@ export function unitViewsHere(index: ScopeIndex, scope: ScopePath, model: HostMo
     scopeOf,
     heldHere: (id) => held.has(id),
     name: (id) => names.get(id) ?? at.unitAt(id)?.name ?? index.lookup(id)?.name ?? id,
+    plansOf: (id) => plans.get(id) ?? NO_PLANS,
   }
 }
 
