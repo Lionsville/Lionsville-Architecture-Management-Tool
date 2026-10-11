@@ -94,4 +94,22 @@ describe('a drawing in the folder', () => {
     expect(restored?.kind === 'drawing' && restored.drawing?.xml).toBe(XML)
     expect(restored?.kind === 'drawing' && restored.drawing).toEqual(drawing.drawing)
   })
+
+  it('writes the picture a drawing names as a file by its address, reads it back, and carries none no drawing names', () => {
+    const digest = 'ab'.repeat(32)
+    const picture = `sha256:${digest}`
+    const url = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg"/>')}`
+    const held: ScopeSnapshot = {
+      ...scope(),
+      model: { ...scope().model, diagrams: [board, { ...drawing, drawing: { ...drawing.drawing!, picture } }] },
+      drawingPictures: [{ address: picture, url }, { address: `sha256:${'cd'.repeat(32)}`, url }],
+    }
+    const files = scopeFiles(held)
+    const kept = files.filter((file) => file.path.startsWith('images/'))
+    expect(kept.map((file) => file.path)).toEqual([`images/.drawings/${digest}.svg`])
+    expect(kept[0] && 'text' in kept[0] && kept[0].text).toBe('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    const back = scopeFromFolder(files, 'acme')
+    expect(back?.drawingPictures?.map((one) => one.address)).toEqual([picture])
+    expect(back?.imageLibrary).toBeUndefined()
+  })
 })

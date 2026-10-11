@@ -424,10 +424,11 @@ export class FolderScopeRepository implements ScopeRepository {
     if (!folder) return
     try {
       for (const { path } of await filesUnder(folder, () => true)) {
-        const address = drawingPictureAddress(path)
-        if (address !== undefined && named.has(address)) continue
-        if (address === undefined) continue
-        await removeAt(this.folder.root, picturePath(read.node.address, `${DRAWING_PICTURES}/${path}`))
+        const file = `${DRAWING_PICTURES}/${path}`
+        const address = drawingPictureAddress(file)
+        // A file that is no drawing's picture is somebody else's, and stays.
+        if (address === undefined || named.has(address)) continue
+        await removeAt(this.folder.root, picturePath(read.node.address, file))
       }
     } catch (cause) {
       this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a drawing's picture could not be let go: ${reasonOf(cause)}`, cause })

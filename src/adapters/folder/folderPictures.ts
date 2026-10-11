@@ -40,6 +40,7 @@ import { imageMediaType, isImageFile } from '../../model/documentImage'
 import { imageEntryRefusal, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry, ImageName } from '../../model/imageName'
 import { imageNameOfFile, PICTURES } from './format/imageLibrary'
+export { DRAWING_PICTURES, drawingPictureAddress, drawingPictureFile } from './format/imageLibrary'
 import type { PictureFiles } from './format/imageLibrary'
 
 /** A picture in a library, and the file inside the pictures folder it is kept as. */
@@ -229,30 +230,6 @@ export function foldersOf(files: readonly string[]): Map<string, string> {
     }
   }
   return folders
-}
-
-/**
- * The folder inside a scope's pictures folder that keeps its drawings'
- * pictures. A dot folder: the library never reads one (`pictureFilesOf`), so
- * a drawing's picture is never mistaken for a picture a document can show.
- */
-export const DRAWING_PICTURES = '.drawings'
-
-const DRAWING_PICTURE_FILE = /^([0-9a-f]{64})\.svg$/
-
-/**
- * A drawing's picture's file, by its content address: `images/.drawings/<digest>.svg`.
- * `undefined` for an address that is not a SHA-256 one, which names no file.
- */
-export function drawingPictureFile(address: string): string | undefined {
-  const digest = /^sha256:([0-9a-f]{64})$/.exec(address)?.[1]
-  return digest ? `${DRAWING_PICTURES}/${digest}.svg` : undefined
-}
-
-/** The content address a drawing picture's file name says, or `undefined` for a file that is not one. */
-export function drawingPictureAddress(fileName: string): string | undefined {
-  const digest = DRAWING_PICTURE_FILE.exec(fileName)?.[1]
-  return digest ? `sha256:${digest}` : undefined
 }
 
 /** Where a picture's file is from the folder's root. */

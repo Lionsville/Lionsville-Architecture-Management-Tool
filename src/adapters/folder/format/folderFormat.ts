@@ -89,7 +89,9 @@ import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
 import { isLinkList } from '../../../projects/links'
 import type { RecordLink } from '../../../projects/links'
 import { isScopeKind, resolveActive } from '../../../projects/scope'
-import type { CarriedImage, ScopeKind, ScopeSnapshot, ScopeSummary } from '../../../projects/scope'
+import type { CarriedDrawingPicture, CarriedImage, ScopeKind, ScopeSnapshot, ScopeSummary } from '../../../projects/scope'
+import { drawingPictureAddresses } from '../../../model/drawing'
+import { drawingPictureAddress, drawingPictureFile } from './imageLibrary'
 import { scopePathLabel } from '../../../projects/scopePath'
 import type { ScopePath } from '../../../projects/scopePath'
 
@@ -392,6 +394,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
   }
 
   files.push(...imageFiles(scope.imageLibrary ?? []))
+  files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
 
   files.push({ path: SCOPE_FILE, text: stableJson(header(scope, files)) })
   return files.sort(byPath)
@@ -431,12 +434,58 @@ function imageFiles(library: readonly CarriedImage[]): FolderFile[] {
   return files
 }
 
+/**
+ * The drawings' pictures, as files named by their content address: each one
+ * a drawing in this scope names, and only those — bytes no drawing names any
+ * more are not carried. An SVG, so written as text.
+ */
+function drawingPictureFiles(pictures: readonly CarriedDrawingPicture[], diagrams: readonly { kind: string; drawing?: { picture?: string } }[]): FolderFile[] {
+  const named = new Set(drawingPictureAddresses(diagrams))
+  const files: FolderFile[] = []
+  const written = new Set<string>()
+  for (const picture of pictures) {
+    const file = drawingPictureFile(picture.address)
+    const held = readDataUrl(picture.url)
+    if (!file || !held || !named.has(picture.address) || written.has(file)) continue
+    written.add(file)
+    files.push({ path: `${IMAGES_FOLDER}/${file}`, text: textFromBytes(held.bytes) })
+  }
+  return files
+}
+
+/**
+ * The library's pictures and the drawings' pictures a folder holds, each
+ * absent rather than empty when there are none, so a scope with no pictures
+ * round-trips to exactly the snapshot it came from.
+ */
+function picturesIn(folder: Folder): Pick<ScopeSnapshot, 'imageLibrary' | 'drawingPictures'> {
+  const images = readImages(folder)
+  const drawingPictures = readDrawingPictures(folder)
+  return {
+    ...(images.length ? { imageLibrary: images } : {}),
+    ...(drawingPictures.length ? { drawingPictures } : {}),
+  }
+}
+
+/** The drawings' pictures a folder holds, by the address each file's name says. */
+function readDrawingPictures(folder: Folder): CarriedDrawingPicture[] {
+  const pictures: CarriedDrawingPicture[] = []
+  for (const path of [...folder.keys()].sort()) {
+    if (!path.startsWith(`${IMAGES_FOLDER}/`)) continue
+    const address = drawingPictureAddress(path.slice(IMAGES_FOLDER.length + 1))
+    if (address) pictures.push({ address, url: markFor(folder.get(path)!, 'image/svg+xml') })
+  }
+  return pictures
+}
+
 /** Every picture in the folder, by name, image folders included. The folder is the whole index. */
 function readImages(folder: Folder): CarriedImage[] {
   const images: CarriedImage[] = []
   for (const path of [...folder.keys()].sort()) {
     if (!path.startsWith(`${IMAGES_FOLDER}/`)) continue
     const file = path.slice(IMAGES_FOLDER.length + 1)
+    // A drawing's picture is no picture of the library (`readDrawingPictures`).
+    if (drawingPictureAddress(file) !== undefined) continue
     if (file.includes('/') && !isImageName(file)) continue
     const mediaType = imageMediaType(file)
     if (!mediaType) continue
@@ -1108,10 +1157,6 @@ export function scopeFromFolder(
     diagrams: ordered,
   }
 
-  // Absent rather than empty when there are none, so a scope with no pictures
-  // round-trips to exactly the snapshot it came from.
-  const images = readImages(folder)
-
   return {
     path,
     model,
@@ -1121,7 +1166,7 @@ export function scopeFromFolder(
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
-    ...(images.length ? { imageLibrary: images } : {}),
+    ...picturesIn(folder),
     ...carriedOf(held),
     // Read as far as it reads, so it can be looked at; said, so nothing writes
     // the empty model — or the header without a mark — it would be saved as.

@@ -11,7 +11,11 @@ import { describe, expect, it } from 'vitest'
 import { memoryRepositories } from '../../memory/memoryRepositories'
 import { readScope } from '../../../projects/scopeAccess'
 import type { ScopeSnapshot } from '../../../projects/scope'
-import { carryOut } from './interchange'
+import { readFileSync } from 'node:fs'
+import { contentAddressOf } from '../../../model/imageName'
+import { toDiagram } from '../../../model/normalised'
+import { sealBytes, unsealBytes } from '../../../projects/sealedFile'
+import { bringIn, carryOut, open } from './interchange'
 import { seed } from './testing/organisation'
 
 /** A scope as a session holds it: read as the app reads one, with no bytes. */
@@ -55,5 +59,47 @@ describe('carrying out scopes the caller holds', () => {
     const inside = Object.keys(unzipSync(carried.bytes))
     expect(inside.filter((path) => path.endsWith('scope.json'))).toEqual(['scope.json'])
     expect(inside.filter((path) => path.startsWith('images/'))).toEqual(['images/depot.png'])
+  })
+})
+
+describe('a drawing\'s picture, carried out and brought back', () => {
+  const svg = readFileSync(new URL('../../../model/testing/drawio/nested-groups.svg', import.meta.url))
+
+  /** An organisation with one drawing whose picture is the real export, its bytes put and named. */
+  async function drawn(): Promise<{ repositories: ReturnType<typeof memoryRepositories>; address: string }> {
+    const repositories = memoryRepositories()
+    await seed(repositories)
+    const tree = await repositories.scopes.tree()
+    const scope = tree.root.children.find((node) => node.address === 'depots')!.id
+    const put = await repositories.images.put(scope, 'drawing.svg', new Uint8Array(svg))
+    if ('refused' in put) throw new Error(put.refused)
+    const diagram = toDiagram({
+      id: 'ctx', kind: 'drawing', name: 'Context', members: [],
+      drawing: { xml: '<mxGraphModel><root/></mxGraphModel>', picture: put.contentAddress, links: [] },
+    })
+    const applied = await repositories.scopes.apply([{ scope, steps: [{ stepId: 'drawn', at: Date.now(), command: { type: 'diagram.create', diagram } }] }])
+    if ('refused' in applied) throw new Error(String(applied.refused))
+    return { repositories, address: put.contentAddress }
+  }
+
+  it('carries the picture as a file named by its address, and brings it into another source, byte for byte', async () => {
+    const { repositories, address } = await drawn()
+    expect(address).toBe(await contentAddressOf(new Uint8Array(svg)))
+    const carried = await carryOut(repositories)
+    const file = `depots/images/.drawings/${address.slice('sha256:'.length)}.svg`
+    const inside = unzipSync(carried.bytes)
+    expect(Object.keys(inside)).toContain(file)
+    expect(inside[file]).toEqual(new Uint8Array(svg))
+
+    for (const bytes of [carried.bytes, await unsealBytes(await sealBytes(carried.bytes, 'correct horse', { iterations: 1000 }), 'correct horse')]) {
+      const opened = await open(bytes!, '')
+      if ('refused' in opened) throw new Error(opened.refused)
+      const elsewhere = memoryRepositories()
+      await bringIn(elsewhere, opened)
+      const there = (await elsewhere.scopes.tree()).root.children.find((node) => node.address === 'depots')!.id
+      expect((await elsewhere.images.bytesAt(there, address))?.bytes).toEqual(new Uint8Array(svg))
+      // Not a picture of the library there either.
+      expect((await elsewhere.images.list(there, '')).images.some((entry) => entry.contentAddress === address)).toBe(false)
+    }
   })
 })

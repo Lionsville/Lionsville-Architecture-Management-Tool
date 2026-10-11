@@ -29,7 +29,8 @@ import { analysisNamesWithin, readdressAnalysis, readdressRef, readdressRefs } f
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope } from './scopePath'
-import type { CarriedImage, ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
+import type { CarriedDrawingPicture, CarriedImage, ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
+import { drawingPictureAddresses } from '../model/drawing'
 import { STEP_ELSEWHERE } from './scopeState'
 import type {
   Revision, ScopeAddress, ScopeCommand, ScopeContent, ScopeId, ScopeRefusal, ScopeState, ScopeStep,
@@ -353,6 +354,8 @@ export type Arriving = {
   /** What it holds; its library is made from `pictures`. */
   content: ScopeContent
   pictures?: readonly CarriedPicture[]
+  /** The bytes of the pictures its drawings name, put before it lands, as the library's are. */
+  drawings?: readonly Uint8Array[]
   /**
    * What the caller read at the address when it decided to place this there:
    * the revision it saw, or none where nothing was there. Given, the landing
@@ -425,6 +428,9 @@ async function landEach(
       library.push({ ...await imageEntryOf(picture.name, picture.bytes), contentAddress })
     }
     libraries.push(library)
+    // A drawing's picture is found by the address its bytes have, which is
+    // the one the drawing names; no library entry is made for it.
+    for (const bytes of one.drawings ?? []) keptAt(await images.put(places[at].id, DRAWING_PICTURE_NAME, bytes))
   }
   const expects = await Promise.all(ordered.map((one, at) => expectedOf(scopes, one, places[at])))
   const applied = landed(await scopes.apply(ordered.map((one, at) => ({
@@ -467,6 +473,33 @@ export function picturesOf(carried: readonly CarriedImage[] | undefined): Carrie
   })
 }
 
+/** The name a drawing's picture is put under: only how the repository knows the bytes are SVG. */
+const DRAWING_PICTURE_NAME: ImageName = 'drawing.svg'
+
+/** The bytes of the drawings' pictures a snapshot carries, as a landing puts them. */
+export function drawingBytesOf(carried: readonly CarriedDrawingPicture[] | undefined): Uint8Array[] {
+  return (carried ?? []).flatMap((picture) => {
+    const read = readDataUrl(picture.url)
+    return read ? [read.bytes] : []
+  })
+}
+
+/**
+ * The pictures a scope's drawings name, with their bytes, by address. One
+ * whose bytes are not there is left out: the drawing arrives as *not drawn
+ * yet*, as it was.
+ */
+export async function drawingPicturesOf(
+  images: Pick<ImageRepository, 'bytesAt'>, scope: ScopeId, model: { diagrams: readonly { kind: string; drawing?: { picture?: string } }[] },
+): Promise<CarriedDrawingPicture[]> {
+  const carried: CarriedDrawingPicture[] = []
+  for (const address of new Set(drawingPictureAddresses(model.diagrams))) {
+    const held = await images.bytesAt(scope, address)
+    if (held) carried.push({ address, url: dataUrl('image/svg+xml', held.bytes) })
+  }
+  return carried
+}
+
 /** A scope's pictures, with their bytes, as a snapshot carries them whole. */
 export async function carriedOf(
   images: Pick<ImageRepository, 'bytes'>, scope: ScopeId, library: readonly ImageEntry[],
@@ -489,7 +522,7 @@ export async function carriedOf(
  * names no scope is refused as a scope gone.
  */
 export async function everyScope(
-  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> },
+  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes' | 'bytesAt'> },
   from: ScopeAddress = '',
 ): Promise<ScopeSnapshot[]> {
   const tree = await repositories.scopes.tree()
@@ -513,7 +546,7 @@ export async function everyScope(
 
 /** One scope, by its address, with its pictures' bytes: what a landing is read back and held to. */
 export async function readWhole(
-  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> },
+  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes' | 'bytesAt'> },
   address: ScopeAddress,
 ): Promise<ScopeSnapshot | undefined> {
   const node = nodeAt(await repositories.scopes.tree(), address)
@@ -522,10 +555,15 @@ export async function readWhole(
 }
 
 /** A scope's state as the app holds one, with its pictures carried whole. */
-async function wholeOf(images: Pick<ImageRepository, 'bytes'>, state: ScopeState): Promise<ScopeSnapshot> {
+async function wholeOf(images: Pick<ImageRepository, 'bytes' | 'bytesAt'>, state: ScopeState): Promise<ScopeSnapshot> {
   const snapshot = snapshotOf(state)
   const carried = await carriedOf(images, state.id, state.images)
-  return carried.length ? { ...snapshot, imageLibrary: carried } : snapshot
+  const drawn = await drawingPicturesOf(images, state.id, snapshot.model)
+  return {
+    ...snapshot,
+    ...(carried.length ? { imageLibrary: carried } : {}),
+    ...(drawn.length ? { drawingPictures: drawn } : {}),
+  }
 }
 
 /**

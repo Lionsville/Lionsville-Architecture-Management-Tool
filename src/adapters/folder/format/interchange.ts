@@ -14,7 +14,9 @@
  */
 import { bareScope } from '../../../projects/scope'
 import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
-import { carriedOf, contentOf, everyScope, nodeAt, picturesOf, placeTogether } from '../../../projects/scopeAccess'
+import {
+  carriedOf, contentOf, drawingBytesOf, drawingPicturesOf, everyScope, nodeAt, picturesOf, placeTogether,
+} from '../../../projects/scopeAccess'
 import { isWithinScope, joinScopePath, ROOT_SCOPE } from '../../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../../projects/scopeState'
 import type {
@@ -81,11 +83,15 @@ export async function carryScopes(scopes: readonly ScopeSnapshot[]): Promise<Car
  * read at its address.
  */
 async function pictured(from: CarriedFrom, scope: ScopeSnapshot, read: ScopeSnapshot | undefined): Promise<ScopeSnapshot> {
-  if (scope.imageLibrary !== undefined || !scope.images?.length) return scope
   const id = scope.id ?? read?.id
   if (!id) return scope
-  const carried = await carriedOf(from.images, id, scope.images)
-  return carried.length ? { ...scope, imageLibrary: carried } : scope
+  const carried = scope.imageLibrary === undefined && scope.images?.length ? await carriedOf(from.images, id, scope.images) : []
+  const drawn = scope.drawingPictures === undefined ? await drawingPicturesOf(from.images, id, scope.model) : []
+  return {
+    ...scope,
+    ...(carried.length ? { imageLibrary: carried } : {}),
+    ...(drawn.length ? { drawingPictures: drawn } : {}),
+  }
 }
 
 /**
@@ -213,6 +219,7 @@ export async function bringIn(
   }
   const setAside = await placeTogether(into, held.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
+    drawings: drawingBytesOf(scope.drawingPictures),
     ...(options.putBack && scope === opened.top ? { putBack: options.putBack } : {}),
   })))
   if (options.subject) await into.history.record({ scopes: await idsAt(into, addresses), subject: options.subject })

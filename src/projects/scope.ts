@@ -61,6 +61,12 @@ export type CarriedImage = {
   url: string
 }
 
+/** A drawing's picture carried whole: the content address a drawing names it by, and its bytes as a data URL. */
+export type CarriedDrawingPicture = {
+  address: string
+  url: string
+}
+
 /**
  * One scope, complete.
  *
@@ -98,6 +104,13 @@ export type ScopeSnapshot = {
    * two — the same reasoning as a model carrying no decisions.
    */
   imageLibrary?: CarriedImage[]
+  /**
+   * The pictures the scope's drawings name, with their bytes, by content
+   * address: what a working file and a sealed file carry so a drawing arrives
+   * drawn (ADR-0034). Not a library: no document names one. Absent rather
+   * than empty, as `imageLibrary` is.
+   */
+  drawingPictures?: CarriedDrawingPicture[]
   /**
    * The scope's image library as a repository keeps it (ADR-0031 §3): an entry
    * per picture — its name, media type, size, dimensions and content address —

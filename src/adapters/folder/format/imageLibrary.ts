@@ -28,6 +28,31 @@ import { adrPath } from './adrFile'
 /** The folder, inside a scope's own, that its pictures are kept in. */
 export const PICTURES = 'images'
 
+/**
+ * The folder inside a scope's pictures folder that keeps its drawings'
+ * pictures. A dot folder: the library never reads one, so a drawing's
+ * picture is never mistaken for a picture a document can show.
+ */
+export const DRAWING_PICTURES = '.drawings'
+
+const DRAWING_PICTURE_FILE = /^\.drawings\/([0-9a-f]{64})\.svg$/
+
+/**
+ * A drawing's picture's file inside the pictures folder, by its content
+ * address: `.drawings/<digest>.svg`. `undefined` for an address that is not
+ * a SHA-256 one, which names no file.
+ */
+export function drawingPictureFile(address: string): string | undefined {
+  const digest = /^sha256:([0-9a-f]{64})$/.exec(address)?.[1]
+  return digest ? `${DRAWING_PICTURES}/${digest}.svg` : undefined
+}
+
+/** The content address a file inside the pictures folder names, where it is a drawing's picture. */
+export function drawingPictureAddress(file: string): string | undefined {
+  const digest = DRAWING_PICTURE_FILE.exec(file)?.[1]
+  return digest ? `sha256:${digest}` : undefined
+}
+
 /** How a file the folder keeps is found from a name, and a name from a file (both inside the pictures folder). */
 export type PictureFiles = {
   nameOf(file: string): ImageName | undefined
