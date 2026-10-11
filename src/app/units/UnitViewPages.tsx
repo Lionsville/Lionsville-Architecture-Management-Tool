@@ -8,14 +8,27 @@
  * change of those, not per render of the editor.
  */
 import { useMemo } from 'react'
-import type { ReactElement } from 'react'
+import type { ComponentProps, ReactElement } from 'react'
 import type { PageView } from '../../editor'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import type { ScopePath } from '../../projects/scopePath'
+import { lazyPart } from '../../widgets/lazyPart'
 import type { WorkspaceParts } from '../workspaceParts'
-import { ChartPage } from './ChartPage'
-import { ConwayPage } from './ConwayPage'
+import type { ChartPage as ChartPageShape } from './ChartPage'
+import type { ConwayPage as ConwayPageShape } from './ConwayPage'
 import { unitViewsHere } from './unitViewsHere'
+
+/**
+ * A chart and a Conway map are tabs, never the first view: each page arrives
+ * when the first of its kind is opened (`widgets/lazyPart`), so the first
+ * download does not carry them.
+ */
+const ChartPage = lazyPart<ComponentProps<typeof ChartPageShape>>(
+  () => import('./ChartPage').then((held) => held.ChartPage),
+)
+const ConwayPage = lazyPart<ComponentProps<typeof ConwayPageShape>>(
+  () => import('./ConwayPage').then((held) => held.ConwayPage),
+)
 
 type Kind = 'chart' | 'conway'
 

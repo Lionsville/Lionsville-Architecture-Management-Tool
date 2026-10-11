@@ -10,6 +10,7 @@
  * from the shell — which is the one thing that knows how to open a scope.
  */
 import { createElement, useMemo } from 'react'
+import type { ComponentProps } from 'react'
 import type { Translate } from '../i18n'
 import type { AnsweredBy, EditorOwnership, StandInNote } from '../editor'
 import type { DesignElement } from '../model'
@@ -33,7 +34,17 @@ import type { Library } from './useLibrary'
 import type { ModelSession } from './useModelSession'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 import type { PeopleRegisterAccess } from '../people/ui/access'
-import { UnitSection } from './units/UnitSection'
+import { lazyPart } from '../widgets/lazyPart'
+import type { UnitSection as UnitSectionShape } from './units/UnitSection'
+
+/**
+ * An actor's unit section, with its dialogs to assign and to declare an
+ * interaction, arrives with the first actor's record that draws it
+ * (`widgets/lazyPart`): a board is drawn without it.
+ */
+const UnitSection = lazyPart<ComponentProps<typeof UnitSectionShape>>(
+  () => import('./units/UnitSection').then((held) => held.UnitSection),
+)
 
 export function useWorkspaceOwnership(deps: {
   session: ModelSession

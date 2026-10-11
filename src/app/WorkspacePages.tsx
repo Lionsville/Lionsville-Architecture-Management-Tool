@@ -23,9 +23,10 @@ import type {
 } from '../technology/ui/ReportPage'
 import { lazyPart } from '../widgets/lazyPart'
 import type { WorkspaceParts } from './workspaceParts'
-import { EndedHolders } from './units/EndedHolders'
-import { PlanMoves, PlanOrganisation } from './units/PlanOrganisation'
-import type { PlanOrganisationProps } from './units/PlanOrganisation'
+import type { EndedHolders as EndedHoldersShape } from './units/EndedHolders'
+import type {
+  PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
+} from './units/PlanOrganisation'
 
 /**
  * A platform's report and a service's are pages reached from a card, never the
@@ -53,6 +54,22 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
  */
 const OperatingModelPage = lazyPart<ComponentProps<typeof OperatingModelPageShape>>(
   () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { until: (props) => props.open },
+)
+
+/**
+ * What a plan does to the organisation, and what a unit type or a role that
+ * ends leaves to decide (ADR-0036 §6), are drawn on a plan's page and the
+ * operating model's, never the first view: their script arrives with the
+ * first of them drawn.
+ */
+const PlanMoves = lazyPart<ComponentProps<typeof PlanMovesShape>>(
+  () => import('./units/PlanOrganisation').then((held) => held.PlanMoves),
+)
+const PlanOrganisation = lazyPart<ComponentProps<typeof PlanOrganisationShape>>(
+  () => import('./units/PlanOrganisation').then((held) => held.PlanOrganisation),
+)
+const EndedHolders = lazyPart<ComponentProps<typeof EndedHoldersShape>>(
+  () => import('./units/EndedHolders').then((held) => held.EndedHolders),
 )
 
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
