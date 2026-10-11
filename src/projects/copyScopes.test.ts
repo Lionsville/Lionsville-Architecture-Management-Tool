@@ -70,6 +70,18 @@ describe('work brought from one place into another', () => {
     expect((await from.people.list()).people).toHaveLength(2)
   })
 
+  it('takes the pairs answered as not the same person along, beside the destination\'s own', async () => {
+    const from = memoryRepositories()
+    const into = memoryRepositories()
+    const yara = await from.people.add({ name: 'Yara Kok' })
+    const vera = await from.people.add({ name: 'Vera Kok' })
+    if ('refused' in yara || 'refused' in vera) throw new Error('refused')
+    const answered = await from.people.answerDistinct(yara.person.id, vera.person.id, '2026-10-11')
+    if ('refused' in answered) throw new Error(answered.refused)
+    await copyScopes(from, into)
+    expect((await into.people.list()).distinct).toEqual([answered.pair])
+  })
+
   it('brings nobody back the destination removed, and takes a forgetting and a removal along', async () => {
     const from = memoryRepositories()
     const into = memoryRepositories()

@@ -297,6 +297,42 @@ describe('the people register in a working file (ADR-0036 §8)', () => {
     expect((await everyone(target)).map((person) => person.id).sort()).toEqual([lind.id, lindt.id].sort())
   })
 
+  it('carries the pairs answered as not the same person, with names and without, and lands them by their ids', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const yara = added(await source.people.add({ name: 'Yara Kok' }))
+    const vera = added(await source.people.add({ name: 'Vera Kok' }))
+    const answered = await source.people.answerDistinct(yara.id, vera.id, '2026-10-11')
+    if ('refused' in answered) throw new Error(answered.refused)
+    for (const withoutNames of [false, true]) {
+      const { bytes } = await writeWorkingFile(source, { withoutNames })
+      const target = memoryRepositories()
+      await readWorkingFile(target, bytes)
+      expect((await target.people.list()).distinct).toEqual([answered.pair])
+    }
+  })
+
+  it('from an address carries a pair only where both its entries go', async () => {
+    const source = memoryRepositories()
+    const [, landscape] = organisation()
+    const yara = added(await source.people.add({ name: 'Yara Kok' }))
+    const vera = added(await source.people.add({ name: 'Vera Kok' }))
+    const kees = added(await source.people.add({ name: 'Kees Kok' }))
+    await source.people.answerDistinct(yara.id, vera.id, '2026-10-11')
+    await source.people.answerDistinct(yara.id, kees.id, '2026-10-11')
+    const named = (at: number) => ({ person: [yara.id, vera.id][at] }) as unknown as string
+    const owned = {
+      ...landscape,
+      model: { ...landscape.model, elements: landscape.model.elements.map((element, at) => (at < 2 ? { ...element, owner: named(at) } : element)) },
+    }
+    await seed(source, [organisation()[0], owned])
+    const { bytes } = await writeWorkingFile(source, { from: 'application-landscape' })
+    const target = memoryRepositories()
+    await readWorkingFile(target, bytes, { at: 'elsewhere' })
+    const pairs = (await target.people.list()).distinct ?? []
+    expect(pairs.map((pair) => [pair.a, pair.b])).toEqual([[yara.id, vera.id].sort()])
+  })
+
   it('is no part of a file from an organisation that keeps nobody', async () => {
     const source = memoryRepositories()
     await seed(source)

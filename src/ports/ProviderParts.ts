@@ -19,6 +19,7 @@
  */
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { PersonId } from '../model/person'
+import type { DistinctPair } from '../people/distinct'
 import type { PeopleAction, Person, PolicyHold } from '../people/person'
 import type {
   SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
@@ -203,8 +204,15 @@ export type SourcePreferences = {
   write(patch: Record<string, unknown>): void
 }
 
-/** The people register a working file carries: its entries, and the ids it removed (ADR-0036 §8). */
-export type CarriedPeople = { readonly people: readonly Person[]; readonly removed: readonly PersonId[] }
+/**
+ * The people register a working file carries: its entries, the ids it
+ * removed (ADR-0036 §8), and the pairs it answered as not the same person.
+ */
+export type CarriedPeople = {
+  readonly people: readonly Person[]
+  readonly removed: readonly PersonId[]
+  readonly distinct?: readonly DistinctPair[]
+}
 
 /**
  * Somewhere new a working file may become (ADR-0025), chosen by a way in:

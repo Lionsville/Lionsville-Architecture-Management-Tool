@@ -25,6 +25,7 @@ import type {
 import type { Repositories } from '../../../ports/Repositories'
 import { withoutSignedNames } from '../../../model/adr'
 import { personIdsIn } from '../../../model/person'
+import type { DistinctPair } from '../../../people/distinct'
 import type { Person, PersonId } from '../../../people/person'
 import { withoutNames } from '../../../people/shown'
 import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from './workingFile'
@@ -63,7 +64,7 @@ export async function carryOut(
   const scopes = withHeld(read, held).map(saysWhatItLacks).map((scope) => (nameless ? withNoSignedNames(scope) : scope))
   const carried = scopes.length ? scopes : [bareScope(ROOT_SCOPE, (await from.scopes.tree()).root.name)]
   const register = await peopleCarried(from, carried, at === ROOT_SCOPE, nameless)
-  return carryScopes(carried, register.people, register.removed)
+  return carryScopes(carried, register.people, register.removed, register.distinct)
 }
 
 /** A scope whose decisions keep no name a signature kept: what a copy without names carries. */
@@ -77,13 +78,14 @@ function withNoSignedNames(scope: ScopeSnapshot): ScopeSnapshot {
  * and with part of it the entries those scopes name — and the entries those
  * were merged into, so every id resolves. Without names where asked. Every id
  * the register removed goes with either, the ids alone, so a removal is made
- * wherever the file lands.
+ * wherever the file lands; and every pair answered as not the same person
+ * whose two entries go, ids and a day, with names or without.
  */
 async function peopleCarried(
   from: CarriedFrom, scopes: readonly ScopeSnapshot[], whole: boolean, nameless: boolean,
-): Promise<{ people: Person[]; removed: readonly PersonId[] }> {
-  if (!from.people) return { people: [], removed: [] }
-  const { people, removed } = await from.people.list()
+): Promise<{ people: Person[]; removed: readonly PersonId[]; distinct: readonly DistinctPair[] }> {
+  if (!from.people) return { people: [], removed: [], distinct: [] }
+  const { people, removed, distinct = [] } = await from.people.list()
   let carried = [...people]
   if (!whole) {
     const named = new Set<string>()
@@ -91,7 +93,11 @@ async function peopleCarried(
     for (const person of people) if (named.has(person.id) && person.mergedInto) named.add(person.mergedInto)
     carried = people.filter((person) => named.has(person.id))
   }
-  return { people: nameless ? withoutNames(carried) : carried, removed }
+  const going = new Set(carried.map((person) => person.id))
+  return {
+    people: nameless ? withoutNames(carried) : carried, removed,
+    distinct: distinct.filter((pair) => going.has(pair.a) && going.has(pair.b)),
+  }
 }
 
 /**
@@ -100,13 +106,13 @@ async function peopleCarried(
  * in, so two sources holding the same organisation write the same bytes.
  */
 export async function carryScopes(
-  scopes: readonly ScopeSnapshot[], people: readonly Person[] = [], removed: readonly PersonId[] = [],
+  scopes: readonly ScopeSnapshot[], people: readonly Person[] = [], removed: readonly PersonId[] = [], distinct: readonly DistinctPair[] = [],
 ): Promise<CarriedOut> {
   const ordered = [...scopes].sort((one, other) => byAddress(one.path, other.path))
   const manifest = await manifestOf(ordered)
   return {
     name: workingFileName(ordered[0]),
-    bytes: workingFileBytes(ordered, manifest, people, removed),
+    bytes: workingFileBytes(ordered, manifest, people, removed, distinct),
     mediaType: WORKING_FILE_MEDIA_TYPE,
     without: ordered.flatMap((scope) => (scope.unread ?? []).map((file) => (scope.path ? `${scope.path}/${file}` : file))),
   }
@@ -178,6 +184,7 @@ export async function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened 
     ...(account ? { account } : {}),
     ...(opened.people ? { people: opened.people } : {}),
     ...(opened.removed ? { removed: opened.removed } : {}),
+    ...(opened.distinct ? { distinct: opened.distinct } : {}),
   }
 }
 
@@ -262,7 +269,9 @@ export async function bringIn(
   })))
   if (options.subject) await into.history.record({ scopes: await idsAt(into, addresses), subject: options.subject })
   // The register after the scopes: a landing refused lands none of it.
-  if (into.people && (opened.people?.length || opened.removed?.length)) await into.people.bringIn(opened.people ?? [], opened.removed ?? [])
+  if (into.people && (opened.people?.length || opened.removed?.length)) {
+    await into.people.bringIn(opened.people ?? [], opened.removed ?? [], opened.distinct ?? [])
+  }
   return { setAside }
 }
 

@@ -93,6 +93,16 @@ describe('landWorkingFile', () => {
     expect(bare.people).toEqual([undefined])
   })
 
+  it('a folder is given the pairs the file\'s register answered as not the same person, with its entries', async () => {
+    const one = { id: 'pe-a', name: 'Yara Kok', pseudonym: '4K7Q', kind: 'internal' as const, state: 'active' as const }
+    const other = { ...one, id: 'pe-b', name: 'Vera Kok', pseudonym: '7KQM' }
+    const distinct = [{ a: 'pe-a', b: 'pe-b', on: '2026-10-11' }]
+    const chosen = folder(false)
+    const carrying = workingFileBytes([scope('Theirs', 'org')], undefined, [one, other], [], distinct)
+    await landWorkingFile({ name: 'x', bytes: carrying, into, prompts: prompts('elsewhere'), chooseDestination: () => Promise.resolve(chosen), here: vi.fn(), notify: vi.fn(), s })
+    expect(chosen.people).toEqual([{ people: [one, other], removed: [], distinct }])
+  })
+
   it('a folder that holds something is written only after a second yes', async () => {
     const refused = folder(true)
     await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('elsewhere', false), chooseDestination: () => Promise.resolve(refused), here: vi.fn(), notify: vi.fn(), s })

@@ -27,8 +27,11 @@
  * organisation, and the entries the scopes name with part of it. Made
  * *without names*, every entry is carried as its pseudonym. Brought in, the
  * entries are taken by their ids once the scopes have landed, and never give
- * a name back to an entry forgotten where they land.
+ * a name back to an entry forgotten where they land. The pairs it answered
+ * as not the same person go with the entries they name, without names too:
+ * they hold ids and a day.
  */
+import type { DistinctPair } from '../people/distinct'
 import type { Person, PersonId } from '../people/person'
 import type { OpenRefusal, ScopeSnapshot } from '../projects/scope'
 import type { ScopeAddress } from '../projects/scopeState'
@@ -87,6 +90,8 @@ export type Opened = {
   people?: readonly Person[]
   /** The ids that register removed, to be removed where it lands too; absent where none. */
   removed?: readonly PersonId[]
+  /** The pairs that register answered as not the same person; absent where none. */
+  distinct?: readonly DistinctPair[]
 }
 
 /** A scope that did not arrive whole: by its address under the parcel's top. */

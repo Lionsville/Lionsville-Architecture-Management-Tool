@@ -206,7 +206,9 @@ export async function landWorkingFile(args: {
   const rooted = await interchange.open(bytes, ROOT_SCOPE)
   if ('refused' in rooted) { notify(s(rooted.refused), 'error'); return }
   // The register goes with the scopes, as it does landing here: a new folder without it reads every picked name as nobody.
-  const people = rooted.people?.length || rooted.removed?.length ? { people: rooted.people ?? [], removed: rooted.removed ?? [] } : undefined
+  const people = rooted.people?.length || rooted.removed?.length
+    ? { people: rooted.people ?? [], removed: rooted.removed ?? [], ...(rooted.distinct?.length ? { distinct: rooted.distinct } : {}) }
+    : undefined
   await inPart(() => destination.place([rooted.top, ...rooted.rest], people), destination.read)
   if (destination.read) await said(rooted, destination.read)
 }

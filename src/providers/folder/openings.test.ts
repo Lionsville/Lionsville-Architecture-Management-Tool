@@ -76,6 +76,16 @@ describe('somewhere new a working file may become', () => {
     expect(readPeopleFile(await textAt(handle, PEOPLE_PATH))).toEqual({ kind: 'read', people: [pia], removed: ['pe-gone'] })
   })
 
+  it('takes the pairs the register answered as not the same person with its entries', async () => {
+    const handle = new FakeDirectory('New')
+    const one = { id: 'pe-a', name: 'Yara Kok', pseudonym: '4K7Q', kind: 'internal' as const, state: 'active' as const }
+    const other = { ...one, id: 'pe-b', name: 'Vera Kok', pseudonym: '7KQM' }
+    const destination = await destinationIn({ handle, name: 'New', root: 'New' })
+    const distinct = [{ a: 'pe-a', b: 'pe-b', on: '2026-10-11' }]
+    await destination.place([scope('', 'Acme Logistics')], { people: [one, other], removed: [], distinct })
+    expect(readPeopleFile(await textAt(handle, PEOPLE_PATH))).toEqual({ kind: 'read', people: [one, other], distinct })
+  })
+
   it('is occupied where the folder already holds a scope', async () => {
     const handle = new FakeDirectory('Elsewhere')
     await (await destinationIn({ handle, name: 'Elsewhere', root: 'Elsewhere' })).place([scope('retail', 'Retail')])

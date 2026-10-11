@@ -103,7 +103,7 @@ export async function destinationIn(opening: FolderOpening): Promise<SourceDesti
     place: async (scopes, people) => {
       await store.saveTogether(scopes.map((scope) => ({ scope })))
       // The register after the scopes, as a landing here brings it (ADR-0036 §8).
-      if (people) await bringPeopleIntoFolder(opening.handle, people.people, people.removed)
+      if (people) await bringPeopleIntoFolder(opening.handle, people.people, people.removed, people.distinct)
     },
     read: (path) => store.load(path),
   }

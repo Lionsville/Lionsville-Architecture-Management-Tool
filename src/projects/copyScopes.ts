@@ -24,7 +24,9 @@
  * holds already is its own, and stays as it is — but a forgetting and a
  * removal go with the work, because forgetting travels and un-forgetting does
  * not: a forgotten entry is brought over whether held or not, and every id
- * removed here, which the destination then never brings back.
+ * removed here, which the destination then never brings back. The pairs
+ * answered here as not the same person go with them, joining the
+ * destination's own over the entries it then holds.
  */
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { PeopleRepository } from '../ports/PeopleRepository'
@@ -56,13 +58,13 @@ type Into = {
   people?: Pick<PeopleRepository, 'list' | 'bringIn'>
 }
 
-/** Every entry of the register the destination does not hold yet, and every forgetting and removal. */
+/** Every entry of the register the destination does not hold yet, every forgetting and removal, and every answer. */
 async function copyPeople(from: From, into: Into): Promise<void> {
   if (!from.people || !into.people) return
   const there = new Set((await into.people.list()).people.map((person) => person.id))
-  const { people, removed } = await from.people.list()
+  const { people, removed, distinct = [] } = await from.people.list()
   const carried = people.filter((person) => !there.has(person.id) || person.state === 'forgotten')
-  if (carried.length || removed.length) await into.people.bringIn(carried, removed)
+  if (carried.length || removed.length || distinct.length) await into.people.bringIn(carried, removed, distinct)
 }
 
 /**

@@ -46,6 +46,7 @@ import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
 import type { ScopePath } from '../../../projects/scopePath'
 import { MANIFEST_FILE, manifestText, readManifest } from './workingFileManifest'
 import type { WorkingFileManifest } from './workingFileManifest'
+import type { DistinctPair } from '../../../people/distinct'
 import type { Person, PersonId } from '../../../people/person'
 import { PEOPLE_PATH, peopleFileText, readPeopleFile } from './peopleFile'
 
@@ -119,10 +120,24 @@ export type OpenResult =
      * where it lands too: forgetting travels (ADR-0036 §10). Absent where none.
      */
     removed?: readonly PersonId[]
+    /** The pairs that register answered as not the same person, which go with it. Absent where none. */
+    distinct?: readonly DistinctPair[]
     relayout: boolean
     kind: 'workingFile'
   }
   | { ok: false; messageKey: OpenRefusal }
+
+/** The register a zip carries at its root, as an opened file says it: each part only where there is any. */
+function registerIn(held: readonly { path: string }[]): { people?: Person[]; removed?: PersonId[]; distinct?: DistinctPair[] } {
+  const file = held.find((one) => one.path === PEOPLE_PATH)
+  const read = file && 'text' in file && typeof file.text === 'string' ? readPeopleFile(file.text) : undefined
+  if (!read || read.kind === 'absent') return {}
+  return {
+    ...(read.people.length ? { people: read.people } : {}),
+    ...(read.removed?.length ? { removed: read.removed } : {}),
+    ...(read.distinct?.length ? { distinct: read.distinct } : {}),
+  }
+}
 
 /**
  * A read and parsed file, landed into the scope it was opened from.
@@ -200,14 +215,18 @@ export function isZip(bytes: Uint8Array): boolean {
  * missing. A register with nobody in it is not written, so a file from an
  * organisation that keeps none is the bytes it always was. `removed`, the ids
  * the register took away, go with it, so a removal is made where the file
- * lands as well.
+ * lands as well — and `distinct`, the pairs it answered as not the same
+ * person, in the same file.
  */
 export function workingFileBytes(
   scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest, people: readonly Person[] = [], removed: readonly PersonId[] = [],
+  distinct: readonly DistinctPair[] = [],
 ): Uint8Array {
   const entries: Record<string, [Uint8Array, { mtime: Date }]> = {}
   if (manifest) entries[MANIFEST_FILE] = [bytesFromText(manifestText(manifest)), { mtime: FIXED_MTIME }]
-  if (people.length || removed.length) entries[PEOPLE_PATH] = [bytesFromText(peopleFileText(people, removed)), { mtime: FIXED_MTIME }]
+  if (people.length || removed.length) {
+    entries[PEOPLE_PATH] = [bytesFromText(peopleFileText(people, removed, distinct)), { mtime: FIXED_MTIME }]
+  }
   const top = scopes.length ? scopes[0].path : ''
   const under = top ? `${top}/` : ''
   for (const scope of scopes) {
@@ -315,10 +334,7 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
     const manifest = said && 'text' in said ? readManifest(said.text) : undefined
     // The register is the organisation's, not a file of the top scope: the
     // same, taken out and handed on whole.
-    const register = held.find((file) => file.path === PEOPLE_PATH)
-    const read = register && 'text' in register ? readPeopleFile(register.text) : undefined
-    const people = read && read.kind !== 'absent' ? read.people : undefined
-    const removed = read && read.kind !== 'absent' ? read.removed : undefined
+    const register = registerIn(held)
     const files = held.filter((file) => file.path !== MANIFEST_FILE && file.path !== PEOPLE_PATH)
     const roots = scopeRootsIn(files)
     // No `scope.json` anywhere: an older zip, which is one scope and has no
@@ -351,8 +367,7 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
       ...(rest.length ? { rest } : {}),
       ...(manifest ? { manifest } : {}),
       ...(unopened.length ? { unopened } : {}),
-      ...(people?.length ? { people } : {}),
-      ...(removed?.length ? { removed } : {}),
+      ...register,
     }
   }
   const opened = openScopeDocument(parseJson(textFromBytes(bytes)), into)
