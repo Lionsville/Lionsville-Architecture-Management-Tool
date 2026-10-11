@@ -2067,40 +2067,50 @@ etwas zur Einheit. Die Einheit, in der er steht, ist der Akteur, unter dem er
 eingeordnet ist, und die Tage, an denen er beginnt und endet, sind seine
 Lebenszyklusdaten — eine Einheit, die außer Betrieb ist, ist beendet.
 
-Der Abschnitt einer Einheit sagt:
+**Der Inspektor einer Einheit stellt die Einheit voran.** Auf einem Board,
+einem Blatt, dem Organigramm oder ihrer Seite steht ihr Name zuerst, mit
+**Verschieben…** und **Zeichnung erstellen** im **⋯** daneben. Unter dem
+Namen stehen ihr Einheitstyp, darunter der Bereich, in dem sie eingeordnet
+ist, und dann die eigenen Abschnitte der Einheit. Zuletzt kommt **Element**,
+eingeklappt: die eigenen Felder des Akteurs — seine Stammdaten, Allgemein mit
+Lebenszyklus, *Verwaltet* und Beschreibung, Darstellung und Daten. Es klappt
+wieder ein, sobald eine andere Einheit gewählt wird. Auf der Seite stehen
+dieselben Felder ausgeschrieben unter der Einheit. Ein Akteur ohne Typ behält
+den Inspektor eines Elements, wie er war, mit **Einheit** unter seinem
+Reiter Allgemein.
 
-- **Eingeordnet in** — der Bereich, der sie führt — und **Bedient**: die
-  Domänen, die sie bedient, dieser Bereich, wenn Sie nichts anderes sagen. Eine
-  Einheit, die mehrere Domänen bedient, wird im Bereich darüber eingeordnet,
-  und ihr Typ muss es erlauben.
-- **Besitzt** — jede Anwendung, die sie als den Akteur nennt, zu dem sie
-  gehört — und **Verantwortlich für**, die Gebiete, Gruppen und Fähigkeiten,
-  die ihr zugewiesen sind, mit dem Bereich, der die Zuweisung führt, wo das
-  ein anderer ist. **+ Domäne** unter **Bedient** wählt eine weitere Domäne,
-  wo ihr Typ mehr als eine erlaubt; **+ Gebiet oder Fähigkeit** unter
-  **Verantwortlich für** wählt eins aus der ganzen Organisation, und die
-  Zuweisung wird in dem Bereich geschrieben, der es definiert — die dieses
-  Bereichs als Schritt hier, die eines anderen als Schritt dort, wo Sie ihn
-  ändern dürfen. **✕** auf einem Etikett nimmt eine hier geführte Zuweisung
-  weg.
+Die Abschnitte einer Einheit, in dieser Reihenfolge:
+
 - **Rollen, heute**: jede Rolle, die ihr Typ hat, mit der gewünschten Anzahl,
   und wer sie heute innehat — mit dem Namen aus dem Register, dem Anteil, wo
-  es nicht die ganze Zeit ist, *kommissarisch* und *Sie*. Eine Rolle mit zu
-  wenigen Personen zeigt **+ unbesetzt**; ein Klick ordnet jemanden zu. **Eine
-  Rolle über ihren Typ hinaus …** fügt nur dieser Einheit eine optionale Rolle
-  hinzu.
-- **Wer sie führt**: wer heute eine führende Rolle innehat, in dieser Einheit
-  oder einer darüber. Die App sagt es und gewährt daraus nichts.
+  es nicht die ganze Zeit ist, *kommissarisch* und *Sie*. Jede Rolle steht
+  darin, auch die optionalen, auch wo das Organigramm eine leere optionale
+  Rolle weglässt. Eine Rolle mit zu wenigen Personen zeigt **+ unbesetzt**;
+  ein Klick ordnet jemanden zu. **+ zuordnen** bei einer Rolle mit Platz für
+  eine weitere Person tut dasselbe. **Eine Rolle über ihren Typ hinaus …**
+  fügt nur dieser Einheit eine optionale Rolle hinzu.
+- **Wer sie führt**: eine Zeile für jede Person, die heute eine führende Rolle
+  innehat, in dieser Einheit oder einer darüber, die nächste zuerst.
+  **warum?** sagt, was das bedeutet: Die App sagt es und gewährt daraus
+  nichts.
+- **Bedient**: die Domänen, die sie bedient, der Bereich, in dem sie
+  eingeordnet ist, wenn Sie nichts anderes sagen. Eine Einheit, die mehrere
+  Domänen bedient, wird im Bereich darüber eingeordnet, und ihr Typ muss es
+  erlauben. **+ Domäne** wählt eine weitere Domäne, wo ihr Typ mehr als eine
+  erlaubt.
+- **Besitzt**: jede Anwendung, die sie als den Akteur nennt, zu dem sie
+  gehört.
+- **Verantwortlich für**: die Gebiete, Gruppen und Fähigkeiten, die ihr
+  zugewiesen sind, mit dem Bereich, der die Zuweisung führt, wo das ein
+  anderer ist. **+ Gebiet oder Fähigkeit** wählt eins aus der ganzen
+  Organisation, und die Zuweisung wird in dem Bereich geschrieben, der es
+  definiert — die dieses Bereichs als Schritt hier, die eines anderen als
+  Schritt dort, wo Sie ihn ändern dürfen. **✕** auf einem Etikett nimmt eine
+  hier geführte Zuweisung weg.
+- **Arbeitet mit**: die Einheiten, mit denen sie festgehalten hat
+  zusammenzuarbeiten (siehe *Die Conway-Karte*).
 - **Im Lauf der Zeit**: der Tag, ab dem sie besteht, ihr letzter Tag und jede
   Verschiebung, die ein Plan mit ihr macht (siehe *Veränderung über die Zeit*).
-
-Der Abschnitt liest den Tag, an dem das Board daneben betrachtet wird. Auf
-einem Board, das einen anderen Tag zeigt — seinen gespeicherten Tag oder einen
-unter **Zeigt** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt der
-Abschnitt *Wie am* diesem Tag, und wer die Rollen innehat, wer sie führt und
-die Prüfungen sind die dieses Tages, die Verschiebungen der Pläne an diesem Tag
-eingeschlossen. Was Sie von dort zuordnen oder beenden, beginnt an diesem Tag,
-wenn er noch kommt.
 - **Prüfungen**: was die Organisation heute über diese Einheit widerspricht —
   eine Rolle mit zu wenigen Personen oder über ihrem Maximum, eine Einheit, wo
   ihr Typ nicht stehen darf, eine, die mehr Domänen bedient, als ihr Typ
@@ -2111,6 +2121,14 @@ wenn er noch kommt.
   noch eine Einheit über ihr bedient. Eine Einheit bedient eine Domäne, wenn
   sie diesen Bereich bedient, einen darüber oder einen darin. Die Startseite
   der Organisation zeigt dieselben Befunde für jeden Bereich.
+
+Die Abschnitte lesen den Tag, an dem das Board daneben betrachtet wird. Auf
+einem Board, das einen anderen Tag zeigt — seinen gespeicherten Tag oder einen
+unter **Zeigt** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt
+der Inspektor *Wie am* diesem Tag, und wer die Rollen innehat, wer sie führt
+und die Prüfungen sind die dieses Tages, die Verschiebungen der Pläne an
+diesem Tag eingeschlossen. Was Sie von dort zuordnen oder beenden, beginnt an
+diesem Tag, wenn er noch kommt.
 
 **Zuordnen** ist ein Schritt in dem Bereich, der die Einheit führt: Wählen Sie
 die Rolle, die Person — gesucht im Register, *Sie* markiert —, den Anteil, den

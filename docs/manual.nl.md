@@ -1952,38 +1952,48 @@ eenheid waarin hij zit is de actor waaronder hij is ingedeeld, en de dagen
 waarop hij begint en eindigt zijn zijn levenscyclusdata — een eenheid die is
 uitgefaseerd, is beëindigd.
 
-Het onderdeel van een eenheid zegt:
+**De inspector van een eenheid zet de eenheid voorop.** Op een bord, een
+blad, het organogram of haar pagina komt haar naam eerst, met
+**Verplaatsen…** en **Tekening maken** in de **⋯** ernaast. Onder de naam
+staan haar eenheidstype, met daaronder de scope waarin ze is ingedeeld, en dan
+de eigen onderdelen van de eenheid. Als laatste komt **Element**, ingeklapt:
+de eigen velden van de actor — zijn stamgegevens, Algemeen met levenscyclus,
+*Beheerd* en beschrijving, Weergave en Gegevens. Het klapt weer in zodra je
+een andere eenheid kiest. Op de pagina staan dezelfde velden uitgeschreven
+onder de eenheid. Een actor zonder type houdt de inspector van een element
+zoals die was, met **Eenheid** onder zijn tabblad Algemeen.
 
-- **Ingedeeld in** — de scope die haar bijhoudt — en **Bedient**: de domeinen
-  die ze bedient, die scope tenzij je anders zegt. Een eenheid die meerdere
-  domeinen bedient wordt ingedeeld in de scope erboven, en haar type moet dat
-  toestaan.
-- **Eigenaar van** — elke applicatie die haar noemt als de actor waartoe die
-  hoort — en **Verantwoordelijk voor**, de gebieden, groepen en capabilities
-  die haar zijn toegewezen, met de scope die de toewijzing bijhoudt als dat
-  een andere is. **+ Domein** onder **Bedient** kiest nog een domein, waar haar
-  type er meer dan één toestaat; **+ Gebied of capability** onder
-  **Verantwoordelijk voor** kiest er een uit de hele organisatie, en de
+De onderdelen van een eenheid, in die volgorde:
+
+- **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
+  en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
+  dat niet al iemands tijd is, *waarnemend*, en *jij*. Elke rol staat erin,
+  ook de optionele, ook waar het organogram een lege optionele rol weglaat.
+  Een rol met te weinig mensen toont **+ vacant**; een klik wijst iemand toe.
+  **+ toewijzen** bij een rol met plaats voor nog iemand doet hetzelfde.
+  **Een rol naast die van het type…** voegt alleen aan deze eenheid een
+  optionele rol toe.
+- **Wie haar aanstuurt**: één regel voor ieder die vandaag een aansturende rol
+  vervult, in deze eenheid of een erboven, de dichtstbijzijnde eerst.
+  **waarom?** zegt wat dat betekent: de app zegt het en geeft er geen rechten
+  mee.
+- **Bedient**: de domeinen die ze bedient, de scope waarin ze is ingedeeld
+  tenzij je anders zegt. Een eenheid die meerdere domeinen bedient wordt
+  ingedeeld in de scope erboven, en haar type moet dat toestaan. **+ Domein**
+  kiest nog een domein, waar haar type er meer dan één toestaat.
+- **Eigenaar van**: elke applicatie die haar noemt als de actor waartoe die
+  hoort.
+- **Verantwoordelijk voor**: de gebieden, groepen en capabilities die haar
+  zijn toegewezen, met de scope die de toewijzing bijhoudt als dat een andere
+  is. **+ Gebied of capability** kiest er een uit de hele organisatie, en de
   toewijzing wordt weggeschreven in de scope die het definieert — die van
   deze scope als een stap hier, die van een andere als een stap daar, waar je
   die mag wijzigen. **✕** op een label haalt een toewijzing die hier wordt
   bijgehouden weg.
-- **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
-  en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
-  dat niet al iemands tijd is, *waarnemend*, en *jij*. Een rol met te weinig
-  mensen toont **+ vacant**; een klik wijst iemand toe. **Een rol naast die
-  van het type…** voegt alleen aan deze eenheid een optionele rol toe.
-- **Wie haar aanstuurt**: wie vandaag een aansturende rol vervult, in deze
-  eenheid of een erboven. De app zegt het en geeft er geen rechten mee.
+- **Werkt samen met**: de eenheden waarmee ze heeft vastgelegd samen te werken
+  (zie *De Conway-kaart*).
 - **In de tijd**: de dag vanaf wanneer ze er is, haar laatste dag, en elke
   verplaatsing die een plan van haar maakt (zie *Verandering in de tijd*).
-
-Het onderdeel leest de dag waarop het bord ernaast wordt bekeken. Op een bord
-dat een andere dag toont — zijn eigen opgeslagen dag, of een dag gekozen onder
-**Toont** of met de schuifregelaar van de roadmap — zegt het onderdeel *Zoals
-op* die dag, en wie de rollen vervult, wie haar aanstuurt en de controles zijn
-die van die dag, de verplaatsingen van plannen op die dag inbegrepen. Wat je
-van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
 - **Controles**: wat de organisatie vandaag over deze eenheid tegenspreekt —
   een rol met te weinig mensen of boven het maximum, een eenheid ingedeeld
   waar haar type niet mag staan, een die meer domeinen bedient dan het type
@@ -1994,6 +2004,13 @@ van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
   een eenheid erboven bedient. Een eenheid bedient een domein als ze die scope
   bedient, een scope erboven of een erbinnen. De home van de organisatie toont
   dezelfde bevindingen voor elke scope.
+
+De onderdelen lezen de dag waarop het bord ernaast wordt bekeken. Op een bord
+dat een andere dag toont — zijn eigen opgeslagen dag, of een dag gekozen onder
+**Toont** of met de schuifregelaar van de roadmap — zegt de inspector *Zoals
+op* die dag, en wie de rollen vervult, wie haar aanstuurt en de controles zijn
+die van die dag, de verplaatsingen van plannen op die dag inbegrepen. Wat je
+van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
 
 **Toewijzen** is één stap in de scope die de eenheid bijhoudt: kies de rol, de
 persoon — gezocht in het register, *jij* gemarkeerd — het aandeel, de eerste

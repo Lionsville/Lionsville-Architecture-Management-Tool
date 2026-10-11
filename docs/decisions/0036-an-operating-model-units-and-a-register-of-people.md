@@ -1466,6 +1466,28 @@ rows laid over the index's (`OrganisationAt.assigned`). The agent's tools
 already write both fields — `element.update` with `scopes`, `relation.add`
 with `assigned` — and `checks.list` names the finding; no tool was added.
 
+## As built, 3.6.1: a unit's inspector, unit first
+
+3.6.0 drew a unit's section under the actor's General tab, a screen below
+the element's own fields: name, *Move…*, the record's line, the three
+tabs, lifecycle, *Managed*, the description and *Create drawing*. For an actor
+with a type the order is turned over. The name stays on top, with *Move…* and
+*Create drawing* in a *⋯* beside it. Then come the type, with where the unit
+is filed in a quiet line under it, and the unit's sections: roles today, every
+role listed with *+ assign*, optional ones included; who manages it, one line
+for each holder, with the reason and what a build with accounts grants from it
+behind *why?*; serves, owns, responsible for, works with, over time and the
+checks. Last is *Element*, folded, which holds the record's line and the three
+tabs; it folds again for each unit picked. On the element's page the same
+fields are laid out below the unit. An actor without a type, and every other
+kind of element, keeps the element's order.
+
+The editor still knows nothing of units. The host's slot says where its
+section goes: `EditorOwnership.unitSection` answers `{ section, leads }`
+(`UnitSlot`), with `leads` set when the actor has a type (`isUnit`), and the
+editor's inspector lays itself out from that. No control name moved and none
+was added: the inspector is `board.inspector` as before.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

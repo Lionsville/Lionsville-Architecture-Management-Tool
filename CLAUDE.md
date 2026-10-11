@@ -874,7 +874,10 @@ src/app/          The shell around the editor.
                                       each edit written where the unit is
                     units/            an actor as a unit in its inspector
                                       (ADR-0036 §3, §4): UnitSection, drawn
-                                      through `EditorOwnership.unitSection`;
+                                      through `EditorOwnership.unitSection`,
+                                      which says it leads where the actor
+                                      has a type (`UnitSlot`: the unit
+                                      first, the element folded below);
                                       AssignDialog; the organisation as the
                                       open scope's session has it, laid over
                                       the index (`organisationHere`); what a

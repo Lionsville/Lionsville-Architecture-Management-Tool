@@ -1805,35 +1805,43 @@ party again. Nothing else marks a unit. The unit it sits in is the actor it is
 filed under, and the dates it starts and ends are its lifecycle dates — so a
 unit that has retired has ended.
 
-A unit's section says:
+**A unit's inspector puts the unit first.** On a board, a sheet, the chart
+or its page, its name comes first, with **Move…** and **Create drawing** in
+the **⋯** beside it. Under the name are its unit type, with the scope it is
+filed in beneath it, and then the unit's own sections. Last comes
+**Element**, folded: the actor's own fields — its record, General with its
+lifecycle, *Managed* and description, Appearance and Data. It is folded again
+each time another unit is picked. On the page the same fields are laid out
+below the unit. An actor without a type keeps the element's inspector as it
+was, with **Unit** under its General tab.
 
-- **Filed in** — the scope that keeps it — and **Serves**: the domains it
-  serves, that scope unless you say otherwise. A unit that serves several
-  domains is filed in the scope above them, and its type must allow it.
-- **Owns** — every application that names it as the actor it belongs to — and
-  **Responsible for**, the areas, groupings and capabilities it is assigned,
-  with the scope that keeps the row where it is another. **+ Domain** under
-  **Serves** picks another domain, where its type allows more than one;
-  **+ Area or capability** under **Responsible for** picks one from the whole
-  organisation, and the row is written in the scope that defines it — this
-  one's as a step here, another's as a step there, where you may change it.
-  **✕** on a chip takes a row kept here off.
+A unit's sections, in that order:
+
 - **Roles, today**: each role its type holds, with how many it wants, and who
   holds it today — by name from the register, with their share where it is not
-  all of their time, *acting*, and *you*. A role short of people shows
-  **+ vacant**; a press assigns someone. **A role beyond its type…** adds an
-  optional role to this unit only.
-- **Who manages it**: whoever holds a role that manages, in this unit or a unit
-  above it, today. The app says so and grants nothing from it.
+  all of their time, *acting*, and *you*. Every role is listed, optional ones
+  included, even where the chart leaves an empty optional role out. A role
+  short of people shows **+ vacant**; a press assigns someone. **+ assign** on
+  a role with room for one more does the same. **A role beyond its type…**
+  adds an optional role to this unit only.
+- **Who manages it**: one line for each person who holds a role that manages,
+  in this unit or a unit above it, today, nearest first. **why?** says what
+  that means: the app says it and grants nothing from it.
+- **Serves**: the domains it serves, the scope it is filed in unless you say
+  otherwise. A unit that serves several domains is filed in the scope above
+  them, and its type must allow it. **+ Domain** picks another domain, where
+  its type allows more than one.
+- **Owns**: every application that names it as the actor it belongs to.
+- **Responsible for**: the areas, groupings and capabilities it is assigned,
+  with the scope that keeps the row where it is another. **+ Area or
+  capability** picks one from the whole organisation, and the row is written
+  in the scope that defines it — this one's as a step here, another's as a
+  step there, where you may change it. **✕** on a chip takes a row kept here
+  off.
+- **Works with**: the units it has declared it works with (see *The Conway
+  map*).
 - **Over time**: the day it is there from, its last day, and every move a plan
   makes of it (see *Change over time*).
-
-The section reads the day the board beside it is looked at. On a board that
-shows another day — its own saved day, or a day picked under **Showing** or
-on the roadmap's slider — the section says *As on* that day, and its holders,
-who manages it and its checks are that day's, a plan's moves of that day
-included. Something assigned or ended from there starts on that day where it
-is still to come.
 - **Checks**: what the organisation contradicts about this unit today — a
   role short of people or over its maximum, a unit filed where its type may
   not sit, one serving more domains than its type allows or owning more
@@ -1843,6 +1851,13 @@ is still to come.
   neither it nor a unit above it serves. A unit serves a domain when it serves
   that scope, a scope above it or one within it. The organisation's home lists
   the same findings for every scope.
+
+The sections read the day the board beside them is looked at. On a board that
+shows another day — its own saved day, or a day picked under **Showing** or
+on the roadmap's slider — the inspector says *As on* that day, and its
+holders, who manages it and its checks are that day's, a plan's moves of that
+day included. Something assigned or ended from there starts on that day where
+it is still to come.
 
 **Assigning** someone is one step in the scope that keeps the unit: choose the
 role, the person — searched in the register, *you* marked — their share, the
