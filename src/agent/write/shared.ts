@@ -17,6 +17,9 @@ import type { DesignElement, ElementId, PlacedNode } from '../../model/types'
 import { businessCaseTemplate } from '../../documentation/businessCase'
 import type { Translate } from '../../i18n/strings'
 import type { Person } from '../../people/person'
+import { personIdOf, personRefOf, pickedPerson } from '../../model/person'
+import type { PersonId, PersonRef } from '../../model/person'
+import { registerOf, resolvePerson } from '../../people/shown'
 import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { refused } from '../tools'
@@ -159,4 +162,33 @@ export function planOf(idOrLabel: unknown, view: ReadView): Transition | undefin
 /** What a plan an agent starts says before anybody has written it. */
 export function planBody(): string {
   return ['## Goal', '', '## Scope', '', '## Approach and phases', '', '## Business case', '', businessCaseTemplate(), '', '## Risks', '', '## Rollback', ''].join('\n')
+}
+
+/**
+ * A person-naming argument as the field keeps it (ADR-0036 §8): text trimmed,
+ * a person picked from the register as `{ person: id }` — a merged id written
+ * as the entry it went into — and nothing for null or blank text, which
+ * clears the field. An id the register does not hold is refused, so no field
+ * points at nobody; with no register to ask, an id is taken as given.
+ */
+export function personArgument(value: unknown, view: WriteView, field: string): { ref: PersonRef | undefined } | AgentAnswer {
+  const ref = personRefOf(value)
+  const id = personIdOf(ref)
+  if (id === undefined) return { ref }
+  const people = view.people?.()
+  if (!people) return { ref }
+  const kept = resolvePerson(id, registerOf(people))
+  if (!kept) return refused('agent.unknownId', `${field}: person ${id}`)
+  return { ref: pickedPerson(kept.id) }
+}
+
+/** The register's name for an id, for a signature to keep (ADR-0036 §8): nothing once forgotten or gone. */
+export function nameAsSigned(view: WriteView): ((id: PersonId) => string | undefined) | undefined {
+  const people = view.people?.()
+  if (!people) return undefined
+  const register = registerOf(people)
+  return (id) => {
+    const kept = resolvePerson(id, register)
+    return kept?.state === 'forgotten' ? undefined : kept?.name
+  }
 }

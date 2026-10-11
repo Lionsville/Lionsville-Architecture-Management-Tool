@@ -65,6 +65,8 @@ import { listChecks, listRegister, listScopes, listTechnology, notOpen, scopeAsk
 import { answerOperating, isOperatingRead } from './operatingModel'
 import { ASSIGNMENTS_LIST, listAssignments } from './assignments'
 import type { Person } from '../people/person'
+import { agentRegister, answerWithNames, mayNamePeople } from './persons'
+import type { AgentRegister } from './persons'
 import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
@@ -205,6 +207,10 @@ const CROP_MARGIN = 60
  * pressed while it runs.
  */
 export async function handle(request: AgentRequest, session: SessionView | undefined, shell?: ShellView): Promise<AgentAnswer> {
+  return withNames(await handled(request, session, shell), session, shell)
+}
+
+async function handled(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell || !isToolName(request.tool) || !drives(request.tool)) return answerRequest(request, session, shell)
   // A write with nothing open goes nowhere and is refused below; it should
   // not put a banner up on the way. Only moving the app drives from a home.
@@ -214,8 +220,38 @@ export async function handle(request: AgentRequest, session: SessionView | undef
   return untilStopped(shell, answerRequest(request, session, shell))
 }
 
+/**
+ * The register as the agent may read it (ADR-0036 §13): the shell's, read
+ * fresh with the organisation's policy, or the session's last read where the
+ * host lends no other — names, then, as the policy's default is.
+ */
+async function registerFor(session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentRegister | undefined> {
+  if (shell?.people) {
+    const { people, policy } = await shell.people.read()
+    return agentRegister(people, policy)
+  }
+  const people = session?.people?.()
+  return people ? agentRegister(people, undefined) : undefined
+}
+
+/** Every person an answer names by id, said by name or pseudonym (`persons.ts`); the register read only when one is there. */
+async function withNames(said: AgentAnswer, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
+  if (!mayNamePeople(said)) return said
+  const register = await registerFor(session, shell)
+  return register ? answerWithNames(said, register.words) : said
+}
+
+/** The two reads that ask the register before they answer: a search for a name, and the export's tables. */
+const ASKS_THE_REGISTER: readonly string[] = ['search', 'project.export']
+
+/** The register, for a tool that asks it before it answers; nothing for every other. */
+function registerAsked(tool: string, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentRegister | undefined> {
+  return ASKS_THE_REGISTER.includes(tool) ? registerFor(session, shell) : Promise.resolve(undefined)
+}
+
 async function answerRequest(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!session) return withoutSession(request, shell)
+  const register = await registerAsked(request.tool, session, shell)
   const view = {
     model: session.indexed(),
     current: session.current,
@@ -223,6 +259,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
     scopePath: session.scopePath(),
     ancestorDecisions: session.ancestorDecisions(),
     tree: session.tree,
+    register,
   }
   if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions, view.scopePath)
   if (request.tool === RESOURCE_READ) return readResource(view, request.args, session.tree)
@@ -246,7 +283,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   const asked = scopeAsked(request.args)
   if (asked !== undefined && asked !== view.scopePath) {
     if (spec.tier !== 'read' || SESSION_BOUND.includes(request.tool)) return notOpen(asked)
-    return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree)
+    return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree, register)
   }
   // Three reads that need the session rather than the model: the log, the
   // pictures, and the revision on the orientation answer.
@@ -374,7 +411,7 @@ async function withoutSession(request: AgentRequest, shell: ShellView | undefine
   const asked = scopeAsked(request.args)
   const spec = toolSpec(request.tool)
   if (asked !== undefined && spec.tier === 'read' && !SESSION_BOUND.includes(request.tool)) {
-    return readElsewhere(request.tool as ReadTool, request.args, asked, tree)
+    return readElsewhere(request.tool as ReadTool, request.args, asked, tree, await registerAsked(request.tool, undefined, shell))
   }
   return refused('agent.noProject')
 }
@@ -412,7 +449,9 @@ async function readOperating(tool: OperatingRead, args: unknown, tree: TreeView 
 }
 
 /** A read over a scope that is not open, answered from its document as it stands on disk. */
-async function readElsewhere(tool: ReadTool, args: unknown, asked: string, tree: TreeView | undefined): Promise<AgentAnswer> {
+async function readElsewhere(
+  tool: ReadTool, args: unknown, asked: string, tree: TreeView | undefined, register?: AgentRegister,
+): Promise<AgentAnswer> {
   const wrong = checkArguments(toolSpec(tool).inputSchema, args)
   if (wrong) return refused('agent.badArguments', wrong)
   const held = await tree?.read(asked)
@@ -424,6 +463,7 @@ async function readElsewhere(tool: ReadTool, args: unknown, asked: string, tree:
     scopePath: asked,
     ancestorDecisions: held.ancestorDecisions,
     tree,
+    ...(register ? { register } : {}),
   })
 }
 

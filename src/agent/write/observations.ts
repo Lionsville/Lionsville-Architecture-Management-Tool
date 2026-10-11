@@ -24,6 +24,7 @@ import { causeLine, findCause, findObservation, observationLine } from '../answe
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
+import { personArgument } from './shared'
 
 /** The two lists as they stand, and the ways every verb reads and answers over them. */
 type Work = {
@@ -112,17 +113,19 @@ export const recordObservation: Handler = (args, view) => {
   if (!title) return refused('agent.badArguments', '"title" must not be blank')
   // The three facts that make it an observation (ADR-0032 §10): what, where
   // and who. The day defaults to today, as the page's does, and is never later.
-  for (const field of ['where', 'by'] as const) {
-    if (typeof args[field] !== 'string' || !args[field].trim()) return refused('agent.badArguments', `"${field}" is required: ${FACT[field]}`)
-  }
+  if (typeof args.where !== 'string' || !args.where.trim()) return refused('agent.badArguments', `"where" is required: ${FACT.where}`)
+  // Who saw it: a person from the register by id, or text (ADR-0036 §8).
+  const by = personArgument(args.by, view, 'by')
+  if ('ok' in by) return by
+  if (by.ref === undefined) return refused('agent.badArguments', `"by" is required: ${FACT.by}`)
   const today = view.today()
   const date = typeof args.date === 'string' ? args.date : today
   if (!isDay(date)) return refused('agent.badArguments', `date ${date} is not yyyy-mm-dd`)
   if (date > today) return refused('agent.badArguments', `date ${date} is in the future; today is ${today}`)
   const fresh = newObservation({
     id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
-    where: args.where as string,
-    by: args.by as string,
+    where: args.where,
+    by: by.ref,
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
@@ -142,13 +145,19 @@ const FACT = {
  * §10); a record written before without where or who keeps going without
  * them until somebody writes them.
  */
-function observationPatch(args: Args): ObservationPatch | AgentAnswer {
+function observationPatch(args: Args, view: WriteView): ObservationPatch | AgentAnswer {
   const patch: ObservationPatch = {}
-  for (const field of ['title', 'where', 'by'] as const) {
+  for (const field of ['title', 'where'] as const) {
     const value = args[field]
     if (typeof value !== 'string') continue
     if (!value.trim()) return refused('agent.badArguments', `"${field}" must not be blank`)
     patch[field] = value
+  }
+  if (args.by !== undefined && args.by !== null) {
+    const by = personArgument(args.by, view, 'by')
+    if ('ok' in by) return by
+    if (by.ref === undefined) return refused('agent.badArguments', '"by" must not be blank')
+    patch.by = by.ref
   }
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
@@ -160,7 +169,7 @@ function observationPatch(args: Args): ObservationPatch | AgentAnswer {
 }
 
 export const updateObservationTool = onObservation((held, args, view, work) => {
-  const patch = observationPatch(args)
+  const patch = observationPatch(args, view)
   if ('ok' in patch) return patch
   const after = { ...work.before, observations: updateObservation(work.before.observations, held.id, patch) }
   return finish(work, after, observationAnswer(after, held.id))

@@ -15,13 +15,13 @@ import { decisionList, decisionsOf } from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
 import {
   adrGate, adrOpenItems, formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, selfAccepted,
-  setAdrStatus, transitionsFrom,
+  setAdrStatus, transitionsFrom, withSignedNames,
 } from '../../decisions/adr'
 import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
-import type { Args, Handler } from './shared'
-import { planOf } from './shared'
+import type { Args, Handler, WriteView } from './shared'
+import { nameAsSigned, personArgument, planOf } from './shared'
 
 export const proposeDecision: Handler = (args, view) => {
   const { model } = view
@@ -40,7 +40,7 @@ export const proposeDecision: Handler = (args, view) => {
     id: view.makeId('adr'), number: nextAdrNumber(list), title, date: view.today(), t: view.translate, subjectId,
   })
   if (typeof args.body === 'string' && args.body.trim()) decision.body = args.body
-  const signers = signersOf(args)
+  const signers = signersOf(args, view)
   if (signers !== undefined) {
     if ('ok' in signers) return signers
     decision.signers = signers
@@ -50,7 +50,12 @@ export const proposeDecision: Handler = (args, view) => {
     if ('ok' in replaces) return replaces
     if (replaces.length) decision.supersedes = replaces
   }
-  if (typeof args.proposedBy === 'string' && args.proposedBy.trim()) decision.proposedBy = args.proposedBy.trim()
+  const proposer = personArgument(args.proposedBy, view, 'proposedBy')
+  if ('ok' in proposer) return proposer
+  if (proposer.ref !== undefined) decision.proposedBy = proposer.ref
+  // A verdict given to a person from the register keeps the name they signed with (ADR-0036 §8).
+  const nameOf = nameAsSigned(view)
+  const signed = nameOf ? withSignedNames(undefined, decision, nameOf) : decision
   // Linked from the plan's side, because that is where the link lives: a
   // plan names the decisions it rests on, and a decision names nothing.
   const linked: Command[] = []
@@ -61,7 +66,7 @@ export const proposeDecision: Handler = (args, view) => {
     linked.push({ type: 'transition.update', id: plan.id, patch: { decisions: [...plan.decisions, decision.id] } })
   }
   return {
-    command: transaction([{ type: 'decision.add', decision }, ...linked], { origin: 'agent' }),
+    command: transaction([{ type: 'decision.add', decision: signed }, ...linked], { origin: 'agent' }),
     answer: json({
       id: decision.id, number: decision.number, label: formatAdrNumber(decision.number), title, status: decision.status, subjectId,
       ...(linked.length ? { plans: linked.map((c) => (c.type === 'transition.update' ? c.id : '')) } : {}),
@@ -95,14 +100,16 @@ function supersedesOf(args: Args, self: string, view: ReadView): string[] | Agen
   return [...new Set(given)]
 }
 
-/** The signers as given, or nothing when they were not. */
-function signersOf(args: Args): AdrSigner[] | AgentAnswer | undefined {
+/** The signers as given, or nothing when they were not: each a person from the register by id, or text. */
+function signersOf(args: Args, view: WriteView): AdrSigner[] | AgentAnswer | undefined {
   const given = args.signers as Record<string, unknown>[] | undefined | null
   if (given === undefined || given === null) return undefined
   const out: AdrSigner[] = []
   for (const [index, one] of given.entries()) {
-    const name = typeof one.name === 'string' ? one.name.trim() : ''
-    if (!name) return refused('agent.badArguments', `signers[${index}].name must not be blank`)
+    const named = personArgument(one.name, view, `signers[${index}].name`)
+    if ('ok' in named) return named
+    const name = named.ref
+    if (name === undefined) return refused('agent.badArguments', `signers[${index}].name must not be blank`)
     if (one.signedAt !== undefined && one.signedAt !== null && !isDay(one.signedAt)) {
       return refused('agent.badArguments', `signers[${index}].signedAt must be yyyy-mm-dd`)
     }
@@ -114,6 +121,20 @@ function signersOf(args: Args): AdrSigner[] | AgentAnswer | undefined {
     })
   }
   return out
+}
+
+/**
+ * The names a signature keeps, written into the patch (ADR-0036 §8): a
+ * verdict given to a person from the register writes the name they signed
+ * with beside the id, and the proposer's is fixed once anybody has signed.
+ * Only where the patch touches who signed or who proposed.
+ */
+function signedNamesIn(held: Adr, patch: Partial<Adr>, view: WriteView): void {
+  const nameOf = nameAsSigned(view)
+  if (!nameOf || (patch.signers === undefined && !('proposedBy' in patch))) return
+  const next = withSignedNames(held, { ...held, ...patch }, nameOf)
+  patch.signers = next.signers
+  if (next.proposedAs !== held.proposedAs) patch.proposedAs = next.proposedAs
 }
 
 export const updateDecision: Handler = (args, view) => {
@@ -131,7 +152,7 @@ export const updateDecision: Handler = (args, view) => {
     if (!isDay(args.date)) return refused('agent.badArguments', 'date must be yyyy-mm-dd')
     patch.date = args.date
   }
-  const signers = signersOf(args)
+  const signers = signersOf(args, view)
   if (signers !== undefined) {
     if ('ok' in signers) return signers
     patch.signers = signers
@@ -142,7 +163,12 @@ export const updateDecision: Handler = (args, view) => {
     patch.supersedes = replaces.length ? replaces : undefined
   }
   if (args.proposedBy === null) patch.proposedBy = undefined
-  else if (typeof args.proposedBy === 'string') patch.proposedBy = args.proposedBy.trim() || undefined
+  else if (args.proposedBy !== undefined) {
+    const proposer = personArgument(args.proposedBy, view, 'proposedBy')
+    if ('ok' in proposer) return proposer
+    patch.proposedBy = proposer.ref
+  }
+  signedNamesIn(held, patch, view)
   return {
     command: { type: 'decision.update', id, patch, origin: 'agent' },
     answer: json({ id, label: formatAdrNumber(held.number), changed: Object.keys(patch) }),

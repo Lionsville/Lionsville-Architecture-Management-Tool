@@ -28,6 +28,7 @@
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
 import { OBSERVATION_TABS } from '../observations/tabs'
+import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
 
@@ -38,8 +39,46 @@ import type { PeopleRefusal } from '../people/person'
  */
 export type ToolTier = 'read' | 'write' | 'see' | 'drive'
 
+/**
+ * A field that names a person (ADR-0036 §8): text — a name, initials, a team —
+ * or a person picked from the register, `{ "person": id }` with an id from
+ * `people.list`. JSON Schema's `anyOf`, and the one argument that is not a
+ * single type.
+ */
+export type PersonRefSchema = {
+  readonly anyOf: readonly [
+    { readonly type: 'string' },
+    {
+      readonly type: 'object'
+      readonly properties: { readonly person: { readonly type: 'string'; readonly description: string } }
+      readonly required: readonly ['person']
+      readonly additionalProperties: false
+    },
+  ]
+  readonly description: string
+}
+
+/** A person-naming argument, said as `what` is said of it. */
+export function personArgument(what: string): PersonRefSchema {
+  return {
+    anyOf: [
+      { type: 'string' },
+      {
+        type: 'object',
+        properties: { person: { type: 'string', description: 'A register id, from people.list.' } },
+        required: ['person'],
+        additionalProperties: false,
+      },
+    ],
+    description: `${what} A person from the register as { "person": id } (people.list; person.add asks the four signs first), `
+      + 'or text — a name, initials, a team — where nobody in the register is meant. A picked person is answered by name, '
+      + 'or by pseudonym where the organisation says so.',
+  }
+}
+
 /** One argument, as JSON Schema says it and as {@link checkArguments} checks it. */
 export type ArgumentSchema =
+  | PersonRefSchema
   | { readonly type: 'string'; readonly description: string; readonly enum?: readonly string[] }
   | { readonly type: 'integer'; readonly description: string; readonly minimum?: number; readonly maximum?: number }
   | { readonly type: 'number'; readonly description: string }
@@ -187,7 +226,7 @@ const ELEMENT_FIELDS = {
   shared: { type: 'boolean', description: 'A platformService only: offered for use beyond the team that maintains it (ADR-0014). False or null takes it off. Where unsaid, a service assigned to one actor and used by an application of another team is reported as check.offeredNotShared rather than assumed.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
-  owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the scope it is kept in.' },
+  owner: personArgument('Who answers for it — a person or a team. Which scope owns it is the scope it is kept in. Where none is written, an application\'s owner may be worked out from the operating model\'s rule (answered as ownerByRule).'),
   outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
   partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said: one this scope keeps or one a scope above it keeps. Only meaningful with outside.' },
   order: { type: 'number', description: 'Where it sits among its siblings, low first. Only say it where the order is a decision — a journey reads left to right.' },
@@ -240,7 +279,7 @@ const PLAN_ID: ArgumentSchema = { type: 'string', description: 'The plan: its id
 const PLAN_FIELDS = {
   from: { type: 'string', description: 'The day the work starts, yyyy-mm-dd.' },
   to: { type: 'string', description: 'The day it is due to end, yyyy-mm-dd.' },
-  owner: { type: 'string', description: 'Who answers for it.' },
+  owner: personArgument('Who answers for it.'),
   initiative: { type: 'boolean', description: 'An initiative the organisation follows (ADR-0012 §7): shown on the roadmap of every scope above this one, read there and edited here. False takes it off them.' },
   body: { type: 'string', description: 'The plan as markdown: goal, approach, phases, the ```business-case fence, risks, rollback.' },
 } as const satisfies Record<string, ArgumentSchema>
@@ -260,10 +299,9 @@ const SUPERSEDES: ArgumentSchema = {
   items: { type: 'string' },
 }
 
-const PROPOSED_BY = {
-  type: 'string',
-  description: 'Who proposed it, as a name. When the only approving signer has the same name, accepting it answers with a warning.',
-} as const satisfies ArgumentSchema
+const PROPOSED_BY = personArgument(
+  'Who proposed it. When the only approving signer is the same person, accepting it answers with a warning. Once anybody has signed, the proposer\'s name is fixed beside the id.',
+)
 
 /** Who a decision was put to. Given whole: the list replaces the list. */
 const SIGNERS: ArgumentSchema = {
@@ -271,9 +309,9 @@ const SIGNERS: ArgumentSchema = {
   description: 'The people the decision is put to, replacing the list. Each has a name and may have a role, a verdict and the day of it.',
   items: {
     type: 'object',
-    description: 'One signer.',
+    description: 'One signer. A person from the register who gives a verdict keeps the name they signed with, beside the id: it stays after they are forgotten.',
     properties: {
-      name: { type: 'string', description: 'Their name.' },
+      name: personArgument('Who.'),
       role: { type: 'string', description: 'Their role, in a few words.' },
       verdict: { type: 'string', description: 'What they said, once they have.', enum: ['approved', 'rejected'] },
       signedAt: { type: 'string', description: 'The day of the verdict, yyyy-mm-dd.' },
@@ -327,7 +365,7 @@ const MERGE_LINKS: ArgumentSchema = {
 const OBSERVATION_VALUES = {
   title: { type: 'string', description: 'The title. Not blank.' },
   where: { type: 'string', description: 'Where it was seen. Not blank.' },
-  by: { type: 'string', description: 'Who saw it. Not blank.' },
+  by: personArgument('Who saw it. Not blank.'),
   impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
   date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd: usually the earliest of the set.' },
   body: { type: 'string', description: 'The body as markdown: the survivor\'s, with what the others add.' },
@@ -1268,7 +1306,7 @@ const SPECS = [
         date: { type: 'string', description: 'The day the record carries, yyyy-mm-dd.' },
         signers: SIGNERS,
         supersedes: SUPERSEDES,
-        proposedBy: { type: 'string', description: `${PROPOSED_BY.description} null clears it.` },
+        proposedBy: { ...PROPOSED_BY, description: `${PROPOSED_BY.description} null clears it.` },
       },
       required: ['id'],
       additionalProperties: false,
@@ -1321,7 +1359,7 @@ const SPECS = [
         title: { type: 'string', description: 'What was seen, as one neutral sentence: no cause and no fix in it.' },
         body: { type: 'string', description: 'What was seen, the evidence, and who or what it affected, as markdown. Facts only: the reading of them is a cause.' },
         where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id. Required.' },
-        by: { type: 'string', description: 'Who saw it, or who wrote it down. Free text: a name, initials, a team. Required.' },
+        by: personArgument('Who saw it, or who wrote it down. Required.'),
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future.' },
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
       },
@@ -1343,7 +1381,7 @@ const SPECS = [
         title: { type: 'string', description: 'A new title.' },
         body: { type: 'string', description: 'The body as markdown.' },
         where: { type: 'string', description: 'Where it was seen. Not blank.' },
-        by: { type: 'string', description: 'Who saw it. Not blank.' },
+        by: personArgument('Who saw it. Not blank.'),
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
       },
@@ -1752,7 +1790,7 @@ const SPECS = [
         hypothesis: { type: 'string', description: 'What should happen if the solution is right.' },
         measure: { type: 'string', description: 'What is counted to decide it.' },
         where: { type: 'string', description: 'Where it runs.' },
-        by: { type: 'string', description: 'Who runs it.' },
+        by: personArgument('Who runs it.'),
         from: { type: 'string', description: 'yyyy-mm-dd. Default: today.' },
         to: { type: 'string', description: 'yyyy-mm-dd.' },
         body: { type: 'string', description: 'How it is set up, as markdown.' },
@@ -1778,7 +1816,7 @@ const SPECS = [
         hypothesis: { type: 'string', description: 'What should happen if the solution is right.' },
         measure: { type: 'string', description: 'What is counted.' },
         where: { type: 'string', description: 'Where it runs.' },
-        by: { type: 'string', description: 'Who runs it.' },
+        by: personArgument('Who runs it.'),
         from: { type: 'string', description: 'yyyy-mm-dd.' },
         to: { type: 'string', description: 'yyyy-mm-dd.' },
         result: { type: 'string', description: 'What happened.' },
@@ -2887,6 +2925,12 @@ export function checkArguments(schema: InputSchema | RowSchema, args: unknown): 
 }
 
 function checkValue(spec: ArgumentSchema, value: unknown): string | undefined {
+  if ('anyOf' in spec) return isPersonRef(value) ? undefined : 'must be text, or { "person": id } with an id from people.list'
+  return checkTyped(spec, value)
+}
+
+/** A value against a schema of one type. */
+function checkTyped(spec: Exclude<ArgumentSchema, PersonRefSchema>, value: unknown): string | undefined {
   switch (spec.type) {
     case 'string':
       if (typeof value !== 'string') return 'must be a string'

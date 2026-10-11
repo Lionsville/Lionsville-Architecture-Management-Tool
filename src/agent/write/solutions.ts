@@ -30,7 +30,7 @@ import { experimentLine, findCause, findExperiment, findSolution, solutionFacts,
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
-import { planBody } from './shared'
+import { personArgument, planBody } from './shared'
 
 type Facts = ReturnType<typeof solutionFacts>
 
@@ -309,10 +309,13 @@ export const planExperimentTool: Handler = (args, view) => {
     if (typeof args[key] === 'string' && !isDay(args[key] as string)) return refused('agent.badArguments', `${key} ${String(args[key])} is not yyyy-mm-dd`)
   }
   const text = (key: string) => (typeof args[key] === 'string' ? { [key]: args[key] as string } : {})
+  // Who runs it: a person from the register by id, or text (ADR-0036 §8).
+  const by = personArgument(args.by, view, 'by')
+  if ('ok' in by) return by
   const fresh = newExperiment({
     id: view.makeId('ex'), number: nextExperimentNumber(before.experiments), title, tests, hypothesis, t: view.translate,
     from: typeof args.from === 'string' ? args.from : day,
-    ...text('measure'), ...text('where'), ...text('by'), ...text('to'), ...text('body'),
+    ...text('measure'), ...text('where'), ...(by.ref !== undefined ? { by: by.ref } : {}), ...text('to'), ...text('body'),
   })
   const strengthened = withStrengths(work, args, [fresh], fresh.id, fresh.tests)
   if ('refusal' in strengthened) return strengthened.refusal
@@ -321,10 +324,15 @@ export const planExperimentTool: Handler = (args, view) => {
 }
 
 /** The fields an update names, or the refusal for the first one that cannot be had. */
-function experimentPatch(args: Args, work: Work): ExperimentPatch | AgentAnswer {
+function experimentPatch(args: Args, work: Work, view: WriteView): ExperimentPatch | AgentAnswer {
   const patch: ExperimentPatch = {}
-  for (const key of ['title', 'hypothesis', 'measure', 'where', 'by', 'from', 'to', 'result', 'body'] as const) {
+  for (const key of ['title', 'hypothesis', 'measure', 'where', 'from', 'to', 'result', 'body'] as const) {
     if (typeof args[key] === 'string') patch[key] = args[key] as string
+  }
+  if (args.by !== undefined && args.by !== null) {
+    const by = personArgument(args.by, view, 'by')
+    if ('ok' in by) return by
+    patch.by = by.ref ?? ''
   }
   if (patch.title !== undefined && !patch.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
   if (patch.hypothesis !== undefined && !patch.hypothesis.trim()) return refused('agent.badArguments', '"hypothesis" must not be blank')
@@ -340,7 +348,7 @@ function experimentPatch(args: Args, work: Work): ExperimentPatch | AgentAnswer 
 }
 
 export const updateExperimentTool = onExperiment((experiment, args, view, work) => {
-  const patch = experimentPatch(args, work)
+  const patch = experimentPatch(args, work, view)
   if ('ok' in patch) return patch
   const updated = updateExperiment(work.before.experiments, experiment.id, patch)
   const strengthened = withStrengths(work, args, updated, experiment.id, updated.find((one) => one.id === experiment.id)!.tests)

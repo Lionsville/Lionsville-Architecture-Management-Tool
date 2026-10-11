@@ -33,6 +33,9 @@ import { findings } from '../model/checks'
 import { ELEMENT_KINDS } from '../model/kinds'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
+import { personIdOf } from '../model/person'
+import type { PersonRef } from '../model/person'
+import type { AgentRegister } from './persons'
 import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'
@@ -86,6 +89,14 @@ export type ReadView = {
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
   readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'>
+  /**
+   * The register as the agent is told it (ADR-0036 §8, §13): what a person
+   * picked from it reads as — the name, or the pseudonym the policy gives —
+   * and which ids a word of a search names. Read for the two reads that need
+   * it before they answer, `search` and `project.export`; every other answer
+   * is said by name as it leaves the handler (`persons.ts`).
+   */
+  readonly register?: AgentRegister
 }
 
 type Args = Record<string, unknown>
@@ -479,6 +490,10 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
  * are left out, because they are markdown already and each is one call away.
  */
 function exportMarkdown(model: Model, view: ReadView): string {
+  // A person picked from the register by what the agent may read; text as it is; an id with no register to ask.
+  const said = (ref: PersonRef | undefined): string | undefined => (view.register
+    ? view.register.words(ref) || undefined
+    : typeof ref === 'string' ? ref : personIdOf(ref))
   const cell = (value: unknown): string => (value === undefined || value === null || value === '' ? '' : String(value).replace(/\|/g, '\\|').replace(/\r?\n/g, ' '))
   const table = (header: string[], rows: unknown[][]): string[] => (rows.length === 0 ? ['_None._', ''] : [
     `| ${header.join(' | ')} |`,
@@ -504,7 +519,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
     if (rows.length === 0) continue
     lines.push(`### ${kind}`, '', ...table(
       ['id', 'name', 'lifecycle', 'dates', 'successor', 'owner', 'category', 'vendor', 'technology', 'parent'],
-      rows.map((e) => [e.id, e.name, e.lifecycle, dates(e), e.successorId, e.owner, e.category, e.vendor, e.technology, e.parentId]),
+      rows.map((e) => [e.id, e.name, e.lifecycle, dates(e), e.successorId, said(e.owner), e.category, e.vendor, e.technology, e.parentId]),
     ))
   }
 
@@ -524,7 +539,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
   lines.push('## Plans', '', ...table(
     ['id', 'label', 'title', 'status', 'from', 'to', 'owner', 'introduces', 'retires', 'changes', 'decisions', 'milestones'],
     plans.map((p) => [
-      p.id, transitionLabel(p), p.title, p.status, p.from, p.to, p.owner,
+      p.id, transitionLabel(p), p.title, p.status, p.from, p.to, said(p.owner),
       p.elements.filter((e) => e.role === 'introduces').map((e) => e.elementId).join(', '),
       p.elements.filter((e) => e.role === 'retires').map((e) => e.elementId).join(', '),
       p.elements.filter((e) => e.role === 'changes').map((e) => e.elementId).join(', '),
@@ -1077,6 +1092,8 @@ function searchHits(args: Args, view: ReadView): Record<string, unknown>[] {
     query: args.query as string,
     limitPerKind: (args.limit as number | undefined) ?? SEARCH_LIMIT_PER_KIND,
     ...(kinds ? { kinds } : {}),
+    // The register first, then the records that point at the ids it names (ADR-0036 §8).
+    ...(view.register ? { people: view.register.match } : {}),
   }).map((hit) => searchLine(hit, view))
 }
 

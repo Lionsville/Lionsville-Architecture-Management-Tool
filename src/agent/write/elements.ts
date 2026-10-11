@@ -18,8 +18,8 @@ import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import { seedPlacement } from './placement'
-import type { Args, Handler, Prepared } from './shared'
-import { diagramOrRefusal, hexColour, merged } from './shared'
+import type { Args, Handler, Prepared, WriteView } from './shared'
+import { diagramOrRefusal, hexColour, merged, personArgument } from './shared'
 
 export const addElement: Handler = (args, view) => {
   const { model } = view
@@ -135,19 +135,26 @@ export const removeElement: Handler = (args, view) => {
  * a request is the one it hears about and the patch's keys come out in the
  * order `changed` has always listed them.
  */
-type FieldReader = (args: Args, held: DesignElement, view: ReadView, patch: Record<string, unknown>) => AgentAnswer | undefined
+type FieldReader = (args: Args, held: DesignElement, view: WriteView, patch: Record<string, unknown>) => AgentAnswer | undefined
 
 /** Null or the empty string: a field asked to be cleared. */
 const cleared = (value: unknown) => value === null || value === ''
 
-const words: FieldReader = (args, _held, _view, patch) => {
+const words: FieldReader = (args, _held, view, patch) => {
   if (typeof args.name === 'string') {
     if (!args.name.trim()) return refused('agent.badArguments', '"name" must not be blank')
     patch.name = args.name.trim()
   }
-  for (const key of ['description', 'category', 'vendor', 'technology', 'owner'] as const) {
+  for (const key of ['description', 'category', 'vendor', 'technology'] as const) {
     if (cleared(args[key])) patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key]
+  }
+  // A person from the register by id, or text (ADR-0036 §8).
+  if (cleared(args.owner)) patch.owner = undefined
+  else if (args.owner !== undefined) {
+    const owner = personArgument(args.owner, view, 'owner')
+    if ('ok' in owner) return owner
+    patch.owner = owner.ref
   }
   return undefined
 }
@@ -324,7 +331,7 @@ const ELEMENT_FIELDS: readonly FieldReader[] = [words, technologyFields, lifecyc
  * The patch an element.update or element.add asks for. Null clears an
  * optional field — a saved file should look hand-written.
  */
-function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<DesignElement> | AgentAnswer {
+function elementPatch(args: Args, held: DesignElement, view: WriteView): Partial<DesignElement> | AgentAnswer {
   const patch: Record<string, unknown> = {}
   for (const read of ELEMENT_FIELDS) {
     const wrong = read(args, held, view, patch)

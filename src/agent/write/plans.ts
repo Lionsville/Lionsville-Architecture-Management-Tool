@@ -25,7 +25,7 @@ import { planEntry } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
-import { merged, planBody, planOf } from './shared'
+import { merged, personArgument, planBody, planOf } from './shared'
 
 // --- a replacement, and its interfaces (ADR-0010) ----------------------------------------
 
@@ -218,6 +218,9 @@ export const createPlan: Handler = (args, view) => {
     return refused('agent.badArguments', 'a plan starts as a draft; move it on with plan.update once its gate is clear')
   }
 
+  // A person from the register by id, or text (ADR-0036 §8).
+  const owner = personArgument(args.owner, view, 'owner')
+  if ('ok' in owner) return owner
   const plan: Transition = {
     id: view.makeId('tr'),
     number: nextTransitionNumber(transitionList(view.model)),
@@ -225,7 +228,7 @@ export const createPlan: Handler = (args, view) => {
     status: 'draft',
     ...(days.from ? { from: days.from } : {}),
     ...(days.to ? { to: days.to } : {}),
-    ...(typeof args.owner === 'string' && args.owner.trim() ? { owner: args.owner.trim() } : {}),
+    ...(owner.ref !== undefined ? { owner: owner.ref } : {}),
     ...(args.initiative === true ? { initiative: true as const } : {}),
     elements,
     decisions: decisions ?? [],
@@ -242,9 +245,8 @@ export const updatePlan: Handler = (args, view) => {
   const held = planOf(args.id, view)
   if (!held) return refused('agent.unknownId', `plan ${String(args.id)}`)
   const patch: Partial<Transition> = {}
-  const wrong = planHeading(args, held, patch) ?? planWindow(args, held, patch)
+  const wrong = planHeading(args, held, patch) ?? planWindow(args, held, patch) ?? planWords(args, patch, view)
   if (wrong) return wrong
-  planWords(args, patch)
   const lists = planLists(args, held, view, patch)
   if (lists) return lists
   const gated = planMove(held, patch, view)
@@ -315,11 +317,16 @@ function planWindow(args: Args, held: Transition, patch: Partial<Transition>): A
   return undefined
 }
 
-function planWords(args: Args, patch: Partial<Transition>): void {
+function planWords(args: Args, patch: Partial<Transition>, view: WriteView): AgentAnswer | undefined {
   if (args.owner === null) patch.owner = undefined
-  else if (typeof args.owner === 'string') patch.owner = args.owner.trim() || undefined
+  else if (args.owner !== undefined) {
+    const owner = personArgument(args.owner, view, 'owner')
+    if ('ok' in owner) return owner
+    patch.owner = owner.ref
+  }
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.initiative === 'boolean') patch.initiative = args.initiative ? true : undefined
+  return undefined
 }
 
 function planLists(args: Args, held: Transition, view: ReadView, patch: Partial<Transition>): AgentAnswer | undefined {
