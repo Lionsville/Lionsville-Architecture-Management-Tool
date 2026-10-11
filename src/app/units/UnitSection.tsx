@@ -36,9 +36,16 @@
  * (`PeopleRegisterAccess.manages`): *Assign*, a holder's correction, end and
  * removal on a unit they manage — a managing role's only strictly below one
  * they hold — and nothing else of the unit.
+ *
+ * **A unit comes first in its inspector** (as built 3.6.1). The host says
+ * this section leads where the actor has a type (`UnitSlot`), so it sits under
+ * the name: the type says what the unit is, with where it is filed beneath
+ * it, and its parts follow in the order a person comes to a unit for. An
+ * actor without a type keeps the section as it was, under General.
  */
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
@@ -170,36 +177,18 @@ export function UnitSection(props: UnitSectionProps) {
   const mayRole = (roleId: string) => peopleHere && (!readOnly || mayChangeIn(people?.manages, element.id, roleId))
   const name = (person: string) => personText(pickedPerson(person), facts.register, s)
   const update = (patch: Partial<DesignElement>) => dispatch({ type: 'element.update', id: element.id, patch })
+  const unit = isUnit(element)
   return (
-    <Box data-testid="unit-section" sx={{ mt: 1 }}>
-      <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{s('unit.title')}</Typography>
+    <Box data-testid="unit-section" sx={{ mt: unit ? 0.5 : 1 }}>
+      {/* A unit leads its inspector, under its name, and its type says what it is; an actor that is not one says Unit over the choice. */}
+      {!unit && <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{s('unit.title')}</Typography>}
       {today !== props.today && <Typography sx={QUIET} data-testid="unit-day">{s('unit.onDay', { day: today })}</Typography>}
-      <TypeField element={element} types={facts.types} editable={editable} onChange={(unitTypeId) => update({ unitTypeId })} s={s} />
+      <TypeField element={element} types={facts.types} editable={editable} onChange={(unitTypeId) => update({ unitTypeId })}
+        {...(unit ? { filedIn: s('unit.filedInLine', { scope: scopeLabel(scope) }) } : {})} s={s} />
       {standIn && <Typography sx={QUIET}>{s('unit.elsewhere', { scope: scopeLabel(element.ref ?? '') })}</Typography>}
-      {isUnit(element) && (
-        <>
-          <Typography sx={SECTION}>{s('unit.filedIn')}</Typography>
-          <Typography sx={LINE}>{scopeLabel(scope)}</Typography>
-          <Serves {...props} type={facts.type} editable={editable} onChange={(scopes) => update({ scopes })} />
-          <Typography sx={SECTION}>{s('unit.owns')}</Typography>
-          <Typography sx={LINE} data-testid="unit-owns">{facts.owns.length ? facts.owns.join(', ') : s('unit.ownsNone')}</Typography>
-          <AnswersFor {...props} rows={facts.answersFor} editable={editable} />
-          <Slots {...props} today={today} looking={today !== props.today} facts={facts} mayRole={mayRole} name={name} onAssign={setAssigning} />
-          {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
-          <Managers {...props} today={today} looking={today !== props.today} facts={facts} name={name} />
-          <OverTime element={element} facts={facts} s={s} />
-          <UnitInteractions {...props} facts={facts} editable={editable} />
-          {facts.said.length > 0 && (
-            <>
-              <Typography sx={SECTION}>{s('unit.checks')}</Typography>
-              {facts.said.map((finding, at) => (
-                <Typography key={`${finding.key}/${finding.id}/${at}`} sx={{ fontSize: 12, color: 'warning.main' }} data-testid="unit-finding">
-                  {findingSentence(finding, s, scopeLabel, name)}
-                </Typography>
-              ))}
-            </>
-          )}
-        </>
+      {unit && (
+        <UnitParts {...props} today={today} looking={today !== props.today} facts={facts} editable={editable}
+          mayRole={mayRole} name={name} onAssign={setAssigning} update={update} />
       )}
       {assigning && people && (
         <AssignDialog
@@ -214,19 +203,67 @@ export function UnitSection(props: UnitSectionProps) {
   )
 }
 
-/** The unit type: none makes the actor a party again. */
-function TypeField({ element, types, editable, onChange, s }: {
-  element: DesignElement; types: readonly UnitType[]; editable: boolean; onChange: (id: string | undefined) => void; s: Translate
+/**
+ * A unit's own sections, in the order a person comes to a unit for (as built
+ * 3.6.1): who is in it and who manages it, then what it serves, owns and
+ * answers for, the units it works with, how it changes over time, and what
+ * the checks say of it.
+ */
+function UnitParts(props: UnitSectionProps & {
+  looking: boolean; facts: Facts; editable: boolean; mayRole: (roleId: string) => boolean
+  name: (person: string) => string; onAssign: (assigning: Assigning) => void; update: (patch: Partial<DesignElement>) => void
+}) {
+  const { element, facts, editable, name, update, scopeLabel, s } = props
+  return (
+    <>
+      <Slots {...props} />
+      {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
+      {/* Its why? folds again for the next unit picked, as the element's fields do. */}
+      <Managers key={element.id} {...props} />
+      <Serves {...props} type={facts.type} editable={editable} onChange={(scopes) => update({ scopes })} />
+      <Typography sx={SECTION}>{s('unit.owns')}</Typography>
+      <Typography sx={LINE} data-testid="unit-owns">{facts.owns.length ? facts.owns.join(', ') : s('unit.ownsNone')}</Typography>
+      <AnswersFor {...props} rows={facts.answersFor} editable={editable} />
+      <UnitInteractions {...props} facts={facts} editable={editable} />
+      <OverTime element={element} facts={facts} s={s} />
+      {facts.said.length > 0 && (
+        <>
+          <Typography sx={SECTION}>{s('unit.checks')}</Typography>
+          {facts.said.map((finding, at) => (
+            <Typography key={`${finding.key}/${finding.id}/${at}`} sx={{ fontSize: 12, color: 'warning.main' }} data-testid="unit-finding">
+              {findingSentence(finding, s, scopeLabel, name)}
+            </Typography>
+          ))}
+        </>
+      )}
+    </>
+  )
+}
+
+/**
+ * The unit type: none makes the actor a party again. A unit's says under it
+ * where the unit is filed — the scope that keeps it — in one quiet line.
+ */
+function TypeField({ element, types, editable, onChange, filedIn, s }: {
+  element: DesignElement; types: readonly UnitType[]; editable: boolean; onChange: (id: string | undefined) => void
+  filedIn?: string; s: Translate
 }) {
   const current = element.unitTypeId ?? ''
   if (!editable) {
     const named = types.find((one) => one.id === current)?.name ?? current
-    return <Typography sx={LINE} data-testid="unit-type">{current ? named : s('unit.notAUnit')}</Typography>
+    return (
+      <>
+        <Typography sx={LINE} data-testid="unit-type">{current ? named : s('unit.notAUnit')}</Typography>
+        {filedIn && <Typography sx={QUIET} data-testid="unit-filed-in">{filedIn}</Typography>}
+      </>
+    )
   }
   return (
     <>
       <TextField size="small" select fullWidth label={s('unit.type')} value={types.some((one) => one.id === current) || !current ? current : ''}
-        onChange={(event) => onChange(event.target.value || undefined)} slotProps={{ htmlInput: { 'data-testid': 'unit-type' } }} sx={{ mt: 0.5 }}>
+        onChange={(event) => onChange(event.target.value || undefined)}
+        helperText={filedIn ? <span data-testid="unit-filed-in">{filedIn}</span> : undefined}
+        slotProps={{ htmlInput: { 'data-testid': 'unit-type' } }} sx={{ mt: 0.5 }}>
         <MenuItem value="">{s('unit.notAUnit')}</MenuItem>
         {types.map((type) => <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>)}
       </TextField>
@@ -443,12 +480,19 @@ function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: bo
   )
 }
 
-/** Who manages it on the day (§12): the holders of a managing role in it or above it. Core grants nothing from it. */
+/**
+ * Who manages it on the day (§12): the holders of a managing role in it or
+ * above it, one line each, nearest first. Why they are said to — and what a
+ * build with accounts grants from it, where core grants nothing — is behind
+ * *why?*, said once a person asks rather than on every unit.
+ */
 function Managers(props: UnitSectionProps & {
   looking: boolean; facts: Facts; name: (person: string) => string
 }) {
   const { element, today, looking, facts, name, s } = props
   const managers = managersOf(facts.organisation, element.id, today)
+  const [why, setWhy] = useState(false)
+  const noteId = useId()
   return (
     <>
       <Typography sx={SECTION}>{s('unit.managedBy')}</Typography>
@@ -461,7 +505,19 @@ function Managers(props: UnitSectionProps & {
           {facts.isMe(one.person) ? ` · ${s('unit.you')}` : ''}
         </Typography>
       ))}
-      <Typography sx={QUIET} data-testid="unit-managed-note">{s(props.people?.managingRight ? 'unit.managedByNoteGranted' : 'unit.managedByNote')}</Typography>
+      <Button
+        size="small" variant="text" data-testid="unit-managed-why" aria-expanded={why} {...(why ? { 'aria-controls': noteId } : {})}
+        onClick={() => setWhy((open) => !open)}
+        sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 12, textTransform: 'none', color: 'text.secondary' }}
+      >
+        <Box component="span" aria-hidden sx={{ mr: 0.5 }}>{why ? '▾' : '▸'}</Box>
+        {s('unit.managedByWhy')}
+      </Button>
+      {why && (
+        <Typography id={noteId} sx={QUIET} data-testid="unit-managed-note">
+          {s(props.people?.managingRight ? 'unit.managedByNoteGranted' : 'unit.managedByNote')}
+        </Typography>
+      )}
     </>
   )
 }

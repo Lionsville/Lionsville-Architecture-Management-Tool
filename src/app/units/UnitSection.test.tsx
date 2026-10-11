@@ -157,11 +157,37 @@ describe('a unit in its inspector', () => {
     expect(within(screen.getByTestId('unit-slot-ro-po')).queryByTestId('unit-assign')).toBeNull()
   })
 
-  it('says who manages it, nearest first, and that core grants nothing from it', () => {
+  it('says who manages it, nearest first, one line each, and behind why? that core grants nothing from it', async () => {
     renderShell(<Harness commands={[]} />)
     expect(screen.getAllByTestId('unit-manager').map((line) => line.textContent)).toEqual([
       'Femke Bos — Product owner, Webshop · you', 'Ada Verbeek — Domain owner, Customer',
     ])
+    // The four lines of why are not said on every unit: they are behind a native button that says whether it is open.
+    const why = screen.getByRole('button', { name: 'why?' })
+    expect(why.tagName).toBe('BUTTON')
+    expect(why.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByTestId('unit-managed-note')).toBeNull()
+    fireEvent.click(why)
+    expect(why.getAttribute('aria-expanded')).toBe('true')
+    expect(document.getElementById(why.getAttribute('aria-controls')!)?.textContent).toContain('here it is said, and grants nothing')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(why)
+    expect(screen.queryByTestId('unit-managed-note')).toBeNull()
+  })
+
+  // Pinned on purpose since 3.6.1, when the unit came first in its inspector:
+  // who is in it and who manages it before what it serves, owns and answers
+  // for, and where it is filed said under its type rather than as a section.
+  it('says its parts in the order a person comes to a unit for: roles, who manages it, serves, owns, responsible for, works with', () => {
+    renderShell(<Harness commands={[]} />)
+    const section = screen.getByTestId('unit-section')
+    const order = ['Roles, today', 'Who manages it', 'Serves', 'Owns', 'Responsible for', 'Works with']
+    const at = order.map((words) => section.textContent!.indexOf(words))
+    expect(at.every((one) => one >= 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+    expect(text('unit-filed-in')).toBe('Filed in Customer')
+    // A unit's type says what it is: no Unit over it, as an actor that is not one still has.
+    expect(within(section).queryByText('Unit')).toBeNull()
   })
 
   it('takes an id merged into an entry as that entry: you, a person\'s load and the checks count them as one', async () => {
@@ -308,11 +334,15 @@ describe('a unit in its inspector', () => {
     renderShell(<Harness unit="stakeholders" commands={commands} />)
     expect(screen.getByText(/An actor with a type is a unit/)).toBeTruthy()
     expect(screen.queryByTestId('unit-owns')).toBeNull()
+    // An actor without a type keeps the section as it was: Unit over the choice, and nothing of a unit's.
+    expect(within(screen.getByTestId('unit-section')).getByText('Unit')).toBeTruthy()
+    expect(screen.queryByTestId('unit-filed-in')).toBeNull()
   })
 
   it('only reads a unit in a scope that is read, and one another scope answers for', () => {
     renderShell(<Harness readOnly commands={[]} />)
     expect(text('unit-type')).toBe('Team')
+    expect(text('unit-filed-in')).toBe('Filed in Customer')
     expect(screen.queryByTestId('unit-assign')).toBeNull()
     cleanup()
     const standIn: HostModel = { ...CUSTOMER, elements: [actor('webshop', 'Webshop', { ref: 'customer', unitTypeId: 'ut-team' })] }
@@ -333,6 +363,8 @@ describe('a unit a manager changes the people of, where the scope is only read',
   it('assigns, corrects and ends in a unit below their own, a managing role there too, and changes nothing else of it', async () => {
     const commands: Command[] = []
     renderShell(<Harness readOnly manages={ada()} commands={commands} />)
+    // The reason is behind why? since 3.6.1, said once it is asked for.
+    fireEvent.click(screen.getByTestId('unit-managed-why'))
     expect(text('unit-managed-note')).toContain('they may change the people of this unit and of the units below it')
     expect(screen.queryByTestId('unit-extra-role')).toBeNull()
     expect(within(screen.getByTestId('unit-type')).queryByRole('combobox')).toBeNull()
