@@ -124,7 +124,8 @@ describe('a large organisation on its chart', () => {
     renderShell(<Harness onSelect={onSelect} />)
     const field = screen.getByRole('textbox', { name: 'Find a unit' })
     fireEvent.change(field, { target: { value: 'team 3.1.2' } })
-    fireEvent.keyDown(field, { key: 'Enter' })
+    // The Enter is consumed (fireEvent answers false), so it cannot go on to press the next button that takes the focus.
+    expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false)
     expect(drawn()).toContain('d3c1t2')
     expect(onSelect).toHaveBeenLastCalledWith('d3c1t2')
     expect(outlined()).toContain('d3c1t2')

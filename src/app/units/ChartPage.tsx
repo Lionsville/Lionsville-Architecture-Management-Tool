@@ -290,7 +290,8 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
         </Typography>
         <TextField
           size="small" label={t('chart.findUnit')} value={query} onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') onFind(query) }}
+          // Consumed: an Enter left to the browser becomes a press of whatever button takes the focus next.
+          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onFind(query) } }}
           sx={{ width: 200 }} slotProps={{ htmlInput: { 'data-testid': 'chart-find-input' } }}
         />
         <Button size="small" variant="outlined" onClick={() => onFind(query)} data-testid="chart-find">{t('chart.find')}</Button>
