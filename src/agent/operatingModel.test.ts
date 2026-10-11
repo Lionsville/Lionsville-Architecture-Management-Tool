@@ -143,6 +143,29 @@ describe('the operating model\'s three lists', () => {
     })
   })
 
+  it('say the name an item was given when it came in, and beside it the entries a bring-in matched it to', async () => {
+    const matched = { library: 'safe', entry: 'agile-release-train', version: '6.0', language: 'en' }
+    const recorded: HostModel = {
+      ...organisation,
+      unitTypes: [
+        { ...organisation.unitTypes![0], alsoBasedOn: [matched] },
+        { ...organisation.unitTypes![1], basedOn: { library: 'scrum', entry: 'scrum-team', version: '1', language: 'nl', name: 'Team' } },
+      ],
+      roles: organisation.roles!.map((role) => (role.id === 'ro-po' ? { ...role, alsoBasedOn: [{ library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }] } : role)),
+    }
+    const types = parsed(await ask('unitTypes.list', {}, session('', recorded))).unitTypes as Record<string, unknown>[]
+    expect(types.map((one) => [one.id, one.basedOn, one.alsoBasedOn])).toEqual([
+      ['ut-train', undefined, [{ library: 'safe', entry: 'agile-release-train', version: '6.0' }]],
+      ['ut-team', { library: 'scrum', entry: 'scrum-team', version: '1', name: 'Team' }, undefined],
+    ])
+    const roles = parsed(await ask('roles.list', {}, session('', recorded))).roles as Record<string, unknown>[]
+    expect(roles.map((one) => [one.id, one.basedOn, one.alsoBasedOn])).toEqual([
+      ['ro-lead', undefined, undefined],
+      ['ro-po', undefined, [{ library: 'scrum', entry: 'product-owner', version: '1' }]],
+      ['ro-dev', { library: 'scrum', entry: 'developer', version: '1' }, undefined],
+    ])
+  })
+
   it('narrow the roles to a unit type or a responsibility, and refuse one that is not there', async () => {
     const on = session('', organisation)
     const ids = (out: AgentAnswer) => (parsed(out).roles as { id: string }[]).map((role) => role.id)

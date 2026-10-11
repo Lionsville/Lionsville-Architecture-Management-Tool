@@ -871,10 +871,12 @@ const SPECS = [
       'The organisation\'s kinds of unit (ADR-0036), in its own words: each unit type\'s purpose, where a unit of it may sit '
       + '(at the top, under the organisation, and under the unit types listed in within), whether it may serve more than '
       + 'one domain (spans), the roles it holds with how many of each (slots: min, and max where there is one), how many '
-      + 'applications a unit of it should own at most (limit), and the library entry it was based on. Listed as the '
-      + 'structure stands: by lane — 1 for a type that may sit at the top, and below the deepest type it may sit in — then '
-      + 'by its order in the lane, then by name; a type that sits nowhere has no lane, says sitsNowhere and comes last. The operating model '
-      + 'is kept at the organisation: whatever scope is open, this answers from there.',
+      + 'applications a unit of it should own at most (limit), the library entry it was based on (basedOn, with the name '
+      + 'it was given then where that was not the library\'s), and the library entries it was matched to when a library '
+      + 'was brought in (alsoBasedOn). Listed as the structure stands: by lane — 1 for a type that may sit at the top, and '
+      + 'below the deepest type it may sit in — then by its order in the lane, then by name; a type that sits nowhere has '
+      + 'no lane, says sitsNowhere and comes last. The operating model is kept at the organisation: whatever scope is '
+      + 'open, this answers from there.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -883,8 +885,8 @@ const SPECS = [
     description:
       'The organisation\'s roles (ADR-0036): name, short name and purpose, its duties — a responsibility each, marked R, '
       + 'A, C or I — whether whoever holds it manages the people of the unit and of the units below (manages), the unit '
-      + 'types that hold it, the library entry it was based on, and the rules that name a role. Kept at the organisation, '
-      + 'and answered from there.',
+      + 'types that hold it, the library entry it was based on (basedOn) and those it was matched to when a library was '
+      + 'brought in (alsoBasedOn), and the rules that name a role. Kept at the organisation, and answered from there.',
     inputSchema: {
       type: 'object',
       properties: {

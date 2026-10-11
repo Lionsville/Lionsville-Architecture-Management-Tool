@@ -115,6 +115,35 @@ describe('the operating model in a scope\'s folder', () => {
     expect(scopeFromFolder(files, '')!.model.unitTypes?.map((one) => 'order' in one)).toEqual([false, false])
   })
 
+  it('keeps the name chosen when an item came in and the entries a bring-in matched an item to, and passes over what does not read', () => {
+    const scope = organisation()
+    const matched = { library: 'safe', entry: 'product-owner', version: '6.0', language: 'nl' }
+    const recorded = {
+      ...scope,
+      model: {
+        ...scope.model,
+        unitTypes: [{ ...train, alsoBasedOn: [{ library: 'safe', entry: 'agile-release-train', version: '6.0', language: 'en' }] }, { ...team, basedOn: { ...team.basedOn!, name: 'Squad' } }],
+        roles: [{ ...owner, alsoBasedOn: [matched] }, developer],
+      },
+    }
+    const back = scopeFromFolder(scopeFiles(recorded), '')!
+    expect(back.model.unitTypes).toEqual(recorded.model.unitTypes)
+    expect(back.model.roles).toEqual(recorded.model.roles)
+    const files: FolderFile[] = [
+      ...scopeFiles(bareScope('', 'Acme')),
+      { path: ROLES_FILE, text: JSON.stringify([
+        { id: 'ro-1', name: 'Lead', duties: [], basedOn: { library: 'scrum', entry: 'product-owner', name: '' }, alsoBasedOn: [{ entry: 'no library' }, matched, 'nonsense'] },
+        { id: 'ro-2', name: 'Coach', duties: [], alsoBasedOn: [{ library: 'safe' }] },
+        { id: 'ro-3', name: 'Member', duties: [], alsoBasedOn: { library: 'safe', entry: 'team-member' } },
+      ]) },
+    ]
+    expect(scopeFromFolder(files, '')!.model.roles).toEqual([
+      { id: 'ro-1', name: 'Lead', duties: [], basedOn: { library: 'scrum', entry: 'product-owner', version: '', language: 'en' }, alsoBasedOn: [matched] },
+      { id: 'ro-2', name: 'Coach', duties: [] },
+      { id: 'ro-3', name: 'Member', duties: [] },
+    ])
+  })
+
   it('opens a scope whose list is not a list to be read and not written', () => {
     const files: FolderFile[] = [...scopeFiles(organisation()).filter((file) => file.path !== ROLES_FILE), { path: ROLES_FILE, text: '{ half a' }]
     const back = scopeFromFolder(files, '')!

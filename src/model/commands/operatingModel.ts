@@ -23,12 +23,12 @@ import { patchWrites } from './writes'
 /** Every field of a unit type but its id. */
 const UNIT_TYPE_FIELDS: PatchKeys<'unitType.update'> = {
   name: true, purpose: true, top: true, within: true, spans: true, slots: true, limit: true, order: true, basedOn: true,
-  from: true, until: true, successors: true,
+  alsoBasedOn: true, from: true, until: true, successors: true,
 }
 
 /** Every field of a role but its id. */
 const ROLE_FIELDS: PatchKeys<'role.update'> = {
-  name: true, short: true, purpose: true, duties: true, manages: true, basedOn: true,
+  name: true, short: true, purpose: true, duties: true, manages: true, basedOn: true, alsoBasedOn: true,
   from: true, until: true, successors: true,
 }
 

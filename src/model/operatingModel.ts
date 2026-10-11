@@ -51,12 +51,18 @@ export type ResponsibilityId = string
  * afterwards: renaming it, rewriting it, cutting its slots. It is what lets a
  * later library be compared against the item without anything being merged
  * into it.
+ *
+ * `name` is the name the item was given when it was brought in, said only
+ * where it was not the library's term in `language`: *compare* reads the
+ * item's name against it, so a rename chosen on the way in is not reported as
+ * a difference for ever after, and a rename since is.
  */
 export type BasedOn = {
   library: string
   entry: string
   version: string
   language: string
+  name?: string
 }
 
 /**
@@ -97,6 +103,11 @@ export type RoleSlot = {
  * none and *compare* never reads it. Absent until somebody moves one, as an
  * element's `order` is, and a type that has none stands after those that do,
  * by name.
+ *
+ * `alsoBasedOn` is what a bring-in matched to the type: the library entries
+ * it was chosen to stand for, so nothing was brought in for them. It is a
+ * record, read by whatever asks what stands for an entry — a library opened
+ * again, *compare*, *What came in* — and never a guess by name.
  */
 export type UnitType = Dated & {
   id: UnitTypeId
@@ -109,6 +120,7 @@ export type UnitType = Dated & {
   limit?: number
   order?: number
   basedOn?: BasedOn
+  alsoBasedOn?: BasedOn[]
 }
 
 /** One responsibility a role has a part in, and which part. */
@@ -123,6 +135,9 @@ export type Duty = {
  * `manages` marks a role whose holder manages the people of the unit and of
  * the units below it. Core holds the flag as model data and grants nothing:
  * the right is a host's to give, from whoever holds the role on the day.
+ *
+ * `alsoBasedOn`, as a unit type's: the library entries a bring-in matched the
+ * role to.
  */
 export type Role = Dated & {
   id: RoleId
@@ -133,6 +148,7 @@ export type Role = Dated & {
   duties: Duty[]
   manages?: boolean
   basedOn?: BasedOn
+  alsoBasedOn?: BasedOn[]
 }
 
 /**

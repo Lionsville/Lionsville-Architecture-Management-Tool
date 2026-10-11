@@ -32,6 +32,13 @@
  * the format stayed 11: a build from before it reads the file, passes the
  * field over, and its next save writes the list without it — the lanes then
  * fall back to names, and nothing else is lost.
+ *
+ * `basedOn.name` and a unit type's or role's `alsoBasedOn` came the same way,
+ * in 3.6.1, and stayed 11. A 3.6.0 build reads the file and passes both over,
+ * and its next save writes the lists without them: *compare* then counts a
+ * name chosen when an item came in as a rename, and a library opened again
+ * offers an entry that was matched to an item of the organisation's own as
+ * not yet brought in. The items, their names and every reference are kept.
  */
 import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
@@ -86,11 +93,23 @@ const count = (value: unknown): number | undefined => (
 const ids = (value: unknown): string[] => (Array.isArray(value) ? value.filter((one): one is string => typeof one === 'string') : [])
 const number = (value: unknown): number | undefined => (typeof value === 'number' && Number.isFinite(value) ? value : undefined)
 
+function basedOn(value: unknown): BasedOn | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const { library, entry, version, language, name } = value as Record<string, unknown>
+  if (typeof library !== 'string' || typeof entry !== 'string') return undefined
+  const chosen = text(name)
+  return { library, entry, version: text(version) ?? '', language: text(language) ?? 'en', ...(chosen ? { name: chosen } : {}) }
+}
+
 function basedOnOf(value: unknown): { basedOn?: BasedOn } {
-  if (!value || typeof value !== 'object') return {}
-  const { library, entry, version, language } = value as Record<string, unknown>
-  if (typeof library !== 'string' || typeof entry !== 'string') return {}
-  return { basedOn: { library, entry, version: text(version) ?? '', language: text(language) ?? 'en' } }
+  const held = basedOn(value)
+  return held ? { basedOn: held } : {}
+}
+
+/** The entries a bring-in matched an item to: each that reads, and the field absent where none does. */
+function alsoBasedOnOf(value: unknown): { alsoBasedOn?: BasedOn[] } {
+  const held = Array.isArray(value) ? value.flatMap((one) => basedOn(one) ?? []) : []
+  return held.length ? { alsoBasedOn: held } : {}
 }
 
 /** The dates and successors a later step reads, carried as they are. */
@@ -131,6 +150,7 @@ function unitTypeOf(row: Record<string, unknown>): UnitType[] {
     ...(limit !== undefined ? { limit } : {}),
     ...(order !== undefined ? { order } : {}),
     ...basedOnOf(row.basedOn),
+    ...alsoBasedOnOf(row.alsoBasedOn),
     ...datedOf(row),
   }]
 }
@@ -145,6 +165,7 @@ function roleOf(row: Record<string, unknown>): Role[] {
     duties: Array.isArray(row.duties) ? row.duties.flatMap(dutyOf) : [],
     ...(row.manages === true ? { manages: true } : {}),
     ...basedOnOf(row.basedOn),
+    ...alsoBasedOnOf(row.alsoBasedOn),
     ...datedOf(row),
   }]
 }

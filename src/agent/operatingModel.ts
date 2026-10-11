@@ -43,8 +43,19 @@ function datedLine(dated: Dated, list: readonly { id: string; name: string }[]) 
   }
 }
 
-function basedOnLine(basedOn: BasedOn | undefined) {
-  return basedOn ? { basedOn: { library: basedOn.library, entry: basedOn.entry, version: basedOn.version } } : {}
+const entryLine = (basedOn: BasedOn) => ({ library: basedOn.library, entry: basedOn.entry, version: basedOn.version })
+
+/**
+ * The library entry an item was made from, with the name it was given then
+ * where that was not the library's term; and, for a unit type or a role, the
+ * entries a bring-in matched it to (`alsoBasedOn`), beside it.
+ */
+function basedOnLine(item: { basedOn?: BasedOn; alsoBasedOn?: readonly BasedOn[] }) {
+  const { basedOn, alsoBasedOn } = item
+  return {
+    ...(basedOn ? { basedOn: { ...entryLine(basedOn), ...(basedOn.name ? { name: basedOn.name } : {}) } } : {}),
+    ...(alsoBasedOn?.length ? { alsoBasedOn: alsoBasedOn.map(entryLine) } : {}),
+  }
 }
 
 /**
@@ -70,7 +81,7 @@ export function unitTypeLine(
     })),
     ...(type.limit !== undefined ? { limit: type.limit } : {}),
     ...datedLine(type, model.unitTypes ?? []),
-    ...basedOnLine(type.basedOn),
+    ...basedOnLine(type),
   }
 }
 
@@ -88,7 +99,7 @@ export function roleLine(role: Role, model: OperatingDocument) {
     })),
     heldIn: typesHolding(model.unitTypes ?? [], role.id).map((type) => ({ id: type.id, name: type.name })),
     ...datedLine(role, model.roles ?? []),
-    ...basedOnLine(role.basedOn),
+    ...basedOnLine(role),
   }
 }
 
@@ -108,7 +119,7 @@ export function responsibilityLine(responsibility: Responsibility, model: Operat
     }),
     accountable: accountable.map((role) => ({ id: role.id, name: role.name })),
     ...finding,
-    ...basedOnLine(responsibility.basedOn),
+    ...basedOnLine(responsibility),
   }
 }
 
