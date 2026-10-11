@@ -159,7 +159,10 @@ describe('the Solutions tab', () => {
       .toEqual(['Back to planned', 'Confirmed', 'Refuted', 'Inconclusive'])
     fireEvent.click(screen.getByTestId('experiment-outcome-confirmed'))
     expect(onChange).not.toHaveBeenCalled()
-    expect((screen.getByTestId('conclude-confirm') as HTMLButtonElement).disabled).toBe(true)
+    // Without a result there is nothing to conclude: pressed, it says what is missing.
+    fireEvent.click(screen.getByTestId('conclude-confirm'))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByText('Say what happened.')).toBeTruthy()
     fireEvent.change(screen.getByTestId('conclude-result'), { target: { value: '41 to 12 a week' } })
     fireEvent.click(screen.getByTestId('conclude-confirm'))
     expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'confirmed', result: '41 to 12 a week', from: '2026-09-10', to: '2026-09-24' })

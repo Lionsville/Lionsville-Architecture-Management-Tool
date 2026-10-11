@@ -85,7 +85,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.explains': 'Erklärt',
   'observation.explainedBy': 'Erklärt durch',
   'observation.noLinks': 'Noch nichts',
-  'observation.linkStrength': 'Zusammenhang',
   'observation.linkConfirm': 'Verknüpfen',
   'observation.unlink': 'Verknüpfung lösen',
   'observation.strengthStrong': 'Stark',
@@ -479,6 +478,12 @@ export const DE: Record<keyof typeof EN, string> = {
   'solution.formProposeMany': 'Lösung für {count} Grundursachen vorschlagen',
   'solution.experimentTitleExample': 'Was ausprobiert wird, in wenigen Worten. Z. B. Zwei Wochen an einem Schalter',
   'solution.experimentTitleMissing': 'Sagen Sie, was das Experiment ist.',
+  'observation.verifyMissing': 'Sagen Sie, was es bestätigt hat.',
+  'solution.hypothesisMissing': 'Sagen Sie, was sich ändern soll, und um wie viel.',
+  'solution.dropNoteMissing': 'Sagen Sie, warum sie verworfen wird.',
+  'solution.resultMissing': 'Sagen Sie, was geschehen ist.',
+  'solution.addressPickMissing': 'Wählen Sie eine Grundursache, die behoben wird.',
+  'solution.addressNone': 'Hier gibt es keine Grundursache mehr zu beheben.',
 
   // --- the picture's controls, filters and views (ADR-0032 §8)
   'observation.filters': 'Filter',

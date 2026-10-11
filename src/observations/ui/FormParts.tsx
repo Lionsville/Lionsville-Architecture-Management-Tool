@@ -17,7 +17,7 @@
  * strength, and taken off again with the button at its end. Nothing in it
  * exists until the form is recorded.
  */
-import { useId, useState, type ReactNode, type Ref } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -25,6 +25,8 @@ import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
+import Radio from '@mui/material/Radio'
+import RadioGroup from '@mui/material/RadioGroup'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -56,8 +58,8 @@ export function ExampleField(props: {
   type?: 'date'
   max?: string
   autoFocus?: boolean
-  /** The input itself, for a dialog that puts focus on it once it has opened. */
-  inputRef?: Ref<HTMLInputElement>
+  /** Several lines: Enter starts a new one rather than answering the dialog. */
+  multiline?: boolean
   testId?: string
   onBlur?: () => void
   onEnter?: () => void
@@ -72,7 +74,7 @@ export function ExampleField(props: {
       type={props.type}
       required={props.required}
       autoFocus={props.autoFocus}
-      inputRef={props.inputRef}
+      multiline={props.multiline}
       label={props.label}
       value={props.value}
       error={props.problem !== undefined}
@@ -285,7 +287,7 @@ export function LookAlikes({ title, rows, action, testId }: {
 }
 
 /** A cause's own fields, written in place: title, why, whether it is a root, and how strongly it explains. */
-export function CauseDraftFields({ draft, onChange, problem, rootFixed, noRoot, alike, s, autoFocus }: {
+export function CauseDraftFields({ draft, onChange, problem, rootFixed, noRoot, alike, s, autoFocus, onEnter }: {
   draft: CauseDraft
   onChange: (draft: CauseDraft) => void
   problem?: string
@@ -296,18 +298,20 @@ export function CauseDraftFields({ draft, onChange, problem, rootFixed, noRoot, 
   alike?: ReactNode
   s: Translate
   autoFocus?: boolean
+  /** Enter in its fields, where it means something else than answering the dialog around it. */
+  onEnter?: () => void
 }) {
   return (
     <Box sx={{ display: 'grid', gap: 1.5 }}>
       <ExampleField
         required autoFocus={autoFocus} label={s('observation.titleField')} value={draft.title}
         onChange={(title) => onChange({ ...draft, title })}
-        example={s('observation.causeTitleExample')} problem={problem} testId="cause-draft-title"
+        example={s('observation.causeTitleExample')} problem={problem} testId="cause-draft-title" onEnter={onEnter}
       />
       {alike}
       <ExampleField
         label={s('observation.causeWhy')} value={draft.why} onChange={(why) => onChange({ ...draft, why })}
-        example={s('observation.causeWhyExample')} testId="cause-draft-why"
+        example={s('observation.causeWhyExample')} testId="cause-draft-why" onEnter={onEnter}
       />
       {!noRoot && (
         <FormControlLabel
@@ -340,6 +344,8 @@ export function CausePicker({ candidates, taken, onPick, s, heading, onClose }: 
       <TextField
         autoFocus size="small" fullWidth placeholder={s('observation.causeFind')} value={query}
         onChange={(event) => setQuery(event.target.value)}
+        // A search that only filters: Enter does not answer the dialog around it.
+        onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault() }}
         slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}
       />
       <Box sx={{ maxHeight: 190, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper', mt: 0.75 }}>
@@ -359,6 +365,52 @@ export function CausePicker({ candidates, taken, onPick, s, heading, onClose }: 
         ))}
       </Box>
     </SubPanel>
+  )
+}
+
+/**
+ * One cause already written down, chosen from a list found by its number or
+ * its words: the link dialog's *Existing cause* and a solution's *Address*.
+ */
+export function ExistingCause({ candidates, picked, onPick, label, empty, s }: {
+  candidates: readonly { key: string; label: string; root: boolean }[]
+  picked: string
+  onPick: (key: string) => void
+  /** What the list is, for a screen reader. */
+  label: string
+  /** What the list says when nothing is on it. */
+  empty: string
+  s: Translate
+}) {
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+  const shown = candidates.filter((one) => !q || one.label.toLowerCase().includes(q))
+  return (
+    <>
+      <TextField
+        autoFocus size="small" fullWidth placeholder={s('observation.causeFind')} value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}
+      />
+      <Box sx={{ maxHeight: 260, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        {shown.length === 0 && <Typography sx={{ px: 1.5, py: 1, fontSize: 13, color: 'text.secondary' }}>{empty}</Typography>}
+        <RadioGroup value={picked} onChange={(event) => onPick(event.target.value)} aria-label={label}>
+          {shown.map((one) => (
+            <FormControlLabel
+              key={one.key} value={one.key} data-testid="link-candidate"
+              control={<Radio size="small" />}
+              label={(
+                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 13 }}>
+                  {one.label}
+                  {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 10 }} />}
+                </Box>
+              )}
+              sx={{ mx: 0, px: 1, borderBottom: 1, borderColor: 'divider' }}
+            />
+          ))}
+        </RadioGroup>
+      </Box>
+    </>
   )
 }
 

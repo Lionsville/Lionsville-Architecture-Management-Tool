@@ -13,12 +13,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Box from '@mui/material/Box'
 import Tooltip from '@mui/material/Tooltip'
@@ -26,15 +20,16 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import { causeLabel, CAUSE_STRENGTHS } from '../observation'
+import { causeLabel } from '../observation'
 import type { Cause, CauseStrength } from '../observation'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { RootCauseIcon } from '../../widgets/icons'
 import { solutionTemplate } from '../solution'
 import type { ExperimentOutcome, SolutionLink } from '../solution'
-import { CausePicker, DescriptionField, ExampleField, LinkRowsTable } from './FormParts'
+import { CausePicker, DescriptionField, ExampleField, ExistingCause, LinkRowsTable, StrengthSelect } from './FormParts'
 import type { LinkRow } from './FormParts'
-import { OUTCOME_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { FormDialog, problemsLine } from './FormDialog'
+import { OUTCOME_LABEL } from '../observationScope'
 
 /** What a new solution is proposed with: its title, its body, and the root causes it addresses. */
 export type NewSolution = { title: string; body: string; addresses: SolutionLink[] }
@@ -80,55 +75,52 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, r
     ? s('solution.formPropose')
     : addresses.length === 1 ? s('solution.formProposeOne') : s('solution.formProposeMany', { count: addresses.length })
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="lg" fullWidth aria-labelledby="new-solution-title">
-      <DialogTitle id="new-solution-title">{s('solution.new')}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 13, mb: 2 }}>{s('solution.formIntro')}</DialogContentText>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3, pt: 0.5 }}>
-          <Box sx={{ alignContent: 'start', display: 'grid' }}>
-            <ExampleField
-              required autoFocus label={s('solution.newTitleField')} value={title}
-              onChange={(value) => { setTitle(value); if (value.trim()) setMissing(false) }}
-              example={s('solution.newTitleHelp')} problem={missing ? s('solution.formTitleMissing') : undefined}
-              testId="new-solution-title"
-            />
-          </Box>
-          <DescriptionField
-            label={s('observation.formDescription')} optional value={body} onChange={setBody} example={s('solution.formBodyExample')}
-            renderMarkdown={renderMarkdown} s={s} minRows={8}
+    <FormDialog
+      open={open} size="lg" title={s('solution.new')} intro={s('solution.formIntro')}
+      dirty={title.trim() !== '' || body !== solutionTemplate(s) || addresses.length > 0}
+      onCancel={onCancel} onSubmit={submit} submitLabel={label} submitTestId="new-solution-create"
+      problem={problemsLine(missing ? 1 : 0, s)} s={s}
+    >
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3 }}>
+        <Box sx={{ alignContent: 'start', display: 'grid' }}>
+          <ExampleField
+            required autoFocus label={s('solution.newTitleField')} value={title}
+            onChange={(value) => { setTitle(value); if (value.trim()) setMissing(false) }}
+            example={s('solution.newTitleHelp')} problem={missing ? s('solution.formTitleMissing') : undefined}
+            testId="new-solution-title"
           />
         </Box>
-        <Box component="section" aria-labelledby="new-solution-addresses" sx={{ borderTop: 1, borderColor: 'divider', mt: 2.5, pt: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Typography id="new-solution-addresses" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('solution.formAddresses')}</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('solution.formAddressesNote')}</Typography>
-            <Tooltip title={s('solution.formAddRootTip')} describeChild>
-              <Button size="small" variant="outlined" startIcon={<RootCauseIcon size={14} />} onClick={() => setPicking(true)} sx={{ textTransform: 'none' }} data-testid="new-solution-add-root">
-                {s('observation.rootCause')}
-              </Button>
-            </Tooltip>
-          </Box>
-          <LinkRowsTable
-            rows={rows} s={s} testId="new-solution-rows" empty={s('solution.formNoRoots')}
-            onStrength={(key, strength) => setAddresses((held) => held.map((one) => (one.id === key ? { ...one, strength } : one)))}
-            onRemove={(key) => setAddresses((held) => held.filter((one) => one.id !== key))}
-          />
-          {picking && (
-            <CausePicker
-              heading={s('solution.formAddresses')}
-              candidates={causes.map((one) => ({ id: one.id, label: `${causeLabel(one)} ${one.title}`, root: true }))}
-              taken={new Set(addresses.map((one) => one.id))}
-              onPick={(id) => setAddresses((held) => [...held, { id, strength: 'strong' }])}
-              onClose={() => setPicking(false)} s={s}
-            />
-          )}
+        <DescriptionField
+          label={s('observation.formDescription')} optional value={body} onChange={setBody} example={s('solution.formBodyExample')}
+          renderMarkdown={renderMarkdown} s={s} minRows={8}
+        />
+      </Box>
+      <Box component="section" aria-labelledby="new-solution-addresses" sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Typography id="new-solution-addresses" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('solution.formAddresses')}</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('solution.formAddressesNote')}</Typography>
+          <Tooltip title={s('solution.formAddRootTip')} describeChild>
+            <Button size="small" variant="outlined" startIcon={<RootCauseIcon size={14} />} onClick={() => setPicking(true)} sx={{ textTransform: 'none' }} data-testid="new-solution-add-root">
+              {s('observation.rootCause')}
+            </Button>
+          </Tooltip>
         </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-        <Button variant="contained" onClick={submit} sx={{ textTransform: 'none' }} data-testid="new-solution-create">{label}</Button>
-      </DialogActions>
-    </Dialog>
+        <LinkRowsTable
+          rows={rows} s={s} testId="new-solution-rows" empty={s('solution.formNoRoots')}
+          onStrength={(key, strength) => setAddresses((held) => held.map((one) => (one.id === key ? { ...one, strength } : one)))}
+          onRemove={(key) => setAddresses((held) => held.filter((one) => one.id !== key))}
+        />
+        {picking && (
+          <CausePicker
+            heading={s('solution.formAddresses')}
+            candidates={causes.map((one) => ({ id: one.id, label: `${causeLabel(one)} ${one.title}`, root: true }))}
+            taken={new Set(addresses.map((one) => one.id))}
+            onPick={(id) => setAddresses((held) => [...held, { id, strength: 'strong' }])}
+            onClose={() => setPicking(false)} s={s}
+          />
+        )}
+      </Box>
+    </FormDialog>
   )
 }
 
@@ -144,31 +136,22 @@ export type AddressDialogProps = {
 export function AddressDialog({ subject, candidates, onCancel, onConfirm, s }: AddressDialogProps) {
   const [causeId, setCauseId] = useState('')
   const [strength, setStrength] = useState<CauseStrength>('strong')
-  useFreshFor(subject, (one) => one.id, () => { setCauseId(''); setStrength('strong') })
+  const [pressed, setPressed] = useState(false)
+  useFreshFor(subject, (one) => one.id, () => { setCauseId(''); setStrength('strong'); setPressed(false) })
+  const submit = () => { if (causeId) onConfirm({ causeId, strength }); else setPressed(true) }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{subject ? s('solution.addressTitle', { name: subject.label }) : ''}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-        <TextField
-          select fullWidth size="small" label={s('solution.addressPick')} value={causeId}
-          onChange={(event) => setCauseId(event.target.value)}
-          slotProps={{ htmlInput: { 'aria-label': s('solution.addressPick') } }}
-        >
-          {candidates.map((one) => <MenuItem key={one.id} value={one.id}>{causeLabel(one)} · {one.title}</MenuItem>)}
-        </TextField>
-        <TextField
-          select size="small" label={s('observation.linkStrength')} value={strength}
-          onChange={(event) => setStrength(event.target.value as CauseStrength)}
-          slotProps={{ htmlInput: { 'aria-label': s('observation.linkStrength') } }}
-        >
-          {CAUSE_STRENGTHS.map((one) => <MenuItem key={one} value={one}>{s(STRENGTH_LABEL[one])}</MenuItem>)}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!causeId} onClick={() => onConfirm({ causeId, strength })}>{s('solution.addressConfirm')}</Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={subject ? s('solution.addressTitle', { name: subject.label }) : ''}
+      dirty={causeId !== ''} onCancel={onCancel} onSubmit={submit} submitLabel={s('solution.addressConfirm')}
+      submitDisabled={candidates.length === 0} problem={pressed && !causeId ? s('solution.addressPickMissing') : undefined} s={s}
+    >
+      <ExistingCause
+        key={subject?.id} label={s('solution.addressPick')} empty={s('solution.addressNone')} s={s}
+        candidates={candidates.map((one) => ({ key: one.id, label: `${causeLabel(one)} ${one.title}`, root: one.root === true }))}
+        picked={causeId} onPick={setCauseId}
+      />
+      <StrengthSelect value={strength} onChange={setStrength} label={s('observation.causeStrength')} s={s} />
+    </FormDialog>
   )
 }
 
@@ -180,27 +163,35 @@ export type NewExperimentDialogProps = {
   s: Translate
 }
 
+/** An experiment, in the pattern of the forms that make records: an example under every field, and what is missing said on submit. */
 export function NewExperimentDialog({ subject, onCancel, onCreate, s }: NewExperimentDialogProps) {
   const [title, setTitle] = useState('')
   const [hypothesis, setHypothesis] = useState('')
   const [measure, setMeasure] = useState('')
-  useFreshFor(subject, (one) => one.id, () => { setTitle(''); setHypothesis(''); setMeasure('') })
-  const ready = title.trim().length > 0 && hypothesis.trim().length > 0
+  const [pressed, setPressed] = useState(false)
+  useFreshFor(subject, (one) => one.id, () => { setTitle(''); setHypothesis(''); setMeasure(''); setPressed(false) })
+  const missing = { title: pressed && !title.trim(), hypothesis: pressed && !hypothesis.trim() }
+  const submit = () => {
+    if (title.trim() && hypothesis.trim()) onCreate({ title: title.trim(), hypothesis: hypothesis.trim(), measure: measure.trim() })
+    else setPressed(true)
+  }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{subject ? s('solution.newExperiment', { name: subject.label }) : ''}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-        <TextField autoFocus fullWidth size="small" label={s('solution.titleField')} value={title} onChange={(event) => setTitle(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'new-experiment-title' } }} />
-        <TextField fullWidth size="small" multiline label={s('solution.hypothesis')} helperText={s('solution.hypothesisHelp')} value={hypothesis} onChange={(event) => setHypothesis(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'new-experiment-hypothesis' } }} />
-        <TextField fullWidth size="small" label={s('solution.measure')} value={measure} onChange={(event) => setMeasure(event.target.value)} />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onCreate({ title: title.trim(), hypothesis: hypothesis.trim(), measure: measure.trim() })} data-testid="new-experiment-create">
-          {s('solution.createExperiment')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={subject ? s('solution.newExperiment', { name: subject.label }) : ''}
+      dirty={Boolean(title.trim() || hypothesis.trim() || measure.trim())} onCancel={onCancel} onSubmit={submit}
+      submitLabel={s('solution.createExperiment')} submitTestId="new-experiment-create"
+      problem={problemsLine(Number(missing.title) + Number(missing.hypothesis), s)} s={s}
+    >
+      <ExampleField
+        required autoFocus label={s('solution.titleField')} value={title} onChange={setTitle} testId="new-experiment-title"
+        example={s('solution.experimentTitleExample')} problem={missing.title ? s('solution.experimentTitleMissing') : undefined}
+      />
+      <ExampleField
+        required multiline label={s('solution.hypothesis')} value={hypothesis} onChange={setHypothesis} testId="new-experiment-hypothesis"
+        example={s('solution.hypothesisHelp')} problem={missing.hypothesis ? s('solution.hypothesisMissing') : undefined}
+      />
+      <ExampleField label={s('solution.measure')} value={measure} onChange={setMeasure} example="" />
+    </FormDialog>
   )
 }
 
@@ -214,19 +205,22 @@ export type DropDialogProps = {
 
 export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps) {
   const [note, setNote] = useState('')
-  useFreshFor(subject, (one) => one.id, () => setNote(''))
+  const [pressed, setPressed] = useState(false)
+  useFreshFor(subject, (one) => one.id, () => { setNote(''); setPressed(false) })
+  const missing = pressed && !note.trim()
+  const submit = () => { if (note.trim()) onConfirm(note.trim()); else setPressed(true) }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{subject ? s('solution.dropTitle', { name: subject.label }) : ''}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ mb: 2 }}>{s('solution.dropBody')}</DialogContentText>
-        <TextField autoFocus fullWidth size="small" multiline label={s('solution.dropNote')} value={note} onChange={(event) => setNote(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'drop-note' } }} />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!note.trim()} onClick={() => onConfirm(note.trim())} data-testid="drop-confirm">{s('solution.dropConfirm')}</Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={subject ? s('solution.dropTitle', { name: subject.label }) : ''} intro={s('solution.dropBody')}
+      dirty={note.trim() !== ''} onCancel={onCancel} onSubmit={submit} submitLabel={s('solution.dropConfirm')} submitTestId="drop-confirm"
+      problem={problemsLine(missing ? 1 : 0, s)} s={s}
+    >
+      <TextField
+        autoFocus fullWidth size="small" multiline required label={s('solution.dropNote')} value={note} onChange={(event) => setNote(event.target.value)}
+        error={missing} helperText={missing ? s('solution.dropNoteMissing') : undefined}
+        slotProps={{ htmlInput: { 'data-testid': 'drop-note' } }}
+      />
+    </FormDialog>
   )
 }
 
@@ -234,7 +228,7 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
  * Concluding an experiment (ADR-0026, amended 28 September 2026): the result,
  * in numbers where there are numbers, and the day it ended — today unless
  * said, never before it started. Without a result there is no conclusion to
- * make, so the button waits for one.
+ * make, so the submit says so.
  */
 export type ConcludeDialogProps = {
   /** The experiment, by its id and the name the page shows, the outcome it is concluded as, and what it holds already; closed when absent. */
@@ -249,34 +243,34 @@ export type ConcludeDialogProps = {
 export function ConcludeDialog({ subject, today, onCancel, onConfirm, s }: ConcludeDialogProps) {
   const [result, setResult] = useState('')
   const [to, setTo] = useState(today)
+  const [pressed, setPressed] = useState(false)
   const { language } = useStrings()
-  useFreshFor(subject, (one) => one.id, (one) => { setResult(one.result ?? ''); setTo(today) })
+  useFreshFor(subject, (one) => one.id, (one) => { setResult(one.result ?? ''); setTo(today); setPressed(false) })
   const early = Boolean(subject?.from && to && to < subject.from)
-  const ready = result.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(to) && !early
+  const badDay = !/^\d{4}-\d{2}-\d{2}$/.test(to) || early
+  const missing = pressed && !result.trim()
+  const submit = () => { if (result.trim() && !badDay) onConfirm({ result: result.trim(), to }); else setPressed(true) }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{subject ? s('solution.concludeTitle', { name: subject.label, outcome: s(OUTCOME_LABEL[subject.outcome]).toLowerCase() }) : ''}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-        <TextField
-          autoFocus fullWidth multiline size="small"
-          label={s('solution.result')} helperText={s('solution.concludeResultHelp')}
-          value={result} onChange={(event) => setResult(event.target.value)}
-          slotProps={{ htmlInput: { 'data-testid': 'conclude-result' } }}
-        />
-        <TextField
-          type="date" size="small" label={s('solution.toField')} value={to}
-          error={early}
-          helperText={early && subject?.from ? s('solution.concludeBeforeFrom', { date: formatDay(subject.from, language) }) : undefined}
-          onChange={(event) => setTo(event.target.value)}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: subject?.from, 'data-testid': 'conclude-to' } }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onConfirm({ result: result.trim(), to })} data-testid="conclude-confirm">
-          {s('solution.concludeConfirm')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)}
+      title={subject ? s('solution.concludeTitle', { name: subject.label, outcome: s(OUTCOME_LABEL[subject.outcome]).toLowerCase() }) : ''}
+      dirty={result.trim() !== (subject?.result ?? '').trim() || to !== today} onCancel={onCancel} onSubmit={submit}
+      submitLabel={s('solution.concludeConfirm')} submitTestId="conclude-confirm"
+      problem={problemsLine(pressed ? Number(!result.trim()) + Number(badDay) : 0, s)} s={s}
+    >
+      <TextField
+        autoFocus fullWidth multiline required size="small"
+        label={s('solution.result')} helperText={missing ? s('solution.resultMissing') : s('solution.concludeResultHelp')} error={missing}
+        value={result} onChange={(event) => setResult(event.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'conclude-result' } }}
+      />
+      <TextField
+        type="date" size="small" required label={s('solution.toField')} value={to}
+        error={early}
+        helperText={early && subject?.from ? s('solution.concludeBeforeFrom', { date: formatDay(subject.from, language) }) : undefined}
+        onChange={(event) => setTo(event.target.value)}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: subject?.from, 'data-testid': 'conclude-to' } }}
+      />
+    </FormDialog>
   )
 }

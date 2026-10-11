@@ -99,7 +99,6 @@ export const EN = {
   'observation.explains': 'Explains',
   'observation.explainedBy': 'Explained by',
   'observation.noLinks': 'Nothing yet',
-  'observation.linkStrength': 'Relationship',
   'observation.linkConfirm': 'Link',
   'observation.unlink': 'Unlink',
   'observation.strengthStrong': 'Strong',
@@ -498,6 +497,12 @@ export const EN = {
   'solution.formProposeMany': 'Propose solution for {count} root causes',
   'solution.experimentTitleExample': 'What is tried, in a few words. e.g. Two weeks at one desk',
   'solution.experimentTitleMissing': 'Say what the experiment is.',
+  'observation.verifyMissing': 'Say what confirmed it.',
+  'solution.hypothesisMissing': 'Say what you expect to change, and by how much.',
+  'solution.dropNoteMissing': 'Say why it is dropped.',
+  'solution.resultMissing': 'Say what happened.',
+  'solution.addressPickMissing': 'Choose a root cause to address.',
+  'solution.addressNone': 'No root cause left to address here.',
 
   // --- the picture's controls, filters and views (ADR-0032 §8) --------------
   'observation.filters': 'Filters',

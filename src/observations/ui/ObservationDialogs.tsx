@@ -15,17 +15,12 @@
  */
 import { useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { seenDayProblem } from '../observation'
+import { FormDialog, problemsLine } from './FormDialog'
 
 /**
  * Why an observation is being closed — fixed, addressed, no longer relevant —
@@ -44,25 +39,12 @@ export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialog
   const [note, setNote] = useState('')
   useFreshFor(subject, (one) => one.id, () => setNote(''))
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('observation.archiveTitle', { name: subject?.label ?? '' })}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <DialogContentText sx={{ fontSize: 14 }}>{s('observation.archiveBody')}</DialogContentText>
-        <TextField
-          autoFocus
-          fullWidth
-          size="small"
-          label={s('observation.archiveNote')}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onConfirm(note.trim()) } }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" onClick={() => onConfirm(note.trim())}>{s('observation.archiveConfirm')}</Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={s('observation.archiveTitle', { name: subject?.label ?? '' })} intro={s('observation.archiveBody')}
+      dirty={note.trim() !== ''} onCancel={onCancel} onSubmit={() => onConfirm(note.trim())} submitLabel={s('observation.archiveConfirm')} s={s}
+    >
+      <TextField autoFocus fullWidth size="small" label={s('observation.archiveNote')} value={note} onChange={(event) => setNote(event.target.value)} />
+    </FormDialog>
   )
 }
 
@@ -84,46 +66,43 @@ export type SeenDialogProps = {
 export function SeenDialog({ subject, today, onCancel, onConfirm, s }: SeenDialogProps) {
   const [date, setDate] = useState(today)
   const [note, setNote] = useState('')
+  const [pressed, setPressed] = useState(false)
   const { language } = useStrings()
-  useFreshFor(subject, (one) => one.id, () => { setDate(today); setNote('') })
+  useFreshFor(subject, (one) => one.id, () => { setDate(today); setNote(''); setPressed(false) })
   const problem = subject ? seenDayProblem({ date: subject.firstSeen }, date, today) : undefined
   const help = problem === 'future'
     ? s('observation.seenFuture')
     : problem === 'beforeFirst' && subject
       ? s('observation.seenBeforeFirst', { date: formatDay(subject.firstSeen, language) })
       : undefined
-  const submit = () => { if (!problem) onConfirm({ date, note: note.trim() }) }
+  const submit = () => { if (problem) setPressed(true); else onConfirm({ date, note: note.trim() }) }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('observation.seenTitle', { name: subject?.label ?? '' })}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-        <DialogContentText sx={{ fontSize: 14 }}>{s('observation.seenBody')}</DialogContentText>
-        <TextField
-          type="date"
-          size="small"
-          label={s('observation.seenDate')}
-          value={date}
-          error={problem !== undefined}
-          helperText={help}
-          onChange={(event) => setDate(event.target.value)}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today, min: subject?.firstSeen, 'data-testid': 'seen-date' } }}
-        />
-        <TextField
-          autoFocus
-          fullWidth
-          size="small"
-          label={s('observation.seenNote')}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
-          slotProps={{ htmlInput: { 'data-testid': 'seen-note' } }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={problem !== undefined} onClick={submit} data-testid="seen-confirm">{s('observation.seenAgain')}</Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={s('observation.seenTitle', { name: subject?.label ?? '' })} intro={s('observation.seenBody')}
+      dirty={note.trim() !== '' || date !== today} onCancel={onCancel} onSubmit={submit}
+      submitLabel={s('observation.seenAgain')} submitTestId="seen-confirm" problem={pressed && problem ? problemsLine(1, s) : undefined} s={s}
+    >
+      <TextField
+        type="date"
+        size="small"
+        required
+        label={s('observation.seenDate')}
+        value={date}
+        error={problem !== undefined}
+        helperText={help}
+        onChange={(event) => setDate(event.target.value)}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today, min: subject?.firstSeen, 'data-testid': 'seen-date' } }}
+      />
+      <TextField
+        autoFocus
+        fullWidth
+        size="small"
+        label={s('observation.seenNote')}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'seen-note' } }}
+      />
+    </FormDialog>
   )
 }
 
@@ -143,28 +122,29 @@ export type VerifyDialogProps = {
 
 export function VerifyDialog({ subject, onCancel, onConfirm, s }: VerifyDialogProps) {
   const [answer, setAnswer] = useState('')
-  useFreshFor(subject, (one) => one.id, () => setAnswer(''))
-  const ready = answer.trim().length > 0
+  const [pressed, setPressed] = useState(false)
+  useFreshFor(subject, (one) => one.id, () => { setAnswer(''); setPressed(false) })
+  const missing = pressed && !answer.trim()
+  const submit = () => { if (answer.trim()) onConfirm(answer.trim()); else setPressed(true) }
   return (
-    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('observation.verifyTitle', { name: subject?.label ?? '' })}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <DialogContentText sx={{ fontSize: 14 }}>{s('observation.verifyBody')}</DialogContentText>
-        <TextField
-          autoFocus
-          fullWidth
-          multiline
-          size="small"
-          label={s('observation.verifyField')}
-          value={answer}
-          onChange={(event) => setAnswer(event.target.value)}
-          slotProps={{ htmlInput: { 'data-testid': 'verify-answer' } }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onConfirm(answer.trim())} data-testid="verify-confirm">{s('observation.verify')}</Button>
-      </DialogActions>
-    </Dialog>
+    <FormDialog
+      open={Boolean(subject)} title={s('observation.verifyTitle', { name: subject?.label ?? '' })} intro={s('observation.verifyBody')}
+      dirty={answer.trim() !== ''} onCancel={onCancel} onSubmit={submit}
+      submitLabel={s('observation.verify')} submitTestId="verify-confirm" problem={missing ? problemsLine(1, s) : undefined} s={s}
+    >
+      <TextField
+        autoFocus
+        fullWidth
+        multiline
+        required
+        size="small"
+        label={s('observation.verifyField')}
+        value={answer}
+        error={missing}
+        helperText={missing ? s('observation.verifyMissing') : undefined}
+        onChange={(event) => setAnswer(event.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'verify-answer' } }}
+      />
+    </FormDialog>
   )
 }

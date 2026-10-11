@@ -160,9 +160,10 @@ export function useAnalysisForms(deps: {
   }
 
   const scopes: FormScope[] = [
-    { label: s('observation.formScopeHere', { name: deps.scopeName }), observations: work.observations, causes: work.causes },
+    { label: s('observation.formScopeHere', { name: deps.scopeName }), name: deps.scopeName, observations: work.observations, causes: work.causes },
     ...(onChangeBelow && deps.local ? below.map((one) => ({
-      scope: one.scope, label: s('observation.formScopeBelow', { name: scopeLabel(one.scope) }), observations: one.observations, causes: one.causes,
+      scope: one.scope, label: s('observation.formScopeBelow', { name: scopeLabel(one.scope) }), name: scopeLabel(one.scope),
+      observations: one.observations, causes: one.causes,
     })) : []),
   ]
 

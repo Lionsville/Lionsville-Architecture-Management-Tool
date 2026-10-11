@@ -26,15 +26,10 @@
  * The form says what it wants and the page performs it: the page owns the
  * lists, the numbering and where the step lands.
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -42,7 +37,7 @@ import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { AddIcon, EyeIcon, LinkIcon } from '../../widgets/icons'
 import {
-  causeLabel, formatObservationNumber, liveObservations, OBSERVATION_IMPACTS,
+  causeLabel, formatCauseNumber, formatObservationNumber, liveObservations, nextCauseNumber, OBSERVATION_IMPACTS,
 } from '../observation'
 import type { Cause, CauseStrength, Observation } from '../observation'
 import { newObservationProblems, observationBody } from '../form'
@@ -51,6 +46,7 @@ import { hintWords, similarTitles, wordingHint } from '../wording'
 import { IMPACT_LABEL } from '../observationScope'
 import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
+import { FormDialog, problemsLine } from './FormDialog'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -58,6 +54,8 @@ export type FormScope = {
   scope?: string
   /** What the select calls it. */
   label: string
+  /** Its name, as a new cause's *Made in* says it. */
+  name: string
   observations: readonly Observation[]
   causes: readonly Cause[]
 }
@@ -132,7 +130,6 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
   const [shown, setShown] = useState<Partial<Record<Refused, 'missing' | 'future'>>>({})
   const [rows, setRows] = useState<Row[]>([])
   const [dropped, setDropped] = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!open) return
     setScopeIndex(0); setFields(freshFields(today)); setSections(blankSections()); setShown({}); setRows([]); setDropped(false)
@@ -172,98 +169,83 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
       causes: rows.map(({ key: _key, ...choice }) => { void _key; return choice }),
     })
   }
-  const shownCount = Object.keys(shown).length
+  const dirty = rows.length > 0 || [fields.title, fields.where, fields.by, ...Object.values(sections)].some((one) => one.trim() !== '')
 
   return (
-    <Dialog
-      open={open} onClose={props.onCancel} maxWidth="lg" fullWidth aria-labelledby="new-observation-title"
-      // The page is a dialog too, and its focus trap takes back a focus the
-      // title claims while this one is still opening: the title is focused
-      // again once it has.
-      slotProps={{ transition: { onEntered: () => titleRef.current?.focus() } }}
+    <FormDialog
+      open={open} size="lg" title={s('observation.new')} intro={s('observation.formIntro')} dirty={dirty}
+      onCancel={props.onCancel} onSubmit={record} submitLabel={recordLabel(rows, s)} submitTestId="form-record" submitGuide="observationForm.record"
+      problem={problemsLine(Object.keys(shown).length, s)} problemTestId="form-problems" s={s}
     >
-      <DialogTitle id="new-observation-title">{s('observation.new')}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 13, mb: 2 }}>{s('observation.formIntro')}</DialogContentText>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3, pt: 0.5 }}>
-          <Box sx={{ display: 'grid', gap: 2, alignContent: 'start' }}>
-            {scopes.length > 1 && (
-              <ExampleField
-                select label={s('observation.formScope')} value={String(scopeIndex)} onChange={(value) => changeScope(Number(value))}
-                example={s('observation.formScopeHelp')} testId="form-scope"
-              >
-                {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
-              </ExampleField>
-            )}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3 }}>
+        <Box sx={{ display: 'grid', gap: 2, alignContent: 'start' }}>
+          {scopes.length > 1 && (
             <ExampleField
-              required autoFocus inputRef={titleRef} label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
-              example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
-            />
-            <LookAlikes
-              testId="form-seen-before"
-              title={s('observation.formSeenBefore')}
-              action={{ label: s('observation.seenAgain'), icon: <EyeIcon size={14} /> }}
-              rows={alike.map((one) => ({
-                id: one.id, label: `${formatObservationNumber(one.number)} ${one.title}`, note: s('observation.seenTimes', { count: one.seen }),
-                tip: s('observation.formSeenAgainTip', { name: formatObservationNumber(one.number) }),
-                onUse: () => props.onSeenAgain(scope?.scope, one.id),
-              }))}
-            />
-            {hint && (
-              <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 13 }}>
-                {s('observation.formWordingHint', { word: hint })}
-              </Alert>
-            )}
-            <ExampleField
-              required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
-              example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
-            />
-            <ExampleField
-              required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)}
-              example={exampleFor('by', s)} problem={problemText('by', shown.by, s)} testId="form-by"
-            />
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 1.5 }}>
-              <ExampleField
-                required type="date" max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
-                example={exampleFor('date', s)} problem={problemText('date', shown.date, s)} testId="form-date"
-              />
-              <ExampleField
-                select label={s('observation.impactField')} value={fields.impact} onChange={(value) => set('impact', value)}
-                example={s('observation.formImpactExample')}
-              >
-                {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
-              </ExampleField>
-            </Box>
-          </Box>
-          <SectionsField
-            label={s('observation.formDescription')} body={body} renderMarkdown={props.renderMarkdown} s={s}
-            sections={SECTIONS.map((one) => ({
-              key: one.key, label: s(one.label), value: sections[one.key], onChange: (value: string) => setSection(one.key, value),
-              example: s(one.example),
-              ...(one.key === 'affected'
-                ? { required: true, ...(shown.affected ? { problem: s('observation.formAffectedMissing') } : {}) }
-                : {}),
+              select label={s('observation.formScope')} value={String(scopeIndex)} onChange={(value) => changeScope(Number(value))}
+              example={s('observation.formScopeHelp')} testId="form-scope"
+            >
+              {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
+            </ExampleField>
+          )}
+          <ExampleField
+            required autoFocus label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
+            example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
+          />
+          <LookAlikes
+            testId="form-seen-before"
+            title={s('observation.formSeenBefore')}
+            action={{ label: s('observation.seenAgain'), icon: <EyeIcon size={14} /> }}
+            rows={alike.map((one) => ({
+              id: one.id, label: `${formatObservationNumber(one.number)} ${one.title}`, note: s('observation.seenTimes', { count: one.seen }),
+              tip: s('observation.formSeenAgainTip', { name: formatObservationNumber(one.number) }),
+              onUse: () => props.onSeenAgain(scope?.scope, one.id),
             }))}
           />
-        </Box>
-
-        {scope && (
-          <CausesSection
-            key={scopeIndex} scope={scope} rows={rows} onRows={setRows} s={s}
-            dropped={dropped} onDismissDropped={() => setDropped(false)}
+          {hint && (
+            <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 13 }}>
+              {s('observation.formWordingHint', { word: hint })}
+            </Alert>
+          )}
+          <ExampleField
+            required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
+            example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
           />
-        )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
-        <Typography role="alert" color="error" sx={{ fontSize: 13, flex: 1 }} data-testid="form-problems">
-          {shownCount === 0 ? '' : shownCount === 1 ? s('observation.formProblemsOne') : s('observation.formProblemsMany', { count: shownCount })}
-        </Typography>
-        <Button onClick={props.onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-        <Button variant="contained" onClick={record} sx={{ textTransform: 'none' }} data-testid="form-record" data-guide="observationForm.record">
-          {recordLabel(rows, s)}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <ExampleField
+            required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)}
+            example={exampleFor('by', s)} problem={problemText('by', shown.by, s)} testId="form-by"
+          />
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 1.5 }}>
+            <ExampleField
+              required type="date" max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
+              example={exampleFor('date', s)} problem={problemText('date', shown.date, s)} testId="form-date"
+            />
+            <ExampleField
+              select label={s('observation.impactField')} value={fields.impact} onChange={(value) => set('impact', value)}
+              example={s('observation.formImpactExample')}
+            >
+              {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
+            </ExampleField>
+          </Box>
+        </Box>
+        <SectionsField
+          label={s('observation.formDescription')} body={body} renderMarkdown={props.renderMarkdown} s={s}
+          sections={SECTIONS.map((one) => ({
+            key: one.key, label: s(one.label), value: sections[one.key], onChange: (value: string) => setSection(one.key, value),
+            example: s(one.example),
+            ...(one.key === 'affected'
+              ? { required: true, ...(shown.affected ? { problem: s('observation.formAffectedMissing') } : {}) }
+              : {}),
+          }))}
+        />
+      </Box>
+
+      {scope && (
+        <CausesSection
+          key={scopeIndex} scope={scope} rows={rows} onRows={setRows} s={s}
+          dropped={dropped} onDismissDropped={() => setDropped(false)}
+        />
+      )}
+    </FormDialog>
   )
 }
 
@@ -308,61 +290,66 @@ function CausesSection({ scope, rows, onRows, dropped, onDismissDropped, s }: {
     return { key: one.key, label: held ? `${causeLabel(held)} ${held.title}` : one.causeId, kind: 'existing', root: held?.root === true, strength: one.strength }
   })
   const draftAlike = draft.title.trim().length >= 6 ? similarTitles(draft.title, scope.causes) : []
+  // The number it is made as: after the scope's own causes and the new ones already on the list.
+  const nextNumber = nextCauseNumber(scope.causes) + rows.filter((one) => one.kind === 'new').length
   return (
-    <Box component="section" aria-labelledby="new-observation-causes" sx={{ borderTop: 1, borderColor: 'divider', mt: 2.5, pt: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-            <Typography id="new-observation-causes" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('observation.formCauses')}</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('observation.formCausesNote')}</Typography>
-            <Tooltip title={s('observation.formNewCauseTip')} describeChild>
-              <Button size="small" variant="outlined" startIcon={<AddIcon size={14} />} onClick={() => { setSub('new'); setDraftProblem(false) }} sx={{ textTransform: 'none' }} data-testid="form-new-cause" data-guide="observations.newCause">
-                {s('observation.newCause')}
-              </Button>
-            </Tooltip>
-            <Tooltip title={s('observation.formExistingCauseTip')} describeChild>
-              <Button size="small" variant="outlined" startIcon={<LinkIcon size={14} />} onClick={() => setSub('existing')} sx={{ textTransform: 'none' }} data-testid="form-existing-cause" data-guide="observationForm.existingCause">
-                {s('observation.formExistingCause')}
-              </Button>
-            </Tooltip>
-          </Box>
-          {dropped && (
-            <Alert severity="info" variant="outlined" onClose={onDismissDropped} data-testid="form-scope-dropped" sx={{ mb: 1, fontSize: 13 }}>
-              {s('observation.formScopeDropped')}
-            </Alert>
-          )}
-          <LinkRowsTable
-            rows={tableRows} onStrength={setStrength} onRemove={(key) => onRows((held) => held.filter((one) => one.key !== key))}
-            empty={s('observation.formNoCauses')} s={s} testId="form-causes" guide="observationForm.causes"
-          />
-          {sub === 'new' && (
-            <SubPanel heading={s('observation.newCause')} onClose={() => setSub(undefined)} closeLabel={s('common.close')} testId="form-cause-draft">
-              <CauseDraftFields
-                autoFocus draft={draft} onChange={(next) => { setDraft(next); if (next.title.trim()) setDraftProblem(false) }}
-                problem={draftProblem ? s('observation.causeTitleMissing') : undefined} s={s}
-                alike={(
-                  <LookAlikes
-                    testId="form-cause-alike" title={s('observation.causeAlike')}
-                    action={{ label: s('observation.causeUse'), icon: <LinkIcon size={14} /> }}
-                    rows={draftAlike.map((one) => ({
-                      id: one.id, label: `${causeLabel(one)} ${one.title}`, tip: s('observation.formExistingCauseTip'), onUse: () => addExisting(one.id),
-                    }))}
-                  />
-                )}
+    <Box component="section" aria-labelledby="new-observation-causes" sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+        <Typography id="new-observation-causes" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('observation.formCauses')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('observation.formCausesNote')}</Typography>
+        <Tooltip title={s('observation.formNewCauseTip')} describeChild>
+          <Button size="small" variant="outlined" startIcon={<AddIcon size={14} />} onClick={() => { setSub('new'); setDraftProblem(false) }} sx={{ textTransform: 'none' }} data-testid="form-new-cause" data-guide="observations.newCause">
+            {s('observation.newCause')}
+          </Button>
+        </Tooltip>
+        <Tooltip title={s('observation.formExistingCauseTip')} describeChild>
+          <Button size="small" variant="outlined" startIcon={<LinkIcon size={14} />} onClick={() => setSub('existing')} sx={{ textTransform: 'none' }} data-testid="form-existing-cause" data-guide="observationForm.existingCause">
+            {s('observation.formExistingCause')}
+          </Button>
+        </Tooltip>
+      </Box>
+      {dropped && (
+        <Alert severity="info" variant="outlined" onClose={onDismissDropped} data-testid="form-scope-dropped" sx={{ mb: 1, fontSize: 13 }}>
+          {s('observation.formScopeDropped')}
+        </Alert>
+      )}
+      <LinkRowsTable
+        rows={tableRows} onStrength={setStrength} onRemove={(key) => onRows((held) => held.filter((one) => one.key !== key))}
+        empty={s('observation.formNoCauses')} s={s} testId="form-causes" guide="observationForm.causes"
+      />
+      {sub === 'new' && (
+        <SubPanel heading={s('observation.newCause')} onClose={() => setSub(undefined)} closeLabel={s('common.close')} testId="form-cause-draft">
+          <CauseDraftFields
+            autoFocus draft={draft} onChange={(next) => { setDraft(next); if (next.title.trim()) setDraftProblem(false) }}
+            problem={draftProblem ? s('observation.causeTitleMissing') : undefined} s={s} onEnter={addDraft}
+            alike={(
+              <LookAlikes
+                testId="form-cause-alike" title={s('observation.causeAlike')}
+                action={{ label: s('observation.causeUse'), icon: <LinkIcon size={14} /> }}
+                rows={draftAlike.map((one) => ({
+                  id: one.id, label: `${causeLabel(one)} ${one.title}`, tip: s('observation.formExistingCauseTip'), onUse: () => addExisting(one.id),
+                }))}
               />
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1.5 }}>
-                <Button size="small" onClick={() => setSub(undefined)} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-                <Button size="small" variant="contained" onClick={addDraft} sx={{ textTransform: 'none' }} data-testid="form-cause-add">{s('observation.causeAddToList')}</Button>
-              </Box>
-            </SubPanel>
-          )}
-          {sub === 'existing' && (
-            <CausePicker
-              heading={s('observation.existingIn', { scope: scope.label })}
-              candidates={scope.causes.map((one) => ({ id: one.id, label: `${causeLabel(one)} ${one.title}`, root: one.root === true }))}
-              taken={new Set(rows.flatMap((one) => (one.kind === 'existing' ? [one.causeId] : [])))}
-              onPick={addExisting} onClose={() => setSub(undefined)} s={s}
-            />
-          )}
-        </Box>
+            )}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }} data-testid="form-cause-made-as">
+              {s('observation.madeAs', { scope: scope.name, label: formatCauseNumber(nextNumber, draft.root) })}
+            </Typography>
+            <Button size="small" onClick={() => setSub(undefined)} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
+            <Button size="small" variant="contained" onClick={addDraft} sx={{ textTransform: 'none' }} data-testid="form-cause-add">{s('observation.causeAddToList')}</Button>
+          </Box>
+        </SubPanel>
+      )}
+      {sub === 'existing' && (
+        <CausePicker
+          heading={s('observation.existingIn', { scope: scope.label })}
+          candidates={scope.causes.map((one) => ({ id: one.id, label: `${causeLabel(one)} ${one.title}`, root: one.root === true }))}
+          taken={new Set(rows.flatMap((one) => (one.kind === 'existing' ? [one.causeId] : [])))}
+          onPick={addExisting} onClose={() => setSub(undefined)} s={s}
+        />
+      )}
+    </Box>
   )
 }
 
