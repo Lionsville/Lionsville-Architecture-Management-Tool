@@ -524,6 +524,19 @@ describe('the possible duplicates, folded', () => {
     expect(screen.queryByTestId('people-duplicates')).toBeNull()
   })
 
+  it('asks still here or left once the entry kept is swapped for one that has left', async () => {
+    renderShell(<Harness start={[...START, person('pe-mulders', 'Gijs Mulders')]} />)
+    review()
+    fireEvent.click(screen.getByRole('button', { name: 'Merge… Gijs Mulders and Gijs Mulder' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Merge Gijs Mulder into Gijs Mulders?' })
+    expect(within(dialog).queryByTestId('people-merge-leaving')).toBeNull()
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Gijs Mulder' }))
+    const swapped = await screen.findByRole('dialog', { name: 'Merge Gijs Mulders into Gijs Mulder?' })
+    expect(within(swapped).getByTestId('people-merge-leaving')).toBeTruthy()
+    fireEvent.click(within(swapped).getByRole('button', { name: 'Merge' }))
+    await waitFor(() => expect(merges).toEqual(['left']))
+  })
+
   it('answers a pair as not the same person: it leaves the fold, and is listed under it to take back', async () => {
     renderShell(<Harness start={DUPES} />)
     review()
