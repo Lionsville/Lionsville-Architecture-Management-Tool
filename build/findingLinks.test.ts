@@ -2,36 +2,27 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Every place that lists findings lists each one as a link to what it is
- * about.
+ * Every place that lists findings lists them in the one list of findings
+ * (`widgets/FindingsList`, ADR-0036 amended 11 October 2026), where each
+ * opens its explanation, and the explanation's actions are the ways to what
+ * it is about.
  *
- * Said by holding the sentences to the components that draw them as links,
- * rather than by visiting each screen: a finding's words come from one of two
- * tables — `CHECK_SENTENCE`, what a scope's dates disagree about, and
- * `findingSentence`, what the tree contradicts about itself — and each has one
- * place that turns them into a link. `FindingSentence` is the roadmap's and
- * the roadmap card's; `attention.ts` hands the tree's to `NeedsAttention`,
- * which draws every row as a button to the record. A new screen that wants to
- * list findings has to go through one of those, because naming either table
- * anywhere else fails here. The component tests of each place check the links
- * open what they name.
+ * Said by holding the sentences to the files that say them, rather than by
+ * visiting each screen: a finding's words come from one of two tables —
+ * `CHECK_SENTENCE`, what a scope's dates disagree about, and
+ * `findingSentence`, what the tree contradicts about itself — and naming
+ * either anywhere else fails here. `FindingSentence` says the dates' — as a
+ * link on the roadmap card at home, and as the words the roadmap's list says
+ * (`RoadmapFindings`); `attention.ts` says the tree's for the organisation's
+ * home (`NeedsAttention`); a unit's checks in its inspector (`UnitSection`),
+ * a plan's *Still open* (`PlanStillOpen`) and the organisation chart's
+ * summary (`ChartSummary`) say them for the units they are about. The
+ * Conway map says its own in its own words (`ConwayPage.findingText`).
  *
- * One more place says the tree's, and draws them as lines and not links: a
- * unit's own section in its inspector (`UnitSection`, ADR-0036 §3), which
- * lists only the findings about that unit and the people holding its roles —
- * what it is about is what the person is looking at, so a link would lead to
- * where they already are.
- *
- * And a plan's page says what is still open on the plan's day in the units
- * it reorganises (`PlanStillOpen`, ADR-0036 §6): each finding about a unit
- * a link to that unit, and one about a person a line — the people are in the
- * list above it.
- *
- * And the organisation chart's summary, in the inspector beside it while
- * nothing is picked (`ChartSummary`, ADR-0036 §7; under the chart until
- * 3.6.1), which lists the findings about the units it draws and the people in
- * them, each a link to the unit on the chart it is about: chosen there,
- * brought on screen and ringed.
+ * And every screen that lists them draws the one list: a new place that
+ * lists findings is a new line below, and draws them grouped, folded and
+ * explained, because that is the list there is. The component tests of each
+ * place check that the actions open what they name.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -59,6 +50,13 @@ describe('findings', () => {
     expect(naming(/\bfindingSentence\b/)).toEqual([
       'app/organisation/attention.ts', 'app/units/ChartSummary.tsx', 'app/units/PlanStillOpen.tsx', 'app/units/UnitSection.tsx',
       'projects/checks.ts',
+    ])
+  })
+
+  it('are listed in the one list of findings wherever a screen lists them', () => {
+    expect(naming(/<FindingsList\b/)).toEqual([
+      'app/organisation/NeedsAttention.tsx', 'app/units/ChartSummary.tsx', 'app/units/ConwayPage.tsx', 'app/units/PlanStillOpen.tsx',
+      'app/units/UnitSection.tsx', 'roadmap/ui/RoadmapFindings.tsx',
     ])
   })
 })
