@@ -193,6 +193,6 @@ export function usePeopleRegister(deps: {
     ...(index ? { assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? [])) } : {}),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
-  }), [held, readOnly, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
+  }), [held, source, readOnly, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
 }
 

@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, endingFor, holdersOn, isUnit, loadOn, managedBy, managersOf, mayHaveParent, parentTypeOf, runsOn, shareOf, slotsOf,
+  dayBefore, endingFor, holdersOn, isUnit, leavingStep, loadOn, managedBy, managersOf, mayHaveParent, parentTypeOf, runsOn, shareOf, slotsOf,
   unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow,
 } from './units'
 import type { Assignment, Organisation } from './units'
@@ -209,3 +209,19 @@ describe('what a person\'s leaving ends', () => {
 function held2(id: string, person: string, over: Partial<Assignment> = {}): Assignment {
   return { id, unitId: 'webshop', roleId: 'ro-dev', person: { person }, ...over }
 }
+
+describe('the one step a leaving makes in a scope', () => {
+  it('is one command for one end, a transaction for several, nothing for none, marked as asked', () => {
+    const one = leavingStep([held2('as-a', 'pe-femke')], new Set(['pe-femke']), '2026-10-31')
+    expect(one).toEqual({ command: { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } }, ended: 1 })
+    const two = leavingStep([held2('as-a', 'pe-femke'), held2('as-b', 'pe-femke', { from: '2027-01-01' })], new Set(['pe-femke']), '2026-10-31', { origin: 'agent' })
+    expect(two).toEqual({
+      command: {
+        type: 'transaction', origin: 'agent',
+        commands: [{ type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } }, { type: 'assignment.remove', id: 'as-b' }],
+      },
+      ended: 2,
+    })
+    expect(leavingStep([held2('as-c', 'pe-bram')], new Set(['pe-femke']), '2026-10-31')).toBeUndefined()
+  })
+})

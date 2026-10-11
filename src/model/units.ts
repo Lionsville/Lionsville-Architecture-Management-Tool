@@ -31,6 +31,7 @@ import { isDay, phaseAt } from './lifecycle'
 import type { PersonId, PickedPerson } from './person'
 import type { Role, RoleId, RoleSlot, UnitType, UnitTypeId } from './operatingModel'
 import type { DesignElement, ElementId } from './types'
+import type { Command, CommandMeta } from './commands'
 
 export type AssignmentId = string
 
@@ -432,4 +433,21 @@ export function endingFor(assignments: readonly Assignment[], persons: ReadonlyS
     }
   }
   return ends
+}
+
+/**
+ * The one step a person's leaving makes in one scope's assignments (ADR-0036
+ * §10): the ends {@link endingFor} says, as a single command — a transaction
+ * where there are several — or nothing where there are none. What the app's
+ * leave dispatches in each scope, and what a server applying a leave itself
+ * applies there, so a leave means the same wherever it is made. `meta` marks
+ * whose step it is: `{ origin: 'agent' }` for an agent's.
+ */
+export function leavingStep(
+  assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string, meta: CommandMeta = {},
+): { command: Command; ended: number } | undefined {
+  const ends = endingFor(assignments, persons, lastDay)
+  if (ends.length === 0) return undefined
+  const command: Command = ends.length === 1 ? { ...ends[0], ...meta } : { type: 'transaction', commands: [...ends], ...meta }
+  return { command, ended: ends.length }
 }

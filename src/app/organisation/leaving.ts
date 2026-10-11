@@ -7,11 +7,12 @@
  *
  * **Leaving ends the person's assignments.** Every assignment of theirs that
  * runs past their last day ends on it, and one that would only begin after it
- * is taken away (`model/units.endingFor`) — under their own id and under
- * every id a merge folded into theirs. Each scope that keeps one gets **one
- * step**, and the scopes are written together: the others in one `apply`
- * over the source's repositories, each expecting what was read, so all of
- * them land or none does (`changeScopes`).
+ * is taken away — under their own id and under every id a merge folded into
+ * theirs (`model/units.leavingStep`, which a server applying a leave itself
+ * applies too). Each scope that keeps one gets **one step**, and the scopes
+ * are written together: the others in one `apply` over the source's
+ * repositories, each expecting what was read, so all of them land or none
+ * does (`changeScopes`).
  *
  * **The open scope's part goes through its session**, never through the
  * repository, for the reason a change across the tree gives
@@ -24,13 +25,11 @@
  * every assignment with its scope; the open scope is asked as well, since it
  * may hold one the index has not seen yet.
  */
-import { transaction } from '../../model/commands'
 import type { Command } from '../../model/commands'
 import { assignmentList, fromArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import type { PersonId } from '../../model/person'
-import { endingFor } from '../../model/units'
-import type { Ending } from '../../model/units'
+import { endingFor, leavingStep } from '../../model/units'
 import type { LeaveConsequence } from '../../people/leave'
 import type { Person } from '../../people/person'
 import type { Repositories } from '../../ports/Repositories'
@@ -57,12 +56,6 @@ export function leaveConsequences(deps: LeavingDeps): readonly LeaveConsequence[
   return [endAssignments(deps)]
 }
 
-/** The one step a scope's ends make, under whose name they are. */
-function stepOf(ends: readonly Ending[], origin: 'agent' | undefined): Command {
-  const meta = origin ? { origin } : {}
-  return ends.length === 1 ? { ...ends[0], ...meta } : transaction([...ends], meta)
-}
-
 /** Every id that is this person's: the entry, and each one a merge folded into it. */
 async function idsOf(person: Person, deps: LeavingDeps): Promise<Set<PersonId>> {
   const { people } = await deps.repositories.people.list()
@@ -72,6 +65,7 @@ async function idsOf(person: Person, deps: LeavingDeps): Promise<Set<PersonId>> 
 function endAssignments(deps: LeavingDeps): LeaveConsequence {
   return async (person, lastDay) => {
     const ids = await idsOf(person, deps)
+    const meta = deps.origin ? { origin: deps.origin } : {}
     const open = deps.openScope?.()
     const openPath = open?.scopePath()
     const read = await deps.repositories.index.read()
@@ -84,18 +78,16 @@ function endAssignments(deps: LeavingDeps): LeaveConsequence {
         ended = 0
         const steps = new Map<string, ScopeCommand[]>()
         for (const [path, scope] of held) {
-          const ends = endingFor(assignmentList(fromArrays(scope.model)), ids, lastDay)
-          if (ends.length === 0) continue
-          ended += ends.length
-          steps.set(path, [stepOf(ends, deps.origin)])
+          const step = leavingStep(assignmentList(fromArrays(scope.model)), ids, lastDay, meta)
+          if (!step) continue
+          ended += step.ended
+          steps.set(path, [step.command])
         }
         return steps
       })
     }
-    if (open) {
-      const ends = endingFor(assignmentList(open.indexed()), ids, lastDay)
-      if (ends.length > 0 && open.dispatch(stepOf(ends, deps.origin)) !== undefined) ended += ends.length
-    }
+    const here = open ? leavingStep(assignmentList(open.indexed()), ids, lastDay, meta) : undefined
+    if (open && here && open.dispatch(here.command) !== undefined) ended += here.ended
     return ended
   }
 }
