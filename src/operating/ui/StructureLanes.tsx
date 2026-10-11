@@ -45,7 +45,7 @@ export type StructureLanesProps = {
 }
 
 /** A lane's width and the gap between two: room in the gap for a line to bend up to the rail and down again. */
-const WIDE = { lane: 236, root: 236, gap: 56 }
+const WIDE = { lane: 236, root: 150, gap: 48 }
 const COMPACT = { lane: 200, root: 120, gap: 40 }
 
 export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named, compact = false }: StructureLanesProps) {
