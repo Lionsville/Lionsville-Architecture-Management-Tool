@@ -59,9 +59,11 @@ export function historyPaths(subject: HistorySubject, model: HostModel): string[
       const stem = stems.get(subject.id)
       if (!stem) return undefined
       // A drawing's other file is its XML. Every other view's is its geometry.
-      // A diagram that is gone is named as a board would be: the geometry file.
-      const other = known?.kind === 'drawing' ? DRAWIO_SUFFIX : GEOMETRY_SUFFIX
-      return [`${DIAGRAMS_FOLDER}/${stem}.json`, `${DIAGRAMS_FOLDER}/${stem}${other}`]
+      // A diagram that is gone may have been either, so both are named: a
+      // deleted drawing's history is its XML as much as its definition.
+      const definition = `${DIAGRAMS_FOLDER}/${stem}.json`
+      if (!known) return [definition, `${DIAGRAMS_FOLDER}/${stem}${GEOMETRY_SUFFIX}`, `${DIAGRAMS_FOLDER}/${stem}${DRAWIO_SUFFIX}`]
+      return [definition, `${DIAGRAMS_FOLDER}/${stem}${known.kind === 'drawing' ? DRAWIO_SUFFIX : GEOMETRY_SUFFIX}`]
     }
     case 'description':
       // An element whose id cannot be a file name keeps its description in

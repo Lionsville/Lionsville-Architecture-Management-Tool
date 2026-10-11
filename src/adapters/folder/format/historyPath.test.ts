@@ -91,9 +91,9 @@ describe('what a subject is filed as', () => {
     expect(written(held)).not.toContain('diagrams/ctx.geometry.json')
   })
 
-  it('still names a diagram that has been deleted since', () => {
+  it('still names a diagram that has been deleted since, as a board or a drawing, since it may have been either', () => {
     const paths = historyPaths({ what: 'diagram', id: 'gone' }, model())
-    expect(paths).toEqual(['diagrams/gone.json', 'diagrams/gone.geometry.json'])
+    expect(paths).toEqual(['diagrams/gone.json', 'diagrams/gone.geometry.json', 'diagrams/gone.drawio'])
   })
 
   it('names the description\'s own page', () => {
