@@ -44,6 +44,8 @@ export const CONTROL_NAMES = [
   'technologyRegister.openRow',
   // The People page (ADR-0036): a person's row, adding someone, importing a list, and the policy.
   'people.row', 'people.add', 'people.importCsv', 'people.policy',
+  // Its possible duplicates (3.6.1): the fold, each pair, and the pairs answered as not the same person.
+  'people.duplicates', 'people.duplicatePair', 'people.answered',
   // The business architecture sheet and the enterprise map.
   'sheet.canvas', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy', 'sheet.unmapped',
   // Who is responsible: a capability's *Assigned to*, and the bar's switch that names the units on the sheet.

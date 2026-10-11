@@ -15,6 +15,7 @@ import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
 import type { PersonId } from '../../model/person'
+import type { DistinctPair } from '../distinct'
 import type { Person } from '../person'
 import type { HeldAssignment, PointsAt } from '../hold'
 import { DEFAULT_POLICY } from '../policy'
@@ -42,30 +43,50 @@ const START: Person[] = [
 ]
 
 /** A register held in React state and changed by the register's own rules, as the shell's hook would. */
-function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt, source, start = START }: {
+function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt, source, start = START, answered = [], open = true }: {
   readOnly?: boolean; me?: PersonId; onPolicy?: (change: Partial<PeoplePolicy>) => void; mentions?: { scope: string; kind: string; id: string; title: string }[]
   held?: Record<PersonId, HeldAssignment[]>; looking?: boolean; pointsAt?: Record<PersonId, PointsAt> | 'unreadable'
-  /** What a source that knows who may do what says (`SourcePeople.may`, `withheld`, `held`). */
-  source?: Pick<PeopleRegisterAccess, 'may' | 'withheld' | 'held'>
+  /** What a source that knows who may do what says (`SourcePeople.may`, `withheld`, `held`, `linked`), and whom a manager reaches. */
+  source?: Pick<PeopleRegisterAccess, 'may' | 'withheld' | 'held' | 'linked' | 'managesBoth'>
   start?: readonly Person[]
+  /** The pairs answered as not the same person to start with. */
+  answered?: readonly DistinctPair[]
+  open?: boolean
 }) {
   const [day, setDay] = useState<string | undefined>(undefined)
   const [people, setPeople] = useState<readonly Person[]>(start)
+  const [distinct, setDistinct] = useState<readonly DistinctPair[]>(answered)
   const [policy, setPolicy] = useState(DEFAULT_POLICY)
   const [who, setWho] = useState<PersonId | undefined>(me)
   // The latest register, written as each change lands: a run of changes in one handler reads what the last left.
   const held = useRef<readonly Person[]>(start)
-  const change = (work: PeopleChange, show?: string) => {
+  const pairs = useRef<readonly DistinctPair[]>(answered)
+  const changed = (work: PeopleChange) => {
     const count = held.current.length
-    const answer = changePeople(held.current, work, { id: () => `pe-new${count}`, pseudonym: () => `N${count}ZZ` })
-    if ('refused' in answer) return Promise.resolve(answer)
+    const answer = changePeople(held.current, work, { id: () => `pe-new${count}`, pseudonym: () => `N${count}ZZ` }, new Set(), pairs.current)
+    if ('refused' in answer) return answer
     held.current = answer.people
+    pairs.current = answer.distinct
     setPeople(answer.people)
+    setDistinct(answer.distinct)
+    return answer
+  }
+  const change = (work: PeopleChange, show?: string) => {
+    const answer = changed(work)
+    if ('refused' in answer) return Promise.resolve(answer)
     const id = show ?? answer.changed[0]
     return Promise.resolve({ person: answer.people.find((one) => one.id === id)!, ended: 0, removed: answer.removed })
   }
   const register: PeopleRegisterAccess = {
-    people, policy, me: who, readOnly, today: TODAY,
+    people, policy, me: who, readOnly, today: TODAY, distinct,
+    answerDistinct: (a, b) => {
+      const answer = changed({ kind: 'distinct', a, b, on: TODAY })
+      return Promise.resolve('refused' in answer ? answer : { pair: answer.distinct[0] })
+    },
+    takeBackDistinct: (a, b) => {
+      const answer = changed({ kind: 'takeBack', a, b })
+      return Promise.resolve({ taken: !('refused' in answer) && answer.distinctChanged })
+    },
     add: (one) => change({ kind: 'add', person: one }),
     change: (id, patch) => change({ kind: 'change', id, patch }),
     leave: (id, on) => change({ kind: 'leave', id, on }),
@@ -81,7 +102,7 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding,
     ...source,
   }
   const look = { ...(day !== undefined ? { day } : {}), onDay: setDay }
-  return <PeoplePage open onClose={() => {}} register={register} copyText={() => {}} s={s} {...(looking ? { look } : {})} />
+  return <PeoplePage open={open} onClose={() => {}} register={register} copyText={() => {}} s={s} {...(looking ? { look } : {})} />
 }
 
 /** What each merge was told, in order: still here, left, or nothing. */
@@ -90,6 +111,14 @@ afterEach(() => { merges.length = 0 })
 
 const row = (id: string) => screen.getByTestId(`people-row-${id}`)
 const pick = (id: string) => fireEvent.click(within(row(id)).getByRole('button'))
+/** Open the possible duplicates, folded as the page opens. */
+const review = () => fireEvent.click(screen.getByTestId('people-duplicates-review'))
+/** *Merge…* on the pair of Eva Lind and Eva Lindt, the dialog it opens. */
+const mergeEvas = () => {
+  review()
+  fireEvent.click(screen.getByRole('button', { name: 'Merge… Eva Lind and Eva Lindt' }))
+  return screen.findByRole('dialog', { name: 'Merge Eva Lindt into Eva Lind?' })
+}
 
 describe('the People page, as axe reads it', () => {
   it('finds nothing on the list with a person picked', async () => {
@@ -103,6 +132,8 @@ describe('the People page', () => {
   it('lists everyone but the redirects, says the counts, and that nothing here is a step', () => {
     renderShell(<Harness />)
     expect(screen.getByTestId('people-counts').textContent).toBe('3 active · 1 left · 1 forgotten')
+    expect(screen.queryByTestId('people-not-a-step')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'About the register' }))
     expect(screen.getByTestId('people-not-a-step').textContent).toContain('Not a step')
     expect(row('pe-gone').textContent).toContain('Former colleague 7KQM')
     fireEvent.change(screen.getByTestId('people-search'), { target: { value: 'lind' } })
@@ -134,10 +165,7 @@ describe('the People page', () => {
 
   it('merges a duplicate pair after asking, and the one absorbed leaves the list', async () => {
     renderShell(<Harness />)
-    const duplicates = screen.getByTestId('people-duplicates')
-    expect(duplicates.textContent).toContain('Eva Lindt and Eva Lind: nearly the same name.')
-    fireEvent.click(within(duplicates).getByRole('button', { name: 'Merge Eva Lindt into Eva Lind' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Merge Eva Lindt into Eva Lind?' })
+    const dialog = await mergeEvas()
     expect(dialog.textContent).toContain('A merge is final')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
     await waitFor(() => expect(screen.queryByTestId('people-row-pe-evt')).toBeNull())
@@ -188,8 +216,7 @@ describe('the People page', () => {
 
     it('asks nothing where the one kept is active: the merge is as it always was', async () => {
       renderShell(<Harness />)
-      fireEvent.click(within(screen.getByTestId('people-duplicates')).getByRole('button', { name: 'Merge Eva Lindt into Eva Lind' }))
-      const dialog = await screen.findByRole('dialog', { name: 'Merge Eva Lindt into Eva Lind?' })
+      const dialog = await mergeEvas()
       expect(within(dialog).queryByTestId('people-merge-leaving')).toBeNull()
       fireEvent.click(within(dialog).getByRole('button', { name: 'Merge' }))
       await waitFor(() => expect(merges).toEqual([undefined]))
@@ -270,8 +297,8 @@ describe('the People page', () => {
     renderShell(<Harness held={held} looking />)
     expect(screen.getByRole('columnheader', { name: 'Roles today' })).toBeTruthy()
     const roles = (id: string) => within(row(id)).getByTestId('people-roles')
-    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel, Developer · Tracking +1')
-    expect(within(roles('pe-pia')).getByTitle('Cluster lead · Freight').textContent).toBe(' +1')
+    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel +2')
+    expect(within(roles('pe-pia')).getByTitle('Developer · Tracking, Cluster lead · Freight').textContent).toBe(' +2')
     expect(roles('pe-eva').textContent).toBe('Product owner · Webshop')
     // Whoever holds nothing says so, rather than an empty cell.
     expect(roles('pe-evt').textContent).toBe('none')
@@ -285,7 +312,7 @@ describe('the People page', () => {
     pick('pe-pia')
     fireEvent.change(screen.getByTestId('people-look'), { target: { value: '2027-01-01' } })
     expect(screen.getByRole('columnheader', { name: 'Roles on 2027-01-01' })).toBeTruthy()
-    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel, Developer · Tracking +2')
+    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel +3')
     expect(roles('pe-eva').textContent).toBe('none')
   })
 
@@ -432,6 +459,136 @@ describe('the People page', () => {
     pick('pe-gijs')
     expect(screen.getByTestId('people-held-back').textContent).toBe(s('people.heldSignedIn'))
     expect(screen.queryByText(s('people.leftDue'))).toBeNull()
+  })
+})
+
+/**
+ * The possible duplicates (ADR-0036 §9, as built in 3.6.1): folded every time
+ * the page opens, a pair to a row, merged from it with the entry to keep
+ * chosen, or answered as not the same person — an answer that sticks, and
+ * can be taken back.
+ */
+describe('the possible duplicates, folded', () => {
+  const DUPES: Person[] = [
+    ...START,
+    person('pe-yara', 'Yara Kok'),
+    person('pe-vera', 'Vera Kok'),
+    person('pe-sam', 'Sam de Vries', { email: 'sam.devries@acme.example' }),
+    person('pe-samuel', 'Samuel de Vries', { email: 'sam.devries@acme.example', kind: 'external' }),
+  ]
+  const pairRows = () => screen.queryAllByTestId(/^people-pair-pe-/)
+  const fold = (name: string, expanded: boolean) => screen.getByRole('button', { name, expanded })
+
+  it('is one line as the page opens: how many, by sign, and Review — and folded again when it opens again', async () => {
+    const { rerender } = renderShell(<Harness start={DUPES} />)
+    expect(fold('3 possible duplicates', false)).toBeTruthy()
+    expect(screen.getByTestId('people-duplicates-signs').textContent).toBe('1 the same address · 2 nearly the same name')
+    expect(pairRows()).toEqual([])
+    review()
+    expect(fold('3 possible duplicates', true)).toBeTruthy()
+    expect(screen.queryByTestId('people-duplicates-review')).toBeNull()
+    // The strongest sign first: the same address before nearly the same name.
+    expect(pairRows().map((one) => one.dataset.testid)).toEqual([
+      'people-pair-pe-sam-pe-samuel', 'people-pair-pe-eva-pe-evt', 'people-pair-pe-yara-pe-vera',
+    ])
+    expect(await axeFindings()).toEqual([])
+    rerender(<Harness start={DUPES} open={false} />)
+    rerender(<Harness start={DUPES} />)
+    expect(await screen.findByRole('button', { name: '3 possible duplicates', expanded: false })).toBeTruthy()
+    expect(pairRows()).toEqual([])
+  })
+
+  it('shows a pair as two people side by side, with what tells them apart and the sign as a tag', () => {
+    renderShell(<Harness start={DUPES} held={{ 'pe-sam': [{ id: 'as-1', scope: 'sales', unit: 'Booking', role: 'Product owner' }, { id: 'as-2', scope: 'sales', unit: 'Rates', role: 'Engineer' }] }} />)
+    review()
+    const pair = screen.getByTestId('people-pair-pe-sam-pe-samuel')
+    expect(pair.dataset.guide).toBe('people.duplicatePair')
+    expect(pair.textContent).toContain('Sam de VriesProduct owner · Booking +1sam.devries@acme.example')
+    expect(pair.textContent).toContain('the same address')
+    expect(pair.textContent).toContain('Samuel de VriesExternal')
+    expect(within(pair).getByRole('button', { name: 'Merge… Sam de Vries and Samuel de Vries' }).textContent).toBe('Merge…')
+    expect(within(pair).getByRole('button', { name: 'Not the same person: Sam de Vries and Samuel de Vries' })).toBeTruthy()
+  })
+
+  it('merges from a pair after asking which entry is kept: the one with more assignments to start with, and either', async () => {
+    renderShell(<Harness held={{ 'pe-evt': [{ id: 'as-1', scope: 'sales', unit: 'Booking', role: 'Engineer' }] }} />)
+    review()
+    fireEvent.click(screen.getByRole('button', { name: 'Merge… Eva Lindt and Eva Lind' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Merge Eva Lind into Eva Lindt?' })
+    const keep = within(dialog).getByRole('radiogroup', { name: 'The entry to keep' })
+    expect(within(keep).getByRole('radio', { name: 'Eva Lindt' })).toHaveProperty('checked', true)
+    fireEvent.click(within(keep).getByRole('radio', { name: 'Eva Lind' }))
+    expect(await screen.findByRole('dialog', { name: 'Merge Eva Lindt into Eva Lind?' })).toBeTruthy()
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Merge' }))
+    await waitFor(() => expect(screen.queryByTestId('people-row-pe-evt')).toBeNull())
+    expect(screen.queryByTestId('people-duplicates')).toBeNull()
+  })
+
+  it('answers a pair as not the same person: it leaves the fold, and is listed under it to take back', async () => {
+    renderShell(<Harness start={DUPES} />)
+    review()
+    fireEvent.click(screen.getByRole('button', { name: 'Not the same person: Yara Kok and Vera Kok' }))
+    await waitFor(() => expect(screen.queryByTestId('people-pair-pe-yara-pe-vera')).toBeNull())
+    expect(screen.getByTestId('people-said').textContent).toContain('Recorded as not the same person: Yara Kok and Vera Kok')
+    expect(fold('2 possible duplicates', true)).toBeTruthy()
+    const answered = screen.getByRole('button', { name: '1 answered as not the same person', expanded: false })
+    expect(answered.dataset.guide).toBe('people.answered')
+    fireEvent.click(answered)
+    const line = screen.getByTestId('people-answered-pe-vera-pe-yara')
+    expect(line.textContent).toContain('Vera Kok and Yara Kok')
+    expect(line.textContent).toContain('answered 2026-10-11')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(line).getByRole('button', { name: 'Take back: Vera Kok and Yara Kok' }))
+    await waitFor(() => expect(screen.getByTestId('people-pair-pe-yara-pe-vera')).toBeTruthy())
+    expect(fold('3 possible duplicates', true)).toBeTruthy()
+    expect(screen.queryByTestId('people-answered')).toBeNull()
+    expect(screen.getByTestId('people-said').textContent).toBe('Taken back: Vera Kok and Yara Kok may be the same person again.')
+  })
+
+  it('goes away when no pair is left, and keeps the answered line while any answer stands', async () => {
+    renderShell(<Harness answered={[{ a: 'pe-eva', b: 'pe-evt', on: '2026-10-01' }]} />)
+    expect(screen.queryByTestId('people-duplicates-toggle')).toBeNull()
+    expect(screen.getByRole('button', { name: '1 answered as not the same person' })).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('does not warn of an answered pair when either is corrected, and still checks somebody new against both', () => {
+    renderShell(<Harness start={DUPES} answered={[{ a: 'pe-vera', b: 'pe-yara', on: '2026-10-01' }]} />)
+    pick('pe-yara')
+    fireEvent.click(screen.getByTestId('people-correct'))
+    expect(screen.queryByTestId('people-correct-similar')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Eva Lin' } })
+    expect(screen.getByTestId('people-correct-similar').textContent).toContain('Eva Lind — nearly the same name')
+    fireEvent.click(screen.getByTestId('people-add'))
+    fireEvent.change(screen.getByTestId('people-add-name'), { target: { value: 'Vera Kok' } })
+    const similar = screen.getByTestId('people-add-similar').textContent
+    expect(similar).toContain('Vera Kok — the same name')
+    expect(similar).toContain('Yara Kok — nearly the same name')
+  })
+
+  it('offers a manager whose units hold both an answer, and no merge, where the source grants that right', () => {
+    const managesBoth = (one: string, other: string) => [one, other].sort().join(' ') === 'pe-vera pe-yara'
+    renderShell(<Harness start={DUPES} source={{ may: (action) => action !== 'merge', managesBoth }} />)
+    expect(fold('1 possible duplicate', false)).toBeTruthy()
+    review()
+    const pair = screen.getByTestId('people-pair-pe-yara-pe-vera')
+    expect(within(pair).queryByRole('button', { name: /^Merge/ })).toBeNull()
+    expect(within(pair).getByRole('button', { name: 'Not the same person: Yara Kok and Vera Kok' })).toBeTruthy()
+  })
+
+  it('says an entry is linked to an account where the source says, and keeps it first', () => {
+    renderShell(<Harness held={{ 'pe-evt': [{ id: 'as-1', scope: 'sales', unit: 'Booking', role: 'Engineer' }] }} source={{ linked: (id) => id === 'pe-eva' }} />)
+    review()
+    const pair = screen.getByTestId('people-pair-pe-eva-pe-evt')
+    expect(within(pair).getAllByTestId('people-pair-account')).toHaveLength(1)
+    // Eva Lind first, though Eva Lindt holds more: an account is kept first.
+    expect(pair.textContent).toMatch(/^Eva Lindaccount/)
+  })
+
+  it('offers nothing where the register is only read, and says it is on the one line', () => {
+    renderShell(<Harness start={DUPES} readOnly answered={[{ a: 'pe-eva', b: 'pe-evt', on: '2026-10-01' }]} />)
+    expect(screen.queryByTestId('people-duplicates')).toBeNull()
+    expect(screen.getByText(/one entry each/).textContent).toContain('The register is read here and not changed.')
   })
 })
 

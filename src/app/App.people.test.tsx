@@ -324,5 +324,46 @@ describe('a source that does more about its people than keep them', () => {
     await openPeople()
     expect(screen.queryByTestId('people-add')).toBeNull()
   })
+
+  /**
+   * Who may answer that two entries are not the same person (3.6.1): whoever
+   * may merge, and — where the source grants a managing role's right — a
+   * manager whose units hold both today. The answer lands in the register.
+   */
+  it('lets a manager whose unit holds both answer that two people are not the same person, and merge neither', async () => {
+    const organisation: ScopeSnapshot = {
+      ...root,
+      model: {
+        ...root.model,
+        elements: [{ id: 'webshop', kind: 'actor', name: 'Webshop', lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId: 'ut-team' }],
+        unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-lead', min: 1, max: 1 }, { role: 'ro-dev', min: 0 }] }],
+        roles: [{ id: 'ro-lead', name: 'Team lead', duties: [], manages: true }, { id: 'ro-dev', name: 'Developer', duties: [] }],
+        assignments: [
+          { id: 'as-1', unitId: 'webshop', roleId: 'ro-lead', person: { person: 'pe-pia' } },
+          { id: 'as-2', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-yara' } },
+          { id: 'as-3', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-vera' } },
+        ],
+      },
+    }
+    const held = heldRepositories([organisation])
+    await held.people.bringIn([
+      { id: 'pe-pia', name: 'Pia Schulz', pseudonym: 'BCDF', kind: 'internal', state: 'active' },
+      { id: 'pe-yara', name: 'Yara Kok', pseudonym: 'GHJK', kind: 'internal', state: 'active' },
+      { id: 'pe-vera', name: 'Vera Kok', pseudonym: 'MNPQ', kind: 'internal', state: 'active' },
+      { id: 'pe-other', name: 'Yara Kokk', pseudonym: 'RSTV', kind: 'internal', state: 'active' },
+    ])
+    const source = { provider: 'browserStorage', name: 'This browser', key: 'browser', readOnly: true } as const
+    const people = { appliesPolicy: true, me: () => 'pe-pia', may: (action: string) => action === 'add', managingRight: true }
+    renderApp({ repositories: held, today: () => TODAY, source, provider: { people } })
+    await openPeople()
+    // The other Yara holds nothing in Webshop: her pairs are not this manager's to answer.
+    fireEvent.click(await screen.findByRole('button', { name: 'Review' }))
+    const pair = screen.getByTestId('people-pair-pe-vera-pe-yara')
+    expect(screen.getAllByTestId(/^people-pair-pe-/)).toHaveLength(1)
+    expect(within(pair).queryByRole('button', { name: /^Merge/ })).toBeNull()
+    fireEvent.click(within(pair).getByRole('button', { name: /^Not the same person/ }))
+    await waitFor(async () => expect((await held.people.list()).distinct).toEqual([{ a: 'pe-vera', b: 'pe-yara', on: TODAY }]))
+    expect(await screen.findByRole('button', { name: '1 answered as not the same person' })).toBeTruthy()
+  })
 })
 

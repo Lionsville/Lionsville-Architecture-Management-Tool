@@ -159,6 +159,18 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId('open-people'))
     await screen.findByTestId('people-table')
   }]],
+  [['its possible duplicates, reviewed', ['people.duplicates', 'people.duplicatePair', 'people.answered'], async () => {
+    const held = heldRepositories(example)
+    const ids: string[] = []
+    for (const name of ['Pia Schulz', 'Pia Schultz', 'Yara Kok', 'Vera Kok']) {
+      const added = await held.people.add({ name })
+      if ('person' in added) ids.push(added.person.id)
+    }
+    await held.people.answerDistinct(ids[2], ids[3], '2026-10-11')
+    renderApp({ repositories: held })
+    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByTestId('people-duplicates-review'))
+  }]],
   [['a landscape open on its board', [
     'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.inspector',
   ], onBoard],

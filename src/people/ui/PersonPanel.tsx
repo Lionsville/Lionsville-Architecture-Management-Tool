@@ -13,7 +13,7 @@
  * The day is today, or the day the page is looked at (ADR-0027): a look the
  * window holds, which writes nothing.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -23,6 +23,7 @@ import Typography from '@mui/material/Typography'
 import { heldLine, heldOn, holdText, keptName, pointerLine, ruleLine, whatWeHold } from '../hold'
 import type { HeldAssignment, Mention, OwnedByRule, PointedAt, PointsAt } from '../hold'
 import type { StringKey } from '../../i18n/table'
+import { possibleDuplicates } from '../duplicates'
 import type { Person, PersonKind, PolicyHold } from '../person'
 import { entriesOf, PERSON_KINDS } from '../person'
 import { meIdIn } from '../me'
@@ -32,6 +33,7 @@ import { shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
 import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
+import { SIGN_LABEL } from './AddPerson'
 import { KIND_LABEL, Section } from './parts'
 
 export type PersonPanelProps = {
@@ -77,13 +79,21 @@ function StateLine({ person, policy, today, held, s }: {
   )
 }
 
-/** The correction: a name, an address, a kind. */
+/**
+ * The correction: a name, an address, a kind — and who it may then be the
+ * same person as, by the four signs, but nobody this entry was answered as
+ * not being (`people/distinct.ts`). A warning, never a refusal.
+ */
 function Correcting({ person, register, saying, onDone, s }: {
   person: Person; register: PeopleRegisterAccess; saying: Saying; onDone: () => void; s: Translate
 }) {
   const [name, setName] = useState(person.name ?? '')
   const [email, setEmail] = useState(person.email ?? '')
   const [kind, setKind] = useState<PersonKind>(person.kind)
+  const similar = useMemo(
+    () => possibleDuplicates({ name, ...(email.trim() ? { email } : {}) }, register.people ?? [], person.id, register.distinct),
+    [name, email, register.people, register.distinct, person.id],
+  )
   const save = () => {
     void saying.run(register.change(person.id, { name, email: email.trim() ? email : null, kind }), () => s('people.saved'))
       .then((done) => { if (done) onDone() })
@@ -95,6 +105,15 @@ function Correcting({ person, register, saying, onDone, s }: {
       <TextField size="small" select label={s('people.kind')} value={kind} onChange={(event) => setKind(event.target.value as PersonKind)}>
         {PERSON_KINDS.map((one) => <MenuItem key={one} value={one}>{s(KIND_LABEL[one])}</MenuItem>)}
       </TextField>
+      {similar.length > 0 && (
+        <Box data-testid="people-correct-similar" sx={{ p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1, fontSize: 12 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{s('people.correctSimilar')}</Typography>
+          {similar.map(({ person: other, sign }) => (
+            <div key={other.id}>{shownText(shownEntry(other), s)} — {s(SIGN_LABEL[sign])}</div>
+          ))}
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.correctSimilarNote')}</Typography>
+        </Box>
+      )}
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Button size="small" variant="contained" onClick={save}>{s('people.save')}</Button>
         <Button size="small" onClick={onDone}>{s('people.cancel')}</Button>
