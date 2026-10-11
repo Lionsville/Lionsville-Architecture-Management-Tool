@@ -13,21 +13,29 @@
  * their share where it is not all of their time, *acting*, and *ext* for
  * someone from outside the organisation. A leaver's name stays plain: the
  * register says when a name goes (`people/shown.ts`).
+ *
+ * **A unit with units under it folds** (3.6.1): the caret beside its name
+ * hides the units under it, and the unit says what it hides — its units and
+ * people, and its vacancies and findings where there are any. Its own roles
+ * stay: a fold hides what is below a unit, never the unit.
  */
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../../i18n'
 import type { Role } from '../../model/operatingModel'
-import type { ChartHolder, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
+import type { ChartHolder, ChartRollUp, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
-import { unitBadges } from './chartWords'
+import { CaretIcon } from '../../widgets/icons'
+import { rollUpWords, unitBadges } from './chartWords'
+import type { RollUpPart } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
 
 /** Everything the boxes read, worked out once per render of the page. */
@@ -53,25 +61,48 @@ export type Drawing = {
   vacancy: ((unit: ChartUnit, roleId: string) => void) | undefined
   /** Whether a vacancy of this unit and role is one to press: every one where the scope may be written, a managed unit's where it is only read. */
   mayAssign: (unit: ChartUnit, roleId: string) => boolean
+  /** The chart's folds: absent, every unit is drawn open. */
+  folds?: ChartBoxFolds
+}
+
+/** What the boxes read of the chart's folds. */
+export type ChartBoxFolds = {
+  folded: ReadonlySet<ElementId>
+  toggle: (id: ElementId) => void
+  /** What a unit hides when it is folded. */
+  rollUp: (unit: ChartUnit) => ChartRollUp
 }
 
 /** One unit, its roles and the units under it. */
 export function UnitBox({ unit, depth, drawing }: { unit: ChartUnit; depth: number; drawing: Drawing }) {
-  const { t } = drawing
+  const { t, folds } = drawing
   const selected = drawing.selectedId === unit.id
+  const folded = folds !== undefined && unit.children.length > 0 && folds.folded.has(unit.id)
   return (
     <Box
-      data-testid="chart-unit" data-element-id={unit.id} data-ended={unit.ended ? 'true' : undefined}
+      data-testid="chart-unit" data-element-id={unit.id} data-ended={unit.ended ? 'true' : undefined} data-folded={folded ? 'true' : undefined}
       sx={{
         border: 1, borderRadius: 1.5, p: 1, minWidth: 220, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
         borderColor: selected ? 'primary.main' : 'divider', borderStyle: unit.ended ? 'dashed' : 'solid',
         boxShadow: selected ? 2 : 0,
       }}
     >
-      <ButtonBase onClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', width: '100%', borderRadius: 1 }} data-testid="chart-unit-open">
-        <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
-      </ButtonBase>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+        {folds && unit.children.length > 0 && (
+          <IconButton
+            size="small" aria-label={t(folded ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!folded}
+            onClick={() => folds.toggle(unit.id)} data-testid="chart-fold"
+            sx={{ width: 22, height: 22, mt: 0.25, color: 'text.secondary', transform: folded ? 'rotate(-90deg)' : undefined }}
+          >
+            <CaretIcon />
+          </IconButton>
+        )}
+        <ButtonBase onClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, borderRadius: 1 }} data-testid="chart-unit-open">
+          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
+        </ButtonBase>
+      </Box>
+      {folded && <RollUp parts={rollUpWords(folds.rollUp(unit), t)} />}
       <UnitBadges unit={unit} drawing={drawing} />
       {unit.slots.map((slot) => <SlotRow key={slot.roleId} unit={unit} slot={slot} drawing={drawing} />)}
       {unit.others.length > 0 && (
@@ -84,12 +115,25 @@ export function UnitBox({ unit, depth, drawing }: { unit: ChartUnit; depth: numb
           ))}
         </Box>
       )}
-      {unit.children.length > 0 && (
+      {unit.children.length > 0 && !folded && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start', mt: 1 }}>
           {unit.children.map((child) => <UnitBox key={child.id} unit={child} depth={depth + 1} drawing={drawing} />)}
         </Box>
       )}
     </Box>
+  )
+}
+
+/** What a folded unit hides, said where its units would be: the vacancies and findings in the warning colour. */
+function RollUp({ parts }: { parts: readonly RollUpPart[] }) {
+  return (
+    <Typography data-testid="chart-rollup" sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.25, ml: 3.5 }}>
+      {parts.map((part, at) => (
+        <Box component="span" key={part.key} data-part={part.key} sx={part.warn ? { color: 'warning.main', fontWeight: 600 } : undefined}>
+          {at > 0 ? ' · ' : ''}{part.text}
+        </Box>
+      ))}
+    </Typography>
   )
 }
 

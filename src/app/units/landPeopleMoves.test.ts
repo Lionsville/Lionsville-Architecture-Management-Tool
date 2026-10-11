@@ -133,6 +133,28 @@ describe('writing the people\'s moves', () => {
     expect(outside.dispatched).toEqual([])
   })
 
+  /** A unit's place among its siblings (3.6.1): the rows of `unitMovedTo`, each in the scope that keeps its unit. */
+  it('lands a unit\'s place among its siblings the same way, under the barrier it is given, and never by a manager\'s right', async () => {
+    const unit = (id: string) => ({ id, kind: 'actor' as const, name: id, lifecycle: 'live' as const, isManaged: false, aspects: {}, unitTypeId: 'ut-team', parentId: 'pf' })
+    const shipping: HostModel = { ...SHIPPING, elements: [unit('tt'), unit('rp')] }
+    const repositories = memoryRepositories()
+    await placeWhole(repositories.scopes, '', content('Acme', { elements: [unit('ip')] }))
+    await placeWhole(repositories.scopes, 'shipping', { ...content('Shipping'), model: shipping })
+    const order = (id: string, at: number): Command => ({ type: 'element.update', id, patch: { order: at } })
+    const open = session(shipping)
+    const held = { scope: 'shipping', scopes: repositories.scopes, session: open, writable: () => true, save: () => Promise.resolve() }
+    const landed = await landPeopleMoves(held, new Map([['shipping', [order('rp', 1), order('tt', 2)]], ['', [order('ip', 3)]]]), 'chart.orderBarrier')
+    expect(landed).toEqual({ ok: true, changed: ['', 'shipping'], ended: 0, begun: 0 })
+    expect(open.dispatched[0]).toMatchObject({ type: 'transaction', barrier: 'chart.orderBarrier' })
+    expect((await readScope(repositories.scopes, ''))!.model.elements.find((one) => one.id === 'ip')?.order).toBe(3)
+    // Who manages a unit's people does not decide where the unit stands.
+    const manages = { held: ['tt'], units: new Set(['tt', 'rp']), below: new Set(['rp']), managing: new Set<string>() }
+    const managed = session(shipping)
+    expect(await landPeopleMoves({ ...held, session: managed, writable: () => false, manages }, new Map([['shipping', [order('tt', 1)]]])))
+      .toEqual({ ok: false, reason: 'shell.scopeReadOnly', scope: 'shipping' })
+    expect(managed.dispatched).toEqual([])
+  })
+
   it('passes over what is gone since the list was drawn, and says when nothing was left', async () => {
     const model = fromArrays(SHIPPING)
     expect(stepIn(model, [ends('as-7'), begins('as-1', 'pe-omar')])).toBeUndefined()

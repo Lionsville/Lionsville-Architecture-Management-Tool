@@ -258,11 +258,15 @@ describe('the organisation chart', () => {
     expect(onSelect).toHaveBeenCalledWith('tt')
   })
 
-  it('shows one unit and those below it, where asked', async () => {
-    renderShell(<Harness commands={[]} />)
-    fireEvent.mouseDown(within(screen.getByTestId('chart-bar')).getByRole('combobox'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Parcel & Freight' }))
-    expect(units()).toEqual(['pf', 'tt'])
+  /** The outline replaced 3.6.0's *Show* select (3.6.1): it goes to a unit and leaves the chart whole. */
+  it('lists its units in an outline beside it, in the chart\'s order, and goes to one without narrowing the chart', () => {
+    const onSelect = vi.fn()
+    renderShell(<Harness commands={[]} onSelect={onSelect} />)
+    const outline = screen.getByRole('navigation', { name: 'Units' })
+    expect(within(outline).getAllByTestId('chart-outline-unit').map((row) => row.getAttribute('data-unit-id'))).toEqual(['shipping', 'pf', 'tt', 'data'])
+    fireEvent.click(within(outline).getByRole('button', { name: 'Cluster Parcel & Freight' }))
+    expect(onSelect).toHaveBeenLastCalledWith('pf')
+    expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
   })
 
   it('counts a person kept under an id merged into theirs as one person over all of their time', () => {

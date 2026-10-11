@@ -10,10 +10,15 @@
  * the inspector to find out which; *serves Customer · Shipping · Warehouse*
  * is the answer. A unit serving many is named in part, with how many more,
  * and the whole list goes with it for a tooltip.
+ *
+ * A folded unit counts, because it stands for what it hides: its units, the
+ * people in them, and — only where there are any — the vacancies and the
+ * findings, which are what a reader unfolds it for.
  */
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import type { ChartUnit } from '../../model/orgChart'
+import { plural } from '../../i18n/strings'
+import type { ChartRollUp, ChartUnit } from '../../model/orgChart'
 import { transitionLabel } from '../../model/transition'
 import type { ScopePath } from '../../projects/scopePath'
 import type { UnitPlans } from './unitViewsHere'
@@ -69,4 +74,18 @@ export function unitBadges(unit: Pick<ChartUnit, 'serves' | 'begins' | 'ends' | 
   if (unit.ended) badges.push({ key: 'ended', text: plan ? t('chart.endedBy', { day, plan }) : t('chart.ended', { day }) })
   else if (unit.ends >= at.day) badges.push({ key: 'ends', text: plan ? t('chart.endsBy', { day, plan }) : t('chart.ends', { day }) })
   return badges
+}
+
+/** One part of what a folded unit says it hides; `warn` for the parts worth unfolding it for. */
+export type RollUpPart = { key: 'units' | 'people' | 'vacant' | 'findings'; text: string; warn: boolean }
+
+/** What a folded unit hides, in words: its units and people always, its vacancies and findings where there are any. */
+export function rollUpWords(rolled: ChartRollUp, t: Translate): RollUpPart[] {
+  const parts: RollUpPart[] = [
+    { key: 'units', text: plural(t, { one: 'chart.rollUnitsOne', other: 'chart.rollUnitsOther' }, rolled.units), warn: false },
+    { key: 'people', text: plural(t, { one: 'chart.rollPeopleOne', other: 'chart.rollPeopleOther' }, rolled.people), warn: false },
+  ]
+  if (rolled.vacant > 0) parts.push({ key: 'vacant', text: plural(t, { one: 'chart.rollVacantOne', other: 'chart.rollVacantOther' }, rolled.vacant), warn: true })
+  if (rolled.findings > 0) parts.push({ key: 'findings', text: plural(t, { one: 'chart.rollFindingsOne', other: 'chart.rollFindingsOther' }, rolled.findings), warn: true })
+  return parts
 }

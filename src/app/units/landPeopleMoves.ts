@@ -31,6 +31,12 @@
  * (`model/managing.onlyPeopleIn`), asked of that scope as it is read: the
  * source's door decides it again, and a part outside their units refuses the
  * whole before anything is written.
+ *
+ * **A unit's place among its siblings** lands the same way (3.6.1): the rows
+ * of `model/unitOrder.unitMovedTo`, each an `element.update` in the scope
+ * that keeps that unit, which `stepIn` passes as they are, under a barrier
+ * that says what was moved. They are no person's, so a manager's right never
+ * reaches them: who stands where is structure.
  */
 import { useCallback } from 'react'
 import { isDay } from '../../model/lifecycle'
@@ -111,7 +117,9 @@ function counted(steps: readonly Command[]): { ended: number; begun: number } {
  * Land the moves: the other scopes in one apply, then the open scope's part
  * through its session. Answers where they went.
  */
-export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<ScopePath, readonly Command[]>): Promise<PeopleMoved> {
+export async function landPeopleMoves(
+  deps: MovePeopleDeps, steps: ReadonlyMap<ScopePath, readonly Command[]>, barrier: StringKey = MOVE_BARRIER,
+): Promise<PeopleMoved> {
   const paths = [...steps.keys()]
   const { manages } = deps
   /** Whether a part may be written in a scope only read here: a manager's, of their units' people alone. */
@@ -154,7 +162,7 @@ export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<S
   const elsewhere = changed.length > 0
   if (elsewhere) deps.onTreeChanged?.()
   if (own) {
-    if (deps.session.dispatch({ ...own, ...(elsewhere ? { barrier: MOVE_BARRIER } : {}) }) === undefined) {
+    if (deps.session.dispatch({ ...own, ...(elsewhere ? { barrier } : {}) }) === undefined) {
       return { ok: false, reason: 'partial', scope: deps.scope }
     }
     written.push(own)
@@ -172,17 +180,21 @@ export async function landPeopleMoves(deps: MovePeopleDeps, steps: ReadonlyMap<S
   }
 }
 
-/** The people's moves as the screens land them: nothing where the scope open may not be changed. */
-export type LandPeopleMoves = (steps: ReadonlyMap<ScopePath, readonly Command[]>) => Promise<PeopleMoved>
+/**
+ * The people's moves as the screens land them — and a unit's place among its
+ * siblings, with the barrier that says so: nothing where the scope open may
+ * not be changed.
+ */
+export type LandPeopleMoves = (steps: ReadonlyMap<ScopePath, readonly Command[]>, barrier?: StringKey) => Promise<PeopleMoved>
 
 /** {@link landPeopleMoves}, asked first whether anything may be written here — by scope rights, or a manager's part. */
 export function useLandPeopleMoves(deps: MovePeopleDeps & { mayChange: () => boolean }): LandPeopleMoves {
   const { scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages } = deps
-  return useCallback(async (steps) => {
+  return useCallback(async (steps, barrier) => {
     if (manages === undefined && !mayChange()) return { ok: false, reason: 'readOnly' }
     return landPeopleMoves({
       scope, scopes, session, writable, save, ...(published !== undefined ? { published } : {}), ...(onTreeChanged ? { onTreeChanged } : {}),
       ...(manages ? { manages } : {}),
-    }, steps)
+    }, steps, barrier)
   }, [scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages])
 }

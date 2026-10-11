@@ -67,6 +67,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
         {...common} {...(select ? { select } : {})} {...(chosen !== undefined ? { chosen } : {})}
         onChoose={(assignmentId) => choose(diagram.id, assignmentId)}
         assign={{ dispatch: session.dispatch, makeId: props.shell.makeId, scopeName }}
+        scope={scope} {...(props.shell.folds ? { folds: props.shell.folds } : {})} reorder={parts.landMoves}
       />
     )
   }

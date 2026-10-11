@@ -78,6 +78,8 @@ export const CONTROL_NAMES = [
   // The unit types drawn as a structure (ADR-0036, amended 11 October 2026):
   // the lanes, each type's card, and the order in its lane in the inspector.
   'operating.structure', 'operating.typeCard', 'operating.typeOrder',
+  // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.
+  'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]
