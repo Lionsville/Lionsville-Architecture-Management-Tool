@@ -1319,6 +1319,47 @@ findings, which no index holds, are said under *Needs attention* on the
 organisation's home off its own document (`operatingModelFindings`), each
 opening the operating model's page with the item picked rather than a board.
 
+## As built, 3.6.1: a library brought in from its dialog
+
+The amendment's second point, on the page; the rows under it are above.
+*From a library…* stands beside *New unit type* and *New role*, an empty
+model offers *Start from a library* first, and each library's card on the
+*Libraries* tab opens the same dialog on itself
+(`operating/ui/LibraryDialog.tsx`). The dialog lists the libraries on the
+left and draws the one picked in the middle as its own structure, read-only,
+in the lanes the page draws the organisation's own types with
+(`LibraryStructure`): each type keyed by its entry, with its purpose, its
+slots and a tick box, the organisation's lane narrower than the rest, and the
+roles none of its types holds under the lanes. A type or a role that comes
+along with a ticked one is drawn dashed; pressing a role folds out what it
+answers for, since responsibilities come with their role and are never
+ticked; an entry something stands for already says *in your model as …*, or
+*(matched)*, and is ticked for good.
+
+*What will come in* (`ComingInPane`) is the rows, each edited in place: a
+name made, starting from the library's term in the screen's language; a unit
+type's place, as `placementChoices` offers them; a role's reuse, the
+suggestion first, and a unit type's where one is suggested. What the step
+makes is counted on its button, and *Bring in* hands the rows back through
+`choicesOf` to `bringIn`, so what was shown is the one step written. It is
+not the whole window: it sits below the shell's toolbar where the host keeps
+one, and its paper is never a handle that moves the window.
+
+After the step the page marks what it made *new* until the page is left, and
+draws its own toast, inside the page so the keyboard reaches it, with
+*Undo*. The host answers, straight after the step is dispatched, what takes
+that step back (`undoStep`): the session's undo, only while no step has come
+since by the session's revision, so an *Undo* pressed late says it was not
+undone rather than taking somebody else's step back. On the *Libraries* tab
+the tick boxes are gone: each library's card says what it offers, opens the
+dialog on itself, and lists *What came in* from `whatCameIn` — the library's
+term, pressed to open the item on its tab, beside its name here, renamed in
+place, and what has changed since in a few words; and the organisation's
+items matched to it, *used your …*. The trademark notice stays. A place
+chosen at bring-in is not recorded the way a name is: *compare* still reads a
+type placed elsewhere as differing from its library where the library puts
+it at the top.
+
 ## As built, 3.6.1: folds, the outline, and one order wherever units are listed
 
 The amendment's fourth point, on the screens.

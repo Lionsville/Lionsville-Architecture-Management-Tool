@@ -1707,7 +1707,9 @@ the types that hold it, and pressing the pick again lets it go. What is picked
 opens on the right to edit: **Where a unit of this type may sit** is ticked
 there, and **Order in its lane** moves the type up or down its lane, one step —
 the organisation chart lists units in that order. **New unit type** and **New
-role** add one. Under the lanes, **Sits nowhere yet** holds a unit type that is
+role** add one, and **From a library…** beside them brings in what a library
+offers (below); a model with nothing in it yet offers **Start from a
+library** first. Under the lanes, **Sits nowhere yet** holds a unit type that is
 neither at the top nor in a unit type that sits anywhere: no unit of it can be
 placed where its type allows, and it is listed under **Needs attention** on the
 organisation's home. **Roles in no unit type yet** holds the roles no type
@@ -1743,22 +1745,47 @@ about itself. Nothing refuses it — a model being worked on passes through both
 
 ### Libraries
 
-The **Libraries** tab offers four starting points that ship with the app:
-**Scrum**, **SAFe**, the **IT4IT** value streams (the seven of its version
-3.0) and **Team Topologies**. Each is read-only, has a version, and is written
-in English, Dutch and German, in this app's own words. Tick the entries you
-want and press **Bring in**, or bring in all of a library. What an entry needs
-comes with it — a unit type brings the roles it holds and the types it sits
-in, a role the responsibilities it has a part in — and the tab says so before
-anything is written. Bringing items in is one step, so ⌘Z takes them all out
-again, and nothing is brought in twice.
+Four starting points ship with the app: **Scrum**, **SAFe**, the **IT4IT**
+value streams (the seven of its version 3.0) and **Team Topologies**. Each is
+read-only, has a version, and is written in English, Dutch and German, in
+this app's own words.
 
-What comes in belongs to the organisation: rename it, rewrite it, cut it. Each
-item remembers the library entry and the version it was based on, so
-**Compare with the libraries** lists how it differs from the library as it
-ships now — read in the language it was brought in — and says when a library
-has moved on to a later version. Nothing is ever merged in. The frameworks'
-names are their owners'; none of the libraries is endorsed by them.
+**From a library…** opens them in a dialog over the page. The libraries are
+listed on the left; the one picked is drawn in the middle as the structure it
+would make, in the same lanes as your own, read-only: each unit type with its
+purpose and the roles it holds, and under the lanes the roles none of its
+types holds. Press a role to see what it answers for. Tick a unit type, or a
+role on its own: what it needs comes along and is drawn dashed — the roles a
+type holds, the types it sits in in the library — and a role always brings
+the responsibilities it has a part in. An entry your model has already says
+**in your model as …**, or **(matched)** where an earlier step matched it to
+one of your own, and is used as it is.
+
+On the right, **What will come in** is the step before it is written. Every
+name can be changed in place, starting from the library's word in the
+language you work in. Each unit type says where it will sit: as in the
+library, at the top, beside one of your types — in the same places — or
+inside one. A library's type at the top that holds none of its own types
+lands beside your deepest type that holds nothing, so Team Topologies' teams
+sit beside your teams rather than loose at the top. Each role is brought in,
+or one of yours is used for it — suggested where the library says the two are
+alike, or where the names are the same — and then nothing is brought in for
+it. **Bring in** says how many items the step makes and writes them as one
+step: the page then marks what is new until you leave it, and the message at
+the bottom offers **Undo**, which takes back that step while nothing has
+happened since. ⌘Z takes it back too.
+
+What comes in belongs to the organisation: rename it, rewrite it, cut it. The
+**Libraries** tab shows, for each library, **What came in**: the library's
+word beside what it is called here, which you can rename in place — press the
+library's word to open the item where it is edited — and what has changed
+since; and the ones that used one of yours, as **used your …**. A name chosen
+on the way in is not a change. Each item remembers the library entry and the
+version it was based on, so **Compare with the libraries** lists how it
+differs from the library as it ships now — read in the language it was
+brought in — and says when a library has moved on to a later version.
+Nothing is ever merged in. The frameworks' names are their owners'; none of
+the libraries is endorsed by them.
 
 An agent reads the operating model with `unitTypes.list`, `roles.list` and
 `responsibilities.list`, from the organisation whatever scope is open, and

@@ -1956,7 +1956,9 @@ sie haben, und ein erneuter Druck auf das Gewählte lässt es los. Das Gewählte
 stehen darf** angehakt, und **Reihenfolge in der Bahn** schiebt den Typ **Nach
 oben** oder **Nach unten** in seiner Bahn, in einem Schritt — das Organigramm
 führt Einheiten in dieser Reihenfolge. **Neuer Einheitstyp** und **Neue Rolle**
-fügen einen hinzu. Unter den Bahnen hält **Gehört noch nirgends hin** einen
+fügen einen hinzu, und **Aus einer Bibliothek…** daneben übernimmt, was eine
+Bibliothek bietet (siehe unten); ein Modell, in dem noch nichts steht, bietet
+zuerst **Mit einer Bibliothek beginnen**. Unter den Bahnen hält **Gehört noch nirgends hin** einen
 Einheitstyp, der weder ganz oben steht noch zu einem Einheitstyp gehört, der
 irgendwo steht: Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es
 erlaubt, und er steht unter **Braucht Aufmerksamkeit** auf dem
@@ -1996,22 +1998,50 @@ verweigert es — ein Modell in Arbeit geht durch beides hindurch.
 
 ### Bibliotheken
 
-Der Reiter **Bibliotheken** bietet vier Ausgangspunkte, die mit der App
-ausgeliefert werden: **Scrum**, **SAFe**, die Wertströme von **IT4IT** (die
-sieben der Version 3.0) und **Team Topologies**. Jede ist nur lesbar, hat
-eine Version und ist auf Englisch, Niederländisch und Deutsch geschrieben, in
-den eigenen Worten dieser App. Haken Sie die gewünschten Einträge an und
-drücken Sie **Übernehmen**, oder übernehmen Sie alles aus einer Bibliothek.
-Was ein Eintrag braucht, kommt mit — ein Einheitstyp bringt die Rollen mit,
-die er hat, und die Typen, unter denen er steht, eine Rolle die
-Verantwortungen, an denen sie Anteil hat — und der Reiter sagt das, bevor
-etwas geschrieben wird. Übernehmen ist ein Schritt, ⌘Z nimmt also alles
-wieder heraus, und nichts wird zweimal übernommen.
+Mit der App werden vier Ausgangspunkte ausgeliefert: **Scrum**, **SAFe**, die
+Wertströme von **IT4IT** (die sieben der Version 3.0) und **Team
+Topologies**. Jede ist nur lesbar, hat eine Version und ist auf Englisch,
+Niederländisch und Deutsch geschrieben, in den eigenen Worten dieser App.
+
+**Aus einer Bibliothek…** öffnet sie in einem Dialog über der Seite. Links
+stehen die Bibliotheken; die gewählte ist in der Mitte als die Struktur
+gezeichnet, die sie ergäbe, in denselben Bahnen wie Ihre eigene, nur lesbar:
+jeder Einheitstyp mit seinem Zweck und den Rollen, die er hat, und unter den
+Bahnen die Rollen, die keiner ihrer Typen hat. Drücken Sie auf eine Rolle, um
+zu sehen, wofür sie steht. Haken Sie einen Einheitstyp an, oder eine Rolle für
+sich: Was er braucht, kommt mit und ist gestrichelt gezeichnet — die Rollen
+eines Typs, die Typen, zu denen er in der Bibliothek gehört — und eine Rolle
+bringt immer die Verantwortungen mit, an denen sie Anteil hat. Ein Eintrag,
+den Ihr Modell schon hat, sagt **in Ihrem Modell als …**, oder
+**(zugeordnet)**, wo ein früherer Schritt ihn einem eigenen zuordnete, und
+wird verwendet, wie er ist.
+
+Rechts ist **Was übernommen wird** der Schritt, bevor er geschrieben wird.
+Jeder Name lässt sich an Ort und Stelle ändern, ausgehend vom Wort der
+Bibliothek in der Sprache, in der Sie arbeiten. Jeder Einheitstyp sagt, wo er
+sitzen wird: wie in der Bibliothek, ganz oben, neben einem Ihrer Typen — an
+denselben Stellen — oder darin. Ein Typ, der in seiner Bibliothek ganz oben
+steht und keinen ihrer Typen enthält, kommt neben Ihren tiefsten Typ, der
+nichts enthält, sodass die Teams von Team Topologies neben Ihren Teams stehen
+statt lose ganz oben. Jede Rolle wird übernommen, oder eine Ihrer eigenen wird
+dafür verwendet — vorgeschlagen, wo die Bibliothek sagt, dass beide dasselbe
+sind, oder wo die Namen gleich sind — und dann wird nichts dafür übernommen.
+**Übernehmen** sagt, wie viele Einträge der Schritt anlegt, und schreibt sie
+als einen Schritt: Die Seite markiert danach, was neu ist, bis Sie sie
+verlassen, und die Meldung unten bietet **Rückgängig**, das diesen Schritt
+zurücknimmt, solange seitdem nichts geschehen ist. ⌘Z nimmt ihn ebenfalls
+zurück.
 
 Was hereinkommt, gehört der Organisation: umbenennen, umschreiben, streichen.
-Jeder Eintrag merkt sich, auf welchem Eintrag welcher Bibliothek und welcher
-Version er beruht, sodass **Mit den Bibliotheken vergleichen** zeigt, worin er
-sich von der Bibliothek unterscheidet, wie sie jetzt ausgeliefert wird —
+Der Reiter **Bibliotheken** zeigt für jede Bibliothek **Was übernommen
+wurde**: das Wort der Bibliothek neben dem, wie es hier heißt, an Ort und
+Stelle umzubenennen — ein Druck auf das Wort der Bibliothek öffnet den
+Eintrag dort, wo er bearbeitet wird — und was sich seitdem geändert hat;
+sowie die Einträge, für die ein eigener verwendet wurde, als **… aus Ihrem
+Modell verwendet**. Ein beim Übernehmen gewählter Name ist keine Änderung. Jeder
+Eintrag merkt sich, auf welchem Eintrag welcher Bibliothek und welcher
+Version er beruht, sodass **Mit den Bibliotheken vergleichen** zeigt, worin
+er sich von der Bibliothek unterscheidet, wie sie jetzt ausgeliefert wird —
 gelesen in der Sprache, in der er übernommen wurde — und sagt, wenn eine
 Bibliothek eine neuere Version hat. Nie wird etwas zusammengeführt. Die Namen
 der Rahmenwerke gehören ihren Inhabern; keine der Bibliotheken ist von ihnen

@@ -1844,7 +1844,9 @@ eens drukken op wat gekozen is laat het los. Wat gekozen is opent rechts om te
 bewerken: daar vink je **Waar een eenheid van dit type onder mag vallen** aan,
 en **Volgorde in de baan** zet het type **Omhoog** of **Omlaag** in zijn baan,
 in één stap — het organogram zet eenheden in die volgorde. **Nieuw
-eenheidstype** en **Nieuwe rol** voegen er een toe. Onder de banen staat in
+eenheidstype** en **Nieuwe rol** voegen er een toe, en **Uit een
+bibliotheek…** ernaast neemt over wat een bibliotheek biedt (hieronder); een
+model waarin nog niets staat, biedt eerst **Begin met een bibliotheek**. Onder de banen staat in
 **Valt nog nergens onder** een eenheidstype dat niet bovenaan staat en niet
 onder een eenheidstype valt dat ergens staat: geen eenheid ervan kan worden
 ingedeeld waar het type dat toestaat, en het staat onder **Vraagt aandacht**
@@ -1884,25 +1886,51 @@ wording gaat door allebei heen.
 
 ### Bibliotheken
 
-Het tabblad **Bibliotheken** biedt vier vertrekpunten die met de app worden
-meegeleverd: **Scrum**, **SAFe**, de waardestromen van **IT4IT** (de zeven
-van versie 3.0) en **Team Topologies**. Elk is alleen-lezen, heeft een versie,
-en is geschreven in het Engels, Nederlands en Duits, in de eigen woorden van
-deze app. Vink de onderdelen aan die je wilt en druk op **Overnemen**, of
-neem alles uit een bibliotheek over. Wat een onderdeel nodig heeft, komt mee —
-een eenheidstype neemt de rollen mee die het heeft en de typen waaronder het
-valt, een rol de verantwoordelijkheden waarin ze een aandeel heeft — en het
-tabblad zegt dat voordat er iets wordt geschreven. Overnemen is één stap, dus
-⌘Z haalt alles weer weg, en niets wordt twee keer overgenomen.
+Met de app komen vier vertrekpunten mee: **Scrum**, **SAFe**, de
+waardestromen van **IT4IT** (de zeven van versie 3.0) en **Team Topologies**.
+Elk is alleen-lezen, heeft een versie, en is geschreven in het Engels,
+Nederlands en Duits, in de eigen woorden van deze app.
+
+**Uit een bibliotheek…** opent ze in een dialoog boven de pagina. Links staan
+de bibliotheken; de gekozen bibliotheek staat in het midden getekend als de
+structuur die ze zou maken, in dezelfde banen als je eigen, alleen-lezen:
+elk eenheidstype met zijn doel en de rollen die het heeft, en onder de banen
+de rollen die in geen van haar typen zitten. Druk op een rol om te zien waar
+die voor staat. Vink een eenheidstype aan, of een losse rol: wat het nodig
+heeft komt mee en staat gestippeld — de rollen van een type, de typen waar het
+in de bibliotheek onder valt — en een rol neemt altijd de
+verantwoordelijkheden mee waarin ze een aandeel heeft. Een onderdeel dat je
+model al heeft, zegt **in je model als …**, of **(gekoppeld)** waar een eerdere
+stap het aan een eigen onderdeel koppelde, en wordt gebruikt zoals het is.
+
+Rechts is **Wat er binnenkomt** de stap voordat hij wordt geschreven. Elke
+naam kan ter plekke worden veranderd, te beginnen met het woord van de
+bibliotheek in de taal waarin je werkt. Elk eenheidstype zegt waar het komt:
+zoals in de bibliotheek, bovenaan, naast een van je eigen typen — op dezelfde
+plaatsen — of erbinnen. Een type dat bovenaan zijn bibliotheek staat en geen
+van haar typen bevat, komt naast je diepste type dat niets bevat, zodat de
+teams van Team Topologies naast je eigen teams staan in plaats van los
+bovenaan. Elke rol wordt overgenomen, of een eigen rol wordt ervoor gebruikt —
+voorgesteld waar de bibliotheek zegt dat de twee hetzelfde zijn, of waar de
+namen gelijk zijn — en dan wordt er niets voor overgenomen. **Overnemen** zegt
+hoeveel onderdelen de stap maakt en schrijft ze als één stap: de pagina
+markeert daarna wat nieuw is tot je haar verlaat, en het bericht onderaan
+biedt **Ongedaan maken**, dat die stap terugneemt zolang er sindsdien niets
+is gebeurd. ⌘Z neemt hem ook terug.
 
 Wat binnenkomt is van de organisatie: hernoem het, herschrijf het, schrap
-het. Elk onderdeel onthoudt op welk onderdeel van welke bibliotheek en welke
-versie het is gebaseerd, zodat **Vergelijken met de bibliotheken** laat zien
-waarin het verschilt van de bibliotheek zoals die nu wordt meegeleverd —
-gelezen in de taal waarin het is overgenomen — en zegt wanneer een
-bibliotheek een nieuwere versie heeft. Er wordt nooit iets samengevoegd. De
-namen van de raamwerken zijn van hun eigenaren; geen van de bibliotheken wordt
-door hen onderschreven.
+het. Het tabblad **Bibliotheken** toont per bibliotheek **Wat binnenkwam**:
+het woord van de bibliotheek naast hoe het hier heet, dat je ter plekke kunt
+hernoemen — druk op het woord van de bibliotheek om het onderdeel te openen
+waar het wordt bewerkt — en wat er sindsdien veranderd is; en de onderdelen
+waarvoor een eigen onderdeel werd gebruikt, als **je eigen … gebruikt**. Een
+naam die bij het overnemen werd gekozen, is geen verandering. Elk onderdeel
+onthoudt op welk onderdeel van welke bibliotheek en welke versie het is
+gebaseerd, zodat **Vergelijken met de bibliotheken** laat zien waarin het
+verschilt van de bibliotheek zoals die nu wordt meegeleverd — gelezen in de
+taal waarin het is overgenomen — en zegt wanneer een bibliotheek een nieuwere
+versie heeft. Er wordt nooit iets samengevoegd. De namen van de raamwerken
+zijn van hun eigenaren; geen van de bibliotheken wordt door hen onderschreven.
 
 Een agent leest het besturingsmodel met `unitTypes.list`, `roles.list` en
 `responsibilities.list`, vanuit de organisatie welke scope er ook open is, en
