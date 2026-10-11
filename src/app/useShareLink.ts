@@ -25,6 +25,7 @@
  */
 import { useCallback, useState } from 'react'
 import { linkTo, placeOf } from '../agent/place'
+import type { Place } from '../agent/place'
 import { VIEW_PAGES } from '../agent/screen'
 import type { Screen } from '../agent/screen'
 import type { Translate } from '../i18n'
@@ -63,6 +64,11 @@ export type ShareLink = {
   answer: ShareAnswer | undefined
   /** The command: make the link, copy it, show it. */
   share: () => void
+  /**
+   * The same for one record, from its reader's *Copy link* (ADR-0033, amended
+   * 11 October 2026): the place it is on, whatever is on screen around it.
+   */
+  shareTo: (place: Place) => void
   /** The dialog's Copy, again. */
   copy: () => void
   close: () => void
@@ -91,22 +97,28 @@ export function useShareLink(deps: {
     )
   }, [copyText, diagnostics, notify, s])
 
-  const share = useCallback(() => {
-    let said: string | undefined
+  const said = useCallback((): string | undefined => {
     try {
-      said = address?.()
+      return address?.()
     } catch (cause) {
       // A provider that falls over asking costs the link, not the window.
       diagnostics.report({ level: 'warn', where: 'share', message: 'the source could not say its address', cause })
+      return undefined
     }
-    const next = shareLinkOf(said, screen(), selected?.())
+  }, [address, diagnostics])
+  const show = useCallback((next: ShareAnswer) => {
     setAnswer(next)
     if ('link' in next) copyLink(next.link)
-  }, [address, screen, selected, diagnostics, copyLink])
+  }, [copyLink])
+  const share = useCallback(() => show(shareLinkOf(said(), screen(), selected?.())), [show, said, screen, selected])
+  const shareTo = useCallback((place: Place) => {
+    const at = said()
+    show(at === undefined || at === '' ? { refused: 'share.noAddress' } : { link: linkTo(at, place) })
+  }, [show, said])
 
   const copy = useCallback(() => {
     if (answer && 'link' in answer) copyLink(answer.link)
   }, [answer, copyLink])
   const close = useCallback(() => setAnswer(undefined), [])
-  return { answer, share, copy, close }
+  return { answer, share, shareTo, copy, close }
 }

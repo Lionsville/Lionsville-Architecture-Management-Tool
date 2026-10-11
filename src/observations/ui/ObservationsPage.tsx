@@ -244,6 +244,13 @@ export type ObservationsPageProps = {
    * what the agent is told the page is on.
    */
   onShown?: (key: string | undefined, nonce: number | undefined, tab: Tab) => void
+  /**
+   * Copy a link to a record and show it (ADR-0033, amended 11 October 2026):
+   * the record by its own id, in the scope that keeps it where that is one
+   * below, on the tab it was copied from where it is an observation or a
+   * cause. Offered read-only too; absent, nothing offers one.
+   */
+  onCopyLink?: (to: RecordLink) => void
   readOnly?: boolean
   s: Translate
   language: Language
@@ -348,6 +355,46 @@ function useOpening(deps: {
     if (open) latest.current.onShown?.(shown, landed, up)
   }, [open, shown, landed, up])
   return { ref: located.ref, ring: located.ring }
+}
+
+/** A record a link names: its own id, the scope below that keeps it where it is not this one's, and the tab. */
+export type RecordLink = { readonly id: string; readonly scope?: string; readonly tab?: Tab }
+
+/**
+ * The link to a record on show: an observation or a cause on the tab it was
+ * copied from, a solution or an experiment on theirs, which the page finds by
+ * itself; one of a scope below in that scope, where its id means something.
+ */
+export function recordLinkOf(selected: Selected, tab: Tab): RecordLink {
+  switch (selected.kind) {
+    case 'observation': return { id: selected.observation.id, tab }
+    case 'cause': return { id: selected.cause.id, tab }
+    case 'solution': return { id: selected.solution.id }
+    case 'experiment': return { id: selected.experiment.id }
+    case 'below': return { id: selected.observation.id, scope: selected.scope, tab }
+    case 'causeBelow': return { id: selected.cause.id, scope: selected.scope, tab }
+    case 'solutionBelow': return { id: selected.solution.id, scope: selected.scope }
+    case 'experimentBelow': return { id: selected.experiment.id, scope: selected.scope }
+  }
+}
+
+/** *Copy link* for a record on show, where the host offers one. */
+function copyLinkOf(props: ObservationsPageProps, tab: Tab): ((selected: Selected) => void) | undefined {
+  const { onCopyLink } = props
+  return onCopyLink && ((selected) => onCopyLink(recordLinkOf(selected, tab)))
+}
+
+/**
+ * A node's menu with *Copy link* last, read-only included — reading is what
+ * a link is for. A line has no link of its own.
+ */
+function withCopyLink(
+  actions: MenuAction[], target: PictureTarget, resolve: (key: string) => Selected | undefined,
+  copy: ((selected: Selected) => void) | undefined, s: Translate,
+): MenuAction[] {
+  const held = target.kind === 'node' ? resolve(target.key) : undefined
+  if (!copy || !held) return actions
+  return [...actions, { key: 'copy-link', label: s('common.copyLink'), divider: actions.length > 0, onClick: () => copy(held) }]
 }
 
 /** What a merged record's note reads, and the ways to where it went. */
@@ -951,7 +998,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             {tab === 'analysis' && !editing && toAnalyse}
           </Box>
         </Box>
-        <PictureMenu at={menu?.at} actions={menu ? menuActions(menu.target) : []} onClose={() => setMenu(undefined)} />
+        <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, tab), s) : []} onClose={() => setMenu(undefined)} />
 
         {forms.dialogs}
         {dialogs}

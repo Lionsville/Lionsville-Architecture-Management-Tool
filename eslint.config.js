@@ -427,7 +427,7 @@ export const LONGEST_FUNCTION = 150
 export const GROWN = {
   'src/agent/answer.ts': { complexity: 97, lines: 309 },
   'src/agent/handle.ts': { complexity: 37 },
-  'src/agent/shell.ts': { complexity: 42 },
+  'src/agent/shell.ts': { complexity: 40 },
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 211 },
   'src/app/organisation/OrganisationCards.tsx': { complexity: 42, lines: 179 },

@@ -210,6 +210,16 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
 }
 
 /**
+ * A record the observations page opens on, by id: an observation, a cause,
+ * and a solution or an experiment on their own tab, as the page itself opens
+ * them (ADR-0026).
+ */
+function onObservationsPage(model: HostModel, id: string): { id: string } | undefined {
+  const { observations = [], causes = [], solutions = [], experiments = [] } = model
+  return [...observations, ...causes, ...solutions, ...experiments].find((held) => held.id === id)
+}
+
+/**
  * What the destination is about, checked against the scope's own document:
  * a view of the right kind, an element, a plan or a record — or, with an id
  * and no page, whichever of those the id names.
@@ -222,12 +232,7 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   const decision = asked.id !== undefined
     ? [...(model.decisions ?? []), ...ancestors].find((held) => held.id === asked.id)
     : undefined
-  // A solution and an experiment open on the same page, on their own tab, as
-  // the page itself opens them (ADR-0026).
-  const observed = asked.id !== undefined
-    ? [...(model.observations ?? []), ...(model.causes ?? []), ...(model.solutions ?? []), ...(model.experiments ?? [])]
-      .find((held) => held.id === asked.id)
-    : undefined
+  const observed = asked.id !== undefined ? onObservationsPage(model, asked.id) : undefined
 
   if (asked.page === undefined) {
     if (diagram) return { page: pageOf(diagram), id: diagram.id }

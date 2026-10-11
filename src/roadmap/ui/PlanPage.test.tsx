@@ -485,3 +485,16 @@ describe('the document', () => {
     expect(screen.getByTestId('rendered')).toBeTruthy()
   })
 })
+
+/** ADR-0033, amended 11 October 2026. */
+describe('a link to the plan', () => {
+  it('is offered in the header, read-only too, and only where the host makes links', () => {
+    const onCopyLink = vi.fn()
+    setup({ readOnly: true, onCopyLink })
+    fireEvent.click(screen.getByTestId('plan-copy-link'))
+    expect(onCopyLink).toHaveBeenCalledTimes(1)
+    cleanup()
+    setup()
+    expect(screen.queryByTestId('plan-copy-link')).toBeNull()
+  })
+})

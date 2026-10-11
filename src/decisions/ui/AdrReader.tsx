@@ -75,6 +75,8 @@ export type AdrReaderProps = {
   onDelete: () => void
   /** "History…", where the host offers one for this record. */
   onHistory?: () => void
+  /** *Copy link* to this record, where the host can make one. */
+  onCopyLink?: ((adrId: string) => void) | undefined
   /** Follow a superseded/supersedes link to another record in this list. */
   onSelect: (adrId: string) => void
   onElementLink?: (elementId: string) => void
@@ -93,6 +95,11 @@ export type AdrReaderProps = {
    * are from theirs. Absent: no row.
    */
   solutions?: { list: readonly Pick<Solution, 'id' | 'number' | 'title' | 'decision'>[]; onOpen(solutionId: string): void }
+}
+
+/** *Copy link* bound to the record on show, where the host offers one. */
+function copyLinkOf({ adr, onCopyLink }: AdrReaderProps): (() => void) | undefined {
+  return onCopyLink && (() => onCopyLink(adr.id))
 }
 
 export function AdrReader(props: AdrReaderProps) {
@@ -157,7 +164,7 @@ export function AdrReader(props: AdrReaderProps) {
     <Box data-testid="adr-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
       <ReaderBar
         adr={adr} list={list} readOnly={readOnly} canEdit={canEdit} mode={mode} s={s} day={day}
-        onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onMode={switchMode}
+        onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onCopyLink={copyLinkOf(props)} onMode={switchMode}
       />
       <ReaderNotices adr={adr} list={list} readOnly={readOnly} s={s} />
 

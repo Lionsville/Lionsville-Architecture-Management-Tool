@@ -91,6 +91,8 @@ export type AdrPageProps = {
   onOpenElement?: (elementId: string) => void
   /** The host keeps a history and can show this record's (ADR-0008). Only a project's records have one. */
   onOpenHistory?: (adrId: string) => void
+  /** Copy a link to this record and show it (ADR-0033, amended); absent, the reader offers none. */
+  onCopyLink?: (adrId: string) => void
   /** A picture into the project, and the project's pictures (ADR-0009); handed on to the record. */
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
@@ -419,7 +421,7 @@ export function AdrPage(props: AdrPageProps) {
                 elements={fromAbove ? [] : model.elements}
                 renderMarkdown={props.renderMarkdown}
                 onAddImage={lockedAt(scopeOfRecord(selected)) ? undefined : props.onAddImage}
-                images={props.images}
+                images={props.images} onCopyLink={props.onCopyLink}
                 onUpdate={(patch) => update(selected, patch)}
                 onStatus={(next) => move(selected, next)}
                 onDelete={() => setDeleting(selected)}

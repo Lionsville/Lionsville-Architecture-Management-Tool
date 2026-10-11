@@ -11,6 +11,7 @@ import type { ComponentProps } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
+import type { RecordLink } from '../observations/ui/ObservationsPage'
 import { flattenScopes } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
@@ -60,8 +61,9 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
   const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow, changeAcross } = parts
   const { s, language, makeId } = props.shell
   const { groupName, ancestorDecisions, scopes } = props.tree
-  const { onOpenScope, crumbs, onGoHome } = props.navigation
+  const { onOpenScope, crumbs, onGoHome, onShareLink } = props.navigation
   const { plans } = pages
+  const scope = props.project.path
   // Each scope above by its name in the tree, never its path — and the same
   // list while nothing changes, because the page re-selects on a new one.
   const ancestors = useMemo(() => {
@@ -106,6 +108,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
           ? (adrId) => { pages.closeDecisions(); snapshots.openPage({ what: 'decision', id: adrId }) }
           : undefined}
         onOpenPlan={plans.openPlan}
+        {...(onShareLink ? { onCopyLink: (id: string) => onShareLink({ scope, page: 'decisions', id }) } : {})}
         onOpenSolution={(solutionId) => { pages.closeDecisions(); pages.openObservations(solutionId) }}
         windowChrome={pageChrome}
       />
@@ -138,6 +141,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         initialTab={pages.obsPage.tab}
         initialNonce={pages.obsPage.nonce}
         onShown={pages.observationShown}
+        {...(onShareLink ? { onCopyLink: (to: RecordLink) => onShareLink({ ...to, scope: to.scope ?? scope, page: 'observations' }) } : {})}
         s={s}
         language={language}
         makeId={makeId}
@@ -154,7 +158,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
 /** The roadmap, the replace dialog it starts from a card, and one plan over it. */
 function PlanPages({ parts }: { parts: WorkspaceParts }) {
   const { props, session, pages, readings, ownership, viewing, pictures, files, readOnly, todayDay, pageChrome } = parts
-  const { onOpenScope } = props.navigation
+  const { onOpenScope, onShareLink } = props.navigation
   const { plans } = pages
   const open = session.model.diagrams.find((d) => d.id === session.activeDiagramId)
   // A plan may rest on a record filed above this scope; its gate reads those too.
@@ -194,6 +198,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         onAddImage={files.addImage}
         images={imagesOf(parts)}
         onClose={plans.closePlan}
+        onCopyLink={onShareLink && plans.planId !== undefined ? () => onShareLink({ scope: props.project.path, page: 'plan', id: plans.planId! }) : undefined}
         windowChrome={pageChrome}
         initiativeToggle={props.project.path !== ''}
         describe={readings.describeForMap}

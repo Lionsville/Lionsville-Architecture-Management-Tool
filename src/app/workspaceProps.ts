@@ -17,6 +17,7 @@ import type { Language, Translate } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { SavedFilters } from '../observations/filter'
 import type { AncestorRecords } from '../decisions/adrScope'
+import type { Place } from '../agent/place'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
@@ -227,6 +228,12 @@ export type WorkspaceNavigation = {
    * has been put back. Absent where there is nothing to read again.
    */
   onReload?: () => void
+  /**
+   * Copy a link to a place in this scope and show it — a record's *Copy
+   * link* (ADR-0033, amended 11 October 2026). The shell's, because the
+   * address a link starts from is the source's. Absent, no reader draws one.
+   */
+  onShareLink?: (place: Place) => void
   /**
    * Which page to show the moment this appears, when it was opened for one.
    *

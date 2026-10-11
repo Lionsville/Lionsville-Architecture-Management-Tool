@@ -100,7 +100,7 @@ function acceptGateOf(adr: Adr, list: readonly Adr[]) {
  * The record's own bar: status, day, the moves, delete, history, and read or
  * edit. Acceptance waits for its gate; withdrawing a proposal is called that.
  */
-export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus, onDelete, onHistory, onMode }: {
+export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus, onDelete, onHistory, onCopyLink, onMode }: {
   adr: Adr
   list: readonly Adr[]
   readOnly: boolean
@@ -111,6 +111,8 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
   onStatus: (next: AdrStatus) => void
   onDelete: () => void
   onHistory?: () => void
+  /** *Copy link*, to this record (ADR-0033, amended): offered read-only too, since reading is what a link is for. */
+  onCopyLink?: () => void
   onMode: (next: Mode | null) => void
 }) {
   const moves = transitionsFrom(adr.status)
@@ -141,6 +143,9 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
       )}
       {onHistory && (
         <Button size="small" onClick={onHistory}>{s('common.history')}</Button>
+      )}
+      {onCopyLink && (
+        <Button size="small" onClick={onCopyLink} data-testid="adr-copy-link">{s('common.copyLink')}</Button>
       )}
       <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => onMode(value)}>
         <ToggleButton value="read">{s('adr.read')}</ToggleButton>

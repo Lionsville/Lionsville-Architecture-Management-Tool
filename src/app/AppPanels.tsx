@@ -148,6 +148,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       }}
       navigation={{
         crumbs: ancestry.crumbs, onGoHome: nav.goHome, onOpenScope: nav.openScopeAt, onReload: nav.reloadOpenProject, initialPage: nav.initialPage,
+        onShareLink: parts.share.shareTo,
       }}
       settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}
       host={{

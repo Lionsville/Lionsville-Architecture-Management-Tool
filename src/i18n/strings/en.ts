@@ -24,6 +24,7 @@ export const EN = {
   'common.empty': 'Nothing written yet.',
   /** Three pages offer it — a diagram, a description, a decision — and it is the same word (ADR-0008). */
   'common.history': 'History…',
+  'common.copyLink': 'Copy link',
   /**
    * What to call the root scope where a path is what is being shown
    * (ADR-0012 §1). The root's path is the EMPTY STRING, so every screen that

@@ -94,6 +94,8 @@ export type PlanPageProps = {
   onAddImage?(file: File): Promise<string | undefined>
   images?: DocumentImages
   onClose(): void
+  /** *Copy link* to this plan (ADR-0033, amended), offered read-only too; absent, none is drawn. */
+  onCopyLink?: (() => void) | undefined
   windowChrome?: WindowChrome
   /**
    * Offer the initiative switch (ADR-0012 §7): this scope has scopes above
@@ -159,11 +161,8 @@ export function PlanPage(props: PlanPageProps) {
           </Typography>
         )}
         <Box sx={{ flex: 1 }} />
-        {plan && (
-          <Button size="small" onClick={() => setFullPage((on) => !on)}>
-            {fullPage ? t('plan.showFacts') : t('plan.fullPage')}
-          </Button>
-        )}
+        {plan && <Button size="small" onClick={() => setFullPage((on) => !on)}>{fullPage ? t('plan.showFacts') : t('plan.fullPage')}</Button>}
+        {plan && props.onCopyLink && <Button size="small" onClick={props.onCopyLink} data-testid="plan-copy-link">{t('common.copyLink')}</Button>}
         {!readOnly && plan && (
           <>
             <ToggleButtonGroup

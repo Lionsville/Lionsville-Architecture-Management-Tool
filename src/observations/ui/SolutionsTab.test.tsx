@@ -334,3 +334,34 @@ describe('the solutions picture’s right-click', () => {
   })
 })
 
+
+/** ADR-0033, amended 11 October 2026: a link to one record, from the picture, read-only too. */
+describe('a link to a record, from the picture', () => {
+  const rightClick = (element: Element) => fireEvent.contextMenu(element, { clientX: 40, clientY: 60 })
+
+  it('offers Copy link on a node, read-only too, with the record’s own id and the tab it was copied from', () => {
+    const onCopyLink = vi.fn()
+    mount({ ...base }, { readOnly: true, onCopyLink })
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    expect(screen.queryByTestId('picture-menu-edit')).toBeNull()
+    fireEvent.click(screen.getByTestId('picture-menu-copy-link'))
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 'c1', tab: 'analysis' })
+  })
+
+  it('names a solution by its own id, which the page opens on its tab by itself', () => {
+    const onCopyLink = vi.fn()
+    mount({ ...base, solutions: [solution({})] }, { onCopyLink })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
+    fireEvent.click(screen.getByTestId('picture-menu-copy-link'))
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 's1' })
+  })
+
+  it('offers none where the host makes no links', () => {
+    mount({ ...base }, { readOnly: true })
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    expect(screen.queryByTestId('picture-menu')).toBeNull()
+  })
+})

@@ -421,3 +421,23 @@ describe('AdrPage — pictures (ADR-0009)', () => {
     ]))
   })
 })
+
+/** ADR-0033, amended 11 October 2026: a link to one record, and the record a link opens on. */
+describe('AdrPage, and a link to a record', () => {
+  it('offers Copy link on the record on show, read-only too, and only where the host makes links', () => {
+    const onCopyLink = vi.fn()
+    mount({ readOnly: true, onCopyLink, initialAdrId: 'c1', initialNonce: 1 })
+    fireEvent.click(screen.getByTestId('adr-copy-link'))
+    expect(onCopyLink).toHaveBeenCalledWith('c1')
+    cleanup()
+    mount({ initialAdrId: 'c1', initialNonce: 1 })
+    expect(screen.queryByTestId('adr-copy-link')).toBeNull()
+  })
+
+  it('opens on the record asked for, its row selected and carrying its id for the ring', () => {
+    mount({ initialAdrId: 'c1', initialNonce: 1 })
+    const row = document.querySelector('[data-record-id="c1"]')
+    expect(row).not.toBeNull()
+    expect(row?.classList.contains('Mui-selected')).toBe(true)
+  })
+})
