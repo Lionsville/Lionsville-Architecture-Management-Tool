@@ -18,6 +18,7 @@ import type { Destination } from '../agent/screen'
 import { isViewPageName } from './pageLanding'
 import { coverageOf, unmappedFunctions } from '../business'
 import { documentFindings, findingsOfOrganisation, identityFindings } from '../projects/checks'
+import { checkMarksHere } from '../projects/checkMarks'
 import { today as clockToday } from '../model/lifecycle'
 import type { Person } from '../people/person'
 import { registerOf, resolvePerson } from '../people/shown'
@@ -208,6 +209,8 @@ export function agentTree(at: {
     rowsTo: (id, types) => indexRef.current.rowsTo(id, types).filter((row) => row.scope !== scope).map((row) => row.relation),
     units: () => indexRef.current.units(),
     assignments: () => indexRef.current.assignments(),
+    // The open scope's marks as its session has them: one made a moment ago holds.
+    checkMarks: () => checkMarksHere(indexRef.current, scope, session.current()),
     moves: () => indexRef.current.moves(),
     operatingModel: () => indexRef.current.operatingModel(),
     findings: (day) => {

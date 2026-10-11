@@ -116,6 +116,7 @@ function useShellTree(
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
     units: () => treeRef.current.index.units(),
     assignments: () => treeRef.current.index.assignments(),
+    checkMarks: () => treeRef.current.index.checkMarks(),
     moves: () => treeRef.current.index.moves(),
     operatingModel: () => treeRef.current.index.operatingModel(),
     // Today's are folded once with the index; another day's organisation is read when asked (ADR-0036 §6).

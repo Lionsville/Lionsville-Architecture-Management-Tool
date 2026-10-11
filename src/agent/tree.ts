@@ -36,6 +36,8 @@ import type { OperatingRule, Responsibility, Role, UnitType } from '../model/ope
 import type { Assignment } from '../model/units'
 import { checkEntry } from '../model/checkCatalogue'
 import type { CheckCategory, CheckWeight } from '../model/checkCatalogue'
+import { splitMarked } from '../model/checkMarks'
+import type { CheckMark, ScopedFinding } from '../model/checkMarks'
 import { matchesQuery } from '../model/textSearch'
 import type {
   DesignElement, ElementId, ElementKind, Lifecycle, LifecycleDates, PlatformArchetype, Relation, RelationType,
@@ -155,6 +157,12 @@ export type TreeView = {
   units?(): readonly { scope: string; unit: DesignElement }[]
   /** Every assignment, with the scope that keeps it (ADR-0036 §4). Ids only. */
   assignments?(): readonly { scope: string; assignment: Assignment }[]
+  /**
+   * Every finding marked as intended, with the scope that keeps it (ADR-0036,
+   * amended): the open scope's as its session has them. Absent in a shell
+   * built before marks, and nothing is then marked.
+   */
+  checkMarks?(): readonly { scope: string; mark: CheckMark }[]
   /** Every unit a plan moves under another parent on a day (ADR-0036 §6), with the scope that keeps the plan. */
   moves?(): readonly { scope: string; move: TransitionMove }[]
   /** The operating model the organisation keeps (ADR-0036 §2), whatever scope is open. */
@@ -273,6 +281,12 @@ export function listTechnology(tree: TreeView | undefined, rawArgs: unknown): Ag
 
 const CHECKS_LIMIT = 200
 
+/**
+ * The tree's findings, and apart from them the ones a person marked as
+ * intended (ADR-0036, amended): `total` and `some` are what is still to look
+ * at, `marked` what was accepted — each finding with the day it was marked
+ * and the reason given. An agent reads marks and makes none.
+ */
 export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentAnswer {
   const args = (rawArgs ?? {}) as Args
   const limit = (args.limit as number | undefined) ?? CHECKS_LIMIT
@@ -280,18 +294,33 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
   const key = args.key as string | undefined
   const information = args.information === true
   const day = isDay(args.on) ? args.on : undefined
-  const some: TreeFinding[] = []
-  let total = 0
+  const listed: TreeFinding[] = []
   for (const finding of tree?.findings(day) ?? []) {
     if (scope !== undefined && finding.scope !== scope) continue
     if (key !== undefined && finding.key !== key) continue
     // Information — a master drawn nowhere — is worth knowing and is not a
     // fault; a list of faults leaves it out unless asked.
     if (finding.information && !information) continue
-    total += 1
-    if (some.length < limit) some.push(finding)
+    listed.push(finding)
   }
-  return json({ ...(day !== undefined ? { day } : {}), total, some: some.map((finding) => ({ key: finding.key, ...weighed(finding.key), ...sayingWho(finding) })) })
+  // The same objects come back, each in one of the two lists: a finding read
+  // structurally is split as the screens split it.
+  const { shown, marked } = splitMarked(listed as readonly unknown[] as readonly ScopedFinding[], tree?.checkMarks?.() ?? [])
+  const said = (finding: TreeFinding) => ({ key: finding.key, ...weighed(finding.key), ...sayingWho(finding) })
+  return json({
+    ...(day !== undefined ? { day } : {}),
+    total: shown.length,
+    some: (shown as readonly unknown[] as TreeFinding[]).slice(0, limit).map(said),
+    ...(marked.length ? {
+      marked: {
+        total: marked.length,
+        some: marked.slice(0, limit).map(({ finding, mark }) => ({
+          ...said(finding as unknown as TreeFinding),
+          mark: { on: mark.on, ...(mark.reason !== undefined ? { reason: mark.reason } : {}) },
+        })),
+      },
+    } : {}),
+  })
 }
 
 /**

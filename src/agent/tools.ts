@@ -571,7 +571,10 @@ const SPECS = [
       + 'given as on, with every plan\'s moves of that day. Beside its key each finding answers its weight — fix (the '
       + 'model contradicts itself), review (worth a look) or note (information, often intended) — and its category '
       + '(landscape, plans, organisation, teams, analysis), from the one catalogue of checks. A finding is never a '
-      + 'refusal and never a reason a save fails.',
+      + 'refusal and never a reason a save fails. A review or a note a person marked as intended is answered apart, '
+      + 'under marked (its total, and each finding with mark: the day it was marked and the reason given), and is not '
+      + 'among total and some. No tool marks a finding as intended or takes a mark back: that is a person\'s, so an '
+      + 'agent cannot silence a check.',
     inputSchema: {
       type: 'object',
       properties: {

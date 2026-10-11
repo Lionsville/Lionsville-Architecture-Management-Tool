@@ -226,6 +226,32 @@ describe('the three reads about the tree', () => {
     expect(Object.keys(some[0]!).slice(0, 3)).toEqual(['key', 'weight', 'category'])
   })
 
+  /** Marked as intended (ADR-0036, amended): an agent reads the marks, apart, and makes none. */
+  it('answers apart a finding a person marked as intended, with the day and the reason, silenced only in its own scope', async () => {
+    const marks = [
+      { scope: 'acme/retail', mark: { check: 'check.unattributed' as const, key: 'wms', reason: 'A partner runs it', on: '2026-10-11' } },
+      // The drift is about finance: a mark of it kept in retail silences nothing there.
+      { scope: 'acme/retail', mark: { check: 'check.drift' as const, key: 'wms', on: '2026-10-11' } },
+    ]
+    const out = parsed(await handle({ id: '1', tool: 'checks.list', args: {} }, session({ tree: { ...tree(), checkMarks: () => marks } })))
+    expect(out.total).toBe(1)
+    expect((out.some as { key: string }[]).map((f) => f.key)).toEqual(['check.drift'])
+    expect(out.marked).toEqual({
+      total: 1,
+      some: [{
+        key: 'check.unattributed', weight: 'review', category: 'landscape', scope: 'acme/retail', id: 'wms', name: 'Warehouse system',
+        mark: { on: '2026-10-11', reason: 'A partner runs it' },
+      }],
+    })
+    // Nothing marked, nothing apart: the answer is what it was before marks.
+    expect(parsed(await handle({ id: '1', tool: 'checks.list', args: {} }, session()))).not.toHaveProperty('marked')
+  })
+
+  it('offers no tool that marks a finding as intended or takes a mark back, and says so', () => {
+    expect(TOOLS.map((tool) => tool.name).filter((name) => /mark/i.test(name))).toEqual([])
+    expect(TOOLS.find((tool) => tool.name === 'checks.list')?.description).toContain('No tool marks a finding as intended')
+  })
+
   it('answers over nothing when the session has no tree', async () => {
     const out = parsed(await handle({ id: '1', tool: 'register.list', args: {} }, session({ tree: undefined })))
     expect(out).toEqual({ total: 0, some: [] })
