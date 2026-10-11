@@ -7,7 +7,10 @@
  * folder only while the desktop has nothing.
  */
 import { describe, expect, it, vi } from 'vitest'
-import type { LocalSettings } from '../../adapters/folder/format/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../../adapters/folder/format/folderSettings'
+import { meOf, mePatch } from '../../people/me'
+import { machineFolderSettingsText, readMachineFolderSettings } from '../../platform/node/machineFolderSettings'
+import { patchSettings } from '../../projects/settings'
 import { desktopPerson } from './desktopPerson'
 
 const settings = (pullOnOpen: boolean, pushAfterSnapshot = false): LocalSettings => ({ git: { pullOnOpen, pushAfterSnapshot } })
@@ -36,6 +39,25 @@ describe('what this person does about a folder on this desktop', () => {
   it('is written to the desktop, beside the folder\'s path, and never into the folder', async () => {
     const kept = channel(undefined)
     await desktopPerson(kept, '/work', { readLocal: () => Promise.resolve(settings(false)) }).write({ git: { pullOnOpen: true, pushAfterSnapshot: false } })
-    expect(kept.writeFolderLocal).toHaveBeenCalledWith('/work', { git: { pullOnOpen: true, pushAfterSnapshot: false } })
+    expect(kept.writeFolderLocal).toHaveBeenCalledWith('/work', { git: { pullOnOpen: true, pushAfterSnapshot: false }, people: { me: null } })
+  })
+
+  it('keeps who this person is (This is me) with the install, beside the folder\'s path, until they say nobody', async () => {
+    let text: string | undefined
+    const kept = {
+      readFolderLocal: (root: string) => Promise.resolve(readMachineFolderSettings(text, root)),
+      writeFolderLocal: (root: string, patch: LocalSettingsPatch) => {
+        text = machineFolderSettingsText(text, root, patch)
+        return Promise.resolve(readMachineFolderSettings(text, root)!)
+      },
+    }
+    const person = desktopPerson(kept, '/work', { readLocal: () => Promise.resolve(settings(false)) })
+    await person.write(patchSettings(await person.read(), mePatch('pe-1')))
+    expect(meOf(await person.read())).toBe('pe-1')
+    await person.write(patchSettings(await person.read(), { git: { pullOnOpen: true } }))
+    expect(meOf(await person.read())).toBe('pe-1')
+    expect((await person.read()).git).toEqual({ pullOnOpen: true, pushAfterSnapshot: false })
+    await person.write(patchSettings(await person.read(), mePatch(undefined)))
+    expect(meOf(await person.read())).toBeUndefined()
   })
 })

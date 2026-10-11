@@ -9,7 +9,8 @@
  *
  * The person's settings of the folder's repositories (ADR-0031 §1) over the
  * channel main already keeps them behind: the desktop keeps the sync settings
- * and nothing else, so a key it does not know is not kept.
+ * and *This is me* (ADR-0036 §11), and nothing else, so a key it does not
+ * know is not kept.
  */
 import type { DesktopSettings } from '../../adapters/desktop/channel'
 import type { PersonSettings } from '../../adapters/folder/FolderSettingsRepository'
@@ -26,10 +27,17 @@ export function desktopPerson(
   return {
     async read(): Promise<Settings> {
       const held: LocalSettings = await channel.readFolderLocal(root) ?? await left.readLocal()
-      return { git: { ...held.git } }
+      return { git: { ...held.git }, ...(held.people ? { people: { ...held.people } } : {}) }
     },
     async write(next: Settings): Promise<void> {
-      await channel.writeFolderLocal(root, next as LocalSettingsPatch)
+      // The whole of the person's settings, said as a patch: *This is me* absent is nobody.
+      const people = next['people']
+      const me = typeof people === 'object' && people !== null && !Array.isArray(people) ? (people as { me?: unknown }).me : undefined
+      const patch: LocalSettingsPatch = {
+        ...(next['git'] !== undefined ? { git: next['git'] as LocalSettingsPatch['git'] } : {}),
+        people: { me: typeof me === 'string' && me !== '' ? me : null },
+      }
+      await channel.writeFolderLocal(root, patch)
     },
   }
 }

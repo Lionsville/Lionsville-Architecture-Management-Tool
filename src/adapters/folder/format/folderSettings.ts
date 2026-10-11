@@ -100,11 +100,14 @@ export type LocalGitSettings = {
 
 export type LocalSettings = {
   readonly git: LocalGitSettings
+  /** *This is me* (ADR-0036 §11): the register entry this install takes to be its person, where one was said. */
+  readonly people?: { readonly me: string }
 }
 
-/** What a writer may change: any subset, at any depth this file has. */
+/** What a writer may change: any subset, at any depth this file has. `me: null` says nobody. */
 export type LocalSettingsPatch = {
   readonly git?: Partial<LocalGitSettings>
+  readonly people?: { readonly me?: string | null }
 }
 
 /**
@@ -151,11 +154,13 @@ export function readFolderSettings(text: string | undefined): FolderSettings {
 export function readLocalSettings(text: string | undefined): LocalSettings {
   const held = text === undefined ? undefined : record(parseJson(text))
   const git = record(held?.['git'])
+  const me = record(held?.['people'])?.['me']
   return {
     git: {
       pullOnOpen: flag(git?.['pullOnOpen'], DEFAULT_LOCAL_SETTINGS.git.pullOnOpen),
       pushAfterSnapshot: flag(git?.['pushAfterSnapshot'], DEFAULT_LOCAL_SETTINGS.git.pushAfterSnapshot),
     },
+    ...(typeof me === 'string' && me !== '' ? { people: { me } } : {}),
   }
 }
 
@@ -173,9 +178,24 @@ export function localSettingsText(existing: string | undefined, patch: LocalSett
   const version = typeof held['version'] === 'number' && held['version'] > LOCAL_SETTINGS_VERSION
     ? held['version']
     : LOCAL_SETTINGS_VERSION
+  const { people: _people, ...rest } = held
+  void _people
+  const people = peopleAfter(record(held['people']), patch.people)
   return stableJson({
-    ...held,
+    ...rest,
     version,
     git: { ...git, ...(patch.git ?? {}) },
+    ...(people ? { people } : {}),
   })
+}
+
+/** *This is me* after a patch: said, changed, or — `null` — taken away with the key where nothing else is under it. */
+function peopleAfter(
+  held: Record<string, unknown> | undefined, patch: LocalSettingsPatch['people'],
+): Record<string, unknown> | undefined {
+  if (patch === undefined || !('me' in patch)) return held
+  const { me: _was, ...others } = held ?? {}
+  void _was
+  const next = typeof patch.me === 'string' && patch.me !== '' ? { ...others, me: patch.me } : others
+  return Object.keys(next).length ? next : undefined
 }
