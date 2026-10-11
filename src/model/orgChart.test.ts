@@ -77,7 +77,7 @@ function find(chart: { roots: readonly ChartUnit[] }, id: string): ChartUnit {
 }
 
 describe('the organisation chart', () => {
-  it('draws every unit of a loop the plans\' moves make, the first by name at the top, rather than none of them', () => {
+  it('draws every unit of a loop the plans\' moves make, the first in order at the top, rather than none of them', () => {
     const looped: Organisation = {
       ...organisation,
       units: [unit('a', 'A', 'ut-team'), unit('b', 'B', 'ut-team', 'a'), unit('c', 'C', 'ut-team', 'b'), unit('z', 'Z', 'ut-team')],
@@ -90,13 +90,23 @@ describe('the organisation chart', () => {
     expect(find(after, 'c').id).toBe('c')
   })
 
-  it('is the units as a tree by parentId, siblings by name, and an actor with no type is not on it', () => {
+  it('is the units as a tree by parentId, siblings by their type\'s rank and then by name, and an actor with no type is not on it', () => {
     const chart = orgChart(organisation, TODAY)
-    expect(chart.roots.map((one) => one.id)).toEqual(['data', 'shipping'])
+    // A domain is in the first lane and a cluster, which may sit in one, in the second: Shipping before Data.
+    expect(chart.roots.map((one) => one.id)).toEqual(['shipping', 'data'])
     expect(find(chart, 'shipping').children.map((one) => one.id)).toEqual(['pf'])
     expect(find(chart, 'pf').children.map((one) => one.id)).toEqual(['rp', 'tt'])
     expect([...walk(chart.roots)].some((one) => one.id === 'stakeholders')).toBe(false)
     expect(chart.units).toBe(5)
+  })
+
+  it('puts siblings of one type in their own order before their names, and the types in theirs', () => {
+    const ordered = units.map((one) => (one.id === 'tt' ? { ...one, order: 1 } : one))
+    const chart = orgChart({ ...organisation, units: ordered }, TODAY)
+    expect(find(chart, 'pf').children.map((one) => one.id)).toEqual(['tt', 'rp'])
+    // A cluster that sits only at the top, put before the domains in the first lane.
+    const first = orgChart({ ...organisation, unitTypes: [{ ...domain, order: 2 }, { ...cluster, within: [], order: 1 }, team] }, TODAY)
+    expect(first.roots.map((one) => one.id)).toEqual(['data', 'shipping'])
   })
 
   it('says the domains a unit serves and the days its dates say', () => {
@@ -167,7 +177,7 @@ describe('the organisation chart', () => {
   it('is of the units it includes and every unit below them, or of one unit and those below it', () => {
     const filed = new Map([['shipping', 'shipping'], ['pf', 'shipping'], ['tt', 'shipping'], ['rp', 'shipping'], ['data', '']])
     const shipping = orgChart(organisation, TODAY, { include: (one) => filed.get(one.id) === 'shipping' || (one.scopes ?? []).includes('shipping') })
-    expect(shipping.roots.map((one) => one.id)).toEqual(['data', 'shipping'])
+    expect(shipping.roots.map((one) => one.id)).toEqual(['shipping', 'data'])
     const onlyPf = orgChart(organisation, TODAY, { root: 'pf' })
     expect(onlyPf.roots.map((one) => one.id)).toEqual(['pf'])
     expect([...walk(onlyPf.roots)].map((one) => one.id)).toEqual(['pf', 'rp', 'tt'])

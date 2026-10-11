@@ -7,9 +7,11 @@
  * their time, and the people still assigned to a unit that has ended.
  *
  * **Laid out, never drawn.** Nothing here has a coordinate: the tree is the
- * units' `parentId`, the order is the units' names, and the page nests one
- * box inside the next. So a chart has no geometry file, nothing drags, and
- * the same organisation on the same day is the same chart for everybody.
+ * units' `parentId`, the order is the one every list of units reads
+ * (`compareUnits`) — the unit type's rank in the structure, the unit's own
+ * `order` among its siblings, then its name — and the page nests one box
+ * inside the next. So a chart has no geometry file, and the same organisation
+ * on the same day is the same chart for everybody.
  *
  * **On a day.** The organisation is that day's (`organisationOn`): every
  * unit under the parent the plans' moves give it then (§6). A unit is drawn
@@ -27,6 +29,7 @@ import { isDay } from './lifecycle'
 import type { PersonId } from './person'
 import type { Role, RoleId, UnitType, UnitTypeId } from './operatingModel'
 import type { DesignDiagram, ElementId } from './types'
+import { compareUnits, unitTypeRank } from './unitOrder'
 import {
   holdersOn, isUnit, organisationOn, personOf, roleOn, runsOn, shareOf, slotsOf, unitEnded, unitLastDay, unitOn, unitTypeOn, unitsAbove,
   unitsBelow,
@@ -129,7 +132,7 @@ export function orgChart(whenever: Organisation, day: string, options: ChartOpti
   const organisation = organisationOn(whenever, day)
   const canonical = options.canonical ?? ((id: PersonId) => id)
   const shown = shownUnits(organisation, day, options)
-  const { roots, children } = treeOf(organisation.units, shown)
+  const { roots, children } = treeOf(organisation.units, shown, compareUnits(unitTypeRank(organisation.unitTypes)))
   const reading: Reading = {
     day,
     organisation,
@@ -194,10 +197,13 @@ function shownUnits(organisation: Organisation, day: string, options: ChartOptio
 
 /**
  * The drawn units as a tree: each under the nearest unit above it that is
- * drawn too, and at the top where none is. Siblings by name, then by id, so
- * the same organisation is the same chart whatever order it was read in.
+ * drawn too, and at the top where none is. Siblings in the order every list
+ * of units reads, which ends in the name and then the id, so the same
+ * organisation is the same chart whatever order it was read in.
  */
-function treeOf(all: readonly UnitLike[], shown: ReadonlySet<ElementId>): { roots: UnitLike[]; children: Map<ElementId, UnitLike[]> } {
+function treeOf(
+  all: readonly UnitLike[], shown: ReadonlySet<ElementId>, inOrder: (a: UnitLike, b: UnitLike) => number,
+): { roots: UnitLike[]; children: Map<ElementId, UnitLike[]> } {
   const units = all.filter((unit) => isUnit(unit) && shown.has(unit.id))
   const children = new Map<ElementId, UnitLike[]>()
   const roots: UnitLike[] = []
@@ -207,7 +213,7 @@ function treeOf(all: readonly UnitLike[], shown: ReadonlySet<ElementId>): { root
     else children.set(parent, [...children.get(parent) ?? [], unit])
   }
   // A loop the plans' moves make leaves its units under each other and none at
-  // the top: the first of them by name is drawn at the top instead, and the
+  // the top: the first of them in order is drawn at the top instead, and the
   // rest under it, so no unit drops out of the chart.
   const reached = new Set<ElementId>()
   const reach = (unit: UnitLike) => {
@@ -216,18 +222,14 @@ function treeOf(all: readonly UnitLike[], shown: ReadonlySet<ElementId>): { root
     for (const child of children.get(unit.id) ?? []) reach(child)
   }
   roots.forEach(reach)
-  for (const unit of [...units].sort(byName)) {
+  for (const unit of [...units].sort(inOrder)) {
     if (reached.has(unit.id)) continue
     for (const [parent, list] of children) children.set(parent, list.filter((one) => one.id !== unit.id))
     roots.push(unit)
     reach(unit)
   }
-  for (const list of children.values()) list.sort(byName)
-  return { roots: roots.sort(byName), children }
-}
-
-function byName(a: UnitLike, b: UnitLike): number {
-  return a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
+  for (const list of children.values()) list.sort(inOrder)
+  return { roots: roots.sort(inOrder), children }
 }
 
 /** How much of each person's time their assignments take on the day, across the whole organisation. */

@@ -128,7 +128,8 @@ const unitBox = (id: string) => screen.getAllByTestId('chart-unit').find((box) =
 describe('the organisation chart', () => {
   it('draws the units of its scope as a tree, and a unit serving it from above', () => {
     renderShell(<Harness commands={[]} />)
-    expect(units()).toEqual(['data', 'shipping', 'pf', 'tt'])
+    // A domain's lane is above a cluster's, which may sit in one: Shipping first.
+    expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
     expect(within(unitBox('pf')).getAllByTestId('chart-unit').map((box) => box.getAttribute('data-element-id'))).toEqual(['tt'])
     expect(within(unitBox('data')).getByText('serves 2 domains')).toBeTruthy()
     expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people')
