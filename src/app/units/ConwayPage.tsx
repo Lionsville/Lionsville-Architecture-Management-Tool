@@ -18,9 +18,17 @@
  *
  * **It only reads.** Nothing on it moves a unit or an application. An answer
  * to a finding is a change where it is kept: an interaction declared on one of
- * the two units — offered here where one of them is kept in this scope — an
- * owner set on the application, a limit on the unit type. The arithmetic is
- * `model/conway`.
+ * the two units — offered here where one of them is kept in this scope — or
+ * one this scope keeps taken away, an owner set on the application, a limit
+ * on the unit type. The arithmetic is `model/conway`.
+ *
+ * **Its findings are the one list** (`widgets/FindingsList`, ADR-0036 amended
+ * 11 October 2026): grouped by check and folded, the interactions no
+ * interface needs a note behind *Show notes*, and an instance opened on its
+ * explanation lights what it is about on the map. For an unused interaction
+ * the actions are *Remove the declaration* where this scope keeps it, *Model
+ * the missing interface…*, a choice of the two units' applications to open,
+ * and *Open the two units*.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -34,9 +42,11 @@ import { useTheme } from '@mui/material/styles'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { CHECK_LIST_WORDS, CONWAY_CHECK, groupByCheck } from '../../model/checkCatalogue'
+import type { CheckAction } from '../../model/checkCatalogue'
 import type { Command } from '../../model/commands'
 import { conwayMap } from '../../model/conway'
-import type { ConwayFinding, ConwayLine, ConwayMap } from '../../model/conway'
+import type { ConwayFinding, ConwayInput, ConwayLine, ConwayMap } from '../../model/conway'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { pickedPerson } from '../../model/person'
@@ -49,6 +59,8 @@ import { CHECK_LABEL } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
+import { FindingsList } from '../../widgets/FindingsList'
+import type { FindingActions } from '../../widgets/FindingsList'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
@@ -57,6 +69,7 @@ import { servesBadge } from './chartWords'
 import { ConwayTable } from './ConwayTable'
 import { InteractDialog } from './Interactions'
 import type { Interacting } from './Interactions'
+import { foldKey } from '../sessionFolds'
 import { conwayInputHere } from './unitViewsHere'
 import type { UnitViewsHere } from './unitViewsHere'
 
@@ -88,7 +101,7 @@ export function ConwayPage(props: ConwayPageProps) {
   const { here, diagram, today } = props
   const day = diagram.asOf ?? today
   const [groupBy, setGroupBy] = useState<string | undefined>(undefined)
-  const [lit, setLit] = useState<number | undefined>(undefined)
+  const [lit, setLit] = useState<ConwayFinding | undefined>(undefined)
   const [interacting, setInteracting] = useState<Interacting | undefined>(undefined)
   const input = useMemo(() => conwayInputHere(props.index, props.scope, props.model, here, day), [props.index, props.scope, props.model, here, day])
   const map = useMemo(() => conwayMap(input, day, groupBy !== undefined ? { groupBy } : {}), [input, day, groupBy])
@@ -105,7 +118,7 @@ export function ConwayPage(props: ConwayPageProps) {
   useSelectRequest(props.select, drawn, locate)
   usePageHandle(page, diagram.id, props.selectedId, props.onHandle, theme.palette.background.default)
   const lines = useMeasuredLines(stage, map)
-  const highlighted = new Set(lit === undefined ? [] : keysOf(map.findings[lit]))
+  const highlighted = new Set(keysOf(lit))
   const types = here.at.organisation.unitTypes
   const findMe = () => { const first = map.groups.find((group) => group.unitId !== undefined && mine.has(group.unitId)); if (first?.unitId) locate(first.unitId) }
   const crossing = map.lines.filter((line) => line.status !== 'inside').length
@@ -141,7 +154,8 @@ export function ConwayPage(props: ConwayPageProps) {
               <Lines lines={lines} />
             </Box>
           )}
-        <Findings map={map} here={here} lit={lit} onLight={(at) => setLit(lit === at ? undefined : at)} declarable={declarable} open={open} t={t}
+        <Findings map={map} input={input} here={here} onLight={setLit} declarable={declarable} open={open} t={t}
+          removable={removable(props)} remember={foldKey(props.scope, diagram.id, 'findings')}
           heading={t('conway.findings', { day: formatDay(day, language) })} />
         <ConwayTable map={map} here={here} t={t} />
       </Box>
@@ -317,28 +331,70 @@ function Lines({ lines }: { lines: readonly Drawn[] }) {
   )
 }
 
-/** What the map finds on the day, each with its answer where one can be given here. */
-function Findings({ map, here, lit, onLight, declarable, open, heading, t }: {
-  map: ConwayMap; here: UnitViewsHere; lit: number | undefined; onLight: (at: number) => void
-  declarable: (from: ElementId, to: ElementId) => (() => void) | undefined; open: (id: ElementId) => void; heading: string; t: Translate
+/**
+ * An interaction this scope keeps, taken away as one step where the page may
+ * write here: what *Remove the declaration* does. One another scope keeps is
+ * changed there.
+ */
+function removable({ declare, readOnly, model }: Pick<ConwayPageProps, 'declare' | 'readOnly' | 'model'>): (id: string) => (() => void) | undefined {
+  return (id) => {
+    if (!declare || readOnly || !model.relations.some((row) => row.id === id && row.type === 'interacts')) return undefined
+    return () => { declare.dispatch({ type: 'relation.delete', id }) }
+  }
+}
+
+/** What tells one finding from another for as long as the map finds it. */
+function findingKey(finding: ConwayFinding): string {
+  switch (finding.kind) {
+    case 'undeclared': return `undeclared:${finding.flow.id}`
+    case 'unused': return `unused:${finding.interaction.id}`
+    case 'unowned': return `unowned:${finding.applicationId}`
+    case 'overLimit': return `overLimit:${finding.unitId}`
+  }
+}
+
+/** The two units a finding is about, where it names two: those of an interface, or of an interaction. */
+function unitsOf(finding: ConwayFinding): ElementId[] {
+  if (finding.kind === 'undeclared') return [finding.from, finding.to]
+  if (finding.kind === 'unused') return [finding.interaction.sourceId, finding.interaction.targetId]
+  return []
+}
+
+/** What this page does for each action a finding of the map can take. */
+function conwayActions({ input, here, open, declarable, removable: remove }: {
+  input: ConwayInput; here: UnitViewsHere; open: (id: ElementId) => void
+  declarable: (from: ElementId, to: ElementId) => (() => void) | undefined; removable: (id: string) => (() => void) | undefined
+}): FindingActions<ConwayFinding, CheckAction> {
+  return {
+    declareInteraction: (one) => (one.kind === 'undeclared' ? declarable(one.from, one.to) : undefined),
+    openInterface: (one) => (one.kind === 'undeclared' ? () => open(one.flow.sourceId) : undefined),
+    openUnits: (one) => unitsOf(one).map((id) => ({ key: id, label: here.name(id), run: () => open(id) })),
+    removeInteraction: (one) => (one.kind === 'unused' ? remove(one.interaction.id) : undefined),
+    // The missing interface is modelled from one of the two units' applications: a choice of them, each under its unit.
+    modelInterface: (one) => unitsOf(one).flatMap((unit) => input.applications
+      .filter((app) => app.partyId === unit)
+      .map((app) => ({ key: app.id, label: here.name(app.id), group: here.name(unit), run: () => open(app.id) }))),
+    openApplication: (one) => (one.kind === 'unowned' ? () => open(one.applicationId) : undefined),
+    openUnit: (one) => (one.kind === 'overLimit' ? () => open(one.unitId) : undefined),
+  }
+}
+
+/** What the map finds on the day, in the one list of findings, each with what this page can do about it. */
+function Findings({ map, input, here, onLight, declarable, removable: remove, open, heading, remember, t }: {
+  map: ConwayMap; input: ConwayInput; here: UnitViewsHere; onLight: (finding: ConwayFinding | undefined) => void
+  declarable: (from: ElementId, to: ElementId) => (() => void) | undefined; removable: (id: string) => (() => void) | undefined
+  open: (id: ElementId) => void; heading: string; remember: string; t: Translate
 }) {
+  const groups = useMemo(() => groupByCheck(map.findings, (one) => CONWAY_CHECK[one.kind]), [map.findings])
+  const actions = conwayActions({ input, here, open, declarable, removable: remove })
   return (
-    <Box data-testid="conway-findings" sx={{ mt: 3 }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{heading}</Typography>
-      {map.findings.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('conway.nothing')}</Typography>}
-      {map.findings.map((finding, at) => {
-        const declare = finding.kind === 'undeclared' ? declarable(finding.from, finding.to) : undefined
-        return (
-          <Box key={at} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <ButtonBase onClick={() => onLight(at)} data-testid="conway-finding" data-kind={finding.kind}
-              sx={{ fontSize: 12, textAlign: 'left', color: finding.kind === 'unused' ? 'text.secondary' : 'warning.main', fontWeight: lit === at ? 700 : 400 }}>
-              {findingText(finding, here, t)}
-            </ButtonBase>
-            {declare && <Button size="small" onClick={declare} data-testid="conway-declare" sx={{ fontSize: 11 }}>{t('interacts.add')}</Button>}
-            {finding.kind === 'unowned' && <Button size="small" onClick={() => open(finding.applicationId)} sx={{ fontSize: 11 }}>{t('conway.openApplication')}</Button>}
-          </Box>
-        )
-      })}
+    <Box data-testid="conway-findings" sx={{ mt: 3, maxWidth: 720 }}>
+      <Typography component="h2" sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{heading}</Typography>
+      <FindingsList
+        groups={groups} words={CHECK_LIST_WORDS} sentence={(one) => findingText(one, here, t)} keyOf={findingKey} actions={actions}
+        attributesOf={(one) => ({ 'data-testid': 'conway-finding', 'data-kind': one.kind })} onPick={onLight} remember={remember}
+        empty={<Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('conway.nothing')}</Typography>}
+      />
       <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 1 }}>{t('conway.onlyReads')}</Typography>
     </Box>
   )

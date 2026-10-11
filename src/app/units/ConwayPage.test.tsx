@@ -7,12 +7,16 @@
  * Acme Logistics — with a platform cluster at the root and a customer domain
  * below: the columns, the findings in words, grouping by a unit type, *you*,
  * an interaction declared from a finding, which answers it, and the table of
- * what runs and what is declared between each two units.
+ * what runs and what is declared between each two units. The findings are the
+ * one list since 3.6.1, grouped and folded with the notes hidden: a test that
+ * reads them unfolds them, and one that answers a finding opens it and
+ * presses the action in its explanation, where it pressed a button beside it.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { axeFindings } from '../testing/axe'
+import { pressAction, unfoldFindings } from '../testing/findings'
 import { renderShell } from '../testing/renderShell'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
@@ -72,9 +76,11 @@ const REGISTER: PeopleRegisterAccess = {
 const NAMES = personNames(REGISTER, translator('en'))
 const VIEW: DesignDiagram = { id: 'cw-1', kind: 'conway', name: 'Teams and systems', members: [] }
 
-function Harness({ commands, root = ROOT }: { commands: Command[]; root?: HostModel }) {
-  const [model, setModel] = useState(CUSTOMER)
-  const index = useMemo(() => indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }]), [root])
+function Harness({ commands, root = ROOT, customer = CUSTOMER, onSelect = () => {}, onOpenElsewhere = () => {} }: {
+  commands: Command[]; root?: HostModel; customer?: HostModel; onSelect?: (id: string | undefined) => void; onOpenElsewhere?: (scope: string, id: string) => void
+}) {
+  const [model, setModel] = useState(customer)
+  const index = useMemo(() => indexScopes([{ path: '', model: root }, { path: 'customer', model: customer }]), [root, customer])
   const here = useMemo(() => unitViewsHere(index, 'customer', model), [index, model])
   const dispatch = (command: Command) => {
     commands.push(command)
@@ -88,14 +94,18 @@ function Harness({ commands, root = ROOT }: { commands: Command[]; root?: HostMo
     <PersonNamesProvider names={NAMES}>
     <ConwayPage
       diagram={VIEW} here={here} index={index} scope="customer" model={model} today={TODAY} readOnly={false} people={REGISTER}
-      scopeLabel={(path) => ({ '': 'the organisation', customer: 'Customer', shipping: 'Shipping' })[path] ?? path} onSelect={() => {}} onOpenElsewhere={() => {}}
+      scopeLabel={(path) => ({ '': 'the organisation', customer: 'Customer', shipping: 'Shipping' })[path] ?? path} onSelect={onSelect} onOpenElsewhere={onOpenElsewhere}
       declare={{ dispatch, newRowId: () => 'i-new', scopeName: 'Customer' }}
     />
     </PersonNamesProvider>
   )
 }
 
-const said = () => screen.getAllByTestId('conway-finding').map((line) => line.textContent)
+/** Every finding's sentence, the list unfolded and its notes shown. */
+const said = () => {
+  unfoldFindings(screen.getByTestId('conway-findings'))
+  return screen.getAllByTestId('conway-finding').map((line) => line.textContent)
+}
 
 describe('the Conway map', () => {
   it('reads the applications of its scope and of the units serving it, with the interfaces between them', () => {
@@ -156,7 +166,9 @@ describe('the Conway map', () => {
   it('declares an interaction from a crossing with none, as one row, and the finding goes', async () => {
     const commands: Command[] = []
     renderShell(<Harness commands={commands} />)
-    fireEvent.click(screen.getByTestId('conway-declare'))
+    unfoldFindings(screen.getByTestId('conway-findings'))
+    fireEvent.click(screen.getByText(/^Phone app → Orders/))
+    pressAction(screen.getByTestId('finding-explanation'), 'Declare an interaction…')
     const dialog = await screen.findByTestId('interact-dialog')
     // The units it may be declared with, in the order every list of units reads: the clusters, then the teams.
     fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
@@ -195,7 +207,52 @@ describe('the Conway map', () => {
     }
     renderShell(<Harness commands={[]} root={root} />)
     expect(cells()[0]).toEqual(['·', 'SF unused', '1S declared', ''])
+    // A note, hidden behind its switch until asked for.
+    expect(screen.getAllByTestId('findings-group').map((row) => row.textContent)).not.toContainEqual(expect.stringContaining('Interaction not used'))
+    expect(screen.getByRole('switch', { name: 'Show notes (1)' })).toBeTruthy()
     expect(said()).toContain('Integration Platform and Mobile App declare Facilitating, and no interface runs between them.')
+  })
+
+  it('settles an interaction no interface needs: taken away where this scope keeps it, the interface modelled, or the two units opened', async () => {
+    const commands: Command[] = []
+    const onSelect = vi.fn()
+    const onOpenElsewhere = vi.fn()
+    const customer: HostModel = {
+      ...CUSTOMER, relations: [...CUSTOMER.relations, { id: 'i-3', type: 'interacts', sourceId: 'mob', targetId: 'ip', mode: 'facilitating', isBidirectional: false }],
+    }
+    renderShell(<Harness commands={commands} customer={customer} onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} />)
+    fireEvent.click(screen.getByRole('switch', { name: 'Show notes (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: /Interaction not used by any interface/ }))
+    fireEvent.click(screen.getByText('Mobile App and Integration Platform declare Facilitating, and no interface runs between them.'))
+    const explanation = screen.getByTestId('finding-explanation')
+    expect(within(explanation).getAllByTestId(/^finding-action-/).map((one) => one.textContent))
+      .toEqual(['Remove the declaration', 'Model the missing interface…', 'Open the two units'])
+    expect(await axeFindings()).toEqual([])
+    // The interface is modelled from either unit's applications, each under its unit.
+    pressAction(explanation, 'Model the missing interface…')
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((one) => one.textContent))
+      .toEqual(['Phone appMobile App', 'Integration HubIntegration Platform'])
+    fireEvent.click(screen.getByRole('menuitem', { name: /Integration Hub/ }))
+    expect(onOpenElsewhere).toHaveBeenCalledWith('', 'hub')
+    pressAction(explanation, 'Open the two units')
+    fireEvent.click(within(await screen.findByRole('menu')).getByRole('menuitem', { name: 'Mobile App' }))
+    expect(onSelect).toHaveBeenCalledWith('mob')
+    // Taken away as one step, and the finding goes with it.
+    pressAction(explanation, 'Remove the declaration')
+    expect(commands).toEqual([{ type: 'relation.delete', id: 'i-3' }])
+    await waitFor(() => expect(screen.queryByTestId('finding-explanation')).toBeNull())
+    expect(screen.queryByRole('switch', { name: /Show notes/ })).toBeNull()
+  })
+
+  it('offers no Remove for an interaction another scope keeps', () => {
+    const root: HostModel = {
+      ...ROOT, relations: [...ROOT.relations, { id: 'i-2', type: 'interacts', sourceId: 'ip', targetId: 'mob', mode: 'facilitating', isBidirectional: false }],
+    }
+    renderShell(<Harness commands={[]} root={root} />)
+    unfoldFindings(screen.getByTestId('conway-findings'))
+    fireEvent.click(screen.getByText(/^Integration Platform and Mobile App declare/))
+    expect(within(screen.getByTestId('finding-explanation')).getAllByTestId(/^finding-action-/).map((one) => one.textContent))
+      .toEqual(['Model the missing interface…', 'Open the two units'])
   })
 })
 
