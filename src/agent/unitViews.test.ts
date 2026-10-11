@@ -158,6 +158,10 @@ describe('an agent and the views of the organisation', () => {
     const report = parsed(await handle({ id: '2', tool: 'diagram.inspect', args: { diagramId: made.id } }, held))
     expect((report.groups as { unitId?: string }[]).map((one) => one.unitId ?? null)).toEqual(['mob', 'web', null])
     expect((report.findings as { kind: string }[]).map((one) => one.kind)).toEqual(['undeclared', 'unowned', 'overLimit'])
+    // Each under its check, weighed as checks.list weighs one: its over-limit is the organisation's own.
+    expect((report.findings as Record<string, unknown>[]).map((one) => [one.key, one.weight, one.category])).toEqual([
+      ['check.interfaceUndeclared', 'review', 'teams'], ['check.applicationUnowned', 'review', 'teams'], ['check.unitOverLimit', 'review', 'organisation'],
+    ])
     const row = parsed(await handle({ id: '3', tool: 'relation.add', args: { type: 'interacts', sourceId: 'mob', targetId: 'web', mode: 'service' } }, held))
     expect(held.model().relations[row.id as string]).toMatchObject({ type: 'interacts', mode: 'service' })
     const after = parsed(await handle({ id: '4', tool: 'diagram.inspect', args: { diagramId: made.id } }, held))

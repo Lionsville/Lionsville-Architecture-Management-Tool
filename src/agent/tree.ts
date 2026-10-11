@@ -34,6 +34,8 @@ import { isDay } from '../model/lifecycle'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
+import { checkEntry } from '../model/checkCatalogue'
+import type { CheckCategory, CheckWeight } from '../model/checkCatalogue'
 import { matchesQuery } from '../model/textSearch'
 import type {
   DesignElement, ElementId, ElementKind, Lifecycle, LifecycleDates, PlatformArchetype, Relation, RelationType,
@@ -289,7 +291,18 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
     total += 1
     if (some.length < limit) some.push(finding)
   }
-  return json({ ...(day !== undefined ? { day } : {}), total, some: some.map(sayingWho) })
+  return json({ ...(day !== undefined ? { day } : {}), total, some: some.map((finding) => ({ key: finding.key, ...weighed(finding.key), ...sayingWho(finding) })) })
+}
+
+/**
+ * What the catalogue says of a finding's kind, said beside its key: its
+ * weight — fix, review or note — and its category (ADR-0036, amended 11
+ * October 2026; `model/checkCatalogue.ts`). Nothing for a key the catalogue
+ * does not know, which a finding read structurally may carry.
+ */
+export function weighed(key: string): { weight: CheckWeight; category: CheckCategory } | Record<string, never> {
+  const entry = checkEntry(key)
+  return entry ? { weight: entry.weight, category: entry.category } : {}
 }
 
 /**

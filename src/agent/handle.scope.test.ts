@@ -216,6 +216,16 @@ describe('the three reads about the tree', () => {
     expect(drift.total).toBe(1)
   })
 
+  /** The catalogue (ADR-0036, amended): how much each finding matters, and what it is about, beside its key. */
+  it('answers each finding with its check\'s weight and category beside its key', async () => {
+    const all = parsed(await handle({ id: '1', tool: 'checks.list', args: { information: true } }, session()))
+    const some = all.some as Record<string, unknown>[]
+    expect(some.map((f) => [f.key, f.weight, f.category])).toEqual([
+      ['check.drift', 'review', 'landscape'], ['check.unattributed', 'review', 'landscape'], ['check.notDrawn', 'note', 'landscape'],
+    ])
+    expect(Object.keys(some[0]!).slice(0, 3)).toEqual(['key', 'weight', 'category'])
+  })
+
   it('answers over nothing when the session has no tree', async () => {
     const out = parsed(await handle({ id: '1', tool: 'register.list', args: {} }, session({ tree: undefined })))
     expect(out).toEqual({ total: 0, some: [] })

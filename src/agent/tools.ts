@@ -568,8 +568,10 @@ const SPECS = [
       + 'check.assignmentEnded, check.unitTypeEnded, check.personOverloaded and check.unitNotServing (an area, grouping or '
       + 'capability assigned to a unit that serves neither its domain nor sits under a unit that does; the unit in detail), '
       + 'read on a day — today, or the day '
-      + 'given as on, with every plan\'s moves of that day. A finding is never a refusal and '
-      + 'never a reason a save fails.',
+      + 'given as on, with every plan\'s moves of that day. Beside its key each finding answers its weight — fix (the '
+      + 'model contradicts itself), review (worth a look) or note (information, often intended) — and its category '
+      + '(landscape, plans, organisation, teams, analysis), from the one catalogue of checks. A finding is never a '
+      + 'refusal and never a reason a save fails.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2338,7 +2340,9 @@ const SPECS = [
       + 'between them, every one a row that exists. On an organisation chart (ADR-0036 §7) it reports the units '
       + 'as a tree on the view\'s day, each role with its holders by person id, their share, who is over 100% and '
       + 'the vacancies; on a Conway map, the units over their applications, every interface that crosses between '
-      + 'units with whether an interaction covers it, the interactions that hold, and the findings.',
+      + 'units with whether an interaction covers it, the interactions that hold, and the findings, each with its key '
+      + '(check.interfaceUndeclared, check.interactionUnused, check.applicationUnowned, check.unitOverLimit), weight '
+      + 'and category as checks.list says them.',
     inputSchema: {
       type: 'object',
       properties: {

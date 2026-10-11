@@ -13,6 +13,7 @@
  * are is `people.list`'s and `assignments.list`'s to say, under the
  * organisation's policy.
  */
+import { CONWAY_CHECK } from '../model/checkCatalogue'
 import { conwayApplication, conwayMap, ownsOf } from '../model/conway'
 import type { ConwayApplication, ConwayInteraction, ConwayRow } from '../model/conway'
 import type { HostModel } from '../model/hostModel'
@@ -25,6 +26,7 @@ import type { UnitLike } from '../model/units'
 import { assignmentsNow, organisationNow } from './assignments'
 import type { OpenDocument } from './assignments'
 import type { TreeView } from './tree'
+import { weighed } from './tree'
 
 /** Is `path` this scope, or one filed anywhere beneath it? The organisation is "". */
 function within(path: string, scope: string): boolean {
@@ -118,7 +120,8 @@ export function inspectConway(tree: TreeView | undefined, open: OpenDocument, di
       ...(line.interaction ? { interactionId: line.interaction.id, ...(line.interaction.mode ? { mode: line.interaction.mode } : {}) } : {}),
     })),
     interactions: map.interactions.map((row) => ({ id: row.id, sourceId: row.sourceId, targetId: row.targetId, ...(row.mode ? { mode: row.mode } : {}) })),
-    findings: map.findings.slice(0, limit),
+    // Each under its check, with the catalogue's weight and category, as `checks.list` says a finding.
+    findings: map.findings.slice(0, limit).map((finding) => ({ key: CONWAY_CHECK[finding.kind], ...weighed(CONWAY_CHECK[finding.kind]), ...finding })),
   }
 }
 
