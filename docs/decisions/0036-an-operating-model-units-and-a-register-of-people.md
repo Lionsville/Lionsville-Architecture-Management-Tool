@@ -1094,6 +1094,37 @@ one field, three inputs to one function and one check.
   preference. The chart's outline is a foldable tree again, replacing the
   select of the first build.
 
+## As built, 3.6.1: the Conway map's table, and what a plan leaves to declare
+
+Two repairs to the build of §6 and §7, where the screens fell short of the
+design.
+
+**The table reads the interactions too.** A cell of the Conway map's table
+(`app/units/ConwayTable.tsx`) is two columns: how many interfaces run between
+them, and a letter for every interaction declared between them — one whose
+ends sit each at, under or above one of the two columns' units, as an
+interaction covers the units under its ends — whether or not an interface
+runs there. The map holds the cells (`model/conway`, `pairs`), each with how
+the two stand: an interface with nothing declared; no interface, and an
+interaction the findings call unused; interfaces only to applications nobody
+owns; or declared. The first two are shaded, each its own way, in tints
+measured in both modes. A cell an interaction covers with no interface of its
+own, where interfaces elsewhere need it, has its letter and no shade: whether
+an interaction is needed is the findings' to say, and the cell agrees with
+them.
+
+**A plan's *Still open* says the interactions it leaves to declare.** The
+Conway map of the plan's day is read around the units it introduces or moves
+and those under them, across the whole organisation (`conwayInputAround`).
+Every interface it finds crossing from one of them with nothing declared is
+said as two units (`model/reorganisation`, `interactionsToDeclare`): the
+plan's highest unit above that end — a new cluster rather than each team
+moved into it — and the unit that the interaction covering the interface the
+day before was declared with, where it is there on the day, so a cluster that
+is split hands its partners on to the clusters it is split into; or else the
+other end's own. Each two units once, each line a link to the plan's unit,
+whose *Works with* declares it (`app/units/PlanStillOpen.tsx`).
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

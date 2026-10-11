@@ -266,7 +266,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       day before; every assignment past the
                                       end of its unit or role, with a
                                       suggestion, written per scope; the
-                                      organisation before and after
+                                      organisation before and after; and the
+                                      interactions its day leaves its units
+                                      to declare (`interactionsToDeclare`)
                     orgChart · conway   the two views of the organisation on a
                                       day (ADR-0036 §7): the units as a tree
                                       with each role's holders, vacancies, the
@@ -274,7 +276,10 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       left in a unit that ended (`orgChart`);
                                       the units over the applications they own,
                                       how each interface lies against the
-                                      `interacts` rows, and the four findings
+                                      `interacts` rows, the table's cells —
+                                      each two columns, their interfaces and
+                                      every interaction declared between them
+                                      (`pairs`) — and the four findings
                                       (`conwayMap`). No words, no paths
                     testing/          the generated landscape, and the budgets
 src/people/       The people register (ADR-0036): who the organisation's people
@@ -815,15 +820,18 @@ src/app/          The shell around the editor.
                                       open scope's session has it, laid over
                                       the index (`organisationHere`); what a
                                       person holds, for the People page; a
-                                      plan's moves, before and after and *Move
-                                      the people* (`PlanOrganisation`,
-                                      `MovePeople`), what an ending leaves to
+                                      plan's moves, before and after, *Move
+                                      the people* and what is still open on
+                                      its day (`PlanOrganisation`,
+                                      `MovePeople`, `PlanStillOpen`), what an
+                                      ending leaves to
                                       decide on the operating model page
                                       (`EndedHolders`), and the people's moves
                                       landed as one step per scope
                                       (`landPeopleMoves`)
                                       …and the two views (§7): ChartPage and
-                                      ConwayPage, drawn in the tab through
+                                      ConwayPage with its table
+                                      (`ConwayTable`), drawn in the tab through
                                       `UnitViewPages`; what a view in a scope
                                       is of, and where a link to a unit lands
                                       (`unitViewsHere`); *Works with* and the
