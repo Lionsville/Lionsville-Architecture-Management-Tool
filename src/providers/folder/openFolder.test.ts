@@ -80,6 +80,24 @@ describe('the pull as a folder opens', () => {
     expect(held.asked).toEqual([])
   })
 
+  it('lists the people register in the history\'s own exclude list first, where the folder keeps a history', async () => {
+    const held = sync()
+    const keptOut: string[] = []
+    held.remote.keepOut = () => { keptOut.push('exclude'); return Promise.resolve() }
+    await openFolder({ handle: new FakeDirectory('Architecture'), name: 'Architecture', root: '/work', sync: held.remote, person: person(false) }, base())
+    expect(keptOut).toEqual(['exclude'])
+    const none = sync({ keeping: false })
+    const never: string[] = []
+    none.remote.keepOut = () => { never.push('exclude'); return Promise.resolve() }
+    await openFolder({ handle: new FakeDirectory('Architecture'), name: 'Architecture', root: '/work', sync: none.remote, person: person(false) }, base())
+    expect(never).toEqual([])
+    const failing = sync()
+    failing.remote.keepOut = () => Promise.reject(new Error('read-only'))
+    const diagnostics = new RecordingDiagnostics()
+    await openFolder({ handle: new FakeDirectory('Architecture'), name: 'Architecture', root: '/work', sync: failing.remote, person: person(false) }, { diagnostics })
+    expect(diagnostics.recent().map((entry) => entry.message)).toContain('the history\'s exclude list could not be written')
+  })
+
   it('opens the folder anyway where the pull fell over, and says so in the trail', async () => {
     const held = sync()
     held.remote.pull = () => Promise.reject(new Error('no network'))

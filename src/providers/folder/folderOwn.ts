@@ -35,6 +35,13 @@ export type FolderSync = {
   resolve(side: SyncSide): Promise<ResolveOutcome>
   /** Record everything in the folder under one subject; `false` where nothing had changed. */
   record(subject: string): Promise<boolean>
+  /**
+   * List the files the history never holds — the people register above all
+   * (ADR-0036 §8) — in git's own local exclude list, so a commit typed in a
+   * terminal leaves them out too. Idempotent, and nothing where no history
+   * is kept. Absent where the folder's git is not the machine's.
+   */
+  keepOut?(): Promise<void>
 }
 
 /** The desktop's remote, over the channel main keeps git behind. Each answers with a value, never an exception. */
@@ -46,6 +53,7 @@ export function desktopSync(git: DesktopHistory, root: string): FolderSync {
     push: () => git.push(root),
     resolve: (side) => git.resolve(root, side),
     record: async (subject) => Boolean(await git.snapshot(root, subject)),
+    keepOut: () => git.excludeLocal(root),
   }
 }
 

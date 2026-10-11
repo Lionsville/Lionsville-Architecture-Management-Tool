@@ -15,6 +15,7 @@ describe('the folder\'s remote on the desktop', () => {
       push: vi.fn(() => Promise.resolve('rejected')),
       resolve: vi.fn(() => Promise.resolve('done')),
       snapshot: vi.fn(() => Promise.resolve(undefined)),
+      excludeLocal: vi.fn(() => Promise.resolve()),
     } as unknown as DesktopHistory
     const sync = desktopSync(git, '/work')
     expect(await sync.available()).toBe(true)
@@ -27,6 +28,8 @@ describe('the folder\'s remote on the desktop', () => {
     expect(git.isRepository).toHaveBeenCalledWith('/work')
     expect(git.resolve).toHaveBeenCalledWith('/work', 'theirs')
     expect(git.snapshot).toHaveBeenCalledWith('/work', 'Before syncing')
+    await sync.keepOut?.()
+    expect(git.excludeLocal).toHaveBeenCalledWith('/work')
   })
 })
 

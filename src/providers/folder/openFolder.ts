@@ -106,6 +106,21 @@ async function pullOnOpen(opening: FolderOpening, base: FolderBase, s: Translate
   }
 }
 
+/**
+ * The files a folder's history never holds, kept out of a commit typed in a
+ * terminal as well: a repository started before the people register, or by
+ * somebody else, or cloned, has never been told (ADR-0036 §8).
+ */
+async function keepOutOfHistory(opening: FolderOpening, base: FolderBase): Promise<void> {
+  const { sync } = opening
+  if (!sync?.keepOut) return
+  try {
+    if (await sync.keeping()) await sync.keepOut()
+  } catch (cause) {
+    base.diagnostics.report({ level: 'warn', where: 'sync', message: 'the history\'s exclude list could not be written', cause })
+  }
+}
+
 /** Every scope in the folder, in the format this build writes. */
 async function upgradeFormat(opening: FolderOpening, base: FolderBase, s: Translate): Promise<void> {
   const { handle, name, sync } = opening
@@ -189,6 +204,7 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
   const { handle, name, root, git, steps, places, stamps, person, sync, channel } = opening
   const { diagnostics } = base
   const s = base.s ?? translator('en')
+  await keepOutOfHistory(opening, base)
   const pulled = await pullOnOpen(opening, base, s)
   await upgradeFormat(opening, base, s)
   // A tab's folder with no database to keep a history in keeps one for as

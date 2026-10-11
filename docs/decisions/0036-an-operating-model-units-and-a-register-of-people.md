@@ -505,7 +505,9 @@ ending a person's assignments is the step that brings them.
 
 **Where it is kept.** The folder keeps `.lionsville-architecture/people.json`;
 `OUT_OF_HISTORY` lists it beside `local.json`, so no commit the app makes
-holds it, `.git/info/exclude` keeps it out of one typed in a terminal, and no
+holds it, `.git/info/exclude` keeps it out of one typed in a terminal — listed
+there whenever the desktop opens a folder that keeps a history, however that
+history was started — and no
 scope's history answers for it. Browser storage keeps it on shelves of its
 own (`people`, `peopleLog`, and `peopleRemoved` for the ids it removed; the
 database is at version 5), and the folder's file lists them under `removed`. The working file
