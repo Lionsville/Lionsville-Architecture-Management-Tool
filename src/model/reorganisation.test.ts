@@ -204,6 +204,18 @@ describe('writing the people\'s moves as one step', () => {
     })
     expect(ended.get('shipping')).toEqual([{ type: 'assignment.update', id: 'as-1', patch: { until: EVE } }])
   })
+
+  /** A person kept under an id merged into another's is moved as the entry the merge kept. */
+  it('writes the new assignment under the id a merge kept, never the merged one', () => {
+    const merged = peopleMoveSteps([{ move: moves[0], choice: { unitId: 'parcel', roleId: 'ro-lead' } }], {
+      scopeOfAssignment: () => 'shipping', scopeOfUnit: () => 'shipping', makeId: () => 'as-x',
+      canonical: (id) => (id === 'pe-omar' ? 'pe-omar-kept' : id),
+    })
+    expect(merged.get('shipping')).toEqual([
+      { type: 'assignment.update', id: 'as-1', patch: { until: EVE } },
+      { type: 'assignment.add', assignment: { id: 'as-x', unitId: 'parcel', roleId: 'ro-lead', person: { person: 'pe-omar-kept' }, from: SPLIT } },
+    ])
+  })
 })
 
 describe('the organisation before and after', () => {

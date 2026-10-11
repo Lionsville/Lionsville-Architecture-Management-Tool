@@ -37,8 +37,10 @@ import { addDays } from './transition'
 import type { Transition } from './transition'
 import type { ElementId } from './types'
 import type { Command } from './commands'
+import { pickedPerson } from './person'
+import type { PersonId } from './person'
 import {
-  dayBefore, isUnit, organisationOn, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove,
+  dayBefore, isUnit, organisationOn, personOf, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove,
 } from './units'
 import type { Assignment, Organisation, UnitLike, UnitMove } from './units'
 
@@ -208,8 +210,11 @@ export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
  * each new one begins the day after (or on its own first day, where that is
  * later) in the scope that answers for its unit, for the same person, the
  * same share, the same last day where it had one after that, and *acting*
- * where it was. A row whose unit or assignment has no scope is passed over.
- * The caller makes each scope's list one step and lands them together.
+ * where it was. The new one names the person by the entry a merge kept
+ * (`canonical`), never by an id merged into it, so nothing new is written
+ * under an id that is only a redirect. A row whose unit or assignment has no
+ * scope is passed over. The caller makes each scope's list one step and lands
+ * them together.
  */
 export function peopleMoveSteps(
   rows: readonly { move: PeopleMove; choice: PeopleChoice }[],
@@ -217,6 +222,8 @@ export function peopleMoveSteps(
     scopeOfAssignment: (assignment: Assignment) => string | undefined
     scopeOfUnit: (unitId: ElementId) => string | undefined
     makeId: (prefix: string) => string
+    /** The id that answers for an id: the entry a merge kept, or the id itself. Absent, every id answers for itself. */
+    canonical?: (id: PersonId) => PersonId
   },
 ): Map<string, Command[]> {
   const steps = new Map<string, Command[]>()
@@ -238,7 +245,7 @@ export function peopleMoveSteps(
       id: deps.makeId('as'),
       unitId: choice.unitId,
       roleId: choice.roleId,
-      person: assignment.person,
+      person: pickedPerson(deps.canonical ? deps.canonical(personOf(assignment)) : personOf(assignment)),
       ...(assignment.share !== undefined ? { share: assignment.share } : {}),
       from,
       ...(isDay(assignment.until) && assignment.until >= from ? { until: assignment.until } : {}),

@@ -84,7 +84,7 @@ export function EndedHolders(props: EndedHoldersProps) {
   const moves = peopleToMove(facts.at.organisation, { roles: roleEnding(item.item) })
   const placesFor = (move: PeopleMove) => placesIn(facts.at.organisation, [move.suggestion?.unitId ?? move.assignment.unitId, move.assignment.unitId], addDays(move.lastDay, 1))
   const write = (rows: { move: PeopleMove; choice: PeopleChoice }[]) => land(peopleMoveSteps(rows, {
-    scopeOfAssignment: facts.at.assignmentAt, scopeOfUnit: (id) => facts.at.unitAt(id)?.scope, makeId,
+    scopeOfAssignment: facts.at.assignmentAt, scopeOfUnit: (id) => facts.at.unitAt(id)?.scope, makeId, canonical: facts.names.canonical,
   }))
   return (
     <Box data-testid="operating-ended">
