@@ -75,6 +75,25 @@ of elke verantwoordelijkheid haar ene eindverantwoordelijke rol heeft. Een
 onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
 opent wat hij telt; als je de pagina sluit ben je weer hier.
 
+**Bediend door**, onder de kaarten, overal waar de organisatie eenheden heeft:
+de eenheden die deze scope bedienen, in de volgorde van hun types, elk met wie
+vandaag haar aansturende rol vervult en waar ze is ingedeeld als dat ergens
+anders is. Een eenheid bedient de domeinen die haar **Bedient** noemt, of de
+scope waarin ze is ingedeeld als ze er geen noemt, en een eenheid onder een
+die een scope bedient, bedient die via haar — die worden geteld in plaats van
+opgesomd. **+ Eenheid** kiest er een uit de hele organisatie: de lijst is
+gegroepeerd per eenheidstype, zegt waar elke eenheid is ingedeeld en wordt
+korter terwijl je typt; een eenheid waarvan het type één domein bedient, of
+die wordt bijgehouden waar je alleen mag lezen, staat erin en zegt waarom je
+haar niet kunt kiezen. Een eenheid toevoegen, of **✕** ernaast, verandert wat
+die eenheid bedient: één stap in de scope die de eenheid bijhoudt, en daarom
+alleen aan jou waar je die scope mag wijzigen — een rol die mensen aanstuurt
+reikt daar niet. Onder de eenheden de **domeineigenaar**: wie de rol vervult
+die de regel *domeineigenaar* van de organisatie noemt, in de bedienende
+eenheid die het hoogst in deze scope is ingedeeld. Die wordt op de dag
+uitgerekend en nooit bewaard. Een klik op de naam van een eenheid opent haar
+waar ze wordt bijgehouden, en haar paneel zegt hetzelfde van de andere kant.
+
 **Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken: één
 zin per ding waarin de organisatie zichzelf tegenspreekt — een naam die twee
 onderdelen allebei definiëren, een verouderde kopie, een applicatie waarvan
@@ -111,7 +130,9 @@ technologielandschap.
 - **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
   domein, programma, team, landschapsscope — een woord voor het scherm, er
   gedraagt zich niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
-  bij**, waarmee je het verplaatst.
+  bij**, waarmee je het verplaatst. Het **Bediend door** erin is dat van het
+  thuis, en elke wijziging ervan wordt weggeschreven zodra je hem maakt, niet
+  met **Opslaan**.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
   bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,
   zijn records uit deze browser. Een werkbestand dat je elders hebt bewaard
@@ -1570,10 +1591,22 @@ staat in de naam, dus u typt over wat het heette en drukt op Enter.
 - **+ belanghebbende**, naast een regel op de rail, zet er een onder; **+
   groep**, onderaan de rail, begint een eigen tak.
 
-**Ondersteund door…** en **Gedaan door…** in het paneel zijn hoe een capability
-ingevuld raakt: vink een applicatie aan en die ondersteunt hem, vink een team
-aan en het is van hen. Elk vinkje is een eigen stap, en de regel onder de naam
-van de capability verandert mee.
+**Ondersteund door…** en **Toegewezen aan** in het paneel zijn hoe een
+capability ingevuld raakt: vink een applicatie aan en die ondersteunt hem;
+**+ Eenheid** onder **Toegewezen aan** maakt een eenheid er verantwoordelijk
+voor, gekozen uit de hele organisatie zoals **Bediend door** van een scope er
+een kiest, met de andere actoren van deze scope na de eenheden. Elk is een
+eigen stap, en de regel onder de naam van de capability verandert mee. De
+toewijzing wordt hier bijgehouden; een eenheid die in een andere scope is
+ingedeeld is het verre eind ervan, en wordt daarvoor hier op geen bord
+getekend. Een eenheid die dit domein niet bedient en ook niet onder een
+eenheid valt die dat wel doet, is gemarkeerd, en is een controle (hieronder).
+**✕** op een label haalt een toewijzing die hier wordt bijgehouden weer weg.
+
+**Toon wie verantwoordelijk is**, in de bovenbalk, noemt op elk gebied, elke
+groep en elke capability de eenheden waaraan het is toegewezen, en markeert
+die waaraan niemand is toegewezen. Het staat uit tot je het aanzet, en alleen
+zolang de pagina open is.
 
 **Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
 erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er
@@ -1895,7 +1928,15 @@ Het onderdeel van een eenheid zegt:
   domeinen bedient wordt ingedeeld in de scope erboven, en haar type moet dat
   toestaan.
 - **Eigenaar van** — elke applicatie die haar noemt als de actor waartoe die
-  hoort — en **Verantwoordelijk voor**, wat haar is toegewezen.
+  hoort — en **Verantwoordelijk voor**, de gebieden, groepen en capabilities
+  die haar zijn toegewezen, met de scope die de toewijzing bijhoudt als dat
+  een andere is. **+ Domein** onder **Bedient** kiest nog een domein, waar haar
+  type er meer dan één toestaat; **+ Gebied of capability** onder
+  **Verantwoordelijk voor** kiest er een uit de hele organisatie, en de
+  toewijzing wordt weggeschreven in de scope die het definieert — die van
+  deze scope als een stap hier, die van een andere als een stap daar, waar je
+  die mag wijzigen. **✕** op een label haalt een toewijzing die hier wordt
+  bijgehouden weg.
 - **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
   en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
   dat niet al iemands tijd is, *waarnemend*, en *jij*. Een rol met te weinig
@@ -1916,8 +1957,11 @@ van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
   een rol met te weinig mensen of boven het maximum, een eenheid ingedeeld
   waar haar type niet mag staan, een die meer domeinen bedient dan het type
   toestaat of eigenaar is van meer applicaties dan de limiet, iemand die nog
-  in een eenheid of rol zit die is beëindigd, en iedereen erin van wie de
-  aandelen samen meer dan al zijn tijd zijn. De home van de organisatie toont
+  in een eenheid of rol zit die is beëindigd, iedereen erin van wie de
+  aandelen samen meer dan al zijn tijd zijn, en een gebied, groep of
+  capability waarvoor ze verantwoordelijk is in een domein dat noch zij noch
+  een eenheid erboven bedient. Een eenheid bedient een domein als ze die scope
+  bedient, een scope erboven of een erbinnen. De home van de organisatie toont
   dezelfde bevindingen voor elke scope.
 
 **Toewijzen** is één stap in de scope die de eenheid bijhoudt: kies de rol, de
@@ -1953,6 +1997,11 @@ Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
 de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst
 toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
 eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
+Wie een scope bedient is de `scopes` van de eenheid, weggeschreven met
+`element.update` in de scope die de eenheid bijhoudt; wie verantwoordelijk is
+voor een capability is een `assigned`-regel, weggeschreven met `relation.add`
+in de scope die hem definieert; en `checks.list` noemt een capability die
+buiten haar domein is toegewezen `check.unitNotServing`.
 
 ### Verandering in de tijd
 

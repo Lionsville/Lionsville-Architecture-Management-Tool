@@ -239,7 +239,15 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       (`applicationOwnersOn`, `domainOwnersOn`);
                                       the records whose fields point at a
                                       person, and the names signatures kept
-                                      (ADR-0036 §2, §8)
+                                      (ADR-0036 §2, §8); a domain's owner off
+                                      the serving unit filed highest in it
+                                      (`domainOwnerOn`)
+                    serving           which units serve a scope, read from
+                                      either end of `unit.scopes`: its own
+                                      scope where it says nothing, through a
+                                      unit above it, the scopes to write to
+                                      add or take one off, and the serving
+                                      unit filed highest (amended 3.6.1)
                     units             the organisation as it is, on a day
                                       (ADR-0036 §3, §4, §12): an assignment, a
                                       unit's slots and holders, a person's load,
@@ -435,7 +443,10 @@ src/business/     The business layer, and the arithmetic over its four trees
                                       the applications the rows name, rolled
                                       up on the sections, the gap on the leaves
                     ui/               SheetPage, MapPage, FunctionInspector,
-                                      captureSheet
+                                      captureSheet; the sheet's bar
+                                      (`SheetBar`) and *Show who is
+                                      responsible* (`Responsible`), over what
+                                      the host hands in (`SheetResponsible`)
 src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
                   and a service's. Read, never drawn; the arithmetic is the
                   model's, because the agent asks for it too.
@@ -630,6 +641,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       file-system monitor, no remote inside
                                       the folder; git 2.26 or newer
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
+                  one thing picked out of a long list to be added
+                  (`PickToAdd`: a *+*, a grouped, searchable combobox),
                   a laid-out page rasterised (`capturePage`), a part that
                   is not in the first download (`lazyPart`): a page behind a
                   card, fetched when it is opened, and every part preloaded
@@ -844,6 +857,10 @@ src/app/          The shell around the editor.
                                       leaving   what leaving ends beyond the
                                       register: a person's assignments, one
                                       step per scope (ADR-0036 §10)
+                                      ServedBy · useServedBy · servedByView
+                                      a scope's *Served by* on its home and
+                                      in its settings, its domain owner, and
+                                      each edit written where the unit is
                     units/            an actor as a unit in its inspector
                                       (ADR-0036 §3, §4): UnitSection, drawn
                                       through `EditorOwnership.unitSection`;
@@ -887,6 +904,13 @@ src/app/          The shell around the editor.
                                       with* and the dialog that declares an
                                       interaction (`Interactions`); making
                                       either view (`useUnitViews`)
+                                      …and the links from either end
+                                      (amended 3.6.1): what the pickers
+                                      offer (`choices`), a link written in
+                                      the scope that keeps it, under its
+                                      rights (`writeIn`), and who is
+                                      responsible on a sheet
+                                      (`sheetResponsible`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)

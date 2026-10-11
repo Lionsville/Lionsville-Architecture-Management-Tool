@@ -1370,6 +1370,55 @@ whole), a plan's moves and the units an interaction is declared with on the
 Conway map, and `diagram.inspect` of either view. A unit's inspector still
 offers the units it may declare it works with by name.
 
+## As built, 3.6.1: each link edited from either end
+
+The amendment's third point, on the screens. Neither field is new and nothing
+is kept twice: who serves a scope is `unit.scopes`, and who answers for an
+area, a grouping or a capability is its `assigned` row.
+
+**A unit serves** the scopes its `scopes` names, or the scope it is filed in
+where it names none; a unit under one that serves a scope serves it through
+that one (`model/serving.ts`). Adding a scope keeps that reading — a unit that
+said nothing goes on serving its own scope beside the new one — and taking
+the last one away leaves it serving its own scope again, so a unit filed in
+the scope it is taken off is not offered the ✕.
+
+**A scope's *Served by*** — on its home and in its settings — lists the units
+that name it, and those filed in it that say nothing and sit under no unit
+that serves it, in the one order for units; the others are counted as
+serving through them. Each says its type, who holds a managing role in it
+today, and where it is filed when that is elsewhere. *+ Unit* picks from the
+organisation's index, grouped by type in rank order, each unit saying where it
+is filed; a unit whose type serves one domain and serves one already, or that
+is kept where the person may only read, is shown and not offered. Adding or
+taking a unit off is `unit.scopes` written as one step in the scope that keeps
+the unit, through the source's repositories and under that scope's own right
+(`app/units/writeIn.ts`): who serves a scope is structure, so a managing
+role's right (§12) does not reach it. The **domain owner** is the rule applied
+to one unit, the serving unit filed highest in the scope — one filed in it
+before one filed elsewhere, then the one with fewest units above it, then the
+one order (`owners.domainOwnerOn`).
+
+**The sheet's *Assigned to*** picks from the same list, with the scope's
+other actors after the units; the row is kept in the open scope, and a unit
+filed elsewhere is its far end (ADR-0012 §5), drawn on no board for it.
+*Show who is responsible*, in the sheet's bar, off by default and the page's
+own, names the units on every area, grouping and capability from their rows
+here and elsewhere, and marks those nobody answers for. A unit's inspector
+keeps *Serves* and *Responsible for*, each with a *+*: a scope picked for
+*Serves* is a step in the unit's session; a capability for *Responsible for*
+is a row written where the capability is defined — the open scope's in its
+session, another's as that scope's step.
+
+**The check** is `check.unitNotServing`: an `assigned` row from a unit there
+on the day to a function whose domain — the scope that defines it, or one
+above or within it, since scopes nest — neither the unit nor a unit above it
+serves. It is about the scope that keeps the row, names the unit and the
+domain, and is read with the organisation's other findings, the open scope's
+rows laid over the index's (`OrganisationAt.assigned`). The agent's tools
+already write both fields — `element.update` with `scopes`, `relation.add`
+with `assigned` — and `checks.list` names the finding; no tool was added.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

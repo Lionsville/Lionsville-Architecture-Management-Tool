@@ -83,6 +83,26 @@ Rolle hat. Ein Bereich, der zeichnet, hat auch eine Karte
 **Dokumentation**. Jede Karte öffnet, was sie zählt; das Schließen der Seite
 bringt Sie hierher zurück.
 
+**Bedient von**, unter den Karten, überall, wo die Organisation Einheiten hat:
+die Einheiten, die diesen Bereich bedienen, in der Reihenfolge ihrer Typen,
+jede mit dem, der heute ihre führende Rolle innehat, und wo sie eingeordnet ist,
+wenn das anderswo ist. Eine Einheit bedient die Domänen, die ihr **Bedient**
+nennt, oder den Bereich, in dem sie eingeordnet ist, wenn sie keine nennt, und
+eine Einheit unter einer, die einen Bereich bedient, bedient ihn über diese —
+sie werden gezählt statt aufgeführt. **+ Einheit** wählt eine aus der ganzen
+Organisation: Die Liste ist nach Einheitentyp gruppiert, sagt, wo jede Einheit
+eingeordnet ist, und wird beim Tippen kürzer; eine Einheit, deren Typ eine
+Domäne bedient, oder die geführt wird, wo Sie nur lesen dürfen, steht darin und
+sagt, warum sie nicht gewählt werden kann. Eine Einheit hinzuzufügen, oder
+**✕** daneben, ändert, was diese Einheit bedient: ein Schritt in dem Bereich,
+der die Einheit führt, und darum nur Ihrer, wo Sie diesen Bereich ändern
+dürfen — eine Rolle, die Personen führt, reicht nicht dorthin. Unter den
+Einheiten der **Domäneneigentümer**: wer die Rolle innehat, die die Regel
+*Domäneneigentümer* der Organisation nennt, in der bedienenden Einheit, die in
+diesem Bereich am höchsten eingeordnet ist. Er wird am Tag ermittelt und nie
+gespeichert. Ein Klick auf den Namen einer Einheit öffnet sie dort, wo sie
+geführt wird, und ihr Inspektor sagt dasselbe vom anderen Ende.
+
 **Braucht Aufmerksamkeit**, unter den Karten, sobald es etwas gibt: ein Satz je
 Sache, in der sich die Organisation selbst widerspricht — ein Name, den zwei
 Bereiche beide definieren, eine veraltete Kopie, eine Anwendung, von der niemand
@@ -118,7 +138,9 @@ Unternehmenskarte oder eine Technologielandschaft.
   (Organisation, Domäne, Programm, Team, Landschaftsbereich — ein Wort für den
   Bildschirm,
   nichts verhält sich anders), einen Auftraggeber, eine Beschreibung, Links und
-  **Abgelegt unter**, was ihn verschiebt.
+  **Abgelegt unter**, was ihn verschiebt. Sein **Bedient von** ist das der
+  Startseite, und jede Änderung daran wird geschrieben, sobald Sie sie machen,
+  nicht mit **Speichern**.
 - **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und
   die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
   einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo
@@ -1666,11 +1688,23 @@ es hieß, und Enter drücken.
 - **+ Beteiligter**, neben einem Eintrag der Leiste, fügt einen darunter hinzu;
   **+ Gruppe**, am Fuß der Leiste, beginnt einen eigenen Zweig.
 
-**Unterstützt von…** und **Erledigt von…** im Inspektor sind, wie eine Fähigkeit
-abgedeckt wird: Haken Sie eine Anwendung an, und sie unterstützt diese
-Fähigkeit; haken Sie ein Team an, und sie ist dessen. Jeder Haken ist ein
-eigener Schritt, und die Zeile unter dem Namen der Fähigkeit ändert sich, während
-Sie es tun.
+**Unterstützt von…** und **Zugewiesen an** im Inspektor sind, wie eine
+Fähigkeit abgedeckt wird: Haken Sie eine Anwendung an, und sie unterstützt diese
+Fähigkeit; **+ Einheit** unter **Zugewiesen an** macht eine Einheit für sie
+verantwortlich, gewählt aus der ganzen Organisation, wie **Bedient von** eines
+Bereichs eine wählt, mit den anderen Akteuren dieses Bereichs nach den
+Einheiten. Jedes ist ein eigener Schritt, und die Zeile unter dem Namen der
+Fähigkeit ändert sich, während Sie es tun. Die Zuweisung wird hier geführt;
+eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende
+und wird dafür hier auf keiner Tafel gezeichnet. Eine Einheit, die weder diese
+Domäne bedient noch unter einer Einheit steht, die es tut, ist markiert und
+eine Prüfung (unten). **✕** auf einem Etikett nimmt eine hier geführte
+Zuweisung wieder weg.
+
+**Zeigen, wer verantwortlich ist**, in der oberen Leiste, nennt auf jedem
+Gebiet, jeder Gruppe und jeder Fähigkeit die Einheiten, denen es zugewiesen ist,
+und markiert die, denen niemand zugewiesen ist. Es ist aus, bis Sie es
+einschalten, und nur, solange die Seite offen ist.
 
 **Löschen**, am Fuß des Inspektors, entfernt, was ausgewählt ist, und jede
 Zeile, die darauf endete. Es wird abgelehnt, solange etwas darin steckt, und
@@ -2007,7 +2041,15 @@ Der Abschnitt einer Einheit sagt:
   Einheit, die mehrere Domänen bedient, wird im Bereich darüber eingeordnet,
   und ihr Typ muss es erlauben.
 - **Besitzt** — jede Anwendung, die sie als den Akteur nennt, zu dem sie
-  gehört — und **Verantwortlich für**, was ihr zugewiesen ist.
+  gehört — und **Verantwortlich für**, die Gebiete, Gruppen und Fähigkeiten,
+  die ihr zugewiesen sind, mit dem Bereich, der die Zuweisung führt, wo das
+  ein anderer ist. **+ Domäne** unter **Bedient** wählt eine weitere Domäne,
+  wo ihr Typ mehr als eine erlaubt; **+ Gebiet oder Fähigkeit** unter
+  **Verantwortlich für** wählt eins aus der ganzen Organisation, und die
+  Zuweisung wird in dem Bereich geschrieben, der es definiert — die dieses
+  Bereichs als Schritt hier, die eines anderen als Schritt dort, wo Sie ihn
+  ändern dürfen. **✕** auf einem Etikett nimmt eine hier geführte Zuweisung
+  weg.
 - **Rollen, heute**: jede Rolle, die ihr Typ hat, mit der gewünschten Anzahl,
   und wer sie heute innehat — mit dem Namen aus dem Register, dem Anteil, wo
   es nicht die ganze Zeit ist, *kommissarisch* und *Sie*. Eine Rolle mit zu
@@ -2030,9 +2072,12 @@ wenn er noch kommt.
   eine Rolle mit zu wenigen Personen oder über ihrem Maximum, eine Einheit, wo
   ihr Typ nicht stehen darf, eine, die mehr Domänen bedient, als ihr Typ
   erlaubt, oder mehr Anwendungen besitzt als ihr Limit, jemand, der noch in
-  einer beendeten Einheit oder Rolle steht, und jeder darin, dessen Anteile
-  zusammen mehr als die ganze Zeit sind. Die Startseite der Organisation zeigt
-  dieselben Befunde für jeden Bereich.
+  einer beendeten Einheit oder Rolle steht, jeder darin, dessen Anteile
+  zusammen mehr als die ganze Zeit sind, und ein Gebiet, eine Gruppe oder eine
+  Fähigkeit, für die sie verantwortlich ist, in einer Domäne, die weder sie
+  noch eine Einheit über ihr bedient. Eine Einheit bedient eine Domäne, wenn
+  sie diesen Bereich bedient, einen darüber oder einen darin. Die Startseite
+  der Organisation zeigt dieselben Befunde für jeden Bereich.
 
 **Zuordnen** ist ein Schritt in dem Bereich, der die Einheit führt: Wählen Sie
 die Rolle, die Person — gesucht im Register, *Sie* markiert —, den Anteil, den
@@ -2067,7 +2112,11 @@ Ein Agent macht einen Akteur mit `element.update` (`unitTypeId`, `scopes`,
 den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
 ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
 der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
-zusammen.
+zusammen. Wer einen Bereich bedient, ist das `scopes` der Einheit, geschrieben
+mit `element.update` in dem Bereich, der die Einheit führt; wer für eine
+Fähigkeit verantwortlich ist, ist eine `assigned`-Zeile, geschrieben mit
+`relation.add` in dem Bereich, der sie definiert; und `checks.list` nennt eine
+Fähigkeit, die außerhalb ihrer Domäne zugewiesen ist, `check.unitNotServing`.
 
 ### Veränderung über die Zeit
 

@@ -74,6 +74,24 @@ role. A scope that draws has a **Documentation**
 card too. Each card opens what it counts; closing the page brings you back
 here.
 
+**Served by**, under the cards, wherever the organisation has units: the
+units that serve this scope, in the order of their types, each with who holds
+its managing role today and where it is filed when that is somewhere else. A
+unit serves the domains its **Serves** names, or the scope it is filed in
+where it names none, and a unit under one that serves a scope serves it
+through that one — those are counted rather than listed. **+ Unit** picks one
+from the whole organisation: the list is grouped by unit type, says where each
+unit is filed, and narrows as you type; a unit whose type serves one domain,
+or that is kept where you may only read, is listed and says why it cannot be
+picked. Adding a unit, or **✕** beside one, changes what that unit serves: one
+step in the scope that keeps the unit, which is why it is only yours to make
+where you may change that scope — a role that manages people does not reach
+it. Under the units, the **domain owner**: whoever holds the role the
+organisation's *domain owner* rule names, in the serving unit filed highest in
+this scope. It is worked out on the day and never kept. Pressing a unit's
+name opens it where it is kept, and its inspector says the same thing from
+the other end.
+
 **Needs attention**, under the cards, when there is anything to attend to:
 one sentence per thing the organisation contradicts about itself — a name two
 scopes both define, a copy gone stale, an application nobody has said whose it
@@ -105,7 +123,9 @@ landscape.
 - **Settings…** on any row holds its name, what it is (organisation, domain,
   programme, team, landscape scope — a word for the screen, nothing behaves
   differently),
-  a client, a description, links, and **Filed under**, which moves it.
+  a client, a description, links, and **Filed under**, which moves it. Its
+  **Served by** is the home's, and each change to it is written as you make
+  it, not with **Save**.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,
   its records from this browser. A working file you saved elsewhere is not
@@ -1455,10 +1475,19 @@ you type over what it was called and press Enter.
 - **+ stakeholder**, beside a rail entry, adds one under it; **+ group**, at the
   foot of the rail, starts a branch of its own.
 
-**Supported by…** and **Done by…** in the inspector are how a capability gets
-covered: tick an application and it supports this capability, tick a team and it
-is theirs. Each tick is a step of its own, and the line under the capability's
-name changes as you go.
+**Supported by…** and **Assigned to** in the inspector are how a capability
+gets covered: tick an application and it supports this capability; **+ Unit**
+under **Assigned to** makes a unit responsible for it, picked from the whole
+organisation the way a scope's **Served by** picks one, with this scope's other
+actors after the units. Each is a step of its own, and the line under the
+capability's name changes as you go. The row is kept here; a unit filed in
+another scope is its far end, and is not drawn on a board here for it. A unit
+that serves neither this domain nor sits under a unit that does is marked, and
+is a check (below). **✕** on a chip takes a row kept here off again.
+
+**Show who is responsible**, in the top bar, names on every area, grouping and
+capability the units it is assigned to, and marks the ones nobody is. It is off
+until you turn it on, and only for as long as the page is open.
 
 **Delete**, at the foot of the inspector, removes what is selected and every row
 that ended on it. It is refused while anything is inside it, and says how much:
@@ -1753,7 +1782,13 @@ A unit's section says:
   serves, that scope unless you say otherwise. A unit that serves several
   domains is filed in the scope above them, and its type must allow it.
 - **Owns** — every application that names it as the actor it belongs to — and
-  **Responsible for**, what it is assigned.
+  **Responsible for**, the areas, groupings and capabilities it is assigned,
+  with the scope that keeps the row where it is another. **+ Domain** under
+  **Serves** picks another domain, where its type allows more than one;
+  **+ Area or capability** under **Responsible for** picks one from the whole
+  organisation, and the row is written in the scope that defines it — this
+  one's as a step here, another's as a step there, where you may change it.
+  **✕** on a chip takes a row kept here off.
 - **Roles, today**: each role its type holds, with how many it wants, and who
   holds it today — by name from the register, with their share where it is not
   all of their time, *acting*, and *you*. A role short of people shows
@@ -1774,8 +1809,11 @@ is still to come.
   role short of people or over its maximum, a unit filed where its type may
   not sit, one serving more domains than its type allows or owning more
   applications than its limit, someone still in a unit or a role that has
-  ended, and anyone in it whose shares add up to more than all of their time.
-  The organisation's home lists the same findings for every scope.
+  ended, anyone in it whose shares add up to more than all of their time, and
+  an area, grouping or capability it is responsible for in a domain that
+  neither it nor a unit above it serves. A unit serves a domain when it serves
+  that scope, a scope above it or one within it. The organisation's home lists
+  the same findings for every scope.
 
 **Assigning** someone is one step in the scope that keeps the unit: choose the
 role, the person — searched in the register, *you* marked — their share, the
@@ -1805,7 +1843,11 @@ An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`), lists who holds what with `assignments.list` — across the tree,
 and for one unit its roles and who manages it — and assigns and ends with
 `assignment.add` and `assignment.end` in the scope that keeps the unit. It
-never forgets, removes or merges anyone.
+never forgets, removes or merges anyone. Who serves a scope is the unit's
+`scopes`, written with `element.update` in the scope that keeps the unit; who
+is responsible for a capability is an `assigned` row, written with
+`relation.add` in the scope that defines it; and `checks.list` names a
+capability assigned outside its domain as `check.unitNotServing`.
 
 ### Change over time
 
