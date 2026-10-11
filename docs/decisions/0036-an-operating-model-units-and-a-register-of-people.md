@@ -11,7 +11,9 @@
   implemented, 11 October 2026, with the screens brought to what this
   record's design drew (*As built, 3.6.1*, below). Amended again, 11 October
   2026: findings you can act on (*Amended*, below); its catalogue as built
-  (*As built, 3.6.1: a catalogue of checks*, below)
+  (*As built, 3.6.1: a catalogue of checks*, below), and a finding marked as
+  intended with the scope format at 12 (*As built, 3.6.1: marked as
+  intended*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1156,6 +1158,21 @@ one field, three inputs to one function and one check.
   | review | analysis | `causeExplainsObservationBelow` |
   | note | the landscape | `notDrawn`, `proposal` |
   | note | teams and systems | `interactionUnused` |
+* **Marked as intended (§1).** A review or a note can be marked as intended,
+  with a reason that is asked for and not required; a fix cannot, because
+  the model contradicts itself and the answer to that is in the model. A
+  mark is a record in the model — it is about the model, and everybody sees
+  it — kept in the scope of the finding's first subject as `{ check, key,
+  reason?, on }`: a step with undo, in the Activity list and the history.
+  `key` is the instance, made of its subjects' ids, so a subject changed so
+  the key no longer matches brings the finding back. A mark is taken back
+  from the check's list. An agent reads marks and never makes one, so an
+  agent cannot silence a check. Marks are kept under `_checks/`, which no
+  scope can collide with, so **the scope format goes from 11 to 12**: an 11
+  reads as a 12 with nothing marked, and the pass that brings it up moves no
+  scope. Format 11 is already public, so its meaning is not changed after the
+  fact; the number is what makes a build that reads 11 refuse a 12, rather
+  than save over `_checks/` without knowing it is there.
 
 ## As built, 3.6.1: the Conway map's table, and what a plan leaves to declare
 
@@ -1669,6 +1686,70 @@ person*, under the list, opens the answers, each with *Take back*. The fold
 is not there when no pair is left. And the page's two paragraphs of
 introduction are one muted line with *About the register*, and *Roles today*
 one line: the first role and how many more, every one in the person's panel.
+
+## As built, 3.6.1: marked as intended
+
+The amendment's marks, in core, with no screen yet: the record, its two
+commands, the folder and the index, and what the agent reads. The Checks page
+and *Mark as intended…* are drawn on it.
+
+**The record** is `CheckMark` (`model/checkMarks.ts`): `check`, `key`,
+`reason` where one was given and `on`. Its id on the model is the check and
+the key (`checkMarkId`), so a scope holds one mark of an instance at most; a
+list on the scope's model, `checkMarks`, in the order the marks were made.
+**`findingKey`** says each kind's key from its subjects' ids, one rule per
+kind, for every shape a finding is worked out in — the tree's and the
+technology rows' (said about a scope), the dates' and the Conway map's. The
+key is the record the finding is about, then the records that make it this
+instance: the unit and the role of a vacancy, the responsibility and the
+roles accountable for it, the service and the applications using it from
+outside, the cause, the scope below and its observation, the person over all
+of their time. An interface and an interaction are the row and its two ends,
+never the columns the map drew them in, so a mark holds whichever way the
+map is grouped; the map's over-limit is the organisation's instance. A plan
+overdue is the plan and the day it was due, so a plan given another end and
+overdue again is asked again. A fix's key may be shared by two of its
+instances, and is never marked.
+
+**Two commands**, each the other's inverse (`model/commands/checkMarks.ts`):
+`checkMark.add`, refused `command.markFix` for a fix or a check the catalogue
+does not know, whoever sends it, and `command.taken` for an instance marked
+already; and `checkMark.remove`, by id. A reason said again is a mark taken
+back and made again, which is what a restore does. The Activity list names
+the check, in the language on screen, and not the instance; the diff names
+what the first subject is called. A mark is a record of its own in a thing's
+history and in a restore, which makes no fix's mark again.
+
+**On disk**: `_checks/marks.json` in each scope that keeps marks
+(`adapters/folder/format/checkMarkFile.ts`), under format 12. A row of a fix,
+of a check this build does not know, or without a key or a day is passed
+over, so a model never holds a mark that cannot be made — which is also what
+keeps taking one back undoable; a build that adds a check whose marks an
+earlier one must keep turns the number again. A file that is not a list
+opens the scope to be read and not written. A folder at 11 reads as a 12 with
+nothing marked and the pass moves no scope, a scope called `checks` included;
+a folder at 12 is one past what a 3.6.0 build reads, so that build refuses it,
+lists it as unreadable and saves nothing over it. The working file carries
+the folder; browser storage and memory keep the list in the model, so their
+content format stays 2.
+
+**The index** reads each scope's marks with its records and lists them,
+`checkMarks()`, with the scope that keeps each — in every store, held by the
+organisation index's contract. **`splitMarked`** splits any list of findings
+into `shown` and `marked`, each in the order it came: a finding said about a
+scope is silenced by its own scope's marks, one of the dates' by those of the
+scope given, a Conway map's by a mark wherever it is kept, and a mark on a fix
+by nothing. `projects/checkMarks.ts` lays the open scope's session over the
+index (`checkMarksHere`) and says where a finding's mark is kept
+(`checkMarkScope`): the scope the finding is about, the scope the dates were
+checked in, or where the map's row is kept and its application or unit
+defined.
+
+**The agent.** `checks.list` answers what is still to look at in `total` and
+`some`, and what a person marked apart, under `marked`, each finding with its
+`mark` — the day and the reason. No tool makes a mark or takes one back, and
+the tool's description says so; the refusal's sentence is there for a step
+that reaches the writer from elsewhere.
 
 ## Open
 
