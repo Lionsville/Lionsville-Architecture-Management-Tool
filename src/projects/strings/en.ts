@@ -55,6 +55,7 @@ export const EN = {
   'check.assignmentEnded': 'Someone still holds {detail} in {name}, after the unit or the role has ended',
   'check.unitTypeEnded': '{name} is still a {detail}, a kind of unit that has ended: give it another type, or end it',
   'check.personOverloaded': '{name} holds {count}% across their roles',
+  'check.unitNotServing': '{detail} is responsible for {name}, but neither it nor a unit above it serves {scope}',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -108,6 +109,8 @@ export const EN = {
   'check.short.unitTypeEnded.other': '{count} units of a type that has ended',
   'check.short.personOverloaded.one': '{count} person over 100%',
   'check.short.personOverloaded.other': '{count} people over 100%',
+  'check.short.unitNotServing.one': '{count} capability with a unit outside its domain',
+  'check.short.unitNotServing.other': '{count} capabilities with a unit outside their domain',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

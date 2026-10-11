@@ -11,14 +11,16 @@
  * made a second ago is a holder, fills a vacancy and counts towards a
  * person's load at once — and everything kept elsewhere is the index's. The
  * open scope's plans are laid over the tree's the same way, so a move just
- * put on a plan moves the unit on its day at once (ADR-0036 §6).
+ * put on a plan moves the unit on its day at once (ADR-0036 §6). So are its
+ * `assigned` rows: a unit just made responsible for a capability here is
+ * checked against the domains it serves at once (3.6.1).
  */
 import type { HostModel } from '../../model/hostModel'
 import { isUnit } from '../../model/units'
 import type { Assignment } from '../../model/units'
 import { ownsOf } from '../../model/conway'
 import { organisationAt } from '../../projects/checks'
-import type { OrganisationAt } from '../../projects/checks'
+import type { AssignedRow, OrganisationAt } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -55,5 +57,25 @@ export function organisationHere(index: ScopeIndex, scope: ScopePath, model: Hos
     },
     assignmentAt: (assignment) => (assignmentsHere.has(assignment) ? scope : base.assignmentAt(assignment)),
     owns,
+    assigned: () => [...(base.assigned?.() ?? []).filter((row) => row.scope !== scope), ...assignedHere(index, scope, model)],
   }
+}
+
+/**
+ * The open scope's `assigned` rows to a function, as its session has them:
+ * the function this scope defines is this scope's, a stand-in's is its
+ * master's, and one only named here is the tree's.
+ */
+function assignedHere(index: ScopeIndex, scope: ScopePath, model: HostModel): AssignedRow[] {
+  const rows: AssignedRow[] = []
+  for (const relation of model.relations) {
+    if (relation.type !== 'assigned') continue
+    const held = model.elements.find((element) => element.id === relation.targetId)
+    const entry = index.lookup(relation.targetId)
+    const kind = held?.kind ?? entry?.kind
+    const defined = held && held.ref === undefined ? scope : entry?.master ?? held?.ref
+    if (kind !== 'function' || defined === undefined) continue
+    rows.push({ scope, relation, function: { id: relation.targetId, name: held?.name ?? entry?.name ?? relation.targetId, scope: defined } })
+  }
+  return rows
 }

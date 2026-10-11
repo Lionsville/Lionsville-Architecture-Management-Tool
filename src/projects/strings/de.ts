@@ -40,6 +40,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.assignmentEnded': 'Jemand hat {detail} in {name} noch inne, obwohl die Einheit oder die Rolle beendet ist',
   'check.unitTypeEnded': '{name} ist noch vom Typ {detail}, einer Art Einheit, die beendet ist: Geben Sie ihr einen anderen Typ, oder beenden Sie sie',
   'check.personOverloaded': '{name} hat über alle Rollen {count} % inne',
+  'check.unitNotServing': '{detail} ist für {name} verantwortlich, aber weder diese Einheit noch eine über ihr bedient {scope}',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -87,6 +88,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.unitTypeEnded.other': '{count} Einheiten eines beendeten Typs',
   'check.short.personOverloaded.one': '{count} Person über 100 %',
   'check.short.personOverloaded.other': '{count} Personen über 100 %',
+  'check.short.unitNotServing.one': '{count} Fähigkeit bei einer Einheit außerhalb ihrer Domäne',
+  'check.short.unitNotServing.other': '{count} Fähigkeiten bei Einheiten außerhalb ihrer Domäne',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

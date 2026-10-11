@@ -24,7 +24,9 @@ import type { OperatingRule, OperatingRuleKind, RoleId } from './operatingModel'
 import type { PersonId } from './person'
 import { isBlankRef } from './person'
 import type { DesignElement, ElementId } from './types'
-import { personOf, roleOn, runsOn, unitOn } from './units'
+import { servingUnitFiledHighest } from './serving'
+import type { FiledIn } from './serving'
+import { organisationOn, personOf, roleOn, runsOn, unitOn } from './units'
 import type { Assignment, Organisation } from './units'
 
 /** An owner worked out from a rule: the person, and the role and unit that make them it. */
@@ -84,6 +86,27 @@ export function domainOwnersOn(
   return organisation.units
     .filter((unit) => (unit.scopes ?? [filedIn(unit.id)]).includes(scope))
     .flatMap((unit) => holdersIn(organisation, roleId, unit.id, day))
+}
+
+/**
+ * A domain's owner as its home says it (ADR-0036, amended 11 October 2026):
+ * the rule applied to one unit, the serving unit filed highest in the scope
+ * (`serving.servingUnitFiledHighest`) — so the owner of a domain is whoever
+ * holds the role in the unit that answers for it, not in every unit that
+ * also serves it. The unit, where one serves the scope, and its holders that
+ * day: none where the organisation has no rule or the role is vacant.
+ */
+export function domainOwnerOn(
+  organisation: Organisation,
+  rules: readonly OperatingRule[] | undefined,
+  scope: string,
+  day: string,
+  filedIn: FiledIn,
+): { unitId?: ElementId; owners: WorkedOutOwner[] } {
+  const unit = servingUnitFiledHighest(organisation, scope, day, filedIn)
+  if (!unit) return { owners: [] }
+  const on = organisationOn(organisation, day)
+  return { unitId: unit.id, owners: domainOwnersOn({ ...on, units: on.units.filter((one) => one.id === unit.id) }, rules, scope, day, filedIn) }
 }
 
 /**

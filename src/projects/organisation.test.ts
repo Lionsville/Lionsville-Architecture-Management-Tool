@@ -211,3 +211,74 @@ describe('what the organisation contradicts, from the index', () => {
     expect(findingSentence(found[3], s, () => '')).toBe('pe-femke holds 150% across their roles')
   })
 })
+
+describe('a capability assigned to a unit outside its domain', () => {
+  /**
+   * The organisation keeps a top-level Data cluster serving Shipping by name;
+   * Shipping keeps its domain, a team under it and a sheet's capabilities;
+   * Warehouse keeps Robotics, which says nothing and so serves Warehouse.
+   */
+  const fn = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
+    id, kind: 'function', name, lifecycle: 'live', isManaged: false, aspects: {}, ...over,
+  })
+  const assigned = (id: string, sourceId: string, targetId: string) => ({ id, type: 'assigned' as const, sourceId, targetId })
+  const models = (): ScopeModel[] => [
+    {
+      path: '',
+      model: {
+        elements: [actor('data', { unitTypeId: 'ut-domain', scopes: ['shipping'] }), fn('serve', 'Serve customers')],
+        relations: [assigned('r-0', 'robotics', 'serve')],
+        unitTypes: [domain, team], roles,
+      },
+    },
+    {
+      path: 'shipping',
+      model: {
+        elements: [
+          actor('shipping', { unitTypeId: 'ut-domain' }),
+          actor('tracking', { unitTypeId: 'ut-team', parentId: 'shipping' }),
+          fn('plan', 'Plan a route'), fn('loads', 'Optimise loads'), fn('track', 'Track a shipment'), fn('price', 'Price freight'),
+        ],
+        relations: [
+          assigned('r-1', 'tracking', 'track'), assigned('r-2', 'robotics', 'loads'),
+          assigned('r-3', 'data', 'plan'), assigned('r-4', 'partner', 'price'),
+        ],
+      },
+    },
+    { path: 'warehouse', model: { elements: [actor('robotics', { unitTypeId: 'ut-team' })], relations: [] } },
+  ]
+
+  it('is a finding about the scope that keeps the row, naming the unit and the domain', () => {
+    const found = organisationFindings(indexScopes(models()), DAY).filter((one) => one.key === 'check.unitNotServing')
+    expect(found).toEqual([{
+      key: 'check.unitNotServing', scope: 'shipping', id: 'loads', name: 'Optimise loads', detail: 'Robotics',
+      fields: ['robotics', 'r-2'], scopes: ['shipping'],
+    }])
+    expect(findingSentence(found[0], translator('en'), (path) => (path === 'shipping' ? 'Shipping' : path))).toBe(
+      'Robotics is responsible for Optimise loads, but neither it nor a unit above it serves Shipping',
+    )
+  })
+
+  it('is nothing for a unit serving the domain through the unit above it, by name from elsewhere, or a capability of the whole organisation', () => {
+    const found = organisationFindings(indexScopes(models()), DAY).filter((one) => one.key === 'check.unitNotServing')
+    expect(found.map((one) => one.id)).not.toContain('track')
+    expect(found.map((one) => one.id)).not.toContain('plan')
+    expect(found.map((one) => one.id)).not.toContain('serve')
+    // An actor that is not a unit is not asked.
+    expect(found.map((one) => one.id)).not.toContain('price')
+  })
+
+  it('is nothing once a plan moves the unit under one that serves the domain', () => {
+    const moved = models()
+    moved[0].model = {
+      ...moved[0].model,
+      transitions: [{
+        id: 'tr-1', number: 1, title: 'Robotics to shipping', status: 'agreed', elements: [], decisions: [], milestones: [], body: '',
+        moves: [{ unitId: 'robotics', parentId: 'shipping', on: '2026-11-01' }],
+      }],
+    }
+    const index = indexScopes(moved)
+    expect(organisationFindings(index, DAY).some((one) => one.key === 'check.unitNotServing')).toBe(true)
+    expect(organisationFindings(index, '2026-11-02').some((one) => one.key === 'check.unitNotServing' && one.id === 'loads')).toBe(false)
+  })
+})

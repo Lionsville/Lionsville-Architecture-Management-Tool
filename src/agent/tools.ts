@@ -565,7 +565,9 @@ const SPECS = [
       + 'check.accountability (a responsibility not exactly one role\'s A) and check.unitTypeNowhere (a unit type '
       + 'neither at the top nor in a unit type that sits anywhere, so no unit of it can be placed). The organisation\'s own (ADR-0036): '
       + 'check.roleVacant, check.roleOverMax, check.unitMisplaced, check.unitSpans, check.unitOverLimit, '
-      + 'check.assignmentEnded, check.unitTypeEnded and check.personOverloaded, read on a day — today, or the day '
+      + 'check.assignmentEnded, check.unitTypeEnded, check.personOverloaded and check.unitNotServing (an area, grouping or '
+      + 'capability assigned to a unit that serves neither its domain nor sits under a unit that does; the unit in detail), '
+      + 'read on a day — today, or the day '
       + 'given as on, with every plan\'s moves of that day. A finding is never a refusal and '
       + 'never a reason a save fails.',
     inputSchema: {

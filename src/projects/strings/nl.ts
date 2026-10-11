@@ -40,6 +40,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.assignmentEnded': 'Iemand vervult nog {detail} in {name}, terwijl de eenheid of de rol is beëindigd',
   'check.unitTypeEnded': '{name} is nog van het type {detail}, een soort eenheid die is beëindigd: geef haar een ander type, of beëindig haar',
   'check.personOverloaded': '{name} vervult {count}% over al zijn of haar rollen',
+  'check.unitNotServing': '{detail} is verantwoordelijk voor {name}, maar noch die eenheid noch een eenheid erboven bedient {scope}',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -87,6 +88,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.unitTypeEnded.other': '{count} eenheden van een beëindigd type',
   'check.short.personOverloaded.one': '{count} persoon boven 100%',
   'check.short.personOverloaded.other': '{count} personen boven 100%',
+  'check.short.unitNotServing.one': '{count} capability bij een eenheid buiten het domein',
+  'check.short.unitNotServing.other': '{count} capabilities bij een eenheid buiten het domein',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

@@ -37,17 +37,18 @@
  */
 import type { StringKey, Translate } from '../i18n/strings'
 import { OWNER_DETAIL } from '../model'
-import type { DesignElement, ElementId, OwnerDetailField } from '../model'
+import type { DesignElement, ElementId, OwnerDetailField, Relation } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { causeLabel, liveCauses } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
 import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
-import { unitFindings } from '../model/units'
+import { isUnit, unitFindings, unitsOn } from '../model/units'
 import { unitTypeLanes } from '../model/unitOrder'
+import { servesOn } from '../model/serving'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
-import { ancestorScopes } from './scopePath'
+import { ancestorScopes, isWithinScope } from './scopePath'
 import type { ScopePath } from './scopePath'
 
 /**
@@ -124,6 +125,14 @@ export type CheckKey =
   | 'check.assignmentEnded'
   | 'check.unitTypeEnded'
   | 'check.personOverloaded'
+  /**
+   * An area, a grouping or a capability assigned to a unit that serves
+   * neither its domain — the scope that defines it, or one above or below
+   * that — nor sits under a unit that does (ADR-0036, amended 11 October
+   * 2026). About the scope that keeps the `assigned` row; the unit in
+   * `detail` and `fields`, the domain in `scopes`.
+   */
+  | 'check.unitNotServing'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -161,6 +170,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.assignmentEnded': 'check.assignmentEnded',
   'check.unitTypeEnded': 'check.unitTypeEnded',
   'check.personOverloaded': 'check.personOverloaded',
+  'check.unitNotServing': 'check.unitNotServing',
 }
 
 /**
@@ -232,6 +242,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.assignmentEnded': { one: 'check.short.assignmentEnded.one', other: 'check.short.assignmentEnded.other' },
   'check.unitTypeEnded': { one: 'check.short.unitTypeEnded.one', other: 'check.short.unitTypeEnded.other' },
   'check.personOverloaded': { one: 'check.short.personOverloaded.one', other: 'check.short.personOverloaded.other' },
+  'check.unitNotServing': { one: 'check.short.unitNotServing.one', other: 'check.short.unitNotServing.other' },
 }
 
 /**
@@ -658,6 +669,28 @@ export type OrganisationAt = {
    * there by their lifecycle that day (ADR-0009); with none, every one.
    */
   owns: (unitId: ElementId, day?: string) => number
+  /**
+   * Every `assigned` row from an actor to an area, a grouping or a
+   * capability, where it is kept and where the function is defined (3.6.1):
+   * what `check.unitNotServing` reads. Absent where nobody gathered them.
+   */
+  assigned?: () => readonly AssignedRow[]
+}
+
+/** An `assigned` row to a function, the scope that keeps it, and the function's name and the scope that defines it. */
+export type AssignedRow = {
+  scope: ScopePath
+  relation: Relation
+  function: { id: ElementId; name: string; scope: ScopePath }
+}
+
+/** Every `assigned` row to a function the index knows, wherever it is kept. */
+export function assignedRowsOf(index: ScopeIndex): AssignedRow[] {
+  return index.entries()
+    .filter((entry) => entry.kind === 'function' && entry.master !== undefined)
+    .flatMap((entry) => index.rowsTo(entry.id, ['assigned']).map(({ scope, relation }) => ({
+      scope, relation, function: { id: entry.id, name: entry.name, scope: entry.master! },
+    })))
 }
 
 
@@ -670,6 +703,7 @@ export function organisationAt(index: ScopeIndex): OrganisationAt {
     unitAt: (id) => units.get(id),
     assignmentAt: (assignment) => assignments.get(assignment),
     owns: ownsOf(index.register()),
+    assigned: () => assignedRowsOf(index),
   }
 }
 
@@ -687,7 +721,36 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string, canonica
     typeName: new Map(organisation.unitTypes.map((type) => [type.id, type.name])),
     roleName: new Map(organisation.roles.map((role) => [role.id, role.name])),
   }
-  return unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said))
+  return [
+    ...unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said)),
+    ...notServingFindings(at, day),
+  ]
+}
+
+/**
+ * Every function assigned to a unit there on the day that serves neither its
+ * domain nor sits under a unit that does. A domain is served by a unit that
+ * serves it, a scope above it — the organisation, for one — or a scope
+ * within it: scopes nest, and a unit for part of a domain answers inside it.
+ */
+function notServingFindings(at: OrganisationAt, day: string): Finding[] {
+  const rows = at.assigned?.() ?? []
+  if (rows.length === 0) return []
+  const { organisation } = at
+  const units = new Map(unitsOn(organisation, day).filter(isUnit).map((unit) => [unit.id, unit]))
+  const filedIn = (id: ElementId) => at.unitAt(id)?.scope
+  const found: Finding[] = []
+  for (const { scope, relation, function: held } of rows) {
+    const unit = units.get(relation.sourceId)
+    if (!unit) continue
+    const covers = (served: string) => isWithinScope(served, held.scope) || isWithinScope(held.scope, served)
+    if (servesOn(organisation, unit.id, covers, day, filedIn)) continue
+    found.push({
+      key: 'check.unitNotServing', scope, id: held.id, name: held.name, detail: unit.name,
+      fields: [unit.id, relation.id], scopes: [held.scope],
+    })
+  }
+  return found
 }
 
 /** What a finding of the organisation is said with: where each unit and assignment is kept, and what things are called. */
