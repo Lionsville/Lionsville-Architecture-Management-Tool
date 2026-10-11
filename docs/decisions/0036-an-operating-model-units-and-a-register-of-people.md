@@ -5,7 +5,9 @@
   assignments, change over time, names as references, the two views and the
   `interacts` row, the calls a review left open, and a managing role's right
   on the screens (*As built*, below); implemented, 11 October 2026. What a
-  build with accounts adds (§14) is that build's own
+  build with accounts adds (§14) is that build's own. Amended, 11 October
+  2026: the structure drawn, libraries brought in as a choice, links from
+  either end, and a large organisation (*Amended*, below); not yet built
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1034,6 +1036,63 @@ one person under every merged id, and hands it as
 not wherever the register may be written. And a unit's section says who
 manages it may change its people, where the source grants the right
 (`PeopleRegisterAccess.managingRight`), rather than that it grants nothing.
+
+## Amended, 11 October 2026 — the structure drawn, libraries brought in as a choice, links from either end, and a large organisation
+
+*Accepted 11 October 2026; not yet built.* A look at the screens of what was
+built found the model right and the pages short of it: the unit types sat in
+a grid in the order they arrived, with where each may sit said only in a
+caption; a library was a list of tick boxes, with nothing to say what a type
+holds or where it lands; a scope and a capability could be tied to a unit
+only from the unit; and a chart of seventy units could neither fold nor keep
+any order but the alphabet. None of this changes a record's meaning. It adds
+one field, three inputs to one function and one check.
+
+* **The structure is drawn in lanes (§2).** A unit type's lane is the longest
+  path from the organisation, which is lane 0, through `within`; the
+  arithmetic is `model/`'s, so a check and the agent read the same lanes the
+  page draws. Each type is drawn once, with a line from every place it may
+  sit, and a line that skips a lane runs along a rail above the cards, where
+  no card hides it: a type that may sit at the top or inside another shows
+  both. **`UnitType.order`** is the order within a lane — the organisation's
+  own, moved on the page, never a difference *compare* reports — with the
+  name breaking ties; arrival order goes. A type that sits nowhere — neither
+  at the top nor within a type — is a finding, because no unit can be made of
+  it.
+* **A library is brought in as a choice (§5).** The library is drawn as its
+  own structure, in the same lanes, read-only, and what a step will write is
+  shown before it is written. `bringIn` takes three more inputs: **`names`**
+  (an entry and what it is called here), **`placements`** (an entry and the
+  unit types it sits in, or the top) and **`reuse`** (an entry and the
+  organisation's own role or unit type that stands for it, which then brings
+  nothing and is what the slots name). It is still one transaction and one
+  undo; every item made keeps `basedOn`, and an item reused keeps its own.
+  The libraries carry **`alike`** hints between their entries — a product
+  owner in one and in another — which, with the same name once normalised,
+  suggest a reuse; the suggestion is the page's and the choice the person's.
+  A library type at the top that holds no type of its library is offered
+  beside the model's deepest type that holds nothing (the same `within`).
+* **Each link has one home and two ends (§3).** Which units serve a scope is
+  `unit.scopes`, and who answers for an area, a grouping or a capability is
+  the `assigned` row, kept in the function's scope — as before. What is new is
+  that each is edited from the other end too: a scope's home and settings say
+  *Served by*, and adding a unit there writes `unit.scopes` as a step in the
+  scope that keeps the unit, under that scope's rights — who serves a scope is
+  structure, so a managing role's right (§12) does not reach it; the sheet's
+  *Assigned to* picks a unit from anywhere in the organisation, which is the
+  row's far end like any other (ADR-0012 §5). A scope's domain owner is
+  derived from `domainOwner` on the serving unit filed highest in it. A
+  capability assigned to a unit that serves neither its domain nor sits under
+  one that does is a finding.
+* **One order for units, and folds (§7).** Wherever units are listed — the
+  chart, its outline, the Conway map, a picker — they are in one order: the
+  type's lane, then its `order`; then the actor's own `order` among siblings of
+  that type, which is the field actors already have and is moved as one step;
+  then the name. The chart's units fold, and a folded unit says what it hides.
+  A fold is kept for the session and keyed by the view, by the rule the scope
+  tree already keeps: a fold is what somebody is doing this minute, not a
+  preference. The chart's outline is a foldable tree again, replacing the
+  select of the first build.
 
 ## Open
 
