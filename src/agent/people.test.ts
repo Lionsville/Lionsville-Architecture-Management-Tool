@@ -140,6 +140,14 @@ describe('person.leave', () => {
     expect(refusal(await handle(call('person.leave', { id: 'pe-gijs' }), undefined, shell(held.view)))).toBe('people.notActive')
     expect(refusal(await handle(call('person.leave', { id: 'pe-eva' }), undefined, shell(register(DEFAULT_POLICY, true).view)))).toBe('agent.readOnly')
   })
+
+  it('refuses a last day so far back that the name would be forgotten at once: agents do not forget people', async () => {
+    const held = register()
+    expect(refusal(await handle(call('person.leave', { id: 'pe-eva', on: '2020-01-01' }), undefined, shell(held.view)))).toBe('agent.badArguments')
+    expect(refusal(await handle(call('person.leave', { id: 'pe-eva', on: '2026-07-13' }), undefined, shell(held.view)))).toBe('agent.badArguments')
+    expect(held.left).toEqual([])
+    expect((await handle(call('person.leave', { id: 'pe-eva', on: '2026-07-14' }), undefined, shell(held.view))).ok).toBe(true)
+  })
 })
 
 describe('what an agent may not do with people', () => {
@@ -156,5 +164,20 @@ describe('what an agent may not do with people', () => {
       expect('ifRevision' in properties, name).toBe(false)
     }
     expect(toolSpec('person.add').tier).toBe('write')
+  })
+})
+
+describe('the register\'s writes and the person\'s Stop', () => {
+  it('drive with nothing open: the banner goes up, and Stop refuses them', async () => {
+    const held = register()
+    const around = shell(held.view)
+    expect((await handle(call('person.add', { name: 'Sara Kaya' }), undefined, around)).ok).toBe(true)
+    expect(around.driving.current().session).toMatchObject({ client: 'Claude Code', calls: 1 })
+    around.driving.end('person')
+    expect(refusal(await handle(call('person.leave', { id: 'pe-pia' }), undefined, around))).toBe('agent.stopped')
+    expect(refusal(await handle(call('person.add', { name: 'Ivo Peters' }), undefined, around))).toBe('agent.stopped')
+    expect(held.left).toEqual([])
+    // Reading the register is not driving.
+    expect((await handle(call('people.list'), undefined, around)).ok).toBe(true)
   })
 })

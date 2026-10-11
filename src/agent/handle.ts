@@ -214,8 +214,11 @@ export async function handle(request: AgentRequest, session: SessionView | undef
 async function handled(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell || !isToolName(request.tool) || !drives(request.tool)) return answerRequest(request, session, shell)
   // A write with nothing open goes nowhere and is refused below; it should
-  // not put a banner up on the way. Only moving the app drives from a home.
-  if (!session && toolSpec(request.tool).tier !== 'drive') return answerRequest(request, session, shell)
+  // not put a banner up on the way. Only moving the app drives from a home —
+  // and the register's writes, which are the organisation's and work with
+  // nothing open: a person added, someone marked as left and their
+  // assignments ended across the tree.
+  if (!session && toolSpec(request.tool).tier !== 'drive' && !isPeopleTool(request.tool)) return answerRequest(request, session, shell)
   const gate = shell.driving.admit(request.tool, shell.client())
   if (gate) return refused(gate)
   return untilStopped(shell, answerRequest(request, session, shell))

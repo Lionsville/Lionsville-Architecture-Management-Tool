@@ -18,6 +18,7 @@
  * because the register is the organisation's and not a scope's.
  */
 import { isDay } from '../model/lifecycle'
+import { addDays } from '../model/transition'
 import type { PersonId } from '../model/person'
 import { possibleDuplicates, duplicatePairs } from '../people/duplicates'
 import type { Left } from '../people/leave'
@@ -101,6 +102,11 @@ async function leave(view: PeopleView, args: Record<string, unknown>): Promise<A
   const on = typeof args.on === 'string' ? args.on : view.today()
   if (!isDay(on)) return refused('people.badDay', on)
   const { policy } = await view.read()
+  // A last day so far back that the policy's period is already over would have the name forgotten
+  // at the next turn of the day, and agents do not forget people (ADR-0036 §13): that is a person's to say.
+  if (addDays(on, policy.keepNameDays) <= view.today()) {
+    return refused('agent.badArguments', `a last day of ${on} is longer ago than the ${policy.keepNameDays} days the organisation keeps a leaver's name; mark it on the People page`)
+  }
   const answer = await view.leave(String(args.id), on)
   if ('refused' in answer) return refused(answer.refused)
   return json({ left: told(answer.person, policy), endedAssignments: answer.ended })

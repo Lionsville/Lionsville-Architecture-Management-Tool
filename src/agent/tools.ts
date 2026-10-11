@@ -625,7 +625,8 @@ const SPECS = [
       'Mark a person as left on their last day (ADR-0036 §10): the register says left, the name stays shown for '
       + 'the period the organisation\'s policy sets and is then forgotten, and everything leaving does beyond the '
       + 'register is done — `endedAssignments` says how many of their assignments ended. Not a step. Only '
-      + 'someone active leaves. Forgetting and removing are a person\'s, on the People page.',
+      + 'someone active leaves, and not on a day further back than the policy keeps a name, which would forget it at once. '
+      + 'Forgetting and removing are a person\'s, on the People page.',
     inputSchema: {
       type: 'object',
       properties: {
