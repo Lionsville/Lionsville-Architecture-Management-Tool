@@ -215,6 +215,50 @@ function complaintIn(method: string, params: Record<string, unknown>): string | 
   return undefined
 }
 
+// --- the organisation chart: a person assigned, and the chart changes (ADR-0036 §7) --
+
+/** What the chart's checks need from the run: its agent and its page, and the board to go back to. */
+type ChartRun = Pick<DrawingRun, 'page' | 'agent'> & { scope: string; board: string }
+
+/**
+ * At the organisation, where the operating model is kept: a role and a unit
+ * type holding one of it, a unit of that type, and an organisation chart. The
+ * chart draws the unit with its role vacant; a person added to the register
+ * and assigned to the role is a holder on the chart at once, and the vacancy
+ * is gone — the step lands, the index and the page follow it. Then back to
+ * the board the run was on.
+ */
+async function organisationChart(run: ChartRun, results: SmokeResult[]): Promise<void> {
+  const { page, agent } = run
+  const ids = { role: '', unit: '', chart: '' }
+  const unitBox = (also: string) => `[...document.querySelectorAll('[data-testid="chart-unit"]')]
+    .find((box) => (box.textContent || '').includes('Smoke Team A') && ${also})`
+
+  results.push(await checkHere('an organisation chart draws a unit of the operating model with its role vacant', async () => {
+    await agent('app.open', { scope: '', page: 'operating' })
+    ids.role = (await agent<{ id: string }>('role.add', { name: 'Smoke Lead', manages: true })).id
+    const type = await agent<{ id: string }>('unitType.add', { name: 'Smoke Team', top: true, slots: [{ roleId: ids.role, min: 1, max: 1 }] })
+    ids.chart = (await agent<{ id: string }>('diagram.create', { kind: 'chart', name: 'Smoke chart' })).id
+    ids.unit = (await agent<{ id: string }>('element.add', { kind: 'actor', name: 'Smoke Team A', unitTypeId: type.id })).id
+    await agent('app.open', { scope: '', page: 'chart', id: ids.chart })
+    const drawn = await page(waitFor(`${unitBox(`!!box.querySelector('[data-testid="chart-vacant"]')`)} && 'vacant'`, 'the unit with its role vacant'))
+    return `${ids.unit} of ${type.id} on ${ids.chart}: ${drawn}`
+  }))
+
+  results.push(await checkHere('a person assigned to the role is a holder on the chart, and the vacancy is gone', async () => {
+    if (!ids.unit || !ids.role) throw new Error('no unit to assign to')
+    const added = await agent<{ added: { id: string } }>('person.add', { name: 'Smoke Person', addAnyway: true })
+    const assigned = await agent<{ id: string }>('assignment.add', { unitId: ids.unit, roleId: ids.role, personId: added.added.id })
+    const holder = await page(waitFor(
+      `${unitBox(`[...box.querySelectorAll('[data-testid="chart-holder"]')].some((chip) => (chip.textContent || '').includes('Smoke Person'))
+        && !box.querySelector('[data-testid="chart-vacant"]')`)} && 'held'`,
+      'the person to hold the role on the chart'))
+    const count = await page(`document.querySelector('[data-testid="chart-count"]')?.textContent || ''`)
+    await agent('app.open', { scope: run.scope, page: 'board', id: run.board })
+    return `${assigned.id}: ${holder}, ${count}`
+  }))
+}
+
 // --- drawings: the real draw.io, on its own scheme, offline (ADR-0034) --------
 
 /** What the drawing checks need from the run: its window, its folder, its agent and its waits. */
@@ -1039,6 +1083,10 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     if (listed.decisions.length < 1) throw new Error('decisions.list does not list it under its subject')
     return `${decision.label} → decisions/${addedId}/${decisionFile}, ${plan.label} → transitions/${planFile}`
   }))
+
+  // The organisation chart (ADR-0036 §7): a person assigned, and the chart changes.
+  section('the organisation chart')
+  await organisationChart({ page, agent, scope: EXAMPLE.landscape, board: EXAMPLE.activeDiagram }, results)
 
   // The real editor, end to end: a drawing made, edited in draw.io on its own
   // scheme under its own policy, saved, its picture read and its link
