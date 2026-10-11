@@ -110,6 +110,17 @@ describe('person.add', () => {
     expect(added.added).toEqual({ id: 'pe-new', name: 'Pia Schultz', kind: 'internal', state: 'active', hasAddress: false })
   })
 
+  it('says only how many resemble the one asked about where names are withheld, so no name or address is paired with an entry', async () => {
+    const held = register({ ...DEFAULT_POLICY, agentsSee: 'pseudonyms' })
+    for (const asked of [{ name: 'Pia Schulz' }, { name: 'Somebody Else', email: 'pia.schulz@acme.example' }]) {
+      const similar = await handle(call('person.add', asked), undefined, shell(held.view))
+      expect(refusal(similar)).toBe('agent.possibleDuplicate')
+      const detail = similar.ok ? '' : similar.detail ?? ''
+      expect(detail).not.toMatch(/pe-pia|4K7Q|same|Schulz/)
+      expect(JSON.parse(detail)).toMatchObject({ possibleDuplicates: 1 })
+    }
+  })
+
   it('adds somebody nobody resembles, keeps the address and never tells it back', async () => {
     const held = register()
     const out = parsed(await handle(call('person.add', { name: 'Sara Kaya', email: 'sara@acme.example', kind: 'external' }), undefined, shell(held.view)))

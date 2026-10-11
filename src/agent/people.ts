@@ -90,7 +90,12 @@ async function addPerson(view: PeopleView, args: Record<string, unknown>): Promi
   const { people, policy } = await view.read()
   const similar = possibleDuplicates(candidate, people)
   if (similar.length > 0 && args.addAnyway !== true) {
-    return refused('agent.possibleDuplicate', JSON.stringify(similar.map((one) => ({ ...told(one.person, policy), sign: one.sign }))))
+    // Where names are withheld, naming the match would pair the name or the address asked
+    // about with an entry, and undo the pseudonym: how many is all that is said.
+    const detail = policy.agentsSee === 'pseudonyms'
+      ? { possibleDuplicates: similar.length, withheld: 'names are withheld from agents; a person compares them on the People page' }
+      : similar.map((one) => ({ ...told(one.person, policy), sign: one.sign }))
+    return refused('agent.possibleDuplicate', JSON.stringify(detail))
   }
   const answer = await view.add(candidate)
   if ('refused' in answer) return refused(answer.refused)
