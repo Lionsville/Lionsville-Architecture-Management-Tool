@@ -113,15 +113,25 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the organisation’s home', [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
-    'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.card.operating', 'org.attention', 'org.attentionMore',
+    'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.card.operating', 'org.attention', 'findings.group',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
+  }],
+  // Its findings: a check unfolded, and an instance opened on its explanation.
+  ['a check under Needs attention, unfolded', ['findings.instance'], async () => {
+    fireEvent.click((await screen.findAllByTestId('findings-group'))[0]!)
+  }],
+  ['a finding, opened', ['findings.back', 'findings.action'], async () => {
+    fireEvent.click(document.querySelector<HTMLElement>('[data-guide="findings.instance"]')!)
   }]],
   // Who serves a scope is said where the organisation has units: one at the
   // organisation, of a type it holds, serving it where it is filed.
-  [['a home served by a unit', ['org.servedBy'], async () => {
-    const served = example.map((one) => (one.path === '' ? {
+  // A domain proposes a function the organisation has not named, which is a
+  // note: the switch that shows the notes is drawn under Needs attention.
+  [['a home served by a unit', ['org.servedBy', 'findings.showNotes'], async () => {
+    const proposed = { id: 'f-proposed', kind: 'function' as const, name: 'Price freight', lifecycle: 'live' as const, isManaged: false, aspects: {} }
+    const served = example.map((one) => (one.path === landscape.path ? { ...one, model: { ...one.model, elements: [...one.model.elements, proposed] } } : one.path === '' ? {
       ...one,
       model: {
         ...one.model,

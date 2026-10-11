@@ -669,8 +669,6 @@ export const EN = {
   'org.describeRegister': 'Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.',
   'org.describeTechnology': 'Every platform service and platform in the organisation: what is offered, what delivers it, and who leans on it.',
   'org.attention': 'Needs attention',
-  'org.attentionOpen': 'Open it where it can be fixed',
-  'org.attentionMore': 'Show all {count}',
   'org.businessMake': 'Make a sheet\u2026',
   'org.map': 'Map',
   'org.mapMake': 'Make a map\u2026',

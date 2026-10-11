@@ -92,6 +92,10 @@ function textPairs(mode: 'light' | 'dark'): Pair[] {
     add(`text on ${ground}`, ratio(palette.text.primary, fill))
     add(`secondary text on ${ground}`, ratio(palette.text.secondary, fill))
     for (const colour of STATUS) add(`${colour} text on ${ground}`, ratio(palette[colour].main, fill))
+    // A finding's weight, as its mark says it in every list of findings (`widgets/FindingsList`): text, on either ground.
+    for (const [weight, ink] of [['fix', palette.error.main], ['review', palette.warning.main], ['note', palette.text.secondary]] as const) {
+      add(`a finding's ${weight} mark on ${ground}`, ratio(ink, fill))
+    }
   }
   for (const colour of FILLED_COLOURS) {
     const { rest, hover } = filledControl(theme, colour)

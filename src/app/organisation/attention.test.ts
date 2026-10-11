@@ -65,7 +65,8 @@ describe('attentionItems', () => {
     expect(attentionItems(undefined, [], [], 'retail', s, scopeName, [], operating)).toEqual([])
   })
 
-  it('says each finding as a sentence, skips information, and sorts by scope', () => {
+  // A note is listed with the rest since 3.6.1: the list hides the notes until asked, which leaving it out used to do.
+  it('says each finding as a sentence, the notes with the rest, and sorts by scope', () => {
     const findings = new Map<string, Finding[]>([
       ['retail', [
         finding({ key: 'check.conflict', scope: 'retail', id: 'erp', name: 'ERP', scopes: ['finance'] }),
@@ -77,7 +78,10 @@ describe('attentionItems', () => {
     expect(items.map((item) => [item.scope, item.id, item.text])).toEqual([
       ['finance', 'crm', 'CRM stands in for something nothing in the organisation defines — define it here, or delete the stand-in'],
       ['retail', 'erp', 'ERP is defined both here and in finance — keep one definition and make the other a stand-in with Link…'],
+      ['retail', 'wms', 'WMS is defined here and drawn on no board — add it to a board, or leave it as a record'],
     ])
+    // The other scope a finding names, for its other definition and Link….
+    expect(items.map((item) => item.elsewhere)).toEqual([undefined, 'finance', undefined])
   })
 
   it('adds an application nobody has said whose it is, and a service nothing delivers', () => {

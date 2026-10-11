@@ -15,6 +15,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { openFinding, pressAction, unfoldFindings } from '../testing/findings'
 import { heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -287,6 +288,7 @@ describe('what the organisation says needs attention', () => {
   it('says each finding as a sentence naming the record, and no row counts them', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
+    unfoldFindings(attention)
     expect(attention.textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
     expect(attention.textContent).toContain('CRM stands in for something nothing in the organisation defines')
     expect(screen.queryByTestId('findings-finance')).toBeNull()
@@ -295,6 +297,7 @@ describe('what the organisation says needs attention', () => {
   it('puts a conflict on both scopes, since neither is the wrong one', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
+    unfoldFindings(attention)
     expect(attention.textContent).toContain('ERP is defined both here and in Finance')
     expect(within(attention).getByTestId('attention-retail-erp')).toBeDefined()
     expect(within(attention).getByTestId('attention-finance-erp')).toBeDefined()
@@ -303,7 +306,7 @@ describe('what the organisation says needs attention', () => {
   it('opens the scope the finding is about, with the record selected', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
-    fireEvent.click(within(attention).getByTestId('attention-finance-crm'))
+    pressAction(openFinding(attention, 'attention-finance-crm'), 'Open it')
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Finance'))
   })
 
@@ -313,17 +316,18 @@ describe('what the organisation says needs attention', () => {
     expect(attention.textContent).not.toContain('Warehouse')
   })
 
-  it('folds past six sentences, and shows them all on request', async () => {
+  // Until 3.6.1 the block showed six sentences and a Show all; the findings are grouped by check and folded now.
+  it('says eight findings of one check as one row, folded, and all eight when it is unfolded', async () => {
     const held = TREE()
     const at = (path: string) => held.find((scope) => scope.path === path)!
     // Eight stand-ins of things nobody defines: eight findings on one scope.
     at('finance').model.elements = Array.from({ length: 8 }, (_, n) => element(`ghost-${n}`, `Ghost ${n}`, 'nowhere'))
     show(held)
     const attention = await screen.findByTestId('needs-attention')
-    expect(within(attention).getAllByTestId(/^attention-finance-/)).toHaveLength(6)
-    fireEvent.click(within(attention).getByTestId('attention-more'))
+    expect(within(attention).getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([expect.stringMatching(/A stand-in of something nothing defines\(8\)$/)])
+    expect(within(attention).queryAllByTestId(/^attention-finance-/)).toHaveLength(0)
+    unfoldFindings(attention)
     expect(within(attention).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
-    expect(within(attention).queryByTestId('attention-more')).toBeNull()
   })
 
   it('shows no block at all on a tree nobody has found anything in', async () => {

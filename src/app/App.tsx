@@ -69,6 +69,7 @@ import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices 
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 import { SessionFolds } from './sessionFolds'
+import { SessionMemoryContext } from '../widgets/sessionMemory'
 
 /**
  * What `App` does to a store.
@@ -432,6 +433,8 @@ export function App(props: AppProps) {
           below: nothing where it offers none. */}
       <ProblemOfferContext.Provider value={parts.services.problem}>
       <PersonNamesProvider names={names}>
+      {/* What each list of findings has unfolded, and its notes shown, for as long as the window is open. */}
+      <SessionMemoryContext.Provider value={parts.folds}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -449,6 +452,7 @@ export function App(props: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </SessionMemoryContext.Provider>
       </PersonNamesProvider>
       </ProblemOfferContext.Provider>
     </ThemeProvider>

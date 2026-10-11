@@ -31,7 +31,7 @@ export const CONTROL_NAMES = [
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',
   'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape', 'org.card.people',
   'org.card.operating',
-  'org.attention', 'org.attentionMore', 'org.boards', 'org.newBoard',
+  'org.attention', 'org.boards', 'org.newBoard',
   // Who serves a scope (ADR-0036, amended 11 October 2026): on its home and in its settings.
   'org.servedBy',
   // A board: the canvas and what is docked to it.
@@ -93,6 +93,10 @@ export const CONTROL_NAMES = [
   'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
   // …the switch that draws its empty optional roles, and its summary in the inspector while nothing is picked (3.6.1).
   'chart.showOptional', 'chart.summary',
+  // A list of findings, wherever it is drawn (ADR-0036, amended 11 October 2026):
+  // a check's row, an instance under it, the switch that shows the notes, the
+  // way back from an explanation, and each of its actions.
+  'findings.group', 'findings.instance', 'findings.showNotes', 'findings.back', 'findings.action',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

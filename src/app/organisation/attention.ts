@@ -21,8 +21,10 @@
  * item picked, since no board draws either.
  *
  * Only what is filed at or under the scope whose home this is, so a domain's
- * home speaks for its domain. Information (`check.notDrawn`) is left out for
- * the reason the tree left it out: it is not something anybody has to do.
+ * home speaks for its domain. A note — a record on no board, a capability a
+ * domain proposes — is listed with the rest: the list hides the notes until
+ * somebody asks for them (ADR-0036, amended 11 October 2026), which is what
+ * leaving `check.notDrawn` out used to do for the one note there was.
  */
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
@@ -55,6 +57,8 @@ export type AttentionItem = {
   id: ElementId
   /** The view to open instead, where the finding is about something on one (`Finding.view`). */
   view?: string
+  /** The other scope the finding names, where it does: the other definition, the one a stand-in's fields belong to. */
+  elsewhere?: ScopePath
   /**
    * The page to open instead, with the record picked on it: the operating
    * model's, where the finding is about a unit type or a responsibility,
@@ -99,9 +103,10 @@ export function attentionItems(
   for (const [scope, held] of [...findings ?? [], ...operatingFound]) {
     if (!within(scope)) continue
     for (const finding of held) {
-      if (finding.information) continue
+      const elsewhere = finding.scopes?.[0]
       add({
         key: finding.key, scope, id: finding.id, ...(finding.view ? { view: finding.view } : {}),
+        ...(elsewhere !== undefined ? { elsewhere } : {}),
         ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : {}),
         text: findingSentence(finding, s, scopeName, personName),
       })

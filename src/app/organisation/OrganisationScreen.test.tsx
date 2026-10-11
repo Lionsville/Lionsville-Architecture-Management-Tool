@@ -18,6 +18,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { openFinding, pressAction, unfoldFindings } from '../testing/findings'
 import { answering, heldRepositories } from '../testing/heldRepositories'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
@@ -272,6 +273,7 @@ describe('the organisation screen — its own pages', () => {
     // tally on the card: the card keeps the counts.
     expect(cards.textContent).not.toContain('unattributed')
     const attention = await screen.findByTestId('needs-attention')
+    unfoldFindings(attention)
     expect(attention.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
     // Each row says what kind of finding it is, in a word that does not move
     // with the language.
@@ -298,7 +300,7 @@ describe('the organisation screen — its own pages', () => {
     }
     renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
     const attention = await screen.findByTestId('needs-attention')
-    fireEvent.click(within(attention).getByTestId('attention--ut-guild'))
+    pressAction(openFinding(attention, 'attention--ut-guild'), 'Open the unit type')
     const inspector = await screen.findByTestId('operating-inspector')
     expect(within(inspector).getByDisplayValue('Guild')).toBeTruthy()
     expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
@@ -318,6 +320,7 @@ describe('the organisation screen — its own pages', () => {
     expect(cards.textContent).toContain('1 shared')
     // The two findings are sentences under the cards, each naming the service.
     const attention = await screen.findByTestId('needs-attention')
+    unfoldFindings(attention)
     expect(attention.textContent).toContain('Message brokering is used by')
     expect(attention.textContent).toContain('is not marked shared — mark it shared, or move it')
     expect(attention.textContent).toContain('Message brokering is offered, but no platform delivers it')
