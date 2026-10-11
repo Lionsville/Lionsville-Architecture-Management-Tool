@@ -70,7 +70,9 @@ status, met de nieuwste erbij; **Roadmap** de plannen, en het eerste waarover
 hun datums het oneens zijn; **Register** elke applicatie in de hele map,
 hoeveel er door een domein worden beheerd en hoeveel van iemand anders zijn;
 **Technologie** elke platformdienst en elk platform, en hoeveel er gedeeld
-zijn. Een onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
+zijn; **Besturingsmodel** de eenheidstypen, rollen en verantwoordelijkheden, en
+of elke verantwoordelijkheid haar ene eindverantwoordelijke rol heeft. Een
+onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
 opent wat hij telt; als je de pagina sluit ben je weer hier.
 
 **Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken: één
@@ -1661,6 +1663,83 @@ en zijn applicaties zeggen welke ze gebruiken; het register vertelt je wie op
 wat leunt, het dienstrapport wie er zou stranden vóór je er een intrekt, en de
 bevinding welke dingen van je eigen team andere teams stilletjes zijn gaan
 gebruiken.
+
+## Het besturingsmodel
+
+De kaart **Besturingsmodel** op het startscherm van de organisatie opent hoe
+de organisatie zichzelf heeft ingericht: de soorten eenheden die ze heeft, de
+rollen die elke soort heeft, en waar elke rol verantwoordelijk voor is — in
+haar eigen woorden. Het wordt bij de organisatie bijgehouden en daar bewerkt;
+geopend boven een andere scope kun je het alleen lezen, en dat staat er ook.
+Elke wijziging is een stap: ze staat in Activiteit, ⌘Z draait haar terug, en
+elk eenheidstype, elke rol en elke verantwoordelijkheid heeft een eigen
+geschiedenis.
+
+### Eenheden en rollen
+
+Een **eenheidstype** is het woord van de organisatie voor een soort eenheid —
+hoe ze haar teams, treinen of afdelingen ook noemt. De kaart zegt waar een
+eenheid van dat type onder mag vallen (bovenaan, direct onder de organisatie,
+of onder een eenheid van een ander type), of ze meer dan één domein mag
+bedienen, welke rollen ze heeft en hoeveel van elk, en van hoeveel
+applicaties een eenheid ervan hoogstens eigenaar hoort te zijn — een controle
+leest dat getal; niets weigert het. **Nieuw eenheidstype** en **Nieuwe rol**
+voegen er een toe; druk op een kaart of een rol om haar rechts te bewerken.
+
+Een **rol** heeft een naam, een korte naam voor de matrix, een doel, en een
+aandeel in elke verantwoordelijkheid. **Stuurt de eenheid aan** markeert een
+rol waarvan de houder de mensen van de eenheid en van de eenheden eronder
+aanstuurt. De app houdt die markering bij; een uitvoering die weet wie mensen
+zijn, kan er een recht aan verbinden.
+
+**Regels die het model leest** zeggen wiens rol waarvoor instaat: de eigenaar
+van een applicatie is wie een gekozen rol heeft in de eenheid waar de
+applicatie bij hoort, en de eigenaar van een domein wie een gekozen rol heeft
+in de eenheid die het bedient. De eigenaar wordt uitgerekend op de dag waarop
+je kijkt, dus hij volgt wie de rol heeft, en er wordt geen naam opgeslagen.
+
+Een rol verwijderen haalt haar in één stap uit de eenheidstypen die haar
+hebben en uit de regels die haar noemen; een verantwoordelijkheid verwijderen
+neemt het aandeel van elke rol erin mee.
+
+### Verantwoordelijkheden
+
+Het tabblad **Verantwoordelijkheden** is een matrix: een rij per
+verantwoordelijkheid, gegroepeerd zoals de organisatie groepeert —
+bijvoorbeeld naar waardestroom — en een kolom per rol. Druk op een cel om het
+aandeel van die rol te laten lopen door R (uitvoerend), A
+(eindverantwoordelijk), C (geraadpleegd) en I (geïnformeerd), en terug naar
+niets. Elke verantwoordelijkheid hoort precies één A te hebben: een rij met
+geen of met meerdere zegt dat in de laatste kolom, en ze staat bij wat de
+organisatie over zichzelf tegenspreekt. Niets weigert het — een model in
+wording gaat door allebei heen.
+
+### Bibliotheken
+
+Het tabblad **Bibliotheken** biedt vier vertrekpunten die met de app worden
+meegeleverd: **Scrum**, **SAFe**, de waardestromen van **IT4IT** (de zeven
+van versie 3.0) en **Team Topologies**. Elk is alleen-lezen, heeft een versie,
+en is geschreven in het Engels, Nederlands en Duits, in de eigen woorden van
+deze app. Vink de onderdelen aan die je wilt en druk op **Overnemen**, of
+neem alles uit een bibliotheek over. Wat een onderdeel nodig heeft, komt mee —
+een eenheidstype neemt de rollen mee die het heeft en de typen waaronder het
+valt, een rol de verantwoordelijkheden waarin ze een aandeel heeft — en het
+tabblad zegt dat voordat er iets wordt geschreven. Overnemen is één stap, dus
+⌘Z haalt alles weer weg, en niets wordt twee keer overgenomen.
+
+Wat binnenkomt is van de organisatie: hernoem het, herschrijf het, schrap
+het. Elk onderdeel onthoudt op welk onderdeel van welke bibliotheek en welke
+versie het is gebaseerd, zodat **Vergelijken met de bibliotheken** laat zien
+waarin het verschilt van de bibliotheek zoals die nu wordt meegeleverd —
+gelezen in de taal waarin het is overgenomen — en zegt wanneer een
+bibliotheek een nieuwere versie heeft. Er wordt nooit iets samengevoegd. De
+namen van de raamwerken zijn van hun eigenaren; geen van de bibliotheken wordt
+door hen onderschreven.
+
+Een agent leest het besturingsmodel met `unitTypes.list`, `roles.list` en
+`responsibilities.list`, vanuit de organisatie welke scope er ook open is, en
+wijzigt het met `unitType.add`, `unitType.update`, `role.add` en
+`role.update` terwijl de organisatie de open scope is.
 
 ## Een tekening
 

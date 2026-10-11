@@ -6,7 +6,7 @@
  * train, and the roles that run each. The names are SAFe's own; every purpose
  * and description is written here, in this project's words (see
  * `../library.ts`). SAFe is a registered trademark of Scaled Agile, Inc.
- * (`THIRD-PARTY-NOTICES.md`).
+ * (`NOTICE`).
  */
 import type { Library } from '../library'
 

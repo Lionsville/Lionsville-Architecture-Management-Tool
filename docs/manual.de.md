@@ -77,7 +77,9 @@ Einträge nach Status, mit dem neuesten beim Namen; **Fahrplan** ihre Pläne und
 das Erste, worüber deren Daten uneins sind; **Register** jede Anwendung im
 ganzen Ordner, wie viele davon eine Domäne verantwortet und wie viele jemand
 anderem gehören; **Technologie** jeden Plattformdienst und jede Plattform, und
-wie viele geteilt sind. Ein Bereich, der zeichnet, hat auch eine Karte
+wie viele geteilt sind; **Betriebsmodell** die Einheitstypen, Rollen und
+Verantwortungen, und ob jede Verantwortung ihre eine rechenschaftspflichtige
+Rolle hat. Ein Bereich, der zeichnet, hat auch eine Karte
 **Dokumentation**. Jede Karte öffnet, was sie zählt; das Schließen der Seite
 bringt Sie hierher zurück.
 
@@ -1764,6 +1766,85 @@ sagen, welche sie nutzen; das Register sagt Ihnen, wer sich worauf stützt, der
 Dienstbericht, wer strandete, bevor Sie einen zurückziehen, und der Befund,
 welche Dinge Ihres eigenen Teams andere Teams stillschweigend zu nutzen
 begonnen haben.
+
+## Das Betriebsmodell
+
+Die Karte **Betriebsmodell** auf der Startseite der Organisation öffnet, wie
+die Organisation sich selbst aufgestellt hat: die Arten von Einheiten, die sie
+hat, die Rollen, die jede Art hat, und wofür jede Rolle verantwortlich ist —
+in ihren eigenen Worten. Es wird bei der Organisation geführt und dort
+bearbeitet; über einem anderen Bereich geöffnet, lässt es sich nur lesen, und
+das steht dann auch da. Jede Änderung ist ein Schritt: Sie steht in der
+Aktivität, ⌘Z nimmt sie zurück, und jeder Einheitstyp, jede Rolle und jede
+Verantwortung hat einen eigenen Verlauf.
+
+### Einheiten und Rollen
+
+Ein **Einheitstyp** ist das Wort der Organisation für eine Art von Einheit —
+wie auch immer sie ihre Teams, Züge oder Abteilungen nennt. Seine Karte sagt,
+wo eine Einheit dieses Typs stehen darf (ganz oben, direkt unter der
+Organisation, oder unter einer Einheit eines anderen Typs), ob sie mehr als
+eine Domäne bedienen darf, welche Rollen sie hat und wie viele von jeder, und
+wie viele Anwendungen eine Einheit davon höchstens verantworten sollte — eine
+Prüfung liest diese Zahl; nichts verweigert sie. **Neuer Einheitstyp** und
+**Neue Rolle** fügen einen hinzu; ein Druck auf eine Karte oder eine Rolle
+öffnet sie rechts zum Bearbeiten.
+
+Eine **Rolle** hat einen Namen, einen Kurznamen für die Matrix, einen Zweck
+und einen Anteil an jeder Verantwortung. **Führt die Einheit** kennzeichnet
+eine Rolle, deren Inhaber die Menschen der Einheit und der Einheiten darunter
+führt. Die App hält das Kennzeichen; eine Ausgabe, die weiß, wer die Menschen
+sind, kann daraus ein Recht ableiten.
+
+**Regeln, die das Modell liest** sagen, wessen Rolle wofür einsteht:
+Verantwortlich für eine Anwendung ist, wer eine gewählte Rolle in der Einheit
+innehat, zu der sie gehört, und für eine Domäne, wer eine gewählte Rolle in
+der Einheit innehat, die sie bedient. Der Verantwortliche wird an dem Tag
+ermittelt, an dem man hinsieht; er folgt also, wer die Rolle innehat, und
+kein Name wird gespeichert.
+
+Eine Rolle zu entfernen nimmt sie in einem Schritt aus den Einheitstypen, die
+sie haben, und aus den Regeln, die sie nennen; eine Verantwortung zu
+entfernen nimmt den Anteil jeder Rolle daran mit.
+
+### Verantwortungen
+
+Der Reiter **Verantwortungen** ist eine Matrix: eine Zeile je Verantwortung,
+gruppiert, wie die Organisation gruppiert — etwa nach Wertstrom — und eine
+Spalte je Rolle. Ein Druck auf eine Zelle führt den Anteil dieser Rolle durch
+R (durchführend), A (rechenschaftspflichtig), C (konsultiert) und I
+(informiert) und zurück zu nichts. Jede Verantwortung braucht genau ein A:
+Eine Zeile mit keinem oder mit mehreren sagt das in ihrer letzten Spalte, und
+sie steht bei dem, was die Organisation sich selbst widerspricht. Nichts
+verweigert es — ein Modell in Arbeit geht durch beides hindurch.
+
+### Bibliotheken
+
+Der Reiter **Bibliotheken** bietet vier Ausgangspunkte, die mit der App
+ausgeliefert werden: **Scrum**, **SAFe**, die Wertströme von **IT4IT** (die
+sieben der Version 3.0) und **Team Topologies**. Jede ist nur lesbar, hat
+eine Version und ist auf Englisch, Niederländisch und Deutsch geschrieben, in
+den eigenen Worten dieser App. Haken Sie die gewünschten Einträge an und
+drücken Sie **Übernehmen**, oder übernehmen Sie alles aus einer Bibliothek.
+Was ein Eintrag braucht, kommt mit — ein Einheitstyp bringt die Rollen mit,
+die er hat, und die Typen, unter denen er steht, eine Rolle die
+Verantwortungen, an denen sie Anteil hat — und der Reiter sagt das, bevor
+etwas geschrieben wird. Übernehmen ist ein Schritt, ⌘Z nimmt also alles
+wieder heraus, und nichts wird zweimal übernommen.
+
+Was hereinkommt, gehört der Organisation: umbenennen, umschreiben, streichen.
+Jeder Eintrag merkt sich, auf welchem Eintrag welcher Bibliothek und welcher
+Version er beruht, sodass **Mit den Bibliotheken vergleichen** zeigt, worin er
+sich von der Bibliothek unterscheidet, wie sie jetzt ausgeliefert wird —
+gelesen in der Sprache, in der er übernommen wurde — und sagt, wenn eine
+Bibliothek eine neuere Version hat. Nie wird etwas zusammengeführt. Die Namen
+der Rahmenwerke gehören ihren Inhabern; keine der Bibliotheken ist von ihnen
+gebilligt.
+
+Ein Agent liest das Betriebsmodell mit `unitTypes.list`, `roles.list` und
+`responsibilities.list` aus der Organisation, welcher Bereich auch geöffnet
+ist, und ändert es mit `unitType.add`, `unitType.update`, `role.add` und
+`role.update`, während die Organisation der geöffnete Bereich ist.
 
 ## Eine Zeichnung
 

@@ -12,3 +12,11 @@ licence agreement described in CONTRIBUTING.md, which assigns the
 contribution's copyright to Lionsville Group BV. Everything in this
 repository, including every merged contribution, stays under the licence
 in LICENSE.
+
+Names of frameworks. The operating model's libraries (src/operating/libraries/)
+name the frameworks they start from, as the frameworks name themselves. SAFe is
+a registered trademark of Scaled Agile, Inc. IT4IT is a trademark of The Open
+Group. Scrum and Team Topologies are named to say where an entry came from.
+Every purpose and description in those libraries is written in this project's
+own words, and nothing is copied from the frameworks' publications; none of
+the libraries is endorsed by the owners of those names.

@@ -307,6 +307,23 @@ src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                     ui/ObservationsPage  the register, the analysis, the solutions,
                                       the readers; View local, the filter row and
                                       the forms beside it (`ui/`)
+src/operating/    The operating model (ADR-0036): what is done with the records
+                  `model/operatingModel.ts` defines.
+                    library · libraries/   what a library is, and the four that
+                                      ship as data: Scrum, SAFe, the IT4IT value
+                                      streams, Team Topologies — every word this
+                                      project's own, in three languages
+                    bringIn           entries brought in as one transaction, with
+                                      what they need, nothing twice, each item
+                                      keeping `basedOn`
+                    compare           what came in against the library as it
+                                      ships now, in the language it came in;
+                                      never merged
+                    edit              the page's edits as commands: a role taken
+                                      out of the slots and rules that name it
+                    ui/OperatingModelPage   unit types and roles as cards, the
+                                      rules, the matrix of responsibilities
+                                      against roles, the libraries
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
                     timeline          rows and spans, in days rather than pixels;
                                       a window, and a plan's shadow run
@@ -924,6 +941,10 @@ declines to *enter* it because the canvas has nothing to show
 **Reserved names.** A child scope may not be called `diagrams`, `docs`,
 `decisions`, `transitions`, `observations`, `images` or `logos` — a folder cannot be both. The
 rule is in `scopePath.ts` and is refused at the dialog, not suffixed quietly.
+A folder the format adds later is named with an underscore — `_operating/` at
+the organisation (ADR-0036) — which no slug can hold, so the list does not
+grow, no tree can already have a scope there, and a format pass never has to
+move one.
 
 **A name has one home.** `model.name` is what the scope is called, and
 `scope.json` holds it; the organisation's name used to ride on every project in
@@ -1184,9 +1205,12 @@ identifiers is still a list of a customer's identifiers.
 | A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one — named by `stepId` or by `changeId`, and with `steps` for the bodies of what the cap has taken off this stack; `steps.onChange` is how anything outside hears what was done here, **once per announcement**, each under a `changeId` of its own, because a step that coalesces is one step here and one sequenced step per fold out there (`HistoryStep.folds`); `steps.settled` is how the far end says it is done with one, and the log's cap of 200 will not evict a fold nobody has said that about; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Where a working file lands (ADR-0025) | **asked, every time**, after the file is read: *A new folder…* — chosen with the folder picker, written with the file's top scope as its root, occupied folders confirmed separately, and the app moves there — or *Replace “<scope>” here*, what opening always did, with the warning on the button. `landWorkingFile` in `app/workingFileFlows.ts`; `chooseFolderDestination` in the composition; the boot's `folder.onChooseForWorkingFile` |
-| Working-folder format | **9** — `SCOPE_FORMAT_VERSION` (`adapters/folder/format/scopeHeader.ts`), and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else (`observations/rootsFromSolutions`, which browser storage and memory read their content format 1 by too) |
-| What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
-| A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
+| Working-folder format | **11** — `SCOPE_FORMAT_VERSION` (`adapters/folder/format/scopeHeader.ts`), and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else (`observations/rootsFromSolutions`, which browser storage and memory read their content format 1 by too); 10 is 9 with a drawing's XML in `diagrams/<id>.drawio` (ADR-0034); 11 is 10 with `_operating/` (ADR-0036): a 10 reads as an 11 with no operating model, and the pass moves no scope |
+| What one scope's folder holds | `scope.json` · `model.json` · the eight folders below · the scopes filed under it |
+| A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` — and `_operating`, which no child can take anyway: a scope's name is a slug, and a slug holds no underscore |
+| The operating model on disk (ADR-0036) | `_operating/unit-types.json` `_operating/roles.json` `_operating/responsibilities.json` `_operating/rules.json` at the organisation: one JSON list per list, in the organisation's order (`adapters/folder/format/operatingFile.ts`); a list file that is not a list opens the scope read-only |
+| The operating model (ADR-0036) | records at the organisation: a **unit type** (the organisation's word for a kind of unit: `top`, `within`, `spans`, `slots` of a role with `min` and `max`, `limit`), a **role** (`short`, `purpose`, `duties` — a responsibility each, marked `R` `A` `C` or `I` — and `manages`), a **responsibility** (`description`, `group`) and an **operating rule** (`applicationOwner` · `domainOwner` → a role), each with `basedOn` where a library gave it; commands `unitType.*` `role.*` `responsibility.*` `operatingRule.*` (`add` · `update` · `remove`). A responsibility not exactly one role's `A` is `check.accountability`. Edited at the organisation only, on the operating model's page (`page: 'operating'`) |
+| The libraries (ADR-0036 §5) | Scrum, SAFe, the IT4IT value streams (3.0) and Team Topologies, shipped as data with a version in `src/operating/libraries/`, every word this project's own; brought in as one transaction (`operating/bringIn.ts`) and compared, never merged (`operating/compare.ts`) |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
 | The five view kinds (ADR-0012 §6, ADR-0015, ADR-0016) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. Any of the five is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot, and the technology landscape keeps the palette and the inspector docked, so it is authored on. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
@@ -1200,6 +1224,7 @@ identifiers is still a list of a customer's identifiers.
 | Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope; `observations/solutions/NNNN-<slug>.md` and `observations/experiments/NNNN-<slug>.md` beside the causes |
 | Agent tools, observations (ADR-0021, ADR-0032 §10) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.merge` `merge.plan` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` — `observation.record` requires `where` and `by` and takes the day as today; `observation.update` has no `shared` and never blanks a title, where or who; `observations.list` takes `below: true` for the observations of the scopes below instead of its own, each with its scope, and has no `fromBelow`; `cause.add` and `cause.update` take `root`; `cause.link` and `cause.unlink` name a cause below by `explainsScope`; `causes.list`'s `root` reads the field; `observation.merge` and `cause.merge` take `into`, `absorb` (each with its scope), `values` and `links` by `merge.plan`'s keys, and land on another scope only through `SessionView.changeAcross` (ADR-0035 §6) |
 | Agent tools, solutions (ADR-0026) | `solutions.list` `solution.read` `experiments.list` `experiment.read` `solution.propose` `solution.update` `solution.address` `solution.unaddress` `solution.move` `solution.waive` `solution.drop` `solution.restore` `solution.decide` `solution.plan` `solution.remove` `experiment.plan` `experiment.update` `experiment.conclude` `experiment.remove` |
+| Agent tools, the operating model (ADR-0036) | `unitTypes.list` `roles.list` `responsibilities.list` — answered from the organisation whatever scope is open — and `unitType.add` `unitType.update` `role.add` `role.update`, refused `agent.scopeNotOpen` unless the organisation is the scope open; `app.open` takes `page: 'operating'`, at the organisation only |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | A drawing's picture on disk | `images/.drawings/<digest>.svg`, named by its content address; a dot folder, so never a picture of the library (ADR-0034) |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |

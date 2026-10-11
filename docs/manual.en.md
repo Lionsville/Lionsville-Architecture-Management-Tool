@@ -68,7 +68,9 @@ has handed to a domain yet; **Decisions** its records by status, naming the
 newest; **Roadmap** its plans, and the first thing their dates disagree about;
 **Register** every application in the whole folder, how many a domain answers
 for and how many are somebody else's; **Technology** every platform service and
-platform, and how many are shared. A scope that draws has a **Documentation**
+platform, and how many are shared; **Operating model** its unit types, roles
+and responsibilities, and whether each responsibility has its one accountable
+role. A scope that draws has a **Documentation**
 card too. Each card opens what it counts; closing the page brings you back
 here.
 
@@ -1542,6 +1544,75 @@ services as stand-ins and its applications say which they use; the register
 tells you who leans on what, the service report tells you who would be
 stranded before you withdraw one, and the finding tells you which of your
 own team's things other teams have quietly come to depend on.
+
+## The operating model
+
+The **Operating model** card on the organisation's home opens the
+organisation's own design of how it is organised: the kinds of unit it has,
+the roles each kind holds, and what each role is responsible for — in its own
+words. It is kept at the organisation and edited there; opened over any other
+scope it only reads, and says so. Every change is a step: it shows in
+Activity, ⌘Z takes it back, and each unit type, role and responsibility has a
+history of its own.
+
+### Units and roles
+
+A **unit type** is the organisation's word for a kind of unit — whatever it
+calls its teams, trains or departments. Its card says where a unit of that
+type may sit (at the top, under the organisation itself, or under a unit of
+another type), whether it may serve more than one domain, the roles it holds
+with how many of each, and how many applications a unit of it should own at
+most — a check reads that number; nothing refuses it. **New unit type** and
+**New role** add one; pressing a card or a role opens it on the right to edit.
+
+A **role** has a name, a short name for the matrix, a purpose, and its part in
+each responsibility. **Manages its unit** marks a role whose holder manages
+the people of the unit and of the units below it. The app keeps the mark; a
+build that knows who people are may grant a right from it.
+
+**Rules the model reads** say whose role answers for what: an application's
+owner is the holder of a chosen role in the unit it belongs to, and a domain's
+owner the holder of a chosen role in the unit that serves it. The owner is
+worked out on the day it is looked at, so it follows whoever holds the role
+and no name is stored.
+
+Removing a role takes it out of the unit types that hold it and the rules that
+name it, in one step; removing a responsibility takes every role's part in it
+with it.
+
+### Responsibilities
+
+The **Responsibilities** tab is a matrix: a row per responsibility, grouped as
+the organisation groups them — by value stream, for example — and a column per
+role. Press a cell to take that role's part through R (responsible), A
+(accountable), C (consulted) and I (informed), and back to nothing. Each
+responsibility wants exactly one A: a row with none, or with several, says so
+in its last column, and it is listed among what the organisation contradicts
+about itself. Nothing refuses it — a model being worked on passes through both.
+
+### Libraries
+
+The **Libraries** tab offers four starting points that ship with the app:
+**Scrum**, **SAFe**, the **IT4IT** value streams (the seven of its version
+3.0) and **Team Topologies**. Each is read-only, has a version, and is written
+in English, Dutch and German, in this app's own words. Tick the entries you
+want and press **Bring in**, or bring in all of a library. What an entry needs
+comes with it — a unit type brings the roles it holds and the types it sits
+in, a role the responsibilities it has a part in — and the tab says so before
+anything is written. Bringing items in is one step, so ⌘Z takes them all out
+again, and nothing is brought in twice.
+
+What comes in belongs to the organisation: rename it, rewrite it, cut it. Each
+item remembers the library entry and the version it was based on, so
+**Compare with the libraries** lists how it differs from the library as it
+ships now — read in the language it was brought in — and says when a library
+has moved on to a later version. Nothing is ever merged in. The frameworks'
+names are their owners'; none of the libraries is endorsed by them.
+
+An agent reads the operating model with `unitTypes.list`, `roles.list` and
+`responsibilities.list`, from the organisation whatever scope is open, and
+changes it with `unitType.add`, `unitType.update`, `role.add` and
+`role.update` while the organisation is the scope open.
 
 ## A drawing
 

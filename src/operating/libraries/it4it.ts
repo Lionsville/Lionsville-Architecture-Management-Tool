@@ -8,7 +8,7 @@
  * them. The value streams are named as the standard names them; what each
  * responsibility is, and every role, is written here, in this project's words
  * (see `../library.ts`). IT4IT is a trademark of The Open Group
- * (`THIRD-PARTY-NOTICES.md`).
+ * (`NOTICE`).
  */
 import type { Library, Words } from '../library'
 
