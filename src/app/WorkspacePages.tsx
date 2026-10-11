@@ -258,10 +258,12 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
 
 /** What a plan does to the organisation (ADR-0036 §6), drawn here because all of it is the organisation's. */
 function planOrganisation(parts: WorkspaceParts, plan: NonNullable<WorkspaceParts['pages']['plans']['plan']>): { facts: ReactNode; main: ReactNode } {
-  const { props, session, readOnly, readings, landMoves } = parts
+  const { props, session, readOnly, readings, landMoves, showElement, pages } = parts
   const shared: PlanOrganisationProps = {
     plan, scope: props.project.path, model: session.model, index: props.tree.index, people: props.shell.people, readOnly,
     dispatch: session.dispatch, makeId: props.shell.makeId, land: landMoves, scopeLabel: readings.scopeLabel, s: props.shell.s,
+    // A unit a finding is about, wherever it is kept: the plan's page closes on the way.
+    onOpenElement: (id) => showElement.show(id, pages.plans.closePlan),
   }
   return { facts: createElement(PlanMoves, shared), main: createElement(PlanOrganisation, shared) }
 }

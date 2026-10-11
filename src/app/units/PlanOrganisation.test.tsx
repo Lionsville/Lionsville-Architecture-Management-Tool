@@ -97,7 +97,7 @@ const index = indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model:
 let made = 0
 
 /** The plan's two parts over a session held here, written by the model's own writer, with an undo. */
-function Harness({ dispatched }: { dispatched: Command[] }) {
+function Harness({ dispatched, opened = [] }: { dispatched: Command[]; opened?: string[] }) {
   const [model, setModel] = useState<Model>(fromArrays(SHIPPING))
   const [undo, setUndo] = useState<Command[]>([])
   const held = { current: model }
@@ -118,7 +118,7 @@ function Harness({ dispatched }: { dispatched: Command[] }) {
   const plan = host.transitions!.find((one) => one.id === 'tr-7')!
   const props = {
     plan, scope: 'shipping', model: host, index, people: register, readOnly: false, dispatch, makeId: (prefix: string) => `${prefix}-new-${(made += 1)}`,
-    land, scopeLabel: (path: string) => path || 'Acme Logistics', s,
+    land, scopeLabel: (path: string) => path || 'Acme Logistics', onOpenElement: (id: string) => { opened.push(id) }, s,
   }
   return (
     <>
@@ -170,12 +170,17 @@ describe('a reorganisation on its plan\'s page', () => {
   })
 
   it('lists the people to move with their suggestions, and what is still open on the day', () => {
-    renderShell(<Harness dispatched={[]} />)
+    const opened: string[] = []
+    renderShell(<Harness dispatched={[]} opened={opened} />)
     expect(screen.getAllByTestId(/^move-row-/).map((row) => row.getAttribute('data-testid'))).toEqual(['move-row-as-1', 'move-row-as-2', 'move-row-as-3'])
     expect(within(screen.getByTestId('move-row-as-3')).getByRole('combobox').textContent).toBe('Cluster lead, Parcel — suggested')
     const open = lines('plan-still-open')[0]
     expect(open).toContain('Release to production needs a new A')
     expect(open).toContain('Freight is short of Cluster lead')
+    // A finding about a unit opens the unit; the lost A is a line.
+    fireEvent.click(screen.getByRole('button', { name: /^Freight is short of Cluster lead/ }))
+    expect(opened).toEqual(['freight'])
+    expect(screen.queryByRole('button', { name: /Release to production/ })).toBeNull()
   })
 
   it('writes every end and beginning as one step, a row changed as chosen, and undo takes it all back', async () => {

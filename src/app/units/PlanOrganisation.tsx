@@ -28,6 +28,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -70,6 +71,8 @@ export type PlanOrganisationProps = {
   /** Write the people's moves, one step per scope, together. */
   land: (steps: ReadonlyMap<ScopePath, readonly Command[]>) => Promise<PeopleMoved>
   scopeLabel: (path: ScopePath) => string
+  /** Open a unit a finding is about, wherever it is kept; absent, the findings are lines. */
+  onOpenElement?: (id: string) => void
   s: Translate
 }
 
@@ -180,7 +183,7 @@ export function PlanOrganisation(props: PlanOrganisationProps) {
       {days && <BeforeAndAfter facts={facts} before={days.before} after={days.after} s={s} />}
       <Typography sx={HEADING}>{s('move.people')}</Typography>
       <PeopleToMove {...props} facts={facts} />
-      {days && <StillOpen facts={facts} before={days.before} after={days.after} scopeLabel={props.scopeLabel} s={s} />}
+      {days && <StillOpen facts={facts} before={days.before} after={days.after} scopeLabel={props.scopeLabel} onOpen={props.onOpenElement} s={s} />}
     </Box>
   )
 }
@@ -265,16 +268,27 @@ function PeopleToMove(props: PlanOrganisationProps & { facts: PlanFacts }) {
   return <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s} />
 }
 
-/** What the checks find on the plan's day in the units it touches, and every responsibility that loses its A. */
-function StillOpen({ facts, before, after, scopeLabel, s }: {
-  facts: PlanFacts; before: string; after: string; scopeLabel: (path: ScopePath) => string; s: Translate
+/**
+ * What the checks find on the plan's day in the units it touches, and every
+ * responsibility that loses its A. A finding about a unit is a link to it,
+ * as every list of findings is; one about a person or a responsibility is a line.
+ */
+function StillOpen({ facts, before, after, scopeLabel, onOpen, s }: {
+  facts: PlanFacts; before: string; after: string; scopeLabel: (path: ScopePath) => string; onOpen: ((id: string) => void) | undefined; s: Translate
 }) {
   const lines = stillOpen(facts.at, facts.reorganisation, facts.responsibilities, { before, after }, scopeLabel, facts.names, s)
   return (
     <Box data-testid="plan-still-open">
       <Typography sx={HEADING}>{s('move.stillOpen', { day: after })}</Typography>
       {lines.length === 0 && <Typography sx={QUIET}>{s('move.stillOpenNone')}</Typography>}
-      {lines.map((line, at) => <Typography key={`${at}/${line}`} sx={{ fontSize: 12, color: 'warning.main' }}>{line}</Typography>)}
+      {lines.map((line, at) => (
+        <Typography key={`${at}/${line.text}`} sx={{ fontSize: 12, color: 'warning.main' }} data-testid="plan-open-line">
+          {line.unitId !== undefined && onOpen
+            ? <Link component="button" type="button" color="inherit" underline="hover" sx={{ fontSize: 'inherit', textAlign: 'left' }}
+              onClick={() => onOpen(line.unitId!)}>{line.text}</Link>
+            : line.text}
+        </Typography>
+      ))}
     </Box>
   )
 }
@@ -283,16 +297,17 @@ function StillOpen({ facts, before, after, scopeLabel, s }: {
 function stillOpen(
   at: OrganisationAt, r: PlanReorganisation, responsibilities: Parameters<typeof lostAccountability>[0], days: { before: string; after: string },
   scopeLabel: (path: ScopePath) => string, names: MoveNames, s: Translate,
-): string[] {
+): { text: string; unitId?: string }[] {
   const roots = reorganisationRoots(at.organisation, r, days.before, days.after)
   const walk = (nodes: readonly UnitNode[]): string[] => nodes.flatMap((node) => [node.unit.id, ...walk(node.children)])
   const units = new Set(walk(unitTree(at.organisation, days.after, roots)))
   const persons = new Set(at.organisation.assignments
     .filter((one) => units.has(one.unitId) && runsOn(one, days.after)).map(personOf))
+  const said = new Set<string>()
   const found = findingsOfOrganisation(at, days.after)
     .filter((one) => (one.person !== undefined ? persons.has(one.person) : units.has(one.id)))
-    .map((one) => findingSentence(one, s, scopeLabel, names.person))
+    .map((one) => ({ text: findingSentence(one, s, scopeLabel, names.person), ...(one.person === undefined ? { unitId: one.id } : {}) }))
   const lost = lostAccountability(responsibilities, at.organisation, days.before, days.after)
-    .map((one) => s('move.lostA', { responsibility: one.name }))
-  return [...new Set([...found, ...lost])]
+    .map((one) => ({ text: s('move.lostA', { responsibility: one.name }) }))
+  return [...found, ...lost].filter((line) => (said.has(line.text) ? false : (said.add(line.text), true)))
 }

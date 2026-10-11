@@ -21,6 +21,11 @@
  * lists only the findings about that unit and the people holding its roles —
  * what it is about is what the person is looking at, so a link would lead to
  * where they already are.
+ *
+ * And a plan's page says what is still open on the plan's day in the units
+ * it reorganises (`PlanOrganisation`, ADR-0036 §6): each finding about a unit
+ * a link to that unit, and one about a person a line — the people are in the
+ * list above it.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -45,6 +50,8 @@ function naming(pattern: RegExp): string[] {
 describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
-    expect(naming(/\bfindingSentence\b/)).toEqual(['app/organisation/attention.ts', 'app/units/UnitSection.tsx', 'projects/checks.ts'])
+    expect(naming(/\bfindingSentence\b/)).toEqual([
+      'app/organisation/attention.ts', 'app/units/PlanOrganisation.tsx', 'app/units/UnitSection.tsx', 'projects/checks.ts',
+    ])
   })
 })
