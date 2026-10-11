@@ -44,6 +44,7 @@ import { accountabilityGaps } from '../model/operatingModel'
 import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
 import { unitFindings } from '../model/units'
+import { unitTypeLanes } from '../model/unitOrder'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
@@ -99,6 +100,12 @@ export type CheckKey =
    */
   | 'check.accountability'
   /**
+   * A unit type of the operating model that sits nowhere (3.6.1): not at the
+   * top, and in no unit type that sits anywhere (`model/unitOrder.ts`), so
+   * every unit made of it would sit where its type may not.
+   */
+  | 'check.unitTypeNowhere'
+  /**
    * The organisation as it is, on a day (ADR-0036 §3), read off the index:
    * fewer people in a role of a unit than its slot's minimum, more than its
    * maximum; a unit under a type it may not sit in, one serving several
@@ -145,6 +152,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.offeredNotShared': 'check.offeredNotShared',
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelow',
   'check.accountability': 'check.accountability',
+  'check.unitTypeNowhere': 'check.unitTypeNowhere',
   'check.roleVacant': 'check.roleVacant',
   'check.roleOverMax': 'check.roleOverMax',
   'check.unitMisplaced': 'check.unitMisplaced',
@@ -215,6 +223,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
     one: 'check.short.causeExplainsObservationBelow.one', other: 'check.short.causeExplainsObservationBelow.other',
   },
   'check.accountability': { one: 'check.short.accountability.one', other: 'check.short.accountability.other' },
+  'check.unitTypeNowhere': { one: 'check.short.unitTypeNowhere.one', other: 'check.short.unitTypeNowhere.other' },
   'check.roleVacant': { one: 'check.short.roleVacant.one', other: 'check.short.roleVacant.other' },
   'check.roleOverMax': { one: 'check.short.roleOverMax.one', other: 'check.short.roleOverMax.other' },
   'check.unitMisplaced': { one: 'check.short.unitMisplaced.one', other: 'check.short.unitMisplaced.other' },
@@ -524,7 +533,7 @@ export function documentFindings(deps: {
   }
   return [
     ...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index),
-    ...accountabilityFindings(scope, model),
+    ...accountabilityFindings(scope, model), ...nowhereFindings(scope, model),
   ]
 }
 
@@ -541,6 +550,15 @@ function accountabilityFindings(scope: ScopePath, model: HostModel): Finding[] {
     name: responsibility.name,
     ...(accountable.length ? { detail: accountable.map((role) => role.name).join(', '), fields: accountable.map((role) => role.id) } : {}),
   }))
+}
+
+/**
+ * Every unit type of the operating model that sits nowhere: not at the top,
+ * and in no unit type that sits anywhere, so no unit of it can be placed
+ * without a finding of its own. Only the organisation's model holds one.
+ */
+function nowhereFindings(scope: ScopePath, model: HostModel): Finding[] {
+  return unitTypeLanes(model.unitTypes ?? []).nowhere.map((type) => ({ key: 'check.unitTypeNowhere', scope, id: type.id, name: type.name }))
 }
 
 /**

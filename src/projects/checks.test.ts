@@ -494,3 +494,33 @@ describe('a responsibility not exactly one role\'s A', () => {
     expect(keys(documentFindings({ scope: '', model: settled, index }))).not.toContain('check.accountability')
   })
 })
+
+describe('a unit type that sits nowhere', () => {
+  const index = indexScopes([{ path: '', model: { elements: [], relations: [] } }])
+  const org = document({
+    unitTypes: [
+      { id: 'ut-train', name: 'Train', top: true, within: [], slots: [] },
+      { id: 'ut-team', name: 'Team', within: ['ut-train'], slots: [] },
+      { id: 'ut-guild', name: 'Guild', within: [], slots: [] },
+      { id: 'ut-chapter', name: 'Chapter', within: ['ut-guild'], slots: [] },
+    ],
+  })
+
+  it('is a finding at the organisation, one per type no unit of which can be placed: not at the top, nor in a type that is anywhere', () => {
+    const found = documentFindings({ scope: '', model: org, index }).filter((one) => one.key === 'check.unitTypeNowhere')
+    expect(found).toEqual([
+      { key: 'check.unitTypeNowhere', scope: '', id: 'ut-chapter', name: 'Chapter' },
+      { key: 'check.unitTypeNowhere', scope: '', id: 'ut-guild', name: 'Guild' },
+    ])
+    expect(findingSentence(found[1], translator('en'), () => '')).toBe(
+      'Guild sits nowhere — not at the top, nor in a unit type that sits anywhere — so no unit of it can be placed: say where it sits',
+    )
+    expect(tally(documentFindings({ scope: '', model: org, index }))['check.unitTypeNowhere']).toBe(2)
+  })
+
+  it('is nothing where every type sits somewhere, or there is no operating model', () => {
+    expect(keys(documentFindings({ scope: 'claims', model: document(), index }))).not.toContain('check.unitTypeNowhere')
+    const placed = document({ unitTypes: org.unitTypes!.slice(0, 2) })
+    expect(keys(documentFindings({ scope: '', model: placed, index }))).not.toContain('check.unitTypeNowhere')
+  })
+})
