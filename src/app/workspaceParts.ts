@@ -26,6 +26,8 @@ import type { WorkspacePages } from './useWorkspacePages'
 import type { WorkspaceRequests } from './useWorkspaceRequests'
 import type { LandPeopleMoves } from './units/landPeopleMoves'
 import type { CheckMarking } from './checkMarking'
+import type { WriteIn } from './units/writeIn'
+import type { ScopePath } from '../projects/scopePath'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 
 /**
@@ -83,6 +85,8 @@ export interface WorkspaceParts {
   landMoves: LandPeopleMoves
   /** A finding marked as intended from any list here, and a mark taken back (ADR-0036, amended): handed down as a context. */
   marking: CheckMarking
+  /** A change kept in another scope, written there under its rights (`units/writeIn.ts`): a unit made on the chart and filed elsewhere. */
+  unitWrites: { writeIn: WriteIn; writable: (path: ScopePath) => boolean }
   dialogs: WorkspaceDialogState
   /** The day each board is being looked at, which is nobody's write (ADR-0027). */
   viewing: ShownDays

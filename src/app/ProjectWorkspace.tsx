@@ -342,7 +342,9 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     open: { scope: project.path, model: session.model, dispatch: session.dispatch, writable: !base.readOnly },
     writable: source.writable ?? writableLikeHere(source.readOnly ?? false),
   }), [index, writeIn, today, notify, s, project.path, session.model, session.dispatch, base.readOnly, source.writable, source.readOnly])
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, marking }
+  // Where a unit made on the chart is filed in another scope (3.6.2): written there, under its rights.
+  const unitWrites = useMemo(() => ({ writeIn, writable: source.writable ?? writableLikeHere(source.readOnly ?? false) }), [writeIn, source.writable, source.readOnly])
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, marking, unitWrites }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */

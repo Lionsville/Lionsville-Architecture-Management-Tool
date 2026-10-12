@@ -44,8 +44,15 @@
  * is the inspector's while nothing is picked (`ChartSummary`, through
  * `EditorPages.inspector`); a finding there goes to its unit here as any
  * request from outside does (`select`).
+ *
+ * **Units are made where they are seen** (3.6.2): *+ Unit at the top* on the
+ * bar, in the outline's header and on an empty chart, and *+* on a unit's
+ * name row for a unit inside it (`useNewUnit`, `AddUnit.tsx`). Only where
+ * the workspace hands the chart a way to write (`make`), and never on a chart
+ * that is only read.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -74,6 +81,7 @@ import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { foldKey, SessionFolds } from '../sessionFolds'
+import { AddAtTop } from './AddUnit'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { ChartOutline } from './ChartOutline'
@@ -84,6 +92,8 @@ import type { LandPeopleMoves } from './landPeopleMoves'
 import type { UnitViewsHere } from './unitViewsHere'
 import { useChartFolds } from './useChartFolds'
 import type { ChartFolds } from './useChartFolds'
+import { useNewUnit } from './useNewUnit'
+import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
 
 export type ChartPageProps = {
@@ -113,6 +123,8 @@ export type ChartPageProps = {
   folds?: SessionFolds
   /** How a unit's move among its siblings lands, a step in each scope that keeps one (`landPeopleMoves`). Absent: the outline moves nothing. */
   reorder?: LandPeopleMoves
+  /** How a unit is made from the chart: a step in the scope it is filed in (`useNewUnit`). Absent: no *+ Unit*. */
+  make?: UnitMaking
 }
 
 export function ChartPage(props: ChartPageProps) {
@@ -164,8 +176,10 @@ export function ChartPage(props: ChartPageProps) {
     goTo(found[0])
   }
   const roles = new Map(here.at.organisation.roles.map((role) => [role.id, role]))
-  const types = new Map(here.at.organisation.unitTypes.map((type) => [type.id, type.name]))
-  const typeName = (id: string | undefined) => types.get(id ?? '') ?? ''
+  const typeName = useTypeName(here)
+  const newUnit = useNewUnit({
+    make: props.make, readOnly: props.readOnly, here, chart, day, scope: props.scope ?? '', scopeLabel: props.scopeLabel, typeName, goTo, t,
+  })
   const writes = props.assign !== undefined && people !== undefined && !people.readOnly
   // Where the scope is only read, a vacancy in a unit kept here that the person manages
   // still assigns — a managing role's only strictly below one they hold (ADR-0036 §12).
@@ -185,17 +199,25 @@ export function ChartPage(props: ChartPageProps) {
     } : undefined,
     folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, byUnit) },
     optional: folds.optional,
+    ...(newUnit.offer ? { add: { offer: newUnit.offer, open: newUnit.open } } : {}),
   }
+  const atTop = (guide: string, testId: string, variant?: 'outlined' | 'contained') => addAtTop(newUnit, props.make, guide, testId, t, variant)
   return (
     <Box data-testid="chart-page" sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <ChartBar chart={chart} folds={folds} onFind={find} onFindMe={findMe} note={note} t={t} />
+      <ChartBar chart={chart} folds={folds} onFind={find} onFindMe={findMe} note={note} add={atTop('chart.addAtTop', 'chart-add-top')} t={t} />
       <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
         <ChartOutline
-          chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={goTo} typeName={typeName} order={order} t={t}
+          chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={goTo} typeName={typeName} order={order}
+          addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} t={t}
         />
         <Box ref={page} data-testid="chart-body" sx={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, overflow: 'auto', p: 2, bgcolor: 'background.default', ...locatedRing(locatedId) }}>
           {chart.roots.length === 0
-            ? <Typography sx={{ fontSize: 12.5, color: 'text.secondary', py: 6, textAlign: 'center' }}>{t('chart.empty', { day: formatDay(day, language) })}</Typography>
+            ? (
+              <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textAlign: 'center' }}>{t('chart.empty', { day: formatDay(day, language) })}</Typography>
+                {atTop('chart.addFirst', 'chart-add-first', 'contained')}
+              </Box>
+            )
             : <UnitGrid units={chart.roots} depth={0} drawing={drawing} />}
         </Box>
       </Box>
@@ -209,8 +231,24 @@ export function ChartPage(props: ChartPageProps) {
           onClose={() => setAssigning(undefined)} s={t}
         />
       )}
+      {newUnit.dialog}
     </Box>
   )
+}
+
+/** A unit type's name by its id, worked out once per organisation. */
+function useTypeName(here: UnitViewsHere): (id: string | undefined) => string {
+  const { unitTypes } = here.at.organisation
+  return useMemo(() => {
+    const types = new Map(unitTypes.map((type) => [type.id, type.name]))
+    return (id: string | undefined) => types.get(id ?? '') ?? ''
+  }, [unitTypes])
+}
+
+/** *+ Unit at the top* where the chart makes units, carrying its stable name; nothing where it makes none. */
+function addAtTop(newUnit: NewUnit, make: UnitMaking | undefined, guide: string, testId: string, t: Translate, variant?: 'outlined' | 'contained') {
+  if (!newUnit.offer || !make) return undefined
+  return <AddAtTop offer={newUnit.offer()} onAdd={() => newUnit.open()} onLink={make.onOpenOperating} guide={guide} testId={testId} t={t} {...(variant ? { variant } : {})} />
 }
 
 /** The chart's folds, kept where the shell keeps them for the session, or — where it keeps none — for as long as the page is up. */
@@ -268,8 +306,8 @@ function usePageHandle(
  * a first open of a large chart is folded, until a fold is changed. How to
  * read the chart is said in its summary, beside it.
  */
-function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
-  chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; t: Translate
+function ChartBar({ chart, folds, onFind, onFindMe, note, add, t }: {
+  chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; add: ReactNode; t: Translate
 }) {
   const [query, setQuery] = useState('')
   return (
@@ -288,6 +326,7 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, t }: {
         <Button size="small" variant="outlined" onClick={onFindMe} data-testid="chart-find-me">{t('chart.findMe')}</Button>
         {note && <Typography data-testid="chart-note" role="status" sx={{ fontSize: 11.5, color: 'warning.main' }}>{note}</Typography>}
         <Box sx={{ flex: 1 }} />
+        {add}
         <FormControlLabel
           data-guide="chart.showOptional" data-testid="chart-show-optional"
           control={<Switch size="small" checked={folds.optional} onChange={folds.toggleOptional} />}

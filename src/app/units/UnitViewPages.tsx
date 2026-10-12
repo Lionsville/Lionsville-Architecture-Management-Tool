@@ -22,6 +22,9 @@ import type { ConwayPage as ConwayPageShape } from './ConwayPage'
 import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
 import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
 import { unitViewsHere } from './unitViewsHere'
+import type { UnitMaking } from './useNewUnit'
+import { flattenScopes } from '../../projects/scope'
+import { ROOT_SCOPE } from '../../projects/scopePath'
 
 /**
  * A chart and a Conway map are tabs, never the first view: each page arrives
@@ -65,6 +68,15 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
     onHandle: parts.renderer.onSheetHandle,
   }
   const select = parts.pages.selectRequestFor(diagram.id)
+  const onOpenScope = props.navigation.onOpenScope
+  const scopes = props.tree.scopes
+  const { writeIn, writable } = parts.unitWrites
+  // A unit made on the chart (3.6.2): the session's step where it is filed here, another scope's step elsewhere.
+  const make = useMemo<UnitMaking>(() => ({
+    scopes: flattenScopes(scopes).map((one) => one.path), writable, dispatch: session.dispatch, writeIn,
+    newId: (name) => session.ids.element(name),
+    onOpenOperating: () => (scope === ROOT_SCOPE ? parts.pages.openOperating() : onOpenScope?.(ROOT_SCOPE, { page: 'operating' })),
+  }), [scopes, writable, session.dispatch, session.ids, writeIn, scope, parts.pages.openOperating, onOpenScope])
   if (kind === 'chart') {
     const { chosenOn, choose } = parts.pages.chartChoice
     const chosen = chosenOn(diagram.id)
@@ -74,6 +86,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
         onChoose={(assignmentId) => choose(diagram.id, assignmentId)}
         assign={{ dispatch: session.dispatch, makeId: props.shell.makeId, scopeName }}
         scope={scope} {...(props.shell.folds ? { folds: props.shell.folds } : {})} reorder={parts.landMoves}
+        make={make}
       />
     )
   }

@@ -76,6 +76,20 @@ function conwayAtTheTop(top: ScopeSnapshot): ScopeSnapshot {
   }
 }
 
+/** The organisation open on a chart of one team, of a type a team may sit in. */
+function chartAtTheTop(top: ScopeSnapshot): ScopeSnapshot {
+  return {
+    ...top,
+    activeDiagramId: 'oc',
+    model: {
+      ...top.model,
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: ['ut-team'], slots: [] }],
+      elements: [...top.model.elements, { id: 'ops', kind: 'actor' as const, name: 'Operations', unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} }],
+      diagrams: [...top.model.diagrams, { id: 'oc', kind: 'chart', name: 'Organisation', members: [] }],
+    },
+  }
+}
+
 function show(opened: boolean) {
   return renderApp({
     repositories: heldRepositories(example),
@@ -322,12 +336,24 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }]],
   // An organisation chart, made on a landscape's home: the example has no
   // units, and the outline, the bar and the summary beside it are drawn all the same.
-  [['an organisation chart', ['chart.outline', 'chart.foldAll', 'chart.unfoldAll', 'chart.showOptional', 'chart.summary'], async () => {
+  [['an organisation chart', [
+    'chart.outline', 'chart.foldAll', 'chart.unfoldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst',
+  ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     fireEvent.click(await screen.findByTestId('new-board'))
     fireEvent.click(await screen.findByTestId('new-board-chart'))
     await screen.findByTestId('chart-page')
+  }]],
+  // A chart of the organisation's own teams: a unit's + makes a unit inside it, in a dialog.
+  [['an organisation chart with a unit', ['chart.addInside'], async () => {
+    const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
+    renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
+    await screen.findByTestId('chart-add-inside')
+  }],
+  ['its dialog for a new unit', ['chart.newUnit'], async () => {
+    fireEvent.click(screen.getByTestId('chart-add-inside'))
+    await screen.findByTestId('new-unit-dialog')
   }]],
   // A list of findings, on a Conway map whose two teams declare they work
   // together and run no interface: a note, hidden until its switch shows it,

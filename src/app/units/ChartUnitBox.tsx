@@ -27,6 +27,10 @@
  * optional one — is not drawn until *Show optional roles* is on: it is a
  * choice, not a gap, and the unit's inspector always lists it. A vacancy is
  * always drawn.
+ *
+ * **A unit is made inside one from its name row** (3.6.2): a quiet *+* that
+ * shows on hover, on focus and on the unit picked (`AddUnit.tsx`), never on a
+ * chart that is only read.
  */
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
@@ -44,9 +48,11 @@ import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
+import { AddInside, showsAddInside } from './AddUnit'
 import { rollUpWords, unitBadges } from './chartWords'
 import type { RollUpPart } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
+import type { UnitOffer } from './useNewUnit'
 
 /** Everything the boxes read, worked out once per render of the page. */
 export type Drawing = {
@@ -75,6 +81,8 @@ export type Drawing = {
   folds?: ChartBoxFolds
   /** Whether a role nobody holds and nobody needs to is drawn: *Show optional roles*. */
   optional: boolean
+  /** *+ Unit* inside a unit: what it offers there, and the dialog it opens. Absent: nothing is made from the chart. */
+  add?: { offer: (unit: ChartUnit) => UnitOffer; open: (unit: ChartUnit) => void }
 }
 
 /** What the boxes read of the chart's folds. */
@@ -120,7 +128,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
         boxShadow: selected ? 2 : 0, ...(wide ? { gridColumn: '1 / -1' } : {}),
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, ...showsAddInside }}>
         {folds && unit.children.length > 0 && (
           <IconButton
             size="small" aria-label={t(folded ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!folded}
@@ -134,6 +142,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
           <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
           <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
         </ButtonBase>
+        {drawing.add && <AddInside name={unit.name} offer={drawing.add.offer(unit)} picked={selected} onAdd={() => drawing.add?.open(unit)} t={t} />}
       </Box>
       {folded && <RollUp parts={rollUpWords(folds.rollUp(unit), t)} />}
       <UnitBadges unit={unit} drawing={drawing} />

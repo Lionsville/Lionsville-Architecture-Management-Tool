@@ -17,8 +17,12 @@
  * place up or down among the units of its type under the same parent
  * (`useSiblingOrder`) — buttons, so the keyboard has the same way as the
  * pointer. Every list of units follows it.
+ *
+ * **A unit is made at the top from its header** (3.6.2): *+ Unit at the
+ * top*, as on the chart's bar (`AddUnit.tsx`).
  */
 import { useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
@@ -41,13 +45,15 @@ export type ChartOutlineProps = {
   typeName: (id: string | undefined) => string
   /** The current unit's place among its siblings; absent where it has none of its type or may not be moved here. */
   order: SiblingOrder | undefined
+  /** *+ Unit at the top*, in the header; absent where nothing is made from the chart. */
+  addAtTop?: ReactNode
   t: Translate
 }
 
 /** The attribute a row carries its unit's id in: not the chart's own, so a ring on the chart never lands here. */
 const ROW = 'data-outline-id'
 
-export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, t }: ChartOutlineProps) {
+export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
   // The unit gone to is brought on screen here too: the way to it is opened in
   // the same render, and a fold turned elsewhere in the outline leaves the
@@ -61,6 +67,7 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
       component="nav" ref={box} aria-label={t('chart.outline')} data-testid="chart-outline" data-guide="chart.outline"
       sx={{ width: { xs: 'auto', md: 240 }, flex: '0 0 auto', maxHeight: { xs: 200, md: 'none' }, overflow: 'auto', p: 1, borderRight: { md: 1 }, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', bgcolor: 'background.paper' }}
     >
+      {addAtTop && <Box data-testid="chart-outline-header" sx={{ mb: 0.5 }}>{addAtTop}</Box>}
       <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.5 }}>{t('chart.outlineHint')}</Typography>
       {chart.roots.length === 0
         ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('chart.outlineEmpty')}</Typography>
@@ -70,7 +77,7 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
   )
 }
 
-function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order'> & { units: readonly ChartUnit[]; depth: number }) {
+function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop'> & { units: readonly ChartUnit[]; depth: number }) {
   const { folded, onToggle, current, onPick, typeName, t } = props
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
