@@ -50,6 +50,8 @@ export const CONTROL_NAMES = [
   'sheet.canvas', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy', 'sheet.unmapped',
   // Who is responsible: a capability's *Assigned to*, and the bar's switch that names the units on the sheet.
   'sheet.assignedTo', 'sheet.showResponsible',
+  // The rail's switch that draws every unit of the scope, not only the ones the sheet uses.
+  'sheet.allUnits',
   'map.grid', 'map.summary',
   // The observations page: its three tabs, one observation, the form, and the solutions.
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',

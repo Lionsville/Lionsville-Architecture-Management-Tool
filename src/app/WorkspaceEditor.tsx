@@ -19,6 +19,7 @@ import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePag
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
+import { foldKey } from './sessionFolds'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -225,6 +226,9 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
       select={parts.pages.selectRequestFor(diagram.id)}
+      // The rail's *All units* and the units kept on it, for the session and per view (ADR-0036, amended 12 October 2026).
+      remember={foldKey(parts.props.project.path, diagram.id, 'rail')}
+      notify={parts.props.shell.notify}
     />
   )
 }

@@ -17,6 +17,16 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.resizeRail': 'Breedte van de belanghebbenden',
   'sheet.resizeDetails': 'Breedte van de details',
   'sheet.noStakeholders': 'Nog geen belanghebbenden.',
+  // De eenheden die het blad gebruikt, en de rest op verzoek (ADR-0036, aangevuld 12 oktober 2026).
+  'sheet.unitsHere': 'Eenheden op dit blad',
+  'sheet.unitsOther': 'Alle andere eenheden',
+  'sheet.allUnits': 'Alle eenheden',
+  'sheet.unitsNotDrawnOne': 'Hier staat nog 1 eenheid.',
+  'sheet.unitsNotDrawnOther': 'Hier staan nog {count} eenheden.',
+  'sheet.unitResponsible': 'Verantwoordelijk voor {name}',
+  'sheet.unitResponsibleMore': 'Verantwoordelijk voor {name} en nog {count}',
+  'sheet.unitLane': 'Heeft een baan',
+  'sheet.nowAUnit': 'Nu een eenheid: die staat in het organogram. Met ‘Alle eenheden’ blijft ze bij de belanghebbenden.',
 
   'sheet.find': 'Zoeken op de pagina',
   'sheet.findPlaceholder': 'Typ een naam…',

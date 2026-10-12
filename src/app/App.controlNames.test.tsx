@@ -39,6 +39,11 @@ const example: ScopeSnapshot[] = exampleScopes(EXAMPLES[0]).map((scope) => {
 const root = example.find((scope) => scope.path === '')!
 root.model = {
   ...root.model,
+  // One unit filed at the top that the sheet does not use, so its rail offers *All units*. Its type is
+  // nobody's: the operating model's journey below starts from an organisation with no unit types.
+  elements: [...root.model.elements, {
+    id: 'back-office', kind: 'actor', name: 'Back office', unitTypeId: 'ut-office', lifecycle: 'live', isManaged: false, aspects: {},
+  }],
   decisions: [{
     id: 'adr-from-above', number: 1, title: 'One register for the organisation', status: 'accepted',
     date: '2026-01-01', body: 'Context.', signers: [],
@@ -207,7 +212,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
   [['the business architecture, a capability chosen', [
     'sheet.canvas', 'sheet.unmapped', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy',
-    'sheet.assignedTo', 'sheet.showResponsible',
+    'sheet.assignedTo', 'sheet.showResponsible', 'sheet.allUnits',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-business'))

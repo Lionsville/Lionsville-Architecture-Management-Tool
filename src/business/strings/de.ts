@@ -17,6 +17,16 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.resizeRail': 'Breite der Beteiligten',
   'sheet.resizeDetails': 'Breite der Details',
   'sheet.noStakeholders': 'Noch keine Beteiligten.',
+  // Die Einheiten, die das Blatt nutzt, und der Rest auf Wunsch (ADR-0036, ergänzt 12. Oktober 2026).
+  'sheet.unitsHere': 'Einheiten auf diesem Blatt',
+  'sheet.unitsOther': 'Alle anderen Einheiten',
+  'sheet.allUnits': 'Alle Einheiten',
+  'sheet.unitsNotDrawnOne': 'Hier ist noch 1 Einheit abgelegt.',
+  'sheet.unitsNotDrawnOther': 'Hier sind noch {count} Einheiten abgelegt.',
+  'sheet.unitResponsible': 'Verantwortlich für {name}',
+  'sheet.unitResponsibleMore': 'Verantwortlich für {name} und {count} weitere',
+  'sheet.unitLane': 'Hat eine eigene Bahn',
+  'sheet.nowAUnit': 'Jetzt eine Einheit: Sie steht im Organigramm. Mit ‘Alle Einheiten’ bleibt sie bei den Beteiligten.',
 
   'sheet.find': 'Auf der Seite suchen',
   'sheet.findPlaceholder': 'Einen Namen eingeben…',

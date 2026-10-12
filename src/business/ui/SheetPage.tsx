@@ -59,8 +59,10 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import InputBase from '@mui/material/InputBase'
 import Popover from '@mui/material/Popover'
+import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme } from '@mui/material/styles'
 import type { SxProps, Theme } from '@mui/material/styles'
@@ -96,6 +98,8 @@ import { LaneDialog } from './LaneDialog'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
 import { SheetSettingsDialog } from './SheetSettingsDialog'
+import { useRail } from './useRail'
+import type { RailUnits } from './useRail'
 
 export type SheetPageProps = {
   open: boolean
@@ -154,6 +158,14 @@ export type SheetPageProps = {
    * page does not draw it.
    */
   select?: SelectRequest
+  /**
+   * Where the rail's *All units* and the units kept on it are remembered for
+   * the session: the view's key in the shell's session memory
+   * (`widgets/sessionMemory`). Absent: for as long as the page is drawn.
+   */
+  remember?: string
+  /** A short note to the person: here, that a stakeholder typed as a unit is now on the organisation chart. */
+  notify?(message: string): void
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
@@ -243,9 +255,9 @@ export function SheetPage(props: SheetPageProps) {
     return () => onHandle(undefined)
   }, [onHandle, props.open, sheetId, capture, selectedId])
 
+  const rail = useRail(model, { remember: props.remember, readOnly, sheet, notify: props.notify, note: t('sheet.nowAUnit') })
   const laidOut = useMemo(
-    () => (sheet ? sheetPage(model, sheet, props.elsewhere) : undefined),
-    [model, sheet, props.elsewhere],
+    () => (sheet ? sheetPage(model, sheet, props.elsewhere, rail.options) : undefined), [model, sheet, props.elsewhere, rail.options],
   )
   const selected = selectedId === undefined
     ? undefined
@@ -358,7 +370,7 @@ export function SheetPage(props: SheetPageProps) {
       >
         {laidOut && sheet?.showActors !== false && panels && (
           <>
-            <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={author} t={t} />
+            <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={author} t={t} units={rail.units(laidOut)} />
             <SeamResizer
               orientation="vertical" region="before"
               value={railWidth} min={RAIL.min} max={RAIL.max} defaultValue={RAIL.default}
@@ -800,13 +812,29 @@ function Finder({ query, hits, onQuery, onPick, t }: {
  * actor with nothing under it is an entry, and becomes a group through the
  * inspector's parent field; the one at the bottom makes a new group.
  */
-function Rail({ actors, width, onSelect, author, t }: {
+
+const RAIL_HEADING = {
+  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', mb: 1,
+} as const
+
+/**
+ * The stakeholder rail (ADR-0036, amended 12 October 2026): the parties'
+ * tree, then *Units on this sheet* with why each is there, then — where
+ * *All units* is on — the rest of the scope's units, and the switch last,
+ * saying how many it would add. A unit is made on the organisation chart,
+ * not here, so the rail offers no *+* for one.
+ */
+function Rail({ actors, width, onSelect, author, t, units }: {
   actors: readonly SheetActor[]
   width: number
   onSelect(id: ElementId): void
   author: Author | undefined
   t: Translate
+  units?: RailUnits
 }) {
+  const parties = actors.filter((row) => row.group === 'parties')
+  const used = actors.filter((row) => row.group === 'used')
+  const other = actors.filter((row) => row.group === 'other')
   return (
     <Box
       data-testid="sheet-rail"
@@ -815,78 +843,13 @@ function Rail({ actors, width, onSelect, author, t }: {
         bgcolor: 'background.paper', px: 1.5, py: 2,
       }}
     >
-      <Typography sx={{
-        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: 'text.secondary', mb: 1,
-      }}>
-        {t('sheet.stakeholders')}
-      </Typography>
-      {actors.length === 0 && (
+      <Typography sx={RAIL_HEADING}>{t('sheet.stakeholders')}</Typography>
+      {parties.length === 0 && (
         <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
           {t('sheet.noStakeholders')}
         </Typography>
       )}
-      {actors.map((row, index) => {
-        const heading = (actors[index + 1]?.depth ?? 0) > row.depth
-        // The group this row belongs to is the nearest row at depth 0 at or
-        // above it; the add line goes after the group's last member.
-        const group = row.depth === 0 ? row : [...actors.slice(0, index)].reverse().find((r) => r.depth === 0) ?? row
-        const endsGroup = row.depth > 0 && (actors[index + 1]?.depth ?? 0) === 0
-        const add = author && endsGroup && (
-          <Box sx={{ pl: 1.25, py: 0.25 }}>
-            <Add
-              label={t('sheet.addStakeholder')}
-              title={t('sheet.addStakeholderTo', { name: group.element.name })}
-              onClick={() => author.made(author.actions.addElement({
-                kind: 'actor', name: t('sheet.nameStakeholder'), parentId: group.element.id,
-              }))}
-              sx={{ px: 0.4, py: 0, fontSize: 9 }}
-            />
-          </Box>
-        )
-        return (
-          <Fragment key={row.element.id}>
-          <Box
-            sx={{
-              display: 'flex', alignItems: 'center', gap: 0.5,
-              pl: row.depth * 1.25,
-              ...(heading ? { mt: 1.5, mb: 0.5 } : { py: 0.25 }),
-            }}
-          >
-            <Box
-              component="button"
-              type="button"
-              data-testid={`sheet-actor-${row.element.id}`}
-              data-element-id={row.element.id}
-              onClick={() => onSelect(row.element.id)}
-              sx={{
-                appearance: 'none', cursor: 'pointer', font: 'inherit',
-                background: 'none', border: 0, p: 0, textAlign: 'left', minWidth: 0, flex: 1,
-                // A button's text is the browser's `buttontext` unless it is
-                // told otherwise: inherit, or a heading loses its own colour.
-                ...(heading
-                  ? {
-                    fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-                    textTransform: 'uppercase', color: 'text.secondary',
-                  }
-                  : { fontSize: 11.5, color: 'inherit' }),
-              }}
-            >
-              {row.element.name}
-            </Box>
-            {row.outside && (
-              <Chip
-                size="small"
-                variant="outlined"
-                label={t('sheet.outside')}
-                sx={{ height: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
-              />
-            )}
-          </Box>
-          {add}
-          </Fragment>
-        )
-      })}
+      <Parties rows={parties} onSelect={onSelect} author={author} t={t} />
       {author && (
         <Box sx={{ mt: 1.5 }}>
           <Add
@@ -898,8 +861,159 @@ function Rail({ actors, width, onSelect, author, t }: {
           />
         </Box>
       )}
+      <RailUnitRows group="used" heading={t('sheet.unitsHere')} rows={used} onSelect={onSelect} t={t} />
+      <RailUnitRows group="other" heading={t('sheet.unitsOther')} rows={other} onSelect={onSelect} t={t} />
+      {units && (units.notDrawn > 0 || units.all) && (
+        <Box sx={{ mt: 2 }}>
+          {!units.all && (
+            <Typography data-testid="sheet-units-not-drawn" sx={{ fontSize: 10.5, color: 'text.secondary' }}>
+              {plural(t, { one: 'sheet.unitsNotDrawnOne', other: 'sheet.unitsNotDrawnOther' }, units.notDrawn)}
+            </Typography>
+          )}
+          <FormControlLabel
+            data-guide="sheet.allUnits" data-testid="sheet-all-units"
+            control={<Switch size="small" checked={units.all} onChange={(event) => units.onAll(event.target.checked)} />}
+            label={<Typography sx={{ fontSize: 11.5 }}>{t('sheet.allUnits')}</Typography>}
+            sx={{ ml: -0.5, mr: 0 }}
+          />
+        </Box>
+      )}
     </Box>
   )
+}
+
+/** The parties' tree: a row with rows under it is their group's heading, with a *+* after its last. */
+function Parties({ rows, onSelect, author, t }: {
+  rows: readonly SheetActor[]
+  onSelect(id: ElementId): void
+  author: Author | undefined
+  t: Translate
+}) {
+  return rows.map((row, index) => {
+    const heading = (rows[index + 1]?.depth ?? 0) > row.depth
+    // The group this row belongs to is the nearest row at depth 0 at or
+    // above it; the add line goes after the group's last member.
+    const group = row.depth === 0 ? row : [...rows.slice(0, index)].reverse().find((r) => r.depth === 0) ?? row
+    const endsGroup = row.depth > 0 && (rows[index + 1]?.depth ?? 0) === 0
+    const add = author && endsGroup && (
+      <Box sx={{ pl: 1.25, py: 0.25 }}>
+        <Add
+          label={t('sheet.addStakeholder')}
+          title={t('sheet.addStakeholderTo', { name: group.element.name })}
+          onClick={() => author.made(author.actions.addElement({
+            kind: 'actor', name: t('sheet.nameStakeholder'), parentId: group.element.id,
+          }))}
+          sx={{ px: 0.4, py: 0, fontSize: 9 }}
+        />
+      </Box>
+    )
+    return (
+      <Fragment key={row.element.id}>
+      <Box
+        sx={{
+          display: 'flex', alignItems: 'center', gap: 0.5,
+          pl: row.depth * 1.25,
+          ...(heading ? { mt: 1.5, mb: 0.5 } : { py: 0.25 }),
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          data-testid={`sheet-actor-${row.element.id}`}
+          data-element-id={row.element.id}
+          data-rail-group="parties"
+          onClick={() => onSelect(row.element.id)}
+          sx={{
+            ...RAIL_BUTTON,
+            ...(heading
+              ? {
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                textTransform: 'uppercase', color: 'text.secondary',
+              }
+              : { fontSize: 11.5, color: 'inherit' }),
+          }}
+        >
+          {row.element.name}
+        </Box>
+        {row.outside && <OutsideChip t={t} />}
+      </Box>
+      {add}
+      </Fragment>
+    )
+  })
+}
+
+/**
+ * A row's button on the rail. A button's text is the browser's `buttontext`
+ * unless it is told otherwise: inherit, or a heading loses its own colour.
+ */
+const RAIL_BUTTON = {
+  appearance: 'none', cursor: 'pointer', font: 'inherit',
+  background: 'none', border: 0, p: 0, textAlign: 'left', minWidth: 0, flex: 1,
+} as const
+
+function OutsideChip({ t }: { t: Translate }) {
+  return (
+    <Chip
+      size="small"
+      variant="outlined"
+      label={t('sheet.outside')}
+      sx={{ height: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
+    />
+  )
+}
+
+/**
+ * The units under the parties: the ones this sheet uses, each saying why in
+ * a quiet second line, or the rest of the scope's, quieter still. Flat — the
+ * organisation chart is where a unit's place in the structure is read.
+ */
+function RailUnitRows({ group, heading, rows, onSelect, t }: {
+  group: 'used' | 'other'
+  heading: string
+  rows: readonly SheetActor[]
+  onSelect(id: ElementId): void
+  t: Translate
+}) {
+  if (rows.length === 0) return null
+  return (
+    <Box data-testid={`sheet-rail-${group}`} sx={{ mt: 2 }}>
+      <Typography sx={RAIL_HEADING}>{heading}</Typography>
+      {rows.map((row) => {
+        const why = row.uses && whyDrawn(row.uses, t)
+        return (
+          <Box key={row.element.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
+            <Box
+              component="button"
+              type="button"
+              data-testid={`sheet-actor-${row.element.id}`}
+              data-element-id={row.element.id}
+              data-rail-group={group}
+              onClick={() => onSelect(row.element.id)}
+              sx={{ ...RAIL_BUTTON, fontSize: 11.5, color: group === 'other' ? 'text.secondary' : 'inherit' }}
+            >
+              {row.element.name}
+              {why && (
+                <Box component="span" sx={{ display: 'block', fontSize: 10, color: 'text.secondary' }}>{why}</Box>
+              )}
+            </Box>
+            {row.outside && <OutsideChip t={t} />}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+/** Why a unit is among *Units on this sheet*: the first thing it answers for here, else its lane. */
+function whyDrawn(uses: NonNullable<SheetActor['uses']>, t: Translate): string | undefined {
+  const [first, ...more] = uses.responsibleFor
+  if (first) {
+    return more.length === 0
+      ? t('sheet.unitResponsible', { name: first.name })
+      : t('sheet.unitResponsibleMore', { name: first.name, count: more.length })
+  }
+  return uses.lane ? t('sheet.unitLane') : undefined
 }
 
 // --- the journey ------------------------------------------------------------

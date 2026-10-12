@@ -25,6 +25,16 @@ export const EN = {
   'sheet.resizeRail': 'Resize the stakeholder rail',
   'sheet.resizeDetails': 'Resize the details',
   'sheet.noStakeholders': 'No stakeholders yet.',
+  // The units the sheet uses, and the rest on request (ADR-0036, amended 12 October 2026).
+  'sheet.unitsHere': 'Units on this sheet',
+  'sheet.unitsOther': 'All other units',
+  'sheet.allUnits': 'All units',
+  'sheet.unitsNotDrawnOne': '1 more unit is filed here.',
+  'sheet.unitsNotDrawnOther': '{count} more units are filed here.',
+  'sheet.unitResponsible': 'Responsible for {name}',
+  'sheet.unitResponsibleMore': 'Responsible for {name} and {count} more',
+  'sheet.unitLane': 'Has a lane',
+  'sheet.nowAUnit': 'Now a unit: it is on the organisation chart. Use ‘All units’ to keep it on this rail.',
 
   // --- finding something on the page ---------------------------------------
   'sheet.find': 'Find on the page',
