@@ -42,18 +42,19 @@ export function useEditorDialogs() {
 export type EditorDialogState = ReturnType<typeof useEditorDialogs>;
 
 /** What comes before the documentation page: the two delete questions, the shortcuts and the export. */
-export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles }: {
+export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles, unitDeletion }: {
   state: EditorState;
   diagram: DesignDiagram;
   deletes: DeleteRequests;
   exports: ExportDialogState;
   dialogs: EditorDialogState;
   roles?: EditorOwnership['roles'];
+  unitDeletion?: EditorOwnership['unitDeletion'];
 }) {
   const { exportOptions, exportSize } = exports;
   return (
     <>
-      <DeleteDialogs state={state} diagram={diagram} deletes={deletes} roles={roles} />
+      <DeleteDialogs state={state} diagram={diagram} deletes={deletes} roles={roles} unitDeletion={unitDeletion} />
       <ShortcutsHelpDialog open={dialogs.helpOpen} onClose={() => dialogs.setHelpOpen(false)} />
       {exportOptions && exportSize && (
         <ExportDialog
@@ -126,14 +127,17 @@ function useRolesEnded(state: EditorState, roles: EditorOwnership['roles']): (su
   }, t);
 }
 
-function DeleteDialogs({ state, diagram, deletes, roles }: {
+function DeleteDialogs({ state, diagram, deletes, roles, unitDeletion }: {
   state: EditorState;
   diagram: DesignDiagram;
   deletes: DeleteRequests;
   roles: EditorOwnership['roles'];
+  unitDeletion: EditorOwnership['unitDeletion'];
 }) {
   const { deleteTarget, setDeleteTarget, confirmDelete, setConfirmDelete } = deletes;
   const deleteElement = deleteTarget ? state.model.elements.find((e) => e.id === deleteTarget) : undefined;
+  // A unit's own question (3.6.2), asked when the dialog is up and not before.
+  const units = deleteElement ? unitDeletion?.([deleteElement.id]) : undefined;
   const rolesEnded = useRolesEnded(state, roles);
   const one = (id: string) => deletionSummary(state.model, { elementIds: [id], connectionIds: [], domainGroups: [] }, roles?.today);
   return (
@@ -144,12 +148,14 @@ function DeleteDialogs({ state, diagram, deletes, roles }: {
           isBoundaryApplication={diagram.kind === 'container' && diagram.applicationElementId === deleteElement.id}
           hasComponents={state.model.elements.some((e) => e.parentId === deleteElement.id)}
           endsRoles={rolesEnded(one(deleteElement.id))}
+          units={units}
           onRemoveFromDiagram={() => {
             state.actions.removeFromDiagram(deleteElement.id);
             setDeleteTarget(undefined);
           }}
-          onDeleteFromModel={() => {
-            state.actions.deleteFromModel(deleteElement.id);
+          onDeleteFromModel={(choice) => {
+            if (units && choice !== undefined) state.actions.deleteFromModel(deleteElement.id, (here) => units.run(choice, here));
+            else state.actions.deleteFromModel(deleteElement.id);
             setDeleteTarget(undefined);
           }}
           onClose={() => setDeleteTarget(undefined)}
@@ -161,8 +167,10 @@ function DeleteDialogs({ state, diagram, deletes, roles }: {
           endsRoles={rolesEnded(confirmDelete.summary)}
           subject={confirmDelete.subject}
           landings={confirmDelete.landings}
-          onConfirm={() => {
-            confirmDelete.run();
+          units={confirmDelete.units}
+          onConfirm={(choice) => {
+            if (choice !== undefined && confirmDelete.runUnits) confirmDelete.runUnits(choice);
+            else confirmDelete.run();
             setConfirmDelete(undefined);
           }}
           onConfirmWithLandings={confirmDelete.runWithLandings && (() => {

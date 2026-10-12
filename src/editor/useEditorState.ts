@@ -335,9 +335,14 @@ export interface EditorActions {
    * and selected domain groups lose their rect (members survive, they just
    * stop belonging to a group).
    */
-  deleteSelection(selection: Selection): void;
+  /**
+   * `via`, where the host makes the delete (a unit's, which may write other
+   * scopes: `EditorOwnership.unitDeletion`): handed the commands rather than
+   * dispatching them.
+   */
+  deleteSelection(selection: Selection, via?: (commands: Command[]) => void): void;
   removeFromDiagram(elementId: ElementId): void;
-  deleteFromModel(elementId: ElementId): void;
+  deleteFromModel(elementId: ElementId, via?: (commands: Command[]) => void): void;
   /**
    * Replace a connection's waypoints on the active diagram (label anchor and pin
    * kept). A hand edit, so the route becomes `manual`. Clearing the last bend of
@@ -1116,7 +1121,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(EMPTY_SELECTION);
       },
 
-      deleteSelection(asked) {
+      deleteSelection(asked, via) {
         const diagram = currentDiagram();
         // The boundary application never goes with the contents, whichever
         // gesture handed it over — Cut reaches here without passing the
@@ -1143,7 +1148,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           commands.push(...groupRemovalCommands(diagram, new Set(selection.domainGroups)));
         }
         if (commands.length === 0) return;
-        geometry(transaction(commands));
+        if (via) via(commands); else geometry(transaction(commands));
         setSelection(EMPTY_SELECTION);
       },
 
@@ -1154,9 +1159,9 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(EMPTY_SELECTION);
       },
 
-      deleteFromModel(elementId) {
+      deleteFromModel(elementId, via) {
         if (!currentModel().elements.some((e) => e.id === elementId)) return;
-        geometry({ type: 'element.delete', id: elementId });
+        if (via) via([{ type: 'element.delete', id: elementId }]); else geometry({ type: 'element.delete', id: elementId });
         setSelection(EMPTY_SELECTION);
       },
 

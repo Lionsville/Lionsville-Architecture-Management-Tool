@@ -38,6 +38,8 @@ import type { PeopleRegisterAccess } from '../people/ui/access'
 import { lazyPart } from '../widgets/lazyPart'
 import type { UnitSection as UnitSectionShape } from './units/UnitSection'
 import type { WriteIn } from './units/writeIn'
+import type { LandPeopleMoves } from './units/landPeopleMoves'
+import { unitDeletionSlot } from './units/unitDeletionSlot'
 
 /**
  * An actor's unit section, with its dialogs to assign and to declare an
@@ -71,10 +73,17 @@ export function useWorkspaceOwnership(deps: {
     /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
     writeIn?: WriteIn
   }
+  /**
+   * How a unit deleted here lands over every scope it writes (3.6.2): the
+   * structure's lander, which no managing role's right reaches, and where a
+   * refusal is said. Absent = a delete of a unit takes only what its own
+   * scope keeps.
+   */
+  deleting?: { land: LandPeopleMoves; onRefused(text: string): void }
   s: Translate
 }): EditorOwnership {
   const {
-    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, units, s,
+    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, units, deleting, s,
   } = deps
   /**
    * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
@@ -147,7 +156,14 @@ export function useWorkspaceOwnership(deps: {
       name: (roleId) => organisationOver(index, scope, session.current()).organisation.roles.find((role) => role.id === roleId)?.name,
       today: units.today,
     },
-  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units])
+    // Deleting a unit (3.6.2): what goes with it across the tree, the units inside it, and the delete itself.
+    ...(deleting ? {
+      unitDeletion: (elementIds: readonly string[]) => unitDeletionSlot({
+        index, scope, model: session.current(), today: units.today, dispatch: session.dispatch, land: deleting.land, scopeLabel, s,
+        onRefused: deleting.onRefused,
+      }, elementIds),
+    } : {}),
+  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units, deleting])
 }
 
 /** The organisation with this scope's session laid over it, once per index and model: a panel asks on every render. */

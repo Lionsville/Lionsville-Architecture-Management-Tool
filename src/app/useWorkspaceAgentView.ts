@@ -13,6 +13,7 @@ import type { Translate } from '../i18n'
 import type { Adr } from '../decisions/adr'
 import type { DesignElement, Relation } from '../model'
 import type { ChangeAcross } from '../agent/merge'
+import type { LandSteps } from '../agent/handle'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
 import { isViewPageName } from './pageLanding'
@@ -72,13 +73,19 @@ export function useWorkspaceAgentView(deps: {
    * this one lands (ADR-0035 §6). Absent, such a merge is refused.
    */
   changeAcross?: ChangeAcross
+  /**
+   * One list of commands per scope as one change, as the agent's: how its
+   * `element.remove` on a unit lands what other scopes keep of it (3.6.2).
+   * Absent, such a removal is refused.
+   */
+  landSteps?: LandSteps
   /** The people register, as the shell holds it: who an assignment may name (ADR-0036). */
   people?: PeopleRegisterAccess
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
     renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
-    changeAcross,
+    changeAcross, landSteps,
   } = deps
   const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
@@ -118,10 +125,11 @@ export function useWorkspaceAgentView(deps: {
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader, people: peopleNow }),
     people: peopleNow,
     ...(changeAcross ? { changeAcross } : {}),
+    ...(landSteps ? { landSteps } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
-    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, peopleNow,
+    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)
@@ -207,6 +215,7 @@ export function agentTree(at: {
     // The rows the rest of the tree wrote: the open scope's own are its session's, and the index's
     // copy of them may hold one the session has since taken away.
     rowsTo: (id, types) => indexRef.current.rowsTo(id, types).filter((row) => row.scope !== scope).map((row) => row.relation),
+    rowsOf: (id) => indexRef.current.rowsOf(id).filter((row) => row.scope !== scope),
     units: () => indexRef.current.units(),
     assignments: () => indexRef.current.assignments(),
     // The open scope's marks as its session has them: one made a moment ago holds.

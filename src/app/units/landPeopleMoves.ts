@@ -71,6 +71,8 @@ export type MovePeopleDeps = {
   onTreeChanged?: () => void
   /** Whose people the person manages, where the source grants that right: a scope only read to them takes their part. */
   manages?: ManagesPeople
+  /** Whose steps these are, where not the person's: an agent's delete of a unit marks every scope's step its own. */
+  origin?: 'agent'
 }
 
 /** Where the moves went: the scopes written and how many ended and began, or why nothing was. */
@@ -83,12 +85,20 @@ export type PeopleMoved =
  * none where nothing is left to do. An end is passed over where the
  * assignment has gone, or already ends on that day or before it — a move
  * never makes an assignment run longer — and so is a beginning for the same
- * person that the end passed over was to be followed by.
+ * person that the end passed over was to be followed by. A row or a
+ * record a step deletes or changes, gone since, is passed over too: what a
+ * delete of a unit takes elsewhere (`model/unitDeletion.ts`) may have gone
+ * in between, and nothing is left to do about it.
  */
 export function stepIn(model: Model, commands: readonly Command[]): Command | undefined {
   const held = assignmentsOf(model)
   const passedOver = new Set<string>()
-  const ends = commands.filter((command) => {
+  const there = commands.filter((command) => {
+    if (command.type === 'relation.delete') return command.id in model.relations
+    if (command.type === 'element.update' || command.type === 'element.delete') return command.id in model.elements
+    return true
+  })
+  const ends = there.filter((command) => {
     if (command.type !== 'assignment.update' && command.type !== 'assignment.remove') return true
     const was = held[command.id] as Assignment | undefined
     const over = command.type === 'assignment.update' && isDay(was?.until) && isDay(command.patch.until) && was.until <= command.patch.until
@@ -111,6 +121,11 @@ function counted(steps: readonly Command[]): { ended: number; begun: number } {
     ended: all.filter((one) => one.type === 'assignment.update' || one.type === 'assignment.remove').length,
     begun: all.filter((one) => one.type === 'assignment.add').length,
   }
+}
+
+/** A step marked as an agent's, where it is one. */
+function marked(step: Command, origin: 'agent' | undefined): Command {
+  return origin ? { ...step, origin } : step
 }
 
 /**
@@ -147,7 +162,7 @@ export async function landPeopleMoves(
           const step = stepIn(model, steps.get(path) ?? [])
           if (!step) continue
           if (!deps.writable(path) && !theirs(model, step)) throw new ShellError('shell.scopeReadOnly')
-          out.set(path, [step])
+          out.set(path, [marked(step, deps.origin)])
           written.push(step)
           changed.push(path)
         }
@@ -162,7 +177,7 @@ export async function landPeopleMoves(
   const elsewhere = changed.length > 0
   if (elsewhere) deps.onTreeChanged?.()
   if (own) {
-    if (deps.session.dispatch({ ...own, ...(elsewhere ? { barrier } : {}) }) === undefined) {
+    if (deps.session.dispatch({ ...marked(own, deps.origin), ...(elsewhere ? { barrier } : {}) }) === undefined) {
       return { ok: false, reason: 'partial', scope: deps.scope }
     }
     written.push(own)
@@ -189,12 +204,12 @@ export type LandPeopleMoves = (steps: ReadonlyMap<ScopePath, readonly Command[]>
 
 /** {@link landPeopleMoves}, asked first whether anything may be written here — by scope rights, or a manager's part. */
 export function useLandPeopleMoves(deps: MovePeopleDeps & { mayChange: () => boolean }): LandPeopleMoves {
-  const { scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages } = deps
+  const { scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages, origin } = deps
   return useCallback(async (steps, barrier) => {
     if (manages === undefined && !mayChange()) return { ok: false, reason: 'readOnly' }
     return landPeopleMoves({
       scope, scopes, session, writable, save, ...(published !== undefined ? { published } : {}), ...(onTreeChanged ? { onTreeChanged } : {}),
-      ...(manages ? { manages } : {}),
+      ...(manages ? { manages } : {}), ...(origin ? { origin } : {}),
     }, steps, barrier)
-  }, [scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages])
+  }, [scope, scopes, session, writable, save, published, onTreeChanged, mayChange, manages, origin])
 }

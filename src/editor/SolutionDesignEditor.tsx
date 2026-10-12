@@ -107,7 +107,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} />}
         {docks.inspector && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
-      <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles} />
+      <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
+        unitDeletion={props.ownership?.unitDeletion} />
       <InsideChoice offers={parts.clicks.offers} onClose={parts.clicks.dismissOffers} />
       {documentationPage}
       <EditorLateDialogs props={props} state={state} dialogs={parts.dialogs} onFocus={parts.requests.requestFocus} />
@@ -142,7 +143,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   });
   const requests = useCanvasRequests(props, state, view.setInspectorCollapsed);
   const docs = useDocumentation(props, state, activeDiagram);
-  const deletes = useDeleteRequests(state, activeDiagram, readOnly, props.ownership?.roles?.today);
+  const deletes = useDeleteRequests(state, activeDiagram, readOnly, props.ownership?.roles?.today, props.ownership?.unitDeletion);
   const exports = useExportDialog({
     props, wrapperRef, theme, showEdgeLabels: view.showEdgeLabels, reportLayoutError: layout.reportLayoutError,
     titleBlock: {

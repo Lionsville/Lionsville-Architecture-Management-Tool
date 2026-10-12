@@ -222,6 +222,7 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       responsible={sheetResponsibleFor({
         index: parts.props.tree.index, scope: parts.props.project.path, model: session.model, day: parts.todayDay,
         scopeName: readings.scopeLabel, s: parts.props.shell.s,
+        ...(ownership.unitDeletion ? { unitDeletion: ownership.unitDeletion } : {}),
       })}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}

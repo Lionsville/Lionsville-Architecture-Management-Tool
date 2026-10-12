@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -10,6 +11,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { describeDeletion, type DeletionSummary } from '../model/deletion';
 import { useStrings } from '../i18n/LanguageContext';
 import { RolesEnded } from '../widgets/RolesEnded';
+import type { UnitDeletion } from './props';
 
 export interface ConfirmDeleteDialogProps {
   summary: DeletionSummary;
@@ -23,7 +25,13 @@ export interface ConfirmDeleteDialogProps {
   landings?: number;
   /** Who stops being what: the units among them take their assignments with them (ADR-0036, amended 12 October 2026). */
   endsRoles?: readonly string[];
-  onConfirm(): void;
+  /**
+   * Units among them (3.6.2): the host's part of the question — ending first,
+   * the units inside and where they go, what else goes — drawn in place of
+   * `endsRoles`, and the choice handed to `onConfirm`.
+   */
+  units?: UnitDeletion;
+  onConfirm(choice?: string): void;
   /** Present only with `landings`: delete it and every landing, as one step. */
   onConfirmWithLandings?(): void;
   onClose(): void;
@@ -54,6 +62,8 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
   const cascade = summary.cascadingConnections;
   const landings = props.landings ?? 0;
   const bothWays = landings > 0 && props.onConfirmWithLandings !== undefined;
+  const { units } = props;
+  const [choice, setChoice] = useState(units?.initial ?? '');
   return (
     <Dialog open onClose={props.onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.deleteTitle', { what })}</DialogTitle>
@@ -70,7 +80,9 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
           {bothWays && (landings === 1 ? t('dialog.landingOne') : t('dialog.landingOther', { count: landings }))}
           {t('dialog.canUndo')}
         </DialogContentText>
-        <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />
+        {units
+          ? units.render(choice, setChoice, props.onClose)
+          : <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />}
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>{t('common.cancel')}</Button>
@@ -79,7 +91,7 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
             {landings === 1 ? t('dialog.deleteWithLandingOne') : t('dialog.deleteWithLandingOther', { count: landings })}
           </Button>
         )}
-        <Button color="error" variant="contained" onClick={props.onConfirm} autoFocus>
+        <Button color="error" variant="contained" onClick={() => props.onConfirm(units ? choice : undefined)} autoFocus>
           {bothWays ? t('dialog.keepLandings') : t('common.delete')}
         </Button>
       </DialogActions>

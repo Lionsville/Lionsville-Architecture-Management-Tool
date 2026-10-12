@@ -44,6 +44,8 @@ import { useChangeAcross } from './useChangeAcross'
 import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useLandPeopleMoves } from './units/landPeopleMoves'
+import { DELETE_BARRIER } from './units/unitDeletionSlot'
+import type { LandSteps } from '../agent/handle'
 import { useWriteIn } from './units/writeIn'
 import { checkMarking, CheckMarkingContext } from './checkMarking'
 import { useWorkspacePages } from './useWorkspacePages'
@@ -309,10 +311,24 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   const units = useMemo(() => ({
     people: shell.people, today, day, makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path), writeIn,
   }), [shell.people, today, day, shell.makeId, tree.scopes, writeIn])
+  /** A unit deleted here, with what it takes in other scopes, landed as one change (3.6.2): structure, so no manager's right. */
+  const landStructure = useLandPeopleMoves({
+    scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
+    published: source.publishesSteps ?? false, onTreeChanged,
+  })
+  const deleting = useMemo(() => ({ land: landStructure, onRefused: (text: string) => notify(text, 'error') }), [landStructure, notify])
+  /** The same for an agent's element.remove on a unit, its steps marked its own. */
+  const agentLandStructure = useLandPeopleMoves({
+    scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
+    published: source.publishesSteps ?? false, onTreeChanged, origin: 'agent',
+  })
+  const agentLandSteps = useCallback<LandSteps>((steps) => agentLandStructure(steps, DELETE_BARRIER), [agentLandStructure])
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
-    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, s,
+    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, deleting, s,
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
   const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })
@@ -344,7 +360,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   }), [index, writeIn, today, notify, s, project.path, session.model, session.dispatch, base.readOnly, source.writable, source.readOnly])
   // Where a unit made on the chart is filed in another scope (3.6.2): written there, under its rights.
   const unitWrites = useMemo(() => ({ writeIn, writable: source.writable ?? writableLikeHere(source.readOnly ?? false) }), [writeIn, source.writable, source.readOnly])
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, marking, unitWrites }
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, agentLandSteps, marking, unitWrites }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */
@@ -397,7 +413,7 @@ function useScreenParts(
     save: base.document.document.flush, putPicture: base.writer.put, pages,
     showElement: showElement.show, openDocumentation: requests.openDocumentation,
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
-    changeAcross: tree.agentChangeAcross, people: shell.people,
+    changeAcross: tree.agentChangeAcross, landSteps: tree.agentLandSteps, people: shell.people,
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,

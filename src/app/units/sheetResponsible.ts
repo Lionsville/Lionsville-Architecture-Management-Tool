@@ -40,6 +40,8 @@ export type SheetResponsibleAt = {
   day: string
   scopeName: (path: ScopePath) => string
   s: Translate
+  /** Deleting units, as the host makes it (`useWorkspaceOwnership`, 3.6.2): absent, a unit deletes as any actor does. */
+  unitDeletion?: (elementIds: readonly ElementId[]) => ReturnType<NonNullable<SheetResponsible['unitDeletion']>>
 }
 
 /** Who may be made responsible on the open scope's sheet, and what is said of them. */
@@ -73,13 +75,15 @@ export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
         unit: (id) => model.elements.find((element) => element.id === id)?.name ?? id,
       })
     },
+    ...(at.unitDeletion ? { unitDeletion: (actorId: ElementId) => at.unitDeletion?.([actorId]) } : {}),
   }
 }
 
 /** The same answer for the same model, index, scope and day: the sheet's memo is keyed on it. */
 export function sheetResponsibleFor(at: SheetResponsibleAt): SheetResponsible {
   const held = kept.get(at.model)
-  if (held && held.index === at.index && held.scope === at.scope && held.day === at.day && held.scopeName === at.scopeName && held.s === at.s) {
+  if (held && held.index === at.index && held.scope === at.scope && held.day === at.day && held.scopeName === at.scopeName && held.s === at.s
+    && held.unitDeletion === at.unitDeletion) {
     return held.answer
   }
   const answer = sheetResponsibleOf(at)

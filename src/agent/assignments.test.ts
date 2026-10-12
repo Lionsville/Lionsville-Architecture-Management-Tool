@@ -243,6 +243,82 @@ describe('element.remove on a unit', () => {
     const open = session('customer', customer)
     expect(parsed(await ask('element.remove', { id: 'partners' }, open)).assignmentsRemoved).toBeUndefined()
   })
+
+  /** The units inside it, and what names it elsewhere (3.6.2). */
+  const squad: UnitType = { id: 'ut-squad', name: 'Squad', within: ['ut-team'], slots: [] }
+  const withInside = (over: Partial<DesignElement> = {}): HostModel => ({
+    ...customer,
+    elements: [...customer.elements, actor('cart', 'Cart', { unitTypeId: 'ut-team', parentId: 'webshop', ...over }), actor('checkout', 'Checkout', { unitTypeId: 'ut-team' })],
+  })
+  const withSquadTypes = <V extends SessionView>(open: V): V => ({
+    ...open, tree: { ...open.tree!, operatingModel: () => ({ unitTypes: [team, squad], roles, responsibilities: [], operatingRules: [] }) },
+  })
+
+  it('moves the units inside up where their type may sit there, in the one step, and says so', async () => {
+    const open = session('customer', withInside())
+    const out = parsed(await ask('element.remove', { id: 'webshop' }, open))
+    expect(out.unitsMoved).toEqual([{ id: 'cart', name: 'Cart', parentId: null }])
+    expect(open.sent).toEqual([{
+      type: 'transaction', origin: 'agent',
+      commands: [{ type: 'element.update', id: 'cart', patch: { parentId: undefined } }, { type: 'element.delete', id: 'webshop' }],
+    }])
+  })
+
+  it('is refused with the choices named where they may not, and does what the person chose with units', async () => {
+    const open = withSquadTypes(session('customer', withInside({ unitTypeId: 'ut-squad' })))
+    const [key, detail] = refusal(await ask('element.remove', { id: 'webshop' }, open))!
+    expect(key).toBe('agent.unitsInside')
+    expect(JSON.parse(detail!)).toEqual({
+      inside: [{ id: 'cart', name: 'Cart', scope: 'customer' }],
+      choices: [
+        { units: 'into:checkout', says: 'move them into Checkout, another unit of its type' },
+        { units: 'into:parcel', says: 'move them into Parcel, another unit of its type' },
+        { units: 'up', says: 'move them up to the top; their type may not sit there, so they show as misplaced' },
+        { units: 'delete', says: 'delete them too, with everything under them and their people\'s assignments' },
+      ],
+    })
+    expect(refusal(await ask('element.remove', { id: 'webshop', units: 'into:partners' }, open))?.[0]).toBe('agent.badArguments')
+    expect(refusal(await ask('element.remove', { id: 'webshop', units: 'sideways' }, open))?.[0]).toBe('agent.badArguments')
+    const moved = parsed(await ask('element.remove', { id: 'webshop', units: 'into:checkout' }, open))
+    expect(moved.unitsMoved).toEqual([{ id: 'cart', name: 'Cart', parentId: 'checkout' }])
+    const again = withSquadTypes(session('customer', withInside({ unitTypeId: 'ut-squad' })))
+    const misplaced = parsed(await ask('element.remove', { id: 'webshop', units: 'up' }, again))
+    expect(misplaced.unitsMoved).toEqual([{ id: 'cart', name: 'Cart', parentId: null, misplaced: true }])
+    const taken = withSquadTypes(session('customer', withInside({ unitTypeId: 'ut-squad' })))
+    expect(parsed(await ask('element.remove', { id: 'webshop', units: 'delete' }, taken)).unitsRemoved).toEqual([{ id: 'cart', name: 'Cart', scope: 'customer' }])
+    expect(taken.model().elements.cart).toBeUndefined()
+  })
+
+  it('refuses units on what is not a unit', async () => {
+    expect(refusal(await ask('element.remove', { id: 'partners', units: 'up' }, session('customer', customer)))?.[0]).toBe('agent.badArguments')
+  })
+
+  it('lands what other scopes keep of it across them as one change, and is refused where the host lands nothing across', async () => {
+    const elsewhere = (open: SessionView): SessionView => ({
+      ...open,
+      tree: {
+        ...open.tree!,
+        rowsOf: (id) => (id === 'webshop' ? [{ scope: 'shipping', relation: { id: 'r-1', type: 'assigned', sourceId: 'webshop', targetId: 'book' } }] : []),
+        register: () => [{ id: 'tms', kind: 'application', name: 'TMS', master: 'shipping', partyId: 'webshop', declarations: [], drawnIn: [], stale: [] }],
+      },
+    })
+    const alone = elsewhere(session('customer', customer))
+    expect(refusal(await ask('element.remove', { id: 'webshop' }, alone))?.[0]).toBe('agent.scopeNotOpen')
+    const landed: ReadonlyMap<string, readonly Command[]>[] = []
+    const open = { ...elsewhere(session('customer', customer)), landSteps: (steps: ReadonlyMap<string, readonly Command[]>) => {
+      landed.push(steps)
+      return Promise.resolve({ ok: true as const, changed: [...steps.keys()] })
+    } }
+    const out = parsed(await ask('element.remove', { id: 'webshop' }, open))
+    expect(out).toMatchObject({ removed: true, alsoChanged: ['shipping'], teamCleared: [{ id: 'tms', name: 'TMS', scope: 'shipping' }] })
+    expect(landed[0].get('shipping')).toEqual([
+      { type: 'relation.delete', id: 'r-1' },
+      { type: 'element.update', id: 'tms', patch: { partyId: undefined } },
+    ])
+    expect(landed[0].get('customer')).toEqual([{ type: 'element.delete', id: 'webshop', origin: 'agent' }])
+    const refusedThere = { ...elsewhere(session('customer', customer)), landSteps: () => Promise.resolve({ ok: false as const, reason: 'shell.scopeReadOnly', scope: 'shipping' }) }
+    expect(refusal(await ask('element.remove', { id: 'webshop' }, refusedThere))).toEqual(['agent.readOnly', 'shell.scopeReadOnly in shipping: nothing was removed'])
+  })
 })
 
 describe('an actor made a unit through the element tools', () => {

@@ -8,8 +8,7 @@
  */
 import { transaction, placeOn } from '../../model/commands'
 import type { Diagram } from '../../model/normalised'
-import { assignmentList, rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
-import { assignmentsIn } from '../../model/units'
+import { rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
 import { CANVAS_KINDS, canPlaceKind } from '../../model/placement'
 import { isDay } from '../../model/lifecycle'
 import { isPlatformArchetype } from '../../model/relations'
@@ -19,6 +18,7 @@ import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import { seedPlacement } from './placement'
+import { isUnitRemoval, unitRemoval } from './removeUnit'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 import { diagramOrRefusal, hexColour, merged, personArgument } from './shared'
 
@@ -125,14 +125,16 @@ export const removeElement: Handler = (args, view) => {
   const id = args.id as string
   const held = view.model.elements[id]
   if (!held) return refused('agent.unknownId', `element ${id}`)
-  // A unit's assignments go with it (ADR-0036, amended 12 October 2026): said, so the agent can tell the person whose roles ended.
-  const gone = assignmentsIn(assignmentList(view.model), [id]).map((one) => ({
-    id: one.id, roleId: one.roleId, person: one.person.person, ...(one.from ? { from: one.from } : {}), ...(one.until ? { until: one.until } : {}),
-  }))
-  return {
-    command: { type: 'element.delete', id, origin: 'agent' },
-    answer: json({ id, name: held.name, removed: true, ...(gone.length > 0 ? { assignmentsRemoved: gone } : {}) }),
+  // A unit takes its assignments, moves or takes the units inside it, and clears what names it (3.6.2).
+  const unit = unitRemoval(args, view)
+  if (unit && !isUnitRemoval(unit)) return unit
+  if (unit && unit.others.size > 0) {
+    return refused('agent.scopeNotOpen', `removing ${held.name} changes ${[...unit.others.keys()].map((scope) => scope || 'the organisation').join(', ')} `
+      + 'as well; call element.remove on its own, not inside a batch')
   }
+  if (unit) return { command: unit.open, answer: json(unit.answer) }
+  if (args.units !== undefined) return refused('agent.badArguments', `${held.name} is not a unit kept here: units says where a unit's units go`)
+  return { command: { type: 'element.delete', id, origin: 'agent' }, answer: json({ id, name: held.name, removed: true }) }
 }
 
 // --- an element's fields ----------------------------------------------------------------

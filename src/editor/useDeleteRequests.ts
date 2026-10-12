@@ -15,6 +15,7 @@ import {
 } from '../model/deletion';
 import { refinementsOf } from '../model/refines';
 import type { EditorState, Selection } from './useEditorState';
+import type { EditorOwnership, UnitDeletion } from './props';
 
 /**
  * A pending confirmed delete: what it takes away, what to call it, and the one
@@ -33,6 +34,9 @@ export interface ConfirmDeleteState {
    */
   landings?: number;
   runWithLandings?(): void;
+  /** Units among what goes (3.6.2): the host's part of the question, and `run` with its choice. */
+  units?: UnitDeletion;
+  runUnits?(choice: string): void;
 }
 
 export function useDeleteRequests(
@@ -41,6 +45,8 @@ export function useDeleteRequests(
   readOnly: boolean,
   /** The day a role still held is told from an assignment already over (`deletionSummary`). */
   today?: string,
+  /** What a delete of units says and does, the host's (`EditorOwnership.unitDeletion`): a selection with one always asks. */
+  unitDeletion?: EditorOwnership['unitDeletion'],
 ) {
   const [deleteTarget, setDeleteTarget] = useState<ElementId | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | undefined>(undefined);
@@ -86,12 +92,16 @@ export function useDeleteRequests(
     if (readOnly) return;
     const selection = deletableSelection(asked, activeDiagram);
     const summary = deletionSummary(model, selection, today);
-    if (!needsDeleteConfirmation(summary)) {
+    const units = unitDeletion?.(selection.elementIds);
+    if (!needsDeleteConfirmation(summary) && !units) {
       actions.deleteSelection(selection);
       return;
     }
-    setConfirmDelete({ summary, run: () => actions.deleteSelection(selection) });
-  }, [readOnly, model, actions, activeDiagram, today]);
+    setConfirmDelete({
+      summary, run: () => actions.deleteSelection(selection),
+      ...(units ? { units, runUnits: (choice: string) => actions.deleteSelection(selection, (here) => units.run(choice, here)) } : {}),
+    });
+  }, [readOnly, model, actions, activeDiagram, today, unitDeletion]);
 
   return { deleteTarget, setDeleteTarget, confirmDelete, setConfirmDelete, requestDeleteConnection, requestDeleteSelection };
 }

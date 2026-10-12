@@ -341,6 +341,40 @@ describe('deleting', () => {
     expect(plain.actions.removeElement).toHaveBeenCalledWith('key-account')
   })
 
+  // Deleting a unit (3.6.2): the host draws its question and makes the delete with the sheet's own commands.
+  it('asks the host\'s question for a unit, and hands the delete to it with the choice made there', async () => {
+    const run = vi.fn()
+    const responsible = {
+      choices: [], name: () => undefined, serves: () => true,
+      unitDeletion: (id: string) => (id === 'warehouse-team' ? {
+        initial: 'up',
+        render: (choice: string, onChoice: (next: string) => void, onDone: () => void) => (
+          <div>
+            <button type="button" data-testid="host-choose" onClick={() => onChoice('delete')}>{choice}</button>
+            <button type="button" data-testid="host-end" onClick={onDone}>End it</button>
+          </div>
+        ),
+        run,
+      } : undefined),
+    }
+    const { actions, onRemoved } = open('warehouse-team', false, vi.fn(), undefined, { responsible })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Warehouse team' }))
+    // Ending it instead closes the question and deletes nothing.
+    fireEvent.click(within(screen.getByRole('dialog')).getByTestId('host-end'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(actions.removeElement).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Warehouse team' }))
+    const dialog = screen.getByRole('dialog')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(dialog).getByTestId('host-choose'))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(actions.removeElement).toHaveBeenCalledWith('warehouse-team', expect.any(Function))
+    const via = vi.mocked(actions.removeElement).mock.calls[0][1]!
+    via([{ type: 'element.delete', id: 'warehouse-team' }])
+    expect(run).toHaveBeenCalledWith('delete', [{ type: 'element.delete', id: 'warehouse-team' }])
+    expect(onRemoved).toHaveBeenCalled()
+  })
+
   it('is not offered under readOnly', () => {
     open('packing', true)
     expect(screen.queryByRole('button', { name: 'Delete Packing' })).toBeNull()

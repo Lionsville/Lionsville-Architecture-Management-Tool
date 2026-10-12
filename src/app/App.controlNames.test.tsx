@@ -13,6 +13,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from './testing/heldRepositories'
+import { laidOut } from '../model/testFixtures'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { CONTROL_NAMES, controlSelector } from '../platform/controlNames'
 import type { ControlName } from '../platform/controlNames'
@@ -86,6 +87,21 @@ function chartAtTheTop(top: ScopeSnapshot): ScopeSnapshot {
       unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: ['ut-team'], slots: [] }],
       elements: [...top.model.elements, { id: 'ops', kind: 'actor' as const, name: 'Operations', unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} }],
       diagrams: [...top.model.diagrams, { id: 'oc', kind: 'chart', name: 'Organisation', members: [] }],
+    },
+  }
+}
+
+/** The organisation open on a board with a division on it, a team inside: what deleting a unit asks (3.6.2). */
+function divisionOnABoard(top: ScopeSnapshot): ScopeSnapshot {
+  const unit = (id: string, name: string, over: object = {}) => ({ id, kind: 'actor' as const, name, lifecycle: 'live' as const, isManaged: false, aspects: {}, ...over })
+  return {
+    ...top,
+    activeDiagramId: 'ub',
+    model: {
+      ...top.model,
+      unitTypes: [{ id: 'ut-division', name: 'Division', top: true, within: [], slots: [] }, { id: 'ut-team', name: 'Team', within: ['ut-division'], slots: [] }],
+      elements: [...top.model.elements, unit('north', 'North', { unitTypeId: 'ut-division' }), unit('booking', 'Booking', { unitTypeId: 'ut-team', parentId: 'north' })],
+      diagrams: [...top.model.diagrams, laidOut({ id: 'ub', kind: 'layer7', name: 'Units', placements: [{ id: 'north', x: 0, y: 0 }] })],
     },
   }
 }
@@ -354,6 +370,15 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['its dialog for a new unit', ['chart.newUnit'], async () => {
     fireEvent.click(screen.getAllByTestId('chart-add-inside')[0])
     await screen.findByTestId('new-unit-dialog')
+  }]],
+  // Deleting a unit with a unit inside it, from its card's Remove / delete… (3.6.2).
+  [['a unit asked to be deleted', ['unitDelete.end', 'unitDelete.inside'], async () => {
+    const boarded = example.map((one) => (one.path === '' ? divisionOnABoard(one) : one))
+    renderApp({ repositories: heldRepositories(boarded), boot: { initialProject: boarded.find((one) => one.path === '')! } })
+    await waitFor(() => expect(document.querySelector('.react-flow__node[data-id="north"]')).not.toBeNull())
+    await selectCard('north')
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove / delete…' }))
+    await screen.findByTestId('unit-deletion')
   }]],
   // A list of findings, on a Conway map whose two teams declare they work
   // together and run no interface: a note, hidden until its switch shows it,

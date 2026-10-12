@@ -667,6 +667,29 @@ export interface EditorOwnership {
    * assignment already over. Absent = the role's id, and every one held.
    */
   roles?: { name(roleId: string): string | undefined; today: string };
+  /**
+   * Deleting units from the model (ADR-0036, amended 12 October 2026; 3.6.2):
+   * what the confirmation says about the units among these elements — ending
+   * offered first, who stops being what, where the units inside them go, and
+   * what else goes — and the delete itself, which the host lands over every
+   * scope it writes. Nothing where none of them is a unit kept here, and the
+   * board then deletes as it always did. See {@link UnitDeletion}.
+   */
+  unitDeletion?(elementIds: readonly ElementId[]): UnitDeletion | undefined;
+}
+
+/**
+ * A delete of units, as the host draws and makes it. `render` draws the
+ * confirmation's part under the board's own question, with `choice` — where
+ * the units inside go, `initial` first — held by the dialog, and `onDone`
+ * closing it where the person chose to end the unit instead. `run` is
+ * Delete: `here` is the board's own commands for the selection, and the host
+ * adds what the units take and lands it as one step.
+ */
+export interface UnitDeletion {
+  initial: string;
+  render(choice: string, onChoice: (choice: string) => void, onDone: () => void): ReactNode;
+  run(choice: string, here: readonly Command[]): void;
 }
 
 /** Where *Add here ▸ Existing application…* was asked for, in flow coordinates. */

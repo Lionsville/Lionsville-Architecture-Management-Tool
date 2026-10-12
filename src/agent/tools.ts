@@ -1145,8 +1145,25 @@ const SPECS = [
       + 'diagram, and any container view about it — and, for a unit, every assignment in it, ended ones included: '
       + 'deleting a unit is a correction, so its people\'s roles in it go as if never held, and the answer lists them '
       + '(assignmentsRemoved). To keep who held what, retire the unit on a day with element.update instead. '
-      + 'One undo step puts all of it back.',
-    inputSchema: { type: 'object', properties: { id: ID('element') }, required: ['id'], additionalProperties: false },
+      + 'The units inside a unit move up into its parent where their type may sit there (unitsMoved); where it may '
+      + 'not, the call is refused with agent.unitsInside and the choices named — never pick one yourself: ask the '
+      + 'person, then call again with units. Applications that name the unit as their team are cleared (teamCleared), '
+      + 'and its rows kept in other scopes go there too (alsoChanged), as one change. '
+      + 'One undo step puts all of it back, unless other scopes were changed: then it is undone scope by scope.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('element'),
+        units: {
+          type: 'string',
+          description: 'A unit only, where the units inside it may not move up: "into:<id>" moves them into another unit '
+            + 'of its type, "up" moves them up anyway (they show as misplaced), "delete" removes them too, with '
+            + 'everything under them and their assignments. Only what the person chose.',
+        },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'connect',
@@ -2807,6 +2824,12 @@ export type AgentRefusal =
   /** `scope` names a path the tree has no scope at. */
   | 'agent.unknownScope'
   /**
+   * A unit removed has units inside it whose type may not sit in its parent
+   * (3.6.2): where they go is the person's to say, and the detail names the
+   * choices for `units`.
+   */
+  | 'agent.unitsInside'
+  /**
    * A field on a stand-in that the scope defining the thing answers for
    * (ADR-0012 §10). A `check.` key rather than an `agent.` one because it is
    * the same refusal the inspector greys a field out for — one rule, said in
@@ -2858,6 +2881,11 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.unknownId': 'Nothing in the project has that id.',
   'agent.scopeNotOpen': 'That scope is not the one open in the app. Reads over it are answered; a change, a picture or undo needs a person to open it.',
   'agent.unknownScope': 'No scope in the organisation has that path. scopes.list says which there are.',
+  'agent.unitsInside':
+    'The unit has units inside it whose type may not sit where it sits, so where they go is the person\'s to say. '
+    + 'Ask them, naming the choices in the detail, then call element.remove again with units: "into:<id>" for '
+    + 'another unit of its type, "up" to move them up anyway (they show as misplaced), or "delete" to remove them too. '
+    + 'Do not choose for them.',
   'agent.tooLarge': 'The board is too large for this operation.',
   'agent.locked': 'The decision record is accepted, rejected or superseded, and locked; nothing about it may change.',
   'agent.notDrawn': 'That element is not drawn on that diagram.',

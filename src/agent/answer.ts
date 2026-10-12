@@ -89,7 +89,8 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'
+    | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register'>>
   /**
    * The register as the agent is told it (ADR-0036 §8, §13): what a person
    * picked from it reads as — the name, or the pseudonym the policy gives —

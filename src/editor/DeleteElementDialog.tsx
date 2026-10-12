@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -11,6 +12,7 @@ import Tooltip from '@mui/material/Tooltip';
 import type { DesignElement } from '../model/types';
 import { useStrings } from '../i18n/LanguageContext';
 import { RolesEnded } from '../widgets/RolesEnded';
+import type { UnitDeletion } from './props';
 
 export interface DeleteElementDialogProps {
   element: DesignElement;
@@ -24,8 +26,16 @@ export interface DeleteElementDialogProps {
    * from this diagram ends nobody's role.
    */
   endsRoles?: readonly string[];
+  /**
+   * A unit (3.6.2): the host's part of the question — ending first, who stops
+   * being what, the units inside it and where they go, what else goes —
+   * drawn in place of `endsRoles`, and the choice handed to
+   * `onDeleteFromModel`. The units inside are that question's, so they do
+   * not hold the delete back the way an application's components do.
+   */
+  units?: UnitDeletion;
   onRemoveFromDiagram(): void;
-  onDeleteFromModel(): void;
+  onDeleteFromModel(choice?: string): void;
   onClose(): void;
 }
 
@@ -35,6 +45,9 @@ export interface DeleteElementDialogProps {
  */
 export function DeleteElementDialog(props: DeleteElementDialogProps) {
   const { t } = useStrings();
+  const { units } = props;
+  const [choice, setChoice] = useState(units?.initial ?? '');
+  const held = props.hasComponents && !units;
   return (
     <Dialog open onClose={props.onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
@@ -44,7 +57,9 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
           <strong>{t('dialog.deleteFromModelButton')}</strong>{' '}
           {t('dialog.deleteElementRemoves')}
         </DialogContentText>
-        <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />
+        {units
+          ? units.render(choice, setChoice, props.onClose)
+          : <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />}
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>{t('common.cancel')}</Button>
@@ -55,9 +70,9 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
             </Button>
           </span>
         </Tooltip>
-        <Tooltip title={props.hasComponents ? t('dialog.deleteComponentsFirst') : ''}>
+        <Tooltip title={held ? t('dialog.deleteComponentsFirst') : ''}>
           <span>
-            <Button color="error" onClick={props.onDeleteFromModel} disabled={props.hasComponents}>
+            <Button color="error" onClick={() => props.onDeleteFromModel(units ? choice : undefined)} disabled={held}>
               {t('dialog.deleteFromModelButton')}
             </Button>
           </span>

@@ -37,7 +37,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { DATED_PHASES, LIFECYCLE_ORDER, datesInOrder } from '../../model'
-import type { DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
+import type { Command, DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
@@ -129,9 +129,11 @@ export type SheetActions = {
   /**
    * Take it out of the model, with its relations and whatever the sheet said
    * about it. Refused while something is inside it — ask `mayRemove` first,
-   * which is what the page says out loud rather than finding out here.
+   * which is what the page says out loud rather than finding out here — but
+   * where `via` is given: a unit's delete, which the host makes and which
+   * decides where the units inside go, is handed the commands instead.
    */
-  removeElement(id: ElementId): void
+  removeElement(id: ElementId, via?: (commands: Command[]) => void): void
   /** Tick or untick what covers a capability. One transaction per tick. */
   setCoverage(change: CoverageChange): void
 }
@@ -177,6 +179,18 @@ export type SheetResponsible = {
    * and the delete then asks nothing.
    */
   rolesEnded?(actorId: ElementId): ReactNode | undefined
+  /**
+   * Deleting a unit (3.6.2), drawn and made by the host, which reads the
+   * tree: ending it offered first, who stops being what, where the units
+   * inside it go and what else goes — `render` with the choice the dialog
+   * holds, `initial` first — and `run` with the sheet's own commands for the
+   * delete. Nothing for an actor that is not a unit kept here.
+   */
+  unitDeletion?(actorId: ElementId): {
+    initial: string
+    render(choice: string, onChoice: (choice: string) => void, onDone: () => void): ReactNode
+    run(choice: string, here: readonly Command[]): void
+  } | undefined
 }
 
 export type FunctionInspectorProps = {
@@ -397,7 +411,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
 
           {!readOnly && (
             <Remove element={element} model={model} actions={actions} onRemoved={props.onRemoved}
-              rolesEnded={props.responsible?.rolesEnded?.(element.id)} />
+              rolesEnded={props.responsible?.rolesEnded?.(element.id)} unit={props.responsible?.unitDeletion?.(element.id)} />
           )}
         </Box>
       )}
@@ -416,17 +430,25 @@ export function FunctionInspector(props: FunctionInspectorProps) {
  * assignments, which go with it: then the delete asks first, naming who
  * stops being what (ADR-0036, amended 12 October 2026).
  */
-function Remove({ element, model, actions, onRemoved, rolesEnded }: {
+function Remove({ element, model, actions, onRemoved, rolesEnded, unit }: {
   element: DesignElement
   model: DesignModel
   actions: SheetActions
   onRemoved?(): void
   rolesEnded?: ReactNode
+  unit?: ReturnType<NonNullable<SheetResponsible['unitDeletion']>>
 }) {
   const { t } = useStrings()
-  const removal = mayRemove(model.elements, element.id)
+  // A unit's units inside are its delete's question (3.6.2), so they do not hold it back.
+  const removal = unit ? { ok: true as const } : mayRemove(model.elements, element.id)
   const [asking, setAsking] = useState(false)
-  const remove = () => { actions.removeElement(element.id); onRemoved?.() }
+  const [choice, setChoice] = useState(unit?.initial ?? '')
+  const remove = () => {
+    if (unit) actions.removeElement(element.id, (here) => unit.run(choice, here))
+    else actions.removeElement(element.id)
+    onRemoved?.()
+  }
+  const asks = unit !== undefined || rolesEnded !== undefined
 
   return (
     <Box>
@@ -436,19 +458,23 @@ function Remove({ element, model, actions, onRemoved, rolesEnded }: {
             size="small" color="error" variant="outlined" fullWidth
             disabled={!removal.ok}
             aria-label={t('sheet.deleteThis', { name: element.name })}
-            onClick={() => (rolesEnded ? setAsking(true) : remove())}
+            onClick={() => {
+              if (!asks) { remove(); return }
+              setChoice(unit?.initial ?? '')
+              setAsking(true)
+            }}
           >
             {t('common.delete')}
           </Button>
         </span>
       </Tooltip>
-      {rolesEnded && (
+      {asks && (
         <ConfirmDialog
           open={asking} title={t('sheet.deleteUnitTitle', { name: element.name })} body={t('sheet.deleteUnitBody')}
           confirmLabel={t('common.delete')} cancelLabel={t('common.cancel')}
           onCancel={() => setAsking(false)} onConfirm={() => { setAsking(false); remove() }}
         >
-          {rolesEnded}
+          {unit && asking ? unit.render(choice, setChoice, () => setAsking(false)) : rolesEnded}
         </ConfirmDialog>
       )}
       {!removal.ok && (

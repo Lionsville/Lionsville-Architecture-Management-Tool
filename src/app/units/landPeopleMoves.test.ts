@@ -163,6 +163,21 @@ describe('writing the people\'s moves', () => {
     expect(await landPeopleMoves(await deps(open), new Map([['shipping', [ends('as-7')]]]))).toEqual({ ok: false, reason: 'unchanged' })
   })
 
+  it('passes over a row or a record a delete of a unit would change, gone since, and marks an agent\'s steps its own', async () => {
+    const held = fromArrays({
+      ...SHIPPING,
+      elements: [{ id: 'rates', kind: 'actor', name: 'Rates', unitTypeId: 'ut-team', parentId: 'north', lifecycle: 'live', isManaged: false, aspects: {} }],
+      relations: [{ id: 'r-1', type: 'assigned', sourceId: 'north', targetId: 'rates' }],
+    })
+    const move: Command = { type: 'element.update', id: 'rates', patch: { parentId: 'south' } }
+    expect(stepIn(held, [{ type: 'relation.delete', id: 'r-gone' }, { type: 'element.update', id: 'tms', patch: { partyId: undefined } }, move]))
+      .toEqual(move)
+    expect(stepIn(held, [{ type: 'element.delete', id: 'quotes' }, { type: 'relation.delete', id: 'r-1' }])).toEqual({ type: 'relation.delete', id: 'r-1' })
+    const open = session(SHIPPING)
+    await landPeopleMoves(await deps(open, { origin: 'agent' }), new Map([['shipping', [ends('as-1')]]]))
+    expect(open.dispatched).toEqual([{ ...ends('as-1'), origin: 'agent' }])
+  })
+
   it('never makes an assignment run longer: one that ended earlier meanwhile, and the place it was to move to, are passed over', () => {
     // Omar left on 31 March; the list drawn before still had him ending on New Year's Eve and beginning anew.
     const left = fromArrays({ ...SHIPPING, assignments: [as('as-1', 'parcel-freight', 'pe-omar', { until: '2026-03-31' }), as('as-2', 'parcel-freight', 'pe-sanne')] })

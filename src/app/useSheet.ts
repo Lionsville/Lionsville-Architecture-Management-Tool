@@ -169,10 +169,11 @@ export function useSheet(deps: {
         return step.id
       },
 
-      removeElement(id) {
+      removeElement(id, via) {
         const model = session.current()
-        // The refusal is the page's to say; this is the net under it.
-        if (!mayRemove(model.elements, id).ok) return
+        // The refusal is the page's to say; this is the net under it. A unit's
+        // delete (`via`) decides where its units inside go, so it is not held back.
+        if (!via && !mayRemove(model.elements, id).ok) return
         const commands: Command[] = [{ type: 'element.delete', id }]
         const sheet = openSheet()
         if (sheet) {
@@ -196,7 +197,8 @@ export function useSheet(deps: {
             })
           }
         }
-        session.dispatch(commands.length === 1 ? commands[0] : transaction(commands))
+        if (via) via(commands)
+        else session.dispatch(commands.length === 1 ? commands[0] : transaction(commands))
       },
 
       setCoverage(change) {

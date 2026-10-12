@@ -44,6 +44,7 @@ import type { Translate } from '../i18n/strings'
 import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
 import { landAcross } from './merge'
+import { isUnitRemoval, unitRemoval } from './write/removeUnit'
 import type { ChangeAcross } from './merge'
 import type { MergeKind } from '../observations/merge'
 import type { ReadTool } from './answer'
@@ -157,7 +158,20 @@ export type SessionView = {
    * `agent.scopeNotOpen`.
    */
   changeAcross?: ChangeAcross
+  /**
+   * Land one list of commands per scope as one change, all or none (3.6.2):
+   * every other scope's as that scope's step, then the open scope's through
+   * this session, with a barrier where another scope was written. How a unit
+   * removed takes what other scopes keep of it. Absent where the host writes
+   * only the scope open, and such a removal is then refused
+   * `agent.scopeNotOpen`.
+   */
+  landSteps?: LandSteps
 }
+
+/** Where a change across scopes went: the scopes written, or why nothing was. */
+export type LandedSteps = { ok: true; changed: readonly string[]; unsaved?: true } | { ok: false; reason: string; scope?: string }
+export type LandSteps = (steps: ReadonlyMap<string, readonly Command[]>) => Promise<LandedSteps>
 
 /** One step as the handler reads it: enough to name it, date it and say whose it was. */
 export type HistoryEntry = {
@@ -324,7 +338,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
 
   // A merge that writes other scopes, where the host writes several as one
   // (ADR-0035 §5); one that writes only this scope is a command like any other.
-  const across = landAcross(MERGE_KIND[request.tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross)
+  const across = acrossScopes(request.tool, args, session)
   if (across) return withRevision(await across, session)
 
   const prepared = commandFor(request.tool, withoutGuard(request.args), writeView(session))
@@ -338,6 +352,35 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (!trial.ok) return refused(trial.reason)
   session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
   return withRevision(prepared.answer, session)
+}
+
+/**
+ * A write that lands over several scopes as one change, where the host
+ * writes several: a merge across the tree (ADR-0035 §5), and a unit removed
+ * with what other scopes keep of it (3.6.2). Nothing for any other write.
+ */
+function acrossScopes(tool: ToolName, args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
+  if (tool === 'element.remove') return removeUnitAcross(args, session)
+  return landAcross(MERGE_KIND[tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross)
+}
+
+/**
+ * `element.remove` on a unit whose removal writes other scopes too, landed
+ * by the host as one change; nothing where it writes only this scope, or the
+ * host lands nothing across, and the command path then answers.
+ */
+function removeUnitAcross(args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
+  if (!session.landSteps) return undefined
+  const worked = unitRemoval(withoutGuard(args) as Record<string, unknown>, writeView(session))
+  if (!worked || !isUnitRemoval(worked) || worked.others.size === 0) return undefined
+  const trial = apply(session.indexed(), worked.open)
+  if (!trial.ok) return Promise.resolve(refused(trial.reason))
+  const steps = new Map(worked.others)
+  steps.set(session.scopePath(), [worked.open])
+  return session.landSteps(steps).then((landed) => (landed.ok
+    ? json({ ...worked.answer, ...(landed.unsaved ? { unsaved: true } : {}) })
+    : refused(landed.reason === 'shell.scopeReadOnly' || landed.reason === 'readOnly' ? 'agent.readOnly' : 'agent.conflict',
+      `${landed.reason}${landed.scope !== undefined ? ` in ${landed.scope || 'the organisation'}` : ''}: nothing was removed`)))
 }
 
 /** The write tools the session answers itself, rather than as one command; nothing for any other tool. */

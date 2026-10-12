@@ -151,6 +151,13 @@ export type TreeView = {
    */
   rowsTo?(id: ElementId, types?: readonly RelationType[]): readonly Relation[]
   /**
+   * Every row the rest of the tree wrote with this id at either end, and the
+   * scope that keeps it: what a unit removed takes with it elsewhere
+   * (3.6.2). The open scope's own are its session's. Absent in a shell built
+   * before it, and a unit's rows elsewhere then stay.
+   */
+  rowsOf?(id: ElementId): readonly { scope: string; relation: Relation }[]
+  /**
    * Every unit in the organisation, as the scope that answers for it holds it
    * (ADR-0036 §3): `projects/scopeIndex`'s, structurally. Absent in a shell
    * built before units.

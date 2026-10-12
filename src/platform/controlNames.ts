@@ -98,6 +98,8 @@ export const CONTROL_NAMES = [
   // …and making a unit from it (3.6.2): + Unit at the top on the bar, in the outline's header and on an
   // empty chart, a unit's own + for a unit inside it, and the dialog they open.
   'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst', 'chart.addInside', 'chart.newUnit',
+  // Deleting a unit (3.6.2): the confirmation's End on a day…, offered first, and where the units inside it go.
+  'unitDelete.end', 'unitDelete.inside',
   // A list of findings, wherever it is drawn (ADR-0036, amended 11 October 2026):
   // a check's row, an instance under it, the switch that shows the notes, the
   // way back from an explanation, and each of its actions.

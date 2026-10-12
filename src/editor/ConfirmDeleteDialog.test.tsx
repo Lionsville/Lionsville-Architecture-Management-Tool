@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { axeFindings } from '../app/testing/axe';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import { DeleteElementDialog } from './DeleteElementDialog';
 import type { DeletionSummary } from '../model/deletion';
 
 afterEach(() => cleanup());
@@ -77,5 +78,43 @@ describe('ConfirmDeleteDialog — the roles a delete ends', () => {
   it('says nothing of roles where none ends', () => {
     render(<ConfirmDeleteDialog summary={summary({ elements: 2 })} endsRoles={[]} onConfirm={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByTestId('roles-ended')).toBeNull();
+  });
+});
+
+/** Units among what goes (3.6.2): the host draws its part, holds nothing, and Delete hands over the choice. */
+describe('the delete questions, for a unit', () => {
+  const units = (run = vi.fn()) => ({
+    initial: 'up',
+    render: (choice: string, onChoice: (next: string) => void) => (
+      <button type="button" data-testid="host-part" onClick={() => onChoice('delete')}>{`chosen ${choice}`}</button>
+    ),
+    run,
+  });
+
+  it('draws the host\'s part in place of the roles, and confirms with the choice made in it', () => {
+    const onConfirm = vi.fn();
+    render(<ConfirmDeleteDialog summary={summary({ elements: 1 })} endsRoles={['x']} units={units()} onConfirm={onConfirm} onClose={vi.fn()} />);
+    expect(screen.queryByTestId('roles-ended')).toBeNull();
+    expect(screen.getByTestId('host-part').textContent).toBe('chosen up');
+    fireEvent.click(screen.getByTestId('host-part'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(onConfirm).toHaveBeenCalledWith('delete');
+  });
+
+  it('lets a unit with units inside it be deleted from the model, with the choice, where an application\'s components hold it back', () => {
+    const element = { id: 'north', kind: 'actor' as const, name: 'North', lifecycle: 'live' as const, isManaged: false, aspects: {} };
+    const onDeleteFromModel = vi.fn();
+    render(
+      <DeleteElementDialog element={element} isBoundaryApplication={false} hasComponents units={units()}
+        onRemoveFromDiagram={vi.fn()} onDeleteFromModel={onDeleteFromModel} onClose={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete from model' }));
+    expect(onDeleteFromModel).toHaveBeenCalledWith('up');
+    cleanup();
+    render(
+      <DeleteElementDialog element={element} isBoundaryApplication={false} hasComponents
+        onRemoveFromDiagram={vi.fn()} onDeleteFromModel={onDeleteFromModel} onClose={vi.fn()} />,
+    );
+    expect((screen.getByRole('button', { name: 'Delete from model' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
