@@ -48,9 +48,10 @@ import { useStrings } from '../i18n'
 import type { StringKey, Translate } from '../i18n'
 import { plural } from '../i18n/strings'
 import { useSessionSet } from './sessionMemory'
+import { WEIGHT_MARK } from './weightMark'
+import type { FindingWeight } from './weightMark'
 
-/** How much a check matters, as the catalogue weighs it: what a mark is drawn for. */
-export type FindingWeight = 'fix' | 'review' | 'note'
+export type { FindingWeight } from './weightMark'
 
 /** What a list says besides the findings: the model's `CHECK_LIST_WORDS` is the table. */
 export type FindingsWords<A extends string> = {
@@ -109,13 +110,6 @@ export type FindingsListProps<F, A extends string> = {
 
 /** The set's own word for the notes shown, beside the checks unfolded; no check's key is this. */
 const NOTES_SHOWN = '\u0000notes'
-
-/** Each weight's mark — its glyph and its colour, measured in both themes — wherever a weight is drawn. */
-export const WEIGHT_MARK: Record<FindingWeight, { glyph: string; sx: object }> = {
-  fix: { glyph: '●', sx: { color: 'error.main' } },
-  review: { glyph: '▲', sx: { color: 'warning.main' } },
-  note: { glyph: 'i', sx: { color: 'text.secondary', fontStyle: 'italic', fontFamily: 'Georgia, serif', fontWeight: 700 } },
-}
 
 /** Read by a screen reader and nobody else. */
 const HIDDEN = {

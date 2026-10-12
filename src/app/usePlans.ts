@@ -28,8 +28,12 @@ import {
 import type { Command, DesignElement, ElementId, Transition } from '../model'
 import type { MakeId } from '../model/keys'
 import { checkMarkFor } from '../model/checkMarks'
-import { planBodyTemplate } from '../roadmap'
-import type { PlanActions, ReplaceAnswer, RoadmapActions } from '../roadmap'
+// Each from its own module, not the module's index: the index names the
+// roadmap's pages, which arrive when they are opened (`WorkspacePages`).
+import { planBodyTemplate } from '../roadmap/planTemplate'
+import type { PlanActions } from '../roadmap/ui/PlanPage'
+import type { ReplaceAnswer } from '../roadmap/ui/ReplaceDialog'
+import type { RoadmapActions } from '../roadmap/ui/RoadmapPage'
 import type { ModelSession } from './useModelSession'
 import type { ShownDays } from '../editor/useShownDays'
 

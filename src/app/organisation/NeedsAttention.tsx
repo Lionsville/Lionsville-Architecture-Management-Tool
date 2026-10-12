@@ -25,7 +25,7 @@ import type { StringKey, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { CHECK_WEIGHTS } from '../../model/checkCatalogue'
 import type { CheckWeight } from '../../model/checkCatalogue'
-import { WEIGHT_MARK } from '../../widgets/FindingsList'
+import { WEIGHT_MARK } from '../../widgets/weightMark'
 
 /** What each weight's count says. */
 const SAID: Record<CheckWeight, { one: StringKey; other: StringKey }> = {
