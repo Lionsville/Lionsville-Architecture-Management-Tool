@@ -244,8 +244,8 @@ findings under **Needs attention** and lists them on the Checks page.
   about, **Why it matters**, **How to fix it**, and the actions that fix it
   or open where it is fixed — open the record, the drawing, the unit or the
   two units, the unit type, the plan, the person in People; **Link…**,
-  **Accept**, **Assign…**, **End the assignment…**, **Declare an
-  interaction…**, **Remove the declaration**. A list offers the actions it can
+  **Accept**, **Assign…**, **End the assignment…**, **Remove the
+  assignment**, **Declare an interaction…**, **Remove the declaration**. A list offers the actions it can
   do where it is drawn, and the screen it opens does the rest. **All
   findings** goes back to the finding you came from.
 - A finding put right leaves the list, and its explanation with it.
@@ -281,7 +281,9 @@ organisation's home in the whole tree.
   the plan, the operating model's page, a person in People. **Mark as
   intended…** beside a review's or a note's finding marks it from here, in
   the scope that keeps it, and **Accepted (N)** lists what was marked, each
-  with **Take back**. A mark made here, with nothing open, is that scope's
+  with **Take back**. An assignment in a unit that is not there offers
+  **Remove the assignment** beside it, written the same way: no unit is left
+  to fix it from. A mark made here, with nothing open, is that scope's
   step and is not on an undo stack: **Take back** is how it is undone.
 - What the page counts comes from what the app already holds about the whole
   tree: the findings between scopes, the organisation's units and people,
@@ -955,6 +957,11 @@ component still attached to an application.
 Elements belong to the model, not to a diagram: one element can be on several
 diagrams, and **Remove from diagram** is a different action from **Delete from
 model**. Deleting asks first, and says how many connections go with it.
+Deleting a unit takes every assignment in it along, ended ones included, as
+if they had never been made: the question names who stops being what —
+*Ada Lovelace stops being Product owner in Webshop.* — and one undo puts the
+unit and its people back. To keep who held what, end the unit on a day
+instead: its lifecycle, or a plan (*Change over time*).
 
 ## Connections
 
@@ -1600,7 +1607,9 @@ until you turn it on, and only for as long as the page is open.
 
 **Delete**, at the foot of the inspector, removes what is selected and every row
 that ended on it. It is refused while anything is inside it, and says how much:
-nothing cascades, so an area you delete is an area you emptied first.
+nothing cascades, so an area you delete is an area you emptied first. An actor
+that is a unit with people in it asks first: its assignments go with it, and
+the question names who stops being what.
 
 **What this sheet draws**, the sliders in the top bar, is about the sheet rather
 than the model — which journey runs across the top (a project with two journeys
@@ -1980,6 +1989,17 @@ by mistake; one that has ended stays, as what the person held.
 their last day — one step in each scope that keeps one — and takes away any
 that would only have begun after it.
 
+**Deleting a unit** is a correction: it says the unit was never there, so its
+assignments go with it in the same step, ended ones included, and the
+question before it names who stops being what. A unit that stops existing on
+a day is ended on that day instead — its lifecycle, or a plan — and its
+people's roles end then and stay in their history. **An assignment in a unit
+that is not there** — left by a unit deleted before deleting took them along,
+or by an actor that is no longer a unit — is a fix, *An assignment in a unit
+that is not there*, whatever its days: the person still counts as holding the
+role. On the Checks page it opens the person in People, and **Remove the
+assignment** takes it away.
+
 A unit kept in another scope is shown here and changed where it is kept.
 
 **Where a role that manages gives a right.** The app grants nothing from who
@@ -1996,7 +2016,10 @@ An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`), lists who holds what with `assignments.list` — across the tree,
 and for one unit its roles and who manages it — and assigns and ends with
 `assignment.add` and `assignment.end` in the scope that keeps the unit. It
-never forgets, removes or merges anyone. Who serves a scope is the unit's
+never forgets, removes or merges anyone. `element.remove` on a unit takes its
+assignments too and lists them in its answer (`assignmentsRemoved`);
+`checks.list` names one left behind as `check.assignmentOrphaned`, which a
+person removes. Who serves a scope is the unit's
 `scopes`, written with `element.update` in the scope that keeps the unit; who
 is responsible for a capability is an `assigned` row, written with
 `relation.add` in the scope that defines it; and `checks.list` names a

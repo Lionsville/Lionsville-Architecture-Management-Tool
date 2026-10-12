@@ -275,7 +275,8 @@ und führt sie auf der Seite Prüfungen auf.
   Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Datensatz
   öffnen, die Zeichnung, die Einheit oder beide Einheiten, den Einheitstyp,
   den Plan, die Person in Personen; **Verknüpfen…**, **Übernehmen**,
-  **Zuweisen…**, **Zuweisung beenden…**, **Eine Zusammenarbeit festhalten…**,
+  **Zuweisen…**, **Zuweisung beenden…**, **Zuweisung entfernen**, **Eine
+  Zusammenarbeit festhalten…**,
   **Festlegung entfernen**. Eine Liste bietet die Aktionen, die sie dort tun
   kann, wo sie steht, und der Bildschirm, den sie öffnet, tut den Rest.
   **Alle Befunde** geht zurück zu dem Befund, von dem Sie kamen.
@@ -319,7 +320,10 @@ Organisationsbildschirm im ganzen Baum.
   Seite des Betriebsmodells, eine Person in Personen. **Als beabsichtigt
   markieren…** neben dem Befund eines Prüfpunkts oder eines Hinweises
   markiert ihn von hier aus, in dem Bereich, der ihn führt, und **Akzeptiert
-  (N)** führt auf, was markiert wurde, jedes mit **Zurücknehmen**. Eine hier
+  (N)** führt auf, was markiert wurde, jedes mit **Zurücknehmen**. Eine
+  Zuweisung in einer Einheit, die es nicht gibt, bietet daneben **Zuweisung
+  entfernen**, auf dieselbe Weise geschrieben: Es bleibt keine Einheit, von
+  der aus sie zu beheben wäre. Eine hier
   gesetzte Markierung, mit nichts geöffnet, ist ein Schritt dieses Bereichs
   und liegt auf keinem Rückgängig-Stapel: **Zurücknehmen** ist der Weg, sie
   rückgängig zu machen.
@@ -1092,7 +1096,12 @@ Container-Diagramm hat, und eine Komponente, die noch an einer Anwendung hängt.
 Elemente gehören zum Modell, nicht zu einem Diagramm: ein Element kann auf
 mehreren Diagrammen liegen, und **Aus dem Diagramm entfernen** ist eine andere
 Aktion als **Aus dem Modell löschen**. Löschen fragt zuerst und sagt, wie viele
-Verbindungen mitgehen.
+Verbindungen mitgehen. Eine Einheit zu löschen nimmt jede Zuweisung darin mit,
+auch beendete, als wären sie nie gemacht worden: Die Frage nennt, wer was
+nicht mehr ist — *Ada Lovelace ist nicht mehr Product Owner in Webshop.* —,
+und ein Rückgängig bringt die Einheit und ihre Leute zurück. Um zu behalten,
+wer was innehatte, beenden Sie die Einheit stattdessen an einem Tag: über
+ihren Lebenszyklus oder einen Plan (*Veränderung über die Zeit*).
 
 ## Verbindungen
 
@@ -1838,7 +1847,9 @@ einschalten, und nur, solange die Seite offen ist.
 Zeile, die darauf endete. Es wird abgelehnt, solange etwas darin steckt, und
 sagt, wie viel: nichts kaskadiert, also ist ein Gebiet, das Sie löschen, eines,
 das Sie zuerst
-geleert haben.
+geleert haben. Ein Akteur, der eine Einheit mit Leuten darin ist, fragt
+zuerst: Seine Zuweisungen gehen mit, und die Frage nennt, wer was nicht mehr
+ist.
 
 **Was dieses Blatt zeigt**, die Schalter in der oberen Leiste, betrifft das
 Blatt und nicht das Modell — welche Kundenreise oben quer verläuft (ein Projekt
@@ -2272,6 +2283,19 @@ eine beendete Zuordnung bleibt, als das, was die Person innehatte.
 der Person an ihrem letzten Tag — ein Schritt in jedem Bereich, der eine führt —
 und entfernt Zuordnungen, die erst danach begonnen hätten.
 
+**Eine Einheit zu löschen** ist eine Korrektur: Es sagt, dass die Einheit nie
+da war, also gehen ihre Zuweisungen im selben Schritt mit, auch beendete, und
+die Frage davor nennt, wer was nicht mehr ist. Eine Einheit, die an einem Tag
+aufhört zu bestehen, beenden Sie stattdessen an diesem Tag — über ihren
+Lebenszyklus oder einen Plan —, und die Rollen ihrer Leute enden dann und
+bleiben in deren Geschichte. **Eine Zuweisung in einer Einheit, die es nicht
+gibt** — zurückgelassen von einer Einheit, die gelöscht wurde, bevor Löschen
+sie mitnahm, oder von einem Akteur, der keine Einheit mehr ist — wiegt
+**Beheben**, *Eine Zuweisung in einer Einheit, die es nicht gibt*, was auch
+immer ihre Tage sind: Die Person zählt weiter als Inhaberin der Rolle. Auf
+der Seite Prüfungen öffnet sie die Person in Personen, und **Zuweisung
+entfernen** nimmt sie weg.
+
 Eine Einheit, die ein anderer Bereich führt, wird hier gezeigt und dort
 geändert.
 
@@ -2292,7 +2316,10 @@ Ein Agent macht einen Akteur mit `element.update` (`unitTypeId`, `scopes`,
 den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
 ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
 der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
-zusammen. Wer einen Bereich bedient, ist das `scopes` der Einheit, geschrieben
+zusammen. `element.remove` auf einer Einheit nimmt auch ihre Zuweisungen mit
+und nennt sie in der Antwort (`assignmentsRemoved`); `checks.list` nennt eine
+zurückgelassene Zuweisung `check.assignmentOrphaned`, die eine Person
+entfernt. Wer einen Bereich bedient, ist das `scopes` der Einheit, geschrieben
 mit `element.update` in dem Bereich, der die Einheit führt; wer für eine
 Fähigkeit verantwortlich ist, ist eine `assigned`-Zeile, geschrieben mit
 `relation.add` in dem Bereich, der sie definiert; und `checks.list` nennt eine

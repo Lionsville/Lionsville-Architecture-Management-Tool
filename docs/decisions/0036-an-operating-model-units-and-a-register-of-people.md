@@ -16,7 +16,10 @@
   intended*, below), and every list of findings grouped, folded and explained
   (*As built, 3.6.1: one list of findings*, below), with marking and the
   Checks page on the screens (*As built, 3.6.1: marked as intended on
-  screen, and the Checks page*, below); implemented, 12 October 2026
+  screen, and the Checks page*, below); implemented, 12 October 2026.
+  Amended, 12 October 2026: a unit deleted takes its assignments with it,
+  and one left behind is a finding (*Amended, 12 October 2026*, below); as
+  built and implemented, 12 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1888,6 +1891,74 @@ key the catalogue does not know is refused; `app.current` says the page is up.
 why, how, and the marked apart — over the tree's findings; the page lists the
 dates' (`roadmap.check`) and the Conway map's (`diagram.inspect`) beside them,
 which the tool's description says.
+
+## Amended, 12 October 2026 — a unit deleted takes its assignments
+
+*Accepted and built 12 October 2026: As built, below.* Deleting a unit left
+every assignment that named it in place: nothing in the delete touched
+assignments, and no check said so. The person kept counting as holding the
+role — in their load, on the People page under what they hold, and in who
+manages whom where a build grants a right from it — in a unit nobody could
+see or open any more.
+
+**Deleting a unit is a correction, so its assignments are removed with it.**
+The rule of §6 decides it: a correction is an edit, a change has a day. A
+unit that ends is retired on a day — its lifecycle, or a plan — and its
+assignments then end on that day, which `check.assignmentEnded` and *Move the
+people* already handle. A delete has no day: it says the unit was never
+there, and nobody held a role in it, so its assignments go too, ended ones
+included, as if never made. Ending them on the day of the delete instead
+would keep a history of roles in a unit with no history of its own, every one
+of them naming nothing. The confirmation says who stops being what, and that
+retiring the unit is the way to keep who held what.
+
+**An assignment left behind is a fix.** One whose unit is not there — deleted
+before this amendment, deleted in another window whose step this one never
+saw, or an actor that is no longer a unit — is `check.assignmentOrphaned`,
+whatever its days: weight fix, in the organisation's category, about the
+scope that keeps it and naming the person. What fixes it is taking it away,
+as the delete would have.
+
+## As built, 12 October 2026: a unit deleted takes its assignments
+
+**The writer.** `element.delete` takes every assignment kept for the element
+in the same step (`model/commands/elements.ts`), ended ones included, and
+its inverse puts them back at the places they had, after the element — so a
+delete from the inspector, the board, a selection, a sheet, the agent's
+`element.remove` and a cross-scope gesture all do it, and one undo restores
+the unit and its people. Its write key stays the element's, as a delete's
+relations do. A gesture that moves a unit and keeps no stand-in now removes
+the assignments it carries before it deletes the record
+(`projects/gestures.ts`), since the delete would otherwise have taken them
+first and the removal found them gone.
+
+**The confirmation.** `deletionSummary` names each person in each role in
+each unit a delete ends — an assignment still running or still to begin, on
+the host's day — and counts the ones already over
+(`model/units.rolesEndedBy`); `rolesEndedSentences` says them, five by name
+and then how many more: *Ada Lovelace stops being Product owner in
+Webshop.* The board's remove-or-delete question and its confirmation of a
+selection list them (`widgets/RolesEnded`), the person by the register, the
+role by the name the host hands in (`EditorOwnership.roles`), with *To keep
+who held what, end the unit on a day instead*. A sheet's *Delete* on an
+actor that ends a role now asks first, with the same lines, drawn by the host
+(`SheetResponsible.rolesEnded`), since a sheet may not read the register; one
+that ends none deletes as it did. `element.remove` answers
+`assignmentsRemoved`, each with its role and person, and its description says
+a unit's assignments go with it.
+
+**The finding.** `unitFindings` reports `orphaned` for every assignment whose
+unit the organisation does not hold, before it reads the day, and
+`endedUnit` only for a unit that is there and has ended; the tree says it as
+`check.assignmentOrphaned` (`projects/checks.ts`), about the scope that
+keeps the assignment, its id the assignment's, naming the person and the
+role. On the Checks page an instance opens the person on the People page —
+there is no unit to open — and offers **Remove the assignment**
+(`removeAssignment`, a new action of the catalogue), written as the page
+writes a mark (`app/checkMarking.tsx`): through the session where the scope
+is open, as that scope's step elsewhere, nothing where it is gone already or
+the scope is only read. The agent has no tool that removes an assignment, as
+before (§13): `checks.list` names the check, and a person removes it.
 
 ## Open
 

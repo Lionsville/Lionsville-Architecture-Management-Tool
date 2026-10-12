@@ -256,7 +256,8 @@ en zet ze op de pagina Controles.
   die het oplossen of openen waar het wordt opgelost — het record openen, de
   tekening, de eenheid of de twee eenheden, het eenheidstype, het plan, de
   persoon in Mensen; **Koppelen…**, **Overnemen**, **Toewijzen…**, **De
-  toewijzing beëindigen…**, **Een samenwerking vastleggen…**, **De vastlegging
+  toewijzing beëindigen…**, **De toewijzing verwijderen**, **Een
+  samenwerking vastleggen…**, **De vastlegging
   verwijderen**. Een lijst biedt de acties die ze kan doen waar ze staat, en
   het scherm dat ze opent doet de rest. **Alle bevindingen** gaat terug naar
   de bevinding waar je vandaan kwam.
@@ -297,7 +298,10 @@ vinden in of onder haar, en op het organisatiescherm in de hele boom.
   besturingsmodel, een persoon in Mensen. **Markeren als bedoeld…** naast een
   bevinding van een nakijkpunt of een notitie markeert haar vanaf hier, in het
   onderdeel dat haar bijhoudt, en **Geaccepteerd (N)** zet op een rij wat is
-  gemarkeerd, elk met **Terugnemen**. Een markering die hier wordt gemaakt,
+  gemarkeerd, elk met **Terugnemen**. Een toewijzing in een eenheid die er
+  niet is biedt ernaast **De toewijzing verwijderen**, op dezelfde manier
+  weggeschreven: er is geen eenheid meer om het vandaan op te lossen. Een
+  markering die hier wordt gemaakt,
   met niets open, is een stap van dat onderdeel en staat niet op een
   ongedaan-stapel: **Terugnemen** is hoe je haar ongedaan maakt.
 - Wat de pagina telt, komt uit wat de app al weet over de hele boom: de
@@ -1030,7 +1034,12 @@ en een component dat nog aan een applicatie hangt.
 Elementen horen bij het model, niet bij een diagram: één element kan op
 meerdere diagrammen staan, en **Uit dit aanzicht halen** is iets anders dan
 **Uit het model verwijderen**. Verwijderen vraagt eerst, en zegt hoeveel
-koppelingen meegaan.
+koppelingen meegaan. Een eenheid verwijderen neemt elke toewijzing erin mee,
+ook beëindigde, alsof ze nooit gemaakt zijn: de vraag noemt wie wat niet
+langer is — *Ada Lovelace is niet langer Product owner in Webshop.* — en één
+keer ongedaan maken zet de eenheid en haar mensen terug. Wil je bewaren wie
+wat vervulde, beëindig de eenheid dan op een dag: met haar levenscyclus, of
+een plan (*Verandering in de tijd*).
 
 ## Koppelingen
 
@@ -1734,7 +1743,8 @@ zolang de pagina open is.
 **Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
 erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er
 cascadeert niets, dus een gebied dat u verwijdert is een gebied dat u eerst
-leeggemaakt hebt.
+leeggemaakt hebt. Een actor die een eenheid is met mensen erin vraagt eerst:
+haar toewijzingen gaan mee, en de vraag noemt wie wat niet langer is.
 
 **Wat dit blad tekent**, de schuifjes in de bovenbalk, gaat over het blad en
 niet over het model — welke klantreis bovenaan loopt (een project met twee
@@ -2149,6 +2159,18 @@ toewijzing blijft staan, als wat de persoon vervulde.
 de persoon op de laatste dag — één stap in elke scope die er een bijhoudt — en
 haalt toewijzingen weg die pas daarna zouden beginnen.
 
+**Een eenheid verwijderen** is een correctie: het zegt dat de eenheid er nooit
+was, dus haar toewijzingen gaan in dezelfde stap mee, ook beëindigde, en de
+vraag ervoor noemt wie wat niet langer is. Een eenheid die op een dag ophoudt
+te bestaan beëindig je op die dag — met haar levenscyclus, of een plan — en
+de rollen van haar mensen eindigen dan en blijven in hun geschiedenis staan.
+**Een toewijzing in een eenheid die er niet is** — achtergelaten door een
+eenheid die verwijderd werd voordat verwijderen ze meenam, of door een actor
+die geen eenheid meer is — weegt **Herstellen**, *Een toewijzing in een eenheid
+die er niet is*, wat haar dagen ook zijn: de persoon telt nog mee als
+vervuller van de rol. Op de pagina Controles opent ze de persoon in Mensen,
+en **De toewijzing verwijderen** haalt haar weg.
+
 Een eenheid die een andere scope bijhoudt wordt hier getoond en daar
 gewijzigd.
 
@@ -2169,6 +2191,9 @@ Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
 de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst
 toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
 eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
+`element.remove` op een eenheid neemt ook haar toewijzingen mee en noemt ze
+in het antwoord (`assignmentsRemoved`); `checks.list` noemt een achtergelaten
+toewijzing `check.assignmentOrphaned`, die een persoon verwijdert.
 Wie een scope bedient is de `scopes` van de eenheid, weggeschreven met
 `element.update` in de scope die de eenheid bijhoudt; wie verantwoordelijk is
 voor een capability is een `assigned`-regel, weggeschreven met `relation.add`
