@@ -25,6 +25,7 @@
 import type { Coverage } from '../business/coverage'
 import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, paperHeight, sheetPaper, sheetPaperWidth, spanOf } from '../business/grid'
 import { sheetPage } from '../business/sheet'
+import type { RailGroup } from '../business/sheet'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
 import type { ElementId, SheetPaper } from '../model/types'
@@ -58,8 +59,22 @@ export type SheetReport = {
       }[]
     }[]
   }
-  /** The stakeholder rail; empty when the sheet does not draw it. */
-  actors: { total: number; some: { id: ElementId; name: string; depth: number; outside: boolean }[] }
+  /**
+   * The stakeholder rail as a person first sees it; empty when the sheet does
+   * not draw it (ADR-0036, amended 12 October 2026). The parties' tree
+   * (`group: 'parties'`, a unit with a party under it as its group), then the
+   * units the sheet uses (`'used'`, with what each answers for here and
+   * whether it has a lane). `unitsNotDrawn` counts the scope's other units,
+   * which a person's *All units* draws for their session.
+   */
+  actors: {
+    total: number
+    unitsNotDrawn: number
+    some: {
+      id: ElementId; name: string; depth: number; outside: boolean; group: RailGroup
+      responsibleFor?: ElementId[]; lane?: boolean
+    }[]
+  }
   /**
    * How the areas tile: the canvas the page is laid out on and its width and
    * height in CSS pixels (none for `fit`), the columns the sheet fixes —
@@ -157,8 +172,12 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
     },
     actors: {
       total: page.actors.length,
+      unitsNotDrawn: page.unitsNotDrawn,
       some: page.actors.slice(0, limit).map((row) => ({
-        id: row.element.id, name: row.element.name, depth: row.depth, outside: row.outside,
+        id: row.element.id, name: row.element.name, depth: row.depth, outside: row.outside, group: row.group,
+        ...(row.uses
+          ? { responsibleFor: row.uses.responsibleFor.map((element) => element.id), lane: row.uses.lane }
+          : {}),
       })),
     },
     grid: {

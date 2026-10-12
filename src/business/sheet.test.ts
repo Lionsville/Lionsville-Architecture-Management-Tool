@@ -38,6 +38,85 @@ describe('the stakeholder rail', () => {
 
 })
 
+describe('the units on the rail (ADR-0036, amended 12 October 2026)', () => {
+  /** The shipping scope with units filed in it: some the sheet uses, some it does not. */
+  function withUnits(): ReturnType<typeof shippingScope> {
+    const { elements, relations } = shippingScope()
+    const unit = (id: string, name: string, over = {}) => actor(id, name, { unitTypeId: 'team', ...over })
+    return {
+      elements: [
+        // A key account the scope typed as a unit: it holds a lane.
+        ...elements.map((one) => (one.id === 'key-account' ? { ...one, unitTypeId: 'team' } : one)),
+        unit('billing-team', 'Billing team'),
+        unit('dispatch', 'Dispatch'),
+        unit('rates', 'Rates', { parentId: 'billing-team' }),
+        unit('carriers', 'Carriers'),
+        // A party nested under a unit: the unit is drawn as its group.
+        actor('haulier', 'Contract haulier', { parentId: 'carriers', outside: true }),
+        // A unit whose parent is filed in another scope.
+        unit('night-shift', 'Night shift', { parentId: 'elsewhere-unit' }),
+      ],
+      relations: [
+        ...relations,
+        relation('a3', 'assigned', 'billing-team', 'dunning'),
+        relation('a4', 'assigned', 'billing-team', 'invoicing'),
+        // Responsible for an area the sheet does not draw: not used here.
+        relation('a5', 'assigned', 'dispatch', 'nowhere-drawn'),
+      ],
+    }
+  }
+  const rail = (options = {}) => sheetPage(withUnits(), SHEET, [], options)
+
+  it('draws the parties, then the units the sheet uses, and counts the rest', () => {
+    const laid = rail()
+    expect(laid.actors.map((row) => [row.element.id, row.group, row.depth])).toEqual([
+      ['warehouse-team', 'parties', 0],
+      ['partner', 'parties', 0],
+      ['carriers', 'parties', 0],
+      ['haulier', 'parties', 1],
+      ['key-account', 'used', 0],
+      ['billing-team', 'used', 0],
+    ])
+    expect(laid.unitsNotDrawn).toBe(3)
+  })
+
+  it('says why a used unit is there: what it answers for, in the page\'s order, and its lane', () => {
+    const rows = rail().actors
+    expect(rows.find((row) => row.element.id === 'billing-team')?.uses).toEqual({
+      responsibleFor: [expect.objectContaining({ id: 'invoicing' }), expect.objectContaining({ id: 'dunning' })],
+      lane: false,
+    })
+    expect(rows.find((row) => row.element.id === 'key-account')?.uses).toEqual({ responsibleFor: [], lane: true })
+    expect(rows.find((row) => row.group === 'parties')?.uses).toBeUndefined()
+  })
+
+  it('counts a row another scope keeps, as Show who is responsible does', () => {
+    const { elements, relations } = withUnits()
+    const laid = sheetPage({ elements, relations }, SHEET, [relation('far', 'assigned', 'dispatch', 'picking')])
+    expect(laid.actors.find((row) => row.element.id === 'dispatch')).toMatchObject({ group: 'used' })
+  })
+
+  it('draws every other unit, flat in the tree’s order, with All units — one filed under a unit elsewhere included', () => {
+    const laid = rail({ allUnits: true })
+    expect(laid.actors.filter((row) => row.group === 'other').map((row) => [row.element.id, row.depth]))
+      .toEqual([['rates', 0], ['dispatch', 0], ['night-shift', 0]])
+    expect(laid.unitsNotDrawn).toBe(0)
+  })
+
+  it('keeps a unit the session kept where the parties are', () => {
+    const laid = rail({ kept: new Set(['dispatch']) })
+    expect(laid.actors.find((row) => row.element.id === 'dispatch')).toMatchObject({ group: 'parties', depth: 0 })
+    expect(laid.unitsNotDrawn).toBe(2)
+  })
+
+  it('still draws a lane whose actor is a unit, and draws no units where the rail is off', () => {
+    const { elements, relations } = withUnits()
+    expect(sheetPage({ elements, relations }, SHEET).journey?.lanes[1].actor?.id).toBe('key-account')
+    expect(sheetPage({ elements, relations }, { ...SHEET, showActors: false }, [], { allUnits: true }))
+      .toMatchObject({ actors: [], unitsNotDrawn: 0 })
+  })
+})
+
 describe('the journey band', () => {
   it('reads the phases across the top, the common path first, then a row per lane', () => {
     expect(page().journey?.phases.map((phase) => phase.id))

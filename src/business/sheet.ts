@@ -15,7 +15,8 @@
  * Four bands, in the order they are read:
  *
  * - **the stakeholder rail** — the `actor` tree down the side, with the
- *   parties from outside the organisation marked;
+ *   parties from outside the organisation marked, and under it the units
+ *   this sheet uses (ADR-0036, amended 12 October 2026);
  * - **the journey** — the phases across the top, and under them one row per
  *   lane with the common path first (`lanes.ts` derives where a lane forks,
  *   rejoins and merely passes through);
@@ -41,18 +42,44 @@
  * screen.
  */
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../model'
+import { isUnit } from '../model/units'
 import { coverageOf, type FunctionCoverage } from './coverage'
 import { journeyOf } from './lanes'
 import { rootsOfKind, unmappedFunctions } from './sheetDiagram'
-import { childrenOf, flatten } from './tree'
+import { childrenOf, flatten, inOrder } from './tree'
+
+/**
+ * Where on the rail a row is drawn (ADR-0036, amended 12 October 2026):
+ * the parties' tree, the units this sheet uses, or the rest of the scope's
+ * units, drawn only when *All units* asks for them.
+ */
+export type RailGroup = 'parties' | 'used' | 'other'
 
 /** A row of the stakeholder rail. */
 export type SheetActor = {
   element: DesignElement
-  /** How far in it is drawn: 0 is a top-level party, deeper is one of its own. */
+  /** How far in it is drawn: 0 is a top-level party, deeper is one of its own. Always 0 outside the parties. */
   depth: number
   /** Not part of this organisation (ADR-0012 §3). */
   outside: boolean
+  group: RailGroup
+  /**
+   * Why a unit is drawn among *Units on this sheet*: what it is responsible
+   * for that the sheet draws, in the page's order, and whether it has a lane.
+   * Only on that group.
+   */
+  uses?: { responsibleFor: DesignElement[]; lane: boolean }
+}
+
+/**
+ * How the rail is drawn for this person, this session: never the sheet's,
+ * and never saved. `allUnits` draws every unit of the scope; `kept` are units
+ * drawn among the parties anyway — a stakeholder typed as a unit while the
+ * sheet was up, which does not leave the rail under the cursor.
+ */
+export type RailOptions = {
+  allUnits?: boolean
+  kept?: ReadonlySet<ElementId>
 }
 
 /** One step in a lane's cell. */
@@ -127,8 +154,10 @@ export type SheetArea = {
 }
 
 export type LaidOutSheet = {
-  /** The rail, or empty when the sheet does not draw it. */
+  /** The rail, or empty when the sheet does not draw it: the parties, then the units used, then (asked) the rest. */
   actors: SheetActor[]
+  /** The units of the scope the rail leaves out: what *All units* would add. */
+  unitsNotDrawn: number
   /** Absent when the sheet names no journey, or names one this scope does not hold. */
   journey?: SheetJourney
   areas: SheetArea[]
@@ -166,6 +195,8 @@ export function sheetPage(
    * tree had an index.
    */
   elsewhere: readonly Relation[] = [],
+  /** How this person has the rail drawn, for the session. Absent: the parties and the units the sheet uses. */
+  rail: RailOptions = {},
 ): LaidOutSheet {
   const { elements, relations } = model
   const byId = new Map(elements.map((element) => [element.id, element]))
@@ -178,9 +209,14 @@ export function sheetPage(
     .filter((element): element is DesignElement => element !== undefined)
     .map((element) => areaOf(element, functions, coverage))
 
+  const journey = journeyFor(model, sheet, byId)
+  const drawnRail = sheet.showActors === false
+    ? { actors: [], unitsNotDrawn: 0 }
+    : railOf(elements, usedHere(model.relations, elsewhere, areas, journey), rail)
+
   return {
-    actors: sheet.showActors === false ? [] : railOf(elements),
-    journey: journeyFor(model, sheet, byId),
+    ...drawnRail,
+    journey,
     areas,
     // The rule itself is `unmappedFunctions`; what this band adds is "and this
     // sheet is not already drawing it", which is about the page and not about
@@ -189,14 +225,94 @@ export function sheetPage(
   }
 }
 
-/** The actor tree, flattened with the depth each row is drawn at. */
-function railOf(elements: readonly DesignElement[]): SheetActor[] {
+/** What this sheet uses each unit for: keyed by the actor, nothing for one it does not use. */
+type Uses = Map<ElementId, { responsibleFor: DesignElement[]; lane: boolean }>
+
+/**
+ * The actors the page uses (ADR-0036, amended 12 October 2026): the far end
+ * of an `assigned` row to something the page draws — an area, a grouping, a
+ * capability or a step, here or in a row another scope keeps, which is what
+ * *Show who is responsible* chips — and every lane's actor. One pass over
+ * the rows, in the page's order.
+ */
+function usedHere(
+  relations: readonly Relation[],
+  elsewhere: readonly Relation[],
+  areas: readonly SheetArea[],
+  journey: SheetJourney | undefined,
+): Uses {
+  const drawn: DesignElement[] = [
+    ...areas.flatMap((area) => [
+      area.element,
+      ...area.groupings.flatMap((group) => [group.element, ...group.capabilities.map((held) => held.element)]),
+      ...area.capabilities.map((held) => held.element),
+    ]),
+    ...(journey?.lanes.flatMap((lane) => lane.cells.flatMap((cell) => cell.steps.map((step) => step.element))) ?? []),
+  ]
+  const order = new Map(drawn.map((element, index) => [element.id, index]))
+  const uses: Uses = new Map()
+  const at = (id: ElementId) => {
+    const held = uses.get(id) ?? { responsibleFor: [], lane: false }
+    uses.set(id, held)
+    return held
+  }
+  for (const lane of journey?.lanes ?? []) if (lane.actorId !== undefined) at(lane.actorId).lane = true
+  for (const relation of [...relations, ...elsewhere]) {
+    if (relation.type !== 'assigned') continue
+    const index = order.get(relation.targetId)
+    if (index === undefined) continue
+    const list = at(relation.sourceId).responsibleFor
+    if (!list.includes(drawn[index])) list.push(drawn[index])
+  }
+  for (const held of uses.values()) held.responsibleFor.sort((a, b) => order.get(a.id)! - order.get(b.id)!)
+  return uses
+}
+
+/**
+ * The rail: the actor tree without the units, then the units this sheet
+ * uses, then — where *All units* is on — the rest of the scope's units.
+ *
+ * A unit with a party under it stays in the parties' tree as that party's
+ * group, so the party is drawn where it always was; a unit kept for the
+ * session stays there too. The units after it are a flat list in the tree's
+ * order: the organisation chart is where their structure is read.
+ */
+function railOf(
+  elements: readonly DesignElement[],
+  uses: Uses,
+  options: RailOptions,
+): { actors: SheetActor[]; unitsNotDrawn: number } {
   const actors = elements.filter((element) => element.kind === 'actor')
-  return flatten(actors).map(({ element, depth }) => ({
-    element,
-    depth,
-    outside: element.outside === true,
-  }))
+  const byId = new Map(actors.map((element) => [element.id, element]))
+  const party = (element: DesignElement) => !isUnit(element) || options.kept?.has(element.id) === true
+  // A party's chain upwards is in the tree, whatever each link is.
+  const inTree = new Set<ElementId>()
+  for (const element of actors) {
+    if (!party(element)) continue
+    let at: DesignElement | undefined = element
+    while (at && !inTree.has(at.id)) {
+      inTree.add(at.id)
+      at = at.parentId === undefined ? undefined : byId.get(at.parentId)
+    }
+  }
+  const row = (element: DesignElement, group: RailGroup, depth = 0): SheetActor => ({
+    element, depth, outside: element.outside === true, group,
+  })
+  const parties = flatten(actors.filter((element) => inTree.has(element.id)))
+    .map(({ element, depth }) => row(element, 'parties', depth))
+
+  // Every unit, in the tree's order, a unit whose parent is filed elsewhere included.
+  const ordered = flatten(actors).map(({ element }) => element)
+  const reached = new Set(ordered.map((element) => element.id))
+  const units = [...ordered, ...inOrder(actors).filter((element) => !reached.has(element.id))]
+    .filter((element) => isUnit(element) && !inTree.has(element.id))
+  const used = units.filter((element) => uses.has(element.id))
+    .map((element) => ({ ...row(element, 'used'), uses: uses.get(element.id)! }))
+  const rest = units.filter((element) => !uses.has(element.id))
+  return {
+    actors: [...parties, ...used, ...(options.allUnits ? rest.map((element) => row(element, 'other')) : [])],
+    unitsNotDrawn: options.allUnits ? 0 : rest.length,
+  }
 }
 
 function journeyFor(

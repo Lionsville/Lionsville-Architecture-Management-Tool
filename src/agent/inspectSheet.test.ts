@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import { inspectSheet } from './inspectSheet'
 import { fromArrays } from '../model/normalised'
-import { shippingScope } from '../business/testFixtures'
+import { actor, relation, shippingScope } from '../business/testFixtures'
 import type { DesignDiagram } from '../model/types'
 
 const SHEET: DesignDiagram = {
@@ -34,5 +34,26 @@ describe('inspectSheet', () => {
     expect(held.grid).toEqual({ paper: 'A2', width: 2245, height: 1587, columns: 4, maxSpan: 4 })
     // Clamped to the widest an area may be, the way the page clamps it.
     expect(held.areas.some.map((area) => area.span)).toEqual([4, 2])
+  })
+
+  it('reads the rail a person first sees: the parties, the units the sheet uses and why, and how many it leaves out', () => {
+    const { elements, relations } = shippingScope()
+    const model = fromArrays({
+      name: 'Acme',
+      elements: [
+        ...elements,
+        actor('billing-team', 'Billing team', { unitTypeId: 'team' }),
+        actor('dispatch', 'Dispatch', { unitTypeId: 'team' }),
+      ],
+      relations: [...relations, relation('a3', 'assigned', 'billing-team', 'invoice')],
+      diagrams: [SHEET],
+    })
+    const held = inspectSheet(model, model.diagrams[SHEET.id])
+    expect(held.actors.unitsNotDrawn).toBe(1)
+    expect(held.actors.some.map((row) => [row.id, row.group])).toEqual([
+      ['warehouse-team', 'parties'], ['key-account', 'parties'], ['partner', 'parties'], ['billing-team', 'used'],
+    ])
+    expect(held.actors.some[3]).toMatchObject({ responsibleFor: ['invoice'], lane: false })
+    expect(held.actors.some[0].responsibleFor).toBeUndefined()
   })
 })
