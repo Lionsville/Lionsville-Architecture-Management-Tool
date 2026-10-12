@@ -14,10 +14,12 @@ import type { InitialPage } from './App'
 import type { ProjectHistoryState } from './history/useProjectHistory'
 import type { FilePicker } from './useFilePicker'
 import type { Gestures } from './useGestures'
+import type { HostModel } from '../model/hostModel'
 import type { ModelSession } from './useModelSession'
 import type { ProjectFiles } from './useProjectFiles'
 import type { Sheets } from './useSheet'
 import type { WorkspacePages } from './useWorkspacePages'
+import { unitLanding } from './units/unitViewsHere'
 
 /**
  * What the File menu asks for, what the web's overflow asks for, and what
@@ -83,13 +85,15 @@ export function useInitialPage(deps: {
   showElement: (id: string) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
   gestures: Gestures
+  /** The scope's model as it is now: a unit it keeps lands on its chart (`unitLanding`). */
+  model: () => HostModel
 }): void {
-  const { initialPage, pages, createSheet, showElement, openDocumentation, gestures } = deps
+  const { initialPage, pages, createSheet, showElement, openDocumentation, gestures, model } = deps
   const openedFor = useRef(false)
   // Read through a ref: what each page opens with is the pages' own, and a
   // page is shown once whatever they become.
-  const latest = useRef({ pages, createSheet, showElement, openDocumentation, gestures })
-  latest.current = { pages, createSheet, showElement, openDocumentation, gestures }
+  const latest = useRef({ pages, createSheet, showElement, openDocumentation, gestures, model })
+  latest.current = { pages, createSheet, showElement, openDocumentation, gestures, model }
   useEffect(() => {
     if (!initialPage || openedFor.current) return
     openedFor.current = true
@@ -122,6 +126,7 @@ function showInitialPage(page: InitialPage, by: {
   showElement: (id: string) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
   gestures: Gestures
+  model: () => HostModel
 }): void {
   const { pages } = by
   if (page.page === 'make') { make(page.kind, by); return }
@@ -139,8 +144,15 @@ function showInitialPage(page: InitialPage, by: {
     // Over the roadmap, so closing the plan lands on the roadmap and closing
     // that leaves a scope that draws nothing, rather than on an empty board.
     case 'plan': pages.openRoadmap(); pages.plans.openPlan(page.id); break
-    // A row of the register, opened where it is answered for.
-    case 'element': by.showElement(page.id); break
+    // A row of the register, opened where it is answered for — a unit this
+    // scope keeps on its chart, selected, so the inspector beside it is the
+    // unit's (ADR-0036 §7): what a unit pressed on another scope's chart opens.
+    case 'element': {
+      const landing = unitLanding(by.model(), page)
+      if (landing.page === 'chart') { pages.openView(landing.id); pages.selectOn(landing.id, landing.select) }
+      else by.showElement(page.id)
+      break
+    }
     // A report, reached by an agent or a link (ADR-0019): derived, so opening it is the whole of it.
     case 'platform': pages.openPlatformReport(page.id); break
     case 'service': pages.openServiceReport(page.id); break

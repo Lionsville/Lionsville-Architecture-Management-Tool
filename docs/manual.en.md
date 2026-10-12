@@ -2221,8 +2221,10 @@ box is a unit that has ended with people still in it.
 
 Choosing a unit this scope keeps opens it in the inspector beside the chart —
 its people, its roles, who manages it and the units it works with. A unit kept
-in another scope opens there, on its record. **Find me** goes to the unit where
-you hold a role; say who you are first, with **This is me** on the People page.
+in another scope opens there, on that scope's chart, chosen, with the same
+inspector beside it — or on its record where that scope has no chart. **Find
+me** goes to the unit where you hold a role; say who you are first, with **This
+is me** on the People page.
 
 Pressing a person opens their assignment in the inspector instead: who holds
 it, the role and the unit, its first and last day, the part of their time it

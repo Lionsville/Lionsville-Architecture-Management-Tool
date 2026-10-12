@@ -63,8 +63,12 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
     diagram, here, today: parts.todayDay, readOnly: view.readOnly, people: props.shell.people, scopeLabel: parts.readings.scopeLabel,
     ...(view.selectedId !== undefined ? { selectedId: view.selectedId } : {}),
     onSelect: view.onSelect,
-    // A unit or an application another scope keeps opens there, on its record.
-    onOpenElsewhere: (where: ScopePath, id: ElementId) => parts.show({ scope: where, page: 'document', id }),
+    // A unit or an application another scope keeps opens there: a unit on
+    // that scope's chart, selected, with its inspector; an application on its
+    // record. By opening that scope — `parts.show` shows a page of the scope
+    // already open, and selected there an id this scope does not hold.
+    onOpenElsewhere: (where: ScopePath, id: ElementId) =>
+      props.navigation.onOpenScope?.(where, here.at.unitAt(id) ? { page: 'element', id } : { page: 'document', id }),
     onHandle: parts.renderer.onSheetHandle,
   }
   const select = parts.pages.selectRequestFor(diagram.id)

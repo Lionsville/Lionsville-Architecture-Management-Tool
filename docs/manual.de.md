@@ -2559,9 +2559,11 @@ der noch Personen zugeordnet sind.
 Eine Einheit zu wählen, die dieser Bereich führt, öffnet sie im Inspektor
 neben dem Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die
 Einheiten, mit denen sie arbeitet. Eine Einheit, die ein anderer Bereich
-führt, öffnet sich dort, auf ihrem Datensatz. **Mich finden** geht zu der
-Einheit, in der Sie eine Rolle haben; sagen Sie zuerst, wer Sie sind, mit
-**Das bin ich** auf der Seite Personen.
+führt, öffnet sich dort, im Organigramm dieses Bereichs, gewählt, mit demselben
+Inspektor daneben — oder auf ihrem Datensatz, wo dieser Bereich kein
+Organigramm hat. **Mich finden** geht zu der Einheit, in der Sie eine Rolle
+haben; sagen Sie zuerst, wer Sie sind, mit **Das bin ich** auf der Seite
+Personen.
 
 Ein Klick auf eine Person öffnet stattdessen ihre Zuordnung im Inspektor: wer
 sie hat, die Rolle und die Einheit, der erste und letzte Tag, der Teil der Zeit,

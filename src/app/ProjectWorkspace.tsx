@@ -417,7 +417,7 @@ function useScreenParts(
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,
-    openDocumentation: requests.openDocumentation, gestures: tree.gestures,
+    openDocumentation: requests.openDocumentation, gestures: tree.gestures, model: session.current,
   })
   const show = useMemo(
     () => showOn(pages, showElement.show, requests.openDocumentation, requests.leaveDocumentation),

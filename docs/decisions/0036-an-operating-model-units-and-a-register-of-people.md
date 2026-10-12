@@ -2040,6 +2040,22 @@ library*, both opening the operating model at the organisation.
 nothing new: `element.add` already takes `kind: 'actor'`, `unitTypeId`,
 `parentId` and `scopes`.
 
+## As built, 3.6.2: a unit pressed on the chart lands on its inspector
+
+Pressing a unit another scope keeps, on a chart or a Conway map, opened the
+scope already open on that unit's record page, and selected there an id that
+scope does not hold: the inspector beside the chart showed the panel for
+several things selected. It now opens the scope that keeps the unit
+(`onOpenScope`, `page: 'element'`), and a unit that scope keeps lands on its
+chart, chosen, with the unit's inspector beside it (`unitLanding`, read when
+a scope opens on an element) — on its record where the scope has no chart.
+An application kept elsewhere still opens there on its record. The docked
+inspector shows the multi-selection panel only for more than one thing: a
+sole selected id the model does not hold falls to the page's own inspector
+(`EditorInspectorDock`). The *New unit* dialog no longer says what rights
+decide; *Filed in* says *Kept with the unit it sits in*, and shows the
+organisation by name where it is chosen.
+
 ## As built, 3.6.2: deleting a unit says what goes, and offers ending first
 
 The repair of 12 October took a unit's assignments with it. What else named

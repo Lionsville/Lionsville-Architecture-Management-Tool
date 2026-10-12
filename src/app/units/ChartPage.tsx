@@ -19,7 +19,8 @@
  * **A unit opens where it is kept.** Choosing one this scope holds selects it,
  * and the inspector docked beside the page edits it — its type, the people in
  * its roles, the interactions it declares. One kept in another scope opens
- * there, on its record. A vacancy in a unit kept here assigns someone at once.
+ * there, on that scope's chart, chosen, with the same inspector. A vacancy in
+ * a unit kept here assigns someone at once.
  *
  * **A person's chip opens their assignment.** In a unit kept here it chooses
  * the assignment, and the inspector shows it (`AssignmentInspector`, through
@@ -107,7 +108,7 @@ export type ChartPageProps = {
   /** The editor's selected element, where it is one this scope holds. */
   selectedId?: ElementId
   onSelect(id: ElementId | undefined): void
-  /** A unit kept in another scope, opened there on its record. */
+  /** A unit kept in another scope, opened there: on its chart, chosen, where that scope has one. */
   onOpenElsewhere(scope: ScopePath, id: ElementId): void
   /** Where a unit kept here may be assigned to from a vacancy. Absent: vacancies are not buttons. */
   assign?: { dispatch: (command: Command) => unknown; makeId: (prefix: string) => string; scopeName: string }

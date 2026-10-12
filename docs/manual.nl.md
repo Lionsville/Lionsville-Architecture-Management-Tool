@@ -2421,9 +2421,11 @@ vak is een eenheid die is opgeheven terwijl er nog mensen in zitten.
 
 Een eenheid kiezen die deze scope bijhoudt opent haar in de inspector naast
 het organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden
-waarmee ze samenwerkt. Een eenheid die een andere scope bijhoudt opent daar, op
-haar record. **Vind mij** gaat naar de eenheid waar jij een rol vervult; zeg
-eerst wie je bent, met **Dit ben ik** op de pagina Mensen.
+waarmee ze samenwerkt. Een eenheid die een andere scope bijhoudt opent daar,
+op het organogram van die scope, gekozen, met dezelfde inspector ernaast — of
+op haar record waar die scope geen organogram heeft. **Vind mij** gaat naar de
+eenheid waar jij een rol vervult; zeg eerst wie je bent, met **Dit ben ik** op
+de pagina Mensen.
 
 Een klik op een persoon opent in plaats daarvan diens toewijzing in de
 inspector: wie haar heeft, de rol en de eenheid, de eerste en laatste dag, het

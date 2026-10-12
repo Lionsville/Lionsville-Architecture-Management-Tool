@@ -151,6 +151,14 @@ describe('the organisation chart in the tab (ADR-0036 §7)', () => {
     expect(screen.getByTestId('page-choice')).toBeDefined();
   });
 
+  it('shows the page\'s own choice, never the panel for several, while the one id selected is one the model does not hold', () => {
+    const { pages, last } = withChoice((diagram) => <div data-testid="page-choice">{diagram.name}</div>);
+    renderEditor(CHART, { pages });
+    act(() => last().onSelect('kept-elsewhere'));
+    expect(screen.getByTestId('page-choice').textContent).toBe('Organisation');
+    expect(screen.getByRole('complementary', { name: 'Inspector' }).textContent).not.toMatch(/selected/);
+  });
+
   it('says what it says with nothing chosen where the page has no choice of its own', () => {
     const { pages } = withChoice(() => undefined);
     renderEditor(CHART, { pages });

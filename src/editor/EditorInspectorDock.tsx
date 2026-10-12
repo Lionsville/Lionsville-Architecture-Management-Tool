@@ -4,7 +4,8 @@
 /**
  * The inspector docked right, and the seam beside it while it is open: the
  * selected element's, line's or group's, the multi-selection's, a laid-out
- * page's own choice (`EditorPages.inspector`), or the empty state.
+ * page's own choice (`EditorPages.inspector`) — also while the one id
+ * selected is one the model does not hold — or the empty state.
  */
 import type { DesignDiagram } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
@@ -72,7 +73,10 @@ function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: D
       />
     );
   }
-  if (selectionCount(state.selection) > 0) {
+  // Several things selected. One the model does not hold — an id another
+  // scope keeps, picked before the page knew — is not several: it falls to
+  // the page's own inspector, never to the panel for a multi-selection.
+  if (selectionCount(state.selection) > 1) {
     return (
       <MultiSelectionInspector
         selection={state.selection}
