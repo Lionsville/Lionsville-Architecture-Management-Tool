@@ -215,11 +215,20 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
   // technology layer, and a namespace pointing at a cluster that is gone
   // would sit under nothing every reader could walk to. The same step, so
   // one undo puts the tree back whole.
-  if (element.kind === 'platform' || element.kind === 'platformService') {
+  //
+  // An actor's do the same, one level up (3.6.2): a unit inside a unit taken
+  // away, or a party in a group, would otherwise name a parent nobody can
+  // find — drawn nowhere on the chart, and counted under nothing. A delete of
+  // a unit from a screen or the agent says where its units go first
+  // (`model/unitDeletion.ts`), so this is what every other delete gets: they
+  // move up into its parent, kept as they were, and a type that may not sit
+  // there is `check.unitMisplaced`.
+  const outFrom = element.kind === 'platform' || element.kind === 'platformService'
+  if (outFrom || element.kind === 'actor') {
     for (const childId of next.order.elements) {
       const child = next.elements[childId]
       if (child.parentId !== id) continue
-      const { row, inverse } = patched(child, { parentId: undefined })
+      const { row, inverse } = patched(child, { parentId: outFrom ? undefined : element.parentId })
       next = withElements(next, put(next.elements, next.order.elements, childId, row))
       undo.push({ type: 'element.update', id: childId, patch: inverse })
     }

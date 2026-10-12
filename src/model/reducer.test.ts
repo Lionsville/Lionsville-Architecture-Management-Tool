@@ -1143,3 +1143,28 @@ describe('deleting a platform or a service takes its children out from under it 
     expect(gone.model.elements.api.parentId).toBe('wms')
   })
 })
+
+describe('deleting an actor moves what sits in it up into its parent (3.6.2)', () => {
+  const held = () => fromArrays({
+    name: 'Acme Logistics',
+    elements: [
+      element('north', { kind: 'actor', unitTypeId: 'ut-division' }),
+      element('booking', { kind: 'actor', unitTypeId: 'ut-team', parentId: 'north' }),
+      element('desk', { kind: 'actor', unitTypeId: 'ut-team', parentId: 'booking' }),
+      element('shipper', { kind: 'actor', parentId: 'booking' }),
+    ],
+    relations: [],
+    diagrams: [],
+  })
+
+  it('puts a unit\'s units and parties under its own parent, or at the top, in the same step, and one undo puts them back', () => {
+    const before = held()
+    const gone = ok(apply(before, { type: 'element.delete', id: 'booking' }))
+    expect(gone.model.elements.desk.parentId).toBe('north')
+    expect(gone.model.elements.shipper.parentId).toBe('north')
+    const back = ok(apply(gone.model, gone.inverse))
+    expect(JSON.stringify(toArrays(back.model))).toBe(JSON.stringify(toArrays(before)))
+    const top = ok(apply(before, { type: 'element.delete', id: 'north' }))
+    expect(top.model.elements.booking.parentId).toBeUndefined()
+  })
+})
