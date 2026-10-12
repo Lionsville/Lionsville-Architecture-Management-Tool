@@ -97,9 +97,15 @@ export type TreeChecksInput = {
   t: Translate
 }
 
+/**
+ * A finding about a person rather than a record: one over their share, and an
+ * assignment whose unit is not there — no record left to open, so the person.
+ */
+const ABOUT_A_PERSON: ReadonlySet<CheckKey> = new Set<CheckKey>(['check.personOverloaded', 'check.assignmentOrphaned'])
+
 /** The tree's findings, where *Needs attention* opened each: the record, its view, the operating model, or the person. */
 function fromTree(item: AttentionItem): CheckInstance {
-  const opens: CheckPlace = item.key === 'check.personOverloaded' && item.person !== undefined
+  const opens: CheckPlace = ABOUT_A_PERSON.has(item.key) && item.person !== undefined
     ? { person: item.person }
     : item.view !== undefined
       ? { scope: item.scope, page: { page: 'board', id: item.view } }

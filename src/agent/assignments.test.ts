@@ -226,6 +226,25 @@ describe('assignment.add and assignment.end', () => {
   })
 })
 
+/** A unit deleted is a correction (ADR-0036, amended 12 October 2026): its assignments go in the same step, and the answer says whose. */
+describe('element.remove on a unit', () => {
+  it('takes its assignments, ended ones included, in the one step, and names them in its answer', async () => {
+    const open = session('customer', customer)
+    const out = parsed(await ask('element.remove', { id: 'webshop' }, open))
+    expect(out.assignmentsRemoved).toEqual([
+      { id: 'as-1', roleId: 'ro-po', person: 'pe-femke' },
+      { id: 'as-2', roleId: 'ro-dev', person: 'pe-bram', until: '2026-06-30' },
+    ])
+    expect(open.sent).toEqual([{ type: 'element.delete', id: 'webshop', origin: 'agent' }])
+    expect(toArrays(open.model()).assignments).toBeUndefined()
+  })
+
+  it('says nothing of assignments for an actor that holds none', async () => {
+    const open = session('customer', customer)
+    expect(parsed(await ask('element.remove', { id: 'partners' }, open)).assignmentsRemoved).toBeUndefined()
+  })
+})
+
 describe('an actor made a unit through the element tools', () => {
   it('takes a unit type, the domains it serves and its roles beyond its type\'s', async () => {
     const open = session('customer', customer)

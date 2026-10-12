@@ -4,7 +4,9 @@
 /**
  * Marking a finding as intended, and taking a mark back, from any list of
  * findings (ADR-0036, amended 11 October 2026; `model/checkMarks.ts` for
- * what a mark is).
+ * what a mark is) — and the one fix a list makes itself: removing an
+ * assignment whose unit is not there, written the same way (amended 12
+ * October 2026).
  *
  * **Kept in the scope of the finding's first subject** (`checkMarkScope`):
  * the scope the finding is about, the scope the dates were checked in, or
@@ -60,6 +62,14 @@ export type CheckMarking = {
   /** May a mark kept in this scope be taken back here. */
   mayTakeBack: (scope: ScopePath) => boolean
   takeBack: (kept: KeptCheckMark) => void
+  /** May a finding about this scope be fixed from here: the scope may be changed, as a mark may be made in it. */
+  mayChange: (scope: ScopePath) => boolean
+  /**
+   * Take away an assignment kept in this scope, as if it had never been made:
+   * what fixes one whose unit is not there (`check.assignmentOrphaned`),
+   * which no screen of the unit can reach any more.
+   */
+  removeAssignment: (scope: ScopePath, id: string) => void
 }
 
 /** The scope that is open, as marking reads and writes it: through its session. */
@@ -116,9 +126,9 @@ export function checkMarking(deps: {
   )
   const mayWrite = (scope: ScopePath) => (here(scope) ? open?.writable === true : writeIn !== undefined && writable(scope))
   /** One move on the scope that keeps the mark: through the session where it is open, else as that scope's step. */
-  const write = (scope: ScopePath, command: Command, unchanged: (marks: readonly CheckMark[] | undefined) => boolean) => {
+  const write = (scope: ScopePath, command: Command, unchanged: (model: Pick<HostModel, 'checkMarks' | 'assignments'>) => boolean) => {
     if (here(scope)) { open?.dispatch(command); return }
-    void writeIn?.(scope, (held) => (unchanged(held.model.checkMarks) ? undefined : [command])).then(
+    void writeIn?.(scope, (held) => (unchanged(held.model) ? undefined : [command])).then(
       (written) => { const key = refusalKey(written); if (key) onRefused?.(key) },
       () => onRefused?.('pick.notWritten'),
     )
@@ -135,13 +145,19 @@ export function checkMarking(deps: {
       const scope = keptAt(finding, checkedIn)
       if (scope === undefined || !mayWrite(scope)) return
       const made = checkMarkFor(finding, { on: today, reason })
-      write(scope, { type: 'checkMark.add', mark: made }, (marks) => holds(marks, checkMarkId(made)))
+      write(scope, { type: 'checkMark.add', mark: made }, (model) => holds(model.checkMarks, checkMarkId(made)))
     },
     mayTakeBack: mayWrite,
     takeBack: ({ scope, mark }) => {
       if (!mayWrite(scope)) return
       const id = checkMarkId(mark)
-      write(scope, { type: 'checkMark.remove', id }, (marks) => !holds(marks, id))
+      write(scope, { type: 'checkMark.remove', id }, (model) => !holds(model.checkMarks, id))
+    },
+    mayChange: mayWrite,
+    removeAssignment: (scope, id) => {
+      if (!mayWrite(scope)) return
+      // Gone already — removed elsewhere since the list was read — is nothing to write.
+      write(scope, { type: 'assignment.remove', id }, (model) => !(model.assignments ?? []).some((one) => one.id === id))
     },
   }
 }

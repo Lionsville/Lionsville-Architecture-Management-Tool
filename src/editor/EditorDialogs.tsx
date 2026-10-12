@@ -6,7 +6,11 @@
  * the shortcuts, the export, ⌘F, and a diagram's rename and settings.
  */
 import { useCallback, useState } from 'react';
+import { deletionSummary, rolesEndedSentences } from '../model/deletion';
+import type { DeletionSummary } from '../model/deletion';
 import type { DesignDiagram } from '../model/types';
+import { useStrings } from '../i18n/LanguageContext';
+import { usePersonNames } from '../people/ui/names';
 import { ElementSearchDialog } from '../search/ui/ElementSearchDialog';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { DeleteElementDialog } from './DeleteElementDialog';
@@ -14,7 +18,7 @@ import { DiagramSettingsDialog } from './DiagramSettingsDialog';
 import { RenameDiagramDialog } from './RenameDiagramDialog';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
 import { ExportDialog } from './export/ExportDialog';
-import type { SolutionDesignEditorProps } from './props';
+import type { EditorOwnership, SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { DeleteRequests } from './useDeleteRequests';
 import type { ExportDialogState } from './useExport';
@@ -38,17 +42,18 @@ export function useEditorDialogs() {
 export type EditorDialogState = ReturnType<typeof useEditorDialogs>;
 
 /** What comes before the documentation page: the two delete questions, the shortcuts and the export. */
-export function EditorDialogs({ state, diagram, deletes, exports, dialogs }: {
+export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles }: {
   state: EditorState;
   diagram: DesignDiagram;
   deletes: DeleteRequests;
   exports: ExportDialogState;
   dialogs: EditorDialogState;
+  roles?: EditorOwnership['roles'];
 }) {
   const { exportOptions, exportSize } = exports;
   return (
     <>
-      <DeleteDialogs state={state} diagram={diagram} deletes={deletes} />
+      <DeleteDialogs state={state} diagram={diagram} deletes={deletes} roles={roles} />
       <ShortcutsHelpDialog open={dialogs.helpOpen} onClose={() => dialogs.setHelpOpen(false)} />
       {exportOptions && exportSize && (
         <ExportDialog
@@ -106,13 +111,31 @@ export function EditorLateDialogs({ props, state, dialogs, onFocus }: {
   );
 }
 
-function DeleteDialogs({ state, diagram, deletes }: {
+/**
+ * Who stops being what, as a delete's confirmation says it (ADR-0036, amended
+ * 12 October 2026): the person by the register, the role by the operating
+ * model the host hands in, the unit by this document.
+ */
+function useRolesEnded(state: EditorState, roles: EditorOwnership['roles']): (summary: DeletionSummary) => string[] {
+  const { t } = useStrings();
+  const names = usePersonNames();
+  return (summary) => rolesEndedSentences(summary, {
+    person: (id) => names.text({ person: id }),
+    role: (id) => roles?.name(id) ?? id,
+    unit: (id) => state.model.elements.find((e) => e.id === id)?.name ?? id,
+  }, t);
+}
+
+function DeleteDialogs({ state, diagram, deletes, roles }: {
   state: EditorState;
   diagram: DesignDiagram;
   deletes: DeleteRequests;
+  roles: EditorOwnership['roles'];
 }) {
   const { deleteTarget, setDeleteTarget, confirmDelete, setConfirmDelete } = deletes;
   const deleteElement = deleteTarget ? state.model.elements.find((e) => e.id === deleteTarget) : undefined;
+  const rolesEnded = useRolesEnded(state, roles);
+  const one = (id: string) => deletionSummary(state.model, { elementIds: [id], connectionIds: [], domainGroups: [] }, roles?.today);
   return (
     <>
       {deleteElement && (
@@ -120,6 +143,7 @@ function DeleteDialogs({ state, diagram, deletes }: {
           element={deleteElement}
           isBoundaryApplication={diagram.kind === 'container' && diagram.applicationElementId === deleteElement.id}
           hasComponents={state.model.elements.some((e) => e.parentId === deleteElement.id)}
+          endsRoles={rolesEnded(one(deleteElement.id))}
           onRemoveFromDiagram={() => {
             state.actions.removeFromDiagram(deleteElement.id);
             setDeleteTarget(undefined);
@@ -134,6 +158,7 @@ function DeleteDialogs({ state, diagram, deletes }: {
       {confirmDelete && (
         <ConfirmDeleteDialog
           summary={confirmDelete.summary}
+          endsRoles={rolesEnded(confirmDelete.summary)}
           subject={confirmDelete.subject}
           landings={confirmDelete.landings}
           onConfirm={() => {

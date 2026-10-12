@@ -11,6 +11,11 @@ import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { DesignModel } from '../model/types';
+import type { Assignment } from '../model/units';
+import { personIdOf } from '../model/person';
+import type { PersonRef } from '../model/person';
+import { translator } from '../i18n';
+import { PersonNamesProvider, textNames } from '../people/ui/names';
 
 /**
  * The two deletes that used to happen in silence: one connection, and a whole
@@ -231,5 +236,64 @@ describe('SolutionDesignEditor — deleting an interface that has landed', () =>
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Delete it too' }));
     expect(asked().every((c) => c.type === 'relation.delete')).toBe(true);
     expect(host.current.model.relations).toEqual([]);
+  });
+});
+
+/**
+ * A unit's assignments go with it (ADR-0036, amended 12 October 2026): the
+ * remove-or-delete question says who stops being what if it is deleted, the
+ * role by the name the host hands in, and the delete and its undo take and
+ * give back the unit and its people in one step.
+ */
+describe('SolutionDesignEditor — deleting a unit with people in it', () => {
+  type WithAssignments = DesignModel & { assignments: Assignment[] };
+  function withTeam(): WithAssignments {
+    const held = model();
+    return {
+      ...held,
+      diagrams: [laidOut({
+        id: 'd1', kind: 'layer7', name: 'Layer 7 — EU',
+        placements: [
+          { id: 'a1', zone: 'landscape', x: 400, y: 300 },
+          { id: 'b1', zone: 'externalSystems', x: 1500, y: 400 },
+          { id: 'team', zone: 'actors', x: 100, y: 100 },
+        ],
+      })],
+      elements: [...held.elements, { id: 'team', kind: 'actor', name: 'Carriers', unitTypeId: 'ut-team', lifecycle: 'live', isManaged: false, aspects: {} }],
+      assignments: [
+        { id: 'as-1', unitId: 'team', roleId: 'ro-po', person: { person: 'pe-ada' } },
+        { id: 'as-0', unitId: 'team', roleId: 'ro-po', person: { person: 'pe-bo' }, until: '2025-12-31' },
+      ],
+    };
+  }
+  const ownership = {
+    ownerOf: () => undefined, noteFor: () => undefined,
+    roles: { name: (id: string) => (id === 'ro-po' ? 'Product owner' : undefined), today: '2026-10-12' },
+  };
+
+  it('names who stops being what, and one undo puts the unit and its people back', async () => {
+    const names = { ...textNames(translator('en')), text: (ref: PersonRef | undefined) => (personIdOf(ref) === 'pe-ada' ? 'Ada Lovelace' : '?') };
+    const host = { current: undefined as unknown as EditorHostState };
+    render(
+      <ThemeProvider theme={testTheme}>
+        <PersonNamesProvider names={names}>
+          <div style={{ width: '1200px', height: '800px' }}>
+            <HostedEditor model={withTeam()} activeDiagramId="d1" onActiveDiagramChange={vi.fn()} ownership={ownership} hostRef={host} />
+          </div>
+        </PersonNamesProvider>
+      </ThemeProvider>,
+    );
+    await measured();
+    fireEvent.click(nodeEl('team'));
+    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
+    expect(within(dialog()).getAllByTestId('role-ended').map((one) => one.textContent)).toEqual([
+      'Ada Lovelace stops being Product owner in Carriers.', '1 assignment in it that is already over goes too.',
+    ]);
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Delete from model' }));
+    const after = host.current.model as WithAssignments;
+    expect(after.elements.some((one) => one.id === 'team')).toBe(false);
+    expect(after.assignments).toBeUndefined();
+    act(() => host.current.history.undo());
+    expect((host.current.model as WithAssignments).assignments).toEqual(withTeam().assignments);
   });
 });

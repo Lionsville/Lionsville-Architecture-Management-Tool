@@ -22,7 +22,7 @@
  * (`business/tree.wouldCycle`), because a cycle is not a state a person can
  * see and mend on a page that is drawn from the tree the cycle broke.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
@@ -43,6 +43,7 @@ import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { StringKey, Translate } from '../../i18n'
+import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { CaretIcon } from '../../widgets/icons'
 import { OrderedDateFields } from '../../widgets/OrderedDateFields'
 import { PickToAdd } from '../../widgets/PickToAdd'
@@ -169,6 +170,13 @@ export type SheetResponsible = {
   name(id: ElementId): string | undefined
   /** False only for a unit that serves neither the function's domain nor sits under one that does. */
   serves(actorId: ElementId, functionId: ElementId): boolean
+  /**
+   * Who stops being what if this actor is deleted — a unit's assignments go
+   * with it (ADR-0036, amended 12 October 2026) — drawn by the host, which
+   * knows the people and the roles; nothing where deleting it ends no role,
+   * and the delete then asks nothing.
+   */
+  rolesEnded?(actorId: ElementId): ReactNode | undefined
 }
 
 export type FunctionInspectorProps = {
@@ -388,7 +396,8 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           />
 
           {!readOnly && (
-            <Remove element={element} model={model} actions={actions} onRemoved={props.onRemoved} />
+            <Remove element={element} model={model} actions={actions} onRemoved={props.onRemoved}
+              rolesEnded={props.responsible?.rolesEnded?.(element.id)} />
           )}
         </Box>
       )}
@@ -403,16 +412,21 @@ export function FunctionInspector(props: FunctionInspectorProps) {
  * stays where it is, disabled, with the count beside it, because the answer
  * to "why can I not delete this" belongs next to the thing that will not
  * delete. Nothing cascades — an area is not a request to delete the twenty
- * capabilities in it (`business/authoring.mayRemove`).
+ * capabilities in it (`business/authoring.mayRemove`) — but a unit's
+ * assignments, which go with it: then the delete asks first, naming who
+ * stops being what (ADR-0036, amended 12 October 2026).
  */
-function Remove({ element, model, actions, onRemoved }: {
+function Remove({ element, model, actions, onRemoved, rolesEnded }: {
   element: DesignElement
   model: DesignModel
   actions: SheetActions
   onRemoved?(): void
+  rolesEnded?: ReactNode
 }) {
   const { t } = useStrings()
   const removal = mayRemove(model.elements, element.id)
+  const [asking, setAsking] = useState(false)
+  const remove = () => { actions.removeElement(element.id); onRemoved?.() }
 
   return (
     <Box>
@@ -422,12 +436,21 @@ function Remove({ element, model, actions, onRemoved }: {
             size="small" color="error" variant="outlined" fullWidth
             disabled={!removal.ok}
             aria-label={t('sheet.deleteThis', { name: element.name })}
-            onClick={() => { actions.removeElement(element.id); onRemoved?.() }}
+            onClick={() => (rolesEnded ? setAsking(true) : remove())}
           >
             {t('common.delete')}
           </Button>
         </span>
       </Tooltip>
+      {rolesEnded && (
+        <ConfirmDialog
+          open={asking} title={t('sheet.deleteUnitTitle', { name: element.name })} body={t('sheet.deleteUnitBody')}
+          confirmLabel={t('common.delete')} cancelLabel={t('common.cancel')}
+          onCancel={() => setAsking(false)} onConfirm={() => { setAsking(false); remove() }}
+        >
+          {rolesEnded}
+        </ConfirmDialog>
+      )}
       {!removal.ok && (
         <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>
           {plural(t, { one: 'sheet.insideOne', other: 'sheet.insideOther' }, removal.count)}

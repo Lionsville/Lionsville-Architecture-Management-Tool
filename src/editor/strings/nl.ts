@@ -518,6 +518,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'dialog.cascadeOther': '{count} koppelingen die eraan hangen gaan mee. ',
   'dialog.groupBoxesRemoved': 'Groepsvlakken verdwijnen; de elementen erin blijven. ',
   'dialog.canUndo': 'Je kunt dit ongedaan maken.',
+  'dialog.retireInstead': 'Wil je bewaren wie wat vervulde, beëindig de eenheid dan op een dag: met de levenscyclus, of een plan.',
   'dialog.deleteElementTitle': '“{name}” verwijderen?',
   'dialog.deleteElementKeeps': 'houdt het element in het model (en op andere aanzichten).',
   'dialog.deleteElementRemoves': 'haalt het overal weg, inclusief de koppelingen.',

@@ -11,7 +11,7 @@
  * and `readOnly` leaves nothing to press.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { FunctionInspector } from './FunctionInspector'
 import type { FunctionInspectorProps, SheetActions } from './FunctionInspector'
@@ -313,6 +313,32 @@ describe('deleting', () => {
     expect(screen.getByText('2 things are inside it')).toBeTruthy()
     fireEvent.click(button)
     expect(actions.removeElement).not.toHaveBeenCalled()
+  })
+
+  // A unit's assignments go with it (ADR-0036, amended 12 October 2026): the host draws who stops being what.
+  it('asks first where the actor is a unit with people, saying what the host says, and deletes only on yes', async () => {
+    const responsible = {
+      choices: [], name: () => undefined, serves: () => true,
+      rolesEnded: (id: string) => (id === 'warehouse-team' ? <p data-testid="said">Ada Lovelace stops being Team lead in Warehouse team.</p> : undefined),
+    }
+    const { actions, onRemoved } = open('warehouse-team', false, vi.fn(), undefined, { responsible })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Warehouse team' }))
+    expect(actions.removeElement).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByTestId('said').textContent).toBe('Ada Lovelace stops being Team lead in Warehouse team.')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(actions.removeElement).not.toHaveBeenCalled()
+    // A closing dialog keeps the page hidden from role queries until it has gone.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Warehouse team' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    expect(actions.removeElement).toHaveBeenCalledWith('warehouse-team')
+    expect(onRemoved).toHaveBeenCalled()
+    cleanup()
+    // An actor that ends no role is deleted as it always was.
+    const plain = open('key-account', false, vi.fn(), undefined, { responsible })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Key account' }))
+    expect(plain.actions.removeElement).toHaveBeenCalledWith('key-account')
   })
 
   it('is not offered under readOnly', () => {

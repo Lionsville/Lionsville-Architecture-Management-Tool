@@ -12,6 +12,9 @@ import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import type { DesignElement } from '../model'
 import type { Role, UnitType } from '../model/operatingModel'
+import type { HostModel } from '../model/hostModel'
+import { fromArrays, toArrays } from '../model/normalised'
+import { apply } from '../model/reducer'
 import type { Assignment } from '../model/units'
 import { findingSentence, organisationFindings, scopeFindings } from './checks'
 import { indexScopes } from './scopeIndex'
@@ -189,6 +192,33 @@ describe('what the organisation contradicts, from the index', () => {
     ended[1].model = { ...ended[1].model, elements: ended[1].model.elements.map((one) => (one.id === 'webshop' ? { ...one, lifecycleDates: { retired: '2026-06-01' } } : one)) }
     const found = organisationFindings(indexScopes(ended), DAY).filter((one) => one.key === 'check.assignmentEnded')
     expect(found).toEqual([{ key: 'check.assignmentEnded', scope: 'customer', id: 'webshop', name: 'Webshop', detail: 'Product owner', fields: ['as-1'] }])
+  })
+
+  // A unit deleted takes its assignments now; one deleted before that did left them naming nothing (ADR-0036, amended 12 October 2026).
+  it('finds an assignment whose unit is not there, ended or not, about the scope that keeps it and naming the person', () => {
+    const left = tree()
+    left[1].model = {
+      ...left[1].model,
+      elements: left[1].model.elements.filter((one) => one.id !== 'customer'),
+    }
+    const found = organisationFindings(indexScopes(left), DAY).filter((one) => one.key === 'check.assignmentOrphaned')
+    // as-2 ended in January and is found all the same: nobody held a role in a unit that was never there.
+    expect(found).toEqual([{
+      key: 'check.assignmentOrphaned', scope: 'customer', id: 'as-2', name: 'pe-ada', person: 'pe-ada', detail: 'Domain owner', fields: ['as-2'],
+    }])
+    expect(findingSentence(found[0], translator('en'), () => '', (id) => (id === 'pe-ada' ? 'Ada Lovelace' : id)))
+      .toBe('Ada Lovelace still holds Domain owner in a unit that is not there')
+  })
+
+  it('finds nothing left behind when the unit is deleted as a step: its assignments went with it', () => {
+    const held = tree()[1].model
+    const scope = fromArrays({ name: 'Customer', diagrams: [], elements: [...held.elements], relations: [], assignments: [...held.assignments ?? []] } satisfies HostModel)
+    const result = apply(scope, { type: 'element.delete', id: 'customer' })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const after = tree()
+    after[1].model = toArrays(result.model)
+    expect(organisationFindings(indexScopes(after), DAY).filter((one) => one.key === 'check.assignmentOrphaned')).toEqual([])
   })
 
   it('has nothing to say of a tree with no units and no assignments', () => {

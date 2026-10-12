@@ -8,7 +8,8 @@
  */
 import { transaction, placeOn } from '../../model/commands'
 import type { Diagram } from '../../model/normalised'
-import { rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
+import { assignmentList, rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
+import { assignmentsIn } from '../../model/units'
 import { CANVAS_KINDS, canPlaceKind } from '../../model/placement'
 import { isDay } from '../../model/lifecycle'
 import { isPlatformArchetype } from '../../model/relations'
@@ -124,7 +125,14 @@ export const removeElement: Handler = (args, view) => {
   const id = args.id as string
   const held = view.model.elements[id]
   if (!held) return refused('agent.unknownId', `element ${id}`)
-  return { command: { type: 'element.delete', id, origin: 'agent' }, answer: json({ id, name: held.name, removed: true }) }
+  // A unit's assignments go with it (ADR-0036, amended 12 October 2026): said, so the agent can tell the person whose roles ended.
+  const gone = assignmentsIn(assignmentList(view.model), [id]).map((one) => ({
+    id: one.id, roleId: one.roleId, person: one.person.person, ...(one.from ? { from: one.from } : {}), ...(one.until ? { until: one.until } : {}),
+  }))
+  return {
+    command: { type: 'element.delete', id, origin: 'agent' },
+    answer: json({ id, name: held.name, removed: true, ...(gone.length > 0 ? { assignmentsRemoved: gone } : {}) }),
+  }
 }
 
 // --- an element's fields ----------------------------------------------------------------

@@ -16,6 +16,8 @@ const summary = (over: Partial<DeletionSummary> = {}): DeletionSummary => ({
   domainGroups: 0,
   cascadingConnections: 0,
   standIns: 0,
+  roles: [],
+  earlierAssignments: 0,
   ...over,
 });
 
@@ -52,5 +54,28 @@ describe('ConfirmDeleteDialog — what it calls the thing', () => {
     expect(screen.getByText(/3 connections attached to them go too/)).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** A unit's assignments go with it (ADR-0036, amended 12 October 2026): the confirmation says who stops being what. */
+describe('ConfirmDeleteDialog — the roles a delete ends', () => {
+  it('lists each, and what to do instead where the history should stay', async () => {
+    render(
+      <ConfirmDeleteDialog
+        summary={summary({ elements: 2 })}
+        endsRoles={['Ada Lovelace stops being Product owner in Webshop.', '1 assignment in it that is already over goes too.']}
+        onConfirm={vi.fn()} onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByTestId('role-ended').map((one) => one.textContent)).toEqual([
+      'Ada Lovelace stops being Product owner in Webshop.', '1 assignment in it that is already over goes too.',
+    ]);
+    expect(screen.getByTestId('roles-ended-instead').textContent).toBe('To keep who held what, end the unit on a day instead: its lifecycle, or a plan.');
+    expect(await axeFindings()).toEqual([]);
+  });
+
+  it('says nothing of roles where none ends', () => {
+    render(<ConfirmDeleteDialog summary={summary({ elements: 2 })} endsRoles={[]} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByTestId('roles-ended')).toBeNull();
   });
 });

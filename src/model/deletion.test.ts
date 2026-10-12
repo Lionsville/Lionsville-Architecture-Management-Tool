@@ -8,6 +8,7 @@ import {
   describeDeletion,
   deletionSummary,
   needsDeleteConfirmation,
+  rolesEndedSentences,
   type DeletionSummary,
 } from './deletion';
 
@@ -22,6 +23,8 @@ const summary = (overrides: Partial<DeletionSummary> = {}): DeletionSummary => (
   domainGroups: 0,
   cascadingConnections: 0,
   standIns: 0,
+  roles: [],
+  earlierAssignments: 0,
   ...overrides,
 });
 
@@ -139,5 +142,43 @@ describe('deletionSummary — stand-ins', () => {
     expect(
       deletionSummary(tree, { elementIds: ['e1', 'erp'], connectionIds: [], domainGroups: [] }),
     ).toMatchObject({ elements: 2, standIns: 1 });
+  });
+});
+
+/**
+ * Deleting a unit takes its assignments (ADR-0036, amended 12 October 2026),
+ * so the summary says who stops being what — each person in each role in
+ * each unit once — and how many already over go too; the sentences name them.
+ */
+describe('the roles a delete ends', () => {
+  const people = ['pe-a', 'pe-b', 'pe-c', 'pe-d', 'pe-e', 'pe-f', 'pe-g'];
+  const team = {
+    ...board,
+    assignments: [
+      ...people.map((person, at) => ({ id: `as-${at}`, unitId: 'e1', roleId: 'ro-dev', person: { person } })),
+      { id: 'as-x', unitId: 'e1', roleId: 'ro-dev', person: { person: 'pe-a' }, from: '2027-01-01' },
+      { id: 'as-old', unitId: 'e1', roleId: 'ro-po', person: { person: 'pe-z' }, until: '2025-12-31' },
+      { id: 'as-else', unitId: 'e2', roleId: 'ro-po', person: { person: 'pe-y' } },
+    ],
+  };
+
+  it('names each role once and counts the ones over, for the elements deleted only', () => {
+    const summary = deletionSummary(team, { elementIds: ['e1'], connectionIds: [], domainGroups: [] }, '2026-10-12');
+    expect(summary.roles.map((one) => one.person)).toEqual(people);
+    expect(summary.earlierAssignments).toBe(1);
+    expect(deletionSummary(board, { elementIds: ['e1'], connectionIds: [], domainGroups: [] })).toMatchObject({ roles: [], earlierAssignments: 0 });
+  });
+
+  it('says the first few by name, then how many more, then the ones over', () => {
+    const summary = deletionSummary(team, { elementIds: ['e1'], connectionIds: [], domainGroups: [] }, '2026-10-12');
+    const lines = rolesEndedSentences(summary, {
+      person: (id) => id.slice(3).toUpperCase(), role: (id) => (id === 'ro-dev' ? 'Developer' : id), unit: () => 'Webshop',
+    });
+    expect(lines).toEqual([
+      'A stops being Developer in Webshop.', 'B stops being Developer in Webshop.', 'C stops being Developer in Webshop.',
+      'D stops being Developer in Webshop.', 'E stops being Developer in Webshop.',
+      'And 2 more roles end.', '1 assignment in it that is already over goes too.',
+    ]);
+    expect(rolesEndedSentences({ roles: [], earlierAssignments: 0 }, { person: String, role: String, unit: String })).toEqual([]);
   });
 });

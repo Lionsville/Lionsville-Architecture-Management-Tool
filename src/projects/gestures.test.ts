@@ -12,6 +12,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Command, DesignElement } from '../model'
+import type { HostModel } from '../model/hostModel'
+import { assignmentList, fromArrays } from '../model/normalised'
+import { apply } from '../model/reducer'
 import type { Assignment } from '../model/units'
 import { isGestureRefusal, planGesture, writeCommand } from './gestures'
 import type { GesturePlan, GestureRefusal, GestureRequest } from './gestures'
@@ -230,9 +233,9 @@ describe('a unit’s assignments', () => {
     expect(held.command).toEqual({
       type: 'transaction',
       commands: [
-        { type: 'element.link', id: 'team', name: 'Team', ref: '' },
         { type: 'assignment.remove', id: 'as-0' },
         { type: 'assignment.remove', id: 'as-1' },
+        { type: 'element.link', id: 'team', name: 'Team', ref: '' },
       ],
     })
   })
@@ -241,7 +244,18 @@ describe('a unit’s assignments', () => {
     expect(planned(plan({ gesture: 'demote', id: 'team', scope: 'acme', to: 'acme/rail' }, models())).writes[0].assignments)
       .toEqual([ended, running])
     const gone = planned(plan({ gesture: 'transfer', id: 'team', scope: 'acme', to: '', keepStandIn: false }, models()))
-    expect(gone.command).toMatchObject({ type: 'transaction', commands: [{ type: 'element.delete', id: 'team' }, { id: 'as-0' }, { id: 'as-1' }] })
+    expect(gone.command).toMatchObject({ type: 'transaction', commands: [{ id: 'as-0' }, { id: 'as-1' }, { type: 'element.delete', id: 'team' }] })
+  })
+
+  // A delete takes a unit's assignments itself; removing them after it would find them gone and refuse the whole step.
+  it('lands on the scope it leaves, the transfer that keeps no stand-in included', () => {
+    const here = fromArrays(models()[1].model as HostModel)
+    for (const keepStandIn of [true, false]) {
+      const held = planned(plan({ gesture: 'transfer', id: 'team', scope: 'acme', to: '', keepStandIn }, models()))
+      const landed = apply(here, held.command)
+      expect(landed.ok).toBe(true)
+      if (landed.ok) expect(assignmentList(landed.model).map((one) => one.id)).toEqual(['as-9'])
+    }
   })
 
   it('writes the definition and the assignments as one step, an id already there replaced whole', () => {

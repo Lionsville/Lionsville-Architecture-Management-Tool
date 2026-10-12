@@ -9,6 +9,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { describeDeletion, type DeletionSummary } from '../model/deletion';
 import { useStrings } from '../i18n/LanguageContext';
+import { RolesEnded } from '../widgets/RolesEnded';
 
 export interface ConfirmDeleteDialogProps {
   summary: DeletionSummary;
@@ -20,6 +21,8 @@ export interface ConfirmDeleteDialogProps {
    * them as interfaces of their own.
    */
   landings?: number;
+  /** Who stops being what: the units among them take their assignments with them (ADR-0036, amended 12 October 2026). */
+  endsRoles?: readonly string[];
   onConfirm(): void;
   /** Present only with `landings`: delete it and every landing, as one step. */
   onConfirmWithLandings?(): void;
@@ -67,6 +70,7 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
           {bothWays && (landings === 1 ? t('dialog.landingOne') : t('dialog.landingOther', { count: landings }))}
           {t('dialog.canUndo')}
         </DialogContentText>
+        <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>{t('common.cancel')}</Button>

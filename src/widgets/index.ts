@@ -10,6 +10,7 @@
  */
 export * from './icons'
 export { ConfirmDialog } from './ConfirmDialog'
+export { RolesEnded } from './RolesEnded'
 export { PageDialog } from './PageDialog'
 export { SeamResizer } from './SeamResizer'
 export { GroupedPicker, PickToAdd } from './PickToAdd'

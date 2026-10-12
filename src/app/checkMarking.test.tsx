@@ -105,6 +105,34 @@ describe('where a mark is written', () => {
   })
 })
 
+/** The one fix a list makes itself: an assignment whose unit is not there, removed (ADR-0036, amended 12 October 2026). */
+describe('removing an assignment whose unit is not there', () => {
+  const left = { id: 'as-1', unitId: 'gone', roleId: 'ro-po', person: { person: 'pe-ada' }, until: '2026-10-12' }
+
+  it('goes through the open scope\'s session where it keeps it, and is another scope\'s step where that scope does', async () => {
+    const dispatch = vi.fn()
+    const open = checkMarking({ index, open: { scope: 'retail', model: RETAIL, dispatch, writable: true }, writable: () => true, today: TODAY })
+    expect(open.mayChange('retail')).toBe(true)
+    open.removeAssignment('retail', 'as-1')
+    expect(dispatch).toHaveBeenCalledWith({ type: 'assignment.remove', id: 'as-1' })
+    const { writeIn, written } = writing({ retail: { ...RETAIL, assignments: [left] } })
+    checkMarking({ index, writable: () => true, writeIn, today: TODAY }).removeAssignment('retail', 'as-1')
+    await waitFor(() => expect(written).toEqual([{ path: 'retail', commands: [{ type: 'assignment.remove', id: 'as-1' }] }]))
+  })
+
+  it('writes nothing where it is gone already, or the scope is only read', async () => {
+    const { writeIn, written } = writing({ retail: RETAIL })
+    checkMarking({ index, writable: () => true, writeIn, today: TODAY }).removeAssignment('retail', 'as-1')
+    await Promise.resolve()
+    expect(written).toEqual([])
+    const readOnly = checkMarking({ index, writable: () => false, writeIn, today: TODAY })
+    expect(readOnly.mayChange('retail')).toBe(false)
+    readOnly.removeAssignment('retail', 'as-1')
+    await Promise.resolve()
+    expect(written).toEqual([])
+  })
+})
+
 type Line = { text: string; finding?: typeof vacant }
 
 function List({ lines }: { lines: Line[] }) {
@@ -123,7 +151,7 @@ describe('a list split by the marks', () => {
     { text: 'Declare an interaction with Sales' },
   ]
   const marked = (over: Partial<CheckMarking> = {}): CheckMarking => ({
-    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), ...over,
+    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), mayChange: () => true, removeAssignment: vi.fn(), ...over,
   })
 
   it('offers Mark as intended… on a line said from a finding, and never on one said from none', () => {

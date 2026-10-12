@@ -659,6 +659,14 @@ export interface EditorOwnership {
   unitSection?(element: DesignElement, readOnly: boolean): UnitSlot | undefined;
   /** See {@link AnsweredBy}. Absent = the record's own owner field only. */
   answeredBy?(element: DesignElement): AnsweredBy | undefined;
+  /**
+   * What a delete's confirmation needs to say who stops being what in a unit
+   * it takes away (ADR-0036, amended 12 October 2026): what each role of the
+   * operating model is called — kept at the organisation, which this scope's
+   * document need not be — and the day that tells a role still held from an
+   * assignment already over. Absent = the role's id, and every one held.
+   */
+  roles?: { name(roleId: string): string | undefined; today: string };
 }
 
 /** Where *Add here ▸ Existing application…* was asked for, in flow coordinates. */

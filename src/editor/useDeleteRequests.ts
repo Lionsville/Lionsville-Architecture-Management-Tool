@@ -39,6 +39,8 @@ export function useDeleteRequests(
   state: Pick<EditorState, 'model' | 'actions'>,
   activeDiagram: DesignDiagram | undefined,
   readOnly: boolean,
+  /** The day a role still held is told from an assignment already over (`deletionSummary`). */
+  today?: string,
 ) {
   const [deleteTarget, setDeleteTarget] = useState<ElementId | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | undefined>(undefined);
@@ -83,13 +85,13 @@ export function useDeleteRequests(
   const requestDeleteSelection = useCallback((asked: Selection) => {
     if (readOnly) return;
     const selection = deletableSelection(asked, activeDiagram);
-    const summary = deletionSummary(model, selection);
+    const summary = deletionSummary(model, selection, today);
     if (!needsDeleteConfirmation(summary)) {
       actions.deleteSelection(selection);
       return;
     }
     setConfirmDelete({ summary, run: () => actions.deleteSelection(selection) });
-  }, [readOnly, model, actions, activeDiagram]);
+  }, [readOnly, model, actions, activeDiagram, today]);
 
   return { deleteTarget, setDeleteTarget, confirmDelete, setConfirmDelete, requestDeleteConnection, requestDeleteSelection };
 }

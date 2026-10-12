@@ -10,6 +10,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Tooltip from '@mui/material/Tooltip';
 import type { DesignElement } from '../model/types';
 import { useStrings } from '../i18n/LanguageContext';
+import { RolesEnded } from '../widgets/RolesEnded';
 
 export interface DeleteElementDialogProps {
   element: DesignElement;
@@ -17,6 +18,12 @@ export interface DeleteElementDialogProps {
   isBoundaryApplication: boolean;
   /** Applications with components must shed them before model deletion. */
   hasComponents: boolean;
+  /**
+   * Who stops being what if it is deleted from the model: a unit's
+   * assignments go with it (ADR-0036, amended 12 October 2026). Removing it
+   * from this diagram ends nobody's role.
+   */
+  endsRoles?: readonly string[];
   onRemoveFromDiagram(): void;
   onDeleteFromModel(): void;
   onClose(): void;
@@ -37,6 +44,7 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
           <strong>{t('dialog.deleteFromModelButton')}</strong>{' '}
           {t('dialog.deleteElementRemoves')}
         </DialogContentText>
+        <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>{t('common.cancel')}</Button>

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
+  assignmentsIn, rolesEndedBy,
   dayBefore, endedBy, endingFor, heldThroughType, holdersOn, holdingFrom, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent,
   organisationOn, parentOn, parentTypeOf, runsOn, shareOf, slotsOf, unitCountsOn, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn,
   unitTypeOn,
@@ -227,16 +228,22 @@ describe('what the organisation contradicts on a day', () => {
     expect(found.find((one) => one.kind === 'vacant' && one.unitId === 'webshop')).toMatchObject({ roleId: 'ro-dev', held: 2, min: 3 })
   })
 
-  it('finds an assignment still running in a unit or a role taken away since, which nobody can hold', () => {
+  it('finds an assignment still running in a role taken away since, and one in a unit taken away whatever its days', () => {
     const gone: Organisation = {
-      units: [unit('webshop', 'ut-team')], roles, unitTypes: [team],
+      units: [unit('webshop', 'ut-team'), unit('plain', undefined)], roles, unitTypes: [team],
       assignments: [
         { id: 'as-a', unitId: 'removed', roleId: 'ro-po', person: { person: 'pe-a' } },
         { id: 'as-b', unitId: 'webshop', roleId: 'ro-gone', person: { person: 'pe-b' } },
+        // Over long ago, and still naming nothing: a unit deleted was never there, so neither was this.
+        { id: 'as-c', unitId: 'removed', roleId: 'ro-po', person: { person: 'pe-c' }, until: '2020-12-31' },
+        // An actor that is no longer a unit is nothing to hold a role in either.
+        { id: 'as-d', unitId: 'plain', roleId: 'ro-po', person: { person: 'pe-d' }, from: '2030-01-01' },
       ],
     }
-    const found = unitFindings(gone, TODAY).filter((one) => one.kind === 'endedUnit' || one.kind === 'endedRole')
-    expect(found.map((one) => [one.kind, one.unitId])).toEqual([['endedUnit', 'removed'], ['endedRole', 'webshop']])
+    const found = unitFindings(gone, TODAY).flatMap((one) => (one.kind === 'endedUnit' || one.kind === 'endedRole' || one.kind === 'orphaned' ? [one] : []))
+    expect(found.map((one) => [one.kind, one.unitId, one.assignment.id])).toEqual([
+      ['orphaned', 'removed', 'as-a'], ['endedRole', 'webshop', 'as-b'], ['orphaned', 'removed', 'as-c'], ['orphaned', 'plain', 'as-d'],
+    ])
     // With no operating model read at all, a role is nobody's to judge.
     expect(unitFindings({ ...gone, roles: [] }, TODAY).filter((one) => one.kind === 'endedRole')).toEqual([])
   })
@@ -342,5 +349,27 @@ describe('the one step a leaving makes in a scope', () => {
       ended: 2,
     })
     expect(leavingStep([held2('as-c', 'pe-bram')], new Set(['pe-femke']), '2026-10-31')).toBeUndefined()
+  })
+})
+
+/** What deleting a unit ends (ADR-0036, amended 12 October 2026): who stops being what, named, and what is over already. */
+describe('the roles a delete ends', () => {
+  it('names each person in each role in each unit once, still held or to come, and counts the ones over', () => {
+    const held = [
+      held2('as-a', 'pe-femke'), held2('as-b', 'pe-femke', { from: '2026-11-01' }),
+      held2('as-c', 'pe-bram', { roleId: 'ro-po', until: '2026-10-12' }), held2('as-d', 'pe-old', { until: '2025-12-31' }),
+      held2('as-e', 'pe-cy', { unitId: 'payments' }), held2('as-f', 'pe-dee', { unitId: 'elsewhere' }),
+    ]
+    expect(assignmentsIn(held, ['payments']).map((one) => one.id)).toEqual(['as-e'])
+    expect(rolesEndedBy(held, new Set(['webshop', 'payments']), '2026-10-12')).toEqual({
+      roles: [
+        { person: 'pe-femke', roleId: 'ro-dev', unitId: 'webshop' },
+        { person: 'pe-bram', roleId: 'ro-po', unitId: 'webshop' },
+        { person: 'pe-cy', roleId: 'ro-dev', unitId: 'payments' },
+      ],
+      earlier: 1,
+    })
+    // With no day, nothing is over.
+    expect(rolesEndedBy(held, ['webshop']).earlier).toBe(0)
   })
 })

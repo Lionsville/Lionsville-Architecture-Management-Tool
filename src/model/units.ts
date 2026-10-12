@@ -460,6 +460,10 @@ export function managedBy(
  * - `overLimit`: a unit that owns more applications than its type's limit;
  * - `endedUnit`, `endedRole`: an assignment running in a unit or a role that
  *   has ended;
+ * - `orphaned`: an assignment in a unit that is not there at all — taken out
+ *   of the model, or no longer a unit — whatever its days, because the unit
+ *   did not end on a day: it was corrected away, and the assignment with it
+ *   is a correction nobody made;
  * - `endedType`: a unit still there under a unit type that has ended — what
  *   it is now is a decision nobody has made;
  * - `overloaded`: a person whose shares add up to more than all of their
@@ -476,6 +480,7 @@ export type UnitFinding =
   | { kind: 'overLimit'; unitId: ElementId; owns: number; limit: number }
   | { kind: 'endedUnit'; unitId: ElementId; assignment: Assignment }
   | { kind: 'endedRole'; unitId: ElementId; roleId: RoleId; assignment: Assignment }
+  | { kind: 'orphaned'; unitId: ElementId; assignment: Assignment }
   | { kind: 'endedType'; unitId: ElementId; unitTypeId: UnitTypeId; until: string }
   | { kind: 'overloaded'; person: PersonId; load: number; assignments: Assignment[] }
 
@@ -529,20 +534,25 @@ function slotFindings(
 }
 
 /**
- * Every assignment running on the day in a unit or a role that has ended by
- * then — or that is gone: a unit taken away, or no longer a unit, and a role
- * taken out of an operating model that holds others. Nobody holds a role in
- * nothing, and the person is still counted as holding it.
+ * Every assignment in a unit that is not there — taken away, or no longer a
+ * unit — whatever its days; then every one running on the day in a unit or a
+ * role that has ended by then, or a role taken out of an operating model that
+ * holds others. Nobody holds a role in nothing, and the person is still
+ * counted as holding it.
  */
 function endedFindings(
   assignments: readonly Assignment[], units: ReadonlyMap<ElementId, UnitLike>, roles: ReadonlyMap<RoleId, Role>, day: string,
 ): UnitFinding[] {
   const found: UnitFinding[] = []
   for (const assignment of assignments) {
-    if (!runsOn(assignment, day)) continue
     const unit = units.get(assignment.unitId)
+    if (!unit) {
+      found.push({ kind: 'orphaned', unitId: assignment.unitId, assignment })
+      continue
+    }
+    if (!runsOn(assignment, day)) continue
     const role = roles.get(assignment.roleId)
-    if (!unit || unitEnded(unit, day)) found.push({ kind: 'endedUnit', unitId: assignment.unitId, assignment })
+    if (unitEnded(unit, day)) found.push({ kind: 'endedUnit', unitId: assignment.unitId, assignment })
     else if (role ? endedBy(role, day) : roles.size > 0) {
       found.push({ kind: 'endedRole', unitId: assignment.unitId, roleId: assignment.roleId, assignment })
     }
@@ -565,6 +575,45 @@ function overloads(assignments: readonly Assignment[], day: string, canonical: (
     if (load > 1 + 1e-9) found.push({ kind: 'overloaded', person, load, assignments: held })
   }
   return found
+}
+
+// --- deleting a unit -------------------------------------------------------------------------
+
+/**
+ * The assignments a delete of these elements takes with it (ADR-0036, amended
+ * 12 October 2026): every one kept for any of them, ended ones included.
+ * Deleting a unit is a correction — it was never there — so its assignments
+ * go in the same step rather than ending on a day (`commands/elements.ts`).
+ */
+export function assignmentsIn(assignments: readonly Assignment[], elementIds: Iterable<ElementId>): Assignment[] {
+  const ids = new Set(elementIds)
+  return assignments.filter((one) => ids.has(one.unitId))
+}
+
+/** One person in one role in one unit: what a delete's confirmation names as ending. */
+export type RoleHeld = { person: PersonId; roleId: RoleId; unitId: ElementId }
+
+/**
+ * What a delete of these elements ends, as its confirmation says it: each
+ * person in each role in each unit once, for an assignment still running on
+ * `today` or still to begin, in the order they are kept; and how many are
+ * already over, which go too and end nobody's role. With no day, every one
+ * is still held.
+ */
+export function rolesEndedBy(
+  assignments: readonly Assignment[], elementIds: Iterable<ElementId>, today?: string,
+): { roles: RoleHeld[]; earlier: number } {
+  const roles: RoleHeld[] = []
+  const seen = new Set<string>()
+  let earlier = 0
+  for (const one of assignmentsIn(assignments, elementIds)) {
+    if (today !== undefined && endedBy(one, today)) { earlier += 1; continue }
+    const key = JSON.stringify([personOf(one), one.roleId, one.unitId])
+    if (seen.has(key)) continue
+    seen.add(key)
+    roles.push({ person: personOf(one), roleId: one.roleId, unitId: one.unitId })
+  }
+  return { roles, earlier }
 }
 
 // --- leaving -------------------------------------------------------------------------------

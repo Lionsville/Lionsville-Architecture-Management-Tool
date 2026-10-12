@@ -151,6 +151,8 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.unitOverLimit': own,
   /** The unit, and the assignment. */
   'check.assignmentEnded': withFields,
+  /** The assignment: its unit is not there. */
+  'check.assignmentOrphaned': own,
   /** The unit, and the type that ended. */
   'check.unitTypeEnded': withFields,
   /** The person, by register id, in each scope that keeps one of their assignments. */

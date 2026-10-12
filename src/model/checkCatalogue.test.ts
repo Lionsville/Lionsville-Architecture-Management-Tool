@@ -97,11 +97,11 @@ describe('the catalogue', () => {
   it('weighs the kinds as ADR-0036\'s amendment says', () => {
     const of = (weight: string) => CHECK_KEYS.filter((key) => CHECK_CATALOGUE[key].weight === weight).map((key) => key.slice('check.'.length)).sort()
     expect(of('fix')).toEqual([
-      'assignmentEnded', 'conflict', 'dangling', 'danglingEnd', 'drawingLinkMissing', 'lineOutlivesEnd', 'platformRetiresFirst',
+      'assignmentEnded', 'assignmentOrphaned', 'conflict', 'dangling', 'danglingEnd', 'drawingLinkMissing', 'lineOutlivesEnd', 'platformRetiresFirst',
       'successorTooLate', 'unitMisplaced', 'unitTypeEnded', 'unitTypeNowhere',
     ])
     expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'proposal'])
-    expect(of('review')).toHaveLength(CHECK_KEYS.length - 14)
+    expect(of('review')).toHaveLength(CHECK_KEYS.length - 15)
   })
 
   it('reads a key it does not know as nothing', () => {

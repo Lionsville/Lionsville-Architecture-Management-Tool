@@ -536,6 +536,7 @@ export const EN = {
   'dialog.cascadeOther': '{count} connections attached to them go too. ',
   'dialog.groupBoxesRemoved': 'Group boxes are removed; the elements inside them stay. ',
   'dialog.canUndo': 'You can undo this.',
+  'dialog.retireInstead': 'To keep who held what, end the unit on a day instead: its lifecycle, or a plan.',
   'dialog.deleteElementTitle': 'Delete “{name}”?',
   'dialog.deleteElementKeeps': 'keeps the element in the model (and on any other diagram).',
   'dialog.deleteElementRemoves': 'removes it everywhere, including its connections.',

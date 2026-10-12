@@ -141,6 +141,12 @@ export function useWorkspaceOwnership(deps: {
     }),
     // Who answers for a record beyond its own field (ADR-0036 §8): a stand-in's master, and the rule.
     answeredBy: (element) => answeredByOf(element, { session, scope, index, today: units.today }),
+    // What a delete's confirmation calls the roles a unit takes with it (ADR-0036, amended 12 October 2026):
+    // the organisation's, with this scope's session laid over it, read when it is asked.
+    roles: {
+      name: (roleId) => organisationOver(index, scope, session.current()).organisation.roles.find((role) => role.id === roleId)?.name,
+      today: units.today,
+    },
   }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units])
 }
 

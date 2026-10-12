@@ -43,7 +43,7 @@ import { causeLabel, liveCauses } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
 import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
-import { isUnit, unitFindings, unitsOn } from '../model/units'
+import { isUnit, personOf, unitFindings, unitsOn } from '../model/units'
 import { unitTypeLanes } from '../model/unitOrder'
 import { servesOn } from '../model/serving'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
@@ -96,7 +96,9 @@ import type { TreeCheckKey } from '../model/checkCatalogue'
  *   several domains under a type that serves one (`check.unitSpans`), one
  *   owning more applications than its type's limit (`check.unitOverLimit`);
  *   an assignment still running in a unit or a role that has ended
- *   (`check.assignmentEnded`); a unit still there under a unit type that has
+ *   (`check.assignmentEnded`); an assignment, running or over, in a unit that
+ *   is not there — deleted, or no longer a unit — about the scope that keeps
+ *   it and the person it names (`check.assignmentOrphaned`); a unit still there under a unit type that has
  *   ended (`check.unitTypeEnded`, ADR-0036 §6); and a person whose shares add
  *   up to more than all of their time (`check.personOverloaded`) — about each
  *   scope that keeps one of their assignments, named by the register, never
@@ -148,6 +150,7 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.unitSpans': 'check.unitSpans',
   'check.unitOverLimit': 'check.unitOverLimit',
   'check.assignmentEnded': 'check.assignmentEnded',
+  'check.assignmentOrphaned': 'check.assignmentOrphaned',
   'check.unitTypeEnded': 'check.unitTypeEnded',
   'check.personOverloaded': 'check.personOverloaded',
   'check.unitNotServing': 'check.unitNotServing',
@@ -220,6 +223,7 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.unitSpans': { one: 'check.short.unitSpans.one', other: 'check.short.unitSpans.other' },
   'check.unitOverLimit': { one: 'check.short.unitOverLimit.one', other: 'check.short.unitOverLimit.other' },
   'check.assignmentEnded': { one: 'check.short.assignmentEnded.one', other: 'check.short.assignmentEnded.other' },
+  'check.assignmentOrphaned': { one: 'check.short.assignmentOrphaned.one', other: 'check.short.assignmentOrphaned.other' },
   'check.unitTypeEnded': { one: 'check.short.unitTypeEnded.one', other: 'check.short.unitTypeEnded.other' },
   'check.personOverloaded': { one: 'check.short.personOverloaded.one', other: 'check.short.personOverloaded.other' },
   'check.unitNotServing': { one: 'check.short.unitNotServing.one', other: 'check.short.unitNotServing.other' },
@@ -775,6 +779,14 @@ function organisationFinding(found: UnitFinding, said: Said): Finding[] {
         key: 'check.assignmentEnded', ...at, scope: said.at.assignmentAt(found.assignment) ?? at.scope,
         detail: said.roleName.get(found.assignment.roleId) ?? found.assignment.roleId, fields: [found.assignment.id],
       }]
+    case 'orphaned': {
+      // The unit is gone: the finding is the assignment's, kept where it is kept, and names the person.
+      const person = personOf(found.assignment)
+      return [{
+        key: 'check.assignmentOrphaned', scope: said.at.assignmentAt(found.assignment) ?? '', id: found.assignment.id, name: person, person,
+        detail: said.roleName.get(found.assignment.roleId) ?? found.assignment.roleId, fields: [found.assignment.id],
+      }]
+    }
     case 'endedType':
       return [{ key: 'check.unitTypeEnded', ...at, detail: type, fields: [found.unitTypeId] }]
   }

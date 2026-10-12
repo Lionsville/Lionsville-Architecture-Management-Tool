@@ -4,6 +4,8 @@
 import type { StringKey, Translate } from '../i18n/strings';
 import { MODEL_ENGLISH } from './words';
 import type { DesignDiagram, DesignModel, ElementId } from './types';
+import { rolesEndedBy } from './units';
+import type { Assignment, RoleHeld } from './units';
 
 /**
  * What a delete is about to take away. Counted here, phrased here, and decided
@@ -42,7 +44,19 @@ export interface DeletionSummary {
    * number is drawn.
    */
   standIns: number;
+  /**
+   * Who stops holding which role in which unit among the elements: the delete
+   * takes their assignments with it (`commands/elements.ts`). Named, because
+   * it is the part of deleting a unit that reaches past the board — the
+   * People page, a person's load, who manages whom.
+   */
+  roles: readonly RoleHeld[];
+  /** Assignments in them already over, which go too and end nobody's role. */
+  earlierAssignments: number;
 }
+
+/** How many named roles a confirmation lists before it says how many more. */
+export const ROLES_LISTED = 5;
 
 /**
  * The same selection, minus the one element this diagram may never lose: the
@@ -74,9 +88,19 @@ export function deletableSelection<S extends DeletionSelection>(
   return { ...selection, elementIds: selection.elementIds.filter((id) => id !== boundary) };
 }
 
-export function deletionSummary(model: DesignModel, selection: DeletionSelection): DeletionSummary {
+/**
+ * What a selection's delete takes away. `model.assignments` is the scope's, as
+ * the session holds them; an editor handed none names nobody. `today` tells a
+ * role still held from an assignment already over; absent, every one is held.
+ */
+export function deletionSummary(
+  model: DesignModel & { readonly assignments?: readonly Assignment[] },
+  selection: DeletionSelection,
+  today?: string,
+): DeletionSummary {
   const elementIds = new Set(selection.elementIds);
   const explicit = new Set(selection.connectionIds);
+  const ended = rolesEndedBy(model.assignments ?? [], elementIds, today);
   const cascading = model.relations.filter(
     (c) => !explicit.has(c.id) && (elementIds.has(c.sourceId) || elementIds.has(c.targetId)),
   );
@@ -86,6 +110,8 @@ export function deletionSummary(model: DesignModel, selection: DeletionSelection
     domainGroups: new Set(selection.domainGroups).size,
     cascadingConnections: cascading.length,
     standIns: model.elements.filter((e) => elementIds.has(e.id) && e.ref !== undefined).length,
+    roles: ended.roles,
+    earlierAssignments: ended.earlier,
   };
 }
 
@@ -148,4 +174,33 @@ export function describeDeletion(
       count: summary.standIns,
     })
     : listed;
+}
+
+/** What a confirmation needs to name a role that ends: the person, the role and the unit, as the screen calls them. */
+export interface RoleNames {
+  person(id: string): string;
+  role(id: string): string;
+  unit(id: string): string;
+}
+
+/**
+ * The roles a delete ends, as sentences a person reads before confirming it:
+ * "Ada Lovelace stops being Product owner in Webshop." — each, up to
+ * {@link ROLES_LISTED}, then how many more; then the assignments already over
+ * that go too. Nothing where the delete ends no role. Said here so a board's
+ * confirmation and a sheet's say the same thing.
+ */
+export function rolesEndedSentences(
+  summary: Pick<DeletionSummary, 'roles' | 'earlierAssignments'>,
+  names: RoleNames,
+  translate: Translate = MODEL_ENGLISH,
+): string[] {
+  const lines = summary.roles.slice(0, ROLES_LISTED).map((one) => translate('deletion.roleEnds', {
+    who: names.person(one.person), role: names.role(one.roleId), unit: names.unit(one.unitId),
+  }));
+  const more = summary.roles.length - ROLES_LISTED;
+  if (more > 0) lines.push(translate(more === 1 ? 'deletion.rolesMoreOne' : 'deletion.rolesMoreOther', { count: more }));
+  const earlier = summary.earlierAssignments;
+  if (earlier > 0) lines.push(translate(earlier === 1 ? 'deletion.earlierOne' : 'deletion.earlierOther', { count: earlier }));
+  return lines;
 }

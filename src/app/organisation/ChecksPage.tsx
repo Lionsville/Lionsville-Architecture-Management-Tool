@@ -25,10 +25,13 @@
  *
  * A full-window page over the home, as the registers are: below the home's bar,
  * window chrome on its own bar, both themes, and nothing on it that writes but
- * a mark — which the marking handed down decides (`checkMarking.tsx`).
+ * a mark — which the marking handed down decides (`checkMarking.tsx`) — and
+ * *Remove the assignment* on one whose unit is not there: no screen of the
+ * unit is left to fix it from (ADR-0036, amended 12 October 2026).
  */
 import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
 import IconButton from '@mui/material/IconButton'
 import ToggleButton from '@mui/material/ToggleButton'
@@ -36,7 +39,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
-import { CHECK_CATEGORY_LABEL, CHECK_LIST_WORDS, CHECK_WEIGHT_LABEL, CHECK_WEIGHTS } from '../../model/checkCatalogue'
+import { CHECK_ACTION_LABEL, CHECK_CATEGORY_LABEL, CHECK_LIST_WORDS, CHECK_WEIGHT_LABEL, CHECK_WEIGHTS } from '../../model/checkCatalogue'
 import type { CheckCategory, CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import { CHECK_MARK_WORDS, checkMarkId } from '../../model/checkMarks'
 import type { ScopePath } from '../../projects/scopePath'
@@ -214,7 +217,7 @@ function CheckDetail({ row, marking, scopeName, onGo, s }: {
             <>
               <Box component="ul" data-testid="checks-instances" sx={{ listStyle: 'none', p: 0, m: 0 }}>
                 {row.shown.map((instance) => (
-                  <Instance key={instance.id} instance={instance} marking={entry.weight === 'fix' ? undefined : marking} scopeName={scopeName} onGo={onGo} s={s} />
+                  <Instance key={instance.id} instance={instance} marking={entry.weight === 'fix' ? undefined : marking} fixing={marking} scopeName={scopeName} onGo={onGo} s={s} />
                 ))}
               </Box>
               <Typography sx={{ ...QUIET, mt: 0.5 }}>{s('checks.opens')}</Typography>
@@ -237,12 +240,28 @@ function CheckDetail({ row, marking, scopeName, onGo, s }: {
   )
 }
 
-/** One instance: its sentence, opening where it is fixed; the scope it is in; and *Mark as intended…* where it may be — never for a fix. */
-function Instance({ instance, marking, scopeName, onGo, s }: {
-  instance: CheckInstance; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string; onGo: (place: CheckPlace) => void; s: Translate
+/**
+ * The assignment an instance would remove, and the scope that keeps it: one
+ * whose unit is not there, where the person may change that scope.
+ */
+function removable(instance: CheckInstance, marking: CheckMarking | undefined): { scope: ScopePath; id: string } | undefined {
+  if (instance.key !== 'check.assignmentOrphaned' || instance.scope === undefined || !marking?.mayChange(instance.scope)) return undefined
+  const id = 'fields' in instance.finding ? instance.finding.fields?.[0] : undefined
+  return id !== undefined ? { scope: instance.scope, id } : undefined
+}
+
+/**
+ * One instance: its sentence, opening where it is fixed; the scope it is in;
+ * *Remove the assignment* where that fixes it; and *Mark as intended…* where
+ * it may be — never for a fix.
+ */
+function Instance({ instance, marking, fixing, scopeName, onGo, s }: {
+  /** `marking` for a mark, where one may be made; `fixing` for the fix, whatever the weight. */
+  instance: CheckInstance; marking: CheckMarking | undefined; fixing: CheckMarking | undefined; scopeName: (path: ScopePath) => string; onGo: (place: CheckPlace) => void; s: Translate
 }) {
   const { opens } = instance
   const markable = marking?.markableIn(instance.finding, instance.checkedIn) !== undefined
+  const remove = removable(instance, fixing)
   return (
     <Box component="li" sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -258,6 +277,14 @@ function Instance({ instance, marking, scopeName, onGo, s }: {
           : <Typography {...instance.attributes} sx={{ fontSize: 12.5 }}>{instance.text}</Typography>}
         {instance.scope !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('checks.in', { scope: scopeName(instance.scope) })}</Typography>}
       </Box>
+      {remove && fixing && (
+        <Button
+          size="small" color="error" sx={{ flex: 'none', textTransform: 'none' }} data-testid="checks-remove-assignment"
+          onClick={() => fixing.removeAssignment(remove.scope, remove.id)}
+        >
+          {s(CHECK_ACTION_LABEL.removeAssignment)}
+        </Button>
+      )}
       {markable && marking && (
         <MarkAsIntended inline words={CHECK_MARK_WORDS} sentence={instance.text} onMark={(reason) => marking.mark(instance.finding, reason, instance.checkedIn)} />
       )}

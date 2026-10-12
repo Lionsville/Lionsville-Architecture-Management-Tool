@@ -6,12 +6,12 @@ import { NOTHING, replacement, transaction } from '../commands'
 import type { Command, CommandMeta, StandInCache } from '../commands'
 import { asStandIn, isLinked, writesOwnersDetail } from '../standIn'
 import type { Model } from '../normalised'
-import { routesOf } from '../normalised'
+import { assignmentsOf, routesOf } from '../normalised'
 import { datesInOrder } from '../lifecycle'
 import type { DesignElement, ElementId } from '../types'
 import { gone, ok, outOfOrder, taken } from './handler'
 import type { ApplyResult, CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, setDiagram, withDiagrams, withElements, withMembers } from './rows'
+import { drop, patched, put, setDiagram, withAssignments, withDiagrams, withElements, withMembers } from './rows'
 import type { Rows } from './rows'
 import { removeRelation } from './relations'
 import { patchWrites } from './writes'
@@ -132,7 +132,8 @@ export const ELEMENT_COMMANDS = {
  * Deleting an element takes with it every relation that ends on it, its
  * membership and node on every diagram, the routes of those relations, any
  * container view that was about it, and the anchor of every drawing anchored
- * to it — which is exactly what the batch did, spelled out, and one more.
+ * to it — which is exactly what the batch did, spelled out, and one more —
+ * and, for a unit, every assignment kept for it.
  *
  * The inverse is a transaction that puts each of those back at the index it was
  * at, in the order that keeps the model referentially whole at every step:
@@ -223,6 +224,20 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
       undo.push({ type: 'element.update', id: childId, patch: inverse })
     }
   }
+
+  // A unit takes its people's assignments with it (ADR-0036, amended 12
+  // October 2026). Deleting it is a correction — it was never there — so they
+  // go, ended ones included, rather than ending on a day: nobody held a role
+  // in nothing. The same step, so one undo puts the unit and its people back;
+  // indices read off the original order, ascending, as the relations' are.
+  // Retiring a unit is the change with a day, and its lifecycle says it.
+  const assignments = assignmentsOf(model)
+  model.order.assignments.forEach((assignmentId, at) => {
+    const assignment = assignments[assignmentId]
+    if (assignment.unitId !== id) return
+    undo.push({ type: 'assignment.add', assignment, at })
+    next = withAssignments(next, drop(assignmentsOf(next), next.order.assignments, assignmentId))
+  })
 
   return { ok: true, model: next, inverse: transaction(undo, meta) }
 }

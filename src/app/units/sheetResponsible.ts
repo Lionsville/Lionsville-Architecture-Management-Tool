@@ -14,10 +14,15 @@
  * over the index (`organisationHere`) — so a unit made a moment ago is on
  * offer at once. Kept once per model, index and day, so a sheet laid out
  * from it is laid out again only when one of them moves.
+ *
+ * And who stops being what if an actor is deleted from the sheet: a unit's
+ * assignments go with it (ADR-0036, amended 12 October 2026).
  */
+import { createElement } from 'react'
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import type { HostModel } from '../../model/hostModel'
+import { deletionSummary } from '../../model/deletion'
 import { servesOn } from '../../model/serving'
 import { isUnit } from '../../model/units'
 import type { SheetResponsible } from '../../business/ui/FunctionInspector'
@@ -26,6 +31,7 @@ import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { organisationHere } from './organisationHere'
 import { unitChoices } from './choices'
+import { RolesEndedHere } from './RolesEndedHere'
 
 export type SheetResponsibleAt = {
   index: ScopeIndex
@@ -57,6 +63,16 @@ export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
     name: (id) => units.get(id)?.name ?? index.lookup(id)?.name,
     serves: (actorId, functionId) => !units.has(actorId)
       || servesOn(organisation, actorId, coversDomain(domainOf(functionId)), day, filedIn),
+    rolesEnded: (actorId) => {
+      const summary = deletionSummary(model, { elementIds: [actorId], connectionIds: [], domainGroups: [] }, day)
+      if (summary.roles.length === 0 && summary.earlierAssignments === 0) return undefined
+      const roleName = new Map(organisation.roles.map((role) => [role.id, role.name]))
+      return createElement(RolesEndedHere, {
+        summary, s,
+        role: (id) => roleName.get(id) ?? id,
+        unit: (id) => model.elements.find((element) => element.id === id)?.name ?? id,
+      })
+    },
   }
 }
 

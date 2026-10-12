@@ -54,7 +54,8 @@ function page(over: Partial<ChecksPageProps> = {}, marks: KeptCheckMark[] = [], 
     onGo: vi.fn(), s: t, windowChrome: NO_WINDOW_CHROME, ...over,
   }
   const handed: CheckMarking = {
-    marks, markableIn: (finding) => ('scope' in finding ? finding.scope : ''), mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), ...marking,
+    marks, markableIn: (finding) => ('scope' in finding ? finding.scope : ''), mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(),
+    mayChange: () => true, removeAssignment: vi.fn(), ...marking,
   }
   renderShell(<CheckMarkingContext.Provider value={handed}><ChecksPage {...props} /></CheckMarkingContext.Provider>)
   return { props, marking: handed }
@@ -137,6 +138,25 @@ describe('the Checks page', () => {
     fireEvent.click(screen.getByTestId('checks-weight-fix'))
     expect(row('check.conflict')).toBeNull()
     expect(screen.getByTestId('checks-weight-fix').getAttribute('aria-pressed')).toBe('false')
+  })
+
+  // A unit deleted before its assignments went with it left them naming nothing (ADR-0036, amended 12 October 2026).
+  it('offers Remove the assignment on one whose unit is not there, ended or not, opening the person, where the scope may be changed', () => {
+    const left: AttentionItem[] = [{
+      key: 'check.assignmentOrphaned', kind: 'assignmentOrphaned', scope: 'retail', id: 'as-1', person: 'pe-ada', fields: ['as-1'],
+      text: 'Ada still holds Team lead in a unit that is not there',
+    }]
+    const rows = checksByCategory(splitInstances(treeInstances({ attention: left, models: [], at: '', today: '2026-10-12', index, home: ROOT, t }), []))
+    const { props, marking } = page({ rows, request: { select: 'check.assignmentOrphaned' } })
+    const detail = screen.getByTestId('checks-detail')
+    expect(within(detail).getByTestId('checks-name').textContent).toBe('An assignment in a unit that is not there')
+    fireEvent.click(within(detail).getByTestId('checks-remove-assignment'))
+    expect(marking.removeAssignment).toHaveBeenCalledWith('retail', 'as-1')
+    fireEvent.click(within(detail).getByTestId('attention-retail-as-1'))
+    expect(props.onGo).toHaveBeenCalledWith({ person: 'pe-ada' })
+    cleanup()
+    page({ rows, request: { select: 'check.assignmentOrphaned' } }, [], { mayChange: () => false })
+    expect(screen.queryByTestId('checks-remove-assignment')).toBeNull()
   })
 
   it('closes from its bar', () => {

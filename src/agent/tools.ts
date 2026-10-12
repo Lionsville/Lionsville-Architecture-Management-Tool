@@ -564,7 +564,8 @@ const SPECS = [
       + 'check.accountability (a responsibility not exactly one role\'s A) and check.unitTypeNowhere (a unit type '
       + 'neither at the top nor in a unit type that sits anywhere, so no unit of it can be placed). The organisation\'s own (ADR-0036): '
       + 'check.roleVacant, check.roleOverMax, check.unitMisplaced, check.unitSpans, check.unitOverLimit, '
-      + 'check.assignmentEnded, check.unitTypeEnded, check.personOverloaded and check.unitNotServing (an area, grouping or '
+      + 'check.assignmentEnded, check.assignmentOrphaned (an assignment, running or over, in a unit that is not there: '
+      + 'the person in person; a person removes it, from the Checks page — tell them), check.unitTypeEnded, check.personOverloaded and check.unitNotServing (an area, grouping or '
       + 'capability assigned to a unit that serves neither its domain nor sits under a unit that does; the unit in detail), '
       + 'read on a day — today, or the day '
       + 'given as on, with every plan\'s moves of that day. Beside its key each finding answers its weight — fix (the '
@@ -1141,7 +1142,10 @@ const SPECS = [
     tier: 'write',
     description:
       'Remove an element from the landscape, with every connection that ends on it, its place on every '
-      + 'diagram, and any container view about it. One undo step puts all of it back.',
+      + 'diagram, and any container view about it — and, for a unit, every assignment in it, ended ones included: '
+      + 'deleting a unit is a correction, so its people\'s roles in it go as if never held, and the answer lists them '
+      + '(assignmentsRemoved). To keep who held what, retire the unit on a day with element.update instead. '
+      + 'One undo step puts all of it back.',
     inputSchema: { type: 'object', properties: { id: ID('element') }, required: ['id'], additionalProperties: false },
   },
   {

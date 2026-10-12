@@ -518,6 +518,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'dialog.cascadeOther': '{count} daran hängende Verbindungen gehen mit. ',
   'dialog.groupBoxesRemoved': 'Gruppenrahmen werden entfernt; die Elemente darin bleiben. ',
   'dialog.canUndo': 'Sie können dies rückgängig machen.',
+  'dialog.retireInstead': 'Um zu behalten, wer was innehatte, beenden Sie die Einheit stattdessen an einem Tag: über ihren Lebenszyklus oder einen Plan.',
   'dialog.deleteElementTitle': '„{name}“ löschen?',
   'dialog.deleteElementKeeps': 'behält das Element im Modell (und auf allen anderen Diagrammen).',
   'dialog.deleteElementRemoves': 'entfernt es überall, einschließlich seiner Verbindungen.',

@@ -143,3 +143,45 @@ describe('assignments in a version\'s history', () => {
     expect(applied(after, back.command)).toStrictEqual({ ...before, order: { ...before.order } })
   })
 })
+
+/**
+ * Deleting a unit is a correction (ADR-0036, amended 12 October 2026): its
+ * assignments go in the same step, ended ones included, whichever way the
+ * delete was asked — and one undo puts the unit and its people back where
+ * they were.
+ */
+describe('a unit deleted', () => {
+  const other: DesignElement = { ...webshop, id: 'payments', name: 'Payments' }
+  const ended: Assignment = { id: 'as-0', unitId: 'webshop', roleId: 'ro-po', person: { person: 'pe-ada' }, until: '2021-12-31' }
+  const elsewhere: Assignment = { id: 'as-9', unitId: 'payments', roleId: 'ro-po', person: { person: 'pe-cy' } }
+  const held = () => scope({ elements: [webshop, other], assignments: [ended, elsewhere, femke, bram] })
+
+  it('takes every assignment kept for it, and leaves the other units’', () => {
+    const result = apply(held(), { type: 'element.delete', id: 'webshop' })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(assignmentList(result.model)).toEqual([elsewhere])
+    const undone = apply(result.model, result.inverse)
+    expect(undone.ok && undone.model).toStrictEqual(held())
+  })
+
+  it('leaves no list behind where it held the last of them', () => {
+    const only = scope({ assignments: [femke] })
+    const gone = applied(only, { type: 'element.delete', id: 'webshop' })
+    expect('assignments' in toArrays(gone)).toBe(false)
+  })
+
+  it('in a step of several, as a board’s selection deletes, still one undo', () => {
+    const both = transaction([{ type: 'element.delete', id: 'webshop' }, { type: 'element.delete', id: 'payments' }])
+    const result = apply(held(), both)
+    expect(result.ok && assignmentList(result.model)).toEqual([])
+    if (!result.ok) return
+    expect(applied(result.model, result.inverse)).toStrictEqual(held())
+  })
+
+  it('touches no assignment of an element that is not a unit', () => {
+    const plain: DesignElement = { id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: false, aspects: {} }
+    const model = scope({ elements: [webshop, plain], assignments: [femke] })
+    expect(assignmentList(applied(model, { type: 'element.delete', id: 'wms' }))).toEqual([femke])
+  })
+})

@@ -52,7 +52,7 @@ export const TREE_CHECK_KEYS = [
   'check.unmapped', 'check.uncovered', 'check.offeredNotShared', 'check.causeExplainsObservationBelow',
   'check.accountability', 'check.unitTypeNowhere',
   'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
-  'check.assignmentEnded', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
+  'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -137,6 +137,8 @@ export type CheckCategory = (typeof CHECK_CATEGORIES)[number]
  *   between them from one of them;
  * - `assign` · `endAssignment` — assign someone to the role, or end an
  *   assignment;
+ * - `removeAssignment` — take away an assignment whose unit is not there, as
+ *   if it had never been made;
  * - `setOwner` — name whose an application is (`partyId`);
  * - `setType` — give the unit another type;
  * - `markShared` — mark the service shared;
@@ -146,7 +148,7 @@ export const CHECK_ACTIONS = [
   'openElement', 'openDefinition', 'openView', 'openRow', 'openInterface', 'openPlan',
   'openUnit', 'openUnits', 'openApplication', 'openType', 'openOperating', 'openPerson', 'openCause',
   'link', 'acceptInterface', 'declareInteraction', 'removeInteraction', 'modelInterface', 'assign', 'endAssignment',
-  'setOwner', 'setType', 'markShared', 'setSuccessor',
+  'removeAssignment', 'setOwner', 'setType', 'markShared', 'setSuccessor',
 ] as const
 export type CheckAction = (typeof CHECK_ACTIONS)[number]
 
@@ -297,6 +299,12 @@ const ENTRIES = {
     name: 'check.name.assignmentEnded', why: 'check.why.assignmentEnded', how: 'check.how.assignmentEnded',
     category: 'organisation', weight: 'fix', actions: ['endAssignment', 'openUnit'],
   },
+  // A unit deleted is a correction (ADR-0036, amended 12 October 2026): an
+  // assignment it left behind is one too, removed rather than ended.
+  'check.assignmentOrphaned': {
+    name: 'check.name.assignmentOrphaned', why: 'check.why.assignmentOrphaned', how: 'check.how.assignmentOrphaned',
+    category: 'organisation', weight: 'fix', actions: ['removeAssignment', 'openPerson'],
+  },
   'check.unitTypeEnded': {
     name: 'check.name.unitTypeEnded', why: 'check.why.unitTypeEnded', how: 'check.how.unitTypeEnded',
     category: 'organisation', weight: 'fix', actions: ['setType', 'openUnit', 'openType'],
@@ -373,6 +381,7 @@ export const CHECK_ACTION_LABEL: Record<CheckAction, StringKey> = {
   modelInterface: 'check.action.modelInterface',
   assign: 'check.action.assign',
   endAssignment: 'check.action.endAssignment',
+  removeAssignment: 'check.action.removeAssignment',
   setOwner: 'check.action.setOwner',
   setType: 'check.action.setType',
   markShared: 'check.action.markShared',

@@ -120,6 +120,8 @@ export const EN = {
 
   // --- taking something away -----------------------------------------------
   'sheet.deleteThis': 'Delete {name}',
+  'sheet.deleteUnitTitle': 'Delete “{name}”?',
+  'sheet.deleteUnitBody': 'Deletes it from the model, and with it every assignment in it. You can undo this.',
   'sheet.deleteChildrenFirst': 'Delete what is inside it first',
   'sheet.insideOne': '1 thing is inside it',
   'sheet.insideOther': '{count} things are inside it',

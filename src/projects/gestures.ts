@@ -213,12 +213,14 @@ export function writeCommand(
 }
 
 /**
- * This scope's half: the definition linked or deleted, and every assignment
- * that went with it taken out, so a stand-in left behind holds none.
+ * This scope's half: every assignment that went with the definition taken
+ * out, so a stand-in left behind holds none, and the definition linked or
+ * deleted. The assignments first: a delete takes a unit's own with it
+ * (`commands/elements.ts`), and a removal after it would find them gone.
  */
 function leaving(command: Command, carried: readonly Assignment[]): Command {
   if (carried.length === 0) return command
-  return transaction([command, ...carried.map((one): Command => ({ type: 'assignment.remove', id: one.id }))])
+  return transaction([...carried.map((one): Command => ({ type: 'assignment.remove', id: one.id })), command])
 }
 
 export function isGestureRefusal(
