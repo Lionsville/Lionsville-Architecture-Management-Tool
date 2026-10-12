@@ -185,11 +185,16 @@ function cleanUp(world: DeletionWorld, gone: ReadonlyMap<ElementId, string>, als
   return applications
 }
 
-/** The other units of one unit's type, outside what goes, by name. */
+/**
+ * The other units of one unit's type, outside what goes: its siblings first —
+ * the units inside are moved to one under the same parent unless the person
+ * picks another — then the rest, each by name.
+ */
 function othersOfType(world: DeletionWorld, unit: KeptActor, gone: ReadonlySet<ElementId>): KeptActor[] {
+  const sibling = (actor: KeptActor) => (actor.parentId === unit.parentId ? 0 : 1)
   return world.actors
     .filter((actor) => isUnit(actor) && actor.unitTypeId === unit.unitTypeId && !gone.has(actor.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => sibling(a) - sibling(b) || a.name.localeCompare(b.name))
 }
 
 /**

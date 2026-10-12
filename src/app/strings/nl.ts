@@ -985,7 +985,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'unitDelete.lastDay': 'Haar laatste dag',
   'unitDelete.endIt': 'Beëindigen',
   'unitDelete.mistake': 'Verwijderen is voor een eenheid die per vergissing is gemaakt. Mee gaan:',
-  'unitDelete.peopleNote': 'Hun toewijzingen verdwijnen mee. Wil je bewaren wie wat vervulde, beëindig haar dan op een dag.',
+  'unitDelete.peopleNote': 'Hun toewijzingen verdwijnen mee.',
   'unitDelete.inside': 'Erin: {names}',
   'unitDelete.insideMore': 'Erin: {names} en nog {count}',
   'unitDelete.up': 'Ze een niveau hoger zetten, in {parent}',

@@ -986,7 +986,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unitDelete.lastDay': 'Ihr letzter Tag',
   'unitDelete.endIt': 'Beenden',
   'unitDelete.mistake': 'Löschen ist für eine Einheit, die versehentlich angelegt wurde. Mit ihr gehen:',
-  'unitDelete.peopleNote': 'Ihre Zuweisungen werden mit entfernt. Um zu behalten, wer was innehatte, beenden Sie sie stattdessen an einem Tag.',
+  'unitDelete.peopleNote': 'Ihre Zuweisungen werden mit entfernt.',
   'unitDelete.inside': 'Darin: {names}',
   'unitDelete.insideMore': 'Darin: {names} und {count} weitere',
   'unitDelete.up': 'Eine Ebene höher setzen, in {parent}',

@@ -93,6 +93,11 @@ describe('unitDeletion', () => {
     ])
   })
 
+  it('offers the units of its type under the same parent first, so the default stays nearby', () => {
+    // Booking's siblings before the rest, though Quotes comes first by name.
+    expect(unitDeletion(world(), ['booking'], undefined, '2026-10-12')!.into.map((one) => one.id)).toEqual(['rates', 'quotes'])
+  })
+
   it('moves them up by default where their type may sit there, and up anyway when asked', () => {
     const fits = TYPES.map((type) => (type.id === 'ut-team' ? { ...type, top: true } : type))
     const plan = unitDeletion(world(fits), ['north'])!

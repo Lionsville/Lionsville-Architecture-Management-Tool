@@ -112,7 +112,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.exportFailed': 'Das Bild konnte nicht gezeichnet werden: {message}',
   'sheet.deleteThis': '{name} löschen',
   'sheet.deleteUnitTitle': '„{name}“ löschen?',
-  'sheet.deleteUnitBody': 'Löscht es aus dem Modell und damit jede Zuweisung darin. Sie können dies rückgängig machen.',
+  'sheet.deleteUnitBody': 'Sie können dies rückgängig machen.',
   'sheet.deleteChildrenFirst': 'Löschen Sie zuerst, was darin steckt',
   'sheet.insideOne': 'Darin steckt 1 Sache',
   'sheet.insideOther': 'Darin stecken {count} Sachen',

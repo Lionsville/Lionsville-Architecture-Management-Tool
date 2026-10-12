@@ -1212,7 +1212,7 @@ export const EN = {
   'unitDelete.lastDay': 'Its last day',
   'unitDelete.endIt': 'End it',
   'unitDelete.mistake': 'Delete is for a unit made by mistake. With it go:',
-  'unitDelete.peopleNote': 'Their assignments are removed with it. To keep who held what, end it on a day instead.',
+  'unitDelete.peopleNote': 'Their assignments are removed with it.',
   'unitDelete.inside': 'Inside it: {names}',
   'unitDelete.insideMore': 'Inside it: {names} and {count} more',
   'unitDelete.up': 'Move them up into {parent}',

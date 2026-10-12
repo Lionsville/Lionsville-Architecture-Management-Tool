@@ -112,7 +112,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.exportFailed': 'De afbeelding kon niet worden getekend: {message}',
   'sheet.deleteThis': '{name} verwijderen',
   'sheet.deleteUnitTitle': '“{name}” verwijderen?',
-  'sheet.deleteUnitBody': 'Verwijdert het uit het model, en daarmee elke toewijzing erin. Je kunt dit ongedaan maken.',
+  'sheet.deleteUnitBody': 'Je kunt dit ongedaan maken.',
   'sheet.deleteChildrenFirst': 'Verwijder eerst wat erin zit',
   'sheet.insideOne': 'Er zit 1 ding in',
   'sheet.insideOther': 'Er zitten {count} dingen in',
