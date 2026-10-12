@@ -1939,6 +1939,11 @@ party again. Nothing else marks a unit. The unit it sits in is the actor it is
 filed under, and the dates it starts and ends are its lifecycle dates — so a
 unit that has retired has ended.
 
+**The quickest way to make a unit is on its organisation chart**: **+ Unit
+at the top**, or the **+** on the name row of the unit it is to sit in (see
+*The organisation chart*). Typing an actor in its inspector, on a board or a
+sheet, works as before.
+
 **A unit's inspector puts the unit first.** On a board, a sheet, the chart
 or its page, its name comes first, with **Move…** and **Create drawing** in
 the **⋯** beside it. Under the name are its unit type, with the scope it is
@@ -2123,6 +2128,27 @@ move the unit picked among the units of its type in the same unit: one step in
 each scope that keeps one of them. Where they are all kept in this scope, undo
 takes the move back; where some are kept in other scopes, each scope is put
 back on its own.
+
+**Making a unit on the chart.** **+ Unit at the top** is on the bar, in the
+outline's header and on an empty chart; a unit's own **+**, on its name row,
+shows when the row is pointed at, holds the focus or the unit is picked, and
+makes a unit inside it. A small dialog asks for four things. **Type** offers
+only the types that may sit there: inside a unit, the types that may sit in
+its type; at the top, the types that may sit at the top. **Name**. **Serves**,
+asked only at the top or for a type that serves several domains: the domains
+it serves, which may be none yet — a unit inside another serves through it.
+**Filed in**, the scope that keeps it: by default the scope of the unit it
+sits in, so a subtree stays together under the same rights; at the top, the
+domain it serves where it serves one and its type does not serve several, and
+otherwise this chart's scope. Any scope you may change can be chosen.
+**Create** is one step in that scope: undone here where it is this scope,
+and in that scope where it is another. Making a unit is structure, so the
+scope's rights decide, and a role that manages people does not give the
+right. The new unit is picked — unfolded and scrolled to — and its type's
+required roles show as **+ vacant**, so assigning people follows straight
+on. Where no type may sit, **+** says so — *No unit type may sit in a Team* —
+and leads to the **Operating model**; with no unit types at all, it leads to
+**Start from a library**. A chart that is only read offers none of it.
 
 **A large organisation folds.** The caret beside a unit's name folds the units
 under it, and the unit then says what it hides: its units and people, and the

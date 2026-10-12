@@ -2103,6 +2103,11 @@ eenheid waarin hij zit is de actor waaronder hij is ingedeeld, en de dagen
 waarop hij begint en eindigt zijn zijn levenscyclusdata — een eenheid die is
 uitgefaseerd, is beëindigd.
 
+**Een eenheid maak je het snelst op het organogram**: **+ Eenheid
+bovenaan**, of de **+** op de naamregel van de eenheid waarin ze komt (zie
+*Het organogram*). Een actor een type geven in zijn inspector, op een bord of
+een blad, werkt zoals voorheen.
+
 **De inspector van een eenheid zet de eenheid voorop.** Op een bord, een
 blad, het organogram of haar pagina komt haar naam eerst, met
 **Verplaatsen…** en **Tekening maken** in de **⋯** ernaast. Onder de naam
@@ -2311,6 +2316,30 @@ tussen de eenheden van haar type in dezelfde eenheid: één stap in elke scope
 die er een van bijhoudt. Waar ze allemaal in deze scope worden bijgehouden,
 neemt ongedaan maken de verplaatsing terug; waar sommige in andere scopes
 worden bijgehouden, zet je elke scope apart terug.
+
+**Een eenheid maken op het organogram.** **+ Eenheid bovenaan** staat op de
+balk, in de kop van het overzicht en op een leeg organogram; de eigen **+**
+van een eenheid, op haar naamregel, verschijnt als je de regel aanwijst, als
+de focus erop staat of als de eenheid gekozen is, en maakt een eenheid erin.
+Een klein venster vraagt vier dingen. **Type** biedt alleen de typen die daar
+mogen zitten: in een eenheid de typen die in haar type mogen zitten, bovenaan
+de typen die bovenaan mogen zitten. **Naam**. **Bedient**, alleen gevraagd
+bovenaan of voor een type dat meerdere domeinen bedient: de domeinen die ze
+bedient, eventueel nog geen — een eenheid in een andere bedient via die.
+**Ingedeeld in**, de scope die haar bewaart: standaard de scope van de eenheid
+waarin ze zit, zodat een deelboom bij elkaar blijft onder dezelfde rechten;
+bovenaan het domein dat ze bedient als ze er één bedient en haar type er niet
+meerdere bedient, en anders de scope van dit organogram. Elke scope die je
+mag wijzigen kan gekozen worden. **Maken** is één stap in die scope: hier
+ongedaan te maken als het deze scope is, en in die scope als het een andere
+is. Een eenheid maken is structuur, dus beslissen de rechten van de scope, en
+een rol die mensen aanstuurt geeft dat recht niet. De nieuwe eenheid wordt
+gekozen — opengevouwen en in beeld gebracht — en de verplichte rollen van haar
+type staan er als **+ vacant**, zodat mensen toewijzen meteen volgt. Waar geen
+type mag zitten, zegt de **+** dat — *Geen eenheidstype mag in een Team
+zitten* — en leidt naar het **Besturingsmodel**; zonder eenheidstypen leidt
+hij naar **Begin met een bibliotheek**. Een organogram dat alleen gelezen
+wordt, biedt niets hiervan.
 
 **Een grote organisatie vouwt.** Het pijltje naast de naam van een eenheid
 vouwt de eenheden eronder dicht, en de eenheid zegt dan wat ze verbergt: haar

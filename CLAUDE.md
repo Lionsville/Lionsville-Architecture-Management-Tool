@@ -997,6 +997,12 @@ src/app/          The shell around the editor.
                                       rights (`writeIn`), and who is
                                       responsible on a sheet
                                       (`sheetResponsible`)
+                                      …and a unit made on the chart (3.6.2):
+                                      what may sit where and where it is
+                                      filed (`newUnit`), the dialog
+                                      (`NewUnitDialog`), its + controls
+                                      (`AddUnit`), and the step and the pick
+                                      after it (`useNewUnit`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)

@@ -1994,6 +1994,52 @@ The capture draws the rail on screen without the switch, and
 row's group, what a used unit answers for and the count left out. The
 switch's control name is `sheet.allUnits`.
 
+## As built, 3.6.2: a unit made on the chart
+
+A unit is made where units are seen. **+ Unit at the top** is on the chart's
+bar, in the outline's header and on an empty chart, and each unit's name row
+has a quiet **+** — shown on hover, on focus and on the unit picked, always
+reachable by the keyboard — for a unit inside it (`app/units/AddUnit.tsx`).
+None of it is drawn on a chart that is only read. The old way stays: an actor
+typed in its inspector, on a board or a sheet.
+
+**The dialog** (`NewUnitDialog`) asks for the type, the name, the domains it
+serves and the scope it is filed in (`app/units/newUnit.ts`). The types are
+only those that may sit there — under a parent, those whose `within` holds the
+parent's type; at the top, those with `top` — and that run on the chart's
+day, in the one order of lanes (`unitTypeRank`), so a unit made here is never
+`check.unitMisplaced`. *Serves* is asked only at the top or for a type that
+`spans`; a non-spanning type takes one domain, and a unit inside another
+serves through it. *Filed in* defaults to the parent's scope, which keeps a
+subtree under the same rights; at the top, to the one domain it serves where
+its type does not span, otherwise to the chart's scope. It offers only the
+scopes the person may write (`WorkspaceSource.writable`), falling back to
+the chart's scope and then to the first; where they may write none, nothing
+is made.
+
+**One step in the scope it is filed in**: an actor with `unitTypeId`,
+`parentId` where it sits in a unit, and `scopes` only where domains were
+picked, its id minted by the session's policy, which reads the whole tree's
+ids. Filed in the open scope it is the session's step; filed in another it is
+that scope's step, written as a link kept at the other end is (`writeIn`,
+under that scope's rights), and a refusal is said in the dialog. It is
+structure: a managing role's right (§12) does not cover it. Once the chart
+draws the new unit it is gone to as a pick in the outline goes — the way to
+it unfolded, scrolled to, and selected where the open scope keeps it — and
+its type's required roles are vacancies on it (`useNewUnit`).
+
+**Where nothing may sit**, the place says why: *+ Unit at the top* is
+disabled with the reason and a link beside it, and a unit's **+** is marked
+unavailable, its tooltip says why, and pressed it opens the dialog with the
+reason — *No unit type may sit in a Team* — and the **Operating model**. With
+no unit types at all the reason is that, and the link is *Start from a
+library*, both opening the operating model at the organisation.
+
+**Names.** `chart.addAtTop`, `chart.outlineAdd`, `chart.addFirst`,
+`chart.addInside` and `chart.newUnit` are named. The agent's tools need
+nothing new: `element.add` already takes `kind: 'actor'`, `unitTypeId`,
+`parentId` and `scopes`.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

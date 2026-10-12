@@ -2226,6 +2226,11 @@ etwas zur Einheit. Die Einheit, in der er steht, ist der Akteur, unter dem er
 eingeordnet ist, und die Tage, an denen er beginnt und endet, sind seine
 Lebenszyklusdaten — eine Einheit, die außer Betrieb ist, ist beendet.
 
+**Am schnellsten legen Sie eine Einheit im Organigramm an**: **+ Einheit
+oben** oder das **+** in der Namenszeile der Einheit, in der sie sitzen soll
+(siehe *Das Organigramm*). Einem Akteur im Inspektor einen Typ zu geben, auf
+einem Board oder einem Blatt, geht wie bisher.
+
 **Der Inspektor einer Einheit stellt die Einheit voran.** Auf einem Board,
 einem Blatt, dem Organigramm oder ihrer Seite steht ihr Name zuerst, mit
 **Verschieben…** und **Zeichnung erstellen** im **⋯** daneben. Unter dem
@@ -2441,6 +2446,31 @@ unter den Einheiten ihres Typs in derselben Einheit: ein Schritt in jedem
 Bereich, der eine davon führt. Wo alle in diesem Bereich geführt werden, nimmt
 Rückgängig die Verschiebung zurück; wo einige in anderen Bereichen geführt
 werden, wird jeder Bereich für sich zurückgesetzt.
+
+**Eine Einheit im Organigramm anlegen.** **+ Einheit oben** steht in der
+Leiste, im Kopf der Gliederung und auf einem leeren Organigramm; das eigene
+**+** einer Einheit, in ihrer Namenszeile, erscheint, wenn auf die Zeile
+gezeigt wird, sie den Fokus hat oder die Einheit gewählt ist, und legt eine
+Einheit darin an. Ein kleiner Dialog fragt nach vier Dingen. **Typ** bietet
+nur die Typen an, die dort sitzen dürfen: in einer Einheit die Typen, die in
+ihrem Typ sitzen dürfen, oben die Typen, die oben sitzen dürfen. **Name**.
+**Bedient**, nur oben gefragt oder für einen Typ, der mehrere Domänen
+bedient: die Domänen, die sie bedient, auch noch keine — eine Einheit in
+einer anderen bedient über diese. **Abgelegt unter**, der Bereich, der sie
+hält: standardmäßig der Bereich der Einheit, in der sie sitzt, damit ein
+Teilbaum unter denselben Rechten zusammenbleibt; oben die Domäne, die sie
+bedient, wenn sie eine bedient und ihr Typ nicht mehrere bedient, sonst der
+Bereich dieses Organigramms. Jeder Bereich, den Sie ändern dürfen, kann
+gewählt werden. **Anlegen** ist ein Schritt in diesem Bereich: hier
+rückgängig zu machen, wenn es dieser Bereich ist, und dort, wenn es ein
+anderer ist. Eine Einheit anzulegen ist Struktur, daher entscheiden die
+Rechte des Bereichs, und eine führende Rolle gibt dieses Recht nicht. Die
+neue Einheit wird gewählt — aufgeklappt und in den Blick gerückt — und die
+Pflichtrollen ihres Typs stehen als **+ vacant** darin, sodass das Zuweisen
+von Personen gleich folgt. Wo kein Typ sitzen darf, sagt das **+** es — *Kein
+Einheitstyp darf in einer Einheit vom Typ Team sitzen* — und führt zum
+**Betriebsmodell**; ohne Einheitstypen führt es zu **Mit einer Bibliothek
+beginnen**. Ein Organigramm, das nur gelesen wird, bietet nichts davon.
 
 **Eine große Organisation klappt ein.** Der Pfeil neben dem Namen einer
 Einheit klappt die Einheiten darunter ein, und die Einheit sagt dann, was sie
