@@ -2040,6 +2040,83 @@ library*, both opening the operating model at the organisation.
 nothing new: `element.add` already takes `kind: 'actor'`, `unitTypeId`,
 `parentId` and `scopes`.
 
+## As built, 3.6.2: deleting a unit says what goes, and offers ending first
+
+The repair of 12 October took a unit's assignments with it. What else named
+the unit was left behind: the units filed under it kept a `parentId` nobody
+could find — drawn nowhere on the chart, counted under nothing — every
+application that named it as its team (`partyId`) pointed at nothing, and so
+did every row kept in another scope, the `assigned` rows to capabilities
+above all.
+
+**What goes is worked out once, over the tree** (`model/unitDeletion.ts`),
+from the open scope as its session has it and the rest as the tree was read,
+as one list of commands per scope, for the screens and the agent alike:
+
+* **The units inside it**, kept here or in another scope, move up into its
+  parent by default where their type may sit there (`top`, `within`). Where
+  it may not, the default is another unit of the deleted unit's own type,
+  first by name; moving them up anyway is still a choice, and they then show
+  as `check.unitMisplaced`; *delete them too* takes the whole subtree, from
+  the bottom up in the scope that keeps each, with every assignment in it. An
+  actor inside that is not a unit goes where they go. Another unit to move
+  them into is offered only where one unit is deleted.
+* **The applications that name it as their team** have `partyId` cleared in
+  the scope that keeps each, and show as owned by nobody.
+* **Every row that names it** and is kept where no delete of its ends takes
+  it is deleted there. Its `scopes` go with the record.
+
+**The confirmation.** The board's remove-or-delete question and its
+confirmation of a selection, and a sheet's Delete, draw the host's part for a
+unit (`EditorOwnership.unitDeletion`, `SheetResponsible.unitDeletion`;
+`app/units/unitDeletionSlot`, `UnitDeletionParts`), because neither page may
+read the tree. It leads with *Ending it is usually what is meant*, and **End
+on a day…** opens a last day in place and ends the unit on its lifecycle —
+one step, nothing deleted. Then who stops being what, as the repair said it;
+*Inside it:* the first three units by name, then how many more, with where
+they go — the default chosen, and where it is *up*, the other two choices
+folded under **Other choices**; where it is not, all three shown and *Move
+them up* marked as misplaced; and a line each, only where there is one, for
+the applications whose team is cleared, the domains it serves and how many
+areas, groupings and capabilities it answers for. The units inside no longer
+hold a unit's delete back, on the board or on the sheet. The controls are
+named `unitDelete.end` and `unitDelete.inside`.
+
+**One change.** Delete hands the page's own commands for the selection to
+the host (`deleteSelection`, `deleteFromModel` and the sheet's
+`removeElement` take a `via`), which puts what the plan adds here before
+them and lands the whole with `landPeopleMoves`: every other scope's part as
+that scope's step, all or none, then the open scope's as one step through
+its session, under `unitDelete.barrier` where another scope was written —
+so one undo takes all of it back where only this scope was changed, and
+undo says why it cannot where others were. It is structure, so a managing
+role's right does not reach it. A row or a record gone since the question
+was drawn is passed over (`stepIn`).
+
+**Every other delete.** `element.delete` now does for an actor what it did
+for a platform: what sits in it moves up into its parent in the same step,
+and one undo puts it back. A delete that says nothing about the units inside
+— a gesture, or a host that draws no question — leaves no parent
+dangling in its own scope; one kept in another scope is the delete's from a
+screen or the agent.
+
+**The agent.** `element.remove` on a unit moves the units inside up where
+their type may sit there; where it may not, it is refused
+`agent.unitsInside` with the units inside and the choices named, and takes
+`units: 'into:<id>' | 'up' | 'delete'` once the person has chosen — an agent
+does not pick a new parent for someone's teams. Its answer adds
+`unitsMoved` (with `misplaced` where they were moved up anyway),
+`unitsRemoved`, `teamCleared` and `alsoChanged`. Where other scopes are
+written it lands across them through `SessionView.landSteps`, its steps
+marked its own, and the tree view lends `rowsOf`; inside a `batch` such a
+removal is refused `agent.scopeNotOpen`.
+
+**Not here.** A plan's moves and the units it introduces or retires that
+name the unit deleted are left as they are, as they were for any element; a
+stand-in of the unit in another scope stays a stand-in. The organisation
+chart offers no Delete of its own: a unit is deleted from a board, a sheet or
+its inspector.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

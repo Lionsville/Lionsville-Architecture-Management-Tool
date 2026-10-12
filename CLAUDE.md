@@ -311,6 +311,12 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       and the order every list of units reads
                                       (`compareUnits`): the type's rank, the
                                       unit's own `order`, its name
+                    unitDeletion      what deleting a unit takes with it over
+                                      the tree (3.6.2): where the units inside
+                                      go, the applications' team cleared, the
+                                      rows kept elsewhere — one list of
+                                      commands per scope, for the screens and
+                                      the agent's `element.remove`
                     orgChart · conway   the two views of the organisation on a
                                       day (ADR-0036 §7): the units as a tree
                                       with each role's holders, vacancies, the
@@ -1003,6 +1009,11 @@ src/app/          The shell around the editor.
                                       (`NewUnitDialog`), its + controls
                                       (`AddUnit`), and the step and the pick
                                       after it (`useNewUnit`)
+                                      …and a unit deleted (3.6.2): the
+                                      question's part for a unit
+                                      (`UnitDeletionParts`), and the delete
+                                      landed over every scope it writes
+                                      (`unitDeletionSlot`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)

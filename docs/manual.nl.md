@@ -1041,6 +1041,22 @@ keer ongedaan maken zet de eenheid en haar mensen terug. Wil je bewaren wie
 wat vervulde, beëindig de eenheid dan op een dag: met haar levenscyclus, of
 een plan (*Verandering in de tijd*).
 
+De vraag over een eenheid begint daar: *Meestal is beëindigen bedoeld*, met
+**Beëindigen op een dag…**, dat om haar laatste dag vraagt en haar beëindigt
+zonder iets te verwijderen. Onder **Verwijderen** staat in korte regels wat
+meegaat. **Erin** noemt de eenheden die eronder vallen, hier of in een andere
+scope, en waar ze heen gaan: een niveau hoger, in haar ouder, waar hun type
+daar mag staan, met **Andere keuzes** ingeklapt eronder; waar dat niet mag,
+in een andere eenheid van haar type, gekozen uit een lijst, met **Ze een
+niveau hoger zetten** gemarkeerd als *misplaatst* en **Ze ook verwijderen**,
+dat alles eronder en de toewijzingen van hun mensen ook meeneemt. Applicaties
+die haar als team noemen worden leeggemaakt en tonen als van niemand, en haar
+koppelingen met de domeinen die ze bedient en de capabilities waarvoor ze
+verantwoordelijk is gaan mee, waar ze ook bijgehouden worden. Het is één
+wijziging: waar ook een andere scope verandert, is het deel van die scope
+haar eigen stap, en kan de stap hier niet ongedaan worden gemaakt. Een actor
+verwijderen zet wat erin zit een niveau hoger, in zijn ouder.
+
 ## Koppelingen
 
 Sleep van het handvat van een element naar een ander, of rechtsklik en kies
@@ -1763,8 +1779,10 @@ zolang de pagina open is.
 **Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
 erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er
 cascadeert niets, dus een gebied dat u verwijdert is een gebied dat u eerst
-leeggemaakt hebt. Een actor die een eenheid is met mensen erin vraagt eerst:
-haar toewijzingen gaan mee, en de vraag noemt wie wat niet langer is.
+leeggemaakt hebt. Een actor die een eenheid is vraagt eerst, dezelfde vraag
+als op een bord (*Elementen*): beëindigen eerst aangeboden, wie wat niet
+langer is, en waar de eenheden erin heen gaan — die het verwijderen dus niet
+tegenhouden.
 
 **Wat dit blad tekent**, de schuifjes in de bovenbalk, gaat over het blad en
 niet over het model — welke klantreis bovenaan loopt (een project met twee
@@ -2194,7 +2212,10 @@ eenheid die verwijderd werd voordat verwijderen ze meenam, of door een actor
 die geen eenheid meer is — weegt **Herstellen**, *Een toewijzing in een eenheid
 die er niet is*, wat haar dagen ook zijn: de persoon telt nog mee als
 vervuller van de rol. Op de pagina Controles opent ze de persoon in Mensen,
-en **De toewijzing verwijderen** haalt haar weg.
+en **De toewijzing verwijderen** haalt haar weg. De eenheden in een verwijderde
+eenheid gaan een niveau hoger, of in een andere eenheid van haar type waar het
+hunne daar niet mag staan, of gaan mee; de applicaties die ze bezat tonen als
+van niemand (*Elementen*).
 
 Een eenheid die een andere scope bijhoudt wordt hier getoond en daar
 gewijzigd.
@@ -2217,7 +2238,12 @@ de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wij
 toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
 eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
 `element.remove` op een eenheid neemt ook haar toewijzingen mee en noemt ze
-in het antwoord (`assignmentsRemoved`); `checks.list` noemt een achtergelaten
+in het antwoord (`assignmentsRemoved`), zet de eenheden erin een niveau
+hoger waar hun type daar mag staan (`unitsMoved`), maakt het team leeg van de
+applicaties die haar noemen (`teamCleared`) en neemt haar regels in andere
+scopes mee (`alsoChanged`). Waar de eenheden erin niet hoger mogen, wordt het
+geweigerd, `agent.unitsInside`, met de keuzes genoemd: de agent vraagt het
+u, en roept opnieuw aan met `units` — `into:<id>`, `up` of `delete`; `checks.list` noemt een achtergelaten
 toewijzing `check.assignmentOrphaned`, die een persoon verwijdert.
 Wie een scope bedient is de `scopes` van de eenheid, weggeschreven met
 `element.update` in de scope die de eenheid bijhoudt; wie verantwoordelijk is

@@ -1103,6 +1103,24 @@ und ein Rückgängig bringt die Einheit und ihre Leute zurück. Um zu behalten,
 wer was innehatte, beenden Sie die Einheit stattdessen an einem Tag: über
 ihren Lebenszyklus oder einen Plan (*Veränderung über die Zeit*).
 
+Die Frage zu einer Einheit beginnt dort: *Meist ist Beenden gemeint*, mit
+**An einem Tag beenden…**, das nach ihrem letzten Tag fragt und sie beendet,
+ohne etwas zu löschen. Unter **Löschen** steht in kurzen Zeilen, was mitgeht.
+**Darin** nennt die Einheiten, die unter ihr geführt werden, hier oder in
+einem anderen Bereich, und wohin sie gehen: eine Ebene höher, in ihr
+übergeordnetes Element, wo ihr Typ dort stehen darf, mit **Andere
+Möglichkeiten** darunter eingeklappt; wo nicht, in eine andere Einheit ihres
+Typs, aus einer Liste gewählt, mit **Eine Ebene höher setzen** als *falsch
+eingeordnet* markiert und **Ebenfalls löschen**, das alles darunter und die
+Zuweisungen ihrer Leute mitnimmt. Anwendungen, die sie als ihr Team nennen,
+werden geleert und erscheinen als niemandes, und ihre Verknüpfungen zu den
+Domänen, die sie bedient, und den Fähigkeiten, für die sie verantwortlich
+ist, gehen mit, wo auch immer sie geführt werden. Es ist eine Änderung: Wo
+auch ein anderer Bereich geändert wird, ist dessen Teil ein eigener Schritt,
+und der Schritt hier lässt sich nicht rückgängig machen. Einen Akteur zu
+löschen setzt, was darin steht, eine Ebene höher in sein übergeordnetes
+Element.
+
 ## Verbindungen
 
 Ziehen Sie vom Anfasser eines Elements zu einem anderen, oder klicken Sie mit
@@ -1869,9 +1887,10 @@ einschalten, und nur, solange die Seite offen ist.
 Zeile, die darauf endete. Es wird abgelehnt, solange etwas darin steckt, und
 sagt, wie viel: nichts kaskadiert, also ist ein Gebiet, das Sie löschen, eines,
 das Sie zuerst
-geleert haben. Ein Akteur, der eine Einheit mit Leuten darin ist, fragt
-zuerst: Seine Zuweisungen gehen mit, und die Frage nennt, wer was nicht mehr
-ist.
+geleert haben. Ein Akteur, der eine Einheit ist, fragt zuerst, dieselbe Frage
+wie auf einem Board (*Elemente*): Beenden zuerst angeboten, wer was nicht
+mehr ist, und wohin die Einheiten darin gehen — die das Löschen darum nicht
+aufhalten.
 
 **Was dieses Blatt zeigt**, die Schalter in der oberen Leiste, betrifft das
 Blatt und nicht das Modell — welche Kundenreise oben quer verläuft (ein Projekt
@@ -2321,7 +2340,10 @@ sie mitnahm, oder von einem Akteur, der keine Einheit mehr ist — wiegt
 **Beheben**, *Eine Zuweisung in einer Einheit, die es nicht gibt*, was auch
 immer ihre Tage sind: Die Person zählt weiter als Inhaberin der Rolle. Auf
 der Seite Prüfungen öffnet sie die Person in Personen, und **Zuweisung
-entfernen** nimmt sie weg.
+entfernen** nimmt sie weg. Die Einheiten in einer gelöschten Einheit gehen
+eine Ebene höher, oder in eine andere Einheit ihres Typs, wo ihr Typ dort nicht
+stehen darf, oder gehen mit; die Anwendungen, die ihr gehörten, erscheinen
+als niemandes (*Elemente*).
 
 Eine Einheit, die ein anderer Bereich führt, wird hier gezeigt und dort
 geändert.
@@ -2344,7 +2366,13 @@ den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
 ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
 der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
 zusammen. `element.remove` auf einer Einheit nimmt auch ihre Zuweisungen mit
-und nennt sie in der Antwort (`assignmentsRemoved`); `checks.list` nennt eine
+und nennt sie in der Antwort (`assignmentsRemoved`), setzt die Einheiten
+darin eine Ebene höher, wo ihr Typ dort stehen darf (`unitsMoved`), leert das
+Team der Anwendungen, die sie nennen (`teamCleared`), und nimmt ihre Zeilen in
+anderen Bereichen mit (`alsoChanged`). Wo die Einheiten darin nicht höher
+dürfen, wird es abgelehnt, `agent.unitsInside`, mit den genannten
+Möglichkeiten: Der Agent fragt Sie und ruft erneut mit `units` auf —
+`into:<id>`, `up` oder `delete`; `checks.list` nennt eine
 zurückgelassene Zuweisung `check.assignmentOrphaned`, die eine Person
 entfernt. Wer einen Bereich bedient, ist das `scopes` der Einheit, geschrieben
 mit `element.update` in dem Bereich, der die Einheit führt; wer für eine

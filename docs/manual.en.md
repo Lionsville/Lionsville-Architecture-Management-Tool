@@ -963,6 +963,21 @@ if they had never been made: the question names who stops being what —
 unit and its people back. To keep who held what, end the unit on a day
 instead: its lifecycle, or a plan (*Change over time*).
 
+The question about a unit starts there: *Ending it is usually what is
+meant*, with **End on a day…**, which asks for its last day and ends it
+without deleting anything. Under **Delete** it says what goes with it, in
+short lines. **Inside it** names the units filed under it, here or in another
+scope, and where they go: up into its parent where their type may sit there,
+with **Other choices** folded beneath; where it may not, into another unit of
+its type, picked from a list, with **Move them up** marked *would show as
+misplaced* and **Delete them too**, which takes everything under them and
+their people's assignments as well. Applications that name it as their team
+are cleared and show as owned by nobody, and its links to the domains it
+serves and the capabilities it is responsible for go with it, wherever they
+are kept. It is one change: where another scope is changed too, that scope's
+part is its own step, and the step here cannot be taken back with undo.
+Deleting any actor moves what sits in it up into its parent.
+
 ## Connections
 
 Drag from one element's handle to another, or right-click and **Start
@@ -1626,8 +1641,9 @@ until you turn it on, and only for as long as the page is open.
 **Delete**, at the foot of the inspector, removes what is selected and every row
 that ended on it. It is refused while anything is inside it, and says how much:
 nothing cascades, so an area you delete is an area you emptied first. An actor
-that is a unit with people in it asks first: its assignments go with it, and
-the question names who stops being what.
+that is a unit asks first, the same question as on a board (*Elements*):
+ending it offered first, who stops being what, and where the units inside it
+go — which therefore do not hold its delete back.
 
 **What this sheet draws**, the sliders in the top bar, is about the sheet rather
 than the model — which journey runs across the top (a project with two journeys
@@ -2021,7 +2037,9 @@ that is not there** — left by a unit deleted before deleting took them along,
 or by an actor that is no longer a unit — is a fix, *An assignment in a unit
 that is not there*, whatever its days: the person still counts as holding the
 role. On the Checks page it opens the person in People, and **Remove the
-assignment** takes it away.
+assignment** takes it away. The units inside a unit deleted move up into its
+parent, or into another unit of its type where theirs may not sit there, or
+go too; the applications it owned show as owned by nobody (*Elements*).
 
 A unit kept in another scope is shown here and changed where it is kept.
 
@@ -2040,7 +2058,12 @@ An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 and for one unit its roles and who manages it — and assigns and ends with
 `assignment.add` and `assignment.end` in the scope that keeps the unit. It
 never forgets, removes or merges anyone. `element.remove` on a unit takes its
-assignments too and lists them in its answer (`assignmentsRemoved`);
+assignments too and lists them in its answer (`assignmentsRemoved`), moves
+the units inside it up where their type may sit there (`unitsMoved`), clears
+the team of the applications that name it (`teamCleared`) and takes its rows
+in other scopes along (`alsoChanged`). Where the units inside may not move up
+it is refused, `agent.unitsInside`, with the choices named: the agent asks
+you, and calls again with `units` — `into:<id>`, `up` or `delete`;
 `checks.list` names one left behind as `check.assignmentOrphaned`, which a
 person removes. Who serves a scope is the unit's
 `scopes`, written with `element.update` in the scope that keeps the unit; who
