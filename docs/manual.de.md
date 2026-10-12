@@ -1796,6 +1796,28 @@ Gebiete, die niemandem gegeben wurden. Es ist ein Befund, kein Fehler: eine
 Liste dessen, was die Organisation zu tun gesagt hat und wofür sie noch nicht
 gesagt hat, wer es tut.
 
+### Die Beteiligten, und die Einheiten
+
+Am Rand stehen die **Beteiligten**: die Parteien, mit denen die Organisation zu
+tun hat, in ihrem eigenen Baum, die von außerhalb markiert. Eine Einheit — ein
+Akteur mit einem Einheitstyp, die eigene Struktur der Organisation — steht dort
+nur, wo dieses Blatt sie nutzt, unter **Einheiten auf diesem Blatt**: eine
+Einheit, die für etwas verantwortlich ist, das das Blatt zeichnet (ein Gebiet,
+eine Gruppierung, eine Fähigkeit oder einen Schritt), oder eine mit einer Bahn in
+der Kundenreise. Jede sagt in einer Zeile unter dem Namen, warum. Eine Partei,
+die in einer Einheit abgelegt ist, behält ihren Platz, mit dieser Einheit als
+ihrer Gruppe.
+
+Die übrigen Einheiten des Bereichs werden unter der Liste gezählt — *Hier sind
+noch 8 Einheiten abgelegt* — und **Alle Einheiten** zeichnet sie dazu, unter
+**Alle anderen Einheiten**. Das gilt für Sie, solange die App offen ist, je
+Blatt; im Modell ändert sich nichts. Einheiten werden im Organigramm angelegt und
+geordnet, nicht hier.
+
+Ein Beteiligter, dem Sie bei offenem Blatt einen Einheitstyp geben, bleibt für
+den Rest der Sitzung, wo er war, und ein Hinweis sagt, dass er jetzt im
+Organigramm steht.
+
 ### Eines anlegen
 
 Ein Blatt in einem Projekt, das nichts über seinen Anwendungen hat, ist leer,

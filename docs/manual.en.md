@@ -1566,6 +1566,24 @@ At the end is a band for what is **not yet mapped to a domain** — the areas
 nobody has been given. It is a finding, not an error: a list of what the
 organisation has said it does and has not yet said who does it.
 
+### The stakeholders, and the units
+
+Down the side are the **stakeholders**: the parties the organisation deals with,
+in their own tree, the ones from outside marked. A unit — an actor with a unit
+type, the organisation's own structure — is drawn there only where this sheet
+uses it, under **Units on this sheet**: a unit responsible for something the
+sheet draws (an area, a grouping, a capability or a step), or one with a lane in
+its journey. Each says why in a line under its name. A party filed inside a unit
+keeps its place, with that unit as its group.
+
+The rest of the scope's units are counted under the list — *8 more units are
+filed here* — and **All units** draws them too, under **All other units**. It is
+yours and lasts for as long as the app is open, per sheet; it changes nothing in
+the model. Units are made and arranged on the organisation chart, not here.
+
+A stakeholder you type as a unit while the sheet is open stays where it was for
+the rest of the session, and a note says it is now on the organisation chart.
+
 ### Making one
 
 A sheet on a project with nothing above its applications is empty, and the empty

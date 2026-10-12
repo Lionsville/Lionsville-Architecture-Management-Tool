@@ -1960,6 +1960,40 @@ is open, as that scope's step elsewhere, nothing where it is gone already or
 the scope is only read. The agent has no tool that removes an assignment, as
 before (§13): `checks.list` names the check, and a person removes it.
 
+## As built, 3.6.2: the stakeholder rail draws the units a sheet uses
+
+The sheet's rail drew every actor in the scope (ADR-0012 §3), and a unit is
+an actor with a type, so a sheet at the organisation's root drew every unit
+filed there among its stakeholders. The rail now draws the actors without a
+type as it did, and a unit only where the sheet uses it, in a group of its
+own under the parties, *Units on this sheet*: a unit at the far end of an
+`assigned` row to an area, grouping, capability or step the page draws — the
+rows *Show who is responsible* chips, a row another scope keeps included —
+or one whose lane the journey draws. Each says why in a quiet line, the
+first thing it answers for here (*and 2 more*) or *Has a lane*. The list is
+flat and in the tree's order, a unit filed under one in another scope
+included; the chart is where a unit's place is read.
+
+A unit with a party under it stays in the parties' tree as that party's
+group, so a party never leaves the rail for where it is filed. Lanes are
+untouched: a lane whose actor is a unit is drawn as before.
+
+*All units*, a switch at the foot of the rail with the count it would add,
+draws the scope's other units too, under *All other units*. It is the
+session's, kept in the shell's session memory under the view's key
+(`foldKey(scope, view, 'rail')`), and never saved. A stakeholder typed as a
+unit while the sheet is drawn and may be written stays where it was for the
+session, in the render it changed in, with a note that it is now on the
+organisation chart; the same memory keeps it. Nothing in the model changes.
+
+`business/sheet.sheetPage` takes the session's options (`RailOptions`) and
+works out what the page uses (`usedHere`); `railOf` groups the rows
+(`SheetActor.group`, `uses`) and counts what it leaves out (`unitsNotDrawn`).
+The capture draws the rail on screen without the switch, and
+`diagram.inspect` on a sheet reports the rail a person first sees, with each
+row's group, what a used unit answers for and the count left out. The
+switch's control name is `sheet.allUnits`.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

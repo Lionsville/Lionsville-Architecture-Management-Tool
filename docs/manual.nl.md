@@ -1696,6 +1696,26 @@ gebieden die nog aan niemand zijn gegeven. Dat is een bevinding, geen fout: een
 lijst van wat de organisatie gezegd heeft te doen en nog niet gezegd heeft wie
 het doet.
 
+### De belanghebbenden, en de eenheden
+
+Langs de zijkant staan de **belanghebbenden**: de partijen waar de organisatie
+mee te maken heeft, in hun eigen boom, die van buiten gemarkeerd. Een eenheid —
+een actor met een eenheidstype, de eigen structuur van de organisatie — staat
+daar alleen waar dit blad haar gebruikt, onder **Eenheden op dit blad**: een
+eenheid die verantwoordelijk is voor iets dat het blad tekent (een gebied, een
+groepering, een capability of een stap), of een met een baan in de klantreis.
+Elk zegt in een regel onder de naam waarom. Een partij die in een eenheid is
+ondergebracht houdt haar plek, met die eenheid als haar groep.
+
+De andere eenheden van de scope worden onder de lijst geteld — *Hier staan nog 8
+eenheden* — en **Alle eenheden** tekent ze erbij, onder **Alle andere
+eenheden**. Dat is van jou en geldt zolang de app open is, per blad; in het model
+verandert er niets. Eenheden maak en ordent je in het organogram, niet hier.
+
+Een belanghebbende die je een eenheidstype geeft terwijl het blad open is,
+blijft de rest van de sessie staan waar hij stond, en een melding zegt dat hij
+nu in het organogram staat.
+
 ### Er een maken
 
 Een blad op een project met niets boven de applicaties is leeg, en die lege
