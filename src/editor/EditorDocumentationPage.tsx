@@ -7,12 +7,23 @@
  * and a map, has no canvas to draw, but its capabilities and stakeholders
  * have pages, and the sheet's *Details ›* is the way to them.
  */
+import type { ComponentProps } from 'react';
 import type { DesignDiagram, DesignElement, ElementId } from '../model/types';
-import { DocumentationPage } from '../documentation/ui/DocumentationPage';
+import type { DocumentationPage as DocumentationPageShape } from '../documentation/ui/DocumentationPage';
+import { lazyPart } from '../widgets/lazyPart';
 import { ElementInspector } from './ElementInspector';
 import type { SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { Documentation } from './useEditorRequests';
+
+/**
+ * An element's page is opened from a board, a sheet or a record, never the
+ * first view: its script, with the editor of its document, arrives with the
+ * first page opened (`widgets/lazyPart`).
+ */
+const DocumentationPage = lazyPart<ComponentProps<typeof DocumentationPageShape>>(
+  () => import('../documentation/ui/DocumentationPage').then((held) => held.DocumentationPage),
+);
 
 /**
  * The *Move…* button for one record, or nothing (ADR-0012 §10).

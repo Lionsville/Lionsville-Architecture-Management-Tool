@@ -12,7 +12,7 @@ import { placedNodes } from '../model/placement';
 import type { EditorRequests, SolutionDesignEditorProps } from './props';
 import { selectElement, type EditorState } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
-import { FIELDS_COLUMN } from '../documentation/ui/DocumentationPage';
+import { FIELDS_COLUMN } from '../documentation/ui/fieldsColumn';
 
 /** Is `next` a request not yet adopted? A host re-asks for the same element by bumping only the nonce. */
 export function isNewRequest(

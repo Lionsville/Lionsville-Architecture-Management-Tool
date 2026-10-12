@@ -15,7 +15,7 @@ import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { sheetResponsibleFor } from './units/sheetResponsible'
-import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
+import type { TechnologyLandscapePage as TechnologyLandscapePageShape } from '../technology/ui/TechnologyLandscapePage'
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -30,6 +30,14 @@ import type { WorkspaceParts } from './workspaceParts'
  */
 const DrawingView = lazyPart<ComponentProps<typeof DrawingViewShape>>(
   () => import('./DrawingView').then((held) => held.DrawingView),
+)
+
+/**
+ * A technology landscape is a tab, as a chart is: its page, its tree of
+ * platforms and its dialogs arrive when the first landscape is opened.
+ */
+const TechnologyLandscapePage = lazyPart<ComponentProps<typeof TechnologyLandscapePageShape>>(
+  () => import('../technology/ui/TechnologyLandscapePage').then((held) => held.TechnologyLandscapePage),
 )
 
 export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {

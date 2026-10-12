@@ -59,15 +59,10 @@ import { drawingsAnchoredTo } from '../../model/drawing';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
+import { FIELDS_COLUMN } from './fieldsColumn';
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;
-
-/**
- * The fields column: wide enough for three dates in a row, and no wider than
- * leaves the document readable beside it.
- */
-export const FIELDS_COLUMN = { default: 340, min: 280, max: 720 } as const;
 
 export type DocumentationMode = 'read' | 'edit';
 

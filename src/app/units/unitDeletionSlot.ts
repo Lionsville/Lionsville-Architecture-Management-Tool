@@ -27,8 +27,20 @@ import { deletionWorld, openStep, unitDeletion, unitsChoiceOf } from '../../mode
 import type { DeletionWorld, UnitsChoice } from '../../model/unitDeletion'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { lazyPart } from '../../widgets/lazyPart'
 import type { LandPeopleMoves } from './landPeopleMoves'
-import { UnitDeletionParts } from './UnitDeletionParts'
+import type { UnitDeletionPartsProps } from './UnitDeletionParts'
+
+/**
+ * What a delete says about a unit is not in the first download
+ * (`widgets/lazyPart`). A unit is chosen before it is deleted, and its record
+ * brings these lines along (`useWorkspaceOwnership`), as a sheet's inspector
+ * asking for its slot does here: the script is there by the time the
+ * confirmation draws them.
+ */
+export const UnitDeletionParts = lazyPart<UnitDeletionPartsProps>(
+  () => import('./UnitDeletionParts').then((held) => held.UnitDeletionParts),
+)
 
 /** Why the open scope's part of a delete that wrote other scopes cannot be undone here. */
 export const DELETE_BARRIER: StringKey = 'unitDelete.barrier'
@@ -84,6 +96,8 @@ export function unitDeletionSlot(at: UnitDeletionAt, elementIds: readonly string
   const world = worldOf(at.index, at.scope, at.model)
   const first = unitDeletion(world, elementIds, undefined, at.today)
   if (!first) return undefined
+  // Fetched now, while the unit is only chosen: one that will not load is asked again when the confirmation draws it.
+  UnitDeletionParts.preload().catch(() => undefined)
   const actors = new Map(world.actors.map((actor) => [actor.id, actor.name]))
   const roles = new Map((at.scope === '' ? at.model.roles ?? [] : at.index.operatingModel().roles).map((role) => [role.id, role.name]))
   const types = new Map(world.unitTypes.map((type) => [type.id, type.name]))

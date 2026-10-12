@@ -39,15 +39,16 @@ import { lazyPart } from '../widgets/lazyPart'
 import type { UnitSection as UnitSectionShape } from './units/UnitSection'
 import type { WriteIn } from './units/writeIn'
 import type { LandPeopleMoves } from './units/landPeopleMoves'
-import { unitDeletionSlot } from './units/unitDeletionSlot'
+import { UnitDeletionParts, unitDeletionSlot } from './units/unitDeletionSlot'
 
 /**
  * An actor's unit section, with its dialogs to assign and to declare an
  * interaction, arrives with the first actor's record that draws it
- * (`widgets/lazyPart`): a board is drawn without it.
+ * (`widgets/lazyPart`): a board is drawn without it. It brings what deleting
+ * a unit says, which a board asks for only once its confirmation is up.
  */
 const UnitSection = lazyPart<ComponentProps<typeof UnitSectionShape>>(
-  () => import('./units/UnitSection').then((held) => held.UnitSection),
+  () => import('./units/UnitSection').then((held) => held.UnitSection), { brings: [UnitDeletionParts] },
 )
 
 export function useWorkspaceOwnership(deps: {
