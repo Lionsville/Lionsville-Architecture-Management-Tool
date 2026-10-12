@@ -19,7 +19,10 @@
   screen, and the Checks page*, below); implemented, 12 October 2026.
   Amended, 12 October 2026: a unit deleted takes its assignments with it,
   and one left behind is a finding (*Amended, 12 October 2026*, below); as
-  built and implemented, 12 October 2026
+  built and implemented, 12 October 2026, with units made on the chart, the
+  sheet's rail drawing the units it uses, a unit pressed on the chart landing
+  on its inspector, and deleting a unit saying what goes with it (*As built,
+  3.6.2*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
