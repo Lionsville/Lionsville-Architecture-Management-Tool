@@ -86,6 +86,14 @@ function NothingMaySit({ none, onClose, s }: { none: NewUnitNone; onClose: () =>
   )
 }
 
+/**
+ * The organisation's path is the empty string, which a select takes for no
+ * choice and shows blank: so it is chosen under a value no scope's path is.
+ */
+const ORGANISATION_CHOICE = '.'
+const choiceOf = (path: ScopePath): string => (path === '' ? ORGANISATION_CHOICE : path)
+const pathOf = (choice: string): ScopePath => (choice === ORGANISATION_CHOICE ? '' : choice)
+
 function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, onCreate, onClose, s }: NewUnitDialogProps) {
   const parent = place.parent
   const [typeId, setTypeId] = useState(types[0]?.id ?? '')
@@ -131,18 +139,15 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
           ? <ServesField serves={servesNow} spans={spans} scopes={scopes} scopeLabel={scopeLabel} onChange={setServes} s={s} />
           : <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="new-unit-through">{s('chart.addServesThrough', { name: parent?.name ?? '' })}</Typography>}
         <TextField
-          size="small" select label={s('chart.addFiledIn')} value={filedIn ?? ''} onChange={(event) => setFiled(event.target.value)}
+          size="small" select label={s('chart.addFiledIn')} value={filedIn === undefined ? '' : choiceOf(filedIn)} onChange={(event) => setFiled(pathOf(event.target.value))}
           disabled={filedIn === undefined}
           helperText={filedIn === undefined ? s('chart.addFiledNowhere') : s(parent ? 'chart.addFiledInParent' : 'chart.addFiledInTop')}
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-filed' } }}
         >
           {writable.map((path) => (
-            <MenuItem key={path} value={path}>{path === preferred ? s('chart.addDefault', { scope: scopeLabel(path) }) : scopeLabel(path)}</MenuItem>
+            <MenuItem key={path} value={choiceOf(path)}>{path === preferred ? s('chart.addDefault', { scope: scopeLabel(path) }) : scopeLabel(path)}</MenuItem>
           ))}
         </TextField>
-        {filedIn !== undefined && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('chart.addOneStep', { scope: scopeLabel(filedIn) })}</Typography>
-        )}
         {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 12, color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
       <DialogActions>

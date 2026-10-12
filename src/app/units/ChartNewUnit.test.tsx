@@ -177,7 +177,8 @@ describe('a unit made at the top', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'Warehouse' }))
     expect(within(dialog()).getAllByTestId('new-unit-serves-chip').map((one) => one.textContent)).toEqual(['Warehouse'])
     // One domain, a type that does not span: filed in that domain.
-    expect(within(dialog()).getByText('One step in Warehouse. A unit is structure, so that scope\'s rights decide; a managing role does not cover it.')).toBeTruthy()
+    expect((within(dialog()).getByTestId('new-unit-filed') as HTMLInputElement).value).toBe('warehouse')
+    expect(within(dialog()).queryByText(/One step in/)).toBeNull()
     expect(await axeFindings(dialog())).toEqual([])
     fireEvent.click(within(dialog()).getByTestId('new-unit-create'))
     await waitFor(() => expect(written).toHaveLength(1))
@@ -206,7 +207,7 @@ describe('a unit made at the top', () => {
     fireEvent.click(within(dialog()).getByTestId('new-unit-serves-add'))
     fireEvent.click(await screen.findByRole('option', { name: 'Shipping' }))
     // Shipping would be the default, and is not the person's to change: the chart's own scope instead.
-    expect(within(dialog()).getByText(/^One step in the organisation\./)).toBeTruthy()
+    expect(within(dialog()).getAllByRole('combobox')[1].textContent).toBe('the organisation')
     fireEvent.mouseDown(within(dialog()).getAllByRole('combobox')[1])
     expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['the organisation'])
   })
