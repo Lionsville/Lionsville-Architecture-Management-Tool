@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { toCanvas } from 'html-to-image';
 import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';
 import type { ExportTokens } from '../theme/tokens';
@@ -20,6 +19,8 @@ import type { ExportTokens } from '../theme/tokens';
  * caller that passes no palette gets ink on white, the block it always had.
  */
 export async function exportDiagramPng(options: ExportDiagramPngOptions): Promise<Blob> {
+  // The rasteriser arrives with the first picture taken, not in the first download.
+  const { toCanvas } = await import('html-to-image');
   const viewport =
     options.container.querySelector<HTMLElement>('.react-flow__viewport') ??
     (options.container.classList.contains('react-flow__viewport') ? options.container : null);

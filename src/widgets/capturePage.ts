@@ -26,7 +26,6 @@
  * printed eleven times across it is a picture of the tool rather than of the
  * architecture — the one thing a drawing handed to somebody else must not be.
  */
-import { toCanvas } from 'html-to-image'
 
 export type SheetShot = {
   png: Uint8Array
@@ -72,6 +71,8 @@ export async function captureSheet(
   node: HTMLElement,
   options: { maxPixels: number; background?: string },
 ): Promise<SheetShot> {
+  // The rasteriser arrives with the first picture asked for, not in the first download.
+  const { toCanvas } = await import('html-to-image')
   const width = Math.max(node.scrollWidth, node.clientWidth, 1)
   const height = Math.max(node.scrollHeight, node.clientHeight, 1)
   const pixelRatio = sheetPixelRatio(width, height, options.maxPixels)
