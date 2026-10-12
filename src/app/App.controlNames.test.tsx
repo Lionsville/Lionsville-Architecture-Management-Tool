@@ -349,10 +349,10 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['an organisation chart with a unit', ['chart.addInside'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
-    await screen.findByTestId('chart-add-inside')
+    await screen.findAllByTestId('chart-add-inside')
   }],
   ['its dialog for a new unit', ['chart.newUnit'], async () => {
-    fireEvent.click(screen.getByTestId('chart-add-inside'))
+    fireEvent.click(screen.getAllByTestId('chart-add-inside')[0])
     await screen.findByTestId('new-unit-dialog')
   }]],
   // A list of findings, on a Conway map whose two teams declare they work
