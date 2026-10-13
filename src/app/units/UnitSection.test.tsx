@@ -342,7 +342,8 @@ describe('a unit in its inspector', () => {
     // The domains it may serve are picked, as a scope's units are: the + opens a field to find one in.
     fireEvent.click(screen.getByTestId('unit-serves-add'))
     const field = screen.getByRole('combobox', { name: 'Find a scope' })
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['the organisation', 'shipping'])
+    // Flipped 13 October 2026: the organisation is no domain, and is not offered.
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['shipping'])
     fireEvent.change(field, { target: { value: 'ship' } })
     fireEvent.click(await screen.findByRole('option', { name: 'shipping' }))
     expect(commands[1]).toEqual({ type: 'element.update', id: 'webshop', patch: { scopes: ['customer', 'shipping'] } })
@@ -353,6 +354,24 @@ describe('a unit in its inspector', () => {
     expect(within(screen.getByTestId('unit-slot-ro-coach')).getAllByTestId('unit-holder')).toHaveLength(1)
     fireEvent.click(within(screen.getByTestId('unit-serves')).getAllByTestId('CancelIcon')[1])
     expect(commands[3]).toEqual({ type: 'element.update', id: 'webshop', patch: { scopes: ['customer'] } })
+  })
+
+  it('lets a one-domain unit kept at the organisation that says nothing be given its domain, which is written alone', async () => {
+    const commands: Command[] = []
+    // The usual organisation: the unit filed at the top, where the operating model lives.
+    const top: HostModel = { ...ROOT, elements: [actor('ops', 'Operations', { unitTypeId: 'ut-domain' })] }
+    renderShell(<Harness model={top} root={top} scope="" unit="ops" commands={commands} />)
+    expect(text('unit-serves')).not.toContain('the organisation')
+    fireEvent.click(screen.getByTestId('unit-serves-add'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Customer' }))
+    expect(commands[0]).toEqual({ type: 'element.update', id: 'ops', patch: { scopes: ['customer'] } })
+    // Its one domain now, and a type that serves one says so; the domain may be taken off again.
+    expect(screen.queryByTestId('unit-serves-add')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('unit-serves')).getByTestId('CancelIcon'))
+    expect(commands[1]).toEqual({ type: 'element.update', id: 'ops', patch: { scopes: undefined } })
+    cleanup()
+    renderShell(<Harness model={top} root={top} scope="" unit="ops" readOnly commands={[]} />)
+    expect(text('unit-serves')).toBe('No domain')
   })
 
   it('offers the units it may work with in the one order for units: the type\'s rank, then the name', async () => {

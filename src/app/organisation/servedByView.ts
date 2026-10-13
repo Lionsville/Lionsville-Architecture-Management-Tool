@@ -16,7 +16,7 @@
 import type { ElementId } from '../../model'
 import { domainOwnerOn, ruleRole } from '../../model/owners'
 import type { PersonId } from '../../model/person'
-import { mayStopServing, scopesServed, servesOn, servingUnits } from '../../model/serving'
+import { isServable, mayStopServing, scopesServed, servesOn, servingUnits } from '../../model/serving'
 import { managersOf } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { ScopeIndex } from '../../projects/scopeIndex'
@@ -52,9 +52,12 @@ export type ServedByView = {
 
 /**
  * What *Served by* says about `scope` on `day`; nothing where the
- * organisation has no unit types and no units, which have nothing to say.
+ * organisation has no unit types and no units, which have nothing to say,
+ * and nothing about the organisation itself, which is no domain and which no
+ * unit serves (`model/serving.isServable`).
  */
 export function servedByOf(index: ScopeIndex, scope: ScopePath, day: string, words: ChoiceWords): ServedByView | undefined {
+  if (!isServable(scope)) return undefined
   const organisation = index.organisation()
   if (organisation.units.length === 0 && organisation.unitTypes.length === 0) return undefined
   const kept = new Map(index.units().map(({ scope: at, unit }) => [unit.id, at]))

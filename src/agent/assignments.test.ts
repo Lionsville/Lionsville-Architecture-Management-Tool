@@ -335,6 +335,14 @@ describe('an actor made a unit through the element tools', () => {
     expect(open.model().elements.partners).toEqual(actor('partners', 'Partners'))
   })
 
+  it('drops the organisation from the domains a unit serves: it is no domain', async () => {
+    const open = session('customer', customer)
+    parsed(await ask('element.update', { id: 'partners', unitTypeId: 'ut-team', scopes: ['', 'shipping'] }, open))
+    expect(open.sent[0]).toMatchObject({ patch: { scopes: ['shipping'] } })
+    parsed(await ask('element.update', { id: 'partners', scopes: [''] }, open))
+    expect(open.sent[1]).toMatchObject({ patch: { scopes: undefined } })
+  })
+
   it('refuses a type nobody holds, a type on what is not an actor, and a role or a count that does not stand', async () => {
     const open = session('customer', { ...customer, elements: [...customer.elements, { ...actor('crm', 'CRM'), kind: 'application' }] })
     expect(refusal(await ask('element.update', { id: 'partners', unitTypeId: 'ut-gone' }, open))?.[0]).toBe('agent.unknownId')

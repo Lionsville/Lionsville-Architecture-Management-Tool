@@ -10,6 +10,7 @@
 import type { PersonId } from '../../model/person'
 import { isBlankRef } from '../../model/person'
 import { unitsByRule } from '../../model/owners'
+import { scopesServed } from '../../model/serving'
 import { personOf } from '../../model/units'
 import type { HeldAssignment, OwnedByRule } from '../../people/hold'
 import type { Person } from '../../people/person'
@@ -41,7 +42,8 @@ export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>): 
  * What the operating model's rules make these ids own on `day` (ADR-0036 §2):
  * every application nobody wrote an owner on whose unit (`partyId`) they hold
  * the `applicationOwner` role in, and every domain a unit they hold the
- * `domainOwner` role in serves — its `scopes`, or the scope it is filed in.
+ * `domainOwner` role in serves — its `scopes`, or the scope it is filed in
+ * where that is a domain (`model/serving.scopesServed`): never the organisation.
  * Off the index; worked out, never stored.
  */
 export function ownedByRule(index: ScopeIndex, ids: ReadonlySet<PersonId>, day: string, scopeName: (path: string) => string): OwnedByRule[] {
@@ -58,7 +60,7 @@ export function ownedByRule(index: ScopeIndex, ids: ReadonlySet<PersonId>, day: 
   const filedIn = new Map(index.units().map(({ scope, unit }) => [unit.id, scope]))
   const domains = [...new Set(organisation.units
     .filter((unit) => serving.has(unit.id))
-    .flatMap((unit) => unit.scopes ?? [filedIn.get(unit.id) ?? '']))]
+    .flatMap((unit) => scopesServed(unit, (id) => filedIn.get(id))))]
     .map((path): OwnedByRule => ({ kind: 'domain', scope: path, id: path, name: scopeName(path), day }))
   return [...applications, ...domains]
 }

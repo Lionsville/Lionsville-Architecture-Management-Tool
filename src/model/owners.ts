@@ -24,7 +24,7 @@ import type { OperatingRule, OperatingRuleKind, RoleId } from './operatingModel'
 import type { PersonId } from './person'
 import { isBlankRef } from './person'
 import type { DesignElement, ElementId } from './types'
-import { servingUnitFiledHighest } from './serving'
+import { scopesServed, servingUnitFiledHighest } from './serving'
 import type { FiledIn } from './serving'
 import { organisationOn, personOf, roleOn, runsOn, unitOn } from './units'
 import type { Assignment, Organisation } from './units'
@@ -71,8 +71,9 @@ export function applicationOwnersOn(
 
 /**
  * A domain's owners on `day`: whoever holds the rule's role in a unit that
- * serves the scope. `filedIn` says where a unit is kept, which is the scope it
- * serves when its `scopes` says nothing.
+ * serves the scope (`serving.scopesServed`). `filedIn` says where a unit is
+ * kept, which is the scope it serves when its `scopes` says nothing — unless
+ * that is the organisation, which is no domain and has no domain owner.
  */
 export function domainOwnersOn(
   organisation: Organisation,
@@ -84,7 +85,7 @@ export function domainOwnersOn(
   const roleId = ruleRole(rules, 'domainOwner')
   if (!roleId) return []
   return organisation.units
-    .filter((unit) => (unit.scopes ?? [filedIn(unit.id)]).includes(scope))
+    .filter((unit) => scopesServed(unit, filedIn).includes(scope))
     .flatMap((unit) => holdersIn(organisation, roleId, unit.id, day))
 }
 

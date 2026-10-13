@@ -40,6 +40,7 @@
 import { isDay } from './lifecycle'
 import type { PersonId } from './person'
 import type { Role, RoleId, UnitType, UnitTypeId } from './operatingModel'
+import { isServable } from './serving'
 import { matchesQuery, queryTokens } from './textSearch'
 import type { DesignDiagram, ElementId } from './types'
 import { compareUnits, unitTypeRank } from './unitOrder'
@@ -422,7 +423,8 @@ function chartUnit(unit: UnitLike, reading: Reading, seen: Set<ElementId>): Char
     id: unit.id,
     name: unit.name,
     ...(unit.unitTypeId !== undefined ? { unitTypeId: unit.unitTypeId } : {}),
-    serves: unit.scopes ?? [],
+    // The organisation is no domain: a `""` an older write left is not said.
+    serves: (unit.scopes ?? []).filter(isServable),
     slots,
     others,
     children,

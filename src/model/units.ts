@@ -508,7 +508,8 @@ export function unitFindings(
     if (!mayHaveParent(type, parentType)) {
       found.push({ kind: 'misplaced', unitId: unit.id, ...(parentType !== undefined ? { parentType } : {}) })
     }
-    const serves = unit.scopes?.length ?? 0
+    // The organisation is no domain (`serving.isServable`): a `""` an older write left counts for nothing.
+    const serves = unit.scopes?.filter((scope) => scope !== '').length ?? 0
     if (serves > 1 && type.spans !== true) found.push({ kind: 'spans', unitId: unit.id, serves })
     const owns = deps.owns?.(unit.id, day) ?? 0
     if (type.limit !== undefined && owns > type.limit) found.push({ kind: 'overLimit', unitId: unit.id, owns, limit: type.limit })

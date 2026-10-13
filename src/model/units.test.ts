@@ -251,6 +251,9 @@ describe('what the organisation contradicts on a day', () => {
   it('finds a unit that serves several domains under a type that serves one', () => {
     const narrow: Organisation = { ...organisation, unitTypes: [domain, { ...cluster, spans: undefined }, team] }
     expect(unitFindings(narrow, TODAY).filter((one) => one.kind === 'spans')).toEqual([{ kind: 'spans', unitId: 'data', serves: 2 }])
+    // The organisation is no domain: a `""` an older write left beside one domain is not a second.
+    const older: Organisation = { ...narrow, units: narrow.units.map((one) => (one.id === 'data' ? { ...one, scopes: ['', 'shipping'] } : one)) }
+    expect(unitFindings(older, TODAY).filter((one) => one.kind === 'spans')).toEqual([])
   })
 
   it('reads nothing of a unit whose type the model does not hold, and nothing of a planned one', () => {

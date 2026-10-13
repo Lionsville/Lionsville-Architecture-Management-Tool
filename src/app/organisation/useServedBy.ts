@@ -10,7 +10,8 @@
  * go through; the tree is read again once a step lands, and the index with it.
  *
  * A unit that said nothing served the scope it is filed in, and goes on
- * serving it beside the one added (`model/serving.scopesWith`).
+ * serving it beside the one added (`model/serving.scopesWith`) — unless that
+ * is the organisation, which is no domain: then it serves the one added alone.
  */
 import { useCallback, useMemo } from 'react'
 import type { Translate } from '../../i18n'

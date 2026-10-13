@@ -83,8 +83,8 @@ describe('the units a picker offers', () => {
 
 describe('the scopes a unit may serve', () => {
   it('are every scope but those it serves, with the scope one below the top is under', () => {
+    // Flipped 13 October 2026: the organisation is no domain, so it is not offered.
     expect(scopeChoices({ scopes: ['', 'shipping', 'shipping/parcels', 'warehouse'], leave: ['warehouse'], scopeName, s })).toEqual([
-      { id: '', label: 'the organisation' },
       { id: 'shipping', label: 'Shipping' },
       { id: 'shipping/parcels', label: 'Parcels', note: 'under Shipping' },
     ])

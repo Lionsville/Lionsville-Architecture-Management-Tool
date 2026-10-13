@@ -259,7 +259,8 @@ const ELEMENT_FIELDS = {
   scopes: {
     type: 'array',
     description: 'A function: the domains the organisation assigned it to. A unit: the domains it serves, by scope path — absent means '
-      + 'the scope it is kept in; several only where its unit type spans domains (a check says so otherwise). Replaces the list; null clears it.',
+      + 'the scope it is kept in, or no domain where that is the organisation ("" is never a domain, and is dropped); several only where '
+      + 'its unit type spans domains (a check says so otherwise). Replaces the list; null clears it.',
     items: { type: 'string' },
   },
   extraSlots: {

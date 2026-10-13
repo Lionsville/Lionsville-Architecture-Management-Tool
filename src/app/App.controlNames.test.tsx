@@ -177,17 +177,22 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('checks-instances')
   }]],
   // Who serves a scope is said where the organisation has units: one at the
-  // organisation, of a type it holds, serving it where it is filed.
+  // organisation, of a type it holds, serving a landscape by name — the
+  // organisation itself is no domain, and its home has no *Served by*.
   [['a home served by a unit', ['org.servedBy'], async () => {
     const served = example.map((one) => (one.path === '' ? {
       ...one,
       model: {
         ...one.model,
         unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [] }],
-        elements: [...one.model.elements, { id: 'ops', kind: 'actor' as const, name: 'Operations', unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} }],
+        elements: [...one.model.elements, {
+          id: 'ops', kind: 'actor' as const, name: 'Operations', unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {},
+          scopes: [landscape.path],
+        }],
       },
     } : one))
     renderApp({ repositories: heldRepositories(served) })
+    fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     await screen.findByTestId('served-by')
   }]],
   [['a landscape’s home', ['org.boards', 'org.newBoard'], async () => {

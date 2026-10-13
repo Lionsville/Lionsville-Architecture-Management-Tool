@@ -56,6 +56,25 @@ describe('what Served by says', () => {
   })
 
   it('has nothing to say where the organisation has no unit types and no units', () => {
-    expect(servedByOf(indexScopes([{ path: '', model: root({ unitTypes: [] }) }]), '', DAY, words)).toBeUndefined()
+    expect(servedByOf(indexScopes([{ path: '', model: root({ unitTypes: [] }) }]), 'shipping', DAY, words)).toBeUndefined()
+  })
+
+  it('has nothing to say about the organisation itself, which is no domain', () => {
+    const kept = indexScopes([{ path: '', model: root({ elements: [unit('operations', 'ut-domain')] }) }, { path: 'shipping', model: shipping }])
+    expect(servedByOf(kept, '', DAY, words)).toBeUndefined()
+  })
+
+  it('offers a one-domain unit kept at the organisation that says nothing, since it serves nothing yet', () => {
+    // The usual organisation: every unit filed at the top, where the operating model lives.
+    const kept = indexScopes([
+      { path: '', model: root({ elements: [unit('operations', 'ut-domain'), unit('robotics', 'ut-team', { parentId: 'operations' })] }) },
+      { path: 'shipping', model: { name: 'Shipping', relations: [], diagrams: [], elements: [] } },
+    ])
+    const view = servedByOf(kept, 'shipping', DAY, words)
+    expect(view?.rows).toEqual([])
+    expect(view?.choices.map((one) => [one.id, one.disabled ?? false, one.note])).toEqual([
+      ['operations', false, 'filed in the organisation'],
+      ['robotics', false, 'filed in the organisation'],
+    ])
   })
 })

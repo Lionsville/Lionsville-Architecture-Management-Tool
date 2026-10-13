@@ -113,6 +113,9 @@ describe('the organisation chart', () => {
     const chart = orgChart(organisation, TODAY)
     expect(find(chart, 'data').serves).toEqual(['customer', 'shipping', 'warehouse'])
     expect(find(chart, 'pf').ends).toBe('2026-12-31')
+    // The organisation is no domain: a `""` an older write left is not said.
+    const older = orgChart({ ...organisation, units: organisation.units.map((one) => (one.id === 'data' ? { ...one, scopes: ['', 'shipping'] } : one)) }, TODAY)
+    expect(find(older, 'data').serves).toEqual(['shipping'])
   })
 
   it('draws each slot against who holds it on the day, with the vacancies its minimum leaves', () => {

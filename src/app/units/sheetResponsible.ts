@@ -23,10 +23,9 @@ import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import type { HostModel } from '../../model/hostModel'
 import { deletionSummary } from '../../model/deletion'
-import { servesOn } from '../../model/serving'
 import { isUnit } from '../../model/units'
 import type { SheetResponsible } from '../../business/ui/FunctionInspector'
-import { coversDomain } from '../../projects/checks'
+import { servesDomainOn } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { organisationHere } from './organisationHere'
@@ -64,7 +63,7 @@ export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
     choices: [...unitChoices({ organisation, filedIn, day, scopeName, s }), ...others],
     name: (id) => units.get(id)?.name ?? index.lookup(id)?.name,
     serves: (actorId, functionId) => !units.has(actorId)
-      || servesOn(organisation, actorId, coversDomain(domainOf(functionId)), day, filedIn),
+      || servesDomainOn(organisation, actorId, domainOf(functionId), day, filedIn),
     rolesEnded: (actorId) => {
       const summary = deletionSummary(model, { elementIds: [actorId], connectionIds: [], domainGroups: [] }, day)
       if (summary.roles.length === 0 && summary.earlierAssignments === 0) return undefined

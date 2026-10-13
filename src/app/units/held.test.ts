@@ -81,4 +81,18 @@ describe('what the rules make a person own', () => {
     ])
     expect(ownedByRule(index, new Set(['pe-bram']), '2026-10-11', (path) => path)).toEqual([])
   })
+
+  it('is no domain for a unit kept at the organisation that says nothing: the organisation is none', () => {
+    const top = indexScopes([{
+      path: '',
+      model: {
+        elements: [{ id: 'retail', kind: 'actor', name: 'Retail', unitTypeId: 'ut-domain', lifecycle: 'live', isManaged: false, aspects: {} }],
+        relations: [],
+        roles: [{ id: 'ro-lead', name: 'Domain lead', duties: [] }],
+        operatingRules: [{ id: 'domainOwner', role: 'ro-lead' }],
+        assignments: [{ id: 'as-9', unitId: 'retail', roleId: 'ro-lead', person: { person: 'pe-old' } }],
+      },
+    }])
+    expect(ownedByRule(top, ids, '2026-10-11', (path) => path)).toEqual([])
+  })
 })

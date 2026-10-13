@@ -19,6 +19,7 @@ import type { HostModel } from '../../model/hostModel'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { unitsOn } from '../../model/units'
 import type { Organisation, UnitLike } from '../../model/units'
+import { isServable } from '../../model/serving'
 import type { FiledIn } from '../../model/serving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
@@ -59,9 +60,13 @@ export function unitChoices(at: ChoiceWords & {
     })
 }
 
-/** The scopes a unit may be said to serve, in the tree's order: each but `leave`'s, with the scope it is filed under below the top. */
+/**
+ * The scopes a unit may be said to serve, in the tree's order: each but
+ * `leave`'s and the organisation, which is no domain (`isServable`), with the
+ * scope it is filed under below the top.
+ */
 export function scopeChoices(at: ChoiceWords & { scopes: readonly ScopePath[]; leave: readonly ScopePath[] }): PickOption[] {
-  return at.scopes.filter((path) => !at.leave.includes(path)).map((path) => {
+  return at.scopes.filter((path) => isServable(path) && !at.leave.includes(path)).map((path) => {
     const parent = parentScope(path)
     const below = parent !== undefined && parent !== ROOT_SCOPE
     return { id: path, label: at.scopeName(path), ...(below ? { note: at.s('pick.under', { scope: at.scopeName(parent) }) } : {}) }

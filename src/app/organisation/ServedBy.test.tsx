@@ -82,15 +82,30 @@ async function shippingHome() {
 const rows = () => screen.getAllByTestId('served-by-row').map((one) => one.textContent)
 
 describe('who serves a scope, on its home', () => {
-  it('is not drawn on the organisation\'s own home where no unit serves it, and names no domain owner there where one does', async () => {
-    renderApp({ repositories: await held(), today: TODAY })
-    await screen.findByTestId('home-shipping')
-    expect(screen.queryByTestId('served-by')).toBeNull()
-    cleanup()
+  // Flipped 13 October 2026: a unit kept at the organisation that says
+  // nothing no longer serves it, so the organisation's home, which is no
+  // domain, has no *Served by* at all.
+  it('is never drawn on the organisation\'s own home, which is no domain, even with a unit kept there that says nothing', async () => {
     const served = tree().map((one) => (one.path === '' ? { ...one, model: { ...one.model, elements: [...one.model.elements, unit('ops', 'Operations', 'ut-domain')] } } : one))
     renderApp({ repositories: heldRepositories(served), today: TODAY })
-    await waitFor(() => expect(screen.getAllByTestId('served-by-row').map((one) => one.textContent)).toEqual(['Domain · Operationsnobody manages it today']))
-    expect(screen.queryByTestId('served-by-owner')).toBeNull()
+    await screen.findByTestId('home-shipping')
+    expect(screen.queryByTestId('served-by')).toBeNull()
+  })
+
+  it('links a one-domain unit kept at the organisation that says nothing to the domain, as a step at the organisation', async () => {
+    const served = tree().map((one) => (one.path === '' ? { ...one, model: { ...one.model, elements: [...one.model.elements, unit('ops', 'Operations', 'ut-domain')] } } : one))
+    const repositories = heldRepositories(served)
+    renderApp({ repositories, today: TODAY })
+    await shippingHome()
+    fireEvent.click(screen.getByTestId('served-by-add'))
+    const operations = screen.getByRole('option', { name: /Operations/ })
+    expect(operations.getAttribute('aria-disabled')).not.toBe('true')
+    fireEvent.click(operations)
+    await waitFor(async () => {
+      const kept = (await repositories.read(''))?.model.elements.find((one) => one.id === 'ops')
+      expect(kept?.scopes).toEqual(['shipping'])
+    })
+    await waitFor(() => expect(rows()).toContain('Domain · Operationsnobody manages it today · filed in the organisation✕'))
   })
 
   it('lists the units in the order of their types, each with its lead and where it is filed, and works the domain owner out', async () => {

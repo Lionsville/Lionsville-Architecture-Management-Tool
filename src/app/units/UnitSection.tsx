@@ -325,28 +325,34 @@ function TypeField({ element, types, editable, onChange, filedIn, s }: {
   )
 }
 
-/** The domains it serves: the scope it is filed in where nothing is said, and as many as its type allows. */
+/**
+ * The domains it serves: the scope it is filed in where nothing is said and
+ * that is a domain, and as many as its type allows — never the organisation
+ * (`model/serving.scopesServed`).
+ */
 function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, s }: UnitSectionProps & {
   type: UnitType | undefined; editable: boolean; onChange: (scopes: string[] | undefined) => void
 }) {
-  // Where it says nothing it serves the scope it is filed in, and goes on serving it beside one added.
+  // Where it says nothing it serves the domain it is filed in, and goes on serving it beside one added.
   const filedIn = () => scope
   const serves = scopesServed(element, filedIn)
   const more = type?.spans === true || serves.length === 0
+  const offered = scopeChoices({ scopes, leave: serves, scopeName: scopeLabel, s })
   return (
     <>
       <Typography sx={SECTION}>{s('unit.serves')}</Typography>
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }} data-testid="unit-serves">
+        {serves.length === 0 && !editable && <Typography sx={QUIET} data-testid="unit-serves-none">{s('unit.servesNone')}</Typography>}
         {serves.map((one) => (
-          <Chip key={one} size="small" label={scopeLabel(one)}
+          <Chip key={one} size="small" label={scopeLabel(one)} data-testid="unit-serves-scope"
             {...(editable && element.scopes ? { onDelete: () => onChange(scopesWithout(element, one)) } : {})} />
         ))}
         {editable && more && (
           <PickToAdd
-            options={scopeChoices({ scopes, leave: serves, scopeName: scopeLabel, s })} label={s('unit.servesAdd')}
+            options={offered} label={s('unit.servesAdd')}
             field={s('pick.findScope')} nothing={s('pick.noScope')} testId="unit-serves-add"
             onPick={(one) => onChange(scopesWith(element, one, filedIn))}
-            disabled={scopes.every((one) => serves.includes(one))}
+            disabled={offered.length === 0}
           />
         )}
       </Box>

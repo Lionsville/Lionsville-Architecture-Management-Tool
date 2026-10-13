@@ -20,8 +20,9 @@
  *
  * **One record.** An actor with `unitTypeId`, `parentId` where it sits in a
  * unit, and `scopes` only where domains were picked: a unit that says nothing
- * serves the scope it is filed in (`model/serving.scopesServed`), and one
- * inside another serves through it. Pure, and no words.
+ * serves the scope it is filed in where that is a domain, and nothing where it
+ * is the organisation (`model/serving.scopesServed`); one inside another
+ * serves through it. Pure, and no words.
  */
 import type { UnitType, UnitTypeId } from '../../model/operatingModel'
 import { unitTypeRank } from '../../model/unitOrder'

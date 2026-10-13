@@ -2,13 +2,21 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Which units serve a scope (ADR-0036 §3, amended 11 October 2026): one
- * field, `unit.scopes`, read from either end — a unit's *Serves* and a
+ * Which units serve a scope (ADR-0036 §3, amended 11 and 13 October 2026):
+ * one field, `unit.scopes`, read from either end — a unit's *Serves* and a
  * scope's *Served by* — and never kept twice.
  *
+ * - **The organisation is not a domain.** No unit serves the root (`""`): a
+ *   unit filed there that says nothing serves nothing, and a `""` written in
+ *   `scopes` is read as nothing and dropped by the next write. The operating
+ *   model lives at the organisation, so that is where units are usually
+ *   filed, and a unit that served the organisation by being kept there
+ *   served every domain at once and could be linked to none.
  * - **A unit serves** the scopes in its `scopes`, or the scope it is filed in
- *   where it says nothing. Adding a scope keeps that reading: a unit that said
- *   nothing goes on serving its own scope beside the new one.
+ *   where it says nothing and that scope is a domain. Adding a scope keeps
+ *   that reading: a unit filed in a domain that said nothing goes on serving
+ *   it beside the new one, and one filed at the organisation serves the new
+ *   one alone.
  * - **A unit under one that serves a scope serves it through that one.** So a
  *   scope's *Served by* lists the units that say so themselves, and a unit
  *   that says nothing is listed only where nothing above it serves the scope.
@@ -29,32 +37,46 @@ import type { Organisation, UnitLike } from './units'
 /** Where a unit is kept: the scope it is filed in, where the caller knows it. */
 export type FiledIn = (unitId: ElementId) => string | undefined
 
-/** The scopes a unit serves itself: its `scopes`, or the scope it is filed in where it says nothing. */
-export function scopesServed(unit: Pick<UnitLike, 'id' | 'scopes'>, filedIn: FiledIn): string[] {
-  if (unit.scopes) return [...unit.scopes]
-  const at = filedIn(unit.id)
-  return at === undefined ? [] : [at]
+/** The organisation's path, which is never a domain a unit serves. */
+const ORGANISATION = ''
+
+/** Whether a unit may serve `scope`: every scope but the organisation. */
+export function isServable(scope: string): boolean {
+  return scope !== ORGANISATION
 }
 
-/** The `scopes` a unit is written with to serve one more: what it serves now, its own scope kept, and `scope` once. */
+/** The scopes a unit serves itself: its `scopes`, or the scope it is filed in where it says nothing — never the organisation. */
+export function scopesServed(unit: Pick<UnitLike, 'id' | 'scopes'>, filedIn: FiledIn): string[] {
+  if (unit.scopes) return unit.scopes.filter(isServable)
+  const at = filedIn(unit.id)
+  return at === undefined || !isServable(at) ? [] : [at]
+}
+
+/**
+ * The `scopes` a unit is written with to serve one more: what it serves now,
+ * its own domain kept, and `scope` once. One filed at the organisation that
+ * said nothing is written with `scope` alone.
+ */
 export function scopesWith(unit: Pick<UnitLike, 'id' | 'scopes'>, scope: string, filedIn: FiledIn): string[] {
   const now = scopesServed(unit, filedIn)
+  if (!isServable(scope)) return now
   return now.includes(scope) ? now : [...now, scope]
 }
 
 /**
  * Whether taking `scope` out of a unit's `scopes` stops it serving `scope`:
  * only where it names it, and where something is left or it is filed
- * elsewhere — a unit with nothing left serves the scope it is filed in.
+ * elsewhere — a unit with nothing left serves the scope it is filed in. One
+ * filed at the organisation may always stop: it then serves nothing.
  */
 export function mayStopServing(unit: Pick<UnitLike, 'id' | 'scopes'>, scope: string, filedIn: FiledIn): boolean {
   if (!unit.scopes?.includes(scope)) return false
   return unit.scopes.length > 1 || filedIn(unit.id) !== scope
 }
 
-/** The `scopes` a unit is written with to stop serving `scope`: absent, its own scope again, where none is left. */
+/** The `scopes` a unit is written with to stop serving `scope`: absent, its own scope again, where no domain is left. */
 export function scopesWithout(unit: Pick<UnitLike, 'scopes'>, scope: string): string[] | undefined {
-  const rest = (unit.scopes ?? []).filter((held) => held !== scope)
+  const rest = (unit.scopes ?? []).filter((held) => held !== scope && isServable(held))
   return rest.length ? rest : undefined
 }
 
@@ -84,7 +106,8 @@ export type ServingUnits = {
 /**
  * The units serving `scope` on `day` (*Served by*): every unit there that
  * names it, and every one filed there that says nothing — apart from those
- * under a unit that serves it, which serve it through that one.
+ * under a unit that serves it, which serve it through that one. None at the
+ * organisation, which is no domain.
  */
 export function servingUnits(organisation: Organisation, scope: string, day: string, filedIn: FiledIn): ServingUnits {
   const there = unitsOn(organisation, day)

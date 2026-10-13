@@ -298,6 +298,18 @@ describe('a capability assigned to a unit outside its domain', () => {
     expect(found.map((one) => one.id)).not.toContain('price')
   })
 
+  it('is said of a unit kept at the organisation that says nothing, which serves no domain, but not for what the organisation defines', () => {
+    const top = models()
+    top[0].model = {
+      ...top[0].model,
+      elements: [...top[0].model.elements, actor('ops', { unitTypeId: 'ut-domain' })],
+      relations: [...(top[0].model.relations ?? []), assigned('r-5', 'ops', 'serve')],
+    }
+    top[1].model = { ...top[1].model, relations: [...(top[1].model.relations ?? []), assigned('r-6', 'ops', 'price')] }
+    const found = organisationFindings(indexScopes(top), DAY).filter((one) => one.key === 'check.unitNotServing' && one.detail === 'Ops')
+    expect(found.map((one) => [one.scope, one.id])).toEqual([['shipping', 'price']])
+  })
+
   it('is nothing once a plan moves the unit under one that serves the domain', () => {
     const moved = models()
     moved[0].model = {

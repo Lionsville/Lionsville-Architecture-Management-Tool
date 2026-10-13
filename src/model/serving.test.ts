@@ -6,10 +6,10 @@
  * (ADR-0036, amended 11 October 2026).
  */
 import { describe, expect, it } from 'vitest'
-import { domainOwnerOn } from './owners'
+import { domainOwnerOn, domainOwnersOn } from './owners'
 import type { OperatingRule, Role, UnitType } from './operatingModel'
 import {
-  mayStopServing, scopesServed, scopesWith, scopesWithout, servesOn, servingUnitFiledHighest, servingUnits,
+  isServable, mayStopServing, scopesServed, scopesWith, scopesWithout, servesOn, servingUnitFiledHighest, servingUnits,
 } from './serving'
 import type { Assignment, Organisation, UnitLike } from './units'
 
@@ -72,6 +72,29 @@ describe('what a unit serves', () => {
     expect(scopesWithout({ scopes: ['shipping'] }, 'shipping')).toBeUndefined()
   })
 
+  it('never serves the organisation, which is no domain', () => {
+    // Data sits at the organisation: saying nothing there serves nothing.
+    expect(scopesServed(unit('data', 'ut-cluster'), filedIn)).toEqual([])
+    // A `""` an older write left beside a domain is read as nothing, and dropped by the next write.
+    expect(scopesServed(unit('data', 'ut-cluster', { scopes: ['', 'shipping'] }), filedIn)).toEqual(['shipping'])
+    expect(scopesWith(unit('data', 'ut-cluster', { scopes: ['', 'shipping'] }), 'warehouse', filedIn)).toEqual(['shipping', 'warehouse'])
+    expect(scopesWithout({ scopes: ['', 'shipping'] }, 'shipping')).toBeUndefined()
+    // Nor is the organisation added.
+    expect(scopesWith(unit('robotics', 'ut-team'), '', filedIn)).toEqual(['warehouse'])
+    expect(isServable('')).toBe(false)
+    expect(isServable('shipping')).toBe(true)
+    const everyone = (scope: string) => scope === ''
+    expect(servesOn(organisation, 'data', everyone, DAY, filedIn)).toBe(false)
+    expect(servingUnits(organisation, '', DAY, filedIn)).toEqual({ units: [], through: [] })
+  })
+
+  it('writes a unit at the organisation that said nothing with the one domain added alone, and lets it stop again', () => {
+    expect(scopesWith(unit('data', 'ut-cluster'), 'shipping', filedIn)).toEqual(['shipping'])
+    // Nothing left: it is back to serving nothing, which is allowed where it is filed at the organisation.
+    expect(mayStopServing(unit('data', 'ut-cluster', { scopes: ['shipping'] }), 'shipping', filedIn)).toBe(true)
+    expect(scopesWithout({ scopes: ['shipping'] }, 'shipping')).toBeUndefined()
+  })
+
   it('reaches through the units above it, on the day', () => {
     const shipping = (scope: string) => scope === 'shipping'
     expect(servesOn(organisation, 'tracking', shipping, DAY, filedIn)).toBe(true)
@@ -109,5 +132,11 @@ describe('who serves a scope', () => {
     expect(domainOwnerOn(organisation, rules, 'shipping', DAY, filedIn).owners).toHaveLength(1)
     expect(domainOwnerOn(organisation, [], 'shipping', DAY, filedIn)).toEqual({ unitId: 'shipping', owners: [] })
     expect(domainOwnerOn(organisation, rules, 'customer', DAY, filedIn)).toEqual({ owners: [] })
+  })
+
+  it('names no domain owner of the organisation, even off a unit kept there that says nothing', () => {
+    const top: Organisation = { ...organisation, units: [unit('data', 'ut-cluster')] }
+    expect(domainOwnerOn(top, rules, '', DAY, filedIn)).toEqual({ owners: [] })
+    expect(domainOwnersOn(top, rules, '', DAY, filedIn)).toEqual([])
   })
 })

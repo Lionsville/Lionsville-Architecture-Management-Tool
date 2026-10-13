@@ -46,9 +46,10 @@ import { today } from '../model/lifecycle'
 import { isUnit, personOf, unitFindings, unitsOn } from '../model/units'
 import { unitTypeLanes } from '../model/unitOrder'
 import { servesOn } from '../model/serving'
+import type { FiledIn } from '../model/serving'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
-import { ancestorScopes, isWithinScope } from './scopePath'
+import { ROOT_SCOPE, ancestorScopes, isWithinScope } from './scopePath'
 import type { ScopePath } from './scopePath'
 import type { TreeCheckKey } from '../model/checkCatalogue'
 
@@ -721,8 +722,22 @@ export function coversDomain(domain: ScopePath): (served: string) => boolean {
 }
 
 /**
+ * Whether a unit serves the domain of something it answers for on `day`,
+ * itself or through a unit above it (`coversDomain`). What the organisation
+ * defines is in no domain, since the organisation is none (ADR-0036, amended
+ * 13 October 2026), so any unit may answer for it.
+ */
+export function servesDomainOn(
+  organisation: Organisation, unitId: ElementId, domain: ScopePath, day: string, filedIn: FiledIn,
+): boolean {
+  return domain === ROOT_SCOPE || servesOn(organisation, unitId, coversDomain(domain), day, filedIn)
+}
+
+/**
  * Every function assigned to a unit there on the day that serves neither its
- * domain nor sits under a unit that does (`coversDomain`).
+ * domain nor sits under a unit that does (`servesDomainOn`). A unit that
+ * serves nothing — one filed at the organisation that says nothing — is
+ * said for every function a domain defines that it answers for.
  */
 function notServingFindings(at: OrganisationAt, day: string): Finding[] {
   const rows = at.assigned?.() ?? []
@@ -734,7 +749,7 @@ function notServingFindings(at: OrganisationAt, day: string): Finding[] {
   for (const { scope, relation, function: held } of rows) {
     const unit = units.get(relation.sourceId)
     if (!unit) continue
-    if (servesOn(organisation, unit.id, coversDomain(held.scope), day, filedIn)) continue
+    if (servesDomainOn(organisation, unit.id, held.scope, day, filedIn)) continue
     found.push({
       key: 'check.unitNotServing', scope, id: held.id, name: held.name, detail: unit.name,
       fields: [unit.id, relation.id], scopes: [held.scope],

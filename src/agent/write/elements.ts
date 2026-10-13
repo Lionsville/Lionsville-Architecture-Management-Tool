@@ -12,6 +12,7 @@ import { rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
 import { CANVAS_KINDS, canPlaceKind } from '../../model/placement'
 import { isDay } from '../../model/lifecycle'
 import { isPlatformArchetype } from '../../model/relations'
+import { isServable } from '../../model/serving'
 import { wouldCycle } from '../../business/tree'
 import type { AspectStatus, DesignElement, ElementId, ElementKind } from '../../model/types'
 import type { ReadView } from '../answer'
@@ -319,7 +320,11 @@ const unit: FieldReader = (args, held, view, patch) => {
     patch.unitTypeId = args.unitTypeId
   }
   if (args.scopes === null) patch.scopes = undefined
-  else if (Array.isArray(args.scopes)) patch.scopes = args.scopes.length ? [...new Set(args.scopes as string[])] : undefined
+  else if (Array.isArray(args.scopes)) {
+    // The organisation is no domain a unit serves (`model/serving.isServable`); a function's domains read it the same way.
+    const domains = [...new Set(args.scopes as string[])].filter((one) => held.kind !== 'actor' || isServable(one))
+    patch.scopes = domains.length ? domains : undefined
+  }
   if (args.extraSlots === null) patch.extraSlots = undefined
   else if (Array.isArray(args.extraSlots)) {
     const slots: { role: string; min: number; max?: number }[] = []

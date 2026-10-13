@@ -711,6 +711,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unit.serves': 'Bedient',
   'unit.servesAdd': '+ Domäne',
   'unit.servesOne': 'Ein {type} bedient eine Domäne.',
+  'unit.servesNone': 'Keine Domäne',
   'unit.owns': 'Besitzt',
   'unit.ownsNone': 'Keine Anwendung nennt sie als ihre Einheit.',
   'unit.answersFor': 'Verantwortlich für',
