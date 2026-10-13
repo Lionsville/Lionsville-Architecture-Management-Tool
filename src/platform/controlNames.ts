@@ -83,6 +83,8 @@ export const CONTROL_NAMES = [
   'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
   'operating.newResponsibility', 'operating.rules', 'operating.matrix', 'operating.cell', 'operating.bringIn',
   'operating.compare',
+  // …and over the matrix, the roles and groups it keeps and its order (3.6.3).
+  'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder',
   // The unit types drawn as a structure (ADR-0036, amended 11 October 2026):
   // the lanes, each type's card, and the order in its lane in the inspector.
   'operating.structure', 'operating.typeCard', 'operating.typeOrder',

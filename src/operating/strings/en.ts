@@ -131,6 +131,13 @@ export const EN = {
   'operating.raci.A': 'Accountable',
   'operating.raci.C': 'Consulted',
   'operating.raci.I': 'Informed',
+  'operating.filterRoles': 'Roles',
+  'operating.filterGroups': 'Groups',
+  'operating.filterAll': 'All',
+  'operating.filterEmpty': 'No responsibility is left with these roles and groups.',
+  'operating.matrixOrder': 'Order',
+  'operating.orderName': 'A–Z',
+  'operating.orderAdded': 'As added',
   'operating.noRolesForMatrix': 'Add a role first: the matrix has a column per role.',
 
   // --- the libraries -------------------------------------------------------------

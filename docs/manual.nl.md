@@ -2055,6 +2055,14 @@ geen of met meerdere zegt dat in de laatste kolom, en ze staat bij wat de
 organisatie over zichzelf tegenspreekt. Niets weigert het — een model in
 wording gaat door allebei heen.
 
+Boven de matrix houdt **Rollen** de kolommen van de gekozen rollen over en de
+verantwoordelijkheden waarin een van hen een aandeel heeft, en houdt
+**Groepen** de gekozen groepen over; is niets gekozen, dan staat alles er.
+**A–Z** zet de rollen, de groepen en de verantwoordelijkheden in elke groep op
+naam, **Zoals toegevoegd** in de volgorde waarin ze zijn toegevoegd. De laatste
+kolom leest nog steeds elke rol, getoond of niet. Wie het tabblad verlaat en
+terugkomt, houdt wat gekozen was; niets ervan verandert het model.
+
 ### Bibliotheken
 
 Met de app komen vier vertrekpunten mee: **Scrum**, **SAFe**, de

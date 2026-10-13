@@ -2176,6 +2176,15 @@ Eine Zeile mit keinem oder mit mehreren sagt das in ihrer letzten Spalte, und
 sie steht bei dem, was die Organisation sich selbst widerspricht. Nichts
 verweigert es — ein Modell in Arbeit geht durch beides hindurch.
 
+Über der Matrix behält **Rollen** die Spalten der gewählten Rollen und die
+Verantwortungen, an denen eine von ihnen einen Anteil hat, und **Gruppen**
+behält die gewählten Gruppen; ist nichts gewählt, steht alles da. **A–Z**
+ordnet die Rollen, die Gruppen und die Verantwortungen jeder Gruppe nach Namen,
+**Wie hinzugefügt** in der Reihenfolge, in der sie hinzugefügt wurden. Die
+letzte Spalte liest weiterhin jede Rolle, gezeigt oder nicht. Wer den Reiter
+verlässt und zurückkommt, behält, was gewählt war; nichts davon ändert das
+Modell.
+
 ### Bibliotheken
 
 Mit der App werden vier Ausgangspunkte ausgeliefert: **Scrum**, **SAFe**, die

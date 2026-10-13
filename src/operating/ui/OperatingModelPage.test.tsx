@@ -109,6 +109,33 @@ describe('the operating model\'s page', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('keeps the roles picked over the matrix and what they have a part in, goes by name or as added, and keeps that across the tabs', async () => {
+    show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    const headings = () => [...screen.getByRole('table').querySelectorAll('thead th[scope="col"]')].map((th) => th.textContent)
+    const rows = () => [...screen.getByRole('table').querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent)
+    const all = rows()
+    expect(all).toEqual([...all].sort((a, b) => a!.localeCompare(b!)))
+    fireEvent.click(screen.getByRole('button', { name: 'As added' }))
+    expect(rows()).toHaveLength(all.length)
+    fireEvent.click(screen.getByRole('button', { name: 'A–Z' }))
+    // Scrum Master kept: its column alone, and only the rows it has a letter in.
+    const roles = screen.getByRole('combobox', { name: 'Roles' })
+    roles.focus()
+    fireEvent.keyDown(roles, { key: 'ArrowDown' })
+    fireEvent.click(await screen.findByRole('option', { name: 'Scrum Master' }))
+    fireEvent.keyDown(roles, { key: 'Escape' })
+    expect(headings()).toHaveLength(2)
+    expect(rows().length).toBeGreaterThan(0)
+    expect(rows().length).toBeLessThan(all.length)
+    const kept = rows()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    expect(rows()).toEqual(kept)
+    expect(await axeFindings()).toEqual([])
+  })
+
   it('edits a role picked from a card, and takes it out of the types that hold it', async () => {
     const sent = show()
     await bringInScrum()

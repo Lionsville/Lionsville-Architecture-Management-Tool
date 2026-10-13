@@ -347,7 +347,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     await screen.findByTestId('library-scrum')
   }],
-  ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell'], async () => {
+  ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell', 'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
   }]],
   // An organisation chart, made on a landscape's home: the example has no

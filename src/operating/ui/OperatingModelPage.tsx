@@ -38,6 +38,8 @@ import type { OperatingItem, OperatingModel } from '../edit'
 import { libraryLanguage } from '../library'
 import type { Library } from '../library'
 import { LIBRARIES } from '../libraries'
+import { ALL_OF_THE_MATRIX } from '../matrixView'
+import type { MatrixView } from '../matrixView'
 import { countsLine } from './countsLine'
 import { Inspector } from './Inspector'
 import { LandedToast } from './LandedToast'
@@ -115,6 +117,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const readOnly = props.readOnly || !props.atOrganisation
   const [tab, setTab] = useState<OperatingTab>('units')
   const [selected, setSelected] = useState<string | undefined>(undefined)
+  const [matrixView, setMatrixView] = useState<MatrixView>(ALL_OF_THE_MATRIX)
   const [removing, setRemoving] = useState<string | undefined>(undefined)
   const [takingOut, setTakingOut] = useState<{ typeId: string; roleId: RoleId } | undefined>(undefined)
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
@@ -207,7 +210,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
             />
           )}
           {tab === 'raci' && (
-            <RaciMatrix model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId} />
+            <RaciMatrix model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId}
+              view={matrixView} onView={setMatrixView} />
           )}
           {tab === 'libraries' && (
             <LibrariesPanel

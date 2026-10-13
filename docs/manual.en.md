@@ -1895,6 +1895,14 @@ responsibility wants exactly one A: a row with none, or with several, says so
 in its last column, and it is listed among what the organisation contradicts
 about itself. Nothing refuses it — a model being worked on passes through both.
 
+Over the matrix, **Roles** keeps the columns of the roles picked and the
+responsibilities any of them has a part in, and **Groups** keeps the groups
+picked; with nothing picked, everything is shown. **A–Z** puts the roles, the
+groups and the responsibilities in each group in order by name, and
+**As added** in the order they were added. The last column still reads every
+role, shown or not. Leaving the tab and coming back keeps what was picked;
+none of it changes the model.
+
 ### Libraries
 
 Four starting points ship with the app: **Scrum**, **SAFe**, the **IT4IT**

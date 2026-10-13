@@ -122,6 +122,13 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.raci.A': 'Eindverantwoordelijk',
   'operating.raci.C': 'Geraadpleegd',
   'operating.raci.I': 'Geïnformeerd',
+  'operating.filterRoles': 'Rollen',
+  'operating.filterGroups': 'Groepen',
+  'operating.filterAll': 'Alle',
+  'operating.filterEmpty': 'Met deze rollen en groepen blijft geen verantwoordelijkheid over.',
+  'operating.matrixOrder': 'Volgorde',
+  'operating.orderName': 'A–Z',
+  'operating.orderAdded': 'Zoals toegevoegd',
   'operating.noRolesForMatrix': 'Voeg eerst een rol toe: de matrix heeft een kolom per rol.',
 
   'operating.librariesIntro': 'Een bibliotheek is een vertrekpunt, geen norm. Wat binnenkomt is van de organisatie: hernoem het, herschrijf het, schrap het. Onderdelen overnemen is één stap, en ongedaan maken haalt ze weer weg.',

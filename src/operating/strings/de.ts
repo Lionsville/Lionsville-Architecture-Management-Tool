@@ -122,6 +122,13 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.raci.A': 'Rechenschaftspflichtig',
   'operating.raci.C': 'Konsultiert',
   'operating.raci.I': 'Informiert',
+  'operating.filterRoles': 'Rollen',
+  'operating.filterGroups': 'Gruppen',
+  'operating.filterAll': 'Alle',
+  'operating.filterEmpty': 'Mit diesen Rollen und Gruppen bleibt keine Verantwortung übrig.',
+  'operating.matrixOrder': 'Reihenfolge',
+  'operating.orderName': 'A–Z',
+  'operating.orderAdded': 'Wie hinzugefügt',
   'operating.noRolesForMatrix': 'Fügen Sie zuerst eine Rolle hinzu: Die Matrix hat eine Spalte je Rolle.',
 
   'operating.librariesIntro': 'Eine Bibliothek ist ein Ausgangspunkt, kein Standard. Was übernommen wird, gehört der Organisation: umbenennen, umschreiben, streichen. Einträge zu übernehmen ist ein Schritt, und Rückgängig nimmt sie wieder heraus.',
