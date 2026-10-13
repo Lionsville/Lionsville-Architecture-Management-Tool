@@ -210,3 +210,53 @@ describe('the links between a unit and the scopes it serves', { timeout: 20_000 
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
+
+describe('a new scope, served from the start', { timeout: 20_000 }, () => {
+  /** The tree with Operations kept at the organisation, a one-domain unit that serves nothing yet. */
+  function withOperations(): ScopeSnapshot[] {
+    return tree().map((one) => (one.path === '' ? { ...one, model: { ...one.model, elements: [...one.model.elements, unit('ops', 'Operations', 'ut-domain')] } } : one))
+  }
+
+  async function newScope(name: string) {
+    fireEvent.click(await screen.findByTestId('new-scope'))
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: name } })
+    // A domain, which draws nothing: what a scope served by a unit usually is.
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape board' }))
+    return screen.getByRole('dialog')
+  }
+
+  it('offers the units as Served by does, and writes the one picked where it is kept once the scope is made', async () => {
+    const repositories = heldRepositories(withOperations())
+    renderApp({ repositories, today: TODAY })
+    await screen.findByTestId('home-shipping')
+    const dialog = await newScope('Customer')
+    fireEvent.click(within(dialog).getByTestId('new-scope-served-by-add'))
+    // A one-domain unit already serving one is shown, and why it cannot take a second.
+    expect(screen.getByRole('option', { name: /Robotics/ }).textContent).toBe('Roboticsa Team serves one domain')
+    fireEvent.click(screen.getByRole('option', { name: /Operations/ }))
+    expect(within(dialog).getByTestId('new-scope-served-by-unit').textContent).toBe('Operations')
+    expect(await axeFindings(dialog)).toEqual([])
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }))
+    await waitFor(async () => {
+      expect(await repositories.read('customer')).toBeDefined()
+      const kept = (await repositories.read(''))?.model.elements.find((one) => one.id === 'ops')
+      expect(kept?.scopes).toEqual(['customer'])
+    })
+  })
+
+  it('keeps the scope and says the link was not made when the unit\'s scope refuses it', async () => {
+    let locked = false
+    const repositories = heldRepositories(withOperations())
+    renderApp({ repositories, today: TODAY, provider: { readOnlyAt: (path: string) => locked && path === 'warehouse' } })
+    await screen.findByTestId('home-shipping')
+    const dialog = await newScope('Customer')
+    fireEvent.click(within(dialog).getByTestId('new-scope-served-by-add'))
+    fireEvent.click(screen.getByRole('option', { name: /Fulfilment/ }))
+    // Somebody takes the right to write Warehouse away before Create is pressed.
+    locked = true
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }))
+    expect(await screen.findByText(/Customer was made, but Fulfilment was not linked to it/)).toBeTruthy()
+    expect(await repositories.read('customer')).toBeDefined()
+    expect((await repositories.read('warehouse'))?.model.elements.find((one) => one.id === 'fulfilment')?.scopes).toBeUndefined()
+  })
+})

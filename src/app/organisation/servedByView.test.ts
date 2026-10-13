@@ -12,7 +12,8 @@ import type { DesignElement } from '../../model'
 import type { HostModel } from '../../model/hostModel'
 import type { Role, UnitType } from '../../model/operatingModel'
 import { indexScopes } from '../../projects/scopeIndex'
-import { servedByOf } from './servedByView'
+import { pickableBy, servedByOf, servingChoicesOf } from './servedByView'
+import { servedByPicked } from './useOrganisation'
 
 const s = translator('en')
 const DAY = '2026-10-11'
@@ -76,5 +77,29 @@ describe('what Served by says', () => {
       ['operations', false, 'filed in the organisation'],
       ['robotics', false, 'filed in the organisation'],
     ])
+  })
+})
+
+describe('what a new scope may be served by', () => {
+  it('is every unit there, nothing serving the scope yet, a one-domain unit serving one shown and said why not', () => {
+    const kept = indexScopes([{ path: '', model: root() }, { path: 'shipping', model: shipping }, { path: 'warehouse', model: warehouse }])
+    expect(servingChoicesOf(kept, undefined, DAY, words).map((one) => [one.id, one.disabled ?? false])).toEqual([
+      ['shipping', true], ['robotics', true], ['tracking', true],
+    ])
+    expect(servingChoicesOf(indexScopes([{ path: '', model: root() }]), undefined, DAY, words)).toEqual([])
+  })
+
+  it('shows a unit kept where the person may only read, and says so', () => {
+    const options = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', disabled: true, note: 'why' }, { id: 'c', label: 'C' }]
+    expect(pickableBy(options, (id) => id !== 'c', { s })).toEqual([
+      { id: 'a', label: 'A' }, { id: 'b', label: 'B', disabled: true, note: 'why' }, { id: 'c', label: 'C', disabled: true, note: 'kept where you may only read' },
+    ])
+  })
+
+  it('is held by the new-scope dialog alone, and taken back', () => {
+    const asked = { kind: 'newScope' as const, parent: '', name: 'Customer', withBoard: false }
+    expect(servedByPicked(asked, 'ops')).toEqual({ ...asked, servedBy: 'ops' })
+    expect(servedByPicked({ ...asked, servedBy: 'ops' }, undefined)).toEqual(asked)
+    expect(servedByPicked({ kind: 'none' }, 'ops')).toEqual({ kind: 'none' })
   })
 })

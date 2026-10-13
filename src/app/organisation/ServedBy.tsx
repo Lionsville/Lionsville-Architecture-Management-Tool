@@ -25,6 +25,7 @@ import { pickedPerson } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { PickToAdd } from '../../widgets/PickToAdd'
+import { pickableBy } from './servedByView'
 import type { ServedByAccess } from './useServedBy'
 
 const HEADING = { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' } as const
@@ -47,7 +48,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   const here = scopeName(scope)
   const person = (id: string) => names.text(pickedPerson(id))
   // A unit kept where the person may only read is offered, and said so: adding it would be a step there.
-  const choices = view.choices.map((one) => (one.disabled || servedBy.mayChange(one.id) ? one : { ...one, disabled: true, note: s('pick.readOnly') }))
+  const choices = pickableBy(view.choices, servedBy.mayChange, { s })
   return (
     <Box data-testid="served-by" data-guide="org.servedBy" sx={compact ? undefined : { mb: 3, maxWidth: 720 }}>
       <Typography component="h2" sx={compact ? { fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' } : HEADING}>

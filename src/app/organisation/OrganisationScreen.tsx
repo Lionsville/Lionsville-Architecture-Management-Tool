@@ -71,6 +71,7 @@ import { BarEnd } from '../BarEnd'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
 import { Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
+import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
 import { PeopleCard } from './PeopleCard'
@@ -639,7 +640,7 @@ export function OrganisationScreen({
         onNameChange={organisation.setNewScopeName}
         onWithBoardChange={organisation.setNewScopeWithBoard}
         onCancel={organisation.closeDialog}
-        onCreate={organisation.create}
+        {...newScopeServing(organisation, servedBy)}
         s={s}
       />
       <NewBoardDialog
@@ -940,4 +941,17 @@ function NameTheOrganisation({ onName, s }: { onName: (name: string) => void; s:
       </Button>
     </Stack>
   )
+}
+
+/**
+ * The new-scope dialog's *Served by*, where the home has one, and its
+ * *Create*, which links the unit picked once the scope is made.
+ */
+function newScopeServing(organisation: Organisation, servedBy: ServedByAccess | undefined): Pick<NewScopeDialogProps, 'servedBy' | 'onCreate'> {
+  const { dialog } = organisation
+  if (!servedBy || dialog.kind !== 'newScope') return { onCreate: () => organisation.create() }
+  return {
+    servedBy: { options: servedBy.choicesForNew(), value: dialog.servedBy, onChange: organisation.setNewScopeServedBy },
+    onCreate: () => organisation.create(servedBy.link),
+  }
 }

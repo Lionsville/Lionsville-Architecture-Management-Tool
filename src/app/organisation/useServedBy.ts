@@ -19,10 +19,11 @@ import type { ElementId } from '../../model'
 import { scopesWith, scopesWithout } from '../../model/serving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import type { PickOption } from '../../widgets/PickToAdd'
 import type { BelowScopes } from '../useChangeBelow'
 import type { Failed } from '../useShellServices'
 import { refusalKey, writeIn } from '../units/writeIn'
-import { servedByOf } from './servedByView'
+import { pickableBy, servedByOf, servingChoicesOf } from './servedByView'
 import type { ServedByView } from './servedByView'
 
 export type ServedByAccess = {
@@ -34,6 +35,14 @@ export type ServedByAccess = {
   remove: (scope: ScopePath, unitId: ElementId) => void
   /** The unit where it is kept, chosen: its inspector says what it serves from that end. */
   open: (unitId: ElementId) => void
+  /** What the new-scope dialog's *Served by* offers: a scope nobody serves yet, as this person may pick. */
+  choicesForNew: () => PickOption[]
+  /**
+   * A scope made a moment ago, served by a unit: the unit's `scopes` written
+   * in the scope that keeps it. Refused, the scope stays and a notice says
+   * the link was not made and where it is made instead. Settles either way.
+   */
+  link: (scope: ScopePath, unitId: ElementId, name: string) => Promise<void>
 }
 
 export function useServedBy(deps: {
@@ -57,17 +66,25 @@ export function useServedBy(deps: {
       return read.get(scope)
     }
   }, [index, today, scopeName, s])
-  const change = useCallback((scope: ScopePath, unitId: ElementId, adding: boolean) => {
+  /** One unit's `scopes`, written where it is kept: what each edit and a new scope's link are. */
+  const write = useCallback((scope: ScopePath, unitId: ElementId, adding: boolean) => {
     const kept = keptAt.get(unitId)
-    if (!kept) return
+    if (!kept) return undefined
     const filedIn = (id: ElementId) => (id === unitId ? kept.scope : undefined)
-    void writeIn({ scopes, writable }, kept.scope, (held) => {
+    const written = writeIn({ scopes, writable }, kept.scope, (held) => {
       const unit = held.model.elements.find((one) => one.id === unitId && one.ref === undefined)
       if (!unit) return undefined
       const next = adding ? scopesWith(unit, scope, filedIn) : scopesWithout(unit, scope)
       if (JSON.stringify(next) === JSON.stringify(unit.scopes)) return undefined
       return [{ type: 'element.update', id: unitId, patch: { scopes: next } }]
-    }).then((written) => {
+    })
+    return { kept, written }
+  }, [keptAt, scopes, writable])
+  const change = useCallback((scope: ScopePath, unitId: ElementId, adding: boolean) => {
+    const asked = write(scope, unitId, adding)
+    if (!asked) return
+    const { kept } = asked
+    void asked.written.then((written) => {
       if (written.ok) {
         onTreeChanged()
         notify(s(adding ? 'org.servedByAdded' : 'org.servedByRemoved', { unit: kept.name, scope: scopeName(scope), kept: scopeName(kept.scope) }), 'success')
@@ -76,18 +93,37 @@ export function useServedBy(deps: {
       const key = refusalKey(written)
       if (key) notify(s(key), 'error')
     }, (cause: unknown) => failed('organisation.servedBy', cause, 'pick.notWritten'))
-  }, [keptAt, scopes, writable, onTreeChanged, notify, failed, scopeName, s])
+  }, [write, onTreeChanged, notify, failed, scopeName, s])
+  // Named by the caller: a scope made a moment ago is not in the tree these names were read from.
+  const link = useCallback(async (scope: ScopePath, unitId: ElementId, name: string) => {
+    const asked = write(scope, unitId, true)
+    const notLinked = (why: string) => notify(
+      `${why} ${s('org.newScopeNotLinked', { unit: asked?.kept.name ?? unitId, scope: name })}`, 'warning',
+    )
+    if (!asked) { notLinked(s('pick.notWritten')); return }
+    try {
+      const written = await asked.written
+      if (written.ok) { onTreeChanged(); return }
+      notLinked(s(refusalKey(written) ?? 'pick.notWritten'))
+    } catch (cause: unknown) {
+      failed('organisation.servedBy.link', cause)
+      notLinked(s('pick.notWritten'))
+    }
+  }, [write, onTreeChanged, notify, failed, s])
+  const mayChange = useCallback((unitId: ElementId) => {
+    const kept = keptAt.get(unitId)
+    return kept !== undefined && writable(kept.scope)
+  }, [keptAt, writable])
   return useMemo<ServedByAccess>(() => ({
     of,
-    mayChange: (unitId) => {
-      const kept = keptAt.get(unitId)
-      return kept !== undefined && writable(kept.scope)
-    },
+    mayChange,
+    choicesForNew: () => pickableBy(servingChoicesOf(index, undefined, today, { scopeName, s }), mayChange, { s }),
+    link,
     add: (scope, unitId) => change(scope, unitId, true),
     remove: (scope, unitId) => change(scope, unitId, false),
     open: (unitId) => {
       const kept = keptAt.get(unitId)
       if (kept) onOpen(kept.scope, unitId)
     },
-  }), [of, keptAt, writable, change, onOpen])
+  }), [of, keptAt, mayChange, change, link, onOpen, index, today, scopeName, s])
 }

@@ -51,6 +51,39 @@ export type ServedByView = {
 }
 
 /**
+ * The units *+ Unit* offers for `scope` on `day`: every unit there that does
+ * not serve it yet, a unit of a type that serves one domain and serves one
+ * already shown and said why it cannot take a second. `scope` absent is a
+ * scope not made yet — the new-scope dialog's *Served by* — which nothing
+ * serves. Nothing where the organisation has no units.
+ */
+export function servingChoicesOf(index: ScopeIndex, scope: ScopePath | undefined, day: string, words: ChoiceWords): PickOption[] {
+  const organisation = index.organisation()
+  if (organisation.units.length === 0) return []
+  const kept = new Map(index.units().map(({ scope: at, unit }) => [unit.id, at]))
+  const filedIn = (id: ElementId) => kept.get(id)
+  const typeName = new Map(organisation.unitTypes.map((type) => [type.id, type.name]))
+  const spans = new Set(organisation.unitTypes.filter((type) => type.spans === true).map((type) => type.id))
+  const serving = (unit: UnitLike) => scope !== undefined && servesOn(organisation, unit.id, (one) => one === scope, day, filedIn)
+  return unitChoices({
+    organisation, filedIn, day, ...words,
+    leave: serving,
+    // A type that serves one domain is offered, and said why it cannot take a second.
+    refuse: (unit) => (spans.has(unit.unitTypeId ?? '') || scopesServed(unit, filedIn).length === 0
+      ? undefined
+      : words.s('pick.servesOne', { type: typeName.get(unit.unitTypeId ?? '') ?? '' })),
+  })
+}
+
+/**
+ * The choices as this person may pick them: a unit kept where they may only
+ * read is shown, and said so, since adding it would be a step there.
+ */
+export function pickableBy(choices: readonly PickOption[], mayChange: (unitId: ElementId) => boolean, words: Pick<ChoiceWords, 's'>): PickOption[] {
+  return choices.map((one) => (one.disabled || mayChange(one.id) ? one : { ...one, disabled: true, note: words.s('pick.readOnly') }))
+}
+
+/**
  * What *Served by* says about `scope` on `day`; nothing where the
  * organisation has no unit types and no units, which have nothing to say,
  * and nothing about the organisation itself, which is no domain and which no
@@ -77,16 +110,7 @@ export function servedByOf(index: ScopeIndex, scope: ScopePath, day: string, wor
   const worked = roleId ? domainOwnerOn(organisation, operatingRules, scope, day, filedIn) : undefined
   const role = organisation.roles.find((one) => one.id === roleId)?.name ?? roleId ?? ''
   const unitName = worked?.unitId === undefined ? undefined : organisation.units.find((one) => one.id === worked.unitId)?.name
-  const spans = new Set(organisation.unitTypes.filter((type) => type.spans === true).map((type) => type.id))
-  const serving = (unit: UnitLike) => servesOn(organisation, unit.id, (one) => one === scope, day, filedIn)
-  const choices = unitChoices({
-    organisation, filedIn, day, ...words,
-    leave: serving,
-    // A type that serves one domain is offered, and said why it cannot take a second.
-    refuse: (unit) => (spans.has(unit.unitTypeId ?? '') || scopesServed(unit, filedIn).length === 0
-      ? undefined
-      : words.s('pick.servesOne', { type: typeName.get(unit.unitTypeId ?? '') ?? '' })),
-  })
+  const choices = servingChoicesOf(index, scope, day, words)
   return {
     scope, rows, through: through.length, choices,
     ...(worked ? { owner: { role, people: worked.owners.map((one) => one.person), ...(unitName !== undefined ? { unit: unitName } : {}) } } : {}),

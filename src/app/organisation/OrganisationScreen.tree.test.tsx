@@ -172,6 +172,8 @@ describe('the tree', () => {
     await screen.findByTestId('scope-retail')
     fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
+    // An organisation with no units has no unit to say serves it.
+    expect(screen.queryByTestId('new-scope-served-by')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.read('returns')).toBeDefined())
   })

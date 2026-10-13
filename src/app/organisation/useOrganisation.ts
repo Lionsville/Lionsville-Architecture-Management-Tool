@@ -34,7 +34,7 @@ import {
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
 import { removeContainerDiagram, toDiagram } from '../../model'
-import type { Command, DesignDiagram } from '../../model'
+import type { Command, DesignDiagram, ElementId } from '../../model'
 import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
 import { ShellError } from '../../platform/errors'
@@ -57,8 +57,12 @@ import type { InitialPage, ScopeSettingsPatch } from '../App'
 /** Which dialog is up. One at a time, because they all ask about one scope. */
 export type OrganisationDialog =
   | { kind: 'none' }
-  /** `withBoard` off makes a domain on purpose — a scope that files others and draws nothing itself. */
-  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean }
+  /**
+   * `withBoard` off makes a domain on purpose — a scope that files others and
+   * draws nothing itself. `servedBy`, the unit picked to serve it, linked once
+   * it is made (ADR-0036, amended 13 October 2026).
+   */
+  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean; servedBy?: ElementId }
   /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
   | { kind: 'newBoard'; path: ScopePath; name: string }
   | { kind: 'settings'; target: ScopeSummary }
@@ -150,7 +154,13 @@ export type Organisation = {
   setNewScopeName: (name: string) => void
   setNewScopeParent: (parent: ScopePath) => void
   setNewScopeWithBoard: (withBoard: boolean) => void
-  create: () => void
+  setNewScopeServedBy: (unitId: ElementId | undefined) => void
+  /**
+   * Make the scope the dialog asks for. `link` writes the unit picked to
+   * serve it, once the scope is there and entered; whatever it answers, the
+   * scope stays.
+   */
+  create: (link?: (path: ScopePath, unitId: ElementId, name: string) => Promise<void>) => void
   /**
    * Give a scope a board of its own. The organisation's, a domain's or a
    * team's: a landscape is a scope that draws, and nothing in the tree says
@@ -292,9 +302,8 @@ export function useOrganisation({
   const setNewScopeParent = useCallback((parent: ScopePath) => {
     setDialog((held) => (held.kind === 'newScope' ? { ...held, parent } : held))
   }, [])
-  const setNewScopeWithBoard = useCallback((withBoard: boolean) => {
-    setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held))
-  }, [])
+  const setNewScopeWithBoard = useCallback((withBoard: boolean) => setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held)), [])
+  const setNewScopeServedBy = useCallback((unitId: ElementId | undefined) => setDialog((held) => servedByPicked(held, unitId)), [])
   const addBoard = useCallback((path: ScopePath) => {
     setDialog({ kind: 'newBoard', path, name: s('shell.newDiagram') })
   }, [s])
@@ -318,11 +327,13 @@ export function useOrganisation({
    * **The ancestors are created too** when they are not there, as domains named
    * after their addresses, from the top down and before the new scope itself,
    * so an interrupted run leaves a tree that is whole as far as it got. A scope
-   * that draws is made with its first board, as the step that adds it.
+   * that draws is made with its first board, as the step that adds it. The
+   * unit picked to serve it is linked last, after the scope is said, so a link
+   * refused is the notice left standing.
    */
-  const create = useCallback(() => {
+  const create = useCallback((link?: (path: ScopePath, unitId: ElementId, name: string) => Promise<void>) => {
     if (dialog.kind !== 'newScope') return
-    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard }
+    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard, servedBy: dialog.servedBy }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void (async () => {
@@ -348,6 +359,7 @@ export function useOrganisation({
         await changeScope(scopes, path, () => [...boards, { type: 'scope.describe', patch: { activeDiagramId: fresh.activeDiagramId } }])
       }
       if (id) await entered(path, s('shell.scopeCreated', { name: wanted.name }))
+      if (id && wanted.servedBy !== undefined && link) await link(path, wanted.servedBy, wanted.name)
     })().catch((cause: unknown) => {
       // Where work is kept refusing is what the standing notice says, and it
       // is latched, so a burst says it once.
@@ -606,13 +618,13 @@ export function useOrganisation({
   return useMemo(() => ({
     tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
     tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
@@ -634,3 +646,9 @@ function settingsCommands(name: string, patch: ScopeSettingsPatch): ScopeCommand
   ]
 }
 
+
+/** The new-scope dialog with the unit picked to serve it, or none. Any other dialog stays as it is. */
+export function servedByPicked(held: OrganisationDialog, unitId: ElementId | undefined): OrganisationDialog {
+  if (held.kind !== 'newScope') return held
+  return { kind: 'newScope', parent: held.parent, name: held.name, withBoard: held.withBoard, ...(unitId !== undefined ? { servedBy: unitId } : {}) }
+}
