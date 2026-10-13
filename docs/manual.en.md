@@ -1642,9 +1642,18 @@ another scope is its far end, and is not drawn on a board here for it. A unit
 that serves neither this domain nor sits under a unit that does is marked, and
 is a check (below). **✕** on a chip takes a row kept here off again.
 
-**Show who is responsible**, in the top bar, names on every area, grouping and
-capability the units it is assigned to, and marks the ones nobody is. It is off
-until you turn it on, and only for as long as the page is open.
+**The unit responsible** is named on every area, grouping and capability a
+unit is assigned to, always: a small label beside its name, or on a
+capability's coverage line, with **+1**, **+2** where more units are, and
+every name in its tooltip. A unit outside the domain is drawn as a warning.
+The label is a button: it opens the home of the domain the unit serves, a
+menu of domains where it serves several or several units are assigned, and
+the unit where it is kept — on that scope's organisation chart — where it
+serves none. Pressing it does not pick the card.
+
+**Show who is responsible**, in the top bar, adds the other actors it is
+assigned to, that are not units, and marks the ones nobody is assigned. It is
+off until you turn it on, and only for as long as the page is open.
 
 **Delete**, at the foot of the inspector, removes what is selected and every row
 that ended on it. It is refused while anything is inside it, and says how much:

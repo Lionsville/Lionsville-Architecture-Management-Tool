@@ -127,6 +127,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.assignedFarEnd': 'Jede ist eine Zuweisung, die hier geführt wird. Eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende und wird dafür hier auf keiner Tafel gezeichnet.',
   'sheet.showResponsible': 'Zeigen, wer verantwortlich ist',
   'sheet.responsibleNobody': 'niemand',
+  'sheet.unitLabel': 'Verantwortlich: {units}. Öffnen, was sie bedienen',
+  'sheet.unitLabelMore': '+{count}',
+  'sheet.unitWhereKept': 'wo sie abgelegt ist',
 
   'sheet.switchedBoard': '{name} wird gezeigt, dort ist es gezeichnet',
 

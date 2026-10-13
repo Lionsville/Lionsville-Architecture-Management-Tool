@@ -1890,9 +1890,20 @@ Domäne bedient noch unter einer Einheit steht, die es tut, ist markiert und
 eine Prüfung (unten). **✕** auf einem Etikett nimmt eine hier geführte
 Zuweisung wieder weg.
 
-**Zeigen, wer verantwortlich ist**, in der oberen Leiste, nennt auf jedem
-Gebiet, jeder Gruppe und jeder Fähigkeit die Einheiten, denen es zugewiesen ist,
-und markiert die, denen niemand zugewiesen ist. Es ist aus, bis Sie es
+**Die verantwortliche Einheit** steht auf jedem Gebiet, jeder Gruppe und
+jeder Fähigkeit, die einer Einheit zugewiesen ist, immer: eine kleine
+Beschriftung neben dem Namen oder auf der Abdeckungszeile einer Fähigkeit,
+mit **+1**, **+2**, wo mehr Einheiten sind, und jedem Namen im Tooltip. Eine
+Einheit außerhalb der Domäne steht als Warnung da. Die Beschriftung ist eine
+Schaltfläche: Sie öffnet die Startseite der Domäne, die die Einheit bedient,
+ein Menü der Domänen, wo sie mehrere bedient oder mehrere Einheiten
+zugewiesen sind, und die Einheit dort, wo sie geführt wird — auf dem
+Organigramm dieses Bereichs —, wo sie keine bedient. Ein Druck darauf wählt
+die Karte nicht.
+
+**Zeigen, wer verantwortlich ist**, in der oberen Leiste, fügt die anderen
+Akteure hinzu, denen es zugewiesen ist und die keine Einheiten sind, und
+markiert die, denen niemand zugewiesen ist. Es ist aus, bis Sie es
 einschalten, und nur, solange die Seite offen ist.
 
 **Löschen**, am Fuß des Inspektors, entfernt, was ausgewählt ist, und jede

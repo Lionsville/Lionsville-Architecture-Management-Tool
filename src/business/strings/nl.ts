@@ -127,6 +127,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.assignedFarEnd': 'Elk is een toewijzing die hier wordt bijgehouden. Een eenheid die in een andere scope is ingedeeld is het verre eind ervan, en wordt daarvoor hier op geen bord getekend.',
   'sheet.showResponsible': 'Toon wie verantwoordelijk is',
   'sheet.responsibleNobody': 'niemand',
+  'sheet.unitLabel': 'Verantwoordelijk: {units}. Open wat ze bedienen',
+  'sheet.unitLabelMore': '+{count}',
+  'sheet.unitWhereKept': 'waar ze bewaard wordt',
 
   'sheet.switchedBoard': '{name} wordt getoond; daar staat het op',
 

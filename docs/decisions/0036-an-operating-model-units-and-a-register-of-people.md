@@ -2195,6 +2195,13 @@ choices *+ Unit* offers on a scope nobody serves yet. The link is the unit's
 scope is there; refused, the scope stays and the person is told where to set
 it.
 
+**The sheet leads to the scopes too.** An area, a grouping or a capability a
+unit answers for carries the unit's name always, not only behind *Show who is
+responsible*, and the name is a way out: to the home of the scope the unit
+serves, a choice of them where there are several, and the unit where it is
+kept where it serves none. The toggle keeps what it shows beyond that — the
+actors that are not units, and the functions nobody answers for.
+
 ## As built, 13 October 2026: the organisation is not a domain, and the links
 
 - **One rule.** `model/serving.scopesServed` never answers `""`
@@ -2219,6 +2226,19 @@ it.
   only read. The pick is held in the dialog's state; *Create* makes the scope,
   says so, and then writes the unit's `scopes` through `writeIn`, so a
   refusal's notice is the one left standing.
+- **The sheet's label.** `business` knows no tree, so the host's
+  `SheetResponsible` says what an actor is as a unit — its name and the
+  scopes it serves by name (`unit`) — and how to leave: `openScope` and
+  `openUnit`, which `app/units/sheetResponsible.ts` builds from the ways out
+  the workspace hands it (`SheetWaysOut`: the shell's `onGoHome`, and the
+  element page in the scope that keeps the unit, `unitLanding` where that is
+  the open one). The ways out are read when pressed, so a fresh pair per
+  render keeps the cached answer and the sheet is not laid out again.
+  `UnitLabel` (`business/ui/Responsible.tsx`) is its own button beside the
+  card's, never inside it — beside an area's name and a grouping's heading in
+  their row, and over a capability's coverage line — so the sheet's heights
+  and its picture do not change, and it stops the press so the card is not
+  picked.
 
 ## Open
 

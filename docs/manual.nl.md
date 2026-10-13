@@ -1782,10 +1782,20 @@ getekend. Een eenheid die dit domein niet bedient en ook niet onder een
 eenheid valt die dat wel doet, is gemarkeerd, en is een controle (hieronder).
 **✕** op een label haalt een toewijzing die hier wordt bijgehouden weer weg.
 
-**Toon wie verantwoordelijk is**, in de bovenbalk, noemt op elk gebied, elke
-groep en elke capability de eenheden waaraan het is toegewezen, en markeert
-die waaraan niemand is toegewezen. Het staat uit tot je het aanzet, en alleen
-zolang de pagina open is.
+**De verantwoordelijke eenheid** staat op elk gebied, elke groep en elke
+capability die aan een eenheid is toegewezen, altijd: een klein label naast
+de naam, of op de dekkingsregel van een capability, met **+1**, **+2** waar
+meer eenheden zijn, en elke naam in de tooltip. Een eenheid buiten het domein
+staat er als waarschuwing. Het label is een knop: het opent de startpagina
+van het domein dat de eenheid bedient, een menu van domeinen waar ze er
+meerdere bedient of meerdere eenheden zijn toegewezen, en de eenheid waar ze
+wordt bijgehouden — op het organogram van die scope — waar ze er geen bedient.
+Erop drukken kiest de kaart niet.
+
+**Toon wie verantwoordelijk is**, in de bovenbalk, voegt de andere actoren toe
+waaraan het is toegewezen en die geen eenheid zijn, en markeert die waaraan
+niemand is toegewezen. Het staat uit tot je het aanzet, en alleen zolang de
+pagina open is.
 
 **Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
 erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er

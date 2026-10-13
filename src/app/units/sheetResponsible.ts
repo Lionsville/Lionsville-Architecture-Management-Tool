@@ -17,6 +17,12 @@
  *
  * And who stops being what if an actor is deleted from the sheet: a unit's
  * assignments go with it (ADR-0036, amended 12 October 2026).
+ *
+ * And where a function's label leads (amended 13 October 2026): each unit's
+ * name and the scopes it serves (`model/serving.scopesServed`, never the
+ * organisation), a scope's home, and a unit where it is kept — the ways out
+ * the host hands in (`SheetResponsibleAt.open`), read when pressed, so a
+ * fresh pair per render does not lay the sheet out again.
  */
 import { createElement } from 'react'
 import type { Translate } from '../../i18n'
@@ -25,6 +31,7 @@ import type { HostModel } from '../../model/hostModel'
 import { deletionSummary } from '../../model/deletion'
 import { isUnit } from '../../model/units'
 import type { SheetResponsible } from '../../business/ui/FunctionInspector'
+import { scopesServed } from '../../model/serving'
 import { servesDomainOn } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -41,10 +48,18 @@ export type SheetResponsibleAt = {
   s: Translate
   /** Deleting units, as the host makes it (`useWorkspaceOwnership`, 3.6.2): absent, a unit deletes as any actor does. */
   unitDeletion?: (elementIds: readonly ElementId[]) => ReturnType<NonNullable<SheetResponsible['unitDeletion']>>
+  /** Where a function's label leads: a scope's home, and a unit in the scope that keeps it. Absent: the label opens nothing. */
+  open?: SheetWaysOut
 }
 
-/** Who may be made responsible on the open scope's sheet, and what is said of them. */
-export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
+/** The host's ways out of the sheet, for a function's label. */
+export type SheetWaysOut = {
+  home(path: ScopePath): void
+  unit(keptIn: ScopePath, unitId: ElementId): void
+}
+
+/** Who may be made responsible on the open scope's sheet, and what is said of them. `open` is read when a label is pressed. */
+export function sheetResponsibleOf(at: SheetResponsibleAt, open: () => SheetWaysOut | undefined = () => at.open): SheetResponsible {
   const { index, scope, model, day, scopeName, s } = at
   const here = organisationHere(index, scope, model)
   const { organisation } = here
@@ -64,6 +79,17 @@ export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
     name: (id) => units.get(id)?.name ?? index.lookup(id)?.name,
     serves: (actorId, functionId) => !units.has(actorId)
       || servesDomainOn(organisation, actorId, domainOf(functionId), day, filedIn),
+    unit: (actorId) => {
+      const unit = units.get(actorId)
+      return unit && { name: unit.name, serves: scopesServed(unit, filedIn).map((path) => ({ scope: path, name: scopeName(path) })) }
+    },
+    ...(at.open ? {
+      openScope: (path: string) => open()?.home(path),
+      openUnit: (actorId: ElementId) => {
+        const kept = filedIn(actorId)
+        if (kept !== undefined) open()?.unit(kept, actorId)
+      },
+    } : {}),
     rolesEnded: (actorId) => {
       const summary = deletionSummary(model, { elementIds: [actorId], connectionIds: [], domainGroups: [] }, day)
       if (summary.roles.length === 0 && summary.earlierAssignments === 0) return undefined
@@ -78,15 +104,21 @@ export function sheetResponsibleOf(at: SheetResponsibleAt): SheetResponsible {
   }
 }
 
-/** The same answer for the same model, index, scope and day: the sheet's memo is keyed on it. */
+/**
+ * The same answer for the same model, index, scope and day: the sheet's memo
+ * is keyed on it. The ways out are not in the key — the latest are kept and
+ * read when a label is pressed — only whether there are any.
+ */
 export function sheetResponsibleFor(at: SheetResponsibleAt): SheetResponsible {
   const held = kept.get(at.model)
   if (held && held.index === at.index && held.scope === at.scope && held.day === at.day && held.scopeName === at.scopeName && held.s === at.s
-    && held.unitDeletion === at.unitDeletion) {
+    && held.unitDeletion === at.unitDeletion && (held.open === undefined) === (at.open === undefined)) {
+    held.open = at.open
     return held.answer
   }
-  const answer = sheetResponsibleOf(at)
-  kept.set(at.model, { ...at, answer })
+  const entry: SheetResponsibleAt & { answer?: SheetResponsible } = { ...at }
+  const answer = sheetResponsibleOf(at, () => entry.open)
+  kept.set(at.model, Object.assign(entry, { answer }))
   return answer
 }
 const kept = new WeakMap<HostModel, SheetResponsibleAt & { answer: SheetResponsible }>()

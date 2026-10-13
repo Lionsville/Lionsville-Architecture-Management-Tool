@@ -129,4 +129,33 @@ describe('who is responsible, as the sheet is told', () => {
     expect(sheetResponsibleFor({ ...at })).toBe(first)
     expect(sheetResponsibleFor({ ...at, day: '2026-10-12' })).not.toBe(first)
   })
+
+  it('names each unit with the scopes it serves, never the organisation, and nothing for an actor that is not one', () => {
+    const top = indexScopes([
+      { path: '', model: { ...ROOT, elements: [...ROOT.elements, element('ops', 'Operations', { unitTypeId: 'ut-domain' })] } },
+      { path: 'shipping', model: SHIPPING }, { path: 'warehouse', model: WAREHOUSE },
+    ])
+    const responsible = sheetResponsibleOf({ ...at, index: top })
+    expect(responsible.unit?.('robotics')).toEqual({ name: 'Robotics', serves: [{ scope: 'warehouse', name: 'Warehouse' }] })
+    expect(responsible.unit?.('ops')).toEqual({ name: 'Operations', serves: [] })
+    expect(responsible.unit?.('carriers')).toBeUndefined()
+    // No ways out handed in: the label opens nothing.
+    expect(responsible.openScope).toBeUndefined()
+  })
+
+  it('opens a scope\'s home, and a unit in the scope that keeps it, by the latest ways out the host handed in', () => {
+    const went: string[] = []
+    const ways = (tag: string) => ({ home: (path: string) => went.push(`${tag} home ${path}`), unit: (kept: string, id: string) => went.push(`${tag} unit ${kept} ${id}`) })
+    const model: HostModel = { ...SHIPPING }
+    const first = sheetResponsibleFor({ ...at, model, open: ways('a') })
+    first.openScope?.('warehouse')
+    first.openUnit?.('robotics')
+    // A fresh pair per render keeps the answer, so the sheet is not laid out again, and is the pair used.
+    const again = sheetResponsibleFor({ ...at, model, open: ways('b') })
+    expect(again).toBe(first)
+    again.openUnit?.('tracking')
+    first.openUnit?.('nowhere')
+    expect(went).toEqual(['a home warehouse', 'a unit warehouse robotics', 'b unit shipping tracking'])
+    expect(sheetResponsibleFor({ ...at, model })).not.toBe(first)
+  })
 })

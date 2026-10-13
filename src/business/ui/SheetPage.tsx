@@ -91,7 +91,7 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
 import type { FunctionInspectorProps, NewLane, SheetActions, SheetResponsible, Supporter } from './FunctionInspector'
-import { ResponsibleChips, useWho } from './Responsible'
+import { ResponsibleChips, UnitLabel, useWho } from './Responsible'
 import type { Who } from './Responsible'
 import { SheetBar } from './SheetBar'
 import { LaneDialog } from './LaneDialog'
@@ -1230,6 +1230,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, who, t
           {area.element.name}
           <ResponsibleChips who={who} functionId={area.element.id} t={t} />
         </Typography>
+        <UnitLabel who={who} functionId={area.element.id} t={t} sx={{ maxWidth: '40%', flexShrink: 1, minWidth: 0 }} />
         {area.domain !== undefined && (
           <Chip size="small" label={area.domain} sx={{ height: 18, fontSize: 9.5 }} />
         )}
@@ -1258,19 +1259,23 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, who, t
             data-element-id={group.element.id}
             sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}
           >
-            <Box
-              component="button"
-              type="button"
-              onClick={() => onSelect(group.element.id)}
-              sx={{
-                appearance: 'none', cursor: 'pointer', font: 'inherit', background: 'none',
-                border: 0, p: 0, mb: 0.75, textAlign: 'left', width: '100%',
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: 'text.secondary',
-              }}
-            >
-              {group.element.name}
-              <ResponsibleChips who={who} functionId={group.element.id} t={t} />
+            {/* The unit's label beside the heading, in its row: never inside the heading's button. */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mb: 0.75 }}>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => onSelect(group.element.id)}
+                sx={{
+                  appearance: 'none', cursor: 'pointer', font: 'inherit', background: 'none',
+                  border: 0, p: 0, textAlign: 'left', flex: 1, minWidth: 0,
+                  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
+              >
+                {group.element.name}
+                <ResponsibleChips who={who} functionId={group.element.id} t={t} />
+              </Box>
+              <UnitLabel who={who} functionId={group.element.id} t={t} sx={{ maxWidth: '45%', flexShrink: 0 }} />
             </Box>
             <Box sx={capabilityGrid(span)}>
               {group.capabilities.map((capability) => (
@@ -1350,29 +1355,32 @@ function CapabilityCard({ capability, onSelect, who, t }: {
     : coverage.coverage === 'manual' ? 'text.secondary' : 'warning.main'
 
   return (
-    <Box
-      component="button"
-      type="button"
-      data-testid={`sheet-capability-${capability.element.id}`}
-      data-element-id={capability.element.id}
-      onClick={() => onSelect(capability.element.id)}
-      sx={{
-        // `font: inherit` does not bring the colour with it: a button's text is
-        // the browser's `buttontext`, black in every theme, which on the dark
-        // ground is a card with a coverage line and no name.
-        appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', width: '100%',
-        // A refinement of a capability sits one step in, so the tree is
-        // readable without a second kind of card for it.
-        ml: (capability.depth - 1) * 1.5,
-        bgcolor: 'background.default', border: 1, borderColor: 'divider', borderRadius: 0.75,
-        px: 1, py: 0.75,
-      }}
-    >
-      <Typography sx={{ fontSize: 11.5 }}>{capability.element.name}</Typography>
-      <Typography data-testid={`sheet-coverage-${capability.element.id}`} sx={{ fontSize: 10, color: colour }}>
-        {label}
-      </Typography>
-      <ResponsibleChips who={who} functionId={capability.element.id} t={t} />
+    // A refinement of a capability sits one step in, so the tree is readable
+    // without a second kind of card for it. The unit's label sits on the
+    // coverage line, the card's last, beside the card's button and not in it.
+    <Box sx={{ position: 'relative', ml: (capability.depth - 1) * 1.5 }}>
+      <Box
+        component="button"
+        type="button"
+        data-testid={`sheet-capability-${capability.element.id}`}
+        data-element-id={capability.element.id}
+        onClick={() => onSelect(capability.element.id)}
+        sx={{
+          // `font: inherit` does not bring the colour with it: a button's text is
+          // the browser's `buttontext`, black in every theme, which on the dark
+          // ground is a card with a coverage line and no name.
+          appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', width: '100%',
+          bgcolor: 'background.default', border: 1, borderColor: 'divider', borderRadius: 0.75,
+          px: 1, py: 0.75,
+        }}
+      >
+        <Typography sx={{ fontSize: 11.5 }}>{capability.element.name}</Typography>
+        <ResponsibleChips who={who} functionId={capability.element.id} t={t} />
+        <Typography data-testid={`sheet-coverage-${capability.element.id}`} sx={{ fontSize: 10, color: colour }}>
+          {label}
+        </Typography>
+      </Box>
+      <UnitLabel who={who} functionId={capability.element.id} t={t} sx={{ position: 'absolute', right: 6, bottom: 5, maxWidth: '55%' }} />
     </Box>
   )
 }

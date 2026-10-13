@@ -18,6 +18,14 @@ is.
 name under **Served by** — on a home or in a scope's **Settings…** — to open
 it where it is kept, on that scope's organisation chart where it has one.
 
+**The sheet names the unit responsible, and goes where it serves.** Every
+area, grouping and capability a unit is responsible for now shows that unit
+on the business sheet, without turning anything on — with **+1** where there
+are more. Press it to go to the home of the domain it serves, or pick one
+from a menu where there are several; a unit that serves no domain opens where
+it is kept. **Show who is responsible** still adds the other actors, and
+marks what nobody is responsible for.
+
 **Say who serves a new domain as you make it.** **New domain or team…** has a
 **Served by** field wherever the organisation has units. The unit picked is
 linked once the scope is made; where you may not change the scope that keeps

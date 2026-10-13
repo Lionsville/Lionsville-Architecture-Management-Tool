@@ -173,6 +173,16 @@ export type SheetResponsible = {
   /** False only for a unit that serves neither the function's domain nor sits under one that does. */
   serves(actorId: ElementId, functionId: ElementId): boolean
   /**
+   * The unit an actor is, where it is one (ADR-0036, amended 13 October
+   * 2026): what the label on a function names, and the scopes it serves
+   * itself, each with its name. Nothing for an actor that is not a unit.
+   */
+  unit?(actorId: ElementId): { name: string; serves: readonly { scope: string; name: string }[] } | undefined
+  /** A scope's home, opened from the label of a unit that serves it. Absent: the label opens nothing. */
+  openScope?(scope: string): void
+  /** A unit where it is kept, opened from the label of a unit that serves no scope. */
+  openUnit?(actorId: ElementId): void
+  /**
    * Who stops being what if this actor is deleted — a unit's assignments go
    * with it (ADR-0036, amended 12 October 2026) — drawn by the host, which
    * knows the people and the roles; nothing where deleting it ends no role,

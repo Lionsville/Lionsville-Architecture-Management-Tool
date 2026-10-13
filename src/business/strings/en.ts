@@ -147,6 +147,9 @@ export const EN = {
   'sheet.assignedFarEnd': 'Each is an assigned row kept here. A unit filed in another scope is its far end, and is drawn on no board here for it.',
   'sheet.showResponsible': 'Show who is responsible',
   'sheet.responsibleNobody': 'nobody',
+  'sheet.unitLabel': 'Responsible: {units}. Open where they serve',
+  'sheet.unitLabelMore': '+{count}',
+  'sheet.unitWhereKept': 'where it is kept',
 
   // --- where an element is actually drawn ----------------------------------
   'sheet.switchedBoard': 'Showing {name}, which draws it',

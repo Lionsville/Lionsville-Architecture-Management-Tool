@@ -617,3 +617,68 @@ describe('who is responsible, shown on the sheet', () => {
     expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
   })
 })
+
+/**
+ * The unit's label (ADR-0036, amended 13 October 2026): always there on a
+ * function a unit answers for, a button beside the card's own, opening where
+ * the unit serves — a menu where there are several — or the unit where it is
+ * kept where it serves nothing. The toggle keeps the rest.
+ */
+describe('the unit on each function, a way to where it serves', () => {
+  const opened: string[] = []
+  const responsible: SheetResponsible = {
+    choices: [],
+    name: (id) => ({ robotics: 'Robotics', data: 'Data' } as Record<string, string>)[id],
+    serves: (actor) => actor !== 'robotics',
+    unit: (id) => ({
+      'warehouse-team': { name: 'Warehouse team', serves: [{ scope: 'warehouse', name: 'Warehouse' }] },
+      robotics: { name: 'Robotics', serves: [] },
+      data: { name: 'Data', serves: [{ scope: 'shipping', name: 'Shipping' }, { scope: 'billing', name: 'Billing' }] },
+    } as Record<string, { name: string; serves: { scope: string; name: string }[] }>)[id],
+    openScope: (scope) => opened.push(`home:${scope}`),
+    openUnit: (id) => opened.push(`unit:${id}`),
+  }
+  const assigned: readonly Relation[] = [
+    { id: 'a9', type: 'assigned', sourceId: 'robotics', targetId: 'invoice' },
+    { id: 'a8', type: 'assigned', sourceId: 'warehouse-team', targetId: 'fulfilment' },
+    { id: 'a7', type: 'assigned', sourceId: 'data', targetId: 'warehousing' },
+    { id: 'a6', type: 'assigned', sourceId: 'robotics', targetId: 'warehousing' },
+  ]
+
+  it('names the unit without the toggle, and opens the home of the scope it serves without choosing the card', async () => {
+    opened.length = 0
+    const onHandle = vi.fn()
+    open({ responsible, elsewhere: assigned, onHandle })
+    expect(screen.getByTestId('sheet-unit-fulfilment').textContent).toBe('Warehouse team')
+    expect(screen.getByTestId('sheet-unit-packing').textContent).toBe('Warehouse team')
+    expect(screen.getByTestId('sheet-unit-fulfilment').getAttribute('aria-label')).toBe('Responsible: Warehouse team. Open where they serve')
+    fireEvent.click(screen.getByTestId('sheet-unit-fulfilment'))
+    expect(opened).toEqual(['home:warehouse'])
+    // The area's header was not chosen by it.
+    expect((onHandle.mock.calls.at(-1)?.[0] as { selectedId?: string } | undefined)?.selectedId).toBeUndefined()
+    // A unit that serves nothing opens where it is kept, and is drawn as outside here.
+    fireEvent.click(screen.getByTestId('sheet-unit-invoice'))
+    expect(opened).toEqual(['home:warehouse', 'unit:robotics'])
+    expect(screen.getByTestId('sheet-unit-invoice').getAttribute('data-sheet-unit')).toBe('outside')
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('says +N where several answer, every name in its title, and offers each place in a menu', () => {
+    opened.length = 0
+    open({ responsible, elsewhere: assigned })
+    const label = screen.getByTestId('sheet-unit-warehousing')
+    expect(label.textContent).toBe('Data +1')
+    expect(label.getAttribute('title')).toBe('Data, Robotics (outside this domain)')
+    fireEvent.click(label)
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent)).toEqual(['ShippingData', 'BillingData', 'Roboticswhere it is kept'])
+    fireEvent.click(screen.getByRole('menuitem', { name: /Billing/ }))
+    expect(opened).toEqual(['home:billing'])
+  })
+
+  it('keeps the toggle for the actors that are not units, and nobody', () => {
+    open({ responsible, elsewhere: assigned })
+    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
+    expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
+    expect(screen.getByTestId('sheet-responsible-dunning').textContent).toBe('nobody')
+  })
+})

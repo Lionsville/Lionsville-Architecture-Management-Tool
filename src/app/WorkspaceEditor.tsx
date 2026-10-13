@@ -15,6 +15,7 @@ import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { sheetResponsibleFor } from './units/sheetResponsible'
+import type { SheetWaysOut } from './units/sheetResponsible'
 import type { TechnologyLandscapePage as TechnologyLandscapePageShape } from '../technology/ui/TechnologyLandscapePage'
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
@@ -231,6 +232,7 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
         index: parts.props.tree.index, scope: parts.props.project.path, model: session.model, day: parts.todayDay,
         scopeName: readings.scopeLabel, s: parts.props.shell.s,
         ...(ownership.unitDeletion ? { unitDeletion: ownership.unitDeletion } : {}),
+        open: sheetWaysOut(parts),
       })}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
@@ -240,6 +242,24 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       notify={parts.props.shell.notify}
     />
   )
+}
+
+/**
+ * Where a function's label on the sheet leads (ADR-0036, amended 13 October
+ * 2026): a scope's home, as a crumb goes there; a unit where it is kept, on
+ * that scope's chart where it has one, as a link to an element lands — here,
+ * through the open scope's own pages, or elsewhere by opening that scope.
+ */
+function sheetWaysOut(parts: WorkspaceParts): SheetWaysOut {
+  const { navigation, project } = parts.props
+  return {
+    home: navigation.onGoHome,
+    unit: (keptIn, unitId) => {
+      const to = { page: 'element' as const, id: unitId }
+      if (keptIn === project.path) parts.show({ ...to, ...unitLanding(parts.session.current(), to), scope: keptIn })
+      else navigation.onOpenScope?.(keptIn, to)
+    },
+  }
 }
 
 function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
