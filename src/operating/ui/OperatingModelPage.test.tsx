@@ -118,13 +118,13 @@ describe('the operating model\'s page', () => {
     await bringInScrum()
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
     const inspector = () => screen.getByTestId('operating-inspector')
-    // Scrum Master, the second column as it came in, picked and moved left.
+    // Scrum Master, the second column as it came in, picked by its heading and moved left.
     expect(headings()).toEqual(['PO', 'SM', 'Dev'])
-    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
-    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
-    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Scrum Master' }))
+    expect(screen.getByRole('button', { name: 'Scrum Master' }).getAttribute('aria-pressed')).toBe('true')
     expect(within(inspector()).getByText('2 of 3')).toBeTruthy()
-    fireEvent.click(within(inspector()).getByRole('button', { name: 'Move up' }))
+    expect(within(inspector()).queryByRole('button', { name: 'Move up' })).toBeNull()
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Move left' }))
     expect(sent.at(-1)?.type).toBe('transaction')
     expect(headings()).toEqual(['SM', 'PO', 'Dev'])
     expect(within(inspector()).getByText('1 of 3')).toBeTruthy()

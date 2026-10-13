@@ -2082,10 +2082,10 @@ verantwoordelijkheden waarin een van hen een aandeel heeft, en houdt
 laatste kolom leest nog steeds elke rol, getoond of niet. Wie het tabblad
 verlaat en terugkomt, houdt wat gekozen was.
 
-De matrix opent in de **eigen volgorde** van de organisatie. Kies een rol en
-druk in haar inspector op **Omhoog** of **Omlaag** om haar kolom naar links
-of rechts te schuiven; kies een verantwoordelijkheid om haar te schuiven
-tussen die van haar groep; druk op ↑ en ↓ in de kop van een groep om de hele
+De matrix opent in de **eigen volgorde** van de organisatie. Druk op de kop
+van een rol in de matrix en dan in haar inspector op **Naar links** of **Naar
+rechts** om haar kolom te schuiven; druk op de naam van een
+verantwoordelijkheid om haar te schuiven tussen die van haar groep; druk op ↑ en ↓ in de kop van een groep om de hele
 groep te schuiven. Elke verschuiving is één stap die ⌘Z terugdraait. Iets
 nieuws staat achteraan tot het geschoven wordt. **A–Z** toont de rollen, de
 groepen en de verantwoordelijkheden in plaats daarvan op naam, en laat de

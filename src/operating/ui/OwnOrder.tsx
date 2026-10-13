@@ -5,7 +5,8 @@
  * A role's or a responsibility's place in the organisation's own order, in its
  * inspector: where it stands, and *Move up* and *Move down*, each one step
  * that renumbers the list (`moveRole`, `moveResponsibility`). A role's order
- * is the matrix's columns, left to right; a responsibility moves among those
+ * is the matrix's columns, left to right, so its buttons say *Move left* and
+ * *Move right*; a responsibility moves among those
  * of its own group. The matrix shows this order unless A–Z is chosen over it.
  */
 import Box from '@mui/material/Box'
@@ -29,6 +30,8 @@ export function RoleOrder({ role, model, readOnly, dispatch }: { role: Role; mod
       guide="operating.roleOrder" place={t('operating.roleOrderAt', { place: at + 1, count: ordered.length })}
       hint={t('operating.roleOrderHint')} readOnly={readOnly}
       up={moveRole(model, role.id, -1)} down={moveRole(model, role.id, 1)} dispatch={dispatch}
+      // A role's place is a column: earlier is left.
+      words={['operating.orderLeft', 'operating.orderRight']}
     />
   )
 }
@@ -50,9 +53,10 @@ export function ResponsibilityOrder({ responsibility, model, readOnly, dispatch 
   )
 }
 
-function Place({ guide, place, hint, readOnly, up, down, dispatch }: {
+function Place({ guide, place, hint, readOnly, up, down, dispatch, words = ['operating.orderUp', 'operating.orderDown'] }: {
   guide: string; place: string; hint: string; readOnly: boolean
   up: Command | undefined; down: Command | undefined; dispatch(command: Command): void
+  words?: readonly ['operating.orderUp' | 'operating.orderLeft', 'operating.orderDown' | 'operating.orderRight']
 }) {
   const { t } = useStrings()
   return (
@@ -62,10 +66,10 @@ function Place({ guide, place, hint, readOnly, up, down, dispatch }: {
       {!readOnly && (
         <Box data-guide={guide} sx={{ display: 'flex', gap: 1, my: 0.5 }}>
           <Button size="small" variant="outlined" disabled={!up} onClick={() => up && dispatch(up)} sx={{ textTransform: 'none' }}>
-            {t('operating.orderUp')}
+            {t(words[0])}
           </Button>
           <Button size="small" variant="outlined" disabled={!down} onClick={() => down && dispatch(down)} sx={{ textTransform: 'none' }}>
-            {t('operating.orderDown')}
+            {t(words[1])}
           </Button>
         </Box>
       )}

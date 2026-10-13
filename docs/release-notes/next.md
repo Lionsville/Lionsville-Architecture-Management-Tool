@@ -30,3 +30,7 @@ marks what nobody is responsible for.
 **Served by** field wherever the organisation has units. The unit picked is
 linked once the scope is made; where you may not change the scope that keeps
 the unit, the scope is made anyway and a notice says the unit was not linked.
+
+**Order the roles from the Responsibilities matrix.** Press a role's heading
+to pick it, then press **Move left** or **Move right** in the panel on the
+right. Before, you had to pick the role on the **Units and roles** tab first.

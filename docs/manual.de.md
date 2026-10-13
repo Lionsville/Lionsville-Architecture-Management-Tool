@@ -2205,10 +2205,10 @@ behält die gewählten Gruppen; ist nichts gewählt, steht alles da. Die letzte
 Spalte liest weiterhin jede Rolle, gezeigt oder nicht. Wer den Reiter verlässt
 und zurückkommt, behält, was gewählt war.
 
-Die Matrix öffnet in der **eigenen Reihenfolge** der Organisation. Wählen Sie
-eine Rolle und drücken Sie in ihrem Inspektor **Nach oben** oder **Nach
-unten**, um ihre Spalte nach links oder rechts zu rücken; wählen Sie eine
-Verantwortung, um sie unter denen ihrer Gruppe zu rücken; drücken Sie ↑ und ↓
+Die Matrix öffnet in der **eigenen Reihenfolge** der Organisation. Drücken
+Sie in der Matrix auf die Kopfzeile einer Rolle und in ihrem Inspektor auf
+**Nach links** oder **Nach rechts**, um ihre Spalte zu rücken; drücken Sie
+auf den Namen einer Verantwortung, um sie unter denen ihrer Gruppe zu rücken; drücken Sie ↑ und ↓
 in der Kopfzeile einer Gruppe, um die ganze Gruppe zu rücken. Jede
 Verschiebung ist ein Schritt, den ⌘Z zurücknimmt. Etwas Neues steht zuletzt,
 bis es verschoben wird. **A–Z** zeigt die Rollen, die Gruppen und die

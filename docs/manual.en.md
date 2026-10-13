@@ -1918,9 +1918,9 @@ picked; with nothing picked, everything is shown. The last column still reads
 every role, shown or not. Leaving the tab and coming back keeps what was
 picked.
 
-The matrix opens in the organisation's **own order**. Pick a role and press
-**Move up** or **Move down** in its inspector to move its column left or
-right; pick a responsibility to move it among those of its group; press the
+The matrix opens in the organisation's **own order**. Press a role's heading
+in the matrix and press **Move left** or **Move right** in its inspector to
+move its column; press a responsibility's name to move it among those of its group; press the
 ↑ and ↓ on a group's heading to move the whole group. Each move is one step
 that ⌘Z takes back. Something new stands last until it is moved. **A–Z**
 shows the roles, the groups and the responsibilities by name instead, and

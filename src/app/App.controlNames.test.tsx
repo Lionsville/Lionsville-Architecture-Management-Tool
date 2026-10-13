@@ -372,11 +372,10 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   ['a responsibility picked', ['operating.responsibilityOrder'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
-    fireEvent.click(within(screen.getByRole('table')).getAllByRole('button', { pressed: false })[0])
+    fireEvent.click(within(screen.getAllByRole('rowheader')[0]).getByRole('button'))
   }],
   ['a role picked', ['operating.roleOrder'], async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
-    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
+    fireEvent.click(within(screen.getByRole('table')).getByRole('button', { name: 'Scrum Master' }))
   }]],
   // An organisation chart, made on a landscape's home: the example has no
   // units, and the outline, the bar and the summary beside it are drawn all the same.

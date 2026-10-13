@@ -11,7 +11,8 @@
  * Over it, a way of looking (`matrixView`): the roles and groups kept, and
  * whether it goes in the organisation's own order or by name. In the own
  * order a group's heading moves the group up or down (`moveGroup`); a role or
- * a responsibility moves in its inspector. The check still reads every role,
+ * a responsibility moves in its inspector, opened by pressing its column's
+ * heading or its row's name. The check still reads every role,
  * kept or not.
  */
 import Autocomplete from '@mui/material/Autocomplete'
@@ -80,8 +81,16 @@ export function RaciMatrix({ model, readOnly, selected, onSelect, dispatch, make
             <tr>
               <Box component="th" sx={{ ...cell, border: 0 }} />
               {roles.map((role) => (
-                <Box component="th" key={role.id} scope="col" sx={{ ...cell, fontWeight: 700, minWidth: 34 }}>
-                  <Tooltip title={role.name}><span>{roleHeading(role)}</span></Tooltip>
+                <Box component="th" key={role.id} scope="col" sx={{ ...cell, fontWeight: 700, minWidth: 34, bgcolor: selected === role.id ? 'action.selected' : undefined }}>
+                  <Tooltip title={role.name}>
+                    <Button
+                      size="small" onClick={() => onSelect(role.id)} aria-pressed={selected === role.id} aria-label={role.name}
+                      data-testid={`heading-${role.id}`}
+                      sx={{ textTransform: 'none', p: 0, minWidth: 0, fontWeight: 700, fontSize: 12, color: 'text.primary' }}
+                    >
+                      {roleHeading(role)}
+                    </Button>
+                  </Tooltip>
                 </Box>
               ))}
               <Box component="th" scope="col" sx={{ ...cell, textAlign: 'left' }}>{t('operating.check')}</Box>

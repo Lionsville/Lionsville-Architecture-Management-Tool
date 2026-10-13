@@ -2150,7 +2150,8 @@ was added. It is written by `role.update` and `responsibility.update` and kept
 in the folder's lists with the format unchanged at 12.
 
 - **A role** moves up or down in its inspector (`moveRole`). Its place is the
-  matrix's columns, left to right.
+  matrix's columns, left to right. Since 3.6.5, pressing a column's heading
+  picks the role, and its buttons say *Move left* and *Move right*.
 - **A responsibility** moves up or down among those of its own group
   (`moveResponsibility`), past whatever of other groups stands between.
 - **A group** stands where its first responsibility does. The arrows on its
