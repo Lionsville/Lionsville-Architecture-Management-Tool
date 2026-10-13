@@ -352,9 +352,21 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     'operating.groupOrder',
   ], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+  }]],
+  // A journey of its own, so the one above stays well inside its time on a slow
+  // runner: Scrum brought in, then a responsibility picked in the matrix and a
+  // role, each with its place in the own order.
+  [['the operating model with a library in it', [], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('open-operating'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Start from a library' }))
+    const dialog = await screen.findByTestId('library-dialog')
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Scrum Team' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Bring in 8 items/ }))
+    await waitFor(() => expect(screen.queryByTestId('library-dialog')).toBeNull())
   }],
-  // A responsibility picked in the matrix, and a role, each with its place in the own order.
   ['a responsibility picked', ['operating.responsibilityOrder'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
     fireEvent.click(within(screen.getByRole('table')).getAllByRole('button', { pressed: false })[0])
   }],
   ['a role picked', ['operating.roleOrder'], async () => {
