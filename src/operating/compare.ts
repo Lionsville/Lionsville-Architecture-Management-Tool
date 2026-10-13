@@ -28,8 +28,9 @@
  * and a move since is a difference, said of the organisation's types by their
  * names now.
  *
- * A unit type's `order` — where it stands in its lane — is the organisation's
- * alone: a library has none, so it is never a difference.
+ * A unit type's `order` — where it stands in its lane — and a role's or a
+ * responsibility's are the organisation's alone: a library has none, so they
+ * are never a difference.
  */
 import type { BasedOn, Placed, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { slotRange } from '../model/operatingModel'

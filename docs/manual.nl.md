@@ -2057,11 +2057,18 @@ wording gaat door allebei heen.
 
 Boven de matrix houdt **Rollen** de kolommen van de gekozen rollen over en de
 verantwoordelijkheden waarin een van hen een aandeel heeft, en houdt
-**Groepen** de gekozen groepen over; is niets gekozen, dan staat alles er.
-**A–Z** zet de rollen, de groepen en de verantwoordelijkheden in elke groep op
-naam, **Zoals toegevoegd** in de volgorde waarin ze zijn toegevoegd. De laatste
-kolom leest nog steeds elke rol, getoond of niet. Wie het tabblad verlaat en
-terugkomt, houdt wat gekozen was; niets ervan verandert het model.
+**Groepen** de gekozen groepen over; is niets gekozen, dan staat alles er. De
+laatste kolom leest nog steeds elke rol, getoond of niet. Wie het tabblad
+verlaat en terugkomt, houdt wat gekozen was.
+
+De matrix opent in de **eigen volgorde** van de organisatie. Kies een rol en
+druk in haar inspector op **Omhoog** of **Omlaag** om haar kolom naar links
+of rechts te schuiven; kies een verantwoordelijkheid om haar te schuiven
+tussen die van haar groep; druk op ↑ en ↓ in de kop van een groep om de hele
+groep te schuiven. Elke verschuiving is één stap die ⌘Z terugdraait. Iets
+nieuws staat achteraan tot het geschoven wordt. **A–Z** toont de rollen, de
+groepen en de verantwoordelijkheden in plaats daarvan op naam, en laat de
+eigen volgorde zoals ze is.
 
 ### Bibliotheken
 

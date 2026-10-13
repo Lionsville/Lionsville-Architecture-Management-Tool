@@ -2178,12 +2178,19 @@ verweigert es — ein Modell in Arbeit geht durch beides hindurch.
 
 Über der Matrix behält **Rollen** die Spalten der gewählten Rollen und die
 Verantwortungen, an denen eine von ihnen einen Anteil hat, und **Gruppen**
-behält die gewählten Gruppen; ist nichts gewählt, steht alles da. **A–Z**
-ordnet die Rollen, die Gruppen und die Verantwortungen jeder Gruppe nach Namen,
-**Wie hinzugefügt** in der Reihenfolge, in der sie hinzugefügt wurden. Die
-letzte Spalte liest weiterhin jede Rolle, gezeigt oder nicht. Wer den Reiter
-verlässt und zurückkommt, behält, was gewählt war; nichts davon ändert das
-Modell.
+behält die gewählten Gruppen; ist nichts gewählt, steht alles da. Die letzte
+Spalte liest weiterhin jede Rolle, gezeigt oder nicht. Wer den Reiter verlässt
+und zurückkommt, behält, was gewählt war.
+
+Die Matrix öffnet in der **eigenen Reihenfolge** der Organisation. Wählen Sie
+eine Rolle und drücken Sie in ihrem Inspektor **Nach oben** oder **Nach
+unten**, um ihre Spalte nach links oder rechts zu rücken; wählen Sie eine
+Verantwortung, um sie unter denen ihrer Gruppe zu rücken; drücken Sie ↑ und ↓
+in der Kopfzeile einer Gruppe, um die ganze Gruppe zu rücken. Jede
+Verschiebung ist ein Schritt, den ⌘Z zurücknimmt. Etwas Neues steht zuletzt,
+bis es verschoben wird. **A–Z** zeigt die Rollen, die Gruppen und die
+Verantwortungen stattdessen nach Namen und lässt die eigene Reihenfolge, wie
+sie ist.
 
 ### Bibliotheken
 

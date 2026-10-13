@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { apply } from '../model/reducer'
 import {
   addSlot, cycleRaci, editResponsibility, editRole, editUnitType, itemOf, newResponsibility, newRole, newUnitType,
-  moveUnitType, removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors,
+  moveGroup, moveResponsibility, moveRole, moveUnitType, removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors,
   setWithin,
 } from './edit'
 import { applyAll, empty, listsOf } from './testing'
@@ -175,5 +175,52 @@ describe('moving a unit type along its lane', () => {
     // Alone in its lane, and alone where nothing sits.
     expect(moveUnitType(listsOf(model), 'ut-2', 1)).toBeUndefined()
     expect(moveUnitType(listsOf(model), 'ut-5', 0)).toBeUndefined()
+  })
+})
+
+describe('the organisation\'s own order of roles and responsibilities', () => {
+  const model = () => applyAll(empty(), [
+    { type: 'role.add', role: { id: 'ro-1', name: 'Lead', duties: [] } },
+    { type: 'role.add', role: { id: 'ro-2', name: 'Dev', duties: [] } },
+    { type: 'role.add', role: { id: 'ro-3', name: 'Ops', duties: [] } },
+    { type: 'responsibility.add', responsibility: { id: 'rs-1', name: 'Code', group: 'Build' } },
+    { type: 'responsibility.add', responsibility: { id: 'rs-2', name: 'Plan', group: 'Run' } },
+    { type: 'responsibility.add', responsibility: { id: 'rs-3', name: 'Test', group: 'Build' } },
+    { type: 'responsibility.add', responsibility: { id: 'rs-4', name: 'Budget' } },
+    { type: 'responsibility.add', responsibility: { id: 'rs-5', name: 'Watch', group: 'Run' } },
+  ])
+  const orderOf = (held: ReturnType<typeof model>, kind: 'roles' | 'responsibilities') =>
+    listsOf(held)[kind].map((one) => [one.id, one.order])
+  const after = (held: ReturnType<typeof model>, step: ReturnType<typeof moveRole>) => {
+    const result = apply(held, step!)
+    if (!result.ok) throw new Error('refused')
+    return result
+  }
+
+  it('moves a role one place as one step, numbering every role, and one undo takes it back', () => {
+    const before = model()
+    const result = after(before, moveRole(listsOf(before), 'ro-3', -1))
+    expect(orderOf(result.model, 'roles')).toEqual([['ro-1', 1], ['ro-2', 3], ['ro-3', 2]])
+    const back = apply(result.model, result.inverse)
+    expect(back.ok && orderOf(back.model, 'roles')).toEqual(orderOf(before, 'roles'))
+    expect(moveRole(listsOf(before), 'ro-1', -1)).toBeUndefined()
+    expect(moveRole(listsOf(before), 'ro-3', 1)).toBeUndefined()
+  })
+
+  it('moves a responsibility past the next one of its own group, over those of other groups between them', () => {
+    const before = model()
+    const result = after(before, moveResponsibility(listsOf(before), 'rs-3', -1))
+    expect(orderOf(result.model, 'responsibilities').map(([id, order]) => `${id}:${order}`)).toEqual(['rs-1:2', 'rs-2:3', 'rs-3:1', 'rs-4:4', 'rs-5:5'])
+    expect(moveResponsibility(listsOf(before), 'rs-1', -1)).toBeUndefined()
+    expect(moveResponsibility(listsOf(before), 'rs-4', 1)).toBeUndefined()
+  })
+
+  it('moves a group past the one beside it, its responsibilities in their order, the ungrouped staying last', () => {
+    const before = model()
+    const result = after(before, moveGroup(listsOf(before), 'Run', -1))
+    const ordered = [...listsOf(result.model).responsibilities].sort((a, b) => a.order! - b.order!).map((one) => one.id)
+    expect(ordered).toEqual(['rs-2', 'rs-5', 'rs-1', 'rs-3', 'rs-4'])
+    expect(moveGroup(listsOf(before), 'Build', -1)).toBeUndefined()
+    expect(moveGroup(listsOf(before), 'Run', 1)).toBeUndefined()
   })
 })

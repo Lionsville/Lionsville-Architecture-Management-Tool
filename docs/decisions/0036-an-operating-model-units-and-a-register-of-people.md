@@ -2136,6 +2136,29 @@ stand-in of the unit in another scope stays a stand-in. The organisation
 chart offers no Delete of its own: a unit is deleted from a board, a sheet or
 its inspector.
 
+## As built, 3.6.4: the organisation's own order of roles and responsibilities
+
+The Responsibilities matrix showed its roles and responsibilities in the order
+they were added; 3.6.3 put a filter and A–Z over it. A role and a
+responsibility now carry an optional `order`, as a unit type does in its lane:
+the organisation's own decision, absent until somebody moves one, so a library
+has none and *compare* never reads it (`model/operatingModel.ts`,
+`inOwnOrder`). One without stands after those that have one, in the order it
+was added. It is written by `role.update` and `responsibility.update` and kept
+in the folder's lists with the format unchanged at 12.
+
+- **A role** moves up or down in its inspector (`moveRole`). Its place is the
+  matrix's columns, left to right.
+- **A responsibility** moves up or down among those of its own group
+  (`moveResponsibility`), past whatever of other groups stands between.
+- **A group** stands where its first responsibility does. The arrows on its
+  heading in the matrix move it past the group beside it (`moveGroup`). The
+  responsibilities in no group stand last, whatever is moved.
+- Each move is one step that renumbers the list, and one undo takes it back.
+- **The matrix opens in this order.** *A–Z* is still offered over it, and
+  leaves the order as it is. *As added* is gone: the own order starts as
+  added.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

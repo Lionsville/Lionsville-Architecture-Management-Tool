@@ -35,6 +35,7 @@ import {
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
 import { libraryById } from '../libraries'
+import { ResponsibilityOrder, RoleOrder } from './OwnOrder'
 import { TypePlace } from './TypePlace'
 
 type Props = {
@@ -66,8 +67,18 @@ export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, 
       {picked.kind === 'unitType' && (
         <UnitTypeFields type={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} taking={{ onRemoveSlot, slotAside }} />
       )}
-      {picked.kind === 'role' && <RoleFields role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />}
-      {picked.kind === 'responsibility' && <ResponsibilityFields responsibility={picked.item} readOnly={readOnly} dispatch={dispatch} />}
+      {picked.kind === 'role' && (
+        <>
+          <RoleFields role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />
+          <RoleOrder role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />
+        </>
+      )}
+      {picked.kind === 'responsibility' && (
+        <>
+          <ResponsibilityFields responsibility={picked.item} readOnly={readOnly} dispatch={dispatch} />
+          <ResponsibilityOrder responsibility={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />
+        </>
+      )}
       {picked.kind !== 'responsibility' && (
         <OverTime kind={picked.kind} item={picked.item} others={picked.kind === 'role' ? model.roles : model.unitTypes} readOnly={readOnly} dispatch={dispatch} />
       )}

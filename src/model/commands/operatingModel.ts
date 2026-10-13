@@ -28,13 +28,13 @@ const UNIT_TYPE_FIELDS: PatchKeys<'unitType.update'> = {
 
 /** Every field of a role but its id. */
 const ROLE_FIELDS: PatchKeys<'role.update'> = {
-  name: true, short: true, purpose: true, duties: true, manages: true, basedOn: true, alsoBasedOn: true,
+  name: true, short: true, purpose: true, duties: true, manages: true, order: true, basedOn: true, alsoBasedOn: true,
   from: true, until: true, successors: true,
 }
 
 /** Every field of a responsibility but its id. */
 const RESPONSIBILITY_FIELDS: PatchKeys<'responsibility.update'> = {
-  name: true, description: true, group: true, basedOn: true,
+  name: true, description: true, group: true, order: true, basedOn: true,
 }
 
 /** A rule names a role, and nothing else: its kind is its id. */

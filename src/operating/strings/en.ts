@@ -137,7 +137,14 @@ export const EN = {
   'operating.filterEmpty': 'No responsibility is left with these roles and groups.',
   'operating.matrixOrder': 'Order',
   'operating.orderName': 'A–Z',
-  'operating.orderAdded': 'As added',
+  'operating.orderOwn': 'Own order',
+  'operating.ownOrder': 'Order',
+  'operating.roleOrderAt': '{place} of {count}',
+  'operating.roleOrderHint': 'One step. The Responsibilities matrix shows its columns in this order, left to right.',
+  'operating.responsibilityOrderAt': '{place} of {count} in {group}',
+  'operating.responsibilityOrderHint': 'One step. It moves among the responsibilities of its group; the group itself moves with the arrows on its heading.',
+  'operating.groupUp': 'Move {group} up',
+  'operating.groupDown': 'Move {group} down',
   'operating.noRolesForMatrix': 'Add a role first: the matrix has a column per role.',
 
   // --- the libraries -------------------------------------------------------------

@@ -12,7 +12,7 @@
  */
 import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
-import { dutiesWith, nextRaci, raciOf } from '../model/operatingModel'
+import { dutiesWith, inOwnOrder, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
 import type { OperatingRule, OperatingRuleKind, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
 import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
@@ -113,6 +113,57 @@ export function moveUnitType(model: Pick<OperatingLists, 'unitTypes'>, id: strin
   const rows = renumbered(siblings, siblings.findIndex((type) => type.id === id), to)
   if (rows.length === 0) return undefined
   return transaction(rows.map(({ id: at, order }): Command => ({ type: 'unitType.update', id: at, patch: { order } })))
+}
+
+/**
+ * A role moved one place earlier (`-1`) or later (`1`) in the organisation's
+ * own order, as one step that renumbers the roles whose number changes.
+ * Nothing where it is at an end already.
+ */
+export function moveRole(model: Pick<OperatingLists, 'roles'>, id: string, step: -1 | 1): Command | undefined {
+  const ordered = inOwnOrder(model.roles)
+  const at = ordered.findIndex((role) => role.id === id)
+  return ordered[at + step] ? reordered('role.update', renumbered(ordered, at, at + step)) : undefined
+}
+
+/**
+ * A responsibility moved one place earlier or later among those of its own
+ * group, as the matrix lists them: past the next one of its group, whatever
+ * stands between them in other groups.
+ */
+export function moveResponsibility(model: Pick<OperatingLists, 'responsibilities'>, id: string, step: -1 | 1): Command | undefined {
+  const ordered = inOwnOrder(model.responsibilities)
+  const at = ordered.findIndex((responsibility) => responsibility.id === id)
+  if (at < 0) return undefined
+  const group = groupOf(ordered[at])
+  const mates = ordered.filter((responsibility) => groupOf(responsibility) === group)
+  const next = mates[mates.indexOf(ordered[at]) + step]
+  return next ? reordered('responsibility.update', renumbered(ordered, at, ordered.indexOf(next))) : undefined
+}
+
+/**
+ * A group moved one place earlier or later among the groups: its
+ * responsibilities, in their order, past those of the group beside it. The
+ * responsibilities in no group stand last whatever is moved.
+ */
+export function moveGroup(model: Pick<OperatingLists, 'responsibilities'>, group: string, step: -1 | 1): Command | undefined {
+  const groups = responsibilityGroups(inOwnOrder(model.responsibilities)).filter((one) => one.group !== '')
+  const at = groups.findIndex((one) => one.group === group.trim())
+  if (at < 0 || !groups[at + step]) return undefined
+  groups.splice(at + step, 0, ...groups.splice(at, 1))
+  const loose = inOwnOrder(model.responsibilities).filter((responsibility) => groupOf(responsibility) === '')
+  const rows = [...groups.flatMap((one) => one.responsibilities), ...loose]
+    .map((responsibility, index) => ({ id: responsibility.id, order: index + 1, was: responsibility.order }))
+    .filter((row) => row.was !== row.order)
+  return reordered('responsibility.update', rows)
+}
+
+const groupOf = (responsibility: Responsibility) => responsibility.group?.trim() ?? ''
+
+function reordered(type: 'role.update' | 'responsibility.update', rows: readonly { id: string; order: number }[]): Command | undefined {
+  if (rows.length === 0) return undefined
+  return transaction(rows.map(({ id, order }): Command => (
+    type === 'role.update' ? { type, id, patch: { order } } : { type, id, patch: { order } })))
 }
 
 /** How many applications a unit of the type should own at most; nothing takes the limit away. */

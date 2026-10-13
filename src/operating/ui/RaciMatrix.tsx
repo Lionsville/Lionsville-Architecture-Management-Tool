@@ -9,8 +9,10 @@
  * exactly one role's A says so in its last column. A flag, never a refusal.
  *
  * Over it, a way of looking (`matrixView`): the roles and groups kept, and
- * whether it goes by name or as the items were added. The check still reads
- * every role, kept or not.
+ * whether it goes in the organisation's own order or by name. In the own
+ * order a group's heading moves the group up or down (`moveGroup`); a role or
+ * a responsibility moves in its inspector. The check still reads every role,
+ * kept or not.
  */
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
@@ -28,7 +30,7 @@ import { accountableFor, raciOf } from '../../model/operatingModel'
 import type { Raci, Responsibility, Role } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
-import { cycleRaci, newResponsibility } from '../edit'
+import { cycleRaci, moveGroup, newResponsibility } from '../edit'
 import type { OperatingModel } from '../edit'
 import { groupsOf, matrixOf, roleHeading } from '../matrixView'
 import type { MatrixOrder, MatrixView } from '../matrixView'
@@ -91,6 +93,7 @@ export function RaciMatrix({ model, readOnly, selected, onSelect, dispatch, make
                 <Box component="th" colSpan={roles.length + 2} scope="colgroup"
                   sx={{ ...cell, textAlign: 'left', bgcolor: 'action.hover', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {group || t('operating.noGroup')}
+                  {group && view.order === 'own' && !readOnly && <GroupMoves group={group} model={model} dispatch={dispatch} />}
                 </Box>
               </tr>,
               ...responsibilities.map((responsibility) => (
@@ -149,9 +152,25 @@ function MatrixLook({ model, view, onView }: { model: OperatingModel; view: Matr
         exclusive size="small" value={view.order} aria-label={t('operating.matrixOrder')} data-guide="operating.matrixOrder"
         onChange={(_e, order: MatrixOrder | null) => { if (order) onView({ ...view, order }) }}
       >
+        <ToggleButton value="own" sx={{ textTransform: 'none', py: 0.25 }}>{t('operating.orderOwn')}</ToggleButton>
         <ToggleButton value="name" sx={{ textTransform: 'none', py: 0.25 }}>{t('operating.orderName')}</ToggleButton>
-        <ToggleButton value="added" sx={{ textTransform: 'none', py: 0.25 }}>{t('operating.orderAdded')}</ToggleButton>
       </ToggleButtonGroup>
+    </Box>
+  )
+}
+
+/** A group's heading's ↑ and ↓: the group past the one beside it, one step each. */
+function GroupMoves({ group, model, dispatch }: { group: string; model: OperatingModel; dispatch(command: Command): void }) {
+  const { t } = useStrings()
+  const up = moveGroup(model, group, -1)
+  const down = moveGroup(model, group, 1)
+  const arrow = { minWidth: 24, p: 0, ml: 0.25, lineHeight: 1.4, fontSize: 14, color: 'text.secondary' } as const
+  return (
+    <Box component="span" data-guide="operating.groupOrder" sx={{ ml: 1 }}>
+      <Button size="small" aria-label={t('operating.groupUp', { group })} title={t('operating.groupUp', { group })} disabled={!up}
+        onClick={() => up && dispatch(up)} sx={arrow}>↑</Button>
+      <Button size="small" aria-label={t('operating.groupDown', { group })} title={t('operating.groupDown', { group })} disabled={!down}
+        onClick={() => down && dispatch(down)} sx={arrow}>↓</Button>
     </Box>
   )
 }

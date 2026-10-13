@@ -23,6 +23,10 @@ import type { SlotTakeOut } from './OperatingModelPage'
 
 afterEach(() => cleanup())
 
+/** The matrix's column headings and row names, as drawn. */
+const headings = () => [...screen.getByRole('table').querySelectorAll('thead th[scope="col"]')].map((th) => th.textContent).slice(0, -1)
+const rows = () => [...screen.getByRole('table').querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent)
+
 /** The page over a model a reducer keeps, and every command it sent. */
 function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut }: {
   start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
@@ -109,24 +113,47 @@ describe('the operating model\'s page', () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  it('keeps the roles picked over the matrix and what they have a part in, goes by name or as added, and keeps that across the tabs', async () => {
+  it('moves a role and a responsibility in their inspector, and the matrix shows the own order', async () => {
+    const sent = show()
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    const inspector = () => screen.getByTestId('operating-inspector')
+    // Scrum Master, the second column as it came in, picked and moved left.
+    expect(headings()).toEqual(['PO', 'SM', 'Dev'])
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    expect(within(inspector()).getByText('2 of 3')).toBeTruthy()
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Move up' }))
+    expect(sent.at(-1)?.type).toBe('transaction')
+    expect(headings()).toEqual(['SM', 'PO', 'Dev'])
+    expect(within(inspector()).getByText('1 of 3')).toBeTruthy()
+    // A responsibility, moved down among those of its group.
+    const [top] = rows()
+    fireEvent.click(screen.getByRole('button', { name: top! }))
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Move down' }))
+    expect(rows().indexOf(top)).toBe(1)
+    // A–Z leaves the order as it is, and the own order comes back as it was left.
+    fireEvent.click(screen.getByRole('button', { name: 'A–Z' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Own order' }))
+    expect(rows().indexOf(top)).toBe(1)
+  })
+
+  it('keeps the roles picked over the matrix and what they have a part in, goes in its own order or by name, and keeps that across the tabs', async () => {
     show()
     await bringInScrum()
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
-    const headings = () => [...screen.getByRole('table').querySelectorAll('thead th[scope="col"]')].map((th) => th.textContent)
-    const rows = () => [...screen.getByRole('table').querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent)
     const all = rows()
-    expect(all).toEqual([...all].sort((a, b) => a!.localeCompare(b!)))
-    fireEvent.click(screen.getByRole('button', { name: 'As added' }))
-    expect(rows()).toHaveLength(all.length)
+    expect(screen.getByRole('button', { name: 'Own order' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: 'A–Z' }))
+    expect(rows()).toEqual([...all].sort((a, b) => a!.localeCompare(b!)))
     // Scrum Master kept: its column alone, and only the rows it has a letter in.
     const roles = screen.getByRole('combobox', { name: 'Roles' })
     roles.focus()
     fireEvent.keyDown(roles, { key: 'ArrowDown' })
     fireEvent.click(await screen.findByRole('option', { name: 'Scrum Master' }))
     fireEvent.keyDown(roles, { key: 'Escape' })
-    expect(headings()).toHaveLength(2)
+    expect(headings()).toHaveLength(1)
     expect(rows().length).toBeGreaterThan(0)
     expect(rows().length).toBeLessThan(all.length)
     const kept = rows()

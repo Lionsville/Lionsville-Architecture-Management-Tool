@@ -115,6 +115,24 @@ describe('the operating model in a scope\'s folder', () => {
     expect(scopeFromFolder(files, '')!.model.unitTypes?.map((one) => 'order' in one)).toEqual([false, false])
   })
 
+  it('keeps a role\'s and a responsibility\'s own order, and passes over one that is not a number', () => {
+    const scope = organisation()
+    const ordered = {
+      ...scope,
+      model: { ...scope.model, roles: [{ ...owner, order: 2 }, { ...developer, order: 1 }], responsibilities: [{ ...order, order: 3 }, build] },
+    }
+    const back = scopeFromFolder(scopeFiles(ordered), '')!.model
+    expect(back.roles?.map((one) => one.order)).toEqual([2, 1])
+    expect(back.responsibilities?.map((one) => one.order)).toEqual([3, undefined])
+    const files: FolderFile[] = [
+      ...scopeFiles(bareScope('', 'Acme')),
+      { path: ROLES_FILE, text: JSON.stringify([{ id: 'ro-1', duties: [], order: 'first' }]) },
+      { path: RESPONSIBILITIES_FILE, text: JSON.stringify([{ id: 'rs-1', order: null }]) },
+    ]
+    const loose = scopeFromFolder(files, '')!.model
+    expect(['order' in loose.roles![0], 'order' in loose.responsibilities![0]]).toEqual([false, false])
+  })
+
   it('keeps the name chosen when an item came in, where a unit type was put then, and the entries a bring-in matched an item to, and passes over what does not read', () => {
     const scope = organisation()
     const matched = { library: 'safe', entry: 'product-owner', version: '6.0', language: 'nl' }

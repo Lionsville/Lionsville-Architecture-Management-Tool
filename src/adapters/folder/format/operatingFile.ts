@@ -44,6 +44,11 @@
  * its next save, after which *compare* reads the type's place against its
  * library again and says a type placed elsewhere on the way in sits
  * elsewhere. Where the type sits, its `top` and `within`, is kept.
+ *
+ * A role's and a responsibility's `order` came the same way in 3.6.4, and the
+ * format stayed 12. A 3.6.3 build passes it over and drops it on its next
+ * save; the matrix then lists them in the list's own order, the order they
+ * were added in, until somebody moves one again.
  */
 import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
@@ -176,6 +181,7 @@ function unitTypeOf(row: Record<string, unknown>): UnitType[] {
 
 function roleOf(row: Record<string, unknown>): Role[] {
   if (typeof row.id !== 'string') return []
+  const order = number(row.order)
   return [{
     id: row.id,
     name: text(row.name) ?? '',
@@ -183,6 +189,7 @@ function roleOf(row: Record<string, unknown>): Role[] {
     ...(text(row.purpose) !== undefined ? { purpose: text(row.purpose) } : {}),
     duties: Array.isArray(row.duties) ? row.duties.flatMap(dutyOf) : [],
     ...(row.manages === true ? { manages: true } : {}),
+    ...(order !== undefined ? { order } : {}),
     ...basedOnOf(row.basedOn),
     ...alsoBasedOnOf(row.alsoBasedOn),
     ...datedOf(row),
@@ -191,11 +198,13 @@ function roleOf(row: Record<string, unknown>): Role[] {
 
 function responsibilityOf(row: Record<string, unknown>): Responsibility[] {
   if (typeof row.id !== 'string') return []
+  const order = number(row.order)
   return [{
     id: row.id,
     name: text(row.name) ?? '',
     ...(text(row.description) !== undefined ? { description: text(row.description) } : {}),
     ...(text(row.group) !== undefined ? { group: text(row.group) } : {}),
+    ...(order !== undefined ? { order } : {}),
     ...basedOnOf(row.basedOn),
   }]
 }

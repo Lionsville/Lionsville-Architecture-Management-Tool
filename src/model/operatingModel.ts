@@ -168,20 +168,38 @@ export type Role = Dated & {
   purpose?: string
   duties: Duty[]
   manages?: boolean
+  /** Where it stands among the roles, as a unit type's `order` does in its lane (`inOwnOrder`). */
+  order?: number
   basedOn?: BasedOn
   alsoBasedOn?: BasedOn[]
 }
 
 /**
  * Something somebody has to do, whoever it turns out to be. `group` gathers
- * responsibilities on the matrix, under a value stream for example.
+ * responsibilities on the matrix, under a value stream for example. `order` is
+ * where it stands among the responsibilities (`inOwnOrder`), which also puts
+ * the groups in order: a group stands where its first responsibility does.
  */
 export type Responsibility = {
   id: ResponsibilityId
   name: string
   description?: string
   group?: string
+  order?: number
   basedOn?: BasedOn
+}
+
+/**
+ * Roles or responsibilities in the organisation's own order: by `order`, low
+ * first, then those without one in the order they were added. As a unit
+ * type's `order`, it is the organisation's own decision — absent until
+ * somebody moves one, so a library has none and *compare* never reads it.
+ */
+export function inOwnOrder<T extends { readonly order?: number }>(list: readonly T[]): T[] {
+  return list
+    .map((item, at) => ({ item, at }))
+    .sort((a, b) => (a.item.order ?? Infinity) - (b.item.order ?? Infinity) || a.at - b.at)
+    .map(({ item }) => item)
 }
 
 /**

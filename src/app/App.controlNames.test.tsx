@@ -347,8 +347,19 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     await screen.findByTestId('library-scrum')
   }],
-  ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell', 'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder'], async () => {
+  ['its responsibilities', [
+    'operating.newResponsibility', 'operating.matrix', 'operating.cell', 'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder',
+    'operating.groupOrder',
+  ], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+  }],
+  // A responsibility picked in the matrix, and a role, each with its place in the own order.
+  ['a responsibility picked', ['operating.responsibilityOrder'], async () => {
+    fireEvent.click(within(screen.getByRole('table')).getAllByRole('button', { pressed: false })[0])
+  }],
+  ['a role picked', ['operating.roleOrder'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /^Scrum Master/ })[0])
   }]],
   // An organisation chart, made on a landscape's home: the example has no
   // units, and the outline, the bar and the summary beside it are drawn all the same.

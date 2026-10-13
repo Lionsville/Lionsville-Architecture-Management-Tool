@@ -3,13 +3,15 @@
 
 /**
  * How the Responsibilities tab is looked at: which roles and which groups it
- * keeps, and in what order. A way of looking, never a change to the model —
- * the order the roles and responsibilities were added in is kept as it is.
+ * keeps, and whether it goes in the organisation's own order or by name. A way
+ * of looking, never a change to the model: the own order is the model's
+ * (`inOwnOrder`), moved with *Move up* and *Move down*, and A–Z leaves it as
+ * it is.
  */
-import { raciOf, responsibilityGroups } from '../model/operatingModel'
+import { inOwnOrder, raciOf, responsibilityGroups } from '../model/operatingModel'
 import type { Responsibility, Role, RoleId } from '../model/operatingModel'
 
-export type MatrixOrder = 'name' | 'added'
+export type MatrixOrder = 'own' | 'name'
 
 export type MatrixView = {
   /** The roles kept, as columns; none picked keeps them all. */
@@ -22,7 +24,7 @@ export type MatrixView = {
 export const ALL_OF_THE_MATRIX: MatrixView = {
   roles: [],
   groups: [],
-  order: 'name',
+  order: 'own',
 }
 
 /** A role as its column is headed. */
@@ -36,8 +38,9 @@ const collator = new Intl.Collator(undefined, {
 /**
  * The matrix as the view leaves it. Roles picked keep their columns and the
  * responsibilities any of them has a part in; groups picked keep their rows.
- * By name, the columns go by their heading and the groups and the rows within
- * each by name, the ungrouped last as always; as added, as the model holds them.
+ * In the own order, as the organisation put them, a group standing where its
+ * first responsibility does; by name, the columns go by their heading and the
+ * groups and the rows within each by name. The ungrouped stand last either way.
  */
 export function matrixOf(
   model: {
@@ -53,8 +56,8 @@ export function matrixOf(
   const pickedRoles = new Set(view.roles.filter((id) => model.roles.some((role) => role.id === id)))
   const pickedGroups = new Set(view.groups.filter((group) => groupsOf(model.responsibilities).includes(group)))
   const byName = view.order === 'name'
-  let roles = pickedRoles.size ? model.roles.filter((role) => pickedRoles.has(role.id)) : [...model.roles]
-  const responsibilities = model.responsibilities.filter(
+  let roles = inOwnOrder(pickedRoles.size ? model.roles.filter((role) => pickedRoles.has(role.id)) : model.roles)
+  const responsibilities = inOwnOrder(model.responsibilities).filter(
     (responsibility) =>
       (pickedGroups.size === 0 || pickedGroups.has(responsibility.group?.trim() ?? '')) &&
       (pickedRoles.size === 0 || roles.some((role) => raciOf(role, responsibility.id) !== undefined)),

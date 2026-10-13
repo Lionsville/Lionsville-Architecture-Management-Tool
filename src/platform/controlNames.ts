@@ -85,6 +85,9 @@ export const CONTROL_NAMES = [
   'operating.compare',
   // …and over the matrix, the roles and groups it keeps and its order (3.6.3).
   'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder',
+  // …and the organisation's own order (3.6.4): a role's and a responsibility's Move up and Move down
+  // in the inspector, and the arrows on a group's heading.
+  'operating.roleOrder', 'operating.responsibilityOrder', 'operating.groupOrder',
   // The unit types drawn as a structure (ADR-0036, amended 11 October 2026):
   // the lanes, each type's card, and the order in its lane in the inspector.
   'operating.structure', 'operating.typeCard', 'operating.typeOrder',
