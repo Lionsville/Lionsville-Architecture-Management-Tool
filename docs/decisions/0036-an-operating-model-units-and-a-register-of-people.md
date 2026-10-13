@@ -22,7 +22,9 @@
   built and implemented, 12 October 2026, with units made on the chart, the
   sheet's rail drawing the units it uses, a unit pressed on the chart landing
   on its inspector, and deleting a unit saying what goes with it (*As built,
-  3.6.2*, below)
+  3.6.2*, below). Amended, 13 October 2026: the organisation is not a
+  domain, and a unit and what it serves link to each other (*Amended, 13
+  October 2026*, below); as built and implemented, 13 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -2158,6 +2160,65 @@ in the folder's lists with the format unchanged at 12.
 - **The matrix opens in this order.** *A–Z* is still offered over it, and
   leaves the order as it is. *As added* is gone: the own order starts as
   added.
+
+## Amended, 13 October 2026 — the organisation is not a domain, and a unit and what it serves link to each other
+
+*Accepted and built 13 October 2026: As built, below.* §3 and the amendment
+of 11 October say a unit serves its `scopes`, or the scope it is filed in
+where it says nothing. The operating model lives at the organisation, so that
+is where units are usually filed — and every one of them then served the
+organisation. A unit of a type that serves one domain counted as serving one
+already: a domain's *Served by* offered it as unable, and its own *Serves*
+had no way to add a domain and a chip for the organisation that could not be
+taken off. A unit filed at the organisation could be linked to its domain
+from neither end.
+
+**The organisation is not a domain.** No unit serves the root. A unit filed
+there that says nothing serves nothing until it is given a domain, and a
+`""` in `scopes` is read as nothing and dropped by the next write. Adding a
+domain to such a unit writes that domain alone; a unit filed in a domain is
+read as before. The organisation's home has no *Served by* and names no
+domain owner, and a capability the organisation itself defines is in no
+domain, so any unit may answer for it without a finding — while a unit that
+serves nothing and answers for something a domain defines is
+`check.unitNotServing`, as any unit outside the domain is.
+
+**Each end leads to the other.** A domain in a unit's *Serves* opens that
+domain's home; a unit's name in a scope's *Served by* — on the home and in
+the scope's settings — opens the unit where it is kept, on that scope's
+organisation chart where it has one, as a link to a unit lands (§7).
+
+**A scope may be served from the start.** The dialog that makes a domain or a
+team offers, where the organisation has units, the unit that serves it — the
+choices *+ Unit* offers on a scope nobody serves yet. The link is the unit's
+`scopes`, written as the step of the scope that keeps the unit once the new
+scope is there; refused, the scope stays and the person is told where to set
+it.
+
+## As built, 13 October 2026: the organisation is not a domain, and the links
+
+- **One rule.** `model/serving.scopesServed` never answers `""`
+  (`isServable`), and `scopesWith`/`scopesWithout` drop it from what they
+  write. Everything that read the rule reads it there: `owners.domainOwnersOn`
+  (it kept a copy), the People page's domains by rule (`units/held.ts`), the
+  *Serves* picker's scopes (`units/choices.scopeChoices`), and *Served by*
+  (`servedByOf` answers nothing at the root). The spans finding and the
+  chart's `serves` leave a stray `""` out by hand, since `model/units.ts` is
+  below the rule. The agent drops `""` from a unit's `scopes` and says so in
+  the tool's text.
+- **The check.** `projects/checks.servesDomainOn` is what
+  `check.unitNotServing` and the sheet's mark ask: true for anything the
+  organisation defines, otherwise `servesOn` over `coversDomain`.
+- **The links.** A *Serves* chip is a button that goes to the domain's home
+  (`onGoHome`, handed down as `units.openHome`); a name in *Served by* is a
+  link that opens the scope that keeps the unit on the `element` page, which
+  `unitLanding` turns into its chart with the unit chosen. In the settings
+  dialog it closes the dialog first.
+- **The new-scope dialog.** *Served by* offers `servingChoicesOf` for a scope
+  not made yet, with `pickableBy` marking units kept where the person may
+  only read. The pick is held in the dialog's state; *Create* makes the scope,
+  says so, and then writes the unit's `scopes` through `writeIn`, so a
+  refusal's notice is the one left standing.
 
 ## Open
 

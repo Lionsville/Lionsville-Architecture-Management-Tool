@@ -74,14 +74,15 @@ role. A scope that draws has a **Documentation**
 card too. Each card opens what it counts; closing the page brings you back
 here.
 
-**Served by**, under the cards, wherever the organisation has units — on the
-organisation's own home only where a unit serves the organisation itself, and
-without a domain owner there, since the organisation is no domain: the
-units that serve this scope, in the order of their types, each with who holds
-its managing role today and where it is filed when that is somewhere else. A
-unit serves the domains its **Serves** names, or the scope it is filed in
-where it names none, and a unit under one that serves a scope serves it
-through that one — those are counted rather than listed. **+ Unit** picks one
+**Served by**, under the cards, wherever the organisation has units — but not
+on the organisation's own home, since the organisation is no domain and no
+unit serves it: the units that serve this scope, in the order of their types,
+each with who holds its managing role today and where it is filed when that
+is somewhere else. A unit serves the domains its **Serves** names, or the
+scope it is filed in where it names none — unless that is the organisation,
+where a unit serves nothing until it is given a domain — and a unit under one
+that serves a scope serves it through that one — those are counted rather
+than listed. **+ Unit** picks one
 from the whole organisation: the list is grouped by unit type, says where each
 unit is filed, and narrows as you type; a unit whose type serves one domain,
 or that is kept where you may only read, is listed and says why it cannot be
@@ -91,8 +92,9 @@ where you may change that scope — a role that manages people does not reach
 it. Under the units, the **domain owner**: whoever holds the role the
 organisation's *domain owner* rule names, in the serving unit filed highest in
 this scope. It is worked out on the day and never kept. Pressing a unit's
-name opens it where it is kept, and its inspector says the same thing from
-the other end.
+name opens it where it is kept — on that scope's organisation chart, picked,
+where it has one — and its inspector says the same thing from the other end,
+each domain there opening that domain's home again.
 
 **Checks**, a card on every home, opens the **Checks page**: every check the
 app makes, by what it is about, with why each matters, how to fix it and
@@ -127,13 +129,19 @@ landscape.
   row under **Boards**.
 - **New domain or team…**, once, at the head of the section, asks for a name
   and files the new scope under the scope whose home you are on; **Filed
-  under** in the dialog puts it somewhere else.
+  under** in the dialog puts it somewhere else. Where the organisation has
+  units, **Served by** in the dialog picks the one that serves it, from the
+  same list **+ Unit** offers; it is written when the scope is made, as one
+  step in the scope that keeps the unit. Where that is refused — you may only
+  read there — the scope is made all the same and a notice says the unit was
+  not linked; **Served by** on the new scope's home is where it is set.
 - **Settings…** on any row holds its name, what it is (organisation, domain,
   programme, team, landscape scope — a word for the screen, nothing behaves
   differently),
   a client, a description, links, and **Filed under**, which moves it. Its
   **Served by** is the home's, and each change to it is written as you make
-  it, not with **Save**.
+  it, not with **Save**; a unit's name there opens it as it does on the
+  home, closing the dialog.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,
   its records from this browser. A working file you saved elsewhere is not
@@ -1997,9 +2005,12 @@ A unit's sections, in that order:
   in this unit or a unit above it, today, nearest first. **why?** says what
   that means: the app says it and grants nothing from it.
 - **Serves**: the domains it serves, the scope it is filed in unless you say
-  otherwise. A unit that serves several domains is filed in the scope above
+  otherwise — but never the organisation: a unit filed there serves nothing
+  until **+ Domain** gives it one, and says **No domain** where you may only
+  read. A unit that serves several domains is filed in the scope above
   them, and its type must allow it. **+ Domain** picks another domain, where
-  its type allows more than one.
+  its type allows more than one. Pressing a domain opens its home, whose
+  **Served by** says the same from the other end.
 - **Owns**: every application that names it as the actor it belongs to.
 - **Responsible for**: the areas, groupings and capabilities it is assigned,
   with the scope that keeps the row where it is another. **+ Area or
@@ -2080,7 +2091,8 @@ it is refused, `agent.unitsInside`, with the choices named: the agent asks
 you, and calls again with `units` — `into:<id>`, `up` or `delete`;
 `checks.list` names one left behind as `check.assignmentOrphaned`, which a
 person removes. Who serves a scope is the unit's
-`scopes`, written with `element.update` in the scope that keeps the unit; who
+`scopes`, written with `element.update` in the scope that keeps the unit — the
+organisation, `""`, is never one, and is dropped from what is written; who
 is responsible for a capability is an `assigned` row, written with
 `relation.add` in the scope that defines it; and `checks.list` names a
 capability assigned outside its domain as `check.unitNotServing`.

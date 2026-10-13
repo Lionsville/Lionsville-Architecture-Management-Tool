@@ -84,12 +84,14 @@ Rolle hat. Ein Bereich, der zeichnet, hat auch eine Karte
 bringt Sie hierher zurück.
 
 **Bedient von**, unter den Karten, überall, wo die Organisation Einheiten hat
-— auf der eigenen Startseite der Organisation nur, wo eine Einheit die
-Organisation selbst bedient, und dort ohne Domäneneigentümer, denn die
-Organisation ist keine Domäne: die Einheiten, die diesen Bereich bedienen, in der Reihenfolge ihrer Typen,
+— aber nicht auf der eigenen Startseite der Organisation, denn die
+Organisation ist keine Domäne, und keine Einheit bedient sie: die Einheiten,
+die diesen Bereich bedienen, in der Reihenfolge ihrer Typen,
 jede mit dem, der heute ihre führende Rolle innehat, und wo sie eingeordnet ist,
 wenn das anderswo ist. Eine Einheit bedient die Domänen, die ihr **Bedient**
-nennt, oder den Bereich, in dem sie eingeordnet ist, wenn sie keine nennt, und
+nennt, oder den Bereich, in dem sie eingeordnet ist, wenn sie keine nennt —
+außer wenn das die Organisation ist: dort bedient eine Einheit nichts, bis sie
+eine Domäne bekommt —, und
 eine Einheit unter einer, die einen Bereich bedient, bedient ihn über diese —
 sie werden gezählt statt aufgeführt. **+ Einheit** wählt eine aus der ganzen
 Organisation: Die Liste ist nach Einheitentyp gruppiert, sagt, wo jede Einheit
@@ -103,7 +105,9 @@ Einheiten der **Domäneneigentümer**: wer die Rolle innehat, die die Regel
 *Domäneneigentümer* der Organisation nennt, in der bedienenden Einheit, die in
 diesem Bereich am höchsten eingeordnet ist. Er wird am Tag ermittelt und nie
 gespeichert. Ein Klick auf den Namen einer Einheit öffnet sie dort, wo sie
-geführt wird, und ihr Inspektor sagt dasselbe vom anderen Ende.
+geführt wird — auf dem Organigramm dieses Bereichs, ausgewählt, wo er eines
+hat —, und ihr Inspektor sagt dasselbe vom anderen Ende, wo jede Domäne
+wieder die Startseite dieser Domäne öffnet.
 
 **Prüfungen**, eine Karte auf jeder Startseite, öffnet die **Seite
 Prüfungen**: jede Prüfung, die die App vornimmt, nach dem, worum es geht, mit
@@ -143,14 +147,22 @@ Unternehmenskarte oder eine Technologielandschaft.
   Eine Tafel öffnen Sie über ihre Zeile unter **Tafeln**.
 - **Neue Domäne oder neues Team…**, einmal, oben im Abschnitt, fragt nach einem
   Namen und legt den neuen Bereich unter dem Bereich ab, dessen Zuhause Sie
-  sehen; **Abgelegt unter** im Dialog legt ihn woanders ab.
+  sehen; **Abgelegt unter** im Dialog legt ihn woanders ab. Wo die
+  Organisation Einheiten hat, wählt **Bedient von** im Dialog die Einheit, die
+  ihn bedient, aus derselben Liste wie **+ Einheit**; sie wird geschrieben,
+  sobald der Bereich angelegt ist, als ein Schritt in dem Bereich, der die
+  Einheit führt. Wird das abgelehnt — Sie dürfen dort nur lesen —, wird der
+  Bereich trotzdem angelegt, und ein Hinweis sagt, dass die Einheit nicht
+  verknüpft wurde; **Bedient von** auf der Startseite des neuen Bereichs ist
+  der Ort, an dem Sie es festlegen.
 - **Einstellungen…** auf jeder Zeile enthält den Namen, was es ist
   (Organisation, Domäne, Programm, Team, Landschaftsbereich — ein Wort für den
   Bildschirm,
   nichts verhält sich anders), einen Auftraggeber, eine Beschreibung, Links und
   **Abgelegt unter**, was ihn verschiebt. Sein **Bedient von** ist das der
   Startseite, und jede Änderung daran wird geschrieben, sobald Sie sie machen,
-  nicht mit **Speichern**.
+  nicht mit **Speichern**; der Name einer Einheit dort öffnet sie wie auf der
+  Startseite und schließt den Dialog.
 - **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und
   die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
   einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo
@@ -2293,10 +2305,13 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   **warum?** sagt, was das bedeutet: Die App sagt es und gewährt daraus
   nichts.
 - **Bedient**: die Domänen, die sie bedient, der Bereich, in dem sie
-  eingeordnet ist, wenn Sie nichts anderes sagen. Eine Einheit, die mehrere
+  eingeordnet ist, wenn Sie nichts anderes sagen — aber nie die Organisation:
+  eine dort eingeordnete Einheit bedient nichts, bis **+ Domäne** ihr eine
+  gibt, und sagt **Keine Domäne**, wo Sie nur lesen dürfen. Eine Einheit, die mehrere
   Domänen bedient, wird im Bereich darüber eingeordnet, und ihr Typ muss es
   erlauben. **+ Domäne** wählt eine weitere Domäne, wo ihr Typ mehr als eine
-  erlaubt.
+  erlaubt. Ein Klick auf eine Domäne öffnet ihre Startseite, deren **Bedient
+  von** dasselbe vom anderen Ende sagt.
 - **Besitzt**: jede Anwendung, die sie als den Akteur nennt, zu dem sie
   gehört.
 - **Verantwortlich für**: die Gebiete, Gruppen und Fähigkeiten, die ihr
@@ -2391,7 +2406,8 @@ Möglichkeiten: Der Agent fragt Sie und ruft erneut mit `units` auf —
 `into:<id>`, `up` oder `delete`; `checks.list` nennt eine
 zurückgelassene Zuweisung `check.assignmentOrphaned`, die eine Person
 entfernt. Wer einen Bereich bedient, ist das `scopes` der Einheit, geschrieben
-mit `element.update` in dem Bereich, der die Einheit führt; wer für eine
+mit `element.update` in dem Bereich, der die Einheit führt — die Organisation,
+`""`, ist nie einer und wird aus dem Geschriebenen weggelassen; wer für eine
 Fähigkeit verantwortlich ist, ist eine `assigned`-Zeile, geschrieben mit
 `relation.add` in dem Bereich, der sie definiert; und `checks.list` nennt eine
 Fähigkeit, die außerhalb ihrer Domäne zugewiesen ist, `check.unitNotServing`.

@@ -76,12 +76,13 @@ onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
 opent wat hij telt; als je de pagina sluit ben je weer hier.
 
 **Bediend door**, onder de kaarten, overal waar de organisatie eenheden heeft
-— op de eigen startpagina van de organisatie alleen waar een eenheid de
-organisatie zelf bedient, en daar zonder domeineigenaar, want de organisatie
-is geen domein: de eenheden die deze scope bedienen, in de volgorde van hun types, elk met wie
+— maar niet op de eigen startpagina van de organisatie, want de organisatie
+is geen domein en geen eenheid bedient haar: de eenheden die deze scope
+bedienen, in de volgorde van hun types, elk met wie
 vandaag haar aansturende rol vervult en waar ze is ingedeeld als dat ergens
 anders is. Een eenheid bedient de domeinen die haar **Bedient** noemt, of de
-scope waarin ze is ingedeeld als ze er geen noemt, en een eenheid onder een
+scope waarin ze is ingedeeld als ze er geen noemt — tenzij dat de organisatie
+is: daar bedient een eenheid niets tot ze een domein krijgt — en een eenheid onder een
 die een scope bedient, bedient die via haar — die worden geteld in plaats van
 opgesomd. **+ Eenheid** kiest er een uit de hele organisatie: de lijst is
 gegroepeerd per eenheidstype, zegt waar elke eenheid is ingedeeld en wordt
@@ -94,7 +95,9 @@ reikt daar niet. Onder de eenheden de **domeineigenaar**: wie de rol vervult
 die de regel *domeineigenaar* van de organisatie noemt, in de bedienende
 eenheid die het hoogst in deze scope is ingedeeld. Die wordt op de dag
 uitgerekend en nooit bewaard. Een klik op de naam van een eenheid opent haar
-waar ze wordt bijgehouden, en haar paneel zegt hetzelfde van de andere kant.
+waar ze wordt bijgehouden — op het organogram van die scope, gekozen, waar die
+er een heeft — en haar paneel zegt hetzelfde van de andere kant, waar elk
+domein weer de startpagina van dat domein opent.
 
 **Controles**, een kaart op elke startpagina, opent de **pagina Controles**:
 elke controle die de app doet, naar waar ze over gaat, met waarom elke
@@ -135,13 +138,21 @@ technologielandschap.
   bord open je vanaf zijn regel onder **Borden**.
 - **Nieuw domein of team…**, één keer, bovenaan de sectie, vraagt om een naam
   en brengt het nieuwe onderdeel onder bij het onderdeel waarvan je het thuis
-  ziet; **Valt onder** in de dialoog zet het ergens anders.
+  ziet; **Valt onder** in de dialoog zet het ergens anders. Waar de
+  organisatie eenheden heeft, kiest **Bediend door** in de dialoog de eenheid
+  die het bedient, uit dezelfde lijst als **+ Eenheid**; dat wordt
+  weggeschreven zodra het onderdeel er is, als één stap in de scope die de
+  eenheid bijhoudt. Wordt dat geweigerd — je mag daar alleen lezen — dan wordt
+  het onderdeel toch gemaakt en zegt een melding dat de eenheid niet is
+  gekoppeld; **Bediend door** op de startpagina van het nieuwe onderdeel is
+  waar je het instelt.
 - **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
   domein, programma, team, landschapsscope — een woord voor het scherm, er
   gedraagt zich niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
   bij**, waarmee je het verplaatst. Het **Bediend door** erin is dat van het
   thuis, en elke wijziging ervan wordt weggeschreven zodra je hem maakt, niet
-  met **Opslaan**.
+  met **Opslaan**; de naam van een eenheid daar opent haar zoals op de
+  startpagina, en sluit de dialoog.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
   bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,
   zijn records uit deze browser. Een werkbestand dat je elders hebt bewaard
@@ -2167,9 +2178,13 @@ De onderdelen van een eenheid, in die volgorde:
   **waarom?** zegt wat dat betekent: de app zegt het en geeft er geen rechten
   mee.
 - **Bedient**: de domeinen die ze bedient, de scope waarin ze is ingedeeld
-  tenzij je anders zegt. Een eenheid die meerdere domeinen bedient wordt
+  tenzij je anders zegt — maar nooit de organisatie: een eenheid die daar is
+  ingedeeld bedient niets tot **+ Domein** haar er een geeft, en zegt **Geen
+  domein** waar je alleen mag lezen. Een eenheid die meerdere domeinen bedient wordt
   ingedeeld in de scope erboven, en haar type moet dat toestaan. **+ Domein**
-  kiest nog een domein, waar haar type er meer dan één toestaat.
+  kiest nog een domein, waar haar type er meer dan één toestaat. Een klik op
+  een domein opent zijn startpagina, waar **Bediend door** hetzelfde zegt van
+  de andere kant.
 - **Eigenaar van**: elke applicatie die haar noemt als de actor waartoe die
   hoort.
 - **Verantwoordelijk voor**: de gebieden, groepen en capabilities die haar
@@ -2261,7 +2276,8 @@ geweigerd, `agent.unitsInside`, met de keuzes genoemd: de agent vraagt het
 u, en roept opnieuw aan met `units` — `into:<id>`, `up` of `delete`; `checks.list` noemt een achtergelaten
 toewijzing `check.assignmentOrphaned`, die een persoon verwijdert.
 Wie een scope bedient is de `scopes` van de eenheid, weggeschreven met
-`element.update` in de scope die de eenheid bijhoudt; wie verantwoordelijk is
+`element.update` in de scope die de eenheid bijhoudt — de organisatie, `""`,
+is er nooit een, en wordt weggelaten uit wat wordt weggeschreven; wie verantwoordelijk is
 voor een capability is een `assigned`-regel, weggeschreven met `relation.add`
 in de scope die hem definieert; en `checks.list` noemt een capability die
 buiten haar domein is toegewezen `check.unitNotServing`.
