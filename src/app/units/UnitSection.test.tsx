@@ -96,8 +96,9 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false, onOpenHome }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
+  onOpenHome?: (path: string) => void
   register?: readonly Person[]; me?: string; manages?: ManagesPeople
   /** Marks as intended handed down, as the workspace hands them: this scope's through the session. */
   marking?: boolean
@@ -142,7 +143,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
       makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
       scopeLabel={(path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
-      scopes={['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} s={s}
+      scopes={['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} {...(onOpenHome ? { onOpenHome } : {})} s={s}
     />
   )
   if (!marking) return section
@@ -372,6 +373,19 @@ describe('a unit in its inspector', () => {
     cleanup()
     renderShell(<Harness model={top} root={top} scope="" unit="ops" readOnly commands={[]} />)
     expect(text('unit-serves')).toBe('No domain')
+  })
+
+  it('opens the home of each domain it serves, by the keyboard too', async () => {
+    const opened: string[] = []
+    renderShell(<Harness commands={[]} onOpenHome={(path) => opened.push(path)} />)
+    const chip = screen.getByRole('button', { name: 'Customer' })
+    expect(chip.getAttribute('title')).toBe('Open the home of Customer')
+    fireEvent.click(chip)
+    expect(opened).toEqual(['customer'])
+    chip.focus()
+    fireEvent.keyDown(chip, { key: 'Enter' })
+    expect(opened).toEqual(['customer', 'customer'])
+    expect(await axeFindings()).toEqual([])
   })
 
   it('offers the units it may work with in the one order for units: the type\'s rank, then the name', async () => {

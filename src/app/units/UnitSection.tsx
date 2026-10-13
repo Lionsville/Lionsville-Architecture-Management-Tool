@@ -116,6 +116,8 @@ export type UnitSectionProps = {
    * for*. Absent: only this scope's own are offered.
    */
   writeIn?: WriteIn
+  /** A scope's home, opened from a domain the unit serves. Absent: the domains are not ways out. */
+  onOpenHome?: (path: ScopePath) => void
   s: Translate
 }
 
@@ -328,9 +330,10 @@ function TypeField({ element, types, editable, onChange, filedIn, s }: {
 /**
  * The domains it serves: the scope it is filed in where nothing is said and
  * that is a domain, and as many as its type allows — never the organisation
- * (`model/serving.scopesServed`).
+ * (`model/serving.scopesServed`). Each opens that scope's home, whose *Served
+ * by* says the same from the other end.
  */
-function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, s }: UnitSectionProps & {
+function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable, onChange, s }: UnitSectionProps & {
   type: UnitType | undefined; editable: boolean; onChange: (scopes: string[] | undefined) => void
 }) {
   // Where it says nothing it serves the domain it is filed in, and goes on serving it beside one added.
@@ -345,6 +348,7 @@ function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, 
         {serves.length === 0 && !editable && <Typography sx={QUIET} data-testid="unit-serves-none">{s('unit.servesNone')}</Typography>}
         {serves.map((one) => (
           <Chip key={one} size="small" label={scopeLabel(one)} data-testid="unit-serves-scope"
+            {...(onOpenHome ? { onClick: () => onOpenHome(one), title: s('unit.servesOpen', { scope: scopeLabel(one) }) } : {})}
             {...(editable && element.scopes ? { onDelete: () => onChange(scopesWithout(element, one)) } : {})} />
         ))}
         {editable && more && (

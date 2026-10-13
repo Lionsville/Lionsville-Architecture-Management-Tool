@@ -932,6 +932,7 @@ export const EN = {
   'unit.servesAdd': '+ Domain',
   'unit.servesOne': 'A {type} serves one domain.',
   'unit.servesNone': 'No domain',
+  'unit.servesOpen': 'Open the home of {scope}',
   'unit.owns': 'Owns',
   'unit.ownsNone': 'No application names it as its unit.',
   'unit.answersFor': 'Responsible for',

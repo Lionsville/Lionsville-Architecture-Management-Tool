@@ -652,7 +652,7 @@ export function OrganisationScreen({
       />
       <ScopeSettingsDialog
         target={dialog.kind === 'settings' ? dialog.target : undefined}
-        tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact s={s} />}
+        tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
         onCancel={organisation.closeDialog}
         onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
         s={s}

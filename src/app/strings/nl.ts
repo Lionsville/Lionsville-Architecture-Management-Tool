@@ -711,6 +711,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'unit.servesAdd': '+ Domein',
   'unit.servesOne': 'Een {type} bedient één domein.',
   'unit.servesNone': 'Geen domein',
+  'unit.servesOpen': 'Open de startpagina van {scope}',
   'unit.owns': 'Eigenaar van',
   'unit.ownsNone': 'Geen applicatie noemt haar als eenheid.',
   'unit.answersFor': 'Verantwoordelijk voor',

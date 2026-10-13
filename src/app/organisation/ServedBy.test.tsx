@@ -24,6 +24,7 @@ import { axeFindings } from '../testing/axe'
 import { heldRepositories } from '../testing/heldRepositories'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import { renderApp } from '../testing/renderShell'
+import { controlSelector } from '../../platform/controlNames'
 
 afterEach(() => cleanup())
 
@@ -173,5 +174,39 @@ describe('who serves a scope, on its home', () => {
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getAllByTestId('served-by-row').map((one) => one.textContent)[0]).toBe('Domain · ShippingNoor Haddad')
     expect(within(dialog).getByTestId('served-by-add')).toBeTruthy()
+  })
+})
+
+describe('the links between a unit and the scopes it serves', { timeout: 20_000 }, () => {
+  /** Shipping with an organisation chart: a unit kept there lands on it, chosen. */
+  function charted(): ScopeSnapshot[] {
+    return tree().map((one) => (one.path === 'shipping' ? {
+      ...one,
+      model: { ...one.model, diagrams: [{ id: 'oc-shipping', kind: 'chart' as const, name: 'Shipping chart', members: [], geometry: { nodes: [] } }] },
+      activeDiagramId: 'oc-shipping',
+    } : one))
+  }
+  const inspector = () => document.querySelector<HTMLElement>(controlSelector('board.inspector'))!
+
+  it('opens a unit named on a home where it is kept, on that scope\'s chart, chosen, and its domain goes back to that home', async () => {
+    renderApp({ repositories: heldRepositories(charted()), today: TODAY })
+    await shippingHome()
+    fireEvent.click(screen.getByRole('button', { name: 'Parcel & Freight' }))
+    await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
+    expect(screen.getByTestId('chart-page')).toBeTruthy()
+    expect(within(inspector()).getByDisplayValue('Parcel & Freight')).toBeTruthy()
+    // From the other end: the domain it serves opens that domain's home.
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Shipping' }))
+    await waitFor(() => expect(screen.getAllByTestId('served-by-row')).toHaveLength(3))
+  })
+
+  it('opens a unit from the scope\'s settings too, leaving the dialog', async () => {
+    renderApp({ repositories: heldRepositories(charted()), today: TODAY })
+    await shippingHome()
+    fireEvent.click(screen.getByRole('button', { name: 'Settings for Shipping' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Parcel & Freight' }))
+    await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

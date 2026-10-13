@@ -11,7 +11,9 @@
  * The same field a unit's *Serves* edits, from this end: adding or taking a
  * unit off is a step in the scope that keeps the unit, so it is offered only
  * where that scope is the person's to change. A name opens the unit where it
- * is kept, whose inspector says the same thing from the other end.
+ * is kept — on that scope's organisation chart, chosen, where it has one —
+ * whose inspector says the same thing from the other end; in the settings
+ * dialog too, which is left for it (`onLeave`).
  */
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
@@ -28,12 +30,14 @@ import type { ServedByAccess } from './useServedBy'
 const HEADING = { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' } as const
 const QUIET = { fontSize: 12, color: 'text.secondary' } as const
 
-export function ServedBy({ scope, servedBy, scopeName, compact, s }: {
+export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   scope: ScopePath
   servedBy: ServedByAccess | undefined
   scopeName: (path: ScopePath) => string
-  /** In the settings dialog: no heading of the home's size, and no way out to a unit. */
+  /** In the settings dialog: no heading of the home's size. */
   compact?: boolean
+  /** What opening a unit leaves first: the settings dialog, closed. */
+  onLeave?: () => void
   s: Translate
 }) {
   const names = usePersonNames()
@@ -55,9 +59,12 @@ export function ServedBy({ scope, servedBy, scopeName, compact, s }: {
         <Box key={row.id} data-testid="served-by-row" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', my: 0.25 }}>
           <Typography sx={{ fontSize: 13 }}>
             <Box component="span" sx={{ color: 'text.secondary' }}>{row.type ? `${row.type} · ` : ''}</Box>
-            {compact
-              ? row.name
-              : <Link component="button" type="button" underline="hover" onClick={() => servedBy.open(row.id)} sx={{ fontSize: 13 }}>{row.name}</Link>}
+            <Link
+              component="button" type="button" underline="hover" data-testid="served-by-unit"
+              onClick={() => { onLeave?.(); servedBy.open(row.id) }} sx={{ fontSize: 13, verticalAlign: 'baseline' }}
+            >
+              {row.name}
+            </Link>
           </Typography>
           <Typography sx={QUIET}>
             {[

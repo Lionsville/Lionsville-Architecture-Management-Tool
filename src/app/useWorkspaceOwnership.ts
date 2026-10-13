@@ -73,6 +73,8 @@ export function useWorkspaceOwnership(deps: {
     people: PeopleRegisterAccess | undefined; today: string; day?: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[]
     /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
     writeIn?: WriteIn
+    /** A scope's home: where a domain a unit serves opens (ADR-0036, amended 13 October 2026). */
+    openHome?: (path: ScopePath) => void
   }
   /**
    * How a unit deleted here lands over every scope it writes (3.6.2): the
@@ -146,6 +148,7 @@ export function useWorkspaceOwnership(deps: {
         newRowId: () => session.ids.connection(),
         people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
         ...(units.writeIn ? { writeIn: units.writeIn } : {}),
+        ...(units.openHome ? { onOpenHome: units.openHome } : {}),
       }),
       leads: isUnit(element),
     }),

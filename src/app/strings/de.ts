@@ -712,6 +712,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unit.servesAdd': '+ Domäne',
   'unit.servesOne': 'Ein {type} bedient eine Domäne.',
   'unit.servesNone': 'Keine Domäne',
+  'unit.servesOpen': 'Startseite von {scope} öffnen',
   'unit.owns': 'Besitzt',
   'unit.ownsNone': 'Keine Anwendung nennt sie als ihre Einheit.',
   'unit.answersFor': 'Verantwortlich für',
