@@ -9,12 +9,13 @@
 import type { ImageEntry } from '../model/imageName'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { useCallback, useMemo, useRef } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { LanguageProvider } from '../i18n'
 import type { StringKey } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
-import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
-import { PreferencesDialog } from './dialogs/PreferencesDialog'
+import type { ConnectAgentDialog as ConnectAgentDialogShape } from './dialogs/ConnectAgentDialog'
+import type { PreferencesDialog as PreferencesDialogShape } from './dialogs/PreferencesDialog'
+import { lazyPart } from '../widgets/lazyPart'
 import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
@@ -477,6 +478,18 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
  * The dialogs that outlive a scope: the two file prompts, the preferences,
  * *Connect an agent* and *Share with a link*.
  */
+/**
+ * The preferences and the agent's connection are asked for from a menu and
+ * outlive a scope, never part of the first view: each arrives the first time
+ * it is opened, in a script of its own (`widgets/lazyPart`).
+ */
+const PreferencesDialog = lazyPart<ComponentProps<typeof PreferencesDialogShape>>(
+  () => import('./dialogs/PreferencesDialog').then((held) => held.PreferencesDialog), { until: (props) => props.open },
+)
+const ConnectAgentDialog = lazyPart<ComponentProps<typeof ConnectAgentDialogShape>>(
+  () => import('./dialogs/ConnectAgentDialog').then((held) => held.ConnectAgentDialog), { until: (props) => props.open },
+)
+
 export function AppDialogs({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, machine, agentServer, provider, prompts } = parts
   const { updates } = machine

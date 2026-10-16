@@ -56,7 +56,7 @@
  * painted on top.
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -97,9 +97,18 @@ import { SheetBar } from './SheetBar'
 import { LaneDialog } from './LaneDialog'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
-import { SheetSettingsDialog } from './SheetSettingsDialog'
+import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSettingsDialog'
+import { lazyPart } from '../../widgets/lazyPart'
 import { useRail } from './useRail'
 import type { RailUnits } from './useRail'
+
+/**
+ * A sheet's settings are drawn only while they are open, and arrive the
+ * first time they are (`widgets/lazyPart`).
+ */
+const SheetSettingsDialog = lazyPart<ComponentProps<typeof SheetSettingsDialogShape>>(
+  () => import('./SheetSettingsDialog').then((held) => held.SheetSettingsDialog),
+)
 
 export type SheetPageProps = {
   open: boolean

@@ -6,6 +6,7 @@
  * the shortcuts, the export, ⌘F, and a diagram's rename and settings.
  */
 import { useCallback, useState } from 'react';
+import type { ComponentProps } from 'react';
 import { deletionSummary, rolesEndedSentences } from '../model/deletion';
 import type { DeletionSummary } from '../model/deletion';
 import type { DesignDiagram } from '../model/types';
@@ -14,14 +15,27 @@ import { usePersonNames } from '../people/ui/names';
 import { ElementSearchDialog } from '../search/ui/ElementSearchDialog';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { DeleteElementDialog } from './DeleteElementDialog';
-import { DiagramSettingsDialog } from './DiagramSettingsDialog';
+import type { DiagramSettingsDialog as DiagramSettingsDialogShape } from './DiagramSettingsDialog';
 import { RenameDiagramDialog } from './RenameDiagramDialog';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
-import { ExportDialog } from './export/ExportDialog';
+import type { ExportDialog as ExportDialogShape } from './export/ExportDialog';
+import { lazyPart } from '../widgets/lazyPart';
 import type { EditorOwnership, SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { DeleteRequests } from './useDeleteRequests';
 import type { ExportDialogState } from './useExport';
+
+/**
+ * The export and a diagram's settings are asked for from a menu, never part
+ * of the board: each arrives the first time it is opened, in a script of its
+ * own (`widgets/lazyPart`).
+ */
+const ExportDialog = lazyPart<ComponentProps<typeof ExportDialogShape>>(
+  () => import('./export/ExportDialog').then((held) => held.ExportDialog), { until: (props) => props.open },
+);
+const DiagramSettingsDialog = lazyPart<ComponentProps<typeof DiagramSettingsDialogShape>>(
+  () => import('./DiagramSettingsDialog').then((held) => held.DiagramSettingsDialog), { until: (props) => props.target !== undefined },
+);
 
 /** Which of the plain dialogs is up. ⌘F's dialog owns its own query; this is only whether it is up. */
 export function useEditorDialogs() {

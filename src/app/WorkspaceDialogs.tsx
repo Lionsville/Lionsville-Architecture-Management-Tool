@@ -7,6 +7,7 @@
  * settings.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ComponentProps } from 'react'
 import type { Destination } from '../agent/screen'
 import type { ProjectPatch } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
@@ -21,18 +22,31 @@ import { HistoryPage } from './history/lazyHistoryPage'
 import { useSaveUnread } from './history/saveUnread'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { SnapshotDialog } from './history/SnapshotDialog'
-import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
+import type { AddFromLibraryDialog as AddFromLibraryDialogShape } from './dialogs/AddFromLibraryDialog'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
 import { MoveRecordDialog } from './dialogs/MoveRecordDialog'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { messageFor } from './messageFor'
-import { ProjectSettingsDialog } from './ProjectSettingsDialog'
+import type { ProjectSettingsDialog as ProjectSettingsDialogShape } from './ProjectSettingsDialog'
+import { lazyPart } from '../widgets/lazyPart'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { InitialPage } from './App'
 import { initialPageFor } from './bootLanding'
 import type { ModelSession } from './useModelSession'
 import type { WorkspaceParts } from './workspaceParts'
 import type { WorkspaceHost, WorkspaceSettings, WorkspaceShell } from './workspaceProps'
+
+/**
+ * The scope's settings and what to do with an element dropped from the
+ * library are asked for, never part of the first view: each arrives the
+ * first time it is up, in a script of its own (`widgets/lazyPart`).
+ */
+const ProjectSettingsDialog = lazyPart<ComponentProps<typeof ProjectSettingsDialogShape>>(
+  () => import('./ProjectSettingsDialog').then((held) => held.ProjectSettingsDialog), { until: (props) => props.open },
+)
+const AddFromLibraryDialog = lazyPart<ComponentProps<typeof AddFromLibraryDialogShape>>(
+  () => import('./dialogs/AddFromLibraryDialog').then((held) => held.AddFromLibraryDialog), { until: (props) => props.choice !== undefined },
+)
 
 export type WorkspaceDialogState = ReturnType<typeof useWorkspaceDialogs>
 
