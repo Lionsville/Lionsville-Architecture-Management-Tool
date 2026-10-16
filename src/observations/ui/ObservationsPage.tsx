@@ -204,6 +204,12 @@ export type ObservationsPageProps = {
   onChangeAcross?: ChangeAcross
   /** What a scope below is called, for the headings; the path where the host cannot say. */
   scopeLabel?: (path: string) => string
+  /**
+   * What a scope is called where one is picked: its path from the
+   * organisation down, so two scopes of one name are told apart — in the new
+   * observation's *Scope* and the merge's rows and search. Absent, `scopeLabel`.
+   */
+  scopeTrail?: (path: string) => string
   /** The filters this person saved, offered in every scope (ADR-0032 §8); absent, nothing can be saved. */
   savedFilters?: SavedFilters
   /** This scope's own observations that a scope above folded into one of its own, by id. */
@@ -583,7 +589,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** The new observation and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
   const forms = useAnalysisForms({
     work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
-    makeId, today, s, scopeLabel, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
+    makeId, today, s, scopeLabel, scopeTrail: props.scopeTrail, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
   })
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
   const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s, changeBelow: forms.changeBelow })
@@ -596,7 +602,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** The merge screen (ADR-0035): over this page, planned over every scope read, landed here or across. */
   const merging = useMerge({
     here: here.scope, scopes: everywhere, writable: props.writable, readOnly, commit, onChangeAcross: props.onChangeAcross,
-    today, t: s, scopeLabel, day: (date) => formatDay(date, props.language), select: setSelectedKey,
+    today, t: s, scopeLabel, scopeTrail: props.scopeTrail, day: (date) => formatDay(date, props.language), select: setSelectedKey,
   })
   const mergeAt = (kind: MergeKind, id: string, scope?: string) => merging.open(kind, { scope: scope ?? here.scope, id })
   const unlink = (causeId: string, target: Pick<CauseLink, 'id' | 'scope'>) => (

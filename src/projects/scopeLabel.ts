@@ -100,3 +100,24 @@ export function scopeDisplayName(
   const parent = ancestorScopes(path).find((at) => at !== ROOT_SCOPE && own(at))
   return parent === undefined ? name : `${own(parent)} › ${name}`
 }
+
+/** What joins the scopes of a path where a person reads it. */
+export const SCOPE_TRAIL_SEPARATOR = ' › '
+
+/**
+ * What to call a scope wherever a person picks one: its path from the
+ * organisation down, each scope by its name ("Platforms › Cameras").
+ *
+ * Two scopes may share a name under different parents, and a list of bare
+ * names then offers two rows nobody can tell apart; the way down to each is
+ * what makes it one. The organisation is where every path starts, so it is
+ * left out of the others and said, as `name` says it, only for itself. `name`
+ * is whatever the caller calls one scope — `scopeDisplayName`, as a rule — so
+ * the trail says each the way the rest of the screen does.
+ */
+export function scopeTrail(path: ScopePath, name: (path: ScopePath) => string): string {
+  if (path === ROOT_SCOPE) return name(ROOT_SCOPE)
+  return [...ancestorScopes(path).filter((at) => at !== ROOT_SCOPE).reverse(), path]
+    .map(name)
+    .join(SCOPE_TRAIL_SEPARATOR)
+}

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { organisationLabel, scopeClient, scopeDisplayName } from './scopeLabel'
+import { organisationLabel, scopeClient, scopeDisplayName, scopeTrail } from './scopeLabel'
 import type { ScopeSummary } from './scope'
 
 const at = (path: string, name: string, client?: string): ScopeSummary => ({
@@ -73,5 +73,29 @@ describe('scopeDisplayName', () => {
     expect(scopeDisplayName('retail/warehouse', tree, 'the organisation', { withParent: true })).toBe('Retail › Warehouse landscape')
     expect(scopeDisplayName('retail', tree, 'the organisation', { withParent: true })).toBe('Retail')
     expect(scopeDisplayName('', [at('', '')], 'the organisation', { withParent: true })).toBe('the organisation')
+  })
+})
+
+describe('scopeTrail', () => {
+  const two = [
+    at('', 'Acme Logistics'),
+    at('north', 'North'),
+    at('north/cameras', 'Cameras'),
+    at('south', 'South'),
+    at('south/cameras', 'Cameras'),
+    at('south/cameras/fixed', 'Fixed'),
+  ]
+  const name = (path: string) => scopeDisplayName(path, two, 'the organisation')
+
+  it('tells two scopes of one name apart by the way down to each', () => {
+    expect(scopeTrail('north/cameras', name)).toBe('North › Cameras')
+    expect(scopeTrail('south/cameras', name)).toBe('South › Cameras')
+    expect(scopeTrail('south/cameras/fixed', name)).toBe('South › Cameras › Fixed')
+  })
+
+  it('leaves the organisation out of a path and says it as it is for itself', () => {
+    expect(scopeTrail('north', name)).toBe('North')
+    expect(scopeTrail('', name)).toBe('Acme Logistics')
+    expect(scopeTrail('', (path) => scopeDisplayName(path, [], 'the organisation'))).toBe('the organisation')
   })
 })

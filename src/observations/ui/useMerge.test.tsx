@@ -134,6 +134,17 @@ describe('useMerge, inside the open scope', () => {
     expect(state().hits.map((one) => one.at.id)).toEqual(['n2'])
   })
 
+  it('names each hit\'s scope by its path where given one, and finds a scope\'s records by it', () => {
+    const twice = [scope('north/cranes', { observations: [observation('nc', 1)] }), scope('south/cranes', { observations: [observation('sc', 1)] })]
+    const trail = (path: string) => ({ 'north/cranes': 'North quay › Cranes', 'south/cranes': 'South quay › Cranes' })[path] ?? label(path)
+    const { result, state } = mount({ scopes: [north, ...twice], scopeTrail: trail })
+    act(() => result.current.open('observation', { scope: 'north', id: 'n1' }))
+    act(() => state().setAcross(true))
+    expect(state().hits.filter((one) => one.scopeName).map((one) => one.scopeName)).toEqual(['North quay › Cranes', 'South quay › Cranes'])
+    act(() => state().setQuery('south cranes'))
+    expect(state().hits.map((one) => one.at.id)).toEqual(['sc'])
+  })
+
   it('lists no more than its limit, and says how many more there are', () => {
     const many = scope('north', { observations: Array.from({ length: MERGE_HIT_LIMIT + 3 }, (_, at) => observation(`m${at}`, at + 1)) })
     const { result, state } = mount({ scopes: [many] })

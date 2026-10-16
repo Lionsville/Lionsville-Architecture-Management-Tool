@@ -982,7 +982,6 @@ export const EN = {
   'org.domainOwnerVacant': 'Domain owner: nobody today. The {role} of {unit} is vacant.',
   'org.domainOwnerNoUnit': 'Domain owner: nobody. No unit serves it, so nobody holds its {role}.',
   'pick.filedIn': 'filed in {scope}',
-  'pick.under': 'under {scope}',
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Of a type the model does not hold',
   'pick.otherActors': 'Others in this scope',

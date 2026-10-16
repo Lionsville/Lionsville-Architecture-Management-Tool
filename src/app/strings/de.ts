@@ -762,7 +762,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.domainOwnerVacant': 'Domäneneigentümer: heute niemand. {role} von {unit} ist unbesetzt.',
   'org.domainOwnerNoUnit': 'Domäneneigentümer: niemand. Keine Einheit bedient ihn, also hat niemand die Rolle {role} inne.',
   'pick.filedIn': 'eingeordnet in {scope}',
-  'pick.under': 'unter {scope}',
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Von einem Typ, den das Modell nicht kennt',
   'pick.otherActors': 'Andere in diesem Bereich',

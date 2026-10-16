@@ -73,8 +73,10 @@ export function recordLabel(kind: MergeKind, record: Observation | Cause): strin
  * merged, not archived — or causes that are not merged, of this scope, or
  * with `across` of every scope given, nearest first and newest first within
  * a scope; matched on the label and the title (and where, for an
- * observation) by every word of `query`. A record a survivor anywhere says it
- * absorbed is history, and is not offered.
+ * observation) by every word of `query` — and, where `scopeName` is given,
+ * on what it calls the scope of a record from elsewhere, so a scope's path
+ * finds what it holds. A record a survivor anywhere says it absorbed is
+ * history, and is not offered.
  */
 export function mergeCandidates(o: {
   kind: MergeKind
@@ -82,18 +84,21 @@ export function mergeCandidates(o: {
   here: string
   across: boolean
   query: string
+  scopeName?: ((path: string) => string) | undefined
 }): MergeHit[] {
   const gone = absorbedKeys(o.scopes, o.here)
   const pool = o.across ? o.scopes : o.scopes.filter((one) => one.scope === o.here)
   const order = nearestFirst(pool.map((one) => one.scope), o.here)
   return [...pool].sort((a, b) => order.indexOf(a.scope) - order.indexOf(b.scope)).flatMap((scope) => {
+    // A row says its scope where that is not this one, and is found by what it says.
+    const where = scope.scope !== o.here ? o.scopeName?.(scope.scope) : undefined
     const standing: (Observation | Cause)[] = o.kind === 'cause'
       ? scope.causes.filter((one) => !isCauseMerged(scope.causes, one.id))
       : scope.observations.filter((one) => !isMerged(scope.observations, one.id) && !isArchived(one))
     return standing
       .filter((one) => !gone.has(pictureKey(o.here, scope.scope, one.id)))
       .map((one) => ({ one, label: recordLabel(o.kind, one) }))
-      .filter(({ one, label }) => matchesQuery(o.query, [label, one.title, (one as Observation).where]))
+      .filter(({ one, label }) => matchesQuery(o.query, [label, one.title, (one as Observation).where, where]))
       .sort((a, b) => b.one.number - a.one.number)
       .map(({ one, label }) => ({ at: { scope: scope.scope, id: one.id }, label, title: one.title }))
   })

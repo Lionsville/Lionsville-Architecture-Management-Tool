@@ -35,6 +35,7 @@ import { scopesServed } from '../../model/serving'
 import { servesDomainOn } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { scopeTrail } from '../../projects/scopeLabel'
 import { organisationHere } from './organisationHere'
 import { unitChoices } from './choices'
 import { RolesEndedHere } from './RolesEndedHere'
@@ -81,7 +82,7 @@ export function sheetResponsibleOf(at: SheetResponsibleAt, open: () => SheetWays
       || servesDomainOn(organisation, actorId, domainOf(functionId), day, filedIn),
     unit: (actorId) => {
       const unit = units.get(actorId)
-      return unit && { name: unit.name, serves: scopesServed(unit, filedIn).map((path) => ({ scope: path, name: scopeName(path) })) }
+      return unit && { name: unit.name, serves: scopesServed(unit, filedIn).map((path) => ({ scope: path, name: scopeTrail(path, scopeName) })) }
     },
     ...(at.open ? {
       openScope: (path: string) => open()?.home(path),

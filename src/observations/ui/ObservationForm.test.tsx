@@ -218,6 +218,15 @@ describe('the new observation form', () => {
     expect(await screen.findByText('Made in Intake, as a step of that scope. Undo here does not reach it: to take it back, change it back.')).toBeTruthy()
   })
 
+  it('names each scope below by its path, so two of one name are told apart', () => {
+    const empty = (scope: string): ScopeAnalysis => ({ scope, observations: [], causes: [], solutions: [], experiments: [] })
+    const trail: Record<string, string> = { 'acme/north/cameras': 'North › Cameras', 'acme/south/cameras': 'South › Cameras' }
+    mount({ below: [empty('acme/north/cameras'), empty('acme/south/cameras')], scopeLabel: () => 'Cameras', scopeTrail: (path) => trail[path] ?? path })
+    openForm()
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Scope' }))
+    expect(screen.getAllByRole('option').map((one) => one.textContent).slice(1)).toEqual(['North › Cameras (local)', 'South › Cameras (local)'])
+  })
+
   it('is clean to axe with a cause being written', async () => {
     mount()
     openForm()

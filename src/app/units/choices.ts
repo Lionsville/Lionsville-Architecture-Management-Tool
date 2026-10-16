@@ -22,11 +22,15 @@ import type { Organisation, UnitLike } from '../../model/units'
 import { isServable } from '../../model/serving'
 import type { FiledIn } from '../../model/serving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
-import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
+import { scopeTrail } from '../../projects/scopeLabel'
 import type { PickOption } from '../../widgets/PickToAdd'
 
-/** Where a picker's rows are said: what a scope is called, and the words. */
+/**
+ * Where a picker's rows are said: what a scope is called, and the words.
+ * Every scope a row names is said by its path (`scopeTrail`), because two
+ * scopes of one name under different parents are otherwise one row twice.
+ */
 export type ChoiceWords = { scopeName: (path: ScopePath) => string; s: Translate }
 
 /**
@@ -41,7 +45,8 @@ export function unitChoices(at: ChoiceWords & {
   leave?: (unit: UnitLike) => boolean
   refuse?: (unit: UnitLike) => string | undefined
 }): PickOption[] {
-  const { organisation, filedIn, day, scopeName, s } = at
+  const { organisation, filedIn, day, s } = at
+  const scopeName = (path: ScopePath) => scopeTrail(path, at.scopeName)
   const typeName = new Map(organisation.unitTypes.map((type) => [type.id, type.name]))
   return unitsOn(organisation, day)
     .filter((unit) => !at.leave?.(unit))
@@ -62,15 +67,13 @@ export function unitChoices(at: ChoiceWords & {
 
 /**
  * The scopes a unit may be said to serve, in the tree's order: each but
- * `leave`'s and the organisation, which is no domain (`isServable`), with the
- * scope it is filed under below the top.
+ * `leave`'s and the organisation, which is no domain (`isServable`), each
+ * by its path from the organisation down, which the search matches too.
  */
 export function scopeChoices(at: ChoiceWords & { scopes: readonly ScopePath[]; leave: readonly ScopePath[] }): PickOption[] {
-  return at.scopes.filter((path) => isServable(path) && !at.leave.includes(path)).map((path) => {
-    const parent = parentScope(path)
-    const below = parent !== undefined && parent !== ROOT_SCOPE
-    return { id: path, label: at.scopeName(path), ...(below ? { note: at.s('pick.under', { scope: at.scopeName(parent) }) } : {}) }
-  })
+  return at.scopes
+    .filter((path) => isServable(path) && !at.leave.includes(path))
+    .map((path) => ({ id: path, label: scopeTrail(path, at.scopeName) }))
 }
 
 /**
@@ -82,7 +85,8 @@ export function scopeChoices(at: ChoiceWords & { scopes: readonly ScopePath[]; l
 export function functionChoices(at: ChoiceWords & {
   index: ScopeIndex; scope: ScopePath; model: HostModel; leave: ReadonlySet<ElementId>
 }): PickOption[] {
-  const { index, scope, model, leave, scopeName, s } = at
+  const { index, scope, model, leave, s } = at
+  const scopeName = (path: ScopePath) => scopeTrail(path, at.scopeName)
   const here = model.elements.filter((element) => element.kind === 'function' && element.ref === undefined)
   const nameHere = new Map(here.map((element) => [element.id, element.name]))
   const named = (id: ElementId | undefined) => (id === undefined ? undefined : nameHere.get(id) ?? index.lookup(id)?.name)

@@ -263,6 +263,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         explainedAboveOf={readings.explainedAboveOf}
         {...(readOnly ? {} : { onChangeBelow: changeBelow, onChangeAcross: changeAcross })}
         scopeLabel={readings.scopeLabel}
+        scopeTrail={readings.scopeTrail}
         {...(props.preferences.savedFilters ? { savedFilters: props.preferences.savedFilters } : {})}
         absorbedAbove={readings.absorbedAbove}
         {...(onOpenScope

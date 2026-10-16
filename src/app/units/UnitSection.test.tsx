@@ -96,9 +96,11 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false, onOpenHome }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false, onOpenHome, tree }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
   onOpenHome?: (path: string) => void
+  /** The scope tree offered, each by its name; absent, the organisation, the customer domain and shipping. */
+  tree?: Record<string, string>
   register?: readonly Person[]; me?: string; manages?: ManagesPeople
   /** Marks as intended handed down, as the workspace hands them: this scope's through the session. */
   marking?: boolean
@@ -142,8 +144,8 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
     <UnitSection
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
       makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
-      scopeLabel={(path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
-      scopes={['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} {...(onOpenHome ? { onOpenHome } : {})} s={s}
+      scopeLabel={tree ? (path) => tree[path] ?? path : (path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
+      scopes={tree ? Object.keys(tree) : ['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} {...(onOpenHome ? { onOpenHome } : {})} s={s}
     />
   )
   if (!marking) return section
@@ -373,6 +375,20 @@ describe('a unit in its inspector', () => {
     cleanup()
     renderShell(<Harness model={top} root={top} scope="" unit="ops" readOnly commands={[]} />)
     expect(text('unit-serves')).toBe('No domain')
+  })
+
+  it('offers each domain by its path, so two of one name are told apart, and finds one by its path', async () => {
+    const commands: Command[] = []
+    const top: HostModel = { ...ROOT, elements: [actor('ops', 'Operations', { unitTypeId: 'ut-domain' })] }
+    const tree = { '': 'the organisation', north: 'North', 'north/cameras': 'Cameras', south: 'South', 'south/cameras': 'Cameras' }
+    renderShell(<Harness model={top} root={top} scope="" unit="ops" tree={tree} commands={commands} />)
+    fireEvent.click(screen.getByTestId('unit-serves-add'))
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['North', 'North › Cameras', 'South', 'South › Cameras'])
+    fireEvent.change(screen.getByRole('combobox', { name: 'Find a scope' }), { target: { value: 'south' } })
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['South', 'South › Cameras'])
+    fireEvent.click(screen.getByRole('option', { name: 'South › Cameras' }))
+    expect(commands[0]).toEqual({ type: 'element.update', id: 'ops', patch: { scopes: ['south/cameras'] } })
+    expect(text('unit-serves')).toBe('South › Cameras')
   })
 
   it('opens the home of each domain it serves, by the keyboard too', async () => {

@@ -29,6 +29,7 @@ import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { UnitType } from '../../model/operatingModel'
 import type { ScopePath } from '../../projects/scopePath'
+import { scopeTrail } from '../../projects/scopeLabel'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import { scopeChoices } from './choices'
 import { asksServes, filedInChoice, filedInDefault } from './newUnit'
@@ -145,7 +146,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-filed' } }}
         >
           {writable.map((path) => (
-            <MenuItem key={path} value={choiceOf(path)}>{path === preferred ? s('chart.addDefault', { scope: scopeLabel(path) }) : scopeLabel(path)}</MenuItem>
+            <MenuItem key={path} value={choiceOf(path)}>{path === preferred ? s('chart.addDefault', { scope: scopeTrail(path, scopeLabel) }) : scopeTrail(path, scopeLabel)}</MenuItem>
           ))}
         </TextField>
         {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 12, color: 'error.main' }}>{said}</Typography>}
@@ -171,7 +172,7 @@ function ServesField({ serves, spans, scopes, scopeLabel, onChange, s }: {
         {serves.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('chart.addServesNone')}</Typography>}
         {serves.map((path) => (
           <Chip
-            key={path} size="small" label={scopeLabel(path)} data-testid="new-unit-serves-chip"
+            key={path} size="small" label={scopeTrail(path, scopeLabel)} data-testid="new-unit-serves-chip"
             onDelete={() => onChange(serves.filter((one) => one !== path))}
           />
         ))}

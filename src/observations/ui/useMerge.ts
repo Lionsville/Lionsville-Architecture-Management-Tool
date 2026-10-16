@@ -100,6 +100,8 @@ export type MergeDeps = {
   today: () => string
   t: Translate
   scopeLabel: (path: string) => string
+  /** What a row of the search calls the scope it is in: its path, which the search matches too. Absent, `scopeLabel`. */
+  scopeTrail?: ((path: string) => string) | undefined
   day: (date: string) => string
   /** Select a record on the page, by its key. */
   select: (key: string) => void
@@ -264,6 +266,7 @@ function screenOf(o: {
 
 export function useMerge(deps: MergeDeps) {
   const { here, scopes, t, scopeLabel, today, select, commit, onChangeAcross, readOnly } = deps
+  const trail = deps.scopeTrail ?? scopeLabel
   const writable = deps.writable ?? EVERY_SCOPE
   // Who saw it, offered by reference and said as the register says it (ADR-0036 §8).
   const names = usePersonNames()
@@ -273,8 +276,8 @@ export function useMerge(deps: MergeDeps) {
   const kind = opened?.kind ?? 'observation'
 
   const hits = useMemo(
-    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query }) : []),
-    [opened, kind, scopes, here, c.across, c.query],
+    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query, scopeName: trail }) : []),
+    [opened, kind, scopes, here, c.across, c.query, trail],
   )
   const records = useMemo<Picked[]>(() => (opened?.picked ?? []).map((at) => ({ at, one: recordAt(scopes, kind, at) })), [opened, scopes, kind])
   const survivorAt = opened?.survivor
@@ -298,9 +301,9 @@ export function useMerge(deps: MergeDeps) {
   const nameAt = useCallback((at: RecordAt) => recordName(scopes, here, scopeLabel, at), [scopes, here, scopeLabel])
   const rowOf = useCallback((hit: MergeHit): MergeRow => ({
     ...hit,
-    ...(hit.at.scope !== here ? { scopeName: scopeLabel(hit.at.scope) } : {}),
-    ...(writable(hit.at.scope) ? {} : { closed: t('observation.mergeNotYoursRow', { scope: scopeLabel(hit.at.scope) }) }),
-  }), [here, scopeLabel, writable, t])
+    ...(hit.at.scope !== here ? { scopeName: trail(hit.at.scope) } : {}),
+    ...(writable(hit.at.scope) ? {} : { closed: t('observation.mergeNotYoursRow', { scope: trail(hit.at.scope) }) }),
+  }), [here, trail, writable, t])
 
   const { close, setBusy } = c
   const land = useCallback(async () => {

@@ -761,7 +761,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.domainOwnerVacant': 'Domeineigenaar: vandaag niemand. De {role} van {unit} is vacant.',
   'org.domainOwnerNoUnit': 'Domeineigenaar: niemand. Geen eenheid bedient het, dus niemand vervult de {role}.',
   'pick.filedIn': 'ingedeeld in {scope}',
-  'pick.under': 'onder {scope}',
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Van een type dat het model niet kent',
   'pick.otherActors': 'Anderen in deze scope',

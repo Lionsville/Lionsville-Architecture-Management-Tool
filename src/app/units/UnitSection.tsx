@@ -71,6 +71,7 @@ import type { Finding } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { scopeTrail } from '../../projects/scopeLabel'
 import { transitionLabel } from '../../model/transition'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
@@ -347,8 +348,8 @@ function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }} data-testid="unit-serves">
         {serves.length === 0 && !editable && <Typography sx={QUIET} data-testid="unit-serves-none">{s('unit.servesNone')}</Typography>}
         {serves.map((one) => (
-          <Chip key={one} size="small" label={scopeLabel(one)} data-testid="unit-serves-scope"
-            {...(onOpenHome ? { onClick: () => onOpenHome(one), title: s('unit.servesOpen', { scope: scopeLabel(one) }) } : {})}
+          <Chip key={one} size="small" label={scopeTrail(one, scopeLabel)} data-testid="unit-serves-scope"
+            {...(onOpenHome ? { onClick: () => onOpenHome(one), title: s('unit.servesOpen', { scope: scopeTrail(one, scopeLabel) }) } : {})}
             {...(editable && element.scopes ? { onDelete: () => onChange(scopesWithout(element, one)) } : {})} />
         ))}
         {editable && more && (

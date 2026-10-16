@@ -82,12 +82,19 @@ describe('the units a picker offers', () => {
 })
 
 describe('the scopes a unit may serve', () => {
-  it('are every scope but those it serves, with the scope one below the top is under', () => {
+  it('are every scope but those it serves, each by its path from the organisation down', () => {
     // Flipped 13 October 2026: the organisation is no domain, so it is not offered.
     expect(scopeChoices({ scopes: ['', 'shipping', 'shipping/parcels', 'warehouse'], leave: ['warehouse'], scopeName, s })).toEqual([
       { id: 'shipping', label: 'Shipping' },
-      { id: 'shipping/parcels', label: 'Parcels', note: 'under Shipping' },
+      { id: 'shipping/parcels', label: 'Shipping › Parcels' },
     ])
+  })
+
+  it('tell two scopes of one name apart by their paths', () => {
+    const twice: Record<string, string> = { north: 'North', 'north/cameras': 'Cameras', south: 'South', 'south/cameras': 'Cameras' }
+    const labels = scopeChoices({ scopes: ['north', 'north/cameras', 'south', 'south/cameras'], leave: [], scopeName: (path) => twice[path] ?? path, s })
+      .map((one) => one.label)
+    expect(labels).toEqual(['North', 'North › Cameras', 'South', 'South › Cameras'])
   })
 })
 

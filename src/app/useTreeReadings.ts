@@ -16,7 +16,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
-import { scopeDisplayName } from '../projects/scopeLabel'
+import { scopeDisplayName, scopeTrail } from '../projects/scopeLabel'
 import type { Supporter } from '../business'
 
 export type TreeReadings = ReturnType<typeof useTreeReadings>
@@ -45,6 +45,8 @@ export function useTreeReadings(deps: {
     (path: ScopePath) => scopeDisplayName(path, everyScope, groupName || s('common.organisation')),
     [everyScope, groupName, s],
   )
+  /** What to call a scope where one is picked: its path from the organisation down (`scopeTrail`). */
+  const scopeTrailLabel = useCallback((path: ScopePath) => scopeTrail(path, scopeLabel), [scopeLabel])
 
   const { rowsElsewhere, rowsThrough, rowsElsewhereRef } = useRowsElsewhere(index, elements)
 
@@ -134,7 +136,7 @@ export function useTreeReadings(deps: {
   const explainedAboveOf = useCallback((path: ScopePath) => index.explainedFromAbove(path), [index])
 
   return {
-    scopeLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
+    scopeLabel, scopeTrail: scopeTrailLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
     sharedElsewhere, applicationsInTree, analysisBelow, analysisTree, absorbedAbove, explainedAbove, explainedAboveOf,
   }
 }

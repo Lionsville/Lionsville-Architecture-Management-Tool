@@ -78,6 +78,8 @@ export function useAnalysisForms(deps: {
   today: () => string
   s: Translate
   scopeLabel: (path: string) => string
+  /** What a scope below is called in the form's *Scope*: its path, so two of one name are told apart. Absent, `scopeLabel`. */
+  scopeTrail?: ((path: string) => string) | undefined
   nameOf: (id: string, scope?: string) => string
   select: (key: string) => void
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
@@ -171,7 +173,7 @@ export function useAnalysisForms(deps: {
   const scopes: FormScope[] = [
     { label: s('observation.formScopeHere', { name: deps.scopeName }), name: deps.scopeName, observations: work.observations, causes: work.causes },
     ...(onChangeBelow && deps.local ? below.map((one) => ({
-      scope: one.scope, label: s('observation.formScopeBelow', { name: scopeLabel(one.scope) }), name: scopeLabel(one.scope),
+      scope: one.scope, label: s('observation.formScopeBelow', { name: (deps.scopeTrail ?? scopeLabel)(one.scope) }), name: scopeLabel(one.scope),
       observations: one.observations, causes: one.causes,
     })) : []),
   ]
