@@ -88,6 +88,20 @@ export type CommandRefusal =
    * catalogue does not know, which nobody here can say the weight of.
    */
   | 'command.markFix'
+  /**
+   * A comment about a kind of record that is not commented on (ADR-0037 §3):
+   * `model/commentable.ts` says which are.
+   */
+  | 'command.notCommentable'
+  /** A comment about a record the scope does not hold (ADR-0037 §3). */
+  | 'command.unknownRecord'
+  /**
+   * A reply that answers a reply, or a comment about another record, or one
+   * the scope does not hold (ADR-0037 §4): a thread is one level deep.
+   */
+  | 'command.badReply'
+  /** A comment removed, updated or removed again (ADR-0037 §5): a tombstone stays as it is. */
+  | 'command.commentRemoved'
 
 /**
  * Whether a refusal is one of the reducer's.
@@ -111,6 +125,10 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.rootExplained': true,
   'command.rootAddressed': true,
   'command.markFix': true,
+  'command.notCommentable': true,
+  'command.unknownRecord': true,
+  'command.badReply': true,
+  'command.commentRemoved': true,
 }
 
 export function isCommandRefusal(value: string): value is CommandRefusal {

@@ -43,6 +43,7 @@ export const EN = {
   'gsearch.kind.unitType': 'Unit types',
   'gsearch.kind.role': 'Roles',
   'gsearch.kind.responsibility': 'Responsibilities',
+  'gsearch.kind.comment': 'Comments',
   'gsearch.kind.experiment': 'Experiments',
   // A view is one kind of hit; which view it is, beside it.
   'gsearch.view.layer7': 'Landscape',

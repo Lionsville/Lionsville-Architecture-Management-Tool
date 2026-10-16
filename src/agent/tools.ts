@@ -159,7 +159,7 @@ const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'manag
 export const SEARCH_HIT_KINDS = [
   'element', 'documentation', 'view', 'relation', 'adr', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility',
+  'unitType', 'role', 'responsibility', 'comment',
 ] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
@@ -3056,6 +3056,10 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
   'command.markFix': 'A fix is never marked as intended: the model contradicts itself, and the answer is a change to the model. A review or a note is marked by a person, never by a tool.',
+  'command.notCommentable': 'That kind of record is not commented on. Comments are on observations, causes, solutions, experiments, elements, decisions and plans.',
+  'command.unknownRecord': 'The record the comment is about is not in this scope. Comment on it in the scope that keeps it.',
+  'command.badReply': 'replyTo must name a comment on the same record that is not a reply itself: a thread is one level deep.',
+  'command.commentRemoved': 'That comment was removed, and a removed comment is not changed again. Write a new one.',
 }
 
 /**

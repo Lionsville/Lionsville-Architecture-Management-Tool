@@ -18,6 +18,7 @@ import type { OperatingRule, Responsibility, Role, UnitType } from './operatingM
 import type { Transition } from './transition'
 import type { Assignment } from './units'
 import type { CheckMark } from './checkMarks'
+import type { Comment } from './comment'
 
 /**
  * What the shell keeps beside the design itself.
@@ -77,6 +78,11 @@ export interface HostExtras {
    * each a review's or a note's, by its check and the ids of its subjects.
    */
   checkMarks?: CheckMark[]
+  /**
+   * The comments on this scope's records (ADR-0037): each about a record of
+   * the scope by its key, its author by register id.
+   */
+  comments?: Comment[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

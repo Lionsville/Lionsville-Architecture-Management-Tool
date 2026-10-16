@@ -25,6 +25,7 @@
  * _operating/<list>.json            the operating model, one file per list (ADR-0036)
  * _assignments/assignments.json     who holds which role in which unit here (ADR-0036)
  * _checks/marks.json                the findings about this scope marked as intended (ADR-0036, amended)
+ * _comments/<kind>-<id>.json        the comments on one record, oldest first (ADR-0037)
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -91,6 +92,7 @@ import {
   ASSIGNMENT_FILES, ASSIGNMENTS_FOLDER, assignmentFileUnreadable, assignmentFiles, assignmentsFrom,
 } from './assignmentFile'
 import { CHECK_MARK_FILES, CHECKS_FOLDER, checkMarkFileUnreadable, checkMarkFiles, checkMarksFrom } from './checkMarkFile'
+import { COMMENTS_FOLDER, commentFileUnreadable, commentFiles, commentsFrom, isThreadPath } from './commentFile'
 import { dataUrl, readDataUrl } from '../../../projects/dataUrl'
 import { markdownBody, markdownFile } from './fileText'
 import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
@@ -116,7 +118,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -128,7 +130,7 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FO
  */
 export const SCOPE_FOLDERS: readonly string[] = [
   DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
-  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER,
+  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER,
 ]
 
 /** The files of the three folders that hold one JSON list each (ADR-0036). */
@@ -447,6 +449,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
   files.push(...operatingFiles(model))
   files.push(...assignmentFiles(model))
   files.push(...checkMarkFiles(model))
+  files.push(...commentFiles(model))
 
   files.push(...imageFiles(scope.imageLibrary ?? []))
   files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
@@ -647,6 +650,7 @@ export function isFormatPath(path: string): boolean {
     return rest.length === 2 && OBSERVATION_SUBFOLDERS.includes(rest[0]) && /^\d{1,6}-.*\.md$/.test(name)
   }
   if (folder === OPERATING_FOLDER || folder === ASSIGNMENTS_FOLDER || folder === CHECKS_FOLDER) return LIST_FILES.includes(path)
+  if (folder === COMMENTS_FOLDER) return rest.length === 1 && isThreadPath(path)
   return false
 }
 
@@ -1210,6 +1214,7 @@ export function scopeFromFolder(
     ...operatingFrom((at) => textAt(folder, at)),
     ...assignmentsFrom((at) => textAt(folder, at)),
     ...checkMarksFrom((at) => textAt(folder, at)),
+    ...commentsFrom([...folder.keys()], (at) => textAt(folder, at)),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
@@ -1269,12 +1274,16 @@ function leftOut(
   // A list of the operating model, the assignments or the marks that is not
   // a list would be written back empty, as a `model.json` that is not a model
   // would (ADR-0036).
-  const lists = LIST_FILES.filter((path) => !failed.includes(path) && listFileUnreadable(textAt(folder, path)))
+  // A thread's file likewise (ADR-0037): written back, it would lose the thread.
+  const threads = [...folder.keys()].filter(isThreadPath)
+  const lists = [...LIST_FILES, ...threads].filter((path) => !failed.includes(path) && (
+    isThreadPath(path) ? commentFileUnreadable(textAt(folder, path)) : listFileUnreadable(textAt(folder, path))))
   const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped), ...lists].sort()
   const unreadable = [
     ...(modelFailed ? [MODEL_FILE] : []),
     ...namedMarks(held).filter((mark) => failed.includes(mark)),
     ...LIST_FILES.filter((path) => failed.includes(path)),
+    ...threads.filter((path) => failed.includes(path)),
     ...lists,
   ]
   return {

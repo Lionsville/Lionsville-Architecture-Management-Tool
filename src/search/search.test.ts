@@ -126,6 +126,13 @@ const everything: HostModel = {
   roles: [{ id: 'ro-1', name: 'Harbour master', short: 'HM', duties: [] }],
   responsibilities: [{ id: 'rs-1', name: 'Plan the harbour shifts', group: 'Operate' }],
   operatingRules: [{ id: 'applicationOwner', role: 'ro-1' }],
+  comments: [{
+    id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at: '2026-10-16T09:00:00Z',
+    body: 'Seen at the harbour gate again',
+  }, {
+    id: 'cm-2', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at: '2026-10-16T09:00:00Z',
+    body: '', removed: { at: '2026-10-16T10:00:00Z', by: { person: 'pe-1' } },
+  }],
 }
 
 describe('every kind of record a scope holds', () => {
@@ -148,6 +155,9 @@ describe('every kind of record a scope holds', () => {
     expect(place('unitType')).toEqual({ page: 'operating', id: 'ut-1' })
     expect(place('role')).toEqual({ page: 'operating', id: 'ro-1' })
     expect(place('responsibility')).toEqual({ page: 'operating', id: 'rs-1' })
+    // A comment opens on the record it is about, and a removed one is found nowhere.
+    expect(place('comment')).toEqual({ page: 'observations', id: 'ob-1' })
+    expect(hits.filter((hit) => hit.kind === 'comment').map((hit) => [hit.id, hit.title])).toEqual([['cm-1', 'Seen at the harbour gate again']])
     expect(hits.every((hit) => hit.scope === 'port')).toBe(true)
   })
 

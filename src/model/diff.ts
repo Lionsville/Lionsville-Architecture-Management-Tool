@@ -35,6 +35,9 @@ import type { OperatingRule, Responsibility, Role, UnitType } from './operatingM
 import type { Assignment } from './units'
 import { checkMarkId } from './checkMarks'
 import type { CheckMark } from './checkMarks'
+import type { Comment } from './comment'
+import { RECORD_LISTS } from './recordKey'
+import type { RecordKey } from './recordKey'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
@@ -43,7 +46,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
   | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'membership' | 'geometry'
+  | 'comment' | 'membership' | 'geometry'
 
 export type ModelChange = {
   kind: ChangeKind
@@ -280,7 +283,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
     'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark',
-    'membership', 'geometry',
+    'comment', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }
@@ -303,7 +306,25 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
     ?? before.elements.find((one) => one.id === id)?.name ?? id
   each<Assignment>('assignment', before.assignments, after.assignments, (held) => unitName(held.unitId))
   changes.push(...markChanges(before, after))
+  changes.push(...commentChanges(before, after))
   return changes
+}
+
+/**
+ * The comments (ADR-0037), each by its id and named by the record it is
+ * about, as the scope calls that record: a diff never names the author, who
+ * is a register id (ADR-0036 §8).
+ */
+function commentChanges(before: HostModel, after: HostModel): ModelChange[] {
+  const wasBy = byId(before.comments ?? [])
+  const nowBy = byId(after.comments ?? [])
+  const nameIn = (model: HostModel, about: RecordKey) => {
+    const list = about.kind in RECORD_LISTS ? model[RECORD_LISTS[about.kind as keyof typeof RECORD_LISTS]] : undefined
+    const held = (list as readonly { id: string; title?: string; name?: string }[] | undefined)?.find((one) => one.id === about.id)
+    return held?.title ?? held?.name
+  }
+  const nameOf = (comment: Comment) => nameIn(after, comment.about) ?? nameIn(before, comment.about) ?? comment.about.id
+  return ids(wasBy, nowBy).flatMap((id) => compare<Comment>('comment', id, wasBy.get(id), nowBy.get(id), nameOf))
 }
 
 /**

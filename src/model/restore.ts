@@ -29,9 +29,10 @@
 import { isAdrLocked } from './adr'
 import { isMarkable } from './checkMarks'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
+import { commentsToCommands } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  assignmentsOf, boxesOf, causesOf, checkMarksOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  assignmentsOf, boxesOf, causesOf, checkMarksOf, commentList, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
@@ -113,7 +114,11 @@ function restoreDecision(then: Model, now: Model, id: string, asOf: string): Res
  * never the last one at the wrong moment.
  */
 function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
-  const commands: Command[] = []
+  // The comments as they were (ADR-0037 §6): those taken first, before a
+  // record they are about goes and takes them with it, and those put back
+  // last, once every record they are about is back.
+  const threads = commentsToCommands(now, commentList(then))
+  const commands: Command[] = threads.filter((command) => command.type === 'comment.take')
   let dropped = 0
   let kept = 0
 
@@ -244,6 +249,7 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
   }
   commands.push(...operatingBack(then, now))
+  commands.push(...threads.filter((command) => command.type !== 'comment.take'))
 
   const restored: Restored = { what: 'project', name: then.name, asOf }
   return { ok: true, command: { type: 'restore', restored, commands }, dropped, kept }

@@ -22,6 +22,7 @@ import type { OperatingRule, Responsibility, Role, UnitType } from '../operating
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
 import type { Assignment } from '../units'
 import type { CheckMark } from '../checkMarks'
+import type { Comment } from '../comment'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
@@ -204,6 +205,17 @@ export function withCheckMarks(model: Model, rows: Rows<CheckMark>): Model {
     return out
   }
   return { ...model, checkMarks: rows.by, order }
+}
+
+/** The comments, put back: emptied means gone, as every list of records (ADR-0037). */
+export function withComments(model: Model, rows: Rows<Comment>): Model {
+  const order = withOrder(model, 'comments', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.comments
+    return out
+  }
+  return { ...model, comments: rows.by, order }
 }
 
 export function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {

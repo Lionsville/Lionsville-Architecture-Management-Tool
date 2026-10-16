@@ -24,10 +24,11 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  assignmentsOf, causesOf, checkMarksOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
+  assignmentsOf, causesOf, checkMarksOf, commentsOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
   transitionsOf, unitTypesOf,
 } from './normalised'
 import { checkEntry } from './checkCatalogue'
+import { commentedName } from './commentable'
 import type { Model } from './normalised'
 import { RELATION_LABEL } from './relations'
 import type { RelationType } from './types'
@@ -267,11 +268,37 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
 }
 
 /** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
+  if (isCommentCommand(lead)) return commentStep(lead, before)
   if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
+}
+
+/** A comment's commands (ADR-0037). */
+type CommentCommand = Extract<CommandBody, { type: `comment.${'add' | 'update' | 'remove' | 'take' | 'put'}` }>
+
+function isCommentCommand(command: CommandBody): command is CommentCommand {
+  return command.type.startsWith('comment.')
+}
+
+const COMMENT_STEP: Record<CommentCommand['type'], StringKey> = {
+  'comment.add': 'activity.commentAdded',
+  'comment.update': 'activity.commentEdited',
+  'comment.remove': 'activity.commentRemoved',
+  'comment.take': 'activity.commentTaken',
+  'comment.put': 'activity.commentPut',
+}
+
+/**
+ * A comment written, edited or removed (ADR-0037 §7): named by the record it
+ * is about, as that record was called before the step — *Commented on
+ * Webshop*.
+ */
+function commentStep(lead: CommentCommand, before: Model): StepSummary {
+  const about = lead.type === 'comment.add' || lead.type === 'comment.put' ? lead.comment.about : commentsOf(before)[lead.id]?.about
+  return { key: COMMENT_STEP[lead.type], ...(about ? { name: commentedName(before, about) } : {}) }
 }
 
 /** A mark's commands (ADR-0036, amended). */

@@ -70,6 +70,7 @@ import { PICTURES } from './format/imageLibrary'
 import { RESPONSIBILITIES_FILE, ROLES_FILE, RULES_FILE, UNIT_TYPES_FILE } from './format/operatingFile'
 import { ASSIGNMENTS_FILE } from './format/assignmentFile'
 import { CHECK_MARKS_FILE } from './format/checkMarkFile'
+import { COMMENTS_FOLDER } from './format/commentFile'
 import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */
@@ -139,6 +140,7 @@ const KIND_PATHS: Record<RecordKind, readonly string[]> = {
   operatingRule: [RULES_FILE],
   assignment: [ASSIGNMENTS_FILE],
   checkMark: [CHECK_MARKS_FILE],
+  comment: [COMMENTS_FOLDER],
   image: ['scope.json', PICTURES],
   scope: ['scope.json', 'model.json'],
 }
@@ -160,6 +162,7 @@ const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   operatingRule: (path) => path === RULES_FILE,
   assignment: (path) => path === ASSIGNMENTS_FILE,
   checkMark: (path) => path === CHECK_MARKS_FILE,
+  comment: (path) => path.startsWith(`${COMMENTS_FOLDER}/`),
   image: (path) => path === 'scope.json' || path.startsWith(`${PICTURES}/`),
   scope: (path) => path === 'scope.json' || path === 'model.json',
 }

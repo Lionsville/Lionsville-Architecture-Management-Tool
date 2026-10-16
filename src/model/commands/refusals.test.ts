@@ -29,6 +29,10 @@ const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.rootExplained': true,
   'command.rootAddressed': true,
   'command.markFix': true,
+  'command.notCommentable': true,
+  'command.unknownRecord': true,
+  'command.badReply': true,
+  'command.commentRemoved': true,
 }
 
 describe('the writer’s refusals', () => {

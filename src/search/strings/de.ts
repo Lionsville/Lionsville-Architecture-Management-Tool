@@ -43,6 +43,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gsearch.kind.unitType': 'Einheitstypen',
   'gsearch.kind.role': 'Rollen',
   'gsearch.kind.responsibility': 'Verantwortungen',
+  'gsearch.kind.comment': 'Kommentare',
   'gsearch.kind.experiment': 'Experimente',
   'gsearch.view.layer7': 'Landschaft',
   'gsearch.view.container': 'Containerdiagramm',

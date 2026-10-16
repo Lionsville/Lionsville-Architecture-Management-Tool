@@ -35,12 +35,12 @@ export type RecordKind =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition'
   | 'observation' | 'cause' | 'solution' | 'experiment'
   | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'image' | 'scope'
+  | 'comment' | 'image' | 'scope'
 
 export const RECORD_KINDS: readonly RecordKind[] = [
   'element', 'relation', 'diagram', 'decision', 'transition',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark', 'image', 'scope',
+  'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark', 'comment', 'image', 'scope',
 ]
 
 /**
@@ -67,7 +67,7 @@ export const RECORD_LISTS = {
   transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
   experiment: 'experiments',
   unitType: 'unitTypes', role: 'roles', responsibility: 'responsibilities', operatingRule: 'operatingRules',
-  assignment: 'assignments', checkMark: 'checkMarks',
+  assignment: 'assignments', checkMark: 'checkMarks', comment: 'comments',
 } as const satisfies Partial<Record<RecordKind, keyof Model>>
 
 type Listed = keyof typeof RECORD_LISTS

@@ -103,6 +103,8 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { assignments: [assignment(r, 'as-1')] } : {}),
     // Every reader passes a fix's mark over, so a model never holds one.
     ...(r.chance(0.6) ? { checkMarks: [{ ...checkMark(r, 'r-1 a b'), check: 'check.interactionUnused' as const }] } : {}),
+    // A thread on the first element, which every model has: a comment, and now and then a reply under it.
+    ...(r.chance(0.6) ? { comments: [thread(r, 'cm-1'), ...(r.chance(0.5) ? [{ ...thread(r, 'cm-2'), replyTo: 'cm-1' }] : [])] } : {}),
   })
   return held
 }
@@ -147,6 +149,15 @@ const checkMark = (r: Random, key: string) => ({
   check: r.chance(0.9) ? r.pick(['check.interactionUnused', 'check.roleVacant', 'check.notDrawn'] as const) : 'check.conflict' as const,
   key, on: r.pick(DAYS), ...(r.chance(0.5) ? { reason: r.pick(WORDS) || 'Meant so' } : {}),
 })
+/** A comment on the first element, or now and then on a record nobody holds or of a kind nobody comments on. */
+const comment = (r: Random, id: string) => ({
+  id, about: r.chance(0.9) ? { kind: 'element' as const, id: 'e0' } : r.pick([{ kind: 'element' as const, id: 'gone' }, { kind: 'diagram' as const, id: 'd1' }]),
+  by: { person: r.pick(['pe-1', 'pe-2']) }, at: `${r.pick(DAYS)}T10:00:00Z`, body: r.pick(WORDS) || 'A remark',
+  ...(r.chance(0.2) ? { edited: `${r.pick(DAYS)}T11:00:00Z` } : {}),
+  ...(r.chance(0.2) ? { via: 'agent' } : {}),
+})
+/** A comment a model may hold: every reader passes over one about nothing, so the thread is on the first element. */
+const thread = (r: Random, id: string) => ({ ...comment(r, id), about: { kind: 'element' as const, id: 'e0' } })
 const responsibility = (r: Random, id: string) => ({
   id, name: r.pick(WORDS) || 'Release', ...(r.chance(0.5) ? { group: 'Deliver' } : {}),
 })
@@ -358,6 +369,21 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     ...(r.chance(0.3) ? { at: r.int(m.order.checkMarks.length + 1) } : {}),
   }),
   'checkMark.remove': (r, m) => ({ type: 'checkMark.remove', id: held(r, m.order.checkMarks, 'check.notDrawn x') }),
+  'comment.add': (r, m) => ({
+    type: 'comment.add',
+    comment: {
+      ...comment(r, r.chance(0.85) ? `cm-${3 + r.int(100)}` : 'cm-1'),
+      ...(r.chance(0.3) ? { replyTo: held(r, m.order.comments, 'cm') } : {}),
+    },
+    ...(r.chance(0.3) ? { at: r.int(m.order.comments.length + 1) } : {}),
+  }),
+  'comment.update': (r, m) => ({ type: 'comment.update', id: held(r, m.order.comments, 'cm'), body: r.pick(WORDS) || 'Said again', edited: '2026-10-16T12:00:00Z' }),
+  'comment.remove': (r, m) => ({ type: 'comment.remove', id: held(r, m.order.comments, 'cm'), removed: { at: '2026-10-16T12:00:00Z', by: { person: 'pe-1' } } }),
+  'comment.take': (r, m) => ({ type: 'comment.take', id: held(r, m.order.comments, 'cm') }),
+  'comment.put': (r, m) => ({
+    type: 'comment.put', comment: thread(r, r.chance(0.5) ? held(r, m.order.comments, 'cm') : `cm-${3 + r.int(100)}`),
+    ...(r.chance(0.3) ? { at: r.int(m.order.comments.length + 1) } : {}),
+  }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

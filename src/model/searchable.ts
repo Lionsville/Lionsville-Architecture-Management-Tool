@@ -35,6 +35,8 @@
  * shell maps them onto its own screens.
  */
 import type { Adr } from './adr'
+import type { Comment } from './comment'
+import type { CommentableKind } from './commentable'
 import type { PersonId, PersonRef } from './person'
 import { personIdOf, refText } from './person'
 import type { ModelOrder } from './normalised'
@@ -55,7 +57,7 @@ import type { DesignDiagram, DesignElement, ElementKind, Relation } from './type
 export const SEARCH_KINDS = [
   'element', 'documentation', 'view', 'relation', 'decision', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility',
+  'unitType', 'role', 'responsibility', 'comment',
 ] as const
 
 export type SearchKind = (typeof SEARCH_KINDS)[number]
@@ -141,6 +143,7 @@ export type SearchableRecords = {
   operatingRules: OperatingRule
   assignments: Assignment
   checkMarks: CheckMark
+  comments: Comment
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -372,6 +375,38 @@ const responsibility: Searchable<Responsibility> = {
   }),
 }
 
+/** The page a record commented on opens on: the page of its kind. */
+const COMMENTED_PAGE: Record<CommentableKind, SearchPage> = {
+  observation: 'observations', cause: 'observations', solution: 'observations', experiment: 'observations',
+  element: 'element', decision: 'decisions', transition: 'plan',
+}
+
+/** A comment's first line, as short as a title is: what a hit on it reads as. */
+function firstLine(body: string): string {
+  const line = body.split('\n').map((one) => one.trim()).find((one) => one !== '') ?? ''
+  return line.length > 80 ? `${line.slice(0, 79)}…` : line
+}
+
+/**
+ * A comment (ADR-0037 §7): found by what it says and by its author, through
+ * the register, and opened on the reader of the record it is about. A removed
+ * comment says nothing: its tombstone is in the thread, not in a search.
+ */
+const comment: Searchable<Comment> = {
+  kind: 'comment',
+  order: 'file',
+  describe: (held) => (held.removed || !(held.about.kind in COMMENTED_PAGE) ? undefined : {
+    id: held.id,
+    title: firstLine(held.body),
+    fields: [],
+    prose: held.body,
+    ...peopleIn(held.by),
+    detail: held.at.slice(0, 10),
+    ...(held.about.kind === 'element' ? { about: [held.about.id] } : {}),
+    opens: { page: COMMENTED_PAGE[held.about.kind as CommentableKind], id: held.about.id },
+  }),
+}
+
 /**
  * Every list a scope holds, and what its records say to a search. One line
  * per list; a list with two kinds of hit — an element and its page, a plan
@@ -398,6 +433,7 @@ export const SEARCHABLE: SearchTable = {
   // A mark is about a finding, which is worked out and never stored: there is
   // no record of it to open, and its reason is found on the Checks page.
   checkMarks: [],
+  comments: [comment],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

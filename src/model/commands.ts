@@ -38,10 +38,11 @@ import type {
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
 import type { CheckMark, CheckMarkId } from './checkMarks'
+import type { Comment, CommentId, CommentRemoved } from './comment'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
-import { causesOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
+import { causesOf, commentsOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
@@ -206,6 +207,27 @@ export type CommandBody =
   | { type: 'checkMark.add'; mark: CheckMark; at?: number }
   /** Taken back: the finding is listed again. The id is `checkMarkId`'s. */
   | { type: 'checkMark.remove'; id: CheckMarkId }
+
+  // --- a comment on a record of the scope (ADR-0037) ------------------------
+  /** Written: about a commentable record the scope holds, a reply to a comment that is not one. */
+  | { type: 'comment.add'; comment: Comment; at?: number }
+  /** Its body changed, and when: nothing else of a comment changes. */
+  | { type: 'comment.update'; id: CommentId; body: string; edited: string }
+  /** Removed: its body emptied and `removed` set, a tombstone in its place. */
+  | { type: 'comment.remove'; id: CommentId; removed: CommentRemoved }
+  /**
+   * Taken out of the scope whole, with no tombstone: what undoes a
+   * `comment.add`, and what a deletion, a merge or a move writes for a thread
+   * that leaves with its record. Never a screen's or an agent's to send.
+   */
+  | { type: 'comment.take'; id: CommentId }
+  /**
+   * Put back as it was, where it stood: what undoes a take, an update and a
+   * removal. Not asked again whether it may be — it was there — so a thread
+   * whose record went some other way still undoes. Never a screen's or an
+   * agent's to send.
+   */
+  | { type: 'comment.put'; comment: Comment; at?: number }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }
@@ -520,4 +542,29 @@ export function experimentsToCommands(model: Model, next: readonly Experiment[])
     }
   }
   return commands
+}
+
+/**
+ * A whole list of comments, said as the changes that get there (ADR-0037 §6):
+ * what a merge or a move hands back for a scope it writes. A comment gone is
+ * taken; one new is added; one whose value differs — a thread a merge moved to
+ * its survivor, about another record now — is taken and added again where it
+ * stood, since `comment.update` never changes what a comment is about.
+ */
+export function commentsToCommands(model: Model, next: readonly Comment[]): Command[] {
+  const held = commentsOf(model)
+  const wanted = new Map(next.map((one) => [one.id, one]))
+  const takes: Command[] = []
+  const adds: Command[] = []
+  for (const id of model.order.comments) {
+    const now = wanted.get(id)
+    if (!now || JSON.stringify(now) !== JSON.stringify(held[id])) takes.push({ type: 'comment.take', id })
+  }
+  next.forEach((one, at) => {
+    const before = held[one.id]
+    if (!before || JSON.stringify(before) !== JSON.stringify(one)) adds.push({ type: 'comment.add', comment: one, at })
+  })
+  // In the list's order, so each lands where it stands — and a comment before
+  // the replies under it, which are written after it.
+  return [...takes, ...adds]
 }

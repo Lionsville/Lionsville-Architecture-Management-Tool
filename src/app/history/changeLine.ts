@@ -73,6 +73,10 @@ const KEYS: Record<LineKey, StringKey> = {
   'checkMark:added': 'change.checkMarkAdded',
   'checkMark:removed': 'change.checkMarkRemoved',
   'checkMark:changed': 'change.checkMarkChanged',
+  // A comment, by the record it is about (ADR-0037).
+  'comment:added': 'change.commentAdded',
+  'comment:removed': 'change.commentRemoved',
+  'comment:changed': 'change.commentChanged',
   // What came onto a board and what left it. Named, not counted: a card put on
   // a view is a decision somebody made (ADR-0012 §6).
   'membership:added': 'change.membershipAdded',
