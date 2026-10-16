@@ -21,7 +21,7 @@ import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COM
 import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operatingModel'
 import { ASSIGNMENT_COMMANDS } from './assignments'
 import { CHECK_MARK_COMMANDS } from './checkMarks'
-import { COMMENT_COMMANDS } from './comments'
+import { COMMENT_COMMANDS } from './commenting'
 import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
 import { RELATION_COMMANDS } from './relations'

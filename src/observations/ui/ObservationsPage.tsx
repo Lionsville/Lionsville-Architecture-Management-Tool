@@ -45,6 +45,7 @@ import { LanguageProvider } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
+import type { Comment } from '../../model/comment'
 import type { ObservationTab } from '../tabs'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -99,7 +100,14 @@ import type { NewSolution } from './SolutionDialogs'
 import { usePictureFilters } from './usePictureFilters'
 
 /** Everything the page hands back: the analysis and what is being done about it. */
-export type ObservationWork = Analysis & SolutionWork
+export type ObservationWork = Analysis & SolutionWork & {
+  /**
+   * The scope's comments (ADR-0037), handed back where a change moves a
+   * thread — a merge carries an absorbed record's to its survivor. Absent,
+   * the comments are as they were.
+   */
+  comments?: Comment[]
+}
 
 /**
  * A change to the analysis of a scope below, landed as that scope's step
@@ -490,8 +498,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const analysis = useMemo<Analysis>(() => ({ observations: [...observations], causes: [...causes] }), [observations, causes])
   const solutions = useMemo(() => model.solutions ?? [], [model.solutions])
   const experiments = useMemo(() => model.experiments ?? [], [model.experiments])
-  const work = useMemo<ObservationWork>(
-    () => ({ ...analysis, solutions: [...solutions], experiments: [...experiments] }), [analysis, solutions, experiments])
+  const work = useMemo<ObservationWork>(() => ({ ...analysis, solutions: [...solutions], experiments: [...experiments], comments: [...model.comments ?? []] }),
+    [analysis, solutions, experiments, model.comments])
   const plans = useMemo<SolutionPlan[]>(() => (model.transitions ?? []).map(solutionPlanOf), [model.transitions])
   const context = useMemo<SolutionContext>(() => ({
     causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),

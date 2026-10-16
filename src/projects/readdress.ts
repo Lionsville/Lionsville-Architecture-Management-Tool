@@ -22,6 +22,7 @@
  * {@link readdressRefs}).
  */
 import type { Command, DesignElement, ElementId } from '../model'
+import type { Comment } from '../model/comment'
 import type { Cause, Observation } from '../model/observation'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
@@ -108,9 +109,10 @@ export function applyRefPatch(scope: ScopeSnapshot, patch?: RefPatch): ScopeSnap
  * observation or cause names its survivor's scope on its `merged` event, and
  * a cause the scope of what it absorbed. A move carries them as it carries a
  * stand-in's `ref`, or the link and the history point at a folder that is not
- * there.
+ * there. A comment that a merge or a move brought from another scope names
+ * that scope on its `from` (ADR-0037 §6), and is carried the same way.
  */
-type AnalysisHeld = { causes?: readonly Cause[]; observations?: readonly Observation[] }
+type AnalysisHeld = { causes?: readonly Cause[]; observations?: readonly Observation[]; comments?: readonly Comment[] }
 
 /** Whether a scope's analysis names an address inside the subtree at `from`. */
 export function analysisNamesWithin(model: AnalysisHeld, from: ScopePath): boolean {
@@ -120,6 +122,7 @@ export function analysisNamesWithin(model: AnalysisHeld, from: ScopePath): boole
     one.explains.some((link) => within(link.scope)) || (one.history ?? []).some((event) => within(event.scope))
   ))
     || (model.observations ?? []).some((one) => one.history.some((event) => within(event.scope)))
+    || (model.comments ?? []).some((one) => within(one.from?.scope))
 }
 
 /**
@@ -149,7 +152,13 @@ export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: Scop
       ? [{ type: 'observation.update', id: one.id, patch: { history } }]
       : []
   })
-  return [...causes, ...observations]
+  // A comment is put back as it was with its `from` carried: its body and author are not touched.
+  const comments = (model.comments ?? []).flatMap((one): Command[] => {
+    if (!one.from) return []
+    const from = carry(one.from)
+    return from.scope !== one.from.scope ? [{ type: 'comment.put', comment: { ...one, from } }] : []
+  })
+  return [...causes, ...observations, ...comments]
 }
 
 /**

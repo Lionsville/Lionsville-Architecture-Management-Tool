@@ -58,7 +58,7 @@ import { relative } from 'node:path'
  * so `platform`'s shorter row must not be the one left standing.
  */
 const MODULES = [
-  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'decisions', 'observations',
+  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'decisions', 'observations',
   'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
   'app',
 ]
@@ -72,18 +72,22 @@ const MAY_IMPORT = {
   widgets: ['i18n'],
   people: ['model', 'i18n', 'platform', 'widgets'],
   documentation: ['model', 'i18n', 'platform', 'widgets'],
+  // A thread is read and written in every reader that takes one (ADR-0037):
+  // its body is a description's Markdown, and its author is a person picked
+  // from the register.
+  comments: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people'],
   // A page with a field that names a person asks the register what a reference
   // reads as, and offers its picker (ADR-0036 §8): the people module, beside it.
-  decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people'],
-  observations: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people'],
+  decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments'],
+  observations: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments'],
   operating: ['model', 'i18n', 'platform', 'widgets'],
-  roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'people'],
+  roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'people', 'comments'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports', 'people'],
-  editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search', 'people'],
-  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people'],
+  editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search', 'people', 'comments'],
+  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people', 'comments'],
   ports: ['model', 'platform', 'projects', 'agent', 'people'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations', 'people'],
   providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters', 'people'],
@@ -101,6 +105,7 @@ const WHY = {
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
   people: 'The register of people is kept outside the history (ADR-0036): its rules, what a reference reads as, and its page. It reads the model\'s shape of a reference and nothing a scope holds, and every module that shows a person asks it for the name.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
+  comments: 'A thread of comments on a record (ADR-0037): the pure rules of a thread and of what travels with a record, and the one thread every reader mounts. It reads the model, renders a body as a description is rendered, and names its author from the register.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
   observations: 'An observation is what was seen and a cause what lies behind it (ADR-0021): markdown over the model, laid out in lanes. It does not know how the model is drawn or where it is saved.',
   operating: 'The operating model is records at the organisation (ADR-0036): the libraries it starts from, bringing them in, and the page that edits it. It does not know how the model is drawn or where it is saved.',
@@ -158,7 +163,7 @@ const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*'
  * spellings a barrel has from inside `src/` are written out instead.
  */
 const BARRELS_THAT_DRAW = [
-  'i18n', 'widgets', 'people', 'decisions', 'observations', 'operating', 'roadmap', 'business', 'technology', 'search',
+  'i18n', 'widgets', 'people', 'comments', 'decisions', 'observations', 'operating', 'roadmap', 'business', 'technology', 'search',
 ]
 
 /** A barrel as it is written from inside `src/`: one level up, or two from `platform/node`. */

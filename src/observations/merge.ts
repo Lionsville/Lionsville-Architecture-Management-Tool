@@ -29,6 +29,14 @@
  * that is unticked, stays on the absorbed record as history. Where a record
  * ends up with the same link twice — both records had it — it keeps one, the
  * stronger unless a strength is chosen.
+ *
+ * ## What travels
+ *
+ * Each absorbed record's thread (ADR-0037 §6): every comment about it is
+ * about the survivor from then on, written where the survivor lives and
+ * saying where it came from (`comments/travel.ts`), in the same writes —
+ * where the scopes' comments were handed in. A scope handed in without them
+ * keeps its threads where they are, on the absorbed record.
  */
 import type { StringKey, Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
@@ -41,6 +49,8 @@ import {
   causeEvidence, isArchived, isBright, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow,
 } from './observation'
 import type { LinkRefusal } from './observation'
+import { carryThread } from '../comments/travel'
+import type { Comment } from '../model/comment'
 
 export type MergeKind = 'observation' | 'cause'
 
@@ -157,7 +167,7 @@ export type MergeRefusal =
 export type MergeWrite = ScopeAnalysis
 
 export type MergePlan =
-  | { ok: true; links: MergeLink[]; writes: MergeWrite[]; survivor: Observation | Cause }
+  | { ok: true; links: MergeLink[]; writes: MergeWrite[]; survivor: Observation | Cause; comments: number }
   | { ok: false; refusal: MergeRefusal; record?: RecordAt; links: MergeLink[] }
 
 // --- paths ------------------------------------------------------------------------------
@@ -487,7 +497,29 @@ export function planMerge(request: MergeRequest): MergePlan {
     ? foldObservations(work, request, absorbedAt)
     : foldCauses(work, request, absorbedAt)
   moveLinks(work, links, request.choices ?? {}, held, absorbed)
-  return { ok: true, links, writes: work.changed(request.survivor.scope), survivor: written }
+  const comments = carryThreads(work, request, absorbedAt)
+  return { ok: true, links, writes: work.changed(request.survivor.scope), survivor: written, comments }
+}
+
+/**
+ * Every absorbed record's thread, carried to the survivor where it lives
+ * (ADR-0037 §6): how many comments moved. Only between scopes whose comments
+ * were handed in.
+ */
+function carryThreads(work: Work, request: MergeRequest, absorbedAt: readonly RecordAt[]): number {
+  const into = { kind: request.kind, id: request.survivor.id }
+  let moved = 0
+  for (const at of absorbedAt) {
+    const from = work.comments(at.scope)
+    const to = work.comments(request.survivor.scope)
+    if (!from || !to) continue
+    const carried = carryThread({ scope: at.scope, comments: from }, { scope: request.survivor.scope, comments: to }, { kind: request.kind, id: at.id }, into)
+    if (carried.moved === 0) continue
+    moved += carried.moved
+    work.setComments(at.scope, carried.from)
+    work.setComments(request.survivor.scope, carried.to)
+  }
+  return moved
 }
 
 /** A value that cannot be the survivor's. */
@@ -507,7 +539,7 @@ function valuesRefusal(request: MergeRequest, survivor: Observation | Cause): Me
 /** The lists of the scopes a merge writes, copied as they are first written, and what changed. */
 class Work {
   private readonly held: Held
-  private readonly lists = new Map<string, { observations: Observation[]; causes: Cause[]; solutions: Solution[] }>()
+  private readonly lists = new Map<string, { observations: Observation[]; causes: Cause[]; solutions: Solution[]; comments?: Comment[] }>()
 
   constructor(held: Held) {
     this.held = held
@@ -517,7 +549,10 @@ class Work {
     let lists = this.lists.get(scope)
     if (!lists) {
       const from = this.held.get(scope)!
-      lists = { observations: [...from.observations], causes: [...from.causes], solutions: [...from.solutions] }
+      lists = {
+        observations: [...from.observations], causes: [...from.causes], solutions: [...from.solutions],
+        ...(from.comments ? { comments: [...from.comments] } : {}),
+      }
       this.lists.set(scope, lists)
     }
     return lists
@@ -538,6 +573,15 @@ class Work {
     lists.solutions = lists.solutions.map((one) => (one.id === at.id ? change(one) : one))
   }
 
+  /** A scope's comments as written so far; nothing where they were not handed in. */
+  comments(scope: string): readonly Comment[] | undefined {
+    return this.lists.get(scope)?.comments ?? this.held.get(scope)?.comments
+  }
+
+  setComments(scope: string, comments: Comment[]): void {
+    this.of(scope).comments = comments
+  }
+
   observations(scope: string): readonly Observation[] {
     return this.lists.get(scope)?.observations ?? this.held.get(scope)!.observations
   }
@@ -548,7 +592,8 @@ class Work {
     for (const [scope, lists] of this.lists) {
       const from = this.held.get(scope)!
       const moved = (a: readonly unknown[], b: readonly unknown[]) => a.some((one, at) => one !== b[at])
-      if (!moved(lists.observations, from.observations) && !moved(lists.causes, from.causes) && !moved(lists.solutions, from.solutions)) continue
+      const commentsMoved = lists.comments !== undefined && (lists.comments.length !== (from.comments ?? []).length || moved(lists.comments, from.comments ?? []))
+      if (!moved(lists.observations, from.observations) && !moved(lists.causes, from.causes) && !moved(lists.solutions, from.solutions) && !commentsMoved) continue
       out.push({ ...from, ...lists })
     }
     return out.sort((a, b) => (a.scope === first ? -1 : b.scope === first ? 1 : a.scope.localeCompare(b.scope)))

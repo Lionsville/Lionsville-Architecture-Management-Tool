@@ -27,7 +27,7 @@
 import { useCallback } from 'react'
 import {
   causeList, causesToCommands, experimentList, experimentsToCommands, fromArrays, observationList,
-  observationsToCommands, solutionList, solutionsToCommands, transaction,
+  commentsToCommands, observationsToCommands, solutionList, solutionsToCommands, transaction,
 } from '../model'
 import type { Command, Model } from '../model'
 import type { CommandRefusal } from '../model/reducer'
@@ -46,6 +46,8 @@ export function stepFor(model: Model, next: ObservationWork): Command | undefine
   const commands = [
     ...observationsToCommands(model, next.observations), ...causesToCommands(model, next.causes),
     ...solutionsToCommands(model, next.solutions), ...experimentsToCommands(model, next.experiments),
+    // A thread a merge carried (ADR-0037 §6); a change that hands none back leaves them.
+    ...(next.comments ? commentsToCommands(model, next.comments) : []),
   ]
   if (commands.length === 0) return undefined
   return commands.length === 1 ? commands[0] : transaction(commands)

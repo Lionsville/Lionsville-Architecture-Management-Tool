@@ -29,7 +29,8 @@
  * `agent.scopeNotOpen`, as every other write to another scope is.
  */
 import type { Model } from '../model/normalised'
-import { causeList, experimentList, observationList, solutionList } from '../model/normalised'
+import { causeList, commentList, experimentList, observationList, solutionList } from '../model/normalised'
+import type { Comment } from '../model/comment'
 import type { CauseState, CauseStrength, Experiment, ObservationImpact, ScopeAnalysis, Solution } from '../model/observation'
 import { planMerge, scopesForMerge } from '../observations/merge'
 import type {
@@ -54,7 +55,7 @@ export type MergeView = {
 // --- the seam a host that writes several scopes fills ------------------------------------
 
 /** A scope's four lists, as a change across reads and writes them. */
-export type AcrossWork = Analysis & { solutions: Solution[]; experiments: Experiment[] }
+export type AcrossWork = Analysis & { solutions: Solution[]; experiments: Experiment[]; comments?: Comment[] }
 
 /**
  * Change several scopes as one (ADR-0031 §1, ADR-0035 §5): read every scope
@@ -154,7 +155,10 @@ function askedOf(kind: MergeKind, args: Args, here: string, known: ReadonlyMap<s
 // --- what it reads ----------------------------------------------------------------------
 
 function analysisOf(scope: string, model: Model): ScopeAnalysis {
-  return { scope, observations: observationList(model), causes: causeList(model), solutions: solutionList(model), experiments: experimentList(model) }
+  return {
+    scope, observations: observationList(model), causes: causeList(model), solutions: solutionList(model), experiments: experimentList(model),
+    comments: commentList(model),
+  }
 }
 
 /**
@@ -298,7 +302,7 @@ export function planAnswer(args: Args, view: MergeView): AgentAnswer {
     survivor: named(request.survivor, request.scopes),
     absorb: request.absorbed.map((at) => named(at, request.scopes)),
     ...(refusal && !refusal.ok ? { refused: refusal.refusal, why: REFUSAL_SENTENCE[refusal.refusal], ...(refusal.detail ? { detail: refusal.detail } : {}) } : {}),
-    ...(plan.ok ? { writes, elsewhere: writes.some((scope) => scope !== view.scopePath) } : {}),
+    ...(plan.ok ? { writes, elsewhere: writes.some((scope) => scope !== view.scopePath), ...(plan.comments > 0 ? { comments: plan.comments } : {}) } : {}),
     links: plan.links.map((row) => rowOf(row, request.scopes)),
   })
 }
@@ -312,6 +316,7 @@ export function mergedAnswer(planned: Planned, survivor: unknown, changed?: read
     absorbed: request.absorbed.map((at) => named(at, request.scopes)),
     ...(changed ? { changed } : {}),
     ...(stayed.length > 0 ? { stayed } : {}),
+    ...(plan.ok && plan.comments > 0 ? { comments: plan.comments } : {}),
   }
 }
 
@@ -338,7 +343,10 @@ function acrossAnswer(landed: ChangedAcross, last: Planned | undefined): AgentAn
 
 /** A merge's lists as a change across writes them. */
 function workOf(write: ScopeAnalysis): AcrossWork {
-  return { observations: [...write.observations], causes: [...write.causes], solutions: [...write.solutions], experiments: [...write.experiments] }
+  return {
+    observations: [...write.observations], causes: [...write.causes], solutions: [...write.solutions], experiments: [...write.experiments],
+    ...(write.comments ? { comments: [...write.comments] } : {}),
+  }
 }
 
 /**

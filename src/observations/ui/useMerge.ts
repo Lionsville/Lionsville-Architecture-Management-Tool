@@ -162,6 +162,7 @@ function valueOf(key: MergeFieldKey, value: string): Chosen {
 function worksOf(plan: Extract<MergePlan, { ok: true }>): Map<string, ObservationWork> {
   return new Map(plan.writes.map((one) => [one.scope, {
     observations: [...one.observations], causes: [...one.causes], solutions: [...one.solutions], experiments: [...one.experiments],
+    ...(one.comments ? { comments: [...one.comments] } : {}),
   }]))
 }
 
@@ -317,7 +318,10 @@ export function useMerge(deps: MergeDeps) {
     }
     if (writtenScopes(plan).every((path) => path === here)) {
       const [own] = plan.writes
-      commit({ observations: [...own.observations], causes: [...own.causes], solutions: [...own.solutions] })
+      commit({
+        observations: [...own.observations], causes: [...own.causes], solutions: [...own.solutions],
+        ...(own.comments ? { comments: [...own.comments] } : {}),
+      })
       landed()
       return
     }

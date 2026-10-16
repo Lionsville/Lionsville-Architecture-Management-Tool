@@ -25,6 +25,7 @@
  * say what it holds without importing the module that decides what may happen
  * to one.
  */
+import type { Comment } from './comment'
 import type { PersonRef } from './person'
 
 /** How much it matters when it is seen. Drawn as the size of the mark. */
@@ -316,6 +317,12 @@ export type ScopeAnalysis = {
   causes: readonly Cause[]
   solutions: readonly Solution[]
   experiments: readonly Experiment[]
+  /**
+   * The scope's comments, where the reader has them (ADR-0037): a merge
+   * carries an absorbed record's thread to its survivor through them. Absent,
+   * nothing of this scope's threads is known, and none travels.
+   */
+  comments?: readonly Comment[]
 }
 
 /**

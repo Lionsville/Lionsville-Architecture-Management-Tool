@@ -32,7 +32,13 @@ export type {
 export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf, observationsOf, causesOf, solutionsOf, experimentsOf,
   elementList, relationList, diagramList, decisionList, transitionList, observationList, causeList, solutionList, experimentList, memberList, routeList,
+  commentsOf, commentList,
 } from './normalised'
+
+/** A comment on a record of the scope, and which kinds take one (ADR-0037). */
+export type { Comment, CommentId, CommentFrom, CommentRemoved } from './comment'
+export { COMMENTABLE, COMMENTABLE_KINDS, isCommentable } from './commentable'
+export type { CommentableKind } from './commentable'
 
 /** What was seen, and what lies behind it (ADR-0021). */
 export {
@@ -150,7 +156,7 @@ export type {
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'
 export {
   transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands, observationsToCommands, causesToCommands,
-  solutionsToCommands, experimentsToCommands,
+  solutionsToCommands, experimentsToCommands, commentsToCommands,
   fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'

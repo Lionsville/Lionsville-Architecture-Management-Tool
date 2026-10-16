@@ -236,7 +236,7 @@ describe('landing a change on several scopes', () => {
         kind: 'observation', survivor: { scope: '', id: 'ob-org' }, absorbed: [{ scope: 'claims/intake', id: 'ob-in' }],
         scopes: [...held].map(([scope, work]): ScopeAnalysis => ({ scope, ...work })), date: '2026-10-08',
       })
-      return plan.ok ? new Map(plan.writes.map(({ scope, ...work }) => [scope, { ...work, observations: [...work.observations], causes: [...work.causes], solutions: [...work.solutions], experiments: [...work.experiments] }])) : { refused: plan.refusal }
+      return plan.ok ? new Map(plan.writes.map(({ scope, comments, ...work }) => [scope, { ...work, observations: [...work.observations], causes: [...work.causes], solutions: [...work.solutions], experiments: [...work.experiments], ...(comments ? { comments: [...comments] } : {}) }])) : { refused: plan.refusal }
     })
     expect(landed).toEqual({ ok: true, changed: ['claims/intake', ''] })
     expect(open.model().observations?.[0]).toMatchObject({ seen: 5 })

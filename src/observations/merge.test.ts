@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
+import type { Comment } from '../model/comment'
 import type { Cause, Observation, ScopeAnalysis, Solution } from '../model/observation'
 import {
   causeDefaults, observationDefaults, planMerge, scopesForMerge, withMergedDescriptions,
@@ -357,5 +358,44 @@ describe('merging causes', () => {
     const writes = written(plan)
     expect(writes.get('north/east')!.causes[0].history).toEqual([{ date: DAY, kind: 'absorbed', id: 's1', scope: 'south' }])
     expect(writes.get('south')!.causes[0].history).toEqual([{ date: DAY, kind: 'merged', id: 'd1', scope: 'north/east' }])
+  })
+})
+
+describe('what travels with a merge (ADR-0037 §6)', () => {
+  const AT = '2026-10-16T09:00:00Z'
+  const said = (id: string, about: string, over: Partial<Comment> = {}): Comment => ({
+    id, about: { kind: 'observation', id: about }, by: { person: 'pe-1' }, at: AT, body: id, ...over,
+  })
+
+  it('carries an absorbed record’s thread to the survivor in one scope, saying where it came from', () => {
+    const here = scope('', {
+      observations: [observation('o1'), observation('o2')],
+      comments: [said('cm-1', 'o2'), said('cm-2', 'o1'), said('cm-3', 'o2', { replyTo: 'cm-1' })],
+    })
+    const plan = planMerge({ kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: '', id: 'o2' }], scopes: [here], date: DAY })
+    expect(plan.ok && plan.comments).toBe(2)
+    expect(written(plan).get('')?.comments).toEqual([
+      said('cm-1', 'o1', { from: { kind: 'observation', id: 'o2' } }),
+      said('cm-2', 'o1'),
+      said('cm-3', 'o1', { replyTo: 'cm-1', from: { kind: 'observation', id: 'o2' } }),
+    ])
+  })
+
+  it('carries one across scopes: out of the absorbed record’s, into the survivor’s, naming the scope it left', () => {
+    const top = scope('', { observations: [observation('o1')], comments: [] })
+    const below = scope('north', { observations: [observation('o5')], comments: [said('cm-5', 'o5'), said('cm-6', 'o9')] })
+    const plan = planMerge({
+      kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: 'north', id: 'o5' }], scopes: [top, below], date: DAY,
+    })
+    const writes = written(plan)
+    expect(writes.get('')?.comments).toEqual([said('cm-5', 'o1', { from: { kind: 'observation', id: 'o5', scope: 'north' } })])
+    expect(writes.get('north')?.comments).toEqual([said('cm-6', 'o9')])
+  })
+
+  it('leaves the threads where they are when a scope is handed in without its comments', () => {
+    const here = scope('', { observations: [observation('o1'), observation('o2')] })
+    const plan = planMerge({ kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: '', id: 'o2' }], scopes: [here], date: DAY })
+    expect(plan.ok && plan.comments).toBe(0)
+    expect(written(plan).get('')?.comments).toBeUndefined()
   })
 })

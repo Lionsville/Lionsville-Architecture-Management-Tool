@@ -33,7 +33,7 @@
  * (`shell.scopeReadOnly`), and nothing is written then either.
  */
 import { useCallback } from 'react'
-import { causeList, experimentList, fromArrays, observationList, solutionList } from '../model'
+import { causeList, commentList, experimentList, fromArrays, observationList, solutionList } from '../model'
 import type { Command, Model } from '../model'
 import { apply } from '../model/reducer'
 import type { CommandRefusal } from '../model/reducer'
@@ -77,7 +77,7 @@ export type AcrossDeps = {
 function workOf(model: Model): ObservationWork {
   return {
     observations: observationList(model), causes: causeList(model),
-    solutions: solutionList(model), experiments: experimentList(model),
+    solutions: solutionList(model), experiments: experimentList(model), comments: commentList(model),
   }
 }
 

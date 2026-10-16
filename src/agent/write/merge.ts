@@ -13,7 +13,7 @@
  * batch, which is one transaction at this session — it is refused
  * `agent.scopeNotOpen`, naming the scopes.
  */
-import { causesToCommands, observationsToCommands, solutionsToCommands, transaction } from '../../model/commands'
+import { causesToCommands, commentsToCommands, observationsToCommands, solutionsToCommands, transaction } from '../../model/commands'
 import { causeList, observationList } from '../../model/normalised'
 import type { MergeKind } from '../../observations/merge'
 import { absorbFromBelow, observationsBelow } from '../../observations/observation'
@@ -54,6 +54,8 @@ function mergeTool(kind: MergeKind): Handler {
       ...observationsToCommands(view.model, write.observations),
       ...causesToCommands(view.model, write.causes),
       ...solutionsToCommands(view.model, write.solutions),
+      // The absorbed records' threads, about the survivor now (ADR-0037 §6).
+      ...(write.comments ? commentsToCommands(view.model, write.comments) : []),
     ]
     return { command: transaction(commands, { origin: 'agent' }), answer: json(mergedAnswer(planned, survivorLine(planned, view))) }
   }

@@ -132,6 +132,21 @@ describe('observation.merge in the scope open', () => {
     expect(said).not.toHaveProperty('stayed')
   })
 
+  it('carries the absorbed records’ threads to the survivor in the same step, and says how many (ADR-0037 §6)', () => {
+    const at = '2026-10-16T09:00:00Z'
+    const withThreads = fromArrays({ ...claims, comments: [
+      { id: 'cm-1', about: { kind: 'observation', id: 'ob-2' }, by: { person: 'pe-1' }, at, body: 'Seen at the desk' },
+      { id: 'cm-2', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at, body: 'Kept' },
+    ] })
+    expect(parse(answer('merge.plan', { kind: 'observation', into: 'ob-1', absorb: [{ id: 'ob-2' }] }, view(withThreads)))).toMatchObject({ comments: 1 })
+    const { model, said } = write('observation.merge', { into: 'ob-1', absorb: [{ id: 'ob-2' }] }, withThreads)
+    expect(toArrays(model).comments).toEqual([
+      { id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at, body: 'Seen at the desk', from: { kind: 'observation', id: 'ob-2' } },
+      { id: 'cm-2', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at, body: 'Kept' },
+    ])
+    expect(said).toMatchObject({ comments: 1 })
+  })
+
   it('keeps a link where it is when links says move false, and says it stayed', () => {
     const row = key(`${OPEN}#ca-2`, `${OPEN}#ob-2`)
     const { model, said } = write('observation.merge', { into: 'ob-1', absorb: [{ id: 'ob-2' }], links: [{ key: row, move: false }] })

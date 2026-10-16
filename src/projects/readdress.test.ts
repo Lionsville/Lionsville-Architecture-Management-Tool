@@ -152,6 +152,18 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
       { type: 'cause.update', id: 'ca-3', patch: { history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'group/rail' }] } },
     ])
   })
+
+  it('carries the scope a comment came from, and leaves one from this scope or nowhere (ADR-0037 §6)', () => {
+    const at = '2026-10-16T09:00:00Z'
+    const came = { id: 'cm-1', about: { kind: 'observation' as const, id: 'ob-1' }, by: { person: 'pe-1' }, at, body: 'Hi', from: { kind: 'observation' as const, id: 'ob-9', scope: 'acme/rail' } }
+    const here = { ...came, id: 'cm-2', from: { kind: 'observation' as const, id: 'ob-8' } }
+    const plain = { ...came, id: 'cm-3', from: undefined }
+    expect(analysisNamesWithin({ comments: [came] }, 'acme/rail')).toBe(true)
+    expect(analysisNamesWithin({ comments: [here, plain] }, 'acme/rail')).toBe(false)
+    expect(readdressAnalysis({ comments: [came, here, plain] }, 'acme/rail', 'group/rail')).toEqual([
+      { type: 'comment.put', comment: { ...came, from: { kind: 'observation', id: 'ob-9', scope: 'group/rail' } } },
+    ])
+  })
 })
 
 describe('a unit\'s reporting lines (ADR-0039 §3)', () => {
