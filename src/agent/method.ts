@@ -45,6 +45,8 @@ export const OBSERVATIONS_METHOD =
   + 'What works is observed too: an observation with bright true is a bright spot, analysed the same way — its '
   + 'causes are what make it work, and a solution on its root cause spreads it, with the same gates and '
   + 'experiment; a bright spot and a problem are never merged, and observations.list takes tone. '
+  + 'A comment (comment.add) is about a record and never changes it: a question, a doubt or a pointer to '
+  + 'more evidence goes there, and what the record should say is changed in the record. '
   + 'When a person describes a problem in one breath, split it — the facts into observations, their '
   + 'explanations into causes, their ideas into solutions — and tell them which went where. Never answer a '
   + 'gate, verify a cause, say a root cause, conclude an experiment or accept a decision on your own judgement: '

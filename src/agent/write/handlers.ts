@@ -34,6 +34,7 @@ import { addRole, addUnitType, updateRole, updateUnitType } from './operatingMod
 import { addAssignment, endAssignment } from './assignments'
 import { removeReportingLine, setReportingLine } from './reporting'
 import type { Handler } from './shared'
+import { addComment, removeComment, updateComment } from '../commenting'
 import {
   addressSolution, concludeExperimentTool, decideSolution, dropSolutionTool, moveSolutionTool, planExperimentTool,
   planSolution, proposeSolution, removeExperimentTool, removeSolutionTool, restoreSolutionTool, unaddressSolution,
@@ -57,6 +58,9 @@ export const ANSWERED_BY_SESSION = [
 export type CommandTool = Exclude<ToolOfTier<'write' | 'see'>, (typeof ANSWERED_BY_SESSION)[number]>
 
 export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
+  'comment.add': addComment,
+  'comment.update': updateComment,
+  'comment.remove': removeComment,
   'element.add': addElement,
   'element.update': updateElement,
   'element.remove': removeElement,

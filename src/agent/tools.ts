@@ -163,6 +163,22 @@ export const SEARCH_HIT_KINDS = [
 ] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
+ * The record a comment is about (ADR-0037 §8): a kind the registry opts in,
+ * and an id or a label. Written out for the reason the search's kinds are: a
+ * schema is a protocol contract, and the registry is checked against it.
+ */
+export const COMMENTABLE_TOOL_KINDS = ['observation', 'cause', 'solution', 'experiment', 'element', 'decision', 'transition'] as const
+const COMMENT_ABOUT: RowSchema = {
+  type: 'object',
+  description: 'The record: its kind (a plan is transition) and its id, or the label people call it by (OB-0007, ADR-0003).',
+  properties: {
+    kind: { type: 'string', description: 'What kind of record.', enum: COMMENTABLE_TOOL_KINDS },
+    id: { type: 'string', description: 'Its id, or its label.' },
+  },
+  required: ['kind', 'id'],
+  additionalProperties: false,
+}
+/**
  * ADR-0012 §5. Written out here rather than imported from `model/relations`
  * because a tool schema is a protocol contract: what a client is told and what
  * {@link checkArguments} enforces have to be the same literal, and the model's
@@ -905,6 +921,62 @@ const SPECS = [
     tier: 'read',
     description: 'One experiment in full, with its body as markdown.',
     inputSchema: { type: 'object', properties: { id: ID('experiment') }, required: ['id'], additionalProperties: false },
+  },
+
+  // --- comments on any record (ADR-0037) ----------------------------------------
+  {
+    name: 'comments.list',
+    tier: 'read',
+    description:
+      'The comments about one record — its thread, oldest first, each reply under the comment it answers, a removed '
+      + 'comment as a tombstone — or, without about, the scope\'s newest comments with the record each is about. A '
+      + 'comment is about a record and never changes it: what the record should say is changed in the record. '
+      + 'Authors are named as people are named to an agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        about: COMMENT_ABOUT,
+        limit: { type: 'integer', description: 'Without about: how many of the newest. Default 20.', minimum: 1, maximum: 200 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'comment.add',
+    tier: 'write',
+    description:
+      'Comment on a record: a question, a doubt, a pointer to more evidence — something said about it, never a change to '
+      + 'it. Signed by the person you act for, via your name. replyTo answers a comment; answering a reply answers the '
+      + 'comment it is under, so a thread is one level deep.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        about: COMMENT_ABOUT,
+        body: { type: 'string', description: 'What it says, as markdown.' },
+        replyTo: { type: 'string', description: 'The comment it answers, by id (comments.list).' },
+      },
+      required: ['about', 'body'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'comment.update',
+    tier: 'write',
+    description: 'Change what a comment of your person\'s says. Only its author edits a comment, and a removed one stays removed.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('comment'), body: { type: 'string', description: 'What it says now, as markdown.' } },
+      required: ['id', 'body'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'comment.remove',
+    tier: 'write',
+    description:
+      'Remove a comment: it leaves the thread and a mark stays where it stood, so the replies keep their place. Your '
+      + 'person\'s own, or anybody\'s where your person may moderate the scope. Its words stay in the history, as any edit\'s do.',
+    inputSchema: { type: 'object', properties: { id: ID('comment') }, required: ['id'], additionalProperties: false },
   },
 
   // --- the operating model, at the organisation (ADR-0036) --------------------

@@ -105,6 +105,8 @@ function view(model: Model, scopePath = 'acme/landscape'): WriteView {
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
     tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
+    me: () => 'pe-femke',
+    now: () => '2026-09-20T10:00:00.000Z',
   }
 }
 
@@ -220,6 +222,10 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'assignment.end': [{ args: { id: 'as-new-1', on: '2026-12-31' }, on: [SQUAD, ['assignment.add', { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke' }]] }],
   'reportingLine.set': [{ args: { unitId: 'squad', roleId: 'ro-po' }, on: [SQUAD] }],
   'reportingLine.remove': [{ args: { unitId: 'squad', roleId: 'ro-po' }, on: [SQUAD, ['reportingLine.set', { unitId: 'squad', roleId: 'ro-po' }]] }],
+
+  'comment.add': [{ args: { about: { kind: 'observation', id: 'OB-1' }, body: 'Seen at the desk too' } }],
+  'comment.update': [{ args: { id: 'cm-new-1', body: 'Seen at both desks' }, on: [['comment.add', { about: { kind: 'element', id: 'billing' }, body: 'Who runs it?' }]] }],
+  'comment.remove': [{ args: { id: 'cm-new-1' }, on: [['comment.add', { about: { kind: 'decision', id: 'ADR-0001' }, body: 'Why now?' }]] }],
 
   'plan.replace': [{ args: { elementId: 'crm', newName: 'CRM next', shadowFrom: '2027-03-01', cutover: '2027-09-01' } }],
   'plan.port': [{ args: { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' } }],

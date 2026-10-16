@@ -124,6 +124,8 @@ export function useWorkspaceAgentView(deps: {
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader, people: peopleNow }),
     people: peopleNow,
+    // Whom an agent's comment is signed by (ADR-0037 §8): *you*, as the register says.
+    me: () => peopleRef.current?.me,
     ...(changeAcross ? { changeAcross } : {}),
     ...(landSteps ? { landSteps } : {}),
   }), [

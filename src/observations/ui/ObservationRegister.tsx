@@ -41,6 +41,7 @@ import type { Experiment, Solution, SolutionPhase } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
 import { MergedNote } from './Readers'
 import type { MergedInto } from './Readers'
+import { CommentBadge } from '../../comments/ui/CommentBadge'
 
 export type ObservationRegisterProps = {
   own: readonly Observation[]
@@ -190,6 +191,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
         {one.title}
         {bright && <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} sx={{ height: 18, fontSize: 10, ml: 1 }} data-testid={`observation-bright-${key}`} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
+        {scope === undefined && <CommentBadge about={{ kind: 'observation', id: one.id }} />}
       </TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDay(one.date, props.language)}</TableCell>
       <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>

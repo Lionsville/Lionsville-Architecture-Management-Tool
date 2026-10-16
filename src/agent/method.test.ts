@@ -18,6 +18,7 @@ describe('the method sent on connect', () => {
 
   it('says local and global are places, not a permission, and that nothing is shared', () => {
     expect(OBSERVATIONS_METHOD).toContain('Local and global are places, not a permission')
+    expect(OBSERVATIONS_METHOD).toContain('A comment (comment.add) is about a record and never changes it')
     expect(OBSERVATIONS_METHOD).toContain('Nothing is shared')
     expect(OBSERVATIONS_METHOD).toContain('the scope below explains its own observations')
     expect(OBSERVATIONS_METHOD).not.toMatch(/\bshared observation\b|share it/)

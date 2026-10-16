@@ -45,6 +45,7 @@ import type { SearchHit, SearchSource } from '../search/search'
 import type { SearchableModel, SearchKind } from '../model/searchable'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, SEARCH_HIT_KINDS, text, toolSpec } from './tools'
+import { withCommentCount, listComments } from './commenting'
 import { identityOf } from './tree'
 import type { TreeView } from './tree'
 import { causeList, experimentList, observationList, observationsOf, solutionList } from '../model/normalised'
@@ -70,7 +71,7 @@ export type ReadTool = Extract<ToolName,
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
   | 'platform.report' | 'service.report'
   | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read' | 'merge.plan'
-  | 'solutions.list' | 'solution.read' | 'experiments.list' | 'experiment.read'>
+  | 'solutions.list' | 'solution.read' | 'experiments.list' | 'experiment.read' | 'comments.list'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -105,7 +106,18 @@ export type ReadView = {
 
 type Args = Record<string, unknown>
 
+/**
+ * A read, answered: the comments' own read (ADR-0037 §8), or the tool's
+ * answer with — for the read of a commentable record — how many comments it
+ * has.
+ */
 export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentAnswer {
+  if (tool !== 'comments.list') return withCommentCount(tool, rawArgs, view.model, answerTool(tool, rawArgs, view))
+  const wrong = checkArguments(toolSpec(tool).inputSchema, rawArgs)
+  return wrong ? refused('agent.badArguments', wrong) : listComments((rawArgs ?? {}) as Args, view)
+}
+
+function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, view: ReadView): AgentAnswer {
   const wrong = checkArguments(toolSpec(tool).inputSchema, rawArgs)
   if (wrong) return refused('agent.badArguments', wrong)
   const args = (rawArgs ?? {}) as Args

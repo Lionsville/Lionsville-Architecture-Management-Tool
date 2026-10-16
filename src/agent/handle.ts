@@ -68,6 +68,7 @@ import { answerOperating, isOperatingRead } from './operatingModel'
 import { ASSIGNMENTS_LIST, listAssignments } from './assignments'
 import { listReportingLines, REPORTING_LINES_LIST } from './reportingLines'
 import type { Person } from '../people/person'
+import type { PersonId } from '../model/person'
 import { agentRegister, answerWithNames, mayNamePeople } from './persons'
 import type { AgentRegister } from './persons'
 import type { OpenDocument } from './assignments'
@@ -119,6 +120,8 @@ export type SessionView = {
    * assignment may name. Absent where there is none.
    */
   people?(): readonly Person[] | undefined
+  /** The person the agent acts for, as the register says *you* (ADR-0037 §8). Absent where nobody is said. */
+  me?(): PersonId | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -342,7 +345,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   const across = acrossScopes(request.tool, args, session)
   if (across) return withRevision(await across, session)
 
-  const prepared = commandFor(request.tool, withoutGuard(request.args), writeView(session))
+  const prepared = commandFor(request.tool, withoutGuard(request.args), writeView(session, clientOf(shell)))
   if ('ok' in prepared) return prepared
 
   // Asked of the reducer first, so a refusal comes back with its reason: the
@@ -529,6 +532,12 @@ async function readElsewhere(
   })
 }
 
+/** The connected client, as a write is told it: what an agent's comment says it was written via (ADR-0037 §8). */
+function clientOf(shell: ShellView | undefined): Partial<WriteView> {
+  const client = shell?.client()
+  return client !== undefined ? { client } : {}
+}
+
 function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteView {
   return {
     model: session.indexed(),
@@ -545,6 +554,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     ...(session.standInFor ? { standInFor: session.standInFor } : {}),
     ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...(session.people ? { people: session.people } : {}),
+    ...(session.me ? { me: session.me } : {}),
     ...over,
   }
 }

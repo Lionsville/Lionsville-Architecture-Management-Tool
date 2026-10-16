@@ -9,6 +9,7 @@
 export * from './thread'
 export * from './travel'
 export { CommentThread } from './ui/CommentThread'
+export { CommentBadge } from './ui/CommentBadge'
 export type { CommentThreadProps } from './ui/CommentThread'
 export { CommentsProvider, useComments } from './ui/CommentsContext'
 export type { CommentsAccess } from './ui/CommentsContext'

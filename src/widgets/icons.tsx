@@ -805,3 +805,12 @@ export function ConwayIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/** A speech bubble: what is said about a record, beside it (ADR-0037). */
+export function CommentIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}

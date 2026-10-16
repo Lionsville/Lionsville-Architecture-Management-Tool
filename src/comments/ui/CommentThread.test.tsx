@@ -26,6 +26,7 @@ import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { personNames, PersonNamesProvider } from '../../people/ui/names'
 import { CommentsProvider } from './CommentsContext'
 import { CommentThread } from './CommentThread'
+import { CommentBadge } from './CommentBadge'
 
 afterEach(() => cleanup())
 
@@ -152,5 +153,18 @@ describe('a thread', () => {
   it('draws nothing with no workspace around it', () => {
     renderShell(<CommentThread about={web} />)
     expect(screen.queryByTestId('comment-thread')).toBeNull()
+  })
+})
+
+describe('a record’s count where it is listed', () => {
+  it('says how many comments say something, and nothing where none do', () => {
+    renderShell(
+      <CommentsProvider value={{ scope: 'shop', comments: [first, mine], dispatch: () => true, mayComment: true, mayModerate: true, makeId: () => 'x', now: () => AT }}>
+        <CommentBadge about={web} />
+        <CommentBadge about={{ kind: 'element', id: 'pay' }} />
+      </CommentsProvider>,
+    )
+    expect(screen.getByTestId('comment-badge-element-web').textContent).toBe('2')
+    expect(screen.queryByTestId('comment-badge-element-pay')).toBeNull()
   })
 })
