@@ -1,7 +1,7 @@
 # ADR-0038 — An observation moves to another scope, and a bright spot is analysed as a problem is
 
-* Status: accepted, 16 October 2026; bright spots (§6) as built, 16 October
-  2026; the move (§1–§5) not yet built (3.7.0)
+* Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0):
+  bright spots (§6), then the move (§1–§5); implemented, 16 October 2026
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -246,7 +246,8 @@ scope written before has no bright spots and nothing moved.
 
 ## As built, 16 October 2026: bright spots
 
-§6, and its part of §7. The move (§1–§5) is not built yet.
+§6, and its part of §7. The move (§1–§5) was built after it, and has the
+next section.
 
 **The record.** `Observation.bright?: true`; absent is a problem. The front
 matter says `bright: true` on a bright spot only and reads anything else as
@@ -292,4 +293,81 @@ success colour. The filter row's tone is `observations.tone`.
 set; a merge that mixes the two is refused `merge.mixedTone`. The method
 sent on connect says what a bright spot is, that a solution on its root
 spreads it, and that it is never merged with a problem; the sentence on the
-move comes with the move.
+move came with the move.
+
+## As built, 16 October 2026: the move
+
+§1–§5, and the move's part of §7, in three steps — the rule, the agent, the
+screen — with what building it settled.
+
+**The record.** `moved` and `movedIn` are two more observation events, each
+with the record's id, the other scope always (the organisation as `''`) and
+`number`, the number it has, or had, there; the file writes `number` on
+them and reads it back. `movedTo` and `isMoved` (`observations/observation.ts`)
+read **the last of the two**, so a tombstone brought back to life is a record
+again without anything being taken out of its history. `isMerged` reads a
+tombstone as merged, so everything that leaves a merged record out — the
+register, the picture, the counts, the link pickers, the merge's search and
+refusal, the agent's lists — leaves a tombstone out without being told; the
+reader and the register's row say *Moved to OB-0012 in <scope>* where a merged
+one says where it went, and the history says both events in those words.
+`seenSinceImplemented` passes a tombstone by (§2).
+
+**The rule** (`observations/move.ts`). `planMove` is pure and over lists, as
+`planMerge` is; `scopesForMove` names what it reads: both scopes, every scope
+above either, and the scopes of the records it absorbed. The number is
+`nextObservationNumber` over the target's list, tombstones and merged records
+included, so none is reused; moving back keeps the tombstone's. Building it
+settled four things:
+
+* **What it absorbed is readdressed wherever it lives**, the source included,
+  not only in other scopes: the last `merged` event naming it from where it
+  was names the target, so every record reads straight to its survivor. A
+  scope not read keeps its event and is found through the tombstone. The
+  record's own `absorbed` events are said again from the target's side,
+  because an event says a scope only where it is not the one the record
+  lives in.
+* **One more refusal**, `taken`: a target holding another live record of its
+  id. No move makes one, and §1's "no scope holds two records of one id" is
+  kept by refusing it rather than by trusting it.
+* **What is cut** is every link of a cause that is not merged naming the
+  record where it was, in any scope read — the links from above that
+  ADR-0021 allowed among them — each with the solutions on a root cause it
+  leads to, followed across the scopes read. Nothing on a cause is written.
+  Moving back, the links that explain it again are listed too (`restored`).
+* **The thread** travels through `carryThread` with the observation as both
+  `about` and `into`, where both scopes' comments were handed in; the number
+  that goes is counted from the source's either way.
+
+**The writes** are the merge's: the page's `onChangeAcross` and the agent's
+`SessionView.changeAcross` read every scope fresh and plan again, the open
+scope's part through its session with the barrier, all or none.
+
+**The agent** (`agent/move.ts`). `move.plan {id, to}` is a read, answered for
+a scope not open, over the tree as last read, with a scope the tree lists
+and holds no analysis for as empty lists; it answers the label it would have,
+`revived`, the scopes written, the comments and the links cut (each cause
+with its solutions) and restored, and the refusal it would meet.
+`observation.move {id, to}` is never one command at the session: it lands
+through `changeAcross`, is refused `agent.scopeNotOpen` where a host has none,
+and no batch holds it. Its refusals are `move.sameScope`, `move.merged`,
+`move.moved`, `move.archived` and `move.unknownScope`, with `agent.unknownId`
+for a record not there and `command.taken` for `taken`. A read of a tombstone
+says `movedTo` and `movedToLabel`. The method's sentence: a move cuts every
+link that explains it, and `move.plan` says which first.
+
+**On the screen** (`observations/ui/MovePage.tsx`, `useMove.ts`).
+*Move to scope…* is offered on the scope's own standing observations, and
+only where the page may write another scope. The scopes are every scope the
+person can read, those with no analysis yet included (the index's listing),
+nearest first, each by `scopeTrail`, found by any word of what it is called;
+one that may be read and not changed is listed and cannot be picked. Below
+it, the number it will have — or that it comes back over its tombstone — and
+the links cut with the solutions they reach. The screen closes on the record
+where it went: selected on this page where that is a scope below, on the page
+of the scope that keeps it otherwise; or it stays up and says why nothing
+moved. The names are `observation.move`, `move.what`, `move.target`,
+`move.search`, `move.cut` and `move.confirm`.
+
+**Not built**, as §2 says: bringing a cause that explains only this
+observation along with it.

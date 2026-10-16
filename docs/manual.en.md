@@ -1261,6 +1261,38 @@ record stays — it is where the original wording is — and is read as merged
 rather than deleted, saying where it went, also when that is another scope;
 *Show merged* brings merged observations and causes back into the register.
 
+**An observation moves to the scope it belongs in.** Its scope did not exist
+yet when it was written down, the tree was reorganised, or the analysis
+shows it is about another part of the organisation: **Move to scope…**,
+among the reader's occasional actions on an observation of this scope,
+opens the **move screen** over the page. It has three parts:
+
+- **What moves.** The observation, how often it was seen, and how many
+  comments go with it.
+- **Where to.** Every other scope you can read, nearest first, each by its
+  path from the organisation down; type part of a path to find one. A scope
+  you may read and not change is listed and cannot be picked, and says why.
+  Once one is picked, the screen says what the observation will be there:
+  that scope's next number, *It will be OB-0012 in Platforms › Cameras*.
+- **Links cut.** A cause explains observations of its own scope only, so
+  every cause that explains this one loses that link. Each is listed, with
+  the solutions on a root cause the link leads to, before anything is
+  written. The links stay on their causes as history, and the analysis
+  starts again in the scope it goes to.
+
+**Move OB-0007 to <scope>** moves it as one change over both scopes, all or
+nothing. It keeps its title, place, observer, impact, day, description,
+sightings, history and comments, and its history says where it came from.
+Where it was, it stays as history: read as a merged record is, left out of
+the register, the picture and the counts, and shown under *Show merged* as
+*Moved to OB-0012 in <scope>*, which goes there — so a link to it still
+leads somewhere. The screen closes on the observation where it went. ⌘Z does
+not take a move back: move it back, and where its old place still holds it,
+it comes back under its old number and the links cut when it left explain it
+again. An archived observation is restored before it moves, and a merged one
+does not move. An agent moves one the same way: `move.plan` says what it
+would cut, and `observation.move` moves it.
+
 An observation that was fixed, addressed or has stopped mattering is
 **archived**: *Archive* asks why, optionally, and writes the day and the
 note into the history. The record stays where it is, for the history, and
@@ -1296,13 +1328,13 @@ or unlink it first. A new cause can be made a root cause as it is written.
 **Every action on a reader is a small button** with an icon and a word or
 two, and hovering it, or reaching it with Tab, says in full what it does and
 what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
-*Merge*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
+*Merge*, *Move to scope*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
 *Make root cause*, *Verify* — *Unverify* once it is verified — and *Merge*;
 a root cause *Solution* and *Make cause*, and never a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
 two tabs: **New cause**, the cause's own fields, and **Existing cause**,
 offering only what the rules allow. *Use this one* beside a cause already
 written down picks it under Existing cause, where its strength is chosen
-before **Link**. Where the reader is narrow, *Merge*,
+before **Link**. Where the reader is narrow, *Merge*, *Move to scope*,
 *Archive* and *Delete* move into `⋯`.
 
 **Across the tree, a cause explains down and never up.** A cause may explain
@@ -2490,7 +2522,9 @@ place your work is kept lets a reader comment.
 **What travels with a record.** Deleting a record takes its thread with it,
 and undo brings both back. Merging observations or causes moves each absorbed
 record's comments to the survivor, each saying which record it came with; the
-merge screen says how many go. A merged or archived record keeps its own.
+merge screen says how many go. An observation moved to another scope takes
+its thread along, each comment saying the scope it came from; the move screen
+says how many go. A merged or archived record keeps its own.
 
 Comments are kept with the scope, in `_comments/`, one file per record
 commented on. **Search** finds what a comment says in the scope you are in,

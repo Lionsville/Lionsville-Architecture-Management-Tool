@@ -55,3 +55,17 @@ record takes its comments along; merging observations or causes brings the
 absorbed records' comments to the one that stays. The observations register
 shows how many comments each has, search finds what they say, and an agent
 can read and write them too.
+
+**An observation moves to the scope it belongs in.** When an observation was
+written down before its scope existed, the tree was reorganised, or it turns
+out to be about another part of the organisation, **Move to scope…** on the
+observation opens a screen over the page. Pick the scope by its path; the
+screen says the number it will have there, how many comments go with it, and
+— before anything is written — every cause link that will be cut, since a
+cause explains observations of its own scope only, with the solutions those
+links lead to. **Move** takes the observation there with its sightings,
+history and comments, as one change over both scopes. Where it was, it stays
+as history saying *Moved to OB-0012 in <scope>*, so a link to it still leads
+somewhere. ⌘Z does not take a move back: move it back, and it returns under
+its old number with the cut links explaining it again. An agent can do the
+same with `move.plan` and `observation.move`.

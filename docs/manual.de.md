@@ -1449,6 +1449,44 @@ und wird als zusammengeführt gelesen, nicht gelöscht, und sagt, wohin er
 ging, auch wenn das ein anderer Scope ist; *Zusammengeführte zeigen* holt
 zusammengeführte Beobachtungen und Ursachen ins Register zurück.
 
+**Eine Beobachtung zieht in den Scope, in den sie gehört.** Ihr Scope gab es
+noch nicht, als sie aufgeschrieben wurde, der Baum wurde neu geordnet, oder
+die Analyse zeigt, dass sie einen anderen Teil der Organisation betrifft:
+**In Scope verschieben…**, unter den selteneren Aktionen des Lesers einer
+Beobachtung dieses Scopes, öffnet die **Verschiebe-Ansicht** über der Seite.
+Sie hat drei Teile:
+
+- **Was verschoben wird.** Die Beobachtung, wie oft sie gesehen wurde, und
+  wie viele Kommentare mitgehen.
+- **Wohin.** Jeder andere Scope, den Sie lesen dürfen, der nächste zuerst,
+  jeder mit seinem Pfad von der Organisation abwärts; tippen Sie einen Teil
+  eines Pfads, um einen zu finden. Ein Scope, den Sie lesen, aber nicht
+  ändern dürfen, steht in der Liste, kann nicht gewählt werden und sagt,
+  warum. Sobald einer gewählt ist, sagt die Ansicht, was die Beobachtung dort
+  wird: die nächste Nummer dieses Scopes, *Sie wird OB-0012 in Plattformen ›
+  Kameras*.
+- **Getrennte Verknüpfungen.** Eine Ursache erklärt nur Beobachtungen ihres
+  eigenen Scopes, daher verliert jede Ursache, die diese erklärt, diese
+  Verknüpfung. Jede steht in der Liste, mit den Lösungen auf einer
+  Grundursache, zu der die Verknüpfung führt, bevor etwas geschrieben wird.
+  Die Verknüpfungen bleiben als Geschichte an ihrer Ursache, und die Analyse
+  beginnt im Ziel-Scope von vorn.
+
+**OB-0007 nach <Scope> verschieben** verschiebt sie als eine Änderung über
+beide Scopes, alles oder nichts. Sie behält Titel, Ort, Beobachter, Auswirkung,
+Tag, Beschreibung, Sichtungen, Verlauf und Kommentare, und ihr Verlauf sagt,
+woher sie kam. Wo sie war, bleibt sie als Geschichte: gelesen wie ein
+zusammengeführter Eintrag, nicht im Register, im Bild und in den Zählungen,
+und unter *Zusammengeführte zeigen* gezeigt als *Verschoben nach OB-0012 in
+<Scope>*, das dorthin führt — so führt ein Link auf sie noch irgendwohin. Die
+Ansicht schließt auf der Beobachtung, wo sie hinging. ⌘Z nimmt ein Verschieben
+nicht zurück: Verschieben Sie sie zurück, und wo ihr alter Ort sie noch hat,
+kehrt sie unter ihrer alten Nummer zurück, und die Verknüpfungen, die beim
+Weggehen getrennt wurden, erklären sie wieder. Eine archivierte Beobachtung
+wird vor dem Verschieben wiederhergestellt, und eine zusammengeführte wird
+nicht verschoben. Ein Agent verschiebt eine auf dieselbe Weise: `move.plan`
+sagt, was es trennen würde, und `observation.move` verschiebt sie.
+
 Eine Beobachtung, die behoben, angegangen oder nicht mehr von Belang ist, wird
 **archiviert**: *Archivieren* fragt, unverbindlich, nach dem Warum und
 schreibt den Tag und die Notiz in die Geschichte. Der Datensatz bleibt, wo er
@@ -1491,7 +1529,7 @@ Grundursache werden.
 und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
 erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
 Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
-*Zusammenführen*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
+*Zusammenführen*, *In Scope verschieben*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
 Ursache*, *Grundursache*, *Zur Grundursache machen*, *Verifizieren* —
 *Verifizierung aufheben*, sobald sie verifiziert ist — und
 *Zusammenführen*; eine
@@ -1502,7 +1540,7 @@ Ursache**, der nur anbietet, was die Regeln erlauben. *Diese verwenden*
 neben einer schon aufgeschriebenen Ursache wählt sie unter Vorhandene
 Ursache, wo ihre Stärke gewählt wird, bevor sie mit **Verknüpfen** verknüpft
 wird. Wo der Leser schmal
-ist, wandern *Zusammenführen*, *Archivieren* und *Löschen* in `⋯`.
+ist, wandern *Zusammenführen*, *In Scope verschieben*, *Archivieren* und *Löschen* in `⋯`.
 
 **Durch den Baum erklärt eine Ursache nach unten und nie nach oben.** Eine
 Ursache darf eine Ursache eines Scopes unter ihrem eigenen erklären — einen
@@ -2879,8 +2917,10 @@ Ihre Arbeit aufbewahrt wird, lässt einen Leser kommentieren.
 mit, und Rückgängig bringt beide zurück. Beobachtungen oder Ursachen
 zusammenzuführen bringt die Kommentare jedes aufgenommenen Eintrags zum
 verbleibenden, jeder mit dem Eintrag, mit dem er kam; die Zusammenführung sagt,
-wie viele. Ein zusammengeführter oder archivierter Eintrag behält seine
-eigenen.
+wie viele. Eine Beobachtung, die in einen anderen Scope verschoben wird, nimmt
+ihren Verlauf mit, jeder Kommentar mit dem Scope, aus dem er kam; die
+Verschiebe-Ansicht sagt, wie viele. Ein zusammengeführter oder archivierter
+Eintrag behält seine eigenen.
 
 Kommentare werden mit dem Bereich aufbewahrt, in `_comments/`, eine Datei je
 kommentiertem Eintrag. **Suchen** findet, was ein Kommentar sagt, in dem

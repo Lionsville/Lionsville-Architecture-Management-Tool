@@ -1372,6 +1372,43 @@ gelezen, niet verwijderd, met waar het heen ging, ook als dat een andere scope
 is; *Samengevoegde tonen* haalt samengevoegde waarnemingen en oorzaken terug in
 het register.
 
+**Een waarneming verhuist naar de scope waar ze thuishoort.** Haar scope
+bestond nog niet toen ze werd opgeschreven, de boom is anders ingedeeld, of de
+analyse laat zien dat ze over een ander deel van de organisatie gaat: **Naar
+scope verplaatsen…**, bij de minder gebruikte acties van de lezer van een
+waarneming van deze scope, opent het **verplaatsscherm** over de pagina. Het
+heeft drie delen:
+
+- **Wat verplaatst.** De waarneming, hoe vaak ze gezien is, en hoeveel
+  reacties meegaan.
+- **Waarheen.** Elke andere scope die je mag lezen, de dichtstbijzijnde
+  eerst, elk met haar pad vanaf de organisatie; typ een deel van een pad om er
+  een te vinden. Een scope die je mag lezen maar niet wijzigen, staat in de
+  lijst en kan niet gekozen worden, en zegt waarom. Zodra er een gekozen is,
+  zegt het scherm wat de waarneming daar wordt: het volgende nummer van die
+  scope, *Ze wordt OB-0012 in Platforms › Camera's*.
+- **Doorgeknipte koppelingen.** Een oorzaak verklaart alleen waarnemingen van
+  haar eigen scope, dus elke oorzaak die deze verklaart, verliest die
+  koppeling. Elke staat in de lijst, met de oplossingen op een grondoorzaak
+  waar de koppeling naartoe leidt, voordat er iets geschreven wordt. De
+  koppelingen blijven als geschiedenis op hun oorzaak staan, en de analyse
+  begint opnieuw in de scope waar ze heen gaat.
+
+**OB-0007 naar <scope> verplaatsen** verplaatst haar als één wijziging over
+beide scopes, alles of niets. Ze houdt haar titel, plek, waarnemer, impact,
+dag, beschrijving, keren gezien, geschiedenis en reacties, en haar
+geschiedenis zegt waar ze vandaan kwam. Waar ze stond, blijft ze als
+geschiedenis: gelezen zoals een samengevoegd record, buiten het register, het
+beeld en de tellingen, en onder *Samengevoegde tonen* getoond als *Verplaatst
+naar OB-0012 in <scope>*, dat erheen gaat — zo leidt een link ernaar nog
+ergens heen. Het scherm sluit op de waarneming waar ze heen ging. ⌘Z neemt een
+verplaatsing niet terug: verplaats haar terug, en waar haar oude plek haar nog
+heeft, komt ze terug onder haar oude nummer en verklaren de koppelingen die
+doorgeknipt werden toen ze vertrok haar weer. Een gearchiveerde waarneming
+wordt eerst teruggehaald, en een samengevoegde verplaatst niet. Een agent
+verplaatst er een op dezelfde manier: `move.plan` zegt wat het zou
+doorknippen, en `observation.move` verplaatst haar.
+
 Een waarneming die is opgelost, aangepakt of er niet meer toe doet wordt
 **gearchiveerd**: *Archiveren* vraagt, vrijblijvend, waarom, en schrijft de
 dag en de toelichting in de geschiedenis. Het record blijft waar het is, voor
@@ -1412,8 +1449,8 @@ worden.
 **Elke actie in een lezer is een kleine knop** met een pictogram en een of
 twee woorden, en er met de muis boven hangen, of er met Tab op komen, zegt
 voluit wat hij doet en waarvoor hij geweigerd wordt. Een waarneming biedt
-*Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Archiveren* en
-*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Tot
+*Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Naar scope
+verplaatsen*, *Archiveren* en *Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Tot
 grondoorzaak maken*, *Verifiëren* — *Verificatie intrekken* zodra ze
 geverifieerd is — en *Samenvoegen*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
 een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
@@ -1421,8 +1458,8 @@ een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
 oorzaak, en **Bestaande oorzaak**, dat alleen aanbiedt wat de regels
 toestaan. *Deze gebruiken* naast een oorzaak die al opgeschreven is, kiest
 haar onder Bestaande oorzaak, waar de sterkte gekozen wordt vóór
-**Koppelen**. Waar de lezer smal is, gaan *Samenvoegen*, *Archiveren* en
-*Verwijderen* in `⋯`.
+**Koppelen**. Waar de lezer smal is, gaan *Samenvoegen*, *Naar scope
+verplaatsen*, *Archiveren* en *Verwijderen* in `⋯`.
 
 **Door de boom verklaart een oorzaak naar beneden en nooit naar boven.** Een
 oorzaak mag een oorzaak van een scope onder de hare verklaren — een reden
@@ -2724,7 +2761,9 @@ bewaard een lezer laat reageren.
 ongedaan maken brengt beide terug. Waarnemingen of oorzaken samenvoegen
 verplaatst de reacties van elk opgenomen record naar het overblijvende record,
 elk met het record waarmee ze meekwam; het samenvoegscherm zegt hoeveel. Een
-samengevoegd of gearchiveerd record houdt zijn eigen reacties.
+waarneming die naar een andere scope verplaatst, neemt haar draad mee, elke
+reactie met de scope waar ze vandaan kwam; het verplaatsscherm zegt hoeveel.
+Een samengevoegd of gearchiveerd record houdt zijn eigen reacties.
 
 Reacties worden bij de scope bewaard, in `_comments/`, één bestand per record
 waarop is gereageerd. **Zoeken** vindt wat een reactie zegt in de scope waarin
