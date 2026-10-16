@@ -8,7 +8,7 @@
  * keyboard, and clear of the window's own controls. Driven through the hook
  * it is drawn from, over a small fictional quay.
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
@@ -124,7 +124,7 @@ describe('the move screen', () => {
     const { changeAcross } = host(new Map())
     const { page } = mount('n1', { onChangeAcross: changeAcross })
     expect(page().getByTestId('move-record').textContent).toBe('OB-0001 Crane n1 idle')
-    expect(page().getByText('Seen 3 times · 1 comments go with it, each saying where it was written')).toBeTruthy()
+    expect(page().getByText('Seen 3 times · 1 comment goes with it, saying where it was written')).toBeTruthy()
     fireEvent.click(within(page().getByTestId('move-target-south')).getByRole('radio'))
     expect(page().getByTestId('move-becomes').textContent).toBe('It will be OB-0005 in South quay.')
     expect(page().getAllByTestId('move-cut').map((one) => one.textContent)).toEqual([
@@ -147,6 +147,56 @@ describe('the move screen', () => {
     // Closed: what it showed is gone (the dialog itself fades out).
     expect(screen.queryByTestId('move-confirm')).toBeNull()
     expect((await screen.findByTestId('move-note')).textContent).toContain('Moved to OB-0005 in South quay.')
+  })
+
+  it('says one sighting and one comment in the singular, and more in the plural, in every language', () => {
+    const { changeAcross } = host(new Map())
+    const once = { ...north, observations: [observation('n1', 1, { seen: 1 })] }
+    const { page } = mount('n1', { onChangeAcross: changeAcross, scopes: [once, south] })
+    expect(page().getByText('Seen once · 1 comment goes with it, saying where it was written')).toBeTruthy()
+    for (const language of ['en', 'nl', 'de'] as const) {
+      const s = translator(language)
+      expect(s('observation.moveSeenOne', { count: '1' })).not.toBe(s('observation.moveSeenOther', { count: '1' }))
+      expect(s('observation.moveCommentsOther', { count: '2' })).toContain('2')
+      expect(s('observation.mergeCommentsOne', { count: '1' })).not.toBe(s('observation.mergeCommentsOther', { count: '1' }))
+    }
+  })
+
+  it('never says the move it just made is refused while it lands, and closes once it went', async () => {
+    // The write reaches the scopes before the host answers, as it does in the app.
+    let answer: (() => void) | undefined
+    const said: string[] = []
+    const onMoved = vi.fn<(to: RecordAt) => void>()
+    function Live() {
+      const [scopes, setScopes] = useState<ScopeAnalysis[]>([north, south])
+      const changeAcross: ChangeAcross = (paths, change) => {
+        const held = new Map(scopes.filter((one) => paths.includes(one.scope)).map((one) => [one.scope, work(one)] as const))
+        const next = change(held)
+        if (next === undefined || 'refused' in next) return Promise.resolve({ ok: false, reason: 'unchanged' })
+        setScopes((was) => was.map((one) => (next.has(one.scope) ? { scope: one.scope, ...next.get(one.scope)! } : one)))
+        return new Promise((resolve) => { answer = () => resolve({ ok: true, changed: [...next.keys()] }) })
+      }
+      const move = useMove({
+        here: 'north', scopes, paths: ['north', 'south'], readOnly: false, today: () => DAY, t,
+        scopeLabel: (path) => NAMES[path] ?? path, onMoved, onChangeAcross: changeAcross,
+      })
+      const { open } = move
+      useEffect(() => open(north.observations[0]!), [open])
+      said.push(move.state?.confirm.blocked ?? '')
+      return <MovePage state={move.state} note={move.note} onNoteClose={move.clearNote} s={t} />
+    }
+    renderShell(<Live />)
+    const page = within(screen.getByRole('dialog', { name: 'Move an observation to another scope' }))
+    fireEvent.click(within(page.getByTestId('move-target-south')).getByRole('radio'))
+    await act(async () => { fireEvent.click(page.getByTestId('move-confirm')) })
+    // Written, not answered yet: the record is history here, and the screen is gone rather than refusing.
+    expect(answer).toBeDefined()
+    expect(screen.queryByTestId('move-confirm')).toBeNull()
+    await act(async () => { answer!() })
+    await waitFor(() => expect(onMoved).toHaveBeenCalledWith({ scope: 'south', id: 'n1' }))
+    expect(screen.queryByTestId('move-confirm')).toBeNull()
+    expect(said).not.toContain(t('observation.moveMoved'))
+    expect(document.body.textContent).not.toContain(t('observation.moveMoved'))
   })
 
   it('moves into a scope that holds nothing yet', () => {

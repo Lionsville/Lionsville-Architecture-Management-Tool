@@ -27,6 +27,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
+import { plural } from '../../i18n/strings'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { OBSERVATION_IMPACTS } from '../../model/observation'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -195,10 +196,10 @@ function WhatItSays({ state, s, renderMarkdown }: { state: MergeScreenState; s: 
         </Box>
       ))}
       {state.seen !== undefined && (
-        <Typography variant="body2" data-testid="merge-seen">{s('observation.mergeSeenSum', { count: String(state.seen) })}</Typography>
+        <Typography variant="body2" data-testid="merge-seen">{plural(s, { one: 'observation.mergeSeenSumOne', other: 'observation.mergeSeenSumOther' }, state.seen)}</Typography>
       )}
       {state.comments > 0 && (
-        <Typography variant="body2" data-testid="merge-comments">{s('observation.mergeComments', { count: String(state.comments) })}</Typography>
+        <Typography variant="body2" data-testid="merge-comments">{plural(s, { one: 'observation.mergeCommentsOne', other: 'observation.mergeCommentsOther' }, state.comments)}</Typography>
       )}
       <DescriptionField
         label={s('observation.formDescription')} value={state.body} onChange={state.setBody}

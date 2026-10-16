@@ -28,6 +28,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
+import { plural } from '../../i18n/strings'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
@@ -65,7 +66,10 @@ function WhatMoves({ state, s }: { state: MoveScreenState; s: Translate }) {
         {state.bright && <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} />}
       </Box>
       <Typography variant="body2" color="text.secondary">
-        {[s('observation.moveSeen', { count: String(state.seen) }), state.comments > 0 ? s('observation.moveComments', { count: String(state.comments) }) : '']
+        {[
+          plural(s, { one: 'observation.moveSeenOne', other: 'observation.moveSeenOther' }, state.seen),
+          state.comments > 0 ? plural(s, { one: 'observation.moveCommentsOne', other: 'observation.moveCommentsOther' }, state.comments) : '',
+        ]
           .filter(Boolean).join(' · ')}
       </Typography>
     </Section>

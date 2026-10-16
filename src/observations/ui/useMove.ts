@@ -15,11 +15,17 @@
  * it read: what lands is planned over what is there, and not over what the
  * screen was shown. The screen closes on the record in its new scope, or
  * stays up and says why nothing moved.
+ *
+ * **What was pressed stays shown while it lands.** The write reaches the
+ * scopes before the host answers, and planned again over them the record is
+ * history here already: the screen keeps the plan Move was pressed on, and
+ * once the record reads as moved it is gone, rather than saying the move it
+ * just made is refused.
  */
 import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../../i18n'
 import type { Observation, ScopeAnalysis } from '../observation'
-import { formatObservationNumber, isBright, isScopeBelow } from '../observation'
+import { formatObservationNumber, isBright, isMoved, isScopeBelow } from '../observation'
 import { nodeKey } from '../graph'
 import { planMove, scopesForMove } from '../move'
 import type { MoveLink, MovePlan } from '../move'
@@ -148,6 +154,8 @@ export function useMove(deps: MoveDeps) {
   const [target, setTarget] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
+  /** The plan Move was pressed on, while the move lands. */
+  const [pressed, setPressed] = useState<MovePlan | undefined>(undefined)
   const [note, setNote] = useState<string | undefined>(undefined)
 
   const open = useCallback((one: Observation) => {
@@ -155,6 +163,7 @@ export function useMove(deps: MoveDeps) {
     setTarget(undefined)
     setQuery('')
     setBusy(false)
+    setPressed(undefined)
   }, [])
   const close = useCallback(() => setOpened(undefined), [])
 
@@ -175,6 +184,7 @@ export function useMove(deps: MoveDeps) {
   const land = useCallback(async () => {
     if (!plan?.ok || !from || target === undefined || !onChangeAcross) return
     const moved = { label: formatObservationNumber(plan.number), scope: trail(target) }
+    setPressed(plan)
     setBusy(true)
     try {
       const result = await onChangeAcross(read, (held) => {
@@ -190,16 +200,19 @@ export function useMove(deps: MoveDeps) {
       setNote(t('observation.moveNotMade'))
     } finally {
       setBusy(false)
+      setPressed(undefined)
     }
   }, [plan, from, target, onChangeAcross, read, today, trail, scopeLabel, t, close, onMoved])
 
-  const state = record && screenOf({
-    record, plan, target, query, setQuery, busy, every, deps: { ...deps, trail, writable }, name,
+  // Landing, the record reads as moved once the write reached this scope: it went, so the screen goes.
+  const landed = pressed !== undefined && record !== undefined && isMoved(record)
+  const state = record && !landed ? screenOf({
+    record, plan: pressed ?? plan, target, query, setQuery, busy, every, deps: { ...deps, trail, writable }, name,
     pick: (path) => { if (writable(path)) setTarget(path) },
     // `land` says every failure itself, in the note.
     run: () => { void land() },
     close,
-  })
+  }) : undefined
 
   return { open, state, note, clearNote: useCallback(() => setNote(undefined), []) }
 }
