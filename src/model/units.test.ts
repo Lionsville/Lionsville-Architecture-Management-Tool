@@ -192,10 +192,13 @@ describe('who manages a unit on a day', () => {
   })
 
   it('reaches from a managing role to the unit and every unit below it', () => {
-    expect(managedBy(organisation, 'pe-chloe', TODAY)).toEqual({ held: ['sales'], units: ['sales', 'webshop', 'mobile'] })
+    expect(managedBy(organisation, 'pe-chloe', TODAY)).toEqual({
+      held: ['sales'], units: ['sales', 'webshop', 'mobile'], below: ['webshop', 'mobile'], elsewhere: [], lines: [],
+    })
     expect(managedBy(organisation, 'pe-ada', TODAY).units).toEqual(['customer', 'sales', 'webshop', 'mobile', 'parcel'])
-    expect(managedBy(organisation, 'pe-bram', TODAY)).toEqual({ held: [], units: [] })
-    expect(managedBy(organisation, 'pe-gijs', TODAY)).toEqual({ held: [], units: [] })
+    const none = { held: [], units: [], below: [], elsewhere: [], lines: [] }
+    expect(managedBy(organisation, 'pe-bram', TODAY)).toEqual(none)
+    expect(managedBy(organisation, 'pe-gijs', TODAY)).toEqual(none)
   })
 
   it('counts an id merged into the person, and not a role that has stopped managing', () => {

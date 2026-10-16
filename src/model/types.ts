@@ -150,6 +150,24 @@ export type ElementId = string;
  */
 export type NodeShapeVariant = 'rounded' | 'sharp' | 'subtle' | 'figure';
 
+/** Where a unit's own reporting line lands (ADR-0039 §3): the scope that keeps the unit, by path, the unit, and the role. */
+export type UnitLineTarget = { scope: string; unit: ElementId; role: string };
+
+/**
+ * A reporting line said on one unit (ADR-0039 §3): `solid` is a line
+ * manager's, `dotted` a functional line that decides nothing. No `to` says
+ * the role reports by nesting here, whatever its type says.
+ */
+export type UnitReportingLine = {
+  role: string;
+  to?: UnitLineTarget;
+  kind: 'solid' | 'dotted';
+  /** `yyyy-mm-dd`, the first day. */
+  from?: string;
+  /** `yyyy-mm-dd`, the last day. */
+  until?: string;
+};
+
 /**
  * How big a node draws its icon; absent = `small`.
  *
@@ -280,6 +298,14 @@ export interface DesignElement {
    * here because this file imports nothing.
    */
   extraSlots?: { role: string; min: number; max?: number }[];
+  /**
+   * A unit only: reporting lines of its own (ADR-0039 §3), each from the
+   * holders of `role` here to the holders of `to.role` in the unit `to.unit`,
+   * kept in the scope `to.scope` — a path, so a scope moved readdresses it. A
+   * line of its own replaces its type's line of the same kind for that role on
+   * the days it runs; one with no `to` says the role reports by nesting here.
+   */
+  reportingLines?: UnitReportingLine[];
   /**
    * Which phase it is in, and — with {@link DesignElement.lifecycleDates} — when
    * (ADR-0009). Meaningful on a function and an actor as well as an application

@@ -44,6 +44,8 @@ import { accountabilityGaps } from '../model/operatingModel'
 import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
 import { isUnit, personOf, unitFindings, unitsOn } from '../model/units'
+import { reportingFindings } from '../model/reporting'
+import type { ReportingFinding } from '../model/reporting'
 import { unitTypeLanes } from '../model/unitOrder'
 import { servesOn } from '../model/serving'
 import type { FiledIn } from '../model/serving'
@@ -104,6 +106,12 @@ import type { TreeCheckKey } from '../model/checkCatalogue'
  *   up to more than all of their time (`check.personOverloaded`) — about each
  *   scope that keeps one of their assignments, named by the register, never
  *   here;
+ * - the reporting lines on the day (ADR-0039 §6), about the unit a line runs
+ *   from: solid lines that come back to where they started, that day or on a
+ *   later day a line starts or a unit moves (`check.reportingLoop`); a line
+ *   whose target role no unit has (`check.reportingDangling`); one several
+ *   units could take with none above (`check.reportingAmbiguous`); and one
+ *   that lands on a role nobody holds that day (`check.reportingVacant`);
  * - `check.unitNotServing` — an area, a grouping or a capability assigned to
  *   a unit that serves neither its domain — the scope that defines it, or one
  *   above or below that — nor sits under a unit that does (ADR-0036, amended
@@ -155,6 +163,10 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.unitTypeEnded': 'check.unitTypeEnded',
   'check.personOverloaded': 'check.personOverloaded',
   'check.unitNotServing': 'check.unitNotServing',
+  'check.reportingLoop': 'check.reportingLoop',
+  'check.reportingDangling': 'check.reportingDangling',
+  'check.reportingAmbiguous': 'check.reportingAmbiguous',
+  'check.reportingVacant': 'check.reportingVacant',
 }
 
 /**
@@ -228,6 +240,10 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.unitTypeEnded': { one: 'check.short.unitTypeEnded.one', other: 'check.short.unitTypeEnded.other' },
   'check.personOverloaded': { one: 'check.short.personOverloaded.one', other: 'check.short.personOverloaded.other' },
   'check.unitNotServing': { one: 'check.short.unitNotServing.one', other: 'check.short.unitNotServing.other' },
+  'check.reportingLoop': { one: 'check.short.reportingLoop.one', other: 'check.short.reportingLoop.other' },
+  'check.reportingDangling': { one: 'check.short.reportingDangling.one', other: 'check.short.reportingDangling.other' },
+  'check.reportingAmbiguous': { one: 'check.short.reportingAmbiguous.one', other: 'check.short.reportingAmbiguous.other' },
+  'check.reportingVacant': { one: 'check.short.reportingVacant.one', other: 'check.short.reportingVacant.other' },
 }
 
 /**
@@ -709,7 +725,47 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string, canonica
   return [
     ...unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said)),
     ...notServingFindings(at, day),
+    ...reportingFindings(organisation, day).map((one) => reportingFinding(one, said, day)),
   ]
+}
+
+/**
+ * One of the reporting lines' findings (`model/reporting.ts`, ADR-0039 §6),
+ * about the unit the line runs from — a loop's about the first role of its
+ * chain that a solid line runs from. The detail names the line: its role and
+ * where it reports, `→` between, the unit in brackets where it lands; a loop's
+ * names each role in its chain, and the day it is first there where that is
+ * later than the day asked.
+ */
+function reportingFinding(found: ReportingFinding, said: Said, day: string): Finding {
+  const role = (id: string) => said.roleName.get(id) ?? id
+  const unitName = (id: string) => said.at.unitAt(id)?.name ?? id
+  const about = (unitId: string) => ({ scope: said.at.unitAt(unitId)?.scope ?? '', id: unitId, name: unitName(unitId) })
+  if (found.kind === 'loop') {
+    const [first] = found.chain
+    const chain = found.chain.map((at) => `${role(at.roleId)} (${unitName(at.unitId)})`).join(' → ')
+    return {
+      key: 'check.reportingLoop', ...about(first.unitId), detail: found.day > day ? `${chain} · ${found.day}` : chain,
+      fields: [first.roleId, ...found.chain.slice(1).flatMap((at) => [at.unitId, at.roleId])],
+    }
+  }
+  const { line } = found
+  const target = line.to ? [line.to.unitId, line.to.roleId] : []
+  const says = (to: string) => `${role(line.roleId)} → ${to}`
+  switch (found.kind) {
+    case 'dangling':
+      return { key: 'check.reportingDangling', ...about(line.unitId), detail: role(line.roleId), fields: [line.roleId] }
+    case 'ambiguous':
+      return {
+        key: 'check.reportingAmbiguous', ...about(line.unitId), detail: role(line.roleId), fields: [line.roleId, ...(line.candidates ?? [])],
+        count: line.candidates?.length ?? 0,
+      }
+    case 'vacant':
+      return {
+        key: 'check.reportingVacant', ...about(line.unitId), fields: [line.roleId, ...target],
+        detail: line.to ? says(`${role(line.to.roleId)} (${unitName(line.to.unitId)})`) : role(line.roleId),
+      }
+  }
 }
 
 /**

@@ -2,24 +2,38 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * What a right from a managing role reaches (ADR-0036 §12), worked out here
- * and granted nowhere in core: core has no accounts. A build that knows who
- * people are grants the right on its own doors and says so to the app
- * (`SourcePeople.managingRight`), and the screens then offer exactly what
- * those doors will take — both asking this.
+ * What a right from a managing role reaches (ADR-0036 §12, ADR-0039 §4, §9),
+ * worked out here and granted nowhere in core: core has no accounts. A build
+ * that knows who people are grants the right on its own doors and says so to
+ * the app (`SourcePeople.managingRight`), and the screens then offer exactly
+ * what those doors will take — both asking this.
  *
  * - **Whose people**: the units a person holds a managing role in on the day,
  *   and every unit below each, under the parents the plans' moves give them
- *   that day (`managedBy`).
+ *   that day — less the roles there whose holders report elsewhere by a solid
+ *   line; and the roles whose solid line lands on a role they hold, with
+ *   everything those holders manage in turn (`managedBy`). A dotted line
+ *   reaches nothing.
  * - **What**: an assignment there added, corrected, ended or taken away, in
  *   the scope that keeps its unit — and nothing else in that scope: not the
  *   unit's name, its place in the tree or the operating model.
  * - **No self-escalation**: an assignment to a role that manages, whichever
  *   way it changes, only strictly below a unit the person holds one in. In
  *   their own unit a manager above, or scope rights, decide it — their own
- *   assignment included.
+ *   assignment included. A role reached by a line is never the person's own,
+ *   so an assignment to it is theirs to change even where that role manages;
+ *   one they hold themselves never is.
  * - **The day it is asked**: from the first day of the assignment to its
  *   last, never on a planned date.
+ *
+ * **What a host asks** (hosted's managing right): {@link managedReach} for a
+ * person on the day, then {@link reachesAssignment} of each assignment as it
+ * was and as it is after — or {@link onlyPeopleIn} of a whole step — with
+ * {@link managingRoleIds}; {@link reachesPosition} where the managing rule is
+ * not asked (whose people they are), and {@link holdsAllIn} for an answer
+ * about two entries of the register. `units` alone is the nesting half: a
+ * door that asks whose people a person manages asks {@link reachesPosition}
+ * of the unit *and* the role.
  *
  * Pure, with no words and no paths, so a server imports it by its path.
  */
@@ -30,33 +44,58 @@ import type { RoleId } from './operatingModel'
 import type { PersonId } from './person'
 import { apply } from './reducer'
 import type { ElementId } from './types'
-import { isUnit, managedBy, organisationOn, personOf, runsOn, unitsBelow } from './units'
-import type { Assignment, Organisation } from './units'
+import { isUnit, managedBy, personOf, positionKey, runsOn } from './units'
+import type { Assignment, ManagedVia, Organisation } from './units'
 
-/** What one person reaches by a managing role on a day. */
+/** What one person reaches by a managing role, or by the solid lines that land on their roles, on a day. */
 export type ManagedReach = {
   /** The units they hold a running managing role in that day. */
   readonly held: readonly ElementId[]
-  /** Those, and every unit below each: whose people are theirs to change. */
+  /** The units they manage the people of by nesting: those, and every unit below each (ADR-0039 §4 adds the units a line brings in). */
   readonly units: ReadonlySet<ElementId>
-  /** The units strictly below one they hold a managing role in: where an assignment to a managing role is theirs too. */
+  /** The units strictly below one they manage by nesting: where an assignment to a managing role is theirs too. */
   readonly below: ReadonlySet<ElementId>
+  /**
+   * The roles in those units, as {@link positionKey}s, whose holders report
+   * elsewhere by a solid line: not reached by nesting. Absent is none, as for
+   * a reach worked out before reporting lines.
+   */
+  readonly elsewhere?: ReadonlySet<string>
+  /** The roles reached by a solid line, as {@link positionKey}s: never one the person holds. Absent is none. */
+  readonly lines?: ReadonlySet<string>
 }
 
 /**
  * What a person reaches on `day`: nothing where they hold no running managing
- * role. `canonical` is the entry a merge kept for an id, so an assignment
- * under an id merged into theirs counts as theirs (ADR-0036 §9).
+ * role and no solid line lands on a role of theirs. `canonical` is the entry
+ * a merge kept for an id, so an assignment under an id merged into theirs
+ * counts as theirs (ADR-0036 §9).
  */
 export function managedReach(
   organisation: Organisation, person: PersonId, day: string, canonical?: (id: PersonId) => PersonId,
 ): ManagedReach | undefined {
-  const { held, units } = managedBy(organisation, person, day, canonical)
-  if (held.length === 0) return undefined
-  const on = organisationOn(organisation, day)
-  const below = new Set<ElementId>()
-  for (const id of held) for (const one of unitsBelow(on.units, id)) below.add(one)
-  return { held, units: new Set(units), below }
+  const reached = managedBy(organisation, person, day, canonical)
+  if (reached.held.length === 0 && reached.lines.length === 0) return undefined
+  return {
+    held: reached.held,
+    units: new Set(reached.units),
+    below: new Set(reached.below),
+    elsewhere: new Set(reached.elsewhere.map((at) => positionKey(at.unitId, at.roleId))),
+    lines: new Set(reached.lines.map((at) => positionKey(at.unitId, at.roleId))),
+  }
+}
+
+/** How a role in a unit is reached: by a line, by nesting, or not at all. */
+export function reachVia(reach: ManagedReach | undefined, unitId: ElementId, roleId: RoleId): ManagedVia | undefined {
+  if (!reach) return undefined
+  const key = positionKey(unitId, roleId)
+  if (reach.lines?.has(key)) return 'line'
+  return reach.units.has(unitId) && !reach.elsewhere?.has(key) ? 'nesting' : undefined
+}
+
+/** Whether the holders of a role in a unit are among the people a person manages, the managing rule not asked. */
+export function reachesPosition(reach: ManagedReach, unitId: ElementId, roleId: RoleId): boolean {
+  return reachVia(reach, unitId, roleId) !== undefined
 }
 
 /** What a person reaches, with the roles that manage: what a screen asks of each unit and role it offers a change of. */
@@ -83,11 +122,17 @@ export function managingRoleIds(organisation: Pick<Organisation, 'roles'>): Read
   return new Set(organisation.roles.filter((role) => role.manages === true).map((role) => role.id))
 }
 
-/** Whether an assignment in this unit and role is in reach: a unit reached, and a managing role's only strictly below one held. */
+/**
+ * Whether an assignment in this unit and role is in reach: a role reached by
+ * a line, whatever it is; else a unit reached by nesting where the role does
+ * not report elsewhere, and a managing role's only strictly below one held.
+ */
 export function reachesAssignment(
   reach: ManagedReach, assignment: Pick<Assignment, 'unitId' | 'roleId'>, managing: ReadonlySet<RoleId>,
 ): boolean {
-  return reach.units.has(assignment.unitId) && (!managing.has(assignment.roleId) || reach.below.has(assignment.unitId))
+  const via = reachVia(reach, assignment.unitId, assignment.roleId)
+  if (via === 'line') return true
+  return via === 'nesting' && (!managing.has(assignment.roleId) || reach.below.has(assignment.unitId))
 }
 
 /**
@@ -106,7 +151,7 @@ export function holdsAllIn(
   const found = new Set<PersonId>()
   for (const assignment of organisation.assignments) {
     const who = canonical(personOf(assignment))
-    if (wanted.has(who) && runsOn(assignment, day) && reach.units.has(assignment.unitId)) found.add(who)
+    if (wanted.has(who) && runsOn(assignment, day) && reachesPosition(reach, assignment.unitId, assignment.roleId)) found.add(who)
   }
   return wanted.size > 0 && found.size === wanted.size
 }

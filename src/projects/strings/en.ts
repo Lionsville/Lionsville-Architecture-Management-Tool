@@ -57,6 +57,10 @@ export const EN = {
   'check.unitTypeEnded': '{name} is still a {detail}, a kind of unit that has ended: give it another type, or end it',
   'check.personOverloaded': '{name} holds {count}% across their roles',
   'check.unitNotServing': '{detail} is responsible for {name}, but neither it nor a unit above it serves {scope}',
+  'check.reportingLoop': '{name}: the reporting lines come back to where they started — {detail}',
+  'check.reportingDangling': '{name}: the line from {detail} lands nowhere, because no unit has the role it reports to',
+  'check.reportingAmbiguous': '{name}: the line from {detail} could land on {count} units, and none is above it',
+  'check.reportingVacant': '{name}: the line from {detail} lands on a role nobody holds',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -114,6 +118,14 @@ export const EN = {
   'check.short.personOverloaded.other': '{count} people over 100%',
   'check.short.unitNotServing.one': '{count} capability with a unit outside its domain',
   'check.short.unitNotServing.other': '{count} capabilities with a unit outside their domain',
+  'check.short.reportingLoop.one': '{count} loop of reporting lines',
+  'check.short.reportingLoop.other': '{count} loops of reporting lines',
+  'check.short.reportingDangling.one': '{count} reporting line that lands nowhere',
+  'check.short.reportingDangling.other': '{count} reporting lines that land nowhere',
+  'check.short.reportingAmbiguous.one': '{count} reporting line with several places to land',
+  'check.short.reportingAmbiguous.other': '{count} reporting lines with several places to land',
+  'check.short.reportingVacant.one': '{count} reporting line to a role nobody holds',
+  'check.short.reportingVacant.other': '{count} reporting lines to roles nobody holds',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

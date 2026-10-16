@@ -53,6 +53,7 @@ export const TREE_CHECK_KEYS = [
   'check.accountability', 'check.unitTypeNowhere',
   'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
+  'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -316,6 +317,23 @@ const ENTRIES = {
   'check.unitNotServing': {
     name: 'check.name.unitNotServing', why: 'check.why.unitNotServing', how: 'check.how.unitNotServing',
     category: 'organisation', weight: 'review', actions: ['openUnit', 'openElement'],
+  },
+  // A reporting line (ADR-0039 §6): about the unit the line runs from.
+  'check.reportingLoop': {
+    name: 'check.name.reportingLoop', why: 'check.why.reportingLoop', how: 'check.how.reportingLoop',
+    category: 'organisation', weight: 'fix', actions: ['openUnit', 'openType'],
+  },
+  'check.reportingDangling': {
+    name: 'check.name.reportingDangling', why: 'check.why.reportingDangling', how: 'check.how.reportingDangling',
+    category: 'organisation', weight: 'fix', actions: ['openUnit', 'openType'],
+  },
+  'check.reportingAmbiguous': {
+    name: 'check.name.reportingAmbiguous', why: 'check.why.reportingAmbiguous', how: 'check.how.reportingAmbiguous',
+    category: 'organisation', weight: 'fix', actions: ['openUnit', 'openType'],
+  },
+  'check.reportingVacant': {
+    name: 'check.name.reportingVacant', why: 'check.why.reportingVacant', how: 'check.how.reportingVacant',
+    category: 'organisation', weight: 'review', actions: ['openUnit', 'assign'],
   },
   // --- teams and systems --------------------------------------------------
   'check.interfaceUndeclared': {

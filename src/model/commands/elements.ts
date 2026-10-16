@@ -20,7 +20,7 @@ import { patchWrites } from './writes'
 const ELEMENT_FIELDS: PatchKeys<'element.update'> = {
   kind: true, ref: true, parentId: true, order: true, lane: true, name: true,
   category: true, vendor: true, technology: true, platformArchetype: true, shared: true,
-  description: true, outside: true, partyId: true, scopes: true, unitTypeId: true, extraSlots: true,
+  description: true, outside: true, partyId: true, scopes: true, unitTypeId: true, extraSlots: true, reportingLines: true,
   lifecycle: true, lifecycleDates: true, successorId: true, owner: true, isManaged: true, aspects: true,
   accentColor: true, shapeVariant: true, iconKey: true, iconSize: true,
 }

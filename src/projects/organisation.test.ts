@@ -324,3 +324,31 @@ describe('a capability assigned to a unit outside its domain', () => {
     expect(organisationFindings(index, '2026-11-02').some((one) => one.key === 'check.unitNotServing' && one.id === 'loads')).toBe(false)
   })
 })
+
+describe('the reporting lines, from the index (ADR-0039 §6)', () => {
+  /** The team's product owner reports to the domain owner, whose assignment ended in January. */
+  function lined(): ScopeModel[] {
+    const [root, customer] = tree()
+    const reporting: UnitType = { ...team, slots: [{ role: 'ro-po', min: 1, max: 1, reportsTo: { role: 'ro-owner', kind: 'solid' } }] }
+    return [{ ...root, model: { ...root.model, unitTypes: [domain, reporting] } }, customer]
+  }
+
+  it('says a line on a role nobody holds about the scope that keeps the unit it runs from', () => {
+    const found = organisationFindings(indexScopes(lined()), DAY).filter((one) => one.key === 'check.reportingVacant')
+    // The team at the top has no domain above it, and lands on the one unit that has a domain owner.
+    expect(found.map((one) => [one.scope, one.id, one.fields])).toEqual([
+      ['', 'platform', ['ro-po', 'customer', 'ro-owner']],
+      ['customer', 'webshop', ['ro-po', 'customer', 'ro-owner']],
+    ])
+    expect(findingSentence(found[1], translator('en'), (path) => path))
+      .toBe('Webshop: the line from Product owner → Domain owner (Customer) lands on a role nobody holds')
+  })
+
+  it('says a loop with its chain, and a later day where time makes it', () => {
+    const [root, customer] = lined()
+    const back = { role: 'ro-owner', kind: 'solid' as const, to: { scope: 'customer', unit: 'webshop', role: 'ro-po' }, from: '2027-02-01' }
+    const looped = { ...customer, model: { ...customer.model, elements: customer.model.elements.map((one) => (one.id === 'customer' ? { ...one, reportingLines: [back] } : one)) } }
+    const [loop] = organisationFindings(indexScopes([root, looped]), DAY).filter((one) => one.key === 'check.reportingLoop')
+    expect(loop).toMatchObject({ scope: 'customer', id: 'customer', detail: 'Domain owner (Customer) → Product owner (Webshop) · 2027-02-01' })
+  })
+})

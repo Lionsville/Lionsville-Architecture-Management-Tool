@@ -99,15 +99,40 @@ export type Dated = {
   successors?: string[]
 }
 
+/** A line manager's line, or a functional one (ADR-0039 §1). */
+export const LINE_KINDS = ['solid', 'dotted'] as const
+
+export type LineKind = (typeof LINE_KINDS)[number]
+
+export function isLineKind(value: unknown): value is LineKind {
+  return typeof value === 'string' && (LINE_KINDS as readonly string[]).includes(value)
+}
+
+/**
+ * Where the holders of a slot's role report (ADR-0039 §2): to the holders of
+ * `role` in the nearest unit above that has a slot for it, else in the one
+ * unit of the organisation that has. `solid` decides who manages them;
+ * `dotted` is shown and decides nothing. Runs on the days between `from` and
+ * `until`.
+ */
+export type ReportsTo = {
+  role: RoleId
+  kind: LineKind
+  from?: string
+  until?: string
+}
+
 /**
  * One role a unit of a type holds, and how many of it: at least `min`, and
  * at most `max` where one is said. A slot with `min` 0 is a role the type may
- * have and need not.
+ * have and need not. `reportsTo` is the one reporting line every unit of the
+ * type has from that role's holders (ADR-0039 §2).
  */
 export type RoleSlot = {
   role: RoleId
   min: number
   max?: number
+  reportsTo?: ReportsTo
 }
 
 /**

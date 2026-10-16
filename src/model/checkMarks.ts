@@ -159,6 +159,11 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.personOverloaded': (finding) => [finding.person ?? finding.id],
   /** The capability, the unit and the `assigned` row. */
   'check.unitNotServing': withFields,
+  /** The unit and role a line runs from, and where it lands: the line's target changed is another question. */
+  'check.reportingLoop': withFields,
+  'check.reportingDangling': withFields,
+  'check.reportingAmbiguous': withFields,
+  'check.reportingVacant': withFields,
   'check.unrealised': own,
 }
 
