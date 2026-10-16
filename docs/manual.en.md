@@ -1174,6 +1174,21 @@ ledger at the end of every observation: recorded, seen again, merged,
 archived. On a large card the impact is a stripe down the left and the count
 is in the corner; on a small one the impact is the size of the circle.
 
+**Bright spots.** Not everything worth understanding goes wrong: a team that
+never misses a release is worth asking why, too. An observation is either a
+**problem** or a **bright spot** — something that works — and *New
+observation* asks which first, problem chosen; *Edit* on its reader changes
+it later. A bright spot is analysed as a problem is: its causes are what make
+it work, the team says which is the root cause, and a solution on that root
+**spreads** it, with the same questions to answer and the same experiment
+before it is proven. A bright spot has its own chip in the register and on
+its reader, and is drawn in green in the picture, with the lines of the chain
+behind bright spots only. The counts over the picture and on the scope's
+home count bright spots apart. A problem and a bright spot are never merged:
+the merge screen offers records of the survivor's kind only. And a bright
+spot seen again after a solution was built is that solution working, so it
+is not flagged against it.
+
 **New observation** — in the top bar, and in a register with nothing in it
 yet — asks for the four facts that make one: the title,
 **where seen**, **observed by** and **date seen** — the same words as when it
@@ -1312,7 +1327,10 @@ with everything they explain and everything behind them. **Search** looks in
 every record, solutions included, and keeps what is found and what is linked
 to it. Filters narrow each other, and they narrow all three tabs. What
 matched is outlined and what came with it is drawn plainly; the count says
-*12 of 40 shown*, and × beside *Filters* clears them all. **Saved filters**
+*12 of 40 shown*, and × beside *Filters* clears them all. **Problems,
+bright spots or both** — both is the default — leaves out the observations of
+the other kind, and what lies behind them alone: a root cause behind a
+problem and a bright spot stays. **Saved filters**
 keeps the filters that are on under a short name you give: one saved again
 under the same name replaces it, a saved one is put back on from the list,
 and one is deleted from it. They are yours — kept with your preferences and

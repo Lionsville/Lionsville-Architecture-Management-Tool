@@ -1273,6 +1273,23 @@ waarneming — vastgelegd, opnieuw gezien, samengevoegd, gearchiveerd. Op een
 grote kaart is de impact een streep langs de linkerkant en staat de teller in
 de hoek; op een kleine is de impact de grootte van de cirkel.
 
+**Lichtpunten.** Niet alles wat het begrijpen waard is gaat mis: een team dat
+nooit een release mist, is ook de vraag waarom waard. Een waarneming is een
+**probleem** of een **lichtpunt** — iets dat werkt — en *Nieuwe waarneming*
+vraagt eerst welke, met probleem gekozen; *Bewerken* in de lezer verandert
+het later. Een lichtpunt wordt geanalyseerd zoals een probleem: de oorzaken
+zijn wat het laat werken, het team zegt welke de grondoorzaak is, en een
+oplossing op die grondoorzaak **verspreidt** het, met dezelfde vragen om te
+beantwoorden en hetzelfde experiment voordat ze bewezen is. Een lichtpunt
+heeft een eigen label in het register en in de lezer, en wordt groen
+getekend in de tekening, met de lijnen van de keten die alleen achter
+lichtpunten ligt. De tellingen boven de tekening en op de startpagina van de
+scope tellen lichtpunten apart. Een probleem en een lichtpunt worden nooit
+samengevoegd: het samenvoegscherm biedt alleen records van de soort van het
+record dat blijft. En een lichtpunt dat opnieuw gezien wordt nadat een
+oplossing gebouwd is, is die oplossing die werkt, en wordt er dus niet tegen
+gemeld.
+
 **Nieuwe waarneming** — in de bovenbalk, en in een register waar nog niets in
 staat — vraagt de vier feiten die er een waarneming van maken:
 de titel, **waar gezien**, **waargenomen door** en **datum gezien** — dezelfde
@@ -1432,7 +1449,10 @@ waarvan de tekst past, met alles wat ze verklaren en alles wat erachter zit.
 wat gevonden is en wat eraan gekoppeld is. Filters beperken elkaar, en ze
 beperken alle drie de tabbladen. Wat paste krijgt een rand en wat meekwam
 wordt gewoon getekend; de telling zegt *12 van 40 getoond*, en × naast
-*Filters* wist ze allemaal. **Bewaarde filters** bewaart de filters die aan
+*Filters* wist ze allemaal. **Problemen, lichtpunten of beide** — beide is
+de standaard — laat de waarnemingen van de andere soort weg, en wat alleen
+daarachter ligt: een grondoorzaak achter een probleem en een lichtpunt
+blijft. **Bewaarde filters** bewaart de filters die aan
 staan onder een korte naam die je zelf kiest: een die opnieuw onder dezelfde
 naam bewaard wordt vervangt de oude, een bewaarde wordt vanuit de lijst weer
 aangezet, en een wordt eruit verwijderd. Ze zijn van jou — bewaard bij je

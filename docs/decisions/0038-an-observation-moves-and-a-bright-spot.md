@@ -1,6 +1,7 @@
 # ADR-0038 — An observation moves to another scope, and a bright spot is analysed as a problem is
 
-* Status: accepted, 16 October 2026; not yet built (3.7.0)
+* Status: accepted, 16 October 2026; bright spots (§6) as built, 16 October
+  2026; the move (§1–§5) not yet built (3.7.0)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -242,3 +243,53 @@ scope written before has no bright spots and nothing moved.
   the other scope meanwhile is cut in its turn.
 * Neutral: the number changes with the scope. People who said `OB-0007` find
   it by the tombstone, which says the new one.
+
+## As built, 16 October 2026: bright spots
+
+§6, and its part of §7. The move (§1–§5) is not built yet.
+
+**The record.** `Observation.bright?: true`; absent is a problem. The front
+matter says `bright: true` on a bright spot only and reads anything else as
+a problem, so a problem's file is what it was. It is a field like the
+impact: `observation.update` patches it, and `updateObservation` reads
+`bright: false` as a problem again. `isBright` (`observations/observation.ts`)
+is the one reading of it.
+
+**The rules.** `planMerge` refuses a set of observations that mixes the two
+with `mixedTone`, naming the first record of another tone than the
+survivor's, and so do the two older merges (`mergeObservations`,
+`absorbFromBelow`) by changing nothing. `mergeCandidates` takes the
+survivor's tone and offers observations of that tone only.
+`seenSinceImplemented` passes a bright spot by, here and below.
+
+**The tone.** `Filters.tone` — `all`, the default, `problems` or `bright` —
+is one more filter over the register, the picture and the Solutions tab
+(`observations/filter.ts`). The observations of the other tone go, with
+everything behind them that no observation of the tone asked leads to as
+well: a root cause behind a problem and a bright spot stays, and so does a
+cause behind nothing yet. It counts as a filter, and a saved filter keeps
+it; one saved before reads as `all`.
+
+**Drawn and counted.** `brightChains` (`observations/graph.ts`) says which
+records lie behind bright spots only. The picture outlines and tints a
+bright spot's mark in the success colour, in both sizes and on the Solutions
+tab, and draws a line in it where both ends are a bright spot or behind
+bright spots only; causes keep their own colours, since nothing about a
+cause is bright. `pictureCounts` counts the problems and their open ends as
+before and the bright spots apart (`bright: {observed, analysed,
+openEnds}`), an open end behind bright spots only among them; the phases
+row shows the bright spots' three where there are any. The organisation's
+observations card counts the problems and the bright spots apart.
+
+**On the screen.** The form asks *Problem | Bright spot* first, problem
+chosen (`observationForm.tone`), and *Seen before?* lists observations of
+the kind chosen; the reader's edit asks the same. The register and the
+reader give a bright spot its chip, and the register a stripe in the
+success colour. The filter row's tone is `observations.tone`.
+
+**The agent.** `observation.record` and `observation.update` take `bright`;
+`observations.list` takes `tone`; every read says `bright: true` where it is
+set; a merge that mixes the two is refused `merge.mixedTone`. The method
+sent on connect says what a bright spot is, that a solution on its root
+spreads it, and that it is never merged with a problem; the sentence on the
+move comes with the move.

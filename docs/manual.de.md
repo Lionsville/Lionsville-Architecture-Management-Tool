@@ -1347,6 +1347,23 @@ einer großen Karte ist die Auswirkung ein Streifen am linken Rand und die
 Zahl steht in der Ecke; auf einer kleinen ist die Auswirkung die Größe des
 Kreises.
 
+**Lichtblicke.** Nicht alles, was zu verstehen lohnt, geht schief: Auch bei
+einem Team, das nie ein Release verpasst, lohnt die Frage, warum. Eine
+Beobachtung ist ein **Problem** oder ein **Lichtblick** — etwas, das
+funktioniert —, und *Neue Beobachtung* fragt zuerst, was davon, mit Problem
+gewählt; *Bearbeiten* im Leser ändert es später. Ein Lichtblick wird
+analysiert wie ein Problem: Seine Ursachen sind, was es funktionieren lässt,
+das Team sagt, welche die Grundursache ist, und eine Lösung an dieser
+Grundursache **verbreitet** es, mit denselben Fragen und demselben
+Experiment, bevor sie bewiesen ist. Ein Lichtblick hat ein eigenes Etikett im
+Register und im Leser und wird im Bild grün gezeichnet, mit den Linien der
+Kette, die nur hinter Lichtblicken liegt. Die Zahlen über dem Bild und auf
+der Startseite des Scopes zählen Lichtblicke für sich. Ein Problem und ein
+Lichtblick werden nie zusammengeführt: Die Zusammenführung bietet nur
+Datensätze der Art dessen an, der bestehen bleibt. Und ein Lichtblick, der
+erneut gesehen wird, nachdem eine Lösung gebaut wurde, ist diese Lösung, die
+wirkt, und wird darum nicht gegen sie gemeldet.
+
 **Neue Beobachtung** — in der oberen Leiste und in einem Register, in dem
 noch nichts steht — fragt nach den vier Fakten, die eine Beobachtung
 ausmachen: dem Titel, **wo gesehen**, **beobachtet von** und **Datum
@@ -1514,6 +1531,9 @@ Datensatz, Lösungen eingeschlossen, und behält, was gefunden wurde, und was
 damit verknüpft ist. Filter grenzen einander ein, und sie grenzen alle drei
 Reiter ein. Was passte, wird umrandet, und was mitkam, schlicht gezeichnet;
 die Zahl sagt *12 von 40 gezeigt*, und × neben *Filter* setzt alle zurück.
+**Probleme, Lichtblicke oder beide** — beide ist die Voreinstellung — lässt
+die Beobachtungen der anderen Art weg, und was nur dahinter liegt: Eine
+Grundursache hinter einem Problem und einem Lichtblick bleibt.
 **Gespeicherte Filter** hebt die Filter, die an sind, unter einem kurzen
 Namen auf, den Sie wählen: Einer, der unter demselben Namen noch einmal
 gespeichert wird, ersetzt den alten, ein gespeicherter wird aus der Liste
