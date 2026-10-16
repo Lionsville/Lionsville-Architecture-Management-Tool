@@ -1,6 +1,7 @@
 # ADR-0039 — Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit
 
-* Status: accepted, 16 October 2026; not yet built (3.7.0)
+* Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0);
+  implemented, 16 October 2026
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Supersedes: ADR-0036 §12, in part — who manages a unit's people is no
@@ -236,3 +237,78 @@ reporting lines, and nesting answers everywhere, as it did.
 * Bad: a loop through time can only be found, not refused.
 * Neutral: a line lands by role. Two people holding the target role in one
   unit both manage, as two holders of a managing role do.
+
+## As built, 16 October 2026
+
+Built in core in four steps — the model, the files, the screens, the agent —
+as the record says, with what building it settled.
+
+**The model** (`model/units.ts`, `model/reporting.ts`). A slot carries
+`reportsTo`, a unit `reportingLines` (§2, §3). `reportingLinesOn` lands every
+line on a day under the parents the day gives the units, and says how each
+stands: `lands`, `nesting` (a unit's line with no `to`), `dangling` or
+`ambiguous` (with the candidates), with the role it reports to as written. A
+unit's own line replaces its type's **of the same kind**: the type's solid
+line and a dotted one of the unit's own both run, which is how a role that
+reports two ways says the second on the unit. A line by nesting counts as
+solid. A type's line lands on the nearest unit above with the target role;
+the "one unit in the organisation" may be the unit itself where the target is
+another of its roles, never where it is the same role. A unit's own line to a
+unit that is not there that day is dangling.
+
+`managersOf(organisation, unitId, day, roleId?)` names each manager with
+`via: 'nesting' | 'line'`. Asked for a role with a solid line, it names the
+holders where the line lands, then whoever manages those; otherwise the
+nesting, and on the way up each managing role with a solid line of its own is
+followed where it lands. Each assignment once, and a role in a unit met twice
+ends the chain. `dottedLinesOf` and `solidLineOf` answer the lines apart.
+`managedBy` answers `held`, `units` (by nesting, the units a line brings in
+included where the role it runs from manages), `below`, `elsewhere` (roles in
+those units whose holders report elsewhere by a solid line) and `lines`
+(roles reached by a solid line, in turn, never one the person holds). A line
+reaches a role whoever holds it, a vacancy included.
+
+**A loop** is found in a graph of roles in units: a role's solid line to
+where it lands, and otherwise every managing role of its unit (unless it
+manages itself) and of the units above. Nesting alone has no cycle, so every
+loop holds a line. `reportingFindings` looks on the day asked and on every
+later day a line starts or a plan moves a unit, and says each loop once with
+the first day it is there. A write is refused where it makes a loop that was
+not there before, on the day it is written or on the line's first day
+(`loopMadeBy`, `refuseUnitLine`, `refuseSlotLine`) — a loop time made earlier
+does not refuse an unrelated line. The refusal is the screen's and the
+agent's: the reducer sees one scope and the organisation spans many, as for a
+plan's move (ADR-0036 §6).
+
+**The findings** are about the unit the line runs from, a loop's about the
+first role of its chain a solid line runs from. `fields` are the role and,
+where it lands, the unit and role; a loop's the chain; an ambiguous line's the
+candidates, and its `count` how many.
+
+**The files.** `_operating/unit-types.json` keeps a slot's `reportsTo` and
+passes over one with no role or another kind; a unit's lines travel on the
+element. A scope moved carries the path a unit's line names
+(`readdressLines`, with the stand-ins and the analysis, one step per scope).
+The format stayed 13.
+
+**The screens.** The slot editor sets *Reports to*, *Line manager* or
+*Functional*, *From* and *Until* under each slot's counts; a count changed
+keeps the line. The unit's inspector has *Reporting lines* after *Who manages
+it*, which says *by line*; its *Override…* sets the unit and role and the kind
+— a unit's own line's days are the agent's to set for now. The chart's
+*Reporting lines* switch (`chart.showLines`) is off by default and lasts while
+the page is up.
+
+**The agent.** As §8 says; `reportingLines.list` is tree-wide, and a line's
+answer names the role it reports to (`reportsToRoleId`).
+
+**What a host asks** for its right (§9): `managedReach(organisation, person,
+day, canonical)` for the reach, `reachesAssignment(reach, assignment,
+managingRoleIds(organisation))` for one assignment before and after a change,
+`onlyPeopleIn` for a step, and `reachesPosition(reach, unitId, roleId)` for
+whose people a person manages. `ManagedReach.units` alone is the nesting
+half: a door that reads it as "whose people" would still let a business
+unit's head reach a lead who reports elsewhere, and not reach the role a line
+brings in. `elsewhere` and `lines` are optional on the type, so a reach built
+before reads as one with no lines.
+

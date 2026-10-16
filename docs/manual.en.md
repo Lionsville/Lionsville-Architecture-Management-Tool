@@ -1907,6 +1907,19 @@ each responsibility. **Manages its unit** marks a role whose holder manages
 the people of the unit and of the units below it. The app keeps the mark; a
 build that knows who people are may grant a right from it.
 
+**Reports to**, under each role a unit type holds, says where the holders of
+that role report in every unit of the type: to the holders of another role in
+the nearest unit above that has it, or — where no unit above has it — in the
+one unit of the organisation that has it. So a business unit's technology
+lead can report to the head of technology in the technology department, while
+the rest of the business unit reports up the way it is nested. A line is a
+**Line manager**'s — its holders manage them, in place of the nesting — or
+**Functional**: shown, and deciding nothing. **From** and **Until** give it
+days. **By nesting** takes the line away. A line manager's line that would
+make a chain of managers come back to where it started is refused there and
+then, and said why; a unit may say otherwise for itself (*Units and the
+people in them*).
+
 **Rules the model reads** say whose role answers for what: an application's
 owner is the holder of a chosen role in the unit it belongs to, and a domain's
 owner the holder of a chosen role in the unit that serves it. The owner is
@@ -2029,8 +2042,22 @@ A unit's sections, in that order:
   a role with room for one more does the same. **A role beyond its type…**
   adds an optional role to this unit only.
 - **Who manages it**: one line for each person who holds a role that manages,
-  in this unit or a unit above it, today, nearest first. **why?** says what
-  that means: the app says it and grants nothing from it.
+  in this unit or a unit above it, today, nearest first — and, where such a
+  role reports elsewhere by a line manager's line, whoever it lands on,
+  marked *by line*. **why?** says what that means: the app says it and grants
+  nothing from it.
+- **Reporting lines**: each role of the unit with a reporting line today,
+  where it lands — the role and the unit — whether it is a line manager's or
+  functional, whether it is the unit type's or this unit's own, and *nobody
+  holds it* where nobody holds the role it lands on. **Override…** points the
+  role at a role in any unit, line manager or functional, for this unit only;
+  **Report by nesting here** says the role reports up the way the unit is
+  nested, whatever its type says; **Use the type's** takes the unit's own
+  line away again. **A line for…** gives a role that has none one of its own.
+  The holders of a role with a line manager's line are managed by the holders
+  of the role it lands on, and then by whoever manages those; the rest of the
+  unit by nesting. A line from a role to itself in the same unit, and one that
+  would close a loop, are refused and said why.
 - **Serves**: the domains it serves, the scope it is filed in unless you say
   otherwise — but never the organisation: a unit filed there serves nothing
   until **+ Domain** gives it one, and says **No domain** where you may only
@@ -2055,7 +2082,11 @@ A unit's sections, in that order:
   applications than its limit, someone still in a unit or a role that has
   ended, anyone in it whose shares add up to more than all of their time, and
   an area, grouping or capability it is responsible for in a domain that
-  neither it nor a unit above it serves. A unit serves a domain when it serves
+  neither it nor a unit above it serves; and of its reporting lines, one that
+  lands nowhere because no unit has the role, one several units could take
+  with none above — **Override…** says which — one on a role nobody holds,
+  and lines that come back to where they started, today or on a later day a
+  line starts or a plan moves a unit. A unit serves a domain when it serves
   that scope, a scope above it or one within it. In the list of findings, a
   role short of people offers **Assign…** and an assignment that has outlived
   its unit or role **End the assignment…**, where you may change that role's
@@ -2100,7 +2131,11 @@ manages a unit; a source that knows who signs in may, and says so. There, a
 person linked to an entry who holds a managing role today changes the people
 of that unit and of the units below it even in a scope they may only read:
 **Assign**, a holder's correction, **End on** and removal — a role that
-manages only in a unit below their own. Nothing else of the unit changes. The
+manages only in a unit below their own. Reporting lines move that right: a
+role whose line manager's line lands on a role they hold is theirs to change,
+in whatever unit it is, and the people in it in turn; a role in their units
+whose holders report elsewhere by such a line is not. A functional line gives
+no right. Nothing else of the unit changes. The
 same goes for a vacancy on the organisation chart, for **New person…** and
 **Mark as left** on the People page where the source says so, and for *Move
 the people*, which then writes their rows and leaves the others as they are.
@@ -2123,6 +2158,14 @@ organisation, `""`, is never one, and is dropped from what is written; who
 is responsible for a capability is an `assigned` row, written with
 `relation.add` in the scope that defines it; and `checks.list` names a
 capability assigned outside its domain as `check.unitNotServing`.
+`assignments.list` says who manages each holder, each with `via` — `nesting`
+or `line` — and the functional lines apart. A slot's line is `reportsTo` in
+`unitType.add` and `unitType.update`; a unit's own is `reportingLine.set` —
+to a role in a unit anywhere, or by nesting here — and `reportingLine.remove`,
+in the scope that keeps the unit; `reportingLines.list` lists every line on a
+day, where it lands and what the lines contradict. A line to itself is
+refused `reportingLine.self` and one that closes a loop `reportingLine.loop`,
+with the chain.
 
 ### Change over time
 
@@ -2253,6 +2296,13 @@ optional one — is not drawn: it is a choice, not a gap. **Show optional
 roles** on the bar draws them, each with **+ assign** where you may assign
 someone, and the unit's inspector always lists every role. Like a fold, the
 switch lasts while the app is open and is never saved.
+
+**Reporting lines** on the bar draws the lines over the boxes, on the chart's
+day: from the row of each role with a line to the row of the role it lands
+on, solid for a line manager's and dotted for a functional one. A line to a
+role nobody holds is drawn in the warning colour, and one that is part of a
+loop in the error colour. A line to or from a unit folded away ends at the
+fold. It is off until it is turned on, for as long as the page is up.
 
 The chart is drawn on a day, as a board is: the day control on the bar looks at
 any other day, and **Save** keeps that day on the chart (see *Time, and the day

@@ -2071,6 +2071,20 @@ rol waarvan de houder de mensen van de eenheid en van de eenheden eronder
 aanstuurt. De app houdt die markering bij; een uitvoering die weet wie mensen
 zijn, kan er een recht aan verbinden.
 
+**Rapporteert aan**, onder elke rol die een eenheidstype heeft, zegt waaraan
+de mensen in die rol rapporteren in elke eenheid van het type: aan de mensen
+in een andere rol in de dichtstbijzijnde eenheid erboven die haar heeft, of —
+waar geen eenheid erboven haar heeft — in de ene eenheid van de organisatie
+die haar heeft. Zo rapporteert de technologieverantwoordelijke van een
+business unit aan het hoofd technologie in de technologieafdeling, terwijl de
+rest van de business unit rapporteert zoals ze genest is. Een lijn is die van
+een **Lijnmanager** — de mensen in die rol sturen hen aan, in plaats van de
+nesting — of **Functioneel**: getoond, en beslist niets. **Vanaf** en **Tot
+en met** geven haar dagen. **Via de nesting** haalt de lijn weg. Een lijn van
+een lijnmanager waardoor een keten van managers terugkomt waar ze begon,
+wordt daar meteen geweigerd, met de reden; een eenheid kan het voor zichzelf
+anders zeggen (*Eenheden en de mensen erin*).
+
 **Regels die het model leest** zeggen wiens rol waarvoor instaat: de eigenaar
 van een applicatie is wie een gekozen rol heeft in de eenheid waar de
 applicatie bij hoort, en de eigenaar van een domein wie een gekozen rol heeft
@@ -2204,9 +2218,24 @@ De onderdelen van een eenheid, in die volgorde:
   **Een rol naast die van het type…** voegt alleen aan deze eenheid een
   optionele rol toe.
 - **Wie haar aanstuurt**: één regel voor ieder die vandaag een aansturende rol
-  vervult, in deze eenheid of een erboven, de dichtstbijzijnde eerst.
-  **waarom?** zegt wat dat betekent: de app zegt het en geeft er geen rechten
-  mee.
+  vervult, in deze eenheid of een erboven, de dichtstbijzijnde eerst — en,
+  waar zo'n rol elders rapporteert via een lijn van een lijnmanager, wie
+  daar uitkomt, gemarkeerd *via een lijn*. **waarom?** zegt wat dat betekent:
+  de app zegt het en geeft er geen rechten mee.
+- **Rapportagelijnen**: elke rol van de eenheid die vandaag een
+  rapportagelijn heeft, waar ze uitkomt — de rol en de eenheid — of ze van een
+  lijnmanager is of functioneel, of ze van het eenheidstype is of van deze
+  eenheid zelf, en *niemand vervult haar* waar niemand de rol vervult waar ze
+  uitkomt. **Overschrijven…** laat de rol wijzen naar een rol in welke eenheid
+  ook, lijnmanager of functioneel, voor deze eenheid alleen; **Hier via de
+  nesting rapporteren** zegt dat de rol rapporteert zoals de eenheid genest
+  is, wat haar type ook zegt; **Die van het type gebruiken** haalt de eigen
+  lijn van de eenheid weer weg. **Een lijn voor…** geeft een rol zonder lijn
+  er een van zichzelf. De mensen in een rol met een lijn van een lijnmanager
+  worden aangestuurd door de mensen in de rol waar ze uitkomt, en dan door
+  wie hen aanstuurt; de rest van de eenheid via de nesting. Een lijn van een
+  rol naar zichzelf in dezelfde eenheid, en een die een lus zou sluiten,
+  worden geweigerd, met de reden.
 - **Bedient**: de domeinen die ze bedient, de scope waarin ze is ingedeeld
   tenzij je anders zegt — maar nooit de organisatie: een eenheid die daar is
   ingedeeld bedient niets tot **+ Domein** haar er een geeft, en zegt **Geen
@@ -2235,7 +2264,12 @@ De onderdelen van een eenheid, in die volgorde:
   in een eenheid of rol zit die is beëindigd, iedereen erin van wie de
   aandelen samen meer dan al zijn tijd zijn, en een gebied, groep of
   capability waarvoor ze verantwoordelijk is in een domein dat noch zij noch
-  een eenheid erboven bedient. Een eenheid bedient een domein als ze die scope
+  een eenheid erboven bedient; en van haar rapportagelijnen een die nergens
+  uitkomt omdat geen eenheid de rol heeft, een die bij meerdere eenheden kan
+  uitkomen zonder dat er een erboven staat — **Overschrijven…** zegt welke —,
+  een naar een rol die niemand vervult, en lijnen die terugkomen waar ze
+  begonnen, vandaag of op een latere dag waarop een lijn begint of een plan
+  een eenheid verplaatst. Een eenheid bedient een domein als ze die scope
   bedient, een scope erboven of een erbinnen. In de lijst met bevindingen
   biedt een rol met te weinig mensen **Toewijzen…** en een toewijzing die
   haar eenheid of rol heeft overleefd **De toewijzing beëindigen…**, waar je
@@ -2286,7 +2320,12 @@ en zegt het. Daar wijzigt iemand die aan een vermelding gekoppeld is en
 vandaag een aansturende rol vervult de mensen van die eenheid en van de
 eenheden eronder, ook in een scope die hij alleen mag lezen: **Toewijzen**,
 een correctie, **Beëindigen op** en verwijderen — een aansturende rol alleen
-in een eenheid onder de eigen. Verder verandert er niets aan de eenheid.
+in een eenheid onder de eigen. Rapportagelijnen verleggen dat recht: een rol
+waarvan de lijn van een lijnmanager uitkomt bij een rol die hij vervult, mag
+hij wijzigen, in welke eenheid ook, en de mensen die die op hun beurt
+aansturen; een rol in zijn eenheden waarvan de mensen via zo'n lijn elders
+rapporteren niet. Een functionele lijn geeft geen recht. Verder verandert er
+niets aan de eenheid.
 Hetzelfde geldt voor een vacature op het organogram, voor **Nieuwe persoon…**
 en **Markeren als vertrokken** op de pagina Mensen waar de bron dat zegt, en
 voor *Verplaats de mensen*, dat dan hun rijen schrijft en de andere laat zoals
@@ -2311,6 +2350,15 @@ is er nooit een, en wordt weggelaten uit wat wordt weggeschreven; wie verantwoor
 voor een capability is een `assigned`-regel, weggeschreven met `relation.add`
 in de scope die hem definieert; en `checks.list` noemt een capability die
 buiten haar domein is toegewezen `check.unitNotServing`.
+`assignments.list` zegt wie elke houder aanstuurt, elk met `via` — `nesting`
+of `line` — en de functionele lijnen apart. De lijn van een rol in een
+eenheidstype is `reportsTo` in `unitType.add` en `unitType.update`; de eigen
+lijn van een eenheid is `reportingLine.set` — naar een rol in een eenheid
+waar ook, of via de nesting hier — en `reportingLine.remove`, in de scope die
+de eenheid bijhoudt; `reportingLines.list` noemt elke lijn op een dag, waar
+ze uitkomt en wat de lijnen tegenspreken. Een lijn naar zichzelf wordt
+geweigerd met `reportingLine.self` en een die een lus sluit met
+`reportingLine.loop`, met de keten.
 
 ### Verandering in de tijd
 
@@ -2460,6 +2508,14 @@ is een keuze, geen gat. **Optionele rollen tonen** in de balk tekent ze, elk
 met **+ toewijzen** waar je iemand mag toewijzen, en de inspector van de
 eenheid noemt altijd elke rol. Net als een vouw duurt de schakelaar zolang de
 app open is en wordt nooit bewaard.
+
+**Rapportagelijnen** in de balk tekent de lijnen over de vakken, op de dag
+van het organogram: van de rij van elke rol met een lijn naar de rij van de
+rol waar ze uitkomt, doorgetrokken voor die van een lijnmanager en gestippeld
+voor een functionele. Een lijn naar een rol die niemand vervult, wordt in de
+waarschuwingskleur getekend, en een die deel is van een lus in de
+foutkleur. Een lijn naar of van een eenheid die is weggevouwen, eindigt bij
+de vouw. Ze staat uit tot ze wordt aangezet, zolang de pagina open is.
 
 Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
 balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het

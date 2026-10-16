@@ -26,3 +26,20 @@ bright spot are never merged, and a bright spot seen again after a solution
 was built counts as that solution working. The assistant can record, change
 and list bright spots too. In Dutch it is a *lichtpunt*, in German a
 *Lichtblick*.
+
+**Reporting lines.** A role in a unit can report somewhere other than up the
+way the units are nested — a business unit's technology lead to the head of
+technology, say, while the rest of the business unit reports to its own head.
+Say it once on the unit type: under each role on the **Operating model** page,
+**Reports to** names the role, **Line manager** or **Functional**, and the days
+it runs; every unit of the type then reports to the nearest unit above that
+has that role, or to the one unit that has it. A unit that differs says so in
+its inspector, under **Reporting lines**: **Override…**, **Report by nesting
+here** and **Use the type's**. A line manager's line decides who manages the
+people in the role — **Who manages it** says *by line* — and a functional one
+is shown and decides nothing. **Reporting lines** on the organisation chart's
+bar draws them over the boxes. A line that would make a chain of managers
+loop back is refused when you write it, and the checks name a loop a plan
+makes later, a line that lands nowhere or in more than one place, and one to a
+role nobody holds. An agent sets them with `reportingLine.set` and reads them
+with `reportingLines.list`.

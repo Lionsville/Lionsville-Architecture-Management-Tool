@@ -361,7 +361,7 @@ instead.
 
 ### 12. A role that manages
 
-*Amended, 16 October 2026, by ADR-0039 (accepted; not yet built): a
+*Amended, 16 October 2026, by ADR-0039 (implemented, 16 October 2026): a
 reporting line runs from a role in a unit to a role in another unit, solid
 or dotted, said on the unit type's slot and overridden on a unit. A solid
 line replaces the nesting below as who manages the holders of its role, and

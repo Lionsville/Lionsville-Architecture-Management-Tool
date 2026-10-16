@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **9307 tests** and one of every config. The
+One codebase, in modules, with **9345 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 9307 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 9345 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -283,7 +283,18 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       granting a right imports it by path; and
                                       the organisation on a day
                                       (`organisationOn`): every unit under the
-                                      parent the plans' moves give it then
+                                      parent the plans' moves give it then;
+                                      and the reporting lines on a day
+                                      (ADR-0039): where each lands
+                                      (`reportingLinesOn`), who manages by a
+                                      line (`via`), and what a person reaches
+                                      by unit and by role
+                    reporting         what the reporting lines contradict — a
+                                      loop, a line landing nowhere or in
+                                      several places, one on a role nobody
+                                      holds — and whether a line written is to
+                                      itself or closes a loop (ADR-0039 §5,
+                                      §6)
                     managing          what a managing role's right reaches
                                       (ADR-0036 §12): the units held and those
                                       below, a managing role only strictly
@@ -1512,6 +1523,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, solutions (ADR-0026) | `solutions.list` `solution.read` `experiments.list` `experiment.read` `solution.propose` `solution.update` `solution.address` `solution.unaddress` `solution.move` `solution.waive` `solution.drop` `solution.restore` `solution.decide` `solution.plan` `solution.remove` `experiment.plan` `experiment.update` `experiment.conclude` `experiment.remove` |
 | Agent tools, the operating model (ADR-0036) | `unitTypes.list` `roles.list` `responsibilities.list` — answered from the organisation whatever scope is open, the unit types by lane, `order` and name with each one's lane — and `unitType.add` `unitType.update` `role.add` `role.update` — each taking `from`, `until` and `successors` — refused `agent.scopeNotOpen` unless the organisation is the scope open; `app.open` takes `page: 'operating'`, at the organisation only |
 | Agent tools, names (ADR-0036 §8) | every argument that names a person — `owner` (`element.add`/`update`, `plan.create`/`update`), `by` (`observation.record`/`update`, `experiment.plan`/`update`, `observation.merge`'s `values`), `proposedBy` and each signer's `name` (`decision.propose`/`update`) — takes text or `{ "person": id }` (`personArgument`, an `anyOf`); an id the register does not hold is refused `agent.unknownId`, a merged one written as the entry kept — the register as last read, not as last drawn (`PeopleRegisterAccess.current`), and a change to it answers only once it has been read again, so whom `person.add` added, or `person.leave` marked, is known to the very next call, `assignment.add` and `batch` included; every answer says a picked person as `{ person, name }`, the name or the pseudonym the policy gives (`agent/persons.ts`), and `search` and `project.export` ask the register first |
+| Reporting lines (ADR-0039) | a slot's `reportsTo {role, kind, from?, until?}` (kind `solid` or `dotted`) in `_operating/unit-types.json`, a unit's `reportingLines` (`{role, to?: {scope, unit, role}, kind, from?, until?}`, owner's detail, carried by `readdressLines` on a scope's move); a unit's own replaces its type's of the same kind, one with no `to` is by nesting; `reportingLinesOn` lands each (nearest unit above with the role, else the one unit that has it, else `dangling`/`ambiguous`); `managersOf(…, roleId?)` names `via` (`nesting` or `line`), `dottedLinesOf` apart; `ManagedReach.elsewhere`/`lines` (optional) and `reachesAssignment` follow a solid line, `reachVia`/`reachesPosition` say how; `check.reportingLoop` `check.reportingDangling` `check.reportingAmbiguous` (fix) and `check.reportingVacant` (review), about the unit a line runs from; a line to itself or closing a loop refused where it is written (`model/reporting.ts`), never by the reducer; the slot editor's *Reports to*, the unit's *Reporting lines* (`app/units/UnitLines.tsx`), the chart's *Reporting lines* switch (`chart.showLines`, `chartLines.ts`, `ChartLinesOverlay.tsx`); tools `reportingLine.set` `reportingLine.remove` `reportingLines.list` (tree-wide), `reportsTo` on `unitType.add`/`update` slots, refused `reportingLine.self` / `reportingLine.loop`; `assignments.list` gives each assignment `managedBy` with `via` and `dotted` |
 | Agent tools, units and assignments (ADR-0036 §3, §4) | units through `element.add` / `element.update` (`unitTypeId`, `scopes`, `extraSlots`); `assignments.list` over the whole tree — its `scope` a filter (`TREE_WIDE`), the open scope as it is now, names or pseudonyms as the policy says, and for one unit its slots, its parent and who manages it, all on its `on` day with every plan's moves of that day — and `assignment.add` (a person by register id; one who has left is refused) and `assignment.end` in the scope that keeps the unit; `checks.list` takes `on` for the organisation's findings. An agent assigns and adds people; it never forgets, removes or merges one |
 | Agent tools, the two views and who works with whom (ADR-0036 §7) | `diagram.create` takes `chart` and `conway` by name; `views.list`, `app.open` (pages `chart` and `conway`, `select` a unit or an application on them) and `diagram.render` take them; `diagram.inspect` reads either off the tree with the open scope laid over it (`agent/inspectUnits.ts`): the units with each role's holders by register id and vacancies on the view's day, or the columns, the crossings and the findings. Two units working together is a relation, `relation.add` / `relation.update` with type `interacts` and a `mode` (`collaboration` · `service` · `facilitating`), refused `command.interactsEnds` unless actor to another actor |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |

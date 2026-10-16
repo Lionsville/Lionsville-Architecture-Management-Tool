@@ -2194,6 +2194,21 @@ eine Rolle, deren Inhaber die Menschen der Einheit und der Einheiten darunter
 führt. Die App hält das Kennzeichen; eine Ausgabe, die weiß, wer die Menschen
 sind, kann daraus ein Recht ableiten.
 
+**Berichtet an**, unter jeder Rolle, die ein Einheitstyp hat, sagt, an wen
+die Inhaber dieser Rolle in jeder Einheit des Typs berichten: an die Inhaber
+einer anderen Rolle in der nächsten Einheit darüber, die sie hat, oder — wo
+keine Einheit darüber sie hat — in der einen Einheit der Organisation, die sie
+hat. So berichtet die Technologieverantwortliche einer Geschäftseinheit an die
+Leitung Technologie in der Technologieabteilung, während der Rest der
+Geschäftseinheit so berichtet, wie sie verschachtelt ist. Eine Linie ist die
+einer **Führungskraft** — deren Inhaber führen sie, anstelle der
+Verschachtelung — oder **Fachlich**: gezeigt, und sie entscheidet nichts.
+**Ab** und **Bis einschließlich** geben ihr Tage. **Über die
+Verschachtelung** nimmt die Linie weg. Eine Linie einer Führungskraft, durch
+die eine Kette von Führungskräften dorthin zurückkehrt, wo sie begann, wird
+dort sofort abgelehnt, mit dem Grund; eine Einheit kann es für sich anders
+sagen (*Einheiten und die Menschen darin*).
+
 **Regeln, die das Modell liest** sagen, wessen Rolle wofür einsteht:
 Verantwortlich für eine Anwendung ist, wer eine gewählte Rolle in der Einheit
 innehat, zu der sie gehört, und für eine Domäne, wer eine gewählte Rolle in
@@ -2332,9 +2347,25 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   eine weitere Person tut dasselbe. **Eine Rolle über ihren Typ hinaus …**
   fügt nur dieser Einheit eine optionale Rolle hinzu.
 - **Wer sie führt**: eine Zeile für jede Person, die heute eine führende Rolle
-  innehat, in dieser Einheit oder einer darüber, die nächste zuerst.
-  **warum?** sagt, was das bedeutet: Die App sagt es und gewährt daraus
-  nichts.
+  innehat, in dieser Einheit oder einer darüber, die nächste zuerst — und, wo
+  eine solche Rolle über die Linie einer Führungskraft anderswohin berichtet,
+  wer dort ankommt, markiert *über eine Linie*. **warum?** sagt, was das
+  bedeutet: Die App sagt es und gewährt daraus nichts.
+- **Berichtslinien**: jede Rolle der Einheit, die heute eine Berichtslinie
+  hat, wo sie endet — die Rolle und die Einheit —, ob sie die einer
+  Führungskraft oder fachlich ist, ob sie vom Einheitstyp ist oder von dieser
+  Einheit selbst, und *niemand hat sie inne*, wo niemand die Rolle innehat,
+  bei der sie endet. **Überschreiben …** richtet die Rolle auf eine Rolle in
+  irgendeiner Einheit, Führungskraft oder fachlich, nur für diese Einheit;
+  **Hier über die Verschachtelung berichten** sagt, dass die Rolle so
+  berichtet, wie die Einheit verschachtelt ist, was ihr Typ auch sagt; **Die
+  des Typs verwenden** nimmt die eigene Linie der Einheit wieder weg. **Eine
+  Linie für …** gibt einer Rolle ohne Linie eine eigene. Die Inhaber einer
+  Rolle mit der Linie einer Führungskraft werden von den Inhabern der Rolle
+  geführt, bei der sie endet, und dann von dem, der diese führt; der Rest der
+  Einheit über die Verschachtelung. Eine Linie von einer Rolle zu sich selbst
+  in derselben Einheit und eine, die eine Schleife schließen würde, werden
+  abgelehnt, mit dem Grund.
 - **Bedient**: die Domänen, die sie bedient, der Bereich, in dem sie
   eingeordnet ist, wenn Sie nichts anderes sagen — aber nie die Organisation:
   eine dort eingeordnete Einheit bedient nichts, bis **+ Domäne** ihr eine
@@ -2363,7 +2394,12 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   einer beendeten Einheit oder Rolle steht, jeder darin, dessen Anteile
   zusammen mehr als die ganze Zeit sind, und ein Gebiet, eine Gruppe oder eine
   Fähigkeit, für die sie verantwortlich ist, in einer Domäne, die weder sie
-  noch eine Einheit über ihr bedient. Eine Einheit bedient eine Domäne, wenn
+  noch eine Einheit über ihr bedient; und von ihren Berichtslinien eine, die
+  nirgends endet, weil keine Einheit die Rolle hat, eine, die bei mehreren
+  Einheiten enden könnte, ohne dass eine darüber steht — **Überschreiben …**
+  sagt, welche —, eine zu einer Rolle, die niemand innehat, und Linien, die
+  dorthin zurückkehren, wo sie begannen, heute oder an einem späteren Tag, an
+  dem eine Linie beginnt oder ein Plan eine Einheit verschiebt. Eine Einheit bedient eine Domäne, wenn
   sie diesen Bereich bedient, einen darüber oder einen darin. In der Liste von
   Befunden bietet eine Rolle mit zu wenigen Personen **Zuweisen…** und eine
   Zuweisung, die ihre Einheit oder Rolle überdauert hat, **Zuweisung
@@ -2416,7 +2452,12 @@ es und sagt es. Dort ändert, wer mit einem Eintrag verknüpft ist und heute ein
 führende Rolle innehat, die Personen dieser Einheit und der Einheiten darunter,
 auch in einem Bereich, den er nur lesen darf: **Zuordnen**, eine Korrektur,
 **Beenden am** und Entfernen — eine führende Rolle nur in einer Einheit unter
-der eigenen. Sonst ändert sich an der Einheit nichts. Dasselbe gilt für eine
+der eigenen. Berichtslinien verlegen dieses Recht: Eine Rolle, deren Linie
+einer Führungskraft bei einer Rolle endet, die er innehat, darf er ändern, in
+welcher Einheit auch immer, und die Menschen, die diese wiederum führen; eine
+Rolle in seinen Einheiten, deren Inhaber über eine solche Linie anderswohin
+berichten, nicht. Eine fachliche Linie gibt kein Recht. Sonst ändert sich an
+der Einheit nichts. Dasselbe gilt für eine
 unbesetzte Stelle im Organigramm, für **Neue Person …** und **Als
 ausgeschieden markieren** auf der Seite Personen, wo die Quelle es sagt, und für
 *Die Menschen verschieben*, das dann ihre Zeilen schreibt und die anderen
@@ -2442,6 +2483,16 @@ mit `element.update` in dem Bereich, der die Einheit führt — die Organisation
 Fähigkeit verantwortlich ist, ist eine `assigned`-Zeile, geschrieben mit
 `relation.add` in dem Bereich, der sie definiert; und `checks.list` nennt eine
 Fähigkeit, die außerhalb ihrer Domäne zugewiesen ist, `check.unitNotServing`.
+`assignments.list` sagt, wer jeden Inhaber führt, jeweils mit `via` —
+`nesting` oder `line` — und die fachlichen Linien getrennt. Die Linie einer
+Rolle in einem Einheitstyp ist `reportsTo` in `unitType.add` und
+`unitType.update`; die eigene Linie einer Einheit ist `reportingLine.set` —
+zu einer Rolle in einer Einheit irgendwo, oder hier über die
+Verschachtelung — und `reportingLine.remove`, in dem Bereich, der die Einheit
+führt; `reportingLines.list` nennt jede Linie an einem Tag, wo sie endet und
+was die Linien widersprechen. Eine Linie zu sich selbst wird mit
+`reportingLine.self` abgelehnt und eine, die eine Schleife schließt, mit
+`reportingLine.loop`, mit der Kette.
 
 ### Veränderung über die Zeit
 
@@ -2597,6 +2648,15 @@ gezeichnet: Sie ist eine Wahl, keine Lücke. **Optionale Rollen zeigen** in der
 Leiste zeichnet sie, jede mit **+ zuordnen**, wo Sie jemanden zuordnen dürfen,
 und der Inspektor der Einheit führt immer jede Rolle. Wie eine Faltung gilt
 der Schalter, solange die App offen ist, und wird nie gespeichert.
+
+**Berichtslinien** in der Leiste zeichnet die Linien über die Kästen, am Tag
+des Organigramms: von der Zeile jeder Rolle mit einer Linie zur Zeile der
+Rolle, bei der sie endet, durchgezogen für die einer Führungskraft und
+gepunktet für eine fachliche. Eine Linie zu einer Rolle, die niemand innehat,
+wird in der Warnfarbe gezeichnet, und eine, die Teil einer Schleife ist, in
+der Fehlerfarbe. Eine Linie zu oder von einer weggefalteten Einheit endet an
+der Faltung. Sie ist aus, bis sie eingeschaltet wird, solange die Seite offen
+ist.
 
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
 in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
