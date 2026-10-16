@@ -51,7 +51,7 @@ import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
-import { CommentThread } from '../../comments/ui/CommentThread'
+import { CommentThread } from '../../comments/ui/threadPart'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200

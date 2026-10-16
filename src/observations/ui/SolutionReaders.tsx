@@ -61,7 +61,7 @@ import type { Mode } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
-import { CommentThread } from '../../comments/ui/CommentThread'
+import { CommentThread } from '../../comments/ui/threadPart'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (

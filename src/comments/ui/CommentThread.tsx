@@ -19,6 +19,11 @@
  *
  * Each step goes through the session the workspace hands down
  * (`CommentsContext`): one step each, in the Activity list, undone by ⌘Z.
+ *
+ * A comment's body is drawn by the markdown renderer every description is
+ * drawn with (`renderMarkdown`), which arrives in a script of its own: the
+ * thread is under every reader, and the renderer must not ride in the first
+ * download behind it.
  */
 import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
@@ -33,7 +38,7 @@ import { isRemoved } from '../../model/comment'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { RecordKey } from '../../model/recordKey'
-import { MarkdownView } from '../../documentation/ui/MarkdownView'
+import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { meIn } from '../../people/me'
 import { registerOf } from '../../people/shown'
 import { useSaying } from '../../people/ui/access'
@@ -239,7 +244,7 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
         <Composer label={t('comments.edit')} submit={t('comments.save')} initial={comment.body} testId="comment-edit-field"
           onSubmit={(body) => actions.edit(comment.id, body)} onCancel={() => actions.setWriting(undefined)} />
       )}
-      {!gone && !editing && <Box sx={{ fontSize: 13.5 }}><MarkdownView markdown={comment.body} /></Box>}
+      {!gone && !editing && <Box sx={{ fontSize: 13.5 }}>{renderMarkdown(comment.body)}</Box>}
       {!gone && !editing && <EntryButtons comment={comment} mine={mine} actions={actions} />}
     </Box>
   )

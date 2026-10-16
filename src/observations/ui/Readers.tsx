@@ -60,7 +60,7 @@ import {
   causeActions, modeAction, observationActions, openScopeAction, restoreAction,
 } from './readerActions'
 import type { LinkMode, Mode } from './readerActions'
-import { CommentThread } from '../../comments/ui/CommentThread'
+import { CommentThread } from '../../comments/ui/threadPart'
 import type { CommentThreadProps } from '../../comments/ui/CommentThread'
 
 export type { Mode } from './readerActions'

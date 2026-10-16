@@ -17,7 +17,7 @@ import { InspectorSection } from './InspectorSection';
 import { GeneralTab } from './InspectorGeneralTab';
 import { AppearanceTab } from './InspectorAppearanceTab';
 import { aspectCount, DataTab } from './InspectorDataTab';
-import { CommentThread } from '../comments/ui/CommentThread';
+import { CommentThread } from '../comments/ui/threadPart';
 
 export type { ElementInspectorProps };
 export { shapeOptionsFor } from './elementInspectorFacts';
