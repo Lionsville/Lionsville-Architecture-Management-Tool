@@ -241,6 +241,7 @@ function observationProps(one: Observation, scope: string | undefined, selectedK
       cause, link: cause.explains.find((held) => held.id === one.id)!, ...(at !== undefined ? { scope: at } : {}),
     })),
     mergedInto: own ? ctx.mergedLabel(one) : undefined,
+    scopeLabel: ctx.scopeLabel,
     readOnly: ctx.readOnly,
     mayChangeBelow: Boolean(forms.changeBelow),
     today: ctx.today(),

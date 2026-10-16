@@ -47,6 +47,11 @@ export const OBSERVATION_IMPACTS: readonly ObservationImpact[] = ['minor', 'majo
  * this one was folded into `id`, and is history from then on. `archived` —
  * fixed, addressed or no longer relevant: the record stays, as history, and
  * leaves the analysis; `restored` brings it back. A note on either says why.
+ * `moved` — this one went to another scope (ADR-0038 §1): `scope` says which,
+ * `number` what it is called there, and the record left here is its
+ * tombstone, read as a merged one is. `movedIn` — it came from `scope`, where
+ * it was `number`. A record that moves back to a scope holding its tombstone
+ * is that tombstone come back to life: the last of the two says which it is.
  *
  * The record's own count moves with the events; the events are why it stands
  * where it does, kept because "seen seven times" is worth less than "seen on
@@ -61,19 +66,22 @@ export type ObservationEvent = {
   /**
    * Its scope, when it is not this one: the path in the tree. On `absorbed`,
    * where the absorbed observation lives; on `merged`, where the survivor
-   * does (ADR-0035 §5).
+   * does (ADR-0035 §5). On `moved` and `movedIn` always, the organisation
+   * as `''`: the scope it went to, or came from (ADR-0038 §1).
    */
   scope?: string
   /** How many sightings an absorbed observation brought. */
   seen?: number
+  /** On `moved` and `movedIn`: the number the record has in the other scope (ADR-0038 §1). */
+  number?: number
   note?: string
 }
 
 export type ObservationEventKind =
-  'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged' | 'archived' | 'restored'
+  'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged' | 'archived' | 'restored' | 'moved' | 'movedIn'
 
 export const OBSERVATION_EVENT_KINDS: readonly ObservationEventKind[] =
-  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored']
+  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored', 'moved', 'movedIn']
 
 export type Observation = {
   /** Stable, never shown. The number is what people call it. */

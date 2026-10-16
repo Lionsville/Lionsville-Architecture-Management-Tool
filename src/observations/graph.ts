@@ -30,7 +30,7 @@
  * Solutions tab's whole chain is drawn from.
  */
 import {
-  absorbedBy, causeDepth, isArchived, isBright, isMerged, isRootCause, liveCauses, mergedInto,
+  absorbedBy, causeDepth, isArchived, isBright, isMerged, isMoved, isRootCause, liveCauses, mergedInto,
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -92,7 +92,7 @@ export function analysisGraph(analysis: Analysis, below: readonly ObservationBel
     })
   }
   for (const { scope, observation } of below) {
-    if (absorbedBy(observations, observation.id, scope) || mergedInto(observation.history) || isArchived(observation)) continue
+    if (absorbedBy(observations, observation.id, scope) || mergedInto(observation.history) || isMoved(observation) || isArchived(observation)) continue
     drawnObservations.push({
       kind: 'observation', key: nodeKey(observation.id, scope), id: observation.id, scope, observation, lane: 0, row: 0,
     })
@@ -240,8 +240,8 @@ export function pictureLinks(scopes: readonly ScopeAnalysis[], here: string): Pi
  * The observations and causes of the scopes read that a merge folded into
  * another, by key: absorbed by a survivor of a scope read, or saying itself
  * that it was merged — which a merge across the tree writes on the absorbed
- * record where it lives (ADR-0035 §4, §5). History, read but no longer drawn
- * or counted.
+ * record where it lives (ADR-0035 §4, §5) — and the tombstones a move left
+ * (ADR-0038 §1). History, read but no longer drawn or counted.
  */
 export function absorbedKeys(scopes: readonly ScopeAnalysis[], here: string): Set<string> {
   const gone = new Set<string>()
@@ -252,7 +252,11 @@ export function absorbedKeys(scopes: readonly ScopeAnalysis[], here: string): Se
     }
   }
   for (const { scope, observations, causes } of scopes) {
-    for (const observation of observations) read(scope, observation.id, observation.history)
+    for (const observation of observations) {
+      read(scope, observation.id, observation.history)
+      // A tombstone a move left (ADR-0038 §1) is read as a merged record is.
+      if (isMoved(observation)) gone.add(pictureKey(here, scope, observation.id))
+    }
     for (const cause of causes) read(scope, cause.id, cause.history ?? [])
   }
   return gone

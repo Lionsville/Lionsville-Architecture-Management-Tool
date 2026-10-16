@@ -61,6 +61,8 @@ export const EVENT_LABEL: Record<ObservationEventKind, StringKey> = {
   merged: 'observation.eventMerged',
   archived: 'observation.eventArchived',
   restored: 'observation.eventRestored',
+  moved: 'observation.eventMoved',
+  movedIn: 'observation.eventMovedIn',
 }
 
 // --- solutions and experiments (ADR-0026) -----------------------------------------

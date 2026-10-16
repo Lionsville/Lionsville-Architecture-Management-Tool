@@ -58,7 +58,7 @@ import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
-  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged,
+  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged, isMoved, movedTo,
   isScopeBelow, linkCause, liveObservations, observationsBelow, removeCause, removeObservation,
   rootCauses, setArchived, sortCauses, sortObservations, unlinkCause,
 } from '../observation'
@@ -438,11 +438,32 @@ function mergedAway(kind: MergeKind, id: string, scope: string, from: Away): Mer
 }
 
 /**
+ * Where a tombstone's observation went (ADR-0038 §1): the number it has in
+ * the scope it moved to, and that scope — opened on it, or selected where it
+ * is a scope below.
+ */
+function movedAway(one: Observation, from: Away): MergedInto | undefined {
+  const to = movedTo(one.history)
+  if (!to) return undefined
+  const there = from.everywhere.find((held) => held.scope === to.scope)?.observations.find((held) => held.id === to.id)
+  const number = there?.number ?? to.number
+  const { openScope, select, here } = from
+  const open = isScopeBelow(to.scope, here) ? () => select(nodeKey(to.id, to.scope))
+    : openScope ? () => openScope(to.scope, to.id) : undefined
+  return {
+    label: number !== undefined ? formatObservationNumber(number) : to.id, scope: from.scopeLabel(to.scope), date: to.date, moved: true,
+    ...(open ? { open } : {}),
+  }
+}
+
+/**
  * Where an observation of this scope went: as {@link mergedAway} says, or —
  * written by a build before a merge wrote both ends — into one a scope above
  * keeps, read off the tree (ADR-0021).
  */
 function mergedIntoOf(one: Observation, from: Away & { absorbedAbove: ObservationsPageProps['absorbedAbove'] }): MergedInto | undefined {
+  const moved = movedAway(one, from)
+  if (moved) return moved
   const away = mergedAway('observation', one.id, from.here, from)
   if (away) return away
   const above = from.absorbedAbove?.get(one.id)
@@ -554,7 +575,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const belowShown = useMemo(
     () => belowAll.filter((one) => (
       !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)
-      && !one.observation.history.some((event) => event.kind === 'merged')
+      && !one.observation.history.some((event) => event.kind === 'merged') && !isMoved(one.observation)
     )),
     [belowAll, observations],
   )

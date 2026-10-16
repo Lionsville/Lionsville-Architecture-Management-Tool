@@ -44,7 +44,7 @@ import {
   causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
 } from '../observation'
 import type {
-  Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
+  Cause, CauseLink, CausePatch, Observation, ObservationEvent, ObservationImpact, ObservationPatch,
 } from '../observation'
 import { observationProblems } from '../form'
 import type { PersonRef } from '../../model/person'
@@ -209,7 +209,11 @@ export function LinkList({ links, onOpen }: {
  * one a scope above keeps (ADR-0021). `open` goes to it, where it can be
  * opened from here.
  */
-export type MergedInto = { label: string; scope?: string; date?: string; open?: () => void }
+export type MergedInto = {
+  label: string; scope?: string; date?: string; open?: () => void
+  /** Moved to another scope rather than merged (ADR-0038 §1): `label` is what it is called there, `scope` where. */
+  moved?: true
+}
 
 /**
  * "Merged into O-0003", as a link to O-0003 where there is a way to it — in
@@ -217,8 +221,8 @@ export type MergedInto = { label: string; scope?: string; date?: string; open?: 
  * the row's.
  */
 export function MergedNote({ merged, s, day }: { merged: MergedInto; s: Translate; day: (date: string) => string }) {
-  const words = merged.scope !== undefined
-    ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ? day(merged.date) : '' })
+  const words = merged.moved ? s('observation.movedTo', { name: merged.label, scope: merged.scope ?? '' })
+    : merged.scope !== undefined ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ? day(merged.date) : '' })
     : s('observation.mergedInto', { name: merged.label })
   const open = merged.open
   if (!open) return <>{words}</>
@@ -233,8 +237,17 @@ export function MergedNote({ merged, s, day }: { merged: MergedInto; s: Translat
   )
 }
 
+/** A move in a record's history (ADR-0038 §1): the number it has, or had, in the other scope, and that scope. */
+function movedWords(event: ObservationEvent, s: Translate, scopeLabel: ((path: string) => string) | undefined): string {
+  const label = event.number !== undefined ? formatObservationNumber(event.number) : ''
+  const scope = event.scope === undefined ? '' : scopeLabel ? scopeLabel(event.scope) : event.scope
+  return s(EVENT_LABEL[event.kind], { label, scope })
+}
+
 export type ObservationReaderProps = {
   observation: Observation
+  /** What a scope is called, for a move in its history; the path where absent. */
+  scopeLabel?: (path: string) => string
   /** Present for an observation of a scope below: read here, added to there, changed there. */
   fromScope?: { path: string; label: string }
   /** The causes that explain it: its own scope's, with `scope` where that is a scope below. */
@@ -406,7 +419,8 @@ export function ObservationReader(props: ObservationReaderProps) {
                       ? s('observation.eventAbsorbed', { name: nameOf(event.id ?? '', event.scope), count: event.seen ?? 0 })
                       : event.kind === 'merged'
                         ? s('observation.eventMerged', { name: nameOf(event.id ?? '') })
-                        : s(EVENT_LABEL[event.kind])}
+                        : event.kind === 'moved' || event.kind === 'movedIn' ? movedWords(event, s, props.scopeLabel)
+                          : s(EVENT_LABEL[event.kind])}
                     {event.note ? ` — ${event.note}` : ''}
                   </Box>
                 </Box>

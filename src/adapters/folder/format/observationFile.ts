@@ -102,6 +102,7 @@ function historyRows(history: readonly ObservationEvent[]): Record<string, Front
       ...(one.id !== undefined ? { id: one.id } : {}),
       ...(one.scope !== undefined ? { scope: one.scope } : {}),
       ...(one.seen !== undefined ? { seen: one.seen } : {}),
+      ...(one.number !== undefined ? { number: one.number } : {}),
       ...(one.note !== undefined ? { note: one.note } : {}),
     }))
 }
@@ -179,6 +180,7 @@ function historyFrom(rows: Record<string, FrontMatterScalar>[]): ObservationEven
       ...(typeof row.id === 'string' && row.id ? { id: row.id } : {}),
       ...(typeof row.scope === 'string' ? { scope: row.scope } : {}),
       ...(typeof row.seen === 'number' ? { seen: row.seen } : {}),
+      ...(typeof row.number === 'number' ? { number: row.number } : {}),
       ...(typeof row.note === 'string' && row.note ? { note: row.note } : {}),
     }]
   })

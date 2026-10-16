@@ -307,13 +307,37 @@ export function absorbedBy(
 }
 
 /**
- * Folded into another observation: history, read but no longer analysed.
- * Either this scope's survivor says it absorbed it, or the record says itself
- * where it went — which a merge into another scope writes on it (ADR-0035 §5).
+ * Folded into another observation, or moved to another scope: history, read
+ * but no longer analysed. Either this scope's survivor says it absorbed it,
+ * or the record says itself where it went — which a merge into another scope
+ * writes on it (ADR-0035 §5), and a move on the tombstone it leaves (ADR-0038
+ * §1), which is read as a merged record is.
  */
 export function isMerged(list: readonly Observation[], id: string): boolean {
   if (absorbedBy(list, id) !== undefined) return true
-  return list.find((one) => one.id === id)?.history.some((event) => event.kind === 'merged') ?? false
+  const one = list.find((held) => held.id === id)
+  return one !== undefined && (one.history.some((event) => event.kind === 'merged') || isMoved(one))
+}
+
+/**
+ * Where a record went when it moved to another scope (ADR-0038 §1), off its
+ * own history: the scope and the number it has there, and the day. Nothing
+ * for a record that never moved, or that moved back here since — the last of
+ * `moved` and `movedIn` says which it is, so a tombstone brought back to life
+ * is a record again.
+ */
+export function movedTo(history: readonly ObservationEvent[] | undefined):
+  { id: string; scope: string; number?: number; date: string } | undefined {
+  const last = [...(history ?? [])].reverse().find((one) => one.kind === 'moved' || one.kind === 'movedIn')
+  if (last?.kind !== 'moved' || last.scope === undefined) return undefined
+  return {
+    id: last.id ?? '', scope: last.scope, ...(last.number !== undefined ? { number: last.number } : {}), date: last.date,
+  }
+}
+
+/** A tombstone: the record moved to another scope and lives there now (ADR-0038 §1). */
+export function isMoved(one: Pick<Observation, 'history'>): boolean {
+  return movedTo(one.history) !== undefined
 }
 
 /** Where a record says it was merged to, off its own history: the last `merged` event, or nothing. */

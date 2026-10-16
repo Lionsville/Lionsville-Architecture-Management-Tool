@@ -43,7 +43,7 @@ import type {
   Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation, Solution, SolutionEvent,
   SolutionLink, SolutionSize, SolutionState,
 } from '../model/observation'
-import { absorbedBy, causeLabel, formatObservationNumber, isRootCause, rootCauses } from './observation'
+import { absorbedBy, causeLabel, formatObservationNumber, isMoved, isRootCause, rootCauses } from './observation'
 import type { Analysis, ObservationBelow } from './observation'
 
 export type {
@@ -801,8 +801,9 @@ export function seenSinceImplemented(
     const observation = reached.scope === undefined
       ? analysis.observations.find((one) => one.id === reached.id)
       : below.find((one) => one.scope === reached.scope && one.observation.id === reached.id)?.observation
-    // A bright spot seen again is the solution working, not failing to hold (ADR-0038 §6).
-    if (observation?.bright) continue
+    // A bright spot seen again is the solution working, not failing to hold (ADR-0038 §6);
+    // one moved away is a tombstone here, its link cut, and its sightings no longer this scope's (§2).
+    if (observation?.bright || (observation && isMoved(observation))) continue
     const days = (observation?.history ?? []).filter((event) => event.kind === 'seen' && event.date >= since).map((event) => event.date)
     if (days.length) out.push({ ...reached, date: days.sort().at(-1)! })
   }

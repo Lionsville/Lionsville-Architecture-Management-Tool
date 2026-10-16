@@ -63,6 +63,21 @@ describe('an observation as a file', () => {
     expect(observationFromFile(text.replace('bright: true\n', 'bright: false\n'), observationPath(bright))).toEqual(observation)
   })
 
+  it('writes a move both ways, the scope always and the organisation as the empty path, and reads it back (ADR-0038 §1)', () => {
+    const moved: Observation = {
+      ...observation,
+      history: [
+        ...observation.history,
+        { date: '2026-10-16', kind: 'movedIn', id: observation.id, scope: '', number: 3 },
+        { date: '2026-10-17', kind: 'moved', id: observation.id, scope: 'north/east', number: 12 },
+      ],
+    }
+    const text = observationFileText(moved)
+    expect(text).toContain('kind: moved')
+    expect(text).toContain('number: 12')
+    expect(observationFromFile(text, observationPath(moved))).toEqual(moved)
+  })
+
   it('round-trips a history with nothing in it as nothing, and not as the event a hand-written file is given', () => {
     const bare: Observation = { ...observation, history: [] }
     expect(observationFileText(bare)).toContain('history: none\n')
