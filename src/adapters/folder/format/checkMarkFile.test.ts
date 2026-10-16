@@ -45,7 +45,7 @@ describe('marks in a scope’s folder', () => {
   it('are one list file under _checks/, read back byte for byte, in the order they were made', () => {
     const files = scopeFiles(customer())
     expect(files.map((file) => file.path)).toContain(CHECK_MARKS_FILE)
-    expect(JSON.parse(textOf(files, SCOPE_FILE)!).version).toBe(12)
+    expect(JSON.parse(textOf(files, SCOPE_FILE)!).version).toBe(SCOPE_FORMAT_VERSION)
     const back = scopeFromFolder(files, 'customer')!
     expect(back.model.checkMarks).toEqual([vacancy, designTogether])
     expect(stableJson(scopeFiles(back))).toBe(stableJson(files))
@@ -171,13 +171,13 @@ describe('a folder written at format 11', () => {
     expect(held?.unreadable).toBeUndefined()
   })
 
-  it('is brought up to 12 by the pass, and not one scope moves — not even one called checks', async () => {
+  it('is brought up to the current format by the pass, and not one scope moves — not even one called checks', async () => {
     const root = await elevenTree()
     const store = new FileSystemScopeStore(root)
     expect((await store.outdated()).sort()).toEqual(['', 'checks'])
     expect(await upgradeProjects(store)).toMatchObject({ upgraded: 2, created: 0, failed: 0 })
     expect(flattenScopes(await store.list()).map((scope) => scope.path)).toEqual(['', 'checks'])
-    for (const path of ['scope.json', 'checks/scope.json']) expect(JSON.parse(await textAt(root, path)).version).toBe(12)
+    for (const path of ['scope.json', 'checks/scope.json']) expect(JSON.parse(await textAt(root, path)).version).toBe(SCOPE_FORMAT_VERSION)
     expect(await store.outdated()).toEqual([])
     // A mark made after keeps beside the scope called checks, each in its own folder.
     await store.save({ ...bareScope('', 'Acme', 'organisation'), model: { ...bareScope('', 'Acme', 'organisation').model, checkMarks: [vacancy] } })
@@ -190,9 +190,9 @@ describe('a folder written at format 12, opened by a build that reads 11', () =>
   /** What a 12 is to a build whose newest is 11: a version one past its own, as this build sees a 13. */
   const later = (scope: ScopeSnapshot) => atVersion(scope, SCOPE_FORMAT_VERSION + 1)
 
-  it('says 12 wherever it keeps marks, which is one past what that build reads', () => {
+  it('says a version past 11 wherever it keeps marks, which that build does not read', () => {
     expect(JSON.parse(textOf(scopeFiles(customer()), SCOPE_FILE)!).version).toBe(SCOPE_FORMAT_VERSION)
-    expect(SCOPE_FORMAT_VERSION).toBe(11 + 1)
+    expect(SCOPE_FORMAT_VERSION).toBeGreaterThan(11)
   })
 
   it('is refused rather than half-read, and nothing is saved over _checks/', async () => {

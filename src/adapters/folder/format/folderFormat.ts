@@ -193,11 +193,29 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  * is already public, so what it means is not changed after the fact. The
  * folder's name holds an underscore, as the other two do: an 11 is a 12 with
  * nothing marked, and the pass that brings it up moves no scope.
+ *
+ * **13 is 12, with comments, observations that move or are bright spots, and
+ * reporting lines** — one turn for three records (ADR-0037, ADR-0038,
+ * ADR-0039). A scope keeps the comments on its records in `_comments/`, one
+ * file per record commented on, `_comments/<kind>-<id>.json`, holding that
+ * record's thread oldest first. An observation may say `bright: true`, and
+ * its history may hold a `moved` event (the observation went to another
+ * scope, and this one is its tombstone) or a `movedIn` event (it came from
+ * one). A unit type's slot in `_operating/` may say `reportsTo`, and a unit
+ * may say `reportingLines`. A build that reads 12 would show a scope without
+ * its threads and save `_comments/` away, read a tombstone as a live record —
+ * the same observation twice, in two scopes — and drop `bright`, `reportsTo`
+ * and `reportingLines` on its way back: so the number turns, and a 3.6 build
+ * refuses the folder instead. Format 12 is already public, so what it means
+ * is not changed after the fact. `_comments/` holds an underscore as the other
+ * three do, and every addition is optional: a 12 is a 13 with no comments, no
+ * bright spots, nothing moved and no reporting lines, and the pass that brings
+ * it up moves no scope.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13]
 
 /**
  * The second half of a view's pair of files: where it ended up.
