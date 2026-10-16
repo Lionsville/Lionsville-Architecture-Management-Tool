@@ -111,4 +111,7 @@ now, with their words unchanged.
 | [0033](0033-back-goes-to-the-place-before.md) | Back goes to the place before | 2026-10-01 | — |
 | [0034](0034-a-drawing-is-a-view-and-points-at-the-model.md) | A drawing is a view, drawn in draw.io, and points at the model | 2026-10-08 | — |
 | [0035](0035-merging-on-a-screen-of-its-own-across-the-tree.md) | Merging on a screen of its own, across the tree | 2026-10-08 | — |
-| [0036](0036-an-operating-model-units-and-a-register-of-people.md) | An operating model, units as typed actors, and a register of people outside the history | 2026-10-11 | — |
+| [0036](0036-an-operating-model-units-and-a-register-of-people.md) | An operating model, units as typed actors, and a register of people outside the history | 2026-10-11 | [0039](0039-reporting-lines-for-roles-in-units.md) in part |
+| [0037](0037-comments-on-any-record.md) | Comments on any record, through one interface | 2026-10-16 | — |
+| [0038](0038-an-observation-moves-and-a-bright-spot.md) | An observation moves to another scope, and a bright spot is analysed as a problem is | 2026-10-16 | — |
+| [0039](0039-reporting-lines-for-roles-in-units.md) | Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit | 2026-10-16 | — |

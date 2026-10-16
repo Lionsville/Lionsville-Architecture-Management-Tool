@@ -27,6 +27,9 @@
   October 2026*, below); as built and implemented, 13 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
+  managing role in it, or in a unit above it*: for the holders of a role a
+  solid reporting line is drawn from, the line says who manages them
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
   is a tool*: forgetting, removing and merging a person are a person's
   alone, and no tool does them)
@@ -357,6 +360,12 @@ never in the folder. A build with accounts links an entry to an account
 instead.
 
 ### 12. A role that manages
+
+*Amended, 16 October 2026, by ADR-0039 (accepted; not yet built): a
+reporting line runs from a role in a unit to a role in another unit, solid
+or dotted, said on the unit type's slot and overridden on a unit. A solid
+line replaces the nesting below as who manages the holders of its role, and
+a host's right follows it; a dotted line is shown and carries no right.*
 
 `manages` on a role says that whoever holds it manages the unit's people.
 Core holds the flag and works out who manages a unit on a day — the holders

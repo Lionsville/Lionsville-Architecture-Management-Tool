@@ -71,6 +71,13 @@ Option 3.
 
 ### 1. A screen of its own
 
+*Amended, 16 October 2026, by ADR-0038 (accepted; not yet built): a merge
+refuses to mix a problem and a bright spot (`merge.mixedTone`), and the
+search offers records of the survivor's tone only. Moving an observation to
+another scope is written through this record's machinery (§5). And by
+ADR-0037 §6: the comments of an absorbed record move to the survivor in the
+same step.*
+
 **Merge…** on an observation or a cause opens the merge screen, full
 window, over the observations page, with that record in the set. The screen
 has three parts, top to bottom:

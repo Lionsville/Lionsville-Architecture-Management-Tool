@@ -102,6 +102,12 @@ Option 4.
 
 ### 1. Local and global
 
+*Amended, 16 October 2026, by ADR-0038 (accepted; not yet built): an
+observation may move to another scope, keeping its id, with the target's
+next number; the source keeps a tombstone that says where it went, and the
+cause links that explained it are cut and listed first. A bright spot
+(`bright`) is an observation of what works, analysed by the same method.*
+
 Every scope's observations, causes, solutions and experiments are its own,
 as they were. Those of a scope below the one being read are **local** to that
 scope, and the ones of the scope being read are its own. Read from the
