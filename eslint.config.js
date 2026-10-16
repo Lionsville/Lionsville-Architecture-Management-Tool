@@ -469,7 +469,7 @@ export const GROWN = {
   'src/model/relations.ts': { complexity: 26 },
   'src/model/restore.ts': { complexity: 45 },
   'src/model/technologyLandscape.ts': { complexity: 41 },
-  'src/observations/ui/ObservationsPage.tsx': { complexity: 34, lines: 459 },
+  'src/observations/ui/ObservationsPage.tsx': { complexity: 34, lines: 465 },
   'src/observations/ui/Readers.tsx': { complexity: 27 },
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
   'src/observations/ui/SolutionReaders.tsx': { complexity: 48, lines: 253 },

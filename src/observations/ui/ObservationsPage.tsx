@@ -73,6 +73,8 @@ import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog } from './ObservationDialogs'
 import { MergePage } from './MergePage'
 import { useMerge } from './useMerge'
+import { MovePage } from './MovePage'
+import { usePageMove } from './useMove'
 import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
 import { formatDay } from '../../i18n/dates'
@@ -185,6 +187,12 @@ export type ObservationsPageProps = {
    * (ADR-0035 §2). Where absent, it searches this scope and those below.
    */
   tree?: readonly ScopeAnalysis[]
+  /**
+   * Every scope the person can read, by path, those with no analysis yet
+   * included: where the move screen offers to move an observation to
+   * (ADR-0038 §5). Where absent, the scopes of `tree`.
+   */
+  scopes?: readonly string[]
   /**
    * May the person change the scope at this path? A record of a scope they
    * may only read is listed by the merge screen and cannot be picked
@@ -654,6 +662,11 @@ export function ObservationsPage(props: ObservationsPageProps) {
     today, t: s, scopeLabel, scopeTrail: props.scopeTrail, day: (date) => formatDay(date, props.language), select: setSelectedKey,
   })
   const mergeAt = (kind: MergeKind, id: string, scope?: string) => merging.open(kind, { scope: scope ?? here.scope, id })
+  /** The move screen (ADR-0038 §5): over this page, to any scope read, landed across; it closes on the record where it went. */
+  const moving = usePageMove({
+    here: here.scope, scopes: everywhere, paths: props.scopes, writable: props.writable, readOnly, onChangeAcross: props.onChangeAcross,
+    today, t: s, scopeLabel, scopeTrail: props.scopeTrail, select: setSelectedKey, onOpenScope: props.onOpenScope, onClose,
+  })
   const unlink = (causeId: string, target: Pick<CauseLink, 'id' | 'scope'>) => (
     commit({ ...analysis, causes: unlinkCause(causes, causeId, target.id, target.scope) })
   )
@@ -744,6 +757,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ask: {
       archive: setArchiving, merge: (observation, scope) => mergeAt('observation', observation.id, scope),
       mergeCause: (cause, scope) => mergeAt('cause', cause.id, scope),
+      move: moving.ask,
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
       address: setAddressing, plan: setPlanning, drop: setDropping,
     },
@@ -989,6 +1003,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           s={s}
         />
         <MergePage state={merging.state} note={merging.note} onNoteClose={merging.clearNote} s={s} renderMarkdown={props.renderMarkdown} windowChrome={props.windowChrome} />
+        <MovePage state={moving.state} note={moving.note} onNoteClose={moving.clearNote} s={s} windowChrome={props.windowChrome} />
         <NewSolutionDialog
           open={Boolean(proposing)}
           causes={causesForProposal(causes)}

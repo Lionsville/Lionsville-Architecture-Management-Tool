@@ -266,6 +266,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         path={props.project.path}
         below={readings.analysisBelow}
         tree={readings.analysisTree}
+        scopes={readings.scopePaths}
         {...(props.source.writable ? { writable: props.source.writable } : {})}
         explainedAbove={readings.explainedAbove}
         explainedAboveOf={readings.explainedAboveOf}

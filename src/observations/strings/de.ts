@@ -679,6 +679,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.moveNotFromHere': 'Ein Verschieben ändert zwei Scopes, und von hier aus darf nur dieser geändert werden.',
   'observation.moveConfirm': '{label} nach {scope} verschieben',
   'observation.movedNote': 'Verschoben nach {label} in {scope}. Rückgängig hier nimmt es nicht zurück: Verschieben Sie sie zurück, um es zurückzunehmen.',
+  'observation.movedPartial': '{scopes} wurden geändert, aber dieser Scope hat seinen Teil verweigert. Verschieben Sie sie zurück oder erneut.',
   'observation.moveNotMadeWhy': 'Nichts wurde verschoben: {why}',
   'observation.moveNotMadeYours': 'Nichts wurde verschoben: Sie dürfen {scope} lesen, aber nicht ändern.',
   'observation.moveNotMadeMoved': 'Nichts wurde verschoben: Ein Scope hat sich geändert, während das Verschieben geschrieben wurde. Versuchen Sie es erneut.',

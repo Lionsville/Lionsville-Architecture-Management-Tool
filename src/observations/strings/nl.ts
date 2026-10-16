@@ -679,6 +679,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.moveNotFromHere': 'Een verplaatsing wijzigt twee scopes, en vanaf hier mag alleen deze worden gewijzigd.',
   'observation.moveConfirm': '{label} naar {scope} verplaatsen',
   'observation.movedNote': 'Verplaatst naar {label} in {scope}. Ongedaan maken hier draait het niet terug: verplaats haar terug om het terug te draaien.',
+  'observation.movedPartial': '{scopes} zijn gewijzigd, maar deze scope weigerde haar deel. Verplaats haar terug, of verplaats haar opnieuw.',
   'observation.moveNotMadeWhy': 'Er is niets verplaatst: {why}',
   'observation.moveNotMadeYours': 'Er is niets verplaatst: je mag {scope} lezen, maar niet wijzigen.',
   'observation.moveNotMadeMoved': 'Er is niets verplaatst: een scope veranderde terwijl de verplaatsing werd geschreven. Probeer het opnieuw.',

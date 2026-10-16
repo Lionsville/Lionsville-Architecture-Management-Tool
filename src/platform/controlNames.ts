@@ -60,6 +60,9 @@ export const CONTROL_NAMES = [
   // The merge screen (ADR-0035): the search, across scopes, the survivor of
   // each record picked, its three parts and Merge.
   'merge.search', 'merge.across', 'merge.survivor', 'merge.what', 'merge.values', 'merge.links', 'merge.confirm',
+  // Moving an observation to another scope (ADR-0038 §5): the reader's action, and the screen's three parts,
+  // its search and Move.
+  'observation.move', 'move.what', 'move.target', 'move.search', 'move.cut', 'move.confirm',
   // One cause: the step that makes it a root cause, or a cause again.
   'cause.root',
   // Over the observations page's tabs: the filters, their row, View local and the picture's two sizes.

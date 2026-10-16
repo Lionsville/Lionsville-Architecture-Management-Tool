@@ -401,6 +401,47 @@ describe('ObservationsPage', () => {
     expect(within(merge).getByTestId('merge-blocked').textContent).toContain('only this one may be changed from here')
   })
 
+  it('offers Move to scope on its own standing observation where two scopes may be written, and opens the move screen (ADR-0038 §5)', async () => {
+    const onChangeAcross = vi.fn<ChangeAcross>(async () => ({ ok: true, changed: [] }))
+    mount({ onChangeAcross, scopes: ['', 'acme', 'acme/claims/intake'] })
+    // Not on one of a scope below: that one moves from its own scope.
+    fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
+    expect(screen.queryByTestId('observation-move')).toBeNull()
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    fireEvent.click(screen.getByTestId('observation-move'))
+    const move = await screen.findByRole('dialog', { name: 'Move an observation to another scope' })
+    expect(within(move).getByTestId('move-record').textContent).toBe('OB-0001 Nightly batch overruns')
+    expect(within(move).getAllByTestId(/^move-target-/).map((one) => one.dataset.testid)).toEqual(['move-target-acme', 'move-target-acme/claims/intake'])
+    fireEvent.click(within(within(move).getByTestId('move-target-acme/claims/intake')).getByRole('radio'))
+    expect(within(move).getAllByTestId('move-cut').map((one) => one.textContent)).toEqual(['CA-0001 Window sized for 2019 explains it'])
+    expect(within(move).getByTestId('move-becomes').textContent).toBe('It will be OB-0002 in Intake.')
+  })
+
+  it('does not offer Move to scope where only this scope may be written from here', () => {
+    mount()
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    expect(screen.queryByTestId('observation-move')).toBeNull()
+  })
+
+  it('reads a tombstone a move left as history, saying where it went and opening it there', () => {
+    const moved = { ...model, observations: [
+      observation({}),
+      observation({ id: 'o2', number: 2, title: 'Same change released twice', history: [
+        { date: '2026-09-08', kind: 'recorded' }, { date: '2026-10-16', kind: 'moved', id: 'o2', scope: 'acme/rail', number: 12 },
+      ] }),
+    ] }
+    const { onOpenScope } = mount({ model: moved, path: 'acme/claims', scopeLabel: (path) => (path === 'acme/rail' ? 'Rail' : path) })
+    expect(screen.queryByTestId('observation-row-o2')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Show merged'))
+    expect(screen.getByTestId('observation-row-o2').textContent).toContain('Moved to OB-0012 in Rail')
+    fireEvent.click(screen.getByTestId('observation-row-o2'))
+    expect(screen.queryByTestId('observation-move')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(within(screen.getByTestId('observation-history')).getByText('Moved to OB-0012 in Rail')).toBeTruthy()
+    fireEvent.click(within(screen.getByTestId('observation-merged')).getByTestId('observation-merged-link'))
+    expect(onOpenScope).toHaveBeenCalledWith('acme/rail', 'o2')
+  })
+
   it('draws the analysis: circles for observations, boxes for causes, a root, and the lines between', () => {
     mount({ model: { ...model, causes: [
       cause({ explains: [{ id: 'o1', strength: 'strong' }, { id: 'in1', scope: 'acme/claims/intake', strength: 'weak' }] }),

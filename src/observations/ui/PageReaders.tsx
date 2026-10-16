@@ -141,6 +141,8 @@ export type ReaderContext = {
     merge: (observation: Observation, scope?: string) => void
     /** The merge screen, opened on a cause of this scope or of `scope` (ADR-0035). */
     mergeCause: (cause: Cause, scope?: string) => void
+    /** The move screen, opened on an observation of this scope (ADR-0038 §5); absent where two scopes cannot be written from here. */
+    move?: ((observation: Observation) => void) | undefined
     remove: (kind: DeleteKind, id: string) => void
     propose: (causeId: string) => void
     address: (solution: Solution) => void
@@ -253,6 +255,7 @@ function observationProps(one: Observation, scope: string | undefined, selectedK
     onArchive: () => ctx.ask.archive(one),
     onRestore: () => ctx.commit({ observations: restoreObservation(work.observations, one.id, ctx.today()) }),
     onMerge: () => ctx.ask.merge(one, scope),
+    onMove: own && ctx.ask.move ? () => ctx.ask.move?.(one) : undefined,
     onLink: () => forms.openLink({ mode: 'cause', id: one.id, ...(scope !== undefined ? { scope } : {}) }),
     onUnlink: unlink,
     onDelete: () => ctx.ask.remove('observation', one.id),

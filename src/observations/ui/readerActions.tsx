@@ -68,6 +68,8 @@ export function observationActions(o: {
   onSeenAgain: () => void
   onLink: () => void
   onMerge: () => void
+  /** *Move to scope…* (ADR-0038 §5): its own and standing, where the page can write two scopes. */
+  onMove?: (() => void) | undefined
   onArchive: () => void
   onDelete: () => void
 }): ReaderAction[] {
@@ -84,6 +86,10 @@ export function observationActions(o: {
     key: 'merge', icon: <MergeIcon size={14} />, label: s('observation.actMerge'), tip: s('observation.tipMerge'),
     onClick: o.onMerge, occasional: true, opensDialog: true, testId: 'observation-merge', guide: 'observation.merge',
   }
+  const move: ReaderAction | undefined = o.onMove && {
+    key: 'move', icon: <ScopeIcon size={14} />, label: s('observation.actMove'), tip: s('observation.tipMove'),
+    onClick: o.onMove, occasional: true, opensDialog: true, testId: 'observation-move', guide: 'observation.move',
+  }
   const archive: ReaderAction = {
     key: 'archive', icon: <ArchiveIcon size={14} />, label: s('observation.actArchive'), tip: s('observation.tipArchive'),
     onClick: o.onArchive, occasional: true, opensDialog: true, testId: 'observation-archive',
@@ -91,6 +97,7 @@ export function observationActions(o: {
   return [
     ...(o.mayAdd ? [seen, cause] : []),
     ...(o.mayMerge ? [merge] : []),
+    ...(o.own && move ? [move] : []),
     ...(o.own ? [archive, deleteAction(s('observation.tipDelete'), o.onDelete, s)] : []),
   ]
 }

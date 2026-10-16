@@ -698,6 +698,7 @@ export const EN = {
   'observation.moveNotFromHere': 'A move changes two scopes, and only this one may be changed from here.',
   'observation.moveConfirm': 'Move {label} to {scope}',
   'observation.movedNote': 'Moved to {label} in {scope}. Undo here does not take it back: to take it back, move it back.',
+  'observation.movedPartial': '{scopes} were changed, but this scope refused its part. Move it back, or move it again.',
   'observation.moveNotMadeWhy': 'Nothing was moved: {why}',
   'observation.moveNotMadeYours': 'Nothing was moved: you may read {scope}, but not change it.',
   'observation.moveNotMadeMoved': 'Nothing was moved: a scope changed while the move was being written. Try again.',

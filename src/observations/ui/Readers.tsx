@@ -268,6 +268,8 @@ export type ObservationReaderProps = {
   onArchive: () => void
   onRestore: () => void
   onMerge: () => void
+  /** *Move to scope…* (ADR-0038 §5); absent where the page cannot write two scopes. Offered on its own, standing record only. */
+  onMove?: (() => void) | undefined
   /** A cause for it: a new one, or one already written down in its scope. */
   onLink: () => void
   onUnlink: (causeId: string, scope?: string) => void
@@ -308,6 +310,7 @@ export function observationBar(props: ObservationReaderProps, mode: Mode, switch
       s, own: canEdit, mayAdd: canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true),
       scope: fromScope ? fromScope.label : s('observation.thisScope'), mayMerge: standing,
       onSeenAgain: props.onSeenAgain, onLink: props.onLink, onMerge: props.onMerge, onArchive: props.onArchive, onDelete: props.onDelete,
+      onMove: props.onMove,
     }),
     ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEdit'), s)] : []),
     ...(archived && !readOnly && !fromScope ? [restoreAction(s('observation.tipRestore'), props.onRestore, 'observation-restore', s)] : []),
