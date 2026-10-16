@@ -49,10 +49,15 @@
  * format stayed 12. A 3.6.3 build passes it over and drops it on its next
  * save; the matrix then lists them in the list's own order, the order they
  * were added in, until somebody moves one again.
+ *
+ * A slot's `reportsTo` (ADR-0039 §2) came with scope format 13, which a 3.6
+ * build refuses, so no build that would drop it opens the folder. A line that
+ * names no role, or a kind other than solid or dotted, is passed over and the
+ * slot kept.
  */
-import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
+import { isLineKind, isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
-  BasedOn, Duty, OperatingRule, Placed, Responsibility, Role, RoleSlot, UnitType, UnitTypeBasedOn,
+  BasedOn, Duty, OperatingRule, Placed, ReportsTo, Responsibility, Role, RoleSlot, UnitType, UnitTypeBasedOn,
 } from '../../../model/operatingModel'
 import type { HostModel } from '../../../model/hostModel'
 import { parseJson, stableJson } from '../../../projects/text'
@@ -145,12 +150,20 @@ function datedOf(row: Record<string, unknown>): Pick<UnitType, 'from' | 'until' 
   }
 }
 
+/** A slot's reporting line (ADR-0039 §2): absent where it names no role or no kind it knows. */
+function reportsToOf(value: unknown): { reportsTo?: ReportsTo } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const { role, kind, from, until } = value as Record<string, unknown>
+  if (typeof role !== 'string' || !isLineKind(kind)) return {}
+  return { reportsTo: { role, kind, ...(text(from) !== undefined ? { from: text(from) } : {}), ...(text(until) !== undefined ? { until: text(until) } : {}) } }
+}
+
 function slotOf(value: unknown): RoleSlot[] {
   if (!value || typeof value !== 'object') return []
-  const { role, min, max } = value as Record<string, unknown>
+  const { role, min, max, reportsTo } = value as Record<string, unknown>
   if (typeof role !== 'string') return []
   const most = count(max)
-  return [{ role, min: count(min) ?? 0, ...(most !== undefined ? { max: most } : {}) }]
+  return [{ role, min: count(min) ?? 0, ...(most !== undefined ? { max: most } : {}), ...reportsToOf(reportsTo) }]
 }
 
 function dutyOf(value: unknown): Duty[] {

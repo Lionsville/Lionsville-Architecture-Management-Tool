@@ -151,3 +151,31 @@ export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: Scop
   })
   return [...causes, ...observations]
 }
+
+/**
+ * A unit's own reporting lines name the scope that keeps the unit each
+ * lands on (ADR-0039 §3), and a move carries that address as it carries a
+ * stand-in's `ref`. Only a definition's: a stand-in holds none of the owner's
+ * detail.
+ */
+type LinesHeld = { elements: readonly DesignElement[] }
+
+/** Whether a scope's units name an address inside the subtree at `from` on a line of their own. */
+export function linesNameWithin(model: LinesHeld, from: ScopePath): boolean {
+  if (from === ROOT_SCOPE) return false
+  return model.elements.some((element) => element.ref === undefined
+    && (element.reportingLines ?? []).some((line) => line.to !== undefined && isWithinScope(line.to.scope, from)))
+}
+
+/** The commands that carry each unit's lines naming an address inside the subtree at `from` to `to`: one patch of the unit's lines each. */
+export function readdressLines(model: LinesHeld, from: ScopePath, to: ScopePath): Command[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  return model.elements.flatMap((element): Command[] => {
+    if (element.ref !== undefined || !element.reportingLines?.length) return []
+    const reportingLines = element.reportingLines.map((line) => (
+      line.to === undefined ? line : { ...line, to: { ...line.to, scope: readdressRef(line.to.scope, from, to) } }
+    ))
+    const moved = reportingLines.some((line, at) => line.to?.scope !== element.reportingLines![at].to?.scope)
+    return moved ? [{ type: 'element.update', id: element.id, patch: { reportingLines } }] : []
+  })
+}

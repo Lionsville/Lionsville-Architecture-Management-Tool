@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
-import { analysisNamesWithin, applyRefPatch, readdressAnalysis, readdressRef, readdressRefs } from './readdress'
+import { analysisNamesWithin, applyRefPatch, linesNameWithin, readdressAnalysis, readdressLines, readdressRef, readdressRefs } from './readdress'
 import type { Cause, Observation } from '../model/observation'
 
 function element(id: string, ref?: string): DesignElement {
@@ -151,5 +151,26 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
     expect(readdressAnalysis({ causes: [merged] }, 'acme/rail', 'group/rail')).toEqual([
       { type: 'cause.update', id: 'ca-3', patch: { history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'group/rail' }] } },
     ])
+  })
+})
+
+describe('a unit\'s reporting lines (ADR-0039 §3)', () => {
+  const unit = (id: string, scopes: (string | undefined)[], ref?: string) => ({
+    id, kind: 'actor' as const, name: id, lifecycle: 'live' as const, isManaged: false, aspects: {}, ...(ref !== undefined ? { ref } : {}),
+    reportingLines: scopes.map((scope) => (scope === undefined
+      ? { role: 'ro-a', kind: 'solid' as const }
+      : { role: 'ro-a', kind: 'dotted' as const, to: { scope, unit: 'u', role: 'ro-b' } })),
+  })
+
+  it('carries a line naming the moved subtree, and nothing else, as one patch of the unit\'s lines', () => {
+    const model = { elements: [unit('one', ['acme/rail/ops', undefined]), unit('two', ['globex']), unit('stand', ['acme/rail'], 'acme')] }
+    expect(linesNameWithin(model, 'acme/rail')).toBe(true)
+    expect(linesNameWithin(model, 'initech')).toBe(false)
+    expect(linesNameWithin(model, '')).toBe(false)
+    expect(readdressLines(model, 'acme/rail', 'group/rail')).toEqual([{
+      type: 'element.update', id: 'one',
+      patch: { reportingLines: [{ role: 'ro-a', kind: 'dotted', to: { scope: 'group/rail/ops', unit: 'u', role: 'ro-b' } }, { role: 'ro-a', kind: 'solid' }] },
+    }])
+    expect(readdressLines(model, 'acme/rail', 'acme/rail')).toEqual([])
   })
 })

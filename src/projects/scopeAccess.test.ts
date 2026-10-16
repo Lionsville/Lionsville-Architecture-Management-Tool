@@ -222,6 +222,20 @@ describe('a content that arrives whole, and a scope moved', () => {
     expect(applied).toEqual([1, 1])
   })
 
+  /** A unit's own reporting line names the scope that keeps its target by path (ADR-0039 §3): a move carries it too. */
+  it('carries a unit\'s reporting line that names a scope it moves', async () => {
+    const { repositories } = await withAcme()
+    const unit = (id: string, over: object = {}) => ({ id, kind: 'actor', name: id, lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId: 'ut-unit', ...over })
+    const model = (name: string, elements: object[]) => ({ name, elements, relations: [], diagrams: [] })
+    await placeWhole(repositories.scopes, 'acme/tech', { ...contentOf(example('acme/tech')), model: model('Tech', [unit('tech')]) as never })
+    const line = { role: 'ro-lead', kind: 'solid', to: { scope: 'acme/tech', unit: 'tech', role: 'ro-head' } }
+    await placeWhole(repositories.scopes, 'globex', { ...contentOf(example('globex')), model: model('Globex', [unit('retail', { reportingLines: [line, { role: 'ro-arch', kind: 'solid' }] })]) as never })
+    await moveScope(repositories.scopes, repositories.index, 'acme', 'group/acme')
+    expect((await readScope(repositories.scopes, 'globex'))?.model.elements[0].reportingLines).toEqual([
+      { ...line, to: { ...line.to, scope: 'group/acme/tech' } }, { role: 'ro-arch', kind: 'solid' },
+    ])
+  })
+
   it('says a move the repository refuses with its key, and moves nothing — not a stand-in either', async () => {
     const { repositories } = await withAcme()
     await placeWhole(repositories.scopes, 'acme/crews', contentOf(example('acme/crews')))

@@ -188,6 +188,35 @@ describe('the operating model in a scope\'s folder', () => {
     expect(back.model.unitTypes).toHaveLength(2)
   })
 
+  it('keeps a slot\'s reporting line and a unit\'s own, and passes over a line that does not read (ADR-0039, format 13)', () => {
+    const scope = organisation()
+    const reporting: UnitType = { ...team, slots: [{ role: 'ro-po', min: 1, max: 1, reportsTo: { role: 'ro-lead', kind: 'solid', from: '2026-11-01' } }, team.slots[1]] }
+    const unit = {
+      id: 'checkout', kind: 'actor' as const, name: 'Checkout', lifecycle: 'live' as const, isManaged: false, aspects: {}, unitTypeId: 'ut-team',
+      reportingLines: [
+        { role: 'ro-dev', kind: 'dotted' as const, to: { scope: 'customer/tech', unit: 'tech', role: 'ro-chief' }, until: '2027-06-30' },
+        { role: 'ro-po', kind: 'solid' as const },
+      ],
+    }
+    const lined = { ...scope, model: { ...scope.model, unitTypes: [train, reporting], elements: [unit] } }
+    const back = scopeFromFolder(scopeFiles(lined), '')!
+    expect(back.model.unitTypes?.[1]).toEqual(reporting)
+    expect(back.model.elements[0].reportingLines).toEqual(unit.reportingLines)
+    const opened = openDocumentBytes(workingFileBytes([lined]), lined)
+    expect(opened.ok && opened.scope.model.unitTypes?.[1]).toEqual(reporting)
+    expect(opened.ok && opened.scope.model.elements[0].reportingLines).toEqual(unit.reportingLines)
+    const files: FolderFile[] = [
+      ...scopeFiles(bareScope('', 'Acme')),
+      {
+        path: UNIT_TYPES_FILE,
+        text: JSON.stringify([{ id: 'ut-1', within: [], slots: [
+          { role: 'ro-a', min: 1, reportsTo: { role: 'ro-b', kind: 'sideways' } }, { role: 'ro-c', min: 0, reportsTo: { kind: 'solid' } },
+        ] }]),
+      },
+    ]
+    expect(scopeFromFolder(files, '')!.model.unitTypes?.[0].slots).toEqual([{ role: 'ro-a', min: 1 }, { role: 'ro-c', min: 0 }])
+  })
+
   it('travels in a working file and comes back whole', () => {
     const held = organisation()
     const opened = openDocumentBytes(workingFileBytes([held]), held)

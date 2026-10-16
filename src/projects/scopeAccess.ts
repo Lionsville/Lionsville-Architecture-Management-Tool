@@ -25,7 +25,7 @@ import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
-import { analysisNamesWithin, readdressAnalysis, readdressRef, readdressRefs } from './readdress'
+import { analysisNamesWithin, linesNameWithin, readdressAnalysis, readdressLines, readdressRef, readdressRefs } from './readdress'
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope } from './scopePath'
@@ -317,6 +317,7 @@ export async function moveScope(
       const commands: Command[] = [
         ...(entries.length ? [{ type: 'standin.refresh', entries } as const] : []),
         ...readdressAnalysis(held.model, from, to),
+        ...readdressLines(held.model, from, to),
       ]
       if (commands.length === 0) return undefined
       return [commands.length === 1 ? commands[0] : { type: 'transaction', commands }]
@@ -339,7 +340,7 @@ function carriedBy(
   for (const patch of readdressRefs(models, from, to)) carried.set(patch.path, patch.refs)
   if (from === to) return carried
   for (const one of models) {
-    if (!carried.has(one.path) && analysisNamesWithin(one.model, from)) carried.set(one.path, [])
+    if (!carried.has(one.path) && (analysisNamesWithin(one.model, from) || linesNameWithin(one.model, from))) carried.set(one.path, [])
   }
   const inside = (address: ScopeAddress) => Number(isWithinScope(address, from))
   return new Map([...carried].sort(([a], [b]) => inside(a) - inside(b) || a.localeCompare(b)))
