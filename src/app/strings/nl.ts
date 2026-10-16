@@ -538,6 +538,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.initiativesOther': '{count} initiatieven van eronder',
   'org.observationsOne': '{count} waarneming',
   'org.observationsOther': '{count} waarnemingen',
+  'org.brightOne': '{count} lichtpunt',
+  'org.brightOther': '{count} lichtpunten',
   'org.localBelowOne': '{count} in de scopes eronder',
   'org.localBelowOther': '{count} in de scopes eronder',
   'org.rootCausesOne': '{count} grondoorzaak',

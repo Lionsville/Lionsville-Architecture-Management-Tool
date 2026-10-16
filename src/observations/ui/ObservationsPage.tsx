@@ -42,7 +42,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
-import type { Language, Translate } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
 import type { ObservationTab } from '../tabs'
@@ -66,6 +66,7 @@ import type {
 } from '../observation'
 import type { SavedFilters } from '../filter'
 import { nodeKey } from '../graph'
+import type { PictureCounts } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog } from './ObservationDialogs'
@@ -458,6 +459,25 @@ function analysedIntoOf(causes: readonly Cause[], below: readonly ScopeAnalysis[
   ]
 }
 
+/**
+ * The counts over the picture, in order, each with the colour its number is
+ * drawn in: the problems' and the causes', then — only where there are any —
+ * the bright spots', counted apart in the success colour (ADR-0038 §6).
+ */
+function phaseRows(counted: PictureCounts): (readonly [StringKey, number, string | undefined])[] {
+  const plain = [
+    ['observation.phaseObserved', counted.observed], ['observation.phaseAnalysed', counted.analysed],
+    ['observation.phaseAssumed', counted.assumed], ['observation.phaseVerified', counted.verified],
+    ['observation.phaseRoots', counted.roots], ['observation.phaseOpenEnds', counted.openEnds],
+  ] as const
+  const { bright } = counted
+  const lit = bright.observed > 0 || bright.openEnds > 0 ? [
+    ['observation.phaseBright', bright.observed], ['observation.phaseBrightAnalysed', bright.analysed],
+    ['observation.phaseBrightOpenEnds', bright.openEnds],
+  ] as const : []
+  return [...plain.map(([key, count]) => [key, count, undefined] as const), ...lit.map(([key, count]) => [key, count, 'success.main'] as const)]
+}
+
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
     open, onClose, model, groupName, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
@@ -710,11 +730,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const queue = liveObservations(observations).filter((one) => analysedInto(one.id).length === 0)
   /** The counts over the picture are the picture's: the scopes below while View local is on, less what the filters hid. */
   const counted = f.counts(aboveOf)
-  const phases = [
-    ['observation.phaseObserved', counted.observed], ['observation.phaseAnalysed', counted.analysed],
-    ['observation.phaseAssumed', counted.assumed], ['observation.phaseVerified', counted.verified],
-    ['observation.phaseRoots', counted.roots], ['observation.phaseOpenEnds', counted.openEnds],
-  ] as const
+  const phases = phaseRows(counted)
 
   // --- the right-click ------------------------------------------------------------------
 
@@ -771,9 +787,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const picture = (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       <Box data-testid="analysis-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        {phases.map(([key, count]) => (
+        {phases.map(([key, count, bright]) => (
           <Typography key={key} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums' }}>{count}</Box>
+            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color: bright }}>{count}</Box>
             <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{s(key)}</Box>
           </Typography>
         ))}

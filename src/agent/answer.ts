@@ -60,6 +60,8 @@ import {
   mergedInto, observationsBelow,
 } from '../observations/observation'
 import { planAnswer } from './merge'
+import { ofTone, TONES } from '../observations/filter'
+import type { Tone } from '../observations/filter'
 import type { ObservationBelow } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
@@ -736,6 +738,8 @@ function observationRows(args: Args, own: readonly Observation[], causes: readon
     .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
     .filter((one) => args.includeArchived === true || !one.archived)
     .filter((one) => impact === undefined || one.impact === impact)
+    // Problems, bright spots or both (ADR-0038 §6); an unknown tone is both.
+    .filter((one) => ofTone(one, TONES.includes(args.tone as Tone) ? args.tone as Tone : 'all'))
     .filter((one) => analysed === undefined || (explainedBy(causes, one.id).length > 0) === analysed)
     .map((one) => observationLine(one, causes, own))
 }
@@ -766,6 +770,7 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(observation.where ? { where: observation.where } : {}),
     ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
+    ...(observation.bright ? { bright: true } : {}),
     seen: observation.seen,
     ...(observation.archived ? { archived: true } : {}),
     ...wentTo(merged, observation.history),

@@ -24,6 +24,7 @@ import type { Translate } from '../../i18n'
 import { matchesQuery } from '../../model/textSearch'
 import { BookmarkIcon, CaretIcon, CloseIcon, ScopeIcon } from '../../widgets/icons'
 import type { Filters, SavedFilter } from '../filter'
+import { TONE_LABEL } from '../observationScope'
 
 /** A button in the filter row that opens a popover under itself. */
 function PopoverButton(props: {
@@ -126,7 +127,7 @@ export function ScopesPopover({ scopes, off, onChange, s }: {
   )
 }
 
-/** A saved filter in a line: what each box says, and how many scopes it switches off. */
+/** A saved filter in a line: what each box says, how many scopes it switches off, and the tone where it is one. */
 export function describeFilters(filters: Filters, s: Translate): string {
   return [
     filters.observations.trim() && `${s('observation.filterObs')}: ${filters.observations.trim()}`,
@@ -134,6 +135,7 @@ export function describeFilters(filters: Filters, s: Translate): string {
     filters.roots.trim() && `${s('observation.filterRoot')}: ${filters.roots.trim()}`,
     filters.search.trim() && `“${filters.search.trim()}”`,
     filters.scopesOff.length > 0 && s('observation.savedScopesOff', { count: filters.scopesOff.length }),
+    filters.tone !== 'all' && s(TONE_LABEL[filters.tone]),
   ].filter(Boolean).join(' · ')
 }
 

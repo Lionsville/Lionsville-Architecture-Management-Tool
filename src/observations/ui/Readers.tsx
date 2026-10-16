@@ -51,11 +51,11 @@ import type { PersonRef } from '../../model/person'
 import type { PersonNames } from '../../people/ui/names'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
-import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { BRIGHT_LABEL, EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
 import { ExampleField, TitleField } from './FormParts'
-import { exampleFor, problemText } from './ObservationForm'
+import { exampleFor, problemText, ToneChoice } from './ObservationForm'
 import {
   causeActions, modeAction, observationActions, openScopeAction, restoreAction,
 } from './readerActions'
@@ -296,7 +296,7 @@ export function ObservationReader(props: ObservationReaderProps) {
   const canEdit = !readOnly && !fromScope && !mergedInto && !archived
   const stored = useMemo(() => ({
     title: observation.title, body: observation.body, where: observation.where ?? '', by: observation.by ?? '',
-    date: observation.date, impact: observation.impact,
+    date: observation.date, impact: observation.impact, bright: observation.bright === true,
   }), [observation])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
   // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
@@ -317,6 +317,7 @@ export function ObservationReader(props: ObservationReaderProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
+          <BrightChip bright={observation.bright} s={s} />
           <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
           {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
           <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
@@ -406,10 +407,15 @@ export function ObservationReader(props: ObservationReaderProps) {
   )
 }
 
+/** A bright spot's chip in the success colour (ADR-0038 §6); nothing on a problem. */
+function BrightChip({ bright, s }: { bright: true | undefined; s: Translate }) {
+  return bright ? <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} data-testid="observation-bright" /> : null
+}
+
 /** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
 function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
-  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact }
-  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact }>) => void
+  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; bright: boolean }
+  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; bright: boolean }>) => void
   onBlur: () => void
   today: string
   names: PersonNames
@@ -426,6 +432,7 @@ function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
   )
   return (
     <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1.5, gridTemplateColumns: '1fr 1fr' }}>
+      <Box sx={{ gridColumn: '1 / -1' }}><ToneChoice bright={draft.bright} onChange={(bright) => onChange({ bright })} s={s} /></Box>
       {field('title', 'observation.titleField', true)}
       {field('where', 'observation.whereField')}
       <PersonRefField

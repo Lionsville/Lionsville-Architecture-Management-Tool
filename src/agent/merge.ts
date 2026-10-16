@@ -219,6 +219,7 @@ const MERGE_REFUSAL: Record<MergeRefusal, AgentRefusal> = {
   survivorAbsorbed: 'merge.survivorAbsorbed',
   notADay: 'merge.notADay',
   unverified: 'merge.unverified',
+  mixedTone: 'merge.mixedTone',
   'command.rootExplained': 'command.rootExplained',
   'command.rootAddressed': 'command.rootAddressed',
 }

@@ -27,7 +27,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { Translate } from '../../i18n'
-import { analysisPicture, fitZoom, openEnds, pictureKey, traceChain, PICTURE_SIZE } from '../graph'
+import { analysisPicture, brightChains, fitZoom, openEnds, pictureKey, traceChain, PICTURE_SIZE } from '../graph'
 import type { PictureEdge, PictureLane, PictureNode, SectionedPicture } from '../graph'
 import { causeLabel } from '../observation'
 import type { CauseAbove, ScopeAnalysis } from '../observation'
@@ -82,6 +82,12 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
     [scopes, here, view.size, visible],
   )
   const open = useMemo(() => openEnds(scopes, here, props.explainedAbove), [scopes, here, props.explainedAbove])
+  // The chains behind bright spots only are drawn in the success colour (ADR-0038 §6).
+  const bright = useMemo(() => {
+    const keys = brightChains(scopes, here)
+    for (const node of picture.nodes) if (node.kind === 'observation' && node.observation.bright) keys.add(node.key)
+    return keys
+  }, [scopes, here, picture.nodes])
   const [hot, setHot] = useState<string | undefined>(undefined)
   const traced = useMemo(() => (hot ? traceChain(hot, picture.edges) : undefined), [hot, picture.edges])
   const hotNode = hot ? picture.nodes.find((node) => node.key === hot) : undefined
@@ -107,7 +113,7 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
           >
             <Headings picture={picture} hereLabel={props.hereLabel} s={s} large={view.size === 'large'} />
             <Boundaries picture={picture} scopeLabel={props.scopeLabel} s={s} />
-            <Edges picture={picture} here={here} large={view.size === 'large'} traced={traced} onMenu={props.onMenu} />
+            <Edges picture={picture} here={here} large={view.size === 'large'} traced={traced} bright={bright} onMenu={props.onMenu} />
             <Nodes {...props} picture={picture} open={open} traced={traced} hot={hot} onHot={setHot} />
           </svg>
           {hotNode && <HoverCard node={hotNode} picture={picture} zoom={view.zoom} large={view.size === 'large'} scopeLabel={props.scopeLabel} s={s} />}
@@ -227,8 +233,8 @@ function Boundaries({ picture, scopeLabel, s }: { picture: SectionedPicture; sco
   )
 }
 
-function Edges({ picture, here, large, traced, onMenu }: {
-  picture: SectionedPicture; here: string; large: boolean; traced?: ReadonlySet<string>; onMenu?: PictureMenuHandler
+function Edges({ picture, here, large, traced, bright, onMenu }: {
+  picture: SectionedPicture; here: string; large: boolean; traced?: ReadonlySet<string>; bright: ReadonlySet<string>; onMenu?: PictureMenuHandler
 }) {
   const theme = useTheme()
   const byKey = useMemo(() => new Map(picture.nodes.map((node) => [node.key, node])), [picture.nodes])
@@ -244,7 +250,8 @@ function Edges({ picture, here, large, traced, onMenu }: {
         const d = `M${a.x},${a.y} C${a.x + bend},${a.y} ${b.x - bend},${b.y} ${b.x},${b.y}`
         const on = traced !== undefined && traced.has(edge.from) && traced.has(edge.to)
         const plain = STROKE[edge.strength]
-        const colour = on ? theme.palette.primary.main : edge.crossing ? theme.palette.info.main : theme.palette.text.secondary
+        const colour = on ? theme.palette.primary.main : edge.crossing ? theme.palette.info.main
+          : bright.has(edge.from) && bright.has(edge.to) ? theme.palette.success.main : theme.palette.text.secondary
         const menu = onMenu && to.scope === here ? edgeTarget(edge, from, to, here) : undefined
         return (
           <g key={`${edge.from}->${edge.to}`}>
@@ -258,6 +265,7 @@ function Edges({ picture, here, large, traced, onMenu }: {
               data-testid="analysis-link"
               data-strength={edge.strength}
               data-crossing={edge.crossing ? 'true' : undefined}
+              data-bright={bright.has(edge.from) && bright.has(edge.to) ? 'true' : undefined}
             />
             {menu && onMenu && (
               <path
@@ -347,7 +355,7 @@ function Nodes(props: NodesProps) {
             matched={(props.filter?.filtering ?? false) && (props.filter?.matched.has(node.key) ?? false)}
             openEnd={props.open.has(node.key)}
             marker={markerOf(node, props, drawn)}
-            fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen) : theme.palette.background.paper}
+            fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen, node.observation.bright) : theme.palette.background.paper}
             s={props.s}
           />
         </g>
@@ -400,12 +408,14 @@ export function PictureLegend({ size, local, s }: { size: 'large' | 'small'; loc
   const solutionFill = palette.background.paper
   const rows = size === 'large' ? [
     row(<><rect x={2} y={2} width={22} height={10} rx={3} fill="none" stroke={palette.text.secondary} /><rect x={2} y={2} width={4} height={10} fill={palette.error.main} /></>, s('observation.legendStripe')),
+    row(box(palette.success.main, { width: 1.8 }), s('observation.legendBright')),
     row(box(palette.warning.main, { dash: '3 2' }), s('observation.legendAssumed')),
     row(box(palette.success.main), s('observation.legendVerified')),
     row(box(palette.secondary.main, { width: 2.4, rx: 6 }), s('observation.legendRoot')),
     row(box(palette.primary.main, { fill: solutionFill }), s('observation.legendSolution')),
   ] : [
     row(<><circle cx={7} cy={7} r={4} fill={palette.primary.main} /><circle cx={19} cy={7} r={6} fill={palette.primary.main} /></>, s('observation.legendCircle')),
+    row(<circle cx={13} cy={7} r={6} fill={palette.success.main} />, s('observation.legendBright')),
     row(ring(palette.text.secondary), s('observation.legendHollow')),
     row(ring(palette.warning.main, { dash: '3 2' }), s('observation.legendAssumed')),
     row(ring(palette.success.main), s('observation.legendVerified')),

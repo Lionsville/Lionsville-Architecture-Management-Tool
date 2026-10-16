@@ -440,3 +440,52 @@ describe('what a look at the page found (ADR-0032 §2)', () => {
     expect(headings.slice(0, 4)).toEqual(['Observations', 'Causes', 'Root causes', 'Solutions'])
   })
 })
+
+describe('bright spots (ADR-0038 §6)', () => {
+  // o2 works rather than goes wrong; c2 is behind it alone.
+  const toned: HostModel = {
+    ...model,
+    observations: model.observations!.map((one) => (one.id === 'o2' ? { ...one, bright: true as const } : one)),
+  }
+  const mountToned = () => {
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={toned} groupName="Acme" below={below} path="acme/claims"
+        scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
+        onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+  }
+
+  it('marks one in the register with its chip, and counts it apart over the picture', () => {
+    mountToned()
+    expect(screen.getByTestId('observation-bright-o2').textContent).toBe('Bright spot')
+    expect(screen.queryByTestId('observation-bright-o1')).toBeNull()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    const phases = screen.getByTestId('analysis-phases').textContent
+    expect(phases).toContain('2observed')
+    expect(phases).toContain('1bright spots')
+    expect(phases).toContain('1bright spots analysed')
+    // The line from the bright spot to the cause behind it alone is drawn in the success colour.
+    const bright = [...picture().querySelectorAll('[data-testid="analysis-link"][data-bright="true"]')]
+    expect(bright).toHaveLength(1)
+  })
+
+  it('narrows every tab to problems or bright spots with the tone, counted as a filter', () => {
+    mountToned()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    fireEvent.click(screen.getByTestId('filter-tone-bright'))
+    expect(drawn()).toEqual(['c2', 'o2'])
+    expect(screen.getByTestId('filters-toggle').textContent).toContain('1')
+    fireEvent.click(screen.getByTestId('filter-tone-problems'))
+    expect(drawn()).not.toContain('o2')
+    expect(drawn()).not.toContain('c2')
+    expect(drawn()).toContain('o1')
+    fireEvent.click(screen.getByTestId('observation-tab-register'))
+    expect(screen.queryByTestId('observation-row-o2')).toBeNull()
+    expect(screen.getByTestId('observation-row-o1')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('filter-tone-all'))
+    expect(screen.getByTestId('observation-row-o2')).toBeTruthy()
+  })
+})

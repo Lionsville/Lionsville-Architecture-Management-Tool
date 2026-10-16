@@ -10,7 +10,8 @@
  * heavier, rounder outline, a solution filled. **Small** is a circle for every
  * kind with the label and a short title under it: an observation filled and
  * sized by its impact, a cause hollow, a root cause with a double ring, a
- * solution a square. Dashed means assumed in both.
+ * solution a square. Dashed means assumed in both. A bright spot (ADR-0038
+ * §6) is outlined and tinted in the success colour in both.
  *
  * Both keep the `?` on a cause that is not a root and that nothing explains —
  * an open end — and a marker where a link leaves the picture: a cause above
@@ -72,7 +73,7 @@ export function anchorOf(node: PictureNode, side: 'left' | 'right', size: Pictur
 /** The outline a record is drawn with: its colour, its weight, and a dash while it is assumed. */
 function outline(theme: Theme, node: PictureNode): { stroke: string; width: number; dash?: string } {
   const { palette } = theme
-  if (node.kind === 'observation') return { stroke: palette.text.secondary, width: 1.2 }
+  if (node.kind === 'observation') return node.observation.bright ? { stroke: palette.success.main, width: 1.8 } : { stroke: palette.text.secondary, width: 1.2 }
   if (node.kind === 'solution') return { stroke: palette.primary.main, width: 1.4 }
   const dash = node.cause.state === 'assumed' ? '5 4' : undefined
   if (node.root) return { stroke: palette.secondary.main, width: 2.6, ...(dash ? { dash } : {}) }
@@ -157,7 +158,7 @@ function SmallMark({ node, selected, matched, openEnd, marker, fill, s }: Record
       )}
       {node.kind === 'observation' && (
         <>
-          <circle cx={cx} cy={cy} r={reach} fill={fill} stroke={theme.palette.primary.main} strokeWidth={1.2} />
+          <circle cx={cx} cy={cy} r={reach} fill={fill} stroke={node.observation.bright ? theme.palette.success.main : theme.palette.primary.main} strokeWidth={1.2} />
           {reach >= 13 && (
             <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize={10} fontWeight={700} fill={inkOn(theme, fill)}>
               {s('observation.seenTimes', { count: node.observation.seen })}

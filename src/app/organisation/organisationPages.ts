@@ -30,7 +30,7 @@ import type { FindingTarget } from '../../roadmap/findingTarget'
 import { TRANSITION_STATUSES } from '../../model/transition'
 import type { TransitionStatus } from '../../model/transition'
 import type { ScopeSnapshot } from '../../projects/scope'
-import { liveCauses, liveObservations, rootCauses } from '../../observations/observation'
+import { isBright, liveCauses, liveObservations, rootCauses } from '../../observations/observation'
 import { isLive, rootsWithoutSolution } from '../../observations/solution'
 import { CAUSE_STATES } from '../../model/observation'
 import type { CauseState } from '../../model/observation'
@@ -82,8 +82,10 @@ export type OrganisationPages = {
   }
   /** What was seen here and what lies behind it (ADR-0021). */
   observations: {
-    /** The observations still standing: merged ones are history. */
+    /** The problems still standing: merged ones are history, and bright spots are counted apart. */
     total: number
+    /** The bright spots still standing (ADR-0038 §6). */
+    bright: number
     causes: StatusTally<CauseState>
     roots: number
     /** Solutions still standing, and how many of the roots one of them addresses (ADR-0026). */
@@ -167,7 +169,8 @@ export function organisationPages(
         : {}),
     },
     observations: {
-      total: liveObservations(observations).length,
+      total: liveObservations(observations).filter((one) => !isBright(one)).length,
+      bright: liveObservations(observations).filter(isBright).length,
       causes: tally(CAUSE_STATES, liveCauses(causes).map((one) => ({ status: one.state }))),
       roots: rootCauses(causes).length,
       solutions: solutions.filter(isLive).length,

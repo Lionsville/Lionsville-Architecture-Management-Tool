@@ -127,6 +127,7 @@ export const recordObservation: Handler = (args, view) => {
     where: args.where,
     by: by.ref,
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
+    ...(args.bright === true ? { bright: true } : {}),
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
   const after = { ...before, observations: [...before.observations, fresh] }
@@ -161,6 +162,8 @@ function observationPatch(args: Args, view: WriteView): ObservationPatch | Agent
   }
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
+  // A problem or a bright spot, and may be changed either way (ADR-0038 §6).
+  if (typeof args.bright === 'boolean') patch.bright = args.bright
   if (typeof args.date === 'string') {
     if (!isDay(args.date)) return refused('agent.badArguments', `date ${args.date} is not yyyy-mm-dd`)
     patch.date = args.date

@@ -30,6 +30,12 @@ describe('the method sent on connect', () => {
     expect(OBSERVATIONS_METHOD).toContain('A merge may take records of any scope')
   })
 
+  it('says what a bright spot is, that a solution on its root spreads it, and that it is never merged with a problem', () => {
+    expect(OBSERVATIONS_METHOD).toContain('bright true is a bright spot, analysed the same way')
+    expect(OBSERVATIONS_METHOD).toContain('a solution on its root cause spreads it')
+    expect(OBSERVATIONS_METHOD).toContain('a bright spot and a problem are never merged')
+  })
+
   it('asks for where and by whom rather than guessing them', () => {
     expect(OBSERVATIONS_METHOD).toContain('Where and by whom are required: ask rather than guess')
   })

@@ -5,8 +5,9 @@
  * The form that records an observation (ADR-0032 §6): one dialog, two
  * columns over a table.
  *
- * On the left the facts — title, where seen, observed by and date seen, all four
- * required, and the impact — each with an example under it that a refusal
+ * First, what it is: a problem, chosen, or a bright spot — something that
+ * works, analysed the same way (ADR-0038 §6). On the left the facts — title,
+ * where seen, observed by and date seen, all four required, and the impact — each with an example under it that a refusal
  * replaces with what is missing. On the right the three questions a sighting
  * answers, a field each — what was seen, the evidence, and who or what it
  * affected, the last required — which make the body under the template's
@@ -31,19 +32,21 @@ import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { AddIcon, EyeIcon, LinkIcon } from '../../widgets/icons'
 import {
-  causeLabel, formatCauseNumber, formatObservationNumber, liveObservations, nextCauseNumber, OBSERVATION_IMPACTS,
+  causeLabel, formatCauseNumber, formatObservationNumber, isBright, liveObservations, nextCauseNumber, OBSERVATION_IMPACTS,
 } from '../observation'
 import type { Cause, CauseStrength, Observation } from '../observation'
 import { newObservationProblems, observationBody } from '../form'
 import type { CauseChoice, CauseDraft, ObservationFields, ObservationSections, RequiredField } from '../form'
 import { hintWords, similarTitles, wordingHint } from '../wording'
-import { IMPACT_LABEL } from '../observationScope'
+import { BRIGHT_LABEL, IMPACT_LABEL } from '../observationScope'
 import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
 import { FormDialog, problemsLine } from './FormDialog'
@@ -141,8 +144,11 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
 
   const scope = scopes[scopeIndex] ?? scopes[0]
   const alike = useMemo(
-    () => (fields.title.trim().length >= 6 && scope ? similarTitles(fields.title, liveObservations(scope.observations)) : []),
-    [fields.title, scope],
+    // Seen before among those of the same kind: a problem is never a bright spot seen again.
+    () => (fields.title.trim().length >= 6 && scope
+      ? similarTitles(fields.title, liveObservations(scope.observations).filter((one) => isBright(one) === Boolean(fields.bright)))
+      : []),
+    [fields.title, fields.bright, scope],
   )
   const hint = wordingHint(fields.title, hintWords(s('observation.formHintWords')))
   const forget = (key: string) => {
@@ -194,6 +200,7 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
               {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
             </ExampleField>
           )}
+          <ToneChoice bright={fields.bright === true} onChange={(bright) => setFields((held) => ({ ...held, bright }))} s={s} />
           <ExampleField
             required autoFocus label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
             example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
@@ -257,6 +264,34 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
   )
 }
 
+
+/**
+ * What an observation is, asked first: *Problem | Bright spot*, problem
+ * chosen (ADR-0038 §6). The reader's edit asks the same, so it may be changed
+ * later as a step.
+ */
+export function ToneChoice({ bright, onChange, s }: { bright: boolean; onChange: (bright: boolean) => void; s: Translate }) {
+  const option = (value: 'problem' | 'bright', label: string, tip: string) => (
+    <Tooltip title={tip} describeChild>
+      <ToggleButton value={value} data-testid={`form-tone-${value}`} color={value === 'bright' ? 'success' : 'standard'} sx={{ px: 1.5, py: 0.25, textTransform: 'none' }}>
+        {label}
+      </ToggleButton>
+    </Tooltip>
+  )
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Typography variant="body2" color="text.secondary">{s('observation.toneField')}</Typography>
+      <ToggleButtonGroup
+        exclusive size="small" value={bright ? 'bright' : 'problem'} aria-label={s('observation.toneField')}
+        onChange={(_event, value: 'problem' | 'bright' | null) => { if (value) onChange(value === 'bright') }}
+        data-testid="form-tone" data-guide="observationForm.tone"
+      >
+        {option('problem', s('observation.problem'), s('observation.problemTip'))}
+        {option('bright', s(BRIGHT_LABEL), s('observation.brightTip'))}
+      </ToggleButtonGroup>
+    </Box>
+  )
+}
 
 /**
  * The causes under the form: rows new and existing, a new one written in

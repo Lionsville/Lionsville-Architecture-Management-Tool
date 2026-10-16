@@ -170,6 +170,23 @@ function tallyLine<T extends string>(
 }
 
 /**
+ * What the observations card counts: the problems, and the bright spots apart
+ * (ADR-0038 §6); the causes by state; and the root causes, with how many a
+ * solution covers once there is one.
+ */
+function observationsLine(counts: OrganisationPages['observations'], s: Translate): string {
+  const { total, bright, roots, solutions } = counts
+  return [
+    total > 0 || bright === 0 ? plural(s, { one: 'org.observationsOne', other: 'org.observationsOther' }, total) : '',
+    bright > 0 ? plural(s, { one: 'org.brightOne', other: 'org.brightOther' }, bright) : '',
+    tallyLine(counts.causes, CAUSE_STATE_LABEL, s),
+    roots > 0 && solutions > 0
+      ? s('solution.coverage', { count: counts.covered, total: roots })
+      : roots > 0 ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, roots) : '',
+  ].filter(Boolean).join(' · ')
+}
+
+/**
  * A card's buttons: in one row while they fit and on two when they do not,
  * each on one line — a label broken over two lines inside its button read as
  * two buttons.
@@ -280,15 +297,7 @@ export function OrganisationCards({
         description={s('org.describeObservations')}
         count={[
           nothing ? s('org.nothingHere') : ready
-            ? [
-              plural(s, { one: 'org.observationsOne', other: 'org.observationsOther' }, pages.observations.total),
-              tallyLine(pages.observations.causes, CAUSE_STATE_LABEL, s),
-              pages.observations.roots > 0 && pages.observations.solutions > 0
-                ? s('solution.coverage', { count: pages.observations.covered, total: pages.observations.roots })
-                : pages.observations.roots > 0
-                  ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, pages.observations.roots)
-                  : '',
-            ].filter(Boolean).join(' · ')
+            ? observationsLine(pages.observations, s)
             : '',
           // What the scopes below observed (ADR-0032 §1): local to them, and
           // off the index like the initiatives on the roadmap card.

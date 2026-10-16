@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureCounts, pictureKey, pictureLinks, placeGraph, solutionKey,
+  PICTURE_SIZE, analysisGraph, analysisPicture, brightChains, fitZoom, openEnds, pictureCounts, pictureKey, pictureLinks, placeGraph, solutionKey,
   traceChain,
 } from './graph'
 import type { Analysis, Cause, Observation, ScopeAnalysis } from './observation'
@@ -264,12 +264,14 @@ describe('analysisPicture', () => {
   })
 })
 
+const NONE_BRIGHT = { observed: 0, analysed: 0, openEnds: 0 }
+
 describe('pictureCounts', () => {
   it('counts what the picture draws, the scopes below included, and what a filter left', () => {
-    expect(pictureCounts(tree, '')).toEqual({ observed: 5, analysed: 4, assumed: 4, verified: 0, roots: 1, openEnds: 1 })
-    expect(pictureCounts([tree[0]], '')).toEqual({ observed: 1, analysed: 1, assumed: 2, verified: 0, roots: 1, openEnds: 0 })
+    expect(pictureCounts(tree, '')).toEqual({ observed: 5, analysed: 4, assumed: 4, verified: 0, roots: 1, openEnds: 1, bright: NONE_BRIGHT })
+    expect(pictureCounts([tree[0]], '')).toEqual({ observed: 1, analysed: 1, assumed: 2, verified: 0, roots: 1, openEnds: 0, bright: NONE_BRIGHT })
     const left = new Set(['o1', 'c1', 'r1', 'acme/rail#x1', 'acme/rail#y1'])
-    expect(pictureCounts(tree, '', { visible: left })).toEqual({ observed: 2, analysed: 2, assumed: 3, verified: 0, roots: 1, openEnds: 1 })
+    expect(pictureCounts(tree, '', { visible: left })).toEqual({ observed: 2, analysed: 2, assumed: 3, verified: 0, roots: 1, openEnds: 1, bright: NONE_BRIGHT })
   })
 
   it('leaves out what is closed or folded in, and takes an explanation from above as analysed', () => {
@@ -281,6 +283,37 @@ describe('pictureCounts', () => {
     const lone: ScopeAnalysis[] = [{ scope: 'acme', observations: [observation('a9', 9)], causes: [], solutions: [], experiments: [] }]
     expect(pictureCounts(lone, 'acme').analysed).toBe(0)
     expect(pictureCounts(lone, 'acme', { above: () => new Map([['a9', [{}]]]) }).analysed).toBe(1)
+  })
+})
+
+describe('bright spots (ADR-0038 §6)', () => {
+  // o1 a problem, o2 a bright spot; c1 behind o1, c2 behind o2, c3 behind both, c4 behind nothing.
+  const toned: ScopeAnalysis[] = [{
+    scope: '',
+    observations: [observation('o1', 1), observation('o2', 2, { bright: true })],
+    causes: [
+      cause('c1', 1, [{ id: 'o1', strength: 'normal' }]),
+      cause('c2', 2, [{ id: 'o2', strength: 'normal' }]),
+      cause('c3', 3, [{ id: 'o1', strength: 'normal' }, { id: 'o2', strength: 'normal' }]),
+      cause('c4', 4, []),
+      cause('r1', 5, [{ id: 'c2', strength: 'normal' }], { root: true }),
+    ],
+    solutions: [solution('s1', 1, [{ id: 'r1', strength: 'normal' }])], experiments: [],
+  }]
+
+  it('knows the records behind bright spots only', () => {
+    expect([...brightChains(toned, '')].sort()).toEqual(['c2', 'r1', solutionKey('s1')])
+    expect(brightChains([{ ...toned[0], observations: [observation('o1', 1)] }], '').size).toBe(0)
+  })
+
+  it('counts the bright spots, and the open ends behind them only, apart', () => {
+    expect(pictureCounts(toned, '')).toEqual({
+      observed: 1, analysed: 1, assumed: 5, verified: 0, roots: 1, openEnds: 3,
+      bright: { observed: 1, analysed: 1, openEnds: 0 },
+    })
+    const open = [{ ...toned[0], causes: toned[0].causes.filter((one) => one.id !== 'r1') }]
+    expect(pictureCounts(open, '').bright.openEnds).toBe(1)
+    expect(pictureCounts(open, '').openEnds).toBe(3)
   })
 })
 
@@ -302,7 +335,7 @@ describe('a merged cause (ADR-0035 §4)', () => {
     expect(keys).toContain('c1')
     expect(keys).not.toContain('c9')
     expect(keys).not.toContain('c8')
-    expect(pictureCounts(merged, '')).toEqual({ observed: 2, analysed: 1, assumed: 1, verified: 0, roots: 0, openEnds: 1 })
+    expect(pictureCounts(merged, '')).toEqual({ observed: 2, analysed: 1, assumed: 1, verified: 0, roots: 0, openEnds: 1, bright: NONE_BRIGHT })
     expect([...openEnds(merged, '')]).toEqual(['c1'])
   })
 

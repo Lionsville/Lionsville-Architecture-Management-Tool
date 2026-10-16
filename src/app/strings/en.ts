@@ -741,6 +741,8 @@ export const EN = {
   'org.initiativesOther': '{count} initiatives from below',
   'org.observationsOne': '{count} observation',
   'org.observationsOther': '{count} observations',
+  'org.brightOne': '{count} bright spot',
+  'org.brightOther': '{count} bright spots',
   'org.localBelowOne': '{count} in the scopes below',
   'org.localBelowOther': '{count} in the scopes below',
   'org.rootCausesOne': '{count} root cause',

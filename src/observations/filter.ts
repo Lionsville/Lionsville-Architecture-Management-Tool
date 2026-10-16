@@ -8,7 +8,7 @@
  * Every record of the scopes in view is one row here — an observation, a
  * cause, a root cause, a solution, an experiment — under the key the picture
  * draws it by (`graph.ts`'s `pictureKey`), with the links between them running
- * from the record on the left to the one behind it. Five filters:
+ * from the record on the left to the one behind it. Six filters:
  *
  * - **Scopes**, a set of paths switched off: their records are out before
  *   anything else is asked.
@@ -20,6 +20,11 @@
  *   it.
  * - **Search**: any record whose text matches, solutions and experiments
  *   included, and everything linked to it both ways.
+ * - **Tone** (ADR-0038 §6): problems, bright spots, or both, which is the
+ *   default. The observations of the other tone are out, and with them what
+ *   lies behind them only — a cause, a root cause, a solution that also
+ *   explains or answers an observation of the tone asked stays, and so does
+ *   one that explains no observation at all.
  *
  * A record is kept when it holds for every filter that is on, so filters
  * narrow each other. What matched is said apart from what came with it, so a
@@ -33,11 +38,24 @@ import { matchesQuery } from '../model/textSearch'
 import { refText } from '../model/person'
 import type { PersonRef } from '../model/person'
 import { absorbedKeys, experimentKey, pictureKey, solutionKey } from './graph'
-import { causeLabel, formatObservationNumber, isArchived, isRootCause } from './observation'
+import { causeLabel, formatObservationNumber, isArchived, isBright, isRootCause } from './observation'
 import type { ScopeAnalysis } from './observation'
 import { formatExperimentNumber, formatSolutionNumber, isLive } from './solution'
 
-/** The filters that are on. Text left blank is a filter that is off. */
+/**
+ * Which observations are in view by what they say (ADR-0038 §6): `all`, the
+ * default, `problems` — what goes wrong — or `bright`, what works.
+ */
+export type Tone = 'all' | 'problems' | 'bright'
+
+export const TONES: readonly Tone[] = ['all', 'problems', 'bright']
+
+/** Whether an observation is of `tone`. */
+export function ofTone(one: { bright?: true }, tone: Tone): boolean {
+  return tone === 'all' || (tone === 'bright') === isBright(one)
+}
+
+/** The filters that are on. Text left blank is a filter that is off, and so is the tone `all`. */
 export type Filters = {
   /** The scopes whose records are hidden, by path. */
   scopesOff: readonly string[]
@@ -47,9 +65,10 @@ export type Filters = {
   roots: string
   /** Text in every record. */
   search: string
+  tone: Tone
 }
 
-export const NO_FILTERS: Filters = { scopesOff: [], observations: '', causes: '', roots: '', search: '' }
+export const NO_FILTERS: Filters = { scopesOff: [], observations: '', causes: '', roots: '', search: '', tone: 'all' }
 
 export type FilterKind = 'observation' | 'cause' | 'root' | 'solution' | 'experiment'
 
@@ -66,6 +85,8 @@ export type FilterRecord = {
    * count is about.
    */
   counted: boolean
+  /** An observation that is a bright spot (ADR-0038 §6). */
+  bright?: true
 }
 
 /** From the record on the left to the record behind it. */
@@ -85,10 +106,27 @@ export type FilterResult = {
 
 const TEXT = ['observations', 'causes', 'roots', 'search'] as const
 
-/** How many filters are on, for the count on *Filters*: each text filter, and the scopes as one. */
+/** How many filters are on, for the count on *Filters*: each text filter, the scopes as one, and the tone. */
 export function activeFilters(filters: Filters, scopes: readonly string[]): number {
   const texts = TEXT.filter((field) => filters[field].trim() !== '').length
-  return texts + (scopes.some((scope) => filters.scopesOff.includes(scope)) ? 1 : 0)
+  return texts + (scopes.some((scope) => filters.scopesOff.includes(scope)) ? 1 : 0) + (filters.tone !== 'all' ? 1 : 0)
+}
+
+/**
+ * What the tone leaves of the pool: the observations of the other tone
+ * dropped, with everything behind them that no observation of this tone
+ * leads to as well. Nothing, while it is `all`.
+ */
+function toneKeeps(pool: readonly FilterRecord[], behind: ReadonlyMap<string, readonly string[]>, tone: Tone): Set<string> | undefined {
+  if (tone === 'all') return undefined
+  const kept = new Set<string>()
+  const dropped = new Set<string>()
+  for (const record of pool) {
+    if (record.kind !== 'observation') continue
+    const into = ofTone(record, tone) ? kept : dropped
+    for (const key of walk(record.key, behind)) into.add(key)
+  }
+  return new Set(pool.filter((record) => kept.has(record.key) || !dropped.has(record.key)).map((record) => record.key))
 }
 
 /** Everything linked to `start` in one direction, `start` included. */
@@ -143,6 +181,8 @@ export function applyFilters(
     }
     kept.push(keep)
   }
+  const toned = toneKeeps(pool, behind, filters.tone)
+  if (toned) kept.push(toned)
   const visible = new Set(pool.filter((record) => kept.every((set) => set.has(record.key))).map((record) => record.key))
   return {
     visible,
@@ -171,6 +211,7 @@ export function filterRecords(
       const key = pictureKey(here, scope, one.id)
       return {
         key, scope, kind: 'observation', counted: !gone.has(key) && !isArchived(one),
+        ...(isBright(one) ? { bright: true as const } : {}),
         text: [formatObservationNumber(one.number), one.title, one.where, named(one.by), one.body],
       }
     }),
@@ -226,7 +267,10 @@ export function readSavedFilters(stored: unknown): SavedFilter[] {
     const scopesOff = Array.isArray(held.scopesOff) ? held.scopesOff.filter((one): one is string => typeof one === 'string') : []
     return [{
       name: name.trim(),
-      filters: { scopesOff, observations: text(held.observations), causes: text(held.causes), roots: text(held.roots), search: text(held.search) },
+      filters: {
+        scopesOff, observations: text(held.observations), causes: text(held.causes), roots: text(held.roots), search: text(held.search),
+        tone: TONES.includes(held.tone as Tone) ? held.tone as Tone : 'all',
+      },
     }]
   })
 }

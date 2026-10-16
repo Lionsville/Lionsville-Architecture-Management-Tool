@@ -108,6 +108,21 @@ describe('the new observation form', () => {
     expect((screen.getByTestId('form-date') as HTMLInputElement).max).toBe('2026-09-20')
   })
 
+  it('asks a problem or a bright spot first, problem chosen, and records a bright spot as one (ADR-0038 §6)', () => {
+    const { onChange } = mount()
+    openForm()
+    expect(screen.getByTestId('form-tone-problem').getAttribute('aria-pressed')).toBe('true')
+    fill('Releases never slip')
+    // Seen before lists those of the kind chosen: the problem written before is not a bright spot seen again.
+    fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'The nightly batch overruns again' } })
+    expect(screen.getByTestId('form-seen-before').textContent).toContain('OB-0001')
+    fireEvent.click(screen.getByTestId('form-tone-bright'))
+    expect(screen.getByTestId('form-tone-bright').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByTestId('form-seen-before')?.textContent ?? '').not.toContain('OB-0001')
+    fireEvent.click(screen.getByTestId('form-record'))
+    expect(lastChange(onChange).observations.at(-1)).toMatchObject({ title: 'The nightly batch overruns again', bright: true })
+  })
+
   it('says a title reads like a cause, and records it anyway', () => {
     const { onChange } = mount()
     openForm()
@@ -257,5 +272,26 @@ describe('the new observation form', () => {
     expect(lastChange(onChange).observations.at(-1)!.body).toBe(
       '## What we saw\n\nTwo labels per parcel.\n\n## Evidence\n\n\n## Who or what it affected\n\nPickers walk twice\n',
     )
+  })
+})
+
+describe('a bright spot, read and changed (ADR-0038 §6)', () => {
+  it('is changed from a problem in the reader\'s edit, as a step', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
+    const reader = within(screen.getByTestId('observation-reader'))
+    expect(reader.queryByTestId('observation-bright')).toBeNull()
+    fireEvent.click(reader.getByTestId('reader-edit'))
+    expect(reader.getByRole('button', { name: 'Problem' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(reader.getByRole('button', { name: 'Bright spot' }))
+    // Leaving the edit commits it.
+    fireEvent.click(reader.getByTestId('reader-read'))
+    expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', bright: true })
+  })
+
+  it('says so on its chip', () => {
+    mount({ model: { ...model, observations: [observation({ bright: true })] } })
+    fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
+    expect(within(screen.getByTestId('observation-reader')).getByTestId('observation-bright').textContent).toBe('Bright spot')
   })
 })

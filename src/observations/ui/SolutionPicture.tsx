@@ -132,7 +132,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
     refuted: theme.palette.error.main, inconclusive: theme.palette.text.secondary,
   }
   const maxSeen = Math.max(1, ...graph.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const tint = (seen: number) => seenTint(theme, seen, maxSeen)
+  const tint = (seen: number, bright?: boolean) => seenTint(theme, seen, maxSeen, bright)
   const halfWidth = (node: SolutionGraphNode | undefined): number => {
     if (!node) return BOX.width / 2
     if (node.kind === 'observation') return RADIUS[node.observation.impact]
@@ -249,7 +249,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
             'data-testid': `solution-picture-${node.kind}`, dim,
           }
           if (node.kind === 'observation') {
-            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen)} {...common} />
+            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen, node.observation.bright)} {...common} />
           }
           if (node.kind === 'cause') {
             return <CauseMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} s={s} flag={flag?.text} {...common} />

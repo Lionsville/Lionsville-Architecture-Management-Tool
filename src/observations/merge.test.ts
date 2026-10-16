@@ -184,6 +184,15 @@ describe('merging observations across the tree', () => {
     expect(planMerge({ kind: 'observation', survivor, absorbed: [{ scope: 'north', id: 'b1' }], scopes: tree, values: { date: 'yesterday' }, date: DAY }))
       .toMatchObject({ ok: false, refusal: 'notADay' })
   })
+
+  it('refuses a problem and a bright spot in one merge, naming the one of the other tone (ADR-0038 §6)', () => {
+    const survivor = { scope: 'north', id: 'o1' }
+    const toned = [scope('north', { observations: [observation('o1'), observation('o2'), observation('o3', { bright: true })] })]
+    expect(planMerge({ kind: 'observation', survivor, absorbed: [{ scope: 'north', id: 'o2' }, { scope: 'north', id: 'o3' }], scopes: toned, date: DAY }))
+      .toMatchObject({ ok: false, refusal: 'mixedTone', record: { scope: 'north', id: 'o3' } })
+    const bright = [scope('north', { observations: [observation('o1', { bright: true }), observation('o3', { bright: true })] })]
+    expect(planMerge({ kind: 'observation', survivor, absorbed: [{ scope: 'north', id: 'o3' }], scopes: bright, date: DAY }).ok).toBe(true)
+  })
 })
 
 describe('merging causes', () => {

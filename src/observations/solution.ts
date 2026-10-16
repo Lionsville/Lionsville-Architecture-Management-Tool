@@ -788,7 +788,8 @@ export type SeenAgain = Reached & { date: string }
  * the day it counts as implemented from, with the latest such day. On, too:
  * the days are days, and a sighting on the day it was built is one it did not
  * stop — the page says which day it was. Empty when it is not implemented,
- * and empty when it held.
+ * and empty when it held. A bright spot is never among them: seen again
+ * under a solution that spreads it, it is the solution working.
  */
 export function seenSinceImplemented(
   solution: Solution, analysis: Analysis, below: readonly ObservationBelow[], plans: readonly SolutionPlan[],
@@ -800,6 +801,8 @@ export function seenSinceImplemented(
     const observation = reached.scope === undefined
       ? analysis.observations.find((one) => one.id === reached.id)
       : below.find((one) => one.scope === reached.scope && one.observation.id === reached.id)?.observation
+    // A bright spot seen again is the solution working, not failing to hold (ADR-0038 §6).
+    if (observation?.bright) continue
     const days = (observation?.history ?? []).filter((event) => event.kind === 'seen' && event.date >= since).map((event) => event.date)
     if (days.length) out.push({ ...reached, date: days.sort().at(-1)! })
   }

@@ -23,6 +23,16 @@ export const IMPACT_COLOR: Record<ObservationImpact, 'default' | 'warning' | 'er
   critical: 'error',
 }
 
+/** What a bright spot is called, on its chip and in the form (ADR-0038 §6). */
+export const BRIGHT_LABEL: StringKey = 'observation.bright'
+
+/** The tone filter's three choices, in the order the toolbar shows them. */
+export const TONE_LABEL: Record<'all' | 'problems' | 'bright', StringKey> = {
+  all: 'observation.toneAll',
+  problems: 'observation.toneProblems',
+  bright: 'observation.toneBright',
+}
+
 /** What an archived observation is marked with, in a list that shows the impact otherwise. */
 export const ARCHIVED_LABEL: StringKey = 'observation.archivedMark'
 

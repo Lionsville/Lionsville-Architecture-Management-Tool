@@ -264,7 +264,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
     'observations.row', 'observations.new', 'observation.seenAgain', 'observation.merge', 'observation.cause',
-    'observations.filters', 'observations.filterRow', 'observations.viewLocal',
+    'observations.filters', 'observations.filterRow', 'observations.viewLocal', 'observations.tone',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
@@ -290,7 +290,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // A cause starts from what it explains: the form's New cause, not the bar's.
   ['a new observation being written', [
     'observations.newCause', 'observationForm.causes', 'observationForm.existingCause', 'observationForm.record',
-    'observationForm.description',
+    'observationForm.description', 'observationForm.tone',
   ], async () => {
     const page = screen.getByRole('dialog')
     fireEvent.click(within(page).getByTestId('observation-tab-register'))

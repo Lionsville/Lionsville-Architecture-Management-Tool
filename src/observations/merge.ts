@@ -38,7 +38,7 @@ import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ScopeAnalysis, Solution,
 } from '../model/observation'
 import {
-  causeEvidence, isArchived, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow,
+  causeEvidence, isArchived, isBright, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow,
 } from './observation'
 import type { LinkRefusal } from './observation'
 
@@ -144,12 +144,13 @@ export type MergeLink = {
  * `nothing` absorbed, a record `missing` from the scopes given, one already
  * `merged` or `archived`, the survivor among the absorbed
  * (`survivorAbsorbed`), a first day that is `notADay`, a cause made verified
- * whose body does not say why (`unverified`), or the two root steps' keys
+ * whose body does not say why (`unverified`), a problem and a bright spot
+ * in one set (`mixedTone`, ADR-0038 §6), or the two root steps' keys
  * (ADR-0032 §3): a root cause something still explains, or a cause again
  * that a solution still addresses.
  */
 export type MergeRefusal =
-  | 'nothing' | 'missing' | 'merged' | 'archived' | 'survivorAbsorbed' | 'notADay' | 'unverified'
+  | 'nothing' | 'missing' | 'merged' | 'archived' | 'survivorAbsorbed' | 'notADay' | 'unverified' | 'mixedTone'
   | 'command.rootExplained' | 'command.rootAddressed'
 
 /** What each scope's lists become. Only the scopes that change, the survivor's first, the rest in path order. */
@@ -271,6 +272,13 @@ function recordRefusal(request: MergeRequest, held: Held, absorbed: readonly Rec
     if (!record) return { refusal: 'missing', record: at }
     if (mergedBefore(held, request.kind, at)) return { refusal: 'merged', record: at }
     if (request.kind === 'observation' && isArchived(record as Observation)) return { refusal: 'archived', record: at }
+  }
+  // A problem and a bright spot are not one thing seen twice (ADR-0038 §6):
+  // the first record of the other tone than the survivor's is named.
+  if (request.kind === 'observation') {
+    const tone = isBright(recordOf(held, 'observation', request.survivor)!)
+    const other = absorbed.find((at) => isBright(recordOf(held, 'observation', at)!) !== tone)
+    if (other) return { refusal: 'mixedTone', record: other }
   }
   return undefined
 }

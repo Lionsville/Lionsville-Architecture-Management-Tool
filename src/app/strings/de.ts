@@ -539,6 +539,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.initiativesOther': '{count} Initiativen von darunter',
   'org.observationsOne': '{count} Beobachtung',
   'org.observationsOther': '{count} Beobachtungen',
+  'org.brightOne': '{count} Lichtblick',
+  'org.brightOther': '{count} Lichtblicke',
   'org.localBelowOne': '{count} in den Bereichen darunter',
   'org.localBelowOther': '{count} in den Bereichen darunter',
   'org.rootCausesOne': '{count} Grundursache',

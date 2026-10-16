@@ -6,7 +6,9 @@
  * §6), neither of which blocks anything.
  *
  * **Seen before?** A repeat is a sighting, not a new record, so the form lists
- * the observations whose titles share words with the one being typed. The
+ * the observations whose titles share words with the one being typed — of
+ * the kind chosen only, since a bright spot is never a problem seen again
+ * (ADR-0038 §6). The
  * match is words, not meaning, and the same in every language: letters and
  * digits, folded to lower case without their accents, words of four letters or
  * more, each cut to its first five so *carrier* meets *carriers* and

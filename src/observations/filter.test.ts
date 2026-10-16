@@ -150,6 +150,38 @@ describe('applyFilters', () => {
   })
 })
 
+describe('the tone (ADR-0038 §6)', () => {
+  // o2 is a bright spot here; the rest are problems. r2 explains o2's chain and,
+  // through b1, a problem below.
+  const toned: ScopeAnalysis[] = scopes.map((one) => (one.scope === ''
+    ? { ...one, observations: one.observations.map((ob) => (ob.id === 'o2' ? { ...ob, bright: true as const } : ob)) }
+    : one))
+  const tonedRun = (tone: Filters['tone']) => applyFilters(filterRecords(toned, ''), pictureLinks(toned, ''), { ...NO_FILTERS, tone })
+
+  it('marks a bright spot among the records', () => {
+    expect(filterRecords(toned, '').find((one) => one.key === 'o2')?.bright).toBe(true)
+    expect(filterRecords(toned, '').find((one) => one.key === 'o1')?.bright).toBeUndefined()
+  })
+
+  it('shows both by default', () => {
+    expect(tonedRun('all').filtering).toBe(false)
+  })
+
+  it('keeps the bright spots and what lies behind them, and drops the problems and what only they lead to', () => {
+    const result = tonedRun('bright')
+    expect(sorted(result.visible)).toEqual(['c2', 'o2', 'r2', solutionKey('s2')])
+    expect(result.matched.size).toBe(0)
+  })
+
+  it('keeps the problems, with a root cause that explains a bright spot too', () => {
+    const result = tonedRun('problems')
+    expect(result.visible.has('o2')).toBe(false)
+    expect(result.visible.has('c2')).toBe(false)
+    // r2 explains b1 below as well, a problem: it stays.
+    expect(['o1', 'o3', 'c1', 'r1', 'r2', 'acme#a1', 'acme#b1'].every((key) => result.visible.has(key))).toBe(true)
+  })
+})
+
 describe('activeFilters', () => {
   it('counts each text filter, and the scopes as one while a scope in view is off', () => {
     expect(activeFilters(NO_FILTERS, ['', 'acme'])).toBe(0)
@@ -157,6 +189,7 @@ describe('activeFilters', () => {
     expect(activeFilters({ ...NO_FILTERS, roots: '  ' }, [''])).toBe(0)
     expect(activeFilters({ ...NO_FILTERS, scopesOff: ['acme', 'zeta'] }, ['', 'acme'])).toBe(1)
     expect(activeFilters({ ...NO_FILTERS, scopesOff: ['zeta'] }, ['', 'acme'])).toBe(0)
+    expect(activeFilters({ ...NO_FILTERS, tone: 'bright' }, [''])).toBe(1)
   })
 })
 
@@ -183,9 +216,15 @@ describe('saved filters', () => {
       [SAVED_FILTERS_KEY]: [
         { name: 'Pricing', filters: { roots: 'pricing', scopesOff: ['acme', 7], extra: true } },
         { name: '', filters: {} },
+        { name: 'Bright', filters: { tone: 'bright' } },
+        { name: 'Odd tone', filters: { tone: 'sunny' } },
         { name: 'No filters' },
         'junk',
       ],
-    })).toEqual([{ name: 'Pricing', filters: { ...NO_FILTERS, roots: 'pricing', scopesOff: ['acme'] } }])
+    })).toEqual([
+      { name: 'Pricing', filters: { ...NO_FILTERS, roots: 'pricing', scopesOff: ['acme'] } },
+      { name: 'Bright', filters: { ...NO_FILTERS, tone: 'bright' } },
+      { name: 'Odd tone', filters: NO_FILTERS },
+    ])
   })
 })

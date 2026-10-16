@@ -5,7 +5,8 @@
  * The controls over the three tabs (ADR-0032 §2, §8): *Filters* with the
  * count of those that are on and the clear button beside it while any is,
  * *View local*, the picture's two sizes and its zoom, and the count of what
- * is shown — and, under them while *Filters* is on, the filter row itself.
+ * is shown — and, under them while *Filters* is on, the filter row itself,
+ * the tone among it: problems, bright spots, or both (ADR-0038 §6).
  *
  * Presentational: what the controls mean is `usePictureFilters`, which the
  * page hands in whole.
@@ -26,7 +27,9 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { AddIcon, CloseIcon, FilterIcon, FitIcon, MinusIcon, SearchIcon } from '../../widgets/icons'
-import type { Filters } from '../filter'
+import { TONES } from '../filter'
+import type { Filters, Tone } from '../filter'
+import { TONE_LABEL } from '../observationScope'
 import type { PictureSize } from '../graph'
 import { SavedPopover, ScopesPopover } from './FilterPopovers'
 import type { ScopeOption } from './FilterPopovers'
@@ -147,7 +150,7 @@ function ZoomControls({ f, s }: { f: PictureFilters; s: Translate }) {
 
 /** One text filter: a short label in the box, an example as its placeholder, and what it keeps on hover. */
 function FilterField(props: {
-  field: Exclude<keyof Filters, 'scopesOff'>
+  field: Exclude<keyof Filters, 'scopesOff' | 'tone'>
   short?: string
   label: string
   example: string
@@ -186,6 +189,32 @@ function FilterField(props: {
   )
 }
 
+/** Problems, bright spots, or both: which observations are in view, and what lies behind them. */
+function ToneSwitch({ f, s }: { f: PictureFilters; s: Translate }) {
+  return (
+    <Tooltip title={s('observation.toneTip')} describeChild>
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={f.filters.tone}
+        onChange={(_event, tone: Tone | null) => { if (tone) f.setFilters({ ...f.filters, tone }) }}
+        aria-label={s('observation.toneLabel')}
+        data-testid="filter-tone"
+        data-guide="observations.tone"
+      >
+        {TONES.map((tone) => (
+          <ToggleButton
+            key={tone} value={tone} data-testid={`filter-tone-${tone}`} color={tone === 'bright' ? 'success' : 'primary'}
+            sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13 }}
+          >
+            {s(TONE_LABEL[tone])}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </Tooltip>
+  )
+}
+
 function FilterRow({ f, scopeLabel, s }: { f: PictureFilters; scopeLabel: (path: string) => string; s: Translate }) {
   const here = f.inView[0]?.scope
   const scopes: ScopeOption[] = f.inView.map((one) => ({ path: one.scope, label: scopeLabel(one.scope), here: one.scope === here }))
@@ -202,6 +231,7 @@ function FilterRow({ f, scopeLabel, s }: { f: PictureFilters; scopeLabel: (path:
       <FilterField f={f} field="causes" short={s('observation.filterCause')} label={s('observation.filterCauseField')} example={s('observation.filterCauseExample')} tip={s('observation.filterCauseTip')} />
       <FilterField f={f} field="roots" short={s('observation.filterRoot')} label={s('observation.filterRootField')} example={s('observation.filterRootExample')} tip={s('observation.filterRootTip')} />
       <FilterField f={f} field="search" label={s('observation.filterSearchField')} example={s('observation.filterSearchField')} tip={s('observation.filterSearchTip')} />
+      <ToneSwitch f={f} s={s} />
       <Box sx={{ flex: 1 }} />
       <SavedPopover
         list={f.saved.list}

@@ -9,6 +9,9 @@
  * lists is what the page hands it, the filters already applied: the register
  * decides how a row reads, not which rows there are.
  *
+ * A bright spot (ADR-0038 §6) is marked with its own chip and a stripe in
+ * the success colour down its row.
+ *
  * *Analysed into* is read in the observation's own scope: a record below is
  * analysed by its own scope's causes, and says so here.
  */
@@ -30,9 +33,9 @@ import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { nodeKey, pictureKey } from '../graph'
-import { causeLabel, formatObservationNumber, isArchived, isCauseMerged, isRootCause, sortCauses } from '../observation'
+import { causeLabel, formatObservationNumber, isArchived, isBright, isCauseMerged, isRootCause, sortCauses } from '../observation'
 import type { Cause, Observation, ObservationBelow, ScopeAnalysis } from '../observation'
-import { IMPACT_COLOR, IMPACT_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
+import { BRIGHT_LABEL, IMPACT_COLOR, IMPACT_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
 import { formatExperimentNumber, formatSolutionNumber, isLive, solutionPhase } from '../solution'
 import type { Experiment, Solution, SolutionPhase } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
@@ -166,12 +169,16 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
   const into = props.analysedInto(one.id, scope)
   const merged = scope === undefined ? props.mergedInto(one) : undefined
   const archived = isArchived(one)
+  const bright = isBright(one)
   return (
     <TableRow
       hover
       selected={key === props.selectedKey}
       onClick={() => props.onSelect(key)}
-      sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
+      sx={{
+        cursor: 'pointer', opacity: merged || archived ? 0.55 : 1,
+        ...(bright ? { boxShadow: (theme) => `inset 3px 0 0 ${theme.palette.success.main}` } : {}),
+      }}
       data-testid={`observation-row-${key}`}
       data-key={key}
       data-guide="observations.row"
@@ -181,6 +188,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       </TableCell>
       <TableCell sx={{ fontWeight: 600 }}>
         {one.title}
+        {bright && <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} sx={{ height: 18, fontSize: 10, ml: 1 }} data-testid={`observation-bright-${key}`} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
       </TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDay(one.date, props.language)}</TableCell>

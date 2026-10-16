@@ -130,6 +130,28 @@ describe('archiving', () => {
   })
 })
 
+describe('bright spots (ADR-0038 §6)', () => {
+  it('records one, says bright where it is set, lists by tone, and changes it either way', () => {
+    const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Releases never slip', where: 'Release desk', by: 'W.S.', bright: true })
+    expect(said).toMatchObject({ label: 'OB-0003', bright: true })
+    expect(model.observations!['ob-new-1'].bright).toBe(true)
+    const ids = (tone: string) => (read(model, 'observations.list', { tone }) as { observations: { id: string }[] }).observations.map((one) => one.id)
+    expect(ids('bright')).toEqual(['ob-new-1'])
+    expect(ids('problems')).toEqual(['ob-1', 'ob-2'])
+    expect(ids('all')).toEqual(['ob-1', 'ob-2', 'ob-new-1'])
+    expect(read(model, 'observation.read', { id: 'OB-1' })).not.toHaveProperty('bright')
+    const back = write(model, 'observation.update', { id: 'ob-new-1', bright: false })
+    expect(back.answer).not.toHaveProperty('bright')
+    expect(back.model.observations!['ob-new-1']).not.toHaveProperty('bright')
+    expect(write(fromArrays(host), 'observation.update', { id: 'ob-2', bright: true }).answer).toMatchObject({ bright: true })
+  })
+
+  it('refuses to merge a problem and a bright spot', () => {
+    const model = write(fromArrays(host), 'observation.update', { id: 'ob-2', bright: true }).model
+    expect(refusal(model, 'observation.merge', { id: 'ob-1', into: 'ob-2' })).toContain('merge.mixedTone')
+  })
+})
+
 describe('recording and analysing', () => {
   it('records a local observation, seen once today, with the template, and says where and who saw it', () => {
     const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' })

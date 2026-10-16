@@ -54,9 +54,10 @@ type MarkProps<N> = {
  * on the full accent was 2.2:1 in the dark mode and 3.5:1 in the light
  * (`inkOn`).
  */
-export function seenTint(theme: Theme, seen: number, maxSeen: number): string {
+export function seenTint(theme: Theme, seen: number, maxSeen: number, bright?: boolean): string {
   const share = maxSeen <= 1 ? 1 : (seen - 1) / (maxSeen - 1)
-  return mix(theme.palette.primary.main, 0.25 + share * 0.75, theme.palette.background.paper)
+  // A bright spot is tinted in the success colour (ADR-0038 §6).
+  return mix(bright ? theme.palette.success.main : theme.palette.primary.main, 0.25 + share * 0.75, theme.palette.background.paper)
 }
 
 /** An observation: a circle sized by its impact, tinted by how often it was seen. */
@@ -74,7 +75,7 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
         <circle
           r={r}
           fill={fill}
-          stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
+          stroke={selected ? theme.palette.secondary.main : node.observation.bright ? theme.palette.success.main : theme.palette.primary.main}
           strokeWidth={selected ? 3 : 1.5}
         />
         {seen > 1 && (

@@ -30,7 +30,7 @@
  * Solutions tab's whole chain is drawn from.
  */
 import {
-  absorbedBy, causeDepth, isArchived, isMerged, isRootCause, liveCauses, mergedInto,
+  absorbedBy, causeDepth, isArchived, isBright, isMerged, isRootCause, liveCauses, mergedInto,
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -294,14 +294,61 @@ function explainedKeys(scopes: readonly ScopeAnalysis[], here: string, gone: Rea
   return new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains' && !gone.has(link.to)).map((link) => link.from))
 }
 
+/**
+ * The records behind bright spots only (ADR-0038 §6), by key: the causes,
+ * root causes, solutions and experiments that the bright spots of the scopes
+ * read lead to and no problem does. Nothing about a cause or a solution is
+ * bright itself; it is known by what it leads to, and one behind both — or
+ * behind nothing yet — is drawn and counted as every record before was.
+ */
+export function brightChains(scopes: readonly ScopeAnalysis[], here: string): Set<string> {
+  const gone = absorbedKeys(scopes, here)
+  const behind = new Map<string, string[]>()
+  for (const link of pictureLinks(scopes, here)) {
+    if (gone.has(link.to)) continue
+    behind.set(link.from, [...(behind.get(link.from) ?? []), link.to])
+  }
+  const reach = (starts: readonly string[]) => {
+    const seen = new Set<string>()
+    const stack = [...starts]
+    while (stack.length) {
+      for (const key of behind.get(stack.pop()!) ?? []) {
+        if (seen.has(key)) continue
+        seen.add(key)
+        stack.push(key)
+      }
+    }
+    return seen
+  }
+  const bright: string[] = []
+  const problems: string[] = []
+  for (const { scope, observations } of scopes) {
+    for (const one of observations) {
+      const key = pictureKey(here, scope, one.id)
+      if (gone.has(key) || isArchived(one)) continue
+      if (isBright(one)) bright.push(key)
+      else problems.push(key)
+    }
+  }
+  if (bright.length === 0) return new Set()
+  const fromProblems = reach(problems)
+  return new Set([...reach(bright)].filter((key) => !fromProblems.has(key)))
+}
+
 /** What the counts over the picture say (ADR-0032 §3, §8). */
 export type PictureCounts = {
+  /** The problems observed, analysed, and the open ends behind them or behind nothing. */
   observed: number
   analysed: number
   assumed: number
   verified: number
   roots: number
   openEnds: number
+  /**
+   * The bright spots, counted apart (ADR-0038 §6): observed, analysed, and
+   * the open ends behind bright spots only.
+   */
+  bright: { observed: number; analysed: number; openEnds: number }
 }
 
 /**
@@ -311,7 +358,8 @@ export type PictureCounts = {
  * and is analysed once a cause explains it, from its own scope or from any
  * over it; the causes count by state, the root causes as said, and the open
  * ends as `openEnds` finds them. So the numbers over the picture are the
- * picture's, and never this scope's alone while more is drawn.
+ * picture's, and never this scope's alone while more is drawn. Bright spots,
+ * and the open ends behind them only, are counted apart (ADR-0038 §6).
  */
 export function pictureCounts(
   scopes: readonly ScopeAnalysis[], here: string, options: {
@@ -322,14 +370,17 @@ export function pictureCounts(
   const gone = absorbedKeys(scopes, here)
   const shown = (key: string) => !gone.has(key) && (options.visible === undefined || options.visible.has(key))
   const explained = explainedKeys(scopes, here, gone)
-  const counts: PictureCounts = { observed: 0, analysed: 0, assumed: 0, verified: 0, roots: 0, openEnds: 0 }
+  const counts: PictureCounts = {
+    observed: 0, analysed: 0, assumed: 0, verified: 0, roots: 0, openEnds: 0, bright: { observed: 0, analysed: 0, openEnds: 0 },
+  }
   for (const { scope, observations, causes } of scopes) {
     const fromAbove = options.above?.(scope)
     for (const one of observations) {
       const key = pictureKey(here, scope, one.id)
       if (isArchived(one) || !shown(key)) continue
-      counts.observed += 1
-      if (explained.has(key) || (fromAbove?.get(one.id)?.length ?? 0) > 0) counts.analysed += 1
+      const into = isBright(one) ? counts.bright : counts
+      into.observed += 1
+      if (explained.has(key) || (fromAbove?.get(one.id)?.length ?? 0) > 0) into.analysed += 1
     }
     for (const one of causes) {
       if (!shown(pictureKey(here, scope, one.id))) continue
@@ -337,7 +388,10 @@ export function pictureCounts(
       if (isRootCause(one)) counts.roots += 1
     }
   }
-  counts.openEnds = [...openEnds(scopes, here, options.above)].filter(shown).length
+  const open = [...openEnds(scopes, here, options.above)].filter(shown)
+  const brightOnly = brightChains(scopes, here)
+  counts.bright.openEnds = open.filter((key) => brightOnly.has(key)).length
+  counts.openEnds = open.length - counts.bright.openEnds
   return counts
 }
 

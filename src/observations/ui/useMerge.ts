@@ -31,7 +31,7 @@ import {
 } from '../mergeScreen'
 import type { MergeHit } from '../mergeScreen'
 import { nodeKey } from '../graph'
-import { isScopeBelow } from '../observation'
+import { isBright, isScopeBelow } from '../observation'
 import { IMPACT_LABEL, STATE_LABEL } from '../observationScope'
 import type { ChangeAcross, ObservationWork } from './ObservationsPage'
 
@@ -275,14 +275,16 @@ export function useMerge(deps: MergeDeps) {
   const { opened, choices, chosen } = c
   const kind = opened?.kind ?? 'observation'
 
-  const hits = useMemo(
-    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query, scopeName: trail }) : []),
-    [opened, kind, scopes, here, c.across, c.query, trail],
-  )
   const records = useMemo<Picked[]>(() => (opened?.picked ?? []).map((at) => ({ at, one: recordAt(scopes, kind, at) })), [opened, scopes, kind])
   const survivorAt = opened?.survivor
   const absorbed = useMemo(() => records.filter(({ at }) => !survivorAt || !same(at, survivorAt)), [records, survivorAt])
   const survivor = records.find(({ at }) => survivorAt && same(at, survivorAt))?.one
+  // Records of the survivor's tone only: a problem and a bright spot are never one (ADR-0038 §6).
+  const bright = kind === 'observation' && survivor ? isBright(survivor as Observation) : undefined
+  const hits = useMemo(
+    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query, scopeName: trail, bright }) : []),
+    [opened, kind, scopes, here, c.across, c.query, trail, bright],
+  )
   const values = useMemo<Chosen>(() => {
     const others = absorbed.flatMap(({ one }) => (one ? [one] : []))
     const defaults = !survivor ? {}

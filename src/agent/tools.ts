@@ -758,11 +758,13 @@ const SPECS = [
       + 'instead (ADR-0032): local to those scopes, each with the path of the scope it lives in and the causes of '
       + 'that scope that explain it. An observation merged into another is listed only when includeMerged is true, '
       + 'with mergedInto — and mergedIntoScope where the survivor lives in another scope (ADR-0035); '
-      + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true.',
+      + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true. A bright spot — '
+      + 'something that works (ADR-0038) — says bright: true; tone lists the problems or the bright spots alone.',
     inputSchema: {
       type: 'object',
       properties: {
         impact: { type: 'string', description: 'Only observations of this impact.', enum: ['minor', 'major', 'critical'] },
+        tone: { type: 'string', description: 'problems: only what goes wrong; bright: only the bright spots, what works; all (the default): both.', enum: ['all', 'problems', 'bright'] },
         analysed: { type: 'boolean', description: 'true: only those linked to a cause; false: only those not yet analysed.' },
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
         includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },
@@ -1420,6 +1422,7 @@ const SPECS = [
         by: personArgument('Who saw it, or who wrote it down. Required.'),
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future.' },
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
+        bright: { type: 'boolean', description: 'true: a bright spot — something that works, analysed the same way: its causes are what make it work, and a solution on its root spreads it (ADR-0038). Default: a problem.' },
       },
       required: ['title', 'where', 'by'],
       additionalProperties: false,
@@ -1430,7 +1433,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, '
-      + 'who, date or impact. Title, where and who may be corrected, never blanked. The count moves only through '
+      + 'who, date or impact, or whether it is a bright spot. Title, where and who may be corrected, never blanked. The count moves only through '
       + 'observation.seen and observation.merge; closing it is observation.archive.',
     inputSchema: {
       type: 'object',
@@ -1442,6 +1445,7 @@ const SPECS = [
         by: personArgument('Who saw it. Not blank.'),
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
+        bright: { type: 'boolean', description: 'true: a bright spot, something that works; false: a problem.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -2848,7 +2852,8 @@ export type AgentRefusal =
    * A merge refused as a whole (ADR-0035, `observations/merge.ts`'s
    * `MergeRefusal`): nothing to absorb, a record already merged or archived,
    * the survivor among the absorbed, a first day that is not a day, a cause
-   * made verified without its evidence, or a row of `links` asked to move
+   * made verified without its evidence, a problem and a bright spot in one
+   * set, or a row of `links` asked to move
    * where the tree forbids it. A record that is not there is
    * `agent.unknownId`, and the two root steps' keys pass through.
    */
@@ -2858,6 +2863,8 @@ export type AgentRefusal =
   | 'merge.survivorAbsorbed'
   | 'merge.notADay'
   | 'merge.unverified'
+  /** A problem and a bright spot in one merge (ADR-0038 §6). */
+  | 'merge.mixedTone'
   | 'merge.linkForbidden'
   /** No people register answers here: the host lent the agent none (ADR-0036 §13). */
   | 'agent.noRegister'
@@ -2909,6 +2916,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'merge.survivorAbsorbed': 'The survivor is among the records to absorb. A record cannot be folded into itself; leave it out of absorb.',
   'merge.notADay': 'The day the survivor was first seen is not a day: write it yyyy-mm-dd.',
   'merge.unverified': 'The survivor would be verified, and its body does not say why the team thinks so and how it was verified. Ask the person what confirmed it and write that into values.body in the same call.',
+  'merge.mixedTone': 'A problem and a bright spot are not one thing seen twice, so they are never merged. The detail names the record of the other kind; leave it out of absorb.',
   'merge.linkForbidden': 'A link named in links may not move: the tree forbids it where the survivor lives, and the detail says why. Leave it out of links, or say move false; it stays on the absorbed record as history.',
   'agent.noRegister': 'This app lends no people register to an agent here.',
   'agent.possibleDuplicate':

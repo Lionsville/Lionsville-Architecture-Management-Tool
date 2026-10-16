@@ -353,6 +353,23 @@ describe('what is derived', () => {
     expect(seenSinceImplemented(adopted, seen, [], plans)).toEqual([{ id: 'o2', date: '2026-09-10' }])
     expect(seenSinceImplemented(adopted, seen, [], [plan({ status: 'running', to: '2026-09-01' })])).toEqual([])
   })
+  it('takes a bright spot seen again for the solution working, not failing to hold (ADR-0038 §6)', () => {
+    const seen: Analysis = {
+      ...analysis,
+      observations: [
+        observation({ bright: true, history: [{ date: '2026-06-01', kind: 'recorded' }, { date: '2026-09-12', kind: 'seen' }] }),
+        observation({ id: 'o2', number: 2, history: [{ date: '2026-06-01', kind: 'recorded' }, { date: '2026-09-10', kind: 'seen' }] }),
+      ],
+    }
+    expect(seenSinceImplemented(adopted, seen, [], [plan({ status: 'done', to: '2026-09-01' })])).toEqual([{ id: 'o2', date: '2026-09-10' }])
+    const below = [{ scope: 'claims', observation: observation({ id: 'x9', bright: true, history: [{ date: '2026-09-11', kind: 'seen' }] }) }]
+    const deep: Analysis = { observations: [], causes: [cause({ explains: [{ id: 'x9', scope: 'claims', strength: 'weak' }] })] }
+    const spreads = { ...adopted, addresses: [{ id: 'c1', strength: 'strong' as const }] }
+    const done = [plan({ status: 'done', to: '2026-09-01' })]
+    expect(seenSinceImplemented(spreads, deep, below, done)).toEqual([])
+    const problem = [{ ...below[0], observation: { ...below[0].observation, bright: undefined } }]
+    expect(seenSinceImplemented(spreads, deep, problem, done)).toEqual([{ id: 'x9', scope: 'claims', date: '2026-09-11' }])
+  })
   it('counts a sighting on the day it was implemented', () => {
     const seen: Analysis = {
       ...analysis,

@@ -102,6 +102,18 @@ describe('organisationPages', () => {
     })
   })
 
+  describe('the observations card', () => {
+    const observation = (id: string, number: number, bright?: true) => ({
+      id, number, title: id, date: '2026-09-01', impact: 'minor' as const, seen: 1, body: '',
+      history: [{ date: '2026-09-01', kind: 'recorded' as const }], ...(bright ? { bright } : {}),
+    })
+
+    it('counts the bright spots apart from the problems (ADR-0038 §6)', () => {
+      const held = scope({ observations: [observation('a', 1), observation('b', 2, true), observation('c', 3, true)] })
+      expect(organisationPages(held, TODAY).observations).toMatchObject({ total: 1, bright: 2 })
+    })
+  })
+
   describe('the decisions card', () => {
     const held = scope({ decisions: [
       { id: 'a', number: 1, title: 'First', status: 'accepted', date: '2026-01-01', body: '', signers: [] },
