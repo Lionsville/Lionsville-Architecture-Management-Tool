@@ -2456,6 +2456,50 @@ opens the box it leaves, and a record opens on its own page; a hit from
 another scope opens that scope there, read-only where your source is. ⌘F inside the editor remains the quick
 finder when all you want is a box on the canvas.
 
+## Comments
+
+A record says what it says; a **comment** is what somebody says *about* it — a
+question, a doubt, a pointer to more evidence — without changing it. Every
+observation, cause, solution and experiment, every element (units too), every
+decision record and every plan ends in its **Comments**: the thread about that
+record, oldest first, each reply under the comment it answers. A heading says
+how many there are, and an observation's row in the register shows the count
+beside its title.
+
+- **Comment.** Write in the field under the thread and press **Comment**
+  (⌘Enter does the same). The body takes the Markdown a description takes.
+- **Reply.** Press **Reply** under a comment. A thread is one level deep:
+  replying to a reply answers the comment it is under.
+- **Edit.** Your own comments only. An edited comment says *edited*.
+- **Remove.** Your own, or anybody's where you may change the scope. A
+  removed comment reads *Comment removed* where it stood, so the replies under
+  it keep their place. Its words stay in the history, as any edit does.
+
+**Who wrote it** is a person in the register, never a name typed in. The first
+time you comment and nobody is *This is me* on this install, the thread asks
+once who is writing — pick yourself, or add yourself with **New person…** —
+and remembers the answer as *This is me*. Forgetting a person on the People
+page reaches every comment they wrote, which then reads as their pseudonym.
+
+Each comment, edit and removal is one step: it is in the **Activity** list
+(*Commented on Webshop*), in the history and in the export, and ⌘Z undoes it.
+A comment never changes its record, so the record's own history stays its
+own. Where a scope is only read here, nothing can be commented — unless the
+place your work is kept lets a reader comment.
+
+**What travels with a record.** Deleting a record takes its thread with it,
+and undo brings both back. Merging observations or causes moves each absorbed
+record's comments to the survivor, each saying which record it came with; the
+merge screen says how many go. A merged or archived record keeps its own.
+
+Comments are kept with the scope, in `_comments/`, one file per record
+commented on. **Search** finds what a comment says in the scope you are in,
+and opens the record it is about.
+
+An agent comments as you do (`comments.list`, `comment.add`,
+`comment.update`, `comment.remove`): its comments are signed by *you*, say
+which agent wrote them, and are edited and removed by the same rules.
+
 ## Diagram settings
 
 Right-click a diagram tab, **Diagram settings…**.

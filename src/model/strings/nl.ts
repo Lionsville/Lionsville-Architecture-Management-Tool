@@ -248,7 +248,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.rootExplained': 'Een oorzaak die door een andere oorzaak verklaard wordt, kan geen grondoorzaak zijn: bij een grondoorzaak houdt de keten op. Ontkoppel de diepere oorzaak, of maak die tot grondoorzaak.',
   'command.rootAddressed': 'Een grondoorzaak waar een oplossing zich op richt, kan niet weer een oorzaak worden: een oplossing richt zich alleen op grondoorzaken. Verplaats de oplossing eerst naar een andere grondoorzaak, of ontkoppel haar.',
   'command.markFix': 'Alleen een nakijkpunt of een notitie kan als bedoeld worden gemarkeerd. Herstellen betekent dat het model zichzelf tegenspreekt: herstel het in het model.',
-  'command.notCommentable': 'Op dit soort record wordt niet gereageerd. Reacties staan bij observaties, oorzaken, oplossingen, experimenten, elementen, besluiten en plannen.',
+  'command.notCommentable': 'Op dit soort record wordt niet gereageerd. Reacties staan bij waarnemingen, oorzaken, oplossingen, experimenten, elementen, besluiten en plannen.',
   'command.unknownRecord': 'Het record waar deze reactie over gaat staat niet in deze scope. Reageer erop in de scope die het bewaart.',
   'command.badReply': 'Een antwoord hoort bij een reactie op hetzelfde record, en een draad is één niveau diep: antwoord op de reactie waar het antwoord onder staat.',
   'command.commentRemoved': 'Deze reactie is verwijderd, en een verwijderde reactie blijft zoals ze is. Schrijf een nieuwe.',

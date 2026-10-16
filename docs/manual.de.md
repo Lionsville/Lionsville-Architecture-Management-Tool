@@ -2837,6 +2837,60 @@ sich auf seiner eigenen Seite; ein Treffer aus einem anderen Bereich öffnet
 diesen Bereich dort, schreibgeschützt, wo Ihre Quelle es ist. ⌘F im Editor bleibt der schnelle
 Sucher, wenn alles, was Sie wollen, ein Kasten auf der Zeichenfläche ist.
 
+## Kommentare
+
+Ein Eintrag sagt, was er sagt; ein **Kommentar** ist, was jemand *über* ihn
+sagt — eine Frage, ein Zweifel, ein Hinweis auf mehr Belege —, ohne ihn zu
+ändern. Jede Beobachtung, Ursache, Lösung und jedes Experiment, jedes Element
+(auch Einheiten), jede Entscheidung und jeder Plan endet in seinen
+**Kommentaren**: dem Verlauf zu diesem Eintrag, der älteste zuerst, jede
+Antwort unter dem Kommentar, auf den sie antwortet. Eine Überschrift sagt, wie
+viele es sind, und die Zeile einer Beobachtung im Register zeigt die Zahl
+neben ihrem Titel.
+
+- **Kommentieren.** Schreiben Sie in das Feld unter dem Verlauf und drücken
+  Sie **Kommentieren** (⌘Enter tut dasselbe). Der Text nimmt das Markdown,
+  das eine Beschreibung nimmt.
+- **Antworten.** Drücken Sie **Antworten** unter einem Kommentar. Ein Verlauf
+  ist eine Ebene tief: Eine Antwort auf eine Antwort antwortet auf den
+  Kommentar, unter dem sie steht.
+- **Bearbeiten.** Nur Ihre eigenen Kommentare. Ein bearbeiteter Kommentar
+  sagt *bearbeitet*.
+- **Entfernen.** Ihre eigenen, oder die aller anderen, wo Sie den Bereich
+  ändern dürfen. Ein entfernter Kommentar liest *Kommentar entfernt* an seiner
+  Stelle, damit die Antworten darunter ihren Platz behalten. Seine Worte
+  bleiben in der Historie, wie bei jeder Änderung.
+
+**Wer ihn schrieb**, ist eine Person aus dem Register, nie ein eingetippter
+Name. Wenn Sie zum ersten Mal kommentieren und auf dieser Installation niemand
+*Das bin ich* ist, fragt der Verlauf einmal, wer schreibt — wählen Sie sich,
+oder fügen Sie sich mit **Neue Person …** hinzu — und merkt sich die Antwort
+als *Das bin ich*. Eine Person auf der Seite Personen zu vergessen, erreicht
+jeden Kommentar, den sie schrieb; er liest sich dann als ihr Pseudonym.
+
+Jeder Kommentar, jede Bearbeitung und jedes Entfernen ist ein Schritt: in der
+Liste **Aktivität** (*Webshop kommentiert*), in der Historie und im Export,
+und ⌘Z macht ihn rückgängig. Ein Kommentar ändert seinen Eintrag nie, die
+Historie des Eintrags bleibt also seine eigene. Wo ein Bereich hier nur
+gelesen wird, kann nicht kommentiert werden — es sei denn, der Ort, an dem
+Ihre Arbeit aufbewahrt wird, lässt einen Leser kommentieren.
+
+**Was mit einem Eintrag reist.** Einen Eintrag zu löschen nimmt seinen Verlauf
+mit, und Rückgängig bringt beide zurück. Beobachtungen oder Ursachen
+zusammenzuführen bringt die Kommentare jedes aufgenommenen Eintrags zum
+verbleibenden, jeder mit dem Eintrag, mit dem er kam; die Zusammenführung sagt,
+wie viele. Ein zusammengeführter oder archivierter Eintrag behält seine
+eigenen.
+
+Kommentare werden mit dem Bereich aufbewahrt, in `_comments/`, eine Datei je
+kommentiertem Eintrag. **Suchen** findet, was ein Kommentar sagt, in dem
+Bereich, in dem Sie arbeiten, und öffnet den Eintrag, um den es geht.
+
+Ein Agent kommentiert wie Sie (`comments.list`, `comment.add`,
+`comment.update`, `comment.remove`): Seine Kommentare sind von *Ihnen*
+gezeichnet, sagen, welcher Agent sie schrieb, und werden nach denselben Regeln
+bearbeitet und entfernt.
+
 ## Diagrammeinstellungen
 
 Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.

@@ -2683,6 +2683,57 @@ vastlegging opent op haar eigen pagina; een treffer uit een andere scope opent
 die scope daar, alleen-lezen waar uw bron dat is. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
 het canvas zoekt.
 
+## Reacties
+
+Een record zegt wat het zegt; een **reactie** is wat iemand *erover* zegt —
+een vraag, een twijfel, een verwijzing naar meer bewijs — zonder het te
+veranderen. Elke waarneming, oorzaak, oplossing en elk experiment, elk element
+(ook eenheden), elk besluit en elk plan eindigt in zijn **Reacties**: de draad
+over dat record, de oudste eerst, elk antwoord onder de reactie waarop het
+antwoordt. Een kop zegt hoeveel het er zijn, en de rij van een waarneming in
+het register toont het aantal naast de titel.
+
+- **Reageren.** Schrijf in het veld onder de draad en druk op **Reageren**
+  (⌘Enter doet hetzelfde). De tekst neemt de Markdown die een beschrijving
+  neemt.
+- **Antwoorden.** Druk op **Antwoorden** onder een reactie. Een draad is één
+  niveau diep: een antwoord op een antwoord antwoordt op de reactie waaronder
+  het staat.
+- **Bewerken.** Alleen uw eigen reacties. Een bewerkte reactie zegt
+  *bewerkt*.
+- **Verwijderen.** Uw eigen reacties, of die van iedereen waar u de scope mag
+  wijzigen. Een verwijderde reactie leest *Reactie verwijderd* op de plek waar
+  ze stond, zodat de antwoorden eronder hun plek houden. Haar woorden blijven
+  in de geschiedenis, zoals bij elke bewerking.
+
+**Wie het schreef** is een persoon uit het register, nooit een getypte naam.
+De eerste keer dat u reageert en niemand op deze installatie *Dit ben ik* is,
+vraagt de draad één keer wie er schrijft — kies uzelf, of voeg uzelf toe met
+**Nieuwe persoon…** — en onthoudt het antwoord als *Dit ben ik*. Iemand
+vergeten op de pagina Mensen bereikt elke reactie die die persoon schreef, die
+dan als pseudoniem leest.
+
+Elke reactie, bewerking en verwijdering is één stap: ze staat in de lijst
+**Activiteit** (*Gereageerd op Webshop*), in de geschiedenis en in de export,
+en ⌘Z maakt haar ongedaan. Een reactie verandert haar record nooit, dus de
+geschiedenis van het record blijft van het record. Waar een scope hier alleen
+gelezen wordt, kan niet worden gereageerd — tenzij de plek waar uw werk wordt
+bewaard een lezer laat reageren.
+
+**Wat met een record meereist.** Een record verwijderen neemt de draad mee, en
+ongedaan maken brengt beide terug. Waarnemingen of oorzaken samenvoegen
+verplaatst de reacties van elk opgenomen record naar het overblijvende record,
+elk met het record waarmee ze meekwam; het samenvoegscherm zegt hoeveel. Een
+samengevoegd of gearchiveerd record houdt zijn eigen reacties.
+
+Reacties worden bij de scope bewaard, in `_comments/`, één bestand per record
+waarop is gereageerd. **Zoeken** vindt wat een reactie zegt in de scope waarin
+u werkt, en opent het record waar ze over gaat.
+
+Een agent reageert zoals u (`comments.list`, `comment.add`, `comment.update`,
+`comment.remove`): zijn reacties zijn door *u* ondertekend, zeggen welke agent
+ze schreef, en worden volgens dezelfde regels bewerkt en verwijderd.
+
 ## Diagraminstellingen
 
 Rechtsklik een diagramtabblad, **Diagraminstellingen…**.

@@ -251,3 +251,81 @@ is not opened by it. A scope written before reads as one with no comments.
 * Mentions and notifications.
 * Comments on views, relations, the operating model and assignments.
 * A thread marked as resolved.
+
+## As built, 16 October 2026
+
+Built on lane A of 3.7.0, as decided, with what building it settled.
+
+**The record and the registry (§1, §3).** `Comment` is `model/comment.ts`;
+`by` and `removed.by` are a `{ person }` always. `model/commentable.ts` is
+the registry, one line per kind naming the command that deletes one:
+`observation`, `cause`, `solution`, `experiment`, `element`, `decision` and
+`transition` (a plan). The command table wraps each of those commands once
+(`commands/table.ts`), so a record deleted takes its thread in the same step
+and undo brings both back — a kind added later takes its comments with no
+line of its own.
+
+**The commands (§5).** `comment.add`, `comment.update` (`body`, `edited`)
+and `comment.remove` (`removed`), as decided, and two more that no screen
+and no agent sends: `comment.take`, the comment gone whole — what undoes an
+add, and what a merge, a move or a restore writes for a thread that leaves —
+and `comment.put`, the comment put back as it was, where it stood, asked
+nothing: what undoes a take, an update and a removal, so a thread whose
+record went some other way still undoes. The refusals are said in the
+writer's own family of keys: `command.notCommentable`,
+`command.unknownRecord`, `command.badReply`, and `command.commentRemoved` for
+a tombstone updated or removed again. `commentsToCommands` says a list
+handed back as those steps.
+
+**Where it is kept (§2).** `_comments/<kind>-<id>.json`, one list per record,
+oldest first; a row leaves out `about`, which the file's name says, and an
+id a file name could not hold is escaped as a URL escapes it
+(`adapters/folder/format/commentFile.ts`). The model keeps one list, read
+back thread by thread in the order of the files. Browser storage and memory
+keep the list in the model.
+
+**What travels (§6).** `comments/travel.ts`'s `carryThread` is the one seam
+for a merge and a move: handed the comments of the scope a record leaves and
+of the scope it arrives in, it answers both lists, each comment about the
+record it now belongs to and with `from` — the record it was written about,
+and that record's scope where another; a comment keeps the first `from` it
+had. `ScopeAnalysis.comments` hands a scope's comments to `planMerge`, which
+carries each absorbed record's thread and says how many moved; the agent's
+merge, the page's and a change across the tree hand them in and write them
+as the scope's steps, `merge.plan` and the merge's answer say how many, and so
+does the merge screen. A scope's analysis handed in without its comments
+keeps its threads where they are. A move (ADR-0038) calls `carryThread`
+with the observation as both `about` and `into`. A scope moved or renamed
+puts back each comment whose `from` names it, readdressed
+(`projects/readdress.ts`). A restore takes the comments first and puts them
+back last, so a record it deletes or brings back takes or finds its thread.
+
+**The thread (§3–§5).** `src/comments/` is a module of its own in the import
+matrix. `<CommentThread about scope? />` is mounted on the four analysis
+readers, an element's inspector, a decision's reader and a plan's page; the
+workspace hands every thread the open scope's comments and its writer once
+(`CommentsProvider`). A record of a scope above or below says that its
+thread is read in the scope that keeps it. *You* are `PeopleAccess.me` — the
+source's word, or *This is me* — and the first comment where nobody is said
+asks once with the register's picker. An observation's row in the register
+shows its count (`CommentBadge`).
+
+**Who may (§5).** `ProviderParts.comments` (`SourceComments`) answers
+`mayComment` and `mayModerate` for a scope; the session lets through a step
+that is comments and nothing else on a scope only read where the source says
+so. Absent, as in all three core sources, a person comments wherever they
+may write and removes any comment there.
+
+**Search and Activity (§7).** `searchable` finds a comment by its words and
+its author through the register, opening the record it is about; a removed
+comment is found nowhere. The Activity list names the record: *Commented on
+…*, *Edited a comment on …*, *Removed a comment on …*. Opening the thread
+with the comment marked is not built: the hit opens the record's reader.
+
+**The agent (§8).** `comments.list`, `comment.add`, `comment.update` and
+`comment.remove` (`agent/commenting.ts`), a record named by its id or its
+label; signed by `WriteView.me` via the client's name, refused
+`agent.badArguments` where nobody is said. The reads of a commentable record
+say `comments: n`. The method sent on connect says a comment is about a
+record and never changes it.
+

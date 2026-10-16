@@ -43,3 +43,15 @@ loop back is refused when you write it, and the checks name a loop a plan
 makes later, a line that lands nowhere or in more than one place, and one to a
 role nobody holds. An agent sets them with `reportingLine.set` and reads them
 with `reportingLines.list`.
+
+**Comments on any record.** Every observation, cause, solution and
+experiment, every element, decision record and plan now ends in its
+**Comments**: say something about a record — a question, a doubt, more
+evidence — without changing it. Reply under a comment, edit your own, and
+remove one to leave *Comment removed* in its place. A comment is signed by
+you, picked once from the people register, and is a step like any other: in
+Activity, in the history and the export, and undone with ⌘Z. Deleting a
+record takes its comments along; merging observations or causes brings the
+absorbed records' comments to the one that stays. The observations register
+shows how many comments each has, search finds what they say, and an agent
+can read and write them too.
