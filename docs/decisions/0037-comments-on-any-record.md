@@ -1,6 +1,7 @@
 # ADR-0037 — Comments on any record, through one interface
 
-* Status: accepted, 16 October 2026; not yet built (3.7.0)
+* Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0);
+  implemented, 16 October 2026 (3.7.0, not yet released)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0031 §1 (a record named by its kind and its id: a comment is
@@ -325,7 +326,19 @@ with the comment marked is not built: the hit opens the record's reader.
 **The agent (§8).** `comments.list`, `comment.add`, `comment.update` and
 `comment.remove` (`agent/commenting.ts`), a record named by its id or its
 label; signed by `WriteView.me` via the client's name, refused
-`agent.badArguments` where nobody is said. The reads of a commentable record
-say `comments: n`. The method sent on connect says a comment is about a
-record and never changes it.
+`agent.badArguments` where nobody is said. Whether that person may remove
+somebody else's comment is `SessionView.mayModerate`, handed to the tools as
+the workspace hands the thread `ProviderParts.comments.mayModerate` for the
+open scope, and as a host that runs the tools itself says it of the scope a
+call writes; where it answers no, `comment.remove` of another's comment is
+refused `agent.mayNotModerate` by the tool, before any step reaches a door.
+Absent, as on every core source, the person removes any comment where they
+may write. The reads of a commentable record say `comments: n`. The method
+sent on connect says a comment is about a record and never changes it.
+
+**The first download.** The thread is a part of its own
+(`comments/ui/threadPart.tsx`, `widgets/lazyPart`), and draws a comment with
+the markdown renderer every description is drawn with (`renderMarkdown`),
+itself a part: mounted under every reader, the thread had brought the
+renderer back into the app's own file.
 

@@ -2,6 +2,7 @@
 
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0):
   bright spots (§6), then the move (§1–§5); implemented, 16 October 2026
+  (3.7.0, not yet released)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,

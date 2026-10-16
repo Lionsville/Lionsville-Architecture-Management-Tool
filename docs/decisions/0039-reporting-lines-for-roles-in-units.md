@@ -1,7 +1,7 @@
 # ADR-0039 — Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit
 
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0);
-  implemented, 16 October 2026
+  implemented, 16 October 2026 (3.7.0, not yet released)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Supersedes: ADR-0036 §12, in part — who manages a unit's people is no

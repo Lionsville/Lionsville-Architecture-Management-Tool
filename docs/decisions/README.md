@@ -22,6 +22,8 @@ where the build stands:
 - **`as built, <date>, <part>`:** added as each part lands. A section says
   what was built, and where the build departed from the text and why.
 - **`implemented, <date>`:** added when the build is done.
+  Built in a release not yet cut, it says which, `(3.7.0, not yet
+  released)`, and the parenthesis goes when that release is published.
 
 **Unbuilt records do not pile up.** A record accepted ahead of its build is
 one somebody is building. One that nobody is building any more is superseded
