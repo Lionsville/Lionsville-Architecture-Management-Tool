@@ -114,6 +114,8 @@ export function observationFileText(observation: Observation): string {
     where: observation.where,
     ...personFrontMatter('by', observation.by),
     impact: observation.impact,
+    // Only on a bright spot (ADR-0038 §6): a problem is written as every observation before was.
+    bright: observation.bright,
     seen: observation.seen,
     archived: observation.archived,
     // None at all is said, so it reads back as none rather than as the one a hand-written file is given.
@@ -241,6 +243,7 @@ export function observationFromFile(text: string, path: string): Observation | u
     ...(where ? { where } : {}),
     ...(by !== undefined ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
+    ...(frontMatterString(fields, 'bright') === 'true' ? { bright: true as const } : {}),
     seen: seen !== undefined && seen >= 1 ? Math.trunc(seen) : 1,
     // `shared: true` in a file written before ADR-0032 is read past and not
     // written again: nothing is shared any more, and the events stay as history.

@@ -166,6 +166,8 @@ export function newObservation(args: {
   /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
   by?: PersonRef
   impact?: ObservationImpact
+  /** A bright spot: something that works (ADR-0038 §6). */
+  bright?: boolean
   body?: string
 }): Observation {
   const { id, number, title, date, t } = args
@@ -179,6 +181,7 @@ export function newObservation(args: {
     ...(where ? { where } : {}),
     ...(by ? { by } : {}),
     impact: args.impact ?? 'minor',
+    ...(args.bright ? { bright: true as const } : {}),
     seen: 1,
     body: args.body?.trim() ? args.body : observationTemplate(t),
     history: [{ date, kind: 'recorded' }],
@@ -208,12 +211,19 @@ function withEvent(one: Observation, event: ObservationEvent): Observation {
   return { ...one, history: [...one.history, event] }
 }
 
-/** The fields a person edits by hand. The count and the history move only through the verbs below. */
-export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'by' | 'impact' | 'date'>>
+/**
+ * The fields a person edits by hand. The count and the history move only
+ * through the verbs below. `bright` says which it is, a problem (`false`) or
+ * a bright spot (`true`), and may be changed later as any field is.
+ */
+export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'by' | 'impact' | 'date'>> & {
+  bright?: boolean
+}
 
 export function updateObservation(list: readonly Observation[], id: string, patch: ObservationPatch): Observation[] {
   return replace(list, id, (one) => {
-    const next = { ...one, ...patch }
+    const { bright, ...rest } = patch
+    const next: Observation = { ...one, ...rest }
     if (patch.where !== undefined && !patch.where.trim()) delete next.where
     if (patch.by !== undefined) {
       const by = personRefOf(patch.by)
@@ -221,8 +231,15 @@ export function updateObservation(list: readonly Observation[], id: string, patc
       else delete next.by
     }
     if (patch.title !== undefined) next.title = patch.title.trim()
+    if (bright === true) next.bright = true
+    else if (bright === false) delete next.bright
     return next
   })
+}
+
+/** A bright spot: something that works (ADR-0038 §6). Absent is a problem. */
+export function isBright(one: Pick<Observation, 'bright'>): boolean {
+  return one.bright === true
 }
 
 /** Why a day cannot be the day an observation was seen again. */
@@ -343,8 +360,9 @@ function relink(causes: readonly Cause[], from: Pick<CauseLink, 'id' | 'scope'>,
  * `into` keeps standing with the sightings of both; `from` is absorbed — it
  * stays in the list as history, its links move over, and each record says
  * what happened on which day. Refused, by returning the analysis unchanged,
- * when either is missing, when they are the same, or when one of them was
- * merged before: a record that was folded into another is not there to fold.
+ * when either is missing, when they are the same, when one of them was
+ * merged before — a record that was folded into another is not there to fold
+ * — or when one is a problem and the other a bright spot.
  */
 export function mergeObservations(analysis: Analysis, from: string, into: string, date: string): Analysis {
   const { observations, causes } = analysis
@@ -354,6 +372,8 @@ export function mergeObservations(analysis: Analysis, from: string, into: string
   if (!absorbed || !survivor) return analysis
   if (isMerged(observations, from) || isMerged(observations, into)) return analysis
   if (isArchived(absorbed) || isArchived(survivor)) return analysis
+  // A problem and a bright spot are not one thing seen twice (ADR-0038 §6).
+  if (isBright(absorbed) !== isBright(survivor)) return analysis
   return {
     observations: observations.map((one) => {
       if (one.id === into) {
@@ -381,6 +401,7 @@ export function absorbFromBelow(
   const survivor = observations.find((one) => one.id === into)
   if (!survivor || isMerged(observations, into) || isArchived(survivor)) return analysis
   if (isArchived(from.observation)) return analysis
+  if (isBright(from.observation) !== isBright(survivor)) return analysis
   if (absorbedBy(observations, from.observation.id, from.scope)) return analysis
   return {
     observations: replace(observations, into, (one) => withEvent(

@@ -90,6 +90,13 @@ export type Observation = {
    */
   by?: PersonRef
   impact: ObservationImpact
+  /**
+   * Something that works, rather than something that goes wrong (ADR-0038
+   * §6): a bright spot. Absent is a problem, as every observation recorded
+   * before is. The method is the same — its causes are what make it work, and
+   * a solution on its root spreads it — and a merge never mixes the two.
+   */
+  bright?: true
   /** How often it has been seen, this record's own sightings and the absorbed ones together. */
   seen: number
   /**

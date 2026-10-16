@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
   absorbFromBelow, absorbedBy, causeDepth, causeEvidence, causeLabel, explainedBy, formatCauseNumber, formatObservationNumber,
-  isArchived, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
+  isArchived, isBright, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
   setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
@@ -77,6 +77,18 @@ describe('seeing and editing', () => {
     expect(newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, by: ' ' }).by).toBeUndefined()
     expect(updateObservation([fresh], 'x', { by: '' })[0].by).toBeUndefined()
     expect(updateObservation([fresh], 'x', { by: 'The desk' })[0].by).toBe('The desk')
+  })
+
+  it('is a problem unless it is said to be a bright spot, and may be changed either way (ADR-0038 §6)', () => {
+    const problem = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t })
+    expect('bright' in problem).toBe(false)
+    expect(isBright(problem)).toBe(false)
+    const bright = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, bright: true })
+    expect(bright.bright).toBe(true)
+    expect(isBright(updateObservation([problem], 'x', { bright: true })[0])).toBe(true)
+    const back = updateObservation([bright], 'x', { bright: false })[0]
+    expect('bright' in back).toBe(false)
+    expect(updateObservation([bright], 'x', { title: 'U' })[0].bright).toBe(true)
   })
 })
 

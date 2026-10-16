@@ -54,6 +54,15 @@ describe('an observation as a file', () => {
     expect(observationFromFile(observationFileText(local), observationPath(local))).toEqual(local)
   })
 
+  it('writes a bright spot as `bright: true`, reads it back, and reads its absence as a problem (ADR-0038 §6)', () => {
+    const bright: Observation = { ...observation, bright: true }
+    const text = observationFileText(bright)
+    expect(text).toContain('impact: major\nbright: true\nseen: 4\n')
+    expect(observationFromFile(text, observationPath(bright))).toEqual(bright)
+    expect(observationFileText(observation)).not.toContain('bright')
+    expect(observationFromFile(text.replace('bright: true\n', 'bright: false\n'), observationPath(bright))).toEqual(observation)
+  })
+
   it('round-trips a history with nothing in it as nothing, and not as the event a hand-written file is given', () => {
     const bare: Observation = { ...observation, history: [] }
     expect(observationFileText(bare)).toContain('history: none\n')

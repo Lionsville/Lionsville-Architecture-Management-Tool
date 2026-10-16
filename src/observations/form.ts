@@ -36,6 +36,8 @@ export type ObservationFields = {
   /** `yyyy-mm-dd`: the day it was first seen. */
   date: string
   impact: ObservationImpact
+  /** A bright spot rather than a problem (ADR-0038 §6); the form asks it first, problem chosen. */
+  bright?: boolean
   body: string
 }
 
