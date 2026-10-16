@@ -123,6 +123,15 @@ export type SessionView = {
   people?(): readonly Person[] | undefined
   /** The person the agent acts for, as the register says *you* (ADR-0037 §8). Absent where nobody is said. */
   me?(): PersonId | undefined
+  /**
+   * Whether that person may remove other people's comments in the scope the
+   * call writes (ADR-0037 §5): what a source with accounts says, as
+   * `ProviderParts.comments.mayModerate` says it to the screens. Absent,
+   * whoever may write the scope may, which is every core source; where it
+   * answers no, `comment.remove` of somebody else's comment is refused
+   * `agent.mayNotModerate` by the tool, before anything reaches a door.
+   */
+  mayModerate?(): boolean
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -561,6 +570,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...(session.people ? { people: session.people } : {}),
     ...(session.me ? { me: session.me } : {}),
+    ...(session.mayModerate ? { mayModerate: session.mayModerate } : {}),
     ...over,
   }
 }

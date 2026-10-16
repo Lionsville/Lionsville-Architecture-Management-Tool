@@ -179,7 +179,7 @@ export const removeComment: Handler = (args, view) => {
   const me = view.me?.()
   if (me === undefined) return refused('agent.badArguments', NO_AUTHOR)
   if (held.by.person !== me && view.mayModerate?.() === false) {
-    return refused('agent.readOnly', 'this comment is somebody else\'s, and the person this agent acts for may not remove other people\'s comments here')
+    return refused('agent.mayNotModerate', `comment ${held.id} is somebody else's, and the person this agent acts for may not remove other people's comments in this scope`)
   }
   const removed = { at: nowOf(view), by: pickedPerson(me) }
   return {

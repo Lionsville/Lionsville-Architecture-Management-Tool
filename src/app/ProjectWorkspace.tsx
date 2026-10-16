@@ -465,6 +465,7 @@ function useScreenParts(
     showElement: showElement.show, openDocumentation: requests.openDocumentation,
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
     changeAcross: tree.agentChangeAcross, landSteps: tree.agentLandSteps, people: shell.people,
+    ...(source.comments ? { comments: source.comments } : {}),
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,

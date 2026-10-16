@@ -3040,6 +3040,13 @@ export type AgentRefusal =
   | 'agent.stale'
   | 'agent.notYours'
   | 'agent.saveFailed'
+  /**
+   * Somebody else's comment, which the person the agent acts for may not
+   * remove in this scope (ADR-0037 §5, §8): the source says who moderates
+   * (`SessionView.mayModerate`), and the tool refuses before anything is
+   * written rather than leave it to the door.
+   */
+  | 'agent.mayNotModerate'
   /** The person pressed Stop on the driving banner (ADR-0019), and nobody has asked to start again. */
   | 'agent.stopped'
   /** A change, a picture or undo addressed to a scope that is not the one open in the app (ADR-0012, step 13). */
@@ -3141,6 +3148,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
+  'agent.mayNotModerate':
+    'That comment is somebody else\'s, and the person you act for may not remove other people\'s comments in this scope. '
+    + 'Its author may remove it, or someone who moderates the scope; ask the person whether to reply to it instead.',
   'check.ownedElsewhere': 'This record is a stand-in: the scope named in the detail defines the thing and answers for its lifecycle, dates, owner, vendor, technology, aspects and category. Its description is the owner\'s too: shown here, and changed in that scope.',
   'gesture.barrier': 'That step wrote two scopes — a record moved between them — so it cannot be undone from here. Move the record back with a gesture of its own.',
   'merge.nothing': 'A merge needs at least one record to fold into the survivor: name them in absorb.',

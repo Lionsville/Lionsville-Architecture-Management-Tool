@@ -42,6 +42,7 @@ import { readDataUrl } from '../projects/dataUrl'
 import type { ModelSession } from './useModelSession'
 import type { WorkspacePages } from './useWorkspacePages'
 import type { PeopleRegisterAccess } from '../people/ui/access'
+import type { SourceComments } from '../ports/ProviderParts'
 
 export function useWorkspaceAgentView(deps: {
   session: ModelSession
@@ -81,11 +82,17 @@ export function useWorkspaceAgentView(deps: {
   landSteps?: LandSteps
   /** The people register, as the shell holds it: who an assignment may name (ADR-0036). */
   people?: PeopleRegisterAccess
+  /**
+   * What the source says about comments (`ProviderParts.comments`): whom an
+   * agent's person may remove comments of, asked of this scope, as the
+   * thread is told it (ADR-0037 §5). Absent, whoever may write may.
+   */
+  comments?: SourceComments
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
     renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
-    changeAcross, landSteps,
+    changeAcross, landSteps, comments,
   } = deps
   const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
@@ -126,12 +133,15 @@ export function useWorkspaceAgentView(deps: {
     people: peopleNow,
     // Whom an agent's comment is signed by (ADR-0037 §8): *you*, as the register says.
     me: () => peopleRef.current?.me,
+    // And whether they may remove somebody else's, where the source says (ADR-0037 §5).
+    ...(comments?.mayModerate ? { mayModerate: () => comments.mayModerate?.(scope) ?? true } : {}),
     ...(changeAcross ? { changeAcross } : {}),
     ...(landSteps ? { landSteps } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
+    comments,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)

@@ -130,7 +130,7 @@ describe('comment.update and comment.remove', () => {
     const { model, said } = write('comment.remove', { id: 'cm-1' })
     expect(commentList(model)[0]).toMatchObject({ body: '', removed: { at: AT, by: { person: 'pe-eva' } } })
     expect(said).toMatchObject({ id: 'cm-1', removed: true })
-    expect(refusal('comment.remove', { id: 'cm-1' }, { mayModerate: () => false })).toBe('agent.readOnly')
+    expect(refusal('comment.remove', { id: 'cm-1' }, { mayModerate: () => false })).toBe('agent.mayNotModerate')
     expect(refusal('comment.remove', { id: 'cm-2' }, { me: () => undefined })).toBe('agent.badArguments')
   })
 })

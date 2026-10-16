@@ -215,6 +215,40 @@ describe('handle', () => {
   })
 })
 
+describe('a comment removed, as the source says who moderates (ADR-0037 §5)', () => {
+  /** A session where Tom has commented on the decision, and the agent acts for Eva. */
+  function commented(over: Partial<SessionView> = {}) {
+    const held = session({ me: () => 'pe-eva', ...over })
+    held.remote({
+      type: 'comment.add',
+      comment: { id: 'cm-tom', about: { kind: 'decision', id: 'adr-1' }, by: { person: 'pe-tom' }, at: '2026-10-16T09:00:00Z', body: 'Why now?' },
+    }, 'tom')
+    return held
+  }
+  const remove = (held: SessionView, id: string) => handle({ id: '1', tool: 'comment.remove', args: { id } }, held)
+
+  it('refuses somebody else’s comment where the person may not moderate, before anything is written', async () => {
+    const held = commented({ mayModerate: () => false })
+    const out = await remove(held, 'cm-tom')
+    expect(out).toMatchObject({ ok: false, refusal: 'agent.mayNotModerate' })
+    expect(held.model().comments?.['cm-tom']?.removed).toBeUndefined()
+  })
+
+  it('removes the person’s own comment all the same', async () => {
+    const held = commented({ mayModerate: () => false })
+    expect((await handle({ id: '1', tool: 'comment.add', args: { about: { kind: 'decision', id: 'ADR-0001' }, body: 'Mine' } }, held)).ok).toBe(true)
+    expect((await remove(held, 'cm-new-1')).ok).toBe(true)
+  })
+
+  it('removes anybody’s where the source says the person moderates, or says nothing — every core source', async () => {
+    for (const over of [{ mayModerate: () => true }, {}]) {
+      const held = commented(over)
+      expect((await remove(held, 'cm-tom')).ok).toBe(true)
+      expect(held.model().comments?.['cm-tom']?.removed).toMatchObject({ by: { person: 'pe-eva' } })
+    }
+  })
+})
+
 describe('the session’s own: revision, the log, undo, save', () => {
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
