@@ -104,6 +104,8 @@ export const CONTROL_NAMES = [
   'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
   // …the switch that draws its empty optional roles, and its summary in the inspector while nothing is picked (3.6.1).
   'chart.showOptional', 'chart.summary',
+  // …the switch that draws the reporting lines over it (ADR-0039 §7).
+  'chart.showLines',
   // …and making a unit from it (3.6.2): + Unit at the top on the bar, in the outline's header and on an
   // empty chart, a unit's own + for a unit inside it, and the dialog they open.
   'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst', 'chart.addInside', 'chart.newUnit',

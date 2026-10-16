@@ -404,6 +404,8 @@ export type ReportingLineOn = {
   from?: string
   until?: string
   state: LineState
+  /** The role it reports to, as written: said also where the line lands nowhere. Absent on a line by nesting. */
+  reportsTo?: RoleId
   /** Where it lands, where it does. */
   to?: LinePosition
   /** The units that have the target role where none is above, for an ambiguous line. */
@@ -459,12 +461,14 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
       for (const kind of ['solid', 'dotted'] as const) {
         const mine = own.find((line) => line.role === roleId && (line.to ? line.kind : 'solid') === kind)
         if (mine) {
-          found.push({ unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...ownLanding(mine, thereIds) })
+          found.push({ unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...(mine.to ? { reportsTo: mine.to.role } : {}), ...ownLanding(mine, thereIds) })
           continue
         }
         const says = typeSays.find((slot) => slot.role === roleId)?.reportsTo
         if (!says || says.kind !== kind || !runsOn(says, day)) continue
-        found.push({ unitId: unit.id, roleId, kind, source: 'type', ...datedOf(says), ...landing(on.units, unit.id, roleId, says.role, holding, thereIds) })
+        found.push({
+          unitId: unit.id, roleId, kind, source: 'type', ...datedOf(says), reportsTo: says.role, ...landing(on.units, unit.id, roleId, says.role, holding, thereIds),
+        })
       }
     }
   }

@@ -76,6 +76,7 @@ import { transitionLabel } from '../../model/transition'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { InteractDialog, InteractionsSection } from './Interactions'
+import { UnitLines } from './UnitLines'
 import type { Interacting, InteractionLine } from './Interactions'
 import { organisationHere } from './organisationHere'
 import { functionChoices, scopeChoices } from './choices'
@@ -166,7 +167,8 @@ function useUnitFacts(props: UnitSectionProps) {
       .filter((one) => one.move.unitId === element.id)
       .sort((a, b) => a.move.on.localeCompare(b.move.on))
     const parent = parentOn(element, organisation.moves, today)
-    return { organisation, types, type, roles, register, canonical, isMe, unitName, owns, answersFor, said, moves, parent }
+    const scopeOf = (id: string) => at.unitAt(id)?.scope
+    return { organisation, types, type, roles, register, canonical, isMe, unitName, scopeOf, owns, answersFor, said, moves, parent }
   }, [element, scope, model, index, people?.people, today])
 }
 
@@ -243,6 +245,10 @@ function UnitParts(props: UnitSectionProps & {
       {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
       {/* Its why? folds again for the next unit picked, as the element's fields do. */}
       <Managers key={element.id} {...props} />
+      <UnitLines
+        key={`lines-${element.id}`} element={element} organisation={facts.organisation} type={facts.type} day={props.today}
+        editable={editable} scopeOf={facts.scopeOf} update={update} s={s}
+      />
       <Serves {...props} type={facts.type} editable={editable} onChange={(scopes) => update({ scopes })} />
       <Typography sx={SECTION}>{s('unit.owns')}</Typography>
       <Typography sx={LINE} data-testid="unit-owns">{facts.owns.length ? facts.owns.join(', ') : s('unit.ownsNone')}</Typography>
@@ -545,7 +551,10 @@ function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: bo
 
 /**
  * Who manages it on the day (§12): the holders of a managing role in it or
- * above it, one line each, nearest first. Why they are said to — and what a
+ * above it, one line each, nearest first — and, where a managing role on the
+ * way reports by a solid line, whoever it lands on, said *by line* (ADR-0039
+ * §4). Who manages the holders of one role that reports elsewhere is said
+ * with its line, under *Reporting lines*. Why they are said to — and what a
  * build with accounts grants from it, where core grants nothing — is behind
  * *why?*, said once a person asks rather than on every unit.
  */
@@ -565,6 +574,7 @@ function Managers(props: UnitSectionProps & {
           {s('unit.managedByLine', {
             person: name(one.person), role: facts.roles.get(one.roleId)?.name ?? one.roleId, unit: facts.unitName(one.unitId),
           })}
+          {one.via === 'line' ? ` · ${s('unit.byLine')}` : ''}
           {facts.isMe(one.person) ? ` · ${s('unit.you')}` : ''}
         </Typography>
       ))}

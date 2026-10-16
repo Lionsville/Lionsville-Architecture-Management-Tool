@@ -46,6 +46,12 @@
  * `EditorPages.inspector`); a finding there goes to its unit here as any
  * request from outside does (`select`).
  *
+ * **Reporting lines** (ADR-0039 §7): *Reporting lines* on the bar draws,
+ * over the boxes, a solid or a dotted line from each role that reports by a
+ * line to the role it lands on, on the chart's day — ending at the fold for a
+ * unit folded away (`chartLines`, `ChartLinesOverlay`). Off until it is
+ * turned on.
+ *
  * **Units are made where they are seen** (3.6.2): *+ Unit at the top* on the
  * bar, in the outline's header and on an empty chart, and *+* on a unit's
  * name row for a unit inside it (`useNewUnit`, `AddUnit.tsx`). Only where
@@ -85,6 +91,8 @@ import { foldKey, SessionFolds } from '../sessionFolds'
 import { AddAtTop } from './AddUnit'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
+import { chartLines } from './chartLines'
+import { ChartLinesOverlay } from './ChartLinesOverlay'
 import { ChartOutline } from './ChartOutline'
 import { UnitGrid } from './ChartUnitBox'
 import type { Drawing } from './ChartUnitBox'
@@ -142,6 +150,13 @@ export function ChartPage(props: ChartPageProps) {
   const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
   const folds = useFoldsOf(chart, props.scope ?? '', diagram.id, props.folds)
   const page = useRef<HTMLDivElement | null>(null)
+  // The Reporting lines overlay (ADR-0039 §7): off until it is turned on, for as long as the page is up.
+  const stage = useRef<HTMLDivElement | null>(null)
+  const [showLines, setShowLines] = useState(false)
+  const lines = useMemo(
+    () => (showLines ? chartLines(here.at.organisation, chart, day, folds.folded) : []),
+    [showLines, here, chart, day, folds.folded],
+  )
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
     const scope = here.scopeOf(id)
@@ -205,7 +220,10 @@ export function ChartPage(props: ChartPageProps) {
   const atTop = (guide: string, testId: string, variant?: 'outlined' | 'contained') => addAtTop(newUnit, props.make, guide, testId, t, variant)
   return (
     <Box data-testid="chart-page" sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <ChartBar chart={chart} folds={folds} onFind={find} onFindMe={findMe} note={note} add={atTop('chart.addAtTop', 'chart-add-top')} t={t} />
+      <ChartBar
+        chart={chart} folds={folds} onFind={find} onFindMe={findMe} note={note} add={atTop('chart.addAtTop', 'chart-add-top')}
+        lines={{ on: showLines, toggle: () => setShowLines((on) => !on) }} t={t}
+      />
       <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
         <ChartOutline
           chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={goTo} typeName={typeName} order={order}
@@ -219,7 +237,12 @@ export function ChartPage(props: ChartPageProps) {
                 {atTop('chart.addFirst', 'chart-add-first', 'contained')}
               </Box>
             )
-            : <UnitGrid units={chart.roots} depth={0} drawing={drawing} />}
+            : (
+              <Box ref={stage} sx={{ position: 'relative' }}>
+                <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
+                {showLines && <ChartLinesOverlay stage={stage} lines={lines} redraw={folds.optional} />}
+              </Box>
+            )}
         </Box>
       </Box>
       {assigning && people && props.assign && (
@@ -307,8 +330,9 @@ function usePageHandle(
  * a first open of a large chart is folded, until a fold is changed. How to
  * read the chart is said in its summary, beside it.
  */
-function ChartBar({ chart, folds, onFind, onFindMe, note, add, t }: {
-  chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; add: ReactNode; t: Translate
+function ChartBar({ chart, folds, onFind, onFindMe, note, add, lines, t }: {
+  chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; add: ReactNode
+  lines: { on: boolean; toggle: () => void }; t: Translate
 }) {
   const [query, setQuery] = useState('')
   return (
@@ -332,6 +356,12 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, add, t }: {
           data-guide="chart.showOptional" data-testid="chart-show-optional"
           control={<Switch size="small" checked={folds.optional} onChange={folds.toggleOptional} />}
           label={<Typography sx={{ fontSize: 12 }}>{t('chart.showOptional')}</Typography>}
+          sx={{ mr: 0.5 }}
+        />
+        <FormControlLabel
+          data-guide="chart.showLines" data-testid="chart-show-lines"
+          control={<Switch size="small" checked={lines.on} onChange={lines.toggle} />}
+          label={<Typography sx={{ fontSize: 12 }}>{t('chart.showLines')}</Typography>}
           sx={{ mr: 0.5 }}
         />
         <Button size="small" onClick={folds.foldAll} data-testid="chart-fold-all" data-guide="chart.foldAll">{t('chart.foldAll')}</Button>

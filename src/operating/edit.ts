@@ -13,7 +13,7 @@
 import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
 import { dutiesWith, inOwnOrder, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
-import type { OperatingRule, OperatingRuleKind, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
+import type { OperatingRule, OperatingRuleKind, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
 import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
 import type { OperatingLists } from './bringIn'
@@ -177,9 +177,24 @@ export function setSlot(type: UnitType, index: number, change: Partial<Pick<Role
     if (at !== index) return slot
     const min = Math.max(0, Math.trunc(change.min ?? slot.min))
     const max = 'max' in change ? change.max : slot.max
-    return { role: slot.role, min, ...(max !== undefined ? { max: Math.max(min, Math.trunc(max)) } : {}) }
+    const { max: _was, ...rest } = slot
+    return { ...rest, min, ...(max !== undefined ? { max: Math.max(min, Math.trunc(max)) } : {}) }
   })
   return { type: 'unitType.update', id: type.id, patch: { slots } }
+}
+
+/**
+ * A slot's reporting line set, changed or taken away (ADR-0039 §2): the
+ * slots as they will be, for the host to ask about a loop before the step is
+ * dispatched, and the step.
+ */
+export function setReportsTo(type: UnitType, index: number, reportsTo: ReportsTo | undefined): { slots: RoleSlot[]; command: Command } {
+  const slots = type.slots.map((slot, at) => {
+    if (at !== index) return slot
+    const { reportsTo: _was, ...rest } = slot
+    return reportsTo ? { ...rest, reportsTo } : rest
+  })
+  return { slots, command: { type: 'unitType.update', id: type.id, patch: { slots } } }
 }
 
 export function addSlot(type: UnitType, role: string): Command {

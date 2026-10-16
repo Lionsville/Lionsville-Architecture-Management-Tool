@@ -103,14 +103,15 @@ const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', nam
 const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
 
 /** The chart over the shipping scope's session, changed by the model's own writer, with the editor's selection and the chart's choice held as the workspace holds them. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select }: {
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select, root = ROOT }: {
+  root?: HostModel
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
   readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean; select?: SelectRequest
 }) {
   const [chosen, setChosen] = useState<string | undefined>(undefined)
-  const [model, setModel] = useState(scope === '' ? ROOT : shipping)
-  const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
+  const [model, setModel] = useState(scope === '' ? root : shipping)
+  const index = useMemo(() => indexScopes([{ path: '', model: root }, { path: 'shipping', model: SHIPPING }]), [root])
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
   const dispatch = (command: Command) => {
     commands.push(command)
@@ -374,5 +375,33 @@ describe('the organisation chart', () => {
     renderShell(<Harness commands={commands} readOnly />)
     fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
     expect(screen.queryByTestId('assign-dialog')).toBeNull()
+  })
+})
+
+describe('the reporting lines over the chart (ADR-0039 §7)', () => {
+  /** A team's developers answer to the cluster lead on how the work is done; its product owner reports to the domain owner. */
+  const lined: HostModel = {
+    ...ROOT,
+    unitTypes: [domain, cluster, { ...team, slots: [
+      { role: 'ro-po', min: 1, max: 1, reportsTo: { role: 'ro-owner', kind: 'solid' } },
+      { role: 'ro-dev', min: 2, reportsTo: { role: 'ro-lead', kind: 'dotted' } },
+    ] }],
+  }
+
+  it('draws nothing until Reporting lines is on, then each line solid or dotted, in the warning colour where nobody holds its end', () => {
+    const rect = { left: 10, right: 110, top: 0, bottom: 20, width: 100, height: 20, x: 10, y: 0, toJSON: () => ({}) }
+    const measured = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+    try {
+      renderShell(<Harness root={lined} commands={[]} />)
+      expect(screen.queryByTestId('chart-lines')).toBeNull()
+      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+      expect(screen.getByTestId('chart-lines')).toBeTruthy()
+      expect(screen.getAllByTestId('chart-line-solid').map((one) => one.getAttribute('data-tone'))).toEqual(['plain'])
+      expect(screen.getAllByTestId('chart-line-dotted').map((one) => one.getAttribute('data-tone'))).toEqual(['plain'])
+      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+      expect(screen.queryByTestId('chart-lines')).toBeNull()
+    } finally {
+      measured.mockRestore()
+    }
   })
 })

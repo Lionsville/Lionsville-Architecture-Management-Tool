@@ -28,10 +28,11 @@ const headings = () => [...screen.getByRole('table').querySelectorAll('thead th[
 const rows = () => [...screen.getByRole('table').querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent)
 
 /** The page over a model a reducer keeps, and every command it sent. */
-function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut }: {
+function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut, refuseLine }: {
   start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
   aside?: ComponentProps<typeof OperatingModelPage>['aside']
   slotTakeOut?: SlotTakeOut
+  refuseLine?: ComponentProps<typeof OperatingModelPage>['refuseLine']
 }) {
   const [model, setModel] = useState(start)
   let n = 0
@@ -49,6 +50,7 @@ function Harness({ start, readOnly = false, atOrganisation = true, sent, initial
       {...(initialId ? { initialId, initialNonce: 1 } : {})}
       {...(aside ? { aside } : {})}
       {...(slotTakeOut ? { slotTakeOut } : {})}
+      {...(refuseLine ? { refuseLine } : {})}
       onClose={() => {}}
     />
   )
@@ -257,6 +259,39 @@ describe('the operating model\'s page', () => {
     expect(sent.at(-1)).toMatchObject({ patch: { slots: [] } })
     // It was made to sit at the top; that was pressed off, and Scrum Team on.
     expect(screen.getByText('Sits in: Scrum Team')).toBeTruthy()
+  })
+
+  it('sets where a slot\'s holders report, solid or dotted, and refuses a line the host says would close a loop (ADR-0039 §2, §5)', async () => {
+    const refusing: { now?: string } = {}
+    const sent = show(empty(), { refuseLine: () => refusing.now })
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New unit type' }))
+    fireEvent.mouseDown(within(screen.getByTestId('operating-inspector')).getByLabelText('A role to add'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Developer' }))
+    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByRole('button', { name: 'Add role' }))
+    const line = () => screen.getByTestId('operating-slot-line')
+    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[0])
+    const options = await screen.findAllByRole('option')
+    expect(options[0].textContent).toBe('By nesting')
+    fireEvent.click(options.find((one) => one.textContent === 'Scrum Master')!)
+    expect(sent.at(-1)).toMatchObject({ type: 'unitType.update', patch: { slots: [{ min: 0, max: 1, reportsTo: { kind: 'solid' } }] } })
+    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByRole('option', { name: 'Functional' }))
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: { kind: 'dotted' } }] } })
+    fireEvent.change(within(line()).getByLabelText('Developer: From'), { target: { value: '2027-01-01' } })
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: { kind: 'dotted', from: '2027-01-01' } }] } })
+    // A solid line the host refuses is said, and not written.
+    refusing.now = 'Not written: the line would close a loop.'
+    const before = sent.length
+    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByRole('option', { name: 'Line manager' }))
+    expect(sent).toHaveLength(before)
+    expect(screen.getByTestId('operating-line-refused').textContent).toBe('Not written: the line would close a loop.')
+    // By nesting again takes the line away.
+    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[0])
+    fireEvent.click(await screen.findByRole('option', { name: 'By nesting' }))
+    expect((sent.at(-1) as { patch: { slots: object[] } }).patch.slots[0]).not.toHaveProperty('reportsTo')
   })
 
   it('lists who holds a role before it is taken out of a unit type, and takes one nobody holds out at once', async () => {

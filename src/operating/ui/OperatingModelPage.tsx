@@ -42,6 +42,7 @@ import { ALL_OF_THE_MATRIX } from '../matrixView'
 import type { MatrixView } from '../matrixView'
 import { countsLine } from './countsLine'
 import { Inspector } from './Inspector'
+import type { RefuseLine } from './Inspector'
 import { LandedToast } from './LandedToast'
 import { LibrariesPanel } from './LibrariesPanel'
 import { LibraryDialog } from './LibraryDialog'
@@ -94,6 +95,8 @@ export type OperatingModelPageProps = {
   aside?: (item: OperatingItem) => ReactNode
   /** A role somebody holds is not taken out of a unit type at once: the host lists them first. Absent, a slot goes at once. */
   slotTakeOut?: SlotTakeOut
+  /** Why a slot's solid reporting line would be refused: the host knows the organisation (ADR-0039 §5). Absent: nothing is. */
+  refuseLine?: RefuseLine
   /** How many units of each type there are today, as the host counts them across the tree; each card says so where given. */
   unitCounts?: ReadonlyMap<UnitTypeId, number>
   /** Who holds a role today or later, as the host counts them: said before the role is removed. */
@@ -226,7 +229,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
             sx={{ width: 340, flexShrink: 0, borderLeft: 1, borderColor: 'divider', overflow: 'auto', p: 2, bgcolor: 'background.paper' }}
           >
             <Inspector model={model} picked={picked} readOnly={readOnly} dispatch={dispatch} onRemove={setRemoving} aside={picked && props.aside?.(picked)}
-              onRemoveSlot={removeSlotOf} slotAside={taking} />
+              onRemoveSlot={removeSlotOf} slotAside={taking} {...(props.refuseLine ? { refuseLine: props.refuseLine } : {})} />
           </Box>
         )}
       </Box>

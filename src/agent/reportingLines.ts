@@ -66,6 +66,7 @@ function lineAnswer(line: ReportingLineOn, at: Named, unitName: (id: string) => 
     ...(line.from !== undefined ? { from: line.from } : {}),
     ...(line.until !== undefined ? { until: line.until } : {}),
     state: line.state,
+    ...(line.reportsTo !== undefined ? { reportsToRoleId: line.reportsTo } : {}),
     ...(line.to ? { to: at(line.to) } : {}),
     ...(line.candidates ? { candidates: line.candidates.map((id) => ({ unitId: id, unit: unitName(id) })) } : {}),
   }

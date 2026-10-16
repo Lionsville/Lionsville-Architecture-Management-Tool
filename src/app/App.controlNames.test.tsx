@@ -381,6 +381,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // units, and the outline, the bar and the summary beside it are drawn all the same.
   [['an organisation chart', [
     'chart.outline', 'chart.foldAll', 'chart.unfoldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst',
+    'chart.showLines',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))

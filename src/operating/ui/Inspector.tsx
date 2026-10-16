@@ -26,11 +26,11 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { Command } from '../../model/commands'
 import { typesHolding } from '../../model/operatingModel'
-import type { BasedOn, Responsibility, Role, UnitType } from '../../model/operatingModel'
+import type { BasedOn, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
 import {
-  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setSlot, setSuccessors, setWithin,
+  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setReportsTo, setSlot, setSuccessors, setWithin,
 } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
@@ -50,14 +50,23 @@ type Props = {
   onRemoveSlot?(type: UnitType, index: number): void
   /** What the host says under the slots of a role being taken out: the people it leaves. */
   slotAside?: ReactNode
+  /**
+   * Why a slot's solid reporting line would be refused (ADR-0039 §5): the
+   * sentence, where it would close a loop over the organisation, which the
+   * host knows and this page does not. Absent: nothing is refused.
+   */
+  refuseLine?: RefuseLine
 }
 
-/** How a unit type's slots are taken out, and what is said under them while one is. */
-type SlotTaking = Pick<Props, 'onRemoveSlot' | 'slotAside'>
+/** Why the slots as they would be are refused: a sentence, or nothing. */
+export type RefuseLine = (type: UnitType, slots: readonly RoleSlot[], reportsTo: ReportsTo) => string | undefined
+
+/** How a unit type's slots are taken out, and what is said under them while one is; and why a slot's line is refused. */
+type SlotTaking = Pick<Props, 'onRemoveSlot' | 'slotAside' | 'refuseLine'>
 
 const heading = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 0.5 } as const
 
-export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, onRemoveSlot, slotAside }: Props) {
+export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, onRemoveSlot, slotAside, refuseLine }: Props) {
   const { t } = useStrings()
   if (!picked) return <Typography variant="body2" color="text.secondary">{t('operating.pick')}</Typography>
   const kindWord = { unitType: 'operating.unitType', role: 'operating.role', responsibility: 'operating.responsibility' } as const
@@ -65,7 +74,7 @@ export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, 
     <Box data-testid="operating-inspector">
       <Typography variant="caption" color="text.secondary">{t(kindWord[picked.kind])}</Typography>
       {picked.kind === 'unitType' && (
-        <UnitTypeFields type={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} taking={{ onRemoveSlot, slotAside }} />
+        <UnitTypeFields type={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} taking={{ onRemoveSlot, slotAside, refuseLine }} />
       )}
       {picked.kind === 'role' && (
         <>
@@ -155,7 +164,8 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
       {type.slots.map((slot, index) => {
         const name = model.roles.find((role) => role.id === slot.role)?.name ?? slot.role
         return (
-          <Box key={`${slot.role}-${index}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, my: 0.5 }}>
+          <Box key={`${slot.role}-${index}`} data-testid="operating-slot">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, my: 0.5 }}>
             <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>{name}</Typography>
             <TextField size="small" type="number" value={slot.min} disabled={readOnly} sx={{ width: 68 }}
               slotProps={{ htmlInput: { min: 0, 'aria-label': `${name}: ${t('operating.slotMin')}` } }}
@@ -168,6 +178,8 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
                 <CloseIcon />
               </IconButton>
             )}
+          </Box>
+          <SlotLine type={type} index={index} name={name} model={model} readOnly={readOnly} dispatch={dispatch} refuseLine={taking.refuseLine} />
           </Box>
         )
       })}
@@ -184,6 +196,66 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
           </Button>
         </Box>
       )}
+    </Box>
+  )
+}
+
+/**
+ * Where a slot's holders report (ADR-0039 §2, §7): a role, solid or dotted,
+ * and its days — or nothing, and the nesting answers. Every unit of the type
+ * has the line; a unit says otherwise in its own inspector. A solid line the
+ * host says would close a loop is refused, and said why, and not written.
+ */
+function SlotLine({ type, index, name, model, readOnly, dispatch, refuseLine }: {
+  type: UnitType; index: number; name: string; model: OperatingModel; readOnly: boolean; dispatch(command: Command): void
+  refuseLine: RefuseLine | undefined
+}) {
+  const { t } = useStrings()
+  const [refused, setRefused] = useState<string | undefined>(undefined)
+  const line = type.slots[index].reportsTo
+  const write = (next: ReportsTo | undefined) => {
+    const { slots, command } = setReportsTo(type, index, next)
+    const why = next && next.kind === 'solid' ? refuseLine?.(type, slots, next) : undefined
+    setRefused(why)
+    if (!why) dispatch(command)
+  }
+  const change = (patch: Partial<ReportsTo>) => {
+    if (!line) return
+    const next: ReportsTo = { ...line, ...patch }
+    for (const key of ['from', 'until'] as const) if (next[key] === '') delete next[key]
+    write(next)
+  }
+  return (
+    <Box sx={{ pl: 1, mb: 0.75 }} data-testid="operating-slot-line">
+      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+        <TextField select size="small" label={t('operating.reportsTo')} value={line?.role ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.reportsTo')}` } }}
+          onChange={(event) => write(event.target.value ? { ...(line ?? { kind: 'solid' as const }), role: event.target.value } : undefined)}>
+          <MenuItem value="">{t('operating.reportsToNone')}</MenuItem>
+          {model.roles.filter((role) => role.id !== type.slots[index].role || type.within.length > 0).map((role) => (
+            <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
+          ))}
+        </TextField>
+        {line && (
+          <TextField select size="small" label={t('operating.lineKind')} value={line.kind} disabled={readOnly} sx={{ width: 150 }}
+            slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.lineKind')}` } }}
+            onChange={(event) => change({ kind: event.target.value === 'dotted' ? 'dotted' : 'solid' })}>
+            <MenuItem value="solid">{t('operating.lineSolid')}</MenuItem>
+            <MenuItem value="dotted">{t('operating.lineDotted')}</MenuItem>
+          </TextField>
+        )}
+      </Box>
+      {line && (
+        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+          <TextField size="small" type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineFrom')}` } }}
+            onChange={(event) => change({ from: event.target.value })} />
+          <TextField size="small" type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineUntil')}` } }}
+            onChange={(event) => change({ until: event.target.value })} />
+        </Box>
+      )}
+      {refused && <Typography role="alert" variant="caption" color="error" sx={{ display: 'block' }} data-testid="operating-line-refused">{refused}</Typography>}
     </Box>
   )
 }

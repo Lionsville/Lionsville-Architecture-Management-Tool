@@ -679,3 +679,70 @@ describe('what a unit is responsible for, from its own inspector', () => {
       .toContain('Webshop is responsible for Price freight, but neither it nor a unit above it serves shipping')
   })
 })
+
+describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
+  /** The team's developers report to the domain owner, and so does its product owner. */
+  const lined: HostModel = {
+    ...ROOT,
+    unitTypes: [domain, {
+      ...team,
+      slots: [
+        { role: 'ro-po', min: 1, max: 1, reportsTo: { role: 'ro-owner', kind: 'solid' } },
+        { role: 'ro-dev', min: 2, max: 3, reportsTo: { role: 'ro-owner', kind: 'dotted' } },
+      ],
+    }],
+  }
+
+  it('lists each line of its roles, where it lands, its kind and whose it is, and names a manager by line', () => {
+    renderShell(<Harness root={lined} commands={[]} />)
+    expect(screen.getAllByTestId('unit-line').map((line) => line.textContent?.split('Override…')[0])).toEqual([
+      'Product owner → Domain owner, Customerline managerthe type\'s',
+      'Developer → Domain owner, Customerfunctionalthe type\'s',
+    ])
+    expect(screen.getAllByTestId('unit-manager').map((line) => line.textContent)).toEqual([
+      'Femke Bos — Product owner, Webshop · you', 'Ada Verbeek — Domain owner, Customer · by line',
+    ])
+  })
+
+  it('reports by nesting here, then uses the type\'s again, each as an update of the unit\'s own lines', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness root={lined} commands={commands} />)
+    fireEvent.click(within(screen.getAllByTestId('unit-line')[0]).getByTestId('unit-line-nesting'))
+    expect(commands[0]).toEqual({ type: 'element.update', id: 'webshop', patch: { reportingLines: [{ role: 'ro-po', kind: 'solid' }] } })
+    await waitFor(() => expect(screen.getAllByTestId('unit-line')[0].textContent).toContain('Product owner: by nesting here'))
+    fireEvent.click(within(screen.getAllByTestId('unit-line')[0]).getByTestId('unit-line-use-type'))
+    expect(commands[1]).toEqual({ type: 'element.update', id: 'webshop', patch: { reportingLines: undefined } })
+  })
+
+  it('overrides a line to a role in another unit, and refuses one to itself, saying why', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness root={lined} commands={commands} />)
+    fireEvent.click(within(screen.getAllByTestId('unit-line')[1]).getByTestId('unit-line-override'))
+    const form = () => screen.getByTestId('unit-line-form')
+    const pick = async (at: number, name: string) => {
+      fireEvent.mouseDown(within(form()).getAllByRole('combobox')[at])
+      fireEvent.click(await screen.findByRole('option', { name }))
+    }
+    await pick(0, 'Webshop')
+    await pick(1, 'Developer')
+    fireEvent.click(within(form()).getByTestId('unit-line-save'))
+    expect(screen.getByTestId('unit-line-refused').textContent).toBe('Not written: a role does not report to itself in the same unit.')
+    expect(commands).toEqual([])
+    await pick(0, 'Customer')
+    await pick(1, 'Domain owner')
+    await pick(2, 'functional')
+    fireEvent.click(within(form()).getByTestId('unit-line-save'))
+    expect(commands[0]).toEqual({
+      type: 'element.update', id: 'webshop',
+      patch: { reportingLines: [{ role: 'ro-dev', to: { scope: 'customer', unit: 'customer', role: 'ro-owner' }, kind: 'dotted' }] },
+    })
+    await waitFor(() => expect(screen.queryByTestId('unit-line-form')).toBeNull())
+    expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('this unit\'s own')
+  })
+
+  it('offers nothing to change where the scope is only read', () => {
+    renderShell(<Harness root={lined} readOnly commands={[]} />)
+    expect(screen.getAllByTestId('unit-line')).toHaveLength(2)
+    expect(screen.queryByTestId('unit-line-override')).toBeNull()
+  })
+})
