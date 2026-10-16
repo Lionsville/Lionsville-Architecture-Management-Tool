@@ -61,6 +61,7 @@ import type { Mode } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
+import { CommentThread } from '../../comments/ui/CommentThread'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (
@@ -423,7 +424,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 </Box>
               ))}
             </Box>
-          </DocumentSheet>
+            <CommentThread about={{ kind: 'solution', id: solution.id }} nameOf={(from) => props.nameOf(from.id)} /></DocumentSheet>
         )}
       </Box>
     </Box>
@@ -640,6 +641,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
             </Box>
             {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+            <CommentThread about={{ kind: 'experiment', id: experiment.id }} />
           </DocumentSheet>
         )}
       </Box>

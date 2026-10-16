@@ -342,7 +342,7 @@ function causeProps(cause: Cause, scope: string | undefined, ctx: ReaderContext)
     causes: lists.causes,
     mergedInto: ctx.mergedCause(cause, scope),
     onMerge: () => ctx.ask.mergeCause(cause, scope),
-    ...(own ? {} : { fromScope: { label: ctx.scopeLabel(scope), ...(openScope ? { onOpenScope: () => openScope(scope) } : {}) } }),
+    ...(own ? {} : { fromScope: { path: scope, label: ctx.scopeLabel(scope), ...(openScope ? { onOpenScope: () => openScope(scope) } : {}) } }),
     explainedFrom: explainedFromOf(cause, scope, own ? ctx.explainedAbove?.get(cause.id) ?? [] : above, ctx),
     readOnly: ctx.readOnly,
     mayChangeBelow: Boolean(forms.changeBelow),

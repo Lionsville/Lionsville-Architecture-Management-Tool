@@ -53,6 +53,8 @@ import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
+import { CommentsProvider } from '../comments/ui/CommentsContext'
+import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 import { flattenScopes } from '../projects/scope'
 import { onlyPeopleIn } from '../model/managing'
@@ -116,9 +118,32 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
   )
   return (
     <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf}>
-      {children}
+      <ScopeComments parts={parts}>{children}</ScopeComments>
     </ViewEmbedsProvider>
   )
+}
+
+/**
+ * The open scope's comments for every thread under the workspace (ADR-0037):
+ * read from the session, each step dispatched to it. A person comments where
+ * the scope may be written, and removes anybody's comment there — on the
+ * desktop, whoever keeps the work is its administrator (ADR-0036 §10).
+ */
+function ScopeComments({ parts, children }: { parts: WorkspaceParts; children: ReactNode }) {
+  const { session, readOnly, props } = parts
+  const { makeId } = props.shell
+  const { dispatch } = session
+  const comments = session.model.comments
+  const value = useMemo<CommentsAccess>(() => ({
+    scope: props.project.path,
+    comments: comments ?? [],
+    dispatch: (command) => dispatch(command) !== undefined,
+    mayComment: !readOnly,
+    mayModerate: !readOnly,
+    makeId: () => makeId('cm'),
+    now: () => new Date().toISOString(),
+  }), [props.project.path, comments, dispatch, readOnly, makeId])
+  return <CommentsProvider value={value}>{children}</CommentsProvider>
 }
 
 function localToday(): string {

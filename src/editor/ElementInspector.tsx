@@ -17,6 +17,7 @@ import { InspectorSection } from './InspectorSection';
 import { GeneralTab } from './InspectorGeneralTab';
 import { AppearanceTab } from './InspectorAppearanceTab';
 import { aspectCount, DataTab } from './InspectorDataTab';
+import { CommentThread } from '../comments/ui/CommentThread';
 
 export type { ElementInspectorProps };
 export { shapeOptionsFor } from './elementInspectorFacts';
@@ -92,6 +93,7 @@ export function ElementInspector(props: ElementInspectorProps) {
         </>
       ) : fields}
 
+      <CommentThread about={{ kind: 'element', id: element.id }} />
       {!readOnly && <DeleteAction inspector={props} />}
     </Box>
   );

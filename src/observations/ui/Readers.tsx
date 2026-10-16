@@ -60,8 +60,20 @@ import {
   causeActions, modeAction, observationActions, openScopeAction, restoreAction,
 } from './readerActions'
 import type { LinkMode, Mode } from './readerActions'
+import { CommentThread } from '../../comments/ui/CommentThread'
+import type { CommentThreadProps } from '../../comments/ui/CommentThread'
 
 export type { Mode } from './readerActions'
+
+/**
+ * Where a record's thread is read (ADR-0037): the scope below that keeps it,
+ * where it is one, and what a comment that came with a merged record names it.
+ */
+export function threadPlace(
+  fromScope: { path: string } | undefined, nameOf: NameOf,
+): Pick<CommentThreadProps, 'scope' | 'nameOf'> {
+  return { ...(fromScope ? { scope: fromScope.path } : {}), nameOf: (from) => nameOf(from.id, from.scope) }
+}
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
@@ -400,6 +412,7 @@ export function ObservationReader(props: ObservationReaderProps) {
                 </Box>
               ))}
             </Box>
+            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf)} />
           </DocumentSheet>
         )}
       </Box>
@@ -488,7 +501,7 @@ export type CauseReaderProps = {
   /** The causes of its own scope: those that explain it are read off these. */
   causes: readonly Cause[]
   /** Present for a cause of a scope below: read here, added to there (ADR-0032 §2). */
-  fromScope?: { label: string; onOpenScope?: () => void }
+  fromScope?: { path: string; label: string; onOpenScope?: () => void }
   /** Where it went, when it was merged (ADR-0035 §4): read, and changed nowhere. */
   mergedInto?: MergedInto
   /** Open the merge screen on it; absent where nothing may be merged. */
@@ -670,6 +683,7 @@ export function CauseReader(props: CauseReaderProps) {
             </Typography>
             <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+            <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf)} />
           </DocumentSheet>
         )}
       </Box>

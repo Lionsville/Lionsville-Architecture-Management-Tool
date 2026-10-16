@@ -51,6 +51,7 @@ import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
+import { CommentThread } from '../../comments/ui/CommentThread'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
@@ -98,6 +99,8 @@ export type AdrReaderProps = {
    * are from theirs. Absent: no row.
    */
   solutions?: { list: readonly Pick<Solution, 'id' | 'number' | 'title' | 'decision'>[]; onOpen(solutionId: string): void }
+  /** The scope that keeps the record, where it is not the scope open (a scope above): its comments are read there (ADR-0037). */
+  keptIn?: string
 }
 
 /** *Copy link* bound to the record on show, where the host offers one. */
@@ -220,6 +223,7 @@ export function AdrReader(props: AdrReaderProps) {
               day={day}
               onChange={(signers) => onUpdate({ signers })}
             />
+            <CommentThread about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} />
           </DocumentSheet>
         )}
       </Box>

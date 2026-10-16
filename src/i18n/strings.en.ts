@@ -32,6 +32,7 @@ import { EN as search } from '../search/strings/en'
 import { EN as business } from '../business/strings/en'
 import { EN as technology } from '../technology/strings/en'
 import { EN as people } from '../people/strings/en'
+import { EN as comments } from '../comments/strings/en'
 
 export const EN = {
   ...adapters,
@@ -51,4 +52,5 @@ export const EN = {
   ...business,
   ...technology,
   ...people,
+  ...comments,
 } as const

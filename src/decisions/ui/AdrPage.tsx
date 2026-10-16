@@ -184,6 +184,11 @@ function useOpening(deps: {
   }, [open, shown, landed])
 }
 
+/** Where a record of a scope above is kept: its thread is read there (ADR-0037). */
+function keptIn(above: { path: string } | undefined): { keptIn?: string } {
+  return above ? { keptIn: above.path } : {}
+}
+
 export function AdrPage(props: AdrPageProps) {
   const {
     open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
@@ -422,7 +427,7 @@ export function AdrPage(props: AdrPageProps) {
             {selected ? (
               <AdrReader
                 key={selected.id}
-                adr={selected}
+                adr={selected} {...keptIn(fromAbove)}
                 list={owningList(scopeOfRecord(selected))}
                 readOnly={lockedAt(scopeOfRecord(selected))}
                 s={s}
