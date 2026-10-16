@@ -618,6 +618,7 @@ export const EN = {
   'observation.mergeStateField': 'Assumed or verified',
   'observation.mergeNotRootValue': 'Not a root cause',
   'observation.mergeSeenSum': 'Seen {count} times, all of them together',
+  'observation.mergeComments': '{count} comments go with them to the survivor, each saying where it was written',
   'observation.mergeBodyExample': 'Markdown. The survivor’s own description; the others keep theirs either way.',
   'observation.mergeAddOthers': 'Add the others’ descriptions',
   'observation.mergeMoves': 'What moves with it',

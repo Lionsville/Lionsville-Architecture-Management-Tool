@@ -73,6 +73,8 @@ export type MergeScreenState = {
   setField: (key: MergeFieldKey, value: string) => void
   /** The survivor's sightings once the merge is made: every record's, together. */
   seen?: number
+  /** How many comments the absorbed records' threads take to the survivor (ADR-0037 §6). */
+  comments: number
   body: string
   setBody: (body: string) => void
   /** *Add the others' descriptions*; absent once they are added, until the set changes. */
@@ -248,6 +250,7 @@ function screenOf(o: {
     fields: fieldsOf(kind, set, values, deps),
     setField: (key, value) => c.setChosen((held) => ({ ...held, ...valueOf(key, value) })),
     ...(kind === 'observation' ? { seen: set.reduce((sum, one) => sum + (one as Observation).seen, 0) } : {}),
+    comments: plan.ok ? plan.comments : 0,
     body: values.body ?? '',
     setBody: (body) => c.setChosen((held) => ({ ...held, body })),
     ...(c.added ? {} : { addOthers }),

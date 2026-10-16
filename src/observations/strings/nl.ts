@@ -599,6 +599,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.mergeStateField': 'Aangenomen of geverifieerd',
   'observation.mergeNotRootValue': 'Geen grondoorzaak',
   'observation.mergeSeenSum': '{count} keer gezien, alle samen',
+  'observation.mergeComments': '{count} reacties gaan mee naar het overblijvende record, elk met waar ze geschreven is',
   'observation.mergeBodyExample': 'Markdown. De eigen beschrijving van het blijvende record; de andere houden hoe dan ook de hunne.',
   'observation.mergeAddOthers': 'De beschrijvingen van de andere toevoegen',
   'observation.mergeMoves': 'Wat meegaat',

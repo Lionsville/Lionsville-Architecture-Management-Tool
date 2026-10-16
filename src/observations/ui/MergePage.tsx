@@ -197,6 +197,9 @@ function WhatItSays({ state, s, renderMarkdown }: { state: MergeScreenState; s: 
       {state.seen !== undefined && (
         <Typography variant="body2" data-testid="merge-seen">{s('observation.mergeSeenSum', { count: String(state.seen) })}</Typography>
       )}
+      {state.comments > 0 && (
+        <Typography variant="body2" data-testid="merge-comments">{s('observation.mergeComments', { count: String(state.comments) })}</Typography>
+      )}
       <DescriptionField
         label={s('observation.formDescription')} value={state.body} onChange={state.setBody}
         example={s('observation.mergeBodyExample')} renderMarkdown={renderMarkdown} s={s} minRows={8}

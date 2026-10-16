@@ -132,6 +132,20 @@ describe('the merge screen', () => {
     expect(next.observations!.find((one) => one.id === 'n1')).toMatchObject({ title: 'Cranes idle at night', where: 'Quay five', seen: 2 })
   })
 
+  it('says how many comments go with the absorbed records, and hands their threads back about the survivor (ADR-0037 §6)', () => {
+    const at = '2026-10-16T09:00:00Z'
+    const threads: ScopeAnalysis = { ...north, comments: [{ id: 'cm-1', about: { kind: 'observation', id: 'n2' }, by: { person: 'pe-1' }, at, body: 'At night too' }] }
+    const { page, commit } = mount(undefined, { scopes: [threads, south] })
+    const merge = within(page())
+    expect(merge.queryByTestId('merge-comments')).toBeNull()
+    fireEvent.click(within(merge.getByTestId('merge-hit-north#n2')).getByRole('checkbox'))
+    expect(merge.getByTestId('merge-comments').textContent).toBe(t('observation.mergeComments', { count: '1' }))
+    fireEvent.click(merge.getByTestId('merge-confirm'))
+    expect(commit.mock.calls[0]![0].comments).toEqual([
+      { id: 'cm-1', about: { kind: 'observation', id: 'n1' }, by: { person: 'pe-1' }, at, body: 'At night too', from: { kind: 'observation', id: 'n2' } },
+    ])
+  })
+
   it('takes a record out again, and lets a link be left behind', () => {
     const { page } = mount()
     const merge = within(page())

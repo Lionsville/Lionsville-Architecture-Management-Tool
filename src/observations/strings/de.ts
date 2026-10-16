@@ -599,6 +599,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.mergeStateField': 'Angenommen oder verifiziert',
   'observation.mergeNotRootValue': 'Keine Grundursache',
   'observation.mergeSeenSum': '{count}-mal gesehen, alle zusammen',
+  'observation.mergeComments': '{count} Kommentare gehen mit zum verbleibenden Eintrag, jeder mit dem Ort, an dem er geschrieben wurde',
   'observation.mergeBodyExample': 'Markdown. Die eigene Beschreibung des bleibenden Datensatzes; die anderen behalten ihre in jedem Fall.',
   'observation.mergeAddOthers': 'Die Beschreibungen der anderen hinzufügen',
   'observation.mergeMoves': 'Was mitgeht',
