@@ -167,7 +167,7 @@ describe('assignments.list', () => {
         { roleId: 'ro-po', role: 'Product owner', min: 1, max: 1, held: 1, manages: true },
         { roleId: 'ro-dev', role: 'Developer', min: 2, held: 0 },
       ],
-      managedBy: [{ personId: 'pe-femke', person: 'Femke Bos', roleId: 'ro-po', role: 'Product owner', unitId: 'webshop', unit: 'Webshop' }],
+      managedBy: [{ personId: 'pe-femke', person: 'Femke Bos', roleId: 'ro-po', role: 'Product owner', unitId: 'webshop', unit: 'Webshop', via: 'nesting' }],
     })
   })
 
@@ -175,6 +175,7 @@ describe('assignments.list', () => {
     const out = parsed(await ask('assignments.list', { scope: 'customer' }, undefined, { tree: tree() } as unknown as ShellView))
     expect((out.assignments as Record<string, unknown>[])[0]).toEqual({
       id: 'as-1', scope: 'customer', unitId: 'webshop', unit: 'Webshop', roleId: 'ro-po', role: 'Product owner', personId: 'pe-femke', share: 100, runs: true,
+      managedBy: [{ personId: 'pe-femke', roleId: 'ro-po', role: 'Product owner', unitId: 'webshop', unit: 'Webshop', via: 'nesting' }],
     })
     expect(refusal(await ask('assignments.list', { nonsense: true }, undefined, shell()))?.[0]).toBe('agent.badArguments')
   })
@@ -403,5 +404,48 @@ describe('a reorganisation at the agent (ADR-0036 §6)', () => {
     expect(parsed(await ask('checks.list', { on: '2027-01-01' }, asked))).toEqual({ day: '2027-01-01', total: 0, some: [] })
     expect(parsed(await ask('checks.list', {}, asked))).toEqual({ total: 0, some: [] })
     expect(days).toEqual(['2027-01-01', undefined])
+  })
+})
+
+describe('reporting lines at the agent (ADR-0039 §8)', () => {
+  it('sets a unit\'s own line as one step, says who manages by it, and takes it away again', async () => {
+    const open = session('customer', { ...customer, assignments: [...customer.assignments!, as('as-3', 'webshop', 'ro-dev', 'pe-bram')] })
+    const set = parsed(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'parcel', roleId: 'ro-dev' }, kind: 'dotted' }, open))
+    expect(set).toEqual({ unitId: 'webshop', roleId: 'ro-dev', kind: 'dotted', to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev' }, revision: 1 })
+    expect(open.sent.at(-1)).toMatchObject({ type: 'element.update', id: 'webshop', origin: 'agent' })
+    await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'webshop', roleId: 'ro-po' } }, open)
+    const listed = parsed(await ask('assignments.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
+    expect((listed.assignments as Record<string, unknown>[])[0]).toMatchObject({
+      managedBy: [{ personId: 'pe-femke', via: 'line' }],
+      dotted: [{ unitId: 'parcel', unit: 'Parcel', roleId: 'ro-dev', role: 'Developer' }],
+    })
+    const lines = parsed(await ask('reportingLines.list', {}, open, shell()))
+    expect(lines.lines).toEqual([
+      expect.objectContaining({ scope: 'customer', unitId: 'webshop', roleId: 'ro-dev', kind: 'solid', said: 'unit', state: 'lands', to: expect.objectContaining({ unitId: 'webshop', roleId: 'ro-po' }) }),
+      expect.objectContaining({ kind: 'dotted', state: 'lands', to: expect.objectContaining({ scope: 'shipping', unitId: 'parcel' }) }),
+    ])
+    expect(parsed(await ask('reportingLine.remove', { unitId: 'webshop', roleId: 'ro-dev', kind: 'dotted' }, open))).toMatchObject({ unitId: 'webshop', roleId: 'ro-dev', removed: 1 })
+    expect(open.model().elements.webshop.reportingLines).toEqual([{ role: 'ro-dev', kind: 'solid', to: { scope: 'customer', unit: 'webshop', role: 'ro-po' } }])
+    expect(refusal(await ask('reportingLine.remove', { unitId: 'webshop', roleId: 'ro-po' }, open))?.[0]).toBe('agent.unknownId')
+  })
+
+  it('refuses a line to itself and one that closes a loop, naming the chain', async () => {
+    const open = session('customer', customer)
+    expect(refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-po', to: { unitId: 'webshop', roleId: 'ro-po' } }, open))?.[0])
+      .toBe('reportingLine.self')
+    await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'webshop', roleId: 'ro-po' } }, open)
+    const loop = refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-po', to: { unitId: 'webshop', roleId: 'ro-dev' } }, open))
+    expect(loop?.[0]).toBe('reportingLine.loop')
+    expect(loop?.[1]).toContain('Product owner in Webshop')
+    expect(refusal(await ask('reportingLine.set', { unitId: 'partners', roleId: 'ro-po' }, open))?.[0]).toBe('agent.badArguments')
+    expect(refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-po', to: { unitId: 'nowhere', roleId: 'ro-po' } }, open))?.[0]).toBe('agent.unknownId')
+    expect(refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-po', from: '2027-01-01', until: '2026-01-01' }, open))?.[0]).toBe('agent.badArguments')
+  })
+
+  it('takes a slot\'s reportsTo on a unit type and reads it back', async () => {
+    const open = session('', organisation)
+    const out = parsed(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: { roleId: 'ro-po', kind: 'dotted', from: '2026-11-01' } }] }, open))
+    expect((out.slots as Record<string, unknown>[])[0].reportsTo).toEqual({ roleId: 'ro-po', role: 'Product owner', kind: 'dotted', from: '2026-11-01' })
+    expect(refusal(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: { roleId: 'ro-nobody' } }] }, open))?.[0]).toBe('agent.unknownId')
   })
 })

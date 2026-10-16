@@ -404,6 +404,29 @@ const DATED_FIELDS = (what: string): Readonly<Record<string, ArgumentSchema>> =>
   },
 })
 
+/** Solid, a line manager's; dotted, functional (ADR-0039 §1). */
+const LINE_KIND: ArgumentSchema = {
+  type: 'string', enum: ['solid', 'dotted'],
+  description: 'solid: the holders of the target role manage these, in place of the nesting, and a right a host grants from managing '
+    + 'follows it. dotted: functional, shown and answered, and deciding nothing. Default solid.',
+}
+
+/** A slot's reporting line (ADR-0039 §2). */
+const REPORTS_TO: ArgumentSchema = {
+  type: 'object',
+  description: 'Where the holders of this role report, in every unit of the type: to the holders of roleId in the nearest unit above '
+    + 'that has it, else in the one unit of the organisation that has it. Leave it out for none: the nesting answers. A unit may '
+    + 'say otherwise for itself (reportingLine.set). A solid line that would close a loop is refused (reportingLine.loop).',
+  properties: {
+    roleId: { type: 'string', description: 'The role reported to, by id (roles.list).' },
+    kind: LINE_KIND,
+    from: { type: 'string', description: 'The first day of the line, yyyy-mm-dd.' },
+    until: { type: 'string', description: 'The last day of the line, yyyy-mm-dd.' },
+  },
+  required: ['roleId'],
+  additionalProperties: false,
+}
+
 /** What a unit type says beside its name (ADR-0036): the fields `unitType.add` and `unitType.update` share. */
 const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   purpose: { type: 'string', description: 'What a unit of this type is for, in the organisation\'s own words.' },
@@ -420,6 +443,7 @@ const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
         roleId: { type: 'string', description: 'The role, by id (roles.list).' },
         min: { type: 'integer', description: 'At least this many; 0 for a role it may have and need not.', minimum: 0 },
         max: { type: 'integer', description: 'At most this many; leave it out for no upper bound.', minimum: 0 },
+        reportsTo: REPORTS_TO,
       },
       required: ['roleId', 'min'],
       additionalProperties: false,
@@ -937,8 +961,9 @@ const SPECS = [
       + 'its unit and role by id and by name, its person by register id and by name — or by pseudonym where the organisation\'s '
       + 'policy gives agents pseudonyms, and never an address — its share in per cent, its days and whether the person is acting. '
       + 'Those running on the day unless all is asked. Asked about one unit, it also says the unit\'s slots against how many '
-      + 'hold each on the day, and who manages it: whoever holds a role that manages, in it or a unit above it. Core grants '
-      + 'nothing from that; it is said.',
+      + 'hold each on the day, and who manages it: whoever holds a role that manages, in it or a unit above it. Each assignment '
+      + 'says who manages its holder, each with via: line where a solid reporting line decides it (ADR-0039), nesting otherwise, '
+      + 'and the dotted lines apart. Core grants nothing from that; it is said.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2025,6 +2050,76 @@ const SPECS = [
       additionalProperties: false,
     },
   },
+  // --- reporting lines, on a unit (ADR-0039 §3, §8) -----------------------------------
+  {
+    name: 'reportingLine.set',
+    tier: 'write',
+    description:
+      'Say where the holders of a role in one unit report, as one step in the scope that keeps the unit — which must be the '
+      + 'scope open. With to, they report to the holders of to.roleId in the unit to.unitId; without it, the role reports by '
+      + 'nesting here, whatever the unit type says. It replaces the unit\'s own line of that role and kind, and its type\'s on '
+      + 'the days it runs. A line from a role to itself in the same unit is refused (reportingLine.self), and so is a solid one '
+      + 'that would close a loop on the day it is written or on its first day (reportingLine.loop, the chain in the detail). '
+      + 'reportingLines.list says each line and where it lands.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        unitId: { type: 'string', description: 'The unit: an actor with a unit type, kept in the scope open.' },
+        roleId: { type: 'string', description: 'The role whose holders report, by id (roles.list).' },
+        to: {
+          type: 'object',
+          description: 'Where they report: the unit and its role. Leave it out to say the role reports by nesting here.',
+          properties: {
+            unitId: { type: 'string', description: 'The unit reported to, anywhere in the organisation (assignments.list, elements.list).' },
+            roleId: { type: 'string', description: 'Its role reported to, by id (roles.list).' },
+          },
+          required: ['unitId', 'roleId'],
+          additionalProperties: false,
+        },
+        kind: LINE_KIND,
+        from: { type: 'string', description: 'The first day, yyyy-mm-dd. Leave it out for always.' },
+        until: { type: 'string', description: 'The last day, yyyy-mm-dd, where it is known.' },
+      },
+      required: ['unitId', 'roleId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'reportingLine.remove',
+    tier: 'write',
+    description:
+      'Take away a unit\'s own line for a role — of one kind, where kind is given, else both — so its unit type\'s applies again. '
+      + 'One step in the scope that keeps the unit, which must be the scope open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        unitId: { type: 'string', description: 'The unit.' },
+        roleId: { type: 'string', description: 'The role whose own line goes.' },
+        kind: { type: 'string', enum: ['solid', 'dotted'], description: 'Only the line of this kind.' },
+      },
+      required: ['unitId', 'roleId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'reportingLines.list',
+    tier: 'read',
+    description:
+      'The reporting lines on a day (ADR-0039), across the whole tree: for each role in each unit that has one, its kind (solid, '
+      + 'a line manager\'s; dotted, functional), whether it is said on the unit type or the unit\'s own, its days, and how it '
+      + 'stands — lands (on a role in a unit, named with the scope that keeps it), nesting (the unit says the role reports by '
+      + 'nesting here), dangling (no unit has the target role) or ambiguous (several do and none is above; the candidates '
+      + 'named). Then what the lines contradict: a loop (the chain, and the first day it is there), and a line that is '
+      + 'dangling, ambiguous or lands on a role nobody holds that day.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        unitId: { type: 'string', description: 'Only the lines from this unit.' },
+        on: { type: 'string', description: 'The day, yyyy-mm-dd. Default: today.' },
+      },
+      additionalProperties: false,
+    },
+  },
   {
     name: 'plan.replace',
     tier: 'write',
@@ -2733,7 +2828,9 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 }
 
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
-export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list']
+export const TREE_WIDE: readonly string[] = [
+  'scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list', 'reportingLines.list',
+]
 
 /**
  * About the organisation's people register rather than a scope (ADR-0036 §13):
@@ -2869,6 +2966,10 @@ export type AgentRefusal =
   /** A problem and a bright spot in one merge (ADR-0038 §6). */
   | 'merge.mixedTone'
   | 'merge.linkForbidden'
+  /** A unit's line from a role to the same role in the same unit (ADR-0039 §5). */
+  | 'reportingLine.self'
+  /** A solid line that would close a loop of managers, on the day it is written or its first day; the chain in the detail (ADR-0039 §5). */
+  | 'reportingLine.loop'
   /** No people register answers here: the host lent the agent none (ADR-0036 §13). */
   | 'agent.noRegister'
   /** `person.add` met somebody similar in the register, said in the detail (ADR-0036 §9). */
@@ -2921,6 +3022,11 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'merge.unverified': 'The survivor would be verified, and its body does not say why the team thinks so and how it was verified. Ask the person what confirmed it and write that into values.body in the same call.',
   'merge.mixedTone': 'A problem and a bright spot are not one thing seen twice, so they are never merged. The detail names the record of the other kind; leave it out of absorb.',
   'merge.linkForbidden': 'A link named in links may not move: the tree forbids it where the survivor lives, and the detail says why. Leave it out of links, or say move false; it stays on the absorbed record as history.',
+  'reportingLine.self': 'A role does not report to itself in the same unit. Name another role, or another unit.',
+  'reportingLine.loop':
+    'The solid line would close a loop: following who manages whom from it, along the lines and the nesting, comes back to '
+    + 'where it started — the chain, and the day, are in the detail. Ask the person which line in the chain is wrong; a dotted '
+    + 'line decides nothing and is never refused.',
   'agent.noRegister': 'This app lends no people register to an agent here.',
   'agent.possibleDuplicate':
     'The register holds somebody who may be this person; the detail lists them. Use their id, or call again with '

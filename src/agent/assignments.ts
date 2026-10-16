@@ -21,7 +21,7 @@ import { pickedPerson } from '../model/person'
 import type { HostModel } from '../model/hostModel'
 import type { Role, UnitType } from '../model/operatingModel'
 import { movesOfPlans } from '../model/transition'
-import { holdersOn, isUnit, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf } from '../model/units'
+import { dottedLinesOf, holdersOn, isUnit, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf } from '../model/units'
 import type { Assignment, Organisation } from '../model/units'
 import type { Person } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
@@ -39,14 +39,16 @@ export type OpenDocument = { path: string; current: HostModel; today: string }
 type Args = Record<string, unknown>
 
 /** The tree's assignments with the open scope's in place of what the index read of it. */
-export function assignmentsNow(tree: TreeView | undefined, open: OpenDocument | undefined): { scope: string; assignment: Assignment }[] {
+export function assignmentsNow(tree: Pick<TreeView, 'assignments'> | undefined, open: OpenDocument | undefined): { scope: string; assignment: Assignment }[] {
   const indexed = (tree?.assignments?.() ?? []).filter((one) => one.scope !== open?.path)
   if (!open) return indexed
   return [...indexed, ...(open.current.assignments ?? []).map((assignment) => ({ scope: open.path, assignment }))]
 }
 
 /** The organisation as the read has it: the tree's units and operating model, the open scope's laid over them. */
-export function organisationNow(tree: TreeView | undefined, open: OpenDocument | undefined, assignments: readonly Assignment[]): Organisation {
+export function organisationNow(
+  tree: Pick<TreeView, 'units' | 'operatingModel' | 'moves'> | undefined, open: OpenDocument | undefined, assignments: readonly Assignment[],
+): Organisation {
   const here = (open?.current.elements ?? []).filter((one) => one.ref === undefined && isUnit(one))
   const ids = new Set(here.map((one) => one.id))
   const units = [...(tree?.units?.() ?? []).filter((one) => !ids.has(one.unit.id) && one.scope !== open?.path).map((one) => one.unit), ...here]
@@ -87,13 +89,23 @@ export async function listAssignments(
   const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
   const named = (id: string) => personName(id, register?.people, register?.policy)
   const asked = typeof args.personId === 'string' ? canonical(args.personId) : undefined
+  // Who manages each holder, and why (ADR-0039 §4, §8): once per role in a unit, however many hold it.
+  const told = new Map<string, ReturnType<typeof managingOf>>()
+  const managing = (unitId: string, roleId: string) => {
+    const key = `${unitId}\u0000${roleId}`
+    if (!told.has(key)) told.set(key, managingOf(organisation, unitId, roleId, day, { roleName, unitName, named }))
+    return told.get(key)!
+  }
   const lines = held
     .filter(({ scope, assignment }) => (typeof args.scope !== 'string' || scope === args.scope)
       && (typeof args.unitId !== 'string' || assignment.unitId === args.unitId)
       && (typeof args.roleId !== 'string' || assignment.roleId === args.roleId)
       && (asked === undefined || canonical(personOf(assignment)) === asked)
       && (args.all === true || runsOn(assignment, day)))
-    .map(({ scope, assignment }) => line(scope, assignment, { unitName, roleName, named, day }))
+    .map(({ scope, assignment }) => ({
+      ...line(scope, assignment, { unitName, roleName, named, day }),
+      ...managing(assignment.unitId, assignment.roleId),
+    }))
   const unit = typeof args.unitId === 'string' ? organisation.units.find((one) => one.id === args.unitId) : undefined
   return json({
     day,
@@ -101,6 +113,23 @@ export async function listAssignments(
     assignments: lines.slice(0, typeof args.limit === 'number' ? args.limit : 500),
     ...(unit ? unitAnswer(unit, organisation, day, { roleName, unitName, named }) : {}),
   })
+}
+
+/** Who manages the holders of a role in a unit on the day, each with why, and the dotted lines apart. */
+function managingOf(organisation: Organisation, unitId: string, roleId: string, day: string, naming: Naming) {
+  const dotted = dottedLinesOf(organisation, unitId, day, roleId)
+  return {
+    managedBy: managersOf(organisation, unitId, day, roleId).map((one) => managerLine(one, naming)),
+    ...(dotted.length ? { dotted: dotted.flatMap((one) => (one.to ? [{ unitId: one.to.unitId, unit: naming.unitName(one.to.unitId), roleId: one.to.roleId, role: naming.roleName(one.to.roleId) }] : [])) } : {}),
+  }
+}
+
+function managerLine(one: ReturnType<typeof managersOf>[number], naming: Naming) {
+  const person = naming.named(one.person)
+  return {
+    personId: one.person, ...(person !== undefined ? { person } : {}),
+    roleId: one.roleId, role: naming.roleName(one.roleId), unitId: one.unitId, unit: naming.unitName(one.unitId), via: one.via,
+  }
 }
 
 type Naming = {
@@ -147,13 +176,7 @@ function unitAnswer(unit: Organisation['units'][number], organisation: Organisat
         held: holdersOn(organisation.assignments, unit.id, slot.role, day).length,
         ...(roles.get(slot.role)?.manages ? { manages: true } : {}),
       })),
-      managedBy: managersOf(organisation, unit.id, day).map((one) => {
-        const person = naming.named(one.person)
-        return {
-          personId: one.person, ...(person !== undefined ? { person } : {}),
-          roleId: one.roleId, role: naming.roleName(one.roleId), unitId: one.unitId, unit: naming.unitName(one.unitId),
-        }
-      }),
+      managedBy: managersOf(organisation, unit.id, day).map((one) => managerLine(one, naming)),
     },
   }
 }

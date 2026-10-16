@@ -66,6 +66,7 @@ import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused
 import { listChecks, listRegister, listScopes, listTechnology, notOpen, scopeAsked, withoutScope } from './tree'
 import { answerOperating, isOperatingRead } from './operatingModel'
 import { ASSIGNMENTS_LIST, listAssignments } from './assignments'
+import { listReportingLines, REPORTING_LINES_LIST } from './reportingLines'
 import type { Person } from '../people/person'
 import { agentRegister, answerWithNames, mayNamePeople } from './persons'
 import type { AgentRegister } from './persons'
@@ -466,6 +467,8 @@ function treeWide(
     case 'checks.list': return listChecks(tree, request.args)
     // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).
     case ASSIGNMENTS_LIST: return listAssignments(request.args, tree, openDocument(session), shell?.people)
+    // Where each role in each unit reports, and what the lines contradict (ADR-0039 §8).
+    case REPORTING_LINES_LIST: return listReportingLines(request.args, tree, openDocument(session))
     default: return isOperatingRead(request.tool) ? readOperating(request.tool, request.args, tree, session) : undefined
   }
 }

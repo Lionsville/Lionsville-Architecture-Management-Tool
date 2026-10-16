@@ -32,6 +32,7 @@ import {
 } from './plans'
 import { addRole, addUnitType, updateRole, updateUnitType } from './operatingModel'
 import { addAssignment, endAssignment } from './assignments'
+import { removeReportingLine, setReportingLine } from './reporting'
 import type { Handler } from './shared'
 import {
   addressSolution, concludeExperimentTool, decideSolution, dropSolutionTool, moveSolutionTool, planExperimentTool,
@@ -88,6 +89,8 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'role.update': updateRole,
   'assignment.add': addAssignment,
   'assignment.end': endAssignment,
+  'reportingLine.set': setReportingLine,
+  'reportingLine.remove': removeReportingLine,
 
   'cause.add': addCause,
   'cause.update': updateCauseTool,

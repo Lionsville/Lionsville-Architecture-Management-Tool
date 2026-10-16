@@ -17,10 +17,12 @@ import { isDay } from '../../model/lifecycle'
 import { operatingRulesOf, responsibilitiesOf, rolesOf, unitTypesOf } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { toArrays } from '../../model/normalised'
-import type { Dated, Duty, Raci, Role, RoleSlot, UnitType } from '../../model/operatingModel'
+import type { Dated, Duty, Raci, ReportsTo, Role, RoleSlot, UnitType } from '../../model/operatingModel'
+import { refuseSlotLine } from '../../model/reporting'
 import { roleLine, unitTypeLine } from '../operatingModel'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
+import { daysOf, kindOf, lineRefused, organisationOfView } from './reporting'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 
 /** The organisation's path: the one scope the operating model is written in. */
@@ -69,9 +71,37 @@ function slotsOf(given: unknown, model: Model): RoleSlot[] | AgentAnswer {
     const min = one.min as number
     const max = one.max as number | undefined | null
     if (typeof max === 'number' && max < min) return refused('agent.badArguments', `slots[${index}]: max ${max} is less than min ${min}`)
-    slots.push({ role, min, ...(typeof max === 'number' ? { max } : {}) })
+    const reportsTo = reportsToOf(one.reportsTo, roles, index)
+    if (reportsTo && 'ok' in reportsTo) return reportsTo
+    slots.push({ role, min, ...(typeof max === 'number' ? { max } : {}), ...(reportsTo ? { reportsTo } : {}) })
   }
   return slots
+}
+
+/** A slot's reporting line as given (ADR-0039 §2): a role the organisation holds, solid where no kind is said, its days in order. */
+function reportsToOf(given: unknown, roles: Readonly<Record<string, Role>>, index: number): ReportsTo | AgentAnswer | undefined {
+  if (!given || typeof given !== 'object') return undefined
+  const line = given as Record<string, unknown>
+  const role = line.roleId as string
+  if (!roles[role]) return refused('agent.unknownId', `slots[${index}].reportsTo: role ${role}`)
+  const days = daysOf(line)
+  if ('ok' in days) return days
+  return { role, kind: kindOf(line.kind), ...days }
+}
+
+/**
+ * Whether a unit type's slots as changed would close a loop of solid lines
+ * over the organisation, on the day written or a line's first day (ADR-0039
+ * §5): the refusal, or nothing.
+ */
+function slotLoop(view: WriteView, typeId: string, slots: readonly RoleSlot[] | undefined): AgentAnswer | undefined {
+  if (!slots?.some((slot) => slot.reportsTo?.kind === 'solid')) return undefined
+  const organisation = organisationOfView(view)
+  for (const slot of slots) {
+    const refusal = refuseSlotLine(organisation, typeId, slots, view.today(), slot.reportsTo)
+    if (refusal) return lineRefused(refusal, organisation)
+  }
+  return undefined
 }
 
 /** The unit types given as where a type may sit, every one held and none the type itself. */
@@ -209,6 +239,8 @@ export const updateUnitType: Handler = (args, view) => {
   if (name !== undefined && typeof name !== 'string') return name
   const patch = unitTypePatch(args, view.model, held.id)
   if ('ok' in patch) return patch
+  const loop = slotLoop(view, held.id, patch.slots)
+  if (loop) return loop
   const full = { ...patch, ...(name !== undefined ? { name } : {}) }
   const command: Command = { type: 'unitType.update', id: held.id, patch: full }
   const after = laid(held, full)

@@ -89,6 +89,14 @@ export function unitTypeLine(
     ...(type.spans ? { spans: true } : {}),
     slots: type.slots.map((slot) => ({
       roleId: slot.role, role: named(roles, slot.role).name, min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}),
+      // Where its holders report (ADR-0039 §2): landed on a unit by reportingLines.list.
+      ...(slot.reportsTo ? {
+        reportsTo: {
+          roleId: slot.reportsTo.role, role: named(roles, slot.reportsTo.role).name, kind: slot.reportsTo.kind,
+          ...(slot.reportsTo.from !== undefined ? { from: slot.reportsTo.from } : {}),
+          ...(slot.reportsTo.until !== undefined ? { until: slot.reportsTo.until } : {}),
+        },
+      } : {}),
     })),
     ...(type.limit !== undefined ? { limit: type.limit } : {}),
     ...datedLine(type, model.unitTypes ?? []),

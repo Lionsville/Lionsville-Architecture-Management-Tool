@@ -218,6 +218,8 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'role.update': [{ args: { id: 'ro-new-1', purpose: 'Helps the team.' }, on: [['role.add', { name: 'Coach' }]], at: '' }],
   'assignment.add': [{ args: { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke', share: 50 }, on: [SQUAD] }],
   'assignment.end': [{ args: { id: 'as-new-1', on: '2026-12-31' }, on: [SQUAD, ['assignment.add', { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke' }]] }],
+  'reportingLine.set': [{ args: { unitId: 'squad', roleId: 'ro-po' }, on: [SQUAD] }],
+  'reportingLine.remove': [{ args: { unitId: 'squad', roleId: 'ro-po' }, on: [SQUAD, ['reportingLine.set', { unitId: 'squad', roleId: 'ro-po' }]] }],
 
   'plan.replace': [{ args: { elementId: 'crm', newName: 'CRM next', shadowFrom: '2027-03-01', cutover: '2027-09-01' } }],
   'plan.port': [{ args: { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' } }],
