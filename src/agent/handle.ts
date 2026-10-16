@@ -44,6 +44,7 @@ import type { Translate } from '../i18n/strings'
 import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
 import { landAcross } from './merge'
+import { moveObservation } from './move'
 import { isUnitRemoval, unitRemoval } from './write/removeUnit'
 import type { ChangeAcross } from './merge'
 import type { MergeKind } from '../observations/merge'
@@ -360,11 +361,16 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
 
 /**
  * A write that lands over several scopes as one change, where the host
- * writes several: a merge across the tree (ADR-0035 §5), and a unit removed
- * with what other scopes keep of it (3.6.2). Nothing for any other write.
+ * writes several: a merge across the tree (ADR-0035 §5), a unit removed with
+ * what other scopes keep of it (3.6.2), and an observation moved (ADR-0038
+ * §4), which is refused here where the host cannot. Nothing for any other write.
  */
 function acrossScopes(tool: ToolName, args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
   if (tool === 'element.remove') return removeUnitAcross(args, session)
+  // Two scopes, always (ADR-0038 §4): landed by the host, or refused here where it cannot.
+  if (tool === 'observation.move') {
+    return Promise.resolve(moveObservation(withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross))
+  }
   return landAcross(MERGE_KIND[tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross)
 }
 

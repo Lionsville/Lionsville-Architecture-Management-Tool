@@ -58,9 +58,10 @@ import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
   absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isCauseMerged, isMerged, isRootCause,
-  mergedInto, observationsBelow,
+  mergedInto, movedTo, observationsBelow,
 } from '../observations/observation'
 import { planAnswer } from './merge'
+import { movePlanAnswer } from './move'
 import { ofTone, TONES } from '../observations/filter'
 import type { Tone } from '../observations/filter'
 import type { ObservationBelow } from '../observations/observation'
@@ -70,7 +71,7 @@ export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
   | 'platform.report' | 'service.report'
-  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read' | 'merge.plan'
+  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read' | 'merge.plan' | 'move.plan'
   | 'solutions.list' | 'solution.read' | 'experiments.list' | 'experiment.read' | 'comments.list'>
 
 /**
@@ -93,7 +94,7 @@ export type ReadView = {
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
   readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'
-    | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register'>>
+    | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register' | 'scopes'>>
   /**
    * The register as the agent is told it (ADR-0036 §8, §13): what a person
    * picked from it reads as — the name, or the pseudonym the policy gives —
@@ -259,6 +260,8 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
     case 'causes.list': return json({ causes: causeRows(args, model) })
 
     case 'merge.plan': return planAnswer(args, view)
+
+    case 'move.plan': return movePlanAnswer(args, view)
 
     case 'cause.read': {
       const causes = causeList(model)
@@ -737,6 +740,13 @@ function causeRows(args: Args, model: Model) {
  * writes where the record lives.
  */
 function wentTo(absorbing: { id: string } | undefined, history: Parameters<typeof mergedInto>[0]) {
+  // A tombstone a move left (ADR-0038 §1): where it lives now, and what it is called there.
+  const moved = movedTo(history)
+  if (moved) {
+    return {
+      movedTo: moved.scope, ...(moved.number !== undefined ? { movedToLabel: formatObservationNumber(moved.number) } : {}),
+    }
+  }
   const went = absorbing ?? mergedInto(history)
   if (!went) return {}
   return { mergedInto: went.id, ...('scope' in went && went.scope !== undefined ? { mergedIntoScope: went.scope } : {}) }

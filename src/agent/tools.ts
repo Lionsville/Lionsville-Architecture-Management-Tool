@@ -877,6 +877,26 @@ const SPECS = [
     },
   },
   {
+    name: 'move.plan',
+    tier: 'read',
+    description:
+      'What observation.move would do with these arguments, without doing it (ADR-0038): the number the '
+      + 'observation would have in the scope it goes to, whether it moves back over its own tombstone there, the '
+      + 'scopes it would write, how many comments go with it, and every link it would cut — each cause that '
+      + 'explains it, with the solutions on a root cause the link leads to — or, moving back, the links that '
+      + 'would explain it again; and the refusal it would meet, if any. A read: it changes nothing, and answers '
+      + 'for a scope that is not open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('observation'),
+        to: { type: 'string', description: 'The path of the scope it would go to: "" is the organisation (see scopes.list).' },
+      },
+      required: ['id', 'to'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'solutions.list',
     tier: 'read',
     description:
@@ -1618,6 +1638,32 @@ const SPECS = [
         fromScope: { type: 'string', description: 'With id, the old way to fold in an observation of a scope below, writing only this scope. Accepted for one beta; use absorb with its scope.' },
       },
       required: ['into'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'observation.move',
+    tier: 'write',
+    description:
+      'Move an observation of this scope to another scope it belongs in — above, below or beside (ADR-0038). '
+      + 'It is the same record under the same id, with the next number of the scope it goes to, and its title, '
+      + 'place, observer, impact, day, body, sightings, history and comments go with it; where it was keeps it '
+      + 'as a tombstone that says where it went, so a link to it still leads there. A cause explains '
+      + 'observations of its own scope only, so every link that explains it is cut: the link stays on its '
+      + 'cause as history, and the analysis starts again in the scope it goes to. move.plan says which links, '
+      + 'before anything is written: tell the person. Moving it back to a scope that holds its tombstone '
+      + 'brings that back under its old number, and the links cut there explain it again. An archived '
+      + 'observation is restored first; a merged one is not moved. It writes two scopes, one step on each, '
+      + 'all or none, where the host can write several scopes as one, and is refused agent.scopeNotOpen where '
+      + 'it cannot; undo does not take it back — moving it back does. Not solution.move, which moves a '
+      + 'solution\'s state. Answers its new label and the links cut.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('observation'),
+        to: { type: 'string', description: 'The path of the scope it goes to: "" is the organisation (see scopes.list).' },
+      },
+      required: ['id', 'to'],
       additionalProperties: false,
     },
   },
@@ -3038,6 +3084,17 @@ export type AgentRefusal =
   /** A problem and a bright spot in one merge (ADR-0038 §6). */
   | 'merge.mixedTone'
   | 'merge.linkForbidden'
+  /**
+   * An observation that may not move (ADR-0038 §1): to the scope it is in, one
+   * merged or moved already, one archived, or to a scope that is not there.
+   * A record that is not there is `agent.unknownId`, and a scope holding
+   * another record of its id `command.taken`.
+   */
+  | 'move.sameScope'
+  | 'move.merged'
+  | 'move.moved'
+  | 'move.archived'
+  | 'move.unknownScope'
   /** A unit's line from a role to the same role in the same unit (ADR-0039 §5). */
   | 'reportingLine.self'
   /** A solid line that would close a loop of managers, on the day it is written or its first day; the chain in the detail (ADR-0039 §5). */
@@ -3094,6 +3151,11 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'merge.unverified': 'The survivor would be verified, and its body does not say why the team thinks so and how it was verified. Ask the person what confirmed it and write that into values.body in the same call.',
   'merge.mixedTone': 'A problem and a bright spot are not one thing seen twice, so they are never merged. The detail names the record of the other kind; leave it out of absorb.',
   'merge.linkForbidden': 'A link named in links may not move: the tree forbids it where the survivor lives, and the detail says why. Leave it out of links, or say move false; it stays on the absorbed record as history.',
+  'move.sameScope': 'The observation is in that scope already. Name another scope in to.',
+  'move.merged': 'The observation was merged into another and is history. Move the one it was merged into instead.',
+  'move.moved': 'The observation was moved to another scope already, and what is left here is its tombstone. Move it from where it is now: observation.read says where.',
+  'move.archived': 'The observation is archived, and an archived observation is out of the analysis. Restore it first (observation.archive with restore), then move it.',
+  'move.unknownScope': 'No scope in the organisation has that path, or it cannot be read here. scopes.list says which there are.',
   'reportingLine.self': 'A role does not report to itself in the same unit. Name another role, or another unit.',
   'reportingLine.loop':
     'The solid line would close a loop: following who manages whom from it, along the lines and the nesting, comes back to '

@@ -50,6 +50,9 @@ import {
  */
 export const ANSWERED_BY_SESSION = [
   'image.upload', 'batch', 'undo', 'project.save',
+  // Two scopes, always (ADR-0038 §4): the handler lands it through a host that writes several as one,
+  // never as one command here, and no batch holds it.
+  'observation.move',
   'diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus',
   'person.add', 'person.leave',
 ] as const satisfies readonly ToolOfTier<'write' | 'see'>[]

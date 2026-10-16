@@ -326,7 +326,7 @@ export function isMerged(list: readonly Observation[], id: string): boolean {
  * `moved` and `movedIn` says which it is, so a tombstone brought back to life
  * is a record again.
  */
-export function movedTo(history: readonly ObservationEvent[] | undefined):
+export function movedTo(history: readonly { kind: string; id?: string; scope?: string; number?: number; date: string }[] | undefined):
   { id: string; scope: string; number?: number; date: string } | undefined {
   const last = [...(history ?? [])].reverse().find((one) => one.kind === 'moved' || one.kind === 'movedIn')
   if (last?.kind !== 'moved' || last.scope === undefined) return undefined
