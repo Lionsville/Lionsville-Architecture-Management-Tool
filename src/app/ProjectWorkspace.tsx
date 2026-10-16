@@ -55,6 +55,7 @@ import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import { CommentsProvider } from '../comments/ui/CommentsContext'
 import type { CommentsAccess } from '../comments/ui/CommentsContext'
+import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 import { flattenScopes } from '../projects/scope'
 import { onlyPeopleIn } from '../model/managing'
@@ -126,23 +127,29 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
 /**
  * The open scope's comments for every thread under the workspace (ADR-0037):
  * read from the session, each step dispatched to it. A person comments where
- * the scope may be written, and removes anybody's comment there — on the
- * desktop, whoever keeps the work is its administrator (ADR-0036 §10).
+ * the scope may be written, or where the source lets a reader comment
+ * (`ProviderParts.comments`), and removes anybody's comment where they may
+ * write it unless the source says otherwise — on the desktop, whoever keeps
+ * the work is its administrator (ADR-0036 §10).
  */
 function ScopeComments({ parts, children }: { parts: WorkspaceParts; children: ReactNode }) {
   const { session, readOnly, props } = parts
   const { makeId } = props.shell
   const { dispatch } = session
   const comments = session.model.comments
+  const path = props.project.path
+  const said = props.source.comments
+  const mayComment = !readOnly || (parts.unreadable.length === 0 && said?.mayComment?.(path) === true)
+  const mayModerate = mayComment && (said?.mayModerate?.(path) ?? !readOnly)
   const value = useMemo<CommentsAccess>(() => ({
-    scope: props.project.path,
+    scope: path,
     comments: comments ?? [],
     dispatch: (command) => dispatch(command) !== undefined,
-    mayComment: !readOnly,
-    mayModerate: !readOnly,
+    mayComment,
+    mayModerate,
     makeId: () => makeId('cm'),
     now: () => new Date().toISOString(),
-  }), [props.project.path, comments, dispatch, readOnly, makeId])
+  }), [path, comments, dispatch, mayComment, mayModerate, makeId])
   return <CommentsProvider value={value}>{children}</CommentsProvider>
 }
 
@@ -150,6 +157,21 @@ function localToday(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+/** Whether a step is comments and nothing else (ADR-0037 §5): what a person who may only read may still send, where the source says. */
+function onlyComments(command: Command): boolean {
+  return command.type === 'transaction' ? command.commands.every(onlyComments) : command.type.startsWith('comment.')
+}
+
+/** The comment steps the session lets through a scope this person may only read, as the source says; read per ask. */
+function useCommentsThrough(said: SourceComments | undefined, path: string, whole: boolean): (command: Command) => boolean {
+  const ref = useRef({ said, path, whole })
+  ref.current = { said, path, whole }
+  return useCallback((command: Command) => {
+    const now = ref.current
+    return now.whole && now.said?.mayComment?.(now.path) === true && onlyComments(command)
+  }, [])
 }
 
 /** A tree nobody said changes: a test, and a shell with nothing to read again. */
@@ -207,6 +229,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   // Whose people this person may change by a managing role (ADR-0036 §12), read per ask.
   const peopleRef = useRef(shell.people)
   peopleRef.current = shell.people
+  const commentsThrough = useCommentsThrough(source.comments, project.path, unreadable.length === 0)
   const session = useModelSession({
     initialProject: project,
     notify,
@@ -223,8 +246,9 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     // that right: those steps go through, and the source's door decides them.
     letThrough: useCallback((command: Command, model: Model) => {
       const manages = peopleRef.current?.manages
-      return manages !== undefined && onlyPeopleIn(model, [command], manages, manages.managing)
-    }, []),
+      // And comments, where the source lets a person who only reads comment (ADR-0037 §5).
+      return (manages !== undefined && onlyPeopleIn(model, [command], manages, manages.managing)) || commentsThrough(command)
+    }, [commentsThrough]),
     // What is done here is written as the steps it was, where nothing else
     // carries them (`Shell.publishesSteps`).
     journaling: !readOnly && !(source.publishesSteps ?? false),

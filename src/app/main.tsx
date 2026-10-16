@@ -515,6 +515,7 @@ function renderApp(
           shareAddress: shell.shareAddress,
           drawingOrigin: shell.drawingOrigin,
           people: shell.people,
+          comments: shell.comments,
           sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,

@@ -135,6 +135,8 @@ describe.each(ways)('on %s', (_name, way) => {
     act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
     const name = await screen.findByLabelText('Name')
     expect((name as HTMLInputElement).readOnly || (name as HTMLInputElement).disabled).toBe(true)
+    // Nor a comment: nobody here said a reader may comment (ADR-0037 §5).
+    expect(screen.queryByTestId('comment-new')).toBeNull()
   })
 
   /** A laid-out view in the tab (ADR-0016) is handed the editor's own flag. */
@@ -179,5 +181,26 @@ describe('a scope its source does not say is only read', () => {
     })
     expect(await screen.findByLabelText('Element palette')).toBeDefined()
     expect(screen.queryByText('Read-only')).toBeNull()
+  })
+})
+
+describe('a scope only read, where its source lets a reader comment (ADR-0037 §5)', () => {
+  it('offers the element’s thread to write in, and nothing else to change', async () => {
+    renderApp({
+      boot: { initialProject: scope() }, source: writableElsewhere,
+      provider: { ...readHere, comments: { mayComment: (path: string) => path === 'acme/landscape' } },
+    })
+    const target = await screen.findByText('ACTORS')
+    act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
+    const name = await screen.findByLabelText('Name')
+    expect((name as HTMLInputElement).readOnly || (name as HTMLInputElement).disabled).toBe(true)
+    expect(await screen.findByTestId('comment-new')).toBeDefined()
+    // Written as somebody the register holds, asked once: the step goes through the session that refuses every other.
+    fireEvent.change(screen.getByTestId('comment-new'), { target: { value: 'Who runs billing?' } })
+    fireEvent.click(screen.getByTestId('comment-new-send'))
+    fireEvent.click(await screen.findByTestId('person-picker-new'))
+    fireEvent.change(await screen.findByTestId('people-add-name'), { target: { value: 'Ada Reader' } })
+    fireEvent.click(screen.getByTestId('people-add-save'))
+    expect((await screen.findByTestId('comment-count')).textContent).toBe('Comments (1)')
   })
 })

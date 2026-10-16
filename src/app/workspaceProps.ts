@@ -30,6 +30,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { HostControls } from '../ports/HostControls'
 import type { HistoryRepository } from '../ports/HistoryRepository'
 import type { Repositories } from '../ports/Repositories'
+import type { SourceComments } from '../ports/ProviderParts'
 import type { CrashTrail } from './ErrorBoundary'
 import type { InitialPage } from './App'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -108,6 +109,8 @@ export type WorkspaceSource = {
    * any (ADR-0035 §2). Absent, every scope is as writable as this one.
    */
   writable?: (path: ScopePath) => boolean
+  /** Who may comment here beyond who may write, and remove others' comments (`ProviderParts.comments`, ADR-0037 §5). */
+  comments?: SourceComments
   /**
    * The source's own log of a scope, everybody's steps and not only this
    * window's (`platform/sourceProvider.ts`'s `SourceRecentActivity`). Absent for

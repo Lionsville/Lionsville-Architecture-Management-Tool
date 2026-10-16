@@ -118,8 +118,27 @@ export type ProviderParts<Own = unknown> = {
    * me* with the install.
    */
   people?: SourcePeople
+  /**
+   * Who may comment, and whose comments they may remove (ADR-0037 §5), where
+   * the source has accounts that say more than whether a scope is written.
+   * Absent for all three core sources: a person comments wherever they may
+   * write, and may remove any comment there.
+   */
+  comments?: SourceComments
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
+}
+
+/**
+ * What a source with accounts says about comments (ADR-0037 §5), beside
+ * `readOnlyAt`: the doors decide every step, and the screens offer what this
+ * says. Each answer is for the person using the app, about one scope.
+ */
+export type SourceComments = {
+  /** Whether this person may comment on a scope they may only read. Absent, nobody comments on what they only read. */
+  readonly mayComment?: (scope: ScopePath) => boolean
+  /** Whether this person may remove other people's comments in a scope. Absent, whoever may write the scope may. */
+  readonly mayModerate?: (scope: ScopePath) => boolean
 }
 
 /**

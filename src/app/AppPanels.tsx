@@ -135,6 +135,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         barButton: barButtonFor(parts, 'workspace'),
         publishesSteps: props.provider?.publishesSteps ?? false,
         writable: writableFor(parts),
+        comments: props.provider?.comments,
         recentActivity: props.provider?.recentActivity,
         unreadableKey: props.provider?.sayings?.unreadableKey,
         onResult: reportKept,
