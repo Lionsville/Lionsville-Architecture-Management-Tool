@@ -112,7 +112,7 @@ export function StatusField({ plan, model, decisions, today, readOnly, describe,
   return (
     <>
       <TextField
-        size="small" select label={t('roadmap.status')} value={plan.status} disabled={readOnly}
+        select label={t('roadmap.status')} value={plan.status} disabled={readOnly}
         slotProps={{ htmlInput: { 'aria-label': t('roadmap.status') } }}
         onChange={(e) => set(statusPatch(plan, e.target.value as TransitionStatus, today))}
       >
@@ -173,13 +173,13 @@ export function WindowFields({ plan, readOnly, set }: {
   return (
     <Box sx={{ display: 'flex', gap: 1 }}>
       <TextField
-        type="date" size="small" fullWidth label={t('roadmap.planFrom')}
+        type="date" fullWidth label={t('roadmap.planFrom')}
         value={plan.from ?? ''} disabled={readOnly}
         slotProps={{ inputLabel: { shrink: true } }}
         onChange={(e) => setWindow({ from: e.target.value || undefined })}
       />
       <TextField
-        type="date" size="small" fullWidth label={t('roadmap.planTo')}
+        type="date" fullWidth label={t('roadmap.planTo')}
         value={plan.to ?? ''} disabled={readOnly}
         error={wrong}
         helperText={wrong ? t('plan.windowBackwards') : undefined}
@@ -222,7 +222,7 @@ export function AddElement({ plan, model, onAdd }: {
   return (
     <Box data-testid="plan-add-element" data-guide="plan.addElement" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       <TextField
-        select size="small" label={t('plan.addElement')} value={adding.elementId} sx={{ flex: 1 }}
+        select label={t('plan.addElement')} value={adding.elementId} sx={{ flex: 1 }}
         slotProps={{ htmlInput: { 'aria-label': t('plan.addElement') } }}
         onChange={(e) => setAdding((a) => ({ ...a, elementId: e.target.value }))}
       >
@@ -232,7 +232,7 @@ export function AddElement({ plan, model, onAdd }: {
         ])}
       </TextField>
       <TextField
-        select size="small" value={adding.role} sx={{ width: 130 }}
+        select value={adding.role} sx={{ width: 130 }}
         slotProps={namedSelect(t('plan.role'))}
         onChange={(e) => chooseRole(e.target.value as TransitionRole)}
       >

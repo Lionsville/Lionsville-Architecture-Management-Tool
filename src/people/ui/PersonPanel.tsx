@@ -57,12 +57,12 @@ export type PeopleLook = { day?: string; onDay: (day: string | undefined) => voi
 function StateLine({ person, policy, today, held, s }: {
   person: Person; policy: PeoplePolicy; today: string; held: PolicyHold | undefined; s: Translate
 }) {
-  if (person.state === 'active') return <Chip size="small" color="success" variant="outlined" label={s('people.stateActive')} />
+  if (person.state === 'active') return <Chip color="success" variant="outlined" label={s('people.stateActive')} />
   if (person.state === 'left') {
     const forget = forgetDay(person, policy) ?? ''
     return (
       <>
-        <Chip size="small" color="warning" variant="outlined" label={s('people.stateLeft', { day: person.leftOn ?? '' })} />
+        <Chip color="warning" variant="outlined" label={s('people.stateLeft', { day: person.leftOn ?? '' })} />
         <Typography sx={{ fontSize: 12, mt: 0.75 }}>{s('people.leftOn', { day: person.leftOn ?? '', forget })}</Typography>
         {held === 'signedInSinceLeaving'
           ? <Typography sx={{ fontSize: 12, fontWeight: 600 }} data-testid="people-held-back">{s('people.heldSignedIn')}</Typography>
@@ -72,7 +72,7 @@ function StateLine({ person, policy, today, held, s }: {
   }
   return (
     <>
-      <Chip size="small" variant="outlined" label={s('people.stateForgotten', { day: person.forgottenOn ?? '' })} />
+      <Chip variant="outlined" label={s('people.stateForgotten', { day: person.forgottenOn ?? '' })} />
       <Typography sx={{ fontSize: 12, mt: 0.75 }}>
         {s('people.forgottenOn', { day: person.forgottenOn ?? '', remove: removeDay(person, policy) ?? '' })}
       </Typography>
@@ -101,9 +101,9 @@ function Correcting({ person, register, saying, onDone, s }: {
   }
   return (
     <Box sx={{ display: 'grid', gap: 1, mt: 1 }}>
-      <TextField size="small" label={s('people.name')} value={name} onChange={(event) => setName(event.target.value)} />
-      <TextField size="small" label={s('people.email')} value={email} onChange={(event) => setEmail(event.target.value)} />
-      <TextField size="small" select label={s('people.kind')} value={kind} onChange={(event) => setKind(event.target.value as PersonKind)}>
+      <TextField label={s('people.name')} value={name} onChange={(event) => setName(event.target.value)} />
+      <TextField label={s('people.email')} value={email} onChange={(event) => setEmail(event.target.value)} />
+      <TextField select label={s('people.kind')} value={kind} onChange={(event) => setKind(event.target.value as PersonKind)}>
         {PERSON_KINDS.map((one) => <MenuItem key={one} value={one}>{s(KIND_LABEL[one])}</MenuItem>)}
       </TextField>
       {similar.length > 0 && (
@@ -265,13 +265,13 @@ function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omi
     <Box sx={{ display: 'grid', gap: 1 }}>
       {can.leave && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField size="small" type="date" label={s('people.lastDay')} value={lastDay} onChange={(event) => setLastDay(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+          <TextField type="date" label={s('people.lastDay')} value={lastDay} onChange={(event) => setLastDay(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
           <Button size="small" variant="outlined" onClick={leave} data-testid="people-leave">{s('people.markLeft')}</Button>
         </Box>
       )}
       {can.merge && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField size="small" select label={s('people.mergeKeep')} value={into} onChange={(event) => setInto(event.target.value)} sx={{ minWidth: 180 }}>
+          <TextField select label={s('people.mergeKeep')} value={into} onChange={(event) => setInto(event.target.value)} sx={{ minWidth: 180 }}>
             {others.map((one) => <MenuItem key={one.id} value={one.id}>{named(one)}</MenuItem>)}
           </TextField>
           <Button size="small" variant="outlined" disabled={!target} onClick={() => { if (target) onMerge(person, target) }} data-testid="people-merge-with">
@@ -322,7 +322,7 @@ function Holds({ held, today, look, s }: { held: readonly HeldAssignment[]; toda
     <>
       {look && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-          <TextField size="small" type="date" label={s('people.lookAt')} value={day} sx={{ width: 170 }}
+          <TextField type="date" label={s('people.lookAt')} value={day} sx={{ width: 170 }}
             onChange={(event) => look.onDay(event.target.value && event.target.value !== today ? event.target.value : undefined)}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'people-look' } }} />
           {day !== today && <Button size="small" onClick={() => look.onDay(undefined)} data-testid="people-look-today">{s('people.lookToday')}</Button>}

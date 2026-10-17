@@ -41,6 +41,9 @@ import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
+import { CompactForms, Term, Value } from '../../widgets/CompactForms'
+
+export { Term, Value }
 import {
   causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
 } from '../observation'
@@ -117,6 +120,11 @@ export const READER_ROOT_SX = {
   display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%',
   containerType: 'inline-size', containerName: 'reader',
 } as const
+
+/** The reader's outermost box, and the panel's treatment for its fields (`CompactForms`). */
+export function ReaderRoot({ testId, children }: { testId: string; children: ReactNode }) {
+  return <Box data-testid={testId} sx={READER_ROOT_SX}><CompactForms>{children}</CompactForms></Box>
+}
 
 /** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
 export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: '1.5rem' } } as const
@@ -198,13 +206,6 @@ export function useDraft<T extends { title: string; body: string }>(
   return { mode, draft, setDraft, commit, switchMode }
 }
 
-export function Term({ children }: { children: ReactNode }) {
-  return <Box component="dt" sx={{ color: 'text.secondary', fontWeight: 500 }}>{children}</Box>
-}
-
-export function Value({ children, testId }: { children: ReactNode; testId?: string }) {
-  return <Box component="dd" sx={{ m: 0 }} data-testid={testId}>{children}</Box>
-}
 
 export function LinkList({ links, onOpen }: {
   links: readonly { key: string; label: string; note?: string; onRemove?: () => void; removeLabel?: string }[]
@@ -372,14 +373,14 @@ export function ObservationReader(props: ObservationReaderProps) {
   const actions = observationBar(props, mode, switchMode)
 
   return (
-    <Box data-testid="observation-reader" sx={READER_ROOT_SX}>
+    <ReaderRoot testId="observation-reader">
       <Box sx={BAR_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
+          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
           <BrightChip bright={observation.bright} s={s} />
-          <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
-          {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
+          <Chip variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
+          {archived && <Chip variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
           <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
         </Box>
         <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
@@ -465,13 +466,13 @@ export function ObservationReader(props: ObservationReaderProps) {
           </DocumentSheet>
         )}
       </Box>
-    </Box>
+    </ReaderRoot>
   )
 }
 
 /** A bright spot's chip in the success colour (ADR-0038 §6); nothing on a problem. */
 function BrightChip({ bright, s }: { bright: true | undefined; s: Translate }) {
-  return bright ? <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} data-testid="observation-bright" /> : null
+  return bright ? <Chip color="success" variant="outlined" label={s(BRIGHT_LABEL)} data-testid="observation-bright" /> : null
 }
 
 /** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
@@ -674,12 +675,12 @@ export function CauseReader(props: CauseReaderProps) {
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
   const actions = causeBar(props, mode, switchMode, setPanel)
   return (
-    <Box data-testid="cause-reader" sx={READER_ROOT_SX}>
+    <ReaderRoot testId="cause-reader">
       <Box sx={BAR_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          {root && <Chip size="small" color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
-          <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
+          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          {root && <Chip color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
+          <Chip color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
         </Box>
         <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
@@ -737,7 +738,7 @@ export function CauseReader(props: CauseReaderProps) {
           </DocumentSheet>
         )}
       </Box>
-    </Box>
+    </ReaderRoot>
   )
 }
 

@@ -52,7 +52,8 @@ import type { CauseStrength } from '../observation'
 import {
   GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
-import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
+import { BAR_SX, LinkList, ReaderRoot, TITLE_SX, Term, Value, useDraft } from './Readers'
+import { SectionHeading } from '../../widgets/CompactForms'
 import { BarActions, ReaderActions } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
 import { TitleField } from './FormParts'
@@ -64,10 +65,11 @@ import { PersonRefField } from '../../people/ui/PersonRefField'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { solutionKey } from '../solutionGraph'
 
+/** A section of the reader, under the same heading every panel's sections wear. */
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (
     <Box sx={{ mt: 3 }} data-testid={testId}>
-      <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{title}</Typography>
+      <SectionHeading sx={{ mb: 0.5 }}>{title}</SectionHeading>
       {children}
     </Box>
   )
@@ -83,7 +85,6 @@ function AnswerField(props: { label: string; value: string; onSave: (value: stri
   useEffect(() => setDraft(props.value), [props.value])
   return (
     <TextField
-      size="small"
       fullWidth
       multiline={props.multiline}
       label={props.label}
@@ -200,7 +201,7 @@ export function SolutionReader(props: SolutionReaderProps) {
   const sizePicker = (field: 'benefit' | 'cost', value: SolutionSize | undefined) => (
     canEdit ? (
       <ToggleButtonGroup
-        exclusive size="small" value={value ?? null}
+        exclusive value={value ?? null}
         onChange={(_e, next: SolutionSize | null) => props.onUpdate({ [field]: next ?? undefined })}
         aria-label={s(field === 'benefit' ? 'solution.benefitField' : 'solution.costField')}
         data-testid={`solution-${field}`}
@@ -211,11 +212,11 @@ export function SolutionReader(props: SolutionReaderProps) {
   )
 
   return (
-    <Box data-testid="solution-reader" sx={READER_ROOT_SX}>
+    <ReaderRoot testId="solution-reader">
       <Box sx={BAR_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
+          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
         </Box>
         <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
@@ -286,12 +287,12 @@ export function SolutionReader(props: SolutionReaderProps) {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
                   {solution.validatedWith.length === 0 && !canEdit && <Muted>—</Muted>}
                   {solution.validatedWith.map((one) => (
-                    <Chip key={one} size="small" label={one} {...(canEdit ? { onDelete: () => props.onUpdate({ validatedWith: solution.validatedWith.filter((held) => held !== one) }) } : {})} />
+                    <Chip key={one} label={one} {...(canEdit ? { onDelete: () => props.onUpdate({ validatedWith: solution.validatedWith.filter((held) => held !== one) }) } : {})} />
                   ))}
                   {canEdit && (
                     <>
                       <TextField
-                        size="small" placeholder={s('solution.validatedField')} value={name}
+                        placeholder={s('solution.validatedField')} value={name}
                         onChange={(event) => setName(event.target.value)}
                         onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addName() } }}
                         slotProps={{ htmlInput: { 'aria-label': s('solution.validatedWith'), 'data-testid': 'solution-validated-field' } }}
@@ -306,7 +307,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               <Value testId="solution-attempts">
                 {solution.attempts.length === 0 && (
                   canEdit
-                    ? <FormControlLabel control={<Checkbox size="small" checked={solution.noneKnown === true} onChange={(event) => props.onUpdate({ noneKnown: event.target.checked })} data-testid="solution-none-known" />} label={<Typography sx={{ fontSize: 13 }}>{s('solution.noneKnown')}</Typography>} />
+                    ? <FormControlLabel control={<Checkbox checked={solution.noneKnown === true} onChange={(event) => props.onUpdate({ noneKnown: event.target.checked })} data-testid="solution-none-known" />} label={<Typography sx={{ fontSize: 13 }}>{s('solution.noneKnown')}</Typography>} />
                     : <Muted>{solution.noneKnown ? s('solution.noneKnown') : s('solution.notAnswered')}</Muted>
                 )}
                 <Box component="ul" sx={{ m: 0, pl: 2 }}>
@@ -323,9 +324,9 @@ export function SolutionReader(props: SolutionReaderProps) {
                   <Term>{null}</Term>
                   <Value>
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 0.5, alignItems: 'center' }}>
-                      <TextField size="small" placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
-                      <TextField size="small" placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
-                      <TextField size="small" placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
+                      <TextField placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
+                      <TextField placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
+                      <TextField placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
                       <Button sx={{ textTransform: 'none' }} size="small" onClick={addAttempt} data-testid="solution-attempt-add">{s('solution.attemptAdd')}</Button>
                     </Box>
                   </Value>
@@ -428,7 +429,7 @@ export function SolutionReader(props: SolutionReaderProps) {
             <CommentThread about={{ kind: 'solution', id: solution.id }} nameOf={(from) => props.nameOf(from.id)} openFrom={(from) => () => props.onOpen(solutionKey(from.id))} /></DocumentSheet>
         )}
       </Box>
-    </Box>
+    </ReaderRoot>
   )
 }
 
@@ -478,7 +479,7 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       </Box>
       {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <TextField size="small" fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
+          <TextField fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
           <Button sx={{ textTransform: 'none' }} size="small" disabled={!waiver.trim()} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
         </Box>
       )}
@@ -561,7 +562,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
   type Field = 'hypothesis' | 'measure' | 'where' | 'from' | 'to' | 'result'
   const field = (key: Field, label: string, extra: { type?: string; wide?: boolean } = {}) => (
     <TextField
-      size="small" label={label} value={draft[key]} type={extra.type}
+      label={label} value={draft[key]} type={extra.type}
       onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))} onBlur={commit}
       multiline={extra.wide} sx={extra.wide ? { gridColumn: '1 / -1' } : undefined}
       slotProps={extra.type === 'date' ? { inputLabel: { shrink: true } } : undefined}
@@ -573,11 +574,11 @@ export function ExperimentReader(props: ExperimentReaderProps) {
   const shownDay = (value: string | undefined) => (value ? formatDay(value, language) : <Muted>—</Muted>)
 
   return (
-    <Box data-testid="experiment-reader" sx={READER_ROOT_SX}>
+    <ReaderRoot testId="experiment-reader">
       <Box sx={BAR_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
+          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
         </Box>
         {(canEdit || props.onCopyLink) && (
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -646,6 +647,6 @@ export function ExperimentReader(props: ExperimentReaderProps) {
           </DocumentSheet>
         )}
       </Box>
-    </Box>
+    </ReaderRoot>
   )
 }

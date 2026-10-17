@@ -52,6 +52,7 @@ import type { PersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { CompactForms } from '../../widgets/CompactForms'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
@@ -170,6 +171,7 @@ export function AdrReader(props: AdrReaderProps) {
 
   return (
     <Box data-testid="adr-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+      <CompactForms>
       <ReaderBar
         adr={adr} list={list} readOnly={readOnly} canEdit={canEdit} mode={mode} s={s} day={day}
         onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onCopyLink={copyLinkOf(props)} onMode={switchMode}
@@ -182,7 +184,6 @@ export function AdrReader(props: AdrReaderProps) {
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
               <TextField
-                size="small"
                 fullWidth
                 label={s('adr.titleField')}
                 value={draft.title}
@@ -227,6 +228,7 @@ export function AdrReader(props: AdrReaderProps) {
           </DocumentSheet>
         )}
       </Box>
+      </CompactForms>
     </Box>
   )
 }
@@ -297,7 +299,7 @@ function SignersTable({ signers, editable, today, names, s, day, onChange }: Sig
                 </TableCell>
                 <TableCell>
                   {editable
-                    ? <TextField variant="standard" size="small" value={signer.role ?? ''} aria-label={s('adr.signerRole')} onChange={(e) => edit(index, { role: e.target.value || undefined })} fullWidth />
+                    ? <TextField variant="standard" value={signer.role ?? ''} aria-label={s('adr.signerRole')} onChange={(e) => edit(index, { role: e.target.value || undefined })} fullWidth />
                     : (signer.role ?? '')}
                 </TableCell>
                 <TableCell>
@@ -305,7 +307,6 @@ function SignersTable({ signers, editable, today, names, s, day, onChange }: Sig
                     <TextField
                       select
                       variant="standard"
-                      size="small"
                       value={signer.verdict ?? 'pending'}
                       slotProps={{ select: { 'aria-label': s('adr.signerVerdict') } as Record<string, unknown> }}
                       onChange={(e) => setVerdict(index, e.target.value as AdrVerdict | 'pending')}

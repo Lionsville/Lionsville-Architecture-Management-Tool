@@ -132,28 +132,28 @@ function UnitTypeFields({ type, model, readOnly, dispatch, taking }: {
   const others = model.unitTypes.filter((one) => one.id !== type.id)
   return (
     <Box>
-      <TextField fullWidth size="small" margin="dense" label={t('operating.name')} value={type.name} disabled={readOnly}
+      <TextField fullWidth margin="dense" label={t('operating.name')} value={type.name} disabled={readOnly}
         onChange={(event) => dispatch(editUnitType(type.id, 'name', event.target.value))} />
-      <TextField fullWidth size="small" margin="dense" multiline minRows={2} label={t('operating.purpose')} value={type.purpose ?? ''} disabled={readOnly}
+      <TextField fullWidth margin="dense" multiline minRows={2} label={t('operating.purpose')} value={type.purpose ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editUnitType(type.id, 'purpose', event.target.value))} />
       <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.whereItSits')}</SectionHeading>
       <FormControlLabel
-        control={<Checkbox size="small" checked={type.top === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'top', on))} />}
+        control={<Checkbox checked={type.top === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'top', on))} />}
         label={t('operating.top')}
       />
       {others.map((other) => (
         <FormControlLabel key={other.id} sx={{ display: 'flex' }}
-          control={<Checkbox size="small" checked={type.within.includes(other.id)} disabled={readOnly} onChange={(_event, on) => dispatch(setWithin(type, other.id, on))} />}
+          control={<Checkbox checked={type.within.includes(other.id)} disabled={readOnly} onChange={(_event, on) => dispatch(setWithin(type, other.id, on))} />}
           label={other.name}
         />
       ))}
       <FormControlLabel
-        control={<Checkbox size="small" checked={type.spans === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'spans', on))} />}
+        control={<Checkbox checked={type.spans === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'spans', on))} />}
         label={t('operating.spans')}
       />
       <TypePlace type={type} model={model} readOnly={readOnly} dispatch={dispatch} />
       <Slots type={type} model={model} readOnly={readOnly} dispatch={dispatch} taking={taking} />
-      <TextField size="small" margin="dense" type="number" label={t('operating.limit')} value={type.limit ?? ''} disabled={readOnly}
+      <TextField margin="dense" type="number" label={t('operating.limit')} value={type.limit ?? ''} disabled={readOnly}
         helperText={t('operating.limitHint')} slotProps={{ htmlInput: { min: 0 } }} sx={{ mt: 2 }} fullWidth
         onChange={(event) => dispatch(setLimit(type, event.target.value === '' ? undefined : Number(event.target.value)))} />
     </Box>
@@ -186,10 +186,10 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
           <Box key={`${slot.role}-${index}`} data-testid="operating-slot">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, my: 0.5 }}>
             <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>{name}</Typography>
-            <TextField size="small" type="number" value={slot.min} disabled={readOnly} sx={{ width: 68 }}
+            <TextField type="number" value={slot.min} disabled={readOnly} sx={{ width: 68 }}
               slotProps={{ htmlInput: { min: 0, 'aria-label': `${name}: ${t('operating.slotMin')}` } }}
               onChange={(event) => dispatch(setSlot(type, index, { min: number(event.target.value) ?? 0 }))} />
-            <TextField size="small" type="number" value={slot.max ?? ''} placeholder="∞" disabled={readOnly} sx={{ width: 68 }}
+            <TextField type="number" value={slot.max ?? ''} placeholder="∞" disabled={readOnly} sx={{ width: 68 }}
               slotProps={{ htmlInput: { min: 0, 'aria-label': `${name}: ${t('operating.slotMax')}` } }}
               onChange={(event) => dispatch(setSlot(type, index, { max: number(event.target.value) }))} />
             {!readOnly && (
@@ -205,7 +205,7 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
       {taking.slotAside}
       {!readOnly && free.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-          <TextField select size="small" value={adding} sx={{ flex: 1 }} label={t('operating.addSlotPick')}
+          <TextField select value={adding} sx={{ flex: 1 }} label={t('operating.addSlotPick')}
             onChange={(event) => setAdding(event.target.value)}>
             {free.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
           </TextField>
@@ -290,16 +290,16 @@ function RoleFields({ role, model, readOnly, dispatch }: { role: Role; model: Op
   return (
     <Box>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField size="small" margin="dense" label={t('operating.name')} value={role.name} disabled={readOnly} sx={{ flex: 1 }}
+        <TextField margin="dense" label={t('operating.name')} value={role.name} disabled={readOnly} sx={{ flex: 1 }}
           onChange={(event) => dispatch(editRole(role.id, 'name', event.target.value))} />
-        <TextField size="small" margin="dense" label={t('operating.short')} value={role.short ?? ''} disabled={readOnly} sx={{ width: 90 }}
+        <TextField margin="dense" label={t('operating.short')} value={role.short ?? ''} disabled={readOnly} sx={{ width: 90 }}
           onChange={(event) => dispatch(editRole(role.id, 'short', event.target.value))} />
       </Box>
-      <TextField fullWidth size="small" margin="dense" multiline minRows={3} label={t('operating.purpose')} value={role.purpose ?? ''} disabled={readOnly}
+      <TextField fullWidth margin="dense" multiline minRows={3} label={t('operating.purpose')} value={role.purpose ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editRole(role.id, 'purpose', event.target.value))} />
       <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.manages')}</SectionHeading>
       <FormControlLabel
-        control={<Checkbox size="small" checked={role.manages === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('role', role.id, 'manages', on))} />}
+        control={<Checkbox checked={role.manages === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('role', role.id, 'manages', on))} />}
         label={t('operating.manages')}
       />
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{t('operating.managesHint')}</Typography>
@@ -322,11 +322,11 @@ function ResponsibilityFields({ responsibility, readOnly, dispatch }: { responsi
   const { t } = useStrings()
   return (
     <Box>
-      <TextField fullWidth size="small" margin="dense" label={t('operating.name')} value={responsibility.name} disabled={readOnly}
+      <TextField fullWidth margin="dense" label={t('operating.name')} value={responsibility.name} disabled={readOnly}
         onChange={(event) => dispatch(editResponsibility(responsibility.id, 'name', event.target.value))} />
-      <TextField fullWidth size="small" margin="dense" multiline minRows={2} label={t('operating.description')} value={responsibility.description ?? ''} disabled={readOnly}
+      <TextField fullWidth margin="dense" multiline minRows={2} label={t('operating.description')} value={responsibility.description ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editResponsibility(responsibility.id, 'description', event.target.value))} />
-      <TextField fullWidth size="small" margin="dense" label={t('operating.group')} value={responsibility.group ?? ''} disabled={readOnly}
+      <TextField fullWidth margin="dense" label={t('operating.group')} value={responsibility.group ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editResponsibility(responsibility.id, 'group', event.target.value))} />
     </Box>
   )
@@ -351,15 +351,15 @@ function OverTime({ kind, item, others, readOnly, dispatch }: {
     <Box data-testid="operating-over-time">
       <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.overTime')}</SectionHeading>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField size="small" type="date" label={t('operating.from')} value={item.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+        <TextField type="date" label={t('operating.from')} value={item.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
           onChange={(event) => dispatch(setDay(kind, item.id, 'from', event.target.value))}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'operating-from' } }} />
-        <TextField size="small" type="date" label={t('operating.until')} value={item.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+        <TextField type="date" label={t('operating.until')} value={item.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
           onChange={(event) => dispatch(setDay(kind, item.id, 'until', event.target.value))}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'operating-until' } }} />
       </Box>
       {candidates.length > 0 && (
-        <TextField select size="small" fullWidth margin="dense" label={t('operating.successors')} value={successors} disabled={readOnly}
+        <TextField select fullWidth margin="dense" label={t('operating.successors')} value={successors} disabled={readOnly}
           onChange={(event) => {
             const value = event.target.value as unknown
             dispatch(setSuccessors(kind, item.id, Array.isArray(value) ? value as string[] : String(value).split(',')))

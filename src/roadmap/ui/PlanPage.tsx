@@ -52,6 +52,7 @@ import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { AddElement, StatusField, WindowFields, namedSelect } from './PlanFacts'
+import { CompactForms, Fields, SectionHeading } from '../../widgets/CompactForms'
 import { DecisionRow, ElementRow } from './PlanRows'
 import type { DescribeElsewhere } from '../planGateHints'
 import { usePersonNames } from '../../people/ui/names'
@@ -176,7 +177,6 @@ export function PlanPage(props: PlanPageProps) {
         {!readOnly && plan && (
           <>
             <ToggleButtonGroup
-              size="small"
               exclusive
               value={mode}
               onChange={(_event, next: 'read' | 'edit' | null) => { if (next) switchMode(next) }}
@@ -248,11 +248,9 @@ export function PlanPage(props: PlanPageProps) {
   )
 }
 
-/** A section heading in the facts column. */
+/** A section heading in the facts column: the one every panel's sections wear. */
 function Heading({ children }: { children: ReactNode }) {
-  return (
-    <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 1 }}>{children}</Typography>
-  )
+  return <SectionHeading sx={{ mt: 1 }}>{children}</SectionHeading>
 }
 
 /** Who answers for the plan: a person picked from the register, or text; read through the register (ADR-0036 §8). */
@@ -291,9 +289,12 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
   const setMilestones = (milestones: Transition['milestones']) => set({ milestones })
 
   return (
-    <Box sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
+      {/* The facts wear the panel's treatment (`CompactForms`): a plan's column is the inspector of a plan. */}
+      <CompactForms>
+      <Fields gap={1.5}>
       <TextField
-        size="small" label={t('common.name')} value={plan.title} disabled={readOnly}
+        label={t('common.name')} value={plan.title} disabled={readOnly}
         onChange={(e) => set({ title: e.target.value })}
       />
       <StatusField
@@ -308,7 +309,6 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
             sx={{ ml: 0 }}
             control={(
               <Switch
-                size="small"
                 checked={plan.initiative === true}
                 disabled={readOnly}
                 onChange={(e) => set({ initiative: e.target.checked ? true : undefined })}
@@ -351,12 +351,12 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       {plan.milestones.map((milestone, index) => (
         <Box key={index} data-testid="plan-milestone" data-guide="plan.milestone" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
-            type="date" size="small" value={milestone.date} disabled={readOnly} sx={{ width: 150 }}
+            type="date" value={milestone.date} disabled={readOnly} sx={{ width: 150 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.milestoneDate') } }}
             onChange={(e) => setMilestones(plan.milestones.map((row, at) => (at === index ? { ...row, date: e.target.value } : row)))}
           />
           <TextField
-            size="small" value={milestone.name} disabled={readOnly} sx={{ flex: 1 }}
+            value={milestone.name} disabled={readOnly} sx={{ flex: 1 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.milestoneName') } }}
             onChange={(e) => setMilestones(plan.milestones.map((row, at) => (at === index ? { ...row, name: e.target.value } : row)))}
           />
@@ -394,7 +394,7 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       {!readOnly && decisionCandidates.length > 0 && (
         <Box data-testid="plan-add-decision" data-guide="plan.addDecision" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
-            select size="small" label={t('plan.decision')} value={addingDecision} sx={{ flex: 1 }}
+            select label={t('plan.decision')} value={addingDecision} sx={{ flex: 1 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.decision') } }}
             onChange={(e) => setAddingDecision(e.target.value)}
           >
@@ -413,6 +413,8 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
 
       {/* ---- moving the whole thing ---- */}
       {!readOnly && <Shift onShift={(days) => actions.shiftTransition(plan.id, days)} />}
+      </Fields>
+      </CompactForms>
     </Box>
   )
 }
@@ -425,7 +427,7 @@ function Shift({ onShift }: { onShift(days: number): void }) {
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
       <TextField
-        size="small" type="number" label={t('roadmap.shiftDays')} value={shiftBy}
+        type="number" label={t('roadmap.shiftDays')} value={shiftBy}
         onChange={(e) => setShiftBy(e.target.value)}
         helperText={t('roadmap.shiftHelp')}
       />
@@ -502,7 +504,7 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
           <>
             {targets.length > 1 && (
               <TextField
-                select size="small" value={allTo} sx={{ width: 180 }} label={t('plan.movesTo')}
+                select value={allTo} sx={{ width: 180 }} label={t('plan.movesTo')}
                 slotProps={{ htmlInput: { 'aria-label': t('plan.movesTo') } }}
                 onChange={(e) => setAllTo(e.target.value)}
               >
@@ -510,7 +512,7 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
               </TextField>
             )}
             <TextField
-              type="date" size="small" value={allOn} sx={{ width: 160 }} label={t('plan.on')}
+              type="date" value={allOn} sx={{ width: 160 }} label={t('plan.on')}
               slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${t('plan.portAll')}: ${t('plan.on')}` } }}
               onChange={(e) => setAllOn(e.target.value)}
             />
@@ -557,7 +559,7 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
               <td>
                 {targets.length > 1 ? (
                   <TextField
-                    select size="small" variant="standard" value={targetFor(port)} disabled={readOnly}
+                    select variant="standard" value={targetFor(port)} disabled={readOnly}
                     slotProps={namedSelect(`${rowName(port)}: ${t('plan.movesTo')}`)}
                     onChange={(e) => {
                       setChoice((c) => ({ ...c, [port.from.id]: e.target.value }))
@@ -572,7 +574,7 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
               </td>
               <td>
                 <TextField
-                  type="date" size="small" variant="standard" value={port.on ?? ''} disabled={readOnly || !targetFor(port)}
+                  type="date" variant="standard" value={port.on ?? ''} disabled={readOnly || !targetFor(port)}
                   slotProps={{ htmlInput: { 'aria-label': `${rowName(port)}: ${t('plan.on')}` } }}
                   onChange={(e) => {
                     if (e.target.value) actions.port(plan.id, port.from.id, targetFor(port), e.target.value)

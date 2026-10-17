@@ -80,7 +80,7 @@ export function UnitLines(props: UnitLinesProps) {
         <Box key={`${line.roleId}/${line.kind}`} data-testid="unit-line" data-role={line.roleId} data-kind={line.kind} data-state={line.state}>
           <Typography component="div" sx={LINE}>
             {lineWords(line, organisation, day, s)}
-            <Chip size="small" variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
+            <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
               sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
             <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>
               {s(line.source === 'type' ? 'unit.lineFromType' : line.source === 'role' ? 'unit.lineFromRole' : 'unit.lineOwn')}
@@ -107,7 +107,7 @@ export function UnitLines(props: UnitLinesProps) {
         </Box>
       ))}
       {editable && editing === undefined && free.length > 0 && (
-        <TextField size="small" select fullWidth label={s('unit.lineAdd')} value="" sx={{ mt: 0.75 }}
+        <TextField select fullWidth label={s('unit.lineAdd')} value="" sx={{ mt: 0.75 }}
           onChange={(event) => { setRefused(undefined); setEditing(event.target.value) }}
           slotProps={{ htmlInput: { 'data-testid': 'unit-line-add' } }}>
           {free.map((role) => <MenuItem key={role} value={role}>{roleName(role)}</MenuItem>)}
@@ -123,7 +123,7 @@ export function UnitLines(props: UnitLinesProps) {
           {into.map((line) => (
             <Typography key={`${line.unitId}/${line.roleId}/${line.kind}`} component="div" sx={LINE} data-testid="unit-line-into" data-kind={line.kind}>
               {s('unit.reportedToByLine', { role: roleName(line.roleId), unit: unitName(line.unitId), target: roleName(line.to!.roleId) })}
-              <Chip size="small" variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
+              <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
                 sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
             </Typography>
           ))}
@@ -174,23 +174,23 @@ function LineForm(props: UnitLinesProps & { role: string; roleName: string; onSa
   return (
     <Box data-testid="unit-line-form" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1, mt: 0.75, display: 'grid', gap: 0.75 }}>
       <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{props.roleName}</Typography>
-      <TextField size="small" select label={s('unit.lineTarget')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget('') }}
+      <TextField select label={s('unit.lineTarget')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget('') }}
         slotProps={{ htmlInput: { 'data-testid': 'unit-line-unit' } }}>
         {units.map((one) => <MenuItem key={one.id} value={one.id}>{one.id === props.element.id ? s('unit.lineThisUnit', { unit: one.name }) : one.name}</MenuItem>)}
       </TextField>
-      <TextField size="small" select label={s('unit.lineTargetRole')} value={target} disabled={!picked} onChange={(event) => setTarget(event.target.value)}
+      <TextField select label={s('unit.lineTargetRole')} value={target} disabled={!picked} onChange={(event) => setTarget(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'unit-line-role' } }}>
         {roles.map((role) => <MenuItem key={role} value={role}>{roleName(role)}</MenuItem>)}
       </TextField>
-      <TextField size="small" select label={s('unit.lineKind')} value={kind} onChange={(event) => setKind(event.target.value === 'dotted' ? 'dotted' : 'solid')}
+      <TextField select label={s('unit.lineKind')} value={kind} onChange={(event) => setKind(event.target.value === 'dotted' ? 'dotted' : 'solid')}
         slotProps={{ htmlInput: { 'data-testid': 'unit-line-kind' } }}>
         <MenuItem value="solid">{s('unit.lineSolid')}</MenuItem>
         <MenuItem value="dotted">{s('unit.lineDotted')}</MenuItem>
       </TextField>
       <Box sx={{ display: 'flex', gap: 0.75 }}>
-        <TextField size="small" type="date" label={s('unit.lineFrom')} value={from} onChange={(event) => setFrom(event.target.value)} sx={{ flex: 1 }}
+        <TextField type="date" label={s('unit.lineFrom')} value={from} onChange={(event) => setFrom(event.target.value)} sx={{ flex: 1 }}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'unit-line-from' } }} />
-        <TextField size="small" type="date" label={s('unit.lineUntil')} value={until} onChange={(event) => setUntil(event.target.value)} sx={{ flex: 1 }}
+        <TextField type="date" label={s('unit.lineUntil')} value={until} onChange={(event) => setUntil(event.target.value)} sx={{ flex: 1 }}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'unit-line-until' } }} />
       </Box>
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>

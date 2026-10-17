@@ -12,6 +12,7 @@
  */
 import type { ReactNode, RefObject } from 'react'
 import Box from '@mui/material/Box'
+import { Term } from '../../widgets/CompactForms'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Link from '@mui/material/Link'
@@ -141,7 +142,7 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
   )
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-      <Chip size="small" color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} data-testid="adr-status" data-guide="decision.status" />
+      <Chip color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} data-testid="adr-status" data-guide="decision.status" />
       <Typography variant="caption" color="text.secondary">{day(adr.date)}</Typography>
       <Box sx={{ flex: 1 }} />
       {!readOnly && moves.map((next) => (
@@ -166,7 +167,7 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
       {onCopyLink && (
         <Button size="small" onClick={onCopyLink} data-testid="adr-copy-link">{s('common.copyLink')}</Button>
       )}
-      <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => onMode(value)}>
+      <ToggleButtonGroup exclusive value={mode} onChange={(_e, value: Mode | null) => onMode(value)}>
         <ToggleButton value="read">{s('adr.read')}</ToggleButton>
         {canEdit && <ToggleButton value="edit">{s('adr.edit')}</ToggleButton>}
       </ToggleButtonGroup>
@@ -244,9 +245,7 @@ function GateChecklist({ items, body, s }: {
 
 // --- the front matter -------------------------------------------------------------------
 
-export function Term({ children }: { children: ReactNode }) {
-  return <Box component="dt" sx={{ color: 'text.secondary', fontWeight: 500 }}>{children}</Box>
-}
+export { Term } from '../../widgets/CompactForms'
 
 /** One row of links to other records: a term, and each as a button. Nothing when there are none. */
 function LinkRow({ term, links, testId }: {
@@ -387,7 +386,6 @@ function SupersedesRow({ adr, list, canEdit, s, onUpdate, onSelect }: {
         <TextField
           select
           variant="standard"
-          size="small"
           fullWidth
           value={adr.supersedes ?? []}
           helperText={s('adr.supersedesHelp')}

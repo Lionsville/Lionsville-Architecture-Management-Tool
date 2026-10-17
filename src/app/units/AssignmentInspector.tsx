@@ -29,6 +29,7 @@ import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
+import { SectionHeading } from '../../widgets/CompactForms'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
@@ -152,7 +153,7 @@ function Said({ held, unitName, roleName, external, load, day, names, language, 
   const share = shareOf(held)
   return (
     <>
-      <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{t('chart.assignment')}</Typography>
+      <SectionHeading>{t('chart.assignment')}</SectionHeading>
       <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700 }} data-testid="assignment-person">
         {[names.text(person), external ? t('chart.external') : undefined, names.isMe(person) ? t('unit.you') : undefined].filter(Boolean).join(' · ')}
       </Typography>
@@ -203,7 +204,7 @@ function EndOn({ held, day, today, language, t, onEnd }: {
     <Box data-testid="assignment-end">
       <Typography sx={SECTION}>{t('chart.assignmentEnd')}</Typography>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-        <TextField size="small" type="date" label={t('chart.assignmentLastDay')} value={until} onChange={(event) => setUntil(event.target.value)}
+        <TextField type="date" label={t('chart.assignmentLastDay')} value={until} onChange={(event) => setUntil(event.target.value)}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assignment-until' } }} />
         <Button size="small" variant="contained" disabled={!isDay(until) || early} onClick={() => onEnd(until)} data-testid="assignment-end-on">
           {t('chart.assignmentEndOn')}

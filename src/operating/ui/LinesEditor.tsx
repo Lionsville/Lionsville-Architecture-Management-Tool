@@ -84,7 +84,7 @@ function LineRow({ kind, roleId, name, roles, readOnly, line, under, onSlot, onW
   return (
     <Box data-testid="operating-line-row" data-kind={kind} data-said={line ? 'true' : undefined}>
       <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 0.25 }}>{kindWord}</Typography>
-      <TextField select size="small" fullWidth label={t('operating.reportsTo')} value={value} disabled={readOnly}
+      <TextField select fullWidth label={t('operating.reportsTo')} value={value} disabled={readOnly}
         // What holds where nothing is said here is read in the box, not only in the list.
         slotProps={{ htmlInput: { 'aria-label': label }, select: { displayEmpty: true }, inputLabel: { shrink: true } }}
         onChange={(event) => {
@@ -99,16 +99,16 @@ function LineRow({ kind, roleId, name, roles, readOnly, line, under, onSlot, onW
       </TextField>
       {line?.role !== undefined && (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5, mt: 0.75 }}>
-          <TextField select size="small" label={t('operating.lineWhere')} value={line.within ? 'within' : 'up'} disabled={readOnly} sx={{ gridColumn: '1 / -1' }}
+          <TextField select label={t('operating.lineWhere')} value={line.within ? 'within' : 'up'} disabled={readOnly} sx={{ gridColumn: '1 / -1' }}
             slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.lineWhere')} (${kindWord})` } }}
             onChange={(event) => change({ within: event.target.value === 'within' ? true : undefined })}>
             <MenuItem value="up">{t('operating.lineUp')}</MenuItem>
             <MenuItem value="within" disabled={line.role === roleId}>{t('operating.lineWithin')}</MenuItem>
           </TextField>
-          <TextField size="small" type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
+          <TextField type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineFrom')} (${kindWord})` } }}
             onChange={(event) => change({ from: event.target.value })} />
-          <TextField size="small" type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
+          <TextField type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineUntil')} (${kindWord})` } }}
             onChange={(event) => change({ until: event.target.value })} />
         </Box>

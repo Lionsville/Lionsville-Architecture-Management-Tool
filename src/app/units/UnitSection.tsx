@@ -90,6 +90,7 @@ import { FindingsList } from '../../widgets/FindingsList'
 import { useFindingMarks } from '../checkMarking'
 import type { FindingActions } from '../../widgets/FindingsList'
 import { PickToAdd } from '../../widgets/PickToAdd'
+import { SectionHeading } from '../../widgets/CompactForms'
 
 export type UnitSectionProps = {
   element: DesignElement
@@ -197,7 +198,7 @@ export function UnitSection(props: UnitSectionProps) {
   return (
     <Box data-testid="unit-section" sx={{ mt: unit ? 0.5 : 1 }}>
       {/* A unit leads its inspector, under its name, and its type says what it is; an actor that is not one says Unit over the choice. */}
-      {!unit && <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{s('unit.title')}</Typography>}
+      {!unit && <SectionHeading>{s('unit.title')}</SectionHeading>}
       {today !== props.today && <Typography sx={QUIET} data-testid="unit-day">{s('unit.onDay', { day: today })}</Typography>}
       <TypeField element={element} types={facts.types} editable={editable} onChange={(unitTypeId) => update({ unitTypeId })}
         {...(unit ? { filedIn: s('unit.filedInLine', { scope: scopeLabel(scope) }) } : {})} s={s} />
@@ -324,7 +325,7 @@ function TypeField({ element, types, editable, onChange, filedIn, s }: {
   }
   return (
     <>
-      <TextField size="small" select fullWidth label={s('unit.type')} value={types.some((one) => one.id === current) || !current ? current : ''}
+      <TextField select fullWidth label={s('unit.type')} value={types.some((one) => one.id === current) || !current ? current : ''}
         onChange={(event) => onChange(event.target.value || undefined)}
         helperText={filedIn ? <span data-testid="unit-filed-in">{filedIn}</span> : undefined}
         slotProps={{ htmlInput: { 'data-testid': 'unit-type' } }} sx={{ mt: 0.5 }}>
@@ -357,7 +358,7 @@ function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }} data-testid="unit-serves">
         {serves.length === 0 && !editable && <Typography sx={QUIET} data-testid="unit-serves-none">{s('unit.servesNone')}</Typography>}
         {serves.map((one) => (
-          <Chip key={one} size="small" label={scopeTrail(one, scopeLabel)} data-testid="unit-serves-scope"
+          <Chip key={one} label={scopeTrail(one, scopeLabel)} data-testid="unit-serves-scope"
             {...(onOpenHome ? { onClick: () => onOpenHome(one), title: s('unit.servesOpen', { scope: scopeTrail(one, scopeLabel) }) } : {})}
             {...(editable && element.scopes ? { onDelete: () => onChange(scopesWithout(element, one)) } : {})} />
         ))}
@@ -412,7 +413,7 @@ function AnswersFor({ element, scope, model, index, dispatch, newRowId, writeIn,
         {rows.length === 0 && <Typography sx={QUIET}>{s('unit.answersForNone')}</Typography>}
         {rows.map((one) => (
           <Chip
-            key={`${one.keptIn}/${one.relationId}`} size="small" data-testid="unit-answers-for-row"
+            key={`${one.keptIn}/${one.relationId}`} data-testid="unit-answers-for-row"
             label={one.keptIn === scope ? one.name : `${one.name} · ${s('unit.keptIn', { scope: scopeLabel(one.keptIn) })}`}
             {...(editable && one.keptIn === scope ? { onDelete: () => dispatch({ type: 'relation.delete', id: one.relationId }) } : {})}
           />
@@ -474,11 +475,11 @@ function SlotLine({ slot, role, element, facts, today, editable, name, onAssign,
         <Holder key={`${one.id}/${at}`} assignment={one} label={name(personOf(one))} you={facts.isMe(personOf(one))} editable={editable} onAssign={onAssign} s={s} />
       ))}
       {Array.from({ length: vacant }, (_, at) => (
-        <Chip key={`vacant-${at}`} size="small" variant="outlined" color="warning" label={s('unit.vacant')} data-testid="unit-vacant"
+        <Chip key={`vacant-${at}`} variant="outlined" color="warning" label={s('unit.vacant')} data-testid="unit-vacant"
           {...(editable ? { onClick: () => onAssign({ mode: 'new', roleId: slot.role }) } : {})} />
       ))}
       {editable && vacant === 0 && room && (
-        <Chip size="small" variant="outlined" label={s('unit.assign')} onClick={() => onAssign({ mode: 'new', roleId: slot.role })} data-testid="unit-assign" />
+        <Chip variant="outlined" label={s('unit.assign')} onClick={() => onAssign({ mode: 'new', roleId: slot.role })} data-testid="unit-assign" />
       )}
     </Box>
   )
@@ -496,7 +497,7 @@ function Holder({ assignment, label, you, editable, onAssign, s }: {
     you ? s('unit.you') : undefined,
   ].filter(Boolean).join(' · ')
   return (
-    <Chip size="small" label={text} data-testid="unit-holder" color={you ? 'primary' : 'default'}
+    <Chip label={text} data-testid="unit-holder" color={you ? 'primary' : 'default'}
       {...(editable ? { onClick: () => onAssign({ mode: 'edit', assignment }) } : {})} />
   )
 }
@@ -509,7 +510,7 @@ function ExtraRole({ element, type, roles, onAdd, s }: {
   const free = roles.filter((role) => !held.has(role.id))
   if (free.length === 0) return null
   return (
-    <TextField size="small" select fullWidth label={s('unit.extraRole')} value="" sx={{ mt: 0.75 }}
+    <TextField select fullWidth label={s('unit.extraRole')} value="" sx={{ mt: 0.75 }}
       onChange={(event) => onAdd([...(element.extraSlots ?? []), { role: event.target.value, min: 0, max: 1 }])}
       slotProps={{ htmlInput: { 'data-testid': 'unit-extra-role' } }}>
       {free.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}

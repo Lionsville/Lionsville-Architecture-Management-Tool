@@ -41,6 +41,7 @@ import type { Command, DesignDiagram, DesignElement, DesignModel, ElementId, Lif
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
+import { CompactForms, SectionHeading } from '../../widgets/CompactForms'
 import { plural } from '../../i18n/strings'
 import type { StringKey, Translate } from '../../i18n'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
@@ -289,13 +290,10 @@ export function FunctionInspector(props: FunctionInspectorProps) {
         bgcolor: 'background.paper', p: 2,
       }}
     >
+      {/* The same treatment as the board's inspector (`CompactForms`). */}
+      <CompactForms>
       <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
-        <Typography sx={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-          color: 'text.secondary',
-        }}>
-          {t('sheet.details')}
-        </Typography>
+        <SectionHeading>{t('sheet.details')}</SectionHeading>
         {/* The way to the page, beside the heading rather than among the
             fields — the same place the canvas's inspector keeps it. A
             capability's documentation is a page like an application's, with
@@ -336,7 +334,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           )}
 
           <TextField
-            size="small" fullWidth
+            fullWidth
             label={t('common.name')}
             value={element.name}
             disabled={readOnly || owned('name')}
@@ -357,7 +355,6 @@ export function FunctionInspector(props: FunctionInspectorProps) {
               sx={{ mt: -1 }}
               control={(
                 <Checkbox
-                  size="small"
                   checked={element.outside === true}
                   disabled={readOnly || owned('outside')}
                   slotProps={{ input: { 'aria-label': t('sheet.outsideOrganisation') } }}
@@ -373,7 +370,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           )}
 
           <TextField
-            select size="small" fullWidth
+            select fullWidth
             label={t('sheet.lifecycle')}
             value={element.lifecycle}
             disabled={readOnly || owned('lifecycle')}
@@ -425,6 +422,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           )}
         </Box>
       )}
+      </CompactForms>
     </Box>
   )
 }
@@ -523,7 +521,7 @@ function ParentField({ element, model, readOnly, actions }: {
   return (
     <Box>
       <TextField
-        select size="small" fullWidth
+        select fullWidth
         label={t('sheet.parent')}
         value={element.parentId ?? ''}
         disabled={readOnly}
@@ -589,7 +587,7 @@ function LaneField({ element, model, readOnly, actions }: {
   const actors = model.elements.filter((held) => held.kind === 'actor')
   return (
     <TextField
-      select size="small" fullWidth
+      select fullWidth
       label={t('sheet.lane')}
       value={element.lane ?? ''}
       disabled={readOnly}
@@ -715,16 +713,14 @@ function AssignedTo({ element, model, readOnly, actions, responsible, assigned, 
   const offered = choices.filter((one) => !assigned.includes(one.id))
   return (
     <Box data-testid="sheet-assigned-to" data-guide="sheet.assignedTo" sx={{ mt: 1.5 }}>
-      <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', mb: 0.5 }}>
-        {t('sheet.assignedTo')}
-      </Typography>
+      <SectionHeading sx={{ mb: 0.5 }}>{t('sheet.assignedTo')}</SectionHeading>
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
         {assigned.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.assignedNobody')}</Typography>}
         {assigned.map((id) => {
           const outside = responsible ? !responsible.serves(id, element.id) : false
           return (
             <Chip
-              key={id} size="small" variant={outside ? 'outlined' : 'filled'} color={outside ? 'warning' : 'default'}
+              key={id} variant={outside ? 'outlined' : 'filled'} color={outside ? 'warning' : 'default'}
               data-testid="sheet-assigned" data-outside={outside || undefined}
               label={outside ? `${named(id)} · ${t('sheet.assignedOutside')}` : named(id)}
               {...(!readOnly && own.includes(id)
@@ -781,7 +777,6 @@ function Picker({ label, named, options, picked, onPick, t }: {
       // The list stays open after a pick: what supports a capability is
       // usually several things, and closing after each was a click per row.
       disableCloseOnSelect
-      size="small"
       options={offered}
       value={held}
       getOptionLabel={(option) => option.name}
