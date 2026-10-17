@@ -25,7 +25,7 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 
 export type LinesEditorProps = {
-  /** The role whose holders report: its lines are never offered to itself in the same unit twice. */
+  /** The role whose holders report: its lines are never offered to itself in the same unit. */
   roleId: RoleId
   /** The role's name, said in every control's name. */
   name: string
@@ -40,7 +40,7 @@ export type LinesEditorProps = {
   testId: string
 }
 
-/** A select's value for a row: nothing said, by nesting, or a role. */
+/** A select's value for a row that says by nesting; nothing said is the empty string, a role its id. */
 const NESTING = '\u0000nesting'
 
 export function LinesEditor({ roleId, name, said, inherited, roles, readOnly, onChange, testId }: LinesEditorProps) {
@@ -48,7 +48,7 @@ export function LinesEditor({ roleId, name, said, inherited, roles, readOnly, on
   const [refused, setRefused] = useState<string | undefined>(undefined)
   const write = (kind: LineKind, line: ReportsTo | undefined) => setRefused(onChange(linesWith(said, kind, line)))
   return (
-    <Box data-testid={testId} sx={{ display: 'grid', gap: 0.75 }}>
+    <Box data-testid={testId} sx={{ display: 'grid', gap: 1 }}>
       {LINE_KINDS.map((kind) => (
         <LineRow
           key={kind} kind={kind} roleId={roleId} name={name} roles={roles} readOnly={readOnly} t={t}
@@ -83,33 +83,32 @@ function LineRow({ kind, roleId, name, roles, readOnly, line, under, onSlot, onW
   const label = `${name}: ${t('operating.reportsTo')} (${kindWord})`
   return (
     <Box data-testid="operating-line-row" data-kind={kind} data-said={line ? 'true' : undefined}>
-      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-        <Typography variant="caption" sx={{ width: 84, flexShrink: 0, color: 'text.secondary' }}>{kindWord}</Typography>
-        <TextField select size="small" label={t('operating.reportsTo')} value={value} disabled={readOnly} sx={{ flex: 1 }}
-          slotProps={{ htmlInput: { 'aria-label': label } }}
-          onChange={(event) => {
-            const picked = event.target.value
-            if (picked === '') onWrite(undefined)
-            else if (picked === NESTING) onWrite({ kind })
-            else onWrite({ ...(line ?? { kind }), role: picked, kind })
-          }}>
-          <MenuItem value="">{nothingSaid}</MenuItem>
-          {onSlot && <MenuItem value={NESTING}>{t('operating.reportsToNesting')}</MenuItem>}
-          {roles.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
-        </TextField>
-      </Box>
+      <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 0.25 }}>{kindWord}</Typography>
+      <TextField select size="small" fullWidth label={t('operating.reportsTo')} value={value} disabled={readOnly}
+        // What holds where nothing is said here is read in the box, not only in the list.
+        slotProps={{ htmlInput: { 'aria-label': label }, select: { displayEmpty: true }, inputLabel: { shrink: true } }}
+        onChange={(event) => {
+          const picked = event.target.value
+          if (picked === '') onWrite(undefined)
+          else if (picked === NESTING) onWrite({ kind })
+          else onWrite({ ...(line ?? { kind }), role: picked, kind })
+        }}>
+        <MenuItem value="">{nothingSaid}</MenuItem>
+        {onSlot && <MenuItem value={NESTING}>{t('operating.reportsToNesting')}</MenuItem>}
+        {roles.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
+      </TextField>
       {line?.role !== undefined && (
-        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, pl: '88px', flexWrap: 'wrap' }}>
-          <TextField select size="small" label={t('operating.lineWhere')} value={line.within ? 'within' : 'up'} disabled={readOnly} sx={{ flex: '1 1 100%' }}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5, mt: 0.75 }}>
+          <TextField select size="small" label={t('operating.lineWhere')} value={line.within ? 'within' : 'up'} disabled={readOnly} sx={{ gridColumn: '1 / -1' }}
             slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.lineWhere')} (${kindWord})` } }}
             onChange={(event) => change({ within: event.target.value === 'within' ? true : undefined })}>
             <MenuItem value="up">{t('operating.lineUp')}</MenuItem>
             <MenuItem value="within" disabled={line.role === roleId}>{t('operating.lineWithin')}</MenuItem>
           </TextField>
-          <TextField size="small" type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          <TextField size="small" type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineFrom')} (${kindWord})` } }}
             onChange={(event) => change({ from: event.target.value })} />
-          <TextField size="small" type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          <TextField size="small" type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineUntil')} (${kindWord})` } }}
             onChange={(event) => change({ until: event.target.value })} />
         </Box>

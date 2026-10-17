@@ -39,12 +39,12 @@ describe('the lines between the cards', () => {
     expect(lines.every((line) => line.source === (line.from.roleId === 'tm' ? 'type' : 'role'))).toBe(true)
   })
 
-  it('runs across to a card beside, out of the right side and back for one above or below, and as a bulge on one card', () => {
+  it('runs out of the bottom of a chip, under its row and into the near side of the other, or under both where they share a card', () => {
     const a = { left: 0, top: 10, right: 50, bottom: 20 }
-    expect(roleLinePath(a, { left: 100, top: 30, right: 150, bottom: 40 }, false)).toBe('M50,15 C75,15 75,35 100,35')
-    expect(roleLinePath({ left: 100, top: 30, right: 150, bottom: 40 }, a, false)).toBe('M100,35 C75,35 75,15 50,15')
-    expect(roleLinePath(a, { left: 0, top: 50, right: 50, bottom: 60 }, false)).toBe('M50,15 C74,15 74,55 50,55')
-    expect(roleLinePath(a, { left: 0, top: 50, right: 50, bottom: 60 }, true)).toBe('M50,15 C66,15 66,55 50,55')
+    expect(roleLinePath(a, { left: 100, top: 30, right: 150, bottom: 40 }, false)).toBe('M25,20 C25,30 25,30 35,30 L76,30 C94,30 100,35 100,35')
+    expect(roleLinePath({ left: 100, top: 30, right: 150, bottom: 40 }, a, false)).toBe('M125,40 C125,50 125,50 115,50 L74,50 C56,50 50,15 50,15')
+    expect(roleLinePath(a, { left: 0, top: 50, right: 50, bottom: 60 }, false)).toBe('M25,20 C25,30 25,30 35,30 L26,30 C44,30 50,55 50,55')
+    expect(roleLinePath(a, { left: 60, top: 10, right: 110, bottom: 20 }, true)).toBe('M25,20 C25,32 85,32 85,20')
     const drawn = roleLinePaths(roleLines(structure, types, roles), (end) => (end.typeId === 'team' ? { left: 0, top: 0, right: 40, bottom: 10 } : undefined))
     // Only the lines with both chips on the stage.
     expect(drawn.map((line) => line.key)).toEqual(['team/dev/solid>team', 'team/sm/solid>team'])

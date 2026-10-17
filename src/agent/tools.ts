@@ -448,7 +448,7 @@ const REPORTS_TO_LINE: RowSchema = {
 
 const REPORTS_TO = (where: string): ArgumentSchema => ({
   type: 'array',
-  description: `Where the holders of this role report, ${where}: at most one line of each kind, solid (a line manager\'s, which `
+  description: `Where the holders of this role report, ${where}: at most one line of each kind, solid (a line manager's, which `
     + 'decides who manages them) and dotted (functional, shown and deciding nothing). Each lands on the holders of roleId in the same '
     + 'unit where within is true, else in the nearest unit above that has the role, else in the one unit of the organisation that has '
     + 'it. The nearest place that says anything wins, kind by kind: a unit\'s own line (reportingLine.set) over the unit type\'s slot, '

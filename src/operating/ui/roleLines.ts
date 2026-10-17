@@ -86,25 +86,32 @@ export function roleLines(structure: UnitTypeLanes, types: readonly UnitType[], 
 /** How a chip is found on the stage: a role's on a type's card. */
 export type ChipOf = (end: RoleLineEnd) => CardBox | undefined
 
-/** A line's SVG path, from the chips as they ended up: out of the near sides, a bulge beside the card where both ends are on it. */
+/** A line's SVG path, from the chips as they ended up: out of the bottom of the one, into the near side of the other, or under both where they share a card. */
 export function roleLinePath(from: CardBox, to: CardBox, within: boolean): string {
-  const y1 = (from.top + from.bottom) / 2
+  const x1 = (from.left + from.right) / 2
   const y2 = (to.top + to.bottom) / 2
   if (within) {
-    const x = Math.max(from.right, to.right)
-    return `M${from.right},${y1} C${x + 16},${y1} ${x + 16},${y2} ${to.right},${y2}`
+    // Under the chips, which sit beside each other on a card: down from the one, across, and up into the other.
+    const x2 = (to.left + to.right) / 2
+    const drop = Math.max(from.bottom, to.bottom) + 12
+    return `M${x1},${from.bottom} C${x1},${drop} ${x2},${drop} ${x2},${to.bottom}`
   }
-  if (to.left >= from.right) {
-    const mid = (from.right + to.left) / 2
-    return `M${from.right},${y1} C${mid},${y1} ${mid},${y2} ${to.left},${y2}`
-  }
-  if (from.left >= to.right) {
-    const mid = (from.left + to.right) / 2
-    return `M${from.left},${y1} C${mid},${y1} ${mid},${y2} ${to.right},${y2}`
-  }
-  // One above the other: out of the right sides and back.
-  const x = Math.max(from.right, to.right) + 24
-  return `M${from.right},${y1} C${x},${y1} ${x},${y2} ${to.right},${y2}`
+  // Out of the bottom of the chip, along under its row — never through the chips beside it — and into the near side of the target's.
+  const { x: x2 } = roleLineEnd(from, to, within)
+  const under = from.bottom + 10
+  const dir = x2 >= x1 ? 1 : -1
+  const turn = x2 - dir * 24
+  return `M${x1},${from.bottom} C${x1},${under} ${x1},${under} ${x1 + dir * 10},${under} L${turn},${under} C${x2 - dir * 6},${under} ${x2},${y2} ${x2},${y2}`
+}
+
+/** Where a line ends on the target's chip: under it for a line within, else on the side nearer the chip it comes from. */
+export function roleLineEnd(from: CardBox, to: CardBox, within: boolean): { x: number; y: number } {
+  if (within) return { x: (to.left + to.right) / 2, y: to.bottom }
+  const x1 = (from.left + from.right) / 2
+  const y = (to.top + to.bottom) / 2
+  if (to.left >= x1) return { x: to.left, y }
+  if (to.right <= x1) return { x: to.right, y }
+  return { x: to.right, y }
 }
 
 /** The lines with their paths, those whose chips are not on the stage left out. */
@@ -113,9 +120,6 @@ export function roleLinePaths(lines: readonly RoleLine[], chipOf: ChipOf): (Role
     const from = chipOf(line.from)
     const to = chipOf(line.to)
     if (!from || !to) return []
-    const d = roleLinePath(from, to, line.within)
-    const end = line.within || !(to.left >= from.right) && !(from.left >= to.right) ? { x: to.right, y: (to.top + to.bottom) / 2 }
-      : to.left >= from.right ? { x: to.left, y: (to.top + to.bottom) / 2 } : { x: to.right, y: (to.top + to.bottom) / 2 }
-    return [{ ...line, d, ...end }]
+    return [{ ...line, d: roleLinePath(from, to, line.within), ...roleLineEnd(from, to, line.within) }]
   })
 }

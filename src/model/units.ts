@@ -473,31 +473,41 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
       const role = roles.get(roleId)
       if (!role || !roleOn(role, day)) continue
       for (const kind of LINE_KINDS) {
-        const mine = own.find((line) => line.role === roleId && (line.to ? line.kind : 'solid') === kind)
-        if (mine) {
-          found.push({ unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...(mine.to ? { reportsTo: mine.to.role } : {}), ...ownLanding(mine, thereIds) })
-          continue
-        }
-        // The nearest place that says anything of this kind: the type's slot, else the role.
-        const slotSays = linesSaid(typeSays.find((slot) => slot.role === roleId)?.reportsTo).find((line) => line.kind === kind)
-        const said = slotSays ?? linesSaid(role.reportsTo).find((line) => line.kind === kind)
-        if (!said || !runsOn(said, day)) continue
-        const source: LineSource = slotSays ? 'type' : 'role'
-        if (said.role === undefined) {
-          // By nesting here, said on the slot: drawn only where it takes a line of the role's away, as a unit's is.
-          if (source === 'type' && linesSaid(role.reportsTo).some((line) => line.kind === kind && line.role !== undefined)) {
-            found.push({ unitId: unit.id, roleId, kind, source, ...datedOf(said), state: 'nesting' })
-          }
-          continue
-        }
-        found.push({
-          unitId: unit.id, roleId, kind, source, ...datedOf(said), reportsTo: said.role, ...(said.within ? { within: true } : {}),
-          ...landing(on.units, unit.id, roleId, { ...said, role: said.role }, holding, thereIds),
-        })
+        const line = lineOfKind({ on, day, holding, there: thereIds }, unit, role, kind, own, typeSays)
+        if (line) found.push(line)
       }
     }
   }
   return found
+}
+
+/** What {@link lineOfKind} reads of the organisation on its day. */
+type Landing = { on: Organisation; day: string; holding: ReadonlyMap<RoleId, readonly ElementId[]>; there: ReadonlySet<ElementId> }
+
+/**
+ * One unit's line of one kind for one role, from the nearest place that says
+ * anything: the unit's own line, else the type's slot, else the role; nothing
+ * where none says, or where the only word is the role's *by nesting*.
+ */
+function lineOfKind(
+  at: Landing, unit: UnitLike, role: Role, kind: LineKind, own: readonly UnitReportingLine[], typeSays: readonly RoleSlot[],
+): ReportingLineOn | undefined {
+  const roleId = role.id
+  const mine = own.find((line) => line.role === roleId && (line.to ? line.kind : 'solid') === kind)
+  if (mine) return { unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...(mine.to ? { reportsTo: mine.to.role } : {}), ...ownLanding(mine, at.there) }
+  const slotSays = linesSaid(typeSays.find((slot) => slot.role === roleId)?.reportsTo).find((line) => line.kind === kind)
+  const said = slotSays ?? linesSaid(role.reportsTo).find((line) => line.kind === kind)
+  if (!said || !runsOn(said, at.day)) return undefined
+  const source: LineSource = slotSays ? 'type' : 'role'
+  if (said.role === undefined) {
+    // By nesting here, said on the slot: drawn only where it takes a line of the role's away, as a unit's is.
+    const takesAway = source === 'type' && linesSaid(role.reportsTo).some((line) => line.kind === kind && line.role !== undefined)
+    return takesAway ? { unitId: unit.id, roleId, kind, source, ...datedOf(said), state: 'nesting' } : undefined
+  }
+  return {
+    unitId: unit.id, roleId, kind, source, ...datedOf(said), reportsTo: said.role, ...(said.within ? { within: true } : {}),
+    ...landing(at.on.units, unit.id, roleId, { ...said, role: said.role }, at.holding, at.there),
+  }
 }
 
 /** A line's days, as written. */

@@ -258,7 +258,7 @@ function RoleLines({ role, model, readOnly, dispatch, refuseLine }: {
   const typeName = (id: string | undefined) => model.unitTypes.find((one) => one.id === id)?.name ?? id ?? ''
   return (
     <Box>
-      <Typography sx={heading}>{t('operating.reportsTo')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.reportsTo')}</SectionHeading>
       <LinesEditor
         roleId={role.id} name={role.name} said={linesSaid(role.reportsTo)} roles={model.roles} readOnly={readOnly} testId="operating-role-lines"
         onChange={(next) => {
@@ -268,7 +268,7 @@ function RoleLines({ role, model, readOnly, dispatch, refuseLine }: {
         }}
       />
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{t('operating.reportsToHint')}</Typography>
-      <Typography sx={heading}>{t('operating.reportedToBy')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.reportedToBy')}</SectionHeading>
       {into.length === 0
         ? <Typography variant="body2" color="text.secondary">{t('operating.reportedToByNone')}</Typography>
         : into.map((line, at) => (

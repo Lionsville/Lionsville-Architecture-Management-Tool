@@ -36,8 +36,12 @@ function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly 
     const boxes = new Map([...root.querySelectorAll<HTMLElement>('[data-testid="chart-unit"]')].map((one) => [one.dataset.elementId ?? '', one]))
     const next: Drawn[] = []
     for (const line of lines) {
-      const a = anchorOf(boxes, line.from)?.getBoundingClientRect()
-      const b = anchorOf(boxes, line.to)?.getBoundingClientRect()
+      const fromRow = anchorOf(boxes, line.from)
+      const toRow = anchorOf(boxes, line.to)
+      // Two roles of one unit whose rows are not drawn — optional roles nobody holds — fall back to one and the same name row: nothing to draw between.
+      if (line.within && fromRow === toRow) continue
+      const a = fromRow?.getBoundingClientRect()
+      const b = toRow?.getBoundingClientRect()
       if (!a || !b || (a.width === 0 && b.width === 0)) continue
       const units: [string, string] = [line.from.unitId, line.to.unitId]
       if (line.within) {
