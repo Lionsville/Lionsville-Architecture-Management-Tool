@@ -1185,6 +1185,7 @@ export const EN = {
   'unitMove.misfitting': 'Where its type may not sit',
   'unitMove.current': 'where it sits now',
   'unitMove.inside': 'inside it',
+  'unitMove.itself': 'being moved',
   'unitMove.along': 'Move these too',
   'unitMove.alongHint': 'The units beside it under the same parent. The units inside each come with it.',
   'unitMove.misfit': '{unit} is a {type}, which may not sit there: it moves, and shows as misplaced until it moves again or the operating model lets its type sit there.',

@@ -963,6 +963,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'unitMove.misfitting': 'Waar haar type niet mag staan',
   'unitMove.current': 'waar ze nu staat',
   'unitMove.inside': 'valt eronder',
+  'unitMove.itself': 'wordt verplaatst',
   'unitMove.along': 'Deze ook verplaatsen',
   'unitMove.alongHint': 'De eenheden ernaast onder dezelfde bovenliggende eenheid. Wat onder elk ervan valt, gaat mee.',
   'unitMove.misfit': '{unit} is een {type}, dat daar niet mag staan: ze wordt verplaatst en staat als misplaatst gemeld tot ze weer verplaatst wordt of het operating model haar type daar toelaat.',

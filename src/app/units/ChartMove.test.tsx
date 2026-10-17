@@ -146,7 +146,7 @@ describe('a unit moved from the chart', () => {
     expect(groups).toEqual([
       ['Where its type may sit', ['Board']],
       ['Where its type may not sit', [
-        'At the top', 'Line of business Ainside it', 'Line of business Bin Technology', 'Technologywhere it sits now', 'Team A1inside it',
+        'At the top', 'Line of business Abeing moved', 'Line of business Bin Technology', 'Technologywhere it sits now', 'Team A1inside it',
       ]],
     ])
     // Its own place, and what it holds, are shown and not offered.

@@ -136,7 +136,7 @@ export function parentChoices(at: ChoiceWords & {
   }
   const rows = unitsOn(organisation, day).sort(compareUnits(unitTypeRank(organisation.unitTypes))).map((unit): PickOption => {
     const trail = unitsAbove(on, unit.id).reverse().map((id) => name.get(id) ?? id).join(' › ')
-    const refused = inside.has(unit.id) ? s('unitMove.inside') : unit.id === at.current ? s('unitMove.current') : undefined
+    const refused = at.unitIds.includes(unit.id) ? s('unitMove.itself') : inside.has(unit.id) ? s('unitMove.inside') : unit.id === at.current ? s('unitMove.current') : undefined
     return {
       id: unit.id, label: unit.name, group: at.fits(unit.id) ? fitting : others,
       ...(refused !== undefined ? { note: refused, disabled: true } : trail ? { note: s('pick.in', { name: trail }) } : {}),

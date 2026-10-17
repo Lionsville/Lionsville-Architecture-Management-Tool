@@ -964,6 +964,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unitMove.misfitting': 'Wo ihr Typ nicht stehen darf',
   'unitMove.current': 'wo sie jetzt steht',
   'unitMove.inside': 'in ihr',
+  'unitMove.itself': 'wird verschoben',
   'unitMove.along': 'Diese auch verschieben',
   'unitMove.alongHint': 'Die Einheiten neben ihr unter derselben übergeordneten Einheit. Was in jeder von ihnen ist, kommt mit.',
   'unitMove.misfit': '{unit} ist ein {type}, der dort nicht stehen darf: Sie wird verschoben und gilt als falsch eingeordnet, bis sie wieder verschoben wird oder das Betriebsmodell ihren Typ dort zulässt.',
