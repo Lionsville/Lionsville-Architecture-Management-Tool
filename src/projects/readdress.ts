@@ -24,6 +24,7 @@
 import type { Command, DesignElement, ElementId } from '../model'
 import type { Comment } from '../model/comment'
 import type { Cause, Observation } from '../model/observation'
+import type { Assignment } from '../model/units'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -163,23 +164,28 @@ export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: Scop
 
 /**
  * A unit's own reporting lines name the scope that keeps the unit each
- * lands on (ADR-0039 §3), and a move carries that address as it carries a
- * stand-in's `ref`. Only a definition's: a stand-in holds none of the owner's
- * detail.
+ * lands on (ADR-0039 §3), and so does a holder's own line on an assignment
+ * (ADR-0039, amended 17 October 2026): a move carries that address as it
+ * carries a stand-in's `ref`. Only a definition's: a stand-in holds none of
+ * the owner's detail.
  */
-type LinesHeld = { elements: readonly DesignElement[] }
+type LinesHeld = { elements: readonly DesignElement[]; assignments?: readonly Assignment[] }
 
-/** Whether a scope's units name an address inside the subtree at `from` on a line of their own. */
+/** Whether a scope's units, or the holders in them, name an address inside the subtree at `from` on a line of their own. */
 export function linesNameWithin(model: LinesHeld, from: ScopePath): boolean {
   if (from === ROOT_SCOPE) return false
   return model.elements.some((element) => element.ref === undefined
     && (element.reportingLines ?? []).some((line) => line.to !== undefined && isWithinScope(line.to.scope, from)))
+    || (model.assignments ?? []).some((one) => (one.reportsTo ?? []).some((line) => isWithinScope(line.to.scope, from)))
 }
 
-/** The commands that carry each unit's lines naming an address inside the subtree at `from` to `to`: one patch of the unit's lines each. */
+/**
+ * The commands that carry each line naming an address inside the subtree at
+ * `from` to `to`: one patch of a unit's lines, and one of a holder's, each.
+ */
 export function readdressLines(model: LinesHeld, from: ScopePath, to: ScopePath): Command[] {
   if (from === ROOT_SCOPE || from === to) return []
-  return model.elements.flatMap((element): Command[] => {
+  const units = model.elements.flatMap((element): Command[] => {
     if (element.ref !== undefined || !element.reportingLines?.length) return []
     const reportingLines = element.reportingLines.map((line) => (
       line.to === undefined ? line : { ...line, to: { ...line.to, scope: readdressRef(line.to.scope, from, to) } }
@@ -187,4 +193,11 @@ export function readdressLines(model: LinesHeld, from: ScopePath, to: ScopePath)
     const moved = reportingLines.some((line, at) => line.to?.scope !== element.reportingLines![at].to?.scope)
     return moved ? [{ type: 'element.update', id: element.id, patch: { reportingLines } }] : []
   })
+  const holders = (model.assignments ?? []).flatMap((one): Command[] => {
+    if (!one.reportsTo?.length) return []
+    const reportsTo = one.reportsTo.map((line) => ({ ...line, to: { ...line.to, scope: readdressRef(line.to.scope, from, to) } }))
+    const moved = reportsTo.some((line, at) => line.to.scope !== one.reportsTo![at].to.scope)
+    return moved ? [{ type: 'assignment.update', id: one.id, patch: { reportsTo } }] : []
+  })
+  return [...units, ...holders]
 }

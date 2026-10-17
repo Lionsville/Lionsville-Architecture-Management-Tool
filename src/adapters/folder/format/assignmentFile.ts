@@ -22,6 +22,11 @@
  * **What it holds of a person is an id** — `{ "person": "pe-…" }` — and never
  * a name: the name is the register's, which is outside the history.
  *
+ * **A holder's own reporting lines** ride on the row as `reportsTo` (format
+ * 14; ADR-0039, amended 17 October 2026): each `{ to: { scope, unit, role },
+ * kind, from?, until? }`, as a unit's own line is kept. A line without a whole
+ * target or a kind is passed over, and the row is kept.
+ *
  * Forgiving in one direction, as the other codecs are: it writes one exact
  * shape and reads what it can of a hand-edited one. A row without an id, a
  * unit, a role or a person is passed over; a file that is not a list at all is
@@ -29,7 +34,8 @@
  * written the list empty.
  */
 import type { HostModel } from '../../../model/hostModel'
-import type { Assignment } from '../../../model/units'
+import { isLineKind } from '../../../model/operatingModel'
+import type { Assignment, AssignmentReportingLine } from '../../../model/units'
 import { parseJson, stableJson } from '../../../projects/text'
 
 /** The folder the assignments are kept in. Not a slug, so never a scope's name. */
@@ -72,6 +78,28 @@ function personOf(value: unknown): string | undefined {
   return undefined
 }
 
+const record = (value: unknown): Record<string, unknown> | undefined => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
+)
+
+/** A holder's own lines as a row says them: each with a whole target and a kind, the rest passed over. */
+function linesOf(value: unknown): { reportsTo?: AssignmentReportingLine[] } {
+  if (!Array.isArray(value)) return {}
+  const lines = value.flatMap((held): AssignmentReportingLine[] => {
+    const line = record(held)
+    const to = record(line?.to)
+    const unit = text(to?.unit)
+    const role = text(to?.role)
+    if (!line || !to || typeof to.scope !== 'string' || !unit || !role || !isLineKind(line.kind)) return []
+    return [{
+      to: { scope: to.scope, unit, role }, kind: line.kind,
+      ...(text(line.from) !== undefined ? { from: text(line.from) } : {}),
+      ...(text(line.until) !== undefined ? { until: text(line.until) } : {}),
+    }]
+  })
+  return lines.length ? { reportsTo: lines } : {}
+}
+
 function assignmentOf(row: Record<string, unknown>): Assignment[] {
   const id = text(row.id)
   const unitId = text(row.unitId)
@@ -87,6 +115,7 @@ function assignmentOf(row: Record<string, unknown>): Assignment[] {
     ...(text(row.from) !== undefined ? { from: text(row.from) } : {}),
     ...(text(row.until) !== undefined ? { until: text(row.until) } : {}),
     ...(row.acting === true ? { acting: true as const } : {}),
+    ...linesOf(row.reportsTo),
   }]
 }
 

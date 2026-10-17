@@ -58,10 +58,10 @@ async function textAt(root: FakeDirectory, path: string): Promise<string> {
 }
 
 describe('format 13', () => {
-  it('is what a scope is written at now, one past 12', () => {
-    expect(SCOPE_FORMAT_VERSION).toBe(12 + 1)
+  it('is one past 12, and a scope is written at it or later', () => {
+    expect(SCOPE_FORMAT_VERSION).toBeGreaterThanOrEqual(12 + 1)
     const header = scopeFiles(bareScope('customer', 'Customer', 'domain')).find((file) => file.path === SCOPE_FILE)!
-    expect(JSON.parse(textOf(header)).version).toBe(13)
+    expect(JSON.parse(textOf(header)).version).toBe(SCOPE_FORMAT_VERSION)
   })
 
   it('keeps its comments in a folder no scope can be called', () => {
@@ -89,7 +89,7 @@ describe('a folder written at format 12', () => {
     }
   })
 
-  it('is brought up to 13 by the pass: the headers turn, every other file stays as it was, and no scope moves', async () => {
+  it('is brought up to the current format by the pass: the headers turn, every other file stays as it was, and no scope moves', async () => {
     const before = twelve()
     const root = new FakeDirectory('Architecture')
     await plant(root, before)
@@ -103,7 +103,7 @@ describe('a folder written at format 12', () => {
     expect(root.paths().sort()).toEqual(before.map((file) => file.path).sort())
     for (const file of before) {
       const now = await textAt(root, file.path)
-      if (file.path.split('/').pop() === SCOPE_FILE) expect(JSON.parse(now).version).toBe(13)
+      if (file.path.split('/').pop() === SCOPE_FILE) expect(JSON.parse(now).version).toBe(SCOPE_FORMAT_VERSION)
       else expect(now, file.path).toBe(textOf(file))
     }
   })

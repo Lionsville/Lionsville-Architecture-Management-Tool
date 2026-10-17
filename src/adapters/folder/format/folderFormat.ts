@@ -213,11 +213,22 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  * three do, and every addition is optional: a 12 is a 13 with no comments, no
  * bright spots, nothing moved and no reporting lines, and the pass that brings
  * it up moves no scope.
+ *
+ * **14 is 13, with a holder's own reporting lines** (ADR-0039, amended 17
+ * October 2026): an assignment in `_assignments/assignments.json` may say
+ * `reportsTo`, a list of lines to a role in a unit, each solid or dotted and
+ * dated. A build that reads 13 reads an assignment field by field and would
+ * drop them on its way back — the person would report where the model says
+ * again after somebody else's save, with nobody having said so — so the
+ * number turns, and a 3.7.2 build refuses the folder instead. Format 13 is
+ * already public, so what it means is not changed after the fact. The field
+ * is optional: a 13 is a 14 in which nobody has a line of their own, and the
+ * pass that brings it up moves no scope and rewrites nothing but the headers.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 /**
  * The second half of a view's pair of files: where it ended up.

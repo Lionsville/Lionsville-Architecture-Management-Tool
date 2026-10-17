@@ -186,3 +186,17 @@ describe('a unit\'s reporting lines (ADR-0039 §3)', () => {
     expect(readdressLines(model, 'acme/rail', 'acme/rail')).toEqual([])
   })
 })
+
+describe('a holder\'s own reporting lines (ADR-0039, amended 17 October 2026)', () => {
+  const line = (scope: string) => ({ to: { scope, unit: 'u', role: 'ro-b' }, kind: 'solid' as const })
+  const holder = (id: string, scopes: string[]) => ({ id, unitId: 'team', roleId: 'ro-a', person: { person: 'pe-a' }, reportsTo: scopes.map(line) })
+
+  it('carries a line naming the moved subtree as one patch of the holder\'s lines, and nothing else', () => {
+    const model = { elements: [], assignments: [holder('as-1', ['acme/rail', 'globex']), holder('as-2', ['globex']), { ...holder('as-3', []), reportsTo: undefined }] }
+    expect(linesNameWithin(model, 'acme/rail')).toBe(true)
+    expect(linesNameWithin(model, 'initech')).toBe(false)
+    expect(readdressLines(model, 'acme/rail', 'group/rail')).toEqual([
+      { type: 'assignment.update', id: 'as-1', patch: { reportsTo: [line('group/rail'), line('globex')] } },
+    ])
+  })
+})
