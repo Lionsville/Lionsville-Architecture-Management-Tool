@@ -42,8 +42,10 @@ export function useWorkspacePages(deps: {
   maps: Maps
   landscapes: TechnologyLandscapes
   onGoHome: (path: ScopePath) => void
+  /** The element whose documentation page is up over the board, where one is (`useWorkspaceRequests`). */
+  documentationShown?: string | undefined
 }) {
-  const { session, scope, makeId, s, viewing, focusElement, maps, landscapes, onGoHome } = deps
+  const { session, scope, makeId, s, viewing, focusElement, maps, landscapes, onGoHome, documentationShown } = deps
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
   const platformReading = usePlatformReport()
   const records = useRecordPages()
@@ -83,6 +85,10 @@ export function useWorkspacePages(deps: {
    * request; until then, the one asked for.
    */
   const page = useCallback((): ScreenPage | undefined => {
+    // The record's page over the board (ADR-0033): a place of its own, so
+    // its address names it and Back leaves it. Never up beside another page:
+    // opening one closes it, and it closes them (`showOn`).
+    if (documentationShown !== undefined) return { page: 'document', id: documentationShown }
     if (adrPage.open) return withId('decisions', adrShown?.nonce === adrPage.nonce ? adrShown.id : adrPage.adrId)
     if (obsPage.open) return observationsPage(obsPage, obsShown)
     if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
@@ -91,7 +97,7 @@ export function useWorkspacePages(deps: {
     if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
-  }, [adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, platformReading.platformId, platformReading.serviceId])
+  }, [documentationShown, adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, platformReading.platformId, platformReading.serviceId])
   /** Has the record page that is up — the same one `page` names — said what it landed on for the latest request? */
   const settled = useCallback((): boolean => {
     if (adrPage.open) return adrShown?.nonce === adrPage.nonce

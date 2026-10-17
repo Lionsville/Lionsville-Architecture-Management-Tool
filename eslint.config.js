@@ -441,7 +441,7 @@ export const GROWN = {
   'src/agent/shell.ts': { complexity: 40 },
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 211 },
-  'src/app/organisation/OrganisationCards.tsx': { complexity: 39, lines: 172 },
+  'src/app/organisation/OrganisationCards.tsx': { complexity: 38, lines: 171 },
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 53, lines: 290 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
   'src/app/organisation/useOrganisation.ts': { lines: 227 },

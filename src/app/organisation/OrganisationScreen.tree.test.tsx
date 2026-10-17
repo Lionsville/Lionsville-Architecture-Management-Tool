@@ -402,7 +402,7 @@ describe('a domain’s home', () => {
     fireEvent.click(screen.getByTestId('home-retail/warehouse'))
     expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse')
     const row = await screen.findByTestId('board-l7')
-    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
+    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
   })
 
@@ -420,7 +420,7 @@ describe('a domain’s home', () => {
     const row = await screen.findByTestId('board-tl')
     expect(row.textContent).toContain('Technology landscape · laid out from the rows')
     expect(row.textContent).not.toContain('on it')
-    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
+    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
     await waitFor(() => expect(screen.getByTestId('landscape-topbar')).toBeDefined())
     expect(screen.getByTestId('landscape-summary').textContent).toBe('0 applications · 0 services · 0 platforms')
   })
@@ -563,7 +563,7 @@ describe('the boards on a landscape’s home', () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
     const row = await screen.findByTestId('board-next')
-    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
+    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     expect(screen.getByRole('tab', { name: /Finance 2028/ }).getAttribute('aria-selected')).toBe('true')
     // Opened on it, not switched to it: nothing to undo and nothing unsaved.

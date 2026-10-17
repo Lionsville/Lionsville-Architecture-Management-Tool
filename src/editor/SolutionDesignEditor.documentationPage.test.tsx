@@ -11,7 +11,7 @@
  * the sheet, and the page lists the sheet's neighbours down its left.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
@@ -63,5 +63,14 @@ describe('the documentation page where there is no board', () => {
   it('draws nothing but the notice without a request', () => {
     renderEditor();
     expect(screen.queryByRole('heading', { name: 'Rating' })).toBeNull();
+  });
+
+  // The host's screen names the page, so it has an address of its own and Back leaves it (ADR-0033).
+  it('tells the host which element’s page is up, and that none is once it closes', () => {
+    const onDocumentation = vi.fn();
+    renderEditor({ documentationRequest: { elementId: 'rating', diagramId: 'sh-1', nonce: 1 }, onDocumentation });
+    expect(onDocumentation).toHaveBeenLastCalledWith('rating');
+    fireEvent.click(screen.getByRole('button', { name: 'Close documentation' }));
+    expect(onDocumentation).toHaveBeenLastCalledWith(undefined);
   });
 });

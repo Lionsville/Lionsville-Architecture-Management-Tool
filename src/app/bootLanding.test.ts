@@ -146,14 +146,25 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two' }).initialProject?.activeDiagramId).toBe('two')
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'gone' }).initialProject?.activeDiagramId).toBe('one')
     expect(placeLanding(held(rail), { scope: 'acme/rail' }).initialProject?.activeDiagramId).toBe('one')
-    // A scope that draws nothing has nothing to open on: its home.
-    expect(placeLanding(held(scope('acme', [])), { scope: 'acme', page: 'board', id: 'gone' })).toEqual({ initialHome: 'acme' })
+    // A scope that draws nothing has nothing to open on: its home, and a word about the board that is not there.
+    expect(placeLanding(held(scope('acme', [])), { scope: 'acme', page: 'board', id: 'gone' })).toEqual({ initialHome: 'acme', notice: 'shell.placeGone' })
+  })
+
+  it('says so once the app is up where the address did not land where it pointed, and not where it did', () => {
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two' }).notice).toBeUndefined()
+    expect(placeLanding(held(rail), { scope: 'acme/rail' }).notice).toBeUndefined()
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'gone' }).notice).toBe('shell.placeGone')
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'chart' }).notice).toBe('shell.placeGone')
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'decisions', id: 'ADR-9' }).notice).toBe('shell.placeGone')
+    // A scope that is not there: the organisation's home, said where the address pointed into it.
+    expect(placeLanding(undefined, { scope: 'acme/gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeGone' })
+    expect(placeLanding(undefined, { scope: 'acme/gone' })).toEqual({})
   })
 
   /** A view's page with no id: the one of its kind there is, and the home where there is none (ADR-0019, amended). */
   it('opens a view\u2019s page with no id on the one of its kind there is, and makes none', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board' }).initialProject?.activeDiagramId).toBe('one')
-    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'sheet' })).toEqual({ initialHome: 'acme/rail' })
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'sheet' })).toEqual({ initialHome: 'acme/rail', notice: 'shell.placeGone' })
   })
 
   it('selects the element a link names on the view it opens, where the link said one (ADR-0033, amended)', () => {
@@ -185,8 +196,9 @@ describe('a place in the address (ADR-0033)', () => {
   })
 
   it('lands a scope that is not there, or that may not be read, on the organisation’s home', async () => {
-    expect(placeLanding(undefined, { scope: 'gone', page: 'board', id: 'x' })).toEqual({})
-    expect(await landedAt(Promise.resolve(undefined), { scope: 'gone', page: 'decisions' })).toEqual({})
+    // And says so, where the address pointed into the scope that is gone.
+    expect(placeLanding(undefined, { scope: 'gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeGone' })
+    expect(await landedAt(Promise.resolve(undefined), { scope: 'gone', page: 'decisions' })).toEqual({ notice: 'shell.placeGone' })
   })
 
   it('lands on the scope’s home where the read keeps the first paint waiting', async () => {

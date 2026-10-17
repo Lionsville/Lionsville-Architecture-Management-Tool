@@ -137,6 +137,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   // --- projects and the picker ---------------------------------------------
   'picker.examples': 'Beispiele',
+  'picker.openNamed': '{name} öffnen',
   'picker.open': 'Öffnen',
   'picker.order': 'Reihenfolge',
   'picker.orderName': 'Name',
@@ -406,6 +407,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.documentation': 'Dokumentation',
   'shell.documentationTip': 'Die Dokumentationsseite des ausgewählten Elements öffnen',
   'shell.noElements': 'Es gibt noch nichts zu dokumentieren — fügen Sie zuerst ein Element hinzu.',
+  'shell.placeUnknown': 'Die Adresse nennt eine Seite, die diese App nicht hat, deshalb wurde geöffnet, was zuletzt offen war.',
+  'shell.placeGone': 'Worauf die Adresse zeigte, ist nicht da, deshalb wurde die nächstgelegene Stelle geöffnet.',
   'shell.decisions': 'Entscheidungen',
   'shell.decisionsTip': 'Architekturentscheidungen — für die Gruppe, die Landschaft und jede Anwendung',
   'shell.observations': 'Beobachtungen',

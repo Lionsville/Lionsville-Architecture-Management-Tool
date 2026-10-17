@@ -99,6 +99,7 @@ import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
 import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSettingsDialog'
 import { lazyPart } from '../../widgets/lazyPart'
+import { ArrivingDialog } from '../../widgets/Arriving'
 import { useRail } from './useRail'
 import type { RailUnits } from './useRail'
 
@@ -107,7 +108,7 @@ import type { RailUnits } from './useRail'
  * first time they are (`widgets/lazyPart`).
  */
 const SheetSettingsDialog = lazyPart<ComponentProps<typeof SheetSettingsDialogShape>>(
-  () => import('./SheetSettingsDialog').then((held) => held.SheetSettingsDialog),
+  () => import('./SheetSettingsDialog').then((held) => held.SheetSettingsDialog), { fallback: () => <ArrivingDialog /> },
 )
 
 export type SheetPageProps = {

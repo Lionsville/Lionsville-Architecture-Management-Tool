@@ -234,6 +234,13 @@ export interface EditorRequests {
      * is open.
      */
     leaveDocumentation?: { nonce: number };
+    /**
+     * The documentation page as it stands: the element whose page is up over
+     * the board, or nothing once it closes — however it opened or closed, by
+     * a request or by the person. The host's screen names it (ADR-0019), so
+     * the page has an address of its own and Back leaves it (ADR-0033).
+     */
+    onDocumentation?(elementId: ElementId | undefined): void;
 }
 
 /**

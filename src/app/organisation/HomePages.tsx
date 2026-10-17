@@ -24,6 +24,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { useShownDays } from '../../editor/useShownDays'
 import { RegisterIcon } from '../../widgets/icons'
 import { lazyPart } from '../../widgets/lazyPart'
+import { arrivingPage } from '../../widgets/Arriving'
 import type { ChecksPage as ChecksPageShape } from './ChecksPage'
 import { OnePage } from './OrganisationCards'
 import type { RegisterRow } from './register'
@@ -36,18 +37,18 @@ import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPageRequest } from '../useShellAgent'
 
 const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
-  () => import('./RegisterPage').then((held) => held.RegisterPage), { until: (props) => props.open },
+  () => import('./RegisterPage').then((held) => held.RegisterPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const TechnologyPage = lazyPart<ComponentProps<typeof TechnologyPageShape>>(
-  () => import('./RegisterPage').then((held) => held.TechnologyPage), { until: (props) => props.open },
+  () => import('./RegisterPage').then((held) => held.TechnologyPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 /** The people register's page (ADR-0036), fetched the first time it is opened, as the registers are. */
 const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
-  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open },
+  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open, fallback: arrivingPage },
 )
 /** The Checks page (ADR-0036, amended 11 October 2026), likewise. */
 const ChecksPage = lazyPart<ComponentProps<typeof ChecksPageShape>>(
-  () => import('./ChecksPage').then((held) => held.ChecksPage), { until: (props) => props.open },
+  () => import('./ChecksPage').then((held) => held.ChecksPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 
 /** The People page has no day of its own: today is its day, and a look away is the window's (ADR-0027). */
@@ -149,7 +150,7 @@ export function ChecksCard({ checks, onOpen, s }: { checks: HomeChecks; onOpen: 
         plural(s, { one: 'org.checksFoundOne', other: 'org.checksFoundOther' }, finding),
       ].join(' · ')}
       action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-checks" data-guide="org.card.checks">
+        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-checks" data-guide="org.card.checks" aria-label={s('picker.openNamed', { name: s('org.checks') })}>
           {s('picker.open')}
         </Button>
       )}

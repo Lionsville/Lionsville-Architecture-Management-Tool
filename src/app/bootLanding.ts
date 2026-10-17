@@ -30,7 +30,15 @@ export type BootLanding = {
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks'
+  /**
+   * What to say once the app is up, where the address did not land where it
+   * pointed: a page this app has no such thing as, or a view or record that
+   * is not there any more. Silence read as the link being broken.
+   */
+  notice?: BootNotice
 }
+
+export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone'
 
 /**
  * The scope the boot read, turned into where the app starts.
@@ -138,25 +146,30 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   if (page !== undefined && HOME_PAGES.includes(page)) {
     return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' }) }
   }
-  if (held === undefined) return {}
+  // A scope that is not there lands on the organisation's home, and says so
+  // where the address pointed at something in it.
+  if (held === undefined) return page !== undefined || place.id !== undefined ? { notice: 'shell.placeGone' } : {}
   const near = nearestPlace(place, { scopeIs: () => true, ...factsOf(held) })
+  // Said once the app is up, where the place in the address is not the one
+  // landed on: the nearest place is the right landing and the wrong silence.
+  const gone = near.page !== page || near.id !== place.id ? { notice: 'shell.placeGone' as const } : {}
   const snapshot = held.snapshot
-  if (near.page === 'home') return homeOf(scope)
+  if (near.page === 'home') return { ...homeOf(scope), ...gone }
   if (near.page === undefined || VIEW_PAGES.includes(near.page)) {
     // A scope that draws nothing has no view to open on: its home.
-    if (!isOpenableScope(snapshot)) return homeOf(scope)
-    if (near.page === undefined) return { initialProject: snapshot }
+    if (!isOpenableScope(snapshot)) return { ...homeOf(scope), ...(page === undefined ? {} : { notice: 'shell.placeGone' }) }
+    if (near.page === undefined) return { initialProject: snapshot, ...gone }
     // A view's page with no id is the one of its kind there is, and the home
     // where there is none: an open never makes a view (ADR-0019, amended).
     const view = viewFor(near.page, near.id, snapshot.model.diagrams, snapshot.activeDiagramId)
-    if (view === undefined) return homeOf(scope)
+    if (view === undefined) return { ...homeOf(scope), notice: 'shell.placeGone' }
     // A link's element, selected and marked on the view it opens (ADR-0033,
     // amended 11 October 2026): on arrival only, where the view draws it.
     const select = near.select === undefined ? undefined : initialPageFor({ ...near, id: view })
-    return { initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}) }
+    return { initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...gone }
   }
   const opened = initialPageFor(near)
-  return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}) }
+  return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}), ...gone }
 }
 
 /** A scope as a place in it is landed by: its snapshot, and the records it reads from above. */

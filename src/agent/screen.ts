@@ -102,6 +102,8 @@ export type ScreenPage =
   | { readonly page: 'roadmap' }
   /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
   | { readonly page: 'operating'; readonly id?: string }
+  /** A record's page over the board (the documentation page), on the element whose page it is. */
+  | { readonly page: 'document'; readonly id: string }
   | { readonly page: 'plan'; readonly id: string }
   | { readonly page: 'platform'; readonly id: string }
   | { readonly page: 'service'; readonly id: string }

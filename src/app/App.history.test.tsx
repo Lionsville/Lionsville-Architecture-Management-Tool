@@ -240,14 +240,21 @@ describe('Back and Forward', () => {
     await settledOn({ scope: '', ...page } as Place)
   })
 
-  it('lands a removed scope on the home of the nearest scope above it', async () => {
+  it('lands a removed scope on the home of the nearest scope above it, and says so', async () => {
     const { where } = await backTo({ scope: 'acme/retail/gone', page: 'decisions' })
     await waitFor(async () => expect((await where()).home?.path).toBe('acme/retail'))
     await settledOn({ scope: 'acme/retail', page: 'home' })
+    await screen.findByText('What the address pointed at is not there, so it opened the nearest place.')
   })
 })
 
 describe('the first paint, where a place in the address landed it', () => {
+  it('says once it is up where the address did not land where it pointed', async () => {
+    const wire = fakeGateway()
+    renderApp({ agent: wire.gateway, repositories: heldRepositories([root, retail]), boot: { initialProject: root, notice: 'shell.placeUnknown' } })
+    await screen.findByText('The address names a page this app does not have, so it opened where it was.')
+  })
+
   it('opens the scope on the page the place named, and the entry holds that place', async () => {
     const wire = fakeGateway()
     renderApp({

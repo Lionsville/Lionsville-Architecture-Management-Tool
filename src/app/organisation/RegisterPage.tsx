@@ -590,6 +590,7 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
               sx={{ fontSize: 11, minWidth: 0, px: 1 }}
               data-testid={`${prefix}-open-${row.id}`}
               data-guide={`${config.named}.openRow`}
+              aria-label={s('picker.openNamed', { name: row.name })}
               onClick={() => onOpen(row.master!, row.id)}
             >
               {s('picker.open')}

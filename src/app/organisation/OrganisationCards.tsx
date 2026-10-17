@@ -138,6 +138,17 @@ export function OnePage({ icon, title, description, count, finding, action }: {
   )
 }
 
+/**
+ * The business card's button: *Open*, named for a reader, where there is a
+ * sheet. A scope with no sheet is not missing one; it has not been given one
+ * yet, and the word says which.
+ */
+function businessAction(hasSheet: boolean, s: Translate): { text: string; label: string | undefined } {
+  return hasSheet
+    ? { text: s('picker.open'), label: s('picker.openNamed', { name: s('org.business') }) }
+    : { text: s('org.businessMake'), label: undefined }
+}
+
 /** A line on a card as a link to the one thing it names, where the home can open it. */
 function CardLink({ onOpen, testId, children }: { onOpen?: () => void; testId: string; children: string }) {
   return onOpen
@@ -219,6 +230,7 @@ export function OrganisationCards({
       ? plural(s, { one: 'org.unmappedOne', other: 'org.unmappedOther' }, pages.business.unmapped)
       : s('org.allMapped')
 
+  const business = businessAction(pages.business.sheetId !== undefined, s)
   return (
     // A grid rather than a wrapping row: equal columns, so six cards are two
     // rows of three the same size and left-aligned, not four and two wider ones
@@ -236,7 +248,7 @@ export function OrganisationCards({
             })
             : undefined}
           action={(
-            <Button size="small" onClick={onOpenDocumentation} sx={quiet} data-testid="open-documentation">
+            <Button size="small" onClick={onOpenDocumentation} sx={quiet} data-testid="open-documentation" aria-label={s('picker.openNamed', { name: s('shell.documentation') })}>
               {s('picker.open')}
             </Button>
           )}
@@ -252,10 +264,8 @@ export function OrganisationCards({
         action={(
           <Actions>
             {(pages.business.sheetId || writable) && (
-              <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business">
-                {/* A scope with no sheet is not missing one; it has not been given
-                    one yet, and the word says which. */}
-                {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
+              <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business" aria-label={business.label}>
+                {business.text}
               </Button>
             )}
             {/* The map is the same layer read the other way — what supports
@@ -286,7 +296,7 @@ export function OrganisationCards({
           </CardLink>
         )}
         action={(
-          <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions" data-guide="org.card.decisions">
+          <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions" data-guide="org.card.decisions" aria-label={s('picker.openNamed', { name: s('shell.decisions') })}>
             {s('picker.open')}
           </Button>
         )}
@@ -307,7 +317,7 @@ export function OrganisationCards({
             : '',
         ].filter(Boolean).join(' · ') || undefined}
         action={(
-          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations" data-guide="org.card.observations">
+          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations" data-guide="org.card.observations" aria-label={s('picker.openNamed', { name: s('shell.observations') })}>
             {s('picker.open')}
           </Button>
         )}
@@ -334,7 +344,7 @@ export function OrganisationCards({
           <RoadmapFinding finding={pages.roadmap.finding} opens={pages.roadmap.findingOpens} onOpen={onOpenFinding} s={s} />
         )}
         action={(
-          <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap" data-guide="org.card.roadmap">
+          <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap" data-guide="org.card.roadmap" aria-label={s('picker.openNamed', { name: s('shell.roadmap') })}>
             {s('picker.open')}
           </Button>
         )}
@@ -356,7 +366,7 @@ export function OrganisationCards({
           plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
         ].join(' · ')}
         action={(
-          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register" data-guide="org.card.register">
+          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register" data-guide="org.card.register" aria-label={s('picker.openNamed', { name: s('org.register') })}>
             {s('picker.open')}
           </Button>
         )}
@@ -376,7 +386,7 @@ export function OrganisationCards({
         ].join(' · ')}
         action={(
           <Actions>
-            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology" data-guide="org.card.technology">
+            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology" data-guide="org.card.technology" aria-label={s('picker.openNamed', { name: s('org.technology') })}>
               {s('picker.open')}
             </Button>
             {/* The landscape is the same layer as a picture — who uses what,

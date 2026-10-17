@@ -17,6 +17,7 @@
  * component of its own over those parts.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import Box from '@mui/material/Box'
 import type { ReactNode } from 'react'
 import { dayShown, useShownDays } from '../editor'
 import { useProjectHistory } from './history/useProjectHistory'
@@ -83,7 +84,10 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
           <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
           {parts.pickers.document.input}
           {parts.pickers.logo.input}
-          <WorkspaceEditor parts={parts} />
+          {/* Inert under a page: what a page covers takes no focus and says nothing to a reader, rather than the whole board staying in the tree under every page. The pages are portals, so this reaches the board alone. */}
+          <Box inert={parts.pages.page() !== undefined || parts.requests.documentationShown !== undefined} sx={{ display: 'contents' }}>
+            <WorkspaceEditor parts={parts} />
+          </Box>
           <HistoryDialogs parts={parts} />
           <WorkspacePages parts={parts} />
           <WorkspaceDialogs parts={parts} />
@@ -455,7 +459,7 @@ function useScreenParts(
   const { viewing } = tree
   const pages = useWorkspacePages({
     session, scope: project.path, makeId, s, viewing, focusElement: requests.focusElement,
-    maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome,
+    maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome, documentationShown: requests.documentationShown,
   })
   useWorkspaceAgentView({
     session, scope: project.path, indexRef: base.indexRef, rowsElsewhereRef: tree.readings.rowsElsewhereRef,

@@ -29,6 +29,7 @@ import { ShellDialogs } from './dialogs/ShellDialogs'
 import { messageFor } from './messageFor'
 import type { ProjectSettingsDialog as ProjectSettingsDialogShape } from './ProjectSettingsDialog'
 import { lazyPart } from '../widgets/lazyPart'
+import { ArrivingDialog, arrivingDialog } from '../widgets/Arriving'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { InitialPage } from './App'
 import { initialPageFor } from './bootLanding'
@@ -42,10 +43,10 @@ import type { WorkspaceHost, WorkspaceSettings, WorkspaceShell } from './workspa
  * first time it is up, in a script of its own (`widgets/lazyPart`).
  */
 const ProjectSettingsDialog = lazyPart<ComponentProps<typeof ProjectSettingsDialogShape>>(
-  () => import('./ProjectSettingsDialog').then((held) => held.ProjectSettingsDialog), { until: (props) => props.open },
+  () => import('./ProjectSettingsDialog').then((held) => held.ProjectSettingsDialog), { until: (props) => props.open, fallback: arrivingDialog },
 )
 const AddFromLibraryDialog = lazyPart<ComponentProps<typeof AddFromLibraryDialogShape>>(
-  () => import('./dialogs/AddFromLibraryDialog').then((held) => held.AddFromLibraryDialog), { until: (props) => props.choice !== undefined },
+  () => import('./dialogs/AddFromLibraryDialog').then((held) => held.AddFromLibraryDialog), { until: (props) => props.choice !== undefined, fallback: (props) => (props.choice === undefined ? null : <ArrivingDialog />) },
 )
 
 export type WorkspaceDialogState = ReturnType<typeof useWorkspaceDialogs>

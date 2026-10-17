@@ -63,7 +63,7 @@ import { sourceKey } from '../platform/workingSource'
 import {
   bootDecidedBy, dialogAsked, landedAt, landingOf, placeLanding, placeToRead, readPlaceScope, reopened, withoutDialog,
 } from './bootLanding'
-import { readPlace } from '../agent/place'
+import { readPlace, unknownPlace } from '../agent/place'
 import type { Place } from '../agent/place'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
@@ -483,6 +483,7 @@ function renderApp(
           ...(landing?.initialHome !== undefined ? { initialHome: landing.initialHome } : {}),
           ...(landing?.initialPage ? { initialPage: landing.initialPage } : {}),
           ...(landing?.initialHomePage ? { initialHomePage: landing.initialHomePage } : {}),
+          ...(landing?.notice ? { notice: landing.notice } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
           browserLanguages: navigator.languages ?? navigator.language,
@@ -588,7 +589,11 @@ void settled()
     const landing = lastScope === undefined
       ? landingOf(undefined, shell.opensAt)
       : await reopened(readScope(shell.repositories.scopes, lastScope), lastScope, shell.opensAt)
-    renderApp(storedPreferences, { ...landing, dialog: askedDialog })
+    // An address that meant to be a place and names a page this app has no
+    // such thing as lands where the app would have anyway, and says so once
+    // it is up, rather than in silence (ADR-0033).
+    const notice = !needed && unknownPlace(window.location.hash) ? { notice: 'shell.placeUnknown' as const } : {}
+    renderApp(storedPreferences, { ...landing, ...notice, dialog: askedDialog })
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({

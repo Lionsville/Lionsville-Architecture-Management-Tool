@@ -24,6 +24,7 @@ import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
 import { lazyPart } from '../widgets/lazyPart'
+import { ArrivingDialog, arrivingPage } from '../widgets/Arriving'
 import type { WorkspaceParts } from './workspaceParts'
 import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from './units/EndedHolders'
 import { organisationHere } from './units/organisationHere'
@@ -41,10 +42,10 @@ import type {
  * first view: their script arrives with the first one opened (`widgets/lazyPart`).
  */
 const ServiceReportPage = lazyPart<ComponentProps<typeof ServiceReportShape>>(
-  () => import('../technology/ui/ReportPage').then((held) => held.ServiceReportPage), { until: (props) => props.open },
+  () => import('../technology/ui/ReportPage').then((held) => held.ServiceReportPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
-  () => import('../technology/ui/ReportPage').then((held) => held.PlatformReportPage), { until: (props) => props.open },
+  () => import('../technology/ui/ReportPage').then((held) => held.PlatformReportPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 /**
  * The observations page is reached from a card or a tab's menu, never the first
@@ -52,7 +53,7 @@ const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
  * the workspace has: its script arrives when it is first opened.
  */
 const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
-  () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open },
+  () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 
 /**
@@ -68,17 +69,17 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
  * *New plan* meanwhile, where the Enter that named the plan pressed it again.
  */
 const AdrPage = lazyPart<ComponentProps<typeof AdrPageShape>>(
-  () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { until: (props) => props.open },
+  () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const PlanPage = lazyPart<ComponentProps<typeof PlanPageShape>>(
-  () => import('../roadmap/ui/PlanPage').then((held) => held.PlanPage), { until: (props) => props.open },
+  () => import('../roadmap/ui/PlanPage').then((held) => held.PlanPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const RoadmapPage = lazyPart<ComponentProps<typeof RoadmapPageShape>>(
-  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open, brings: [PlanPage] },
+  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open, brings: [PlanPage], fallback: arrivingPage },
 )
 const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
   () => import('../roadmap/ui/ReplaceDialog').then((held) => held.ReplaceDialog),
-  { until: (props) => props.subject !== undefined, brings: [PlanPage] },
+  { until: (props) => props.subject !== undefined, brings: [PlanPage], fallback: (props) => (props.subject === undefined ? null : <ArrivingDialog />) },
 )
 
 /**
@@ -87,7 +88,7 @@ const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
  * is first opened.
  */
 const OperatingModelPage = lazyPart<ComponentProps<typeof OperatingModelPageShape>>(
-  () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { until: (props) => props.open },
+  () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 
 /**

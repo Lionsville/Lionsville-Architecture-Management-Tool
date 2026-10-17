@@ -9,8 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PREFIX, PLACE_STATE_KEY, linkTo, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
-} from './place'
+  PLACE_PREFIX, PLACE_STATE_KEY, linkTo, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
 
@@ -89,6 +88,17 @@ describe('the place a screen is', () => {
     expect(placeOf({ open, page: { page: 'observations' } })).toEqual({ scope: 'acme', page: 'observations' })
     expect(placeOf({ open, page: { page: 'roadmap' } })).toEqual({ scope: 'acme', page: 'roadmap' })
     expect(placeOf({ open: { path: 'acme', name: 'Acme' }, page: { page: 'plan', id: 'TR-1' } })).toEqual({ scope: 'acme', page: 'plan', id: 'TR-1' })
+    // The documentation page is a place of its own, on the element whose page it is.
+    expect(placeOf({ open, page: { page: 'document', id: 'wms' } })).toEqual({ scope: 'acme', page: 'document', id: 'wms' })
+    expect(readPlace(writePlace({ scope: 'acme', page: 'document', id: 'wms' }))).toEqual({ scope: 'acme', page: 'document', id: 'wms' })
+  })
+
+  it('tells an address that meant to be a place and is not from one that was never meant to be', () => {
+    expect(unknownPlace('#place?scope=acme&page=chart-of-units')).toBe(true)
+    expect(unknownPlace('#place?scope=acme&page=technology')).toBe(false)
+    expect(unknownPlace('#place?scope=acme&page=board&id=l7')).toBe(false)
+    expect(unknownPlace('#somebody-elses')).toBe(false)
+    expect(unknownPlace('')).toBe(false)
   })
 
   it('is whose home is up, and its page, with nothing open', () => {

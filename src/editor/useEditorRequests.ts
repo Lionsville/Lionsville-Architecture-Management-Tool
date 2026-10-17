@@ -132,6 +132,10 @@ export function useDocumentation(
   // simply has no page any more.
   const diagram = (diagramId !== undefined ? state.model.diagrams.find((d) => d.id === diagramId) : undefined) ?? activeDiagram;
   const element = documentationId ? state.model.elements.find((e) => e.id === documentationId) : undefined;
+  // Said to the host as it stands, the element's page or none: what the screen names.
+  const onDocumentation = props.requests?.onDocumentation;
+  const shownId = element?.id;
+  useEffect(() => { onDocumentation?.(shownId); }, [onDocumentation, shownId]);
   return { open, close, leave: () => setDocumentationId(undefined), element, diagram, fieldsWidth, setFieldsWidth };
 }
 

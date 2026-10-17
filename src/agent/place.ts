@@ -117,6 +117,18 @@ function isPage(value: string): value is Page {
 }
 
 /**
+ * Whether a fragment meant to be a place and is not one: it carries the
+ * prefix and {@link readPlace} refuses it — a page there is no such thing
+ * as, a key this grammar does not have. The boot says so then, rather than
+ * landing somewhere else in silence; a fragment with no prefix is somebody
+ * else's and is left alone as before.
+ */
+export function unknownPlace(hash: string): boolean {
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash
+  return fragment.startsWith(PLACE_PREFIX) && readPlace(hash) === undefined
+}
+
+/**
  * A place out of whatever a history entry's state holds — the window's
  * history is anybody's to write, so it is checked as an address is, by
  * writing what was found and reading it back.

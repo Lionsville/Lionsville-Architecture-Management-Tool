@@ -429,7 +429,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             {tabs.map((diagram) => (
               <Tab
                 key={diagram.id}
-                value={diagram.id}
+                value={diagram.id} aria-label={diagram.name}
                 {...tabMenuDoors(diagram.id, openTabMenu, hasTabMenu ? openTabMenuBelow : undefined)}
                 label={
                   <TabLabel

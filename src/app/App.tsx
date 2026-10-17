@@ -14,7 +14,7 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -575,6 +575,13 @@ function useShellParts(props: AppProps): ShellParts {
     ...(props.provider?.people ? { source: props.provider.people } : {}),
     readText: (file) => props.documents.readBytes(file).then(textFromBytes), copyText: (text) => { void props.hostControls.copyText(text).catch((cause: unknown) => services.failed('people.copy', cause)) },
   })
+  // What the boot has to say about the address it landed from (ADR-0033), once, as the app comes up.
+  const noticed = useRef(false)
+  useEffect(() => {
+    if (noticed.current || props.boot.notice === undefined) return
+    noticed.current = true
+    toasts.notify(s(props.boot.notice), 'info')
+  }, [props.boot.notice, toasts, s])
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,

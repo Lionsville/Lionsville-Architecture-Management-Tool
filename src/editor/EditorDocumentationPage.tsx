@@ -11,6 +11,7 @@ import type { ComponentProps } from 'react';
 import type { DesignDiagram, DesignElement, ElementId } from '../model/types';
 import type { DocumentationPage as DocumentationPageShape } from '../documentation/ui/DocumentationPage';
 import { lazyPart } from '../widgets/lazyPart';
+import { ArrivingPage } from '../widgets/Arriving';
 import { ElementInspector } from './ElementInspector';
 import type { SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
@@ -23,6 +24,7 @@ import type { Documentation } from './useEditorRequests';
  */
 const DocumentationPage = lazyPart<ComponentProps<typeof DocumentationPageShape>>(
   () => import('../documentation/ui/DocumentationPage').then((held) => held.DocumentationPage),
+  { fallback: (props) => <ArrivingPage topInset={props.windowChrome?.topInset ?? 0} /> },
 );
 
 /**

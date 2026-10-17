@@ -89,7 +89,7 @@ describe('BoardsTable', () => {
   it('keeps Open and Delete on a sub-row, each about its own diagram', () => {
     const { onOpen, onDelete } = show()
     const row = screen.getByTestId('board-cd-billing')
-    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
+    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
     expect(onOpen).toHaveBeenCalledWith('cd-billing')
     fireEvent.click(within(row).getByRole('button', { name: 'Delete' }))
     expect(onDelete).toHaveBeenCalledWith({ id: 'cd-billing', name: 'Billing' })
@@ -116,7 +116,7 @@ describe('BoardsTable', () => {
     show(BOARDS(), true)
     expect(screen.queryByTestId('new-board')).toBeNull()
     expect(within(screen.getByTestId('board-cd-billing')).queryByRole('button', { name: 'Delete' })).toBeNull()
-    expect(within(screen.getByTestId('board-cd-billing')).getByRole('button', { name: 'Open' })).toBeDefined()
+    expect(within(screen.getByTestId('board-cd-billing')).getByRole('button', { name: /^Open / })).toBeDefined()
   })
 
   it('says the day a board shows as that day, wherever the clock is', () => {

@@ -9,8 +9,9 @@
  */
 import type { ComponentProps } from 'react'
 import { lazyPart } from '../../widgets/lazyPart'
+import { arrivingPage } from '../../widgets/Arriving'
 import type { HistoryPage as HistoryPageShape } from './HistoryPage'
 
 export const HistoryPage = lazyPart<ComponentProps<typeof HistoryPageShape>>(
-  () => import('./HistoryPage').then((held) => held.HistoryPage), { until: (props) => props.open },
+  () => import('./HistoryPage').then((held) => held.HistoryPage), { until: (props) => props.open, fallback: arrivingPage },
 )

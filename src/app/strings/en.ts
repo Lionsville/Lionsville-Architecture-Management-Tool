@@ -241,6 +241,7 @@ export const EN = {
 
   // --- projects and the picker ---------------------------------------------
   'picker.examples': 'Examples',
+  'picker.openNamed': 'Open {name}',
   'picker.open': 'Open',
   'picker.order': 'Order',
   'picker.orderName': 'Name',
@@ -564,6 +565,9 @@ export const EN = {
   'shell.documentation': 'Documentation',
   'shell.documentationTip': 'Open the documentation page of the selected element',
   'shell.noElements': 'There is nothing to document yet \u2014 add an element first.',
+  /** The address the app opened from named a page it has no such thing as, or a view or record that is not there (ADR-0033). */
+  'shell.placeUnknown': 'The address names a page this app does not have, so it opened where it was.',
+  'shell.placeGone': 'What the address pointed at is not there, so it opened the nearest place.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
   'shell.observations': 'Observations',

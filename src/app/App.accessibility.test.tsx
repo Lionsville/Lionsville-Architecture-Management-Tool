@@ -61,13 +61,17 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
   })
 
   // Every page the organisation's cards open, over the whole example tree:
-  // the register and the technology register, the sheet and the map, the
-  // decisions, the observations and the roadmap.
+  // the register and the technology register, the people and the checks,
+  // the operating model, the sheet and the map, the decisions, the
+  // observations and the roadmap.
   // The sheet and the map are views, drawn in their tab over the editor
   // rather than in a page of their own.
   it.each<[string, () => Promise<HTMLElement>]>([
     ['open-register', () => screen.findByTestId('register-table')],
     ['open-technology', () => screen.findByTestId('technology-register-table')],
+    ['open-people', () => screen.findByTestId('people-policy')],
+    ['open-checks', () => screen.findByRole('dialog')],
+    ['open-operating', () => screen.findByRole('dialog')],
     ['open-business', () => screen.findByRole('tab', { name: /Business architecture/, selected: true })],
     ['open-map', () => screen.findByRole('tab', { name: /Enterprise map/, selected: true })],
     ['open-decisions', () => screen.findByRole('dialog')],
@@ -84,6 +88,16 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
     show(true)
     await screen.findByRole('tab', { name: /Application landscape/ })
     await waitFor(() => expect(document.querySelectorAll('.react-flow__node').length).toBeGreaterThan(0))
+    expect(await axeFindings()).toEqual([])
+  })
+
+  // The documentation page, over the board, from the bar.
+  it('finds nothing on the documentation page', async () => {
+    show(true)
+    await screen.findByRole('tab', { name: /Application landscape/ })
+    // The bar's buttons are named by their tips; the word is their text.
+    fireEvent.click(screen.getByText('Documentation', { selector: 'button' }))
+    await screen.findByTestId('doc-content')
     expect(await axeFindings()).toEqual([])
   })
 

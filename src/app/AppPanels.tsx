@@ -16,6 +16,7 @@ import { sourceIsReadOnly } from '../platform/workingSource'
 import type { ConnectAgentDialog as ConnectAgentDialogShape } from './dialogs/ConnectAgentDialog'
 import type { PreferencesDialog as PreferencesDialogShape } from './dialogs/PreferencesDialog'
 import { lazyPart } from '../widgets/lazyPart'
+import { arrivingDialog } from '../widgets/Arriving'
 import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
@@ -484,10 +485,10 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
  * it is opened, in a script of its own (`widgets/lazyPart`).
  */
 const PreferencesDialog = lazyPart<ComponentProps<typeof PreferencesDialogShape>>(
-  () => import('./dialogs/PreferencesDialog').then((held) => held.PreferencesDialog), { until: (props) => props.open },
+  () => import('./dialogs/PreferencesDialog').then((held) => held.PreferencesDialog), { until: (props) => props.open, fallback: arrivingDialog },
 )
 const ConnectAgentDialog = lazyPart<ComponentProps<typeof ConnectAgentDialogShape>>(
-  () => import('./dialogs/ConnectAgentDialog').then((held) => held.ConnectAgentDialog), { until: (props) => props.open },
+  () => import('./dialogs/ConnectAgentDialog').then((held) => held.ConnectAgentDialog), { until: (props) => props.open, fallback: arrivingDialog },
 )
 
 export function AppDialogs({ parts }: { parts: ShellParts }) {

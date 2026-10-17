@@ -151,10 +151,15 @@ export function useShellAgent(deps: {
    * lands when it is not there any more is asked of the tree the shell holds,
    * and of the open session for the scope that is open.
    */
-  const nearest = useCallback((place: Place) => landingFor(place, tree, (path) => {
-    const held = agentSessionRef.current
-    return held && project?.path === path ? { model: held.current(), ancestorDecisions: held.ancestorDecisions() } : undefined
-  }, report), [tree, project, report])
+  const nearest = useCallback(async (place: Place) => {
+    const near = await landingFor(place, tree, (path) => {
+      const held = agentSessionRef.current
+      return held && project?.path === path ? { model: held.current(), ancestorDecisions: held.ancestorDecisions() } : undefined
+    }, report)
+    // Back to a place that is gone lands on the nearest one, and says so (ADR-0033).
+    if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) notify(s('shell.placeGone'), 'info')
+    return near
+  }, [tree, project, report, notify, s])
   const lookAtPlace = usePlaceHistory({ open: openFor, nearest, failed: report })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a

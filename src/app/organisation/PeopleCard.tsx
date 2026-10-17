@@ -32,7 +32,7 @@ export function PeopleCard({ people: register, atRoot, onOpen, s }: {
         ...(left > 0 ? [plural(s, { one: 'org.peopleLeftOne', other: 'org.peopleLeftOther' }, left)] : []),
       ].join(' · ')}
       action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-people" data-guide="org.card.people">
+        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-people" data-guide="org.card.people" aria-label={s('picker.openNamed', { name: s('org.people') })}>
           {s('picker.open')}
         </Button>
       )}

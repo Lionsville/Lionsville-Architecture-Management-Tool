@@ -243,7 +243,7 @@ function BoardRow({ board, under, compact = false, onOpen, onDelete, language, s
           {said}
         </Typography>
       </Box>
-      <Button size="small" onClick={() => onOpen(board.id)} sx={actionSx}>
+      <Button size="small" onClick={() => onOpen(board.id)} sx={actionSx} aria-label={s('picker.openNamed', { name: board.name })}>
         {s('picker.open')}
       </Button>
       {board.kind === 'container' && onDelete && (

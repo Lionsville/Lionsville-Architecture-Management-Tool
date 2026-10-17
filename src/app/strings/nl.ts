@@ -136,6 +136,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   // --- projecten en de kiezer ----------------------------------------------
   'picker.examples': 'Voorbeelden',
+  'picker.openNamed': '{name} openen',
   'picker.open': 'Openen',
   'picker.order': 'Volgorde',
   'picker.orderName': 'Naam',
@@ -405,6 +406,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.documentation': 'Documentatie',
   'shell.documentationTip': 'Open de documentatiepagina van het geselecteerde element',
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',
+  'shell.placeUnknown': 'Het adres noemt een pagina die deze app niet heeft, dus hij is geopend waar hij was.',
+  'shell.placeGone': 'Waar het adres naar wees is er niet, dus de dichtstbijzijnde plek is geopend.',
   'shell.decisions': 'Besluiten',
   'shell.decisionsTip': 'Architectuurbesluiten \u2014 voor de groep, het landschap en elke applicatie',
   'shell.observations': 'Waarnemingen',

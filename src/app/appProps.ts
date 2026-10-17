@@ -14,7 +14,7 @@
 import type { StringKey } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
-import type { BootDialog } from './bootLanding'
+import type { BootDialog, BootNotice } from './bootLanding'
 import type { InitialPage } from './App'
 import type { ThemeMode } from '../platform/theme'
 import type { WindowChrome } from '../platform/windowChrome'
@@ -65,6 +65,8 @@ export type AppBoot = {
    */
   initialPage?: InitialPage
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks'
+  /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
+  notice?: BootNotice
   /**
    * One of the shell's own dialogs, open at the first paint because the
    * address asked for it (`bootLanding`'s `dialogAsked`) — a page elsewhere

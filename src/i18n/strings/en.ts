@@ -24,6 +24,8 @@ export const EN = {
   'common.empty': 'Nothing written yet.',
   /** Three pages offer it — a diagram, a description, a decision — and it is the same word (ADR-0008). */
   'common.history': 'History…',
+  /** What a page or a dialog says while its script is on the way (`widgets/Arriving`). */
+  'common.arriving': 'Loading…',
   'common.copyLink': 'Copy link',
   /**
    * What to call the root scope where a path is what is being shown

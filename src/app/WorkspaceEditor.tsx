@@ -62,7 +62,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         diagrams={diagramCalls(parts)}
         history={seams.historyRequests}
         requests={{
-          focus: requests.focus, documentation: requests.documentation,
+          focus: requests.focus, documentation: requests.documentation, onDocumentation: requests.shownDocumentation,
           ...(requests.leftDocumentation ? { leaveDocumentation: requests.leftDocumentation } : {}),
         }}
         plans={{

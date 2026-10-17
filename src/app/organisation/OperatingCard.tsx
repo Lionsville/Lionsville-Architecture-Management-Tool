@@ -48,7 +48,7 @@ export function OperatingCard({ shown, ready, counts, onOpen, s }: {
       <Box sx={{ mt: 'auto' }}>
         <Button
           size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }}
-          data-testid="open-operating" data-guide="org.card.operating"
+          data-testid="open-operating" data-guide="org.card.operating" aria-label={s('picker.openNamed', { name: s('org.operating') })}
         >
           {s('picker.open')}
         </Button>

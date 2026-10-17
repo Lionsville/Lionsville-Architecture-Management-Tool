@@ -433,7 +433,7 @@ export function OrganisationScreen({
         windowChrome={windowChrome}
       />
 
-      <Box sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
+      <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
         {/* Wider on a wide screen, where the cards and the tables have use
             for the room; the sentences keep their own measure (720). From
             1200 px the cards stand five across, so ten of them are two rows
