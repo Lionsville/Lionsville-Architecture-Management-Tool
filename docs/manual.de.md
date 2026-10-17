@@ -1099,6 +1099,15 @@ Verwaltungswerkzeug, Akteur, und die Domänengruppe, die sie hält — und, seit
 der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
 die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie
 eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
+Die Seite des Elements legt dieselben Felder aus, in derselben Reihenfolge,
+unter denselben Überschriften (*Dokumentation*): beide entstehen aus einer
+Liste, sodass sie nicht auseinanderlaufen können. Jeder Bildschirm, der die
+Eigenschaften eines Datensatzes zeigt oder ein Formular verlangt — der
+Inspektor, die Seite, die Leser von Beobachtungen, Entscheidungen und Plänen,
+die Details des Geschäftsblatts, die Einstellungsdialoge und die Dialoge, die
+einen Datensatz anlegen — trägt ein Aussehen: kleine Felder, ein Rhythmus von
+Beschriftungen und Werten, dieselben Abschnittsüberschriften und ein
+gestrichelter Rand um ein Feld, das Sie nur lesen dürfen.
 
 - **Allgemein.** Name, Kategorie und Lebenszyklus (geplant, aktiv,
   auslaufend, abgeschaltet; als Abzeichen dargestellt, abgeschaltete Elemente
@@ -1237,7 +1246,10 @@ alles, was keine Anwendung ist.
 
 Die Seite öffnet sich zum **Lesen**: das Dokument mit einem Inhaltsverzeichnis,
 die anderen Elemente des Diagramms links zum Wechseln (eine Seitenmarke zeigt,
-wer schon Dokumentation hat), und die eigenen Felder des Elements rechts.
+wer schon Dokumentation hat), und die eigenen Felder des Elements rechts —
+die Felder des Inspektors am Board, in seiner Reihenfolge und seinem Aussehen,
+mit dem **Datensatz** vollständig über *Allgemein* und *Daten*, zwei nebeneinander,
+wo die Spalte breit genug ist. *Aussehen* bleibt neben dem Board, wo die Karte ist.
 **Bearbeiten** setzt den Quelltext nach links und das Ergebnis daneben, und macht
 auch die Felder rechts bearbeitbar. ⌘B und ⌘I umschließen die Auswahl; Escape
 verlässt zuerst Bearbeiten, dann die Seite. Änderungen werden nach einer kurzen

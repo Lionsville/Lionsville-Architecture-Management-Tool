@@ -121,6 +121,19 @@ share a row. The description field keeps its in-place editing and gains
 for the longer text. A card under the pointer shows a thin ring before it is
 clicked.
 
+**Every property screen is that one panel.** The documentation page lays
+out the same fields as the board's inspector, in the same order, under the
+same headings — the two are built from one list, so they cannot drift — with
+the record in full and two fields to a row where its column is wide enough;
+*Appearance* stays beside the board, where the card is. The readers of
+observations, causes, solutions, experiments, decisions and plans, the
+business sheet's details, the diagram, scope and sheet settings, the
+preferences and every dialog that makes a record — a unit, an assignment,
+a scope, a board, a plan, an observation, a decision — wear the same
+treatment, so a field looks the same wherever you meet it. A full-page
+reader keeps its two-column list of facts, because the page has the width;
+the terms are the panel's labels.
+
 **The *Managed* switch is gone.** It stood beside an element's lifecycle and
 nothing read it — not a card, a count, a check or a report — so flipping it
 changed nothing anybody could see. Whose a system is, is **Outside the

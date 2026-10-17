@@ -955,7 +955,15 @@ Seven kinds: application, component, external system, input channel,
 management tool, actor, and the domain group that holds them — and, since
 the physical view, a **platform**: a cluster, a broker, a bus, the tooling,
 what the applications run on and what they use. Select one and the
-**inspector** on the right shows its fields in three tabs.
+**inspector** on the right shows its fields in three tabs. The element's
+page lays out the same fields, in the same order, under the same headings
+(*Documentation*): the two are built from one list, so they cannot drift
+apart. Every screen that shows a record's properties or asks for a form —
+the inspector, the page, the readers of observations, decisions and plans,
+the business sheet's details, the settings dialogs and the dialogs that
+make a record — wears one look: small fields, one rhythm of labels and
+values, the same section headings, and a dashed outline round a field you
+may only read.
 
 - **General.** Name, category and lifecycle (planned, live, retiring,
   retired; shown as a badge, retired elements dim) on one row, the
@@ -1077,7 +1085,10 @@ or a double-click on anything that is not an application.
 
 The page opens to **read**: the document with a table of contents, the
 diagram's other elements down the left to move between (a page mark shows who
-has documentation already), and the element's own fields down the right.
+has documentation already), and the element's own fields down the right — the
+board inspector's fields, in its order and its look, with the **record** laid
+out in full above *General* and *Data*, two to a row where the column is wide
+enough. *Appearance* stays beside the board, where the card is.
 **Edit** puts the source on the left and the result beside it, and makes the
 fields on the right editable too. ⌘B and ⌘I wrap the selection; Escape leaves
 Edit first, then the page. Changes are saved after a short pause and when you

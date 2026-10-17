@@ -1034,7 +1034,15 @@ Zeven soorten: applicatie, component, extern systeem, invoerkanaal,
 beheertool, actor, en de domeingroep die ze bijeenhoudt — en, sinds de
 fysieke weergave, een **platform**: een cluster, een broker, een bus, de
 tooling, waar applicaties op draaien en wat ze gebruiken. Selecteer er een en
-de **inspector** rechts toont zijn velden in drie tabbladen.
+de **inspector** rechts toont zijn velden in drie tabbladen. De pagina van
+het element zet dezelfde velden neer, in dezelfde volgorde, onder dezelfde
+koppen (*Documentatie*): beide komen uit één lijst, dus ze kunnen niet uit
+elkaar groeien. Elk scherm dat de eigenschappen van een record toont of om
+een formulier vraagt — de inspector, de pagina, de lezers van observaties,
+besluiten en plannen, de details van het businessblad, de
+instellingendialogen en de dialogen die een record maken — draagt één
+uiterlijk: kleine velden, één ritme van labels en waarden, dezelfde
+sectiekoppen, en een gestippelde rand om een veld dat je alleen mag lezen.
 
 - **Algemeen.** Naam, categorie en levenscyclus (gepland, live, uitfaserend,
   uitgefaseerd; als badge, uitgefaseerde elementen dimmen) op één rij, de
@@ -1165,7 +1173,10 @@ geselecteerde element, of een dubbelklik op alles wat geen applicatie is.
 
 De pagina opent om te **lezen**: het document met een inhoudsopgave, links de
 andere elementen van het diagram om tussen te wisselen (een paginateken toont
-wie al documentatie heeft), rechts de velden van het element zelf.
+wie al documentatie heeft), rechts de velden van het element zelf — de
+velden van de inspector op het bord, in zijn volgorde en zijn uiterlijk, met
+het **record** voluit boven *Algemeen* en *Gegevens*, twee naast elkaar waar
+de kolom breed genoeg is. *Uiterlijk* blijft naast het bord, waar de kaart is.
 **Bewerken** zet de bron links en het resultaat ernaast, en maakt ook de velden
 rechts bewerkbaar. ⌘B en ⌘I omhullen de selectie; Escape gaat eerst uit
 Bewerken en dan uit de pagina. Wijzigingen worden bewaard na een korte pauze en
