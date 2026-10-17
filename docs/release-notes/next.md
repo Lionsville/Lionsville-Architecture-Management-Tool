@@ -135,4 +135,6 @@ pointed, and the address is written in the new form once they have. A link
 to an element's page opens it wherever the element is kept, a unit of a
 scope that draws nothing included, where it used to show *Diagram not
 found*; closing the page there goes to the scope's home. A link pasted into
-the address bar of a window that is already open goes there too.
+the address bar of a window that is already open goes there too, and a link
+made from an organisation chart selects the unit you went to, wherever it is
+kept.

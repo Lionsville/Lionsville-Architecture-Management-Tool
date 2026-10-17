@@ -1006,9 +1006,11 @@ geschlossen, der nichts zeichnet, geht es zum Zuhause dieses Bereichs. Ein
 Link auf ein Element, das es nicht mehr gibt, öffnet den Bereich und sagt das.
 
 **Auf einer Ansicht wählt der Link aus, was Sie ausgewählt hatten.** Teilen Sie
-von einem Board, einem Blatt, einer Unternehmenskarte oder der
-Technologielandschaft mit einem ausgewählten Element, öffnet der Link diese
-Ansicht mit dem Element wieder ausgewählt; auf einem Blatt und einer Karte wird
+von einem Board, einem Blatt, einer Unternehmenskarte, der
+Technologielandschaft oder einem Organigramm mit einem ausgewählten Element
+oder einer ausgewählten Einheit, öffnet der Link diese Ansicht mit ihr wieder
+ausgewählt — auf einem Organigramm die Einheit, zu der Sie gegangen sind, wo
+immer sie aufbewahrt wird; auf einem Blatt und einer Karte wird
 es auch kurz umrandet. Ein Eintrag, auf dem ein Link öffnet — eine Entscheidung, eine Beobachtung, eine
 Ursache, eine Lösung oder ein Experiment —, wird ebenso ins Bild gebracht und
 umrandet, in der Liste oder im Bild.

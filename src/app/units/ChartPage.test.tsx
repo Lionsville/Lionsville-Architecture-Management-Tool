@@ -103,8 +103,9 @@ const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', nam
 const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
 
 /** The chart over the shipping scope's session, changed by the model's own writer, with the editor's selection and the chart's choice held as the workspace holds them. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select, root = ROOT }: {
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select, root = ROOT, onHandle }: {
   root?: HostModel
+  onHandle?: (handle: { selectedId?: string } | undefined) => void
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
   readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean; select?: SelectRequest
@@ -129,7 +130,7 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     <ChartPage
       diagram={view(asOf)} here={here} today={TODAY} readOnly={readOnly} people={people}
       scopeLabel={(path) => LABELS[path] ?? path} {...(selectedId !== undefined ? { selectedId } : {})}
-      onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} {...(select ? { select } : {})}
+      onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} {...(select ? { select } : {})} {...(onHandle ? { onHandle } : {})}
       {...(choosing ? { onChoose: setChosen, ...(chosen !== undefined ? { chosen } : {}) } : {})}
       assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
     />
@@ -227,6 +228,19 @@ describe('the organisation chart', () => {
     expect(onOpenElsewhere).not.toHaveBeenCalled()
     fireEvent.doubleClick(within(unitBox('data')).getAllByTestId('chart-unit-open')[0])
     expect(onOpenElsewhere).toHaveBeenCalledWith('', 'data')
+  })
+
+  it('says the unit gone to as what is selected on it, kept here or elsewhere, so a link made here selects it', () => {
+    let said: string | undefined
+    const onHandle = (handle: { selectedId?: string } | undefined) => { said = handle?.selectedId }
+    const { rerender } = renderShell(<Harness commands={[]} onHandle={onHandle} />)
+    expect(said).toBeUndefined()
+    // A unit kept elsewhere is gone to, not selected by the editor: it is still what a link points at.
+    fireEvent.click(within(unitBox('data')).getAllByTestId('chart-unit-open')[0])
+    expect(said).toBe('data')
+    // One the editor selects here is said as such.
+    rerender(<Harness commands={[]} onHandle={onHandle} selectedId="tt" />)
+    expect(said).toBe('tt')
   })
 
   it('chooses a person\'s assignment by their chip in a unit kept here, the editor\'s selection let go, and marks it', async () => {

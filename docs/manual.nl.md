@@ -949,9 +949,10 @@ tekent, dan kom je op het thuis van dat onderdeel. Een link naar een element
 dat er niet meer is, opent het onderdeel en zegt dat.
 
 **Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
-een bord, een blad, een ondernemingskaart of het technologielandschap met één
-element geselecteerd, dan opent de link die weergave met dat element weer
-geselecteerd; op een blad en een kaart wordt het ook even omlijnd. Een record waarop een link
+een bord, een blad, een ondernemingskaart, het technologielandschap of een
+organigram met één element of eenheid geselecteerd, dan opent de link die
+weergave met dat weer geselecteerd — op een organigram de eenheid waar je
+naartoe ging, waar die ook bewaard wordt; op een blad en een kaart wordt het ook even omlijnd. Een record waarop een link
 opent — een besluit, een waarneming, een oorzaak, een oplossing of een
 experiment — wordt op dezelfde manier in beeld gebracht en omlijnd, in de lijst
 of in het plaatje.

@@ -194,7 +194,8 @@ export function ChartPage(props: ChartPageProps) {
     goTo(id)
   }, [here, props.onSelect, onChoose, goTo])
   useSelectRequest(props.select, (id) => [...walk(chart.roots)].some((unit) => unit.id === id), goTo)
-  usePageHandle(page, diagram.id, props.selectedId, props.onHandle, theme.palette.background.default)
+  // What a link made here selects (ADR-0033, amended 17 October 2026): the unit gone to, kept here or elsewhere, while no person is chosen.
+  usePageHandle(page, diagram.id, chosen === undefined ? current : props.selectedId, props.onHandle, theme.palette.background.default)
   const order = useSiblingOrder({
     here, day, scope: props.scope ?? '', unitId: current, land: props.readOnly ? undefined : props.reorder, t,
   })

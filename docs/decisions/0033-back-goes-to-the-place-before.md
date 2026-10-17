@@ -485,6 +485,13 @@ it, and a link to an element that is not there lands as a removed record
 does, on the scope, and says so. The editor's words for a scope with no view
 at all are a sentence a reader can act on, in the three languages.
 
+**An organisation chart says the unit gone to.** A link from a chart
+carried no `select`, because the chart told the shell only what the editor
+selected, and a unit kept in another scope is gone to on the chart, never
+selected. The chart's handle now says the unit gone to — the outline's
+current one, kept here or elsewhere — while no person's assignment is
+chosen, and the boot's `select` goes to it as it already did.
+
 **What is deliberately not done.** No second spelling of the same place: the
 page names stay the ones `app.open` takes, so a link and an agent's
 destination are one vocabulary. No query left in the address by the app

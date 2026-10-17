@@ -875,8 +875,9 @@ Closing the page in a scope that draws nothing goes to that scope's home. A
 link to an element that is not there any more opens the scope and says so.
 
 **On a view, the link selects what you selected.** Share from a board, a
-sheet, an enterprise map or the technology landscape with one element
-selected, and the link opens that view with the element selected again; on a
+sheet, an enterprise map, the technology landscape or an organisation chart
+with one element or unit selected, and the link opens that view with it
+selected again — on a chart, the unit gone to, wherever it is kept; on a
 sheet and a map it is also outlined for a moment. A record a link opens on — a
 decision, an observation, a cause, a solution or an experiment — is brought
 into view and outlined the same way, in the list or in the picture.
