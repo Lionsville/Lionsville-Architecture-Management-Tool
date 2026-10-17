@@ -442,10 +442,33 @@ describe('reporting lines at the agent (ADR-0039 §8)', () => {
     expect(refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-po', from: '2027-01-01', until: '2026-01-01' }, open))?.[0]).toBe('agent.badArguments')
   })
 
-  it('takes a slot\'s reportsTo on a unit type and reads it back', async () => {
+  it('takes a slot\'s reportsTo on a unit type — a list, one line of each kind, within where said — and reads it back', async () => {
     const open = session('', organisation)
-    const out = parsed(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: { roleId: 'ro-po', kind: 'dotted', from: '2026-11-01' } }] }, open))
-    expect((out.slots as Record<string, unknown>[])[0].reportsTo).toEqual({ roleId: 'ro-po', role: 'Product owner', kind: 'dotted', from: '2026-11-01' })
-    expect(refusal(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: { roleId: 'ro-nobody' } }] }, open))?.[0]).toBe('agent.unknownId')
+    const out = parsed(await ask('unitType.update', {
+      id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: [{ roleId: 'ro-po', kind: 'dotted', from: '2026-11-01' }, { roleId: 'ro-po', within: true }] }],
+    }, open))
+    expect((out.slots as Record<string, unknown>[])[0].reportsTo).toEqual([
+      { roleId: 'ro-po', role: 'Product owner', kind: 'dotted', from: '2026-11-01' }, { roleId: 'ro-po', role: 'Product owner', kind: 'solid', within: true },
+    ])
+    expect(refusal(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: [{ roleId: 'ro-nobody' }] }] }, open))?.[0]).toBe('agent.unknownId')
+    expect(refusal(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: [{ roleId: 'ro-po' }, { roleId: 'ro-po' }] }] }, open))?.[0]).toBe('agent.badArguments')
+    // A slot may say by nesting, taking the role's own line away for this type; a role's line names a role.
+    const nesting = parsed(await ask('unitType.update', { id: 'ut-team', slots: [{ roleId: 'ro-dev', min: 2, reportsTo: [{ kind: 'solid' }] }] }, open))
+    expect((nesting.slots as Record<string, unknown>[])[0].reportsTo).toEqual([{ by: 'nesting', kind: 'solid' }])
+    expect(refusal(await ask('role.update', { id: 'ro-dev', reportsTo: [{ kind: 'solid' }] }, open))?.[0]).toBe('agent.badArguments')
+  })
+
+  it('takes a role\'s own reportsTo, wherever it is held, refuses one to itself in the same unit, and lists it (ADR-0039 §2, amended)', async () => {
+    const open = session('', organisation)
+    const out = parsed(await ask('role.update', { id: 'ro-dev', reportsTo: [{ roleId: 'ro-po', within: true }] }, open))
+    expect(out.reportsTo).toEqual([{ roleId: 'ro-po', role: 'Product owner', kind: 'solid', within: true }])
+    expect(refusal(await ask('role.update', { id: 'ro-dev', reportsTo: [{ roleId: 'ro-dev', within: true }] }, open))?.[0]).toBe('reportingLine.self')
+    const listed = parsed(await ask('roles.list', {}, open))
+    expect((listed.roles as Record<string, unknown>[]).find((role) => role.id === 'ro-dev')?.reportsTo).toEqual([{ roleId: 'ro-po', role: 'Product owner', kind: 'solid', within: true }])
+    const lines = parsed(await ask('reportingLines.list', { roleId: 'ro-dev' }, open))
+    expect((lines.lines as Record<string, unknown>[]).map((line) => [line.unitId, line.said, line.within, line.state, (line.to as { roleId: string } | undefined)?.roleId]))
+      .toEqual(expect.arrayContaining([['webshop', 'role', true, 'lands', 'ro-po']]))
+    // Taken away with null.
+    expect(parsed(await ask('role.update', { id: 'ro-dev', reportsTo: null }, open)).reportsTo).toBeUndefined()
   })
 })

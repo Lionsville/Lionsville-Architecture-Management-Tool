@@ -40,10 +40,14 @@ export function listReportingLines(rawArgs: unknown, tree: TreeView | undefined,
     scope: kept.get(position.unitId) ?? '', unitId: position.unitId, unit: unitName(position.unitId), roleId: position.roleId, role: roleName(position.roleId),
   })
   const asked = typeof args.unitId === 'string' ? args.unitId : undefined
-  const lines = reportingLinesOn(organisation, day).filter((line) => asked === undefined || line.unitId === asked)
-  const findings = reportingFindings(organisation, day).filter((one) => asked === undefined || (one.kind === 'loop'
-    ? one.chain.some((position) => position.unitId === asked)
-    : one.line.unitId === asked))
+  const role = typeof args.roleId === 'string' ? args.roleId : undefined
+  const into = typeof args.toUnitId === 'string' ? args.toUnitId : undefined
+  const wanted = (line: ReportingLineOn) => (asked === undefined || line.unitId === asked) && (role === undefined || line.roleId === role)
+    && (into === undefined || line.to?.unitId === into)
+  const lines = reportingLinesOn(organisation, day).filter(wanted)
+  const findings = reportingFindings(organisation, day).filter((one) => (one.kind === 'loop'
+    ? (asked === undefined || one.chain.some((position) => position.unitId === asked)) && (role === undefined || one.chain.some((position) => position.roleId === role)) && into === undefined
+    : wanted(one.line)))
   return json({
     day,
     lines: lines.map((line) => lineAnswer(line, at, unitName)),
@@ -63,6 +67,7 @@ function lineAnswer(line: ReportingLineOn, at: Named, unitName: (id: string) => 
     ...at(line),
     kind: line.kind,
     said: line.source,
+    ...(line.within ? { within: true } : {}),
     ...(line.from !== undefined ? { from: line.from } : {}),
     ...(line.until !== undefined ? { until: line.until } : {}),
     state: line.state,

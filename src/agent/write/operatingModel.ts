@@ -17,8 +17,9 @@ import { isDay } from '../../model/lifecycle'
 import { operatingRulesOf, responsibilitiesOf, rolesOf, unitTypesOf } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { toArrays } from '../../model/normalised'
+import { linesSaid } from '../../model/operatingModel'
 import type { Dated, Duty, Raci, ReportsTo, Role, RoleSlot, UnitType } from '../../model/operatingModel'
-import { refuseSlotLine } from '../../model/reporting'
+import { refuseRoleLines, refuseSlotLine } from '../../model/reporting'
 import { roleLine, unitTypeLine } from '../operatingModel'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -71,37 +72,56 @@ function slotsOf(given: unknown, model: Model): RoleSlot[] | AgentAnswer {
     const min = one.min as number
     const max = one.max as number | undefined | null
     if (typeof max === 'number' && max < min) return refused('agent.badArguments', `slots[${index}]: max ${max} is less than min ${min}`)
-    const reportsTo = reportsToOf(one.reportsTo, roles, index)
+    const reportsTo = reportsToOf(one.reportsTo, roles, `slots[${index}].reportsTo`, true)
     if (reportsTo && 'ok' in reportsTo) return reportsTo
     slots.push({ role, min, ...(typeof max === 'number' ? { max } : {}), ...(reportsTo ? { reportsTo } : {}) })
   }
   return slots
 }
 
-/** A slot's reporting line as given (ADR-0039 §2): a role the organisation holds, solid where no kind is said, its days in order. */
-function reportsToOf(given: unknown, roles: Readonly<Record<string, Role>>, index: number): ReportsTo | AgentAnswer | undefined {
-  if (!given || typeof given !== 'object') return undefined
-  const line = given as Record<string, unknown>
-  const role = line.roleId as string
-  if (!roles[role]) return refused('agent.unknownId', `slots[${index}].reportsTo: role ${role}`)
-  const days = daysOf(line)
-  if ('ok' in days) return days
-  return { role, kind: kindOf(line.kind), ...days }
+/**
+ * The reporting lines as given (ADR-0039 §2, amended): each a role the
+ * organisation holds — or none, by nesting, on a slot only — solid where no
+ * kind is said, at most one of each kind, its days in order.
+ */
+function reportsToOf(given: unknown, roles: Readonly<Record<string, Role>>, at: string, onSlot: boolean): ReportsTo[] | AgentAnswer | undefined {
+  if (given === undefined || given === null) return undefined
+  const rows = Array.isArray(given) ? given : [given]
+  const lines: ReportsTo[] = []
+  for (const [index, one] of (rows as Record<string, unknown>[]).entries()) {
+    const role = one.roleId as string | undefined
+    if (role !== undefined && !roles[role]) return refused('agent.unknownId', `${at}[${index}]: role ${role}`)
+    if (role === undefined && !onSlot) return refused('agent.badArguments', `${at}[${index}]: a role's line names the role reported to`)
+    const days = daysOf(one)
+    if ('ok' in days) return days
+    const kind = kindOf(one.kind)
+    if (lines.some((line) => line.kind === kind)) return refused('agent.badArguments', `${at}[${index}]: a second ${kind} line; at most one of each kind`)
+    lines.push({ ...(role !== undefined ? { role } : {}), kind, ...(one.within === true ? { within: true } : {}), ...days })
+  }
+  return lines.length ? lines : undefined
 }
 
 /**
  * Whether a unit type's slots as changed would close a loop of solid lines
  * over the organisation, on the day written or a line's first day (ADR-0039
- * §5): the refusal, or nothing.
+ * §5), or point a role at itself in the same unit: the refusal, or nothing.
  */
 function slotLoop(view: WriteView, typeId: string, slots: readonly RoleSlot[] | undefined): AgentAnswer | undefined {
-  if (!slots?.some((slot) => slot.reportsTo?.kind === 'solid')) return undefined
+  if (!slots?.some((slot) => linesSaid(slot.reportsTo).some((line) => line.role !== undefined))) return undefined
   const organisation = organisationOfView(view)
   for (const slot of slots) {
-    const refusal = refuseSlotLine(organisation, typeId, slots, view.today(), slot.reportsTo)
+    const refusal = refuseSlotLine(organisation, typeId, slots, view.today(), slot.reportsTo, slot.role)
     if (refusal) return lineRefused(refusal, organisation)
   }
   return undefined
+}
+
+/** Whether a role's lines as changed would close a loop, or point the role at itself in the same unit. */
+function roleLoop(view: WriteView, roleId: string, said: ReportsTo[] | undefined): AgentAnswer | undefined {
+  if (!said?.length) return undefined
+  const organisation = organisationOfView(view)
+  const refusal = refuseRoleLines(organisation, roleId, said, view.today())
+  return refusal && lineRefused(refusal, organisation)
 }
 
 /** The unit types given as where a type may sit, every one held and none the type itself. */
@@ -188,6 +208,11 @@ function rolePatch(args: Args, model: Model, self?: string): Partial<Role> | Age
     if ('ok' in duties) return duties
     patch.duties = duties
   }
+  if ('reportsTo' in args) {
+    const reportsTo = reportsToOf(args.reportsTo, rolesOf(model), 'reportsTo', false)
+    if (reportsTo && 'ok' in reportsTo) return reportsTo
+    patch.reportsTo = reportsTo
+  }
   return patch
 }
 
@@ -255,6 +280,9 @@ export const addRole: Handler = (args, view) => {
   const patch = rolePatch(args, view.model)
   if ('ok' in patch) return patch
   const role = laid<Role>({ id: freshId('ro', view.model, view), name, duties: [] }, patch)
+  // A new role's own line can point only at itself in the same unit, since nothing holds it yet; still asked, so the answer is one.
+  const loop = roleLoop(view, role.id, linesSaid(role.reportsTo))
+  if (loop) return loop
   const command: Command = { type: 'role.add', role }
   return prepared(command, json(roleLine(role, documentWith(view.model, command))))
 }
@@ -268,6 +296,8 @@ export const updateRole: Handler = (args, view) => {
   if (name !== undefined && typeof name !== 'string') return name
   const patch = rolePatch(args, view.model, held.id)
   if ('ok' in patch) return patch
+  const loop = 'reportsTo' in patch ? roleLoop(view, held.id, patch.reportsTo as ReportsTo[] | undefined) : undefined
+  if (loop) return loop
   const full = { ...patch, ...(name !== undefined ? { name } : {}) }
   const command: Command = { type: 'role.update', id: held.id, patch: full }
   const after = laid(held, full)

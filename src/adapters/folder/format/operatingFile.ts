@@ -51,9 +51,11 @@
  * were added in, until somebody moves one again.
  *
  * A slot's `reportsTo` (ADR-0039 §2) came with scope format 13, which a 3.6
- * build refuses, so no build that would drop it opens the folder. A line that
- * names no role, or a kind other than solid or dotted, is passed over and the
- * slot kept.
+ * build refuses, so no build that would drop it opens the folder; a role's
+ * `reportsTo`, and a list of lines in place of one, came with the amendment of
+ * 17 October 2026 in the same format, one object still read. A line of a kind
+ * other than solid or dotted is passed over and the slot kept; one that names
+ * no role says the holders report by nesting.
  */
 import { isLineKind, isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
@@ -150,12 +152,25 @@ function datedOf(row: Record<string, unknown>): Pick<UnitType, 'from' | 'until' 
   }
 }
 
-/** A slot's reporting line (ADR-0039 §2): absent where it names no role or no kind it knows. */
-function reportsToOf(value: unknown): { reportsTo?: ReportsTo } {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-  const { role, kind, from, until } = value as Record<string, unknown>
-  if (typeof role !== 'string' || !isLineKind(kind)) return {}
-  return { reportsTo: { role, kind, ...(text(from) !== undefined ? { from: text(from) } : {}), ...(text(until) !== undefined ? { until: text(until) } : {}) } }
+/**
+ * A role's or a slot's reporting lines (ADR-0039 §2, amended): one line as
+ * an object, as the first 13 folders wrote a slot's, or a list of them. A
+ * line with no kind it knows is passed over; one with no role says *by
+ * nesting*. Absent where nothing is left.
+ */
+function reportsToOf(value: unknown): { reportsTo?: ReportsTo[] } {
+  const given = Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : []
+  const lines: ReportsTo[] = []
+  for (const one of given) {
+    if (!one || typeof one !== 'object' || Array.isArray(one)) continue
+    const { role, kind, within, from, until } = one as Record<string, unknown>
+    if (!isLineKind(kind) || lines.some((line) => line.kind === kind)) continue
+    lines.push({
+      ...(typeof role === 'string' && role !== '' ? { role } : {}), kind, ...(within === true ? { within: true } : {}),
+      ...(text(from) !== undefined ? { from: text(from) } : {}), ...(text(until) !== undefined ? { until: text(until) } : {}),
+    })
+  }
+  return lines.length ? { reportsTo: lines } : {}
 }
 
 function slotOf(value: unknown): RoleSlot[] {
@@ -202,6 +217,7 @@ function roleOf(row: Record<string, unknown>): Role[] {
     ...(text(row.purpose) !== undefined ? { purpose: text(row.purpose) } : {}),
     duties: Array.isArray(row.duties) ? row.duties.flatMap(dutyOf) : [],
     ...(row.manages === true ? { manages: true } : {}),
+    ...reportsToOf(row.reportsTo),
     ...(order !== undefined ? { order } : {}),
     ...basedOnOf(row.basedOn),
     ...alsoBasedOnOf(row.alsoBasedOn),

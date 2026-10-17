@@ -188,9 +188,9 @@ describe('the operating model in a scope\'s folder', () => {
     expect(back.model.unitTypes).toHaveLength(2)
   })
 
-  it('keeps a slot\'s reporting line and a unit\'s own, and passes over a line that does not read (ADR-0039, format 13)', () => {
+  it('keeps a slot\'s reporting lines, a role\'s and a unit\'s own, reads one object as the first 13 folders wrote it, and passes over a line that does not read (ADR-0039, format 13)', () => {
     const scope = organisation()
-    const reporting: UnitType = { ...team, slots: [{ role: 'ro-po', min: 1, max: 1, reportsTo: { role: 'ro-lead', kind: 'solid', from: '2026-11-01' } }, team.slots[1]] }
+    const reporting: UnitType = { ...team, slots: [{ role: 'ro-po', min: 1, max: 1, reportsTo: [{ role: 'ro-lead', kind: 'solid', from: '2026-11-01' }] }, team.slots[1]] }
     const unit = {
       id: 'checkout', kind: 'actor' as const, name: 'Checkout', lifecycle: 'live' as const, isManaged: false, aspects: {}, unitTypeId: 'ut-team',
       reportingLines: [
@@ -198,9 +198,12 @@ describe('the operating model in a scope\'s folder', () => {
         { role: 'ro-po', kind: 'solid' as const },
       ],
     }
-    const lined = { ...scope, model: { ...scope.model, unitTypes: [train, reporting], elements: [unit] } }
+    // A role's own lines (amended 17 October 2026): one of each kind, within where said.
+    const dev = { ...scope.model.roles!.find((role) => role.id === 'ro-dev')!, reportsTo: [{ role: 'ro-po', kind: 'solid' as const, within: true as const }, { role: 'ro-lead', kind: 'dotted' as const }] }
+    const lined = { ...scope, model: { ...scope.model, unitTypes: [train, reporting], roles: scope.model.roles!.map((role) => (role.id === 'ro-dev' ? dev : role)), elements: [unit] } }
     const back = scopeFromFolder(scopeFiles(lined), '')!
     expect(back.model.unitTypes?.[1]).toEqual(reporting)
+    expect(back.model.roles?.find((role) => role.id === 'ro-dev')).toEqual(dev)
     expect(back.model.elements[0].reportingLines).toEqual(unit.reportingLines)
     const opened = openDocumentBytes(workingFileBytes([lined]), lined)
     expect(opened.ok && opened.scope.model.unitTypes?.[1]).toEqual(reporting)
@@ -211,10 +214,14 @@ describe('the operating model in a scope\'s folder', () => {
         path: UNIT_TYPES_FILE,
         text: JSON.stringify([{ id: 'ut-1', within: [], slots: [
           { role: 'ro-a', min: 1, reportsTo: { role: 'ro-b', kind: 'sideways' } }, { role: 'ro-c', min: 0, reportsTo: { kind: 'solid' } },
+          // One object, as the first 13 folders wrote a slot's line: read as a list of one.
+          { role: 'ro-d', min: 0, reportsTo: { role: 'ro-b', kind: 'dotted' } },
         ] }]),
       },
     ]
-    expect(scopeFromFolder(files, '')!.model.unitTypes?.[0].slots).toEqual([{ role: 'ro-a', min: 1 }, { role: 'ro-c', min: 0 }])
+    expect(scopeFromFolder(files, '')!.model.unitTypes?.[0].slots).toEqual([
+      { role: 'ro-a', min: 1 }, { role: 'ro-c', min: 0, reportsTo: [{ kind: 'solid' }] }, { role: 'ro-d', min: 0, reportsTo: [{ role: 'ro-b', kind: 'dotted' }] },
+    ])
   })
 
   it('travels in a working file and comes back whole', () => {

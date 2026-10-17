@@ -28,7 +28,7 @@ const UNIT_TYPE_FIELDS: PatchKeys<'unitType.update'> = {
 
 /** Every field of a role but its id. */
 const ROLE_FIELDS: PatchKeys<'role.update'> = {
-  name: true, short: true, purpose: true, duties: true, manages: true, order: true, basedOn: true, alsoBasedOn: true,
+  name: true, short: true, purpose: true, duties: true, manages: true, reportsTo: true, order: true, basedOn: true, alsoBasedOn: true,
   from: true, until: true, successors: true,
 }
 

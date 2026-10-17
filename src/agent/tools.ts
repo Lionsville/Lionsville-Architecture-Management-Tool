@@ -428,20 +428,34 @@ const LINE_KIND: ArgumentSchema = {
 }
 
 /** A slot's reporting line (ADR-0039 §2). */
-const REPORTS_TO: ArgumentSchema = {
+/** One reporting line said on a role or on a unit type's slot (ADR-0039 §2, amended 17 October 2026). */
+const REPORTS_TO_LINE: RowSchema = {
   type: 'object',
-  description: 'Where the holders of this role report, in every unit of the type: to the holders of roleId in the nearest unit above '
-    + 'that has it, else in the one unit of the organisation that has it. Leave it out for none: the nesting answers. A unit may '
-    + 'say otherwise for itself (reportingLine.set). A solid line that would close a loop is refused (reportingLine.loop).',
+  description: 'One line: where the holders report, of one kind.',
   properties: {
-    roleId: { type: 'string', description: 'The role reported to, by id (roles.list).' },
+    roleId: {
+      type: 'string',
+      description: 'The role reported to, by id (roles.list). Leave it out on a slot to say the holders report by nesting in units '
+        + 'of this type, whatever the role says for itself.',
+    },
     kind: LINE_KIND,
+    within: { type: 'boolean', description: 'True: the holders report to that role in the same unit (a developer to the team\'s tech lead).' },
     from: { type: 'string', description: 'The first day of the line, yyyy-mm-dd.' },
     until: { type: 'string', description: 'The last day of the line, yyyy-mm-dd.' },
   },
-  required: ['roleId'],
   additionalProperties: false,
 }
+
+const REPORTS_TO = (where: string): ArgumentSchema => ({
+  type: 'array',
+  description: `Where the holders of this role report, ${where}: at most one line of each kind, solid (a line manager\'s, which `
+    + 'decides who manages them) and dotted (functional, shown and deciding nothing). Each lands on the holders of roleId in the same '
+    + 'unit where within is true, else in the nearest unit above that has the role, else in the one unit of the organisation that has '
+    + 'it. The nearest place that says anything wins, kind by kind: a unit\'s own line (reportingLine.set) over the unit type\'s slot, '
+    + 'over the role. An empty list says nothing. A solid line that would close a loop is refused (reportingLine.loop), and one from a '
+    + 'role to itself in the same unit (reportingLine.self).',
+  items: REPORTS_TO_LINE,
+})
 
 /** What a unit type says beside its name (ADR-0036): the fields `unitType.add` and `unitType.update` share. */
 const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
@@ -459,7 +473,7 @@ const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
         roleId: { type: 'string', description: 'The role, by id (roles.list).' },
         min: { type: 'integer', description: 'At least this many; 0 for a role it may have and need not.', minimum: 0 },
         max: { type: 'integer', description: 'At most this many; leave it out for no upper bound.', minimum: 0 },
-        reportsTo: REPORTS_TO,
+        reportsTo: REPORTS_TO('in every unit of the type, in place of what the role says'),
       },
       required: ['roleId', 'min'],
       additionalProperties: false,
@@ -478,6 +492,7 @@ const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   short: { type: 'string', description: 'A few letters, for the matrix\'s heading.' },
   purpose: { type: 'string', description: 'What the role is for, in the organisation\'s own words.' },
   manages: { type: 'boolean', description: 'Whoever holds it manages the people of the unit and of the units below it. The app holds the flag and grants nothing.' },
+  reportsTo: REPORTS_TO('wherever the role is held'),
   duties: {
     type: 'array',
     description: 'Its part in each responsibility it has one in.',
@@ -1022,7 +1037,8 @@ const SPECS = [
     tier: 'read',
     description:
       'The organisation\'s roles (ADR-0036): name, short name and purpose, its duties — a responsibility each, marked R, '
-      + 'A, C or I — whether whoever holds it manages the people of the unit and of the units below (manages), the unit '
+      + 'A, C or I — whether whoever holds it manages the people of the unit and of the units below (manages), where its '
+      + 'holders report wherever it is held (reportsTo, ADR-0039; reportingLines.list lands each line on a unit), the unit '
       + 'types that hold it, the library entry it was based on (basedOn) and those it was matched to when a library was '
       + 'brought in (alsoBasedOn), and the rules that name a role. Kept at the organisation, and answered from there.',
     inputSchema: {
@@ -2106,8 +2122,8 @@ const SPECS = [
     description:
       'Add a role to the organisation\'s operating model, in its own words: a purpose, its duties — a responsibility '
       + 'each from responsibilities.list, marked R (responsible), A (accountable), C (consulted) or I (informed) — and '
-      + 'whether its holder manages the people of the unit (manages). A role is held in a unit type through that type\'s '
-      + 'slots (unitType.update). At the organisation, which must be the scope open.',
+      + 'whether its holder manages the people of the unit (manages), and where its holders report wherever it is held '
+      + '(reportsTo). A role is held in a unit type through that type\'s slots (unitType.update). At the organisation, which must be the scope open.',
     inputSchema: {
       type: 'object',
       properties: { name: { type: 'string', description: 'What the organisation calls the role.' }, ...ROLE_FIELDS },
@@ -2119,8 +2135,8 @@ const SPECS = [
     name: 'role.update',
     tier: 'write',
     description:
-      'Change a role. Only the fields given change; duties replace the list; null clears the short name, the purpose '
-      + 'and manages. A blank name is refused. At the organisation, which must be the scope open.',
+      'Change a role. Only the fields given change; duties and reportsTo replace their lists; null clears the short name, '
+      + 'the purpose, manages and reportsTo. A blank name is refused. At the organisation, which must be the scope open.',
     inputSchema: {
       type: 'object',
       properties: { id: ID('role'), name: { type: 'string', description: 'A new name.' }, ...ROLE_FIELDS },
@@ -2226,7 +2242,8 @@ const SPECS = [
     tier: 'read',
     description:
       'The reporting lines on a day (ADR-0039), across the whole tree: for each role in each unit that has one, its kind (solid, '
-      + 'a line manager\'s; dotted, functional), whether it is said on the unit type or the unit\'s own, its days, and how it '
+      + 'a line manager\'s; dotted, functional), where it was said (said: role, for every unit that holds the role; type, on the '
+      + 'unit type\'s slot; unit, the unit\'s own), whether its target is in the same unit (within), its days, and how it '
       + 'stands — lands (on a role in a unit, named with the scope that keeps it), nesting (the unit says the role reports by '
       + 'nesting here), dangling (no unit has the target role) or ambiguous (several do and none is above; the candidates '
       + 'named). Then what the lines contradict: a loop (the chain, and the first day it is there), and a line that is '
@@ -2235,6 +2252,8 @@ const SPECS = [
       type: 'object',
       properties: {
         unitId: { type: 'string', description: 'Only the lines from this unit.' },
+        roleId: { type: 'string', description: 'Only the lines from this role, in whichever unit.' },
+        toUnitId: { type: 'string', description: 'Only the lines that land on this unit: who reports into it.' },
         on: { type: 'string', description: 'The day, yyyy-mm-dd. Default: today.' },
       },
       additionalProperties: false,

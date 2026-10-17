@@ -39,7 +39,8 @@
  */
 import { isDay, phaseAt } from './lifecycle'
 import type { PersonId, PickedPerson } from './person'
-import type { LineKind, Role, RoleId, RoleSlot, UnitType, UnitTypeId } from './operatingModel'
+import { LINE_KINDS, linesSaid } from './operatingModel'
+import type { LineKind, ReportsTo, Role, RoleId, RoleSlot, UnitType, UnitTypeId } from './operatingModel'
 import type { DesignElement, ElementId, UnitReportingLine } from './types'
 import type { Command, CommandMeta } from './commands'
 import type { TransitionMove } from './transition'
@@ -391,21 +392,27 @@ export type LineState = 'lands' | 'nesting' | 'dangling' | 'ambiguous'
 /** A role in a unit: where a line runs from, and where it lands. */
 export type LinePosition = { unitId: ElementId; roleId: RoleId }
 
+/** Where a line was said (ADR-0039 §2, §3, amended): on the role for every unit, on the unit type's slot, or on the unit itself. */
+export type LineSource = 'role' | 'type' | 'unit'
+
 /**
  * One reporting line on a day, from the holders of `roleId` in `unitId`:
- * whose it is (`type`, said on the unit type's slot, or `unit`, the unit's
- * own), its kind and days as written, and where it lands that day.
+ * whose it is (`source`: the role's, said for every unit that holds it; the
+ * `type`'s, said on the unit type's slot; or the `unit`'s own), its kind and
+ * days as written, and where it lands that day.
  */
 export type ReportingLineOn = {
   unitId: ElementId
   roleId: RoleId
   kind: LineKind
-  source: 'type' | 'unit'
+  source: LineSource
   from?: string
   until?: string
   state: LineState
   /** The role it reports to, as written: said also where the line lands nowhere. Absent on a line by nesting. */
   reportsTo?: RoleId
+  /** The target was said to be another role of the same unit. */
+  within?: true
   /** Where it lands, where it does. */
   to?: LinePosition
   /** The units that have the target role where none is above, for an ambiguous line. */
@@ -418,20 +425,23 @@ export function positionKey(unitId: ElementId, roleId: RoleId): string {
 }
 
 /** Whether anything in the organisation says a reporting line at all: where nothing does, nesting answers everywhere, as before. */
-export function hasReportingLines(organisation: Pick<Organisation, 'units' | 'unitTypes'>): boolean {
-  return organisation.unitTypes.some((type) => type.slots.some((slot) => slot.reportsTo !== undefined))
+export function hasReportingLines(organisation: Pick<Organisation, 'units' | 'unitTypes' | 'roles'>): boolean {
+  return organisation.roles.some((role) => linesSaid(role.reportsTo).length > 0)
+    || organisation.unitTypes.some((type) => type.slots.some((slot) => linesSaid(slot.reportsTo).length > 0))
     || organisation.units.some((unit) => (unit.reportingLines?.length ?? 0) > 0)
 }
 
 /**
- * Every reporting line on `day` (ADR-0039 §2, §3), unit by unit in the
- * organisation's order and role by role in the unit's: a unit's own line
- * replaces its type's line of the same kind for that role on the days it
- * runs, and lands on the unit it names; a type's lands, under the parents the
- * day gives the units (the plans' moves included), on the nearest unit above
- * that has a slot for the target role, else on the one unit in the
- * organisation that has. Only units there that day and roles running that day
- * draw lines.
+ * Every reporting line on `day` (ADR-0039 §2, §3, amended), unit by unit in
+ * the organisation's order and role by role in the unit's, kind by kind: the
+ * unit's own line of a kind, running that day, replaces its type's slot's of
+ * that kind, which replaces the role's own; the nearest that says anything
+ * wins, and one that says *by nesting* (no target) ends the search. A unit's
+ * own line lands on the unit it names; a role's or a type's lands, under the
+ * parents the day gives the units (the plans' moves included), on the unit
+ * itself where it says `within`, else on the nearest unit above that has a
+ * slot for the target role, else on the one unit in the organisation that
+ * has. Only units there that day and roles running that day draw lines.
  */
 export function reportingLinesOn(organisation: Organisation, day: string): ReportingLineOn[] {
   if (!hasReportingLines(organisation)) return []
@@ -445,8 +455,11 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
   const roles = new Map(on.roles.map((role) => [role.id, role]))
   const there = on.units.filter((unit) => isUnit(unit) && unitOn(unit, day))
   const holding = new Map<RoleId, ElementId[]>()
+  const slotsBy = new Map<ElementId, RoleSlot[]>()
   for (const unit of there) {
-    for (const slot of slotsOf(unit, types.get(unit.unitTypeId ?? ''))) holding.set(slot.role, [...holding.get(slot.role) ?? [], unit.id])
+    const slots = slotsOf(unit, types.get(unit.unitTypeId ?? ''))
+    slotsBy.set(unit.id, slots)
+    for (const slot of slots) holding.set(slot.role, [...holding.get(slot.role) ?? [], unit.id])
   }
   const thereIds = new Set(there.map((unit) => unit.id))
   const found: ReportingLineOn[] = []
@@ -454,20 +467,32 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
     const type = types.get(unit.unitTypeId ?? '')
     const own = (unit.reportingLines ?? []).filter((line) => runsOn(line, day))
     const typeSays = type && unitTypeOn(type, day) ? type.slots : []
-    const roleIds = [...new Set([...slotsOf(unit, type).map((slot) => slot.role), ...own.map((line) => line.role)])]
+    const slots = slotsBy.get(unit.id) ?? []
+    const roleIds = [...new Set([...slots.map((slot) => slot.role), ...own.map((line) => line.role)])]
     for (const roleId of roleIds) {
       const role = roles.get(roleId)
       if (!role || !roleOn(role, day)) continue
-      for (const kind of ['solid', 'dotted'] as const) {
+      for (const kind of LINE_KINDS) {
         const mine = own.find((line) => line.role === roleId && (line.to ? line.kind : 'solid') === kind)
         if (mine) {
           found.push({ unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...(mine.to ? { reportsTo: mine.to.role } : {}), ...ownLanding(mine, thereIds) })
           continue
         }
-        const says = typeSays.find((slot) => slot.role === roleId)?.reportsTo
-        if (!says || says.kind !== kind || !runsOn(says, day)) continue
+        // The nearest place that says anything of this kind: the type's slot, else the role.
+        const slotSays = linesSaid(typeSays.find((slot) => slot.role === roleId)?.reportsTo).find((line) => line.kind === kind)
+        const said = slotSays ?? linesSaid(role.reportsTo).find((line) => line.kind === kind)
+        if (!said || !runsOn(said, day)) continue
+        const source: LineSource = slotSays ? 'type' : 'role'
+        if (said.role === undefined) {
+          // By nesting here, said on the slot: drawn only where it takes a line of the role's away, as a unit's is.
+          if (source === 'type' && linesSaid(role.reportsTo).some((line) => line.kind === kind && line.role !== undefined)) {
+            found.push({ unitId: unit.id, roleId, kind, source, ...datedOf(said), state: 'nesting' })
+          }
+          continue
+        }
         found.push({
-          unitId: unit.id, roleId, kind, source: 'type', ...datedOf(says), reportsTo: says.role, ...landing(on.units, unit.id, roleId, says.role, holding, thereIds),
+          unitId: unit.id, roleId, kind, source, ...datedOf(said), reportsTo: said.role, ...(said.within ? { within: true } : {}),
+          ...landing(on.units, unit.id, roleId, { ...said, role: said.role }, holding, thereIds),
         })
       }
     }
@@ -486,12 +511,21 @@ function ownLanding(line: UnitReportingLine, there: ReadonlySet<ElementId>): Pic
   return there.has(line.to.unit) ? { state: 'lands', to: { unitId: line.to.unit, roleId: line.to.role } } : { state: 'dangling' }
 }
 
-/** Where a type's line lands: the nearest unit above with the target role, else the one unit that has it. */
+/**
+ * Where a role's or a type's line lands: on the unit itself where it says
+ * `within` and the unit holds the target role; else the nearest unit above
+ * with the target role, else the one unit that has it.
+ */
 function landing(
-  units: readonly UnitLike[], unitId: ElementId, roleId: RoleId, target: RoleId,
+  units: readonly UnitLike[], unitId: ElementId, roleId: RoleId, said: ReportsTo & { role: RoleId },
   holding: ReadonlyMap<RoleId, readonly ElementId[]>, there: ReadonlySet<ElementId>,
 ): Pick<ReportingLineOn, 'state' | 'to' | 'candidates'> {
+  const target = said.role
   const has = new Set(holding.get(target) ?? [])
+  if (said.within) {
+    // A role does not report to itself in the same unit; the target is another of the unit's roles.
+    return has.has(unitId) && target !== roleId ? { state: 'lands', to: { unitId, roleId: target } } : { state: 'dangling' }
+  }
   const above = unitsAbove(units, unitId).find((id) => there.has(id) && has.has(id))
   if (above !== undefined) return { state: 'lands', to: { unitId: above, roleId: target } }
   // The unit itself only where the target is another of its roles: a role does not report to itself.

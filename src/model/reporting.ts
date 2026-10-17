@@ -23,7 +23,8 @@
  * screens ask {@link loopMadeBy} before they write.
  */
 import { isDay } from './lifecycle'
-import type { ReportsTo, RoleId, RoleSlot, UnitTypeId } from './operatingModel'
+import { linesSaid } from './operatingModel'
+import type { ReportsToSaid, RoleId, RoleSlot, UnitTypeId } from './operatingModel'
 import type { ElementId, UnitReportingLine } from './types'
 import {
   holdersOn, isUnit, organisationOn, positionKey, reportingLinesOn, roleOn, slotsOf, unitOn, unitsAbove,
@@ -152,7 +153,8 @@ export function chainKey(chain: readonly LinePosition[]): string {
 function daysFrom(organisation: Organisation, day: string): string[] {
   const later = new Set<string>()
   const add = (one: string | undefined) => { if (isDay(one) && one > day) later.add(one) }
-  for (const type of organisation.unitTypes) for (const slot of type.slots) add(slot.reportsTo?.from)
+  for (const role of organisation.roles) for (const line of linesSaid(role.reportsTo)) add(line.from)
+  for (const type of organisation.unitTypes) for (const slot of type.slots) for (const line of linesSaid(slot.reportsTo)) add(line.from)
   for (const unit of organisation.units) for (const line of unit.reportingLines ?? []) add(line.from)
   for (const move of organisation.moves ?? []) add(move.on)
   return [day, ...[...later].sort()]
@@ -236,12 +238,45 @@ export function refuseUnitLine(organisation: Organisation, unitId: ElementId, li
   return loopMadeBy(organisation, after, day, line.from)
 }
 
-/** Whether a slot's line may be written: a solid one never closes a loop. A dotted one is not asked. */
+/** The organisation with one role's own lines replaced. */
+export function withRoleLines(organisation: Organisation, roleId: RoleId, said: ReportsToSaid | undefined): Organisation {
+  return {
+    ...organisation,
+    roles: organisation.roles.map((role) => {
+      if (role.id !== roleId) return role
+      const { reportsTo: _was, ...rest } = role
+      return said && linesSaid(said).length ? { ...rest, reportsTo: said } : rest
+    }),
+  }
+}
+
+/** Whether `after` over `before` closes a loop on the day written or on the first day of any solid line in `said`. */
+function refuseSaid(before: Organisation, after: Organisation, day: string, said: ReportsToSaid | undefined): LineRefusal | undefined {
+  const solid = linesSaid(said).filter((line) => line.kind === 'solid' && line.role !== undefined)
+  if (solid.length === 0) return undefined
+  for (const line of solid) {
+    const refusal = loopMadeBy(before, after, day, line.from)
+    if (refusal) return refusal
+  }
+  return undefined
+}
+
+/**
+ * Whether a slot's lines may be written: a solid one never closes a loop, and
+ * a line to the slot's own role in the same unit is refused. A dotted one is
+ * not asked.
+ */
 export function refuseSlotLine(
-  organisation: Organisation, typeId: UnitTypeId, slots: readonly RoleSlot[], day: string, reportsTo: ReportsTo | undefined,
+  organisation: Organisation, typeId: UnitTypeId, slots: readonly RoleSlot[], day: string, said: ReportsToSaid | undefined, roleId?: RoleId,
 ): LineRefusal | undefined {
-  if (!reportsTo || reportsTo.kind !== 'solid') return undefined
-  return loopMadeBy(organisation, withTypeSlots(organisation, typeId, slots), day, reportsTo.from)
+  if (roleId !== undefined && linesSaid(said).some((line) => line.within && line.role === roleId)) return { refusal: 'reportingLine.self' }
+  return refuseSaid(organisation, withTypeSlots(organisation, typeId, slots), day, said)
+}
+
+/** Whether a role's own lines may be written (ADR-0039 §2, amended): never to itself in the same unit, and a solid one never closes a loop. */
+export function refuseRoleLines(organisation: Organisation, roleId: RoleId, said: ReportsToSaid | undefined, day: string): LineRefusal | undefined {
+  if (linesSaid(said).some((line) => line.within && line.role === roleId)) return { refusal: 'reportingLine.self' }
+  return refuseSaid(organisation, withRoleLines(organisation, roleId, said), day, said)
 }
 
 /**

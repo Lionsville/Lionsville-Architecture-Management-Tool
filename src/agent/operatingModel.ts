@@ -14,8 +14,8 @@
  * their order in it, then by name, those that sit nowhere last.
  */
 import type { HostModel } from '../model/hostModel'
-import { accountableFor, raciOf, typesHolding } from '../model/operatingModel'
-import type { BasedOn, Dated, Responsibility, Role, UnitType, UnitTypeBasedOn, UnitTypeId } from '../model/operatingModel'
+import { accountableFor, linesSaid, raciOf, typesHolding } from '../model/operatingModel'
+import type { BasedOn, Dated, ReportsToSaid, Responsibility, Role, UnitType, UnitTypeBasedOn, UnitTypeId } from '../model/operatingModel'
 import { unitTypeLanes } from '../model/unitOrder'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -90,13 +90,7 @@ export function unitTypeLine(
     slots: type.slots.map((slot) => ({
       roleId: slot.role, role: named(roles, slot.role).name, min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}),
       // Where its holders report (ADR-0039 §2): landed on a unit by reportingLines.list.
-      ...(slot.reportsTo ? {
-        reportsTo: {
-          roleId: slot.reportsTo.role, role: named(roles, slot.reportsTo.role).name, kind: slot.reportsTo.kind,
-          ...(slot.reportsTo.from !== undefined ? { from: slot.reportsTo.from } : {}),
-          ...(slot.reportsTo.until !== undefined ? { until: slot.reportsTo.until } : {}),
-        },
-      } : {}),
+      ...reportsToLine(slot.reportsTo, roles),
     })),
     ...(type.limit !== undefined ? { limit: type.limit } : {}),
     ...datedLine(type, model.unitTypes ?? []),
@@ -113,12 +107,28 @@ export function roleLine(role: Role, model: OperatingDocument) {
     ...(role.short ? { short: role.short } : {}),
     ...(role.purpose ? { purpose: role.purpose } : {}),
     ...(role.manages ? { manages: true } : {}),
+    ...reportsToLine(role.reportsTo, model.roles ?? []),
     duties: role.duties.map((duty) => ({
       responsibilityId: duty.responsibility, responsibility: named(responsibilities, duty.responsibility).name, raci: duty.raci,
     })),
     heldIn: typesHolding(model.unitTypes ?? [], role.id).map((type) => ({ id: type.id, name: type.name })),
     ...datedLine(role, model.roles ?? []),
     ...basedOnLine(role),
+  }
+}
+
+/** The lines a role or a slot says, as the agent reads them: each with its role by id and name, its kind, within and its days. */
+function reportsToLine(said: ReportsToSaid | undefined, roles: readonly Role[]) {
+  const lines = linesSaid(said)
+  if (lines.length === 0) return {}
+  return {
+    reportsTo: lines.map((line) => ({
+      ...(line.role !== undefined ? { roleId: line.role, role: named(roles, line.role).name } : { by: 'nesting' }),
+      kind: line.kind,
+      ...(line.within ? { within: true } : {}),
+      ...(line.from !== undefined ? { from: line.from } : {}),
+      ...(line.until !== undefined ? { until: line.until } : {}),
+    })),
   }
 }
 

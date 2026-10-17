@@ -109,30 +109,58 @@ export function isLineKind(value: unknown): value is LineKind {
 }
 
 /**
- * Where the holders of a slot's role report (ADR-0039 §2): to the holders of
- * `role` in the nearest unit above that has a slot for it, else in the one
- * unit of the organisation that has. `solid` decides who manages them;
- * `dotted` is shown and decides nothing. Runs on the days between `from` and
- * `until`.
+ * Where the holders of a role report (ADR-0039 §2, amended 17 October 2026):
+ * to the holders of `role` — in the **same unit** where `within` says so (a
+ * developer to the team's tech lead), else in the nearest unit above that has
+ * a slot for the role, else in the one unit of the organisation that has.
+ * `solid` decides who manages them; `dotted` is shown and decides nothing.
+ * Runs on the days between `from` and `until`.
+ *
+ * Said on a role for every unit that holds it, on a unit type's slot for the
+ * units of that type, or on a unit for itself — the nearest wins, kind by
+ * kind. A line with no `role` says the holders report **by nesting** where it
+ * is said, whatever a wider place says: the slot's way of taking the role's
+ * line away for its type.
  */
 export type ReportsTo = {
-  role: RoleId
+  role?: RoleId
   kind: LineKind
+  /** The target is another role of the same unit. */
+  within?: true
   from?: string
   until?: string
+}
+
+/** What a role or a slot says about reporting: one line, or one of each kind. Read with {@link linesSaid}. */
+export type ReportsToSaid = ReportsTo | readonly ReportsTo[]
+
+/** The lines a role or a slot says, as a list: at most one of each kind, the first of a kind said counting. */
+export function linesSaid(said: ReportsToSaid | undefined): ReportsTo[] {
+  const all = said === undefined ? [] : Array.isArray(said) ? [...said] : [said as ReportsTo]
+  const seen = new Set<LineKind>()
+  return all.filter((line) => (seen.has(line.kind) ? false : (seen.add(line.kind), true)))
+}
+
+/** One of each kind, with `line` in place of the one of its kind — or taken away where `line` is absent. */
+export function linesWith(said: ReportsToSaid | undefined, kind: LineKind, line: ReportsTo | undefined): ReportsTo[] | undefined {
+  const kept = linesSaid(said).filter((one) => one.kind !== kind)
+  const next = line ? [...kept, { ...line, kind }] : kept
+  next.sort((a, b) => LINE_KINDS.indexOf(a.kind) - LINE_KINDS.indexOf(b.kind))
+  return next.length ? next : undefined
 }
 
 /**
  * One role a unit of a type holds, and how many of it: at least `min`, and
  * at most `max` where one is said. A slot with `min` 0 is a role the type may
- * have and need not. `reportsTo` is the one reporting line every unit of the
- * type has from that role's holders (ADR-0039 §2).
+ * have and need not. `reportsTo` is what every unit of the type says about
+ * where the role's holders report (ADR-0039 §2), in place of what the role
+ * says for itself.
  */
 export type RoleSlot = {
   role: RoleId
   min: number
   max?: number
-  reportsTo?: ReportsTo
+  reportsTo?: ReportsToSaid
 }
 
 /**
@@ -193,6 +221,8 @@ export type Role = Dated & {
   purpose?: string
   duties: Duty[]
   manages?: boolean
+  /** Where its holders report, wherever the role is held (ADR-0039 §2, amended): a unit type's slot or a unit may say otherwise. */
+  reportsTo?: ReportsToSaid
   /** Where it stands among the roles, as a unit type's `order` does in its lane (`inOwnOrder`). */
   order?: number
   basedOn?: BasedOn
@@ -303,6 +333,38 @@ export function accountabilityGaps(
 /** The unit types that hold a role in one of their slots. */
 export function typesHolding(types: readonly UnitType[], role: RoleId): UnitType[] {
   return types.filter((type) => type.slots.some((slot) => slot.role === role))
+}
+
+/**
+ * The lines that hold for a slot, kind by kind (ADR-0039 §2, amended): the
+ * slot's own where it says anything — a line by nesting counting as said,
+ * and drawn as none — else the role's. Each says where it was said.
+ */
+export function linesHolding(slot: Pick<RoleSlot, 'reportsTo'> | undefined, role: Pick<Role, 'reportsTo'> | undefined): (ReportsTo & { role: RoleId; source: 'role' | 'type' })[] {
+  const slotSays = linesSaid(slot?.reportsTo)
+  const roleSays = linesSaid(role?.reportsTo)
+  return LINE_KINDS.flatMap((kind) => {
+    const mine = slotSays.find((line) => line.kind === kind)
+    const said = mine ?? roleSays.find((line) => line.kind === kind)
+    return said && said.role !== undefined ? [{ ...said, role: said.role, source: mine ? 'type' as const : 'role' as const }] : []
+  })
+}
+
+/** One line into a role, as the operating model says it: from a role wherever it is held, or from a slot of a unit type. */
+export type LineInto = ReportsTo & { role: RoleId; from: RoleId; source: 'role' | 'type'; typeId?: UnitTypeId }
+
+/** The lines that land on a role across the operating model (ADR-0039, amended): who reports to it, as roles and slots say. */
+export function linesInto(types: readonly UnitType[], roles: readonly Role[], target: RoleId): LineInto[] {
+  const found: LineInto[] = []
+  for (const role of roles) {
+    for (const line of linesSaid(role.reportsTo)) if (line.role === target) found.push({ ...line, role: target, from: role.id, source: 'role' })
+  }
+  for (const type of types) {
+    for (const slot of type.slots) {
+      for (const line of linesSaid(slot.reportsTo)) if (line.role === target) found.push({ ...line, role: target, from: slot.role, source: 'type', typeId: type.id })
+    }
+  }
+  return found
 }
 
 /** How a slot's count reads: `1`, `0–1`, `3–9`, `2+`. */
