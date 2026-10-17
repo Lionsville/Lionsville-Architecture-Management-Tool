@@ -86,8 +86,13 @@ export type ChartSlot = {
   extra: boolean
 }
 
-/** A holder in a role the unit holds no slot for on the day: a role it does not hold, or one that has ended. */
-export type ChartOther = ChartHolder & { endedRole: boolean }
+/**
+ * A holder in a role the unit holds no slot for on the day: a role it does
+ * not hold, or one that has ended. One in a running role the unit's slots do
+ * not have, under a type that runs, is an exception placement (ADR-0039,
+ * amended 17 October 2026): allowed, and said as such.
+ */
+export type ChartOther = ChartHolder & { endedRole: boolean; exception: boolean }
 
 /** One unit of the chart, and the units under it. */
 export type ChartUnit = {
@@ -412,7 +417,9 @@ function chartUnit(unit: UnitLike, reading: Reading, seen: Set<ElementId>): Char
     .filter((one) => one.unitId === unit.id && !inSlots.has(one.roleId) && runsOn(one, reading.day))
     .map((one): ChartOther => {
       const role = reading.roles.get(one.roleId)
-      return { ...holderOf(one, reading), endedRole: role !== undefined && isDay(role.until) && reading.day > role.until }
+      const endedRole = role !== undefined && isDay(role.until) && reading.day > role.until
+      const exception = type !== undefined && unitTypeOn(type, reading.day) && role !== undefined && !endedRole
+      return { ...holderOf(one, reading), endedRole, exception }
     })
   const children = (reading.children.get(unit.id) ?? [])
     .filter((child) => !seen.has(child.id))

@@ -83,6 +83,27 @@ export function filledAlert(theme: Theme, colour: AlertColor): Filled {
   return { fill, ink: palette.getContrastText(fill) }
 }
 
+/**
+ * The three colours a reporting line takes on the organisation chart for the
+ * person picked (ADR-0039, amended 17 October 2026): the lines they report
+ * along in the accent; the lines reporting into them in a teal; and any line
+ * that is an exception to the model — a unit's own, a holder's own — in a
+ * magenta, whichever way it runs, which the chip of a role held outside a
+ * unit's slots wears too. Each a hue away from the warning and error tones a
+ * vacant line and a loop keep, and each at 3:1 on both grounds in both modes
+ * (`theme.contrast.test`).
+ */
+export type ReportingLineColours = { reportsTo: string; reportedBy: string; override: string }
+
+export function reportingLineColours(theme: Theme): ReportingLineColours {
+  const dark = theme.palette.mode === 'dark'
+  return {
+    reportsTo: theme.palette.primary.main,
+    reportedBy: dark ? '#2dd4bf' : '#0f766e',
+    override: dark ? '#e879f9' : '#a21caf',
+  }
+}
+
 /** The palette colours a contained button or a filled chip can be drawn in. */
 export const FILLED_COLOURS = ['primary', 'secondary', 'error', 'warning', 'info', 'success'] as const
 export type FilledColour = (typeof FILLED_COLOURS)[number]

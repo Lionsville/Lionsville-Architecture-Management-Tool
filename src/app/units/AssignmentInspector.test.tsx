@@ -199,3 +199,56 @@ describe('the last day End offers first', () => {
     expect(endDay({ from: '2027-02-01' }, '2027-01-01', TODAY)).toBe('2027-02-01')
   })
 })
+
+describe('where the holder reports (ADR-0039, amended 17 October 2026)', () => {
+  const combo = (at: number) => within(screen.getByTestId('holder-line-form')).getAllByRole('combobox')[at]
+  const pick = async (at: number, name: string) => {
+    fireEvent.mouseDown(combo(at))
+    fireEvent.click(await screen.findByRole('option', { name }))
+  }
+
+  it('says the model\'s answer — by nesting, and who manages them — and sets a line of their own to one person, marked as an override', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness id="as-3" commands={commands} />)
+    expect(text('holder-line-nesting')).toBe('By nesting: to whoever manages this unit or one above it')
+    expect(screen.getAllByTestId('holder-manager').map((one) => [one.textContent, one.dataset.via])).toEqual([
+      ['Sara Kaya — Product owner, Track & Trace', 'nesting'], ['Omar Benali — Cluster lead, Parcel & Freight', 'nesting'],
+    ])
+    fireEvent.click(screen.getByTestId('holder-line-override'))
+    await pick(0, 'One person')
+    await pick(1, 'Omar Benali')
+    // One role held: filled in, by its place in the tree.
+    expect(text('holder-line-place')).toBe('Cluster lead · Parcel & Freight')
+    fireEvent.click(screen.getByTestId('holder-line-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.update', id: 'as-3',
+      patch: { reportsTo: [{ to: { scope: 'shipping', unit: 'pf', role: 'ro-lead', person: 'pe-omar' }, kind: 'solid' }] },
+    }])
+    await waitFor(() => expect(screen.getByTestId('holder-line').dataset.source).toBe('person'))
+    expect(text('holder-line')).toContain('Developer → Omar Benali (Cluster lead, Parcel & Freight)')
+    expect(within(screen.getByTestId('holder-line')).getByTestId('line-override-mark').textContent).toBe('override')
+    expect(screen.getAllByTestId('holder-manager').map((one) => one.dataset.via)).toEqual(['override'])
+    expect(text('holder-model')).toBe('The model says: by nesting')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByTestId('holder-line-use-model'))
+    expect(commands.at(-1)).toEqual({ type: 'assignment.update', id: 'as-3', patch: { reportsTo: undefined } })
+    await waitFor(() => expect(screen.queryByTestId('holder-model')).toBeNull())
+  })
+
+  it('refuses a line to their own role in their own unit, and says why', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness id="as-2" commands={commands} />)
+    fireEvent.click(screen.getByTestId('holder-line-override'))
+    await pick(1, 'Parcel & Freight / Track & Trace (this unit)')
+    await pick(2, 'Product owner')
+    fireEvent.click(screen.getByTestId('holder-line-save'))
+    expect(commands).toEqual([])
+    expect(text('holder-line-refused')).toBe('Not written: a role does not report to itself in the same unit, nor a holder to their own role there.')
+  })
+
+  it('offers nothing to change where the scope is only read', () => {
+    renderShell(<Harness id="as-3" commands={[]} readOnly />)
+    expect(screen.getByTestId('holder-lines')).toBeTruthy()
+    expect(screen.queryByTestId('holder-line-override')).toBeNull()
+  })
+})

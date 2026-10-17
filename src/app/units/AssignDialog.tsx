@@ -11,6 +11,12 @@
  * Correcting one is a patch of what changed; ending one sets its last day;
  * removing one is for an assignment made by mistake — one that ended stays,
  * because it is what the person held.
+ *
+ * **The unit's roles first** (ADR-0039, amended 17 October 2026): the roles
+ * its slots give, and under them, apart, *Another role (an exception)* — any
+ * other role of the organisation. One picked from there is allowed, said as
+ * an exception to the model before it is saved, and marked wherever the
+ * holder is shown.
  */
 import { useState } from 'react'
 import Box from '@mui/material/Box'
@@ -21,6 +27,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import ListSubheader from '@mui/material/ListSubheader'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -34,6 +41,7 @@ import type { Person } from '../../people/person'
 import { useSaying } from '../../people/ui/access'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { PersonPicker } from '../../people/ui/PersonPicker'
+import { reportingLineColours } from '../theme'
 
 /** What the dialog is asked to do: put someone in a role, or look again at an assignment. */
 export type Assigning =
@@ -45,6 +53,8 @@ export type AssignDialogProps = {
   unit: { id: string; name: string }
   /** The roles the unit holds, in the order its slots list them. */
   roles: readonly Role[]
+  /** The organisation's other roles, offered apart as exceptions to the model. Absent: none offered. */
+  others?: readonly Role[]
   register: PeopleRegisterAccess
   /** The day a new assignment starts on: today, or the day looked at where that is still to come. */
   today: string
@@ -109,7 +119,9 @@ export function AssignDialog(props: AssignDialogProps) {
   const [form, setForm] = useState<Form>(() => formOf(assigning, today))
   const set = (patch: Partial<Form>) => setForm((was) => ({ ...was, ...patch }))
   const { roleId, person, share, from, until, acting } = form
-  const role = roles.find((one) => one.id === roleId)
+  const others = (props.others ?? []).filter((one) => !roles.some((slot) => slot.id === one.id))
+  const role = roles.find((one) => one.id === roleId) ?? others.find((one) => one.id === roleId)
+  const exception = role !== undefined && !roles.some((one) => one.id === roleId)
   const done = (command: Command | undefined) => {
     if (command && dispatch(command) !== undefined) onClose()
   }
@@ -130,7 +142,14 @@ export function AssignDialog(props: AssignDialogProps) {
         <TextField select label={s('assign.role')} value={roleId} onChange={(event) => set({ roleId: event.target.value })}
           slotProps={{ htmlInput: { 'data-testid': 'assign-role' } }}>
           {roles.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+          {others.length > 0 && <ListSubheader data-testid="assign-other-roles">{s('assign.otherRoles')}</ListSubheader>}
+          {others.map((one) => <MenuItem key={one.id} value={one.id} data-exception="true">{one.name}</MenuItem>)}
         </TextField>
+        {exception && (
+          <Typography role="note" data-testid="assign-exception" sx={{ fontSize: 12, color: 'text.secondary', borderLeft: 3, borderColor: (theme) => reportingLineColours(theme).override, pl: 1 }}>
+            {s('assign.exception', { role: role.name, unit: unit.name })}
+          </Typography>
+        )}
         <FieldLabel>{s('assign.person')}</FieldLabel>
         <PersonPicker register={register} saying={saying} value={person} onChange={(id) => set({ person: id })} note={loadOf} s={s} />
         {saying.said && <Typography sx={{ fontSize: 12, color: saying.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>{saying.said.text}</Typography>}

@@ -54,10 +54,12 @@
  * request from outside does (`select`).
  *
  * **Reporting lines** (ADR-0039 §7, amended 17 October 2026): with a person
- * picked, a solid or a dotted line from their chip to whoever holds the role
- * they report to, and from the chips of the people who report to them, on
- * the chart's day — ending at the fold for a unit folded away (`chartLines`,
- * `ChartLinesOverlay`). Nothing picked, or a unit, draws none. *Reporting
+ * picked, the lines that apply to them — their own where they have one —
+ * from their chip to whoever they report to, in the accent, and from the
+ * chips of the people who report to them, in teal; an exception to the model
+ * in magenta whichever way it runs; on the chart's day, ending at the fold
+ * for a unit folded away (`holderLines`, `ChartLinesOverlay`), with a legend
+ * over the chart while any are drawn. Nothing picked, or a unit, draws none. *Reporting
  * lines* on the bar turns them off altogether; it is on from the start where
  * the organisation says any line.
  *
@@ -91,7 +93,7 @@ import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
-import { dayBefore, hasReportingLines, loadOn } from '../../model/units'
+import { dayBefore, hasReportingLines, loadOn, roleOn } from '../../model/units'
 import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { registerOf, resolvePerson } from '../../people/shown'
@@ -108,8 +110,8 @@ import { foldKey, SessionFolds } from '../sessionFolds'
 import { AddAtTop } from './AddUnit'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
-import { chartLines, linesOf } from './chartLines'
-import { ChartLinesOverlay } from './ChartLinesOverlay'
+import { holderLines } from './chartLines'
+import { ChartLinesLegend, ChartLinesOverlay } from './ChartLinesOverlay'
 import { ChartOutline } from './ChartOutline'
 import { UnitGrid } from './ChartUnitBox'
 import type { Drawing } from './ChartUnitBox'
@@ -178,20 +180,14 @@ export function ChartPage(props: ChartPageProps) {
   // says none; the switch lasts while the page is up.
   const stage = useRef<HTMLDivElement | null>(null)
   const [showLines, setShowLines] = useState(() => hasReportingLines(here.at.organisation))
-  const lines = useMemo(
-    () => (showLines ? chartLines(here.at.organisation, chart, day, folds.folded) : []),
-    [showLines, here, chart, day, folds.folded],
-  )
   // Whenever the boxes may have moved, the lines are measured again from the chips.
   const redraw = useMemo(() => ({ optional: folds.optional, folded: folds.folded }), [folds.optional, folds.folded])
-  // The person picked, whose lines alone are drawn: the assignment chosen, while the editor selects nothing.
+  // The person picked, whose lines alone are drawn — those that apply to them, their own included — while the editor selects nothing.
   const chosenLines = useMemo(() => {
-    const held = props.selectedId === undefined && props.chosen !== undefined
+    const held = showLines && props.selectedId === undefined && props.chosen !== undefined
       ? here.at.organisation.assignments.find((one) => one.id === props.chosen) : undefined
-    if (!held) return undefined
-    const place = { unitId: held.unitId, roleId: held.roleId }
-    return { chosen: { id: held.id, place }, lines: linesOf(lines, place) }
-  }, [props.selectedId, props.chosen, here, lines])
+    return held ? holderLines(here.at.organisation, chart, day, folds.folded, held) : undefined
+  }, [showLines, props.selectedId, props.chosen, here, chart, day, folds.folded])
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
     const scope = here.scopeOf(id)
@@ -283,10 +279,13 @@ export function ChartPage(props: ChartPageProps) {
               </Box>
             )
             : (
-              <Box ref={stage} sx={{ position: 'relative' }}>
-                <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
-                {showLines && chosenLines && <ChartLinesOverlay stage={stage} lines={chosenLines.lines} redraw={redraw} chosen={chosenLines.chosen} />}
-              </Box>
+              <>
+                {chosenLines && chosenLines.length > 0 && <ChartLinesLegend t={t} />}
+                <Box ref={stage} sx={{ position: 'relative' }}>
+                  <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
+                  {chosenLines && <ChartLinesOverlay stage={stage} lines={chosenLines} redraw={redraw} />}
+                </Box>
+              </>
             )}
         </Box>
       </Box>
@@ -294,6 +293,7 @@ export function ChartPage(props: ChartPageProps) {
         <AssignDialog
           assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
           roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? []).filter((role) => mayAssign(assigning.unit, role.id))}
+          others={here.at.organisation.roles.filter((role) => roleOn(role, day) && mayAssign(assigning.unit, role.id))}
           register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
           makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
           loadOf={(person) => t('assign.load', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100), day })}

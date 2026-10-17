@@ -26,7 +26,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { alpha, decomposeColor, darken, lighten } from '@mui/material/styles'
 import type { CSSObject, Theme } from '@mui/material/styles'
-import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, shellTheme } from './theme'
+import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, reportingLineColours, shellTheme } from './theme'
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
 import { groupColors } from '../editor/canvas/DomainGroupLayer'
@@ -233,6 +233,8 @@ function nonTextPairs(mode: 'light' | 'dark'): Pair[] {
     add(`focus ring on ${ground}`, ratio(ring, fill))
     add(`field outline on ${ground}`, ratio(fieldOutline(theme), fill))
     add(`focused field outline on ${ground}`, ratio(palette.primary.main, fill))
+    // The chart's three reporting-line colours, and the edge of a chip held outside the slots (ADR-0039, amended 17 October 2026).
+    for (const [which, colour] of Object.entries(reportingLineColours(theme))) add(`reporting line (${which}) on ${ground}`, ratio(colour, fill))
   }
   for (const [zone, fill] of Object.entries(tokens.zone.fill)) {
     const board = palette.background.default

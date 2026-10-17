@@ -168,7 +168,7 @@ function ManagedBy({ managers, name, organisation, personName, s }: Pick<MoveUni
   const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
   const said = (list: readonly Manager[]) => (list.length === 0
     ? s('unitMove.managedNobody')
-    : list.map((one) => `${s('unit.managedByLine', { person: personName(one.person), role: roleName(one.roleId), unit: name(one.unitId) })}${one.via === 'line' ? ` · ${s('unit.byLine')}` : ''}`).join('; '))
+    : list.map((one) => `${s('unit.managedByLine', { person: personName(one.person), role: roleName(one.roleId), unit: name(one.unitId) })}${one.via === 'line' ? ` · ${s('unit.byLine')}` : one.via === 'override' ? ` · ${s('unit.byOverride')}` : ''}`).join('; '))
   return (
     <Box data-testid="move-unit-managed">
       <FieldLabel>{s('unitMove.managedBy')}</FieldLabel>

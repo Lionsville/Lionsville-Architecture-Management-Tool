@@ -30,8 +30,15 @@ export type HeldAssignment = {
   from?: string
   until?: string
   acting?: true
-  /** Where the role reports on the day the list was made (ADR-0039): the line manager's line and the functional one, where they land. */
-  reportsTo?: readonly { kind: 'solid' | 'dotted'; role: string; unit: string }[]
+  /**
+   * Where they report on the day the list was made (ADR-0039, amended 17
+   * October 2026): the line manager's line and the functional one that hold
+   * for them, where they land — their own where they have one — each with the
+   * one person it lands on where it names one, and whether it is an override.
+   */
+  reportsTo?: readonly { kind: 'solid' | 'dotted'; role: string; unit: string; person?: string; override?: true }[]
+  /** A role the unit's slots do not have: an exception placement, allowed and said. */
+  exception?: true
 }
 
 /** A person's assignments on a day: those that run on it, those still to begin, and those over. */

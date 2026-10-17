@@ -35,6 +35,8 @@ import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { SIGN_LABEL } from './AddPerson'
 import { KIND_LABEL, Section } from './parts'
+import { usePersonNames } from './names'
+import { pickedPerson } from '../../model/person'
 import { CompactForms } from '../../widgets/CompactForms'
 
 export type PersonPanelProps = {
@@ -294,17 +296,26 @@ function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omi
 
 /** One assignment, as a line: the role in the unit, and what is said of it. */
 function HeldItem({ one, s }: { one: HeldAssignment; s: Translate }) {
+  const names = usePersonNames()
   const said = [
     one.share !== undefined && one.share < 1 ? `${Math.round(one.share * 100)}%` : undefined,
     one.acting ? s('people.heldActing') : undefined,
     one.from ? s('people.heldFrom', { day: one.from }) : undefined,
     one.until ? s('people.heldUntil', { day: one.until }) : undefined,
   ].filter(Boolean)
-  const reports = (one.reportsTo ?? []).map((line) => s(line.kind === 'solid' ? 'people.heldReportsTo' : 'people.heldDottedTo', { role: line.role, unit: line.unit }))
+  // A line to one person names them; an override says it is one (ADR-0039, amended 17 October 2026).
+  const reports = (one.reportsTo ?? []).map((line) => {
+    const words = { role: line.role, unit: line.unit, person: line.person !== undefined ? names.text(pickedPerson(line.person)) : '' }
+    const key = line.kind === 'solid'
+      ? line.person !== undefined ? 'people.heldReportsToPerson' : 'people.heldReportsTo'
+      : line.person !== undefined ? 'people.heldDottedToPerson' : 'people.heldDottedTo'
+    return `${s(key, words)}${line.override ? ` (${s('people.heldOverride')})` : ''}`
+  })
   return (
     <Typography sx={{ fontSize: 13 }} data-testid="people-held">
       {s('people.heldIn', { role: one.role, unit: one.unit })}
       {said.length > 0 && <Box component="span" sx={{ color: 'text.secondary' }}> · {said.join(' · ')}</Box>}
+      {one.exception && <Box component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }} data-testid="people-held-exception">{s('people.heldException')}</Box>}
       {reports.length > 0 && <Box component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }} data-testid="people-held-reports">{reports.join(' · ')}</Box>}
     </Typography>
   )

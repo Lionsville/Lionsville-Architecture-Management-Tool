@@ -52,6 +52,7 @@ import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon, MoveToIcon } from '../../widgets/icons'
+import { reportingLineColours } from '../theme'
 import { ADD_INSIDE, AddInside, showsAddInside } from './AddUnit'
 import { rollUpWords, unitBadges } from './chartWords'
 import type { RollUpPart } from './chartWords'
@@ -159,11 +160,12 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
       <UnitBadges unit={unit} drawing={drawing} />
       {unit.slots.map((slot) => <SlotRow key={slot.roleId} unit={unit} slot={slot} drawing={drawing} />)}
       {unit.others.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
+        <Box data-testid="chart-others" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
           {unit.others.map((other, at) => (
             <HolderChip
               key={`${other.assignment.id}/${at}`} holder={other} drawing={drawing} unit={unit}
               prefix={`${drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId}${other.endedRole ? ` (${t('chart.roleEnded')})` : ''}: `}
+              {...(other.exception ? { exception: t('unit.exceptionPlacement', { role: drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId, unit: unit.name }) } : {})}
             />
           ))}
         </Box>
@@ -246,7 +248,11 @@ function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; dr
  * *you*, a red edge when over all of their time, and the ring a chosen
  * assignment has — the one a chosen unit's box has.
  */
-function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolder; drawing: Drawing; unit: ChartUnit; prefix?: string }) {
+function HolderChip({ holder, drawing, unit, prefix = '', exception }: {
+  holder: ChartHolder; drawing: Drawing; unit: ChartUnit; prefix?: string
+  /** An exception placement, said: the chip wears the override colour, and its tooltip and name say why. */
+  exception?: string
+}) {
   const { t } = drawing
   const you = drawing.names.isMe(pickedPerson(holder.person))
   const chosen = drawing.chosen === holder.assignment.id && drawing.selectedId === undefined
@@ -260,15 +266,18 @@ function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolde
   const chip = (
     <Chip
       size="small" label={label} color={you ? 'primary' : 'default'} variant={you ? 'filled' : 'outlined'}
-      data-testid="chart-holder" data-assignment-id={holder.assignment.id} data-you={you ? 'true' : undefined}
+      data-testid="chart-holder" data-assignment-id={holder.assignment.id} data-role-id={holder.assignment.roleId} data-you={you ? 'true' : undefined}
       data-over={holder.overloaded ? 'true' : undefined} data-chosen={chosen ? 'true' : undefined} aria-pressed={chosen}
+      data-exception={exception !== undefined ? 'true' : undefined} {...(exception !== undefined ? { 'aria-label': `${label}. ${exception}` } : {})}
       onClick={() => drawing.choose(holder, unit)} onDoubleClick={() => drawing.open(unit.id)}
       sx={{
         height: 22,
+        ...(exception !== undefined && !holder.overloaded ? { borderColor: (theme) => reportingLineColours(theme).override, borderWidth: 2, borderStyle: 'dashed' } : {}),
         ...(holder.overloaded ? { borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' } : {}),
         ...(chosen ? { boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}` } : {}),
       }}
     />
   )
-  return holder.overloaded ? <Tooltip title={t('chart.over')}>{chip}</Tooltip> : chip
+  const said = [holder.overloaded ? t('chart.over') : undefined, exception].filter(Boolean).join(' ')
+  return said ? <Tooltip title={said}>{chip}</Tooltip> : chip
 }

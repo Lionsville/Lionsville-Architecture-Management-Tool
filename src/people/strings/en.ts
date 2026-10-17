@@ -226,4 +226,8 @@ export const EN = {
   'people.badDistinct': 'An entry is answered as not the same person as another entry, never as itself.',
   'people.unwritable': 'The register here will not read, or a later version wrote it: it is shown and not changed.',
   'people.failed': 'The register did not answer: {message}',
+  'people.heldReportsToPerson': 'reports to {person} ({role}, {unit})',
+  'people.heldDottedToPerson': 'functionally to {person} ({role}, {unit})',
+  'people.heldOverride': 'an exception to the model',
+  'people.heldException': 'An exception to the model: this role is not one of the unit\'s own roles.',
 } as const

@@ -499,6 +499,38 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     }
   })
 
+  it('colours a line by which way it runs from the person picked, an override apart, with a legend (ADR-0039, amended 17 October 2026)', () => {
+    const spy = measured()
+    try {
+      renderShell(<Harness root={chipped} commands={[]} />)
+      expect(screen.queryByTestId('chart-lines-legend')).toBeNull()
+      fireEvent.click(holder('tt', 'ro-po'))
+      const lines = () => [...document.querySelectorAll<SVGGElement>('[data-testid^="chart-line-"]')].map((one) => [one.dataset.direction, one.dataset.override ?? ''])
+      expect(lines()).toEqual([['up', ''], ['into', '']])
+      expect(within(screen.getByTestId('chart-lines-legend')).getAllByRole('listitem').map((one) => one.textContent))
+        .toEqual(['Reports to', 'Reports to them', 'An exception to the model', 'Dotted: functional'])
+      cleanup()
+      // The developer reports to the cluster lead by a line of her own: drawn in place of the role's, as an override.
+      const own: HostModel = { ...SHIPPING, assignments: SHIPPING.assignments!.map((one) => (one.id === 'as-4' ? { ...one, reportsTo: [{ to: { scope: 'shipping', unit: 'pf', role: 'ro-lead' }, kind: 'solid' as const }] } : one)) }
+      renderShell(<Harness root={chipped} shipping={own} commands={[]} />)
+      fireEvent.click(holder('tt', 'ro-dev'))
+      expect(lines()).toEqual([['up', 'true'], ['up', '']])
+      // From her chip to his.
+      expect(drawn()[0]).toEqual(['chart-line-solid', '300,250', '280,130'])
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('marks a role held outside the unit\'s slots as an exception on its chip, and says why', async () => {
+    const outside: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'tt', 'ro-lead', 'pe-tim')] }
+    renderShell(<Harness shipping={outside} commands={[]} />)
+    const chip = within(within(unitBox('tt')).getByTestId('chart-others')).getByTestId('chart-holder')
+    expect(chip.dataset.exception).toBe('true')
+    expect(chip.getAttribute('aria-label')).toContain('An exception to the model: Cluster lead is not one of the roles Track & Trace holds.')
+    expect(await axeFindings()).toEqual([])
+  })
+
   it('ends a line whose far end is folded away at the folded unit\'s name, and says so', () => {
     const spy = measured()
     try {

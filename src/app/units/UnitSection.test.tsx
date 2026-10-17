@@ -513,7 +513,9 @@ describe('a unit a manager changes the people of, where the scope is only read',
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
     const dialog = await screen.findByTestId('assign-dialog')
     fireEvent.mouseDown(within(dialog).getByRole('combobox'))
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Product owner', 'Developer'])
+    // The unit's slots first; the organisation's other roles apart, under a heading, as exceptions.
+    expect(screen.getAllByRole('option').map((one) => one.textContent).slice(0, 2)).toEqual(['Product owner', 'Developer'])
+    expect(screen.getByTestId('assign-other-roles').textContent).toBe('Another role (an exception)')
     fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
     fireEvent.click(within(dialog).getByTestId('person-pick-pe-ivo'))
     fireEvent.click(within(dialog).getByTestId('assign-save'))
@@ -793,12 +795,15 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
       fireEvent.mouseDown(within(form()).getAllByRole('combobox')[at])
       fireEvent.click(await screen.findByRole('option', { name }))
     }
-    // This unit first, and its own role left out of the roles offered: a role does not report to itself in the same unit.
-    fireEvent.mouseDown(within(form()).getAllByRole('combobox')[0])
-    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Webshop (this unit)', 'Customer'])
-    fireEvent.click(screen.getByRole('option', { name: 'Webshop (this unit)' }))
+    // To a role in a unit, the first way; this unit first, by its place in the tree, and its own role left out of the roles
+    // offered: a role does not report to itself in the same unit.
+    expect(within(form()).getAllByRole('combobox')[0].textContent).toBe('A role in a unit')
     fireEvent.mouseDown(within(form()).getAllByRole('combobox')[1])
-    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Product owner'])
+    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Customer / Webshop (this unit)', 'Customer'])
+    fireEvent.click(screen.getByRole('option', { name: 'Customer / Webshop (this unit)' }))
+    fireEvent.mouseDown(within(form()).getAllByRole('combobox')[2])
+    // The unit's slots, then a role held there outside them (ADR-0039, amended): its holders may be reported to as well.
+    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Product owner', 'Team coach'])
     fireEvent.click(screen.getByRole('option', { name: 'Product owner' }))
     fireEvent.click(within(form()).getByTestId('unit-line-save'))
     expect(commands[0]).toEqual({
@@ -808,9 +813,11 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     await waitFor(() => expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('Developer → Product owner, in this unit'))
     commands.length = 0
     fireEvent.click(within(screen.getAllByTestId('unit-line')[1]).getByTestId('unit-line-override'))
-    await pick(0, 'Customer')
-    await pick(1, 'Domain owner')
-    await pick(2, 'functional')
+    await pick(1, 'Customer')
+    await pick(2, 'Domain owner')
+    // Somebody holds it there: whoever does, or one of them by name; whoever does is the default.
+    expect(within(form()).getAllByRole('combobox')[3].textContent).toBe('Whoever holds it')
+    await pick(4, 'functional')
     // The two days the type's slot editor takes, kept only where said.
     fireEvent.change(within(form()).getByTestId('unit-line-from'), { target: { value: '2026-01-01' } })
     fireEvent.click(within(form()).getByTestId('unit-line-save'))
@@ -824,6 +831,9 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     })
     await waitFor(() => expect(screen.queryByTestId('unit-line-form')).toBeNull())
     expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('this unit\'s own')
+    // A unit's own line is an exception to the model, and marked as one (ADR-0039, amended 17 October 2026).
+    expect(within(screen.getAllByTestId('unit-line')[1]).getByTestId('line-override-mark').textContent).toBe('override')
+    expect(within(screen.getAllByTestId('unit-line')[0]).queryByTestId('line-override-mark')).toBeNull()
   })
 
   it('offers nothing to change where the scope is only read', () => {

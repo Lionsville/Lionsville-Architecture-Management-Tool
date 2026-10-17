@@ -10,23 +10,30 @@
  * role at the far end, it ends at the role's name in its row, and where a
  * fold hides the far end, at the folded unit's name, which its tooltip says.
  * Solid or dotted (`2 3`, as the Conway map draws a line that is only said),
- * in the warning colour where nobody holds the role it lands on and the error
- * colour where it is part of a loop. Where it runs is measured from the chips
+ * and in one of three colours (`reportingLineColours`): the accent for a line
+ * the person reports along, teal for one reporting into them, and magenta for
+ * an exception to the model whichever way it runs, its end dot saying where
+ * it lands — and in the warning colour where nobody holds what it lands on and
+ * the error colour where it is part of a loop, which win. `ChartLinesLegend`
+ * says which is which. Where it runs is measured from the chips
  * as they ended up, after every layout and again when the stage changes size,
  * and never stored.
  */
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
+import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
-import type { ChartLine, ChartLineEnd, ChartPosition } from './chartLines'
+import type { Translate } from '../../i18n'
+import { reportingLineColours } from '../theme'
+import type { ChartLine, ChartLineEnd } from './chartLines'
 
 /** A measured rectangle, relative to the stage. */
 export type Rect = { left: number; top: number; right: number; bottom: number }
 
 type Anchor = { element: HTMLElement; folded?: string }
 type Drawn = {
-  key: string; d: string; kind: ChartLine['kind']; tone: ChartLine['tone']; x: number; y: number
+  key: string; d: string; kind: ChartLine['kind']; tone: ChartLine['tone']; direction: ChartLine['direction']; override: boolean; x: number; y: number
   /** The unit a fold hides the far end in, said in the tooltip. */
   folded?: string
 }
@@ -35,12 +42,13 @@ type Drawn = {
 const childrenOf = (box: HTMLElement) => [...box.children] as HTMLElement[]
 
 /**
- * The chips an end of a line is drawn at: the chip of the person picked where
- * the end is theirs; else the chips of whoever holds the role in the unit;
- * else the role's name in its row; and where a fold hides the unit, the
- * folded unit's name.
+ * The chips an end of a line is drawn at: the chips of the holders it names,
+ * in the role's row or among the people a unit holds outside its slots; the
+ * chips of whoever holds the role in the unit where it names none; else the
+ * role's name in its row; and where a fold hides the unit, the folded unit's
+ * name.
  */
-function anchorsOf(boxes: ReadonlyMap<string, HTMLElement>, end: ChartLineEnd, chosen: string | undefined, isChosen: boolean): Anchor[] {
+function anchorsOf(boxes: ReadonlyMap<string, HTMLElement>, end: ChartLineEnd): Anchor[] {
   const box = boxes.get(end.unitId)
   if (!box) return []
   const head = () => {
@@ -48,12 +56,17 @@ function anchorsOf(boxes: ReadonlyMap<string, HTMLElement>, end: ChartLineEnd, c
     return name ? [{ element: name, folded: box.dataset.unitName ?? end.unitId }] : []
   }
   if (end.roleId === undefined) return head()
+  const named = end.holders
   const row = childrenOf(box).find((child) => child.dataset.testid === `chart-slot-${end.roleId}`)
-  if (!row) return []
+  if (!row) {
+    // A role held outside the unit's slots has no row: its holders' chips are among the others.
+    const others = childrenOf(box).find((child) => child.dataset.testid === 'chart-others')
+    const chips = others ? childrenOf(others).filter((chip) => named?.includes(chip.dataset.assignmentId ?? '') ?? chip.dataset.roleId === end.roleId) : []
+    return chips.map((element) => ({ element }))
+  }
   const holders = childrenOf(row).filter((child) => child.dataset.testid === 'chart-holder')
-  const mine = isChosen ? holders.filter((chip) => chip.dataset.assignmentId === chosen) : []
-  if (mine.length > 0) return mine.map((element) => ({ element }))
-  if (holders.length > 0) return holders.map((element) => ({ element }))
+  const shown = named === undefined ? holders : holders.filter((chip) => named.includes(chip.dataset.assignmentId ?? ''))
+  if (shown.length > 0) return shown.map((element) => ({ element }))
   const name = row.querySelector<HTMLElement>('[data-testid="chart-role-name"]')
   return name ? [{ element: name }] : []
 }
@@ -79,10 +92,8 @@ export function chipLinePath(a: Rect, b: Rect, within: boolean): { d: string; x1
   return { d: `M${x1},${y1} C${bend},${y1} ${bend},${y2} ${x2},${y2}`, x1, y1, x2, y2 }
 }
 
-const samePlace = (one: ChartPosition, other: ChartPosition | undefined) => other !== undefined && one.unitId === other.unitId && one.roleId === other.roleId
-
 /** Where each line runs, measured from the chips on the stage. */
-function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly ChartLine[], chosen: Chosen | undefined, redraw: unknown): Drawn[] {
+function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly ChartLine[], redraw: unknown): Drawn[] {
   const [drawn, setDrawn] = useState<Drawn[]>([])
   const measure = useCallback(() => {
     const root = stage.current
@@ -96,8 +107,8 @@ function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly 
     const boxes = new Map([...root.querySelectorAll<HTMLElement>('[data-testid="chart-unit"]')].map((one) => [one.dataset.elementId ?? '', one]))
     const next: Drawn[] = []
     for (const line of lines) {
-      const froms = anchorsOf(boxes, line.from, chosen?.id, samePlace(line.at, chosen?.place))
-      const tos = anchorsOf(boxes, line.to, chosen?.id, samePlace(line.lands, chosen?.place))
+      const froms = anchorsOf(boxes, line.from)
+      const tos = anchorsOf(boxes, line.to)
       for (const from of froms) {
         for (const to of tos) {
           if (from.element === to.element) continue
@@ -107,14 +118,15 @@ function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly 
           const path = chipLinePath(a, b, line.within === true)
           const folded = to.folded ?? from.folded
           next.push({
-            key: `${line.key}:${next.length}`, d: path.d, kind: line.kind, tone: line.tone, x: path.x2, y: path.y2,
+            key: `${line.key}:${next.length}`, d: path.d, kind: line.kind, tone: line.tone, direction: line.direction, override: line.override,
+            x: path.x2, y: path.y2,
             ...(folded !== undefined ? { folded } : {}),
           })
         }
       }
     }
     setDrawn(next)
-  }, [stage, lines, chosen])
+  }, [stage, lines])
   useLayoutEffect(() => { measure() }, [measure, redraw])
   // Drawn with the page: a child's layout effect runs before the stage's ref is attached, so the first measure is taken again after it.
   useEffect(() => { measure() }, [measure])
@@ -129,26 +141,69 @@ function useMeasured(stage: { current: HTMLDivElement | null }, lines: readonly 
   return drawn
 }
 
-/** The person picked: their assignment, and the role in a unit it is. */
-type Chosen = { id: string; place: ChartPosition }
-
 /** The lines of the person picked, over the stage they were measured on. `redraw` changes whenever the boxes may have moved. */
-export function ChartLinesOverlay({ stage, lines, redraw, chosen }: {
-  stage: { current: HTMLDivElement | null }; lines: readonly ChartLine[]; redraw: unknown; chosen: Chosen | undefined
+export function ChartLinesOverlay({ stage, lines, redraw }: {
+  stage: { current: HTMLDivElement | null }; lines: readonly ChartLine[]; redraw: unknown
 }) {
   const theme = useTheme()
   const { t } = useStrings()
-  const drawn = useMeasured(stage, lines, chosen, redraw)
-  const stroke = (tone: Drawn['tone']) => (tone === 'loop' ? theme.palette.error.main : tone === 'vacant' ? theme.palette.warning.main : theme.palette.primary.main)
+  const drawn = useMeasured(stage, lines, redraw)
+  const colours = reportingLineColours(theme)
+  const stroke = (line: Pick<Drawn, 'tone' | 'override' | 'direction'>) => {
+    if (line.tone === 'loop') return theme.palette.error.main
+    if (line.tone === 'vacant') return theme.palette.warning.main
+    return line.override ? colours.override : line.direction === 'up' ? colours.reportsTo : colours.reportedBy
+  }
   return (
     <Box component="svg" aria-hidden data-testid="chart-lines" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
       {drawn.map((line) => (
-        <g key={line.key} data-testid={`chart-line-${line.kind}`} data-tone={line.tone} data-folded={line.folded !== undefined ? 'true' : undefined}>
+        <g
+          key={line.key} data-testid={`chart-line-${line.kind}`} data-tone={line.tone} data-direction={line.direction}
+          data-override={line.override ? 'true' : undefined} data-folded={line.folded !== undefined ? 'true' : undefined}
+        >
           {line.folded !== undefined && <title>{t('chart.lineFolded', { unit: line.folded })}</title>}
-          <path d={line.d} fill="none" stroke={stroke(line.tone)} strokeWidth={2} strokeDasharray={line.kind === 'dotted' ? '2 3' : undefined}
+          <path d={line.d} fill="none" stroke={stroke(line)} strokeWidth={2} strokeDasharray={line.kind === 'dotted' ? '2 3' : undefined}
             style={line.folded !== undefined ? { pointerEvents: 'visibleStroke' } : undefined} />
-          <circle cx={line.x} cy={line.y} r={3.5} fill={stroke(line.tone)} />
+          <circle cx={line.x} cy={line.y} r={3.5} fill={stroke(line)} />
         </g>
+      ))}
+    </Box>
+  )
+}
+
+/** One swatch of the legend: a short stretch of line in its colour, solid or dotted. */
+function Swatch({ colour, dotted }: { colour: string; dotted?: boolean }) {
+  return (
+    <Box component="svg" aria-hidden width={22} height={8} sx={{ flex: 'none' }}>
+      <line x1={1} y1={4} x2={21} y2={4} stroke={colour} strokeWidth={2} strokeDasharray={dotted ? '2 3' : undefined} />
+    </Box>
+  )
+}
+
+/**
+ * What the chart's lines mean, said beside them while any are drawn: the
+ * three colours, and that a dotted line is a functional one. The vacant and
+ * loop tones are said where they are drawn, on the line's own finding.
+ */
+export function ChartLinesLegend({ t }: { t: Translate }) {
+  const theme = useTheme()
+  const colours = reportingLineColours(theme)
+  const items: { key: string; colour: string; dotted?: boolean; text: string }[] = [
+    { key: 'up', colour: colours.reportsTo, text: t('chart.legendReportsTo') },
+    { key: 'into', colour: colours.reportedBy, text: t('chart.legendReportedBy') },
+    { key: 'override', colour: colours.override, text: t('chart.legendOverride') },
+    { key: 'dotted', colour: theme.palette.text.secondary, dotted: true, text: t('chart.legendDotted') },
+  ]
+  return (
+    <Box
+      component="ul" data-testid="chart-lines-legend" aria-label={t('chart.legend')}
+      sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, listStyle: 'none', m: 0, mb: 1, p: 0 }}
+    >
+      {items.map((item) => (
+        <Box component="li" key={item.key} data-testid={`chart-legend-${item.key}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Swatch colour={item.colour} dotted={item.dotted} />
+          <Typography component="span" sx={{ fontSize: 11.5, color: 'text.secondary' }}>{item.text}</Typography>
+        </Box>
       ))}
     </Box>
   )

@@ -18,6 +18,12 @@
  * register is there: the People page is the organisation's, so it leaves this
  * scope for its home.
  *
+ * **Reports to** (ADR-0039, amended 17 October 2026): where this holder
+ * reports, by which line or by nesting and who manages them, with
+ * *Override…* for a line of their own and *Use the model's* to take it away
+ * (`HolderLines`) — reached from the person picked on the chart, not only
+ * from the unit's lines.
+ *
  * Read on the chart's day, off the organisation as the open scope's session
  * has it laid over the tree, so an end made a second ago is said at once.
  * Where the scope is only read, a manager of the unit may still end and
@@ -40,7 +46,7 @@ import { overAllOfTheirTime } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram } from '../../model/types'
-import { dayBefore, loadOn, personOf, shareOf, slotsOf } from '../../model/units'
+import { dayBefore, loadOn, personOf, roleOn, shareOf, slotsOf } from '../../model/units'
 import type { Assignment } from '../../model/units'
 import { registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
@@ -49,6 +55,7 @@ import type { PersonNames } from '../../people/ui/names'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { AssignDialog } from './AssignDialog'
+import { HolderLines } from './HolderLines'
 import { organisationHere } from './organisationHere'
 
 export type AssignmentInspectorProps = {
@@ -95,6 +102,8 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
     <Box data-testid="assignment-inspector" sx={{ pt: 0.5 }}>
       <Said held={held} unitName={unit?.name ?? held.unitId} roleName={roles.get(held.roleId)?.name ?? held.roleId}
         external={entry?.kind === 'external' && entry.state !== 'forgotten'} load={load(personOf(held))} day={day} names={names} language={language} t={t} />
+      <HolderLines organisation={organisation} held={held} day={day} editable={mayWrite} scopeOf={(id) => at.unitAt(id)?.scope}
+        names={names} dispatch={props.dispatch} s={t} />
       {mayWrite && held.until === undefined && (
         <EndOn key={held.id} held={held} day={day} today={props.today} language={language} t={t}
           onEnd={(until) => props.dispatch({ type: 'assignment.update', id: held.id, patch: { until } })} />
@@ -114,6 +123,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
           assigning={{ mode: 'edit', assignment: held }} unit={{ id: unit.id, name: unit.name }}
           roles={slotsOf(unit, organisation.unitTypes.find((type) => type.id === unit.unitTypeId))
             .flatMap((slot) => roles.get(slot.role) ?? []).filter((role) => !props.readOnly || mayChangeIn(people.manages, unit.id, role.id))}
+          others={organisation.roles.filter((role) => roleOn(role, day) && (!props.readOnly || mayChangeIn(people.manages, unit.id, role.id)))}
           register={people} today={day > props.today ? day : props.today} endOn={endDay(held, day, props.today)}
           makeId={props.makeId} dispatch={props.dispatch} scopeName={props.scopeName}
           loadOf={(one) => t('assign.load', { share: Math.round(load(one.id) * 100), day })}
@@ -127,7 +137,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
 /** Where the scope is only read, a manager of the unit still ends and corrects it (ADR-0036 §12); one kept elsewhere is changed there. */
 function mayWriteHere(props: AssignmentInspectorProps, held: Assignment): boolean {
   if (props.keptIn !== undefined) return false
-  return !props.readOnly || mayChangeIn(props.people?.manages, held.unitId, held.roleId)
+  return !props.readOnly || mayChangeIn(props.people?.manages, held.unitId, held.roleId, held.id)
 }
 
 /** Where an assignment kept in another scope is changed, and the way there. */

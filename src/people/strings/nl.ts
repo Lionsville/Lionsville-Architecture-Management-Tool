@@ -212,4 +212,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.badDistinct': 'Een vermelding wordt beantwoord als niet dezelfde persoon als een andere vermelding, nooit als zichzelf.',
   'people.unwritable': 'Het register hier is niet te lezen, of een latere versie heeft het geschreven: het wordt getoond en niet gewijzigd.',
   'people.failed': 'Het register gaf geen antwoord: {message}',
+  'people.heldReportsToPerson': 'rapporteert aan {person} ({role}, {unit})',
+  'people.heldDottedToPerson': 'functioneel aan {person} ({role}, {unit})',
+  'people.heldOverride': 'een uitzondering op het model',
+  'people.heldException': 'Een uitzondering op het model: deze rol is geen van de rollen van de eenheid.',
 }

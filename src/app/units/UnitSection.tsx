@@ -63,7 +63,7 @@ import type { Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { slotRange } from '../../model/operatingModel'
 import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
-import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
+import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, roleOn, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
 import type { Assignment } from '../../model/units'
 import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
@@ -225,7 +225,8 @@ export function UnitSection(props: UnitSectionProps) {
       {assigning && people && (
         <AssignDialog
           assigning={assigning} unit={{ id: element.id, name: element.name }}
-          roles={dialogRoles(element, facts, assigning).filter((role) => mayRole(role.id))}
+          roles={dialogRoles(element, facts, assigning, today).filter((role) => mayRole(role.id))}
+          others={facts.organisation.roles.filter((role) => roleOn(role, today) && mayRole(role.id))}
           register={people} today={assignFrom} endOn={endOn} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
           loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today, facts.canonical) * 100), day: today })}
           onClose={() => setAssigning(undefined)} s={s}
@@ -236,15 +237,17 @@ export function UnitSection(props: UnitSectionProps) {
 }
 
 /**
- * The roles the assignment dialog offers: the unit's slots, in their order,
- * and the role of an assignment being changed where it holds no slot for it —
- * a holder of a role the unit does not hold, ended there from a finding.
+ * The roles the assignment dialog offers first: the unit's slots, in their
+ * order, and the role of an assignment being changed where it holds no slot
+ * for it and the role has ended — a holder of a role ended there, from a
+ * finding. A running role outside the slots is offered apart, as an
+ * exception (`others`).
  */
-function dialogRoles(element: DesignElement, facts: Facts, assigning: Assigning): Role[] {
+function dialogRoles(element: DesignElement, facts: Facts, assigning: Assigning, day: string): Role[] {
   const held = slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? [])
   const roleId = assigning.mode === 'edit' ? assigning.assignment.roleId : undefined
   const role = roleId === undefined || held.some((one) => one.id === roleId) ? undefined : facts.roles.get(roleId)
-  return role ? [...held, role] : held
+  return role && !roleOn(role, day) ? [...held, role] : held
 }
 
 /**
@@ -639,7 +642,7 @@ function Managers(props: UnitSectionProps & {
           {s('unit.managedByLine', {
             person: name(one.person), role: facts.roles.get(one.roleId)?.name ?? one.roleId, unit: facts.unitName(one.unitId),
           })}
-          {one.via === 'line' ? ` · ${s('unit.byLine')}` : ''}
+          {one.via === 'line' ? ` · ${s('unit.byLine')}` : one.via === 'override' ? ` · ${s('unit.byOverride')}` : ''}
           {facts.isMe(one.person) ? ` · ${s('unit.you')}` : ''}
         </Typography>
       ))}

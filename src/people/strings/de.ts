@@ -212,4 +212,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.badDistinct': 'Ein Eintrag wird als nicht dieselbe Person wie ein anderer Eintrag beantwortet, nie als er selbst.',
   'people.unwritable': 'Das Register hier lässt sich nicht lesen, oder eine spätere Version hat es geschrieben: Es wird angezeigt und nicht geändert.',
   'people.failed': 'Das Register hat nicht geantwortet: {message}',
+  'people.heldReportsToPerson': 'berichtet an {person} ({role}, {unit})',
+  'people.heldDottedToPerson': 'fachlich an {person} ({role}, {unit})',
+  'people.heldOverride': 'eine Ausnahme vom Modell',
+  'people.heldException': 'Eine Ausnahme vom Modell: Diese Rolle ist keine der Rollen der Einheit.',
 }
