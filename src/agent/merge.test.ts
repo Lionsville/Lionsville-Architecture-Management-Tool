@@ -147,6 +147,13 @@ describe('observation.merge in the scope open', () => {
     expect(said).toMatchObject({ comments: 1 })
   })
 
+  it('says the plan counts no comments of a record in another scope, which the merge carries and counts', () => {
+    expect(plan({ kind: 'observation', into: 'ob-1', absorb: [{ id: 'ob-2' }] })).not.toHaveProperty('commentsNotCounted')
+    const across = plan({ kind: 'observation', into: 'ob-1', absorb: [{ id: 'in-1', scope: INTAKE }] })
+    expect(across).toMatchObject({ commentsNotCounted: [INTAKE] })
+    expect(across.commentsNote).toContain('its answer counts them')
+  })
+
   it('keeps a link where it is when links says move false, and says it stayed', () => {
     const row = key(`${OPEN}#ca-2`, `${OPEN}#ob-2`)
     const { model, said } = write('observation.merge', { into: 'ob-1', absorb: [{ id: 'ob-2' }], links: [{ key: row, move: false }] })

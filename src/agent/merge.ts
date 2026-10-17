@@ -290,6 +290,17 @@ export function writesOf(planned: Planned): string[] {
   return planned.plan.ok ? planned.plan.writes.map((one) => one.scope) : []
 }
 
+/**
+ * The scopes of a merge's records whose comments this did not read: every one
+ * but the call's own, which the tree reads without its threads. Their threads
+ * travel all the same, read where the merge writes them (`landAcross`), and
+ * the merge's answer counts them; the plan says so rather than undercount.
+ */
+function threadsUnread(request: MergeRequest): string[] {
+  const scopes = new Set([request.survivor, ...request.absorbed].map((at) => at.scope))
+  return [...scopes].filter((scope) => request.scopes.find((one) => one.scope === scope)?.comments === undefined)
+}
+
 /** `merge.plan`: what the merge would do, or the refusal it would meet, with the links either way. */
 export function planAnswer(args: Args, view: MergeView): AgentAnswer {
   const planned = planFor(args.kind as MergeKind, args, view, '')
@@ -297,12 +308,17 @@ export function planAnswer(args: Args, view: MergeView): AgentAnswer {
   const { plan, request } = planned
   const refusal = mergeRefused(planned) ?? choiceRefused(planned)
   const writes = writesOf(planned)
+  const unread = plan.ok ? threadsUnread(request) : []
   return json({
     kind: request.kind,
     survivor: named(request.survivor, request.scopes),
     absorb: request.absorbed.map((at) => named(at, request.scopes)),
     ...(refusal && !refusal.ok ? { refused: refusal.refusal, why: REFUSAL_SENTENCE[refusal.refusal], ...(refusal.detail ? { detail: refusal.detail } : {}) } : {}),
     ...(plan.ok ? { writes, elsewhere: writes.some((scope) => scope !== view.scopePath), ...(plan.comments > 0 ? { comments: plan.comments } : {}) } : {}),
+    ...(unread.length > 0 ? {
+      commentsNotCounted: unread.map(where),
+      commentsNote: 'comments on records in these scopes are not read for a plan and not in its count; the merge carries their threads to the survivor and its answer counts them',
+    } : {}),
     links: plan.links.map((row) => rowOf(row, request.scopes)),
   })
 }

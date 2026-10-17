@@ -855,7 +855,9 @@ const SPECS = [
       + 'survivor and the records it would absorb, every link that names an absorbed record — its key, the record '
       + 'it lives on and the one it names, where it would land, whether it may move and, where not, why in the '
       + 'link form\'s words, whether both records had it and the strength offered — the scopes the merge would '
-      + 'write, and the refusal it would meet, if any. Pass the key back in links to keep a row where it is or '
+      + 'write, and the refusal it would meet, if any — and how many comments travel with the absorbed records\' '
+      + 'threads, counted for the scope this call is for; those of records in another scope are carried all the same '
+      + 'and counted in the merge\'s answer, and commentsNotCounted names those scopes. Pass the key back in links to keep a row where it is or '
       + 'choose its strength. A read: it changes nothing, and answers for a scope that is not open.',
     inputSchema: {
       type: 'object',
