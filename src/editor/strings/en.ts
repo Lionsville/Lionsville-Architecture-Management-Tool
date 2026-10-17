@@ -617,7 +617,7 @@ export const EN = {
   'shortcut.find': 'Find element',
 
   // --- editor messages -----------------------------------------------------
-  'error.diagramNotFound': 'Diagram not found — pass a valid activeDiagramId.',
+  'error.diagramNotFound': 'There is no view here to show. Open one from the scope’s home.',
   'error.overCap':
     'This diagram has a group of {total} connections; routing handles up to {max} at a time, so those lines could not be routed automatically.',
   'error.tidyRoutingUnattended': 'This diagram was laid out but its connections could not be routed.',

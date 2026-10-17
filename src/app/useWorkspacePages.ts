@@ -10,7 +10,7 @@
  * them all. Which one is up is also what the agent is told when it asks where
  * the app stands (ADR-0019).
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { ShownDays } from '../editor'
 import type { ObservationTab, ScreenPage } from '../agent/screen'
@@ -98,6 +98,7 @@ export function useWorkspacePages(deps: {
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
   }, [documentationShown, adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, platformReading.platformId, platformReading.serviceId])
+  useLeaveWithDocumentation(documentationShown, page, leaveIfNothingToDraw)
   /** Has the record page that is up — the same one `page` names — said what it landed on for the latest request? */
   const settled = useCallback((): boolean => {
     if (adrPage.open) return adrShown?.nonce === adrPage.nonce
@@ -112,6 +113,23 @@ export function useWorkspacePages(deps: {
     decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,
   }
+}
+
+/**
+ * An element's page closed over a scope that draws nothing — a link opened
+ * it there (ADR-0033, amended 17 October 2026) — goes home, as every other
+ * page does in such a scope: there is no board to close onto. Not where
+ * another page took its place, which is a move of its own.
+ */
+function useLeaveWithDocumentation(
+  documentationShown: string | undefined, page: () => ScreenPage | undefined, leaveIfNothingToDraw: () => void,
+): void {
+  const had = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const was = had.current
+    had.current = documentationShown
+    if (was !== undefined && documentationShown === undefined && page() === undefined) leaveIfNothingToDraw()
+  }, [documentationShown, page, leaveIfNothingToDraw])
 }
 
 /** The operating model's page as the screen says it: on the item it was asked for, where one was. */

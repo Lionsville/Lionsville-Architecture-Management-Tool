@@ -124,6 +124,12 @@ describe('documentedElements', () => {
     const map = { ...sheet, kind: 'map' as const };
     expect(documentedElements(model, map).map((group) => group.kind)).toEqual(['function']);
   });
+
+  it('lists what the scope keeps itself where there is no view, and leaves a stand-in out', () => {
+    const kept = { ...model, elements: [...model.elements, { ...element('far', 'application'), ref: 'elsewhere' }] };
+    const listed = documentedElements(kept, undefined).flatMap((group) => group.elements.map((one) => one.id));
+    expect(listed.sort()).toEqual(['billing', 'crm', 'erp', 'ops', 'ship']);
+  });
 });
 
 describe('linkElementRefs', () => {

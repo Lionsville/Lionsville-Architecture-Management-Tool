@@ -859,6 +859,21 @@ that record — choosing another record is still not a step for Back. Anyone who
 may read the work opens the same place with it; somebody who is not signed in
 yet signs in first and lands there after.
 
+**What a link says.** After the `#` comes the scope's path, a `-` that ends
+it, then the page and the record: `#/acme/rail/-/board/landscape` is the board
+*landscape* of the scope *acme/rail*, `#/acme/-/document/billing` the page of
+the element *billing* in *acme*, and `#/-/home` the organisation's home. A tab
+or a selection follows as `?tab=analysis` or `?select=billing`. A link made
+before version 3.7.0, which starts with `#place?`, still opens the same place,
+and the address is written again in the new form once it has. A link pasted
+into the address bar of a window that is already open goes there too.
+
+**A link to an element's page always opens it**, wherever the element is
+kept: an element no view draws, a unit kept by a scope that draws nothing,
+and an element kept in another scope, which opens in the scope that keeps it.
+Closing the page in a scope that draws nothing goes to that scope's home. A
+link to an element that is not there any more opens the scope and says so.
+
 **On a view, the link selects what you selected.** Share from a board, a
 sheet, an enterprise map or the technology landscape with one element
 selected, and the link opens that view with the element selected again; on a

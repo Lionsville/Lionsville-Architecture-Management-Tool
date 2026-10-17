@@ -598,7 +598,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shortcut.help': 'Sneltoetsen',
   'shortcut.find': 'Element zoeken',
 
-  'error.diagramNotFound': 'Aanzicht niet gevonden — geef een geldige activeDiagramId mee.',
+  'error.diagramNotFound': 'Er is hier geen aanzicht om te tonen. Open er een vanaf de startpagina van de scope.',
   'error.overCap':
     'Dit aanzicht heeft een groep van {total} koppelingen; routeren gaat tot {max} tegelijk, dus die lijnen konden niet automatisch worden gerouteerd.',
   'error.tidyRoutingUnattended':

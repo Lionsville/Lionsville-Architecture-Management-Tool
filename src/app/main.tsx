@@ -63,7 +63,7 @@ import { sourceKey } from '../platform/workingSource'
 import {
   bootDecidedBy, dialogAsked, landedAt, landingOf, placeLanding, placeToRead, readPlaceScope, reopened, withoutDialog,
 } from './bootLanding'
-import { readPlace, unknownPlace } from '../agent/place'
+import { oldPlaceForm, readPlace, unknownPlace, writePlace } from '../agent/place'
 import type { Place } from '../agent/place'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
@@ -396,6 +396,13 @@ const askedDialog = (() => {
  * left alone for the source that may have written it.
  */
 const bootPlace = readPlace(window.location.hash)
+
+// A link shared before 3.7.0 is read and written over in the shape links have
+// now, in place, so the bar shows what Copy link would make (ADR-0033, amended
+// 17 October 2026).
+if (bootPlace !== undefined && oldPlaceForm(window.location.hash)) {
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}${writePlace(bootPlace)}`)
+}
 
 /**
  * Where that place lands, once the source it is in is open. A read that fails

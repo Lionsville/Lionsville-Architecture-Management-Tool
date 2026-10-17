@@ -597,7 +597,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shortcut.help': 'Tastenkürzel',
   'shortcut.find': 'Element suchen',
 
-  'error.diagramNotFound': 'Diagramm nicht gefunden — übergeben Sie eine gültige activeDiagramId.',
+  'error.diagramNotFound': 'Hier gibt es keine Ansicht zum Anzeigen. Öffnen Sie eine auf der Startseite des Bereichs.',
   'error.overCap':
     'Dieses Diagramm hat eine Gruppe von {total} Verbindungen; das Routing schafft bis zu {max} auf einmal, daher konnten diese Linien nicht automatisch geroutet werden.',
   'error.tidyRoutingUnattended':

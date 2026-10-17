@@ -17,7 +17,7 @@ type Entry = { state: unknown; url: string }
 function fakeWindow(start = 'https://app.example/index.html?tenant=t1', state: unknown = null) {
   const entries: Entry[] = [{ state, url: start }]
   let at = 0
-  let listener: ((event: { state: unknown }) => void) | undefined
+  const listeners = new Map<string, (event: { state?: unknown }) => void>()
   const win: HistoryWindow = {
     history: {
       get state() { return entries[at].state },
@@ -34,14 +34,26 @@ function fakeWindow(start = 'https://app.example/index.html?tenant=t1', state: u
       get href() { return entries[at].url },
       get hash() { return new URL(entries[at].url).hash },
     },
-    addEventListener: (_type, next) => { listener = next },
-    removeEventListener: () => { listener = undefined },
+    addEventListener: (type, next) => { listeners.set(type, next) },
+    removeEventListener: (type) => { listeners.delete(type) },
   }
   const go = (delta: number) => {
     at += delta
-    listener?.({ state: entries[at].state })
+    listeners.get('popstate')?.({ state: entries[at].state })
   }
-  return { win, entries, go, at: () => at, listening: () => listener !== undefined }
+  /**
+   * The bar's fragment changed, as a person pasting a link does: a new entry
+   * with no state, then what the browser says — `popstate` and `hashchange`
+   * both, or `hashchange` alone.
+   */
+  const paste = (hash: string, says: 'both' | 'hashchange' = 'both') => {
+    entries.splice(at + 1)
+    entries.push({ state: null, url: new URL(hash, entries[at].url).href })
+    at += 1
+    if (says === 'both') listeners.get('popstate')?.({ state: null })
+    listeners.get('hashchange')?.({})
+  }
+  return { win, entries, go, paste, at: () => at, listening: () => listeners.size > 0 }
 }
 
 function setUp(win = fakeWindow(), nearest: (place: Place) => Promise<Place> = (place) => Promise.resolve(place)) {
@@ -70,7 +82,7 @@ describe('a look at the screen', () => {
     const { look, entries } = setUp()
     look(home)
     expect(entries).toHaveLength(1)
-    expect(entries[0].url).toBe('https://app.example/index.html?tenant=t1#place?scope=&page=home')
+    expect(entries[0].url).toBe('https://app.example/index.html?tenant=t1#/-/home')
     expect((entries[0].state as Record<string, unknown>)[PLACE_STATE_KEY]).toEqual(home)
   })
 
@@ -79,7 +91,7 @@ describe('a look at the screen', () => {
     look(home)
     look(board)
     expect(entries).toHaveLength(2)
-    expect(entries[1].url).toBe('https://app.example/?tenant=t1#place?scope=acme&page=board&id=l7')
+    expect(entries[1].url).toBe('https://app.example/?tenant=t1#/acme/-/board/l7')
     expect(entries[1].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: board })
     expect(entries[0].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: home })
   })
@@ -98,8 +110,7 @@ describe('a look at the screen', () => {
     look(decisions('ADR-2'))
     look(decisions())
     expect(entries).toHaveLength(2)
-    expect(entries[1].url).toContain('page=decisions')
-    expect(entries[1].url).not.toContain('id=')
+    expect(new URL(entries[1].url).hash).toBe('#/acme/-/decisions')
   })
 
   it('writes only the place a move settled on, and does not start the wait again for the same one', () => {
@@ -113,7 +124,7 @@ describe('a look at the screen', () => {
     history.look({ scope: 'acme', page: 'register' })
     settle()
     expect(entries).toHaveLength(2)
-    expect(entries[1].url).toContain('page=register')
+    expect(new URL(entries[1].url).hash).toBe('#/acme/-/register')
   })
 
   it('takes a screen that is not a place yet for no look at all', () => {
@@ -128,13 +139,13 @@ describe('a look at the screen', () => {
     expect(entries[0].url).toBe('https://app.example/#token=abc')
     expect((entries[0].state as Record<string, unknown>)[PLACE_STATE_KEY]).toEqual(home)
     look(board)
-    expect(entries[1].url).toBe('https://app.example/#place?scope=acme&page=board&id=l7')
+    expect(entries[1].url).toBe('https://app.example/#/acme/-/board/l7')
   })
 
   it('writes a place over a place the first entry carried', () => {
     const { look, entries } = setUp(fakeWindow('https://app.example/#place?scope=acme&page=board&id=gone'))
     look(board)
-    expect(entries[0].url).toBe('https://app.example/#place?scope=acme&page=board&id=l7')
+    expect(entries[0].url).toBe('https://app.example/#/acme/-/board/l7')
   })
 })
 
@@ -170,7 +181,7 @@ describe('Back and Forward', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(opened).toEqual([near])
-    expect(entries[0].url).toContain('page=sheet&id=first')
+    expect(new URL(entries[0].url).hash).toBe('#/acme/-/sheet/first')
     look(near)
     expect(entries).toHaveLength(2)
   })
@@ -183,7 +194,7 @@ describe('Back and Forward', () => {
     await Promise.resolve()
     look({ scope: '', page: 'register' })
     expect(entries).toHaveLength(2)
-    expect(entries[0].url).toContain('page=register')
+    expect(new URL(entries[0].url).hash).toBe('#/-/register')
   })
 
   it('is a person\'s move again once Back has had long enough to land', async () => {
@@ -195,7 +206,7 @@ describe('Back and Forward', () => {
     pass(ARRIVAL_MS + 1)
     look(decisions())
     expect(entries).toHaveLength(2)
-    expect(entries[1].url).toContain('page=decisions')
+    expect(new URL(entries[1].url).hash).toBe('#/acme/-/decisions')
   })
 
   it('ignores an entry the app never wrote', async () => {
@@ -224,8 +235,41 @@ describe('Back and Forward', () => {
     go(0)
     await Promise.resolve()
     expect(opened).toEqual([{ ...board, select: 'app-1' }])
-    expect(new URL(entries.at(-1)!.url).hash).toBe('#place?scope=acme&page=board&id=l7')
+    expect(new URL(entries.at(-1)!.url).hash).toBe('#/acme/-/board/l7')
     expect(entries.at(-1)!.state).toEqual({ 'lvarch.place': board })
+  })
+
+  it('opens a link pasted into the bar of an open window where the browser says only that the fragment changed', async () => {
+    const { look, paste, opened, entries } = setUp()
+    look(home)
+    paste('#/acme/-/board/l7', 'hashchange')
+    await Promise.resolve()
+    expect(opened).toEqual([board])
+    // Nothing is pushed for it: the browser made the entry, and it holds the place.
+    expect(entries).toHaveLength(2)
+  })
+
+  it('opens a pasted link once where the browser says both, in the old form as well, and writes it over in the new one', async () => {
+    const { look, paste, opened, entries } = setUp()
+    look(home)
+    paste('#place?scope=acme&page=board&id=l7')
+    await Promise.resolve()
+    expect(opened).toEqual([board])
+    expect(new URL(entries.at(-1)!.url).hash).toBe('#/acme/-/board/l7')
+    paste('#/acme/-/decisions/ADR-1')
+    await Promise.resolve()
+    expect(opened).toEqual([board, decisions('ADR-1')])
+    expect(entries).toHaveLength(3)
+  })
+
+  it('takes a fragment that changed to what the entry holds, or to somebody else\'s, for no move', async () => {
+    const { look, paste, opened } = setUp()
+    look(home)
+    look(board)
+    paste('#/acme/-/board/l7', 'hashchange')
+    paste('#section-2', 'hashchange')
+    await Promise.resolve()
+    expect(opened).toEqual([])
   })
 
   it('opens what the entry says where where it lands could not be worked out', async () => {

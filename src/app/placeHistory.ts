@@ -41,7 +41,7 @@
  * No React: a class with a window handed in, so every rule here is a node
  * test with a fake window and a clock (`placeHistory.test.ts`).
  */
-import { PLACE_STATE_KEY, placeInState, readPlace, samePlace, stepBetween, writePlace } from '../agent/place'
+import { PLACE_STATE_KEY, oldPlaceForm, placeInState, readPlace, samePlace, stepBetween, writePlace } from '../agent/place'
 import type { Place } from '../agent/place'
 
 /** How long a look waits for the next before the place is written. */
@@ -58,8 +58,8 @@ export type HistoryWindow = {
     replaceState(state: unknown, unused: string, url?: string): void
   }
   readonly location: { readonly href: string; readonly hash: string }
-  addEventListener(type: 'popstate', listener: (event: { state: unknown }) => void): void
-  removeEventListener(type: 'popstate', listener: (event: { state: unknown }) => void): void
+  addEventListener(type: 'popstate' | 'hashchange', listener: (event: { state?: unknown }) => void): void
+  removeEventListener(type: 'popstate' | 'hashchange', listener: (event: { state?: unknown }) => void): void
 }
 
 export type PlaceHistoryOptions = {
@@ -89,7 +89,8 @@ export class PlaceHistory {
   #moving: Moving | undefined
   /** Which Back is the latest, so a slow one does not open after a later one. */
   #pops = 0
-  readonly #onPop = (event: { state: unknown }) => { this.popped(event.state) }
+  readonly #onPop = (event: { state?: unknown }) => { this.popped(event.state) }
+  readonly #onHash = () => { this.hashChanged() }
 
   constructor(window: HistoryWindow, options: PlaceHistoryOptions) {
     this.#window = window
@@ -104,8 +105,10 @@ export class PlaceHistory {
   /** Listen for the window's own moves; the answer stops listening and drops a look not yet written. */
   listen(): () => void {
     this.#window.addEventListener('popstate', this.#onPop)
+    this.#window.addEventListener('hashchange', this.#onHash)
     return () => {
       this.#window.removeEventListener('popstate', this.#onPop)
+      this.#window.removeEventListener('hashchange', this.#onHash)
       this.#cancel()
     }
   }
@@ -144,6 +147,25 @@ export class PlaceHistory {
     const place = placeInState(state) ?? readPlace(this.#window.location.hash)
     // An entry the app never wrote: not one of its places, and nothing to open.
     if (place === undefined) return
+    this.#arrive(place)
+  }
+
+  /**
+   * The address's fragment changed under the window: a link pasted into the
+   * bar of a window that is open, or a fragment edited there. A browser says
+   * so with `popstate` as well where it makes a new entry, and then this
+   * finds the entry already holding the place and does nothing; where only
+   * `hashchange` comes, the place is opened as Back opens one. A fragment
+   * that is not a place, or the place the entry holds, is no move.
+   */
+  hashChanged(): void {
+    const place = readPlace(this.#window.location.hash)
+    if (place === undefined || samePlace(place, this.#entry)) return
+    this.#arrive(place)
+  }
+
+  /** Open a place the window moved to, as Back opens one: worked out to where it lands first. */
+  #arrive(place: Place): void {
     this.#cancel()
     this.#moving = { from: this.#seen, until: this.#options.now() + ARRIVAL_MS }
     this.#entry = place
@@ -153,7 +175,10 @@ export class PlaceHistory {
       // A link pasted into an open window may carry `select`: it is opened
       // with it, and the entry is written without it, since it is no part of
       // a place (ADR-0033, amended 11 October 2026).
-      if (!samePlace(near, place) || near.select !== undefined) this.#write('replace', withoutSelect(near))
+      // An address in the form before 3.7.0 is written over in the new one,
+      // and an entry the browser made for a pasted link is given its place.
+      const rewrite = oldPlaceForm(this.#window.location.hash) || placeInState(this.#window.history.state) === undefined
+      if (!samePlace(near, place) || near.select !== undefined || rewrite) this.#write('replace', withoutSelect(near))
       this.#options.open(near)
     }, (cause: unknown) => {
       if (pop !== this.#pops) return

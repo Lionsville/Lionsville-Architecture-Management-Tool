@@ -4,7 +4,9 @@
   2026 (a place on the observations page carries its tab); implemented,
   1 October 2026; amended 8 October 2026 (a link to a place, shared from the
   menu), accepted and built; amended 11 October 2026 (what a link selects,
-  and a link to one record), accepted and built
+  and a link to one record), accepted and built; amended 17 October 2026 (a
+  link is a path, the old form is read, a pasted link moves an open window,
+  and an element's page needs no view), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -410,4 +412,82 @@ name one.
 **What is deliberately not done.** No several elements in a link: one
 selection is what a person points somebody at, and a list would make a link
 nobody can read. No day being looked at, no dialog and no filter, as before.
+
+## Amended — a link is a path
+
+*17 October 2026; accepted and built the same day.* A link worked, and read
+badly: `#place?scope=acme%2Frail&page=board&id=landscape` says the scope's
+path with its `/` escaped, every word with its key, and the page after the
+scope's name in a form nobody types. It is what a person sees in the bar and
+pastes into a message, so it should read like the tree it points into. And
+two holes showed when links were followed: an element's page in a scope that
+draws nothing showed the editor's own complaint about a missing view instead
+of the page, and a link pasted into the bar of a window that was already open
+was only certain to be followed where the browser said `popstate` for it.
+
+**The shape.** A place's fragment is a path:
+
+    #/acme/rail/-/board/landscape            a board
+    #/acme/-/document/billing                an element's page
+    #/-/home                                 the organisation's home
+    #/acme/-/observations/OB-1?tab=analysis  a record on a tab
+    #/acme/rail/-/board/landscape?select=crm what a link selects
+
+The scope's path comes first, written as it is everywhere else, segment by
+segment; a `-` ends it; then the page, and the record where the page has
+one. What is not the place's three words — the observations page's tab and a
+link's `select` — follows as a query. The organisation's scope, whose path is
+the empty one, is nothing before the `-`.
+
+**Why the `-`.** A scope's path holds whatever a person named a scope, and a
+scope may well be called *board* or *document*. Read from the right with the
+pages as a vocabulary, `#/a/board/home` is both the board *home* of `a` and
+the home of `a/board`. The `-` is a segment no scope's path can hold — a
+scope's own segment that is `-` is written escaped, `%2D` — so the scope is
+said up to it whatever it is called, and the grammar stays as strict as the
+one it replaces. It costs two characters, and the alternative a reader would
+guess, a reserved list of names no scope may have, would be a rule about
+naming scopes made for the sake of an address.
+
+**Stable.** Each segment is `encodeURIComponent`'s, so a `/`, a `#`, a `?` or
+a space a person put in a name or an id comes back as it went in, and every
+place written is read back the same (`place.test.ts`). The leading `/` is
+what tells a place from a fragment a source wrote, as `place?` did.
+
+**The old form is read, always.** Links shared since 3.5 are in messages and
+documents, and a link that stopped working would be a broken promise.
+`readPlace` reads `#place?…` exactly as strictly as before, to the same
+place. Only the path is written: the boot writes an old link over in the new
+form before anything moves (`main.tsx`), and so does a move of the history
+that arrives at one (`app/placeHistory.ts`), so the bar shows what *Copy
+link* would make. Links made by the app — *Share with a Link…* and every
+*Copy link* — are written in the new form, from the place, through
+`linkTo`; what comes before the `#` is the source's, as before.
+
+**A pasted link moves an open window.** Pasting a link into the bar of a
+window that is open is a navigation to a fragment. Browsers say so with
+`hashchange`, and most with `popstate` as well. The history listens to both:
+`hashchange` opens the place the fragment names, as Back opens one, unless
+the entry already holds it — which is what `popstate`, arriving first, has
+made true. The entry the browser made for the paste is given the place in
+its state, and an old form is written over.
+
+**An element's page needs no view.** The page lists the other things on the
+view it was opened from, and was refused where there was no view: a scope
+that draws nothing — a domain that keeps its units — had a link to its
+unit's page land on the editor's complaint, in words meant for a developer.
+Now the page opens without one: its list is every element the scope keeps
+itself (`documentedElements` with no view), its breadcrumb has no view's
+name, and its inspector reads a view with nothing on it. Closing it in a
+scope that draws nothing goes to the scope's home, as every other page there
+does. An element kept in another scope still opens in the scope that keeps
+it, and a link to an element that is not there lands as a removed record
+does, on the scope, and says so. The editor's words for a scope with no view
+at all are a sentence a reader can act on, in the three languages.
+
+**What is deliberately not done.** No second spelling of the same place: the
+page names stay the ones `app.open` takes, so a link and an agent's
+destination are one vocabulary. No query left in the address by the app
+itself: a source's own parameters before the `#` are the source's to keep
+or drop.
 

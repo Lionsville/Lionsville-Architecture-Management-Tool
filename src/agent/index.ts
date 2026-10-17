@@ -27,7 +27,7 @@ export type { Destination, Page, Screen, ScreenPage, ScreenView } from './screen
 export { HOME_PAGES, NEEDS_ID, PAGES, VIEW_PAGES, arrived, scopeOf, viewPage } from './screen'
 export type { Place, PlaceFacts } from './place'
 export {
-  PLACE_PREFIX, PLACE_STATE_KEY, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
+  PLACE_PATH_PREFIX, PLACE_PREFIX, PLACE_STATE_KEY, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
 } from './place'
 export type { DrivingSession, DrivingState } from './driving'
 export { Driving } from './driving'

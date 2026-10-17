@@ -25,7 +25,7 @@ describe('a link to one record', () => {
   it('names the place it is on, whatever is on screen, and is copied and shown', async () => {
     const { result, copyText, notify } = hook('https://work.example/')
     act(() => result.current.shareTo({ scope: 'acme', page: 'observations', id: 'ob-1', tab: 'analysis' }))
-    const link = 'https://work.example/#place?scope=acme&page=observations&id=ob-1&tab=analysis'
+    const link = 'https://work.example/#/acme/-/observations/ob-1?tab=analysis'
     expect(result.current.answer).toEqual({ link })
     expect(copyText).toHaveBeenCalledWith(link)
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Link copied', 'success'))

@@ -140,7 +140,7 @@ describe('the history the shell writes', () => {
     expect(parsed(await ask('app.open', { scope: 'acme/retail' })).arrived).toBe(true)
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
     expect(window.history.length).toBe(before + 1)
-    expect(window.location.hash).toBe('#place?scope=acme%2Fretail&page=board&id=r7')
+    expect(window.location.hash).toBe('#/acme/retail/-/board/r7')
     // The person's click on the organisation's crumb.
     fireEvent.click(screen.getByTestId('crumb-'))
     await settledOn({ scope: '', page: 'home' })
@@ -188,6 +188,18 @@ describe('Back and Forward', () => {
     expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'board', id: 'r7' })
   })
 
+  it('opens a link pasted into the bar of the window that is open, the old form as well, and writes it over in the new one', async () => {
+    const { where } = await organisationOnScreen()
+    // What the bar does with a fragment typed or pasted into it: a navigation
+    // to the fragment, which says so with \`hashchange\`.
+    window.location.hash = '#/acme/retail/-/board/r8'
+    await waitFor(async () => expect((await where()).open?.view?.id).toBe('r8'))
+    await settledOn({ scope: 'acme/retail', page: 'board', id: 'r8' })
+    window.location.hash = '#place?scope=&page=decisions&id=adr-2'
+    await waitFor(async () => expect((await where()).page).toEqual({ page: 'decisions', id: 'adr-2' }))
+    await waitFor(() => expect(window.location.hash).toBe('#/-/decisions/adr-2'))
+  })
+
   it('moves the page beneath a dialog, and the dialog goes with the page it was opened on', async () => {
     const { ask, where } = await organisationOnScreen()
     await ask('app.open', { scope: 'acme/retail' })
@@ -227,7 +239,7 @@ describe('Back and Forward', () => {
     const { where } = await backTo({ scope: 'acme/retail', page: 'board', id: 'gone' })
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
     expect((await where()).open?.view?.id).toBe('r7')
-    expect(window.location.hash).toBe('#place?scope=acme%2Fretail&page=board&id=r7')
+    expect(window.location.hash).toBe('#/acme/retail/-/board/r7')
   })
 
   it('lands a removed record on its page without one, and writes what that page shows over the entry', async () => {

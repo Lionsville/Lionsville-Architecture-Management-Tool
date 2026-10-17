@@ -931,6 +931,23 @@ op dat record uitkomt — een ander record kiezen is nog steeds geen stap voor
 Terug. Iedereen die het werk mag lezen, opent er dezelfde plek mee; wie nog niet
 is aangemeld, meldt zich eerst aan en komt daarna op die plek uit.
 
+**Wat een link zegt.** Na de `#` komt het pad van het onderdeel, een `-` die
+het afsluit, en dan de pagina en het record: `#/acme/rail/-/board/landscape`
+is het bord *landscape* van het onderdeel *acme/rail*, `#/acme/-/document/billing`
+de pagina van het element *billing* in *acme*, en `#/-/home` het thuis van de
+organisatie. Een tabblad of een selectie volgt als `?tab=analysis` of
+`?select=billing`. Een link van vóór versie 3.7.0, die met `#place?` begint,
+opent nog steeds dezelfde plek, en het adres wordt daarna in de nieuwe vorm
+geschreven. Een link die je in de adresbalk plakt van een venster dat al open
+is, gaat daar ook heen.
+
+**Een link naar de pagina van een element opent die altijd**, waar het element
+ook bewaard wordt: een element dat geen weergave tekent, een eenheid van een
+onderdeel dat niets tekent, en een element van een ander onderdeel, dat opent
+in het onderdeel dat het bewaart. Sluit je de pagina in een onderdeel dat niets
+tekent, dan kom je op het thuis van dat onderdeel. Een link naar een element
+dat er niet meer is, opent het onderdeel en zegt dat.
+
 **Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
 een bord, een blad, een ondernemingskaart of het technologielandschap met één
 element geselecteerd, dan opent de link die weergave met dat element weer

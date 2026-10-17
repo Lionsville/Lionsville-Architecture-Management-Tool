@@ -16,10 +16,30 @@
  * **The address.** A place is written into the address's fragment, so a
  * reload in a browser lands where the person was, and the fragment never
  * leaves the browser — the names of scopes reach no server's log on the way.
- * The grammar is a fixed prefix and a query string:
+ * The grammar is a path (ADR-0033, amended 17 October 2026): the scope's path
+ * as it is written everywhere else, a `-` that ends it, and the page and the
+ * record after it:
+ *
+ *     #/acme/rail/-/board/landscape
+ *     #/freight/-/document/freight-division      an element's page
+ *     #/-/home                                   the organisation's home
+ *     #/acme/-/observations?tab=analysis         a tab, as a query
+ *     #/acme/rail/-/board/landscape?select=crm   what a link selects
+ *
+ * The `-` is what keeps a scope called *board* from reading as a page: a
+ * scope's path may hold any name, so the scope is said up to a segment that no
+ * scope's can be, and a scope's own segment that is `-` is written escaped.
+ * Each segment is `encodeURIComponent`'s, so a `/` or a `#` a person put in a
+ * name comes back as it went in.
+ *
+ * **The form before it** is read as well, and always will be: links shared
+ * from 3.5 to 3.6 were a fixed prefix and a query string,
  *
  *     #place?scope=acme%2Frail&page=board&id=landscape
- *     #place?scope=&page=home                          the organisation's home
+ *
+ * and {@link readPlace} reads them to the same place. Only the path is
+ * written, so the first step the app takes after opening an old link writes
+ * it over in the new shape (`app/placeHistory.ts`).
  *
  * The observations page says which of its tabs is up, so a place on it may
  * carry `tab` as well (ADR-0019, amended): a reload stays on the tab, and a
@@ -31,13 +51,11 @@
  * `placeOf` and the history's state never hold it, and choosing another
  * element is never a step.
  *
- * The prefix is what tells a place from anything else a fragment may carry: a
- * source provider reads the address too (`SourceConnect.fromLocation`), and a
- * fragment that is not a place is left alone for whoever wrote it. The rest is
- * `URLSearchParams`, which is the browser's own encoding: a scope path holds
- * `/` and whatever a person named a folder, and every one of those characters
- * comes back as it went in. `scope` is always written, because the
- * organisation's path is the empty one and a place with no scope is no place.
+ * The leading `/` — `place?` in the old form — is what tells a place
+ * from anything else a fragment may carry: a source provider reads the
+ * address too (`SourceConnect.fromLocation`), and a fragment that is not a
+ * place is left alone for whoever wrote it. Both readings are strict for the
+ * same reason.
  *
  * Pure, and the agent's module's because the vocabulary is: the shell keeps
  * the history (`app/placeHistory.ts`), and a test here says that every place
@@ -51,22 +69,46 @@ import type { Destination, Page, Screen } from './screen'
 export type Place = Destination & { readonly scope: string }
 
 /** What a fragment that is a place begins with, after the `#`. */
+export const PLACE_PATH_PREFIX = '/'
+
+/**
+ * What a place's fragment began with until 3.7.0, after the `#`: the form
+ * links shared from 3.5 to 3.6 carry. Read, never written.
+ */
 export const PLACE_PREFIX = 'place?'
 
 /** The key a place is kept under in a history entry's state, beside whatever other code keeps there. */
 export const PLACE_STATE_KEY = 'lvarch.place'
 
+/** The segment that ends a scope's path in a place's address. */
+const SCOPE_END = '-'
+
 const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select'])
+
+/** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
+const QUERY_KEYS = new Set(['id', 'tab', 'select'])
+
+/** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
+function segment(text: string): string {
+  return text === SCOPE_END ? '%2D' : encodeURIComponent(text)
+}
 
 /** The fragment for a place, with its `#`. */
 export function writePlace(place: Place): string {
+  const path = [...(place.scope === '' ? [] : place.scope.split('/').map(segment)), SCOPE_END]
   const query = new URLSearchParams()
-  query.set('scope', place.scope)
-  if (place.page !== undefined) query.set('page', place.page)
-  if (place.id !== undefined) query.set('id', place.id)
+  if (place.page !== undefined) {
+    path.push(segment(place.page))
+    if (place.id !== undefined) path.push(segment(place.id))
+  } else if (place.id !== undefined) {
+    // A record with no page to say it on: there is no such screen, but a
+    // destination may say it, and what is written is read back.
+    query.set('id', place.id)
+  }
   if (place.tab !== undefined) query.set('tab', place.tab)
   if (place.select !== undefined) query.set('select', place.select)
-  return `#${PLACE_PREFIX}${query.toString()}`
+  const rest = query.toString()
+  return `#${PLACE_PATH_PREFIX}${path.join('/')}${rest === '' ? '' : `?${rest}`}`
 }
 
 /**
@@ -84,31 +126,84 @@ export function linkTo(address: string, place: Place): string {
 
 /**
  * The place a fragment names, with or without its `#` — or `undefined` for a
- * fragment that is not one: no prefix, a key this grammar does not have, a
- * key said twice, no scope, a page there is no such thing as, or a tab that
- * is not one of the observations page's. Strict, because a fragment that
- * nearly is a place is somebody else's.
+ * fragment that is not one: neither of the two forms, a key or a segment the
+ * grammar does not have, a key said twice, no scope, a page there is no such
+ * thing as, or a tab that is not one of the observations page's. Strict,
+ * because a fragment that nearly is a place is somebody else's.
  */
 export function readPlace(hash: string): Place | undefined {
   const fragment = hash.startsWith('#') ? hash.slice(1) : hash
-  if (!fragment.startsWith(PLACE_PREFIX)) return undefined
-  const query = new URLSearchParams(fragment.slice(PLACE_PREFIX.length))
-  const seen = new Set<string>()
-  for (const key of query.keys()) {
-    if (!KEYS.has(key) || seen.has(key)) return undefined
-    seen.add(key)
+  if (fragment.startsWith(PLACE_PATH_PREFIX)) return readPath(fragment.slice(PLACE_PATH_PREFIX.length))
+  if (fragment.startsWith(PLACE_PREFIX)) return readQueryForm(fragment.slice(PLACE_PREFIX.length))
+  return undefined
+}
+
+/** Whether a fragment is written in the form links carried until 3.7.0, which is read and written over. */
+export function oldPlaceForm(hash: string): boolean {
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash
+  return fragment.startsWith(PLACE_PREFIX) && readPlace(hash) !== undefined
+}
+
+/** `#/<scope>/-/<page>/<id>?tab=…&select=…`, after its leading `/`. */
+function readPath(text: string): Place | undefined {
+  const mark = text.indexOf('?')
+  const path = mark < 0 ? text : text.slice(0, mark)
+  const segments = path.split('/')
+  const end = segments.indexOf(SCOPE_END)
+  if (end < 0) return undefined
+  const decoded = decodeAll(segments)
+  if (decoded === undefined) return undefined
+  const scopeParts = decoded.slice(0, end)
+  // The organisation's path is the empty one, said by nothing before the end;
+  // any other scope has no empty segment.
+  if (scopeParts.some((part) => part === '')) return undefined
+  const after = decoded.slice(end + 1)
+  if (after.length > 2) return undefined
+  const [page, id] = after
+  if (page !== undefined && !isPage(page)) return undefined
+  const query = new URLSearchParams(mark < 0 ? '' : text.slice(mark + 1))
+  const said = queryOf(query, QUERY_KEYS)
+  if (said === undefined) return undefined
+  // A record said twice, or a record with no page that is said in the query
+  // and on the path at once, is not a place.
+  if (said.id !== undefined && page !== undefined) return undefined
+  const scope = scopeParts.join('/')
+  return placeFrom(scope, page, id ?? said.id, said.tab, said.select)
+}
+
+/** `#place?scope=…&page=…&id=…`, the form before 3.7.0, after its prefix. */
+function readQueryForm(text: string): Place | undefined {
+  const said = queryOf(new URLSearchParams(text), KEYS)
+  if (said === undefined || said.scope === undefined) return undefined
+  if (said.page !== undefined && !isPage(said.page)) return undefined
+  return placeFrom(said.scope, said.page, said.id, said.tab, said.select)
+}
+
+/** Every key of a query once, and only the ones allowed: or nothing. */
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select', string>> | undefined {
+  const out: Record<string, string> = {}
+  for (const [key, value] of query) {
+    if (!allowed.has(key) || key in out) return undefined
+    out[key] = value
   }
-  const scope = query.get('scope')
-  if (scope === null) return undefined
-  const page = query.get('page')
-  if (page !== null && !isPage(page)) return undefined
-  const id = query.get('id')
-  const tab = query.get('tab')
-  if (tab !== null && !isObservationTab(tab)) return undefined
-  const select = query.get('select')
+  return out
+}
+
+function placeFrom(scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined): Place | undefined {
+  if (page !== undefined && !isPage(page)) return undefined
+  if (tab !== undefined && !isObservationTab(tab)) return undefined
   return {
-    scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}), ...(tab !== null ? { tab } : {}),
-    ...(select !== null && select !== '' ? { select } : {}),
+    scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}),
+    ...(select !== undefined && select !== '' ? { select } : {}),
+  }
+}
+
+/** Every segment as it was written, or nothing where one is not an escape the browser would make. */
+function decodeAll(segments: readonly string[]): string[] | undefined {
+  try {
+    return segments.map((one) => decodeURIComponent(one))
+  } catch {
+    return undefined
   }
 }
 
@@ -117,15 +212,16 @@ function isPage(value: string): value is Page {
 }
 
 /**
- * Whether a fragment meant to be a place and is not one: it carries the
- * prefix and {@link readPlace} refuses it — a page there is no such thing
- * as, a key this grammar does not have. The boot says so then, rather than
- * landing somewhere else in silence; a fragment with no prefix is somebody
- * else's and is left alone as before.
+ * Whether a fragment meant to be a place and is not one: it is written in
+ * either form and {@link readPlace} refuses it — a page there is no such
+ * thing as, a key this grammar does not have. The boot says so then, rather
+ * than landing somewhere else in silence; a fragment in neither form is
+ * somebody else's and is left alone as before.
  */
 export function unknownPlace(hash: string): boolean {
   const fragment = hash.startsWith('#') ? hash.slice(1) : hash
-  return fragment.startsWith(PLACE_PREFIX) && readPlace(hash) === undefined
+  const meant = fragment.startsWith(PLACE_PREFIX) || fragment.startsWith(PLACE_PATH_PREFIX)
+  return meant && readPlace(hash) === undefined
 }
 
 /**

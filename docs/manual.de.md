@@ -988,6 +988,23 @@ wählen ist weiterhin kein Schritt für Zurück. Wer die Arbeit lesen darf, öff
 damit denselben Ort; wer noch nicht angemeldet ist, meldet sich zuerst an und
 landet danach dort.
 
+**Was ein Link sagt.** Nach dem `#` kommt der Pfad des Bereichs, ein `-`, das
+ihn abschließt, dann die Seite und der Eintrag: `#/acme/rail/-/board/landscape`
+ist das Board *landscape* des Bereichs *acme/rail*, `#/acme/-/document/billing`
+die Seite des Elements *billing* in *acme* und `#/-/home` das Zuhause der
+Organisation. Ein Reiter oder eine Auswahl folgt als `?tab=analysis` oder
+`?select=billing`. Ein Link von vor Version 3.7.0, der mit `#place?` beginnt,
+öffnet weiterhin denselben Ort, und die Adresse wird danach in der neuen Form
+geschrieben. Ein Link, den Sie in die Adressleiste eines bereits offenen
+Fensters einfügen, führt ebenfalls dorthin.
+
+**Ein Link auf die Seite eines Elements öffnet sie immer**, wo das Element auch
+aufbewahrt wird: ein Element, das keine Ansicht zeichnet, eine Einheit eines
+Bereichs, der nichts zeichnet, und ein Element eines anderen Bereichs, das in
+dem Bereich öffnet, der es aufbewahrt. Wird die Seite in einem Bereich
+geschlossen, der nichts zeichnet, geht es zum Zuhause dieses Bereichs. Ein
+Link auf ein Element, das es nicht mehr gibt, öffnet den Bereich und sagt das.
+
 **Auf einer Ansicht wählt der Link aus, was Sie ausgewählt hatten.** Teilen Sie
 von einem Board, einem Blatt, einer Unternehmenskarte oder der
 Technologielandschaft mit einem ausgewählten Element, öffnet der Link diese

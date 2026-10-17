@@ -28,6 +28,12 @@ const DocumentationPage = lazyPart<ComponentProps<typeof DocumentationPageShape>
 );
 
 /**
+ * What the inspector beside the page is handed where the scope draws nothing:
+ * a view with nothing on it, so every row that reads a placement reads none.
+ */
+const NO_VIEW: DesignDiagram = { id: '', kind: 'layer7', name: '', members: [] };
+
+/**
  * The *Move…* button for one record, or nothing (ADR-0012 §10).
  *
  * Asked per element rather than handed down as a prop, because whether there
@@ -56,7 +62,10 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
   onRequestDelete(elementId: ElementId): void;
 }) {
   const { element, diagram } = docs;
-  if (!element || !diagram) return null;
+  // No view is no reason to refuse the page: a scope that draws nothing still
+  // keeps records with pages — a domain's units, an element nothing draws —
+  // and a link to one opens it (ADR-0033, amended 17 October 2026).
+  if (!element) return null;
   return (
     <DocumentationPage
       element={element}
@@ -76,7 +85,7 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
           inspectorReadOnly={inspectorReadOnly}
           docs={docs}
           element={shown}
-          diagram={diagram}
+          diagram={diagram ?? NO_VIEW}
           onRequestDelete={onRequestDelete}
         />
       )}

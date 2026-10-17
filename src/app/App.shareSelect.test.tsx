@@ -86,13 +86,13 @@ describe('Share with a Link… from a board', () => {
     await waitFor(() => expect(readPlace(window.location.hash)).toEqual({ scope: 'acme', page: 'board', id: 'board' }))
     app.share()
     await waitFor(() => expect(readPlace(new URL(linkShown()).hash)).toEqual({ scope: 'acme', page: 'board', id: 'board', select: 'crm' }))
-    expect(linkShown()).toContain('&select=crm')
+    expect(linkShown()).toContain('?select=crm')
   })
 
   it('carries nothing where nothing is selected', async () => {
     const app = show()
     await waitFor(() => expect(readPlace(window.location.hash)).toEqual({ scope: 'acme', page: 'board', id: 'board' }))
     app.share()
-    await waitFor(() => expect(linkShown()).toBe(`${ADDRESS}#place?scope=acme&page=board&id=board`))
+    await waitFor(() => expect(linkShown()).toBe(`${ADDRESS}#/acme/-/board/board`))
   })
 })

@@ -323,13 +323,18 @@ function laidOutKinds(kind: DesignDiagram['kind']): readonly ElementKind[] | und
  * A sheet or a map places nothing: it is laid out from the trees, so what is
  * on it is every element of the kinds it draws. A capability's page reached
  * from the sheet lists the other capabilities, not the board's applications.
+ *
+ * With no view at all — a page opened by a link in a scope that draws
+ * nothing, a unit kept by a domain — the neighbours are every element the
+ * scope keeps itself: there is no drawing to be next on, and the scope's own
+ * records are what a reader of it means.
  */
-export function documentedElements(model: DesignModel, diagram: DesignDiagram): DocumentedGroup[] {
-  const kinds = laidOutKinds(diagram.kind);
-  const placed = kinds ? undefined : new Set(placedNodes(diagram).map((p) => p.id));
+export function documentedElements(model: DesignModel, diagram: DesignDiagram | undefined): DocumentedGroup[] {
+  const kinds = diagram ? laidOutKinds(diagram.kind) : undefined;
+  const placed = diagram && !kinds ? new Set(placedNodes(diagram).map((p) => p.id)) : undefined;
   const byKind = new Map<ElementKind, DesignElement[]>();
   for (const element of model.elements) {
-    if (placed ? !placed.has(element.id) : !kinds?.includes(element.kind)) continue;
+    if (!keptOn(element, diagram, kinds, placed)) continue;
     const list = byKind.get(element.kind) ?? [];
     list.push(element);
     byKind.set(element.kind, list);
@@ -338,6 +343,14 @@ export function documentedElements(model: DesignModel, diagram: DesignDiagram): 
     kind,
     elements: [...(byKind.get(kind) ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
   }));
+}
+
+/** Whether an element is one of the page's neighbours: placed on the view, of a kind it lays out, or kept by the scope where there is no view. */
+function keptOn(
+  element: DesignElement, diagram: DesignDiagram | undefined, kinds: readonly ElementKind[] | undefined, placed: ReadonlySet<string> | undefined,
+): boolean {
+  if (!diagram) return element.ref === undefined;
+  return placed ? placed.has(element.id) : (kinds?.includes(element.kind) ?? false);
 }
 
 // --- the template --------------------------------------------------------------

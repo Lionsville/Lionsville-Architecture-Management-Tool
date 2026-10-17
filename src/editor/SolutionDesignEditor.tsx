@@ -80,11 +80,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
     />
   );
   if (!activeDiagram) {
+    // A scope that draws nothing, opened for an element's page: the page is
+    // the whole of it. Without one there is nothing to show, said in words a
+    // reader can use rather than as the host's mistake.
     return (
       <>
-        <Box sx={{ p: 3 }}>
-          <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
-        </Box>
+        {!parts.docs.element && (
+          <Box sx={{ p: 3 }}>
+            <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
+          </Box>
+        )}
         {documentationPage}
       </>
     );

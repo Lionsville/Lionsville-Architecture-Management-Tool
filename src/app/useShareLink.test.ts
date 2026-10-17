@@ -14,31 +14,31 @@ const onDecision: Screen = {
 describe('the link to a screen', () => {
   it('is the source’s address with the place as its fragment, the record on screen included', () => {
     const answer = shareLinkOf('https://work.example/', onDecision)
-    expect(answer).toEqual({ link: 'https://work.example/#place?scope=acme%2Frail&page=decisions&id=adr-2' })
+    expect(answer).toEqual({ link: 'https://work.example/#/acme/rail/-/decisions/adr-2' })
     if (!('link' in answer)) throw new Error('no link')
     expect(readPlace(new URL(answer.link).hash)).toEqual({ scope: 'acme/rail', page: 'decisions', id: 'adr-2' })
   })
 
   it('names a home, the organisation’s included', () => {
     expect(shareLinkOf('https://work.example/', { home: { path: '', name: 'Acme' } }))
-      .toEqual({ link: 'https://work.example/#place?scope=&page=home' })
+      .toEqual({ link: 'https://work.example/#/-/home' })
   })
 
   it('carries the observations page’s tab', () => {
     const screen: Screen = { open: { path: 'acme', name: 'Acme' }, page: { page: 'observations', id: 'ob-1', tab: 'analysis' } }
     expect(shareLinkOf('https://work.example/', screen))
-      .toEqual({ link: 'https://work.example/#place?scope=acme&page=observations&id=ob-1&tab=analysis' })
+      .toEqual({ link: 'https://work.example/#/acme/-/observations/ob-1?tab=analysis' })
   })
 
   it('selects again the element selected on a view, and only on a view (ADR-0033, amended)', () => {
     const onBoard: Screen = { open: { path: 'acme', name: 'Acme', view: { id: 'b1', name: 'Board', kind: 'layer7' } } }
     expect(shareLinkOf('https://work.example/', onBoard, 'app-1'))
-      .toEqual({ link: 'https://work.example/#place?scope=acme&page=board&id=b1&select=app-1' })
+      .toEqual({ link: 'https://work.example/#/acme/-/board/b1?select=app-1' })
     expect(shareLinkOf('https://work.example/', onBoard))
-      .toEqual({ link: 'https://work.example/#place?scope=acme&page=board&id=b1' })
+      .toEqual({ link: 'https://work.example/#/acme/-/board/b1' })
     // A record's page names its record as the place's id; a board's selection behind it is not the point.
     expect(shareLinkOf('https://work.example/', onDecision, 'app-1'))
-      .toEqual({ link: 'https://work.example/#place?scope=acme%2Frail&page=decisions&id=adr-2' })
+      .toEqual({ link: 'https://work.example/#/acme/rail/-/decisions/adr-2' })
   })
 
   it('is refused where the source has no address, whatever is on screen', () => {

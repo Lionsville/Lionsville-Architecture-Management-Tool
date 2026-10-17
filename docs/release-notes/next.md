@@ -126,3 +126,13 @@ nothing read it — not a card, a count, a check or a report — so flipping it
 changed nothing anybody could see. Whose a system is, is **Outside the
 organisation** on its record. The flag stays in the files that carry it, and
 an agent may still write it.
+
+**Links read like the tree.** A link to a place now says the scope's path,
+a `-`, then the page and the record — `#/acme/rail/-/board/landscape`, or
+`#/acme/-/document/billing` for an element's page — instead of a string of
+`scope=…&page=…`. Links shared from earlier versions still open where they
+pointed, and the address is written in the new form once they have. A link
+to an element's page opens it wherever the element is kept, a unit of a
+scope that draws nothing included, where it used to show *Diagram not
+found*; closing the page there goes to the scope's home. A link pasted into
+the address bar of a window that is already open goes there too.

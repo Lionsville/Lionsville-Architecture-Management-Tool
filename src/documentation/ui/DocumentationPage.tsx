@@ -82,7 +82,8 @@ export interface DocumentationPageProps {
    * above it is called.
    */
   scopeLabel?: string;
-  diagram: DesignDiagram;
+  /** The view the page was opened from, whose neighbours it lists; absent where the scope draws nothing (`documentedElements`). */
+  diagram?: DesignDiagram;
   readOnly: boolean;
   /**
    * The one thing this page changes. Not the editor's whole action set: a page
@@ -331,7 +332,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
           </IconButton>
         </Tooltip>
         <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {scopeLabel ?? model.name} &nbsp;/&nbsp; {diagram.name} &nbsp;/&nbsp;
+          {scopeLabel ?? model.name} &nbsp;/&nbsp; <ViewCrumb diagram={diagram} />
           <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{element.name}</Box>
         </Typography>
         <Box sx={{ flex: 1 }} />
@@ -533,4 +534,10 @@ function PlansHere({ plans, onOpen }: { plans: readonly Transition[]; onOpen: (i
       ))}
     </Box>
   );
+}
+
+/** The view's step of the breadcrumb, where the page was opened from one: a scope that draws nothing has none. */
+function ViewCrumb({ diagram }: { diagram: DesignDiagram | undefined }) {
+  if (!diagram) return null;
+  return <>{diagram.name} &nbsp;/&nbsp;</>;
 }

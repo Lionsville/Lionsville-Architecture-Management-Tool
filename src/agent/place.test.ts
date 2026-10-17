@@ -9,15 +9,15 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PREFIX, PLACE_STATE_KEY, linkTo, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
+  PLACE_PATH_PREFIX, PLACE_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
 
 const SCOPES = [
-  '', 'acme', 'acme/rail', 'acme/rail/rolling-stock',
+  '', 'acme', 'acme/rail', 'acme/rail/rolling-stock', 'board', 'acme/document/home', '-', 'a/-/b', '%2D',
   'Zoë & Søn', 'a=b&c=d', 'hash#in/the name', 'per%cent/plus+sign', 'spaces in a name/and ? marks', '日本/東京',
 ]
-const IDS = [undefined, 'landscape', 'ADR-0003', 'id with spaces', 'a&b=c#d', '', 'ünïcode']
+const IDS = [undefined, 'landscape', 'ADR-0003', 'id with spaces', 'a&b=c#d', '', 'ünïcode', 'a/b', '-', '?x=1']
 
 describe('the place function pair', () => {
   it('reads back every place it writes, for every scope, page and id', () => {
@@ -27,7 +27,7 @@ describe('the place function pair', () => {
         for (const id of IDS) {
           const place: Place = { scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}) }
           const written = writePlace(place)
-          expect(written.startsWith(`#${PLACE_PREFIX}`)).toBe(true)
+          expect(written.startsWith(`#${PLACE_PATH_PREFIX}`)).toBe(true)
           expect(readPlace(written)).toEqual(place)
           // As `location.hash` hands it back, and as a fragment without its `#`.
           expect(readPlace(new URL(`app://local/index.html?x=1${written}`).hash)).toEqual(place)
@@ -40,8 +40,38 @@ describe('the place function pair', () => {
   })
 
   it('writes the organisation as the empty scope, said out loud', () => {
-    expect(writePlace({ scope: '', page: 'home' })).toBe('#place?scope=&page=home')
-    expect(writePlace({ scope: 'acme/rail', page: 'board', id: 'r7' })).toBe('#place?scope=acme%2Frail&page=board&id=r7')
+    expect(writePlace({ scope: '', page: 'home' })).toBe('#/-/home')
+    expect(writePlace({ scope: 'acme/rail', page: 'board', id: 'r7' })).toBe('#/acme/rail/-/board/r7')
+    expect(writePlace({ scope: 'freight', page: 'document', id: 'freight-division' })).toBe('#/freight/-/document/freight-division')
+    expect(writePlace({ scope: 'acme', page: 'observations', id: 'OB-1', tab: 'analysis' })).toBe('#/acme/-/observations/OB-1?tab=analysis')
+    expect(writePlace({ scope: 'acme' })).toBe('#/acme/-')
+  })
+
+  it('writes a scope path as it is said everywhere else, and ends it so a scope named like a page is still a scope', () => {
+    expect(writePlace({ scope: 'acme/board', page: 'home' })).toBe('#/acme/board/-/home')
+    expect(readPlace('#/acme/board/-/home')).toEqual({ scope: 'acme/board', page: 'home' })
+    expect(readPlace('#/acme/-/board/home')).toEqual({ scope: 'acme', page: 'board', id: 'home' })
+    // A scope's own segment that is the end is escaped, so it reads back as a scope.
+    expect(writePlace({ scope: 'a/-', page: 'home' })).toBe('#/a/%2D/-/home')
+    expect(readPlace('#/a/%2D/-/home')).toEqual({ scope: 'a/-', page: 'home' })
+  })
+
+  it('reads every link written before 3.7.0, in the form it was written in, as the same place', () => {
+    for (const [old, place] of [
+      ['#place?scope=&page=home', { scope: '', page: 'home' }],
+      ['#place?scope=acme%2Frail&page=board&id=landscape', { scope: 'acme/rail', page: 'board', id: 'landscape' }],
+      ['#place?scope=freight&page=document&id=freight-division', { scope: 'freight', page: 'document', id: 'freight-division' }],
+      ['#place?scope=acme&page=observations&tab=analysis', { scope: 'acme', page: 'observations', tab: 'analysis' }],
+      ['#place?scope=acme%2Frail&page=board&id=landscape&select=app+%26+co+%231', { scope: 'acme/rail', page: 'board', id: 'landscape', select: 'app & co #1' }],
+      ['place?scope=acme', { scope: 'acme' }],
+    ] as const) {
+      expect(readPlace(old), old).toEqual(place)
+      expect(oldPlaceForm(old), old).toBe(true)
+      // And it is written again in the new form, which reads back the same.
+      expect(readPlace(writePlace(place)), old).toEqual(place)
+      expect(oldPlaceForm(writePlace(place))).toBe(false)
+    }
+    expect(oldPlaceForm('#place?scope=a&page=nowhere')).toBe(false)
   })
 
   it('reads a fragment that is not a place as nothing, and leaves it to whoever wrote it', () => {
@@ -49,6 +79,9 @@ describe('the place function pair', () => {
       '', '#', '#/acme', '#section-2', '#access_token=abc&state=xyz', '#place', '#place?', '#place?page=home',
       '#place?scope=a&page=nowhere', '#place?scope=a&scope=b', '#place?scope=a&extra=1', '#Place?scope=a',
       '#xplace?scope=a', 'place=scope',
+      '#/', '#/-/nowhere', '#/acme/-/board/l7/extra', '#//-/home', '#/a//b/-/home', '#/acme/-/board?tab=nope',
+      '#/acme/-/board/l7?id=l8', '#/acme/-/home?scope=a', '#/acme/-/home?extra=1', '#/acme/-/home?tab=analysis&tab=register',
+      '#/acme/%E0%A4%A/-/home', '#/acme/-/home?select=a&select=b',
     ]) {
       expect(readPlace(hash), hash).toBeUndefined()
     }
@@ -97,6 +130,8 @@ describe('the place a screen is', () => {
     expect(unknownPlace('#place?scope=acme&page=chart-of-units')).toBe(true)
     expect(unknownPlace('#place?scope=acme&page=technology')).toBe(false)
     expect(unknownPlace('#place?scope=acme&page=board&id=l7')).toBe(false)
+    expect(unknownPlace('#/acme/-/chart-of-units')).toBe(true)
+    expect(unknownPlace('#/acme/-/board/l7')).toBe(false)
     expect(unknownPlace('#somebody-elses')).toBe(false)
     expect(unknownPlace('')).toBe(false)
   })
@@ -228,13 +263,13 @@ describe('a link to a place', () => {
 
   it('is the address with the place as its fragment, read back as the same place', () => {
     const link = linkTo('https://work.example/', place)
-    expect(link).toBe('https://work.example/#place?scope=acme%2Frail&page=decisions&id=adr-2')
+    expect(link).toBe('https://work.example/#/acme/rail/-/decisions/adr-2')
     expect(readPlace(new URL(link).hash)).toEqual(place)
   })
 
   it('keeps the address’s path and query, and drops a fragment it had', () => {
     expect(linkTo('https://work.example/app/?tenant=t1#somebody-else', { scope: '', page: 'home' }))
-      .toBe('https://work.example/app/?tenant=t1#place?scope=&page=home')
+      .toBe('https://work.example/app/?tenant=t1#/-/home')
   })
 
   it('carries the tab of the observations page', () => {
@@ -249,13 +284,14 @@ describe('an element selected, in a link', () => {
 
   it('is written and read back with the place it is selected on', () => {
     const link = linkTo('https://work.example/', withSelect)
-    expect(link).toBe('https://work.example/#place?scope=acme%2Frail&page=board&id=landscape&select=app+%26+co+%231')
+    expect(link).toBe('https://work.example/#/acme/rail/-/board/landscape?select=app+%26+co+%231')
     expect(readPlace(new URL(link).hash)).toEqual(withSelect)
   })
 
   it('is nothing where it is said empty, and no place where it is said twice', () => {
     expect(readPlace('#place?scope=acme&page=board&select=')).toEqual({ scope: 'acme', page: 'board' })
     expect(readPlace('#place?scope=acme&page=board&select=a&select=b')).toBeUndefined()
+    expect(readPlace('#/acme/-/board?select=')).toEqual({ scope: 'acme', page: 'board' })
   })
 
   it('is no part of the place: the same place, no step, and never kept in a history entry', () => {

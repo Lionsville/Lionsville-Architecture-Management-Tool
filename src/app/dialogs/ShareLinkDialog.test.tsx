@@ -12,7 +12,7 @@ import { ShareLinkDialog } from './ShareLinkDialog'
 afterEach(() => cleanup())
 
 const s = translator('en')
-const LINK = 'https://work.example/#place?scope=acme&page=decisions&id=adr-1'
+const LINK = 'https://work.example/#/acme/-/decisions/adr-1'
 
 describe('ShareLinkDialog, as axe reads it', () => {
   it('finds nothing with a link, or with the sentence in its place', async () => {

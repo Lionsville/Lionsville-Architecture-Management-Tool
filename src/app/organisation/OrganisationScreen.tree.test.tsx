@@ -207,7 +207,7 @@ describe('the tree', () => {
     // board to open it on, and the canvas would say so as an error.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
     expect(screen.queryByTestId('saved-indicator')).toBeNull()
-    expect(screen.queryByText(/Diagram not found/)).toBeNull()
+    expect(screen.queryByText(/Diagram not found|no view here to show/)).toBeNull()
   })
 
   /** Refused where a person can see it, rather than quietly suffixed. */

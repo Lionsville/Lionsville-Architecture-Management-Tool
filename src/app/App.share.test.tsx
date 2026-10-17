@@ -103,7 +103,7 @@ describe('Share with a Link…', () => {
     let resolve: () => void = () => {}
     app.hostControls.copyText.mockImplementationOnce(() => new Promise<void>((done) => { resolve = done }))
     app.share()
-    const link = `${ADDRESS}#place?scope=&page=home`
+    const link = `${ADDRESS}#/-/home`
     await waitFor(() => expect(linkShown()).toBe(link))
     expect(app.hostControls.copyText).toHaveBeenCalledWith(link)
     // Not a success that was not waited for.
@@ -151,7 +151,7 @@ describe('Share with a Link…', () => {
     app.share()
     await waitFor(() => expect(screen.getByText(s('share.copyFailed'))).toBeDefined())
     expect(screen.queryByText(s('share.copied'))).toBeNull()
-    expect(linkShown()).toBe(`${ADDRESS}#place?scope=&page=home`)
+    expect(linkShown()).toBe(`${ADDRESS}#/-/home`)
     expect(app.diagnostics.recent().some((entry) => entry.where === 'share')).toBe(true)
   })
 })
