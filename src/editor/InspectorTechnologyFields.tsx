@@ -79,7 +79,6 @@ function ServiceSharedField({ field, offeredBeyond }: { field: InspectorField; o
       <FormControlLabel
         control={
           <Switch
-            size="small"
             checked={element.shared === true}
             disabled={field.readOnly || field.owned('shared')}
             onChange={(e) => field.update({ shared: e.target.checked ? true : undefined })}

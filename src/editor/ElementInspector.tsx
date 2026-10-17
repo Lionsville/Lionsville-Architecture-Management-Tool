@@ -4,12 +4,12 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useStrings } from '../i18n/LanguageContext';
 import { ElementRecord } from './ElementRecord';
 import type { ElementInspectorProps } from './ElementInspectorProps';
-import { inspectorField, usesChoices } from './elementInspectorFacts';
-import type { InspectorField } from './elementInspectorFacts';
+import { PAGE_SECTIONS, SECTION_TITLE, TABBED_SECTIONS, inspectorField, usesChoices } from './elementInspectorFacts';
+import type { ElementSection, InspectorField } from './elementInspectorFacts';
 import { useRenameFocus, useTabPerElement, useUsesPicker } from './useInspectorState';
 import { ElementMore, InspectorHeader, InspectorTabs, MoveRecord, OwnedElsewhere, RecordSummaryLine } from './InspectorHeader';
 import { InspectorSection } from './InspectorSection';
@@ -31,13 +31,15 @@ export { kindLabel } from '../model/kinds';
  * visible. Tab selection is per-selection in-memory state and resets to General
  * when the selected element id changes.
  *
- * **Two layouts, and the record is what differs.** Beside the canvas (`tabs`)
- * the panel holds what a person sets while drawing — name, category, phase,
- * the short description, the placement — and the owner's detail (vendor,
- * owner, dates, successor, whose it is) is one line and a way to the page.
- * On the page (`stacked`) the record is laid out in full above the rest
- * (`ElementRecord.tsx` says why it moved). The fields are the same fields
- * and reach the model the same way; only where they are typed differs.
+ * **Two layouts, one order of sections** (`ELEMENT_SECTIONS`). Beside the
+ * canvas (`tabs`) the panel holds what a person sets while drawing — name,
+ * category, phase, the short description, the placement — and the owner's
+ * detail (vendor, owner, dates, successor, whose it is) is one line and a way
+ * to the page. On the page (`stacked`) the record is laid out in full above
+ * the rest (`ElementRecord.tsx` says why it moved), in two columns where the
+ * column has room. The fields are the same fields, in the same order, worn
+ * the same way (`CompactForms`), and reach the model the same way; only
+ * where they are typed differs.
  *
  * **A unit comes first** (ADR-0036, as built 3.6.1). Where the host's unit
  * section leads (`UnitSlot.leads`: an actor with a type), it follows the name,
@@ -101,8 +103,12 @@ export function ElementInspector(props: ElementInspectorProps) {
 }
 
 /**
- * The element's own fields: its record, the tabs and what they hold — and,
- * where the host's unit section does not lead, that section under General.
+ * The element's own fields: its sections, in the one order both layouts keep
+ * (`ELEMENT_SECTIONS`). Beside the canvas the record is its summary line and
+ * the rest are tabs; on the page every section but the appearance is laid out
+ * under its heading. What each section holds is said once, below, so the two
+ * layouts cannot drift apart — and, where the host's unit section does not
+ * lead, that section goes under General in both.
  */
 function ElementFields({ inspector, field, tab, uses, picker, underGeneral }: {
   inspector: ElementInspectorProps;
@@ -115,47 +121,57 @@ function ElementFields({ inspector, field, tab, uses, picker, underGeneral }: {
   const { t } = useStrings();
   const { element, readOnly } = field;
   const stacked = inspector.layout === 'stacked';
-  const show = (index: number) => stacked || tab.value === index;
-  const sectionTitle = (text: string) =>
-    stacked ? <SectionHeading sx={{ mt: 1.5 }}>{text}</SectionHeading> : null;
 
+  const body = (section: ElementSection): ReactNode => {
+    switch (section) {
+      case 'record':
+        return stacked ? (
+          <ElementRecord
+            element={element}
+            model={inspector.model}
+            readOnly={readOnly}
+            actions={inspector.actions}
+            owned={field.owned}
+            parties={inspector.parties}
+            answeredBy={inspector.answeredBy}
+            onReplace={inspector.onReplace}
+          />
+        ) : (
+          <RecordSummaryLine
+            element={element} model={inspector.model} parties={inspector.parties} answeredBy={inspector.answeredBy}
+            move={inspector.unitSection?.leads === true || readOnly ? undefined : inspector.move}
+          />
+        );
+      case 'general':
+        return <><GeneralTab field={field} inspector={inspector} uses={uses} picker={picker} />{underGeneral}</>;
+      case 'appearance':
+        return <AppearanceTab field={field} onRequestLogoUpload={inspector.onRequestLogoUpload} />;
+      case 'data':
+        return <DataTab key={element.id} field={field} diagram={inspector.diagram} />;
+    }
+  };
+
+  if (stacked) {
+    return (
+      <>
+        {PAGE_SECTIONS.map((section) => (
+          <Fragment key={section}>
+            <SectionHeading sx={{ mt: 1.5 }}>{t(SECTION_TITLE[section])}</SectionHeading>
+            {body(section)}
+          </Fragment>
+        ))}
+      </>
+    );
+  }
   return (
     <>
-      {!stacked && (
-        <RecordSummaryLine
-          element={element} model={inspector.model} parties={inspector.parties} answeredBy={inspector.answeredBy}
-          move={inspector.unitSection?.leads === true || readOnly ? undefined : inspector.move}
-        />
-      )}
-
-      {stacked && sectionTitle(t('record.title'))}
-      {stacked && (
-        <ElementRecord
-          element={element}
-          model={inspector.model}
-          readOnly={readOnly}
-          actions={inspector.actions}
-          owned={field.owned}
-          parties={inspector.parties}
-          answeredBy={inspector.answeredBy}
-          onReplace={inspector.onReplace}
-        />
-      )}
-
-      {!stacked && (
-        <InspectorTabs
-          value={tab.value}
-          onChange={tab.onChange}
-          dataCount={element.kind === 'application' ? aspectCount(field, inspector.diagram) : undefined}
-        />
-      )}
-
-      {sectionTitle(t('tab.general'))}
-      {show(0) && <GeneralTab field={field} inspector={inspector} uses={uses} picker={picker} />}
-      {show(0) && underGeneral}
-      {!stacked && show(1) && <AppearanceTab field={field} onRequestLogoUpload={inspector.onRequestLogoUpload} />}
-      {sectionTitle(t('tab.data'))}
-      {show(2) && <DataTab key={element.id} field={field} diagram={inspector.diagram} />}
+      {body('record')}
+      <InspectorTabs
+        value={tab.value}
+        onChange={tab.onChange}
+        dataCount={element.kind === 'application' ? aspectCount(field, inspector.diagram) : undefined}
+      />
+      {body(TABBED_SECTIONS[tab.value] ?? 'general')}
     </>
   );
 }

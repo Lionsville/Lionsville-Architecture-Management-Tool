@@ -35,6 +35,7 @@ import Typography from '@mui/material/Typography';
 import type { DesignElement, DesignModel, ElementId } from '../model/types';
 import { DATED_PHASES, datesInOrder } from '../model/lifecycle';
 import { OrderedDateFields } from '../widgets/OrderedDateFields';
+import { FieldGrid, Fields } from '../widgets/CompactForms';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { fieldEdit } from '../model/commands';
@@ -172,28 +173,30 @@ export function ElementRecord(props: ElementRecordProps) {
   const parties = partyChoices(element, model, props.parties);
 
   return (
-    <Box data-testid="element-record" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Fields testId="element-record">
       <OwnerField element={element} names={names} readOnly={readOnly || owned('owner')} answeredBy={props.answeredBy}
         onChange={(owner) => typed('owner', { owner })} />
 
-      {showVendor(element.kind) && (
-        <TextField
-          label={t('field.vendor')}
-          value={element.vendor ?? ''}
-          fullWidth
-          disabled={readOnly || owned('vendor')}
-          onChange={(e) => typed('vendor', { vendor: e.target.value || undefined })}
-        />
-      )}
-
-      {showTechnology(element.kind) && (
-        <TextField
-          label={t('field.technology')}
-          value={element.technology ?? ''}
-          fullWidth
-          disabled={readOnly || owned('technology')}
-          onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
-        />
+      {/* Two columns where the page's column has room, one where it has not (`FieldGrid`). */}
+      {(showVendor(element.kind) || showTechnology(element.kind)) && (
+        <FieldGrid min={150}>
+          {showVendor(element.kind) && (
+            <TextField
+              label={t('field.vendor')}
+              value={element.vendor ?? ''}
+              disabled={readOnly || owned('vendor')}
+              onChange={(e) => typed('vendor', { vendor: e.target.value || undefined })}
+            />
+          )}
+          {showTechnology(element.kind) && (
+            <TextField
+              label={t('field.technology')}
+              value={element.technology ?? ''}
+              disabled={readOnly || owned('technology')}
+              onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
+            />
+          )}
+        </FieldGrid>
       )}
 
       {/* `true` or absent, never `false` (ADR-0012 §3): switching it off
@@ -202,11 +205,10 @@ export function ElementRecord(props: ElementRecordProps) {
           else, and a party left on it would be what the checks call a
           contradiction. */}
       {showOutside(element.kind) && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+        <FieldGrid min={160} sx={{ alignItems: 'center' }}>
           <FormControlLabel
             control={
               <Switch
-                size="small"
                 checked={element.outside === true}
                 disabled={readOnly || owned('outside')}
                 onChange={(e) => update(
@@ -217,7 +219,7 @@ export function ElementRecord(props: ElementRecordProps) {
               />
             }
             label={t('field.outside')}
-            sx={{ flex: 1, minWidth: 180 }}
+            sx={{ mr: 0 }}
           />
           {/* Whose it is: a party outside, or — for one of ours — the unit
               it belongs to, which the operating model's rule reads its
@@ -229,7 +231,6 @@ export function ElementRecord(props: ElementRecordProps) {
               data-guide="record.party"
               value={element.partyId ?? ''}
               disabled={readOnly || owned('partyId')}
-              sx={{ flex: 1, minWidth: 180 }}
               onChange={(e) => update({ partyId: e.target.value || undefined })}
             >
               <MenuItem value="">{t('field.partyNone')}</MenuItem>
@@ -249,7 +250,7 @@ export function ElementRecord(props: ElementRecordProps) {
               )}
             </TextField>
           )}
-        </Box>
+        </FieldGrid>
       )}
 
       {/* The dates on the lifecycle (ADR-0009). Optional throughout: an
@@ -259,10 +260,7 @@ export function ElementRecord(props: ElementRecordProps) {
           shrink below its own text, so three sharing a narrow inspector
           clipped the date to its first two parts. Each keeps room for a
           whole date and they stack where there is not room for three. */}
-      <Box
-        data-testid="element-lifecycle-dates"
-        sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 1 }}
-      >
+      <FieldGrid testId="element-lifecycle-dates">
         <OrderedDateFields
           keys={DATED_PHASES}
           values={element.lifecycleDates}
@@ -273,7 +271,7 @@ export function ElementRecord(props: ElementRecordProps) {
           refusal={t('command.datesOutOfOrder')}
           onChange={(lifecycleDates) => update({ lifecycleDates })}
         />
-      </Box>
+      </FieldGrid>
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         <TextField
@@ -302,7 +300,7 @@ export function ElementRecord(props: ElementRecordProps) {
           </Button>
         )}
       </Box>
-    </Box>
+    </Fields>
   );
 }
 

@@ -62,7 +62,6 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
       <SectionHeading>{t('section.domainGroup')}</SectionHeading>
       <TextField
         label={t('field.name')}
-        size="small"
         fullWidth
         value={draft}
         disabled={readOnly}

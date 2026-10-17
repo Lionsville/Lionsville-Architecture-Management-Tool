@@ -19,6 +19,35 @@ import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
 import type { EditorOwnership } from './props';
 
+/**
+ * The element's sections, in the one order every layout keeps (3.7.0): the
+ * record — the owner's detail —, then what a person sets while drawing, how
+ * this scope draws the card, and the data on it. The panel beside the canvas
+ * shows the record as one line and the rest as tabs; the page lays the same
+ * sections out one under the other, the appearance left to the board, where
+ * the card is. Both read this list, so the two cannot drift apart.
+ */
+export const ELEMENT_SECTIONS = ['record', 'general', 'appearance', 'data'] as const;
+export type ElementSection = (typeof ELEMENT_SECTIONS)[number];
+
+/** What each section is called: the tab's label beside the canvas, the heading on the page. */
+export const SECTION_TITLE: Record<ElementSection, StringKey> = {
+  record: 'record.title',
+  general: 'tab.general',
+  appearance: 'tab.appearance',
+  data: 'tab.data',
+};
+
+/** The sections the panel beside the canvas offers as tabs, in order; the record is its summary line. */
+export const TABBED_SECTIONS: readonly ElementSection[] = ELEMENT_SECTIONS.filter((section) => section !== 'record');
+
+/**
+ * The sections the page lays out, in order: all but the appearance, which is
+ * about how this scope draws the card and stays beside the canvas — a colour
+ * picker on the page would be a control for a drawing you cannot see.
+ */
+export const PAGE_SECTIONS: readonly ElementSection[] = ELEMENT_SECTIONS.filter((section) => section !== 'appearance');
+
 export const LIFECYCLES: DesignElement['lifecycle'][] = ['planned', 'live', 'retiring', 'retired'];
 
 /** The technology the rest of the organisation defines, as the panel is handed it. */

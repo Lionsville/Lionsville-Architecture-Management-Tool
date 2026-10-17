@@ -25,6 +25,7 @@ import type { DesignElement, DesignModel, ElementId } from '../model/types';
 import { kindLabel } from '../model/kinds';
 import { useStrings } from '../i18n/LanguageContext';
 import { recordSummary } from './ElementRecord';
+import { SECTION_TITLE, TABBED_SECTIONS } from './elementInspectorFacts';
 import type { InspectorField } from './elementInspectorFacts';
 import type { ElementInspectorProps } from './ElementInspectorProps';
 import type { AnsweredBy, PartyElsewhere } from './props';
@@ -238,7 +239,7 @@ function TabLabel({ text, count }: { text: string; count?: string }) {
   );
 }
 
-/** General / Appearance / Data, beside the canvas. */
+/** The tabs beside the canvas, from the one list of sections (`TABBED_SECTIONS`). */
 export function InspectorTabs({ value, onChange, dataCount }: {
   value: number;
   onChange(tab: number): void;
@@ -254,9 +255,9 @@ export function InspectorTabs({ value, onChange, dataCount }: {
       // panel the tabs read ‹PPEARANCE otherwise.
       sx={{ minHeight: 40, mb: 0.5, '& .MuiTab-root': { minHeight: 40, py: 0.5, px: 0.5, minWidth: 0, letterSpacing: 0, fontSize: 11.5 } }}
     >
-      <Tab label={<TabLabel text={t('tab.general')} />} />
-      <Tab label={<TabLabel text={t('tab.appearance')} />} />
-      <Tab label={<TabLabel text={t('tab.data')} count={dataCount} />} />
+      {TABBED_SECTIONS.map((section) => (
+        <Tab key={section} label={<TabLabel text={t(SECTION_TITLE[section])} count={section === 'data' ? dataCount : undefined} />} />
+      ))}
     </Tabs>
   );
 }

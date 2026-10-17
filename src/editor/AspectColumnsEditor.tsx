@@ -87,7 +87,6 @@ export function AspectColumnsEditor({
         {columns.map((column, index) => (
           <Stack key={column.key} direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <TextField
-              size="small"
               label={index === 0 ? t('diagramSettings.columnLabel') : undefined}
               // Only the first row shows its label; every row is named, so a
               // screen reader on the fifth still says which field it is in.
@@ -97,7 +96,6 @@ export function AspectColumnsEditor({
               onChange={(e) => editColumn(index, { label: e.target.value })}
             />
             <TextField
-              size="small"
               label={index === 0 ? t('diagramSettings.columnCode') : undefined}
               // What the badge would say if this field stayed empty — which for
               // a standard column is its curated code (`dr` reads DR), not

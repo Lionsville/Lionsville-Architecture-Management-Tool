@@ -34,7 +34,6 @@ export function AppearanceTab({ field, onRequestLogoUpload }: { field: Inspector
         label={t('field.shape')}
         value={element.shapeVariant ?? ''}
         fullWidth
-        size="small"
         disabled={readOnly}
         onChange={(e) =>
           update({
@@ -82,7 +81,6 @@ function IconSizeSelect({ field }: { field: InspectorField }) {
       label={t('field.iconSize')}
       value={element.iconSize ?? ''}
       fullWidth
-      size="small"
       disabled={readOnly || !element.iconKey}
       helperText={element.iconKey ? undefined : t('field.iconFirst')}
       onChange={(e) =>

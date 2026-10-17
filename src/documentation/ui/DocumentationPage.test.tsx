@@ -14,6 +14,7 @@ import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { axeFindings } from '../../app/testing/axe';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
 import type { DocumentationActions } from './DocumentationPage';
 import type { DesignDiagram, DesignElement, DesignModel } from '../../model/types';
@@ -370,6 +371,20 @@ describe('DocumentationPage', () => {
     cleanup();
     setup();
     expect(screen.queryByRole('separator', { name: 'Resize the fields column' })).toBeNull();
+  });
+
+  it('gives the fields column the panel\'s own treatment, so the page and the board inspector read alike (3.7.0)', () => {
+    // The board's inspector wears `CompactForms`; the page's column is that
+    // panel with room, not another form. A field handed to the slot comes
+    // out small without saying so, and the headings over the drawings and
+    // plans are the panel's section headings.
+    setup({
+      renderInspector: () => <TextField label="Vendor" />,
+      plans: { list: [{ id: 'tr1', number: 1, title: 'Replace it', status: 'draft', elements: [{ elementId: 'e1', role: 'retires' }], decisions: [], milestones: [] } as never], onOpen: vi.fn() },
+    });
+    expect(screen.getByLabelText('Vendor').closest('.MuiInputBase-root')?.classList.contains('MuiInputBase-sizeSmall')).toBe(true);
+    const heading = screen.getByText('Plans');
+    expect(getComputedStyle(heading).textTransform).toBe('uppercase');
   });
 
   it('renders nothing on the right when nobody fills the slot', () => {

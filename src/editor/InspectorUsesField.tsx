@@ -47,7 +47,6 @@ export function UsesField({ field, uses, picker }: { field: InspectorField; uses
             // *shared*, go under the pointer rather than truncating the chip.
             <Tooltip key={id} title={note ?? ''}>
               <Chip
-                size="small"
                 data-testid={`uses-pill-${id}`}
                 label={name}
                 onDelete={locked ? undefined : () => actions.setUses(element.id, usesIds.filter((held) => held !== id))}
@@ -68,7 +67,6 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
     <Autocomplete
       multiple
       disableCloseOnSelect
-      size="small"
       options={usable}
       groupBy={(option) => option.group}
       getOptionLabel={(option) => option.name}
@@ -93,7 +91,6 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
       renderOption={(optionProps, option, { selected }) => (
         <li {...optionProps} key={option.id} data-testid={`uses-option-${option.id}`}>
           <Checkbox
-            size="small"
             checked={selected}
             aria-hidden
             slotProps={{ input: { disabled: true, tabIndex: -1 } }}

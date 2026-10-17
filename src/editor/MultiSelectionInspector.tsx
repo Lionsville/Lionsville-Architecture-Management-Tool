@@ -115,7 +115,6 @@ export function MultiSelectionInspector({
 
           <TextField
             select
-            size="small"
             fullWidth
             label={t('inspector.bulkLifecycle')}
             value=""
@@ -161,7 +160,7 @@ export function MultiSelectionInspector({
                 actions.fileUnderGroupNamed(landscapeIds, value ?? undefined)
               }
               renderInput={(params) => (
-                <TextField {...params} size="small" label={t('inspector.bulkDomainGroup')} />
+                <TextField {...params} label={t('inspector.bulkDomainGroup')} />
               )}
             />
           )}

@@ -60,6 +60,7 @@ import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
 import { FIELDS_COLUMN } from './fieldsColumn';
+import { CompactForms, SectionHeading } from '../../widgets/CompactForms';
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;
@@ -472,14 +473,27 @@ export function DocumentationPage(props: DocumentationPageProps) {
             label={t('doc.resizeFields')}
           />
         )}
-        <Box sx={{ borderLeft: props.fieldsWidth ? 0 : 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2, minWidth: 0 }}>
+        <FieldsColumn bordered={!props.fieldsWidth}>
           <DrawingsHere drawings={drawingsHere} onOpen={props.onOpenDrawing ? openDrawing : undefined} />
           {props.plans && <PlansHere plans={plansHere} onOpen={props.plans.onOpen} />}
           {props.renderInspector?.(element, { readOnly })}
-        </Box>
+        </FieldsColumn>
       </Box>
 
     </PageDialog>
+  );
+}
+
+/**
+ * The column down the right: the same treatment as the panel beside a board
+ * (`CompactForms`) — the page's column is that panel with room, not another
+ * form — at the panel's own gutter.
+ */
+function FieldsColumn({ bordered, children }: { bordered: boolean; children: ReactNode }) {
+  return (
+    <Box sx={{ borderLeft: bordered ? 1 : 0, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', px: 1.5, py: 1.5, minWidth: 0 }}>
+      <CompactForms>{children}</CompactForms>
+    </Box>
   );
 }
 
@@ -494,8 +508,8 @@ function DrawingsHere({ drawings, onOpen }: {
   const { t } = useStrings();
   if (drawings.length === 0) return null;
   return (
-    <Box data-testid="doc-drawings" sx={{ mb: 2 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.drawings')}</Typography>
+    <Box data-testid="doc-drawings" sx={{ mb: 1.5 }}>
+      <SectionHeading sx={{ mb: 0.25 }}>{t('doc.drawings')}</SectionHeading>
       {drawings.map((drawing) => onOpen ? (
         <Link
           key={drawing.id}
@@ -520,8 +534,8 @@ function PlansHere({ plans, onOpen }: { plans: readonly Transition[]; onOpen: (i
   const { t } = useStrings();
   if (plans.length === 0) return null;
   return (
-    <Box data-testid="doc-plans" sx={{ mb: 2 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.plans')}</Typography>
+    <Box data-testid="doc-plans" sx={{ mb: 1.5 }}>
+      <SectionHeading sx={{ mb: 0.25 }}>{t('doc.plans')}</SectionHeading>
       {plans.map((plan) => (
         <Link
           key={plan.id}

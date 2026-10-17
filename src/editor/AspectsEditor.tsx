@@ -54,7 +54,6 @@ export function AspectsEditor({
           <Box key={entry.key} sx={{ display: 'flex', gap: 1 }}>
             <TextField
               select
-              size="small"
               label={entry.label}
               value={aspect?.status ?? UNSET}
               disabled={disabled}
@@ -71,7 +70,6 @@ export function AspectsEditor({
               ))}
             </TextField>
             <TextField
-              size="small"
               label={t('field.note')}
               placeholder={t('field.notePlaceholder')}
               value={aspect?.note ?? ''}

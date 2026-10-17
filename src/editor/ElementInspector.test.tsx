@@ -9,6 +9,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { ThemeProvider } from '@mui/material/styles';
 import { testTheme } from './testing/theme';
 import { ElementInspector } from './ElementInspector';
+import { PAGE_SECTIONS, SECTION_TITLE, TABBED_SECTIONS } from './elementInspectorFacts';
+import { EN as en } from './strings/en';
 import type { ElementInspectorProps } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
@@ -149,6 +151,29 @@ const openTab = (name: 'General' | 'Appearance' | 'Data') => fireEvent.click(tab
 /** MUI non-native Select exposes disabled via aria-disabled on its combobox. */
 const selectDisabled = (labelText: string) =>
   screen.getByLabelText(labelText).getAttribute('aria-disabled') === 'true';
+
+describe('ElementInspector — one order of sections (3.7.0)', () => {
+  it('the tabs beside the canvas and the headings on the page come from the one list, in its order', () => {
+    renderInspector(element());
+    // The Data tab's count rides along out of its name (`TabLabel`); the words are the list's.
+    expect(screen.getAllByRole('tab').map((one) => one.textContent?.replace(/\d+\/\d+$/, ''))).toEqual(TABBED_SECTIONS.map((section) => en[SECTION_TITLE[section] as keyof typeof en]));
+    cleanup();
+    renderInspector(element(), { layout: 'stacked' });
+    const headings = PAGE_SECTIONS.map((section) => en[SECTION_TITLE[section] as keyof typeof en]);
+    const found = headings.map((text) => screen.getByText(text, { selector: 'div' }));
+    // In the page's order: each heading comes before the next in the document.
+    found.forEach((node, index) => {
+      if (index === 0) return;
+      expect(found[index - 1].compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+    // The appearance stays beside the canvas: no colour picker on the page.
+    expect(screen.queryByText(en['tab.appearance'])).toBeNull();
+    // The record's fields are laid out two to a row where the column has room (`FieldGrid`).
+    let grid: Element | null = screen.getByLabelText('Vendor');
+    while (grid && !getComputedStyle(grid).gridTemplateColumns.includes('auto-fit')) grid = grid.parentElement;
+    expect(grid).not.toBeNull();
+  });
+});
 
 describe('ElementInspector — tab structure (U7a)', () => {
   it('renders three tabs with General active first; header + Delete stay outside tabs', () => {

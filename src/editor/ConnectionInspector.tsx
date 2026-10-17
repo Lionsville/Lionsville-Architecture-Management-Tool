@@ -370,7 +370,6 @@ export function ConnectionInspector({
             label={t('field.lineStyle')}
             value={connection.lineStyle ?? ''}
             fullWidth
-            size="small"
             disabled={readOnly}
             onChange={(e) =>
               update({ lineStyle: e.target.value === '' ? undefined : (e.target.value as EdgeLineStyle) })
@@ -388,7 +387,6 @@ export function ConnectionInspector({
             label={t('field.routing')}
             value={connection.routing ?? ''}
             fullWidth
-            size="small"
             disabled={readOnly}
             helperText={t('field.routingHelp')}
             onChange={(e) =>
@@ -424,7 +422,6 @@ export function ConnectionInspector({
                 label={t('field.source')}
                 value={connection.sourceArrowhead ?? ''}
                 sx={{ flex: 1 }}
-                size="small"
                 disabled={readOnly}
                 onChange={(e) =>
                   update({
@@ -444,7 +441,6 @@ export function ConnectionInspector({
                 label={t('field.target')}
                 value={connection.targetArrowhead ?? ''}
                 sx={{ flex: 1 }}
-                size="small"
                 disabled={readOnly}
                 onChange={(e) =>
                   update({
@@ -469,7 +465,6 @@ export function ConnectionInspector({
         <SectionHeading>{t('section.route')}</SectionHeading>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip
-            size="small"
             data-testid="route-badge"
             label={ROUTE_BADGE[routeStatus]}
             color={routeStatus === 'manual' ? 'primary' : 'default'}
@@ -517,7 +512,6 @@ export function ConnectionInspector({
               label={t('field.leavesFrom')}
               value={route?.sourceSide ?? ''}
               sx={{ flex: 1 }}
-              size="small"
               onChange={(e) =>
                 onSetRouteSides(connection.id, {
                   sourceSide: e.target.value === '' ? undefined : (e.target.value as AttachSide),
@@ -535,7 +529,6 @@ export function ConnectionInspector({
               label={t('field.arrivesAt')}
               value={route?.targetSide ?? ''}
               sx={{ flex: 1 }}
-              size="small"
               onChange={(e) =>
                 onSetRouteSides(connection.id, {
                   targetSide: e.target.value === '' ? undefined : (e.target.value as AttachSide),
