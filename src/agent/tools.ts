@@ -458,6 +458,50 @@ const REPORTS_TO = (where: string): ArgumentSchema => ({
   items: REPORTS_TO_LINE,
 })
 
+/** One holder a line may land on, in place of every holder of the role there (ADR-0039, amended 17 October 2026). */
+const TARGET_PERSON: ArgumentSchema = {
+  type: 'string',
+  description: 'One holder of that role in that unit, by register id (assignments.list): the line lands on them alone, and who manages '
+    + 'in turn goes on from them. Leave it out for whoever holds the role there. Where they no longer hold it on a day, the line is '
+    + 'vacant that day (a finding) and the model\'s answer stands.',
+}
+
+/** One line of a holder's own (ADR-0039, amended 17 October 2026): to a role in a unit, of one kind, on its days. */
+const PERSON_LINE: RowSchema = {
+  type: 'object',
+  description: 'One line of the holder\'s own: to the holders of a role in a unit, of one kind.',
+  properties: {
+    to: {
+      type: 'object',
+      description: 'Where they report: a unit anywhere in the organisation, and its role.',
+      properties: {
+        unitId: { type: 'string', description: 'The unit reported to, anywhere in the organisation (assignments.list, elements.list).' },
+        roleId: { type: 'string', description: 'Its role reported to, by id (roles.list).' },
+        person: TARGET_PERSON,
+      },
+      required: ['unitId', 'roleId'],
+      additionalProperties: false,
+    },
+    kind: LINE_KIND,
+    from: { type: 'string', description: 'The first day of the line, yyyy-mm-dd. Leave it out for as long as the assignment runs.' },
+    until: { type: 'string', description: 'The last day of the line, yyyy-mm-dd. It ends with the assignment in any case.' },
+  },
+  required: ['to'],
+  additionalProperties: false,
+}
+
+/** A holder's own lines, as `assignment.add` and `assignment.update` take them. */
+const PERSON_LINES: ArgumentSchema = {
+  type: 'array',
+  description: 'An EXCEPTION to the model, for this holder only: where they report in place of what their role, their unit\'s type, '
+    + 'their unit and nesting say. Write it only when the person you act for explicitly asks for this exception, and say in your answer '
+    + 'that it is one; otherwise leave it out and the model\'s lines hold. At most one line of each kind: a solid one decides who manages '
+    + 'this holder (and the managing right a host grants follows it); a dotted one is functional and replaces their role\'s dotted line '
+    + 'for them. A line to their own role in their own unit is refused (reportingLine.self), and a solid one that would close a loop '
+    + '(reportingLine.loop). On assignment.update the list replaces theirs; an empty list or null goes back to the model\'s.',
+  items: PERSON_LINE,
+}
+
 /** What a unit type says beside its name (ADR-0036): the fields `unitType.add` and `unitType.update` share. */
 const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   purpose: { type: 'string', description: 'What a unit of this type is for, in the organisation\'s own words.' },
@@ -1076,9 +1120,11 @@ const SPECS = [
       + 'its unit and role by id and by name, its person by register id and by name — or by pseudonym where the organisation\'s '
       + 'policy gives agents pseudonyms, and never an address — its share in per cent, its days and whether the person is acting. '
       + 'Those running on the day unless all is asked. Asked about one unit, it also says the unit\'s slots against how many '
-      + 'hold each on the day, and who manages it: whoever holds a role that manages, in it or a unit above it. Each assignment '
-      + 'says who manages its holder, each with via: line where a solid reporting line decides it (ADR-0039), nesting otherwise, '
-      + 'and the dotted lines apart. Core grants nothing from that; it is said.',
+      + 'hold each on the day, the roles held there outside them (exceptions), and who manages it: whoever holds a role that '
+      + 'manages, in it or a unit above it. Each assignment says who manages its holder, each with via — nesting, line where a '
+      + 'solid line of the model\'s decides it (the role\'s or the unit type\'s), override where an exception does (the unit\'s own '
+      + 'line, or the holder\'s own) — and the dotted lines apart; the holder\'s own lines as written (reportsTo); and exception: true '
+      + 'where the role is not one of the unit\'s slots (ADR-0039, amended 17 October 2026). Core grants nothing from that; it is said.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2161,9 +2207,13 @@ const SPECS = [
     tier: 'write',
     description:
       'Put a person in a role of a unit, as one step in the scope that keeps the unit — which must be the scope open. '
+      + 'Keep to the model: place them in a role the unit\'s slots give (assignments.list with unitId lists them) and let their '
+      + 'reporting line follow the role, the unit type and nesting. A role outside the slots is an exception placement — allowed, '
+      + 'answered exception: true, shown as an exception wherever the holder is, and no finding — to write only when the person '
+      + 'you act for explicitly asks for it, saying in your answer that it is one; so is reportsTo, the holder\'s own line. '
       + 'The assignment holds the person\'s register id, never a name: add someone new with person.add first, which checks '
-      + 'the register for duplicates. Someone who has left or been forgotten is refused. A role the unit\'s type does not '
-      + 'hold, a slot over its maximum, a person over 100% are findings (checks.list), not refusals. Answers with the id.',
+      + 'the register for duplicates. Someone who has left or been forgotten is refused. A slot over its maximum and a person '
+      + 'over 100% are findings (checks.list), not refusals. Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2174,8 +2224,33 @@ const SPECS = [
         from: { type: 'string', description: 'The first day, yyyy-mm-dd. Default: today.' },
         until: { type: 'string', description: 'The last day, yyyy-mm-dd, where it is known.' },
         acting: { type: 'boolean', description: 'Holding the role until somebody is appointed to it.' },
+        reportsTo: PERSON_LINES,
       },
       required: ['unitId', 'roleId', 'personId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'assignment.update',
+    tier: 'write',
+    description:
+      'Correct an assignment, as one step in the scope that keeps it — which must be the scope open: its share, whether the '
+      + 'person is acting, its first and last day, and the holder\'s own reporting lines (reportsTo). Only the fields given change; '
+      + 'null clears the share (all of their time), acting, the last day and reportsTo. Days run forwards (command.datesOutOfOrder). '
+      + 'Ending one is assignment.end; another unit or role is a new assignment (assignment.end, then assignment.add). '
+      + 'Keep to the model\'s defaults: reportsTo is an exception for this holder alone, written only when the person you act for '
+      + 'explicitly asks for it — say in your answer that it is one — and reportsTo null puts the model\'s lines back.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('assignment, from assignments.list'),
+        share: { type: 'integer', description: 'The part of their time, in per cent. Null is all of it.', minimum: 1, maximum: 100 },
+        acting: { type: 'boolean', description: 'Holding the role until somebody is appointed to it. False or null: appointed.' },
+        from: { type: 'string', description: 'The first day, yyyy-mm-dd.' },
+        until: { type: 'string', description: 'The last day, yyyy-mm-dd. Null: open-ended.' },
+        reportsTo: PERSON_LINES,
+      },
+      required: ['id'],
       additionalProperties: false,
     },
   },
@@ -2202,7 +2277,11 @@ const SPECS = [
     tier: 'write',
     description:
       'Say where the holders of a role in one unit report, as one step in the scope that keeps the unit — which must be the '
-      + 'scope open. With to, they report to the holders of to.roleId in the unit to.unitId; without it, the role reports by '
+      + 'scope open. This is an OVERRIDE of the model for that unit: by default a role\'s holders report where the role and the '
+      + 'unit type say (role.update, unitType.update) and otherwise by nesting, and that is what to keep to; write a unit\'s own '
+      + 'line only when the person you act for explicitly asks for this exception, and say in your answer that it is one. For one '
+      + 'person rather than everybody in the role there, the holder\'s own line is assignment.update with reportsTo. '
+      + 'With to, they report to the holders of to.roleId in the unit to.unitId; without it, the role reports by '
       + 'nesting here, whatever the unit type says. It replaces the unit\'s own line of that role and kind, and its type\'s on '
       + 'the days it runs. A line from a role to itself in the same unit is refused (reportingLine.self), and so is a solid one '
       + 'that would close a loop on the day it is written or on its first day (reportingLine.loop, the chain in the detail). '
@@ -2218,6 +2297,7 @@ const SPECS = [
           properties: {
             unitId: { type: 'string', description: 'The unit reported to, anywhere in the organisation (assignments.list, elements.list).' },
             roleId: { type: 'string', description: 'Its role reported to, by id (roles.list).' },
+            person: TARGET_PERSON,
           },
           required: ['unitId', 'roleId'],
           additionalProperties: false,
@@ -2234,7 +2314,8 @@ const SPECS = [
     name: 'reportingLine.remove',
     tier: 'write',
     description:
-      'Take away a unit\'s own line for a role — of one kind, where kind is given, else both — so its unit type\'s applies again. '
+      'Take away a unit\'s own line for a role — of one kind, where kind is given, else both — so the model\'s line (the unit '
+      + 'type\'s, else the role\'s, else nesting) applies again. '
       + 'One step in the scope that keeps the unit, which must be the scope open.',
     inputSchema: {
       type: 'object',
@@ -2253,17 +2334,21 @@ const SPECS = [
     description:
       'The reporting lines on a day (ADR-0039), across the whole tree: for each role in each unit that has one, its kind (solid, '
       + 'a line manager\'s; dotted, functional), where it was said (said: role, for every unit that holds the role; type, on the '
-      + 'unit type\'s slot; unit, the unit\'s own), whether its target is in the same unit (within), its days, and how it '
+      + 'unit type\'s slot; unit, the unit\'s own; person, one holder\'s own, with the assignmentId and personId it holds for), '
+      + 'whether it is an exception to the model (override: true for a unit\'s own line and a holder\'s own; the role\'s and the '
+      + 'type\'s lines and nesting are the model\'s defaults), whether its target is in the same unit (within), its days, and how it '
       + 'stands — lands (on a role in a unit, named with the scope that keeps it), nesting (the unit says the role reports by '
       + 'nesting here), dangling (no unit has the target role) or ambiguous (several do and none is above; the candidates '
-      + 'named). Then what the lines contradict: a loop (the chain, and the first day it is there), and a line that is '
-      + 'dangling, ambiguous or lands on a role nobody holds that day.',
+      + 'named). A holder\'s own solid line holds for them in place of their role\'s there; a role held outside the unit\'s slots '
+      + 'takes the role\'s own line, and such placements are listed apart (exceptions). Then what the lines contradict: a loop '
+      + '(the chain, and the first day it is there), and a line that is dangling, ambiguous or lands on a role nobody holds that day.',
     inputSchema: {
       type: 'object',
       properties: {
         unitId: { type: 'string', description: 'Only the lines from this unit.' },
         roleId: { type: 'string', description: 'Only the lines from this role, in whichever unit.' },
         toUnitId: { type: 'string', description: 'Only the lines that land on this unit: who reports into it.' },
+        personId: { type: 'string', description: 'Only the lines that hold for this person, by register id: their own, and their roles\'.' },
         on: { type: 'string', description: 'The day, yyyy-mm-dd. Default: today.' },
       },
       additionalProperties: false,
@@ -3199,7 +3284,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'move.moved': 'The observation was moved to another scope already, and what is left here is its tombstone. Move it from where it is now: observation.read says where.',
   'move.archived': 'The observation is archived, and an archived observation is out of the analysis. Restore it first (observation.archive with restore), then move it.',
   'move.unknownScope': 'No scope in the organisation has that path, or it cannot be read here. scopes.list says which there are.',
-  'reportingLine.self': 'A role does not report to itself in the same unit. Name another role, or another unit.',
+  'reportingLine.self': 'A role does not report to itself in the same unit, and a holder does not report to their own role in their own unit. Name another role, or another unit.',
   'reportingLine.loop':
     'The solid line would close a loop: following who manages whom from it, along the lines and the nesting, comes back to '
     + 'where it started — the chain, and the day, are in the detail. Ask the person which line in the chain is wrong; a dotted '

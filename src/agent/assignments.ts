@@ -12,7 +12,9 @@
  * organisation's policy gives agents pseudonyms; never an address. Asked
  * about one unit, it also says the unit's slots against who holds them on
  * the day, and who manages it (§12) — which core works out and grants
- * nothing from. The day is today unless one is asked for, and the
+ * nothing from. Each holder is answered as they are (ADR-0039, amended 17
+ * October 2026): who manages them by their own line where they have one,
+ * their own lines as written, and an exception placement said. The day is today unless one is asked for, and the
  * organisation is that day's: every plan's moves of that day included, the
  * open scope's plans as its session has them (§6).
  */
@@ -21,7 +23,9 @@ import { pickedPerson } from '../model/person'
 import type { HostModel } from '../model/hostModel'
 import type { Role, UnitType } from '../model/operatingModel'
 import { movesOfPlans } from '../model/transition'
-import { dottedLinesOf, holdersOn, isUnit, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf } from '../model/units'
+import {
+  holdersOn, isExceptionPlacement, isUnit, linesOfHolder, managersOf, managersOfHolder, parentOn, personOf, runsOn, shareOf, slotsOf,
+} from '../model/units'
 import type { Assignment, Organisation } from '../model/units'
 import type { Person } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
@@ -68,7 +72,7 @@ export function organisationNow(
 }
 
 /** What a person reads as to an agent: their name, or their pseudonym where the policy says so. */
-function personName(id: string, people: readonly Person[] | undefined, policy: PeoplePolicy | undefined): string | undefined {
+export function personName(id: string, people: readonly Person[] | undefined, policy: PeoplePolicy | undefined): string | undefined {
   if (!people) return undefined
   return shownEnglish(shownPerson(pickedPerson(id), registerOf(people), { withhold: policy?.agentsSee === 'pseudonyms' }))
 }
@@ -89,11 +93,12 @@ export async function listAssignments(
   const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
   const named = (id: string) => personName(id, register?.people, register?.policy)
   const asked = typeof args.personId === 'string' ? canonical(args.personId) : undefined
-  // Who manages each holder, and why (ADR-0039 §4, §8): once per role in a unit, however many hold it.
+  // Who manages each holder, and why (ADR-0039 §4, §8): once per role in a unit, however many hold it — and once
+  // more for a holder with a line of their own, which holds for them alone.
   const told = new Map<string, ReturnType<typeof managingOf>>()
-  const managing = (unitId: string, roleId: string) => {
-    const key = `${unitId}\u0000${roleId}`
-    if (!told.has(key)) told.set(key, managingOf(organisation, unitId, roleId, day, { roleName, unitName, named }))
+  const managing = (assignment: Assignment) => {
+    const key = assignment.reportsTo?.length ? `\u0001${assignment.id}` : `${assignment.unitId}\u0000${assignment.roleId}`
+    if (!told.has(key)) told.set(key, managingOf(organisation, assignment, day, { roleName, unitName, named }))
     return told.get(key)!
   }
   const lines = held
@@ -104,7 +109,8 @@ export async function listAssignments(
       && (args.all === true || runsOn(assignment, day)))
     .map(({ scope, assignment }) => ({
       ...line(scope, assignment, { unitName, roleName, named, day }),
-      ...managing(assignment.unitId, assignment.roleId),
+      ...(isExceptionPlacement(organisation, assignment) ? { exception: true } : {}),
+      ...managing(assignment),
     }))
   const unit = typeof args.unitId === 'string' ? organisation.units.find((one) => one.id === args.unitId) : undefined
   return json({
@@ -115,12 +121,18 @@ export async function listAssignments(
   })
 }
 
-/** Who manages the holders of a role in a unit on the day, each with why, and the dotted lines apart. */
-function managingOf(organisation: Organisation, unitId: string, roleId: string, day: string, naming: Naming) {
-  const dotted = dottedLinesOf(organisation, unitId, day, roleId)
+/** Who manages one holder on the day, each with why, and the dotted lines that hold for them apart. */
+function managingOf(organisation: Organisation, assignment: Assignment, day: string, naming: Naming) {
+  const dotted = linesOfHolder(organisation, assignment, day).filter((one) => one.kind === 'dotted' && one.state === 'lands')
   return {
-    managedBy: managersOf(organisation, unitId, day, roleId).map((one) => managerLine(one, naming)),
-    ...(dotted.length ? { dotted: dotted.flatMap((one) => (one.to ? [{ unitId: one.to.unitId, unit: naming.unitName(one.to.unitId), roleId: one.to.roleId, role: naming.roleName(one.to.roleId) }] : [])) } : {}),
+    managedBy: managersOfHolder(organisation, assignment, day).map((one) => managerLine(one, naming)),
+    ...(dotted.length
+      ? {
+        dotted: dotted.flatMap((one) => (one.to
+          ? [{ unitId: one.to.unitId, unit: naming.unitName(one.to.unitId), roleId: one.to.roleId, role: naming.roleName(one.to.roleId), ...(one.override ? { override: true } : {}) }]
+          : [])),
+      }
+      : {}),
   }
 }
 
@@ -130,6 +142,12 @@ function managerLine(one: ReturnType<typeof managersOf>[number], naming: Naming)
     personId: one.person, ...(person !== undefined ? { person } : {}),
     roleId: one.roleId, role: naming.roleName(one.roleId), unitId: one.unitId, unit: naming.unitName(one.unitId), via: one.via,
   }
+}
+
+/** A person a line names, as an answer says them: by register id, and by name where the register lends one. */
+function named(id: string, naming: Naming): { person: string; name?: string } {
+  const name = naming.named(id)
+  return { person: id, ...(name !== undefined ? { name } : {}) }
 }
 
 type Naming = {
@@ -154,6 +172,18 @@ function line(scope: string, assignment: Assignment, naming: Naming & { day: str
     ...(assignment.from !== undefined ? { from: assignment.from } : {}),
     ...(assignment.until !== undefined ? { until: assignment.until } : {}),
     ...(assignment.acting ? { acting: true } : {}),
+    // The holder's own lines as written: an exception to the model for them alone (ADR-0039, amended).
+    ...(assignment.reportsTo?.length
+      ? {
+        reportsTo: assignment.reportsTo.map((one) => ({
+          to: {
+            scope: one.to.scope, unitId: one.to.unit, unit: naming.unitName(one.to.unit), roleId: one.to.role, role: naming.roleName(one.to.role),
+            ...(one.to.person !== undefined ? { person: named(one.to.person, naming) } : {}),
+          },
+          kind: one.kind, ...(one.from !== undefined ? { from: one.from } : {}), ...(one.until !== undefined ? { until: one.until } : {}),
+        })),
+      }
+      : {}),
     runs: runsOn(assignment, naming.day),
   }
 }
@@ -163,6 +193,10 @@ function unitAnswer(unit: Organisation['units'][number], organisation: Organisat
   const type: UnitType | undefined = organisation.unitTypes.find((one) => one.id === unit.unitTypeId)
   const roles = new Map<string, Role>(organisation.roles.map((role) => [role.id, role]))
   const parentId = parentOn(unit, organisation.moves, day)
+  const slotted = new Set(slotsOf(unit, type).map((slot) => slot.role))
+  const outside = [...new Set(organisation.assignments
+    .filter((one) => one.unitId === unit.id && runsOn(one, day) && !slotted.has(one.roleId))
+    .map((one) => one.roleId))]
   return {
     unit: {
       id: unit.id,
@@ -176,6 +210,10 @@ function unitAnswer(unit: Organisation['units'][number], organisation: Organisat
         held: holdersOn(organisation.assignments, unit.id, slot.role, day).length,
         ...(roles.get(slot.role)?.manages ? { manages: true } : {}),
       })),
+      // Roles held here that are none of its slots: exception placements, allowed and said (ADR-0039, amended).
+      ...(type && outside.length
+        ? { exceptions: outside.map((roleId) => ({ roleId, role: naming.roleName(roleId), held: holdersOn(organisation.assignments, unit.id, roleId, day).length })) }
+        : {}),
       managedBy: managersOf(organisation, unit.id, day).map((one) => managerLine(one, naming)),
     },
   }

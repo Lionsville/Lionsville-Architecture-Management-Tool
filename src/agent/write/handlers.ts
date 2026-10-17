@@ -31,7 +31,7 @@ import {
   addMilestone, createPlan, moveUnit, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
 } from './plans'
 import { addRole, addUnitType, updateRole, updateUnitType } from './operatingModel'
-import { addAssignment, endAssignment } from './assignments'
+import { addAssignment, endAssignment, updateAssignment } from './assignments'
 import { removeReportingLine, setReportingLine } from './reporting'
 import type { Handler } from './shared'
 import { addComment, removeComment, updateComment } from '../commenting'
@@ -95,6 +95,7 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'role.add': addRole,
   'role.update': updateRole,
   'assignment.add': addAssignment,
+  'assignment.update': updateAssignment,
   'assignment.end': endAssignment,
   'reportingLine.set': setReportingLine,
   'reportingLine.remove': removeReportingLine,

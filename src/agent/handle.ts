@@ -563,7 +563,7 @@ function treeWide(
     // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).
     case ASSIGNMENTS_LIST: return listAssignments(request.args, tree, openDocument(session), shell?.people)
     // Where each role in each unit reports, and what the lines contradict (ADR-0039 §8).
-    case REPORTING_LINES_LIST: return listReportingLines(request.args, tree, openDocument(session))
+    case REPORTING_LINES_LIST: return listReportingLines(request.args, tree, openDocument(session), shell?.people)
     default: return isOperatingRead(request.tool) ? readOperating(request.tool, request.args, tree, session) : undefined
   }
 }

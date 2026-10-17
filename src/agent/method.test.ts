@@ -7,7 +7,8 @@
  * places, not a permission.
  */
 import { describe, expect, it } from 'vitest'
-import { OBSERVATIONS_METHOD } from './method'
+import { INSTRUCTIONS } from './mcpProtocol'
+import { OBSERVATIONS_METHOD, STRUCTURE_DEFAULTS } from './method'
 
 describe('the method sent on connect', () => {
   it('says a root cause is said by a person, and that the agent never says one on its own judgement', () => {
@@ -39,5 +40,26 @@ describe('the method sent on connect', () => {
 
   it('asks for where and by whom rather than guessing them', () => {
     expect(OBSERVATIONS_METHOD).toContain('Where and by whom are required: ask rather than guess')
+  })
+})
+
+describe('the structure\'s defaults sent on connect (ADR-0039, amended 17 October 2026)', () => {
+  it('says to keep to the model and write an exception only when explicitly asked, saying so', () => {
+    expect(STRUCTURE_DEFAULTS).toContain('Keep to the model\'s defaults: place people in the roles their unit\'s slots give')
+    expect(STRUCTURE_DEFAULTS).toContain('let reporting lines follow the role\'s and the unit type\'s lines and nesting')
+    expect(STRUCTURE_DEFAULTS).toContain('only when the person you act for explicitly asks for that exception')
+    expect(STRUCTURE_DEFAULTS).toContain('say in your answer that it is one')
+  })
+
+  it('names a tool that reads and one that writes each structure relationship, every one of them a tool', async () => {
+    const { TOOL_NAMES } = await import('./tools')
+    const named = STRUCTURE_DEFAULTS.match(/\b[a-z]+(?:\.[a-zA-Z]+)+\b/g) ?? []
+    expect(named.length).toBeGreaterThan(10)
+    for (const tool of named) expect(TOOL_NAMES, tool).toContain(tool)
+  })
+
+  it('is part of what the desktop hands over, before the method', () => {
+    expect(INSTRUCTIONS).toContain(STRUCTURE_DEFAULTS)
+    expect(INSTRUCTIONS.indexOf(STRUCTURE_DEFAULTS)).toBeLessThan(INSTRUCTIONS.indexOf(OBSERVATIONS_METHOD))
   })
 })

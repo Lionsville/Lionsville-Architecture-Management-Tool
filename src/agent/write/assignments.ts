@@ -13,16 +13,25 @@
  * the organisation then contradicts — a slot over its maximum, a person over
  * 100% — is a finding the checks report, never a refusal here. An agent adds
  * and assigns people; it never forgets, removes or merges one (ADR-0036 §13).
+ *
+ * **Exceptions to the model** (ADR-0039, amended 17 October 2026) are written
+ * here as any other field, and said in the answer: a role outside the unit's
+ * slots answers `exception: true`, and a holder's own lines (`reportsTo`) —
+ * refused where they point at the holder's own role in their own unit or
+ * close a loop — answer `override: true`. Whether to write one is the tools'
+ * descriptions' to say: only when the person asks for that exception.
  */
 import { isDay } from '../../model/lifecycle'
 import { assignmentsOf, rolesOf } from '../../model/normalised'
 import { pickedPerson } from '../../model/person'
-import type { Assignment } from '../../model/units'
-import { isUnit } from '../../model/units'
+import { refusePersonLines } from '../../model/reporting'
+import type { Assignment, AssignmentReportingLine } from '../../model/units'
+import { isExceptionPlacement, isUnit } from '../../model/units'
 import { registerOf, resolvePerson } from '../../people/shown'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
-import type { Handler, WriteView } from './shared'
+import { lineRefused, organisationOfView, personLinesAnswer, personLinesOf } from './reporting'
+import type { Args, Handler, WriteView } from './shared'
 
 /** The organisation's roles as this scope can see them: its own at the organisation, the tree's anywhere else. */
 function rolesKnown(view: WriteView): readonly { id: string }[] | undefined {
@@ -68,15 +77,80 @@ export const addAssignment: Handler = (args, view) => {
     if (args[key] !== undefined && !isDay(args[key])) return refused('agent.badArguments', `"${key}" must be yyyy-mm-dd`)
   }
   const share = typeof args.share === 'number' && args.share < 100 ? { share: args.share / 100 } : {}
+  const reportsTo = personLinesOf(args.reportsTo, view)
+  if (!Array.isArray(reportsTo)) return reportsTo
   const assignment: Assignment = {
     id: freshId(view), unitId, roleId, person: pickedPerson(person), ...share,
     from: (args.from as string | undefined) ?? view.today(),
     ...(typeof args.until === 'string' ? { until: args.until } : {}),
     ...(args.acting === true ? { acting: true as const } : {}),
+    ...(reportsTo.length ? { reportsTo } : {}),
   }
+  const organisation = organisationOfView(view)
+  const refusal = reportsTo.length ? refusePersonLines(organisation, assignment, reportsTo, view.today()) : undefined
+  if (refusal) return lineRefused(refusal, organisation)
   return {
     command: { type: 'assignment.add', assignment, origin: 'agent' },
-    answer: json({ id: assignment.id, unitId, roleId, personId: person, from: assignment.from }),
+    answer: json({
+      id: assignment.id, unitId, roleId, personId: person, from: assignment.from,
+      ...exceptionsOf(organisation, assignment, reportsTo),
+    }),
+  }
+}
+
+/** What an answer says of the exceptions to the model it wrote: a role outside the slots, and the holder's own lines. */
+function exceptionsOf(
+  organisation: ReturnType<typeof organisationOfView>, assignment: Pick<Assignment, 'unitId' | 'roleId'>, reportsTo: readonly AssignmentReportingLine[] | undefined,
+) {
+  return {
+    ...(isExceptionPlacement(organisation, assignment) ? { exception: true, note: 'An exception placement: the role is not one of the unit\'s slots. Say so to the person.' } : {}),
+    ...(reportsTo?.length ? { reportsTo: personLinesAnswer(reportsTo), override: true } : {}),
+  }
+}
+
+/** The fields of `assignment.update` given, as a patch: null clears what may be cleared. */
+function patchOf(args: Args, view: WriteView, held: Assignment): Partial<Assignment> | AgentAnswer {
+  const patch: Partial<Assignment> = {}
+  for (const key of ['from', 'until'] as const) {
+    if (args[key] !== undefined && args[key] !== null && !isDay(args[key])) return refused('agent.badArguments', `"${key}" must be yyyy-mm-dd`)
+  }
+  if (args.from === null) return refused('agent.badArguments', '"from" may be moved and not cleared: an assignment begins on a day')
+  if (typeof args.from === 'string') patch.from = args.from
+  if (args.until !== undefined) patch.until = typeof args.until === 'string' ? args.until : undefined
+  if (args.share !== undefined) patch.share = typeof args.share === 'number' && args.share < 100 ? args.share / 100 : undefined
+  if (args.acting !== undefined) patch.acting = args.acting === true ? true : undefined
+  if (args.reportsTo !== undefined) {
+    const lines = personLinesOf(args.reportsTo, view)
+    if (!Array.isArray(lines)) return lines
+    patch.reportsTo = lines.length ? lines : undefined
+  }
+  // A field said as it already is changes nothing, and is not written.
+  for (const key of Object.keys(patch) as (keyof Assignment)[]) {
+    if (JSON.stringify(patch[key]) === JSON.stringify(held[key])) delete patch[key]
+  }
+  return patch
+}
+
+export const updateAssignment: Handler = (args, view) => {
+  const id = args.id as string
+  const held = assignmentsOf(view.model)[id]
+  if (!held) return refused('agent.unknownId', `assignment ${id}: one this scope keeps (assignments.list says the scope of each)`)
+  const patch = patchOf(args, view, held)
+  if ('ok' in patch) return patch
+  if (Object.keys(patch).length === 0) return refused('agent.badArguments', `nothing to change: ${id} already says that`)
+  const organisation = organisationOfView(view)
+  if (patch.reportsTo) {
+    const refusal = refusePersonLines(organisation, held, patch.reportsTo, view.today())
+    if (refusal) return lineRefused(refusal, organisation)
+  }
+  const after = { ...held, ...patch }
+  return {
+    command: { type: 'assignment.update', id, patch, origin: 'agent' },
+    answer: json({
+      id, changed: Object.keys(patch),
+      ...exceptionsOf(organisation, after, after.reportsTo),
+      ...('reportsTo' in patch && !patch.reportsTo ? { reportsTo: [], note: 'The holder reports where the model says again.' } : {}),
+    }),
   }
 }
 

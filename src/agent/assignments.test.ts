@@ -451,7 +451,7 @@ describe('reporting lines at the agent (ADR-0039 §8)', () => {
   it('sets a unit\'s own line as one step, says who manages by it, and takes it away again', async () => {
     const open = session('customer', { ...customer, assignments: [...customer.assignments!, as('as-3', 'webshop', 'ro-dev', 'pe-bram')] })
     const set = parsed(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'parcel', roleId: 'ro-dev' }, kind: 'dotted' }, open))
-    expect(set).toEqual({ unitId: 'webshop', roleId: 'ro-dev', kind: 'dotted', to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev' }, revision: 1 })
+    expect(set).toEqual({ unitId: 'webshop', roleId: 'ro-dev', kind: 'dotted', to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev' }, override: true, revision: 1 })
     expect(open.sent.at(-1)).toMatchObject({ type: 'element.update', id: 'webshop', origin: 'agent' })
     await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'webshop', roleId: 'ro-po' } }, open)
     const listed = parsed(await ask('assignments.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
@@ -510,5 +510,90 @@ describe('reporting lines at the agent (ADR-0039 §8)', () => {
       .toEqual(expect.arrayContaining([['webshop', 'role', true, 'lands', 'ro-po']]))
     // Taken away with null.
     expect(parsed(await ask('role.update', { id: 'ro-dev', reportsTo: null }, open)).reportsTo).toBeUndefined()
+  })
+})
+
+describe('exceptions to the model at the agent (ADR-0039, amended 17 October 2026)', () => {
+  const toParcel = { to: { unitId: 'parcel', roleId: 'ro-dev' }, kind: 'solid' }
+
+  it('takes a holder\'s own line on assignment.add, says it is an override, and answers who manages them by it', async () => {
+    const open = session('customer', customer)
+    const added = parsed(await ask('assignment.add', { unitId: 'webshop', roleId: 'ro-dev', personId: 'pe-bram', reportsTo: [toParcel] }, open))
+    expect(added).toMatchObject({ override: true, reportsTo: [{ to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev' }, kind: 'solid' }] })
+    expect(added.exception).toBeUndefined()
+    expect(open.model().assignments![added.id as string]!.reportsTo).toEqual([{ to: { scope: 'shipping', unit: 'parcel', role: 'ro-dev' }, kind: 'solid' }])
+    const listed = parsed(await ask('assignments.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
+    expect((listed.assignments as Record<string, unknown>[])[0]).toMatchObject({
+      personId: 'pe-bram',
+      reportsTo: [{ to: { scope: 'shipping', unitId: 'parcel', unit: 'Parcel', roleId: 'ro-dev', role: 'Developer' }, kind: 'solid' }],
+      managedBy: [{ personId: 'pe-femke', unitId: 'parcel', via: 'override' }],
+    })
+    const lines = parsed(await ask('reportingLines.list', { personId: 'pe-bram' }, open, shell()))
+    expect(lines.lines).toEqual([expect.objectContaining({
+      unitId: 'webshop', roleId: 'ro-dev', said: 'person', override: true, assignmentId: added.id, personId: 'pe-bram', person: 'Bram de Wit',
+      state: 'lands', to: expect.objectContaining({ scope: 'shipping', unitId: 'parcel' }),
+    })])
+    // Somebody else's lines are not theirs.
+    expect(parsed(await ask('reportingLines.list', { personId: 'pe-femke' }, open, shell())).lines).toEqual([])
+  })
+
+  it('corrects an assignment with assignment.update — the share, a line of the holder\'s own, and back to the model\'s', async () => {
+    const open = session('customer', { ...customer, assignments: [...customer.assignments!, as('as-3', 'webshop', 'ro-dev', 'pe-bram')] })
+    expect(parsed(await ask('assignment.update', { id: 'as-3', share: 50, acting: true }, open))).toMatchObject({ id: 'as-3', changed: ['share', 'acting'] })
+    expect(open.model().assignments!['as-3']).toMatchObject({ share: 0.5, acting: true })
+    expect(open.sent.at(-1)).toMatchObject({ type: 'assignment.update', id: 'as-3', origin: 'agent' })
+    const lined = parsed(await ask('assignment.update', { id: 'as-3', reportsTo: [toParcel] }, open))
+    expect(lined).toMatchObject({ changed: ['reportsTo'], override: true })
+    const back = parsed(await ask('assignment.update', { id: 'as-3', reportsTo: null, share: null }, open))
+    expect(back).toMatchObject({ changed: ['share', 'reportsTo'], reportsTo: [] })
+    expect(open.model().assignments!['as-3']!.reportsTo).toBeUndefined()
+    expect(open.model().assignments!['as-3']!.share).toBeUndefined()
+    expect(refusal(await ask('assignment.update', { id: 'as-3', acting: true }, open))?.[0]).toBe('agent.badArguments')
+    expect(refusal(await ask('assignment.update', { id: 'as-9', share: 50 }, open))?.[0]).toBe('agent.unknownId')
+    // Days run forwards: the writer's rule, as for any assignment.
+    expect(refusal(await ask('assignment.update', { id: 'as-3', from: '2027-01-01', until: '2026-01-01' }, open))?.[0]).toBe('command.datesOutOfOrder')
+  })
+
+  it('refuses a holder\'s line to their own role in their own unit, one that closes a loop, and two of a kind', async () => {
+    const open = session('customer', { ...customer, assignments: [...customer.assignments!, as('as-3', 'webshop', 'ro-dev', 'pe-bram')] })
+    expect(refusal(await ask('assignment.update', { id: 'as-1', reportsTo: [{ to: { unitId: 'webshop', roleId: 'ro-po' } }] }, open))?.[0]).toBe('reportingLine.self')
+    // The product owner manages the developer by nesting: the owner reporting to the developer closes a loop.
+    const loop = refusal(await ask('assignment.update', { id: 'as-1', reportsTo: [{ to: { unitId: 'webshop', roleId: 'ro-dev' } }] }, open))
+    expect(loop?.[0]).toBe('reportingLine.loop')
+    expect(parsed(await ask('assignment.update', { id: 'as-1', reportsTo: [{ to: { unitId: 'webshop', roleId: 'ro-dev' }, kind: 'dotted' }] }, open))).toMatchObject({ override: true })
+    expect(refusal(await ask('assignment.update', { id: 'as-3', reportsTo: [toParcel, toParcel] }, open))?.[0]).toBe('agent.badArguments')
+    expect(refusal(await ask('assignment.add', { unitId: 'webshop', roleId: 'ro-dev', personId: 'pe-bram', reportsTo: [{ to: { unitId: 'nowhere', roleId: 'ro-dev' } }] }, open))?.[0]).toBe('agent.unknownId')
+  })
+
+  it('says a role held outside the unit\'s slots is an exception placement, wherever the holder is answered', async () => {
+    const architect: Role = { id: 'ro-arch', name: 'Architect', duties: [] }
+    const base = session('customer', customer)
+    const open = { ...base, tree: { ...tree(), operatingModel: () => ({ unitTypes: [team], roles: [...roles, architect], responsibilities: [], operatingRules: [] }) } }
+    const added = parsed(await ask('assignment.add', { unitId: 'webshop', roleId: 'ro-arch', personId: 'pe-bram' }, open))
+    expect(added).toMatchObject({ exception: true })
+    const listed = parsed(await ask('assignments.list', { unitId: 'webshop' }, open, shell()))
+    expect((listed.assignments as Record<string, unknown>[]).map((one) => [one.roleId, one.exception])).toEqual([['ro-po', undefined], ['ro-arch', true]])
+    expect((listed.unit as Record<string, unknown>).exceptions).toEqual([{ roleId: 'ro-arch', role: 'Architect', held: 1 }])
+    const lines = parsed(await ask('reportingLines.list', {}, open, shell()))
+    expect(lines.exceptions).toEqual([expect.objectContaining({ unitId: 'webshop', roleId: 'ro-arch', personId: 'pe-bram', exception: true })])
+  })
+
+  it('takes a line to one person — on a unit\'s own line and a holder\'s own — and answers them by name', async () => {
+    const open = session('customer', customer)
+    const set = parsed(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'parcel', roleId: 'ro-dev', person: 'pe-old' } }, open))
+    // A merged id is written as the entry it was merged into.
+    expect(set).toMatchObject({ to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev', person: 'pe-femke' }, override: true })
+    expect(refusal(await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'parcel', roleId: 'ro-dev', person: 'pe-bram' } }, open))?.[0]).toBe('agent.badArguments')
+    const lines = parsed(await ask('reportingLines.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
+    expect((lines.lines as Record<string, unknown>[])[0].to).toMatchObject({ unitId: 'parcel', person: { person: 'pe-femke', name: 'Femke Bos' } })
+    const added = parsed(await ask('assignment.add', {
+      unitId: 'webshop', roleId: 'ro-dev', personId: 'pe-bram', reportsTo: [{ to: { unitId: 'parcel', roleId: 'ro-dev', person: 'pe-femke' } }],
+    }, open))
+    expect(added.reportsTo).toEqual([{ to: { scope: 'shipping', unitId: 'parcel', roleId: 'ro-dev', person: 'pe-femke' }, kind: 'solid' }])
+    const listed = parsed(await ask('assignments.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
+    expect((listed.assignments as Record<string, unknown>[])[0]).toMatchObject({
+      reportsTo: [{ to: { unitId: 'parcel', person: { person: 'pe-femke', name: 'Femke Bos' } } }],
+      managedBy: [{ personId: 'pe-femke', via: 'override' }],
+    })
   })
 })

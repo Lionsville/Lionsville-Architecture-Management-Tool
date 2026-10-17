@@ -915,6 +915,9 @@ function elementLine(element: DesignElement) {
     lane: element.lane,
     outside: element.outside,
     partyId: element.partyId,
+    // A unit's place in the organisation's structure (ADR-0036 §3): its type and the domains it serves, so a list says which actors are units.
+    unitTypeId: element.unitTypeId,
+    scopes: element.scopes,
     hasDescription: Boolean(element.description?.trim()),
   }
 }

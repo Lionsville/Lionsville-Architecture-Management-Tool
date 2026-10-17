@@ -53,3 +53,25 @@ export const OBSERVATIONS_METHOD =
   + 'explanations into causes, their ideas into solutions — and tell them which went where. Never answer a '
   + 'gate, verify a cause, say a root cause, conclude an experiment or accept a decision on your own judgement: '
   + 'those are the team\'s to say, so ask.'
+
+/**
+ * How the organisation's structure is kept, said once for an agent (ADR-0036,
+ * ADR-0039, amended 17 October 2026). The operating model says where a role
+ * sits and whom it reports to, and an agent asked to place someone or to say
+ * who manages them reaches for the exception as readily as for the rule
+ * unless it is told which is which. Handed over on connect beside
+ * {@link OBSERVATIONS_METHOD} by every host, with no word about a screen in it.
+ */
+export const STRUCTURE_DEFAULTS =
+  'The organisation\'s structure keeps to its operating model, and so do you. Every structure relationship is read and written '
+  + 'by a tool: a unit\'s parent, type, served domains and extra slots (elements.list, element.describe, element.update), a unit '
+  + 'type\'s place and slots and a slot\'s line (unitTypes.list, unitType.update), a role\'s line and whether it manages '
+  + '(roles.list, role.update), a unit\'s own line and a holder\'s own (reportingLines.list, reportingLine.set, '
+  + 'assignment.update), who holds which role (assignments.list, assignment.add, assignment.update, assignment.end), how two '
+  + 'units interact (connections.list, relation.add) and a plan\'s moves of a unit (plans.list, plan.move). '
+  + 'Keep to the model\'s defaults: place people in the roles their unit\'s slots give, and let reporting lines follow the '
+  + 'role\'s and the unit type\'s lines and nesting. Three things are exceptions to the model — a unit\'s own line '
+  + '(reportingLine.set), a holder\'s own line (reportsTo on assignment.add or assignment.update) and a role held outside the '
+  + 'unit\'s slots — and you write one only when the person you act for explicitly asks for that exception, never because it '
+  + 'is quicker; say in your answer that it is one. Where the model says something that is not true for many people, the '
+  + 'model is what to change (role.update, unitType.update), and that is the person\'s decision: ask.'

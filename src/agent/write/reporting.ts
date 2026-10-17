@@ -6,7 +6,9 @@
  * taken away, as the unit's inspector sets and takes one away — one command
  * each, under the agent's name, in the scope that keeps the unit — and the
  * refusal both a unit's line and a unit type's slot meet where a solid line
- * would close a loop.
+ * would close a loop. A holder's own lines (ADR-0039, amended 17 October
+ * 2026) are read here too, for `assignment.add` and `assignment.update`:
+ * each target found in the tree and addressed by the scope that keeps it.
  *
  * What a request names is checked against what is there: the unit is a unit
  * this scope keeps, the roles are the organisation's, and the unit reported
@@ -22,8 +24,9 @@ import type { LineKind } from '../../model/operatingModel'
 import { refuseUnitLine, unitLinesWith, unitLinesWithout } from '../../model/reporting'
 import type { LineRefusal } from '../../model/reporting'
 import type { DesignElement, UnitReportingLine } from '../../model/types'
-import { isUnit } from '../../model/units'
-import type { Organisation } from '../../model/units'
+import { isUnit, personOf } from '../../model/units'
+import type { AssignmentReportingLine, Organisation } from '../../model/units'
+import { registerOf, resolvePerson } from '../../people/shown'
 import { assignmentsNow, organisationNow } from '../assignments'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -82,6 +85,64 @@ function scopeOfUnit(view: WriteView, unitId: string): string | undefined {
   return view.tree?.units?.().find((one) => one.unit.id === unitId && one.scope !== view.scopePath)?.scope
 }
 
+/** A target as a call gives it: a unit, its role, and — for a line to one holder — the person. */
+type GivenTarget = { unitId: string; roleId: string; person?: string }
+
+/**
+ * Where a line a call gives lands, addressed: the unit found anywhere in the
+ * tree by the scope that keeps it, the role the organisation's, and a person
+ * named (ADR-0039, amended 17 October 2026) one who holds that role in that
+ * unit on some day — a merged id written as the entry it was merged into.
+ */
+function targetOf(view: WriteView, given: GivenTarget, where: string): UnitReportingLine['to'] | AgentAnswer {
+  const scope = scopeOfUnit(view, given.unitId)
+  if (scope === undefined) return refused('agent.unknownId', `${where}unit ${given.unitId}, a unit anywhere in the organisation (assignments.list)`)
+  const roles = rolesKnown(view)
+  if (roles && !roles.some((role) => role.id === given.roleId)) return refused('agent.unknownId', `${where}role ${given.roleId}`)
+  if (given.person === undefined) return { scope, unit: given.unitId, role: given.roleId }
+  const people = view.people?.()
+  const person = people ? resolvePerson(given.person, registerOf(people))?.id ?? given.person : given.person
+  const holds = organisationOfView(view).assignments.some((one) => one.unitId === given.unitId && one.roleId === given.roleId && personOf(one) === person)
+  if (!holds) {
+    return refused('agent.badArguments', `${where}${given.person} holds no ${given.roleId} in ${given.unitId}: a line to one person names a holder of that role there (assignments.list)`)
+  }
+  return { scope, unit: given.unitId, role: given.roleId, person }
+}
+
+/**
+ * A holder's own lines as a call gives them: each target a unit somewhere in
+ * the tree and a role the organisation holds, addressed by the scope that
+ * keeps the unit; the days checked; at most one of each kind.
+ */
+export function personLinesOf(given: unknown, view: WriteView): AssignmentReportingLine[] | AgentAnswer {
+  if (!Array.isArray(given)) return []
+  const lines: AssignmentReportingLine[] = []
+  for (const [at, raw] of given.entries()) {
+    const one = raw as { to: GivenTarget; kind?: unknown; from?: unknown; until?: unknown }
+    const to = targetOf(view, one.to, `reportsTo[${at}]: `)
+    if (!to || 'ok' in to) return to as AgentAnswer
+    const days = daysOf(one as Args)
+    if ('ok' in days) return days
+    const kind = kindOf(one.kind)
+    if (lines.some((line) => line.kind === kind)) return refused('agent.badArguments', `reportsTo says two ${kind} lines: at most one of each kind`)
+    lines.push({ to, kind, ...days })
+  }
+  return lines
+}
+
+/** A holder's own lines as an answer says them: each target by id, with the scope that keeps its unit. */
+export function personLinesAnswer(lines: readonly AssignmentReportingLine[]) {
+  return lines.map((line) => ({
+    to: targetAnswer(line.to), kind: line.kind,
+    ...(line.from !== undefined ? { from: line.from } : {}), ...(line.until !== undefined ? { until: line.until } : {}),
+  }))
+}
+
+/** A target as an answer says it: by id, with the scope that keeps its unit, and the person where one is named. */
+export function targetAnswer(to: NonNullable<UnitReportingLine['to']>) {
+  return { scope: to.scope, unitId: to.unit, roleId: to.role, ...(to.person !== undefined ? { person: to.person } : {}) }
+}
+
 export const setReportingLine: Handler = (args, view) => {
   const unitId = args.unitId as string
   const unit = unitHere(view, unitId)
@@ -92,13 +153,12 @@ export const setReportingLine: Handler = (args, view) => {
   if (!known(roleId)) return refused('agent.unknownId', `role ${roleId}`)
   const days = daysOf(args)
   if ('ok' in days) return days
-  const given = args.to as { unitId: string; roleId: string } | undefined
+  const given = args.to as GivenTarget | undefined
   let to: UnitReportingLine['to']
   if (given) {
-    const scope = scopeOfUnit(view, given.unitId)
-    if (scope === undefined) return refused('agent.unknownId', `unit ${given.unitId}: a unit anywhere in the organisation (assignments.list)`)
-    if (!known(given.roleId)) return refused('agent.unknownId', `role ${given.roleId}`)
-    to = { scope, unit: given.unitId, role: given.roleId }
+    const found = targetOf(view, given, '')
+    if (!found || 'ok' in found) return found as AgentAnswer
+    to = found
   }
   const line: UnitReportingLine = { role: roleId, ...(to ? { to } : {}), kind: to ? kindOf(args.kind) : 'solid', ...days }
   const organisation = organisationOfView(view)
@@ -106,7 +166,11 @@ export const setReportingLine: Handler = (args, view) => {
   if (refusal) return lineRefused(refusal, organisation)
   return {
     command: { type: 'element.update', id: unitId, patch: { reportingLines: unitLinesWith(unit.reportingLines, line) }, origin: 'agent' },
-    answer: json({ unitId, roleId, ...(to ? { kind: line.kind, to: { scope: to.scope, unitId: to.unit, roleId: to.role } } : { by: 'nesting' }), ...days }),
+    answer: json({
+      unitId, roleId, ...(to ? { kind: line.kind, to: targetAnswer(to) } : { by: 'nesting' }), ...days,
+      // A unit's own line is an exception to the model's lines: said, so the answer to the person can say so too.
+      override: true,
+    }),
   }
 }
 
