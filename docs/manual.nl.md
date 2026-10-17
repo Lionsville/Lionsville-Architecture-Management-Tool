@@ -2123,19 +2123,36 @@ rol waarvan de houder de mensen van de eenheid en van de eenheden eronder
 aanstuurt. De app houdt die markering bij; een uitvoering die weet wie mensen
 zijn, kan er een recht aan verbinden.
 
-**Rapporteert aan**, onder elke rol die een eenheidstype heeft, zegt waaraan
-de mensen in die rol rapporteren in elke eenheid van het type: aan de mensen
-in een andere rol in de dichtstbijzijnde eenheid erboven die haar heeft, of —
-waar geen eenheid erboven haar heeft — in de ene eenheid van de organisatie
-die haar heeft. Zo rapporteert de technologieverantwoordelijke van een
-business unit aan het hoofd technologie in de technologieafdeling, terwijl de
-rest van de business unit rapporteert zoals ze genest is. Een lijn is die van
-een **Lijnmanager** — de mensen in die rol sturen hen aan, in plaats van de
-nesting — of **Functioneel**: getoond, en beslist niets. **Vanaf** en **Tot
-en met** geven haar dagen. **Via de nesting** haalt de lijn weg. Een lijn van
-een lijnmanager waardoor een keten van managers terugkomt waar ze begon,
-wordt daar meteen geweigerd, met de reden; een eenheid kan het voor zichzelf
-anders zeggen (*Eenheden en de mensen erin*).
+**Rapporteert aan**, op een rol, zegt waaraan de mensen in die rol
+rapporteren, waar de rol ook gehouden wordt: aan de mensen in een andere rol,
+**in dezelfde eenheid** — een developer aan de tech lead van het eigen team,
+een scrum master aan de product owner — of **in de dichtstbijzijnde eenheid
+erboven** die de rol heeft, anders in de ene eenheid van de organisatie die
+haar heeft. Zo rapporteert de technologiemanager van een business unit aan
+het hoofd technologie in de technologieafdeling, één keer gezegd op de rol
+technologiemanager, terwijl de rest van de business unit rapporteert zoals ze
+genest is. Er zijn twee rijen: een lijn van een **Lijnmanager** — de mensen
+in die rol sturen hen aan, in plaats van de nesting — en een
+**Functionele**: getoond, en beslist niets. Een rol kan beide hebben, zoals
+in een matrixorganisatie. **Vanaf** en **Tot en met** geven een lijn dagen.
+**Rapporteren aan haar**, onder de rijen, noemt de rollen die aan deze
+rapporteren.
+
+Dezelfde twee rijen staan onder elke rol die een eenheidstype heeft, en zeggen
+wat de rol zegt tot het type het voor zijn eigen eenheden anders zegt: een
+andere rol, of **Via de nesting in dit type**, wat de lijn van de rol daar
+weghaalt. Een eenheid zegt het voor zichzelf anders in haar inspector
+(*Eenheden en de mensen erin*). Een lijn van een lijnmanager waardoor een
+keten van managers terugkomt waar ze begon, en een lijn van een rol naar
+zichzelf in dezelfde eenheid, worden daar meteen geweigerd, met de reden.
+
+**De structuur tekent de lijnen** tussen de rollen op haar kaarten: op de
+kaart zelf voor een lijn in dezelfde eenheid, naar de kaarten erboven die de
+rol hebben, anders naar elke kaart die haar heeft — in de waarschuwingskleur
+waar een eenheid zou moeten zeggen welke. Doorgetrokken voor die van een
+lijnmanager, gestippeld voor een functionele. Kies een rol en haar lijnen
+lichten op, met de rollen waaraan ze rapporteert en de rollen die aan haar
+rapporteren; de rest vervaagt.
 
 **Regels die het model leest** zeggen wiens rol waarvoor instaat: de eigenaar
 van een applicatie is wie een gekozen rol heeft in de eenheid waar de
@@ -2275,20 +2292,23 @@ De onderdelen van een eenheid, in die volgorde:
   daar uitkomt, gemarkeerd *via een lijn*. **waarom?** zegt wat dat betekent:
   de app zegt het en geeft er geen rechten mee.
 - **Rapportagelijnen**: elke rol van de eenheid die vandaag een
-  rapportagelijn heeft, waar ze uitkomt — de rol en de eenheid — of ze van een
-  lijnmanager is of functioneel, of ze van het eenheidstype is of van deze
-  eenheid zelf, en *niemand vervult haar* waar niemand de rol vervult waar ze
-  uitkomt. **Overschrijven…** laat de rol wijzen naar een rol in welke eenheid
-  ook, lijnmanager of functioneel, voor deze eenheid alleen, vanaf een dag en
-  tot en met een dag waar het niet voorgoed is; **Hier via de
-  nesting rapporteren** zegt dat de rol rapporteert zoals de eenheid genest
-  is, wat haar type ook zegt; **Die van het type gebruiken** haalt de eigen
-  lijn van de eenheid weer weg. **Een lijn voor…** geeft een rol zonder lijn
+  rapportagelijn heeft, waar ze uitkomt — de rol en de eenheid, of *in deze
+  eenheid* — of ze van een lijnmanager is of functioneel, of ze van de rol is,
+  van het eenheidstype of van deze eenheid zelf, en *niemand vervult haar*
+  waar niemand de rol vervult waar ze uitkomt. **Overschrijven…** laat de rol
+  wijzen naar een rol in welke eenheid ook — deze eenheid eerst in de lijst,
+  voor een lijn erbinnen — lijnmanager of functioneel, voor deze eenheid
+  alleen, vanaf een dag en tot en met een dag waar het niet voorgoed is;
+  **Hier via de nesting rapporteren** zegt dat de rol rapporteert zoals de
+  eenheid genest is, wat haar type of de rol ook zegt; **De eigen lijn van
+  deze eenheid weghalen** laat het type of de rol weer spreken. **Een lijn
+  voor…** geeft een rol zonder lijn
   er een van zichzelf. De mensen in een rol met een lijn van een lijnmanager
   worden aangestuurd door de mensen in de rol waar ze uitkomt, en dan door
   wie hen aanstuurt; de rest van de eenheid via de nesting. Een lijn van een
   rol naar zichzelf in dezelfde eenheid, en een die een lus zou sluiten,
-  worden geweigerd, met de reden.
+  worden geweigerd, met de reden. **Rapporteren hieraan** noemt de rollen
+  elders waarvan de lijn op een rol van deze eenheid uitkomt.
 - **Bedient**: de domeinen die ze bedient, de scope waarin ze is ingedeeld
   tenzij je anders zegt — maar nooit de organisatie: een eenheid die daar is
   ingedeeld bedient niets tot **+ Domein** haar er een geeft, en zegt **Geen
@@ -2565,10 +2585,14 @@ app open is en wordt nooit bewaard.
 **Rapportagelijnen** in de balk tekent de lijnen over de vakken, op de dag
 van het organogram: van de rij van elke rol met een lijn naar de rij van de
 rol waar ze uitkomt, doorgetrokken voor die van een lijnmanager en gestippeld
-voor een functionele. Een lijn naar een rol die niemand vervult, wordt in de
+voor een functionele; een lijn tussen twee rollen van één eenheid is een haak
+naast haar vak. Een lijn naar een rol die niemand vervult, wordt in de
 waarschuwingskleur getekend, en een die deel is van een lus in de
 foutkleur. Een lijn naar of van een eenheid die is weggevouwen, eindigt bij
-de vouw. Ze staat uit tot ze wordt aangezet, zolang de pagina open is.
+de vouw. Klik op een eenheid en haar lijnen lichten op terwijl de rest
+vervaagt. De schakelaar staat van begin af aan waar de organisatie een lijn
+heeft, en uit waar ze er geen heeft; hoe dan ook blijft ze staan zolang de
+pagina open is.
 
 Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
 balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het

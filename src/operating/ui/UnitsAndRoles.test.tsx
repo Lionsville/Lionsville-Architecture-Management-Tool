@@ -35,7 +35,8 @@ function acme(): Model {
     { type: 'role.add', role: { id: 'ro-owner', name: 'Domain owner', duties: [], manages: true } },
     { type: 'role.add', role: { id: 'ro-lead', name: 'Cluster lead', duties: [], manages: true } },
     { type: 'role.add', role: { id: 'ro-po', name: 'Product owner', duties: [] } },
-    { type: 'role.add', role: { id: 'ro-dev', name: 'Developer', duties: [] } },
+    // The developer reports to the team's own product owner, and answers to the cluster lead on the side (ADR-0039, amended).
+    { type: 'role.add', role: { id: 'ro-dev', name: 'Developer', duties: [], reportsTo: [{ role: 'ro-po', kind: 'solid', within: true }, { role: 'ro-lead', kind: 'dotted' }] } },
     { type: 'role.add', role: { id: 'ro-coach', name: 'Team coach', duties: [], until: '2026-12-31' } },
     { type: 'role.add', role: { id: 'ro-inc', name: 'Incident manager', duties: [] } },
     { type: 'unitType.add', unitType: { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [{ role: 'ro-owner', min: 1, max: 1 }] } },
@@ -192,6 +193,31 @@ describe('the units and roles drawn as a structure', () => {
     const lit = [...stage.querySelectorAll<SVGPathElement>('path')].map((one) => one.dataset.look)
     expect(lit.filter((one) => one === 'lit')).toHaveLength(1)
     expect(lit.filter((one) => one === 'dim')).toHaveLength(4)
+  })
+
+  it('draws the reporting lines between the cards\' role chips, lit at the role picked and dimmed away from it (ADR-0039 §7, amended)', () => {
+    // Every card and chip somewhere on the stage, so each line has two ends to measure.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const lane = Number(this.closest<HTMLElement>('[data-lane]')?.dataset.lane ?? 0)
+      const left = lane * 300
+      const top = this.dataset.testid?.startsWith('role-') ? 60 : 40
+      return { left, top, right: left + 236, bottom: top + 20, width: 236, height: 20, x: left, y: top, toJSON: () => ({}) }
+    })
+    show()
+    const stage = screen.getByTestId('structure-lanes')
+    const drawn = () => [...stage.querySelectorAll<SVGGElement>('[data-testid^="structure-role-line-"]')]
+    // The developer's two lines: within the team, and to the cluster lead above it.
+    expect(drawn().map((one) => [one.dataset.testid, one.dataset.within ?? '', one.dataset.look])).toEqual([
+      ['structure-role-line-solid', 'true', 'plain'], ['structure-role-line-dotted', '', 'plain'],
+    ])
+    expect(screen.getByTestId('structure-lines-legend')).toBeTruthy()
+    fireEvent.click(within(card('ut-cluster')).getByTestId('role-ro-lead'))
+    expect(drawn().map((one) => one.dataset.look)).toEqual(['dim', 'lit'])
+    // The roles at either end of the picked role's lines are lit.
+    expect(within(card('ut-team')).getByTestId('role-ro-dev').dataset.look).toBe('lit')
+    expect(within(card('ut-team')).getByTestId('role-ro-po').dataset.look).toBe('plain')
+    pickType('Team')
+    expect(drawn().map((one) => one.dataset.look)).toEqual(['lit', 'lit'])
   })
 
   it('says how many people hold a role, and where, before it is removed', async () => {

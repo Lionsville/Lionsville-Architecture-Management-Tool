@@ -2249,20 +2249,38 @@ eine Rolle, deren Inhaber die Menschen der Einheit und der Einheiten darunter
 führt. Die App hält das Kennzeichen; eine Ausgabe, die weiß, wer die Menschen
 sind, kann daraus ein Recht ableiten.
 
-**Berichtet an**, unter jeder Rolle, die ein Einheitstyp hat, sagt, an wen
-die Inhaber dieser Rolle in jeder Einheit des Typs berichten: an die Inhaber
-einer anderen Rolle in der nächsten Einheit darüber, die sie hat, oder — wo
-keine Einheit darüber sie hat — in der einen Einheit der Organisation, die sie
-hat. So berichtet die Technologieverantwortliche einer Geschäftseinheit an die
-Leitung Technologie in der Technologieabteilung, während der Rest der
-Geschäftseinheit so berichtet, wie sie verschachtelt ist. Eine Linie ist die
-einer **Führungskraft** — deren Inhaber führen sie, anstelle der
-Verschachtelung — oder **Fachlich**: gezeigt, und sie entscheidet nichts.
-**Ab** und **Bis einschließlich** geben ihr Tage. **Über die
-Verschachtelung** nimmt die Linie weg. Eine Linie einer Führungskraft, durch
-die eine Kette von Führungskräften dorthin zurückkehrt, wo sie begann, wird
-dort sofort abgelehnt, mit dem Grund; eine Einheit kann es für sich anders
-sagen (*Einheiten und die Menschen darin*).
+**Berichtet an**, auf einer Rolle, sagt, an wen die Inhaber dieser Rolle
+berichten, wo immer die Rolle gehalten wird: an die Inhaber einer anderen
+Rolle, **in derselben Einheit** — eine Entwicklerin an den Tech Lead des
+eigenen Teams, ein Scrum Master an die Product Ownerin — oder **in der
+nächsten Einheit darüber**, die die Rolle hat, sonst in der einen Einheit der
+Organisation, die sie hat. So berichtet die Technologiemanagerin einer
+Geschäftseinheit an die Leitung Technologie in der Technologieabteilung,
+einmal auf der Rolle Technologiemanager gesagt, während der Rest der
+Geschäftseinheit so berichtet, wie sie verschachtelt ist. Es gibt zwei
+Zeilen: die Linie einer **Führungskraft** — deren Inhaber führen sie,
+anstelle der Verschachtelung — und eine **Fachliche**: gezeigt, und sie
+entscheidet nichts. Eine Rolle kann beide haben, wie in einer
+Matrixorganisation. **Ab** und **Bis einschließlich** geben einer Linie Tage.
+**Berichten an sie**, unter den Zeilen, nennt die Rollen, die an diese
+berichten.
+
+Dieselben zwei Zeilen stehen unter jeder Rolle, die ein Einheitstyp hat, und
+sagen, was die Rolle sagt, bis der Typ es für seine eigenen Einheiten anders
+sagt: eine andere Rolle, oder **Über die Verschachtelung in diesem Typ**,
+was die Linie der Rolle dort wegnimmt. Eine Einheit sagt es für sich selbst
+in ihrem Inspektor anders (*Einheiten und die Menschen darin*). Eine Linie
+einer Führungskraft, durch die eine Kette von Führungskräften dorthin
+zurückkehrt, wo sie begann, und eine Linie von einer Rolle zu sich selbst in
+derselben Einheit werden dort sofort abgelehnt, mit dem Grund.
+
+**Die Struktur zeichnet die Linien** zwischen den Rollen auf ihren Karten: auf
+der Karte selbst für eine Linie in derselben Einheit, zu den Karten darüber,
+die die Rolle haben, sonst zu jeder Karte, die sie hat — in der Warnfarbe, wo
+eine Einheit sagen müsste, welche. Durchgezogen für die einer Führungskraft,
+gepunktet für eine fachliche. Wählen Sie eine Rolle, und ihre Linien leuchten
+auf, mit den Rollen, an die sie berichtet, und den Rollen, die an sie
+berichten; der Rest verblasst.
 
 **Regeln, die das Modell liest** sagen, wessen Rolle wofür einsteht:
 Verantwortlich für eine Anwendung ist, wer eine gewählte Rolle in der Einheit
@@ -2407,21 +2425,24 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   wer dort ankommt, markiert *über eine Linie*. **warum?** sagt, was das
   bedeutet: Die App sagt es und gewährt daraus nichts.
 - **Berichtslinien**: jede Rolle der Einheit, die heute eine Berichtslinie
-  hat, wo sie endet — die Rolle und die Einheit —, ob sie die einer
-  Führungskraft oder fachlich ist, ob sie vom Einheitstyp ist oder von dieser
-  Einheit selbst, und *niemand hat sie inne*, wo niemand die Rolle innehat,
-  bei der sie endet. **Überschreiben …** richtet die Rolle auf eine Rolle in
-  irgendeiner Einheit, Führungskraft oder fachlich, nur für diese Einheit, ab
-  einem Tag und bis einschließlich einem Tag, wo es nicht für immer gilt;
-  **Hier über die Verschachtelung berichten** sagt, dass die Rolle so
-  berichtet, wie die Einheit verschachtelt ist, was ihr Typ auch sagt; **Die
-  des Typs verwenden** nimmt die eigene Linie der Einheit wieder weg. **Eine
+  hat, wo sie endet — die Rolle und die Einheit, oder *in dieser Einheit* —,
+  ob sie die einer Führungskraft oder fachlich ist, ob sie von der Rolle ist,
+  vom Einheitstyp oder von dieser Einheit selbst, und *niemand hat sie inne*,
+  wo niemand die Rolle innehat, bei der sie endet. **Überschreiben …**
+  richtet die Rolle auf eine Rolle in irgendeiner Einheit — diese Einheit
+  zuerst in der Liste, für eine Linie in ihr —, Führungskraft oder fachlich,
+  nur für diese Einheit, ab einem Tag und bis einschließlich einem Tag, wo es
+  nicht für immer gilt; **Hier über die Verschachtelung berichten** sagt,
+  dass die Rolle so berichtet, wie die Einheit verschachtelt ist, was ihr Typ
+  oder die Rolle auch sagt; **Die eigene Linie dieser Einheit wegnehmen**
+  lässt den Typ oder die Rolle wieder sprechen. **Eine
   Linie für …** gibt einer Rolle ohne Linie eine eigene. Die Inhaber einer
   Rolle mit der Linie einer Führungskraft werden von den Inhabern der Rolle
   geführt, bei der sie endet, und dann von dem, der diese führt; der Rest der
   Einheit über die Verschachtelung. Eine Linie von einer Rolle zu sich selbst
   in derselben Einheit und eine, die eine Schleife schließen würde, werden
-  abgelehnt, mit dem Grund.
+  abgelehnt, mit dem Grund. **Berichten hierher** nennt die Rollen anderswo,
+  deren Linie bei einer Rolle dieser Einheit endet.
 - **Bedient**: die Domänen, die sie bedient, der Bereich, in dem sie
   eingeordnet ist, wenn Sie nichts anderes sagen — aber nie die Organisation:
   eine dort eingeordnete Einheit bedient nichts, bis **+ Domäne** ihr eine
@@ -2708,11 +2729,14 @@ der Schalter, solange die App offen ist, und wird nie gespeichert.
 **Berichtslinien** in der Leiste zeichnet die Linien über die Kästen, am Tag
 des Organigramms: von der Zeile jeder Rolle mit einer Linie zur Zeile der
 Rolle, bei der sie endet, durchgezogen für die einer Führungskraft und
-gepunktet für eine fachliche. Eine Linie zu einer Rolle, die niemand innehat,
-wird in der Warnfarbe gezeichnet, und eine, die Teil einer Schleife ist, in
-der Fehlerfarbe. Eine Linie zu oder von einer weggefalteten Einheit endet an
-der Faltung. Sie ist aus, bis sie eingeschaltet wird, solange die Seite offen
-ist.
+gepunktet für eine fachliche; eine Linie zwischen zwei Rollen einer Einheit
+ist ein Haken neben ihrem Kasten. Eine Linie zu einer Rolle, die niemand
+innehat, wird in der Warnfarbe gezeichnet, und eine, die Teil einer Schleife
+ist, in der Fehlerfarbe. Eine Linie zu oder von einer weggefalteten Einheit
+endet an der Faltung. Klicken Sie eine Einheit an, und ihre Linien leuchten
+auf, während der Rest verblasst. Der Schalter ist von Anfang an an, wo die
+Organisation eine Linie hat, und aus, wo sie keine hat; so oder so bleibt er,
+solange die Seite offen ist.
 
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
 in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag

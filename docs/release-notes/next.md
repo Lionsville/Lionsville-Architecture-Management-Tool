@@ -46,21 +46,32 @@ and list bright spots too. In Dutch it is a *lichtpunt*, in German a
 *Lichtblick*.
 
 **Reporting lines.** A role in a unit can report somewhere other than up the
-way the units are nested — a business unit's technology lead to the head of
-technology, say, while the rest of the business unit reports to its own head.
-Say it once on the unit type: under each role on the **Operating model** page,
-**Reports to** names the role, **Line manager** or **Functional**, and the days
-it runs; every unit of the type then reports to the nearest unit above that
-has that role, or to the one unit that has it. A unit that differs says so in
-its inspector, under **Reporting lines**: **Override…**, **Report by nesting
-here** and **Use the type's**. A line manager's line decides who manages the
-people in the role — **Who manages it** says *by line* — and a functional one
-is shown and decides nothing. **Reporting lines** on the organisation chart's
-bar draws them over the boxes. A line that would make a chain of managers
-loop back is refused when you write it, and the checks name a loop a plan
-makes later, a line that lands nowhere or in more than one place, and one to a
-role nobody holds. An agent sets them with `reportingLine.set` and reads them
-with `reportingLines.list`.
+way the units are nested — a business unit's technology manager to the head
+of technology, say, while the rest of the business unit reports to its own
+head. Say it once **on the role**, on the **Operating model** page: **Reports
+to** names the role reported to, **in the same unit** — a developer to the
+team's own tech lead, a scrum master to its product owner — or in the nearest
+unit above that has it, else the one unit that has it; a **Line manager**'s
+line and a **Functional** one may stand side by side, as they do in a matrix
+organisation, each with the days it runs. A unit type says otherwise for its
+own units under the role it holds, or **By nesting in this type**; a unit that
+differs says so in its inspector, under **Reporting lines**, with **Override…**
+offering the unit itself first. The structure on the Operating model page
+draws the lines between its roles, and picking a role lights its lines, the
+roles it reports to and the roles that report to it — **Reported to by** says
+the same in its inspector. The organisation chart's **Reporting lines** are on
+from the start where the organisation has any, a line within a unit is a hook
+beside its box, and pressing a unit lights its lines. A unit's inspector says
+whose each line is and who reports into the unit; the People page says where
+each role held reports. A line manager's line decides who manages the people
+in the role — **Who manages it** says *by line* — and a functional one is
+shown and decides nothing. A line that would make a chain of managers loop
+back, or point a role at itself in the same unit, is refused when you write
+it, and the checks name a loop a plan makes later, a line that lands nowhere
+or in more than one place, and one to a role nobody holds. An agent sets them
+with `reportsTo` on `role.add`, `role.update`, `unitType.add` and
+`unitType.update`, with `reportingLine.set` on a unit, and reads them with
+`reportingLines.list`, filtered by unit, role or the unit reported into.
 
 **A scope is picked by its path.** Two scopes may have the same name under
 different parents, and a list of bare names showed them as one row twice.

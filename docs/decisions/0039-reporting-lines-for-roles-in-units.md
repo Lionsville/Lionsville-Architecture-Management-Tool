@@ -1,7 +1,9 @@
 # ADR-0039 — Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit
 
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0);
-  implemented, 16 October 2026 (3.7.0, not yet released)
+  implemented, 16 October 2026 (3.7.0, not yet released); amended,
+  17 October 2026 — a line is said on the role as well, a line may land in
+  the same unit, and the screens draw them (as built the same day, below)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Supersedes: ADR-0036 §12, in part — who manages a unit's people is no
@@ -312,3 +314,108 @@ unit's head reach a lead who reports elsewhere, and not reach the role a line
 brings in. `elsewhere` and `lines` are optional on the type, so a reach built
 before reads as one with no lines.
 
+
+## Amended, 17 October 2026 — said on the role, landing in the same unit, and drawn where roles are
+
+*Accepted and built the same day, before 3.7.0 is released; the scope format
+stays 13.*
+
+### Context
+
+A walk of the first build found the lines where the model keeps them and
+nowhere else. A line said on a unit type's slot was visible only in that
+type's inspector, under the slot; the Operating model page drew the types'
+structure and not a single reporting line, and the chart drew them only once
+a switch was found. Somebody who thinks *a technology manager reports to the
+head of technology* had to find the unit type that holds the technology
+manager and say it there, once per type.
+
+Two things the model could not say well: a line **within a unit** — a
+developer to the team's own tech lead, a scrum master to its product owner —
+landed, by §2, on the nearest unit above that holds the role or on the one
+unit that holds it, so with several teams it was ambiguous; and a role with
+**both** a line manager and a functional manager — a matrix organisation —
+could say the second only on each unit, since a slot said one line.
+
+### Decision
+
+1. **A line is said at three places, the nearest winning kind by kind.** A
+   **role** says where its holders report wherever the role is held
+   (`Role.reportsTo`); a **unit type's slot** says otherwise for the units of
+   that type (`RoleSlot.reportsTo`); a **unit** says otherwise for itself
+   (`reportingLines`, as §3). Each place says at most one line of each kind,
+   a line manager's and a functional one, so both stand side by side wherever
+   each is said. A slot's line with no role says the holders report **by
+   nesting** in units of that type, whatever the role says — as a unit's line
+   with no target does for the unit.
+2. **A line may land in the same unit** (`within: true`): the target is
+   another role of the unit the holders are in, and the line lands there or
+   nowhere. A line without it lands as §2 says: the nearest unit above that
+   holds the role, else the one unit that does. A role does not report to
+   itself in the same unit; that is refused where it is written
+   (`reportingLine.self`), as a unit's line to itself is.
+3. **The lines are drawn where roles are.** The Operating model page draws
+   them between the role chips on its cards — on the card itself for a line
+   within, to the types above it in the structure that hold the role, else to
+   every type that holds it, in the warning colour where a unit would have to
+   say which — and picking a role lights its lines, the roles it reports to
+   and the roles that report to it; the role's inspector sets its lines and
+   says who reports to it. The organisation chart's overlay is on from the
+   start where the organisation says any line, draws a line within a unit as
+   a hook beside its box, and lights the lines of the unit picked. A unit's
+   inspector says whose each line is — the role's, the type's or the unit's
+   own — and who reports into the unit; the People page says under each role
+   held where it reports.
+4. **Who manages, the reach and the right are unchanged in meaning** (§4,
+   §9): a solid line decides who manages, wherever it was said; a dotted line
+   decides nothing. Only where a line comes from grew.
+
+### Consequences
+
+* Good: the line is said once where it is thought of, and seen wherever the
+  role is.
+* Good: a team's internal lines and a matrix's two managers are each one
+  line, said once.
+* Neutral: a role's line lands nowhere in a unit that holds the role but not
+  the target — a business unit with members and no team lead — and that is a
+  finding there, as a type's dangling line was.
+* Bad: a line's precedence has three places to look. Each screen that shows a
+  line says where it was said.
+
+## As built, 17 October 2026: the amendment
+
+**The model.** `ReportsTo` gains `within` and an optional `role`; a role's
+`reportsTo` and a slot's are `ReportsToSaid`, one line or a list, read with
+`linesSaid` and set kind by kind with `linesWith`. `reportingLinesOn` reads,
+for each kind, the unit's own line, else the slot's, else the role's, and
+says `source: 'role' | 'type' | 'unit'` and `within` on each; `landing`
+lands a line within on the unit itself where it holds the target role, and
+nowhere otherwise. `linesHolding` answers what holds for a slot, and
+`linesInto` who reports to a role across the model. `refuseRoleLines` asks of
+a role's lines what `refuseSlotLine` asks of a slot's, and both refuse a line
+to the role itself within. `daysFrom` reads a role's lines as it reads a
+slot's, so a loop a role's later line makes is found on its day.
+
+**The files.** `_operating/unit-types.json` reads a slot's `reportsTo` as one
+object, as the first 13 folders wrote it, or as a list; `_operating/roles.json`
+reads a role's the same way. Written as held. No format turn.
+
+**The screens.** `LinesEditor` is the one editor, two rows — line manager,
+functional — each a role, *Where* (in the same unit, or in the nearest unit
+above else the one unit that has the role) and the days; the role's inspector
+draws it under *Reports to* with *Reported to by* beneath, and each slot draws
+it with the role's line as what holds until the slot says otherwise and *By
+nesting in this type* as its way of taking that away. `roleLines` works out
+the lines between the cards' chips and `StructureLanes` measures and draws
+them over the cards; `pickLooks` lights them. `chartLines` keeps a line whose
+two ends are rows of one box, and the overlay draws it as a hook and lights
+the picked unit's lines; the switch starts on where `hasReportingLines`. The
+unit's *Reporting lines* list says the role's, lists *Reported to by*, and its
+*Override…* offers the unit itself first and leaves the role's own out. The
+People page's held roles say *reports to* and *functionally to*.
+
+**The agent.** `role.add` and `role.update` take `reportsTo`, a list of
+lines; a slot's `reportsTo` is the same list, one line of each kind at most,
+`within` where said, a line with no `roleId` on a slot saying by nesting.
+`roles.list`, `unitTypes.list` and `reportingLines.list` answer them, the last
+with `said` and `within`, filtered by `unitId`, `roleId` or `toUnitId`.

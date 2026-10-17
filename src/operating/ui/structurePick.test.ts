@@ -3,7 +3,8 @@
 
 /** What picking a unit type or a role on the structure lights, and what it dims. */
 import { describe, expect, it } from 'vitest'
-import type { UnitType } from '../../model/operatingModel'
+import type { Role, UnitType } from '../../model/operatingModel'
+import type { RoleLine } from './roleLines'
 import { pickLooks } from './structurePick'
 
 const types: UnitType[] = [
@@ -41,5 +42,32 @@ describe('picking on the structure', () => {
     expect(looks.organisation).toBe('dim')
     expect([looks.role('coach'), looks.role('po')]).toEqual(['picked', 'plain'])
     expect(looks.line({ type: 'team', sitsIn: 'cluster' })).toBe('plain')
+  })
+})
+
+describe('picking with reporting lines on the structure (ADR-0039 §7, amended)', () => {
+  const roles: Role[] = [
+    { id: 'owner', name: 'Owner', duties: [] }, { id: 'lead', name: 'Lead', duties: [], reportsTo: [{ role: 'owner', kind: 'solid' }] },
+    { id: 'po', name: 'PO', duties: [] }, { id: 'coach', name: 'Coach', duties: [], reportsTo: [{ role: 'po', kind: 'dotted', within: true }] },
+  ]
+  const line = (from: [string, string], to: [string, string]): RoleLine => ({
+    key: `${from.join('/')}>${to.join('/')}`, kind: 'solid', source: 'role', within: false, ambiguous: false,
+    from: { typeId: from[0], roleId: from[1] }, to: { typeId: to[0], roleId: to[1] },
+  })
+
+  it('lights, for a role, the roles it reports to and the roles that report to it, and the lines at either end', () => {
+    const looks = pickLooks(types, { kind: 'role', id: 'po' }, roles)
+    expect([looks.role('po'), looks.role('coach'), looks.role('owner'), looks.role('lead')]).toEqual(['picked', 'lit', 'plain', 'plain'])
+    expect(looks.roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('lit')
+    expect(looks.roleLine(line(['cluster', 'lead'], ['domain', 'owner']))).toBe('dim')
+    const lead = pickLooks(types, { kind: 'role', id: 'lead' }, roles)
+    expect([lead.role('owner'), lead.role('po')]).toEqual(['lit', 'plain'])
+  })
+
+  it('lights, for a type, the lines from and to its cards', () => {
+    const looks = pickLooks(types, { kind: 'unitType', id: 'cluster' }, roles)
+    expect(looks.roleLine(line(['cluster', 'lead'], ['domain', 'owner']))).toBe('lit')
+    expect(looks.roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('dim')
+    expect(pickLooks(types, undefined, roles).roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('plain')
   })
 })

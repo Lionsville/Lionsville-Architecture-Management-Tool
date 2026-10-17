@@ -1954,18 +1954,33 @@ each responsibility. **Manages its unit** marks a role whose holder manages
 the people of the unit and of the units below it. The app keeps the mark; a
 build that knows who people are may grant a right from it.
 
-**Reports to**, under each role a unit type holds, says where the holders of
-that role report in every unit of the type: to the holders of another role in
-the nearest unit above that has it, or — where no unit above has it — in the
-one unit of the organisation that has it. So a business unit's technology
-lead can report to the head of technology in the technology department, while
-the rest of the business unit reports up the way it is nested. A line is a
-**Line manager**'s — its holders manage them, in place of the nesting — or
-**Functional**: shown, and deciding nothing. **From** and **Until** give it
-days. **By nesting** takes the line away. A line manager's line that would
-make a chain of managers come back to where it started is refused there and
-then, and said why; a unit may say otherwise for itself (*Units and the
-people in them*).
+**Reports to**, on a role, says where the holders of that role report
+wherever the role is held: to the holders of another role, either **in the
+same unit** — a developer to the team's own tech lead, a scrum master to its
+product owner — or **in the nearest unit above** that has the role, else in
+the one unit of the organisation that has it. So a business unit's technology
+manager reports to the head of technology in the technology department,
+said once on the technology manager's role, while the rest of the business
+unit reports up the way it is nested. There are two rows: a **Line
+manager**'s line — its holders manage them, in place of the nesting — and a
+**Functional** one: shown, and deciding nothing. A role may have both, as it
+does in a matrix organisation. **From** and **Until** give a line days.
+**Reported to by**, under the rows, lists the roles that report to this one.
+
+The same two rows sit under each role a unit type holds, and say what the
+role says until the type says otherwise for its own units: another role, or
+**By nesting in this type**, which takes the role's line away there. A unit
+says otherwise for itself in its inspector (*Units and the people in them*).
+A line manager's line that would make a chain of managers come back to where
+it started, and a line from a role to itself in the same unit, are refused
+there and then, and said why.
+
+**The structure draws the lines** between the roles on its cards: on the card
+itself for a line in the same unit, to the cards above it that hold the role,
+else to every card that holds it — in the warning colour where a unit would
+have to say which. Solid for a line manager's, dotted for a functional one.
+Pick a role and its lines light up, with the roles it reports to and the
+roles that report to it; the rest fades.
 
 **Rules the model reads** say whose role answers for what: an application's
 owner is the holder of a chosen role in the unit it belongs to, and a domain's
@@ -2094,14 +2109,17 @@ A unit's sections, in that order:
   marked *by line*. **why?** says what that means: the app says it and grants
   nothing from it.
 - **Reporting lines**: each role of the unit with a reporting line today,
-  where it lands — the role and the unit — whether it is a line manager's or
-  functional, whether it is the unit type's or this unit's own, and *nobody
-  holds it* where nobody holds the role it lands on. **Override…** points the
-  role at a role in any unit, line manager or functional, for this unit only,
-  from a day and until one where it is not for good;
+  where it lands — the role and the unit, or *in this unit* — whether it is a
+  line manager's or functional, whether it is the role's, the unit type's or
+  this unit's own, and *nobody holds it* where nobody holds the role it lands
+  on. **Override…** points the role at a role in any unit — this unit first
+  in the list, for a line within it — line manager or functional, for this
+  unit only, from a day and until one where it is not for good;
   **Report by nesting here** says the role reports up the way the unit is
-  nested, whatever its type says; **Use the type's** takes the unit's own
-  line away again. **A line for…** gives a role that has none one of its own.
+  nested, whatever its type or the role says; **Take this unit's own line
+  away** lets the type or the role say again. **A line for…** gives a role
+  that has none one of its own. **Reported to by** lists the roles elsewhere
+  whose line lands on one of this unit's.
   The holders of a role with a line manager's line are managed by the holders
   of the role it lands on, and then by whoever manages those; the rest of the
   unit by nesting. A line from a role to itself in the same unit, and one that
@@ -2347,10 +2365,13 @@ switch lasts while the app is open and is never saved.
 
 **Reporting lines** on the bar draws the lines over the boxes, on the chart's
 day: from the row of each role with a line to the row of the role it lands
-on, solid for a line manager's and dotted for a functional one. A line to a
-role nobody holds is drawn in the warning colour, and one that is part of a
-loop in the error colour. A line to or from a unit folded away ends at the
-fold. It is off until it is turned on, for as long as the page is up.
+on, solid for a line manager's and dotted for a functional one; a line
+between two roles of one unit is a hook beside its box. A line to a role
+nobody holds is drawn in the warning colour, and one that is part of a loop
+in the error colour. A line to or from a unit folded away ends at the fold.
+Press a unit and its lines light up while the rest fade. The switch is on
+from the start where the organisation has any line, and off where it has
+none; either way it lasts while the page is up.
 
 The chart is drawn on a day, as a board is: the day control on the bar looks at
 any other day, and **Save** keeps that day on the chart (see *Time, and the day

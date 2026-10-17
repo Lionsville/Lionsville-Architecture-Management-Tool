@@ -17,6 +17,38 @@
     "    \"order\": 2,",
     "    \"purpose\": \"Does the team's work.\",",
     "    \"short\": \"M\"",
+    "  },",
+    "  {",
+    "    \"duties\": [],",
+    "    \"id\": \"head\",",
+    "    \"manages\": true,",
+    "    \"name\": \"Head\",",
+    "    \"order\": 3,",
+    "    \"purpose\": \"Answers for a department and the teams in it.\",",
+    "    \"short\": \"H\"",
+    "  },",
+    "  {",
+    "    \"duties\": [],",
+    "    \"id\": \"product-owner\",",
+    "    \"name\": \"Product owner\",",
+    "    \"order\": 4,",
+    "    \"purpose\": \"Decides what a team works on next.\",",
+    "    \"short\": \"PO\"",
+    "  },",
+    "  {",
+    "    \"duties\": [],",
+    "    \"id\": \"scrum-master\",",
+    "    \"name\": \"Scrum master\",",
+    "    \"order\": 5,",
+    "    \"purpose\": \"Keeps a team's way of working whole.\",",
+    "    \"reportsTo\": [",
+    "      {",
+    "        \"kind\": \"solid\",",
+    "        \"role\": \"product-owner\",",
+    "        \"within\": true",
+    "      }",
+    "    ],",
+    "    \"short\": \"SM\"",
     "  }",
     "]",
     ""
@@ -24,9 +56,24 @@
   "_operating/unit-types.json": [
     "[",
     "  {",
+    "    \"id\": \"department\",",
+    "    \"name\": \"Department\",",
+    "    \"order\": 1,",
+    "    \"purpose\": \"A part of the operation with its own head, made of teams.\",",
+    "    \"slots\": [",
+    "      {",
+    "        \"max\": 1,",
+    "        \"min\": 1,",
+    "        \"role\": \"head\"",
+    "      }",
+    "    ],",
+    "    \"top\": true,",
+    "    \"within\": []",
+    "  },",
+    "  {",
     "    \"id\": \"team\",",
     "    \"name\": \"Team\",",
-    "    \"order\": 1,",
+    "    \"order\": 2,",
     "    \"purpose\": \"A few people with one lead, doing one part of the work.\",",
     "    \"slots\": [",
     "      {",
@@ -37,10 +84,21 @@
     "      {",
     "        \"min\": 0,",
     "        \"role\": \"member\"",
+    "      },",
+    "      {",
+    "        \"max\": 1,",
+    "        \"min\": 0,",
+    "        \"role\": \"product-owner\"",
+    "      },",
+    "      {",
+    "        \"max\": 1,",
+    "        \"min\": 0,",
+    "        \"role\": \"scrum-master\"",
     "      }",
     "    ],",
-    "    \"top\": true,",
-    "    \"within\": []",
+    "    \"within\": [",
+    "      \"department\"",
+    "    ]",
     "  }",
     "]",
     ""
@@ -3343,13 +3401,14 @@
         "parentId": "employees"
       },
       {
-        "id": "dock-crew",
-        "kind": "actor",
-        "name": "Dock crew",
-        "lifecycle": "live",
-        "isManaged": true,
         "aspects": {},
+        "id": "dock-crew",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Dock crew",
         "order": 1,
+        "parentId": "terminal",
         "unitTypeId": "team"
       },
       {
@@ -3736,25 +3795,36 @@
         "parentId": "employees"
       },
       {
-        "id": "planning-desk",
-        "kind": "actor",
-        "name": "Planning desk",
-        "lifecycle": "live",
-        "isManaged": true,
         "aspects": {},
+        "id": "planning",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Planning",
+        "order": 2,
+        "unitTypeId": "department"
+      },
+      {
+        "aspects": {},
+        "id": "planning-desk",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Planning desk",
         "order": 3,
-        "unitTypeId": "team",
+        "parentId": "planning",
         "reportingLines": [
           {
+            "kind": "dotted",
             "role": "lead",
             "to": {
+              "role": "lead",
               "scope": "",
-              "unit": "dock-crew",
-              "role": "lead"
-            },
-            "kind": "dotted"
+              "unit": "dock-crew"
+            }
           }
-        ]
+        ],
+        "unitTypeId": "team"
       },
       {
         "aspects": {},
@@ -4026,6 +4096,16 @@
       },
       {
         "aspects": {},
+        "id": "terminal",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Terminal",
+        "order": 1,
+        "unitTypeId": "department"
+      },
+      {
+        "aspects": {},
         "id": "track-and-trace",
         "isManaged": false,
         "kind": "step",
@@ -4130,13 +4210,25 @@
         "parentId": "move"
       },
       {
-        "id": "yard-crew",
-        "kind": "actor",
-        "name": "Yard crew",
-        "lifecycle": "live",
-        "isManaged": true,
         "aspects": {},
+        "id": "yard-crew",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Yard crew",
         "order": 2,
+        "parentId": "terminal",
+        "reportingLines": [
+          {
+            "kind": "solid",
+            "role": "lead",
+            "to": {
+              "role": "head",
+              "scope": "",
+              "unit": "planning"
+            }
+          }
+        ],
         "unitTypeId": "team"
       }
     ],

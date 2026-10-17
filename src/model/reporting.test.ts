@@ -12,7 +12,8 @@ import { describe, expect, it } from 'vitest'
 import { managedReach, reachesAssignment, reachVia } from './managing'
 import type { Role, UnitType } from './operatingModel'
 import {
-  loopMadeBy, refuseSlotLine, refuseUnitLine, reportingFindings, reportingLoops, unitLinesWith, unitLinesWithout, withUnitLines,
+  loopMadeBy, refuseRoleLines, refuseSlotLine, refuseUnitLine, reportingFindings, reportingLoops, unitLinesWith, unitLinesWithout, withRoleLines,
+  withUnitLines,
 } from './reporting'
 import type { DesignElement } from './types'
 import { dottedLinesOf, managedBy, managersOf, reportingLinesOn, solidLineOf } from './units'
@@ -238,5 +239,63 @@ describe('a line written', () => {
     expect(unitLinesWith(unitLinesWith([solid], dotted), nesting)).toEqual([nesting, dotted])
     expect(unitLinesWithout([solid, dotted], 'ro-lead', 'dotted')).toEqual([solid])
     expect(unitLinesWithout([solid, dotted], 'ro-lead')).toEqual([])
+  })
+})
+
+describe('a line said on the role, and one in the same unit (ADR-0039 §2, §3, amended 17 October 2026)', () => {
+  /** Members report to the team lead of their own unit, wherever a member is; a team's lead answers to the chief architect on the side. */
+  const amended: Organisation = withRoleLines(organisation, 'ro-member', [{ role: 'ro-tl', kind: 'solid', within: true }])
+
+  it('lands a role\'s line in every unit that holds the role, on the unit itself where it says within', () => {
+    const lines = reportingLinesOn(amended, TODAY)
+    expect(lines.find((one) => one.unitId === 'checkout' && one.roleId === 'ro-member')).toMatchObject({
+      kind: 'solid', source: 'role', within: true, state: 'lands', to: { unitId: 'checkout', roleId: 'ro-tl' },
+    })
+    // A business unit holds members but no team lead: the line lands nowhere there, and nesting answers.
+    expect(lines.find((one) => one.unitId === 'retail' && one.roleId === 'ro-member')).toMatchObject({ source: 'role', state: 'dangling' })
+    expect(people(managersOf(amended, 'checkout', TODAY, 'ro-member'))).toEqual(['pe-tl:line', 'pe-lead:line', 'pe-hot:line', 'pe-ceo:nesting'])
+    expect(people(managersOf(amended, 'retail', TODAY, 'ro-member'))).toEqual(['pe-head:nesting', 'pe-lead:nesting', 'pe-hot:line', 'pe-ceo:nesting'])
+  })
+
+  it('lets a unit type\'s slot say otherwise for its units — another role, or by nesting — kind by kind', () => {
+    const teamSays = (said: UnitType['slots'][number]['reportsTo']): Organisation => ({
+      ...amended, unitTypes: amended.unitTypes.map((type) => (type.id !== 'ut-team' ? type : { ...type, slots: type.slots.map((slot) => (slot.role === 'ro-member' ? { ...slot, reportsTo: said } : slot)) })),
+    })
+    // The slot's dotted line stands beside the role's solid one.
+    const both = reportingLinesOn(teamSays([{ role: 'ro-chief', kind: 'dotted' }]), TODAY).filter((one) => one.unitId === 'checkout' && one.roleId === 'ro-member')
+    expect(both.map((one) => [one.kind, one.source, one.to?.roleId])).toEqual([['solid', 'role', 'ro-tl'], ['dotted', 'type', 'ro-chief']])
+    // The slot's solid line replaces the role's.
+    const other = reportingLinesOn(teamSays([{ role: 'ro-lead', kind: 'solid' }]), TODAY).filter((one) => one.unitId === 'checkout' && one.roleId === 'ro-member')
+    expect(other.map((one) => [one.source, one.to?.unitId, one.to?.roleId])).toEqual([['type', 'retail', 'ro-lead']])
+    // By nesting in this type: the role's line does not apply to teams, and is drawn as nesting there.
+    const nesting = teamSays([{ kind: 'solid' }])
+    expect(reportingLinesOn(nesting, TODAY).find((one) => one.unitId === 'checkout' && one.roleId === 'ro-member')).toMatchObject({ source: 'type', state: 'nesting' })
+    expect(people(managersOf(nesting, 'checkout', TODAY, 'ro-member'))).toEqual(['pe-tl:nesting', 'pe-lead:line', 'pe-hot:line', 'pe-ceo:nesting', 'pe-head:nesting'])
+    // One object on a slot still reads as one line, as the first 13 folders wrote it.
+    expect(reportingLinesOn(teamSays({ role: 'ro-chief', kind: 'dotted' }), TODAY).filter((one) => one.unitId === 'checkout' && one.roleId === 'ro-member')).toHaveLength(2)
+  })
+
+  it('gives the team lead reach over the members by the role\'s line, whether or not the lead manages by nesting', () => {
+    const noManage: Organisation = { ...amended, roles: amended.roles.map((role) => (role.id === 'ro-tl' ? { ...role, manages: false } : role)) }
+    const reach = managedReach(noManage, 'pe-tl', TODAY)!
+    expect(reachVia(reach, 'checkout', 'ro-member')).toBe('line')
+    expect(reachesAssignment(reach, { unitId: 'checkout', roleId: 'ro-member' }, new Set(['ro-tl']))).toBe(true)
+    expect(reachesAssignment(reach, { unitId: 'checkout', roleId: 'ro-tl' }, new Set(['ro-tl']))).toBe(false)
+  })
+
+  it('refuses a role\'s line to itself in the same unit, and a solid one that closes a loop, as a slot\'s', () => {
+    expect(refuseRoleLines(amended, 'ro-member', [{ role: 'ro-member', kind: 'solid', within: true }], TODAY)).toEqual({ refusal: 'reportingLine.self' })
+    // The chief executive reporting to the one team lead, who reports up to the head of technology, who is managed by the chief executive: a loop.
+    expect(refuseRoleLines(amended, 'ro-ceo', [{ role: 'ro-tl', kind: 'solid' }], TODAY)).toMatchObject({ refusal: 'reportingLine.loop' })
+    expect(refuseRoleLines(amended, 'ro-ceo', [{ role: 'ro-tl', kind: 'dotted' }], TODAY)).toBeUndefined()
+    // The team type's slot says where its lead reports, so a line on the lead's role changes nothing in a team, and closes no loop there.
+    expect(refuseRoleLines(amended, 'ro-tl', [{ role: 'ro-member', kind: 'solid', within: true }], TODAY)).toBeUndefined()
+    const slots = [{ role: 'ro-tl', min: 1, max: 1, reportsTo: [{ role: 'ro-tl', kind: 'solid' as const, within: true as const }] }, { role: 'ro-member', min: 0 }]
+    expect(refuseSlotLine(amended, 'ut-team', slots, TODAY, slots[0].reportsTo, 'ro-tl')).toEqual({ refusal: 'reportingLine.self' })
+  })
+
+  it('finds a role\'s line that lands nowhere, once per unit it is held in', () => {
+    const found = reportingFindings(amended, TODAY).flatMap((one) => (one.kind === 'dangling' && one.line.roleId === 'ro-member' ? [one.line.unitId] : []))
+    expect(found).toEqual(['retail', 'wholesale'])
   })
 })

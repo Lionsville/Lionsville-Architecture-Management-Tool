@@ -301,7 +301,7 @@ describe('the operating model\'s page', () => {
     // By nesting in this type keeps a line with no role; as the role says takes the slot's line away.
     await pick('solid', 0, 'By nesting in this type')
     expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: [{ kind: 'solid' }, { kind: 'dotted' }] }] } })
-    expect((sent.at(-1) as { patch: { slots: { reportsTo: object[] }[] } }).patch.slots[0].reportsTo[0]).not.toHaveProperty('role')
+    expect((sent.at(-1) as unknown as { patch: { slots: { reportsTo: object[] }[] } }).patch.slots[0].reportsTo[0]).not.toHaveProperty('role')
     await pick('solid', 0, 'As the role says: no line')
     await pick('dotted', 0, 'As the role says: no line')
     expect((sent.at(-1) as { patch: { slots: object[] } }).patch.slots[0]).not.toHaveProperty('reportsTo')

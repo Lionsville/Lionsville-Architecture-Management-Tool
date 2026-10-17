@@ -39,6 +39,36 @@ describe('what a person holds', () => {
       { id: 'as-2', scope: 'customer', unit: 'gone', role: 'ro-gone' },
     ])
   })
+
+  it('says where each role held reports on the day, the line manager\'s line and the functional one (ADR-0039)', () => {
+    const index = indexScopes([
+      {
+        path: '',
+        model: {
+          elements: [
+            { id: 'customer', kind: 'actor', name: 'Customer', unitTypeId: 'ut-domain', lifecycle: 'live', isManaged: false, aspects: {} },
+            { id: 'webshop', kind: 'actor', name: 'Webshop', unitTypeId: 'ut-team', parentId: 'customer', lifecycle: 'live', isManaged: false, aspects: {} },
+          ],
+          relations: [],
+          unitTypes: [
+            { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [{ role: 'ro-owner', min: 1 }] },
+            { id: 'ut-team', name: 'Team', within: ['ut-domain'], slots: [{ role: 'ro-po', min: 1 }, { role: 'ro-dev', min: 0 }] },
+          ],
+          roles: [
+            { id: 'ro-owner', name: 'Domain owner', duties: [], manages: true }, { id: 'ro-po', name: 'Product owner', duties: [] },
+            { id: 'ro-dev', name: 'Developer', duties: [], reportsTo: [{ role: 'ro-po', kind: 'solid', within: true }, { role: 'ro-owner', kind: 'dotted' }] },
+          ],
+          assignments: [{ id: 'as-1', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-femke' } }],
+        },
+      },
+    ])
+    expect(heldAssignments(index, new Set(['pe-femke']), '2026-10-17')).toEqual([{
+      id: 'as-1', scope: '', unit: 'Webshop', role: 'Developer',
+      reportsTo: [{ kind: 'solid', role: 'Product owner', unit: 'Webshop' }, { kind: 'dotted', role: 'Domain owner', unit: 'Customer' }],
+    }])
+    // Without a day, nothing is said about reporting.
+    expect(heldAssignments(index, new Set(['pe-femke']))[0]).not.toHaveProperty('reportsTo')
+  })
 })
 
 describe('what the rules make a person own', () => {
