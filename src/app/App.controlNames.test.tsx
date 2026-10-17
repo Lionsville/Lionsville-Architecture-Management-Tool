@@ -40,8 +40,12 @@ const example: ScopeSnapshot[] = exampleScopes(EXAMPLES[0]).map((scope) => {
 const root = example.find((scope) => scope.path === '')!
 root.model = {
   ...root.model,
+  // The shipped example has an operating model, a type and two roles, for the crews on its chart; the
+  // operating model's journey below starts from an organisation with none, so its empty state is met.
+  unitTypes: [],
+  roles: [],
   // One unit filed at the top that the sheet does not use, so its rail offers *All units*. Its type is
-  // nobody's: the operating model's journey below starts from an organisation with no unit types.
+  // nobody's, like the crews' once the types above are gone.
   elements: [...root.model.elements, {
     id: 'back-office', kind: 'actor', name: 'Back office', unitTypeId: 'ut-office', lifecycle: 'live', isManaged: false, aspects: {},
   }],

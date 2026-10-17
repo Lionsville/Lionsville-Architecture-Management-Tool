@@ -145,6 +145,7 @@ function ScopeComments({ parts, children }: { parts: WorkspaceParts; children: R
   const said = props.source.comments
   const mayComment = !readOnly || (parts.unreadable.length === 0 && said?.mayComment?.(path) === true)
   const mayModerate = mayComment && (said?.mayModerate?.(path) ?? !readOnly)
+  const pointed = parts.requests.pointedComment
   const value = useMemo<CommentsAccess>(() => ({
     scope: path,
     comments: comments ?? [],
@@ -153,7 +154,8 @@ function ScopeComments({ parts, children }: { parts: WorkspaceParts; children: R
     mayModerate,
     makeId: () => makeId('cm'),
     now: () => new Date().toISOString(),
-  }), [path, comments, dispatch, mayComment, mayModerate, makeId])
+    ...(pointed ? { pointed } : {}),
+  }), [path, comments, dispatch, mayComment, mayModerate, makeId, pointed])
   return <CommentsProvider value={value}>{children}</CommentsProvider>
 }
 
@@ -481,7 +483,7 @@ function useScreenParts(
   )
   const dialogs = useWorkspaceDialogs({
     session, settings: props.settings, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,
-    scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
+    scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}), pointComment: requests.pointComment,
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
   return { snapshots, toolbarRef, pageChrome, todayDay, today, pages, show, dialogs, analysis }

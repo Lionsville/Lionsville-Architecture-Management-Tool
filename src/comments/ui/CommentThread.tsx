@@ -25,7 +25,7 @@
  * thread is under every reader, and the renderer must not ride in the first
  * download behind it.
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
@@ -55,6 +55,9 @@ export type CommentThreadProps = {
   about: RecordKey
   /** The scope that keeps the record, where it is not the scope open: its thread is read and written there. */
   scope?: string
+  /** What that scope is called, and the way there: the notice then links to it. */
+  scopeLabel?: string
+  onOpenScope?: () => void
   /** What a record a comment came with is called (a merge's absorbed one, or the number it had before a move); its id where not said. */
   nameOf?: (from: CommentFrom) => string
   /** How to open the record a comment came with, where it can be: the name is then a link. */
@@ -64,12 +67,26 @@ export type CommentThreadProps = {
 /** What is being written: a new comment, a reply to one, or an edit of one. */
 type Writing = { kind: 'new' } | { kind: 'reply'; to: string } | { kind: 'edit'; id: string }
 
-export function CommentThread({ about, scope, nameOf, openFrom }: CommentThreadProps) {
+export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, openFrom }: CommentThreadProps) {
   const access = useComments()
   const { t } = useStrings()
   if (!access) return null
   if (scope !== undefined && scope !== access.scope) {
-    return <ThreadFrame count={undefined}><Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{t('comments.elsewhere')}</Typography></ThreadFrame>
+    return (
+      <ThreadFrame count={undefined}>
+        <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+          {t('comments.elsewhere')}
+          {onOpenScope && (
+            <>
+              {' '}
+              <Link component="button" type="button" onClick={onOpenScope} data-testid="comment-thread-open-scope" sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
+                {t('comments.openScope', { scope: scopeLabel ?? scope })}
+              </Link>
+            </>
+          )}
+        </Typography>
+      </ThreadFrame>
+    )
   }
   return <OpenThread access={access} about={about} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
 }
@@ -127,6 +144,7 @@ function OpenThread({ access, about, nameOf, openFrom }: {
     },
     ...(nameOf ? { nameOf } : {}),
     ...(openFrom ? { openFrom } : {}),
+    ...(access.pointed ? { pointed: access.pointed } : {}),
   }
 
   return (
@@ -212,6 +230,8 @@ function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, cle
 }
 
 type EntryActions = {
+  /** The comment a search hit pointed at, where it is one of these. */
+  pointed?: { readonly id: string; readonly nonce: number }
   me: PersonId | undefined
   names: PersonNames
   mayComment: boolean
@@ -238,8 +258,15 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
     ...(comment.edited && !gone ? [t('comments.edited')] : []),
     ...(comment.via ? [t('comments.via', { agent: comment.via })] : []),
   ].join(' · ')
+  // Pointed at by a search hit: marked, and brought into view once per pointing.
+  const pointed = actions.pointed?.id === comment.id ? actions.pointed : undefined
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (pointed) root.current?.scrollIntoView?.({ block: 'center' }) }, [pointed])
   return (
-    <Box data-testid={`comment-${comment.id}`} sx={{ display: 'grid', gap: 0.25 }}>
+    <Box
+      ref={root} data-testid={`comment-${comment.id}`} data-pointed={pointed ? 'true' : undefined}
+      sx={{ display: 'grid', gap: 0.25, ...(pointed ? { outline: 2, outlineColor: 'primary.main', outlineOffset: 4, borderRadius: 1 } : {}) }}
+    >
       <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{byline}</Typography>
       {comment.from && <CameWith from={comment.from} actions={actions} />}
       {gone && <Typography sx={{ fontSize: 13, fontStyle: 'italic', color: 'text.secondary' }}>{t('comments.removed')}</Typography>}

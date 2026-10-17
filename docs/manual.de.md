@@ -2394,7 +2394,8 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   Führungskraft oder fachlich ist, ob sie vom Einheitstyp ist oder von dieser
   Einheit selbst, und *niemand hat sie inne*, wo niemand die Rolle innehat,
   bei der sie endet. **Überschreiben …** richtet die Rolle auf eine Rolle in
-  irgendeiner Einheit, Führungskraft oder fachlich, nur für diese Einheit;
+  irgendeiner Einheit, Führungskraft oder fachlich, nur für diese Einheit, ab
+  einem Tag und bis einschließlich einem Tag, wo es nicht für immer gilt;
   **Hier über die Verschachtelung berichten** sagt, dass die Rolle so
   berichtet, wie die Einheit verschachtelt ist, was ihr Typ auch sagt; **Die
   des Typs verwenden** nimmt die eigene Linie der Einheit wieder weg. **Eine
@@ -2924,7 +2925,10 @@ Eintrag behält seine eigenen.
 
 Kommentare werden mit dem Bereich aufbewahrt, in `_comments/`, eine Datei je
 kommentiertem Eintrag. **Suchen** findet, was ein Kommentar sagt, in dem
-Bereich, in dem Sie arbeiten, und öffnet den Eintrag, um den es geht.
+Bereich, in dem Sie arbeiten, öffnet den Eintrag, um den es geht, und
+markiert den Kommentar in seinem Thread. Ein Eintrag, der aus einem anderen
+Bereich gezeigt wird, sagt, dass seine Kommentare dort liegen, mit einem Link
+zu jenem Bereich.
 
 Ein Agent kommentiert wie Sie (`comments.list`, `comment.add`,
 `comment.update`, `comment.remove`): Seine Kommentare sind von *Ihnen*

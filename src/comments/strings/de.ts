@@ -25,6 +25,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'comments.who': 'Wer schreibt? Wählen Sie sich einmal aus dem Register; die App merkt es sich als Das bin ich.',
   'comments.noRegister': 'Ein Kommentar wird von einer Person aus dem Register gezeichnet, und das Register wird hier nicht gelesen.',
   'comments.elsewhere': 'Dieser Eintrag liegt in einem anderen Bereich: Seine Kommentare werden dort gelesen und geschrieben.',
+  'comments.openScope': '{scope} öffnen',
   'comments.readOnly': 'Dieser Bereich wird hier gelesen und nicht geändert, daher kann nicht kommentiert werden.',
   'comments.refused': 'Der Kommentar wurde nicht geschrieben.',
   'comments.notLoaded': 'Die Kommentare konnten nicht geladen werden.',

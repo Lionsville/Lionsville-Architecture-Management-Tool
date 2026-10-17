@@ -80,12 +80,16 @@ export type { Mode } from './readerActions'
  * nothing to open, because the record is the one being read.
  */
 export function threadPlace(
-  fromScope: { path: string } | undefined, nameOf: NameOf, onOpen: (key: string) => void,
+  fromScope: { path: string; label?: string; onOpenScope?: () => void } | undefined, nameOf: NameOf, onOpen: (key: string) => void,
   moved?: { id: string; history: readonly ObservationEvent[]; scopeLabel: ((path: string) => string) | undefined },
-): Pick<CommentThreadProps, 'scope' | 'nameOf' | 'openFrom'> {
+  onOpenScope?: () => void,
+): Pick<CommentThreadProps, 'scope' | 'scopeLabel' | 'onOpenScope' | 'nameOf' | 'openFrom'> {
   const itself = (from: CommentFrom) => moved !== undefined && from.id === moved.id && from.scope !== undefined
+  const openScope = onOpenScope ?? fromScope?.onOpenScope
   return {
     ...(fromScope ? { scope: fromScope.path } : {}),
+    ...(fromScope?.label !== undefined ? { scopeLabel: fromScope.label } : {}),
+    ...(fromScope && openScope ? { onOpenScope: openScope } : {}),
     nameOf: (from) => {
       const came = itself(from) ? moved?.history.find((event) => event.kind === 'movedIn' && event.scope === from.scope) : undefined
       if (came?.number !== undefined) return `${formatObservationNumber(came.number)} (${(moved?.scopeLabel ?? ((path: string) => path))(from.scope ?? '')})`
@@ -457,7 +461,7 @@ export function ObservationReader(props: ObservationReaderProps) {
                 </Box>
               ))}
             </Box>
-            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel })} />
+            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
           </DocumentSheet>
         )}
       </Box>

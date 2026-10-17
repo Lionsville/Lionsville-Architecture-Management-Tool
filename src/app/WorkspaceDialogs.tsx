@@ -67,10 +67,12 @@ export function useWorkspaceDialogs(deps: {
   show: (to: Destination & { scope: string }) => void
   /** Open another scope on a page; absent where there is nowhere to go. */
   onOpenScope?: (path: ScopePath, page?: InitialPage) => void
+  /** Point at the comment a search hit named, for the thread that holds it (`useWorkspaceRequests`). */
+  pointComment: (id: string) => void
   /** Write what the session holds now, and answer once it has landed (`DocumentSessionHook.flush`). */
   save: () => Promise<void>
 }) {
-  const { session, diagnostics, notify, s, scope, show, onOpenScope, save } = deps
+  const { session, diagnostics, notify, s, scope, show, onOpenScope, save, pointComment } = deps
   const { onOpen: onOpenSettings, onApply: onApplySettings } = deps.settings
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The settings rename the scope and can move it — so on a scope that is
@@ -92,8 +94,12 @@ export function useWorkspaceDialogs(deps: {
   const chooseHit = useCallback((hit: SearchHit) => {
     const to: Destination = { page: hit.opens.page, id: hit.opens.id }
     if (hit.scope !== undefined && hit.scope !== scope && onOpenScope) onOpenScope(hit.scope, initialPageFor(to))
-    else show({ ...to, scope })
-  }, [scope, show, onOpenScope])
+    else {
+      show({ ...to, scope })
+      // A hit on a comment opens the record's reader, and the thread under it marks the comment and brings it into view (ADR-0037 §7).
+      if (hit.kind === 'comment') pointComment(hit.id)
+    }
+  }, [scope, show, onOpenScope, pointComment])
 
   // ⌘K / Ctrl+K from anywhere in the workspace. The editor's own ⌘F stays the
   // canvas finder; this is the wider one.

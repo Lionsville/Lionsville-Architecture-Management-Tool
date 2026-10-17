@@ -68,6 +68,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.slotRemove': '{role} uit dit eenheidstype halen',
   'operating.addSlot': 'Rol toevoegen',
   'operating.reportsTo': 'Rapporteert aan',
+  'operating.reportsToHint': 'De houders van die rol in de dichtstbijzijnde eenheid erboven. Haar eigen rol bereikt ook de eenheid erboven: zo rapporteert een type dat in zichzelf genest is naar boven.',
   'operating.reportsToNone': 'Via de nesting',
   'operating.lineKind': 'Soort',
   'operating.lineSolid': 'Lijnmanager',

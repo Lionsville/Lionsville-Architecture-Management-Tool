@@ -2082,7 +2082,8 @@ A unit's sections, in that order:
   where it lands — the role and the unit — whether it is a line manager's or
   functional, whether it is the unit type's or this unit's own, and *nobody
   holds it* where nobody holds the role it lands on. **Override…** points the
-  role at a role in any unit, line manager or functional, for this unit only;
+  role at a role in any unit, line manager or functional, for this unit only,
+  from a day and until one where it is not for good;
   **Report by nesting here** says the role reports up the way the unit is
   nested, whatever its type says; **Use the type's** takes the unit's own
   line away again. **A line for…** gives a role that has none one of its own.
@@ -2528,7 +2529,9 @@ says how many go. A merged or archived record keeps its own.
 
 Comments are kept with the scope, in `_comments/`, one file per record
 commented on. **Search** finds what a comment says in the scope you are in,
-and opens the record it is about.
+opens the record it is about and marks the comment in its thread. A record
+shown from another scope says its comments are kept there, with a link to
+that scope.
 
 An agent comments as you do (`comments.list`, `comment.add`,
 `comment.update`, `comment.remove`): its comments are signed by *you*, say

@@ -53,10 +53,14 @@ function scope(comments: Comment[] = []): Model {
 }
 
 /** The workspace, as far as a thread sees it: a model, the writer over it, and the register. */
-function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom }: {
+function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom, onOpenScope, pointed }: {
   start: Model; me: PersonId | undefined; mayComment?: boolean; mayModerate?: boolean; onMe?: (id: PersonId | undefined) => void; keptIn?: string
   /** Where given, a record a comment came with is named by its id in capitals and opens through this. */
   onOpenFrom?: (id: string) => void
+  /** The way to the scope that keeps the record, where it is another. */
+  onOpenScope?: () => void
+  /** The comment a search hit pointed at. */
+  pointed?: { id: string; nonce: number }
 }) {
   const [model, setModel] = useState(start)
   const [who, setWho] = useState(me)
@@ -70,10 +74,10 @@ function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptI
     <PersonNamesProvider names={personNames(register(who, (id) => { setWho(id); onMe?.(id) }), s)}>
       <CommentsProvider value={{
         scope: 'shop', comments: commentList(model), dispatch, mayComment, mayModerate,
-        makeId: () => `cm-new-${++next}`, now: () => AT,
+        makeId: () => `cm-new-${++next}`, now: () => AT, ...(pointed ? { pointed } : {}),
       }}>
         <CommentThread
-          about={web} {...(keptIn ? { scope: keptIn } : {})}
+          about={web} {...(keptIn ? { scope: keptIn, scopeLabel: 'Elsewhere' } : {})} {...(onOpenScope ? { onOpenScope } : {})}
           {...(onOpenFrom ? { nameOf: (from) => from.id.toUpperCase(), openFrom: (from) => () => onOpenFrom(from.id) } : {})}
         />
       </CommentsProvider>
@@ -153,6 +157,22 @@ describe('a thread', () => {
     renderShell(<Harness start={scope([first])} me="pe-eva" keptIn="elsewhere" />)
     expect(screen.getByText(s('comments.elsewhere'))).toBeTruthy()
     expect(screen.queryByTestId('comment-cm-1')).toBeNull()
+    expect(screen.queryByTestId('comment-thread-open-scope')).toBeNull()
+    cleanup()
+    // And the way there, where the reader has one.
+    const onOpenScope = vi.fn()
+    renderShell(<Harness start={scope([first])} me="pe-eva" keptIn="elsewhere" onOpenScope={onOpenScope} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open Elsewhere' }))
+    expect(onOpenScope).toHaveBeenCalledTimes(1)
+  })
+
+  it('marks the comment a search hit pointed at, and brings it into view', () => {
+    const into = vi.fn()
+    Element.prototype.scrollIntoView = into
+    renderShell(<Harness start={scope([first, mine])} me="pe-eva" pointed={{ id: 'cm-2', nonce: 1 }} />)
+    expect(screen.getByTestId('comment-cm-2').getAttribute('data-pointed')).toBe('true')
+    expect(screen.getByTestId('comment-cm-1').getAttribute('data-pointed')).toBeNull()
+    expect(into).toHaveBeenCalledTimes(1)
   })
 
   it('says which record a comment came with, by the name it is given, and links it where it can be opened', () => {

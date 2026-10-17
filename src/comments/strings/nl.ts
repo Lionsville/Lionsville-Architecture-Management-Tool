@@ -25,6 +25,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'comments.who': 'Wie schrijft er? Kies jezelf één keer uit het register; de app onthoudt het als Dit ben ik.',
   'comments.noRegister': 'Een reactie wordt ondertekend door een persoon uit het register, en het register wordt hier niet gelezen.',
   'comments.elsewhere': 'Dit record staat in een andere scope: de reacties erop worden daar gelezen en geschreven.',
+  'comments.openScope': '{scope} openen',
   'comments.readOnly': 'Deze scope wordt hier gelezen en niet gewijzigd, dus er kan niet worden gereageerd.',
   'comments.refused': 'De reactie is niet geschreven.',
   'comments.notLoaded': 'De reacties konden niet worden geladen.',

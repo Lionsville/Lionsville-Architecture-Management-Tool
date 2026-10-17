@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../app/testing/axe'
 import { renderShell } from '../app/testing/renderShell'
-import { PickToAdd } from './PickToAdd'
+import { PickToAdd, pickMatches } from './PickToAdd'
 import type { PickOption } from './PickToAdd'
 
 afterEach(() => cleanup())
@@ -54,6 +54,18 @@ describe('picking one thing to add', () => {
     fireEvent.keyDown(field, { key: 'Enter' })
     expect(onPick).toHaveBeenCalledWith('data')
     expect(screen.queryByRole('combobox')).toBeNull()
+  })
+
+  it('matches word by word, in any order, across the name and where it is', async () => {
+    expect(pickMatches(OPTIONS, 'shipping parcel').map((one) => one.id)).toEqual(['parcels'])
+    expect(pickMatches(OPTIONS, 'parcel shipping').map((one) => one.id)).toEqual(['parcels'])
+    expect(pickMatches(OPTIONS, 'data org').map((one) => one.id)).toEqual(['data'])
+    expect(pickMatches(OPTIONS, '  ').map((one) => one.id)).toEqual(['shipping', 'parcels', 'data', 'webshop'])
+    expect(pickMatches(OPTIONS, 'parcel nowhere')).toEqual([])
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: '+ Unit' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Find a unit' }), { target: { value: 'freight parcel' } })
+    await waitFor(() => expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Parcel & Freightfiled in Shipping']))
   })
 
   it('says so where nothing matches, and Escape puts the field away with the focus back on the +', async () => {

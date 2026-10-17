@@ -75,6 +75,7 @@ export const EN = {
   'operating.slotRemove': 'Take {role} out of this unit type',
   'operating.addSlot': 'Add role',
   'operating.reportsTo': 'Reports to',
+  'operating.reportsToHint': 'The holders of that role in the nearest unit above. Its own role reaches the unit above too: how a type nested in itself reports upward.',
   'operating.reportsToNone': 'By nesting',
   'operating.lineKind': 'Kind',
   'operating.lineSolid': 'Line manager',

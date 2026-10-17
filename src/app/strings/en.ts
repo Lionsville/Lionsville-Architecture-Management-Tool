@@ -979,6 +979,8 @@ export const EN = {
   'unit.lineUseType': 'Use the type\'s',
   'unit.lineTarget': 'Reports to',
   'unit.lineTargetRole': 'Its role',
+  'unit.lineFrom': 'From',
+  'unit.lineUntil': 'Until',
   'unit.lineKind': 'Kind',
   'unit.lineSelf': 'Not written: a role does not report to itself in the same unit.',
   'unit.overTime': 'Over time',

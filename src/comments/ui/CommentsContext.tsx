@@ -30,6 +30,12 @@ export type CommentsAccess = {
   readonly makeId: () => string
   /** Now, as an ISO date and time. */
   readonly now: () => string
+  /**
+   * The comment a search hit pointed at (ADR-0037 §7), by its number so the
+   * same one can be pointed at twice: the thread that holds it marks it and
+   * brings it into view. Absent where nothing was pointed at.
+   */
+  readonly pointed?: { readonly id: string; readonly nonce: number }
 }
 
 const CommentsContext = createContext<CommentsAccess | undefined>(undefined)

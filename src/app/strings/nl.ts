@@ -757,6 +757,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'unit.lineUseType': 'Die van het type gebruiken',
   'unit.lineTarget': 'Rapporteert aan',
   'unit.lineTargetRole': 'Haar rol',
+  'unit.lineFrom': 'Vanaf',
+  'unit.lineUntil': 'Tot en met',
   'unit.lineKind': 'Soort',
   'unit.lineSelf': 'Niet geschreven: een rol rapporteert niet aan zichzelf in dezelfde eenheid.',
   'unit.overTime': 'In de tijd',

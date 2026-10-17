@@ -30,6 +30,7 @@ export const EN = {
   'comments.who': 'Who is writing? Pick yourself from the register once, and the app keeps it as This is me.',
   'comments.noRegister': 'A comment is signed by a person in the register, and the register is not read here.',
   'comments.elsewhere': 'This record is kept in another scope: its comments are read and written there.',
+  'comments.openScope': 'Open {scope}',
   'comments.readOnly': 'This scope is read here and not changed, so nothing can be commented.',
   'comments.refused': 'The comment was not written.',
   'comments.notLoaded': 'Comments could not be loaded.',

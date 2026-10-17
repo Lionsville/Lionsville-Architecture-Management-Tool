@@ -20,7 +20,7 @@
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
+import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
@@ -55,7 +55,25 @@ export type PickToAddProps = {
   children?: ReactNode
 }
 
-const matches = createFilterOptions<PickOption>({ stringify: (option) => [option.label, option.group, option.note].filter(Boolean).join(' ') })
+/** What a row says to a search: its name, its group and its note. */
+const said = (option: PickOption) => [option.label, option.group, option.note].filter(Boolean).join(' ').toLowerCase()
+
+/**
+ * Word by word: every word typed is found somewhere in what the row says, in
+ * any order. A plain substring found *south* in *South › Cameras* and not
+ * *south cam*, because of the ` › ` between — and a person types the words
+ * they remember, not the punctuation between them.
+ */
+export function pickMatches(options: readonly PickOption[], query: string): PickOption[] {
+  const words = query.toLowerCase().split(/\s+/).filter((word) => word !== '')
+  if (words.length === 0) return [...options]
+  return options.filter((option) => {
+    const text = said(option)
+    return words.every((word) => text.includes(word))
+  })
+}
+
+const matches = (options: PickOption[], state: { inputValue: string }) => pickMatches(options, state.inputValue)
 
 const GROUP_HEADING = {
   px: 1.5, pt: 1, pb: 0.25, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary',

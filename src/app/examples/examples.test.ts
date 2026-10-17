@@ -272,7 +272,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(kinds(model)).toEqual(['application', 'component', 'platformService'])
     // The map beside the sheet: the organisation's capabilities against the
     // landscape's systems is the view ADR-0012 §6 was written for.
-    expect(organisation.model.diagrams.map((d) => d.kind)).toEqual(['sheet', 'map'])
+    // And the organisation chart (ADR-0036 §7), so the units and their reporting lines can be walked.
+    expect(organisation.model.diagrams.map((d) => d.kind)).toEqual(['sheet', 'map', 'chart'])
     expect(model.diagrams.every((d) => d.kind !== 'sheet')).toBe(true)
   })
 

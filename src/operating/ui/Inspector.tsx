@@ -238,6 +238,7 @@ function SlotLine({ type, index, name, model, readOnly, dispatch, refuseLine }: 
     <Box sx={{ pl: 1, mb: 0.75 }} data-testid="operating-slot-line">
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
         <TextField select size="small" label={t('operating.reportsTo')} value={line?.role ?? ''} disabled={readOnly} sx={{ flex: 1 }}
+          helperText={t('operating.reportsToHint')}
           slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.reportsTo')}` } }}
           onChange={(event) => write(event.target.value ? { ...(line ?? { kind: 'solid' as const }), role: event.target.value } : undefined)}>
           <MenuItem value="">{t('operating.reportsToNone')}</MenuItem>

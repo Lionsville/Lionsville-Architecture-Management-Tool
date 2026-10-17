@@ -68,6 +68,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.slotRemove': '{role} aus diesem Einheitstyp nehmen',
   'operating.addSlot': 'Rolle hinzufügen',
   'operating.reportsTo': 'Berichtet an',
+  'operating.reportsToHint': 'Die Inhaber dieser Rolle in der nächsten Einheit darüber. Die eigene Rolle erreicht ebenfalls die Einheit darüber: so berichtet ein in sich selbst verschachtelter Typ nach oben.',
   'operating.reportsToNone': 'Über die Verschachtelung',
   'operating.lineKind': 'Art',
   'operating.lineSolid': 'Führungskraft',

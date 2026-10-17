@@ -140,6 +140,9 @@ function LineForm(props: UnitLinesProps & { role: string; roleName: string; onSa
   const [unitId, setUnitId] = useState('')
   const [target, setTarget] = useState('')
   const [kind, setKind] = useState<LineKind>('solid')
+  // The same two days the type's slot editor takes, and the agent sets.
+  const [from, setFrom] = useState('')
+  const [until, setUntil] = useState('')
   const units = useMemo(() => organisation.units.filter((one) => isUnit(one) && unitOn(one, day)).sort((a, b) => a.name.localeCompare(b.name)), [organisation, day])
   const types = new Map(organisation.unitTypes.map((one) => [one.id, one]))
   const picked = units.find((one) => one.id === unitId)
@@ -162,10 +165,19 @@ function LineForm(props: UnitLinesProps & { role: string; roleName: string; onSa
         <MenuItem value="solid">{s('unit.lineSolid')}</MenuItem>
         <MenuItem value="dotted">{s('unit.lineDotted')}</MenuItem>
       </TextField>
+      <Box sx={{ display: 'flex', gap: 0.75 }}>
+        <TextField size="small" type="date" label={s('unit.lineFrom')} value={from} onChange={(event) => setFrom(event.target.value)} sx={{ flex: 1 }}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'unit-line-from' } }} />
+        <TextField size="small" type="date" label={s('unit.lineUntil')} value={until} onChange={(event) => setUntil(event.target.value)} sx={{ flex: 1 }}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'unit-line-until' } }} />
+      </Box>
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button size="small" onClick={props.onCancel}>{s('common.cancel')}</Button>
         <Button size="small" variant="contained" disabled={!target || scope === undefined} data-testid="unit-line-save"
-          onClick={() => props.onSave({ role: props.role, to: { scope: scope ?? '', unit: unitId, role: target }, kind })}>
+          onClick={() => props.onSave({
+            role: props.role, to: { scope: scope ?? '', unit: unitId, role: target }, kind,
+            ...(from ? { from } : {}), ...(until ? { until } : {}),
+          })}>
           {s('common.save')}
         </Button>
       </Box>

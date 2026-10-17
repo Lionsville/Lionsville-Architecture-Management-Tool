@@ -789,10 +789,12 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     await pick(0, 'Customer')
     await pick(1, 'Domain owner')
     await pick(2, 'functional')
+    // The two days the type's slot editor takes, kept only where said.
+    fireEvent.change(within(form()).getByTestId('unit-line-from'), { target: { value: '2026-01-01' } })
     fireEvent.click(within(form()).getByTestId('unit-line-save'))
     expect(commands[0]).toEqual({
       type: 'element.update', id: 'webshop',
-      patch: { reportingLines: [{ role: 'ro-dev', to: { scope: 'customer', unit: 'customer', role: 'ro-owner' }, kind: 'dotted' }] },
+      patch: { reportingLines: [{ role: 'ro-dev', to: { scope: 'customer', unit: 'customer', role: 'ro-owner' }, kind: 'dotted', from: '2026-01-01' }] },
     })
     await waitFor(() => expect(screen.queryByTestId('unit-line-form')).toBeNull())
     expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('this unit\'s own')

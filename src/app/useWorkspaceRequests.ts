@@ -30,6 +30,9 @@ export type WorkspaceRequests = {
   leftDocumentation: { nonce: number } | undefined
   /** The element whose page is up over the board, as the editor last said (`EditorRequests.onDocumentation`); nothing where none is. */
   documentationShown: string | undefined
+  /** The comment a search hit pointed at, by its number: the thread that holds it marks it (ADR-0037 §7). */
+  pointedComment: { id: string; nonce: number } | undefined
+  pointComment: (id: string) => void
   /** What the editor says about its page, as it opens and closes. */
   shownDocumentation: (elementId: string | undefined) => void
   /** Select an element on the board that draws it. */
@@ -75,5 +78,10 @@ export function useWorkspaceRequests(deps: {
   const [leftDocumentation, setLeftDocumentation] = useState<{ nonce: number } | undefined>(undefined)
   const leaveDocumentation = useCallback(() => setLeftDocumentation((prev) => ({ nonce: (prev?.nonce ?? 0) + 1 })), [])
   const [documentationShown, shownDocumentation] = useState<string | undefined>(undefined)
-  return { focus, documentation, focusElement, openDocumentation, leftDocumentation, leaveDocumentation, documentationShown, shownDocumentation }
+  const [pointedComment, setPointedComment] = useState<{ id: string; nonce: number } | undefined>(undefined)
+  const pointComment = useCallback((id: string) => setPointedComment((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 })), [])
+  return {
+    focus, documentation, focusElement, openDocumentation, leftDocumentation, leaveDocumentation, documentationShown, shownDocumentation,
+    pointedComment, pointComment,
+  }
 }

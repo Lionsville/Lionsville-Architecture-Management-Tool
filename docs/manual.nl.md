@@ -2264,7 +2264,8 @@ De onderdelen van een eenheid, in die volgorde:
   lijnmanager is of functioneel, of ze van het eenheidstype is of van deze
   eenheid zelf, en *niemand vervult haar* waar niemand de rol vervult waar ze
   uitkomt. **Overschrijven…** laat de rol wijzen naar een rol in welke eenheid
-  ook, lijnmanager of functioneel, voor deze eenheid alleen; **Hier via de
+  ook, lijnmanager of functioneel, voor deze eenheid alleen, vanaf een dag en
+  tot en met een dag waar het niet voorgoed is; **Hier via de
   nesting rapporteren** zegt dat de rol rapporteert zoals de eenheid genest
   is, wat haar type ook zegt; **Die van het type gebruiken** haalt de eigen
   lijn van de eenheid weer weg. **Een lijn voor…** geeft een rol zonder lijn
@@ -2767,7 +2768,9 @@ Een samengevoegd of gearchiveerd record houdt zijn eigen reacties.
 
 Reacties worden bij de scope bewaard, in `_comments/`, één bestand per record
 waarop is gereageerd. **Zoeken** vindt wat een reactie zegt in de scope waarin
-u werkt, en opent het record waar ze over gaat.
+u werkt, opent het record waar ze over gaat en markeert de reactie in haar
+draad. Een record dat vanuit een andere scope wordt getoond zegt dat de
+reacties daar worden bewaard, met een link naar die scope.
 
 Een agent reageert zoals u (`comments.list`, `comment.add`, `comment.update`,
 `comment.remove`): zijn reacties zijn door *u* ondertekend, zeggen welke agent

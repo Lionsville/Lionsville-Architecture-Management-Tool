@@ -1,4 +1,50 @@
 {
+  "_operating/roles.json": [
+    "[",
+    "  {",
+    "    \"duties\": [],",
+    "    \"id\": \"lead\",",
+    "    \"manages\": true,",
+    "    \"name\": \"Lead\",",
+    "    \"order\": 1,",
+    "    \"purpose\": \"Answers for a team.\",",
+    "    \"short\": \"L\"",
+    "  },",
+    "  {",
+    "    \"duties\": [],",
+    "    \"id\": \"member\",",
+    "    \"name\": \"Member\",",
+    "    \"order\": 2,",
+    "    \"purpose\": \"Does the team's work.\",",
+    "    \"short\": \"M\"",
+    "  }",
+    "]",
+    ""
+  ],
+  "_operating/unit-types.json": [
+    "[",
+    "  {",
+    "    \"id\": \"team\",",
+    "    \"name\": \"Team\",",
+    "    \"order\": 1,",
+    "    \"purpose\": \"A few people with one lead, doing one part of the work.\",",
+    "    \"slots\": [",
+    "      {",
+    "        \"max\": 1,",
+    "        \"min\": 0,",
+    "        \"role\": \"lead\"",
+    "      },",
+    "      {",
+    "        \"min\": 0,",
+    "        \"role\": \"member\"",
+    "      }",
+    "    ],",
+    "    \"top\": true,",
+    "    \"within\": []",
+    "  }",
+    "]",
+    ""
+  ],
   "application-landscape/decisions/0001-one-place-where-a-price-is-decided.md": [
     "---",
     "id: adr-one-price",
@@ -2826,6 +2872,15 @@
     "members": [],
     "name": "Enterprise map"
   },
+  "diagrams/organisation-chart.geometry.json": {
+    "nodes": []
+  },
+  "diagrams/organisation-chart.json": {
+    "id": "organisation-chart",
+    "kind": "chart",
+    "name": "Organisation chart",
+    "members": []
+  },
   "docs/assets-and-fleet.md": [
     "The trucks, the trailers and the people licensed to drive them.",
     ""
@@ -3288,6 +3343,16 @@
         "parentId": "employees"
       },
       {
+        "id": "dock-crew",
+        "kind": "actor",
+        "name": "Dock crew",
+        "lifecycle": "live",
+        "isManaged": true,
+        "aspects": {},
+        "order": 1,
+        "unitTypeId": "team"
+      },
+      {
         "aspects": {},
         "id": "drive-the-leg",
         "isManaged": false,
@@ -3671,6 +3736,27 @@
         "parentId": "employees"
       },
       {
+        "id": "planning-desk",
+        "kind": "actor",
+        "name": "Planning desk",
+        "lifecycle": "live",
+        "isManaged": true,
+        "aspects": {},
+        "order": 3,
+        "unitTypeId": "team",
+        "reportingLines": [
+          {
+            "role": "lead",
+            "to": {
+              "scope": "",
+              "unit": "dock-crew",
+              "role": "lead"
+            },
+            "kind": "dotted"
+          }
+        ]
+      },
+      {
         "aspects": {},
         "id": "platform-team",
         "isManaged": true,
@@ -4042,6 +4128,16 @@
         "name": "Yard and dock",
         "order": 2,
         "parentId": "move"
+      },
+      {
+        "id": "yard-crew",
+        "kind": "actor",
+        "name": "Yard crew",
+        "lifecycle": "live",
+        "isManaged": true,
+        "aspects": {},
+        "order": 2,
+        "unitTypeId": "team"
       }
     ],
     "relations": [
@@ -4477,7 +4573,8 @@
     "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
     "diagrams": [
       "business-architecture",
-      "enterprise-map"
+      "enterprise-map",
+      "organisation-chart"
     ],
     "kind": "organisation",
     "name": "Acme Logistics",

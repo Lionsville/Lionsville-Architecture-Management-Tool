@@ -758,6 +758,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'unit.lineUseType': 'Die des Typs verwenden',
   'unit.lineTarget': 'Berichtet an',
   'unit.lineTargetRole': 'Ihre Rolle',
+  'unit.lineFrom': 'Ab',
+  'unit.lineUntil': 'Bis einschließlich',
   'unit.lineKind': 'Art',
   'unit.lineSelf': 'Nicht geschrieben: Eine Rolle berichtet nicht an sich selbst in derselben Einheit.',
   'unit.overTime': 'Im Lauf der Zeit',
