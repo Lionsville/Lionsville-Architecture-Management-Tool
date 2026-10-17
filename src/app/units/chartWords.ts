@@ -16,6 +16,11 @@
  * findings, which are what a reader unfolds it for. The chart's summary
  * counts the same way, for the whole chart, and lists its findings rather
  * than counting them.
+ *
+ * A unit type's name is shortened over a box (3.7.3): a chart of many small
+ * boxes spent a line of each on *Organisational unit*, so a word longer than
+ * {@link TYPE_WORD_KEPT} letters is cut, and the whole name goes with it for
+ * hover and for assistive technology (`TypeLabel`).
  */
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
@@ -99,4 +104,25 @@ export function rollUpWords(rolled: ChartRollUp, t: Translate): RollUpPart[] {
  */
 export function summaryWords(held: Pick<ChartRollUp, 'units' | 'people' | 'vacant'>, t: Translate): RollUpPart[] {
   return rollUpWords({ ...held, findings: 0 }, t)
+}
+
+/** A reader's letters: an accent written as a mark after its letter is still one. */
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+
+/** The longest word a unit type's name keeps whole on the chart; a longer one keeps {@link TYPE_WORD_CUT} letters and a full stop. */
+export const TYPE_WORD_KEPT = 7
+export const TYPE_WORD_CUT = 6
+
+/**
+ * A unit type's name as the chart's boxes and outline show it (3.7.3): each
+ * word longer than {@link TYPE_WORD_KEPT} letters cut to its first
+ * {@link TYPE_WORD_CUT} and a full stop, word by word — *Organisational unit*
+ * is *Organi. unit* — and everything between the words as it was. Letters
+ * are counted as a reader counts them, so an accented one is one.
+ */
+export function shortTypeName(name: string): string {
+  return name.replace(/\S+/gu, (word) => {
+    const letters = Array.from(GRAPHEMES.segment(word), (part) => part.segment)
+    return letters.length > TYPE_WORD_KEPT ? `${letters.slice(0, TYPE_WORD_CUT).join('')}.` : word
+  })
 }

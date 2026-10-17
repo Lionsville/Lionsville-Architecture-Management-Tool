@@ -57,6 +57,7 @@ import { rollUpWords, unitBadges } from './chartWords'
 import type { RollUpPart } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
 import type { UnitOffer } from './useNewUnit'
+import { TypeLabel } from './TypeLabel'
 
 /** Everything the boxes read, worked out once per render of the page. */
 export type Drawing = {
@@ -148,7 +149,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
           </IconButton>
         )}
         <ButtonBase onClick={() => drawing.pick(unit.id)} onDoubleClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, borderRadius: 1 }} data-testid="chart-unit-open">
-          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
+          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}><TypeLabel name={drawing.typeName(unit.unitTypeId)} /></Typography>
           <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
         </ButtonBase>
         {drawing.add && <AddInside name={unit.name} offer={drawing.add.offer(unit)} picked={selected} onAdd={() => drawing.add?.open(unit)} t={t} />}

@@ -19,6 +19,9 @@
  * pointer. Every list of units follows it. Beside them, *Move to…* puts the
  * unit under another anywhere in the organisation (3.7.1, `useMoveUnit`).
  *
+ * **A type's long words are cut** (3.7.3, `TypeLabel`), the whole name on
+ * hover and in each row's name.
+ *
  * **A unit is made at the top from its header** (3.6.2): *+ Unit at the
  * top*, as on the chart's bar (`AddUnit.tsx`).
  */
@@ -33,6 +36,7 @@ import type { ChartUnit, OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
 import { CaretIcon } from '../../widgets/icons'
 import { locatedSelector } from '../../widgets/useLocated'
+import { TypeLabel } from './TypeLabel'
 import type { SiblingOrder } from './useSiblingOrder'
 
 export type ChartOutlineProps = {
@@ -108,7 +112,7 @@ function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'ord
                 }}
               >
                 <Box component="span" sx={{ fontSize: 9.5, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'text.secondary', mr: 0.5, flex: '0 0 auto' }}>
-                  {typeName(unit.unitTypeId)}
+                  <TypeLabel name={typeName(unit.unitTypeId)} />
                 </Box>
                 {' '}
                 <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{unit.name}</Box>

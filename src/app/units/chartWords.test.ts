@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
-import { rollUpWords, servesBadge, summaryWords, unitBadges } from './chartWords'
+import { rollUpWords, servesBadge, shortTypeName, summaryWords, unitBadges } from './chartWords'
 import type { BadgeReading } from './chartWords'
 
 const t = translator('en')
@@ -83,5 +83,28 @@ describe('what a whole chart holds, for its summary', () => {
       ['1 unit', false], ['1 person', false], ['2 vacant', true],
     ])
     expect(summaryWords({ units: 2, people: 3, vacant: 1 }, translator('nl')).map((part) => part.text)).toEqual(['2 eenheden', '3 mensen', '1 vacature'])
+  })
+})
+
+describe('a unit type\'s name on the chart (3.7.3)', () => {
+  it('cuts each word longer than seven letters to its first six and a full stop', () => {
+    expect(shortTypeName('Organisational unit')).toBe('Organi. unit')
+    expect(shortTypeName('Business line')).toBe('Busine. line')
+    expect(shortTypeName('Directorate General')).toBe('Direct. General')
+  })
+
+  it('keeps a word of seven letters or fewer, and a name of such words, as it is', () => {
+    expect(shortTypeName('Cluster')).toBe('Cluster')
+    expect(shortTypeName('Team')).toBe('Team')
+    expect(shortTypeName('IT department')).toBe('IT depart.')
+    expect(shortTypeName('')).toBe('')
+  })
+
+  it('keeps what is between the words, and counts an accented letter once', () => {
+    expect(shortTypeName('Geschäftsbereich  Süd')).toBe('Geschä.  Süd')
+    expect(shortTypeName('Übergeordnet')).toBe('Überge.')
+    // Decomposed, the Ü is two code points and still one letter: it is cut where the composed one is.
+    expect(shortTypeName('U\u0308bergeordnet')).toBe('U\u0308berge.')
+    expect(shortTypeName('Platform-group')).toBe('Platfo.')
   })
 })
