@@ -42,7 +42,7 @@ export const EN = {
    * sentences and three buttons, because the app genuinely cannot choose: there
    * is no merge, only which version survives.
    */
-  'shell.changedThere': 'This project changed elsewhere. Nothing here is unsaved.',
+  'shell.changedThere': 'This scope changed elsewhere. Nothing here is unsaved.',
   /**
    * A scope a part of which did not read — its model, a mark its header names
    * (`ScopeSnapshot.unreadable`, ADR-0028). What was read is shown and nothing
@@ -73,11 +73,11 @@ export const EN = {
    * came in, so a control that forgot to hide itself still changes nothing.
    */
   'shell.readOnlyRefused': 'This scope is open to be read and not changed, so nothing was done.',
-  'shell.conflictThere': 'This project changed elsewhere, and there are unsaved changes here.',
+  'shell.conflictThere': 'This scope changed elsewhere, and there are unsaved changes here.',
   'shell.unsettledFirst': 'This scope changed elsewhere while changes here are unsaved. Choose which version stands on the bar first.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
-  'shell.saveACopy': 'Save a copy…',
+  'shell.saveACopy': 'Save a copy of the working file…',
   'shell.keepFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.keptAgain': 'Saving in this browser works again.',
@@ -107,9 +107,8 @@ export const EN = {
    * button rather than advice.
    */
   'shell.bootFailed': 'The app could not start.',
-  'shell.bootFailedNote':
-    'Reading your settings or the project you had open did not work. Starting without that project usually gets you back in; nothing is deleted.',
-  'shell.startFresh': 'Start without the last project',
+  'shell.bootFailedNote': 'Reading your settings or the scope you had open did not work. Starting without that scope usually gets you back in; nothing is deleted.',
+  'shell.startFresh': 'Start without the last scope',
   /** A throw nobody caught. Throttled: a broken loop must not paper the screen. */
   'shell.unexpectedError': 'Something unexpected went wrong. If the screen stops responding, reload the page.',
   'shell.orphanOne':
@@ -238,7 +237,7 @@ export const EN = {
   'shell.chooseBoardHint': '{name} is drawn on more than one board.',
   'shell.chooseBoardAsOf': 'As of {day}',
   'shell.crumbTip': 'Go to {name}',
-  'shell.exampleCopied': 'Example \u201c{name}\u201d copied to a project of your own.',
+  'shell.exampleCopied': 'Example “{name}” copied to an organisation of your own.',
 
   // --- projects and the picker ---------------------------------------------
   'picker.examples': 'Examples',
@@ -280,12 +279,12 @@ export const EN = {
   'history.readFailed': 'The history could not be read: {message}',
   'history.none': 'No snapshots yet.',
   'history.unavailable': 'No history can be kept here. Everything else works as before.',
-  'history.compare': 'Compared with the project as it is now',
+  'history.compare': 'Compared with the scope as it is now',
   'history.unchanged': 'Nothing has changed since this snapshot.',
   'history.gone': 'This scope did not exist yet at that snapshot.',
   'history.by': '{author}',
   'history.subject': 'Show the history of',
-  'history.everything': 'The whole project',
+  'history.everything': 'The whole scope',
   /**
    * Where a subject's history is coming from, when it is more than one scope
    * (ADR-0012 §7): an element's page is filed in every scope that holds the
@@ -299,16 +298,16 @@ export const EN = {
   'history.noneFor': 'No snapshot has touched this yet.',
   'history.unchangedFor': 'This has not changed since this snapshot.',
   'history.restore': 'Restore this version…',
-  'history.restoreProject': 'Restore the whole project…',
+  'history.restoreProject': 'Restore the whole scope…',
   'history.restoreTitle': 'Restore {name} as of {date}?',
-  'history.restoreProjectTitle': 'Restore the whole project as of {date}?',
+  'history.restoreProjectTitle': 'Restore the whole scope as of {date}?',
   'history.restoreBody':
     'This makes {name} what it was at that snapshot, as a new change — the history keeps everything that happened since, and this step goes on top of it. It can be undone with ⌘Z until the next snapshot records it.',
   'history.restoreProjectBody':
     'Every element, connection, diagram and decision becomes what it was at that snapshot, as one new change on top of everything that happened since. Decisions that have been accepted, rejected or superseded stay as they are. It can be undone with ⌘Z until the next snapshot records it.',
   'history.restoreConfirm': 'Restore',
   'history.restored': 'Restored {name} as of {date}.',
-  'history.restoredProject': 'Restored the whole project as of {date}.',
+  'history.restoredProject': 'Restored the whole scope as of {date}.',
   'history.restoredDropped': ' {count} placed elements no longer exist and were left out.',
   'history.restoredKept': ' {count} locked decisions were left as they are.',
   /**
@@ -404,7 +403,7 @@ export const EN = {
   'change.becameStandIn': '{name} is now a stand-in of {scope}',
   'change.becameDefinition': '{name} is now defined here',
 
-  'source.firstTitle': 'Where should your projects live?',
+  'source.firstTitle': 'Where should your work live?',
   'source.recent': 'Recently used',
   'picker.never': 'Not saved yet',
   'picker.changed': 'Changed {when}',
@@ -427,20 +426,19 @@ export const EN = {
   'scope.kind.team': 'Team',
   'scope.kind.landscape': 'Landscape scope',
   'picker.create': 'Create',
-  'picker.loadFailed': 'That project could not be opened.',
-  'picker.listFailed': 'Your projects could not be read.',
-  'picker.deleteFailed': 'That project could not be deleted.',
-  'settings.title': 'Project settings',
+  'picker.loadFailed': 'That scope could not be opened.',
+  'picker.listFailed': 'The organisations could not be read.',
+  'picker.deleteFailed': 'That scope could not be deleted.',
+  'settings.title': 'Scope settings',
   'settings.open': 'Settings\u2026',
-  'settings.projectName': 'Project name',
+  'settings.projectName': 'Name',
   'settings.group': 'Group',
-  'settings.groupHelp': 'Moving a project files it under another group. Its content is untouched.',
+  'settings.groupHelp': 'Moving a scope files it under another group. Its content is untouched.',
   'settings.save': 'Save',
   'settings.moved': 'Moved to {name}.',
   'settings.renamed': 'Renamed to \u201c{name}\u201d.',
-  'settings.defaults': 'DEFAULTS FOR THIS PROJECT',
-  'settings.defaultsHelp':
-    'What a diagram in this project falls back on. Changing these never rewrites a diagram that has already been configured.',
+  'settings.defaults': 'DEFAULTS FOR THIS SCOPE',
+  'settings.defaultsHelp': 'What a diagram in this scope falls back on. Changing these never rewrites a diagram that has already been configured.',
   'settings.defaultAuthor': 'Author',
   'settings.defaultAuthorHelp': 'Named on an exported diagram that has no author of its own.',
   'settings.defaultColumns': 'The operational aspects a new landscape starts with.',
@@ -450,7 +448,7 @@ export const EN = {
   'prefs.general': 'GENERAL',
   'prefs.language': 'Language',
   'prefs.theme': 'Theme',
-  'prefs.projectOrder': 'Project list order',
+  'prefs.projectOrder': 'Scope list order',
   'prefs.updates': 'UPDATES',
   'prefs.checkAutomatically': 'Check for updates automatically',
   'prefs.updatesNote':
@@ -500,8 +498,7 @@ export const EN = {
   'agent.moved':
     'Port {from} was taken when the app started, so it listens on {port} now. An agent configured with the old port needs the new address.',
   /** A browser tab: the explanation stands, and this replaces the switch. */
-  'agent.desktopOnly':
-    'Connecting an agent needs the desktop app — only it can listen on this machine. Open this project there and the switch is here.',
+  'agent.desktopOnly': 'Connecting an agent needs the desktop app — only it can listen on this machine. Open this scope there and the switch is here.',
   'agent.recipes': 'CONNECT YOUR CLIENT',
   'agent.recipesNote': 'The port and the token below are this machine\u2019s. Pick your client and paste.',
   'agent.tabClaude': 'Claude Code',
@@ -574,7 +571,7 @@ export const EN = {
   'shell.roadmap': 'Roadmap',
   'shell.roadmapTip': 'The landscape on a time axis, the plans over it, and what the dates disagree about',
   'shell.activity': 'Activity',
-  'shell.activityTip': 'What has changed in this project since you opened it',
+  'shell.activityTip': 'What has changed in this scope since you opened it',
   'shell.activityEmpty': 'Nothing yet',
   /** The tag on a step an agent took, beside the time (ADR-0007). */
   'shell.activityAgent': 'AGENT',
@@ -598,7 +595,7 @@ export const EN = {
   /** The list while the source's log of the scope is being read, with nothing else to show yet. */
   'shell.activityReading': 'Reading what was done here…',
   /** The button's tip where the list is the source's log and not only this session's steps. */
-  'shell.activityTipKept': 'What was lately done in this project, and by whom',
+  'shell.activityTipKept': 'What was lately done in this scope, and by whom',
   /** The tag on a step nobody made: a board the editor laid out by itself as it opened. */
   'shell.activityUnattended': 'LAID OUT AUTOMATICALLY',
   /**
@@ -676,7 +673,7 @@ export const EN = {
   'org.map': 'Map',
   'org.mapMake': 'Make a map\u2026',
   'org.technologyLandscape': 'Landscape',
-  'org.technologyLandscapeMake': 'Make a landscape\u2026',
+  'org.technologyLandscapeMake': 'New landscape…',
   'org.journeysOne': '{count} journey',
   'org.journeysOther': '{count} journeys',
   'org.areasOne': '{count} area',

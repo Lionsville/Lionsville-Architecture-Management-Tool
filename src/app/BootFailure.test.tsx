@@ -31,7 +31,7 @@ describe('BootFailure', () => {
     renderShell(<BootFailure
       s={translator('en')} error="nope" onStartFresh={onStartFresh} onReload={onReload} />)
 
-    fireEvent.click(screen.getByText('Start without the last project'))
+    fireEvent.click(screen.getByText('Start without the last scope'))
     expect(onStartFresh).toHaveBeenCalledOnce()
     fireEvent.click(screen.getByText('Reload'))
     expect(onReload).toHaveBeenCalledOnce()

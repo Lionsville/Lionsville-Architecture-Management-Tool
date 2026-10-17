@@ -83,8 +83,9 @@ export function ObservationRegister(props: ObservationRegisterProps) {
       <TableCell colSpan={7} sx={{ bgcolor: 'background.default', py: 0.5, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>{text}</TableCell>
     </TableRow>
   )
+  // The same look as the table's section headings above: one list, one treatment.
   const subheader = (text: string) => (
-    <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{text}</ListSubheader>
+    <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>{text}</ListSubheader>
   )
   const belowHeading = (scope: string) => (
     <ListSubheader component="div" disableSticky data-testid="register-below-heading" sx={{ lineHeight: '26px', bgcolor: 'background.paper', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', pl: 3 }}>

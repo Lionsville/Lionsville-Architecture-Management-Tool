@@ -51,29 +51,24 @@ export const EN = {
   'history.beforeUpgrade': 'Before upgrading the file format',
 
   // --- the way into a folder -------------------------------------------------
-  'folder.body':
-    'Pick a folder and this app keeps your projects in it as files you can read, back up, '
-    + 'sync and commit. Nothing is kept inside the app itself.',
-  'folder.choose': 'Choose a folder…',
+  'folder.body': 'Pick a folder and this app keeps your work in it as files you can read, back up, sync and commit. Nothing is kept inside the app itself.',
+  'folder.choose': 'Open folder…',
   /**
    * The folder pick asks before it copies. Both answers are safe and the body
    * says so: the app keeps its own copy until somebody moves it on purpose.
    */
   'folder.adoptTitle': 'Bring your work into this folder?',
-  'folder.adoptBody':
-    'Your projects are kept inside the app at the moment. “{name}” can take a copy of '
-    + 'them, or open as it is. Nothing is deleted either way — the app keeps its copy until '
-    + 'you move it on purpose.',
+  'folder.adoptBody': 'Your work is kept inside the app at the moment. “{name}” can take a copy of it, or open as it is. Nothing is deleted either way — the app keeps its copy until you move it on purpose.',
   'folder.adoptCopy': 'Copy my work in',
   'folder.adoptSkip': 'Open the folder as it is',
-  'picker.chooseFolder': 'Choose folder…',
+  'picker.chooseFolder': 'Open folder…',
   'picker.changeFolder': 'Work from another folder…',
   'shell.folderNotOpened': 'The folder could not be opened: {message}',
   'shell.sourceFolder': 'Folder · {name}',
   'shell.sourceBrowser': 'In this browser',
   'shell.sourceMemory': 'Not kept anywhere',
-  'shell.sourceTipFolder': 'Your projects are files in this folder. Snapshots go into its history.',
-  'shell.sourceTipBrowser': 'Your projects are kept in this browser\'s storage. Save a working file to keep them anywhere else.',
+  'shell.sourceTipFolder': 'Your work is kept in this folder as files. Snapshots go into its history.',
+  'shell.sourceTipBrowser': 'Your work is kept in this browser\'s storage. Save a working file to keep it anywhere else.',
   'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
   'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
   'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',

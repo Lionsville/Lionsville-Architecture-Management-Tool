@@ -25,7 +25,8 @@ export const EN = {
   'comments.edited': 'edited',
   'comments.you': 'you',
   'comments.via': 'via {agent}',
-  'comments.from': 'Came with {record}',
+  /** Before the record a comment came with, which is drawn after it as a link where it can be opened. */
+  'comments.cameWith': 'Came with',
   'comments.who': 'Who is writing? Pick yourself from the register once, and the app keeps it as This is me.',
   'comments.noRegister': 'A comment is signed by a person in the register, and the register is not read here.',
   'comments.elsewhere': 'This record is kept in another scope: its comments are read and written there.',

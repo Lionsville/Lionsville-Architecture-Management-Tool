@@ -260,8 +260,8 @@ export const EN = {
   'command.badReply': 'A reply answers a comment on the same record, and a thread is one level deep: answer the comment the reply is under.',
   'command.commentRemoved': 'This comment was removed, and a removed comment stays as it is. Write a new one.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
-  'restore.absentThen': 'This was not in the project at that snapshot.',
-  'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',
+  'restore.absentThen': 'This was not in the scope at that snapshot.',
+  'restore.absentNow': 'The element is no longer in the scope; restore the whole scope to bring it back.',
   'restore.locked': 'This decision has been accepted, rejected or superseded, and a locked record is not changed. Write a new one that supersedes it.',
   'logo.category.data': 'Data',
   'logo.category.integration': 'Integration',
@@ -376,9 +376,9 @@ export const EN = {
   'activity.commentRemoved': 'Removed a comment on {name}',
   'activity.commentTaken': 'Took a comment off {name}',
   'activity.commentPut': 'Put back a comment on {name}',
-  'activity.projectSettings': 'Changed the project settings',
+  'activity.projectSettings': 'Changed the scope settings',
   'activity.diagramRestored': 'Restored the diagram {name} as of {asOf}',
   'activity.descriptionRestored': 'Restored the description of {name} as of {asOf}',
   'activity.decisionRestored': 'Restored the decision {name} as of {asOf}',
-  'activity.projectRestored': 'Restored the whole project as of {asOf}',
+  'activity.projectRestored': 'Restored the whole scope as of {asOf}',
 } as const

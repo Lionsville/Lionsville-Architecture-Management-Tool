@@ -173,7 +173,7 @@ Das Etikett rechts in der Leiste sagt, wo Ihre Arbeit aufbewahrt wird: der
 Ordner, in dem Ihre Projekte als Dateien liegen, **In diesem Browser**, oder
 **Nirgends gespeichert**. **Aus einem anderen Ordner arbeiten…** daneben
 richtet die App auf einen anderen Ordner aus, und ein Browser ohne Ordner
-bietet stattdessen **Ordner wählen…**.
+bietet stattdessen **Ordner öffnen…**.
 
 **Beispiele**, zuletzt. Eines in eine Organisation zu kopieren, die leer und
 unbenannt ist, macht das Beispiel zu *der* Organisation. Eine Organisation, die
@@ -793,7 +793,7 @@ Streifen über der Zeichenfläche fragt, welche Version gilt:
   deren Änderungen an dem, was Sie nicht berührt haben, bleiben. Nur wo das
   abgelehnt wird, schreibt es den ganzen Bereich, wie er auf Ihrem Bildschirm
   ist, über deren Version.
-- **Kopie speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
+- **Kopie der Arbeitsdatei speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
   in eine Arbeitsdatei und lässt die Entscheidung für später.
 
 Nichts wird ohne Nachfrage überschrieben.
@@ -865,8 +865,8 @@ gehören jenen zum Wiederherstellen.
 
 **Wiederherstellen.** Mit einer gewählten Momentaufnahme macht **Diese Version
 wiederherstellen…** das Diagramm, die Beschreibung oder die Entscheidung wieder
-zu dem, was es damals war; wenn das ganze Projekt gezeigt wird, tut **Das ganze
-Projekt wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
+zu dem, was es damals war; wenn der ganze Bereich gezeigt wird, tut **Den ganzen
+Bereich wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
 neue Änderung über allem, was seither geschah, kein Schritt zurück: der Verlauf
 wächst weiter, die Aktivitätsliste sagt *Diagramm Lager wiederhergestellt auf
 den Stand vom 3. Sep*, ⌘Z macht es rückgängig, und die nächste Momentaufnahme

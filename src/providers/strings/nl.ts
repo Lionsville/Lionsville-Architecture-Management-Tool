@@ -34,25 +34,20 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
   'history.beforeSync': 'Voor het synchroniseren',
   'history.beforeUpgrade': 'Voor het bijwerken van het bestandsformaat',
-  'folder.body':
-    'Kies een map; deze app bewaart je projecten daarin als bestanden die je kunt lezen, '
-    + 'back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
-  'folder.choose': 'Map kiezen…',
+  'folder.body': 'Kies een map; deze app bewaart je werk daarin als bestanden die je kunt lezen, back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
+  'folder.choose': 'Map openen…',
   'folder.adoptTitle': 'Je werk meenemen naar deze map?',
-  'folder.adoptBody':
-    'Je projecten worden nu in de app zelf bewaard. “{name}” kan er een kopie van '
-    + 'krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — '
-    + 'de app houdt zijn eigen kopie tot je die zelf verplaatst.',
+  'folder.adoptBody': 'Je werk wordt nu in de app zelf bewaard. “{name}” kan er een kopie van krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — de app houdt zijn eigen kopie tot je die zelf verplaatst.',
   'folder.adoptCopy': 'Mijn werk erin kopiëren',
   'folder.adoptSkip': 'De map openen zoals hij is',
-  'picker.chooseFolder': 'Map kiezen…',
+  'picker.chooseFolder': 'Map openen…',
   'picker.changeFolder': 'Vanuit een andere map werken…',
   'shell.folderNotOpened': 'De map kon niet worden geopend: {message}',
   'shell.sourceFolder': 'Map · {name}',
   'shell.sourceBrowser': 'In deze browser',
   'shell.sourceMemory': 'Nergens bewaard',
-  'shell.sourceTipFolder': 'Je projecten zijn bestanden in deze map. Momentopnamen gaan in haar geschiedenis.',
-  'shell.sourceTipBrowser': 'Je projecten staan in de opslag van deze browser. Bewaar een werkbestand om ze ergens anders te houden.',
+  'shell.sourceTipFolder': 'Je werk staat als bestanden in deze map. Momentopnamen gaan in haar geschiedenis.',
+  'shell.sourceTipBrowser': 'Je werk staat in de opslag van deze browser. Bewaar een werkbestand om het ergens anders te houden.',
   'shell.sourceTipMemory': 'Er wordt niets bewaard: de opslag weigerde. Bewaar een werkbestand voor je dit tabblad sluit.',
   'picker.deleteBodyFolder': 'Dit verwijdert {name}, alles wat eronder is ondergebracht, en haar map op schijf. Een werkbestand dat je elders bewaarde blijft staan.',
   'picker.deleteBodyBrowser': 'Dit verwijdert {name} en alles wat eronder is ondergebracht uit deze browser. Een werkbestand dat je elders bewaarde blijft staan.',

@@ -607,7 +607,7 @@ describe('the organisation screen — a scope with no document of its own', () =
     fireEvent.click(await screen.findByTestId('open-decisions'))
     expect(await screen.findByText('Architecture decisions')).toBeDefined()
     expect(await scopes.read('')).toBeDefined()
-    expect(screen.queryByText('That project could not be opened.')).toBeNull()
+    expect(screen.queryByText('That scope could not be opened.')).toBeNull()
   })
 
   it('opens the page, and writes nothing, for somebody who may only read', async () => {
@@ -617,7 +617,7 @@ describe('the organisation screen — a scope with no document of its own', () =
     fireEvent.click(await screen.findByTestId('open-decisions'))
     expect(await screen.findByText('Architecture decisions')).toBeDefined()
     expect((await scopes.read(''))?.revision).toBe(before)
-    expect(screen.queryByText('That project could not be opened.')).toBeNull()
+    expect(screen.queryByText('That scope could not be opened.')).toBeNull()
   })
 })
 

@@ -192,7 +192,7 @@ describe('Back and Forward', () => {
     const { ask, where } = await organisationOnScreen()
     await ask('app.open', { scope: 'acme/retail' })
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
-    fireEvent.click(screen.getByRole('button', { name: 'Project settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Scope settings' }))
     expect(await screen.findByRole('dialog')).toBeDefined()
     window.history.back()
     await waitFor(async () => expect((await where()).home?.path).toBe(''))

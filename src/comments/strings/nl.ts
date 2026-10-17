@@ -21,7 +21,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'comments.edited': 'bewerkt',
   'comments.you': 'jij',
   'comments.via': 'via {agent}',
-  'comments.from': 'Meegekomen met {record}',
+  'comments.cameWith': 'Meegekomen met',
   'comments.who': 'Wie schrijft er? Kies jezelf één keer uit het register; de app onthoudt het als Dit ben ik.',
   'comments.noRegister': 'Een reactie wordt ondertekend door een persoon uit het register, en het register wordt hier niet gelezen.',
   'comments.elsewhere': 'Dit record staat in een andere scope: de reacties erop worden daar gelezen en geschreven.',

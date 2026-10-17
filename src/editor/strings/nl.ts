@@ -396,7 +396,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.uses': 'Gebruikt',
   'field.usesNothing': 'Nog niets',
   'field.usesPick': 'Diensten of platforms toevoegen…',
-  'field.usesSearch': 'Zoek in de organisatie…',
+  'field.usesSearch': 'Zoeken…',
   'field.usesHelp': 'Diensten eerst; een platform waar deze aan één exemplaar gebonden is',
   'field.usesHere': 'Deze scope',
   'field.usesShared': 'gedeeld',

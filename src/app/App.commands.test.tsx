@@ -335,7 +335,7 @@ describe('the overflow on the web', () => {
 
   const openOverflow = async () => {
     fireEvent.click(screen.getByTestId('overflow-button'))
-    await waitFor(() => expect(screen.getByText('Save a Copy of the Working File…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Save a copy of the working file…')).toBeDefined())
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
@@ -355,7 +355,7 @@ describe('the overflow on the web', () => {
   it('sends the same command the menu bar would', async () => {
     const view = show()
     await openOverflow()
-    fireEvent.click(screen.getByText('Save a Copy of the Working File…'))
+    fireEvent.click(screen.getByText('Save a copy of the working file…'))
 
     await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
@@ -365,7 +365,7 @@ describe('the overflow on the web', () => {
   it('offers no folder where none can be chosen', async () => {
     show()
     await openOverflow()
-    expect(screen.queryByText('Open Folder…')).toBeNull()
+    expect(screen.queryByText('Open folder…')).toBeNull()
   })
 
   /**

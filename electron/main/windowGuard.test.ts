@@ -245,14 +245,14 @@ describe('the question closing asks', () => {
 
   it('is asked in the app’s language', async () => {
     expect(await asked('nl')).toMatchObject({
-      title: 'Niet-bewaarde wijzigingen', message: 'Dit project kon niet worden bewaard.', buttons: ['Toch sluiten', 'Venster open laten'],
+      title: 'Niet-bewaarde wijzigingen', message: 'Deze scope kon niet worden bewaard.', buttons: ['Toch sluiten', 'Venster open laten'],
     })
     expect((await asked('de')).buttons).toEqual(['Trotzdem schließen', 'Fenster geöffnet lassen'])
   })
 
   it('is asked in English where main has heard no language, or one it does not know', async () => {
     expect((await asked()).buttons).toEqual(['Close anyway', 'Keep the window open'])
-    expect((await asked('fr')).message).toBe('This project could not be saved.')
+    expect((await asked('fr')).message).toBe('This scope could not be saved.')
   })
 })
 

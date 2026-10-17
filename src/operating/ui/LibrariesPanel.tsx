@@ -34,6 +34,7 @@ import type { Difference } from '../compare'
 import { editResponsibility, editRole, editUnitType } from '../edit'
 import type { OperatingModel } from '../edit'
 import type { Library, LibraryLanguage } from '../library'
+import { NothingDash } from '../../widgets/NothingDash'
 import { countsLine } from './countsLine'
 
 type Props = {
@@ -209,7 +210,9 @@ function MadeRow({ item, readOnly, dispatch, onOpenItem }: { item: CameInItem; r
               onChange={(event) => dispatch(RENAME[item.kind](item.id, 'name', event.target.value))} />
           )}
       </TableCell>
-      <TableCell sx={{ fontSize: 12, color: item.changed.length ? 'text.primary' : 'text.secondary' }}>{changedWords(item.changed, t)}</TableCell>
+      <TableCell sx={{ fontSize: 12 }}>
+        {item.changed.length === 0 ? <NothingDash says={t('operating.changedNothing')} /> : changedWords(item.changed, t)}
+      </TableCell>
     </TableRow>
   )
 }

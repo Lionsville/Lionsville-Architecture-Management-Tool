@@ -34,25 +34,20 @@ export const DE: Record<keyof typeof EN, string> = {
   'prefs.pushAfterSnapshot': 'Nach jeder Momentaufnahme pushen',
   'history.beforeSync': 'Vor dem Synchronisieren',
   'history.beforeUpgrade': 'Vor der Aktualisierung des Dateiformats',
-  'folder.body':
-    'Wählen Sie einen Ordner; diese App bewahrt Ihre Projekte darin als Dateien auf, die Sie lesen, '
-    + 'sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
-  'folder.choose': 'Ordner wählen…',
+  'folder.body': 'Wählen Sie einen Ordner; diese App bewahrt Ihre Arbeit darin als Dateien auf, die Sie lesen, sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
+  'folder.choose': 'Ordner öffnen…',
   'folder.adoptTitle': 'Ihre Arbeit in diesen Ordner mitnehmen?',
-  'folder.adoptBody':
-    'Ihre Projekte liegen zurzeit in der App selbst. „{name}“ kann eine Kopie davon '
-    + 'bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen '
-    + 'nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
+  'folder.adoptBody': 'Ihre Arbeit liegt zurzeit in der App selbst. „{name}“ kann eine Kopie davon bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
   'folder.adoptCopy': 'Meine Arbeit hineinkopieren',
   'folder.adoptSkip': 'Ordner so öffnen, wie er ist',
-  'picker.chooseFolder': 'Ordner wählen…',
+  'picker.chooseFolder': 'Ordner öffnen…',
   'picker.changeFolder': 'Aus einem anderen Ordner arbeiten…',
   'shell.folderNotOpened': 'Der Ordner konnte nicht geöffnet werden: {message}',
   'shell.sourceFolder': 'Ordner · {name}',
   'shell.sourceBrowser': 'In diesem Browser',
   'shell.sourceMemory': 'Nirgends gespeichert',
-  'shell.sourceTipFolder': 'Ihre Projekte sind Dateien in diesem Ordner. Schnappschüsse gehen in seinen Verlauf.',
-  'shell.sourceTipBrowser': 'Ihre Projekte liegen im Speicher dieses Browsers. Speichern Sie eine Arbeitsdatei, um sie anderswo aufzubewahren.',
+  'shell.sourceTipFolder': 'Ihre Arbeit liegt als Dateien in diesem Ordner. Schnappschüsse gehen in seinen Verlauf.',
+  'shell.sourceTipBrowser': 'Ihre Arbeit liegt im Speicher dieses Browsers. Speichern Sie eine Arbeitsdatei, um sie anderswo aufzubewahren.',
   'shell.sourceTipMemory': 'Nichts wird aufbewahrt: der Speicher hat abgelehnt. Speichern Sie eine Arbeitsdatei, bevor Sie diesen Tab schließen.',
   'picker.deleteBodyFolder': 'Dies löscht {name}, alles darunter Abgelegte und seinen Ordner auf der Festplatte. Eine anderswo gespeicherte Arbeitsdatei bleibt unberührt.',
   'picker.deleteBodyBrowser': 'Dies löscht {name} und alles darunter Abgelegte aus diesem Browser. Eine anderswo gespeicherte Arbeitsdatei bleibt unberührt.',

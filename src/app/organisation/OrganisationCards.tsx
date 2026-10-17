@@ -181,7 +181,7 @@ function observationsLine(counts: OrganisationPages['observations'], s: Translat
     bright > 0 ? plural(s, { one: 'org.brightOne', other: 'org.brightOther' }, bright) : '',
     tallyLine(counts.causes, CAUSE_STATE_LABEL, s),
     roots > 0 && solutions > 0
-      ? s('solution.coverage', { count: counts.covered, total: roots })
+      ? plural(s, { one: 'solution.coverageOne', other: 'solution.coverageOther' }, roots, { count: counts.covered, total: roots })
       : roots > 0 ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, roots) : '',
   ].filter(Boolean).join(' · ')
 }

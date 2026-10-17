@@ -184,7 +184,7 @@ describe('the other ways in', () => {
   it('takes nothing while a dialog is open', async () => {
     const view = onTheDesktop(landscape)
     await screen.findByTestId('back-forward')
-    fireEvent.click(screen.getByRole('button', { name: 'Project settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Scope settings' }))
     await screen.findByRole('dialog')
     expect(dialogIsOpen()).toBe(true)
     view.send({ type: 'back' })

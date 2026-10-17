@@ -52,7 +52,7 @@ import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, goMenu, preferencesPlacement,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, goMenu, preferencesPlacement, titleCase,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
 import type { ThemeMode } from '../../src/platform/theme'
@@ -154,7 +154,8 @@ export function commandsHeard(by?: Listener): void {
   for (const command of held.splice(0)) sendCommand(command)
 }
 
-const label = (key: keyof typeof EN): string => EN[key]
+// The table is in sentence case for the web's overflow; a menu bar is in Title Case.
+const label = (key: keyof typeof EN): string => titleCase(EN[key])
 
 /** The id an item that needs a scope is found by, to enable it when one opens. */
 const scopeId = (spec: MenuItemSpec) => `scope:${spec.command.type}`

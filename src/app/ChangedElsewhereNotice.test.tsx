@@ -46,14 +46,14 @@ describe('ChangedElsewhereNotice', () => {
     show('external-changed')
     expect(screen.getByTestId('changed-elsewhere-notice').textContent).toContain('changed elsewhere')
     expect(screen.getByText('Take theirs')).toBeDefined()
-    expect(screen.queryByText('Save a copy…')).toBeNull()
+    expect(screen.queryByText('Save a copy of the working file…')).toBeNull()
   })
 
   it('offers all three when both sides changed', () => {
     // No "merge" button, because there is no merge: the choice is which version
     // survives, and a fourth button would be the one place this app lied.
     show('conflict')
-    for (const label of ['Take theirs', 'Keep mine', 'Save a copy…']) {
+    for (const label of ['Take theirs', 'Keep mine', 'Save a copy of the working file…']) {
       expect(screen.getByText(label), label).toBeDefined()
     }
   })
@@ -62,7 +62,7 @@ describe('ChangedElsewhereNotice', () => {
     const actions = show('conflict')
     fireEvent.click(screen.getByText('Take theirs'))
     fireEvent.click(screen.getByText('Keep mine'))
-    fireEvent.click(screen.getByText('Save a copy…'))
+    fireEvent.click(screen.getByText('Save a copy of the working file…'))
 
     expect(actions.takeTheirs).toHaveBeenCalled()
     expect(actions.keepMine).toHaveBeenCalled()

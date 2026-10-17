@@ -78,6 +78,7 @@ import { usePageMove } from './useMove'
 import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
 import { formatDay } from '../../i18n/dates'
+import { plural } from '../../i18n/strings'
 import { EmptyRegister, crumbTrail, preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
@@ -501,18 +502,27 @@ function analysedIntoOf(causes: readonly Cause[], below: readonly ScopeAnalysis[
  * drawn in: the problems' and the causes', then — only where there are any —
  * the bright spots', counted apart in the success colour (ADR-0038 §6).
  */
-function phaseRows(counted: PictureCounts): (readonly [StringKey, number, string | undefined])[] {
+type PhaseRow = { readonly keys: { one: StringKey; other: StringKey }; readonly count: number; readonly color: string | undefined }
+
+/** The word beside a count, in the number the count has: *1 root cause*, *2 root causes*; a participle is the same in both. */
+const phase = (one: StringKey, other: StringKey, count: number, color?: string): PhaseRow => ({ keys: { one, other }, count, color })
+
+function phaseRows(counted: PictureCounts): PhaseRow[] {
   const plain = [
-    ['observation.phaseObserved', counted.observed], ['observation.phaseAnalysed', counted.analysed],
-    ['observation.phaseAssumed', counted.assumed], ['observation.phaseVerified', counted.verified],
-    ['observation.phaseRoots', counted.roots], ['observation.phaseOpenEnds', counted.openEnds],
-  ] as const
+    phase('observation.phaseObserved', 'observation.phaseObserved', counted.observed),
+    phase('observation.phaseAnalysed', 'observation.phaseAnalysed', counted.analysed),
+    phase('observation.phaseAssumed', 'observation.phaseAssumed', counted.assumed),
+    phase('observation.phaseVerified', 'observation.phaseVerified', counted.verified),
+    phase('observation.phaseRootsOne', 'observation.phaseRoots', counted.roots),
+    phase('observation.phaseOpenEndsOne', 'observation.phaseOpenEnds', counted.openEnds),
+  ]
   const { bright } = counted
   const lit = bright.observed > 0 || bright.openEnds > 0 ? [
-    ['observation.phaseBright', bright.observed], ['observation.phaseBrightAnalysed', bright.analysed],
-    ['observation.phaseBrightOpenEnds', bright.openEnds],
-  ] as const : []
-  return [...plain.map(([key, count]) => [key, count, undefined] as const), ...lit.map(([key, count]) => [key, count, 'success.main'] as const)]
+    phase('observation.phaseBrightOne', 'observation.phaseBright', bright.observed, 'success.main'),
+    phase('observation.phaseBrightAnalysedOne', 'observation.phaseBrightAnalysed', bright.analysed, 'success.main'),
+    phase('observation.phaseBrightOpenEndsOne', 'observation.phaseBrightOpenEnds', bright.openEnds, 'success.main'),
+  ] : []
+  return [...plain, ...lit]
 }
 
 export function ObservationsPage(props: ObservationsPageProps) {
@@ -830,10 +840,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const picture = (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       <Box data-testid="analysis-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        {phases.map(([key, count, bright]) => (
-          <Typography key={key} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color: bright }}>{count}</Box>
-            <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{s(key)}</Box>
+        {phases.map(({ keys, count, color }) => (
+          <Typography key={keys.other} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color }}>{count}</Box>
+            <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{plural(s, keys, count)}</Box>
           </Typography>
         ))}
       </Box>
@@ -890,7 +900,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </Typography>
         ))}
         <Typography variant="caption" color="text.secondary" data-testid="solution-coverage">
-          {s('solution.coverage', { count: rootCount - orphanRoots.length, total: rootCount })}
+          {plural(s, { one: 'solution.coverageOne', other: 'solution.coverageOther' }, rootCount, { count: rootCount - orphanRoots.length, total: rootCount })}
         </Typography>
         <Box sx={{ flex: 1 }} />
         <FormControlLabel

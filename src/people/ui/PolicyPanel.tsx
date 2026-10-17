@@ -7,7 +7,7 @@
  * agent sees. A setting of the organisation's, not a step; read-only where
  * the organisation's settings are not this person's to change.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
@@ -49,11 +49,15 @@ export function PolicyPanel({ register, saying, s }: { register: PeopleRegisterA
     <Section title={s('people.policy')}>
       <Box data-testid="people-policy" data-guide="people.policy" sx={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 1, alignItems: 'center' }}>
         <Typography component="label" htmlFor="people-keep" sx={{ fontSize: 12 }}>{s('people.keepName')}</Typography>
-        <TextField id="people-keep" size="small" type="number" value={keep} disabled={fixed} onChange={(event) => setKeep(event.target.value)}
-          sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.keepName')} (${s('people.days')})` } }} />
+        <Days s={s}>
+          <TextField id="people-keep" size="small" type="number" value={keep} disabled={fixed} onChange={(event) => setKeep(event.target.value)}
+            sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.keepName')} (${s('people.days')})` } }} />
+        </Days>
         <Typography component="label" htmlFor="people-remove" sx={{ fontSize: 12 }}>{s('people.removeAfter')}</Typography>
-        <TextField id="people-remove" size="small" type="number" value={remove} disabled={fixed} onChange={(event) => setRemove(event.target.value)}
-          sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.removeAfter')} (${s('people.days')})` } }} />
+        <Days s={s}>
+          <TextField id="people-remove" size="small" type="number" value={remove} disabled={fixed} onChange={(event) => setRemove(event.target.value)}
+            sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.removeAfter')} (${s('people.days')})` } }} />
+        </Days>
         <Typography component="label" htmlFor="people-sees" sx={{ fontSize: 12 }}>{s('people.agentsSee')}</Typography>
         <TextField id="people-sees" size="small" select value={sees} disabled={fixed} onChange={(event) => setSees(event.target.value as AgentSees)}
           sx={{ width: 110 }} slotProps={{ select: { inputProps: { 'aria-label': s('people.agentsSee') } } }}>
@@ -67,5 +71,15 @@ export function PolicyPanel({ register, saying, s }: { register: PeopleRegisterA
       )}
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1 }}>{s('people.policyNote')}</Typography>
     </Section>
+  )
+}
+
+/** A number of days, with the unit beside the field: a bare *90* names none. */
+function Days({ s, children }: { s: Translate; children: ReactNode }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+      {children}
+      <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.days')}</Typography>
+    </Box>
   )
 }

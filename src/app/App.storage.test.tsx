@@ -85,7 +85,7 @@ describe('what the root’s home says you are working from', () => {
     renderApp({ source: folder, provider: folderSays })
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     expect((await screen.findByRole('tooltip')).textContent)
-      .toBe('Your projects are files in this folder. Snapshots go into its history.')
+      .toBe('Your work is kept in this folder as files. Snapshots go into its history.')
   })
 
   it('says where everything is kept under the organisation\'s name, in its provider\'s sentence', () => {
@@ -546,7 +546,7 @@ describe('a way in a registered provider brought', () => {
     renderApp({ provider: { waysIn: [chooser, ...waysIn] } })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
     expect(screen.getByTestId('connect-source-somewhere').textContent).toBe('Connect to somewhere\u2026')
-    expect(screen.getByText('Choose folder\u2026')).toBeDefined()
+    expect(screen.getByText('Open folder\u2026')).toBeDefined()
   })
 
   it('presses through to whoever registered it', () => {
@@ -606,7 +606,7 @@ describe('a way in a registered provider brought', () => {
     // Its own button and nobody else's: the other provider's stands, and so does
     // the folder's, which is offered wherever a folder can be chosen.
     expect(screen.getByTestId('connect-source-somewhere')).toBeDefined()
-    expect(screen.getByText('Choose folder\u2026')).toBeDefined()
+    expect(screen.getByText('Open folder\u2026')).toBeDefined()
   })
 
   it('says what its provider now says on it, where it gave a word', () => {

@@ -246,7 +246,7 @@ describe('the picture', () => {
     // c2 is no root cause and nothing explains it.
     expect(picture().querySelector('[data-key="c2"] [data-testid="picture-open-end"]')).not.toBeNull()
     expect(picture().querySelector('[data-key="c1"] [data-testid="picture-open-end"]')).toBeNull()
-    expect(screen.getByTestId('analysis-phases').textContent).toContain('1open ends')
+    expect(screen.getByTestId('analysis-phases').textContent).toContain('1open end')
   })
 
   it('is clean for axe with a filter on and in the small size', async () => {
@@ -465,8 +465,8 @@ describe('bright spots (ADR-0038 §6)', () => {
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     const phases = screen.getByTestId('analysis-phases').textContent
     expect(phases).toContain('2observed')
-    expect(phases).toContain('1bright spots')
-    expect(phases).toContain('1bright spots analysed')
+    expect(phases).toContain('1bright spot')
+    expect(phases).toContain('1bright spot analysed')
     // The line from the bright spot to the cause behind it alone is drawn in the success colour.
     const bright = [...picture().querySelectorAll('[data-testid="analysis-link"][data-bright="true"]')]
     expect(bright).toHaveLength(1)

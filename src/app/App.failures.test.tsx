@@ -61,7 +61,7 @@ describe('the organisation screen, when the store refuses', () => {
   it('says the list could not be read instead of showing an empty one', async () => {
     show({ tree: refused })
     await waitFor(() => expect(screen.getByRole('alert').textContent)
-      .toContain('Your projects could not be read.'))
+      .toContain('The organisations could not be read.'))
   })
 
   it('puts the cause in the trail, not only on the screen', async () => {

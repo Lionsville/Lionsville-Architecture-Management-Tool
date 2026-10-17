@@ -44,7 +44,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.getDesktopApp': 'Desktop-App herunterladen',
   // The question the desktop asks where closing would lose what could not be saved.
   'window.unsavedTitle': 'Nicht gespeicherte Änderungen',
-  'window.unsavedMessage': 'Dieses Projekt konnte nicht gespeichert werden.',
+  'window.unsavedMessage': 'Dieser Bereich konnte nicht gespeichert werden.',
   'window.unsavedDetail': 'Wenn Sie jetzt schließen, gehen die Änderungen verloren, die nur in diesem Fenster sind.',
   'window.closeAnyway': 'Trotzdem schließen',
   'window.keepOpen': 'Fenster geöffnet lassen',

@@ -62,17 +62,43 @@ import {
 import type { LinkMode, Mode } from './readerActions'
 import { CommentThread } from '../../comments/ui/threadPart'
 import type { CommentThreadProps } from '../../comments/ui/CommentThread'
+import type { CommentFrom } from '../../model/comment'
+import { nodeKey } from '../graph'
+import { experimentKey, solutionKey } from '../solutionGraph'
 
 export type { Mode } from './readerActions'
 
 /**
  * Where a record's thread is read (ADR-0037): the scope below that keeps it,
- * where it is one, and what a comment that came with a merged record names it.
+ * where it is one; what a comment that came with a merged record names it; and
+ * how that record is opened, where it still is — a link in the thread.
+ *
+ * A comment that came with the record itself, from the scope it was moved out
+ * of (ADR-0038), names that scope and the number the record had there, as the
+ * history line does: `moved` is the observation's own history, and there is
+ * nothing to open, because the record is the one being read.
  */
 export function threadPlace(
-  fromScope: { path: string } | undefined, nameOf: NameOf,
-): Pick<CommentThreadProps, 'scope' | 'nameOf'> {
-  return { ...(fromScope ? { scope: fromScope.path } : {}), nameOf: (from) => nameOf(from.id, from.scope) }
+  fromScope: { path: string } | undefined, nameOf: NameOf, onOpen: (key: string) => void,
+  moved?: { id: string; history: readonly ObservationEvent[]; scopeLabel: ((path: string) => string) | undefined },
+): Pick<CommentThreadProps, 'scope' | 'nameOf' | 'openFrom'> {
+  const itself = (from: CommentFrom) => moved !== undefined && from.id === moved.id && from.scope !== undefined
+  return {
+    ...(fromScope ? { scope: fromScope.path } : {}),
+    nameOf: (from) => {
+      const came = itself(from) ? moved?.history.find((event) => event.kind === 'movedIn' && event.scope === from.scope) : undefined
+      if (came?.number !== undefined) return `${formatObservationNumber(came.number)} (${(moved?.scopeLabel ?? ((path: string) => path))(from.scope ?? '')})`
+      return nameOf(from.id, from.scope)
+    },
+    openFrom: (from) => (itself(from) ? undefined : () => onOpen(keyOfFrom(from))),
+  }
+}
+
+/** The page's key for a record a comment came with: the picture's for an observation or a cause, a solution's or an experiment's own. */
+function keyOfFrom(from: CommentFrom): string {
+  if (from.kind === 'solution') return solutionKey(from.id)
+  if (from.kind === 'experiment') return experimentKey(from.id)
+  return nodeKey(from.id, from.scope)
 }
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -429,7 +455,7 @@ export function ObservationReader(props: ObservationReaderProps) {
                 </Box>
               ))}
             </Box>
-            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf)} />
+            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel })} />
           </DocumentSheet>
         )}
       </Box>
@@ -700,7 +726,7 @@ export function CauseReader(props: CauseReaderProps) {
             </Typography>
             <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
-            <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf)} />
+            <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
           </DocumentSheet>
         )}
       </Box>

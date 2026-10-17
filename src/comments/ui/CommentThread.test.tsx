@@ -9,7 +9,7 @@
  * again when a reply is answered — an edit of your own, a removal that leaves
  * *Comment removed*, and nothing offered where the scope is only read.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { useState } from 'react'
 import { renderShell } from '../../app/testing/renderShell'
@@ -53,8 +53,10 @@ function scope(comments: Comment[] = []): Model {
 }
 
 /** The workspace, as far as a thread sees it: a model, the writer over it, and the register. */
-function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn }: {
+function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom }: {
   start: Model; me: PersonId | undefined; mayComment?: boolean; mayModerate?: boolean; onMe?: (id: PersonId | undefined) => void; keptIn?: string
+  /** Where given, a record a comment came with is named by its id in capitals and opens through this. */
+  onOpenFrom?: (id: string) => void
 }) {
   const [model, setModel] = useState(start)
   const [who, setWho] = useState(me)
@@ -70,7 +72,10 @@ function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptI
         scope: 'shop', comments: commentList(model), dispatch, mayComment, mayModerate,
         makeId: () => `cm-new-${++next}`, now: () => AT,
       }}>
-        <CommentThread about={web} {...(keptIn ? { scope: keptIn } : {})} />
+        <CommentThread
+          about={web} {...(keptIn ? { scope: keptIn } : {})}
+          {...(onOpenFrom ? { nameOf: (from) => from.id.toUpperCase(), openFrom: (from) => () => onOpenFrom(from.id) } : {})}
+        />
       </CommentsProvider>
       <output data-testid="held">{JSON.stringify(commentList(model))}</output>
     </PersonNamesProvider>
@@ -148,6 +153,19 @@ describe('a thread', () => {
     renderShell(<Harness start={scope([first])} me="pe-eva" keptIn="elsewhere" />)
     expect(screen.getByText(s('comments.elsewhere'))).toBeTruthy()
     expect(screen.queryByTestId('comment-cm-1')).toBeNull()
+  })
+
+  it('says which record a comment came with, by the name it is given, and links it where it can be opened', () => {
+    const came: Comment = { ...first, from: { kind: 'element', id: 'ob-1' } }
+    renderShell(<Harness start={scope([came])} me="pe-eva" />)
+    expect(screen.getByTestId('comment-from').textContent).toBe('Came with ob-1')
+    expect(screen.queryByRole('button', { name: 'ob-1' })).toBeNull()
+    cleanup()
+    const onOpenFrom = vi.fn()
+    renderShell(<Harness start={scope([came])} me="pe-eva" onOpenFrom={onOpenFrom} />)
+    expect(screen.getByTestId('comment-from').textContent).toBe('Came with OB-1')
+    fireEvent.click(screen.getByRole('button', { name: 'OB-1' }))
+    expect(onOpenFrom).toHaveBeenCalledWith('ob-1')
   })
 
   it('draws nothing with no workspace around it', () => {

@@ -389,6 +389,8 @@ describe('the People page', () => {
   it('changes the policy as the organisation’s setting', async () => {
     const onPolicy = vi.fn()
     renderShell(<Harness onPolicy={onPolicy} />)
+    // The unit stands beside each field: a bare 90 names none.
+    expect(within(screen.getByTestId('people-policy')).getAllByText('days')).toHaveLength(2)
     fireEvent.change(screen.getByLabelText('Keep a leaver’s name for (days)'), { target: { value: '30' } })
     fireEvent.click(screen.getByTestId('people-policy-save'))
     await waitFor(() => expect(onPolicy).toHaveBeenCalledWith({ keepNameDays: 30, removeAfterDays: 730, agentsSee: 'names' }))

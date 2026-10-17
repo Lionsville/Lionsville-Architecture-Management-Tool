@@ -151,7 +151,7 @@ landscape.
 The chip at the right of the bar says where your work is kept: the folder your
 projects are files in, **In this browser**, or **Not kept anywhere**.
 **Work from another folder…** beside it points the app at a different folder,
-and a browser that has no folder offers **Choose folder…** instead.
+and a browser that has no folder offers **Open folder…** instead.
 
 **Examples**, last. Copying one into an organisation that is empty and unnamed
 makes the example *the* organisation. An organisation that is already something
@@ -686,7 +686,7 @@ too. A strip above the canvas asks which version stands:
 - **Keep mine** replays your changes onto their version, so their edits to
   things you did not touch survive. Only where that is refused does it write
   the whole scope as it is on your screen over theirs.
-- **Save a copy…**, with unsaved changes here, puts yours in a working file
+- **Save a copy of the working file…**, with unsaved changes here, puts yours in a working file
   first and leaves the decision for later.
 
 Nothing is overwritten without asking.
@@ -749,8 +749,8 @@ scope's: it puts back what this scope's page said, and the others are theirs to
 restore.
 
 **Restore.** With a snapshot chosen, **Restore this version…** makes the
-diagram, description or decision what it was then; with the whole project
-shown, **Restore the whole project…** does the same for everything. A restore
+diagram, description or decision what it was then; with the whole scope
+shown, **Restore the whole scope…** does the same for everything. A restore
 is a new change on top of everything that happened since, not a step back: the
 history keeps growing, the Activity list says *Restored the diagram Warehouse
 as of 3 Sep*, ⌘Z undoes it, and the next snapshot records it. The app offers
@@ -773,15 +773,15 @@ was there can be restored.
 
 ## The workspace
 
-One open project: a bar at the top, the editor below it.
+One open scope: a bar at the top, the editor below it.
 
 | In the bar | What it does |
 |---|---|
 | **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Share with a Link…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar, with **Preferences…** as **Settings…** in the app menu on macOS |
-| **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it, read from the history, so they include moves from before you opened it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
-| **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
+| **⋯** | In a browser, the menu: **Open folder…** where the browser offers one, **Open…**, **Save**, **Save a copy of the working file…**, **Share with a link…**, **Snapshot…**, **History…**, **Connect an agent…**, the theme, **Preferences…**, and under Help **User manual**, **Keyboard shortcuts…** and **Get the desktop app**. On the desktop the same items, but the last, are in the menu bar — in Title Case, as a menu bar has them — with **Preferences…** as **Settings…** in the app menu on macOS |
+| **Activity** | What has changed in this scope since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it, read from the history, so they include moves from before you opened it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
+| **Saved · hh:mm** | Where the scope stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
 Everything is saved automatically as you work: three seconds after you stop, on
 leaving the window, and on closing it. Closing with unsaved work saves it
@@ -847,7 +847,7 @@ nearest scope above it. The Activity list says what was removed.
 
 ### Share with a link
 
-**File → Share with a Link…** (in a browser, in the **⋯** menu) makes a link
+**File → Share with a Link…** (in a browser, **Share with a link…** in the **⋯** menu) makes a link
 to the place you are on, copies it, and shows it in a small dialog, where it
 can be selected and copied again with **Copy link**. *Link copied* is said once
 the copy has been made. The link is the address of where the work is kept with
@@ -1520,7 +1520,7 @@ introduces and retires — in a single step, because a plan slipping is one thin
 that happened. A plan that reorganises units says what that does to the people
 in them (see *Change over time*).
 
-Each plan is one markdown file in `transitions/` in your project folder, numbered
+Each plan is one markdown file in `transitions/` in the scope's folder, numbered
 `TR-0001` upwards.
 
 **Initiatives.** A plan lives in the scope that writes it, and a domain's
@@ -1659,7 +1659,7 @@ the rest of the session, and a note says it is now on the organisation chart.
 
 ### Making one
 
-A sheet on a project with nothing above its applications is empty, and the empty
+A sheet on a scope with nothing above its applications is empty, and the empty
 page offers the two places to start: **New journey** and **New area**.
 Everything else is a **+** where the thing would go, and they all work the same
 way — what you made appears, it is selected, and the cursor is in its name, so
@@ -1713,7 +1713,7 @@ ending it offered first, who stops being what, and where the units inside it
 go — which therefore do not hold its delete back.
 
 **What this sheet draws**, the sliders in the top bar, is about the sheet rather
-than the model — which journey runs across the top (a project with two journeys
+than the model — which journey runs across the top (a scope with two journeys
 starts with neither), which areas are drawn and in which order, the order of the
 lanes, and whether the rail is there at all.
 
@@ -2539,7 +2539,7 @@ which agent wrote them, and are edited and removed by the same rules.
 Right-click a diagram tab, **Diagram settings…**.
 
 - **On the drawing.** Author, client and date for the title block of a PNG
-  export, each falling back to the project's default or the day of export when
+  export, each falling back to the scope's default or the day of export when
   left empty, and whether to draw the title block at all.
 - **Operational aspects.** The aspect columns applications on this diagram carry:
   add a standard one (platform, CI/CD, DR, security, monitoring, backup,
@@ -2637,7 +2637,7 @@ Activity and is not undone with ⌘Z.
 
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the
 minimap, the tidy settings, the language and the theme are remembered per
-browser or per desktop install. They belong to you, not to the project: they
+browser or per desktop install. They belong to you, not to the scope: they
 do not travel in a file. The same goes for what this machine does about a
 folder — pull on open, push after a snapshot: the desktop keeps that with the
 install, and writes nothing of its own into your folder.
@@ -2645,7 +2645,7 @@ install, and writes nothing of its own into your folder.
 ## Undo
 
 **⌘Z** covers everything, in the order you did it: a box moved, a diagram
-renamed, a decision accepted, a project setting cleared. Typing a name is one
+renamed, a decision accepted, a scope setting cleared. Typing a name is one
 step rather than one per letter, and a drag and the lines that re-route after it
 are one step — so going back once gives you what you had rather than what you
 had a keystroke ago.

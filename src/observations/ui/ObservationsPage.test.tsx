@@ -454,7 +454,7 @@ describe('ObservationsPage', () => {
     expect(causes).toHaveLength(2)
     expect(causes.find((node) => node.getAttribute('data-key') === 'c2')?.getAttribute('data-root')).toBe('true')
     expect(within(picture).getAllByTestId('analysis-link').map((line) => line.getAttribute('data-strength')).sort()).toEqual(['normal', 'strong', 'weak'])
-    expect(screen.getByTestId('analysis-phases').textContent).toContain('1root causes')
+    expect(screen.getByTestId('analysis-phases').textContent).toContain('1root cause')
     // The queue names what has no cause yet.
     expect(screen.getByTestId('analysis-queue').textContent).toContain('OB-0002')
     fireEvent.click(causes.find((node) => node.getAttribute('data-key') === 'c2')!)

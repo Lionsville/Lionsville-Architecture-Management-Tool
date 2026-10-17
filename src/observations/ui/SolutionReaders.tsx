@@ -62,6 +62,7 @@ import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { solutionKey } from '../solutionGraph'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (
@@ -424,7 +425,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 </Box>
               ))}
             </Box>
-            <CommentThread about={{ kind: 'solution', id: solution.id }} nameOf={(from) => props.nameOf(from.id)} /></DocumentSheet>
+            <CommentThread about={{ kind: 'solution', id: solution.id }} nameOf={(from) => props.nameOf(from.id)} openFrom={(from) => () => props.onOpen(solutionKey(from.id))} /></DocumentSheet>
         )}
       </Box>
     </Box>

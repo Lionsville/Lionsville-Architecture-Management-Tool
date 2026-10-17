@@ -28,6 +28,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Link from '@mui/material/Link'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -54,21 +55,23 @@ export type CommentThreadProps = {
   about: RecordKey
   /** The scope that keeps the record, where it is not the scope open: its thread is read and written there. */
   scope?: string
-  /** What a record a comment came with is called (a merge's absorbed one); its id where not said. */
+  /** What a record a comment came with is called (a merge's absorbed one, or the number it had before a move); its id where not said. */
   nameOf?: (from: CommentFrom) => string
+  /** How to open the record a comment came with, where it can be: the name is then a link. */
+  openFrom?: (from: CommentFrom) => (() => void) | undefined
 }
 
 /** What is being written: a new comment, a reply to one, or an edit of one. */
 type Writing = { kind: 'new' } | { kind: 'reply'; to: string } | { kind: 'edit'; id: string }
 
-export function CommentThread({ about, scope, nameOf }: CommentThreadProps) {
+export function CommentThread({ about, scope, nameOf, openFrom }: CommentThreadProps) {
   const access = useComments()
   const { t } = useStrings()
   if (!access) return null
   if (scope !== undefined && scope !== access.scope) {
     return <ThreadFrame count={undefined}><Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{t('comments.elsewhere')}</Typography></ThreadFrame>
   }
-  return <OpenThread access={access} about={about} {...(nameOf ? { nameOf } : {})} />
+  return <OpenThread access={access} about={about} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
 }
 
 function ThreadFrame({ count, children }: { count: number | undefined; children: ReactNode }) {
@@ -89,7 +92,9 @@ function useMe(names: PersonNames): PersonId | undefined {
   return useMemo(() => meIn(register?.me, registerOf(register?.people ?? []))?.id, [register?.me, register?.people])
 }
 
-function OpenThread({ access, about, nameOf }: { access: CommentsAccess; about: RecordKey; nameOf?: (from: CommentFrom) => string }) {
+function OpenThread({ access, about, nameOf, openFrom }: {
+  access: CommentsAccess; about: RecordKey; nameOf?: (from: CommentFrom) => string; openFrom?: (from: CommentFrom) => (() => void) | undefined
+}) {
   const { t } = useStrings()
   const names = usePersonNames()
   const me = useMe(names)
@@ -121,6 +126,7 @@ function OpenThread({ access, about, nameOf }: { access: CommentsAccess; about: 
       if (me !== undefined) said(access.dispatch({ type: 'comment.remove', id, removed: { at: access.now(), by: pickedPerson(me) } }))
     },
     ...(nameOf ? { nameOf } : {}),
+    ...(openFrom ? { openFrom } : {}),
   }
 
   return (
@@ -216,6 +222,7 @@ type EntryActions = {
   edit: (id: string, body: string) => void
   remove: (id: string) => void
   nameOf?: (from: CommentFrom) => string
+  openFrom?: (from: CommentFrom) => (() => void) | undefined
 }
 
 /** One comment: who, when, what it says — or that it was removed — and what may be done with it. */
@@ -234,11 +241,7 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
   return (
     <Box data-testid={`comment-${comment.id}`} sx={{ display: 'grid', gap: 0.25 }}>
       <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{byline}</Typography>
-      {comment.from && (
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {t('comments.from', { record: actions.nameOf?.(comment.from) ?? comment.from.id })}
-        </Typography>
-      )}
+      {comment.from && <CameWith from={comment.from} actions={actions} />}
       {gone && <Typography sx={{ fontSize: 13, fontStyle: 'italic', color: 'text.secondary' }}>{t('comments.removed')}</Typography>}
       {!gone && editing && (
         <Composer label={t('comments.edit')} submit={t('comments.save')} initial={comment.body} testId="comment-edit-field"
@@ -247,6 +250,25 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
       {!gone && !editing && <Box sx={{ fontSize: 13.5 }}>{renderMarkdown(comment.body)}</Box>}
       {!gone && !editing && <EntryButtons comment={comment} mine={mine} actions={actions} />}
     </Box>
+  )
+}
+
+/**
+ * Where a comment came from (§6): the record it was written about, by the
+ * number people call it — the history line above says *Moved here from
+ * OB-0001*, and this says the same — and a link to it where it can be opened.
+ */
+function CameWith({ from, actions }: { from: CommentFrom; actions: EntryActions }) {
+  const { t } = useStrings()
+  const name = actions.nameOf?.(from) ?? from.id
+  const open = actions.openFrom?.(from)
+  return (
+    <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }} data-testid="comment-from">
+      {t('comments.cameWith')}{' '}
+      {open
+        ? <Link component="button" type="button" onClick={open} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>{name}</Link>
+        : name}
+    </Typography>
   )
 }
 

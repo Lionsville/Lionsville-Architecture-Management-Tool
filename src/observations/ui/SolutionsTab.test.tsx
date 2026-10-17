@@ -250,7 +250,7 @@ describe('the Solutions tab', () => {
     const picture = screen.getByTestId('solution-picture')
     expect(picture.querySelector('[data-key="so:s1"]')?.getAttribute('data-phase')).toBe('idea')
     expect(picture.querySelectorAll('[data-testid="picture-flag"]')).toHaveLength(1)
-    expect(screen.getByTestId('solution-coverage').textContent).toBe('0 of 1 root causes have a live solution')
+    expect(screen.getByTestId('solution-coverage').textContent).toBe('0 of 1 root cause has a live solution')
   })
 
   it('draws a proven solution after the direction it was and the experiment that confirmed it, and opens it from either box', () => {

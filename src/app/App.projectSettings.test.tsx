@@ -68,7 +68,7 @@ function show(initial: ScopeSnapshot) {
 function applySettings(fields: { name?: string; author?: string }) {
   fireEvent.click(screen.getByText('Settings…'))
   if (fields.name !== undefined) {
-    fireEvent.change(screen.getByLabelText('Project name'), { target: { value: fields.name } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: fields.name } })
   }
   if (fields.author !== undefined) {
     fireEvent.change(screen.getByLabelText('Author'), { target: { value: fields.author } })
@@ -181,7 +181,7 @@ describe('project settings on a scope that is only read', () => {
     const store = show({ ...project(), unreadable: ['model.json'] })
     fireEvent.click(screen.getByText('Settings…'))
     await screen.findByText(/open to be read and not changed/)
-    expect(screen.queryByLabelText('Project name')).toBeNull()
+    expect(screen.queryByLabelText('Name')).toBeNull()
     expect((await saved(store))?.model.name).toBe('Landscape')
   })
 })

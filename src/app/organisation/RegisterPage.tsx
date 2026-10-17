@@ -57,6 +57,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
+import { NothingDash } from '../../widgets/NothingDash'
 import { matchingTechnology, sortTechnology, technologySummary } from '../../projects/technologyRegister'
 import type { TechnologyOrder, TechnologyRow, TechnologySummary } from '../../projects/technologyRegister'
 import { isUnattributed, matchingRows, registerSummary, sortRows } from './register'
@@ -218,7 +219,7 @@ const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummar
       header: 'register.colDrawn',
       named: 'register.colDrawn',
       cell: (row, s, scopeName) => (row.drawnIn.length === 0 ? (
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('register.drawnNowhere')}</Typography>
+        <NothingDash says={s('register.drawnNowhere')} />
       ) : (
         <Tooltip title={row.drawnIn.map(scopeName).join(' · ')}>
           <Typography sx={{ fontSize: 12, cursor: 'default' }}>

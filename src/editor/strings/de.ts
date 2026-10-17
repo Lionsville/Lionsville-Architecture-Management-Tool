@@ -396,7 +396,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.uses': 'Nutzt',
   'field.usesNothing': 'Noch nichts',
   'field.usesPick': 'Dienste oder Plattformen hinzufügen…',
-  'field.usesSearch': 'Organisation durchsuchen…',
+  'field.usesSearch': 'Suchen…',
   'field.usesHelp': 'Dienste zuerst; eine Plattform, wo diese an eine Instanz gebunden ist',
   'field.usesHere': 'Dieser Bereich',
   'field.usesShared': 'geteilt',

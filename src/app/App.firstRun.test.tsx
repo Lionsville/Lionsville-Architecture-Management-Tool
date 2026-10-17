@@ -52,9 +52,9 @@ describe('where work has nowhere to be kept yet', () => {
     })
 
     expect(screen.getByTestId('first-run')).toBeDefined()
-    expect(screen.getByText('Where should your projects live?')).toBeDefined()
+    expect(screen.getByText('Where should your work live?')).toBeDefined()
     // In the words of the way in it asks for.
-    expect(screen.getByText(/keeps your projects in it as files/)).toBeDefined()
+    expect(screen.getByText(/keeps your work in it as files/)).toBeDefined()
     expect(screen.queryByText('Landscape')).toBeNull()
   })
 
@@ -81,7 +81,7 @@ describe('where work has nowhere to be kept yet', () => {
       },
     })
 
-    fireEvent.click(screen.getByText('Choose a folder…'))
+    fireEvent.click(screen.getByText('Open folder…'))
     expect(connect).toHaveBeenCalled()
     fireEvent.click(screen.getByText('Somewhere else'))
     expect(other).toHaveBeenCalled()
@@ -115,7 +115,7 @@ describe('a browser tab', () => {
 
     expect(screen.queryByTestId('first-run')).toBeNull()
     expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
-    expect(screen.getByRole('button', { name: 'Choose folder…' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Open folder…' })).toBeDefined()
   })
 
   it('says so, in the way in\'s own sentence, when one was taken and did not open', async () => {

@@ -34,6 +34,24 @@ import type { ThemeMode } from './theme'
 export type MenuHost = 'desktop' | 'web'
 
 /**
+ * The case a menu bar says its items in.
+ *
+ * The table says every item in sentence case — *Save a copy of the working
+ * file…* — which is how the web's overflow and every button beside it read.
+ * A macOS menu bar says *Save a Copy of the Working File…*, so the desktop
+ * renders the English table through this: every word capitalised but the
+ * short ones in between, as the platform's own menus have them. Only the
+ * desktop's menu bar calls it, and only on the English the bar is in.
+ */
+const SMALL_WORDS = new Set(['a', 'an', 'the', 'of', 'with', 'for', 'and', 'or', 'to', 'in', 'on', 'at', 'by'])
+
+export function titleCase(label: string): string {
+  return label.split(' ').map((word, at) => (
+    at > 0 && SMALL_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
+  )).join(' ')
+}
+
+/**
  * What an item needs the shell to have before it is worth offering: a history
  * to keep, a way in the host names to take, a scope open to act on.
  */

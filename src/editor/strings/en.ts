@@ -411,7 +411,7 @@ export const EN = {
   'field.uses': 'Uses',
   'field.usesNothing': 'Nothing yet',
   'field.usesPick': 'Add services or platforms…',
-  'field.usesSearch': 'Search the organisation…',
+  'field.usesSearch': 'Search…',
   'field.usesHelp': 'Services first; a platform where this one binds to one instance',
   'field.usesHere': 'This scope',
   'field.usesShared': 'shared',

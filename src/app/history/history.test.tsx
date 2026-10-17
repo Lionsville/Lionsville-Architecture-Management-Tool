@@ -521,12 +521,12 @@ describe('going back, as going forward (ADR-0008)', () => {
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
     await within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
-    fireEvent.click(screen.getByRole('button', { name: 'Restore the whole project…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore the whole scope…' }))
     expect(await screen.findByText(/Every element, connection, diagram and decision/)).toBeDefined()
 
-    expect(restoreAndLetThePageGo().textContent).toContain(`Restored the whole project as of ${asOf}.`)
+    expect(restoreAndLetThePageGo().textContent).toContain(`Restored the whole scope as of ${asOf}.`)
     act(() => { fireEvent.click(screen.getByText('Activity')) })
-    expect(screen.getAllByRole('menuitem')[0].textContent).toContain('Restored the whole project')
+    expect(screen.getAllByRole('menuitem')[0].textContent).toContain('Restored the whole scope')
   })
 })
 

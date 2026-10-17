@@ -21,7 +21,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'comments.edited': 'bearbeitet',
   'comments.you': 'Sie',
   'comments.via': 'über {agent}',
-  'comments.from': 'Mitgekommen mit {record}',
+  'comments.cameWith': 'Mitgekommen mit',
   'comments.who': 'Wer schreibt? Wählen Sie sich einmal aus dem Register; die App merkt es sich als Das bin ich.',
   'comments.noRegister': 'Ein Kommentar wird von einer Person aus dem Register gezeichnet, und das Register wird hier nicht gelesen.',
   'comments.elsewhere': 'Dieser Eintrag liegt in einem anderen Bereich: Seine Kommentare werden dort gelesen und geschrieben.',

@@ -18,6 +18,7 @@ import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation, ScopeAnalysis } from '../observation'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
+import { threadPlace } from './Readers'
 import type { ChangeBelow, ObservationWork, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
 
@@ -150,5 +151,40 @@ describe('the readers’ buttons', () => {
     expect(screen.queryByRole('dialog', { name: /A cause of Claims/ })).toBeNull()
     expect(screen.getByRole('alert').textContent).toContain('is a root cause: nothing explains it. Make it a cause first')
     expect(onChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('where a record’s thread is read (ADR-0037 §6)', () => {
+  const nameOf = (id: string, scope?: string) => (scope === undefined ? `${id} here` : `${id} in ${scope}`)
+  const onOpen = vi.fn()
+
+  it('names a comment that came with a merged record as the page names it, and links it to that record', () => {
+    const place = threadPlace(undefined, nameOf, onOpen)
+    expect(place.scope).toBeUndefined()
+    expect(place.nameOf?.({ kind: 'observation', id: 'ob-2' })).toBe('ob-2 here')
+    expect(place.nameOf?.({ kind: 'cause', id: 'c-2', scope: 'north' })).toBe('c-2 in north')
+    place.openFrom?.({ kind: 'cause', id: 'c-2', scope: 'north' })?.()
+    expect(onOpen).toHaveBeenLastCalledWith('north#c-2')
+    place.openFrom?.({ kind: 'solution', id: 's-1' })?.()
+    expect(onOpen).toHaveBeenLastCalledWith('so:s-1')
+    place.openFrom?.({ kind: 'experiment', id: 'e-1' })?.()
+    expect(onOpen).toHaveBeenLastCalledWith('ex:e-1')
+  })
+
+  it('names a comment that came with the record itself, from the scope it was moved out of, by the number it had there, with nothing to open', () => {
+    const moved = {
+      id: 'ob-1',
+      history: [
+        { kind: 'recorded' as const, date: '2026-10-01' },
+        { kind: 'movedIn' as const, date: '2026-10-02', scope: 'north', number: 7 },
+      ],
+      scopeLabel: (path: string) => path.toUpperCase(),
+    }
+    const place = threadPlace({ path: 'south' }, nameOf, onOpen, moved)
+    expect(place.scope).toBe('south')
+    expect(place.nameOf?.({ kind: 'observation', id: 'ob-1', scope: 'north' })).toBe('OB-0007 (NORTH)')
+    expect(place.openFrom?.({ kind: 'observation', id: 'ob-1', scope: 'north' })).toBeUndefined()
+    // A scope its history does not name falls back to the page's own naming.
+    expect(place.nameOf?.({ kind: 'observation', id: 'ob-1', scope: 'east' })).toBe('ob-1 in east')
   })
 })

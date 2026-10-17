@@ -162,7 +162,7 @@ technologielandschap.
 Het label rechts in de balk zegt waar je werk wordt bewaard: de map waarin je
 projecten als bestanden staan, **In deze browser**, of **Nergens bewaard**.
 **Vanuit een andere map werken…** ernaast wijst de app naar een andere map, en
-een browser zonder map biedt in plaats daarvan **Map kiezen…**.
+een browser zonder map biedt in plaats daarvan **Map openen…**.
 
 **Voorbeelden**, als laatste. Een voorbeeld kopiëren in een organisatie die
 leeg is en geen naam heeft, maakt het voorbeeld *de* organisatie. Een
@@ -745,7 +745,7 @@ blijft:
   wijzigingen aan wat jij niet aanraakte blijven staan. Alleen waar dat wordt
   geweigerd, schrijft het het hele onderdeel zoals het op je scherm staat over
   het hunne.
-- **Kopie bewaren…**, met wijzigingen die hier openstaan, zet de jouwe eerst in
+- **Kopie van het werkbestand bewaren…**, met wijzigingen die hier openstaan, zet de jouwe eerst in
   een werkbestand en laat de keuze voor later.
 
 Er wordt nooit iets ongevraagd overschreven.
@@ -814,7 +814,7 @@ onderdeel zei, de andere horen bij die onderdelen.
 
 **Terugzetten.** Met een momentopname gekozen maakt **Deze versie
 terugzetten…** het aanzicht, de beschrijving of het besluit weer wat het toen
-was; met het hele project in beeld doet **Het hele project terugzetten…**
+was; met de hele scope in beeld doet **De hele scope terugzetten…**
 hetzelfde voor alles. Terugzetten is een nieuwe wijziging bovenop alles wat
 sindsdien gebeurde, geen stap terug: de geschiedenis blijft groeien, de
 activiteitenlijst zegt *Aanzicht Warehouse teruggezet naar 3 sep*, ⌘Z maakt

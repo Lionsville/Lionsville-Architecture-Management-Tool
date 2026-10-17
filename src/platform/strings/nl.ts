@@ -44,7 +44,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.getDesktopApp': 'Desktop-app downloaden',
   // The question the desktop asks where closing would lose what could not be saved.
   'window.unsavedTitle': 'Niet-bewaarde wijzigingen',
-  'window.unsavedMessage': 'Dit project kon niet worden bewaard.',
+  'window.unsavedMessage': 'Deze scope kon niet worden bewaard.',
   'window.unsavedDetail': 'Nu sluiten verliest de wijzigingen die alleen nog in dit venster staan.',
   'window.closeAnyway': 'Toch sluiten',
   'window.keepOpen': 'Venster open laten',

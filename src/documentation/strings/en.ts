@@ -68,13 +68,13 @@ export const EN = {
   // The pictures a project holds, listed beside the source so one can be put
   // in again or taken out (ADR-0009). Deleting is not undoable, so it asks.
   'doc.pictures': 'Pictures',
-  'doc.picturesNone': 'No pictures in this project yet. Paste or drop one into the text.',
+  'doc.picturesNone': 'No pictures in this scope yet. Paste or drop one into the text.',
   'doc.pictureUsedHere': 'Used on this page',
   'doc.insertPicture': 'Insert',
   'doc.deletePicture': 'Delete picture',
   'doc.deletePictureTitle': 'Delete {file}?',
-  'doc.deletePictureUsedBy': 'It is shown in: {labels}. Those places will show its caption instead. The file is removed from the project on the next save, and this cannot be undone.',
-  'doc.deletePictureUnused': 'No document shows it. The file is removed from the project on the next save, and this cannot be undone.',
+  'doc.deletePictureUsedBy': 'It is shown in: {labels}. Those places will show its caption instead. The file is removed from the scope on the next save, and this cannot be undone.',
+  'doc.deletePictureUnused': 'No document shows it. The file is removed from the scope on the next save, and this cannot be undone.',
 
   // Markdown help: what the renderer draws, one row per thing. The syntax in
   // each row is markdown and stays as it is; only the words beside it are
@@ -88,7 +88,7 @@ export const EN = {
   'docHelp.tasks': 'A task list',
   'docHelp.elementLink': 'A link to another element, by its name',
   'docHelp.link': 'A link to the web, opened outside the app',
-  'docHelp.image': 'A picture from this project; paste or drop one to add it',
+  'docHelp.image': 'A picture from this scope; paste or drop one to add it',
   'docHelp.view': 'A view of this scope, by its id. A drawing shows its picture.',
   'docHelp.table': 'A table',
   'docHelp.quote': 'A quotation',
@@ -96,7 +96,7 @@ export const EN = {
   'docHelp.mermaid': 'A diagram, drawn with Mermaid',
   'docHelp.businessCase': 'A business case, with the figures worked out beneath it',
   'docHelp.rule': 'A horizontal rule',
-  'docHelp.imagesNote': 'Only pictures kept in the project are drawn. A web address shows as its caption, and the app never fetches anything.',
+  'docHelp.imagesNote': 'Only pictures kept in the scope are drawn. A web address shows as its caption, and the app never fetches anything.',
   'docHelp.htmlNote': 'HTML is shown as text, not rendered.',
 
   // The business-case block (ADR-0009). The words around it are translated;
