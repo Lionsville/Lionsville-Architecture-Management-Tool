@@ -27,6 +27,7 @@ import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
+import { FieldLabel, SectionHeading } from '../widgets/CompactForms';
 
 /**
  * Style controls follow the NULL-inherit contract (U4b): the "default" choice
@@ -221,11 +222,9 @@ export function ConnectionInspector({
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
       <Box>
-        <Typography variant="overline" color="text.secondary">
-          {t('section.connection')}
-        </Typography>
+        <SectionHeading>{t('section.connection')}</SectionHeading>
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
           {name(connection.sourceId)} {connection.isBidirectional ? '↔' : '→'}{' '}
           {name(connection.targetId)}
@@ -236,14 +235,14 @@ export function ConnectionInspector({
         value={activeTab}
         onChange={(_e, value: number) => setActiveTab(value)}
         variant="fullWidth"
-        sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.5, minWidth: 0 } }}
+        sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.5, px: 0.5, minWidth: 0, letterSpacing: 0, fontSize: 11.5 } }}
       >
         <Tab label={<TabLabel text={t('tab.general')} dot={generalHasValues} />} />
         <Tab label={<TabLabel text={t('tab.appearance')} dot={appearanceHasValues} />} />
       </Tabs>
 
       {activeTab === 0 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
           {/* Where this line belongs, asked first because it decides what the
               rest of the panel means: a line that is part of an interface
               carries the protocol, and the interface carries the label and the
@@ -357,7 +356,7 @@ export function ConnectionInspector({
       )}
 
       {activeTab === 1 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
           <ColorField
             label={t('field.colour')}
             ariaLabel={t('field.edgeColour')}
@@ -418,9 +417,7 @@ export function ConnectionInspector({
               gap: 1,
             }}
           >
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              Arrowhead override
-            </Typography>
+            <FieldLabel sx={{ fontWeight: 600 }}>{t('field.arrowheadOverride')}</FieldLabel>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <TextField
                 select
@@ -469,9 +466,7 @@ export function ConnectionInspector({
 
       <Divider />
       <Box data-testid="route-section" sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Typography variant="overline" color="text.secondary">
-          {t('section.route')}
-        </Typography>
+        <SectionHeading>{t('section.route')}</SectionHeading>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip
             size="small"

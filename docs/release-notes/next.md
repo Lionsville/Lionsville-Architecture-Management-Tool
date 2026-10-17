@@ -76,3 +76,33 @@ a record. Where that happens while the network is gone, the part now says, in
 one line where it would be, that it could not be loaded, with **Try again**;
 the screen around it goes on working. A record opened offline is still read,
 its comments saying *Comments could not be loaded* until they can be.
+
+**Colour the landscape by what the records say, and see it.** **Colour by**
+on a landscape's toolbar now colours the cards by the record's own answers
+too — lifecycle, category, owner, vendor, technology — and by the status in
+any one of the board's operational aspect columns, beside the platform,
+technology lifecycle and one-platform overlays it had. Every card in a band
+wears the band's colour as a deeper wash, a bar down its left edge and a
+number, and a **legend** stands in the corner of the board while the overlay
+is up, naming each band with its number and how many cards it holds; ✕ on it
+takes the colouring off. The numbers make the picture readable without
+telling the colours apart. The toolbar button says what the board is coloured
+by. An agent sets the new overlays with `diagram.update` (`colourBy:
+"owner"`, `"aspect:dr"`, …); a folder written before this release reads as
+before.
+
+**The properties panel is tighter, everywhere it appears.** The inspector
+beside a board, the operating model's, the technology landscape's and the
+people page's share one treatment: smaller fields, one rhythm of labels and
+values, the same section headings, and a field you may only read keeps its
+words behind a dashed outline instead of greying out. Category and lifecycle
+share a row. The description field keeps its in-place editing and gains
+**Open as a page ›** under it, which opens the element's documentation page
+for the longer text. A card under the pointer shows a thin ring before it is
+clicked.
+
+**The *Managed* switch is gone.** It stood beside an element's lifecycle and
+nothing read it — not a card, a count, a check or a report — so flipping it
+changed nothing anybody could see. Whose a system is, is **Outside the
+organisation** on its record. The flag stays in the files that carry it, and
+an agent may still write it.

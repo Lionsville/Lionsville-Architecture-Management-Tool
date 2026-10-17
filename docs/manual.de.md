@@ -1081,10 +1081,12 @@ der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
 die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie
 eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
 
-- **Allgemein.** Name, Kategorie, Anbieter, Technologie, Lebenszyklus (geplant,
-  aktiv, auslaufend, abgeschaltet; als Abzeichen dargestellt, abgeschaltete
-  Elemente werden abgeblendet), ob Sie es verwalten, die Beschreibung (siehe
-  *Dokumentation*), und wo es sitzt.
+- **Allgemein.** Name, Kategorie und Lebenszyklus (geplant, aktiv,
+  auslaufend, abgeschaltet; als Abzeichen dargestellt, abgeschaltete Elemente
+  werden abgeblendet) in einer Zeile, die Beschreibung (siehe
+  *Dokumentation*), und wo es sitzt. Der Schalter *Verwaltet*, der bis 3.7.0
+  neben dem Lebenszyklus stand, ist weg: nichts las ihn. Wem ein System
+  gehört, sagt **Außerhalb der Organisation** auf seinen Stammdaten.
 - **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße.
 - **Daten.** Die **betrieblichen Aspekte** einer Anwendung: für jede Spalte dieses
   Diagramms verwaltet, teilweise, keiner oder gefährdet, mit einer Notiz. Die
@@ -1207,10 +1209,12 @@ Verschieben mit den Pfeilen, **Einpassen** (Shift+1) und 100 % (Shift+2).
 ## Dokumentation
 
 Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite
-sein. Öffnen Sie sie als Seite mit **Dokumentation öffnen** im Menü des
-Elements, der Ausklapp-Schaltfläche neben dem Beschreibungsfeld im Inspektor,
-Enter auf dem ausgewählten Element, oder einem Doppelklick auf alles, was keine
-Anwendung ist.
+sein. Eine Zeile oder zwei tippen Sie im Beschreibungsfeld des Inspektors;
+für mehr öffnet **Als Seite öffnen ›** unter dem Feld denselben Text auf
+seiner Seite, mit der Breite des Fensters und den Abschnitten der Vorlage
+darum. Die Seite öffnet sich auch mit **Dokumentation öffnen** im Menü des
+Elements, Enter auf dem ausgewählten Element, oder einem Doppelklick auf
+alles, was keine Anwendung ist.
 
 Die Seite öffnet sich zum **Lesen**: das Dokument mit einem Inhaltsverzeichnis,
 die anderen Elemente des Diagramms links zum Wechseln (eine Seitenmarke zeigt,
@@ -2163,7 +2167,20 @@ Technik, damit die Karten, die auf etwas Auslaufendem stehen, bernsteinfarben
 werden, die ganze Kette mitgezählt — oder nach **einer Plattform oder einem
 Dienst**: jede Anwendung, die ihn nutzt, darauf gehostet ist oder sich
 darauf stützt, wird eingefärbt und der Rest verblasst, die umgekehrte
-Frage: wer steht darauf. Das Abzeichen **Plattform** liest ab,
+Frage: wer steht darauf. Seit 3.7.0 färbt es auch nach **dem, was der
+Datensatz sagt** — dem eigenen Lebenszyklus der Karte, ihrer Kategorie,
+ihrem Eigentümer, Hersteller oder ihrer Technologie — und nach dem Status in
+**einem betrieblichen Aspekt**, sodass *welche davon hat keinen Eigentümer*
+und *welche stehen noch beim alten Hersteller* durch Hinsehen beantwortet
+werden. Jede Karte in einem Band trägt die Farbe des Bandes als Tönung, als
+Balken an ihrem linken Rand und als **Nummer**; die **Legende** in der Ecke
+der Tafel nennt jedes Band mit dieser Nummer und wie viele Karten es hält,
+und bleibt stehen, während Sie lesen. Die Nummer ist der Punkt: zwei Farben
+sind nicht für jedes Auge verschieden, eine Nummer schon. Die Schaltfläche in
+der Werkzeugleiste sagt, wonach die Tafel eingefärbt ist, und ✕ auf der
+Legende schaltet die Einfärbung aus. Ein Leser darf jede davon wählen, ohne
+zu schreiben; die Wahl bleibt auf der Ansicht, wo die Sitzung schreiben darf.
+Das Abzeichen **Plattform** liest ab,
 worauf die Container stehen, wenn es niemand gesetzt hat, und die Befunde der
 Roadmap melden eine Anwendung, die noch auf einer Plattform steht, nachdem
 diese oder etwas darüber ausgelaufen ist, mit der Plattform, die tatsächlich
@@ -2368,7 +2385,7 @@ einem Blatt, dem Organigramm oder ihrer Seite steht ihr Name zuerst, mit
 Namen stehen ihr Einheitstyp, darunter der Bereich, in dem sie eingeordnet
 ist, und dann die eigenen Abschnitte der Einheit. Zuletzt kommt **Element**,
 eingeklappt: die eigenen Felder des Akteurs — seine Stammdaten, Allgemein mit
-Lebenszyklus, *Verwaltet* und Beschreibung, Darstellung und Daten. Es klappt
+Lebenszyklus und Beschreibung, Darstellung und Daten. Es klappt
 wieder ein, sobald eine andere Einheit gewählt wird. Auf der Seite stehen
 dieselben Felder ausgeschrieben unter der Einheit. Ein Akteur ohne Typ behält
 den Inspektor eines Elements, wie er war, mit **Einheit** unter seinem

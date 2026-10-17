@@ -11,6 +11,7 @@ import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { FieldLabel, FieldText } from '../widgets/CompactForms';
 import type { ElementId } from '../model/types';
 import { hostingOf, mayBeHosted } from '../model/hosting';
 import { useStrings } from '../i18n/LanguageContext';
@@ -89,15 +90,15 @@ function RunsOnLine({ field }: { field: InspectorField }) {
   const nameOf = (id: ElementId) => model.elements.find((held) => held.id === id)?.name ?? id;
   return (
     <Box data-testid="element-runs-on">
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.runsOn')}</Typography>
-      <Typography sx={{ fontSize: 13 }}>
+      <FieldLabel>{t('field.runsOn')}</FieldLabel>
+      <FieldText quiet={hosting.platformIds.length === 0}>
         {hosting.platformIds.length === 0
           ? t('field.runsOnNothing')
           : t('field.runsOnContainers', {
             names: hosting.platformIds.map((id) => nameOf(id)).join(', '),
             count: String(hosting.containers),
           })}
-      </Typography>
+      </FieldText>
     </Box>
   );
 }
@@ -118,8 +119,8 @@ export function LeveragesField({ elementId, leverage, onShowOnTechnology }: {
   if (leverage === undefined || (text === '' && !onShowOnTechnology)) return null;
   return (
     <Box data-testid="element-leverages">
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.leverages')}</Typography>
-      <Typography sx={{ fontSize: 13 }}>{text || t('field.runsOnNothing')}</Typography>
+      <FieldLabel>{t('field.leverages')}</FieldLabel>
+      <FieldText quiet={text === ''}>{text || t('field.runsOnNothing')}</FieldText>
       {onShowOnTechnology && (
         <Link
           component="button"

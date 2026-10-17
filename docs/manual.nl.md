@@ -1018,10 +1018,11 @@ fysieke weergave, een **platform**: een cluster, een broker, een bus, de
 tooling, waar applicaties op draaien en wat ze gebruiken. Selecteer er een en
 de **inspector** rechts toont zijn velden in drie tabbladen.
 
-- **Algemeen.** Naam, categorie, leverancier, technologie, levenscyclus
-  (gepland, live, uitfaserend, uitgefaseerd; als badge, uitgefaseerde
-  elementen dimmen), of je het beheert, de omschrijving (zie *Documentatie*) en
-  waar het staat.
+- **Algemeen.** Naam, categorie en levenscyclus (gepland, live, uitfaserend,
+  uitgefaseerd; als badge, uitgefaseerde elementen dimmen) op één rij, de
+  omschrijving (zie *Documentatie*) en waar het staat. De schakelaar
+  *Beheerd* die tot 3.7.0 naast de levenscyclus stond is weg: niets las hem.
+  Van wie een systeem is, zegt **Buiten de organisatie** op zijn stamgegevens.
 - **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte.
 - **Gegevens.** De **operationele aspecten** van een applicatie: per kolom van
   dit diagram beheerd, deels, geen of risico, met een notitie. De kolommen
@@ -1138,8 +1139,10 @@ met de pijltjes, **passend maken** (Shift+1) en 100 % (Shift+2).
 ## Documentatie
 
 Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
-Open hem als pagina met **Documentatie openen** in het elementmenu, de
-uitklapknop naast het omschrijvingsveld in de inspector, Enter op het
+Een regel of twee typ je in het omschrijvingsveld van de inspector; voor meer
+opent **Als pagina openen ›** onder het veld dezelfde tekst op haar pagina,
+met de breedte van het venster en de secties van het sjabloon eromheen. De
+pagina opent ook met **Documentatie openen** in het elementmenu, Enter op het
 geselecteerde element, of een dubbelklik op alles wat geen applicatie is.
 
 De pagina opent om te **lezen**: het document met een inhoudsopgave, links de
@@ -2042,7 +2045,19 @@ altijd alleen stromen.
 de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele
 keten meegerekend — of op **één platform of dienst**: elke applicatie die
 het gebruikt, erop gehost is of erop steunt wordt gekleurd en de rest
-vervaagt, de omgekeerde vraag: wie staat hierop. De badge **platform** leest af waar de containers op staan
+vervaagt, de omgekeerde vraag: wie staat hierop. Sinds 3.7.0 kleurt het ook
+op **wat de stamgegevens zeggen** — de eigen levenscyclus van de kaart, haar
+categorie, eigenaar, leverancier of technologie — en op de status in **één
+operationeel aspect**, zodat *welke hiervan heeft geen eigenaar* en *welke
+staan nog bij de oude leverancier* door kijken beantwoord worden. Elke kaart
+in een band draagt de kleur van de band als waas, als balk langs haar
+linkerrand en als **nummer**; de **legenda** in de hoek van het bord noemt
+elke band met dat nummer en hoeveel kaarten erin staan, en blijft staan
+terwijl je leest. Het nummer is de kern: twee kleuren zijn niet voor elk oog
+verschillend, een nummer wel. De knop op de werkbalk zegt waarop het bord
+gekleurd is, en ✕ op de legenda zet de kleuring uit. Een lezer mag elk
+hiervan kiezen zonder te schrijven; de keuze wordt op de weergave bewaard
+waar de sessie mag schrijven. De badge **platform** leest af waar de containers op staan
 als niemand hem heeft gezet, en de bevindingen van de roadmap melden een
 applicatie die nog op een platform staat nadat dat, of iets erboven, is
 uitgefaseerd, met het platform erbij dat werkelijk verdwijnt.
@@ -2238,8 +2253,8 @@ blad, het organogram of haar pagina komt haar naam eerst, met
 **Verplaatsen…** en **Tekening maken** in de **⋯** ernaast. Onder de naam
 staan haar eenheidstype, met daaronder de scope waarin ze is ingedeeld, en dan
 de eigen onderdelen van de eenheid. Als laatste komt **Element**, ingeklapt:
-de eigen velden van de actor — zijn stamgegevens, Algemeen met levenscyclus,
-*Beheerd* en beschrijving, Weergave en Gegevens. Het klapt weer in zodra je
+de eigen velden van de actor — zijn stamgegevens, Algemeen met levenscyclus
+en beschrijving, Weergave en Gegevens. Het klapt weer in zodra je
 een andere eenheid kiest. Op de pagina staan dezelfde velden uitgeschreven
 onder de eenheid. Een actor zonder type houdt de inspector van een element
 zoals die was, met **Eenheid** onder zijn tabblad Algemeen.

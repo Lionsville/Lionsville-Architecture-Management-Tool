@@ -68,7 +68,8 @@ export function InspectorSection({
             strokeLinejoin="round"
           />
         </svg>
-        <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: 0.6 }}>
+        {/* The same small capitals every panel's section wears (`SectionHeading`). */}
+        <Typography component="span" sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
           {title}
         </Typography>
         {note && (
@@ -83,7 +84,7 @@ export function InspectorSection({
         )}
       </ButtonBase>
       <Collapse in={open} unmountOnExit={false} id={id}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5, pb: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, pt: 0.5, pb: 1 }}>
           {children}
         </Box>
       </Collapse>

@@ -29,6 +29,7 @@ import { typesHolding } from '../../model/operatingModel'
 import type { BasedOn, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
+import { CompactForms, SectionHeading } from '../../widgets/CompactForms'
 import {
   addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setReportsTo, setSlot, setSuccessors, setWithin,
 } from '../edit'
@@ -64,13 +65,13 @@ export type RefuseLine = (type: UnitType, slots: readonly RoleSlot[], reportsTo:
 /** How a unit type's slots are taken out, and what is said under them while one is; and why a slot's line is refused. */
 type SlotTaking = Pick<Props, 'onRemoveSlot' | 'slotAside' | 'refuseLine'>
 
-const heading = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 0.5 } as const
 
 export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, onRemoveSlot, slotAside, refuseLine }: Props) {
   const { t } = useStrings()
   if (!picked) return <Typography variant="body2" color="text.secondary">{t('operating.pick')}</Typography>
   const kindWord = { unitType: 'operating.unitType', role: 'operating.role', responsibility: 'operating.responsibility' } as const
   return (
+    <CompactForms>
     <Box data-testid="operating-inspector">
       <Typography variant="caption" color="text.secondary">{t(kindWord[picked.kind])}</Typography>
       {picked.kind === 'unitType' && (
@@ -99,6 +100,7 @@ export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, 
         </Button>
       )}
     </Box>
+    </CompactForms>
   )
 }
 
@@ -126,7 +128,7 @@ function UnitTypeFields({ type, model, readOnly, dispatch, taking }: {
         onChange={(event) => dispatch(editUnitType(type.id, 'name', event.target.value))} />
       <TextField fullWidth size="small" margin="dense" multiline minRows={2} label={t('operating.purpose')} value={type.purpose ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editUnitType(type.id, 'purpose', event.target.value))} />
-      <Typography sx={heading}>{t('operating.whereItSits')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.whereItSits')}</SectionHeading>
       <FormControlLabel
         control={<Checkbox size="small" checked={type.top === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'top', on))} />}
         label={t('operating.top')}
@@ -160,7 +162,7 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
   const number = (value: string) => (value === '' ? undefined : Math.max(0, Number(value)))
   return (
     <Box>
-      <Typography sx={heading}>{t('operating.slots')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.slots')}</SectionHeading>
       {type.slots.length > 0 && (
         // What the two boxes on every row hold, said once above them.
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }} aria-hidden="true">
@@ -283,13 +285,13 @@ function RoleFields({ role, model, readOnly, dispatch }: { role: Role; model: Op
       </Box>
       <TextField fullWidth size="small" margin="dense" multiline minRows={3} label={t('operating.purpose')} value={role.purpose ?? ''} disabled={readOnly}
         onChange={(event) => dispatch(editRole(role.id, 'purpose', event.target.value))} />
-      <Typography sx={heading}>{t('operating.manages')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.manages')}</SectionHeading>
       <FormControlLabel
         control={<Checkbox size="small" checked={role.manages === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('role', role.id, 'manages', on))} />}
         label={t('operating.manages')}
       />
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{t('operating.managesHint')}</Typography>
-      <Typography sx={heading}>{t('operating.duties')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.duties')}</SectionHeading>
       {role.duties.length === 0
         ? <Typography variant="body2" color="text.secondary">{t('operating.noDuties')}</Typography>
         : role.duties.map((duty) => (
@@ -298,7 +300,7 @@ function RoleFields({ role, model, readOnly, dispatch }: { role: Role; model: Op
             {model.responsibilities.find((one) => one.id === duty.responsibility)?.name ?? duty.responsibility}
           </Typography>
         ))}
-      <Typography sx={heading}>{t('operating.heldIn')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.heldIn')}</SectionHeading>
       <Typography variant="body2">{holding.length ? holding.map((type) => type.name).join(', ') : t('operating.inNoType')}</Typography>
     </Box>
   )
@@ -335,7 +337,7 @@ function OverTime({ kind, item, others, readOnly, dispatch }: {
   const successors = item.successors ?? []
   return (
     <Box data-testid="operating-over-time">
-      <Typography sx={heading}>{t('operating.overTime')}</Typography>
+      <SectionHeading sx={{ mt: 2, mb: 0.5 }}>{t('operating.overTime')}</SectionHeading>
       <Box sx={{ display: 'flex', gap: 1 }}>
         <TextField size="small" type="date" label={t('operating.from')} value={item.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
           onChange={(event) => dispatch(setDay(kind, item.id, 'from', event.target.value))}

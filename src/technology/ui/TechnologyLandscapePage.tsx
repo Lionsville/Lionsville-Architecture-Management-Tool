@@ -59,6 +59,7 @@ import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
+import { CompactForms } from '../../widgets/CompactForms'
 import { PageDialog } from '../../widgets/PageDialog'
 import { AddIcon } from '../../widgets/icons'
 import { captureSheet } from '../../widgets/capturePage'
@@ -1043,7 +1044,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
       {report && (
         <Button size="small" variant="outlined" data-testid="landscape-report" onClick={report} sx={{ mb: 1, fontSize: 11 }}>{t('landscape.report')}</Button>
       )}
-      {body}
+      <CompactForms>{body}</CompactForms>
     </Box>
   )
 }

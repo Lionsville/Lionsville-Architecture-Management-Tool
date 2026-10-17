@@ -162,7 +162,7 @@ describe('ElementInspector — tab structure (U7a)', () => {
     expect(screen.getByRole('button', { name: /Remove \/ delete/ })).toBeDefined();
   });
 
-  it('General reaches Category, Lifecycle, Managed, Description — and the record is one line and a way to the page', () => {
+  it('General reaches Category, Lifecycle, Description — and the record is one line and a way to the page', () => {
     // Vendor, technology, owner, the dates and the successor left the panel
     // for the page (`ElementRecord.tsx`): they are what a thing IS, not what
     // a person sets while drawing it. What stays here is a read-out.
@@ -170,8 +170,12 @@ describe('ElementInspector — tab structure (U7a)', () => {
     renderInspector(element({ vendor: 'SAP', owner: 'Logistics' }), { onOpenDocumentation });
     expect(screen.getByLabelText('Category')).toBeDefined();
     expect(screen.getByLabelText('Lifecycle')).toBeDefined();
-    expect(screen.getByLabelText('Managed')).toBeDefined();
+    // The Managed switch is gone (3.7.0): nothing read it. The flag stays on the record.
+    expect(screen.queryByLabelText('Managed')).toBeNull();
     expect(screen.getByText('Description (markdown)')).toBeDefined();
+    // The description's way to the page, in words, under the field.
+    fireEvent.click(screen.getByTestId('open-documentation'));
+    expect(onOpenDocumentation).toHaveBeenCalledWith('e1');
     expect(screen.queryByLabelText('Vendor')).toBeNull();
     expect(screen.queryByLabelText('Owner')).toBeNull();
     expect(screen.getByTestId('record-summary').textContent).toContain('Owner: Logistics · Vendor: SAP');
@@ -579,7 +583,6 @@ describe('ElementInspector — readOnly disables controls in every tab', () => {
     // General
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true);
     expect(selectDisabled('Lifecycle')).toBe(true);
-    expect((screen.getByLabelText('Managed') as HTMLInputElement).disabled).toBe(true);
 
     // Appearance
     openTab('Appearance');

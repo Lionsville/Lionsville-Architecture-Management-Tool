@@ -13,6 +13,7 @@ import type { DesignDiagram } from '../model/types';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import { useStrings } from '../i18n/LanguageContext';
 import type { EditorActions } from './useEditorState';
+import { SectionHeading } from '../widgets/CompactForms';
 
 export interface DomainGroupInspectorProps {
   /** The selected group's name — domain groups are keyed by name, not by id. */
@@ -57,10 +58,8 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-        {t('section.domainGroup')}
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, pt: 1 }}>
+      <SectionHeading>{t('section.domainGroup')}</SectionHeading>
       <TextField
         label={t('field.name')}
         size="small"
@@ -89,9 +88,7 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
           {props.onTidy && (
             <>
               <Divider />
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                {t('section.tidyGroup')}
-              </Typography>
+              <SectionHeading>{t('section.tidyGroup')}</SectionHeading>
               {/* The same controls the right-click menu opens, on the same
                   state — direction, density and manual routes, then Apply.
                   "Pin group placements" stays out: a per-group tidy already

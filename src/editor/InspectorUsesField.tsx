@@ -21,6 +21,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ListSubheader from '@mui/material/ListSubheader';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { FieldLabel, FieldText } from '../widgets/CompactForms';
 import { useStrings } from '../i18n/LanguageContext';
 import { runsSomewhere, type InspectorField, type usesChoices } from './elementInspectorFacts';
 import type { useUsesPicker } from './useInspectorState';
@@ -36,9 +37,9 @@ export function UsesField({ field, uses, picker }: { field: InspectorField; uses
   const locked = readOnly || field.owned('uses');
   return (
     <Box data-testid="element-uses">
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.uses')}</Typography>
+      <FieldLabel>{t('field.uses')}</FieldLabel>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-        {usesIds.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('field.usesNothing')}</Typography>}
+        {usesIds.length === 0 && <FieldText quiet>{t('field.usesNothing')}</FieldText>}
         {usesIds.map((id) => {
           const { name, note } = uses.pill(id);
           return (
@@ -118,7 +119,7 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
           }}
         />
       )}
-      sx={{ mt: 1 }}
+      sx={{ mt: 0.75 }}
       data-testid="element-uses-picker" data-guide="record.uses" data-shortcuts-ignore=""
     />
   );

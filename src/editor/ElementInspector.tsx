@@ -4,7 +4,6 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { useStrings } from '../i18n/LanguageContext';
 import { ElementRecord } from './ElementRecord';
@@ -14,6 +13,7 @@ import type { InspectorField } from './elementInspectorFacts';
 import { useRenameFocus, useTabPerElement, useUsesPicker } from './useInspectorState';
 import { ElementMore, InspectorHeader, InspectorTabs, MoveRecord, OwnedElsewhere, RecordSummaryLine } from './InspectorHeader';
 import { InspectorSection } from './InspectorSection';
+import { SectionHeading } from '../widgets/CompactForms';
 import { GeneralTab } from './InspectorGeneralTab';
 import { AppearanceTab } from './InspectorAppearanceTab';
 import { aspectCount, DataTab } from './InspectorDataTab';
@@ -117,11 +117,7 @@ function ElementFields({ inspector, field, tab, uses, picker, underGeneral }: {
   const stacked = inspector.layout === 'stacked';
   const show = (index: number) => stacked || tab.value === index;
   const sectionTitle = (text: string) =>
-    stacked ? (
-      <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-        {text}
-      </Typography>
-    ) : null;
+    stacked ? <SectionHeading sx={{ mt: 1.5 }}>{text}</SectionHeading> : null;
 
   return (
     <>

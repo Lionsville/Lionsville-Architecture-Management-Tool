@@ -941,9 +941,11 @@ the physical view, a **platform**: a cluster, a broker, a bus, the tooling,
 what the applications run on and what they use. Select one and the
 **inspector** on the right shows its fields in three tabs.
 
-- **General.** Name, category, vendor, technology, lifecycle (planned, live,
-  retiring, retired; shown as a badge, retired elements dim), whether you
-  manage it, the description (see *Documentation*), and where it sits.
+- **General.** Name, category and lifecycle (planned, live, retiring,
+  retired; shown as a badge, retired elements dim) on one row, the
+  description (see *Documentation*), and where it sits. The *Managed* switch
+  that stood beside the lifecycle until 3.7.0 is gone: nothing read it. Whose
+  a system is, is **Outside the organisation** on its record.
 - **Appearance.** Accent colour, shape, icon, icon size.
 - **Data.** The **operational aspects** of an application: for each column of this
   diagram, managed, partial, none or at risk, with a note. The columns are set
@@ -1050,9 +1052,11 @@ the selection menu, a **grid** with optional snapping, nudge with the arrows,
 
 ## Documentation
 
-Every element has a markdown description, and it can be a whole page. Open it
-as a page with **Open documentation** in the element's menu, the expand button
-beside the description field in the inspector, Enter on the selected element,
+Every element has a markdown description, and it can be a whole page. A line
+or two is typed in the inspector's description field; for more, **Open as a
+page ›** under the field opens the same text on its page, with the width of
+the window and the template's sections around it. The page also opens with
+**Open documentation** in the element's menu, Enter on the selected element,
 or a double-click on anything that is not an application.
 
 The page opens to **read**: the document with a table of contents, the
@@ -1879,7 +1883,18 @@ cluster, not the namespace — or by technology lifecycle, so the cards
 standing on something retiring go amber, the whole chain counted — or by
 **one platform or offering**: every application that uses it, is hosted on
 it or leverages it is coloured and the rest fade, which is the reverse
-question, who stands on this. The
+question, who stands on this. Since 3.7.0 it also colours by **what the
+record says** — the card's own lifecycle, its category, owner, vendor or
+technology — and by the status in **one operational aspect** column, so
+*which of these does nobody own* and *which are still on the old vendor*
+are answered by looking. Every card in a band wears the band's colour as a
+wash, a bar down its left edge and a **number**; the **legend** in the
+corner of the board names each band with that number and how many cards it
+holds, and stays while you read. The number is the point: two colours are
+not apart to every eye, and a number is. The button on the toolbar says what
+the board is coloured by, and ✕ on the legend takes the colouring off. A
+reader may choose any of these without writing; the choice is kept on the
+view when the session may write. The
 **platform** badge reads off the roll-up where nobody set it, and the
 roadmap's findings flag an application still standing on a platform after it
 or anything above it has retired, naming the platform that actually goes.
@@ -2059,7 +2074,7 @@ or its page, its name comes first, with **Move…** and **Create drawing** in
 the **⋯** beside it. Under the name are its unit type, with the scope it is
 filed in beneath it, and then the unit's own sections. Last comes
 **Element**, folded: the actor's own fields — its record, General with its
-lifecycle, *Managed* and description, Appearance and Data. It is folded again
+lifecycle and description, Appearance and Data. It is folded again
 each time another unit is picked. On the page the same fields are laid out
 below the unit. An actor without a type keeps the element's inspector as it
 was, with **Unit** under its General tab.

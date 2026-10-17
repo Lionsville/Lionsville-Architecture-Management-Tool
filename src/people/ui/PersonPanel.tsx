@@ -35,6 +35,7 @@ import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { SIGN_LABEL } from './AddPerson'
 import { KIND_LABEL, Section } from './parts'
+import { CompactForms } from '../../widgets/CompactForms'
 
 export type PersonPanelProps = {
   person: Person
@@ -352,6 +353,7 @@ export function PersonPanel(props: PersonPanelProps) {
     void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))
   }
   return (
+    <CompactForms>
     <Box data-testid="people-person">
       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
         {s(KIND_LABEL[person.kind])} · <Box component="code">{person.id}</Box>
@@ -396,5 +398,6 @@ export function PersonPanel(props: PersonPanelProps) {
         {holding && <Holding person={person} register={register} found={found} copyText={copyText} s={s} />}
       </Box>
     </Box>
+    </CompactForms>
   )
 }

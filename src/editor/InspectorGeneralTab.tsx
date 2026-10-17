@@ -9,12 +9,11 @@
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
-import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { FieldLabel, FieldText } from '../widgets/CompactForms';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import { drawingsPointingAt } from '../model/drawing';
 import { placedNodes } from '../model/placement';
@@ -38,7 +37,7 @@ export function GeneralTab({ field, inspector, uses, picker }: {
   const { element, model, readOnly } = field;
   const { onOpenDocumentation, onCreateContainer, onCreateDrawing } = inspector;
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
       <TechnologyFields field={field} offeredBeyond={inspector.offeredBeyond} />
       <HostingField field={field} technology={inspector.technology} />
       <UsesField field={field} uses={uses} picker={picker} />
@@ -47,8 +46,7 @@ export function GeneralTab({ field, inspector, uses, picker }: {
         leverage={leverageFor(element, model, inspector.leverage)}
         onShowOnTechnology={inspector.onShowOnTechnology}
       />
-      {element.kind === 'application' && <CategoryField field={field} />}
-      <LifecycleRow field={field} />
+      <CategoryLifecycleRow field={field} />
       {!inspector.hideDescription && (
         <MarkdownField
           value={(field.owned('description') ? inspector.owned?.description : element.description) ?? ''}
@@ -70,6 +68,25 @@ export function GeneralTab({ field, inspector, uses, picker }: {
   );
 }
 
+/**
+ * The category and the phase on one row: the two short answers a person
+ * gives while drawing, side by side where the panel is wide enough and
+ * stacked where it is not. The *Managed* switch that stood beside the phase
+ * until 3.7.0 is gone: nothing drew it, counted it or asked it — whose a
+ * system is, is `outside` on the record (ADR-0012 §4) — and a switch that
+ * does nothing is a promise the app does not keep. The flag stays on the
+ * record for the files that carry it.
+ */
+function CategoryLifecycleRow({ field }: { field: InspectorField }) {
+  const { element } = field;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 1 }}>
+      {element.kind === 'application' && <CategoryField field={field} />}
+      <LifecycleField field={field} />
+    </Box>
+  );
+}
+
 function CategoryField({ field }: { field: InspectorField }) {
   const { t } = useStrings();
   const knownCategories = [
@@ -81,6 +98,7 @@ function CategoryField({ field }: { field: InspectorField }) {
       options={knownCategories}
       value={field.element.category ?? ''}
       disabled={field.readOnly || field.owned('category')}
+      sx={{ minWidth: 0 }}
       // A new element handed in is the field catching up with the selection
       // (`reset`), not a person typing: written, it was an `element.update` on
       // every selection. And a value the element already holds is no change.
@@ -93,37 +111,24 @@ function CategoryField({ field }: { field: InspectorField }) {
   );
 }
 
-function LifecycleRow({ field }: { field: InspectorField }) {
+function LifecycleField({ field }: { field: InspectorField }) {
   const { t } = useStrings();
   const { element, readOnly } = field;
   return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      <TextField
-        select
-        label={t('field.lifecycle')}
-        value={element.lifecycle}
-        sx={{ flex: 1 }}
-        disabled={readOnly || field.owned('lifecycle')}
-        onChange={(e) => field.update({ lifecycle: e.target.value as DesignElement['lifecycle'] })}
-      >
-        {LIFECYCLES.map((lifecycle) => (
-          <MenuItem key={lifecycle} value={lifecycle}>
-            {t(`lifecycle.${lifecycle}` as StringKey)}
-          </MenuItem>
-        ))}
-      </TextField>
-      <FormControlLabel
-        control={
-          <Switch
-            size="small"
-            checked={element.isManaged}
-            disabled={readOnly || field.owned('isManaged')}
-            onChange={(e) => field.update({ isManaged: e.target.checked })}
-          />
-        }
-        label={<Typography variant="caption">{t('field.managed')}</Typography>}
-      />
-    </Box>
+    <TextField
+      select
+      label={t('field.lifecycle')}
+      value={element.lifecycle}
+      sx={{ minWidth: 0 }}
+      disabled={readOnly || field.owned('lifecycle')}
+      onChange={(e) => field.update({ lifecycle: e.target.value as DesignElement['lifecycle'] })}
+    >
+      {LIFECYCLES.map((lifecycle) => (
+        <MenuItem key={lifecycle} value={lifecycle}>
+          {t(`lifecycle.${lifecycle}` as StringKey)}
+        </MenuItem>
+      ))}
+    </TextField>
   );
 }
 
@@ -141,12 +146,8 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
   const current = groups.find((group) => group.id === placement.group)?.name ?? '';
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-        {t('field.placement')}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {t('field.zone', { name: placement.zone ? zoneLabel(placement.zone, t) : '—' })}
-      </Typography>
+      <FieldLabel>{t('field.placement')}</FieldLabel>
+      <FieldText>{t('field.zone', { name: placement.zone ? zoneLabel(placement.zone, t) : '—' })}</FieldText>
       {placement.zone === 'landscape' && (
         <Autocomplete
           freeSolo
@@ -185,9 +186,7 @@ function DrawingsField({ model, elementId, onOpen }: {
   if (drawings.length === 0) return null;
   return (
     <Box data-testid="element-drawings">
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-        {t('field.onDrawings')}
-      </Typography>
+      <FieldLabel sx={{ mb: 0.25 }}>{t('field.onDrawings')}</FieldLabel>
       {drawings.map((drawing) => (
         <Typography key={drawing.id} variant="body2" component="div" data-testid={`element-drawing-${drawing.id}`}>
           {onOpen ? (
@@ -214,9 +213,7 @@ function DrawingOffer({ onCreate }: { onCreate(): void }) {
   const { t } = useStrings();
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-        {t('field.anchoredDrawing')}
-      </Typography>
+      <FieldLabel sx={{ mb: 0.5 }}>{t('field.anchoredDrawing')}</FieldLabel>
       <Button size="small" variant="outlined" onClick={onCreate}>
         {t('menu.createDrawing')}
       </Button>
@@ -228,9 +225,7 @@ function ContainerOffer({ onCreate }: { onCreate(): void }) {
   const { t } = useStrings();
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-        {t('field.noContainer')}
-      </Typography>
+      <FieldLabel sx={{ mb: 0.5 }}>{t('field.noContainer')}</FieldLabel>
       <Button size="small" variant="outlined" onClick={onCreate}>
         {t('menu.createContainer')}
       </Button>

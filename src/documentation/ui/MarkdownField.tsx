@@ -3,11 +3,12 @@
 
 import { useState, type ReactNode } from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { EyeIcon, FullscreenIcon, PencilIcon } from '../../widgets/icons';
+import { FieldLabel } from '../../widgets/CompactForms';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { MarkdownRenderOptions } from '../documentation';
 import { MarkdownHelp } from './MarkdownHelp';
@@ -17,6 +18,13 @@ import { MarkdownHelp } from './MarkdownHelp';
  * pluggable (`renderMarkdown` prop on the editor); without a renderer the
  * preview falls back to a plain <pre> so the package needs no markdown
  * dependency of its own.
+ *
+ * Editing in place stays, for a line or two; the way to write more is the
+ * button under the field, *Open as a page*, which opens the element's
+ * documentation page (ADR-0033) — the same text, with the width of the
+ * window and the template's sections around it. A button with words rather
+ * than the icon it was until 3.7.0: the icon was read as "make this box
+ * bigger" when it was found at all.
  */
 export function MarkdownField({
   value,
@@ -36,20 +44,11 @@ export function MarkdownField({
   const [preview, setPreview] = useState(false);
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-          {t('field.descriptionMarkdown')}
-        </Typography>
+    <Box data-testid="description-field">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
+        <FieldLabel sx={{ fontWeight: 600 }}>{t('field.descriptionMarkdown')}</FieldLabel>
         <Box sx={{ display: 'flex' }}>
         <MarkdownHelp />
-        {onOpenDocumentation && (
-          <Tooltip title={t('field.openDocumentation')}>
-            <IconButton size="small" aria-label={t('field.openDocumentation')} onClick={onOpenDocumentation}>
-              <FullscreenIcon size={16} />
-            </IconButton>
-          </Tooltip>
-        )}
         <Tooltip title={preview ? t('field.edit') : t('field.preview')}>
           <IconButton
             size="small"
@@ -82,12 +81,27 @@ export function MarkdownField({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           multiline
-          minRows={4}
-          maxRows={12}
+          minRows={3}
+          maxRows={10}
           fullWidth
           placeholder={t('field.descriptionPlaceholder')}
           slotProps={{ htmlInput: { 'aria-label': t('field.description') } }}
         />
+      )}
+      {onOpenDocumentation && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.25 }}>
+          <Tooltip title={t('field.openDocumentationTip')}>
+            <Button
+              size="small"
+              data-testid="open-documentation"
+              startIcon={<FullscreenIcon size={14} />}
+              onClick={onOpenDocumentation}
+              sx={{ fontSize: 11.5, textTransform: 'none', minWidth: 0, px: 0.75, py: 0.25, '& .MuiButton-startIcon': { mr: 0.5 } }}
+            >
+              {t('field.openDocumentation')} ›
+            </Button>
+          </Tooltip>
+        </Box>
       )}
     </Box>
   );

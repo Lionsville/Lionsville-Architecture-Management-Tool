@@ -33,6 +33,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.operations': 'Beheer',
   'doc.decisions': 'Besluiten en open punten',
   'field.openDocumentation': 'Als pagina openen',
+  'field.openDocumentationTip': 'Schrijf en lees de hele beschrijving op haar pagina, met ruimte en de secties van het sjabloon',
   'doc.title': 'Documentatie',
   'doc.plans': 'Plannen',
   'doc.drawings': 'Tekeningen',

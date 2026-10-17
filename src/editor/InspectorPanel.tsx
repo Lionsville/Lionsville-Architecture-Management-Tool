@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { PANEL_LIMITS } from './panels';
 import { useStrings } from '../i18n/LanguageContext';
+import { CompactForms } from '../widgets/CompactForms';
 
 export const INSPECTOR_WIDTH = PANEL_LIMITS.inspector.default;
 /** Collapsed rail width (U7b, D5): wide enough for the expand chevron only. */
@@ -87,8 +88,12 @@ export function InspectorPanel({
           </IconButton>
         </Tooltip>
       </Box>
+      {/* One treatment for every panel in this dock — the element's, the
+          line's, the group's, a page's own (`CompactForms`). */}
       {!collapsed && (
-        <Box sx={{ overflowY: 'auto', px: 1.5, pb: 1.5, flex: 1, minHeight: 0 }}>{children}</Box>
+        <Box sx={{ overflowY: 'auto', px: 1.5, pb: 1.5, flex: 1, minHeight: 0 }}>
+          <CompactForms>{children}</CompactForms>
+        </Box>
       )}
     </Box>
   );
