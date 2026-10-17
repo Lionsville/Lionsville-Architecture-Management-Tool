@@ -18,14 +18,14 @@ import type {
   Transition, TransitionElement, TransitionMilestone, TransitionMove, TransitionRole, TransitionStatus,
 } from '../../model/transition'
 import type { ElementId } from '../../model/types'
-import { isUnit, makesLoop } from '../../model/units'
-import type { UnitLike } from '../../model/units'
+import { makesLoop } from '../../model/units'
 import type { ReadView } from '../answer'
 import { planEntry } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 import { merged, personArgument, planBody, planOf } from './shared'
+import { unitsKnown } from './organisation'
 
 // --- a replacement, and its interfaces (ADR-0010) ----------------------------------------
 
@@ -405,13 +405,6 @@ export const removeMilestone: Handler = (args, view) => {
 }
 
 // --- the units a plan moves (ADR-0036 §6) -------------------------------------------------
-
-/** Every unit the organisation has, by id: the tree's, with this scope's own as the session holds them. */
-function unitsKnown(view: ReadView): Map<ElementId, UnitLike> {
-  const here = Object.values(view.model.elements).filter((one) => one.ref === undefined && isUnit(one))
-  const elsewhere = (view.tree?.units?.() ?? []).filter((one) => one.scope !== view.scopePath).map((one) => one.unit)
-  return new Map([...elsewhere, ...here].map((unit) => [unit.id, unit]))
-}
 
 /** Every move but this plan's of this unit: the other scopes' plans', and this scope's as the session holds them. */
 function otherMoves(view: ReadView, plan: Transition, unitId: ElementId): TransitionMove[] {

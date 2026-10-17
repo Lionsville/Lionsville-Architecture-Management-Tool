@@ -407,6 +407,46 @@ describe('a reorganisation at the agent (ADR-0036 §6)', () => {
   })
 })
 
+describe('a unit\'s place corrected with element.update (3.7.1)', () => {
+  const withMoves = (moves: { unitId: string; parentId?: string; on: string }[]): HostModel => ({
+    ...customer, transitions: [{ id: 'tr-1', number: 1, title: 'A plan', status: 'draft', elements: [], decisions: [], milestones: [], body: '', moves }],
+  })
+
+  it('puts a unit under a unit another scope keeps, found by its id, and says where its type may not sit', async () => {
+    const open = session('customer', customer)
+    expect(parsed(await ask('element.update', { id: 'webshop', parentId: 'parcel' }, open))).toMatchObject({
+      id: 'webshop', changed: ['parentId'], misplaced: true,
+    })
+    expect(open.sent[0]).toEqual({ type: 'element.update', id: 'webshop', patch: { parentId: 'parcel' }, origin: 'agent' })
+    // At the top its type may sit, so nothing is said of its place.
+    expect(parsed(await ask('element.update', { id: 'webshop', parentId: null }, open))).not.toHaveProperty('misplaced')
+  })
+
+  it('clears the order a unit had among its old siblings, unless the call says one', async () => {
+    const ordered = { ...customer, elements: customer.elements.map((one) => (one.id === 'webshop' ? { ...one, order: 3 } : one)) }
+    const open = session('customer', ordered)
+    expect(parsed(await ask('element.update', { id: 'webshop', parentId: 'parcel' }, open)).changed).toEqual(['parentId', 'order'])
+    expect(open.model().elements.webshop).not.toHaveProperty('order')
+    expect(parsed(await ask('element.update', { id: 'webshop', parentId: null, order: 1 }, open)).changed).toEqual(['order', 'parentId'])
+  })
+
+  it('refuses a loop over the organisation, today or on a later day a plan\'s move reaches', async () => {
+    const open = session('customer', withMoves([{ unitId: 'parcel', parentId: 'webshop', on: '2026-12-01' }]))
+    expect(refusal(await ask('element.update', { id: 'webshop', parentId: 'parcel' }, open)))
+      .toEqual(['agent.badArguments', '"parentId" parcel sits inside webshop on 2026-12-01: the move would make a loop'])
+    expect(refusal(await ask('element.update', { id: 'webshop', parentId: 'webshop' }, open))?.[0]).toBe('agent.badArguments')
+    expect(open.sent).toEqual([])
+  })
+
+  it('refuses a unit kept in another scope, which is moved there, and keeps a non-unit parent here as before', async () => {
+    const open = session('customer', customer)
+    expect(refusal(await ask('element.update', { id: 'parcel', parentId: 'webshop' }, open)))
+      .toEqual(['agent.scopeNotOpen', 'unit parcel is kept in shipping: it is changed there, its parent too'])
+    expect(refusal(await ask('element.update', { id: 'webshop', parentId: 'nowhere' }, open))?.[0]).toBe('agent.unknownId')
+    expect(parsed(await ask('element.update', { id: 'webshop', parentId: 'partners' }, open)).changed).toEqual(['parentId'])
+  })
+})
+
 describe('reporting lines at the agent (ADR-0039 §8)', () => {
   it('sets a unit\'s own line as one step, says who manages by it, and takes it away again', async () => {
     const open = session('customer', { ...customer, assignments: [...customer.assignments!, as('as-3', 'webshop', 'ro-dev', 'pe-bram')] })

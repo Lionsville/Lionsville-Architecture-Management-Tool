@@ -15,10 +15,13 @@ import { isPlatformArchetype } from '../../model/relations'
 import { isServable } from '../../model/serving'
 import { wouldCycle } from '../../business/tree'
 import type { AspectStatus, DesignElement, ElementId, ElementKind } from '../../model/types'
+import { isUnit } from '../../model/units'
+import { unitFits, unitMove } from '../../model/unitMove'
 import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import { seedPlacement } from './placement'
+import { organisationKnown, unitKeptElsewhere } from './organisation'
 import { isUnitRemoval, unitRemoval } from './removeUnit'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 import { diagramOrRefusal, hexColour, merged, personArgument } from './shared'
@@ -109,7 +112,12 @@ function recordOnly(element: DesignElement, diagram: Diagram | undefined): Prepa
 export const updateElement: Handler = (args, view) => {
   const id = args.id as string
   const held = view.model.elements[id]
-  if (!held) return refused('agent.unknownId', `element ${id}`)
+  if (!held) {
+    // A unit is changed where it is kept (ADR-0012 §7): its place too (3.7.1).
+    const keptIn = unitKeptElsewhere(view, id)
+    if (keptIn !== undefined) return refused('agent.scopeNotOpen', `unit ${id} is kept in ${keptIn || 'the organisation'}: it is changed there, its parent too`)
+    return refused('agent.unknownId', `element ${id}`)
+  }
   const patch = elementPatch(args, held, view)
   if ('ok' in patch) return patch
   // A stand-in's owner's detail belongs to the scope that defines it, and
@@ -118,8 +126,20 @@ export const updateElement: Handler = (args, view) => {
   if (owned) return refused('check.ownedElsewhere', owned.owner ?? '')
   return {
     command: { type: 'element.update', id, patch, origin: 'agent' },
-    answer: json({ id, changed: Object.keys(patch) }),
+    answer: json({ id, changed: Object.keys(patch), ...misplacedBy(view, held, patch) }),
   }
+}
+
+/**
+ * A unit moved where its type may not sit (`top`, `within`): moved all the
+ * same, as the screens move it, and said, since `check.unitMisplaced` will
+ * stand until it moves again or the operating model lets it sit there.
+ */
+function misplacedBy(view: WriteView, held: DesignElement, patch: Partial<DesignElement>): { misplaced?: true; hint?: string } {
+  if (!('parentId' in patch) || !keptUnit({ ...held, ...patch })) return {}
+  const organisation = organisationKnown(view)
+  if (unitFits(organisation, { ...held, ...patch }, patch.parentId)) return {}
+  return { misplaced: true, hint: 'its unit type may not sit there, so it shows as misplaced (check.unitMisplaced) until it moves again or the type is allowed there' }
 }
 
 export const removeElement: Handler = (args, view) => {
@@ -289,8 +309,13 @@ const tree: FieldReader = (args, held, view, patch) => {
     if (actor.kind !== 'actor') return refused('agent.badArguments', '"lane" must name an actor')
     patch.lane = args.lane
   }
-  if (cleared(args.parentId)) patch.parentId = undefined
-  else if (typeof args.parentId === 'string') {
+  if (cleared(args.parentId)) {
+    patch.parentId = undefined
+    if (keptUnit(held)) unitStartsAfresh(held, args, patch)
+  } else if (typeof args.parentId === 'string') {
+    // A unit's parent is any unit in the organisation, wherever it is kept (3.7.1).
+    const placed = keptUnit(held) ? unitPlaced(view, held, args.parentId) : undefined
+    if (placed) return placed === true ? unitStartsAfresh(held, args, Object.assign(patch, { parentId: args.parentId })) : placed
     if (!view.model.elements[args.parentId]) return refused('agent.unknownId', `element ${args.parentId}`)
     // A loop is offered and refused rather than hidden, as the sheet's own
     // inspector does — a tree with a cycle in it is a page that never ends.
@@ -300,6 +325,37 @@ const tree: FieldReader = (args, held, view, patch) => {
     patch.parentId = args.parentId
   }
   return undefined
+}
+
+/** A unit this scope keeps: a stand-in's `parentId` is where this scope draws it, not where the unit sits. */
+function keptUnit(held: DesignElement): boolean {
+  return held.ref === undefined && isUnit(held)
+}
+
+/** A unit moved starts afresh among its new siblings (3.7.1), unless the call says its order. Nothing to refuse. */
+function unitStartsAfresh(held: DesignElement, args: Args, patch: Record<string, unknown>): undefined {
+  if (args.order === undefined && held.order !== undefined) patch.order = undefined
+  return undefined
+}
+
+/**
+ * A unit put under another unit (ADR-0036, amended 17 October 2026; 3.7.1):
+ * the parent found anywhere in the organisation by its id, and a loop
+ * looked for over the whole of it — today, and on every later day a plan's
+ * move reaches (`model/unitMove`). `true` where it may go there; nothing
+ * where the parent is no unit the organisation has, which the scope's own
+ * tree then answers for — an actor that is only a group, here.
+ */
+function unitPlaced(view: WriteView, held: DesignElement, parentId: string): true | AgentAnswer | undefined {
+  const organisation = organisationKnown(view)
+  if (!organisation.units.some((one) => one.id === parentId)) return undefined
+  const answer = unitMove({ organisation, scopeOf: () => view.scopePath, unitIds: [held.id], parentId, day: view.today() })
+  if (answer.ok) return true
+  if (answer.reason === 'itself') return refused('agent.badArguments', 'a unit cannot sit under itself')
+  if (answer.reason === 'loop') {
+    return refused('agent.badArguments', `"parentId" ${parentId} sits inside ${held.id} on ${answer.day}: the move would make a loop`)
+  }
+  return refused('agent.unknownId', `unit ${parentId}`)
 }
 
 /**

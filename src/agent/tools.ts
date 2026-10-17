@@ -1271,13 +1271,18 @@ const SPECS = [
       'Change an element\'s fields. Only the fields given change; the rest stay as they are, and null '
       + 'clears an optional one. The dates go live → retiring → retired and are refused out of order; '
       + 'a parentId that would make a loop is refused; where a card sits on a diagram is element.place, '
-      + 'not this. Order among siblings is `order`, low first — a sheet lays its trees out by it.',
+      + 'not this. Order among siblings is `order`, low first — a sheet lays its trees out by it. '
+      + 'A unit\'s parentId may be any unit in the organisation, kept in any scope, found by its id: the unit moves '
+      + 'there with its people, its reporting lines, the scopes it serves and the units inside it, its order among its '
+      + 'new siblings starts afresh, and a loop over the organisation — today or on a later day a plan\'s move reaches — '
+      + 'is refused. Where its type may not sit there it is moved all the same and the answer says misplaced: true. '
+      + 'Call it in the scope that keeps the unit. This is a correction, with no day; a move on a day is plan.move.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('element'),
         ...ELEMENT_FIELDS,
-        parentId: { type: 'string', description: 'What contains it now: a component\'s application, a function\'s area or grouping, a step\'s phase, an actor\'s group. Null makes it a root.' },
+        parentId: { type: 'string', description: 'What contains it now: a component\'s application, a function\'s area or grouping, a step\'s phase, an actor\'s group, a unit\'s parent unit anywhere in the organisation. Null makes it a root — a unit at the top.' },
       },
       required: ['id'],
       additionalProperties: false,
