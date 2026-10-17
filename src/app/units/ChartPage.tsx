@@ -30,8 +30,9 @@
  * shows one thing at a time. The boxes themselves are `ChartUnitBox`.
  *
  * **A large organisation folds** (ADR-0036, amended 11 October 2026). A unit
- * with units under it folds, and says what it hides; a first open of more
- * than thirty units folds everything below the second level; *Fold all* and
+ * with units under it folds, and says what it hides; a first open folds
+ * everything below the second level (3.7.3; until then only a chart of more
+ * than thirty units did); *Fold all* and
  * *Unfold all* are on the bar. Folds are the screen's, for the session and
  * keyed by the view (`useChartFolds`), never the model's. Beside the chart,
  * the outline (`ChartOutline`) lists the same units as a tree that folds on
@@ -80,7 +81,7 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
-import { FOLD_OVER, rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
+import { rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
 import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
@@ -426,7 +427,7 @@ function ChartBar({ chart, folds, onFind, onFindMe, note, add, lines, t }: {
       </Box>
       {folds.foldedOnOpen && (
         <Typography data-testid="chart-folded-note" sx={{ fontSize: 12, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', color: 'text.secondary' }}>
-          {t('chart.foldedOnOpen', { count: FOLD_OVER })}
+          {t('chart.foldedOnOpen')}
         </Typography>
       )}
     </>

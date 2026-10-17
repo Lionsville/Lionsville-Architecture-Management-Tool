@@ -35,6 +35,7 @@ import { PersonNamesProvider, personNames } from '../../people/ui/names'
 import { translator } from '../../i18n'
 import { indexScopes } from '../../projects/scopeIndex'
 import { axeFindings } from '../testing/axe'
+import { leftUnfolded } from '../testing/chartFolds'
 import { ChartPage } from './ChartPage'
 import { unitViewsHere } from './unitViewsHere'
 
@@ -111,6 +112,8 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
   readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean; select?: SelectRequest
 }) {
   const [chosen, setChosen] = useState<string | undefined>(undefined)
+  // Opened as left unfolded: this file is about what a chart of three levels draws, and a first open folds the third (3.7.3).
+  const [folds] = useState(() => leftUnfolded('', 'oc-1'))
   const [model, setModel] = useState(scope === '' ? root : shipping)
   const index = useMemo(() => indexScopes([{ path: '', model: root }, { path: 'shipping', model: SHIPPING }]), [root])
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
@@ -132,7 +135,7 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
       scopeLabel={(path) => LABELS[path] ?? path} {...(selectedId !== undefined ? { selectedId } : {})}
       onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} {...(select ? { select } : {})} {...(onHandle ? { onHandle } : {})}
       {...(choosing ? { onChoose: setChosen, ...(chosen !== undefined ? { chosen } : {}) } : {})}
-      assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
+      assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }} folds={folds}
     />
     </PersonNamesProvider>
   )

@@ -1149,7 +1149,7 @@ export const EN = {
   'chart.unfold': 'Unfold {name}',
   'chart.foldAll': 'Fold all',
   'chart.unfoldAll': 'Unfold all',
-  'chart.foldedOnOpen': 'More than {count} units: folded below the second level for this session. Nothing about a fold is saved.',
+  'chart.foldedOnOpen': 'Opened two levels deep: folded below the second level for this session. Nothing about a fold is saved.',
   'chart.findUnit': 'Find a unit',
   'chart.find': 'Find',
   'chart.findNone': 'No unit on this chart is called that.',

@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
+import { leftUnfolded } from '../testing/chartFolds'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
 import { fromArrays, toArrays } from '../../model/normalised'
@@ -71,6 +72,8 @@ function Harness({ landed, answer, readOnly = false }: { landed: Landed[]; answe
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
   const here = useMemo(() => unitViewsHere(index, 'shipping', model), [index, model])
   const [selected, setSelected] = useState<string | undefined>(undefined)
+  // Opened as left unfolded: the teams on the third level are what is moved (a first open folds them away, 3.7.3).
+  const [folds] = useState(() => leftUnfolded('shipping', 'oc-1'))
   const reorder = (steps: ReadonlyMap<ScopePath, readonly Command[]>, barrier?: string) => {
     landed.push({ steps, barrier })
     const own = steps.get('shipping')
@@ -84,7 +87,7 @@ function Harness({ landed, answer, readOnly = false }: { landed: Landed[]; answe
     <ChartPage
       diagram={view} here={here} today={TODAY} readOnly={readOnly} people={undefined} scopeLabel={(path) => path || 'Acme Logistics'}
       {...(selected !== undefined ? { selectedId: selected } : {})} onSelect={setSelected} onOpenElsewhere={() => {}}
-      scope="shipping" reorder={reorder}
+      scope="shipping" reorder={reorder} folds={folds}
     />
   )
 }

@@ -927,7 +927,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'chart.unfold': 'Vouw {name} open',
   'chart.foldAll': 'Alles dichtvouwen',
   'chart.unfoldAll': 'Alles openvouwen',
-  'chart.foldedOnOpen': 'Meer dan {count} eenheden: onder het tweede niveau dichtgevouwen voor deze sessie. Niets van een vouw wordt bewaard.',
+  'chart.foldedOnOpen': 'Twee niveaus diep geopend: onder het tweede niveau dichtgevouwen voor deze sessie. Niets van een vouw wordt bewaard.',
   'chart.findUnit': 'Zoek een eenheid',
   'chart.find': 'Zoek',
   'chart.findNone': 'Geen eenheid op dit organogram heet zo.',

@@ -82,7 +82,8 @@ const outlined = () => within(outline()).getAllByTestId('chart-outline-unit').ma
 const DOMAINS = ['d0', 'd1', 'd2', 'd3', 'd4', 'd5']
 
 describe('a large organisation on its chart', () => {
-  it('folds a first open of more than thirty units below the second level, says so, and each folded unit says what it hides', async () => {
+  // 3.7.3: the note no longer counts thirty units — a first open of any size folds below the second level (ChartReading.test opens a small one).
+  it('folds a first open below the second level, says so, and each folded unit says what it hides', async () => {
     renderShell(<Harness />)
     expect(screen.getByTestId('chart-count').textContent).toBe('54 units · 36 people')
     // The domains and their clusters, and no team.
@@ -91,7 +92,7 @@ describe('a large organisation on its chart', () => {
     expect(box('d0c0').getAttribute('data-folded')).toBe('true')
     // Each team is short of its developers, which the organisation's findings say of each — listed in the summary beside the chart (3.6.1).
     expect(within(box('d0c0')).getByTestId('chart-rollup').textContent).toBe('3 units · 3 people · 6 vacant · 3 to look at')
-    expect(screen.getByTestId('chart-folded-note').textContent).toMatch(/More than 30 units: folded below the second level for this session/)
+    expect(screen.getByTestId('chart-folded-note').textContent).toMatch(/^Opened two levels deep: folded below the second level for this session/)
     // The outline folds the same on a first open.
     expect(outlined()).toHaveLength(18)
     expect(await axeFindings()).toEqual([])

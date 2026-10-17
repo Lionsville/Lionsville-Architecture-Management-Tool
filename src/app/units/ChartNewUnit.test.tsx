@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
+import { leftUnfolded } from '../testing/chartFolds'
 import type { Command } from '../../model/commands'
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { HostModel } from '../../model/hostModel'
@@ -67,6 +68,8 @@ function Harness({ scope = 'shipping', root = ROOT, shipping = SHIPPING, command
 }) {
   const [models, setModels] = useState<Record<string, HostModel>>({ '': root, shipping, warehouse: { name: 'Warehouse', elements: [], relations: [], diagrams: [] } })
   const [selected, setSelected] = useState<string | undefined>(undefined)
+  // Opened as left unfolded, so the units made inside a unit on the third level are seen as they land (a first open folds it, 3.7.3).
+  const [folds] = useState(() => leftUnfolded(scope, 'oc-1'))
   const index = useMemo(() => indexScopes(Object.entries(models).map(([path, model]) => ({ path, model }))), [models])
   const model = models[scope]
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
@@ -94,7 +97,7 @@ function Harness({ scope = 'shipping', root = ROOT, shipping = SHIPPING, command
   return (
     <ChartPage
       diagram={view} here={here} today={TODAY} readOnly={readOnly} people={undefined} scopeLabel={(path) => LABELS[path] ?? path}
-      {...(selected !== undefined ? { selectedId: selected } : {})} onSelect={select} onOpenElsewhere={() => {}} scope={scope} make={make}
+      {...(selected !== undefined ? { selectedId: selected } : {})} onSelect={select} onOpenElsewhere={() => {}} scope={scope} make={make} folds={folds}
     />
   )
 }

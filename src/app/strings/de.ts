@@ -928,7 +928,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'chart.unfold': '{name} ausklappen',
   'chart.foldAll': 'Alle einklappen',
   'chart.unfoldAll': 'Alle ausklappen',
-  'chart.foldedOnOpen': 'Mehr als {count} Einheiten: unterhalb der zweiten Ebene eingeklappt, für diese Sitzung. Nichts an einer Faltung wird gespeichert.',
+  'chart.foldedOnOpen': 'Zwei Ebenen tief geöffnet: unterhalb der zweiten Ebene eingeklappt, für diese Sitzung. Nichts an einer Faltung wird gespeichert.',
   'chart.findUnit': 'Eine Einheit finden',
   'chart.find': 'Finden',
   'chart.findNone': 'Keine Einheit in diesem Organigramm heißt so.',

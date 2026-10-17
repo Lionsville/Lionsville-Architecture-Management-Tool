@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import {
-  FOLD_OVER, findingsByUnit, foldable, foldedOnFirstOpen, orgChart, rollUp, unitsAboveIn, unitsNamed, walk,
+  findingsByUnit, foldable, foldedOnFirstOpen, orgChart, rollUp, unitsAboveIn, unitsNamed, walk,
 } from './orgChart'
 import type { ChartUnit, OrgChart } from './orgChart'
 import type { DesignElement } from './types'
@@ -69,13 +69,20 @@ function large(): Organisation {
 const find = (chart: OrgChart, id: string): ChartUnit => [...walk(chart.roots)].find((one) => one.id === id)!
 
 describe('folding the organisation chart', () => {
-  it('folds a first open of more than thirty units below the second level, and nothing of a chart that fits', () => {
+  // 3.7.3: a first open folds below the second level however few units there are; until then a chart of thirty or fewer opened whole.
+  it('folds a first open below the second level, a large chart and a small one alike', () => {
     const chart = orgChart(large(), TODAY)
     expect(chart.units).toBe(54)
-    expect(chart.units).toBeGreaterThan(FOLD_OVER)
     // Every cluster folds, so the domains and their clusters show and no team does.
     expect(foldedOnFirstOpen(chart)).toEqual(['d0c0', 'd0c1', 'd1c0', 'd1c1', 'd2c0', 'd2c1', 'd3c0', 'd3c1', 'd4c0', 'd4c1', 'd5c0', 'd5c1'])
-    expect(foldedOnFirstOpen(orgChart(small, TODAY))).toEqual([])
+    // Four units, three levels: the cluster folds, its two teams wait.
+    expect(foldedOnFirstOpen(orgChart(small, TODAY))).toEqual(['pf'])
+  })
+
+  it('folds nothing on a chart of two levels or one', () => {
+    const two = { ...small, units: small.units.filter((one) => one.parentId !== 'pf') }
+    expect(foldedOnFirstOpen(orgChart(two, TODAY))).toEqual([])
+    expect(foldedOnFirstOpen(orgChart({ ...small, units: [small.units[0]!] }, TODAY))).toEqual([])
   })
 
   it('folds nothing on the second level that has no units under it', () => {

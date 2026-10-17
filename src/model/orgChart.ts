@@ -255,17 +255,17 @@ export function drawsUnitsBelow(unit: Pick<ChartUnit, 'id' | 'children'>, folded
   return unit.children.length > 0 && !folded.has(unit.id)
 }
 
-/** How many units a chart draws before its first open is folded. */
-export const FOLD_OVER = 30
-
 /**
- * The units a first open of a chart folds (3.6.1): where it draws more than
- * {@link FOLD_OVER} units, every unit on the second level that has units
- * under it — so the top two levels show and nothing below them. None where it
- * draws fewer: a chart that fits is shown whole.
+ * The units a first open of a chart folds (3.7.3): every unit on the second
+ * level that has units under it, so the top two levels show — the chart's top
+ * units and the units directly under them — and nothing below them, however
+ * few units there are. A chart of two levels or fewer folds nothing.
+ *
+ * Until 3.7.3 only a chart of more than thirty units folded, and a smaller
+ * one opened whole; a chart of twenty units five levels deep opened as a page
+ * to scroll through, and the person had to fold it to read its shape.
  */
 export function foldedOnFirstOpen(chart: OrgChart): ElementId[] {
-  if (chart.units <= FOLD_OVER) return []
   return chart.roots.flatMap((top) => top.children).filter((unit) => unit.children.length > 0).map((unit) => unit.id)
 }
 
