@@ -31,4 +31,5 @@ export const EN = {
   'comments.elsewhere': 'This record is kept in another scope: its comments are read and written there.',
   'comments.readOnly': 'This scope is read here and not changed, so nothing can be commented.',
   'comments.refused': 'The comment was not written.',
+  'comments.notLoaded': 'Comments could not be loaded.',
 } as const

@@ -8,10 +8,10 @@
  * (`app/testing/lazyParts.ts`), so each starts out unfetched.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useState } from 'react'
-import type { ComponentType } from 'react'
+import { Component, useState } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { lazyPart } from './lazyPart'
+import { lazyPart, PartNotLoaded } from './lazyPart'
 
 afterEach(() => cleanup())
 
@@ -122,6 +122,63 @@ describe('lazyPart', () => {
     expect(screen.getByText('Roadmap')).toBeTruthy()
     expect(await screen.findByText('Plan')).toBeTruthy()
     expect(plan).toHaveBeenCalledTimes(2)
+  })
+
+  /**
+   * Offline, a reader whose thread had not arrived: the import rejects as a
+   * browser's does, and the line takes the part's place while the rest of
+   * the screen stands and answers its keys.
+   */
+  it('draws a quiet line with Try again where its script will not load, and the screen around it goes on working', async () => {
+    const load = vi.fn()
+      .mockImplementationOnce(() => Promise.reject(new TypeError('Failed to fetch dynamically imported module')))
+      .mockImplementation(() => Promise.resolve(Page))
+    const Part = lazyPart<Props>(load)
+    const typed = vi.fn()
+    render(<><input aria-label="reader" onKeyDown={(event) => { if (event.key === 'Enter') typed() }} /><Part open title="Comments" /></>)
+    expect((await screen.findByTestId('part-not-loaded')).textContent).toContain('This could not be loaded.')
+    const reader = screen.getByLabelText('reader')
+    reader.focus()
+    fireEvent.keyDown(reader, { key: 'Enter' })
+    expect(typed).toHaveBeenCalledTimes(1)
+    expect(document.activeElement).toBe(reader)
+    fireEvent.click(screen.getByTestId('part-retry'))
+    expect(await screen.findByText('Comments')).toBeTruthy()
+    expect(screen.queryByTestId('part-not-loaded')).toBeNull()
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  it('draws what the part says where its script will not load, and asks again from it', async () => {
+    const load = vi.fn()
+      .mockImplementationOnce(() => Promise.reject(new TypeError('Failed to fetch dynamically imported module')))
+      .mockImplementation(() => Promise.resolve(Page))
+    const Part = lazyPart<Props>(load, { failed: (props, retry) => <button onClick={retry}>{`${props.title} not here`}</button> })
+    render(<Part open title="Comments" />)
+    fireEvent.click(await screen.findByText('Comments not here'))
+    expect(await screen.findByText('Comments')).toBeTruthy()
+  })
+
+  it('says a part\'s own words through the line', () => {
+    render(<PartNotLoaded message="comments.notLoaded" onRetry={() => {}} />)
+    expect(screen.getByTestId('part-not-loaded').textContent).toBe('Comments could not be loaded.Try again')
+  })
+
+  it('leaves a part that loaded and then throws to the boundary above, as before', async () => {
+    function Broken(): ReactNode { throw new Error('a bug in the part') }
+    class Above extends Component<{ children: ReactNode }, { caught?: string }> {
+      override state: { caught?: string } = {}
+      static getDerivedStateFromError(caught: Error) { return { caught: caught.message } }
+      override render() { return this.state.caught ? <p>{this.state.caught}</p> : this.props.children }
+    }
+    const Part = lazyPart<Props>(() => Promise.resolve(Broken as ComponentType<Props>))
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      render(<Above><Part open title="Comments" /></Above>)
+      expect(await screen.findByText('a bug in the part')).toBeTruthy()
+      expect(screen.queryByTestId('part-not-loaded')).toBeNull()
+    } finally {
+      quiet.mockRestore()
+    }
   })
 
   it('asks again after a fetch that failed', async () => {

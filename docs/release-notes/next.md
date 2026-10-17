@@ -69,3 +69,10 @@ merge finds in other scopes, the domains a unit **Serves**, where a new unit
 is filed, and the scope a unit is filed in when you pick a unit — each scope
 is now said by its path from the organisation down, such as *Platforms ›
 Cameras*, and typing part of the path finds it.
+
+**Offline, a part that has not arrived yet says so.** Some parts of the app
+arrive the first time they are reached — a page, a dialog, the comments under
+a record. Where that happens while the network is gone, the part now says, in
+one line where it would be, that it could not be loaded, with **Try again**;
+the screen around it goes on working. A record opened offline is still read,
+its comments saying *Comments could not be loaded* until they can be.

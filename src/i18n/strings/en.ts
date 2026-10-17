@@ -33,4 +33,7 @@ export const EN = {
    * is what `common.` is for.
    */
   'common.organisation': 'the organisation',
+  /** Where a part of the app that arrives later would not load (`widgets/lazyPart`): offline, or a network that dropped it. */
+  'common.partNotLoaded': 'This could not be loaded.',
+  'common.tryAgain': 'Try again',
 } as const

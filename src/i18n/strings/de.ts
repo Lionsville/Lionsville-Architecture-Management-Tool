@@ -27,4 +27,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'common.history': 'Verlauf…',
   'common.copyLink': 'Link kopieren',
   'common.organisation': 'die Organisation',
+  'common.partNotLoaded': 'Das konnte nicht geladen werden.',
+  'common.tryAgain': 'Erneut versuchen',
 }

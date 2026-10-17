@@ -27,4 +27,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'comments.elsewhere': 'Dit record staat in een andere scope: de reacties erop worden daar gelezen en geschreven.',
   'comments.readOnly': 'Deze scope wordt hier gelezen en niet gewijzigd, dus er kan niet worden gereageerd.',
   'comments.refused': 'De reactie is niet geschreven.',
+  'comments.notLoaded': 'De reacties konden niet worden geladen.',
 }

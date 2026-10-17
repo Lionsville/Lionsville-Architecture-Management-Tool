@@ -27,4 +27,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'comments.elsewhere': 'Dieser Eintrag liegt in einem anderen Bereich: Seine Kommentare werden dort gelesen und geschrieben.',
   'comments.readOnly': 'Dieser Bereich wird hier gelesen und nicht geändert, daher kann nicht kommentiert werden.',
   'comments.refused': 'Der Kommentar wurde nicht geschrieben.',
+  'comments.notLoaded': 'Die Kommentare konnten nicht geladen werden.',
 }
