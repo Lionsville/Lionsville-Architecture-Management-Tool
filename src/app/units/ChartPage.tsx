@@ -75,7 +75,7 @@ import { FOLD_OVER, rollUp, unitsHolding, unitsNamed, walk } from '../../model/o
 import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
-import { dayBefore, loadOn } from '../../model/units'
+import { dayBefore, hasReportingLines, loadOn } from '../../model/units'
 import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { registerOf, resolvePerson } from '../../people/shown'
@@ -150,13 +150,16 @@ export function ChartPage(props: ChartPageProps) {
   const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
   const folds = useFoldsOf(chart, props.scope ?? '', diagram.id, props.folds)
   const page = useRef<HTMLDivElement | null>(null)
-  // The Reporting lines overlay (ADR-0039 §7): off until it is turned on, for as long as the page is up.
+  // The Reporting lines overlay (ADR-0039 §7, amended): on from the start where the organisation says any line, off where it
+  // says none; the switch lasts while the page is up.
   const stage = useRef<HTMLDivElement | null>(null)
-  const [showLines, setShowLines] = useState(false)
+  const [showLines, setShowLines] = useState(() => hasReportingLines(here.at.organisation))
   const lines = useMemo(
     () => (showLines ? chartLines(here.at.organisation, chart, day, folds.folded) : []),
     [showLines, here, chart, day, folds.folded],
   )
+  // The unit whose lines are lit: the one selected, or the one whose assignment is chosen.
+  const pickedUnit = props.selectedId ?? (props.chosen !== undefined ? here.at.organisation.assignments.find((one) => one.id === props.chosen)?.unitId : undefined)
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
     const scope = here.scopeOf(id)
@@ -240,7 +243,7 @@ export function ChartPage(props: ChartPageProps) {
             : (
               <Box ref={stage} sx={{ position: 'relative' }}>
                 <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
-                {showLines && <ChartLinesOverlay stage={stage} lines={lines} redraw={folds.optional} />}
+                {showLines && <ChartLinesOverlay stage={stage} lines={lines} redraw={folds.optional} picked={pickedUnit} />}
               </Box>
             )}
         </Box>

@@ -12,8 +12,10 @@
  * Read off plain types, so the library's own structure, drawn the same way,
  * lights the same way. Pure, and no words.
  */
-import type { RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
+import { linesInto, linesSaid } from '../../model/operatingModel'
+import type { Role, RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
 import type { SitsIn } from '../../model/unitOrder'
+import type { RoleLine } from './roleLines'
 
 /** What is picked on the structure: a unit type or a role, by id. */
 export type StructurePick = { readonly kind: 'unitType' | 'role'; readonly id: string }
@@ -30,29 +32,46 @@ export type PickLooks = {
   role(id: RoleId): Exclude<Look, 'dim'>
   /** A line between two places: lit where it reaches the picked type, dimmed where not. */
   line(edge: SitsIn): Exclude<Look, 'picked'>
+  /** A reporting line between two roles' chips (ADR-0039 §7, amended): lit where it runs from or to the pick, dimmed where not. */
+  roleLine(line: RoleLine): Exclude<Look, 'picked'>
 }
 
-const NOTHING_PICKED: PickLooks = { type: () => 'plain', organisation: 'plain', role: () => 'plain', line: () => 'plain' }
+const NOTHING_PICKED: PickLooks = { type: () => 'plain', organisation: 'plain', role: () => 'plain', line: () => 'plain', roleLine: () => 'plain' }
 
-export function pickLooks(types: readonly UnitType[], pick: StructurePick | undefined): PickLooks {
+/**
+ * What a pick lights: a role lights the types that hold it, the roles it
+ * reports to and the roles that report to it, and the reporting lines at
+ * either end of it; a type lights the lines from and to its cards' chips.
+ */
+export function pickLooks(types: readonly UnitType[], pick: StructurePick | undefined, roles: readonly Role[] = []): PickLooks {
   if (!pick) return NOTHING_PICKED
   if (pick.kind === 'role') {
     const holding = new Set(types.filter((type) => type.slots.some((slot) => slot.role === pick.id)).map((type) => type.id))
+    const picked = roles.find((role) => role.id === pick.id)
+    const related = new Set<RoleId>([
+      ...linesSaid(picked?.reportsTo).flatMap((line) => (line.role === undefined ? [] : [line.role])),
+      ...types.flatMap((type) => type.slots.filter((slot) => slot.role === pick.id)
+        .flatMap((slot) => linesSaid(slot.reportsTo).flatMap((line) => (line.role === undefined ? [] : [line.role])))),
+      ...linesInto(types, roles, pick.id).map((line) => line.from),
+    ])
+    related.delete(pick.id)
     return {
       type: (id) => (holding.has(id) ? 'lit' : 'dim'),
       organisation: 'dim',
-      role: (id) => (id === pick.id ? 'picked' : 'plain'),
+      role: (id) => (id === pick.id ? 'picked' : related.has(id) ? 'lit' : 'plain'),
       line: () => 'plain',
+      roleLine: (line) => (line.from.roleId === pick.id || line.to.roleId === pick.id ? 'lit' : 'dim'),
     }
   }
   const picked = types.find((type) => type.id === pick.id)
   if (!picked) return NOTHING_PICKED
   const lit = new Set([...picked.within, ...types.filter((type) => type.within.includes(picked.id)).map((type) => type.id)])
-  const roles = new Set(picked.slots.map((slot) => slot.role))
+  const held = new Set(picked.slots.map((slot) => slot.role))
   return {
     type: (id) => (id === picked.id ? 'picked' : lit.has(id) ? 'lit' : 'dim'),
     organisation: picked.top === true ? 'lit' : 'dim',
-    role: (id) => (roles.has(id) ? 'lit' : 'plain'),
+    role: (id) => (held.has(id) ? 'lit' : 'plain'),
     line: (edge) => (edge.type === picked.id || edge.sitsIn === picked.id ? 'lit' : 'dim'),
+    roleLine: (line) => (line.from.typeId === picked.id || line.to.typeId === picked.id ? 'lit' : 'dim'),
   }
 }

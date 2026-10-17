@@ -261,37 +261,80 @@ describe('the operating model\'s page', () => {
     expect(screen.getByText('Sits in: Scrum Team')).toBeTruthy()
   })
 
-  it('sets where a slot\'s holders report, solid or dotted, and refuses a line the host says would close a loop (ADR-0039 §2, §5)', async () => {
+  it('sets where a slot\'s holders report, a line manager\'s and a functional line, in the same unit or above, and refuses a line the host says would close a loop (ADR-0039 §2, §5, amended)', async () => {
     const refusing: { now?: string } = {}
-    const sent = show(empty(), { refuseLine: () => refusing.now })
+    const asked: unknown[] = []
+    const sent = show(empty(), { refuseLine: (change) => { asked.push(change); return refusing.now } })
     await bringInScrum()
     fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
     fireEvent.click(screen.getByRole('button', { name: 'New unit type' }))
     fireEvent.mouseDown(within(screen.getByTestId('operating-inspector')).getByLabelText('A role to add'))
     fireEvent.click(await screen.findByRole('option', { name: 'Developer' }))
     fireEvent.click(within(screen.getByTestId('operating-inspector')).getByRole('button', { name: 'Add role' }))
-    const line = () => screen.getByTestId('operating-slot-line')
-    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[0])
+    const row = (kind: 'solid' | 'dotted') => screen.getByTestId('operating-slot-line').querySelector<HTMLElement>(`[data-testid="operating-line-row"][data-kind="${kind}"]`)!
+    const pick = async (kind: 'solid' | 'dotted', at: number, name: string) => {
+      fireEvent.mouseDown(within(row(kind)).getAllByRole('combobox')[at])
+      fireEvent.click(await screen.findByRole('option', { name }))
+    }
+    // Nothing said on the slot: the row says what the role says, which is no line.
+    fireEvent.mouseDown(within(row('solid')).getAllByRole('combobox')[0])
     const options = await screen.findAllByRole('option')
-    expect(options[0].textContent).toBe('By nesting')
+    expect(options.slice(0, 2).map((one) => one.textContent)).toEqual(['As the role says: no line', 'By nesting in this type'])
     fireEvent.click(options.find((one) => one.textContent === 'Scrum Master')!)
-    expect(sent.at(-1)).toMatchObject({ type: 'unitType.update', patch: { slots: [{ min: 0, max: 1, reportsTo: { kind: 'solid' } }] } })
-    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[1])
-    fireEvent.click(await screen.findByRole('option', { name: 'Functional' }))
-    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: { kind: 'dotted' } }] } })
-    fireEvent.change(within(line()).getByLabelText('Developer: From'), { target: { value: '2027-01-01' } })
-    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: { kind: 'dotted', from: '2027-01-01' } }] } })
-    // A solid line the host refuses is said, and not written.
+    expect(sent.at(-1)).toMatchObject({ type: 'unitType.update', patch: { slots: [{ min: 0, max: 1, reportsTo: [{ kind: 'solid', role: expect.any(String) }] }] } })
+    expect(asked.at(-1)).toMatchObject({ on: 'slot', said: [{ kind: 'solid' }] })
+    // In the same unit: a developer reports to the team's own scrum master.
+    await pick('solid', 1, 'In the same unit')
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: [{ kind: 'solid', within: true }] }] } })
+    // A functional line beside it, with a first day.
+    await pick('dotted', 0, 'Product Owner')
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: [{ kind: 'solid', within: true }, { kind: 'dotted' }] }] } })
+    fireEvent.change(within(row('dotted')).getByLabelText('Developer: From (Functional)'), { target: { value: '2027-01-01' } })
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: [{ kind: 'solid' }, { kind: 'dotted', from: '2027-01-01' }] }] } })
+    // A line the host refuses is said, and not written.
     refusing.now = 'Not written: the line would close a loop.'
     const before = sent.length
-    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[1])
-    fireEvent.click(await screen.findByRole('option', { name: 'Line manager' }))
+    await pick('solid', 1, 'In the nearest unit above, else the one unit that has the role')
     expect(sent).toHaveLength(before)
     expect(screen.getByTestId('operating-line-refused').textContent).toBe('Not written: the line would close a loop.')
-    // By nesting again takes the line away.
-    fireEvent.mouseDown(within(line()).getAllByRole('combobox')[0])
-    fireEvent.click(await screen.findByRole('option', { name: 'By nesting' }))
+    refusing.now = undefined
+    // By nesting in this type keeps a line with no role; as the role says takes the slot's line away.
+    await pick('solid', 0, 'By nesting in this type')
+    expect(sent.at(-1)).toMatchObject({ patch: { slots: [{ reportsTo: [{ kind: 'solid' }, { kind: 'dotted' }] }] } })
+    expect((sent.at(-1) as { patch: { slots: { reportsTo: object[] }[] } }).patch.slots[0].reportsTo[0]).not.toHaveProperty('role')
+    await pick('solid', 0, 'As the role says: no line')
+    await pick('dotted', 0, 'As the role says: no line')
     expect((sent.at(-1) as { patch: { slots: object[] } }).patch.slots[0]).not.toHaveProperty('reportsTo')
+  })
+
+  it('sets where a role\'s holders report wherever it is held, says who reports to it, and shows the role\'s line under a slot (ADR-0039 §2, amended)', async () => {
+    const sent = show(empty(), { refuseLine: () => undefined })
+    await bringInScrum()
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New unit type' }))
+    fireEvent.mouseDown(within(screen.getByTestId('operating-inspector')).getByLabelText('A role to add'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Developer' }))
+    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByRole('button', { name: 'Add role' }))
+    // The role itself: picked from its chip on the new type's card.
+    const roleChip = screen.getAllByTestId(/^role-/).find((one) => one.textContent?.startsWith('Developer') && one.tagName === 'BUTTON')!
+    fireEvent.click(roleChip)
+    const lines = () => screen.getByTestId('operating-role-lines')
+    const solid = () => lines().querySelector<HTMLElement>('[data-kind="solid"]')!
+    fireEvent.mouseDown(within(solid()).getAllByRole('combobox')[0])
+    expect((await screen.findAllByRole('option'))[0].textContent).toBe('No line')
+    fireEvent.click(screen.getByRole('option', { name: 'Scrum Master' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { reportsTo: [{ kind: 'solid' }] } })
+    fireEvent.mouseDown(within(solid()).getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByRole('option', { name: 'In the same unit' }))
+    expect(sent.at(-1)).toMatchObject({ type: 'role.update', patch: { reportsTo: [{ kind: 'solid', within: true }] } })
+    // Scrum Master picked: the developer reports to it, wherever the developer is held.
+    const smChip = screen.getAllByTestId(/^role-/).find((one) => one.textContent?.startsWith('Scrum Master') && one.tagName === 'BUTTON')!
+    fireEvent.click(smChip)
+    expect(screen.getAllByTestId('operating-reported-by').map((one) => one.textContent)).toEqual(['Developer, wherever it is held · line manager · same unit'])
+    // Under the new type's Developer slot, the row says the role's line holds until the slot says otherwise.
+    fireEvent.click(screen.getByRole('button', { name: 'Unit type' }))
+    fireEvent.mouseDown(within(screen.getByTestId('operating-slot-line').querySelector<HTMLElement>('[data-kind="solid"]')!).getAllByRole('combobox')[0])
+    expect((await screen.findAllByRole('option'))[0].textContent).toBe('As the role says: Scrum Master')
   })
 
   it('lists who holds a role before it is taken out of a unit type, and takes one nobody holds out at once', async () => {

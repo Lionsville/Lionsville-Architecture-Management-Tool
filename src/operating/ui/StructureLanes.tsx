@@ -22,6 +22,8 @@ import type { UnitType } from '../../model/operatingModel'
 import type { SitsIn, UnitTypeLanes } from '../../model/unitOrder'
 import { laneLines, railBand } from './laneLines'
 import type { CardBox, LaneLine } from './laneLines'
+import { roleLinePaths } from './roleLines'
+import type { RoleLine } from './roleLines'
 import type { Look } from './structurePick'
 import { ringOf } from './TypeCard'
 
@@ -42,22 +44,25 @@ export type StructureLanesProps = {
   named?: 'operating.structure'
   /** Narrower lanes, and a narrow organisation: for a dialog with a pane beside it. */
   compact?: boolean
+  /** The reporting lines between the cards' role chips (ADR-0039 §7, amended), and how each stands to what is picked. Absent: none drawn. */
+  roleLines?: { lines: readonly RoleLine[]; look: (line: RoleLine) => Exclude<Look, 'picked'> }
 }
 
 /** A lane's width and the gap between two: room in the gap for a line to bend up to the rail and down again. */
 const WIDE = { lane: 236, root: 150, gap: 48 }
 const COMPACT = { lane: 200, root: 120, gap: 40 }
 
-export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named, compact = false }: StructureLanesProps) {
+export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named, compact = false, roleLines }: StructureLanesProps) {
   const stage = useRef<HTMLDivElement>(null)
-  const lines = useMeasuredLines(stage, structure)
+  const lines = useMeasuredLines(stage, structure, roleLines?.lines ?? NO_ROLE_LINES)
   const size = compact ? COMPACT : WIDE
   return (
     <Box
       ref={stage} role="group" aria-label={label} data-guide={named} data-testid="structure-lanes"
       sx={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: `${size.gap}px`, width: 'max-content', pt: `${railBand(structure)}px`, pb: 1.5, pr: 3 }}
     >
-      <Lines lines={lines} look={lineLook} />
+      <Lines lines={lines.lanes} look={lineLook} />
+      {roleLines && <RoleLines lines={lines.roles} look={roleLines.look} />}
       <Lane heading={laneLabel(0)} lane={0} width={size.root}>
         <Box data-lane-root>
           <OrganisationCard {...organisation} />
@@ -117,13 +122,40 @@ function Lines({ lines, look }: { lines: readonly LaneLine[]; look: StructureLan
   )
 }
 
+const NO_ROLE_LINES: readonly RoleLine[] = []
+
+/** The reporting lines, over the cards: solid or dotted, lit at the pick, dimmed away from it, and a dot where each lands. */
+function RoleLines({ lines, look }: { lines: readonly (RoleLine & { d: string; x: number; y: number })[]; look: (line: RoleLine) => Exclude<Look, 'picked'> }) {
+  const theme = useTheme()
+  if (lines.length === 0) return null
+  return (
+    <Box component="svg" aria-hidden data-testid="structure-role-lines"
+      sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 2 }}>
+      {lines.map((line) => {
+        const how = look(line)
+        const stroke = line.ambiguous ? theme.palette.warning.main : theme.palette.secondary.main
+        return (
+          <g key={line.key} data-testid={`structure-role-line-${line.kind}`} data-look={how} data-within={line.within || undefined} data-source={line.source}
+            opacity={how === 'dim' ? 0.18 : 1}>
+            <path d={line.d} fill="none" stroke={stroke} strokeWidth={how === 'lit' ? 2.2 : 1.4} strokeDasharray={line.kind === 'dotted' ? '2 3' : undefined} />
+            <circle cx={line.x} cy={line.y} r={how === 'lit' ? 3.5 : 2.5} fill={stroke} />
+          </g>
+        )
+      })}
+    </Box>
+  )
+}
+
+type Measured = { lanes: LaneLine[]; roles: (RoleLine & { d: string; x: number; y: number })[] }
+const NOTHING_MEASURED: Measured = { lanes: [], roles: [] }
+
 /**
  * Where each line runs, from the cards as they ended up: measured after every
  * layout — a card grows as its name or its slots do, and moves the ones under
  * it — and again whenever a card or the stage changes size.
  */
-function useMeasuredLines(stage: { current: HTMLDivElement | null }, structure: UnitTypeLanes): LaneLine[] {
-  const [lines, setLines] = useState<LaneLine[]>([])
+function useMeasuredLines(stage: { current: HTMLDivElement | null }, structure: UnitTypeLanes, roleLines: readonly RoleLine[]): Measured {
+  const [lines, setLines] = useState<Measured>(NOTHING_MEASURED)
   const measure = useCallback(() => {
     const root = stage.current
     if (!root) return
@@ -135,9 +167,13 @@ function useMeasuredLines(stage: { current: HTMLDivElement | null }, structure: 
     }
     const cards = new Map([...root.querySelectorAll<HTMLElement>('[data-lane-card]')].map((card) => [card.dataset.laneCard, card]))
     const top = root.querySelector('[data-lane-root]')
-    const next = laneLines(structure, (type) => boxOf(type === undefined ? top : cards.get(type)))
-    setLines((held) => (sameLines(held, next) ? held : next))
-  }, [stage, structure])
+    const lanes = laneLines(structure, (type) => boxOf(type === undefined ? top : cards.get(type)))
+    // A role's chip on a card, by the test id every slot carries (`TypeCard`).
+    const chipOf = (end: { typeId: string; roleId: string }) => [...(cards.get(end.typeId)?.querySelectorAll<HTMLElement>('[data-testid^="role-"]') ?? [])]
+      .find((chip) => chip.dataset.testid === `role-${end.roleId}`)
+    const roles = roleLinePaths(roleLines, (end) => boxOf(chipOf(end)))
+    setLines((held) => (sameLines(held.lanes, lanes) && sameRoleLines(held.roles, roles) ? held : { lanes, roles }))
+  }, [stage, structure, roleLines])
   useLayoutEffect(measure)
   useEffect(() => {
     const root = stage.current
@@ -151,5 +187,9 @@ function useMeasuredLines(stage: { current: HTMLDivElement | null }, structure: 
 }
 
 function sameLines(a: readonly LaneLine[], b: readonly LaneLine[]): boolean {
+  return a.length === b.length && a.every((line, at) => line.key === b[at].key && line.d === b[at].d)
+}
+
+function sameRoleLines(a: readonly { key: string; d: string }[], b: readonly { key: string; d: string }[]): boolean {
   return a.length === b.length && a.every((line, at) => line.key === b[at].key && line.d === b[at].d)
 }

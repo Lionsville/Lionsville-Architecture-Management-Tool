@@ -4,7 +4,8 @@
 /**
  * A unit's reporting lines, in its inspector (ADR-0039 §3, §7): each line of
  * its roles on the day looked at — where it lands, solid or dotted, whether it
- * is the type's or the unit's own — and, where the unit is kept here and may
+ * is the role's, the type's or the unit's own — who reports into it from
+ * elsewhere, and, where the unit is kept here and may
  * be written, *Override…*, *Report by nesting here* and *Use the type's*, and
  * a line for a role that has none.
  *
@@ -68,6 +69,9 @@ export function UnitLines(props: UnitLinesProps) {
   }
   const solid = new Set(lines.filter((line) => line.kind === 'solid').map((line) => line.roleId))
   const free = slotsOf(element, type).map((slot) => slot.role).filter((role) => !solid.has(role))
+  // Who reports into this unit (ADR-0039 §7, amended): every line of another unit's role that lands on one of its roles today.
+  const into = useMemo(() => reportingLinesOn(organisation, day).filter((line) => line.state === 'lands' && line.to?.unitId === element.id && line.unitId !== element.id), [organisation, day, element.id])
+  const unitName = (id: string) => organisation.units.find((one) => one.id === id)?.name ?? id
   return (
     <Box data-testid="unit-lines">
       <Typography sx={SECTION}>{s('unit.lines')}</Typography>
@@ -79,7 +83,7 @@ export function UnitLines(props: UnitLinesProps) {
             <Chip size="small" variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
               sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
             <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>
-              {s(line.source === 'type' ? 'unit.lineFromType' : 'unit.lineOwn')}
+              {s(line.source === 'type' ? 'unit.lineFromType' : line.source === 'role' ? 'unit.lineFromRole' : 'unit.lineOwn')}
               {(line.from !== undefined || line.until !== undefined) ? ` · ${s('unit.lineDays', { from: line.from ?? '…', until: line.until ?? '…' })}` : ''}
             </Box>
           </Typography>
@@ -113,6 +117,18 @@ export function UnitLines(props: UnitLinesProps) {
         <LineForm role={editing} roleName={roleName(editing)} {...props} onSave={write} onCancel={() => { setEditing(undefined); setRefused(undefined) }} />
       )}
       {refused && <Typography role="alert" sx={{ fontSize: 12, color: 'error.main' }} data-testid="unit-line-refused">{refused}</Typography>}
+      {into.length > 0 && (
+        <>
+          <Typography sx={SECTION}>{s('unit.reportedToBy')}</Typography>
+          {into.map((line) => (
+            <Typography key={`${line.unitId}/${line.roleId}/${line.kind}`} component="div" sx={LINE} data-testid="unit-line-into" data-kind={line.kind}>
+              {s('unit.reportedToByLine', { role: roleName(line.roleId), unit: unitName(line.unitId), target: roleName(line.to!.roleId) })}
+              <Chip size="small" variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
+                sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
+            </Typography>
+          ))}
+        </>
+      )}
     </Box>
   )
 }
@@ -129,7 +145,10 @@ function lineWords(line: ReportingLineOn, organisation: Organisation, day: strin
     case 'lands': {
       const to = line.to!
       const vacant = holdersOn(organisation.assignments, to.unitId, to.roleId, day).length === 0
-      return `${s('unit.lineTo', { role: role(line.roleId), target: role(to.roleId), unit: unit(to.unitId) })}${vacant ? ` (${s('unit.lineVacant')})` : ''}`
+      const where = to.unitId === line.unitId
+        ? s('unit.lineToHere', { role: role(line.roleId), target: role(to.roleId) })
+        : s('unit.lineTo', { role: role(line.roleId), target: role(to.roleId), unit: unit(to.unitId) })
+      return `${where}${vacant ? ` (${s('unit.lineVacant')})` : ''}`
     }
   }
 }
@@ -143,10 +162,13 @@ function LineForm(props: UnitLinesProps & { role: string; roleName: string; onSa
   // The same two days the type's slot editor takes, and the agent sets.
   const [from, setFrom] = useState('')
   const [until, setUntil] = useState('')
-  const units = useMemo(() => organisation.units.filter((one) => isUnit(one) && unitOn(one, day)).sort((a, b) => a.name.localeCompare(b.name)), [organisation, day])
+  // This unit first, named as such: a developer reports to the team's own tech lead more often than to one elsewhere.
+  const units = useMemo(() => organisation.units.filter((one) => isUnit(one) && unitOn(one, day))
+    .sort((a, b) => (a.id === props.element.id ? -1 : b.id === props.element.id ? 1 : a.name.localeCompare(b.name))), [organisation, day, props.element.id])
   const types = new Map(organisation.unitTypes.map((one) => [one.id, one]))
   const picked = units.find((one) => one.id === unitId)
-  const roles = picked ? slotsOf(picked, types.get(picked.unitTypeId ?? '')).map((slot) => slot.role) : []
+  // A role does not report to itself in the same unit: the unit's own list leaves it out.
+  const roles = picked ? slotsOf(picked, types.get(picked.unitTypeId ?? '')).map((slot) => slot.role).filter((role) => picked.id !== props.element.id || role !== props.role) : []
   const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
   const scope = unitId ? scopeOf(unitId) : undefined
   return (
@@ -154,7 +176,7 @@ function LineForm(props: UnitLinesProps & { role: string; roleName: string; onSa
       <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{props.roleName}</Typography>
       <TextField size="small" select label={s('unit.lineTarget')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget('') }}
         slotProps={{ htmlInput: { 'data-testid': 'unit-line-unit' } }}>
-        {units.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+        {units.map((one) => <MenuItem key={one.id} value={one.id}>{one.id === props.element.id ? s('unit.lineThisUnit', { unit: one.name }) : one.name}</MenuItem>)}
       </TextField>
       <TextField size="small" select label={s('unit.lineTargetRole')} value={target} disabled={!picked} onChange={(event) => setTarget(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'unit-line-role' } }}>

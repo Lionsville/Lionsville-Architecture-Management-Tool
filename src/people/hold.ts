@@ -30,6 +30,8 @@ export type HeldAssignment = {
   from?: string
   until?: string
   acting?: true
+  /** Where the role reports on the day the list was made (ADR-0039): the line manager's line and the functional one, where they land. */
+  reportsTo?: readonly { kind: 'solid' | 'dotted'; role: string; unit: string }[]
 }
 
 /** A person's assignments on a day: those that run on it, those still to begin, and those over. */

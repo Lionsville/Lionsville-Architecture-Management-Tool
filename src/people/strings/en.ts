@@ -111,6 +111,8 @@ export const EN = {
   'people.heldBefore': 'Held before',
   'people.holdsNothing': 'Nothing.',
   'people.heldIn': '{role} in {unit}',
+  'people.heldDottedTo': 'functionally to {role}, {unit}',
+  'people.heldReportsTo': 'reports to {role}, {unit}',
   'people.heldActing': 'acting',
   'people.heldFrom': 'from {day}',
   'people.heldUntil': 'until {day}',

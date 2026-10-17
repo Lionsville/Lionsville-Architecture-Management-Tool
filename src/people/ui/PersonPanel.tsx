@@ -300,10 +300,12 @@ function HeldItem({ one, s }: { one: HeldAssignment; s: Translate }) {
     one.from ? s('people.heldFrom', { day: one.from }) : undefined,
     one.until ? s('people.heldUntil', { day: one.until }) : undefined,
   ].filter(Boolean)
+  const reports = (one.reportsTo ?? []).map((line) => s(line.kind === 'solid' ? 'people.heldReportsTo' : 'people.heldDottedTo', { role: line.role, unit: line.unit }))
   return (
     <Typography sx={{ fontSize: 13 }} data-testid="people-held">
       {s('people.heldIn', { role: one.role, unit: one.unit })}
       {said.length > 0 && <Box component="span" sx={{ color: 'text.secondary' }}> · {said.join(' · ')}</Box>}
+      {reports.length > 0 && <Box component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }} data-testid="people-held-reports">{reports.join(' · ')}</Box>}
     </Typography>
   )
 }

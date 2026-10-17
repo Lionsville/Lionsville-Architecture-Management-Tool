@@ -412,20 +412,30 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     ] }],
   }
 
-  it('draws nothing until Reporting lines is on, then each line solid or dotted, in the warning colour where nobody holds its end', () => {
+  it('draws the lines from the start where the organisation says any, each solid or dotted, lit at the unit pressed, and none once Reporting lines is off', () => {
     const rect = { left: 10, right: 110, top: 0, bottom: 20, width: 100, height: 20, x: 10, y: 0, toJSON: () => ({}) }
     const measured = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
     try {
       renderShell(<Harness root={lined} commands={[]} />)
-      expect(screen.queryByTestId('chart-lines')).toBeNull()
-      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
       expect(screen.getByTestId('chart-lines')).toBeTruthy()
-      expect(screen.getAllByTestId('chart-line-solid').map((one) => one.getAttribute('data-tone'))).toEqual(['plain'])
+      expect(screen.getAllByTestId('chart-line-solid').map((one) => [one.getAttribute('data-tone'), one.getAttribute('data-look')])).toEqual([['plain', 'plain']])
       expect(screen.getAllByTestId('chart-line-dotted').map((one) => one.getAttribute('data-tone'))).toEqual(['plain'])
+      // A unit picked lights its lines and fades the rest.
+      cleanup()
+      renderShell(<Harness root={lined} commands={[]} selectedId="shipping" />)
+      expect(screen.getAllByTestId('chart-line-solid').map((one) => one.getAttribute('data-look'))).toEqual(['lit'])
+      expect(screen.getAllByTestId('chart-line-dotted').map((one) => one.getAttribute('data-look'))).toEqual(['dim'])
       fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
       expect(screen.queryByTestId('chart-lines')).toBeNull()
     } finally {
       measured.mockRestore()
     }
+  })
+
+  it('draws nothing where the organisation says no line, until Reporting lines is turned on', () => {
+    renderShell(<Harness root={ROOT} commands={[]} />)
+    expect(screen.queryByTestId('chart-lines')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+    expect(screen.getByTestId('chart-lines')).toBeTruthy()
   })
 })

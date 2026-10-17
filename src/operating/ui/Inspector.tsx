@@ -25,17 +25,19 @@ import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { Command } from '../../model/commands'
-import { typesHolding } from '../../model/operatingModel'
-import type { BasedOn, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../../model/operatingModel'
+import { linesInto, linesSaid, typesHolding } from '../../model/operatingModel'
+import type { BasedOn, ReportsTo, Responsibility, Role, RoleId, RoleSlot, UnitType } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
 import { CompactForms, SectionHeading } from '../../widgets/CompactForms'
 import {
-  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setReportsTo, setSlot, setSuccessors, setWithin,
+  addSlot, editResponsibility, editRole, editUnitType, removeSlot, setDay, setFlag, setLimit, setReportsTo, setRoleReportsTo, setSlot, setSuccessors,
+  setWithin,
 } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
 import { libraryById } from '../libraries'
+import { LinesEditor } from './LinesEditor'
 import { ResponsibilityOrder, RoleOrder } from './OwnOrder'
 import { TypePlace } from './TypePlace'
 
@@ -59,8 +61,13 @@ type Props = {
   refuseLine?: RefuseLine
 }
 
-/** Why the slots as they would be are refused: a sentence, or nothing. */
-export type RefuseLine = (type: UnitType, slots: readonly RoleSlot[], reportsTo: ReportsTo) => string | undefined
+/** A change of lines about to be written: a slot's, with the slots as they would be, or a role's own. */
+export type LineChange =
+  | { on: 'slot'; type: UnitType; slots: readonly RoleSlot[]; roleId: RoleId; said: readonly ReportsTo[] | undefined }
+  | { on: 'role'; roleId: RoleId; said: readonly ReportsTo[] | undefined }
+
+/** Why the lines as they would be are refused: a sentence, or nothing. */
+export type RefuseLine = (change: LineChange) => string | undefined
 
 /** How a unit type's slots are taken out, and what is said under them while one is; and why a slot's line is refused. */
 type SlotTaking = Pick<Props, 'onRemoveSlot' | 'slotAside' | 'refuseLine'>
@@ -80,6 +87,7 @@ export function Inspector({ model, picked, readOnly, dispatch, onRemove, aside, 
       {picked.kind === 'role' && (
         <>
           <RoleFields role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />
+          <RoleLines role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} refuseLine={refuseLine} />
           <RoleOrder role={picked.item} model={model} readOnly={readOnly} dispatch={dispatch} />
         </>
       )}
@@ -212,62 +220,66 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
 }
 
 /**
- * Where a slot's holders report (ADR-0039 §2, §7): a role, solid or dotted,
- * and its days — or nothing, and the nesting answers. Every unit of the type
- * has the line; a unit says otherwise in its own inspector. A solid line the
- * host says would close a loop is refused, and said why, and not written.
+ * Where a slot's holders report (ADR-0039 §2, §7, amended): the role's own
+ * lines hold for every unit of the type until the slot says otherwise — a
+ * role, in the same unit or found above, solid or dotted, with its days — or
+ * *by nesting*, which takes the role's line away for this type. A line the
+ * host says would close a loop is refused, said why, and not written.
  */
 function SlotLine({ type, index, name, model, readOnly, dispatch, refuseLine }: {
   type: UnitType; index: number; name: string; model: OperatingModel; readOnly: boolean; dispatch(command: Command): void
   refuseLine: RefuseLine | undefined
 }) {
-  const { t } = useStrings()
-  const [refused, setRefused] = useState<string | undefined>(undefined)
-  const line = type.slots[index].reportsTo
-  const write = (next: ReportsTo | undefined) => {
-    const { slots, command } = setReportsTo(type, index, next)
-    const why = next && next.kind === 'solid' ? refuseLine?.(type, slots, next) : undefined
-    setRefused(why)
-    if (!why) dispatch(command)
-  }
-  const change = (patch: Partial<ReportsTo>) => {
-    if (!line) return
-    const next: ReportsTo = { ...line, ...patch }
-    for (const key of ['from', 'until'] as const) if (next[key] === '') delete next[key]
-    write(next)
-  }
+  const slot = type.slots[index]
+  const role = model.roles.find((one) => one.id === slot.role)
   return (
     <Box sx={{ pl: 1, mb: 0.75 }} data-testid="operating-slot-line">
-      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-        <TextField select size="small" label={t('operating.reportsTo')} value={line?.role ?? ''} disabled={readOnly} sx={{ flex: 1 }}
-          helperText={t('operating.reportsToHint')}
-          slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.reportsTo')}` } }}
-          onChange={(event) => write(event.target.value ? { ...(line ?? { kind: 'solid' as const }), role: event.target.value } : undefined)}>
-          <MenuItem value="">{t('operating.reportsToNone')}</MenuItem>
-          {model.roles.filter((role) => role.id !== type.slots[index].role || type.within.length > 0).map((role) => (
-            <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
-          ))}
-        </TextField>
-        {line && (
-          <TextField select size="small" label={t('operating.lineKind')} value={line.kind} disabled={readOnly} sx={{ width: 150 }}
-            slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.lineKind')}` } }}
-            onChange={(event) => change({ kind: event.target.value === 'dotted' ? 'dotted' : 'solid' })}>
-            <MenuItem value="solid">{t('operating.lineSolid')}</MenuItem>
-            <MenuItem value="dotted">{t('operating.lineDotted')}</MenuItem>
-          </TextField>
-        )}
-      </Box>
-      {line && (
-        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
-          <TextField size="small" type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ flex: 1 }}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineFrom')}` } }}
-            onChange={(event) => change({ from: event.target.value })} />
-          <TextField size="small" type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ flex: 1 }}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineUntil')}` } }}
-            onChange={(event) => change({ until: event.target.value })} />
-        </Box>
-      )}
-      {refused && <Typography role="alert" variant="caption" color="error" sx={{ display: 'block' }} data-testid="operating-line-refused">{refused}</Typography>}
+      <LinesEditor
+        roleId={slot.role} name={name} said={linesSaid(slot.reportsTo)} inherited={linesSaid(role?.reportsTo)} roles={model.roles} readOnly={readOnly}
+        testId="operating-slot-lines"
+        onChange={(next) => {
+          const { slots, command } = setReportsTo(type, index, next)
+          const why = refuseLine?.({ on: 'slot', type, slots, roleId: slot.role, said: next })
+          if (!why) dispatch(command)
+          return why
+        }}
+      />
+    </Box>
+  )
+}
+
+/** Where a role's holders report wherever it is held (ADR-0039 §2, amended), and who reports to it across the model. */
+function RoleLines({ role, model, readOnly, dispatch, refuseLine }: {
+  role: Role; model: OperatingModel; readOnly: boolean; dispatch(command: Command): void; refuseLine: RefuseLine | undefined
+}) {
+  const { t } = useStrings()
+  const into = linesInto(model.unitTypes, model.roles, role.id)
+  const roleName = (id: string) => model.roles.find((one) => one.id === id)?.name ?? id
+  const typeName = (id: string | undefined) => model.unitTypes.find((one) => one.id === id)?.name ?? id ?? ''
+  return (
+    <Box>
+      <Typography sx={heading}>{t('operating.reportsTo')}</Typography>
+      <LinesEditor
+        roleId={role.id} name={role.name} said={linesSaid(role.reportsTo)} roles={model.roles} readOnly={readOnly} testId="operating-role-lines"
+        onChange={(next) => {
+          const why = refuseLine?.({ on: 'role', roleId: role.id, said: next })
+          if (!why) dispatch(setRoleReportsTo(role, next))
+          return why
+        }}
+      />
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{t('operating.reportsToHint')}</Typography>
+      <Typography sx={heading}>{t('operating.reportedToBy')}</Typography>
+      {into.length === 0
+        ? <Typography variant="body2" color="text.secondary">{t('operating.reportedToByNone')}</Typography>
+        : into.map((line, at) => (
+          <Typography key={`${line.from}/${line.typeId ?? ''}/${line.kind}/${at}`} variant="body2" data-testid="operating-reported-by">
+            {line.source === 'role'
+              ? t('operating.reportedByRole', { role: roleName(line.from) })
+              : t('operating.reportedBySlot', { role: roleName(line.from), type: typeName(line.typeId) })}
+            {' · '}{t(line.kind === 'solid' ? 'operating.lineSolid' : 'operating.lineDotted').toLowerCase()}
+            {line.within ? ` · ${t('operating.lineWithinShort')}` : ''}
+          </Typography>
+        ))}
     </Box>
   )
 }

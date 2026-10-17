@@ -11,7 +11,7 @@ import type { PersonId } from '../../model/person'
 import { isBlankRef } from '../../model/person'
 import { unitsByRule } from '../../model/owners'
 import { scopesServed } from '../../model/serving'
-import { personOf } from '../../model/units'
+import { personOf, reportingLinesOn } from '../../model/units'
 import type { HeldAssignment, OwnedByRule } from '../../people/hold'
 import type { Person } from '../../people/person'
 import type { ScopeIndex } from '../../projects/scopeIndex'
@@ -22,20 +22,28 @@ export function idsOfPerson(id: PersonId, people: readonly Person[]): Set<Person
 }
 
 /** The assignments of these ids across the tree, in the index's order. */
-export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>): HeldAssignment[] {
+export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>, day?: string): HeldAssignment[] {
   const roles = new Map(index.operatingModel().roles.map((role) => [role.id, role.name]))
+  const name = (id: string) => index.lookup(id)?.name ?? id
+  // Where each role reports on the day (ADR-0039): its lines that land, the line manager's and the functional, as roles in units.
+  const lines = day === undefined ? [] : reportingLinesOn(index.organisation(), day).filter((line) => line.state === 'lands' && line.to)
   return index.assignments()
     .filter(({ assignment }) => ids.has(personOf(assignment)))
-    .map(({ scope, assignment }) => ({
-      id: assignment.id,
-      scope,
-      unit: index.lookup(assignment.unitId)?.name ?? assignment.unitId,
-      role: roles.get(assignment.roleId) ?? assignment.roleId,
-      ...(assignment.share !== undefined ? { share: assignment.share } : {}),
-      ...(assignment.from !== undefined ? { from: assignment.from } : {}),
-      ...(assignment.until !== undefined ? { until: assignment.until } : {}),
-      ...(assignment.acting ? { acting: true as const } : {}),
-    }))
+    .map(({ scope, assignment }) => {
+      const reportsTo = lines.filter((line) => line.unitId === assignment.unitId && line.roleId === assignment.roleId)
+        .map((line) => ({ kind: line.kind, role: roles.get(line.to!.roleId) ?? line.to!.roleId, unit: name(line.to!.unitId) }))
+      return {
+        id: assignment.id,
+        scope,
+        unit: name(assignment.unitId),
+        role: roles.get(assignment.roleId) ?? assignment.roleId,
+        ...(assignment.share !== undefined ? { share: assignment.share } : {}),
+        ...(assignment.from !== undefined ? { from: assignment.from } : {}),
+        ...(assignment.until !== undefined ? { until: assignment.until } : {}),
+        ...(assignment.acting ? { acting: true as const } : {}),
+        ...(reportsTo.length ? { reportsTo } : {}),
+      }
+    })
 }
 
 /**

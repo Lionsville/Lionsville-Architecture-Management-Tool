@@ -29,7 +29,7 @@ import type { WorkspaceParts } from './workspaceParts'
 import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from './units/EndedHolders'
 import { organisationHere } from './units/organisationHere'
 import { heldThroughType } from '../model/units'
-import { refuseSlotLine } from '../model/reporting'
+import { refuseRoleLines, refuseSlotLine } from '../model/reporting'
 import { refusalWords } from './units/lineWords'
 import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
 import { roleHoldersHere, unitCountsHere } from './units/operatingCounts'
@@ -158,9 +158,11 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
       }))}
       slotTakeOut={slotTakeOut(parts)}
       // A slot's solid line that would close a loop over the organisation is refused (ADR-0039 §5).
-      refuseLine={(type, slots, reportsTo) => {
+      refuseLine={(change) => {
         const { organisation } = organisationHere(props.tree.index, scope, session.model)
-        const refusal = refuseSlotLine(organisation, type.id, slots, todayDay, reportsTo)
+        const refusal = change.on === 'slot'
+          ? refuseSlotLine(organisation, change.type.id, change.slots, todayDay, change.said, change.roleId)
+          : refuseRoleLines(organisation, change.roleId, change.said, todayDay)
         return refusal && refusalWords(refusal, organisation, props.shell.s)
       }}
       {...(unitCounts ? { unitCounts } : {})}

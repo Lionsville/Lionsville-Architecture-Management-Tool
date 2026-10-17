@@ -101,6 +101,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.heldBefore': 'Vervulde eerder',
   'people.holdsNothing': 'Niets.',
   'people.heldIn': '{role} in {unit}',
+  'people.heldDottedTo': 'functioneel aan {role}, {unit}',
+  'people.heldReportsTo': 'rapporteert aan {role}, {unit}',
   'people.heldActing': 'waarnemend',
   'people.heldFrom': 'vanaf {day}',
   'people.heldUntil': 'tot en met {day}',

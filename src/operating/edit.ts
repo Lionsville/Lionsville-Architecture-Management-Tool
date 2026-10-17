@@ -188,13 +188,18 @@ export function setSlot(type: UnitType, index: number, change: Partial<Pick<Role
  * slots as they will be, for the host to ask about a loop before the step is
  * dispatched, and the step.
  */
-export function setReportsTo(type: UnitType, index: number, reportsTo: ReportsTo | undefined): { slots: RoleSlot[]; command: Command } {
+export function setReportsTo(type: UnitType, index: number, reportsTo: readonly ReportsTo[] | undefined): { slots: RoleSlot[]; command: Command } {
   const slots = type.slots.map((slot, at) => {
     if (at !== index) return slot
     const { reportsTo: _was, ...rest } = slot
-    return reportsTo ? { ...rest, reportsTo } : rest
+    return reportsTo?.length ? { ...rest, reportsTo: [...reportsTo] } : rest
   })
   return { slots, command: { type: 'unitType.update', id: type.id, patch: { slots } } }
+}
+
+/** Where a role's holders report wherever it is held (ADR-0039 §2, amended): the role's own lines, replaced. */
+export function setRoleReportsTo(role: Role, reportsTo: readonly ReportsTo[] | undefined): Command {
+  return { type: 'role.update', id: role.id, patch: { reportsTo: reportsTo?.length ? [...reportsTo] : undefined } }
 }
 
 export function addSlot(type: UnitType, role: string): Command {

@@ -772,7 +772,7 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     expect(commands[1]).toEqual({ type: 'element.update', id: 'webshop', patch: { reportingLines: undefined } })
   })
 
-  it('overrides a line to a role in another unit, and refuses one to itself, saying why', async () => {
+  it('overrides a line to a role in another unit, or to another role of this unit, which is offered first', async () => {
     const commands: Command[] = []
     renderShell(<Harness root={lined} commands={commands} />)
     fireEvent.click(within(screen.getAllByTestId('unit-line')[1]).getByTestId('unit-line-override'))
@@ -781,20 +781,34 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
       fireEvent.mouseDown(within(form()).getAllByRole('combobox')[at])
       fireEvent.click(await screen.findByRole('option', { name }))
     }
-    await pick(0, 'Webshop')
-    await pick(1, 'Developer')
+    // This unit first, and its own role left out of the roles offered: a role does not report to itself in the same unit.
+    fireEvent.mouseDown(within(form()).getAllByRole('combobox')[0])
+    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Webshop (this unit)', 'Customer'])
+    fireEvent.click(screen.getByRole('option', { name: 'Webshop (this unit)' }))
+    fireEvent.mouseDown(within(form()).getAllByRole('combobox')[1])
+    expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Product owner'])
+    fireEvent.click(screen.getByRole('option', { name: 'Product owner' }))
     fireEvent.click(within(form()).getByTestId('unit-line-save'))
-    expect(screen.getByTestId('unit-line-refused').textContent).toBe('Not written: a role does not report to itself in the same unit.')
-    expect(commands).toEqual([])
+    expect(commands[0]).toEqual({
+      type: 'element.update', id: 'webshop',
+      patch: { reportingLines: [{ role: 'ro-dev', to: { scope: 'customer', unit: 'webshop', role: 'ro-po' }, kind: 'solid' }] },
+    })
+    await waitFor(() => expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('Developer → Product owner, in this unit'))
+    commands.length = 0
+    fireEvent.click(within(screen.getAllByTestId('unit-line')[1]).getByTestId('unit-line-override'))
     await pick(0, 'Customer')
     await pick(1, 'Domain owner')
     await pick(2, 'functional')
     // The two days the type's slot editor takes, kept only where said.
     fireEvent.change(within(form()).getByTestId('unit-line-from'), { target: { value: '2026-01-01' } })
     fireEvent.click(within(form()).getByTestId('unit-line-save'))
+    // Beside the unit's own line manager's line: one of each kind.
     expect(commands[0]).toEqual({
       type: 'element.update', id: 'webshop',
-      patch: { reportingLines: [{ role: 'ro-dev', to: { scope: 'customer', unit: 'customer', role: 'ro-owner' }, kind: 'dotted', from: '2026-01-01' }] },
+      patch: { reportingLines: [
+        { role: 'ro-dev', to: { scope: 'customer', unit: 'webshop', role: 'ro-po' }, kind: 'solid' },
+        { role: 'ro-dev', to: { scope: 'customer', unit: 'customer', role: 'ro-owner' }, kind: 'dotted', from: '2026-01-01' },
+      ] },
     })
     await waitFor(() => expect(screen.queryByTestId('unit-line-form')).toBeNull())
     expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('this unit\'s own')

@@ -7,7 +7,8 @@
  * them over the boxes.
  *
  * A line runs from the row of a role in a unit to the row of the role it
- * lands on. A unit folded away is drawn as the fold that hides it: a line to
+ * lands on — a short hook beside the box where both rows are the same
+ * unit's. A unit folded away is drawn as the fold that hides it: a line to
  * or from one ends at the box of the topmost folded unit above it, without a
  * row, and a line whose two ends fold into one box is not drawn. A line that
  * lands nowhere has nothing to draw; a finding about one that does is drawn
@@ -30,6 +31,8 @@ export type ChartLine = {
   from: ChartLineEnd
   to: ChartLineEnd
   tone: 'plain' | 'vacant' | 'loop'
+  /** Both ends in one box: a line between two roles of the same unit (ADR-0039 §2, amended). */
+  within?: true
 }
 
 /** The lines to draw on `day`, over the units the chart draws with `folded` folded. */
@@ -43,10 +46,16 @@ export function chartLines(organisation: Organisation, chart: OrgChart, day: str
     const to = line.to!
     const from = endOf(shownAs, line.unitId, line.roleId)
     const end = endOf(shownAs, to.unitId, to.roleId)
-    if (!from || !end || from.unitId === end.unitId) continue
+    if (!from || !end) continue
+    // Both ends in one box: drawn between its two rows where both are rows, and not at all where a fold hides them.
+    const within = from.unitId === end.unitId
+    if (within && (from.roleId === undefined || end.roleId === undefined)) continue
     const loop = looped.has(positionKey(line.unitId, line.roleId)) && line.kind === 'solid'
     const vacant = holdersOn(organisation.assignments, to.unitId, to.roleId, day).length === 0
-    drawn.push({ key: `${line.unitId}/${line.roleId}/${line.kind}`, kind: line.kind, from, to: end, tone: loop ? 'loop' : vacant ? 'vacant' : 'plain' })
+    drawn.push({
+      key: `${line.unitId}/${line.roleId}/${line.kind}`, kind: line.kind, from, to: end, tone: loop ? 'loop' : vacant ? 'vacant' : 'plain',
+      ...(within ? { within: true } : {}),
+    })
   }
   return drawn
 }

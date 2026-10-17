@@ -31,6 +31,7 @@ import type { CommandOf, OperatingModel } from '../edit'
 import type { Library } from '../library'
 import { HEADING, Rules } from './Rules'
 import { StructureLanes } from './StructureLanes'
+import { roleLines } from './roleLines'
 import { pickLooks } from './structurePick'
 import type { PickLooks, StructurePick } from './structurePick'
 import { ringOf, TypeCard } from './TypeCard'
@@ -58,7 +59,9 @@ export function UnitsAndRoles(props: Props) {
   const { model, readOnly, selected, onSelect, dispatch, makeId, empty, onFromLibrary, fresh } = props
   const { t } = useStrings()
   const structure = useMemo(() => unitTypeLanes(model.unitTypes), [model.unitTypes])
-  const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected)), [model, selected])
+  const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected), model.roles), [model, selected])
+  // The reporting lines between the cards' role chips (ADR-0039 §7, amended): drawn always, lit at the pick.
+  const lines = useMemo(() => roleLines(structure, model.unitTypes, model.roles), [structure, model.unitTypes, model.roles])
   const roles = useMemo(() => new Map(model.roles.map((role) => [role.id, role])), [model.roles])
   const add = (command: CommandOf<'unitType.add'> | CommandOf<'role.add'>) => {
     dispatch(command)
@@ -111,9 +114,12 @@ export function UnitsAndRoles(props: Props) {
           structure={structure} label={t('operating.structure')} named="operating.structure"
           organisation={{ name: t('operating.theOrganisation'), note: t('operating.organisationNote'), look: looks.organisation }}
           laneLabel={(lane) => (lane === 0 ? t('operating.theOrganisation') : t('operating.lane', { lane }))}
-          card={card} lineLook={looks.line}
+          card={card} lineLook={looks.line} roleLines={{ lines, look: looks.roleLine }}
         />
       </Box>
+      {lines.length > 0 && (
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }} data-testid="structure-lines-legend">{t('operating.linesLegend')}</Typography>
+      )}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start', mt: 1 }}>
         <Tray heading={t('operating.trayNowhere')} testId="tray-nowhere">
           {structure.nowhere.length === 0
