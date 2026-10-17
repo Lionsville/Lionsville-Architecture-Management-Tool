@@ -2484,15 +2484,22 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
 - **Wer sie führt**: eine Zeile für jede Person, die heute eine führende Rolle
   innehat, in dieser Einheit oder einer darüber, die nächste zuerst — und, wo
   eine solche Rolle über die Linie einer Führungskraft anderswohin berichtet,
-  wer dort ankommt, markiert *über eine Linie*. **warum?** sagt, was das
+  wer dort ankommt, markiert *über eine Linie* — oder *per Ausnahme*, wo es
+  die eigene Linie dieser Einheit oder die eigene Linie einer Person ist.
+  **warum?** sagt, was das
   bedeutet: Die App sagt es und gewährt daraus nichts.
 - **Berichtslinien**: jede Rolle der Einheit, die heute eine Berichtslinie
   hat, wo sie endet — die Rolle und die Einheit, oder *in dieser Einheit* —,
   ob sie die einer Führungskraft oder fachlich ist, ob sie von der Rolle ist,
   vom Einheitstyp oder von dieser Einheit selbst, und *niemand hat sie inne*,
-  wo niemand die Rolle innehat, bei der sie endet. **Überschreiben …**
-  richtet die Rolle auf eine Rolle in irgendeiner Einheit — diese Einheit
-  zuerst in der Liste, für eine Linie in ihr —, Führungskraft oder fachlich,
+  wo niemand die Rolle innehat, bei der sie endet. Eine eigene Linie dieser
+  Einheit ist eine Ausnahme vom Modell und ist als *Ausnahme* markiert.
+  **Überschreiben …** richtet die Rolle auf eine Rolle in irgendeiner Einheit
+  — jede Einheit mit den Einheiten darüber genannt, diese Einheit zuerst in
+  der Liste, für eine Linie in ihr —, auf eine Person, die sie dort innehat
+  (*Welche Person in der Rolle*), oder auf eine Person irgendwo (**Berichtet
+  an: Eine Person**, ihre Rolle eingetragen, wo sie eine hat, und erfragt, wo
+  sie mehrere hat); Führungskraft oder fachlich,
   nur für diese Einheit, ab einem Tag und bis einschließlich einem Tag, wo es
   nicht für immer gilt; **Hier über die Verschachtelung berichten** sagt,
   dass die Rolle so berichtet, wie die Einheit verschachtelt ist, was ihr Typ
@@ -2504,7 +2511,8 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   Einheit über die Verschachtelung. Eine Linie von einer Rolle zu sich selbst
   in derselben Einheit und eine, die eine Schleife schließen würde, werden
   abgelehnt, mit dem Grund. **Berichten hierher** nennt die Rollen anderswo,
-  deren Linie bei einer Rolle dieser Einheit endet.
+  deren Linie bei einer Rolle dieser Einheit endet, und die Personen, deren
+  eigene Linie das tut.
 - **Bedient**: die Domänen, die sie bedient, der Bereich, in dem sie
   eingeordnet ist, wenn Sie nichts anderes sagen — aber nie die Organisation:
   eine dort eingeordnete Einheit bedient nichts, bis **+ Domäne** ihr eine
@@ -2555,7 +2563,13 @@ diesem Tag, wenn er noch kommt.
 
 **Zuordnen** ist ein Schritt in dem Bereich, der die Einheit führt: Wählen Sie
 die Rolle, die Person — gesucht im Register, *Sie* markiert —, den Anteil, den
-ersten Tag und ob es kommissarisch ist. **Neue Person …** ist das eigene
+ersten Tag und ob es kommissarisch ist. Die eigenen Rollen der Einheit stehen
+zuerst; unter **Eine andere Rolle (eine Ausnahme)** stehen die übrigen der
+Organisation. Wer in eine davon gesetzt wird, ist eine Ausnahme vom Modell: Das
+ist erlaubt und kein Befund, der Dialog sagt es vor dem Speichern, und überall,
+wo die Person gezeigt wird — ihr Chip im Organigramm mit gestricheltem
+Magenta-Rand, ihr Inspektor, die Seite Personen —, ist sie als Ausnahme
+markiert. Die eigene Berichtslinie der Rolle gilt dort für sie. **Neue Person …** ist das eigene
 Formular der Seite Personen, sodass jemand, der vielleicht schon im Register
 steht, angeboten wird, bevor ein zweiter Eintrag entsteht. Die Zuordnung
 enthält die ID der Person, nie ihren Namen. Ein Klick auf eine Person
@@ -2595,7 +2609,10 @@ der eigenen. Berichtslinien verlegen dieses Recht: Eine Rolle, deren Linie
 einer Führungskraft bei einer Rolle endet, die er innehat, darf er ändern, in
 welcher Einheit auch immer, und die Menschen, die diese wiederum führen; eine
 Rolle in seinen Einheiten, deren Inhaber über eine solche Linie anderswohin
-berichten, nicht. Eine fachliche Linie gibt kein Recht. Sonst ändert sich an
+berichten, nicht. Die eigene Linie einer Führungskraft für eine Person
+verschiebt es ebenso, für diese eine Zuordnung: Wer an ihrem Ende steht, darf
+sie ändern, und wer sie nur über die Rolle dort erreichte, nicht mehr. Eine
+fachliche Linie gibt kein Recht. Sonst ändert sich an
 der Einheit nichts. Dasselbe gilt für eine
 unbesetzte Stelle im Organigramm, für **Neue Person …** und **Als
 ausgeschieden markieren** auf der Seite Personen, wo die Quelle es sagt, und für
@@ -2606,7 +2623,14 @@ Ein Agent macht einen Akteur mit `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`) zur Einheit, fragt mit `assignments.list`, wer was innehat — über
 den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
 ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
-der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
+der die Einheit führt, und korrigiert eine — den Anteil, kommissarisch, die Tage
+und die eigenen Berichtslinien der Person (`reportsTo`) — mit
+`assignment.update`. `reportingLine.set` sagt die eigene Linie einer Einheit, zu
+einer Rolle in einer Einheit oder zu einer Person (`to.person`), und
+`reportingLines.list` nennt jede Linie mit dem Ort, an dem sie gesagt ist, und
+ob sie eine Ausnahme ist, und die Zuordnungen als Ausnahme. Der Agent bekommt
+mit, sich an die Vorgaben des Modells zu halten, eine Ausnahme nur zu schreiben,
+wenn Sie darum bitten, und zu sagen, dass er es tat. Ein Agent vergisst, entfernt oder führt nie jemanden
 zusammen. `element.remove` auf einer Einheit nimmt auch ihre Zuweisungen mit
 und nennt sie in der Antwort (`assignmentsRemoved`), setzt die Einheiten
 darin eine Ebene höher, wo ihr Typ dort stehen darf (`unitsMoved`), leert das
@@ -2840,9 +2864,15 @@ und der Inspektor der Einheit führt immer jede Rolle. Wie eine Faltung gilt
 der Schalter, solange die App offen ist, und wird nie gespeichert.
 
 **Berichtslinien** werden für die Person gezeichnet, die Sie wählen, am Tag
-des Organigramms: von ihrem Chip zum Chip derer, die die Rolle innehaben, an
-die sie berichtet, und von den Chips derer, die an sie berichten, zu ihrem —
-durchgezogen für die einer Führungskraft und gepunktet für eine fachliche.
+des Organigramms — die Linien, die für sie gelten, ihre eigene, wo sie eine
+hat: von ihrem Chip zum Chip derer, an die sie berichtet, in der Akzentfarbe,
+und von den Chips derer, die an sie berichten, zu ihrem, in Türkis —
+durchgezogen für die einer Führungskraft und gepunktet für eine fachliche. Eine
+Linie, die eine Ausnahme vom Modell ist — die eigene Linie einer Einheit oder
+einer Person —, ist magenta, in welche Richtung sie auch läuft; ihr Endpunkt
+sagt, wo sie ankommt. Eine Legende über dem Organigramm sagt, welche Farbe was
+ist, solange eine Linie gezeichnet ist. Eine Linie zu einer Person endet nur an
+deren Chip.
 Eine Linie zwischen zwei Rollen einer Einheit verbindet die beiden Chips in
 ihrem Kasten. Wo niemand die Rolle am anderen Ende innehat, endet die Linie
 am Namen der Rolle, in der Warnfarbe; eine, die Teil einer Schleife ist, steht
@@ -2892,7 +2922,25 @@ am letzten Tag, den Sie wählen — am Tag vor dem Tag des Organigramms, wenn Si
 vorausschauen, sonst heute, und nie vor dem ersten Tag. Eine beendete Zuordnung
 bleibt: Sie ist, was die Person innehatte. **Korrigieren…** öffnet für alles
 andere den Dialog der Einheit, und **In Personen öffnen** geht zur Seite
-Personen mit dieser Person gewählt. Eine Person in einer Einheit, die ein
+Personen mit dieser Person gewählt.
+
+**Berichtet an**, im selben Inspektor, sagt, wohin diese Person am Tag des
+Organigramms berichtet: jede Linie, die für sie gilt — die der Rolle, des
+Einheitstyps, der Einheit selbst, oder ihre eigene —, wo sie endet und ob sie
+die einer Führungskraft oder fachlich ist, *über die Verschachtelung*, wo keine
+Linie einer Führungskraft gilt, und wer sie führt, *über eine Linie* oder *per
+Ausnahme*. Die Linien des Modells sind die Vorgabe; eine Ausnahme für diese eine
+Person ist **Überschreiben …**: eine eigene Linie zu einer Rolle in irgendeiner
+Einheit, zu einer Person in dieser Rolle, oder zu einer Person irgendwo,
+durchgezogen oder gepunktet, mit ihren Tagen. Eine eigene Linie einer
+Führungskraft ersetzt, nur für diese Person, was ihre Rolle, deren Typ, ihre
+Einheit und die Verschachtelung sagen; eine fachliche ersetzt die fachliche
+Linie ihrer Rolle. Sie ist als *Ausnahme* markiert, der Inspektor sagt daneben,
+was das Modell sagen würde, und **Dem Modell folgen** nimmt sie weg. Jedes ist
+ein Schritt in dem Bereich, der die Zuordnung führt, und eine Linie zur eigenen
+Rolle in der eigenen Einheit, oder eine, die eine Schleife schließen würde, wird
+abgelehnt, mit dem Grund. Eine eigene Linie endet mit der Zuordnung: Bei einer
+neuen Zuordnung wird sie neu erfragt. Eine Person in einer Einheit, die ein
 anderer Bereich führt, wird ebenso gezeigt, nur zum Lesen: Der Inspektor sagt,
 welcher Bereich die Zuordnung führt, und **In** diesem Bereich **öffnen** geht
 dorthin, um sie zu ändern, wie ein Doppelklick auf die Person.

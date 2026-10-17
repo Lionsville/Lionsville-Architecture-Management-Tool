@@ -3,7 +3,10 @@
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0);
   implemented, 16 October 2026 (3.7.0, not yet released); amended,
   17 October 2026 — a line is said on the role as well, a line may land in
-  the same unit, and the screens draw them (as built the same day, below)
+  the same unit, and the screens draw them (as built the same day, below);
+  amended, 17 October 2026 — a person's own line, a role held outside the
+  slots, overrides drawn apart, and a line to one person (as built the same
+  day, 3.7.3, below)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Supersedes: ADR-0036 §12, in part — who manages a unit's people is no
@@ -443,3 +446,207 @@ On the chart a click picks and a double-click opens, as on a board: a person
 in a unit kept in another scope is chosen like any other, and the inspector
 reads the assignment there with the way to the scope that keeps it, where a
 click used to leave the chart.
+
+
+## Amended, 17 October 2026 — a person's own line, a role held outside the slots, overrides drawn apart
+
+*Accepted and built the same day (3.7.3). The scope format turns to 14.*
+
+### Context
+
+The model says where a role sits and whom it reports to: a unit type's
+slots, the role's and the slot's lines, a unit's own, and nesting. For most
+people that is the truth; for some it is not — an agreement of their own, or
+a line delegated differently for one person. Two exceptions could not be
+said:
+
+* **A person placed in a unit their role does not normally sit in** — an
+  assignment to a role the unit's slots (its type's and its `extraSlots`) do
+  not have. Nothing refused it, but nothing said it was an exception, and
+  the role's own line did not apply to it, because the lines were read off
+  the slots only; nesting answered.
+* **A person reporting to a different manager** than their role does in
+  that unit. Option 1 above (a manager per assignment) was rejected as *the*
+  mechanism; as an exception on top of the model it is what was missing.
+
+Both had to be visibly exceptions wherever they are shown. And on the chart
+the line a person reports along must not look like the lines reporting into
+them: a middle manager has one line up and the lines of their direct
+reports coming in.
+
+### Decision
+
+1. **A person's own line.** An assignment gains `reportsTo`: lines of the
+   holder's own, each `{ to: { scope, unit, role, person? }, kind, from?,
+   until? }`, addressed as a unit's own line is. Kind by kind the nearest
+   place wins, and the holder is the nearest of all: a solid line of their
+   own running on a day replaces, for that holder only, whatever their role,
+   their unit's type, their unit and nesting say; a dotted one replaces
+   their role's dotted line. It runs only while the assignment does, and
+   ends with it. A line to the holder's own role in their own unit is
+   refused (`reportingLine.self`), and so is a solid one that would close a
+   loop (`reportingLine.loop`), as §5 refuses them. The four findings of §6
+   read it too. A scope moved carries the address it names, as it carries a
+   unit's.
+2. **A line may land on one person.** Any override — a unit's own line or a
+   person's own — may name, in `to.person`, one holder of the target role in
+   that unit, by register id. It then lands on that person's position alone:
+   they manage by it, not every holder of the role, and who manages in turn
+   goes on from them — along their own line where they have one, else as
+   their role there is managed. Where that person no longer holds the role
+   there on a day, the line is vacant that day, with its finding, and it
+   decides nothing: for a unit's own line nesting answers, as for one that
+   lands nowhere, and for a person's own the model's answer for their role
+   there stands. The self refusal is asked per person: a holder may
+   report to a colleague in their own role in their own unit, never to
+   themselves; a loop is found per person-position.
+3. **An exception placement.** An assignment to a role the unit's slots do
+   not have stays allowed, is said as an exception wherever the holder is
+   shown, and gives no finding. The role's own line applies to it (the role
+   is held there), and its holders manage and are managed there, by nesting
+   where the role manages. It does not make the unit a landing place for
+   other lines, which still read the slots.
+4. **What is an override.** A unit's own line, a person's own line and an
+   exception placement. The type's and the role's lines and nesting are the
+   model's defaults. Every line says `source` — `role`, `type`, `unit` or
+   `person` — and `override`.
+5. **Who manages.** A person's solid line wins over the unit's, the type's
+   and the role's. `via` gains `override`, for a person's own line and for a
+   unit's own line; `line` stays for the model's lines and `nesting` for
+   nesting. The managing right of §9 follows a person's solid line exactly
+   as it follows any solid line: whoever it lands on reaches that one
+   assignment, and whoever reached it only by the default — nesting, or the
+   line of the role there — no longer does.
+6. **Three colours on the chart.** On a pick, the lines that apply to the
+   holder picked are drawn: those they report along in one colour, those
+   reporting into them in a second, and any override in a third whichever
+   way it runs, its end dot saying where it lands. Solid and dotted keep
+   their dash; vacant and loop keep their tones. A legend says which is
+   which. An exception placement's chip wears the override colour and says
+   why.
+7. **The agent keeps to the model.** Every structure relationship is read by
+   a tool and written by a tool (the audit below), and the tools, and the
+   instructions handed over on connect, say: place people in the roles their
+   unit's slots give and let lines follow the role, the type and nesting;
+   write an override only when the person acted for explicitly asks for that
+   exception, and say in the answer that it is one.
+
+### Decisions taken by default, open to overturning
+
+1. ~~A person's line points at a role in a unit (its holders), not at one
+   named person.~~ **Overturned by the owner the same day**: a line may name
+   one person (decision 2 above), on a unit's own line and on a person's own.
+2. A person's line lives on the assignment and ends with it; a reassignment
+   asks for it again.
+3. An exception placement is allowed and marked, with no finding.
+4. An override line takes the override colour whichever way it runs; its
+   direction is read from its end dot and the legend.
+5. A person's own line that lands nowhere, or on somebody who no longer
+   holds the role, says nothing about who manages that day: the model's
+   answer for their role there stands — not nesting, as for a unit's own
+   line that dangles.
+6. A manager who reaches an assignment may set or take away its holder's own
+   line, as any other correction of it.
+
+### Consequences
+
+* Good: the exception is said where it is true — on the one person — and
+  the model stays the rule for everybody else, including whoever holds the
+  role next.
+* Good: an exception is visible as one wherever it is shown, and an agent is
+  told to treat it as one.
+* Bad: who manages a person is no longer read off their role alone. A screen,
+  a door or a check that asked it of a role in a unit asks it of the holder
+  where it is about one (`managersOfHolder`, `reachesHolder`).
+* Neutral: a line to one person needs that person to keep the role; when
+  they leave it the line is a finding until somebody says another.
+
+### The scope format
+
+A person's lines are kept on the assignment in `_assignments/assignments.json`.
+A build that reads 13 reads an assignment field by field and would drop them
+on its way back, and would read a unit's line to one person as a line to all
+of them. **The scope format turns to 14**: a 13 is a 14 in which nobody has a
+line of their own, the pass that brings a folder up rewrites the headers and
+nothing else, and a 3.7.2 build refuses a 14. Browser storage and memory keep
+an assignment whole, so their content format does not turn.
+
+### Every structure relationship, read and written by the agent
+
+| Relationship | Read by | Written by |
+|---|---|---|
+| A unit's parent | `elements.list`, `element.describe`, `assignments.list` (unit) | `element.update` (`parentId`) |
+| A unit's type | `elements.list`, `element.describe` | `element.update` (`unitTypeId`) |
+| The domains a unit serves | `elements.list`, `element.describe` | `element.update` (`scopes`) |
+| A unit's extra slots | `element.describe`, `assignments.list` (unit) | `element.update` (`extraSlots`) |
+| A unit type's place (`top`, `within`) and slots | `unitTypes.list` | `unitType.add`, `unitType.update` |
+| A slot's line | `unitTypes.list`, `reportingLines.list` | `unitType.update` (`slots[].reportsTo`) |
+| A role's line, and whether it manages | `roles.list`, `reportingLines.list` | `role.add`, `role.update` |
+| A unit's own line | `reportingLines.list`, `element.describe` | `reportingLine.set`, `reportingLine.remove` |
+| A person's own line | `assignments.list`, `reportingLines.list` | `assignment.add`, `assignment.update` (`reportsTo`) |
+| An assignment | `assignments.list` | `assignment.add`, `assignment.update`, `assignment.end` |
+| An exception placement | `assignments.list` (`exception`), `reportingLines.list` (`exceptions`) | `assignment.add` |
+| How two units interact | `connections.list`, `element.describe` | `relation.add`, `relation.update`, `relation.remove` |
+| A plan's moves of a unit | `plans.list`, `plan.read` | `plan.move` |
+
+The gaps the audit found and filled: a correction of an assignment had no
+tool (`assignment.update`, new); a person's own line had neither a read nor a
+write; `elements.list` did not say which actors are units (`unitTypeId` and
+`scopes` now on each line). Taking an assignment away stays a person's, as
+ADR-0036 §13 says.
+
+## As built, 17 October 2026: the amendment of a person's own line
+
+**The model** (`model/units.ts`, `model/reporting.ts`, `model/managing.ts`).
+`Assignment.reportsTo` holds `AssignmentReportingLine`s; `UnitLineTarget` and
+`LinePosition` gain `person`. `reportingLinesOn` keeps answering the roles in
+units, the model's lines, now with `override` and with a role held outside
+the slots given its own line; `personLinesOn` answers the holders' own;
+`everyLineOn` both; `linesOfHolder` the lines that hold for one holder, kind
+by kind; `isExceptionPlacement` says one. `lineDecides` says whether a solid
+line decides who manages that day — landing, and on somebody who holds the
+role where it names one — and `holdersAt` who it lands on. `managersOf` keeps
+answering a role in a unit as the model says it, following each manager in
+the chain by their own line first; `managersOfHolder` answers one holder.
+`managedBy` adds `overrides`, `holders` (assignments reached by a holder's own
+line) and `away` (those whose own line takes them out of a reach);
+`ManagedReach` carries them, `reachViaHolder` and `reachesHolder` read them,
+`reachesAssignment` reads them where the assignment has an id, and
+`holdsAllIn` asks of each holder. The loop graph keeps one node per role in
+a unit, with each holder's own solid line as one more way out of it, and one
+node per person a line names, managed along that person's own line or else
+as their role there; `refusePersonLines`, `withAssignmentLines`,
+`personLinesWith` and `personLinesWithout` are the write's side. A holder's
+dangling or vacant line is a finding of its own, its assignment among the
+finding's fields.
+
+**The files.** `_assignments/assignments.json` reads `reportsTo` line by line,
+passing over one without a whole target or a kind; `readdressLines` carries
+a person's line on a scope move as one `assignment.update`. Format 14.
+
+**The screens.** The chart draws a picked holder's lines through
+`holderLines` and colours them with `reportingLineColours` — the accent, teal
+and magenta — under a legend (`ChartLinesLegend`); an exception placement's
+chip wears a dashed magenta edge and says why in its tooltip and accessible
+name. The assignment's inspector gains *Reports to* (`HolderLines`), with
+*Override…* and *Use the model's*; `LineTargetForm` is the form both
+overrides are said with — to a role in a unit, any unit by its place in the
+tree, whoever holds it or one holder, or to one person who holds a role on
+the day, their one role filled in or the one asked for. The unit's
+*Reporting lines* mark its own lines *override* and use the same form. The
+assign dialog offers the unit's slots first and *Another role (an
+exception)* below. Who manages says *by override*; the People page says a
+holder's own line, the person it names and an exception placement.
+
+**The agent.** `assignment.update` is new; `assignment.add` takes
+`reportsTo`; `reportingLine.set` and both take `to.person`. The answers say
+`override` and `exception`; `assignments.list` and `reportingLines.list`
+answer as the audit says; `STRUCTURE_DEFAULTS` (`agent/method.ts`) is handed
+over on connect before the method.
+
+**Not built.** The shipped example has units and lines but no people — an
+example names nobody, and the register is kept outside the history — so it
+shows neither a person's own line nor an exception placement. The People
+page says a person's lines and exceptions and changes neither: they are set
+from the person picked on the chart, and by the agent.
+

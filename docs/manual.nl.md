@@ -2347,16 +2347,23 @@ De onderdelen van een eenheid, in die volgorde:
 - **Wie haar aanstuurt**: één regel voor ieder die vandaag een aansturende rol
   vervult, in deze eenheid of een erboven, de dichtstbijzijnde eerst — en,
   waar zo'n rol elders rapporteert via een lijn van een lijnmanager, wie
-  daar uitkomt, gemarkeerd *via een lijn*. **waarom?** zegt wat dat betekent:
+  daar uitkomt, gemarkeerd *via een lijn* — of *via een uitzondering* waar
+  het de eigen lijn van deze eenheid is of iemands eigen lijn. **waarom?**
+  zegt wat dat betekent:
   de app zegt het en geeft er geen rechten mee.
 - **Rapportagelijnen**: elke rol van de eenheid die vandaag een
   rapportagelijn heeft, waar ze uitkomt — de rol en de eenheid, of *in deze
   eenheid* — of ze van een lijnmanager is of functioneel, of ze van de rol is,
   van het eenheidstype of van deze eenheid zelf, en *niemand vervult haar*
-  waar niemand de rol vervult waar ze uitkomt. **Overschrijven…** laat de rol
-  wijzen naar een rol in welke eenheid ook — deze eenheid eerst in de lijst,
-  voor een lijn erbinnen — lijnmanager of functioneel, voor deze eenheid
-  alleen, vanaf een dag en tot en met een dag waar het niet voorgoed is;
+  waar niemand de rol vervult waar ze uitkomt. Een eigen lijn van deze
+  eenheid is een uitzondering op het model en is gemarkeerd *uitzondering*.
+  **Overschrijven…** laat de rol wijzen naar een rol in welke eenheid ook —
+  elke eenheid genoemd met de eenheden erboven, deze eenheid eerst in de
+  lijst, voor een lijn erbinnen — of naar één persoon die haar daar vervult
+  (*Welke bekleder*), of naar één persoon waar ook (**Rapporteert aan: Eén
+  persoon**, diens rol ingevuld waar die er één heeft en gevraagd waar die er
+  meer heeft); lijnmanager of functioneel, voor deze eenheid alleen, vanaf een
+  dag en tot en met een dag waar het niet voorgoed is;
   **Hier via de nesting rapporteren** zegt dat de rol rapporteert zoals de
   eenheid genest is, wat haar type of de rol ook zegt; **De eigen lijn van
   deze eenheid weghalen** laat het type of de rol weer spreken. **Een lijn
@@ -2366,7 +2373,8 @@ De onderdelen van een eenheid, in die volgorde:
   wie hen aanstuurt; de rest van de eenheid via de nesting. Een lijn van een
   rol naar zichzelf in dezelfde eenheid, en een die een lus zou sluiten,
   worden geweigerd, met de reden. **Rapporteren hieraan** noemt de rollen
-  elders waarvan de lijn op een rol van deze eenheid uitkomt.
+  elders waarvan de lijn op een rol van deze eenheid uitkomt, en de mensen
+  wier eigen lijn dat doet.
 - **Bedient**: de domeinen die ze bedient, de scope waarin ze is ingedeeld
   tenzij je anders zegt — maar nooit de organisatie: een eenheid die daar is
   ingedeeld bedient niets tot **+ Domein** haar er een geeft, en zegt **Geen
@@ -2416,7 +2424,13 @@ van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
 
 **Toewijzen** is één stap in de scope die de eenheid bijhoudt: kies de rol, de
 persoon — gezocht in het register, *jij* gemarkeerd — het aandeel, de eerste
-dag, en of het waarnemend is. **Nieuwe persoon…** is het eigen formulier van
+dag, en of het waarnemend is. De eigen rollen van de eenheid staan eerst; onder
+**Een andere rol (een uitzondering)** staan de andere van de organisatie. Wie in
+zo'n rol wordt geplaatst is een uitzondering op het model: het mag en is geen
+bevinding, het venster zegt het voordat je opslaat, en overal waar die persoon
+staat — de chip op het organogram, met een gestippelde magenta rand, de
+inspector, de pagina Mensen — is het als uitzondering gemarkeerd. De eigen
+rapportagelijn van de rol geldt daar voor die persoon. **Nieuwe persoon…** is het eigen formulier van
 de pagina Mensen, dus wie misschien al in het register staat wordt aangeboden
 voordat er een tweede vermelding komt. De toewijzing bevat het id van de
 persoon, nooit de naam. Klik op iemand om de toewijzing te corrigeren, haar
@@ -2455,7 +2469,9 @@ in een eenheid onder de eigen. Rapportagelijnen verleggen dat recht: een rol
 waarvan de lijn van een lijnmanager uitkomt bij een rol die hij vervult, mag
 hij wijzigen, in welke eenheid ook, en de mensen die die op hun beurt
 aansturen; een rol in zijn eenheden waarvan de mensen via zo'n lijn elders
-rapporteren niet. Een functionele lijn geeft geen recht. Verder verandert er
+rapporteren niet. Iemands eigen lijn van een lijnmanager verlegt het net zo,
+voor die ene toewijzing: wie ze bereikt mag die wijzigen, en wie haar alleen
+via de rol daar bereikte niet meer. Een functionele lijn geeft geen recht. Verder verandert er
 niets aan de eenheid.
 Hetzelfde geldt voor een vacature op het organogram, voor **Nieuwe persoon…**
 en **Markeren als vertrokken** op de pagina Mensen waar de bron dat zegt, en
@@ -2466,7 +2482,14 @@ Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
 `scopes`, `extraSlots`), vraagt met `assignments.list` wie wat vervult — over
 de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst
 toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
-eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
+eenheid bijhoudt, en corrigeert er een — het aandeel, waarnemend, de dagen en
+iemands eigen rapportagelijnen (`reportsTo`) — met `assignment.update`.
+`reportingLine.set` zegt de eigen lijn van een eenheid, naar een rol in een
+eenheid of naar één persoon (`to.person`), en `reportingLines.list` geeft elke
+lijn met waar ze is gezegd en of ze een uitzondering is, en noemt de
+uitzonderlijke plaatsingen. De agent krijgt mee dat hij zich aan de standaard
+van het model houdt, alleen een uitzondering schrijft als je erom vraagt, en
+zegt dat hij dat deed. Een agent vergeet, verwijdert of voegt nooit iemand samen.
 `element.remove` op een eenheid neemt ook haar toewijzingen mee en noemt ze
 in het antwoord (`assignmentsRemoved`), zet de eenheden erin een niveau
 hoger waar hun type daar mag staan (`unitsMoved`), maakt het team leeg van de
@@ -2687,10 +2710,15 @@ eenheid noemt altijd elke rol. Net als een vouw duurt de schakelaar zolang de
 app open is en wordt nooit bewaard.
 
 **Rapportagelijnen** worden getekend voor de persoon die je kiest, op de dag
-van het organogram: van diens chip naar de chip van wie de rol vervult
-waaraan die persoon rapporteert, en van de chips van wie aan die persoon
-rapporteert naar de hare — doorgetrokken voor die van een lijnmanager en
-gestippeld voor een functionele. Een lijn tussen twee rollen van één eenheid
+van het organogram — de lijnen die voor die persoon gelden, een eigen lijn
+waar die er een heeft: van diens chip naar de chip van wie die persoon aan
+rapporteert, in de accentkleur, en van de chips van wie aan die persoon
+rapporteert naar de hare, in groenblauw — doorgetrokken voor die van een
+lijnmanager en gestippeld voor een functionele. Een lijn die een uitzondering
+op het model is — de eigen lijn van een eenheid, of iemands eigen lijn — is
+magenta, welke kant ze ook op loopt; haar eindpunt zegt waar ze uitkomt. Een
+legenda boven het organogram zegt welke kleur wat is zolang er een lijn
+getekend is. Een lijn naar één persoon eindigt alleen bij diens chip. Een lijn tussen twee rollen van één eenheid
 verbindt de twee chips binnen haar vak. Waar niemand de rol aan de andere kant
 vervult, eindigt de lijn bij de naam van de rol, in de waarschuwingskleur; een
 die deel is van een lus staat in de foutkleur. Waar de andere kant is
@@ -2737,7 +2765,25 @@ haar, als één stap, op de laatste dag die je kiest — de dag vóór de dag va
 organogram als je vooruitkijkt, anders vandaag, en nooit vóór de eerste dag.
 Een beëindigde toewijzing blijft: het is wat de persoon had. **Corrigeren…**
 opent het venster van de eenheid voor al het andere, en **Openen in Mensen**
-gaat naar de pagina Mensen met die persoon gekozen. Een persoon in een eenheid
+gaat naar de pagina Mensen met die persoon gekozen.
+
+**Rapporteert aan**, in dezelfde inspector, zegt waaraan deze persoon op de dag
+van het organogram rapporteert: elke lijn die voor die persoon geldt — van de
+rol, van het eenheidstype, van de eenheid zelf, of een eigen lijn — waar ze
+uitkomt en of ze van een lijnmanager is of functioneel, *via de nesting* waar
+geen lijn van een lijnmanager dat doet, en wie die persoon aanstuurt, *via een
+lijn* of *via een uitzondering*. De lijnen van het model zijn de standaard; een
+uitzondering voor deze ene persoon is **Overschrijven…**: een eigen lijn naar
+een rol in welke eenheid ook, naar één bekleder ervan, of naar één persoon waar
+ook, doorgetrokken of gestippeld, met haar dagen. Een eigen lijn van een
+lijnmanager vervangt, voor deze persoon alleen, wat de rol, haar type, de
+eenheid en de nesting zeggen; een functionele vervangt de functionele lijn van
+de rol. Ze is gemarkeerd *uitzondering*, de inspector zegt ernaast wat het
+model zou zeggen, en **Het model volgen** haalt haar weg. Elk is één stap in de
+scope die de toewijzing bijhoudt, en een lijn naar de eigen rol in de eigen
+eenheid, of een die een lus zou sluiten, wordt geweigerd, met de reden. Een
+eigen lijn eindigt met de toewijzing: bij een nieuwe toewijzing wordt ze
+opnieuw gevraagd. Een persoon in een eenheid
 die een andere scope bijhoudt wordt net zo getoond, alleen te lezen: de
 inspector zegt welke scope de toewijzing bijhoudt, en **Openen in** die scope
 gaat erheen om haar te wijzigen, zoals een dubbelklik op de persoon doet.

@@ -2159,20 +2159,26 @@ A unit's sections, in that order:
 - **Who manages it**: one line for each person who holds a role that manages,
   in this unit or a unit above it, today, nearest first — and, where such a
   role reports elsewhere by a line manager's line, whoever it lands on,
-  marked *by line*. **why?** says what that means: the app says it and grants
+  marked *by line* — or *by override* where it is this unit's own line or a
+  person's own. **why?** says what that means: the app says it and grants
   nothing from it.
 - **Reporting lines**: each role of the unit with a reporting line today,
   where it lands — the role and the unit, or *in this unit* — whether it is a
   line manager's or functional, whether it is the role's, the unit type's or
   this unit's own, and *nobody holds it* where nobody holds the role it lands
-  on. **Override…** points the role at a role in any unit — this unit first
-  in the list, for a line within it — line manager or functional, for this
-  unit only, from a day and until one where it is not for good;
+  on. A line of this unit's own is an exception to the model and is marked
+  *override*. **Override…** points the role at a role in any unit — each unit
+  named with the units above it, this unit first in the list, for a line
+  within it — or at one person who holds it there (*Which holder*), or at one
+  person anywhere (**Reports to: One person**, their role filled in where they
+  hold one and asked where they hold several); line manager or functional,
+  for this unit only, from a day and until one where it is not for good;
   **Report by nesting here** says the role reports up the way the unit is
   nested, whatever its type or the role says; **Take this unit's own line
   away** lets the type or the role say again. **A line for…** gives a role
   that has none one of its own. **Reported to by** lists the roles elsewhere
-  whose line lands on one of this unit's.
+  whose line lands on one of this unit's, and the people whose own line
+  does.
   The holders of a role with a line manager's line are managed by the holders
   of the role it lands on, and then by whoever manages those; the rest of the
   unit by nesting. A line from a role to itself in the same unit, and one that
@@ -2220,7 +2226,12 @@ it is still to come.
 
 **Assigning** someone is one step in the scope that keeps the unit: choose the
 role, the person — searched in the register, *you* marked — their share, the
-first day, and whether they are acting. **New person…** is the People page's
+first day, and whether they are acting. The unit's own roles come first; under
+**Another role (an exception)** are the organisation's others. Someone placed
+in one of those is an exception to the model: it is allowed and no finding,
+the dialog says so before you save, and wherever they are shown — their chip on
+the chart, in a magenta dashed edge, their inspector, the People page — they
+are marked as one. The role's own reporting line applies to them there. **New person…** is the People page's
 own form, so someone who may already be in the register is offered before a
 second entry is made. The assignment holds the person's id, never their name.
 Press a holder to correct the assignment, **End on** today, or remove one made
@@ -2253,7 +2264,10 @@ of that unit and of the units below it even in a scope they may only read:
 manages only in a unit below their own. Reporting lines move that right: a
 role whose line manager's line lands on a role they hold is theirs to change,
 in whatever unit it is, and the people in it in turn; a role in their units
-whose holders report elsewhere by such a line is not. A functional line gives
+whose holders report elsewhere by such a line is not. A person's own line
+manager's line moves it the same way, for that one assignment: whoever it lands
+on may change it, and whoever reached it only through the role there no longer
+does. A functional line gives
 no right. Nothing else of the unit changes. The
 same goes for a vacancy on the organisation chart, for **New person…** and
 **Mark as left** on the People page where the source says so, and for *Move
@@ -2262,7 +2276,14 @@ the people*, which then writes their rows and leaves the others as they are.
 An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
 `extraSlots`), lists who holds what with `assignments.list` — across the tree,
 and for one unit its roles and who manages it — and assigns and ends with
-`assignment.add` and `assignment.end` in the scope that keeps the unit. It
+`assignment.add` and `assignment.end` in the scope that keeps the unit, and
+corrects one — its share, acting, days and the person's own reporting lines
+(`reportsTo`) — with `assignment.update`. `reportingLine.set` says a unit's
+own line, to a role in a unit or to one person (`to.person`), and
+`reportingLines.list` answers every line with where it was said and whether
+it is an override, and lists the exception placements. The agent is told to
+keep to the model's defaults and to write an exception only when you ask for
+one, and to say that it did. It
 never forgets, removes or merges anyone. `element.remove` on a unit takes its
 assignments too and lists them in its answer (`assignmentsRemoved`), moves
 the units inside it up where their type may sit there (`unitsMoved`), clears
@@ -2458,10 +2479,15 @@ roles** on the bar draws them, each with **+ assign** where you may assign
 someone, and the unit's inspector always lists every role. Like a fold, the
 switch lasts while the app is open and is never saved.
 
-**Reporting lines** are drawn for the person you pick, on the chart's day:
-from their chip to the chip of whoever holds the role they report to, and
-from the chips of the people who report to them to theirs — solid for a line
-manager's and dotted for a functional one. A line between two roles of one
+**Reporting lines** are drawn for the person you pick, on the chart's day —
+the lines that apply to them, their own where they have one: from their chip
+to the chip of whoever they report to, in the accent colour, and from the
+chips of the people who report to them to theirs, in teal — solid for a line
+manager's and dotted for a functional one. A line that is an exception to the
+model — a unit's own line, or a person's own — is magenta whichever way it
+runs; its end dot says where it lands. A legend over the chart says which
+colour is which while any line is drawn. A line to one person ends at that
+person's chip only. A line between two roles of one
 unit joins the two chips inside its box. Where nobody holds the role at the
 far end, the line ends at the role's name, in the warning colour; one that is
 part of a loop is in the error colour. Where the far end is folded away, the
@@ -2504,7 +2530,23 @@ day. **End on this day** ends it, as one step, on the last day you choose — th
 day before the chart's day where you are looking ahead, today otherwise, and
 never before its first. An ended assignment stays: it is what the person held.
 **Correct…** opens the unit's dialog for everything else, and **Open in
-People** goes to the People page with the person picked. A person in a unit kept
+People** goes to the People page with the person picked.
+
+**Reports to**, in the same inspector, says where this person reports on the
+chart's day: each line that holds for them — their role's, their unit type's,
+their unit's own, or their own — where it lands and whether it is a line
+manager's or functional, *by nesting* where no line manager's line does, and
+who manages them, *by line* or *by override*. The model's lines are the
+default; an exception for this one person is **Override…**: a line of their
+own to a role in any unit, to one holder of it, or to one person anywhere,
+solid or dotted, with its days. A line manager's line of their own replaces,
+for them alone, whatever their role, its type, their unit and nesting say; a
+functional one replaces their role's functional line. It is marked
+*override*, the inspector says what the model would say beside it, and **Use
+the model's** takes it away. Each is one step in the scope that keeps the
+assignment, and a line to their own role in their own unit, or one that would
+close a loop, is refused and said why. A line of their own ends with the
+assignment: someone reassigned is asked again. A person in a unit kept
 in another scope is shown the same way, read only: the inspector says which
 scope keeps the assignment, and **Open in** that scope goes there to change it,
 as a double-click on the person does.
