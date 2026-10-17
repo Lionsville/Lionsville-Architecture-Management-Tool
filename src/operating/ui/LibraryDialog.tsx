@@ -20,7 +20,7 @@
  */
 import { useId, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import IconButton from '@mui/material/IconButton'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -69,7 +69,7 @@ export function LibraryDialog(props: LibraryDialogProps) {
   const titleId = useId()
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   return (
-    <Dialog
+    <FieldsDialog
       open={props.open} onClose={props.onClose} aria-labelledby={titleId} maxWidth={false} fullWidth
       sx={{ top: chrome.topInset ?? 0 }}
       slotProps={{
@@ -87,7 +87,7 @@ export function LibraryDialog(props: LibraryDialogProps) {
         </Tooltip>
       </Box>
       <Body {...props} />
-    </Dialog>
+    </FieldsDialog>
   )
 }
 

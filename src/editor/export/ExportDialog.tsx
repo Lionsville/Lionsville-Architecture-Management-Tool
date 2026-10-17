@@ -21,7 +21,7 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
+import { FieldsDialog } from '../../widgets/CompactForms';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -66,7 +66,7 @@ export function ExportDialog(props: ExportDialogProps) {
   const large = props.size.megapixels > LARGE_EXPORT_MEGAPIXELS;
 
   return (
-    <Dialog open={props.open} onClose={props.exporting ? undefined : props.onClose} maxWidth="md" fullWidth>
+    <FieldsDialog open={props.open} onClose={props.exporting ? undefined : props.onClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('export.dialogTitle')}</DialogTitle>
       <DialogContent>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
@@ -77,7 +77,6 @@ export function ExportDialog(props: ExportDialogProps) {
               </Typography>
               <ToggleButtonGroup
                 exclusive
-                size="small"
                 value={options.theme}
                 disabled={props.exporting}
                 aria-label={t('export.theme')}
@@ -93,7 +92,6 @@ export function ExportDialog(props: ExportDialogProps) {
               <FormControlLabel
                 control={(
                   <Switch
-                    size="small"
                     checked={options.showLabels}
                     disabled={props.exporting}
                     onChange={(event) => onChange({ ...options, showLabels: event.target.checked })}
@@ -109,7 +107,6 @@ export function ExportDialog(props: ExportDialogProps) {
               <FormControlLabel
                 control={(
                   <Switch
-                    size="small"
                     checked={options.titleBlock}
                     disabled={props.exporting}
                     onChange={(event) => onChange({ ...options, titleBlock: event.target.checked })}
@@ -125,7 +122,6 @@ export function ExportDialog(props: ExportDialogProps) {
               <FormControlLabel
                 control={(
                   <Switch
-                    size="small"
                     checked={options.legend && options.titleBlock}
                     // The key lives on the strip: without one there is nowhere to draw it.
                     disabled={props.exporting || !options.titleBlock}
@@ -190,6 +186,6 @@ export function ExportDialog(props: ExportDialogProps) {
           {large ? t('export.largeConfirm') : t('export.confirm')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   );
 }

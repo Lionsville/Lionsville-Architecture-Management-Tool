@@ -27,13 +27,12 @@ import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog, SectionHeading } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import type { PickOption } from '../../widgets/PickToAdd'
@@ -77,10 +76,10 @@ export function NewScopeDialog({
   const ready = typed.length > 0 && !reserved
 
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+    <FieldsDialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{s('picker.newScopeTitle')}</DialogTitle>
       <DialogContent>
-        <Stack spacing={1}>
+        <Stack spacing={1.25} sx={{ pt: 0.5 }}>
           <ScopeField
             tree={tree}
             value={parent}
@@ -91,7 +90,6 @@ export function NewScopeDialog({
           <TextField
             autoFocus
             fullWidth
-            margin="dense"
             label={s('picker.scopeName')}
             value={name}
             error={reserved}
@@ -102,7 +100,6 @@ export function NewScopeDialog({
           <FormControlLabel
             control={(
               <Checkbox
-                size="small"
                 checked={withBoard}
                 onChange={(e) => onWithBoardChange(e.target.checked)}
                 slotProps={{ input: { 'aria-label': s('picker.withBoard') } }}
@@ -120,7 +117,7 @@ export function NewScopeDialog({
           {s('picker.create')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -129,12 +126,12 @@ function ServedByField({ options, value, onChange, s }: NonNullable<NewScopeDial
   const picked = options.find((one) => one.id === value)
   return (
     <Box data-testid="new-scope-served-by">
-      <Typography component="h3" sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary' }}>{s('org.newScopeServedBy')}</Typography>
-      <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.25 }}>{s('org.newScopeServedByHint')}</Typography>
+      <SectionHeading component="h3">{s('org.newScopeServedBy')}</SectionHeading>
+      <FieldLabel sx={{ mb: 0.25 }}>{s('org.newScopeServedByHint')}</FieldLabel>
       {picked
         ? (
             <Chip
-              size="small" label={picked.label} data-testid="new-scope-served-by-unit"
+              label={picked.label} data-testid="new-scope-served-by-unit"
               // Backspace or Delete on the chip takes the pick back, as the cross does.
               onDelete={() => onChange(undefined)}
             />

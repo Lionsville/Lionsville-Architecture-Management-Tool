@@ -24,7 +24,7 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog, SectionHeading } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -72,10 +72,8 @@ export type PreferencesDialogProps = {
 function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
     <Stack spacing={1}>
-      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
-        {title}
-      </Typography>
-      {note && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{note}</Typography>}
+      <SectionHeading>{title}</SectionHeading>
+      {note && <FieldLabel>{note}</FieldLabel>}
       {children}
     </Stack>
   )
@@ -95,14 +93,13 @@ export function PreferencesDialog({
   updates, sourcePanel, s,
 }: PreferencesDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="preferences-dialog">
+    <FieldsDialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="preferences-dialog">
       <DialogTitle sx={{ fontSize: 15 }}>{s('prefs.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           <Section title={s('prefs.general')}>
             <Row label={s('prefs.language')}>
               <ToggleButtonGroup
-                size="small"
                 exclusive
                 value={language}
                 onChange={(_e, next: Language | null) => { if (next) onLanguageChange(next) }}
@@ -117,7 +114,6 @@ export function PreferencesDialog({
             </Row>
             <Row label={s('prefs.theme')}>
               <ToggleButtonGroup
-                size="small"
                 exclusive
                 value={themeMode}
                 onChange={(_e, next: ThemeMode | null) => { if (next) onThemeChange(next) }}
@@ -132,7 +128,6 @@ export function PreferencesDialog({
             </Row>
             <Row label={s('prefs.projectOrder')}>
               <ToggleButtonGroup
-                size="small"
                 exclusive
                 value={order}
                 onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
@@ -151,7 +146,6 @@ export function PreferencesDialog({
                 <FormControlLabel
                   control={(
                     <Checkbox
-                      size="small"
                       checked={updates.checkAutomatically}
                       onChange={(e) => updates.onChange({ checkAutomatically: e.target.checked })}
                     />
@@ -160,7 +154,6 @@ export function PreferencesDialog({
                 />
                 <Row label={s('prefs.channel')}>
                   <ToggleButtonGroup
-                    size="small"
                     exclusive
                     value={updates.channel}
                     onChange={(_e, next: UpdateChannel | null) => { if (next) updates.onChange({ channel: next }) }}
@@ -187,6 +180,6 @@ export function PreferencesDialog({
       <DialogActions>
         <Button size="small" onClick={onClose}>{s('common.close')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

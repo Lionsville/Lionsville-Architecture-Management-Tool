@@ -19,7 +19,7 @@
 import { useState } from 'react'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -61,12 +61,12 @@ export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDia
   }
 
   return (
-    <Dialog open onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth>
+    <FieldsDialog open onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('sheet.exportTitle')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('sheet.exportHint')}</Typography>
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.exportPaper')}
           value={layout}
           disabled={busy}
@@ -94,6 +94,6 @@ export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDia
           {busy ? t('sheet.exportBusy') : t('sheet.exportSave')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

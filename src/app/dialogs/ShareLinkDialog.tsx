@@ -12,7 +12,7 @@
  * a screen reader reads it as the value of something named.
  */
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -31,7 +31,7 @@ export function ShareLinkDialog({ answer, onCopy, onClose, s }: {
 }) {
   const link = answer && 'link' in answer ? answer.link : undefined
   return (
-    <Dialog
+    <FieldsDialog
       open={answer !== undefined}
       onClose={onClose}
       maxWidth="sm"
@@ -46,7 +46,6 @@ export function ShareLinkDialog({ answer, onCopy, onClose, s }: {
             <Typography sx={{ fontSize: 13 }}>{s('share.what')}</Typography>
             <TextField
               value={link}
-              size="small"
               fullWidth
               onFocus={(event) => event.target.select()}
               slotProps={{
@@ -64,6 +63,6 @@ export function ShareLinkDialog({ answer, onCopy, onClose, s }: {
         )}
         <Button size="small" onClick={onClose}>{s('common.close')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

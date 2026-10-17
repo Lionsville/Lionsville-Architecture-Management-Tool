@@ -21,7 +21,7 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog, SectionHeading } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -67,11 +67,11 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
       .filter((id): id is ElementId => id !== undefined)
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
+    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('sheet.settings')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.settingsJourney')}
           value={sheet.journeyId ?? ''}
           slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsJourney') } }}
@@ -97,7 +97,6 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
                     sx={{ flex: 1, minWidth: 0 }}
                     control={(
                       <Checkbox
-                        size="small"
                         checked={on}
                         slotProps={{ input: { 'aria-label': t('sheet.settingsDraw', { name: named(id) }) } }}
                         onChange={() => actions.updateSheet({
@@ -124,11 +123,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
 
         <Box>
           <Caption text={t('sheet.settingsLanes')} />
-          {lanes.length === 0 && (
-            <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-              {t('sheet.settingsNoLanes')}
-            </Typography>
-          )}
+          {lanes.length === 0 && <FieldLabel>{t('sheet.settingsNoLanes')}</FieldLabel>}
           {lanes.map((id, at) => (
             <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
               <Typography sx={{ fontSize: 12, flex: 1, minWidth: 0 }}>{named(id)}</Typography>
@@ -147,7 +142,6 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
         <FormControlLabel
           control={(
             <Checkbox
-              size="small"
               checked={sheet.showActors !== false}
               slotProps={{ input: { 'aria-label': t('sheet.settingsRail') } }}
               onChange={(e) => actions.updateSheet({ showActors: e.target.checked })}
@@ -159,7 +153,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
         {/* The canvas: a sheet of paper the page is laid out on, scrolling
             sideways in a window narrower than it, or the window itself. */}
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.settingsPaper')}
           value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER}
           slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsPaper') } }}
@@ -176,7 +170,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
         {/* How many columns the areas tile in: as many as the canvas has room
             for, which is the default, or a fixed count. */}
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.settingsColumns')}
           value={sheet.columns ?? ''}
           slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsColumns') } }}
@@ -193,7 +187,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
       <DialogActions>
         <Button size="small" onClick={onClose}>{t('common.close')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -201,14 +195,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
 const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
 
 function Caption({ text }: { text: string }) {
-  return (
-    <Typography sx={{
-      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-      color: 'text.secondary', mb: 0.5,
-    }}>
-      {text}
-    </Typography>
-  )
+  return <SectionHeading sx={{ mb: 0.5 }}>{text}</SectionHeading>
 }
 
 function Move({ name, up, down, t }: {

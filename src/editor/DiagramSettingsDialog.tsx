@@ -20,7 +20,7 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
+import { FieldLabel, FieldsDialog, SectionHeading } from '../widgets/CompactForms';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -29,7 +29,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 import { AspectColumnsEditor, settleFreshAspectKeys } from './AspectColumnsEditor';
 import { DEFAULT_ASPECT_CONFIG, normaliseAspectConfig } from '../model/aspects';
 import { useStrings } from '../i18n/LanguageContext';
@@ -119,7 +118,7 @@ export function DiagramSettingsDialog({
   };
 
   return (
-    <Dialog open={target !== undefined && draft !== null} onClose={onClose} maxWidth="sm" fullWidth>
+    <FieldsDialog open={target !== undefined && draft !== null} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t('diagramSettings.title')}</DialogTitle>
       <DialogContent>
         {draft && (
@@ -127,7 +126,6 @@ export function DiagramSettingsDialog({
             <TextField
               autoFocus
               fullWidth
-              size="small"
               label={t('field.name')}
               value={draft.name}
               onChange={(e) => edit({ name: e.target.value })}
@@ -139,14 +137,11 @@ export function DiagramSettingsDialog({
             />
 
             <Box>
-              <SectionHeading text={t('diagramSettings.presentation')} />
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1.25 }}>
-                {t('diagramSettings.presentationHelp')}
-              </Typography>
+              <SectionHeading>{t('diagramSettings.presentation')}</SectionHeading>
+              <FieldLabel sx={{ mb: 1.25 }}>{t('diagramSettings.presentationHelp')}</FieldLabel>
               <Stack spacing={1.5}>
                 <Stack direction="row" spacing={1}>
                   <TextField
-                    size="small"
                     fullWidth
                     label={t('diagramSettings.author')}
                     placeholder={t('diagramSettings.authorPlaceholder')}
@@ -155,7 +150,6 @@ export function DiagramSettingsDialog({
                     onChange={(e) => edit({ author: e.target.value })}
                   />
                   <TextField
-                    size="small"
                     fullWidth
                     label={t('diagramSettings.client')}
                     placeholder={defaultClient}
@@ -166,7 +160,6 @@ export function DiagramSettingsDialog({
                   />
                 </Stack>
                 <TextField
-                  size="small"
                   type="date"
                   label={t('diagramSettings.date')}
                   helperText={t('diagramSettings.dateHelp')}
@@ -179,16 +172,11 @@ export function DiagramSettingsDialog({
                 <FormControlLabel
                   control={
                     <Switch
-                      size="small"
                       checked={draft.showTitleBlock}
                       onChange={(e) => edit({ showTitleBlock: e.target.checked })}
                     />
                   }
-                  label={
-                    <Typography sx={{ fontSize: 13 }}>
-                      {t('diagramSettings.showTitleBlock')}
-                    </Typography>
-                  }
+                  label={t('diagramSettings.showTitleBlock')}
                 />
               </Stack>
             </Box>
@@ -197,29 +185,18 @@ export function DiagramSettingsDialog({
               <>
                 <Divider />
                 <Box>
-                  <SectionHeading text={t('diagramSettings.aspects')} />
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1.25 }}>
-                    {t('diagramSettings.aspectsHelp')}
-                  </Typography>
+                  <SectionHeading>{t('diagramSettings.aspects')}</SectionHeading>
+                  <FieldLabel sx={{ mb: 1.25 }}>{t('diagramSettings.aspectsHelp')}</FieldLabel>
                   <FormControlLabel
                     control={
                       <Switch
-                        size="small"
                         checked={draft.showAspects}
                         onChange={(e) => edit({ showAspects: e.target.checked })}
                       />
                     }
-                    label={
-                      <Typography sx={{ fontSize: 13 }}>
-                        {t('diagramSettings.showAspects')}
-                      </Typography>
-                    }
+                    label={t('diagramSettings.showAspects')}
                   />
-                  {!draft.showAspects && (
-                    <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1 }}>
-                      {t('diagramSettings.hiddenNote')}
-                    </Typography>
-                  )}
+                  {!draft.showAspects && <FieldLabel sx={{ mb: 1 }}>{t('diagramSettings.hiddenNote')}</FieldLabel>}
 
                   <AspectColumnsEditor
                     columns={draft.columns}
@@ -239,14 +216,6 @@ export function DiagramSettingsDialog({
           {t('common.save')}
         </Button>
       </DialogActions>
-    </Dialog>
-  );
-}
-
-function SectionHeading({ text }: { text: string }) {
-  return (
-    <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' }}>
-      {text}
-    </Typography>
+    </FieldsDialog>
   );
 }

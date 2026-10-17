@@ -15,7 +15,7 @@
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
@@ -47,7 +47,7 @@ export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, s
   useEffect(() => { if (open) setMessage(draft) }, [open, draft])
 
   return (
-    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
+    <FieldsDialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontSize: 16 }}>
         {s(keeping ? 'history.snapshot' : 'history.start')}
       </DialogTitle>
@@ -78,6 +78,6 @@ export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, s
           {s('history.take')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

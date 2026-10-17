@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
@@ -37,13 +37,12 @@ export function NewAdrDialog({ open, onCancel, onCreate, s }: NewAdrDialogProps)
   const submit = () => { if (ready) onCreate(title.trim()) }
 
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s('adr.new')}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           fullWidth
-          size="small"
           label={s('adr.newTitleField')}
           helperText={s('adr.newTitleHelp')}
           value={title}
@@ -56,7 +55,7 @@ export function NewAdrDialog({ open, onCancel, onCreate, s }: NewAdrDialogProps)
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
         <Button variant="contained" disabled={!ready} onClick={submit}>{s('adr.create')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -85,7 +84,7 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
   const chosen = candidates.some((adr) => adr.id === successor) ? successor : candidates[0]?.id ?? ''
 
   return (
-    <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s('adr.supersedeTitle')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 14, mb: 2 }}>{s('adr.supersedeBody')}</DialogContentText>
@@ -95,7 +94,6 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
           <TextField
             select
             fullWidth
-            size="small"
             label={s('adr.successor')}
             value={chosen}
             onChange={(event) => setSuccessor(event.target.value)}
@@ -114,7 +112,7 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
           {s('adr.statusSuperseded')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -141,7 +139,7 @@ export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, 
   const name = target ? `${formatAdrNumber(target.number)} ${target.title}` : ''
 
   return (
-    <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s(withdraw ? 'adr.withdrawTitle' : 'adr.rejectTitle', { name })}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 14, mb: 2 }}>{s(withdraw ? 'adr.withdrawBody' : 'adr.rejectBody')}</DialogContentText>
@@ -150,7 +148,6 @@ export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, 
           fullWidth
           multiline
           minRows={2}
-          size="small"
           required={required}
           label={s('adr.reasonField')}
           value={reason}
@@ -163,6 +160,6 @@ export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, 
           {s(withdraw ? 'adr.withdraw' : 'adr.reject')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

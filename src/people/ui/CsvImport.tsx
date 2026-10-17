@@ -12,7 +12,7 @@ import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -67,7 +67,7 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
     onClose()
   }
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <FieldsDialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle sx={{ fontSize: 16 }}>{s('people.csvTitle')}</DialogTitle>
       <DialogContent>
         <Typography sx={{ fontSize: 13, mb: 1.5 }}>{s('people.csvLead')}</Typography>
@@ -101,7 +101,7 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
                   <td>{result(one, s)}</td>
                   <td>
                     {one.as === 'flagged' && (
-                      <Checkbox size="small" checked={anyway.has(one.row.line)} onChange={(event) => tick(one.row.line, event.target.checked)}
+                      <Checkbox checked={anyway.has(one.row.line)} onChange={(event) => tick(one.row.line, event.target.checked)}
                         slotProps={{ input: { 'aria-label': `${s('people.csvAddAnyway')}: ${one.row.name}` } }} />
                     )}
                   </td>
@@ -118,6 +118,6 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
           {plural(s, { one: 'people.csvImportOne', other: 'people.csvImportOther' }, adding.length)}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

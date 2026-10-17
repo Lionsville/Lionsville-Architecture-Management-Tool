@@ -19,7 +19,7 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -65,10 +65,10 @@ export function NewUnitDialog(props: NewUnitDialogProps) {
   const { place, none, s, onClose } = props
   const parent = place.parent
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="new-unit-dialog" data-guide="chart.newUnit">
+    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="new-unit-dialog" data-guide="chart.newUnit">
       <DialogTitle sx={{ fontSize: 16 }}>{parent ? s('chart.addTitleInside', { name: parent.name }) : s('chart.addTitleTop')}</DialogTitle>
       {none ? <NothingMaySit none={none} onClose={onClose} s={s} /> : <NewUnitForm {...props} />}
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -124,14 +124,14 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
     <>
       <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
         <TextField
-          size="small" select label={s('chart.addType')} value={typeId} onChange={(event) => setTypeId(event.target.value)}
+          select label={s('chart.addType')} value={typeId} onChange={(event) => setTypeId(event.target.value)}
           helperText={parent ? s('chart.addTypesIn', { type: parent.typeName }) : s('chart.addTypesTop')}
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-type' } }}
         >
           {types.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
         </TextField>
         <TextField
-          size="small" label={s('chart.addName')} value={name} autoFocus onChange={(event) => setName(event.target.value)}
+          label={s('chart.addName')} value={name} autoFocus onChange={(event) => setName(event.target.value)}
           // Consumed: an Enter left to the browser becomes a press of whatever button takes the focus next.
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); create() } }}
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-name' } }}
@@ -140,7 +140,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
           ? <ServesField serves={servesNow} spans={spans} scopes={scopes} scopeLabel={scopeLabel} onChange={setServes} s={s} />
           : <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="new-unit-through">{s('chart.addServesThrough', { name: parent?.name ?? '' })}</Typography>}
         <TextField
-          size="small" select label={s('chart.addFiledIn')} value={filedIn === undefined ? '' : choiceOf(filedIn)} onChange={(event) => setFiled(pathOf(event.target.value))}
+          select label={s('chart.addFiledIn')} value={filedIn === undefined ? '' : choiceOf(filedIn)} onChange={(event) => setFiled(pathOf(event.target.value))}
           disabled={filedIn === undefined}
           helperText={filedIn === undefined ? s('chart.addFiledNowhere') : s(parent ? 'chart.addFiledInParent' : 'chart.addFiledInTop')}
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-filed' } }}
@@ -167,12 +167,12 @@ function ServesField({ serves, spans, scopes, scopeLabel, onChange, s }: {
   const more = spans || serves.length === 0
   return (
     <Box data-testid="new-unit-serves">
-      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{s(spans ? 'chart.addServesMany' : 'chart.addServes')}</Typography>
+      <FieldLabel>{s(spans ? 'chart.addServesMany' : 'chart.addServes')}</FieldLabel>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.25 }}>
         {serves.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('chart.addServesNone')}</Typography>}
         {serves.map((path) => (
           <Chip
-            key={path} size="small" label={scopeTrail(path, scopeLabel)} data-testid="new-unit-serves-chip"
+            key={path} label={scopeTrail(path, scopeLabel)} data-testid="new-unit-serves-chip"
             onDelete={() => onChange(serves.filter((one) => one !== path))}
           />
         ))}

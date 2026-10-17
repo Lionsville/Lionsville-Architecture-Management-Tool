@@ -23,14 +23,13 @@
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog, SectionHeading } from '../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { AspectColumnsEditor, settleFreshAspectKeys } from '../editor'
 import { DEFAULT_ASPECT_CONFIG } from '../model'
 import type { Translate } from '../i18n'
@@ -87,14 +86,13 @@ export function ProjectSettingsDialog({
   const moving = group !== parent
 
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s('settings.title')}</DialogTitle>
       <DialogContent>
-        <Stack spacing={1}>
+        <Stack spacing={1.25} sx={{ pt: 0.5 }}>
           <TextField
             autoFocus
             fullWidth
-            margin="dense"
             label={s('settings.projectName')}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -108,31 +106,19 @@ export function ProjectSettingsDialog({
             excluding={project.path}
             s={s}
           />
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {project.path}
-          </Typography>
+          <FieldLabel>{project.path}</FieldLabel>
 
           <Divider sx={{ mt: 1.5 }} />
-          <Typography sx={{
-            fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary', mt: 1,
-          }}>
-            {s('settings.defaults')}
-          </Typography>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {s('settings.defaultsHelp')}
-          </Typography>
+          <SectionHeading sx={{ mt: 1 }}>{s('settings.defaults')}</SectionHeading>
+          <FieldLabel>{s('settings.defaultsHelp')}</FieldLabel>
           <TextField
             fullWidth
-            size="small"
-            margin="dense"
             label={s('settings.defaultAuthor')}
             helperText={s('settings.defaultAuthorHelp')}
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
           />
-          <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 1 }}>
-            {s('settings.defaultColumns')}
-          </Typography>
+          <FieldLabel sx={{ mt: 1 }}>{s('settings.defaultColumns')}</FieldLabel>
           <AspectColumnsEditor
             columns={columns}
             fresh={freshColumns}
@@ -156,6 +142,6 @@ export function ProjectSettingsDialog({
           {s('settings.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

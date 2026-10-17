@@ -25,7 +25,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import Link from '@mui/material/Link'
 import IconButton from '@mui/material/IconButton'
 import Slider from '@mui/material/Slider'
@@ -445,11 +445,10 @@ function NamePlanDialog({ title, onTitle, onMake }: {
     onTitle(null)
   }
   return (
-    <Dialog open={title !== null} onClose={() => onTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
+    <FieldsDialog open={title !== null} onClose={() => onTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Typography id="lv-new-plan-title" sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
         <TextField
-          size="small"
           autoFocus slotProps={{ htmlInput: { 'aria-labelledby': 'lv-new-plan-title' } }}
           value={title ?? ''}
           onChange={(e) => onTitle(e.target.value)}
@@ -464,7 +463,7 @@ function NamePlanDialog({ title, onTitle, onMake }: {
           <Button variant="contained" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
         </Box>
       </Box>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 

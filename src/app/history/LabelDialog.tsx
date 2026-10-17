@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
@@ -28,7 +28,7 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
   useEffect(() => { if (open) setName('') }, [open])
 
   return (
-    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
+    <FieldsDialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontSize: 16 }}>{s('history.labelTitle')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 13, mb: 2 }}>{s('history.labelBody')}</DialogContentText>
@@ -47,6 +47,6 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
           {s('history.labelConfirm')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

@@ -25,7 +25,7 @@
 import { useId, useRef, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -77,7 +77,7 @@ export function FormDialog(props: FormDialogProps) {
     if (held?.isConnected && document.activeElement !== held) held.focus()
   }
   return (
-    <Dialog
+    <FieldsDialog
       open={open} maxWidth={size} fullWidth aria-labelledby={titleId}
       onClose={(_event, reason) => { if (reason === 'escapeKeyDown' && !dirty) onCancel() }}
       onKeyDown={(event) => { if (submitsOnEnter(event)) { event.preventDefault(); onSubmit() } }}
@@ -102,7 +102,7 @@ export function FormDialog(props: FormDialogProps) {
           {props.submitLabel}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 

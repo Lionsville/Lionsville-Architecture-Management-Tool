@@ -14,7 +14,7 @@
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
@@ -52,7 +52,7 @@ export function AddFromLibraryDialog({
 
   if (choice?.kind === 'asking') {
     return (
-      <Dialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.ownTitle', { name: choice.name })}>
+      <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.ownTitle', { name: choice.name })}>
         <DialogTitle>{s('library.ownTitle', { name: choice.name })}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: 14 }}>{s('library.ownBody', { name: choice.name })}</DialogContentText>
@@ -62,13 +62,13 @@ export function AddFromLibraryDialog({
           {choice.canDrawOnly && <Button onClick={onDrawOnly}>{s('library.drawOnly')}</Button>}
           <Button variant="contained" onClick={onOwn}>{s('library.own')}</Button>
         </DialogActions>
-      </Dialog>
+      </FieldsDialog>
     )
   }
 
   if (choice?.kind === 'placing') {
     return (
-      <Dialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.placeTitle', { name: choice.name })}>
+      <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.placeTitle', { name: choice.name })}>
         <DialogTitle>{s('library.placeTitle', { name: choice.name })}</DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
           <List component="div" dense disablePadding>
@@ -91,7 +91,7 @@ export function AddFromLibraryDialog({
         <DialogActions>
           <Button size="small" onClick={onCancel}>{s('common.cancel')}</Button>
         </DialogActions>
-      </Dialog>
+      </FieldsDialog>
     )
   }
 
@@ -104,7 +104,7 @@ export function AddFromLibraryDialog({
     return s('library.nobodyDefines')
   }
   return (
-    <Dialog open={choice !== undefined} onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.title')}>
+    <FieldsDialog open={choice !== undefined} onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.title')}>
       <DialogTitle>{s('library.title')}</DialogTitle>
       <DialogContent sx={{ pt: 0 }}>
         <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>{s('library.hint')}</Typography>
@@ -112,7 +112,6 @@ export function AddFromLibraryDialog({
           <TextField
             autoFocus
             fullWidth
-            size="small"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={s('library.searchPlaceholder')}
@@ -141,6 +140,6 @@ export function AddFromLibraryDialog({
       <DialogActions>
         <Button size="small" onClick={onCancel}>{s('common.cancel')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

@@ -25,7 +25,7 @@ import { useId, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from './CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -81,13 +81,13 @@ export function MarkAsIntended({ words, sentence, onMark, inline = false }: {
       >
         {t(words.open)}
       </Button>
-      <Dialog open={asking} onClose={close} maxWidth="xs" fullWidth aria-labelledby={titleId}>
+      <FieldsDialog open={asking} onClose={close} maxWidth="xs" fullWidth aria-labelledby={titleId}>
         <DialogTitle id={titleId} sx={{ fontSize: 16 }}>{t(words.title)}</DialogTitle>
         <DialogContent>
           <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
           <Typography sx={{ ...SMALL, color: 'text.secondary', mb: 1.5 }}>{t(words.about)}</Typography>
           <TextField
-            autoFocus fullWidth size="small" label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
+            autoFocus fullWidth label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
             onChange={(event) => setReason(event.target.value)}
             // The Enter it acts on is consumed, so it cannot go on to press whatever takes the focus next.
             onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); confirm() } }}
@@ -98,7 +98,7 @@ export function MarkAsIntended({ words, sentence, onMark, inline = false }: {
           <Button onClick={close}>{t(words.cancel)}</Button>
           <Button variant="contained" onClick={confirm} data-testid="finding-mark-confirm">{t(words.confirm)}</Button>
         </DialogActions>
-      </Dialog>
+      </FieldsDialog>
     </Box>
   )
 }

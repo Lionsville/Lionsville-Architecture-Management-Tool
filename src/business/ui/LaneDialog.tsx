@@ -22,7 +22,7 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -65,11 +65,11 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
   }
 
   return (
-    <Dialog open onClose={onCancel} maxWidth="xs" fullWidth>
+    <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{t('sheet.laneTitle')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.laneWho')}
           value={actorId}
           slotProps={{ htmlInput: { 'aria-label': t('sheet.laneWho') } }}
@@ -84,7 +84,7 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
         {fresh && (
           <Box>
             <TextField
-              size="small" fullWidth autoFocus
+              fullWidth autoFocus
               label={t('sheet.laneName')}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -93,7 +93,6 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
               sx={{ mt: 0.5 }}
               control={(
                 <Checkbox
-                  size="small"
                   checked={outside}
                   onChange={(e) => setOutside(e.target.checked)}
                 />
@@ -104,7 +103,7 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
         )}
 
         <TextField
-          select size="small" fullWidth
+          select fullWidth
           label={t('sheet.laneWhere')}
           value={phaseId}
           slotProps={{ htmlInput: { 'aria-label': t('sheet.laneWhere') } }}
@@ -121,6 +120,6 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
           {t('sheet.laneAdd')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

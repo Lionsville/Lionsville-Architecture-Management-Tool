@@ -8,7 +8,7 @@
  * beside it that can drift out of step with it.
  */
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -26,7 +26,7 @@ export type NewDiagramDialogProps = {
 export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagramDialogProps) {
   const empty = (name ?? '').trim().length === 0
   return (
-    <Dialog open={name !== null} onClose={() => onNameChange(null)} maxWidth="xs" fullWidth>
+    <FieldsDialog open={name !== null} onClose={() => onNameChange(null)} maxWidth="xs" fullWidth>
       <DialogTitle>{s('shell.newDiagram')}</DialogTitle>
       <DialogContent>
         <TextField
@@ -43,6 +43,6 @@ export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagra
         <Button onClick={() => onNameChange(null)}>{s('common.cancel')}</Button>
         <Button variant="contained" disabled={empty} onClick={onConfirm}>{s('shell.add')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

@@ -21,7 +21,7 @@
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
@@ -68,7 +68,7 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
   }
 
   return (
-    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
+    <FieldsDialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontSize: 16 }}>{s(mode === 'set' ? 'seal.setTitle' : 'seal.enterTitle')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 13, mb: 2 }}>
@@ -122,6 +122,6 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
           {s(mode === 'set' ? 'seal.confirmSet' : 'seal.confirmEnter')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

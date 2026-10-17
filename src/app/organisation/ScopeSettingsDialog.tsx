@@ -28,7 +28,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog, SectionHeading } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -37,7 +37,6 @@ import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import { isSafeLinkUrl } from '../../projects/links'
 import type { RecordLink } from '../../projects/links'
@@ -122,14 +121,13 @@ export function ScopeSettingsDialog({
   const ready = name.trim().length > 0
 
   return (
-    <Dialog open={target !== undefined} onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open={target !== undefined} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s('group.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 0.5 }}>
           <TextField
             autoFocus
             fullWidth
-            size="small"
             label={s('group.name')}
             helperText={s('group.nameHelp', { path: target?.path || '/' })}
             value={name}
@@ -137,7 +135,6 @@ export function ScopeSettingsDialog({
           />
           <TextField
             fullWidth
-            size="small"
             label={s('group.client')}
             placeholder={name.trim() || undefined}
             helperText={s('group.clientHelp')}
@@ -148,7 +145,6 @@ export function ScopeSettingsDialog({
             fullWidth
             multiline
             minRows={2}
-            size="small"
             label={s('group.description')}
             placeholder={s('group.descriptionPlaceholder')}
             value={description}
@@ -157,7 +153,6 @@ export function ScopeSettingsDialog({
           <TextField
             select
             fullWidth
-            size="small"
             label={s('org.kind')}
             helperText={s('org.kindHelp')}
             value={kind}
@@ -211,7 +206,7 @@ export function ScopeSettingsDialog({
           {s('settings.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -224,14 +219,8 @@ function LinksField({ links, onChange, s }: { links: LinkDraft[]; onChange: (lin
     onChange(links.map((link, i) => (i === index ? { ...link, ...patch } : link)))
   return (
     <Box>
-      <Typography sx={{
-        fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary',
-      }}>
-        {s('group.links')}
-      </Typography>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1 }}>
-        {s('group.linksHelp')}
-      </Typography>
+      <SectionHeading>{s('group.links')}</SectionHeading>
+      <FieldLabel sx={{ mb: 1 }}>{s('group.linksHelp')}</FieldLabel>
       <Stack spacing={1}>
         {links.map((link, index) => {
           // Flagged, not refused: somebody halfway through typing an
@@ -241,14 +230,12 @@ function LinksField({ links, onChange, s }: { links: LinkDraft[]; onChange: (lin
           return (
             <Stack key={index} direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
               <TextField
-                size="small"
                 label={index === 0 ? s('group.linkLabel') : undefined}
                 value={link.label}
                 sx={{ width: 160 }}
                 onChange={(e) => editLink(index, { label: e.target.value })}
               />
               <TextField
-                size="small"
                 label={index === 0 ? s('group.linkUrl') : undefined}
                 placeholder="https://"
                 value={link.url}

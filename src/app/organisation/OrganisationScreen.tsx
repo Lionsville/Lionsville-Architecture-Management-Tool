@@ -33,7 +33,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -739,7 +739,7 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
 }) {
   const ready = name.trim().length > 0
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+    <FieldsDialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{s('org.newBoard')}</DialogTitle>
       <DialogContent>
         <TextField
@@ -758,7 +758,7 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
           {s('picker.create')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 

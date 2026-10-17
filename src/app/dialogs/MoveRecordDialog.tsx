@@ -18,7 +18,7 @@
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -91,13 +91,12 @@ export function MoveRecordDialog({
   const ready = gesture !== '' && (gesture === 'link' || to !== undefined)
 
   return (
-    <Dialog open onClose={onCancel} maxWidth="xs" fullWidth>
+    <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{s('gesture.title', { name: target.name })}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           <TextField
             select
-            size="small"
             label={s('gesture.what')}
             value={gesture}
             onChange={(event) => {
@@ -118,7 +117,6 @@ export function MoveRecordDialog({
           {gesture !== '' && choices.length > 0 && (
             <TextField
               select
-              size="small"
               label={s('gesture.to')}
               value={to ?? ''}
               onChange={(event) => setTo(event.target.value)}
@@ -133,7 +131,6 @@ export function MoveRecordDialog({
             <FormControlLabel
               control={(
                 <Checkbox
-                  size="small"
                   checked={keepStandIn}
                   onChange={(event) => setKeepStandIn(event.target.checked)}
                   slotProps={{ input: { 'data-testid': 'gesture-keep' } as never }}
@@ -170,6 +167,6 @@ export function MoveRecordDialog({
           {s(gesture === 'link' ? 'gesture.link' : 'gesture.go')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

@@ -16,7 +16,7 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
+import { FieldLabel, FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -122,30 +122,30 @@ export function AssignDialog(props: AssignDialogProps) {
     else done({ type: 'assignment.update', id: held.id, patch })
   }
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="assign-dialog">
+    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="assign-dialog">
       <DialogTitle sx={{ fontSize: 16 }}>
         {s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? roleId, unit: unit.name })}
       </DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
-        <TextField size="small" select label={s('assign.role')} value={roleId} onChange={(event) => set({ roleId: event.target.value })}
+        <TextField select label={s('assign.role')} value={roleId} onChange={(event) => set({ roleId: event.target.value })}
           slotProps={{ htmlInput: { 'data-testid': 'assign-role' } }}>
           {roles.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
         </TextField>
-        <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{s('assign.person')}</Typography>
+        <FieldLabel>{s('assign.person')}</FieldLabel>
         <PersonPicker register={register} saying={saying} value={person} onChange={(id) => set({ person: id })} note={loadOf} s={s} />
         {saying.said && <Typography sx={{ fontSize: 12, color: saying.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>{saying.said.text}</Typography>}
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField size="small" type="number" label={s('assign.share')} value={share} onChange={(event) => set({ share: event.target.value })}
+          <TextField type="number" label={s('assign.share')} value={share} onChange={(event) => set({ share: event.target.value })}
             slotProps={{ htmlInput: { min: 1, max: 100, 'data-testid': 'assign-share' } }} sx={{ width: 110 }} />
-          <TextField size="small" type="date" label={s('assign.from')} value={from} onChange={(event) => set({ from: event.target.value })}
+          <TextField type="date" label={s('assign.from')} value={from} onChange={(event) => set({ from: event.target.value })}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assign-from' } }} />
           {held && (
-            <TextField size="small" type="date" label={s('assign.until')} value={until} onChange={(event) => set({ until: event.target.value })}
+            <TextField type="date" label={s('assign.until')} value={until} onChange={(event) => set({ until: event.target.value })}
               slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assign-until' } }} />
           )}
         </Box>
-        <FormControlLabel control={<Checkbox size="small" checked={acting} onChange={(event) => set({ acting: event.target.checked })} />}
-          label={<Typography sx={{ fontSize: 13 }}>{s('assign.acting')}</Typography>} />
+        <FormControlLabel control={<Checkbox checked={acting} onChange={(event) => set({ acting: event.target.checked })} />}
+          label={s('assign.acting')} />
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('assign.oneStep', { scope: scopeName })}</Typography>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -165,6 +165,6 @@ export function AssignDialog(props: AssignDialogProps) {
           {s(held ? 'assign.saveChange' : 'assign.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

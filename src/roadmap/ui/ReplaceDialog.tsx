@@ -18,7 +18,7 @@ import { useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -95,23 +95,23 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
   }
 
   return (
-    <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
+    <FieldsDialog open onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{t('replace.title', { name: subject.name })}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Box>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('replace.arrives')}</Typography>
           <RadioGroup value={arrives} onChange={(e) => setArrives(e.target.value as 'new' | 'existing')}>
-            <FormControlLabel value="new" control={<Radio size="small" />} label={t('replace.newApplication')} />
+            <FormControlLabel value="new" control={<Radio />} label={t('replace.newApplication')} />
             {arrives === 'new' && (
               <TextField
-                size="small" autoFocus label={t('common.name')} value={name} sx={{ ml: 4, mb: 1 }}
+                autoFocus label={t('common.name')} value={name} sx={{ ml: 4, mb: 1 }}
                 onChange={(e) => setName(e.target.value)}
               />
             )}
-            <FormControlLabel value="existing" control={<Radio size="small" />} label={t('replace.existing')} />
+            <FormControlLabel value="existing" control={<Radio />} label={t('replace.existing')} />
             {arrives === 'existing' && (
               <TextField
-                select size="small" label={t('replace.which')} value={existingId} sx={{ ml: 4, mb: 1 }}
+                select label={t('replace.which')} value={existingId} sx={{ ml: 4, mb: 1 }}
                 slotProps={{ htmlInput: { 'aria-label': t('replace.which') } }}
                 onChange={(e) => setExistingId(e.target.value)}
               >
@@ -124,8 +124,8 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
         <Box>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('replace.shape')}</Typography>
           <RadioGroup value={shape} onChange={(e) => setShape(e.target.value as 'goes' | 'stays')}>
-            <FormControlLabel value="goes" control={<Radio size="small" />} label={t('replace.goes', { name: subject.name })} />
-            <FormControlLabel value="stays" control={<Radio size="small" />} label={t('replace.stays', { name: subject.name })} />
+            <FormControlLabel value="goes" control={<Radio />} label={t('replace.goes', { name: subject.name })} />
+            <FormControlLabel value="stays" control={<Radio />} label={t('replace.stays', { name: subject.name })} />
           </RadioGroup>
         </Box>
 
@@ -140,7 +140,7 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
           {others.filter((element) => element.id !== existingId).length > 0 && (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
               <TextField
-                select size="small" label={t('plan.addApplication')} value={adding} sx={{ flex: 1 }}
+                select label={t('plan.addApplication')} value={adding} sx={{ flex: 1 }}
                 // MUI 9 names a select by its visible label alone; the fuller
                 // name is the one that says what the field is for.
                 slotProps={{
@@ -162,12 +162,12 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
 
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
-            type="date" size="small" fullWidth label={t('replace.shadowFrom')} value={shadowFrom}
+            type="date" fullWidth label={t('replace.shadowFrom')} value={shadowFrom}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('replace.shadowFrom') } }}
             onChange={(e) => setShadowFrom(e.target.value)}
           />
           <TextField
-            type="date" size="small" fullWidth label={t('replace.cutover')} value={cutover}
+            type="date" fullWidth label={t('replace.cutover')} value={cutover}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('replace.cutover') } }}
             onChange={(e) => setCutover(e.target.value)}
             error={isDay(shadowFrom) && isDay(cutover) && !datesInOrder}
@@ -179,6 +179,6 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
         <Button onClick={onCancel}>{t('common.cancel')}</Button>
         <Button variant="contained" disabled={!ready} onClick={confirm}>{t('replace.start')}</Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }

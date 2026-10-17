@@ -19,7 +19,7 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
+import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -102,22 +102,22 @@ export function InteractDialog({ interacting, units, newRowId, dispatch, scopeNa
   }
   const others = units.filter((unit) => unit.id !== interacting.from.id)
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="interact-dialog">
+    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="interact-dialog">
       <DialogTitle sx={{ fontSize: 16 }}>{s('interacts.dialogTitle', { unit: interacting.from.name })}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
-        <TextField size="small" select label={s('interacts.with')} value={form.with} onChange={(event) => set({ with: event.target.value })}
+        <TextField select label={s('interacts.with')} value={form.with} onChange={(event) => set({ with: event.target.value })}
           slotProps={{ htmlInput: { 'data-testid': 'interact-with' } }}>
           {others.map((unit) => <MenuItem key={unit.id} value={unit.id}>{unit.name}</MenuItem>)}
         </TextField>
-        <TextField size="small" select label={s('interacts.mode')} value={form.mode} onChange={(event) => set({ mode: event.target.value as InteractionMode })}
+        <TextField select label={s('interacts.mode')} value={form.mode} onChange={(event) => set({ mode: event.target.value as InteractionMode })}
           slotProps={{ htmlInput: { 'data-testid': 'interact-mode' } }}>
           {INTERACTION_MODES.map((mode) => <MenuItem key={mode} value={mode}>{s(INTERACTION_MODE_LABEL[mode])}</MenuItem>)}
         </TextField>
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s(MODE_HELP[form.mode])}</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField size="small" type="date" label={s('interacts.from')} value={form.from} onChange={(event) => set({ from: event.target.value })}
+          <TextField type="date" label={s('interacts.from')} value={form.from} onChange={(event) => set({ from: event.target.value })}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'interact-from' } }} />
-          <TextField size="small" type="date" label={s('interacts.until')} value={form.until} onChange={(event) => set({ until: event.target.value })}
+          <TextField type="date" label={s('interacts.until')} value={form.until} onChange={(event) => set({ until: event.target.value })}
             error={backwards} slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'interact-until' } }} />
         </Box>
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('interacts.oneStep', { scope: scopeName })}</Typography>
@@ -134,7 +134,7 @@ export function InteractDialog({ interacting, units, newRowId, dispatch, scopeNa
           {s(held ? 'interacts.saveChange' : 'interacts.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   )
 }
 
@@ -156,7 +156,7 @@ export function InteractionsSection({ lines, onDeclare, onEdit, s }: {
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
         {lines.map(({ row, other, keptIn, editable }) => (
           <Chip
-            key={row.id} size="small" data-testid="unit-interaction"
+            key={row.id} data-testid="unit-interaction"
             label={[
               other, row.mode ? s(INTERACTION_MODE_LABEL[row.mode]) : undefined,
               row.validFrom || row.validUntil ? `${row.validFrom ?? '…'} – ${row.validUntil ?? '…'}` : undefined,

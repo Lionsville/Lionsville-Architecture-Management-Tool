@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
+import { FieldsDialog } from '../widgets/CompactForms';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -49,7 +49,7 @@ export function RenameDiagramDialog({ target, onRename, onClose }: RenameDiagram
   };
 
   return (
-    <Dialog open={target !== undefined} onClose={onClose} maxWidth="xs" fullWidth>
+    <FieldsDialog open={target !== undefined} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.renameDiagram')}</DialogTitle>
       <DialogContent>
         <TextField
@@ -73,6 +73,6 @@ export function RenameDiagramDialog({ target, onRename, onClose }: RenameDiagram
           {t('common.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </FieldsDialog>
   );
 }
