@@ -14,6 +14,7 @@
  * nothing here is kept: `model/serving.ts` is the arithmetic.
  */
 import type { ElementId } from '../../model'
+import type { UnitTypeId } from '../../model/operatingModel'
 import { domainOwnerOn, ruleRole } from '../../model/owners'
 import type { PersonId } from '../../model/person'
 import { isServable, mayStopServing, scopesServed, servesOn, servingUnits } from '../../model/serving'
@@ -21,6 +22,8 @@ import { managersOf } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { typeLinkOf, typeToFollow } from '../../projects/scopeType'
+import type { TypeLink } from '../../projects/scopeType'
 import type { PickOption } from '../../widgets/PickToAdd'
 import { unitChoices } from '../units/choices'
 import type { ChoiceWords } from '../units/choices'
@@ -31,6 +34,8 @@ export type ServingRow = {
   name: string
   /** Its unit type's name. */
   type: string
+  /** Its unit type's id. */
+  typeId: UnitTypeId | ''
   /** The scope that keeps it: where a change to what it serves is that scope's step. */
   filedIn: ScopePath
   /** Who holds a managing role in it today: the people, by register id. */
@@ -39,9 +44,24 @@ export type ServingRow = {
   mayStop: boolean
 }
 
+/**
+ * The scope's type against the units that serve it (ADR-0036, amended 17
+ * October 2026; `projects/scopeType.ts`): the unit type it says, by id and
+ * name where the operating model still holds it, how it stands to the
+ * serving units' types, and those types by name.
+ */
+export type ScopeTypeLink = {
+  unitTypeId?: string
+  name?: string
+  link: TypeLink
+  /** The types of the units that serve it, by name, each once. */
+  servingTypes: string[]
+}
+
 export type ServedByView = {
   scope: ScopePath
   rows: ServingRow[]
+  type: ScopeTypeLink
   /** How many units serve it only through a unit above them. */
   through: number
   /** The domain owner as the rule works it out; absent where the organisation has no such rule. */
@@ -101,6 +121,7 @@ export function servedByOf(index: ScopeIndex, scope: ScopePath, day: string, wor
     id: unit.id,
     name: unit.name,
     type: typeName.get(unit.unitTypeId ?? '') ?? '',
+    typeId: unit.unitTypeId ?? '',
     filedIn: filedIn(unit.id) ?? '',
     managers: managersOf(organisation, unit.id, day).filter((one) => one.unitId === unit.id).map((one) => one.person),
     mayStop: mayStopServing(unit, scope, filedIn),
@@ -111,8 +132,42 @@ export function servedByOf(index: ScopeIndex, scope: ScopePath, day: string, wor
   const role = organisation.roles.find((one) => one.id === roleId)?.name ?? roleId ?? ''
   const unitName = worked?.unitId === undefined ? undefined : organisation.units.find((one) => one.id === worked.unitId)?.name
   const choices = servingChoicesOf(index, scope, day, words)
+  const unitTypeId = index.scopeTypes().get(scope)
+  const servingIds = [...new Set(units.map((unit) => unit.unitTypeId ?? '').filter(Boolean))]
+  const type: ScopeTypeLink = {
+    ...(unitTypeId !== undefined ? { unitTypeId } : {}),
+    ...(unitTypeId !== undefined && typeName.has(unitTypeId) ? { name: typeName.get(unitTypeId)! } : {}),
+    link: typeLinkOf({ unitTypeId }, servingIds, (id) => typeName.has(id)),
+    servingTypes: servingIds.map((id) => typeName.get(id) ?? id),
+  }
   return {
-    scope, rows, through: through.length, choices,
+    scope, rows, type, through: through.length, choices,
     ...(worked ? { owner: { role, people: worked.owners.map((one) => one.person), ...(unitName !== undefined ? { unit: unitName } : {}) } } : {}),
   }
+}
+
+/**
+ * The unit types a scope may be typed by, live today: what the type picker
+ * offers before the built-in kinds. Nothing where the organisation has no
+ * operating model, and the picker is then as it always was.
+ */
+export function unitTypeChoicesOf(index: ScopeIndex, day: string): { id: UnitTypeId; name: string }[] {
+  return index.organisation().unitTypes
+    .filter((type) => (type.from === undefined || type.from <= day) && (type.until === undefined || type.until >= day))
+    .map((type) => ({ id: type.id, name: type.name }))
+}
+
+/**
+ * The type a scope takes when `unitId` is linked to it (`typeToFollow`):
+ * the unit's, unless the scope's own still agrees with a unit serving it
+ * once the link is made. Nothing where the type stays.
+ */
+export function typeFollowingUnit(index: ScopeIndex, scope: ScopePath, unitId: ElementId, day: string): UnitTypeId | undefined {
+  const organisation = index.organisation()
+  const unit = organisation.units.find((one) => one.id === unitId)
+  if (!unit?.unitTypeId || !isServable(scope)) return undefined
+  const kept = new Map(index.units().map(({ scope: at, unit: one }) => [one.id, at]))
+  const serving = servingUnits(organisation, scope, day, (id) => kept.get(id)).units
+  const after = [...new Set([...serving.map((one) => one.unitTypeId ?? ''), unit.unitTypeId].filter(Boolean))]
+  return typeToFollow({ unitTypeId: index.scopeTypes().get(scope) }, unit.unitTypeId, after)
 }

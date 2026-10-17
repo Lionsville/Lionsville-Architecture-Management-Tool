@@ -276,7 +276,8 @@ const ELEMENT_FIELDS = {
     type: 'array',
     description: 'A function: the domains the organisation assigned it to. A unit: the domains it serves, by scope path — absent means '
       + 'the scope it is kept in, or no domain where that is the organisation ("" is never a domain, and is dropped); several only where '
-      + 'its unit type spans domains (a check says so otherwise). Replaces the list; null clears it.',
+      + 'its unit type spans domains (a check says so otherwise). Replaces the list; null clears it. Each domain named takes the unit\'s '
+      + 'type as its own (ADR-0036, amended 17 October 2026) unless its type already agrees with a unit serving it; the answer\'s scopeTypes says which did.',
     items: { type: 'string' },
   },
   extraSlots: {
@@ -534,10 +535,14 @@ const SPECS = [
     name: 'scopes.list',
     tier: 'read',
     description:
-      'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is (organisation, '
-      + 'domain, programme, team or landscape — a landscape scope, which is not the same thing as a landscape '
-      + 'board), how many views it holds, and which one is open in the app. A path is what `scope` takes on '
-      + 'every other tool; "" is the organisation itself.',
+      'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is — a unit type of the '
+      + 'operating model (unitTypeId and unitType, ADR-0036) or a built-in kind (organisation, domain, programme, team '
+      + 'or landscape — a landscape scope, which is not the same thing as a landscape board) — the units that serve it '
+      + 'today with their types (servedBy), how its type stands to theirs (typeLink: agrees, disagrees, unserved, gone '
+      + 'or unsaid), how many views it holds, and which one is open in the app. A scope\'s type follows the unit linked to it: '
+      + 'a unit\'s scopes written by element.add or element.update give each scope the unit\'s type where this host writes '
+      + 'other scopes, and the answer\'s scopeTypes says which did. A path is what `scope` takes on every other tool; '
+      + '"" is the organisation itself.',
     inputSchema: NO_ARGUMENTS,
   },
   {

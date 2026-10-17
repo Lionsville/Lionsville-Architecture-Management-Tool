@@ -19,10 +19,10 @@
  */
 import { useCallback } from 'react'
 import type { StringKey } from '../../i18n'
-import type { Command } from '../../model'
+import type { ScopeCommand } from '../../projects/scopeState'
 import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
-import { changeScope } from '../../projects/scopeAccess'
+import { changeScope, changeScopes } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { BelowScopes } from '../useChangeBelow'
 
@@ -30,7 +30,7 @@ import type { BelowScopes } from '../useChangeBelow'
 export type WrittenIn = { ok: true } | { ok: false; reason: 'unchanged' | 'gone' | 'readOnly' | (string & {}) }
 
 /** One change to the scope at `path`, worked out from what it holds: nothing, or no command, changes nothing. */
-export type WriteIn = (path: ScopePath, change: (held: ScopeSnapshot) => readonly Command[] | undefined) => Promise<WrittenIn>
+export type WriteIn = (path: ScopePath, change: (held: ScopeSnapshot) => readonly ScopeCommand[] | undefined) => Promise<WrittenIn>
 
 /** Land `change` on the scope at `path` as that scope's one step, where the person may change it. */
 export async function writeIn(
@@ -43,6 +43,40 @@ export async function writeIn(
     const after = await changeScope(deps.scopes, path, (held) => {
       const commands = change(held)
       made = (commands?.length ?? 0) > 0
+      return commands
+    })
+    if (!after) return { ok: false, reason: 'gone' }
+  } catch (error) {
+    if (error instanceof ShellError) return { ok: false, reason: error.key }
+    throw error
+  }
+  return made ? { ok: true } : { ok: false, reason: 'unchanged' }
+}
+
+/**
+ * {@link writeIn} over several scopes as one apply, all or none (ADR-0036,
+ * amended 17 October 2026): a unit linked to a scope is the unit's `scopes`
+ * where the unit is kept and the scope's type in its own header, landed
+ * together. Every scope named must be the person's to change, and each
+ * change is worked out from what its scope holds; one scope named twice is
+ * written once, with its commands in the order given.
+ */
+export async function writeInEach(
+  deps: { scopes: BelowScopes; writable: (path: ScopePath) => boolean },
+  changes: readonly { path: ScopePath; change: Parameters<WriteIn>[1] }[],
+): Promise<WrittenIn> {
+  const refused = changes.find(({ path }) => !deps.writable(path))
+  if (refused) return { ok: false, reason: 'shell.scopeReadOnly' }
+  let made = false
+  try {
+    const after = await changeScopes(deps.scopes, changes.map(({ path }) => path), (held) => {
+      const commands = new Map<ScopePath, ScopeCommand[]>()
+      for (const { path, change } of changes) {
+        const scope = held.get(path)
+        const list = scope ? change(scope) : undefined
+        if (list?.length) commands.set(path, [...(commands.get(path) ?? []), ...list])
+      }
+      made = commands.size > 0
       return commands
     })
     if (!after) return { ok: false, reason: 'gone' }

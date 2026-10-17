@@ -537,6 +537,21 @@ describe('scopeSummaryFrom', () => {
     })
   })
 
+  /** The scope's type from the operating model (ADR-0036, amended 17 October 2026): written, read, listed; a 12 header without it reads as before. */
+  it('carries a unit type in the header, lists it, and reads a header without one as none', () => {
+    const typed = project({ unitTypeId: 'ut-team' })
+    const header = JSON.parse(textOf(scopeFiles(typed), SCOPE_FILE)) as Record<string, unknown>
+    expect(header.unitTypeId).toBe('ut-team')
+    expect(scopeFromFolder(scopeFiles(typed), REF)?.unitTypeId).toBe('ut-team')
+    expect(scopeSummaryFrom(textOf(scopeFiles(typed), SCOPE_FILE), REF)?.unitTypeId).toBe('ut-team')
+    const plain = scopeFiles(project())
+    expect(JSON.parse(textOf(plain, SCOPE_FILE))).not.toHaveProperty('unitTypeId')
+    expect(scopeFromFolder(plain, REF)).not.toHaveProperty('unitTypeId')
+    // A blank one, typed by hand, is no type.
+    const blank = plain.map((file) => (file.path === SCOPE_FILE && 'text' in file ? { ...file, text: file.text.replace('"version"', '"unitTypeId": "", "version"') } : file))
+    expect(scopeFromFolder(blank, REF)).not.toHaveProperty('unitTypeId')
+  })
+
   /** A domain draws nothing; hiding it would hide everything under it. */
   it('lists a scope with no views, counting none', () => {
     const empty = project()

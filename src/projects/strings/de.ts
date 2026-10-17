@@ -46,6 +46,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.reportingDangling': '{name}: Die Linie von {detail} endet nirgends, weil keine Einheit die Rolle hat, an die sie berichtet',
   'check.reportingAmbiguous': '{name}: Die Linie von {detail} könnte bei {count} Einheiten enden, und keine steht darüber',
   'check.reportingVacant': '{name}: Die Linie von {detail} endet bei einer Rolle, die niemand innehat',
+  'check.scopeTypeDisagrees': '{scope} sagt, er sei ein {detail}, und die Einheiten, die ihn bedienen, sind von anderem Typ: {name}',
+  'check.scopeTypeUnserved': '{scope} sagt, er sei ein {detail}, und noch keine Einheit bedient ihn',
+  'check.scopeTypeGone': '{scope} sagt, er sei ein Einheitentyp, den das Betriebsmodell nicht kennt ({detail})',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -105,6 +108,12 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.reportingAmbiguous.other': '{count} Berichtslinien mit mehreren möglichen Zielen',
   'check.short.reportingVacant.one': '{count} Berichtslinie zu einer Rolle, die niemand innehat',
   'check.short.reportingVacant.other': '{count} Berichtslinien zu Rollen, die niemand innehat',
+  'check.short.scopeTypeDisagrees.one': '{count} Bereich mit anderem Typ als die Einheiten, die ihn bedienen',
+  'check.short.scopeTypeDisagrees.other': '{count} Bereiche mit anderem Typ als die Einheiten, die sie bedienen',
+  'check.short.scopeTypeUnserved.one': '{count} typisierter Bereich, den keine Einheit bedient',
+  'check.short.scopeTypeUnserved.other': '{count} typisierte Bereiche, die keine Einheit bedient',
+  'check.short.scopeTypeGone.one': '{count} Bereich eines verschwundenen Einheitentyps',
+  'check.short.scopeTypeGone.other': '{count} Bereiche eines verschwundenen Einheitentyps',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

@@ -42,6 +42,7 @@ import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
+import { typeChosen } from '../../projects/scopeType'
 import {
   blank, changeScope, ensureScope, landed, moveScope, nodeAt, readScope, summaryOf,
 } from '../../projects/scopeAccess'
@@ -640,7 +641,8 @@ function settingsCommands(name: string, patch: ScopeSettingsPatch): ScopeCommand
       patch: {
         client: patch.client?.trim() || undefined,
         links: links.length ? links : undefined,
-        ...(patch.kind ? { kind: patch.kind } : {}),
+        // The one picker says both fields; a caller speaking kinds alone sets the kind as before.
+        ...(patch.type !== undefined ? typeChosen(patch.type) : patch.kind ? { kind: patch.kind } : {}),
       },
     },
   ]

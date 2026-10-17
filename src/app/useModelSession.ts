@@ -906,9 +906,10 @@ function useSessionJournal(journaling: boolean) {
  * files the read did not take in, so every save of this session leaves them
  * where they are (`ScopeSnapshot.unread`).
  */
-function scopeHeader(project: ScopeSnapshot): Pick<ScopeSnapshot, 'kind' | 'client' | 'links' | 'unread'> {
+function scopeHeader(project: ScopeSnapshot): Pick<ScopeSnapshot, 'kind' | 'unitTypeId' | 'client' | 'links' | 'unread'> {
   return {
     ...(project.kind !== undefined ? { kind: project.kind } : {}),
+    ...(project.unitTypeId !== undefined ? { unitTypeId: project.unitTypeId } : {}),
     ...(project.client !== undefined ? { client: project.client } : {}),
     ...(project.links !== undefined ? { links: project.links } : {}),
     ...(project.unread?.length ? { unread: project.unread } : {}),

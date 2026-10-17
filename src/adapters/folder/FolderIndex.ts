@@ -43,7 +43,11 @@ export class FolderIndex implements OrganisationIndex {
       const model = byAddress.get(node.address)
       // A scope whose model would not read is left out rather than answered empty: unknown, not "defines nothing".
       if (!model && Object.keys(node.header).length > 0) return []
-      return [{ id: node.id, address: node.address, model: structuredClone(model ?? { elements: [], relations: [] }) }]
+      return [{
+        id: node.id, address: node.address,
+        ...(node.summary.unitTypeId !== undefined ? { unitTypeId: node.summary.unitTypeId } : {}),
+        model: structuredClone(model ?? { elements: [], relations: [] }),
+      }]
     })
     const parts = new Map(scopes.map((scope) => [scope.id, stableJson(scope)]))
     const revision = fingerprint(['index', ...[...parts].map(([id, part]) => `${id}\u0000${part}`).sort()])

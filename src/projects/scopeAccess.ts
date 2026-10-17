@@ -48,6 +48,7 @@ function summaryOfNode(node: ScopeNode): ScopeSummary {
     id: node.id,
     name: node.name,
     ...(node.kind !== undefined ? { kind: node.kind } : {}),
+    ...(node.unitTypeId !== undefined ? { unitTypeId: node.unitTypeId } : {}),
     ...(node.client !== undefined ? { client: node.client } : {}),
     ...(node.description !== undefined ? { description: node.description } : {}),
     ...(node.links !== undefined ? { links: node.links } : {}),
@@ -72,7 +73,7 @@ export function nodeAt(tree: ScopeTree, address: ScopeAddress): ScopeNode | unde
  * it opens on resolved against the views it has, and the marks as a list.
  */
 export function snapshotOf(state: ScopeState): ScopeSnapshot {
-  const { id, address, model, activeDiagramId, logoLibrary, kind, client, links, updatedAt, unreadable, later, revision, images } = state
+  const { id, address, model, activeDiagramId, logoLibrary, kind, unitTypeId, client, links, updatedAt, unreadable, later, revision, images } = state
   return {
     path: address,
     id,
@@ -80,6 +81,7 @@ export function snapshotOf(state: ScopeState): ScopeSnapshot {
     activeDiagramId: resolveActive(model, activeDiagramId),
     logoLibrary: [...(logoLibrary ?? [])] as UploadedLogo[],
     ...(kind !== undefined ? { kind } : {}),
+    ...(unitTypeId !== undefined ? { unitTypeId } : {}),
     ...(client !== undefined ? { client } : {}),
     ...(links !== undefined ? { links } : {}),
     ...(updatedAt !== undefined ? { updatedAt } : {}),
@@ -118,7 +120,7 @@ export function modelsOf(read: IndexRead): ScopeModel[] {
 }
 
 export function modelOf(scope: IndexedScope): ScopeModel {
-  return { path: scope.address, model: scope.model }
+  return { path: scope.address, ...(scope.unitTypeId !== undefined ? { unitTypeId: scope.unitTypeId } : {}), model: scope.model }
 }
 
 /** A step, minted here: one command, with a name nobody else will give one. */
@@ -260,6 +262,7 @@ export function contentOf(scope: ScopeSnapshot, images: ScopeContent['images'] =
     ...(scope.activeDiagramId ? { activeDiagramId: scope.activeDiagramId } : {}),
     ...(scope.logoLibrary.length ? { logoLibrary: scope.logoLibrary } : {}),
     ...(scope.kind !== undefined ? { kind: scope.kind } : {}),
+    ...(scope.unitTypeId !== undefined ? { unitTypeId: scope.unitTypeId } : {}),
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
     images,

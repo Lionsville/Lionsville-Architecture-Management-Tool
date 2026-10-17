@@ -105,7 +105,8 @@ function useShellTree(
   treeRef.current = { tree, index, identity }
   return useMemo<TreeView>(() => ({
     scopes: () => flattenScopes(treeRef.current.tree).map((held) => ({
-      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
+      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
+      ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,
     })),
     lookup: (id) => treeRef.current.index.lookup(id),
     register: () => treeRef.current.index.register(),

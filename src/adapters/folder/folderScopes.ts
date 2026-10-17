@@ -408,6 +408,7 @@ export function stateFrom(
     model: namesInDocuments(content.model, pictureFiles(library).nameOf),
     images: library.map(({ entry }) => ({ ...entry })),
     ...(content.kind !== undefined ? { kind: content.kind } : {}),
+    ...(content.unitTypeId !== undefined ? { unitTypeId: content.unitTypeId } : {}),
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
     ...(typeof active === 'string' && active !== '' ? { activeDiagramId: active } : {}),

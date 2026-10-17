@@ -60,6 +60,8 @@ export type Revision = string
 export type ScopeDescription = {
   /** A label for a screen, never a branch (`ScopeKind`). */
   kind?: ScopeKind
+  /** Its type from the operating model, a unit type's id (`projects/scopeType.ts`); a label too. */
+  unitTypeId?: string
   /** Who a drawing made here is addressed to, where that is not the scope's own name. */
   client?: string
   links?: RecordLink[]
@@ -394,7 +396,7 @@ function replace(content: ScopeContent): Outcome {
 
 /** The keys a description may carry. */
 const DESCRIPTION_KEYS: Record<keyof ScopeDescription, true> = {
-  kind: true, client: true, links: true, activeDiagramId: true, logoLibrary: true,
+  kind: true, unitTypeId: true, client: true, links: true, activeDiagramId: true, logoLibrary: true,
 }
 
 /**
@@ -407,9 +409,11 @@ function describe(working: Working, patch: ScopeDescription): Outcome {
   const next: Record<string, unknown> = { ...working.description }
   for (const [key, value] of Object.entries(patch)) {
     if (!Object.hasOwn(DESCRIPTION_KEYS, key)) return { ok: false, refused: 'command.notAField' }
-    if (key === 'kind' && value !== undefined && !isScopeKind(value)) return { ok: false, refused: 'command.notAField' }
-    if (value === undefined) delete next[key]
-    else next[key] = structuredClone(value)
+    // Null clears as undefined does: a patch that crossed a wire as JSON has no undefined in it.
+    if (value === undefined || value === null) { delete next[key]; continue }
+    if (key === 'kind' && !isScopeKind(value)) return { ok: false, refused: 'command.notAField' }
+    if (key === 'unitTypeId' && (typeof value !== 'string' || value === '')) return { ok: false, refused: 'command.notAField' }
+    next[key] = structuredClone(value)
   }
   return { ok: true, working: { ...working, description: next as ScopeDescription } }
 }

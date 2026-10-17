@@ -140,8 +140,30 @@ describe('who serves a scope, on its home', () => {
       expect(kept?.scopes).toEqual(['warehouse', 'shipping'])
     })
     expect((await repositories.read('shipping'))?.model.elements.some((one) => one.id === 'fulfilment')).toBe(false)
-    expect(await screen.findByText('Fulfilment now serves Shipping: one step in Warehouse.')).toBeTruthy()
+    expect(await screen.findByText(/Fulfilment now serves Shipping: one step in Warehouse\./)).toBeTruthy()
     await waitFor(() => expect(rows()).toContain('Cluster · Fulfilmentnobody manages it today · filed in Warehouse✕'))
+  })
+
+  /** The type follows the unit (ADR-0036, amended 17 October 2026): in the same apply as the link, and left where a unit is taken off. */
+  it('gives the scope the type of the unit linked to it, in the same apply, says so, and leaves it when a unit is taken off', async () => {
+    const repositories = await held()
+    renderApp({ repositories, today: TODAY })
+    await shippingHome()
+    // Nothing typed yet: the line says what serves it instead.
+    expect(screen.getByTestId('served-by-type').textContent).toBe('Not typed from the operating model; the units that serve it are: Domain, Cluster.')
+    expect(screen.getByTestId('served-by-type').getAttribute('data-link')).toBe('unsaid')
+    fireEvent.click(screen.getByTestId('served-by-add'))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Find a unit' }), { target: { value: 'fulf' } })
+    fireEvent.click(await screen.findByRole('option', { name: /Fulfilment/ }))
+    await waitFor(async () => expect((await repositories.read('shipping'))?.unitTypeId).toBe('ut-cluster'))
+    expect((await repositories.read('warehouse'))?.model.elements.find((one) => one.id === 'fulfilment')?.scopes).toEqual(['warehouse', 'shipping'])
+    expect(await screen.findByText('Fulfilment now serves Shipping: one step in Warehouse. Shipping is now a Cluster.')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('served-by-type').textContent).toBe('Typed Cluster, as a unit that serves it is.'))
+    expect(screen.getByTestId('served-by-type').getAttribute('data-link')).toBe('agrees')
+    // Taking a cluster off leaves the type: another cluster still serves it, and the type says what the scope is.
+    fireEvent.click(screen.getByRole('button', { name: 'Stop Data & Integration serving Shipping' }))
+    await waitFor(() => expect(rows()).toHaveLength(3))
+    expect((await repositories.read('shipping'))?.unitTypeId).toBe('ut-cluster')
   })
 
   it('takes off a unit that names the scope and has somewhere else to serve, as a step where it is kept', async () => {

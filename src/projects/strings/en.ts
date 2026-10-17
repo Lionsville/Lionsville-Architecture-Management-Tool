@@ -61,6 +61,9 @@ export const EN = {
   'check.reportingDangling': '{name}: the line from {detail} lands nowhere, because no unit has the role it reports to',
   'check.reportingAmbiguous': '{name}: the line from {detail} could land on {count} units, and none is above it',
   'check.reportingVacant': '{name}: the line from {detail} lands on a role nobody holds',
+  'check.scopeTypeDisagrees': '{scope} says it is a {detail}, and the units that serve it are of another type: {name}',
+  'check.scopeTypeUnserved': '{scope} says it is a {detail}, and no unit serves it yet',
+  'check.scopeTypeGone': '{scope} says it is a unit type the operating model does not hold ({detail})',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -126,6 +129,12 @@ export const EN = {
   'check.short.reportingAmbiguous.other': '{count} reporting lines with several places to land',
   'check.short.reportingVacant.one': '{count} reporting line to a role nobody holds',
   'check.short.reportingVacant.other': '{count} reporting lines to roles nobody holds',
+  'check.short.scopeTypeDisagrees.one': '{count} scope typed unlike the units that serve it',
+  'check.short.scopeTypeDisagrees.other': '{count} scopes typed unlike the units that serve them',
+  'check.short.scopeTypeUnserved.one': '{count} typed scope no unit serves',
+  'check.short.scopeTypeUnserved.other': '{count} typed scopes no unit serves',
+  'check.short.scopeTypeGone.one': '{count} scope of a unit type that is gone',
+  'check.short.scopeTypeGone.other': '{count} scopes of a unit type that is gone',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

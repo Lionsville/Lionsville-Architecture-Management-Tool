@@ -26,6 +26,7 @@ import { usePersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import { pickableBy } from './servedByView'
+import type { ScopeTypeLink } from './servedByView'
 import type { ServedByAccess } from './useServedBy'
 
 const HEADING = { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' } as const
@@ -55,6 +56,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
         {s('org.servedBy')}
       </Typography>
       <Typography sx={{ ...QUIET, mb: 0.75 }}>{s('org.servedByHint', { scope: here })}</Typography>
+      <TypeLine type={view.type} s={s} />
       {view.rows.length === 0 && <Typography sx={QUIET} data-testid="served-by-none">{s('org.servedByNone', { scope: here })}</Typography>}
       {view.rows.map((row) => (
         <Box key={row.id} data-testid="served-by-row" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', my: 0.25 }}>
@@ -102,5 +104,32 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
         </Typography>
       )}
     </Box>
+  )
+}
+
+/**
+ * The scope's type against the units that serve it (ADR-0036, amended 17
+ * October 2026): the unit type it says and whether a serving unit is of it,
+ * in the warning colour where they disagree or the type is gone. Nothing
+ * where the scope says no unit type and nothing serves it: there is nothing
+ * to compare.
+ */
+function TypeLine({ type, s }: { type: ScopeTypeLink; s: Translate }) {
+  if (type.link === 'unsaid' && type.servingTypes.length === 0) return null
+  const types = type.servingTypes.join(', ')
+  const said = type.link === 'agrees'
+    ? s('org.typeAgrees', { type: type.name ?? '' })
+    : type.link === 'disagrees'
+      ? s('org.typeDisagrees', { type: type.name ?? '', types })
+      : type.link === 'unserved'
+        ? s('org.typeUnserved', { type: type.name ?? '' })
+        : type.link === 'gone'
+          ? s('org.typeGone', { id: type.unitTypeId ?? '' })
+          : s('org.typeUnsaid', { types })
+  const warns = type.link === 'disagrees' || type.link === 'gone'
+  return (
+    <Typography sx={{ fontSize: 12, color: warns ? 'warning.main' : 'text.secondary', mb: 0.5 }} data-testid="served-by-type" data-link={type.link}>
+      {said}
+    </Typography>
   )
 }

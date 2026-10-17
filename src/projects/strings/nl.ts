@@ -46,6 +46,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.reportingDangling': '{name}: de lijn van {detail} komt nergens uit, want geen eenheid heeft de rol waaraan ze rapporteert',
   'check.reportingAmbiguous': '{name}: de lijn van {detail} kan bij {count} eenheden uitkomen, en geen ervan staat erboven',
   'check.reportingVacant': '{name}: de lijn van {detail} komt uit bij een rol die niemand vervult',
+  'check.scopeTypeDisagrees': '{scope} zegt een {detail} te zijn, en de eenheden die haar bedienen zijn van een ander type: {name}',
+  'check.scopeTypeUnserved': '{scope} zegt een {detail} te zijn, en nog geen eenheid bedient haar',
+  'check.scopeTypeGone': '{scope} zegt een eenheidstype te zijn dat het operating model niet kent ({detail})',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -105,6 +108,12 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.reportingAmbiguous.other': '{count} rapportagelijnen met meerdere mogelijke doelen',
   'check.short.reportingVacant.one': '{count} rapportagelijn naar een rol die niemand vervult',
   'check.short.reportingVacant.other': '{count} rapportagelijnen naar rollen die niemand vervult',
+  'check.short.scopeTypeDisagrees.one': '{count} scope met een ander type dan de eenheden die haar bedienen',
+  'check.short.scopeTypeDisagrees.other': '{count} scopes met een ander type dan de eenheden die ze bedienen',
+  'check.short.scopeTypeUnserved.one': '{count} getypeerde scope die geen eenheid bedient',
+  'check.short.scopeTypeUnserved.other': '{count} getypeerde scopes die geen eenheid bedient',
+  'check.short.scopeTypeGone.one': '{count} scope van een verdwenen eenheidstype',
+  'check.short.scopeTypeGone.other': '{count} scopes van een verdwenen eenheidstype',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

@@ -82,6 +82,7 @@ import { UnitLines } from './UnitLines'
 import type { Interacting, InteractionLine } from './Interactions'
 import { organisationHere } from './organisationHere'
 import { functionChoices, scopeChoices } from './choices'
+import { followTypeIn, typeFollowingHere } from './followType'
 import { refusalKey } from './writeIn'
 import type { WriteIn } from './writeIn'
 import { scopesServed, scopesWith, scopesWithout } from '../../model/serving'
@@ -171,7 +172,9 @@ function useUnitFacts(props: UnitSectionProps) {
       .sort((a, b) => a.move.on.localeCompare(b.move.on))
     const parent = parentOn(element, organisation.moves, today)
     const scopeOf = (id: string) => at.unitAt(id)?.scope
-    return { organisation, types, type, roles, register, canonical, isMe, unitName, scopeOf, owns, answersFor, said, moves, parent }
+    return {
+      at,
+organisation, types, type, roles, register, canonical, isMe, unitName, scopeOf, owns, answersFor, said, moves, parent }
   }, [element, scope, model, index, people?.people, today])
 }
 
@@ -253,7 +256,14 @@ function UnitParts(props: UnitSectionProps & {
         key={`lines-${element.id}`} element={element} organisation={facts.organisation} type={facts.type} day={props.today}
         editable={editable} scopeOf={facts.scopeOf} update={update} s={s}
       />
-      <Serves {...props} type={facts.type} editable={editable} onChange={(scopes) => update({ scopes })} />
+      <Serves
+        {...props} type={facts.type} editable={editable}
+        onChange={(scopes, added) => {
+          update({ scopes })
+          // The domain added takes this unit's type, in its own header (ADR-0036, amended 17 October 2026).
+          if (added !== undefined) void followTypeIn(props.writeIn, added, typeFollowingHere(facts.at, added, element, props.day ?? props.today))
+        }}
+      />
       <Typography sx={SECTION}>{s('unit.owns')}</Typography>
       <Typography sx={LINE} data-testid="unit-owns">{facts.owns.length ? facts.owns.join(', ') : s('unit.ownsNone')}</Typography>
       <AnswersFor {...props} rows={facts.answersFor} editable={editable} />
@@ -345,7 +355,9 @@ function TypeField({ element, types, editable, onChange, filedIn, s }: {
  * by* says the same from the other end.
  */
 function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable, onChange, s }: UnitSectionProps & {
-  type: UnitType | undefined; editable: boolean; onChange: (scopes: string[] | undefined) => void
+  type: UnitType | undefined; editable: boolean
+  /** The unit's `scopes` as written, and the domain added where one was: what follows the unit's type. */
+  onChange: (scopes: string[] | undefined, added?: string) => void
 }) {
   // Where it says nothing it serves the domain it is filed in, and goes on serving it beside one added.
   const filedIn = () => scope
@@ -366,7 +378,7 @@ function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable
           <PickToAdd
             options={offered} label={s('unit.servesAdd')}
             field={s('pick.findScope')} nothing={s('pick.noScope')} testId="unit-serves-add"
-            onPick={(one) => onChange(scopesWith(element, one, filedIn))}
+            onPick={(one) => onChange(scopesWith(element, one, filedIn), one)}
             disabled={offered.length === 0}
           />
         )}

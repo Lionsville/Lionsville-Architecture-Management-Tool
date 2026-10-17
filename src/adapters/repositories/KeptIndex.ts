@@ -81,6 +81,8 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
   } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
+    // The scope's type from the operating model, for the type findings (ADR-0036, amended 17 October 2026).
+    ...(kept.says.unitTypeId !== undefined ? { unitTypeId: kept.says.unitTypeId } : {}),
     model: {
       elements: elements.map(({ description: _prose, ...element }) => element),
       relations,

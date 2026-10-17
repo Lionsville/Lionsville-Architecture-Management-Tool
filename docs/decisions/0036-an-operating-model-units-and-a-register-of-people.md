@@ -24,7 +24,11 @@
   on its inspector, and deleting a unit saying what goes with it (*As built,
   3.6.2*, below). Amended, 13 October 2026: the organisation is not a
   domain, and a unit and what it serves link to each other (*Amended, 13
-  October 2026*, below); as built and implemented, 13 October 2026
+  October 2026*, below); as built and implemented, 13 October 2026. Amended,
+  17 October 2026: a scope's type is a unit type of the operating model,
+  offered before the built-in kinds, following the unit linked to it, and
+  checked against the units that serve it (*Amended, 17 October 2026*,
+  below); as built and implemented, 17 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
@@ -2249,6 +2253,116 @@ actors that are not units, and the functions nobody answers for.
   their row, and over a capability's coverage line — so the sheet's heights
   and its picture do not change, and it stops the press so the card is not
   picked.
+
+## Amended, 17 October 2026 — a scope's type is the operating model's
+
+*Accepted and built 17 October 2026: As built, below.* A scope says what it
+is with one of five built-in words — organisation, domain, programme, team,
+landscape scope — "a label in its `scope.json` for a screen to show, not a
+type anything switches on" (ADR-0012 §1). The operating model gives the
+organisation its own kinds of unit, and since the amendments of 11 and 13
+October a unit serves scopes. The two vocabularies then stood side by side:
+a scope called *Domain* in the app's words, served by a *Business unit* in
+the organisation's. The owner, after testing the local build: the scope
+types are still a plain list; with an operating model the types for scopes
+should come from it, the old ones still allowed lower on the list, so one
+can see that scopes are linked properly to types; and linking a scope to a
+unit should set the type.
+
+**A scope's type is a unit type where the organisation has one.** The scope's
+header gains `unitTypeId`, a unit type's id. Wherever a scope's type is
+chosen — its settings, today the one place — the operating model's unit
+types are offered first, under their own heading, and the five built-in
+kinds below them under theirs, still allowed; an organisation without an
+operating model sees the kinds alone, as before. **One of the two is said,
+never both**: a unit type picked clears the kind and a kind picked clears
+the unit type (`projects/scopeType.ts`). A unit type needs no built-in kind
+behind it, because nothing branches on either: what a scope *does* is read
+off its shape — it draws, or it files scopes — exactly as `ScopeKind`
+promised, and the one screen that read the word *landscape* reads the shape
+first. A scope's badge, the word beside its name on its home, the counts
+under the organisation's name and `scopes.list` say the unit type's name
+where there is one.
+
+**The type follows the unit.** When a unit is linked to a scope — *+ Unit*
+under *Served by* on the home or in the settings, a new scope's *Served by*,
+a unit's *Serves* on the chart, a new unit's domains, or the agent's
+`element.add` and `element.update` — the scope takes that unit's type in the
+same change, unless the type it has still agrees with a unit that serves it:
+a scope served by a division and given a team under it stays a division.
+Overwriting rather than asking, by this reading: the owner asked for the
+type to follow the link, every path that links has no room for a question
+(the chart's picker, the agent), and the link is the stronger statement —
+somebody who linked the wrong unit undoes the link, and a scope whose type
+should stand apart from its units says so in its settings, where the check
+then tells them they disagree. Where the link and the header are the same
+scope's steps they land in one apply, all or none; where the link is the
+open scope's step on the chart, the header is the served scope's own step,
+written under its rights once the link has landed. **Taking a unit off
+leaves the type as it is**, and undoing a link is taking the unit off: the
+type says what the scope is, and a unit no longer serving it does not make
+it something else.
+
+**The link is shown and checked.** *Served by* says, on the home and in the
+settings, how the scope's type stands to the units that serve it: typed as
+one of them is; typed while they are of other types, in the warning colour;
+typed and served by nobody; typed by a unit type the model no longer holds;
+or not typed from the model, with the serving types named so the type can be
+set. The tree's badge warns the same way. Three findings in the
+organisation's category: `check.scopeTypeDisagrees` (review) for a scope
+typed by a unit type no serving unit is of, `check.scopeTypeUnserved` (note)
+for one typed and served by nobody, `check.scopeTypeGone` (fix) for one
+typed by a unit type the operating model does not hold. Each is about the
+scope and opens its home.
+
+**The format stays at 13**, which this release introduces: `unitTypeId` is
+one more optional key in `scope.json`, read as a label and never required. A
+12 folder reads as before and says no unit type; a build before this one
+reads a 13 header with the key and carries it through a save
+(`ScopeSnapshot.carried`).
+
+## As built, 17 October 2026: a scope's type from the operating model
+
+- **The header.** `ScopeDescription`, `ScopeSnapshot`, `ScopeSummary`,
+  `ScopeNode`, `IndexedScope` and `ScopeModel` carry `unitTypeId`; the
+  folder format writes and reads it, the kept stores list it, and
+  `scope.describe` takes it as it takes `kind`, refusing a blank one. A
+  patch key set to `null` clears as `undefined` does, because a patch that
+  crossed a wire as JSON has no `undefined` in it. The index answers
+  `scopeTypes()`, and `OrganisationAt` carries them to the checks.
+- **The rule**, `projects/scopeType.ts`: `typeLinkOf` (the five words),
+  `typeToFollow` (the unit's type unless the scope's own still agrees),
+  `typeChoiceOf`/`typeChosen` (the picker's one value, `unit:<id>` or
+  `kind:<kind>`, read back as a patch that sets one field and clears the
+  other).
+- **The picker.** `ScopeSettingsDialog`'s *What this is* is one select with
+  two headings — the operating model's types, then the built-in kinds — the
+  headings as options that cannot be picked, since a Select makes every
+  child one; the kinds alone without an operating model. The dialog hands
+  `type` back in `ScopeSettingsPatch`, and `settingsCommands` writes both
+  fields through one `scope.describe`.
+- **The link followed.** `useServedBy.write` lands the unit's `scopes` and
+  the scope's header in one apply through `writeInEach` (`units/writeIn.ts`,
+  over `changeScopes`) and the notice says *… is now a …*; the chart's
+  *Serves* and a new unit's domains write the header after the link through
+  `units/followType.ts`; the agent's handler asks the host
+  (`SessionView.followScopeTypes`, filled on the desktop over `writeIn`) and
+  answers `scopeTypes` with `set` per scope, and a hint where a host writes
+  only the scope open.
+- **Shown.** `ServedBy`'s type line (`served-by-type`, `data-link`), the
+  tree's badge (`scope-type`, warning where the link is off or the type
+  gone), the bar's word, the counts line (`{count} × {type}` before the
+  kinds), and `scopes.list`'s `unitTypeId`, `unitType`, `servedBy` and
+  `typeLink`.
+- **Checked.** `projects/checks.scopeTypeFindings`, the three catalogue
+  entries with the `openScope` action, `ABOUT_A_SCOPE` routing the Checks
+  page to the scope's home.
+- **Open here**: a host with no screen writes only the scope a call names,
+  so the agent's `element.update` there names the type to set and does not
+  set it; a `followScopeTypes` filling on the server, or a `scope.describe`
+  tool, closes that. The new-scope dialog asks no type: a scope served from
+  the start takes its unit's type, and one served by nobody is typed in its
+  settings.
 
 ## Open
 

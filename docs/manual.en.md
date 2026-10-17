@@ -96,6 +96,20 @@ name opens it where it is kept — on that scope's organisation chart, picked,
 where it has one — and its inspector says the same thing from the other end,
 each domain there opening that domain's home again.
 
+**The type follows the unit.** Linking a unit to a scope — **+ Unit** here or
+in the settings, **Served by** in the new-scope dialog, **+ Domain** on a
+unit's inspector on the chart, a new unit's domains, or the assistant —
+gives the scope that unit's type in the same change, unless the type it
+already has is still that of a unit serving it: a scope served by a division
+keeps saying *Division* when a team under it is added. Taking a unit off
+leaves the type as it is, and so does undoing the link. Under **Served by**
+a line says how the two stand: *Typed Division, as a unit that serves it is*;
+in the warning colour, *Typed Team, while the units that serve it are:
+Division*; *Typed Team; no unit serves it yet*; or, where the scope says no
+type from the operating model, which units of what types serve it, so the
+type can be set. The badge on the scope's row in the tree warns the same
+way, and the checks say the three cases that are off (*The Checks page*).
+
 **Checks**, a card on every home, opens the **Checks page**: every check the
 app makes, by what it is about, with why each matters, how to fix it and
 where it finds something at or under this home (*The Checks page*, below).
@@ -107,7 +121,8 @@ something. A finding marked as intended is not counted. What the checks find
 is what the organisation contradicts about itself — a name two scopes both
 define, a copy gone stale, an application nobody has said whose it is, a
 service used across a team boundary without being marked shared, a service no
-platform delivers, a capability a domain proposes, a unit short of people or
+platform delivers, a capability a domain proposes, a scope typed unlike the
+units that serve it, a unit short of people or
 over its type's limit, a plan past its end, an interface between two teams
 that declared nothing, and on the organisation's own home a unit type that
 sits nowhere or a responsibility without its one accountable role. The rest
@@ -135,10 +150,14 @@ landscape.
   step in the scope that keeps the unit. Where that is refused — you may only
   read there — the scope is made all the same and a notice says the unit was
   not linked; **Served by** on the new scope's home is where it is set.
-- **Settings…** on any row holds its name, what it is (organisation, domain,
-  programme, team, landscape scope — a word for the screen, nothing behaves
-  differently),
-  a client, a description, links, and **Filed under**, which moves it. Its
+- **Settings…** on any row holds its name, **what it is**, a client, a
+  description, links, and **Filed under**, which moves it. **What it is** is
+  one list: where the organisation has an operating model, its unit types
+  come first under their own heading — *Division*, *Team*, whatever the
+  organisation calls them — and the five built-in words below them
+  (organisation, domain, programme, team, landscape scope), still allowed;
+  without an operating model, the five words alone. It is a label: nothing
+  behaves differently for it. One of the two is said, never both. Its
   **Served by** is the home's, and each change to it is written as you make
   it, not with **Save**; a unit's name there opens it as it does on the
   home, closing the dialog.

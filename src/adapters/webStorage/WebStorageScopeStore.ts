@@ -180,6 +180,7 @@ export class WebStorageScopeStore implements ScopeStore {
       // yields an empty library, not a broken scope.
       logoLibrary: Array.isArray(held.logoLibrary) ? held.logoLibrary : [],
       ...(held.kind !== undefined ? { kind: held.kind } : {}),
+      ...(typeof held.unitTypeId === 'string' && held.unitTypeId ? { unitTypeId: held.unitTypeId } : {}),
       ...(held.client !== undefined ? { client: held.client } : {}),
       ...(held.links !== undefined ? { links: held.links } : {}),
       ...(held.imageLibrary !== undefined ? { imageLibrary: held.imageLibrary } : {}),

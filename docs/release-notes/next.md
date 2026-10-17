@@ -151,3 +151,17 @@ found*; closing the page there goes to the scope's home. A link pasted into
 the address bar of a window that is already open goes there too, and a link
 made from an organisation chart selects the unit you went to, wherever it is
 kept.
+
+**A scope's type comes from the operating model.** Where the organisation has
+an operating model, **What it is** in a scope's settings offers its unit
+types first — *Division*, *Team*, whatever you call them — and the five
+built-in words below them, still allowed. The badge in the tree, the word
+beside the scope's name and the counts under the organisation's name say
+the unit type. Linking a unit to a scope — **+ Unit** under **Served by**,
+**+ Domain** on a unit, a new unit's domains, or the assistant — gives the
+scope that unit's type in the same change, unless its type is still that of
+a unit serving it; taking a unit off leaves it. **Served by** says how the
+scope's type and its units stand, and three new checks say where they do
+not: a scope typed unlike the units that serve it, one typed that no unit
+serves, and one typed by a unit type the operating model no longer holds.
+`scopes.list` answers the type, the serving units and how they stand.

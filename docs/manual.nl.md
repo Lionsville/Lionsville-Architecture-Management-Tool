@@ -99,6 +99,23 @@ waar ze wordt bijgehouden — op het organogram van die scope, gekozen, waar die
 er een heeft — en haar paneel zegt hetzelfde van de andere kant, waar elk
 domein weer de startpagina van dat domein opent.
 
+**Het type volgt de eenheid.** Een eenheid aan een scope koppelen — **+
+Eenheid** hier of in de instellingen, **Bediend door** in de dialoog voor een
+nieuwe scope, **+ Domein** in de inspector van een eenheid op het
+organogram, de domeinen van een nieuwe eenheid, of de assistent — geeft de
+scope in dezelfde wijziging het type van die eenheid, tenzij het type dat ze
+al heeft nog dat van een eenheid is die haar bedient: een scope die door een
+divisie wordt bediend blijft *Divisie* zeggen als er een team onder wordt
+toegevoegd. Een eenheid loskoppelen laat het type staan, en de koppeling
+ongedaan maken ook. Onder **Bediend door** zegt een regel hoe de twee zich
+verhouden: *Type Divisie, zoals een eenheid die haar bedient*; in de
+waarschuwingskleur *Type Team, terwijl de eenheden die haar bedienen van
+type Divisie zijn*; *Type Team; nog geen eenheid bedient haar*; of, waar de
+scope geen type uit het operating model zegt, welke eenheden van welke
+types haar bedienen, zodat het type gezet kan worden. De badge op de regel
+van de scope in de boom waarschuwt op dezelfde manier, en de controles
+noemen de drie gevallen die niet kloppen (*De pagina Controles*).
+
 **Controles**, een kaart op elke startpagina, opent de **pagina Controles**:
 elke controle die de app doet, naar waar ze over gaat, met waarom elke
 controle ertoe doet, hoe je het oplost en waar ze iets vindt in of onder deze
@@ -146,10 +163,15 @@ technologielandschap.
   het onderdeel toch gemaakt en zegt een melding dat de eenheid niet is
   gekoppeld; **Bediend door** op de startpagina van het nieuwe onderdeel is
   waar je het instelt.
-- **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
-  domein, programma, team, landschapsscope — een woord voor het scherm, er
-  gedraagt zich niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
-  bij**, waarmee je het verplaatst. Het **Bediend door** erin is dat van het
+- **Instellingen…** op elke regel bevat de naam, **wat dit is**, een klant,
+  een omschrijving, koppelingen en **Ondergebracht bij**, waarmee je het
+  verplaatst. **Wat dit is** is één lijst: waar de organisatie een operating
+  model heeft, staan haar eenheidstypes bovenaan onder een eigen kopje —
+  *Divisie*, *Team*, hoe de organisatie ze ook noemt — en de vijf ingebouwde
+  woorden eronder (organisatie, domein, programma, team, landschapsscope),
+  nog altijd toegestaan; zonder operating model alleen de vijf woorden. Het
+  is een label: er gedraagt zich niets anders door. Eén van de twee wordt
+  gezegd, nooit beide. Het **Bediend door** erin is dat van het
   thuis, en elke wijziging ervan wordt weggeschreven zodra je hem maakt, niet
   met **Opslaan**; de naam van een eenheid daar opent haar zoals op de
   startpagina, en sluit de dialoog.

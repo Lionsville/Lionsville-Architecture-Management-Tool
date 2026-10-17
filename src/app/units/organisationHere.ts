@@ -58,6 +58,8 @@ export function organisationHere(index: ScopeIndex, scope: ScopePath, model: Hos
     assignmentAt: (assignment) => (assignmentsHere.has(assignment) ? scope : base.assignmentAt(assignment)),
     owns,
     assigned: () => [...(base.assigned?.() ?? []).filter((row) => row.scope !== scope), ...assignedHere(index, scope, model)],
+    // The scopes' types are headers the index read; the open scope's own follows its steps once written.
+    ...(base.scopeTypes ? { scopeTypes: base.scopeTypes } : {}),
   }
 }
 

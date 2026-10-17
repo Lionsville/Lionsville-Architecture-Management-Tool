@@ -35,6 +35,7 @@ export { entryKey, sequenceKey }
 export type NodeSays = {
   name: string
   kind?: ScopeKind
+  unitTypeId?: string
   client?: string
   description?: string
   links?: RecordLink[]
@@ -104,10 +105,11 @@ export async function readMeta(tx: Transaction): Promise<Meta> {
 }
 
 export function says(content: ScopeContent): NodeSays {
-  const { model, kind, client, links } = content
+  const { model, kind, unitTypeId, client, links } = content
   return {
     name: model.name, diagrams: model.diagrams.length,
     ...(kind !== undefined ? { kind } : {}),
+    ...(unitTypeId !== undefined ? { unitTypeId } : {}),
     ...(client !== undefined ? { client } : {}),
     ...(model.description !== undefined ? { description: model.description } : {}),
     ...(links !== undefined ? { links } : {}),

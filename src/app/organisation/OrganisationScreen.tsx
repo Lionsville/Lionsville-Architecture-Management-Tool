@@ -45,7 +45,7 @@ import Typography from '@mui/material/Typography'
 import { LOCALE } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Language, StringKey, Translate } from '../../i18n'
-import { countScopeKinds, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
+import { countScopeKinds, countScopeTypes, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
 
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
@@ -91,7 +91,7 @@ import type { TreeRead } from './useHomeChecks'
 import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
-import { ScopeSettingsDialog, SCOPE_KIND_COUNT, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
+import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
@@ -347,7 +347,7 @@ export function OrganisationScreen({
   const registerCounts = useMemo(() => registerSummary(registerHere), [registerHere])
   const technologyHere = useMemo(() => technologyWithin(technology, at), [technology, at])
   const technologyCounts = useMemo(() => technologySummary(technologyHere), [technologyHere])
-  const counts = useMemo(() => countScopeKinds(home), [home])
+  const { typeLines, unitTypes, typeName, typeLink } = useScopeTypes(home, servedBy, s)
   const changed = useMemo(() => newestChange(home), [home])
   /**
    * What to call a scope a finding names: its name where the tree has one,
@@ -419,7 +419,7 @@ export function OrganisationScreen({
         tree={tree}
         home={home}
         heading={heading}
-        level={level}
+        level={level} typeName={typeName}
         source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
         sourceDescription={sourceDescription}
         sourceLabelKey={sourceSayings.labelKey}
@@ -456,7 +456,7 @@ export function OrganisationScreen({
               home.client?.trim() && home.client.trim() !== home.name.trim()
                 ? s('org.forClient', { name: home.client.trim() })
                 : '',
-              ...counts.map(({ kind, count }) => plural(s, SCOPE_KIND_COUNT[kind ?? 'unsaid'], count)),
+              ...typeLines,
               changed
                 ? s('org.lastChanged', {
                   when: new Date(changed).toLocaleString(LOCALE[language], {
@@ -613,7 +613,7 @@ export function OrganisationScreen({
               onSettings={organisation.editScope}
               onDelete={organisation.askDelete}
               writable={writable}
-              landscape={level === 'landscape' || home.kind === 'landscape'}
+              landscape={level === 'landscape' || home.kind === 'landscape'} typeName={typeName} typeLink={typeLink}
               language={language}
               s={s}
             />
@@ -631,7 +631,7 @@ export function OrganisationScreen({
 
       <HomePages
         pages={homePages} at={at} heading={heading} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName}
-        scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open}
+        scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
         onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome}
       />
       <NewScopeDialog
@@ -658,7 +658,7 @@ export function OrganisationScreen({
       <ScopeSettingsDialog
         target={dialog.kind === 'settings' ? dialog.target : undefined}
         tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
-        onCancel={organisation.closeDialog}
+        unitTypes={unitTypes} onCancel={organisation.closeDialog}
         onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
         s={s}
       />
@@ -825,7 +825,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
+  barRef, tree, home, heading, level, typeName, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
   waysIn = [],
   onGoHome, onSettings, overflow, agent, barButton, s, windowChrome,
 }: {
@@ -836,6 +836,8 @@ function OrganisationBar({
   heading: string
   /** What the scope is by shape, for the word beside the name when it has not said. */
   level: 'organisation' | 'domain' | 'landscape'
+  /** What a unit type is called, for a scope typed from the operating model (ADR-0036, amended 17 October 2026). */
+  typeName: (unitTypeId: string) => string | undefined
   source?: WorkingSource
   sourceDescription?: StringKey | (string & {})
   sourceLabelKey?: StringKey | (string & {})
@@ -884,7 +886,7 @@ function OrganisationBar({
       <BackForward chrome={windowChrome} s={s} />
       <Crumbs crumbs={crumbs} current={heading} currentPath={home.path} onGoHome={onGoHome} s={s} />
       <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-        {s(SCOPE_KIND_LABEL[home.kind ?? level])}
+        {scopeTypeLabel({ kind: home.kind ?? level, unitTypeId: home.unitTypeId }, typeName, s)}
       </Typography>
       {onSettings && (
         <Tooltip title={s('group.openFor', { name: heading })}>
@@ -945,6 +947,25 @@ function NameTheOrganisation({ onName, s }: { onName: (name: string) => void; s:
       </Button>
     </Stack>
   )
+}
+
+/**
+ * What the scopes under a home say they are, for the line under its name,
+ * the badges and the picker (ADR-0036, amended 17 October 2026): the kinds
+ * counted, the unit types counted, the operating model's unit types by id
+ * and name — nothing where there is no model — and how each scope's type
+ * stands to the units that serve it.
+ */
+function useScopeTypes(home: ScopeSummary, servedBy: ServedByAccess | undefined, s: Translate) {
+  const unitTypes = useMemo(() => servedBy?.unitTypes() ?? [], [servedBy])
+  const typeName = useCallback((id: string) => unitTypes.find((one) => one.id === id)?.name, [unitTypes])
+  const typeLink = useCallback((path: ScopePath) => servedBy?.of(path)?.type.link, [servedBy])
+  // The unit types counted first, then the kinds, for the line under the name.
+  const typeLines = useMemo(() => [
+    ...countScopeTypes(home).map(({ unitTypeId, count }) => s('org.typedCount', { count, type: typeName(unitTypeId) ?? s('org.typeGoneBadge') })),
+    ...countScopeKinds(home).map(({ kind, count }) => plural(s, SCOPE_KIND_COUNT[kind ?? 'unsaid'], count)),
+  ], [home, typeName, s])
+  return { typeLines, unitTypes, typeName, typeLink }
 }
 
 /**

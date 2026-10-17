@@ -195,6 +195,22 @@ describe('what a scope says about itself, as steps', () => {
     expect(result.ok && result.changed).toBe(false)
   })
 
+  /** One of the two is said (ADR-0036, amended 17 October 2026); a patch that crossed a wire as JSON clears with null. */
+  it('takes a unit type beside the kind, clears either with null as with undefined, and refuses a blank one', () => {
+    const typed = applySteps(content(), steps({ type: 'scope.describe', patch: { unitTypeId: 'ut-team', kind: undefined } }))
+    if (!typed.ok) throw new Error('not typed')
+    expect(typed.content.unitTypeId).toBe('ut-team')
+    expect(typed.content).not.toHaveProperty('kind')
+    const back = applySteps(typed.content, steps({ type: 'scope.describe', patch: { kind: 'domain', unitTypeId: null } } as unknown as ScopeCommand))
+    if (!back.ok) throw new Error('not back')
+    expect(back.content.kind).toBe('domain')
+    expect(back.content).not.toHaveProperty('unitTypeId')
+    for (const patch of [{ unitTypeId: '' }, { unitTypeId: 7 }]) {
+      const result = applySteps(content(), steps({ type: 'scope.describe', patch } as unknown as ScopeCommand))
+      expect(result.ok ? undefined : result.refused).toBe('command.notAField')
+    }
+  })
+
   it('refuses a key it does not know, and a kind that is not a label', () => {
     for (const patch of [{ name: 'Other' }, { kind: 'kingdom' }, null]) {
       const result = applySteps(content(), steps({ type: 'scope.describe', patch } as unknown as ScopeCommand))

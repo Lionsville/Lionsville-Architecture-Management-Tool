@@ -47,6 +47,9 @@ import { landAcross } from './merge'
 import { moveObservation } from './move'
 import { isUnitRemoval, unitRemoval } from './write/removeUnit'
 import type { ChangeAcross } from './merge'
+import type { Prepared } from './write/shared'
+import { scopeTypesToFollow } from './scopeTypes'
+import type { ScopeTypeFollowed } from './scopeTypes'
 import type { MergeKind } from '../observations/merge'
 import type { ReadTool } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
@@ -181,7 +184,19 @@ export type SessionView = {
    * `agent.scopeNotOpen`.
    */
   landSteps?: LandSteps
+  /**
+   * Give scopes their type from the operating model, each in its own header
+   * (ADR-0036, amended 17 October 2026): the scopes a unit was just linked
+   * to, by path, each with the unit type it follows. Answers the paths
+   * written; one the person may only read, or that is gone, is left out and
+   * the answer says so. Absent where the host writes only the scope open,
+   * and the types are then named and not set.
+   */
+  followScopeTypes?: FollowScopeTypes
 }
+
+/** The scopes' types to follow, by path, and the paths that were written. */
+export type FollowScopeTypes = (follow: ReadonlyMap<string, string>) => Promise<readonly string[]>
 
 /** Where a change across scopes went: the scopes written, or why nothing was. */
 export type LandedSteps = { ok: true; changed: readonly string[]; unsaved?: true } | { ok: false; reason: string; scope?: string }
@@ -362,10 +377,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   // session shows one to the person and answers with nothing, and an agent
   // needs the key. Applying twice is cheap; a command touches the path it
   // names and copies nothing else.
-  const trial = apply(view.model, prepared.command)
-  if (!trial.ok) return refused(trial.reason)
-  session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
-  return withRevision(prepared.answer, session)
+  return landCommand(request.tool, prepared, view.model, session)
 }
 
 /**
@@ -400,6 +412,71 @@ function removeUnitAcross(args: Record<string, unknown>, session: SessionView): 
     ? json({ ...worked.answer, ...(landed.unsaved ? { unsaved: true } : {}) })
     : refused(landed.reason === 'shell.scopeReadOnly' || landed.reason === 'readOnly' ? 'agent.readOnly' : 'agent.conflict',
       `${landed.reason}${landed.scope !== undefined ? ` in ${landed.scope || 'the organisation'}` : ''}: nothing was removed`)))
+}
+
+/**
+ * One command landed on the session: asked of the reducer first, so a
+ * refusal comes back with its reason — the session shows one to the person
+ * and answers with nothing, and an agent needs the key; applying twice is
+ * cheap, a command touches the path it names and copies nothing else. A unit
+ * linked to domains then gives each its type, in that scope's own header
+ * (ADR-0036, amended 17 October 2026), and the answer says so.
+ */
+async function landCommand(tool: ToolName, prepared: Prepared, model: Model, session: SessionView): Promise<AgentAnswer> {
+  const trial = apply(model, prepared.command)
+  if (!trial.ok) return refused(trial.reason)
+  session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
+  const followed = await followTypesOf(tool, prepared.command, session)
+  return withRevision(followed ? withFollowed(prepared.answer, followed) : prepared.answer, session)
+}
+
+/**
+ * The scopes a unit's `element.add` or `element.update` just linked it to
+ * (`scopes` on the command), each given the unit's type where the host
+ * writes other scopes' headers; nothing for any other write, or where the
+ * unit has no type or nothing follows. Said in the answer either way, so an
+ * agent on a host that writes only the scope open knows what was not set.
+ */
+async function followTypesOf(tool: ToolName, command: Command, session: SessionView): Promise<readonly ScopeTypeFollowed[] | undefined> {
+  if (tool !== 'element.add' && tool !== 'element.update') return undefined
+  const unit = unitLinked(command, session)
+  if (!unit) return undefined
+  const follow = scopeTypesToFollow(session.tree, unit, unit.scopes, session.today())
+  if (follow.size === 0) return undefined
+  const written = session.followScopeTypes
+    ? new Set(await session.followScopeTypes(new Map([...follow].map(([scope, one]) => [scope, one.unitTypeId]))))
+    : new Set<string>()
+  return [...follow.values()].map((one) => ({ ...one, set: written.has(one.scope) }))
+}
+
+/** The unit a command links to domains, with the domains as it leaves them; nothing for any other command. */
+function unitLinked(command: Command, session: SessionView): { id: string; unitTypeId?: string | undefined; scopes: readonly string[] } | undefined {
+  const inner = command.type === 'transaction' ? command.commands[0] : command
+  if (!inner) return undefined
+  if (inner.type === 'element.create') {
+    const { element } = inner
+    return element.kind === 'actor' && element.unitTypeId && element.scopes?.length ? { id: element.id, unitTypeId: element.unitTypeId, scopes: element.scopes } : undefined
+  }
+  if (inner.type !== 'element.update' || !Array.isArray(inner.patch.scopes)) return undefined
+  const held = session.indexed().elements[inner.id]
+  if (!held || held.kind !== 'actor') return undefined
+  const unitTypeId = inner.patch.unitTypeId ?? held.unitTypeId
+  return unitTypeId ? { id: inner.id, unitTypeId, scopes: inner.patch.scopes } : undefined
+}
+
+/** The answer with what the scopes' types did beside it. */
+function withFollowed(held: AgentAnswer, followed: readonly ScopeTypeFollowed[]): AgentAnswer {
+  if (!held.ok || held.content.length !== 1 || held.content[0].type !== 'text') return held
+  try {
+    const parsed = JSON.parse(held.content[0].text) as Record<string, unknown>
+    const unset = followed.filter((one) => !one.set)
+    return json({
+      ...parsed, scopeTypes: followed,
+      ...(unset.length ? { hint: `${unset.map((one) => one.scope).join(', ')}: the type was not set here; Served by on the scope's home, or its settings, sets it` } : {}),
+    })
+  } catch {
+    return held
+  }
 }
 
 /** The write tools the session answers itself, rather than as one command; nothing for any other tool. */

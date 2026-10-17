@@ -35,7 +35,13 @@ import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
-import { SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
+import { scopeTypeLabel } from './ScopeSettingsDialog'
+import type { TypeLink } from '../../projects/scopeType'
+
+/** Whether the badge warns: the scope's type and its serving units disagree, or its type is gone. */
+function typeWarns(link: TypeLink | undefined): boolean {
+  return link === 'disagrees' || link === 'gone'
+}
 
 export type ScopeTreeProps = {
   /**
@@ -73,6 +79,14 @@ export type ScopeTreeProps = {
    * one the way an empty domain does.
    */
   landscape?: boolean
+  /**
+   * What a scope typed from the operating model is called, by unit type id
+   * (ADR-0036, amended 17 October 2026); nothing for a type the model no
+   * longer holds, and the badge then says so. Absent: the kind alone is shown.
+   */
+  typeName?: (unitTypeId: string) => string | undefined
+  /** How a scope's type stands to the units that serve it, for the badge's tone; absent: not said. */
+  typeLink?: (path: ScopePath) => TypeLink | undefined
   language: Language
   s: Translate
 }
@@ -126,7 +140,7 @@ const ANYWHERE = () => true
 
 export function ScopeTree({
   tree, name, collapsed, onToggleCollapsed, onHome, onSettings, onDelete, writable = ANYWHERE, landscape = false,
-  language, s,
+  typeName, typeLink, language, s,
 }: ScopeTreeProps) {
   const rows = visibleRows(tree, collapsed)
   // The top of the tree is the screen, so its children are the first column.
@@ -202,10 +216,13 @@ export function ScopeTree({
                 >
                   {scope.name}
                 </Button>
-                {scope.kind && (
+                {(scope.unitTypeId !== undefined || scope.kind) && (
                   <Chip
                     size="small"
-                    label={s(SCOPE_KIND_LABEL[scope.kind])}
+                    label={scopeTypeLabel(scope, typeName, s)}
+                    color={typeWarns(typeLink?.(scope.path)) ? 'warning' : 'default'}
+                    variant={typeWarns(typeLink?.(scope.path)) ? 'outlined' : 'filled'}
+                    data-testid="scope-type" data-link={typeLink?.(scope.path)}
                     sx={{ height: 16, fontSize: 10 }}
                   />
                 )}

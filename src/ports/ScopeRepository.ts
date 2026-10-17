@@ -57,6 +57,8 @@ export type ScopeNode = {
   /** What it is called — its model's name. */
   name: string
   kind?: ScopeKind
+  /** Its type from the operating model, a unit type's id, where it says one (ADR-0036, amended 17 October 2026). */
+  unitTypeId?: string
   client?: string
   /** Its model's description. */
   description?: string

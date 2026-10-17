@@ -178,6 +178,7 @@ function broughtOf(snapshot: ScopeSnapshot, pictures: Pictures): BroughtScope {
     activeDiagramId: snapshot.activeDiagramId,
     logoLibrary: snapshot.logoLibrary,
     ...(snapshot.kind !== undefined ? { kind: snapshot.kind } : {}),
+    ...(snapshot.unitTypeId !== undefined ? { unitTypeId: snapshot.unitTypeId } : {}),
     ...(snapshot.client !== undefined ? { client: snapshot.client } : {}),
     ...(snapshot.links !== undefined ? { links: snapshot.links } : {}),
   }

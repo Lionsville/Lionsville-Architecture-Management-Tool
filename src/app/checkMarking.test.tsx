@@ -11,7 +11,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import type { Command } from '../model'
+import type { ScopeCommand } from '../projects/scopeState'
 import type { ConwayFinding } from '../model/conway'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -38,7 +38,7 @@ const unused: ConwayFinding = { kind: 'unused', interaction: { id: 'i-new', sour
 
 /** A write to another scope that applies the change to what that scope holds, and says it landed. */
 function writing(held: Record<string, HostModel>) {
-  const written: { path: string; commands: readonly Command[] }[] = []
+  const written: { path: string; commands: readonly ScopeCommand[] }[] = []
   const writeIn: WriteIn = (path, change) => {
     const commands = change({ path, model: held[path]!, activeDiagramId: '', logoLibrary: [] } satisfies ScopeSnapshot)
     if (!commands) return Promise.resolve({ ok: false, reason: 'unchanged' })

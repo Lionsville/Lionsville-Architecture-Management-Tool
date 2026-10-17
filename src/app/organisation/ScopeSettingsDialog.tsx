@@ -44,6 +44,8 @@ import { SCOPE_KINDS } from '../../projects/scope'
 import type { ScopeKind, ScopeSummary } from '../../projects/scope'
 import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
+import { typeChoiceOf } from '../../projects/scopeType'
+import type { ScopeTyped, TypeChoice } from '../../projects/scopeType'
 import type { ScopeSettingsPatch } from '../App'
 import { ScopeField } from './ScopeField'
 import { useFreshFor } from '../../widgets/useFreshFor'
@@ -74,6 +76,16 @@ export const SCOPE_KIND_COUNT = {
   unsaid: { one: 'org.scopesOne', other: 'org.scopesOther' },
 } as const satisfies Record<ScopeKind | 'unsaid', { one: StringKey; other: StringKey }>
 
+/**
+ * What a scope's badge says (ADR-0036, amended 17 October 2026): its unit
+ * type's name where it says one and the operating model holds it, *Unknown
+ * type* where it says one the model does not, else its kind's word.
+ */
+export function scopeTypeLabel(scope: ScopeTyped, typeName: ((unitTypeId: string) => string | undefined) | undefined, s: Translate): string {
+  if (scope.unitTypeId !== undefined) return typeName?.(scope.unitTypeId) ?? s('org.typeGoneBadge')
+  return scope.kind ? s(SCOPE_KIND_LABEL[scope.kind]) : ''
+}
+
 export type ScopeSettingsDialogProps = {
   /** The scope being edited; the dialog is closed while undefined. */
   target?: ScopeSummary
@@ -89,19 +101,25 @@ export type ScopeSettingsDialogProps = {
    * (ADR-0036, amended 11 October 2026). Absent: not said here.
    */
   servedBy?: (path: ScopePath) => ReactNode
+  /**
+   * The operating model's unit types, offered first under *What this is*
+   * (ADR-0036, amended 17 October 2026), the built-in kinds below them.
+   * Absent or empty — no operating model — the kinds alone, as before.
+   */
+  unitTypes?: readonly { id: string; name: string }[]
   s: Translate
 }
 
 type LinkDraft = RecordLink
 
 export function ScopeSettingsDialog({
-  target, tree, onSave, onCancel, servedBy, s,
+  target, tree, onSave, onCancel, servedBy, unitTypes = [], s,
 }: ScopeSettingsDialogProps) {
   const [name, setName] = useState('')
   const [client, setClient] = useState('')
   const [description, setDescription] = useState('')
   const [links, setLinks] = useState<LinkDraft[]>([])
-  const [kind, setKind] = useState<ScopeKind | ''>('')
+  const [type, setType] = useState<TypeChoice>('')
   const [parent, setParent] = useState<ScopePath>(ROOT_SCOPE)
 
   // Reopening on a different scope must not show the previous one's values;
@@ -111,7 +129,7 @@ export function ScopeSettingsDialog({
     setClient(one.client ?? '')
     setDescription(one.description ?? '')
     setLinks((one.links ?? []).map((link) => ({ ...link })))
-    setKind(one.kind ?? '')
+    setType(typeChoiceOf(one))
     setParent(parentScope(one.path) ?? ROOT_SCOPE)
   })
 
@@ -150,19 +168,7 @@ export function ScopeSettingsDialog({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <TextField
-            select
-            fullWidth
-            label={s('org.kind')}
-            helperText={s('org.kindHelp')}
-            value={kind}
-            onChange={(e) => setKind(e.target.value as ScopeKind | '')}
-          >
-            <MenuItem value="">{s('org.kindNone')}</MenuItem>
-            {SCOPE_KINDS.map((one) => (
-              <MenuItem key={one} value={one}>{s(SCOPE_KIND_LABEL[one])}</MenuItem>
-            ))}
-          </TextField>
+          <TypeField type={type} unitTypes={unitTypes} onChange={setType} s={s} />
           {canMove && (
             <ScopeField
               tree={tree}
@@ -196,7 +202,7 @@ export function ScopeSettingsDialog({
               client,
               description,
               links,
-              ...(kind ? { kind } : {}),
+              type,
               ...(canMove && parent !== (parentScope(target.path) ?? ROOT_SCOPE)
                 ? { parent }
                 : {}),
@@ -207,6 +213,45 @@ export function ScopeSettingsDialog({
         </Button>
       </DialogActions>
     </FieldsDialog>
+  )
+}
+
+/**
+ * *What this is*: one list, the operating model's unit types first under
+ * their own heading where there are any, the built-in kinds under theirs
+ * below, still allowed; the kinds alone where the organisation has no
+ * operating model (ADR-0036, amended 17 October 2026). A unit type the scope
+ * says and the model no longer holds is listed once so the field can show it.
+ */
+const HEADING = { fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary', minHeight: 0, py: 0.5, '&.Mui-disabled': { opacity: 1 } } as const
+
+function TypeField({ type, unitTypes, onChange, s }: {
+  type: TypeChoice; unitTypes: readonly { id: string; name: string }[]; onChange: (type: TypeChoice) => void; s: Translate
+}) {
+  const grouped = unitTypes.length > 0
+  const gone = type.startsWith('unit:') && !unitTypes.some((one) => `unit:${one.id}` === type)
+  return (
+    <TextField
+      select
+      fullWidth
+      label={s('org.kind')}
+      helperText={s(grouped ? 'org.typeHelp' : 'org.kindHelp')}
+      value={type}
+      onChange={(e) => onChange(e.target.value as TypeChoice)}
+      slotProps={{ select: { 'data-testid': 'scope-type-field' } as object }}
+    >
+      <MenuItem value="">{s('org.kindNone')}</MenuItem>
+      {/* Headings, not choices: a Select makes every child an option, so each is one that cannot be picked. */}
+      {grouped && <MenuItem disabled sx={HEADING}>{s('org.typeFromModel')}</MenuItem>}
+      {unitTypes.map((one) => (
+        <MenuItem key={one.id} value={`unit:${one.id}`}>{one.name}</MenuItem>
+      ))}
+      {gone && <MenuItem value={type}>{s('org.typeGoneBadge')}</MenuItem>}
+      {grouped && <MenuItem disabled sx={HEADING}>{s('org.typeBuiltIn')}</MenuItem>}
+      {SCOPE_KINDS.map((one) => (
+        <MenuItem key={one} value={`kind:${one}`}>{s(SCOPE_KIND_LABEL[one])}</MenuItem>
+      ))}
+    </TextField>
   )
 }
 

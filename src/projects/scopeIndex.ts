@@ -388,6 +388,12 @@ export type ScopeIndex = {
   organisation(): Organisation
   /** The scopes this was built from, in path order. */
   scopes(): ScopePath[]
+  /**
+   * The type each scope says it is from the operating model (ADR-0036,
+   * amended 17 October 2026), by path: a unit type's id, for the scopes whose
+   * header says one and whose store read it.
+   */
+  scopeTypes(): ReadonlyMap<ScopePath, string>
 }
 
 /**
@@ -453,6 +459,8 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const incoming = new Map<ElementId, IndexedRelation[]>()
   const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
+  // The type each scope says it is from the operating model (ADR-0036, amended 17 October 2026).
+  const scopeTypes = new Map<ScopePath, string>(models.flatMap((one) => (one.unitTypeId !== undefined ? [[one.path, one.unitTypeId] as const] : [])))
   const initiatives: IndexedTransition[] = []
   const analyses: IndexedAnalysis[] = []
   const absorptions: Absorption[] = []
@@ -584,6 +592,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     unitPlans: () => [...unitPlans],
     organisation: () => organisation,
     scopes: () => [...paths],
+    scopeTypes: () => scopeTypes,
   }
 }
 

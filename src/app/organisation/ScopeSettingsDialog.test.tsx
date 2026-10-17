@@ -38,6 +38,45 @@ describe('ScopeSettingsDialog, as axe reads it', () => {
   })
 })
 
+describe('ScopeSettingsDialog — what this is (ADR-0036, amended 17 October 2026)', () => {
+  const types = [{ id: 'ut-division', name: 'Division' }, { id: 'ut-squad', name: 'Squad' }]
+  const options = () => screen.getAllByRole('option').map((one) => one.textContent?.trim())
+  function openTyped(target: Partial<ScopeSummary> = {}) {
+    const onSave = vi.fn<(path: string, patch: ScopeSettingsPatch) => void>()
+    renderShell(<ScopeSettingsDialog target={{ path: 'acme', name: 'Acme', diagrams: 0, children: [], ...target }} unitTypes={types} onSave={onSave} onCancel={() => {}} s={s} />)
+    return onSave
+  }
+
+  it('offers the operating model\'s unit types first and the built-in kinds below them, under their headings', async () => {
+    openTyped({ kind: 'domain' })
+    fireEvent.mouseDown(screen.getByLabelText('What this is'))
+    expect(options()).toEqual(['Not said', 'From the operating model', 'Division', 'Squad', 'Built-in kinds', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope'])
+    // The two headings cannot be picked.
+    expect(screen.getByRole('option', { name: 'From the operating model' }).getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByRole('option', { name: 'Built-in kinds' }).getAttribute('aria-disabled')).toBe('true')
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('offers the kinds alone, as before, where the organisation has no operating model', () => {
+    open({ kind: 'domain' })
+    fireEvent.mouseDown(screen.getByLabelText('What this is'))
+    expect(options()).toEqual(['Not said', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope'])
+    expect(screen.queryByText('From the operating model')).toBeNull()
+  })
+
+  it('opens on the unit type the scope says, hands a unit type picked back as one value, and shows a type the model no longer holds', () => {
+    const onSave = openTyped({ kind: 'domain', unitTypeId: 'ut-squad' })
+    expect(screen.getByText('Squad')).toBeDefined()
+    fireEvent.mouseDown(screen.getByLabelText('What this is'))
+    fireEvent.click(screen.getByRole('option', { name: 'Division' }))
+    save()
+    expect(onSave).toHaveBeenCalledWith('acme', expect.objectContaining({ type: 'unit:ut-division' }))
+    cleanup()
+    openTyped({ unitTypeId: 'ut-gone' })
+    expect(screen.getByText('Unknown type')).toBeDefined()
+  })
+})
+
 describe('ScopeSettingsDialog', () => {
   it('opens on what the scope already says about itself', () => {
     open({
@@ -79,7 +118,7 @@ describe('ScopeSettingsDialog', () => {
       client: ' Acme Logistics BV ',
       description: 'Rolling stock.',
       links: [],
-      kind: 'domain',
+      type: 'kind:domain',
     })
   })
 
@@ -169,7 +208,7 @@ describe('ScopeSettingsDialog — filed under', () => {
     fireEvent.mouseDown(screen.getByLabelText('What this is'))
     fireEvent.click(screen.getByRole('option', { name: 'Programme' }))
     save()
-    expect(onSave3).toHaveBeenCalledWith('acme', expect.objectContaining({ kind: 'programme' }))
+    expect(onSave3).toHaveBeenCalledWith('acme', expect.objectContaining({ type: 'kind:programme' }))
   })
 
   /** A scope filed under itself, or under its own child, has no address at all. */

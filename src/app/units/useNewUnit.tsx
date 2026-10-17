@@ -32,6 +32,7 @@ import { NewUnitDialog } from './NewUnitDialog'
 import type { NewUnitForm, NewUnitNone } from './NewUnitDialog'
 import { newUnitElement, typesThatMaySit } from './newUnit'
 import type { UnitViewsHere } from './unitViewsHere'
+import { followTypeIn, typeFollowingHere } from './followType'
 import { refusalKey } from './writeIn'
 import type { WriteIn } from './writeIn'
 
@@ -109,9 +110,13 @@ export function useNewUnit(at: {
         return key ? t(key) : t('chart.addNotMade')
       }
     }
+    // Each domain picked takes the unit's type, in its own header (ADR-0036, amended 17 October 2026).
+    for (const served of form.serves) {
+      await followTypeIn(making.writeIn, served, typeFollowingHere(here.at, served, element, day))
+    }
     setPending(element.id)
     return undefined
-  }, [making, place, scope, t])
+  }, [making, place, scope, here, day, t])
   const writable = useMemo(() => (making ? making.scopes.filter(making.writable) : []), [making])
   let dialog: ReactNode = null
   if (place && making && offer) {

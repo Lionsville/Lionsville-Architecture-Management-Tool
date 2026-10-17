@@ -72,12 +72,15 @@ export type AttentionItem = {
    * model's, where the finding is about a unit type or a responsibility,
    * which no board draws (ADR-0036 §2).
    */
-  page?: 'operating'
+  page?: 'operating' | 'home'
   text: string
 }
 
 /** The findings about the operating model: opened on its page at the organisation, the item picked there. */
 const ON_THE_OPERATING_PAGE: ReadonlySet<string> = new Set(['check.accountability', 'check.unitTypeNowhere'])
+
+/** The findings about a scope itself (ADR-0036, amended 17 October 2026): opened on its home, where its type and *Served by* are. */
+export const ABOUT_A_SCOPE: ReadonlySet<string> = new Set(['check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone'])
 
 /** The kind a key names: its last segment, `check.conflict` → `conflict`. */
 export function findingKind(key: string): string {
@@ -117,7 +120,7 @@ export function attentionItems(
         ...(elsewhere !== undefined ? { elsewhere } : {}),
         ...(finding.fields ? { fields: finding.fields } : {}), ...(finding.scopes ? { scopes: finding.scopes } : {}),
         ...(finding.person !== undefined ? { person: finding.person } : {}),
-        ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : {}),
+        ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : ABOUT_A_SCOPE.has(finding.key) ? { page: 'home' as const } : {}),
         text: findingSentence(finding, s, scopeName, personName),
       })
     }

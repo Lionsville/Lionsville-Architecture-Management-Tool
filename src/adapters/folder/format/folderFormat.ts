@@ -302,6 +302,8 @@ type ScopeFile = {
   name: string
   /** A word for a screen to show (ADR-0012 §1). Absent is ordinary. */
   kind?: ScopeKind
+  /** Its type from the operating model, a unit type's id (ADR-0036, amended 17 October 2026). Absent is ordinary. */
+  unitTypeId?: string
   /** Who a drawing here is made out to. Absent = the nearest ancestor's. */
   client?: string
   description?: string
@@ -586,6 +588,7 @@ function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
     version: SCOPE_FORMAT_VERSION,
     name: model.name,
     ...(scope.kind !== undefined ? { kind: scope.kind } : {}),
+    ...(scope.unitTypeId !== undefined ? { unitTypeId: scope.unitTypeId } : {}),
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(model.description !== undefined ? { description: model.description } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
@@ -764,6 +767,7 @@ export function scopeSummaryFrom(
     path,
     name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
     ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
+    ...headerType(held),
     ...(typeof held.client === 'string' ? { client: held.client } : {}),
     ...(typeof held.description === 'string' ? { description: held.description } : {}),
     ...(isLinkList(held.links) ? { links: held.links } : {}),
@@ -1225,6 +1229,7 @@ export function scopeFromFolder(
     path,
     model,
     ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
+    ...headerType(held),
     ...(typeof held.client === 'string' ? { client: held.client } : {}),
     ...(isLinkList(held.links) ? { links: held.links } : {}),
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
@@ -1238,9 +1243,14 @@ export function scopeFromFolder(
   }
 }
 
+/** The scope's type from the operating model, where the header says one (ADR-0036, amended 17 October 2026): a unit type's id, never blank. */
+function headerType(held: Pick<ScopeFile, 'unitTypeId'>): { unitTypeId?: string } {
+  return typeof held.unitTypeId === 'string' && held.unitTypeId ? { unitTypeId: held.unitTypeId } : {}
+}
+
 /** The keys of `scope.json` the header itself writes; any other is carried through a save. */
 const HEADER_KEYS: ReadonlySet<string> = new Set<keyof ScopeFile>([
-  'type', 'version', 'name', 'kind', 'client', 'description', 'links', 'activeDiagramId', 'diagrams',
+  'type', 'version', 'name', 'kind', 'unitTypeId', 'client', 'description', 'links', 'activeDiagramId', 'diagrams',
   'defaults', 'logos', 'interchange',
 ])
 

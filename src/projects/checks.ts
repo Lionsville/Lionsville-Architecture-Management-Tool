@@ -47,8 +47,9 @@ import { isUnit, personOf, unitFindings, unitsOn } from '../model/units'
 import { reportingFindings } from '../model/reporting'
 import type { ReportingFinding } from '../model/reporting'
 import { unitTypeLanes } from '../model/unitOrder'
-import { servesOn } from '../model/serving'
+import { servesOn, servingUnits } from '../model/serving'
 import type { FiledIn } from '../model/serving'
+import { typeLinkOf } from './scopeType'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
 import { ROOT_SCOPE, ancestorScopes, isWithinScope } from './scopePath'
@@ -112,6 +113,13 @@ import type { TreeCheckKey } from '../model/checkCatalogue'
  *   whose target role no unit has (`check.reportingDangling`); one several
  *   units could take with none above (`check.reportingAmbiguous`); and one
  *   that lands on a role nobody holds that day (`check.reportingVacant`);
+ * - a scope's type against the units that serve it (ADR-0036, amended 17
+ *   October 2026; `projects/scopeType.ts`), about the scope, which `scopes`
+ *   names too so the sentence can call it by name: one typed by a unit type
+ *   that no serving unit is of (`check.scopeTypeDisagrees`, the serving types
+ *   as `name`, the scope's own as `detail`); one typed and served by nobody
+ *   (`check.scopeTypeUnserved`); one typed by a unit type the operating model
+ *   does not hold (`check.scopeTypeGone`);
  * - `check.unitNotServing` — an area, a grouping or a capability assigned to
  *   a unit that serves neither its domain — the scope that defines it, or one
  *   above or below that — nor sits under a unit that does (ADR-0036, amended
@@ -167,6 +175,9 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.reportingDangling': 'check.reportingDangling',
   'check.reportingAmbiguous': 'check.reportingAmbiguous',
   'check.reportingVacant': 'check.reportingVacant',
+  'check.scopeTypeDisagrees': 'check.scopeTypeDisagrees',
+  'check.scopeTypeUnserved': 'check.scopeTypeUnserved',
+  'check.scopeTypeGone': 'check.scopeTypeGone',
 }
 
 /**
@@ -244,6 +255,9 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.reportingDangling': { one: 'check.short.reportingDangling.one', other: 'check.short.reportingDangling.other' },
   'check.reportingAmbiguous': { one: 'check.short.reportingAmbiguous.one', other: 'check.short.reportingAmbiguous.other' },
   'check.reportingVacant': { one: 'check.short.reportingVacant.one', other: 'check.short.reportingVacant.other' },
+  'check.scopeTypeDisagrees': { one: 'check.short.scopeTypeDisagrees.one', other: 'check.short.scopeTypeDisagrees.other' },
+  'check.scopeTypeUnserved': { one: 'check.short.scopeTypeUnserved.one', other: 'check.short.scopeTypeUnserved.other' },
+  'check.scopeTypeGone': { one: 'check.short.scopeTypeGone.one', other: 'check.short.scopeTypeGone.other' },
 }
 
 /**
@@ -676,6 +690,13 @@ export type OrganisationAt = {
    * what `check.unitNotServing` reads. Absent where nobody gathered them.
    */
   assigned?: () => readonly AssignedRow[]
+  /**
+   * The type each scope says it is from the operating model, by path
+   * (ADR-0036, amended 17 October 2026): what the three scope-type findings
+   * read against the units that serve each. Absent where nobody read the
+   * headers, and nothing is then said of them.
+   */
+  scopeTypes?: ReadonlyMap<ScopePath, string>
 }
 
 /** An `assigned` row to a function, the scope that keeps it, and the function's name and the scope that defines it. */
@@ -705,6 +726,7 @@ export function organisationAt(index: ScopeIndex): OrganisationAt {
     assignmentAt: (assignment) => assignments.get(assignment),
     owns: ownsOf(index.register()),
     assigned: () => assignedRowsOf(index),
+    scopeTypes: index.scopeTypes(),
   }
 }
 
@@ -725,8 +747,43 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string, canonica
   return [
     ...unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said)),
     ...notServingFindings(at, day),
+    ...scopeTypeFindings(at, day, said),
     ...reportingFindings(organisation, day).map((one) => reportingFinding(one, said, day)),
   ]
+}
+
+/**
+ * Each scope's type against the units that serve it on `day`
+ * (`projects/scopeType.typeLinkOf`): the units that say so themselves
+ * (`servingUnits`), by type. About the scope, with `id` its path and its
+ * path in `scopes` so the sentence names it; nothing where the scope's type
+ * agrees with one of them, or says no unit type.
+ */
+function scopeTypeFindings(at: OrganisationAt, day: string, said: Said): Finding[] {
+  if (!at.scopeTypes?.size) return []
+  const { organisation } = at
+  const filedIn = (id: ElementId) => at.unitAt(id)?.scope
+  const found: Finding[] = []
+  for (const [scope, unitTypeId] of [...at.scopeTypes].sort(([a], [b]) => a.localeCompare(b))) {
+    const serving = servingUnits(organisation, scope, day, filedIn).units
+    const types = [...new Set(serving.map((unit) => unit.unitTypeId ?? '').filter(Boolean))]
+    const link = typeLinkOf({ unitTypeId }, types, (id) => said.typeName.has(id))
+    const about = { scope, id: scope, scopes: [scope], detail: said.typeName.get(unitTypeId) ?? unitTypeId }
+    switch (link) {
+      case 'disagrees':
+        found.push({ key: 'check.scopeTypeDisagrees', ...about, name: types.map((id) => said.typeName.get(id) ?? id).join(', '), fields: [unitTypeId, ...serving.map((unit) => unit.id)] })
+        break
+      case 'unserved':
+        found.push({ key: 'check.scopeTypeUnserved', ...about, name: about.detail, fields: [unitTypeId] })
+        break
+      case 'gone':
+        found.push({ key: 'check.scopeTypeGone', ...about, name: unitTypeId, fields: [unitTypeId] })
+        break
+      default:
+        break
+    }
+  }
+  return found
 }
 
 /**

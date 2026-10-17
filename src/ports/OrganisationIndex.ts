@@ -31,6 +31,8 @@ import type { Revision, ScopeAddress, ScopeId } from '../projects/scopeState'
 export type IndexedScope = {
   id: ScopeId
   address: ScopeAddress
+  /** The scope's type from the operating model, where its header says one (ADR-0036, amended 17 October 2026). */
+  unitTypeId?: string
   model: ScopeModel['model']
 }
 

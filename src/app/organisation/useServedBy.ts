@@ -12,18 +12,27 @@
  * A unit that said nothing served the scope it is filed in, and goes on
  * serving it beside the one added (`model/serving.scopesWith`) — unless that
  * is the organisation, which is no domain: then it serves the one added alone.
+ *
+ * **The type follows the unit** (ADR-0036, amended 17 October 2026): a unit
+ * added gives the scope that unit's type, written in the scope's own header
+ * in the same apply as the link, all or none (`writeInEach`) — unless the
+ * scope's type still agrees with a unit that serves it (`typeFollowingUnit`).
+ * Taking a unit off leaves the type as it is.
  */
 import { useCallback, useMemo } from 'react'
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
+import type { UnitTypeId } from '../../model/operatingModel'
 import { scopesWith, scopesWithout } from '../../model/serving'
+import type { ScopeSnapshot } from '../../projects/scope'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { typedByUnitType } from '../../projects/scopeType'
 import type { PickOption } from '../../widgets/PickToAdd'
 import type { BelowScopes } from '../useChangeBelow'
 import type { Failed } from '../useShellServices'
-import { refusalKey, writeIn } from '../units/writeIn'
-import { pickableBy, servedByOf, servingChoicesOf } from './servedByView'
+import { refusalKey, writeInEach } from '../units/writeIn'
+import { pickableBy, servedByOf, servingChoicesOf, typeFollowingUnit, unitTypeChoicesOf } from './servedByView'
 import type { ServedByView } from './servedByView'
 
 export type ServedByAccess = {
@@ -35,6 +44,8 @@ export type ServedByAccess = {
   remove: (scope: ScopePath, unitId: ElementId) => void
   /** The unit where it is kept, chosen: its inspector says what it serves from that end. */
   open: (unitId: ElementId) => void
+  /** The unit types a scope may be typed by today (`unitTypeChoicesOf`): what the type picker offers first. */
+  unitTypes: () => readonly { id: UnitTypeId; name: string }[]
   /** What the new-scope dialog's *Served by* offers: a scope nobody serves yet, as this person may pick. */
   choicesForNew: () => PickOption[]
   /**
@@ -59,6 +70,7 @@ export function useServedBy(deps: {
 }): ServedByAccess {
   const { index, scopes, writable, onTreeChanged, notify, failed, onOpen, today, scopeName, s } = deps
   const keptAt = useMemo(() => new Map(index.units().map(({ scope, unit }) => [unit.id, { scope, name: unit.name }])), [index])
+  const typeNames = useMemo(() => new Map(index.organisation().unitTypes.map((type) => [type.id, type.name])), [index])
   const of = useMemo(() => {
     const read = new Map<ScopePath, ServedByView | undefined>()
     return (scope: ScopePath) => {
@@ -66,34 +78,49 @@ export function useServedBy(deps: {
       return read.get(scope)
     }
   }, [index, today, scopeName, s])
-  /** One unit's `scopes`, written where it is kept: what each edit and a new scope's link are. */
+  /**
+   * One unit's `scopes`, written where it is kept — and, adding, the scope's
+   * type where the unit's is what it follows, in the same apply: what each
+   * edit and a new scope's link are. `followed` is the type the scope takes.
+   */
   const write = useCallback((scope: ScopePath, unitId: ElementId, adding: boolean) => {
     const kept = keptAt.get(unitId)
     if (!kept) return undefined
     const filedIn = (id: ElementId) => (id === unitId ? kept.scope : undefined)
-    const written = writeIn({ scopes, writable }, kept.scope, (held) => {
-      const unit = held.model.elements.find((one) => one.id === unitId && one.ref === undefined)
-      if (!unit) return undefined
-      const next = adding ? scopesWith(unit, scope, filedIn) : scopesWithout(unit, scope)
-      if (JSON.stringify(next) === JSON.stringify(unit.scopes)) return undefined
-      return [{ type: 'element.update', id: unitId, patch: { scopes: next } }]
-    })
-    return { kept, written }
-  }, [keptAt, scopes, writable])
+    const followed = adding ? typeFollowingUnit(index, scope, unitId, today) : undefined
+    const written = writeInEach({ scopes, writable }, [
+      {
+        path: kept.scope,
+        change: (held) => {
+          const unit = held.model.elements.find((one) => one.id === unitId && one.ref === undefined)
+          if (!unit) return undefined
+          const next = adding ? scopesWith(unit, scope, filedIn) : scopesWithout(unit, scope)
+          if (JSON.stringify(next) === JSON.stringify(unit.scopes)) return undefined
+          return [{ type: 'element.update', id: unitId, patch: { scopes: next } }]
+        },
+      },
+      ...(followed !== undefined
+        ? [{ path: scope, change: (held: ScopeSnapshot) => (held.unitTypeId === followed ? undefined : [{ type: 'scope.describe' as const, patch: typedByUnitType(followed) }]) }]
+        : []),
+    ])
+    return { kept, written, followed }
+  }, [keptAt, scopes, writable, index, today])
   const change = useCallback((scope: ScopePath, unitId: ElementId, adding: boolean) => {
     const asked = write(scope, unitId, adding)
     if (!asked) return
-    const { kept } = asked
+    const { kept, followed } = asked
     void asked.written.then((written) => {
       if (written.ok) {
         onTreeChanged()
-        notify(s(adding ? 'org.servedByAdded' : 'org.servedByRemoved', { unit: kept.name, scope: scopeName(scope), kept: scopeName(kept.scope) }), 'success')
+        const said = s(adding ? 'org.servedByAdded' : 'org.servedByRemoved', { unit: kept.name, scope: scopeName(scope), kept: scopeName(kept.scope) })
+        const type = followed !== undefined ? typeNames.get(followed) : undefined
+        notify(type !== undefined ? `${said} ${s('org.typeFollowed', { scope: scopeName(scope), type })}` : said, 'success')
         return
       }
       const key = refusalKey(written)
       if (key) notify(s(key), 'error')
     }, (cause: unknown) => failed('organisation.servedBy', cause, 'pick.notWritten'))
-  }, [write, onTreeChanged, notify, failed, scopeName, s])
+  }, [write, onTreeChanged, notify, failed, scopeName, typeNames, s])
   // Named by the caller: a scope made a moment ago is not in the tree these names were read from.
   const link = useCallback(async (scope: ScopePath, unitId: ElementId, name: string) => {
     const asked = write(scope, unitId, true)
@@ -118,6 +145,7 @@ export function useServedBy(deps: {
     of,
     mayChange,
     choicesForNew: () => pickableBy(servingChoicesOf(index, undefined, today, { scopeName, s }), mayChange, { s }),
+    unitTypes: () => unitTypeChoicesOf(index, today),
     link,
     add: (scope, unitId) => change(scope, unitId, true),
     remove: (scope, unitId) => change(scope, unitId, false),

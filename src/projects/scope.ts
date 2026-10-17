@@ -93,6 +93,15 @@ export type ScopeSnapshot = {
   /** See {@link ScopeKind}: a word for a screen, never a branch. */
   kind?: ScopeKind
   /**
+   * The scope's type in the organisation's own words (ADR-0036, amended 17
+   * October 2026): the id of a unit type of the operating model, offered
+   * before the built-in kinds wherever a scope's type is chosen, and set
+   * when a unit is linked to the scope. One of the two is said, not both:
+   * picking a unit type clears `kind`, picking a kind clears this
+   * (`scopeType.ts`). A label still, as `kind` is — nothing branches on it.
+   */
+  unitTypeId?: string
+  /**
    * Who a drawing made here is addressed to, when that is not this scope's own
    * name. Absent = the nearest ancestor that says (`scopeLabel.ts`), which is
    * what the title block has always meant by "the client".
@@ -195,6 +204,8 @@ export type ScopeSummary = {
   /** What it is called. Its own name, never an ancestor's. */
   name: string
   kind?: ScopeKind
+  /** Its type from the operating model, where it says one ({@link ScopeSnapshot.unitTypeId}). */
+  unitTypeId?: string
   /** Its own answer only; {@link scopeClient} is what walks up for the rest. */
   client?: string
   description?: string
@@ -252,6 +263,12 @@ export function unreadableAt(listing: ScopeSummary, path: ScopePath): ScopePath 
  */
 export type ScopeModel = {
   path: ScopePath
+  /**
+   * The scope's type from the operating model, where its header says one
+   * (ADR-0036, amended 17 October 2026): what the type findings read against
+   * the units that serve it. Absent where a store has not read the header.
+   */
+  unitTypeId?: string
   model: {
     elements: readonly DesignElement[]
     relations: readonly Relation[]
@@ -297,6 +314,7 @@ export function summarise(scope: ScopeSnapshot): ScopeSummary {
     path: scope.path,
     name: scope.model.name,
     ...(scope.kind !== undefined ? { kind: scope.kind } : {}),
+    ...(scope.unitTypeId !== undefined ? { unitTypeId: scope.unitTypeId } : {}),
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(scope.model.description !== undefined ? { description: scope.model.description } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
@@ -578,10 +596,25 @@ export function countScopes(root: ScopeSummary): { domains: number; landscapes: 
  * {@link isOpenableScope}).
  */
 export function countScopeKinds(root: ScopeSummary): { kind: ScopeKind | undefined; count: number }[] {
-  const under = flattenScopes(root).slice(1)
+  // A scope typed by the operating model is counted by its type ({@link countScopeTypes}), not here.
+  const under = flattenScopes(root).slice(1).filter((scope) => scope.unitTypeId === undefined)
   return [...SCOPE_KINDS, undefined]
     .map((kind) => ({ kind, count: under.filter((scope) => scope.kind === kind).length }))
     .filter(({ count }) => count > 0)
+}
+
+/**
+ * The scopes under a home tallied by the unit type each says it is (ADR-0036,
+ * amended 17 October 2026), by type id in the order first met, for the same
+ * line {@link countScopeKinds} feeds: the names are the operating model's to
+ * say. The root left out, as above.
+ */
+export function countScopeTypes(root: ScopeSummary): { unitTypeId: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const scope of flattenScopes(root).slice(1)) {
+    if (scope.unitTypeId !== undefined) counts.set(scope.unitTypeId, (counts.get(scope.unitTypeId) ?? 0) + 1)
+  }
+  return [...counts].map(([unitTypeId, count]) => ({ unitTypeId, count }))
 }
 
 /**

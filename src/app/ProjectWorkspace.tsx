@@ -470,7 +470,7 @@ function useScreenParts(
     save: base.document.document.flush, putPicture: base.writer.put, pages,
     showElement: showElement.show, openDocumentation: requests.openDocumentation,
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
-    changeAcross: tree.agentChangeAcross, landSteps: tree.agentLandSteps, people: shell.people,
+    changeAcross: tree.agentChangeAcross, landSteps: tree.agentLandSteps, writeIn: tree.unitWrites.writeIn, people: shell.people,
     ...(source.comments ? { comments: source.comments } : {}),
   })
   useInitialPage({

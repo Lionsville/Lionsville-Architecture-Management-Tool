@@ -16,6 +16,7 @@ import { pressAction, unfoldFindings } from '../testing/findings'
 import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
+import type { ScopeCommand } from '../../projects/scopeState'
 import { managesPeople } from '../../model/managing'
 import type { ManagesPeople } from '../../model/managing'
 import type { HostModel } from '../../model/hostModel'
@@ -364,11 +365,18 @@ describe('a unit in its inspector', () => {
     const commands: Command[] = []
     // The usual organisation: the unit filed at the top, where the operating model lives.
     const top: HostModel = { ...ROOT, elements: [actor('ops', 'Operations', { unitTypeId: 'ut-domain' })] }
-    renderShell(<Harness model={top} root={top} scope="" unit="ops" commands={commands} />)
+    const asked: { path: string; commands: readonly ScopeCommand[] | undefined }[] = []
+    const writeIn: WriteIn = (path, change) => {
+      asked.push({ path, commands: change({ path, model: CUSTOMER, activeDiagramId: '', logoLibrary: [] }) })
+      return Promise.resolve({ ok: true })
+    }
+    renderShell(<Harness model={top} root={top} scope="" unit="ops" commands={commands} writeIn={writeIn} />)
     expect(text('unit-serves')).not.toContain('the organisation')
     fireEvent.click(screen.getByTestId('unit-serves-add'))
     fireEvent.click(await screen.findByRole('option', { name: 'Customer' }))
     expect(commands[0]).toEqual({ type: 'element.update', id: 'ops', patch: { scopes: ['customer'] } })
+    // The domain takes the unit's type, in its own header, as that scope's step (ADR-0036, amended 17 October 2026).
+    await waitFor(() => expect(asked).toEqual([{ path: 'customer', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: undefined } }] }]))
     // Its one domain now, and a type that serves one says so; the domain may be taken off again.
     expect(screen.queryByTestId('unit-serves-add')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-serves')).getByTestId('CancelIcon'))
@@ -701,7 +709,7 @@ describe('what a unit is responsible for, from its own inspector', () => {
   })
 
   it('writes the row for a capability another scope defines in that scope, and says so where it may not', async () => {
-    const asked: { path: string; commands: readonly Command[] | undefined }[] = []
+    const asked: { path: string; commands: readonly ScopeCommand[] | undefined }[] = []
     let answer: Awaited<ReturnType<WriteIn>> = { ok: true }
     const writeIn: WriteIn = (path, change) => {
       asked.push({ path, commands: change({ path, model: ROOT, activeDiagramId: '', logoLibrary: [] }) })

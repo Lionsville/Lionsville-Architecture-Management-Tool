@@ -45,6 +45,12 @@ import type {
 } from '../model/types'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
+import { scopeTyped } from './scopeTypes'
+
+/** Today as `yyyy-mm-dd`, for the organisation on the day nothing else names. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
 
 /** One scope of the tree, as the listing knows it. */
 export type TreeScope = {
@@ -52,6 +58,8 @@ export type TreeScope = {
   readonly name: string
   /** A label for a screen (`organisation` · `domain` · `programme` · `landscape`), never a branch. */
   readonly kind?: string
+  /** Its type from the operating model, a unit type's id, where it says one (ADR-0036, amended 17 October 2026). */
+  readonly unitTypeId?: string
   /** How many views it holds. Zero is a domain that draws nothing itself. */
   readonly views: number
 }
@@ -197,10 +205,14 @@ export function withoutScope(args: unknown): unknown {
   return rest
 }
 
-/** `open` is the scope's path, or nothing while a home is up and no scope is open (ADR-0019). */
-export function listScopes(tree: TreeView | undefined, open: string | undefined): AgentAnswer {
+/**
+ * `open` is the scope's path, or nothing while a home is up and no scope is
+ * open (ADR-0019). Each scope says its type from the operating model, who
+ * serves it and how the two stand (`scopeTypes.ts`), today.
+ */
+export function listScopes(tree: TreeView | undefined, open: string | undefined, day: string = today()): AgentAnswer {
   const scopes = (tree?.scopes() ?? []).map((scope) => ({
-    ...scope,
+    ...(tree ? scopeTyped(tree, scope, day) : scope),
     open: open !== undefined && scope.path === open,
   }))
   return json({ ...(open !== undefined ? { open } : { open: null, hint: 'nothing is open; app.open opens a scope' }), total: scopes.length, scopes })

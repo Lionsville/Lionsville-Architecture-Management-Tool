@@ -26,6 +26,7 @@ import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
 import { flattenScopes, namesUnder } from '../projects/scope'
 import type { ScopeKind, ScopeSnapshot } from '../projects/scope'
+import type { TypeChoice } from '../projects/scopeType'
 import type { CarryChoice } from './workingFileFlows'
 import {
   modelsOf, moveScope, readWhole, refusedError, stepOf, summaryOf,
@@ -395,7 +396,14 @@ export type ScopeSettingsPatch = {
   client?: string
   description?: string
   links?: RecordLink[]
+  /** The built-in kind, where the caller speaks that vocabulary alone; `type` says both and wins where given. */
   kind?: ScopeKind
+  /**
+   * What the scope is, as the one picker holds it (ADR-0036, amended 17
+   * October 2026): a unit type of the operating model, a built-in kind, or
+   * nothing — and whichever of the two is not said is cleared.
+   */
+  type?: TypeChoice
   /**
    * Where it is filed, when that is what changed.
    *

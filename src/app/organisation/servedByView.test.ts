@@ -41,7 +41,7 @@ const warehouse: HostModel = { name: 'Warehouse', relations: [], diagrams: [], e
 describe('what Served by says', () => {
   it('lists the units serving it with their leads, how many serve through them, and the domain owner', () => {
     const view = servedByOf(indexScopes([{ path: '', model: root() }, { path: 'shipping', model: shipping }, { path: 'warehouse', model: warehouse }]), 'shipping', DAY, words)
-    expect(view?.rows).toEqual([{ id: 'shipping', name: 'Shipping', type: 'Domain', filedIn: 'shipping', managers: ['pe-noor'], mayStop: false }])
+    expect(view?.rows).toEqual([{ id: 'shipping', name: 'Shipping', type: 'Domain', typeId: 'ut-domain', filedIn: 'shipping', managers: ['pe-noor'], mayStop: false }])
     expect(view?.through).toBe(1)
     expect(view?.owner).toEqual({ role: 'Lead', unit: 'Shipping', people: ['pe-noor'] })
     // A team serving another domain is offered, and said why it cannot take a second.

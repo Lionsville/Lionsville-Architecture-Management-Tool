@@ -84,7 +84,7 @@ function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
   )
 }
 
-export function HomePages({ pages, at, heading, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onOpenRow, onOpenRowPage, onLink, s, windowChrome }: {
+export function HomePages({ pages, at, heading, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, s, windowChrome }: {
   pages: HomePagesState
   /** The home: what the Checks page keeps its weights under for the session. */
   at: ScopePath
@@ -101,6 +101,8 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
   readOnly: boolean
   /** Open a scope on a page, as the cards do. */
   open: Organisation['open']
+  /** A scope's home, where a finding about the scope itself is put right (ADR-0036, amended 17 October 2026). */
+  onHome: (path: ScopePath) => void
   onOpenRow: ((scope: ScopePath, id: ElementId) => void) | undefined
   onOpenRowPage: ((scope: ScopePath, id: ElementId) => void) | undefined
   onLink: ((scope: ScopePath, id: ElementId, to: ScopePath) => void) | undefined
@@ -110,8 +112,9 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
   const { openPage, asked, close } = pages
   const go = useCallback((place: CheckPlace) => {
     if ('person' in place) pages.open('people', place.person)
+    else if ('home' in place) { close(); onHome(place.home) }
     else open(place.scope, place.page)
-  }, [pages, open])
+  }, [pages, open, close, onHome])
   return (
     <>
       <RegisterPage

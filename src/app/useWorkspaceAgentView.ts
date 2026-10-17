@@ -13,7 +13,7 @@ import type { Translate } from '../i18n'
 import type { Adr } from '../decisions/adr'
 import type { DesignElement, Relation } from '../model'
 import type { ChangeAcross } from '../agent/merge'
-import type { LandSteps } from '../agent/handle'
+import type { LandSteps, FollowScopeTypes } from '../agent/handle'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
 import { isViewPageName } from './pageLanding'
@@ -30,6 +30,8 @@ import { flattenScopes } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes } from '../projects/scopePath'
+import { typedByUnitType } from '../projects/scopeType'
+import type { WriteIn } from './units/writeIn'
 import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
 import type { WorkspaceAgentView } from './useAgentShell'
@@ -80,6 +82,8 @@ export function useWorkspaceAgentView(deps: {
    * Absent, such a removal is refused.
    */
   landSteps?: LandSteps
+  /** Another scope's step under its rights (`units/writeIn.ts`): how the agent gives a scope its type (ADR-0036, amended 17 October 2026). */
+  writeIn?: WriteIn
   /** The people register, as the shell holds it: who an assignment may name (ADR-0036). */
   people?: PeopleRegisterAccess
   /**
@@ -92,8 +96,17 @@ export function useWorkspaceAgentView(deps: {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
     renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
-    changeAcross, landSteps, comments,
+    changeAcross, landSteps, writeIn, comments,
   } = deps
+  // Each scope's type written in its own header, one after the other; the paths that took it are answered.
+  const followScopeTypes = useMemo<FollowScopeTypes | undefined>(() => (writeIn ? async (follow) => {
+    const written: string[] = []
+    for (const [path, unitTypeId] of follow) {
+      const answer = await writeIn(path, (held) => (held.unitTypeId === unitTypeId ? undefined : [{ type: 'scope.describe', patch: typedByUnitType(unitTypeId) }]))
+      if (answer.ok || answer.reason === 'unchanged') written.push(path)
+    }
+    return written
+  } : undefined), [writeIn])
   const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   // Read through a ref: the register is read again after every change, and the view need not be made again for it.
@@ -137,11 +150,12 @@ export function useWorkspaceAgentView(deps: {
     ...(comments?.mayModerate ? { mayModerate: () => comments.mayModerate?.(scope) ?? true } : {}),
     ...(changeAcross ? { changeAcross } : {}),
     ...(landSteps ? { landSteps } : {}),
+    ...(followScopeTypes ? { followScopeTypes } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
-    comments,
+    followScopeTypes, comments,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)
@@ -216,7 +230,8 @@ export function agentTree(at: {
   const { session, scope, indexRef, rowsElsewhereRef, scopes, reader } = at
   return {
     scopes: () => flattenScopes(scopes).map((held) => ({
-      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
+      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
+      ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,
     })),
     lookup: (id) => indexRef.current.lookup(id),
     register: () => indexRef.current.register(),

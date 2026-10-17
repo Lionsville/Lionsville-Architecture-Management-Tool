@@ -98,10 +98,10 @@ describe('the catalogue', () => {
     const of = (weight: string) => CHECK_KEYS.filter((key) => CHECK_CATALOGUE[key].weight === weight).map((key) => key.slice('check.'.length)).sort()
     expect(of('fix')).toEqual([
       'assignmentEnded', 'assignmentOrphaned', 'conflict', 'dangling', 'danglingEnd', 'drawingLinkMissing', 'lineOutlivesEnd', 'platformRetiresFirst',
-      'reportingAmbiguous', 'reportingDangling', 'reportingLoop', 'successorTooLate', 'unitMisplaced', 'unitTypeEnded', 'unitTypeNowhere',
+      'reportingAmbiguous', 'reportingDangling', 'reportingLoop', 'scopeTypeGone', 'successorTooLate', 'unitMisplaced', 'unitTypeEnded', 'unitTypeNowhere',
     ])
-    expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'proposal'])
-    expect(of('review')).toHaveLength(CHECK_KEYS.length - 18)
+    expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'proposal', 'scopeTypeUnserved'])
+    expect(of('review')).toHaveLength(CHECK_KEYS.length - 20)
   })
 
   it('reads a key it does not know as nothing', () => {

@@ -109,6 +109,23 @@ geführt wird — auf dem Organigramm dieses Bereichs, ausgewählt, wo er eines
 hat —, und ihr Inspektor sagt dasselbe vom anderen Ende, wo jede Domäne
 wieder die Startseite dieser Domäne öffnet.
 
+**Der Typ folgt der Einheit.** Eine Einheit mit einem Bereich zu verknüpfen
+— **+ Einheit** hier oder in den Einstellungen, **Bedient von** im Dialog
+für einen neuen Bereich, **+ Domäne** im Inspektor einer Einheit auf dem
+Organigramm, die Domänen einer neuen Einheit oder der Assistent — gibt dem
+Bereich in derselben Änderung den Typ dieser Einheit, es sei denn, der Typ,
+den er schon hat, ist noch der einer Einheit, die ihn bedient: Ein Bereich,
+den eine Division bedient, sagt weiter *Division*, wenn ein Team darunter
+hinzukommt. Eine Einheit zu entfernen lässt den Typ stehen, das Rückgängig
+der Verknüpfung ebenso. Unter **Bedient von** sagt eine Zeile, wie die
+beiden zueinander stehen: *Typ Division, wie eine Einheit, die ihn bedient*;
+in der Warnfarbe *Typ Team, während die Einheiten, die ihn bedienen, vom Typ
+Division sind*; *Typ Team; noch keine Einheit bedient ihn*; oder, wo der
+Bereich keinen Typ aus dem Betriebsmodell sagt, welche Einheiten welcher
+Typen ihn bedienen, damit der Typ gesetzt werden kann. Das Abzeichen auf
+der Zeile des Bereichs im Baum warnt genauso, und die Prüfungen nennen die
+drei Fälle, die nicht stimmen (*Die Seite Prüfungen*).
+
 **Prüfungen**, eine Karte auf jeder Startseite, öffnet die **Seite
 Prüfungen**: jede Prüfung, die die App vornimmt, nach dem, worum es geht, mit
 warum jede wichtig ist, wie man es behebt und wo sie in oder unter dieser
@@ -155,11 +172,16 @@ Unternehmenskarte oder eine Technologielandschaft.
   Bereich trotzdem angelegt, und ein Hinweis sagt, dass die Einheit nicht
   verknüpft wurde; **Bedient von** auf der Startseite des neuen Bereichs ist
   der Ort, an dem Sie es festlegen.
-- **Einstellungen…** auf jeder Zeile enthält den Namen, was es ist
-  (Organisation, Domäne, Programm, Team, Landschaftsbereich — ein Wort für den
-  Bildschirm,
-  nichts verhält sich anders), einen Auftraggeber, eine Beschreibung, Links und
-  **Abgelegt unter**, was ihn verschiebt. Sein **Bedient von** ist das der
+- **Einstellungen…** auf jeder Zeile enthält den Namen, **was das ist**,
+  einen Auftraggeber, eine Beschreibung, Links und **Abgelegt unter**, was
+  ihn verschiebt. **Was das ist** ist eine Liste: Wo die Organisation ein
+  Betriebsmodell hat, stehen dessen Einheitentypen zuerst unter einer
+  eigenen Überschrift — *Division*, *Team*, wie die Organisation sie auch
+  nennt — und die fünf eingebauten Wörter darunter (Organisation, Domäne,
+  Programm, Team, Landschaftsbereich), weiterhin erlaubt; ohne
+  Betriebsmodell die fünf Wörter allein. Es ist ein Etikett: Nichts verhält
+  sich deswegen anders. Eines von beiden wird gesagt, nie beide. Sein
+  **Bedient von** ist das der
   Startseite, und jede Änderung daran wird geschrieben, sobald Sie sie machen,
   nicht mit **Speichern**; der Name einer Einheit dort öffnet sie wie auf der
   Startseite und schließt den Dialog.

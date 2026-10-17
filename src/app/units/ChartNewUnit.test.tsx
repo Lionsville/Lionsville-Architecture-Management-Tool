@@ -17,6 +17,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { useMemo, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
 import type { Command } from '../../model/commands'
+import type { ScopeCommand } from '../../projects/scopeState'
 import type { HostModel } from '../../model/hostModel'
 import { fromArrays, toArrays } from '../../model/normalised'
 import type { Role, UnitType } from '../../model/operatingModel'
@@ -58,7 +59,7 @@ const SHIPPING: HostModel = {
 const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
 const view: DesignDiagram = { id: 'oc-1', kind: 'chart', name: 'Organisation', members: [] }
 
-type Written = { path: string; commands: readonly Command[] }
+type Written = { path: string; commands: readonly ScopeCommand[] }
 
 function Harness({ scope = 'shipping', root = ROOT, shipping = SHIPPING, commands, written = [], refuse, readOnly = false, onSelect = () => {}, onOpenOperating = () => {}, writable = () => true }: {
   scope?: string; root?: HostModel; shipping?: HostModel; commands: Command[]; written?: Written[]; refuse?: WrittenIn
@@ -80,7 +81,8 @@ function Harness({ scope = 'shipping', root = ROOT, shipping = SHIPPING, command
     if (refuse) return Promise.resolve(refuse)
     const made = change({ path, model: models[path] } as ScopeSnapshot) ?? []
     written.push({ path, commands: made })
-    for (const command of made) land(path, command)
+    // A scope's header is no model command: the harness keeps no header, so it is written down and not landed.
+    for (const command of made) if (command.type !== 'scope.describe') land(path, command as Command)
     return Promise.resolve({ ok: true })
   }
   const make: UnitMaking = {
@@ -181,12 +183,14 @@ describe('a unit made at the top', () => {
     expect(within(dialog()).queryByText(/One step in/)).toBeNull()
     expect(await axeFindings(dialog())).toEqual([])
     fireEvent.click(within(dialog()).getByTestId('new-unit-create'))
-    await waitFor(() => expect(written).toHaveLength(1))
+    await waitFor(() => expect(written).toHaveLength(2))
     expect(commands).toEqual([])
     expect(written[0]).toEqual({
       path: 'warehouse',
       commands: [{ type: 'element.create', element: expect.objectContaining({ id: 'u-warehouse', unitTypeId: 'ut-domain', scopes: ['warehouse'] }) }],
     })
+    // The domain served takes the unit's type, in its own header (ADR-0036, amended 17 October 2026).
+    expect(written[1]).toEqual({ path: 'warehouse', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: undefined } }] })
     await waitFor(() => expect(screen.queryByTestId('new-unit-dialog')).toBeNull())
   })
 

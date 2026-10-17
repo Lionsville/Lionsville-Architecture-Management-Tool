@@ -157,6 +157,10 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.unitTypeEnded': withFields,
   /** The person, by register id, in each scope that keeps one of their assignments. */
   'check.personOverloaded': (finding) => [finding.person ?? finding.id],
+  /** The scope (its path), and the unit type it says — and the units serving it, where they disagree (ADR-0036, amended 17 October 2026). */
+  'check.scopeTypeDisagrees': withFields,
+  'check.scopeTypeUnserved': withFields,
+  'check.scopeTypeGone': withFields,
   /** The capability, the unit and the `assigned` row. */
   'check.unitNotServing': withFields,
   /** The unit and role a line runs from, and where it lands: the line's target changed is another question. */

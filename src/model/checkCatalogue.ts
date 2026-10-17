@@ -54,6 +54,7 @@ export const TREE_CHECK_KEYS = [
   'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
   'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
+  'check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -142,6 +143,7 @@ export type CheckCategory = (typeof CHECK_CATEGORIES)[number]
  *   if it had never been made;
  * - `setOwner` — name whose an application is (`partyId`);
  * - `setType` — give the unit another type;
+ * - `openScope` — the scope's home, where its type and *Served by* are;
  * - `markShared` — mark the service shared;
  * - `setSuccessor` — name what replaces it.
  */
@@ -149,7 +151,7 @@ export const CHECK_ACTIONS = [
   'openElement', 'openDefinition', 'openView', 'openRow', 'openInterface', 'openPlan',
   'openUnit', 'openUnits', 'openApplication', 'openType', 'openOperating', 'openPerson', 'openCause',
   'link', 'acceptInterface', 'declareInteraction', 'removeInteraction', 'modelInterface', 'assign', 'endAssignment',
-  'removeAssignment', 'setOwner', 'setType', 'markShared', 'setSuccessor',
+  'removeAssignment', 'setOwner', 'setType', 'markShared', 'setSuccessor', 'openScope',
 ] as const
 export type CheckAction = (typeof CHECK_ACTIONS)[number]
 
@@ -331,6 +333,19 @@ const ENTRIES = {
     name: 'check.name.reportingAmbiguous', why: 'check.why.reportingAmbiguous', how: 'check.how.reportingAmbiguous',
     category: 'organisation', weight: 'fix', actions: ['openUnit', 'openType'],
   },
+  // A scope's type against the units that serve it (ADR-0036, amended 17 October 2026): about the scope.
+  'check.scopeTypeDisagrees': {
+    name: 'check.name.scopeTypeDisagrees', why: 'check.why.scopeTypeDisagrees', how: 'check.how.scopeTypeDisagrees',
+    category: 'organisation', weight: 'review', actions: ['openScope', 'openUnit'],
+  },
+  'check.scopeTypeUnserved': {
+    name: 'check.name.scopeTypeUnserved', why: 'check.why.scopeTypeUnserved', how: 'check.how.scopeTypeUnserved',
+    category: 'organisation', weight: 'note', actions: ['openScope'],
+  },
+  'check.scopeTypeGone': {
+    name: 'check.name.scopeTypeGone', why: 'check.why.scopeTypeGone', how: 'check.how.scopeTypeGone',
+    category: 'organisation', weight: 'fix', actions: ['openScope', 'openType'],
+  },
   'check.reportingVacant': {
     name: 'check.name.reportingVacant', why: 'check.why.reportingVacant', how: 'check.how.reportingVacant',
     category: 'organisation', weight: 'review', actions: ['openUnit', 'assign'],
@@ -404,6 +419,7 @@ export const CHECK_ACTION_LABEL: Record<CheckAction, StringKey> = {
   setType: 'check.action.setType',
   markShared: 'check.action.markShared',
   setSuccessor: 'check.action.setSuccessor',
+  openScope: 'check.action.openScope',
 }
 
 /**
