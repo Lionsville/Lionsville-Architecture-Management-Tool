@@ -29,7 +29,7 @@ import { linesSaid } from './operatingModel'
 import type { ReportsToSaid, RoleId, RoleSlot, UnitTypeId } from './operatingModel'
 import type { ElementId, UnitReportingLine } from './types'
 import {
-  everyLineOn, holdersOn, isUnit, organisationOn, positionKey, roleOn, runsOn, slotsOf, unitOn, unitsAbove,
+  everyLineOn, holdersAt, isUnit, lineDecides, organisationOn, personOf, positionKey, roleOn, runsOn, slotsOf, unitOn, unitsAbove,
 } from './units'
 import type { Assignment, AssignmentId, AssignmentReportingLine, LinePosition, Organisation, ReportingLineOn, UnitLike } from './units'
 
@@ -64,32 +64,39 @@ export function reportingLoops(organisation: Organisation, day: string): LinePos
  * The roles in units and who manages each: a solid line's target, else the
  * managing roles of the unit and the units above — and the target of every
  * holder's own solid line there besides, since a chain that comes back to a
- * role in a unit comes back to each of its holders.
+ * role in a unit comes back to each of its holders. A line to one person
+ * (ADR-0039, amended 17 October 2026) lands on a node of that holder's own,
+ * managed along their own line where they have one, else as their role there.
  */
 function managerGraph(on: Organisation, day: string, lines: readonly ReportingLineOn[]) {
   const managing = new Set(on.roles.filter((role) => role.manages === true && roleOn(role, day)).map((role) => role.id))
   const there = new Map(on.units.filter((unit) => isUnit(unit) && unitOn(unit, day)).map((unit) => [unit.id, unit]))
   const roleIds = rolesHeldIn(on, day, there.values())
-  const { lineFrom, ownFrom } = solidFrom(lines)
+  const { lineFrom, ownFrom, ownBy } = solidFrom(on, day, lines)
+  const keyOf = (at: LinePosition) => positionKey(at.unitId, at.roleId, at.person)
   const position = new Map<string, LinePosition>()
   const order: string[] = []
   const next = new Map<string, string[]>()
   const add = (at: LinePosition) => {
-    const key = positionKey(at.unitId, at.roleId)
+    const key = keyOf(at)
     if (!position.has(key)) { position.set(key, at); order.push(key) }
     return key
   }
   for (const unit of there.values()) for (const roleId of roleIds.get(unit.id) ?? []) add({ unitId: unit.id, roleId })
-  for (const line of lines) if (line.kind === 'solid' && line.state === 'lands' && line.to) { add(line); add(line.to) }
+  for (const line of lines) if (lineDecides(on.assignments, line, day)) { add({ unitId: line.unitId, roleId: line.roleId }); add(line.to) }
+  const defaults = (at: LinePosition): string[] => {
+    const target = lineFrom.get(positionKey(at.unitId, at.roleId))
+    if (target) return [keyOf(target)]
+    const up = [...(managing.has(at.roleId) ? [] : [at.unitId]), ...unitsAbove(on.units, at.unitId)]
+    return up.filter((id) => there.has(id)).flatMap((id) => (roleIds.get(id) ?? [])
+      .filter((role) => managing.has(role)).map((role) => positionKey(id, role)))
+      .filter((one) => position.has(one))
+  }
   for (const key of [...order]) {
     const at = position.get(key)!
-    const target = lineFrom.get(key)
-    const own = (ownFrom.get(key) ?? []).map((to) => positionKey(to.unitId, to.roleId))
-    if (target) { next.set(key, [...new Set([positionKey(target.unitId, target.roleId), ...own])]); continue }
-    const up = [...(managing.has(at.roleId) ? [] : [at.unitId]), ...unitsAbove(on.units, at.unitId)]
-    next.set(key, [...new Set([...up.filter((id) => there.has(id)).flatMap((id) => (roleIds.get(id) ?? [])
-      .filter((role) => managing.has(role)).map((role) => positionKey(id, role)))
-      .filter((one) => position.has(one)), ...own])])
+    const own = at.person === undefined ? ownFrom.get(key) : ownBy.get(key)
+    if (at.person !== undefined) next.set(key, own ? own.map(keyOf) : defaults(at))
+    else next.set(key, [...new Set([...defaults(at), ...(own ?? []).map(keyOf)])])
   }
   // A loop is said from the first role a solid line runs from, a holder's own included.
   for (const [key, to] of ownFrom) if (!lineFrom.has(key)) lineFrom.set(key, to[0])
@@ -111,17 +118,28 @@ function rolesHeldIn(on: Organisation, day: string, there: Iterable<UnitLike>): 
   return roleIds
 }
 
-/** The solid lines that land, by the role in the unit they run from: the role's there, and the targets of its holders' own. */
-function solidFrom(lines: readonly ReportingLineOn[]): { lineFrom: Map<string, LinePosition>; ownFrom: Map<string, LinePosition[]> } {
+/**
+ * The solid lines that decide who manages, by the role in the unit they run
+ * from: the role's there; the targets of its holders' own; and those again by
+ * the one holder whose own they are, for a line that lands on that person.
+ */
+function solidFrom(on: Organisation, day: string, lines: readonly ReportingLineOn[]) {
   const lineFrom = new Map<string, LinePosition>()
   const ownFrom = new Map<string, LinePosition[]>()
+  const ownBy = new Map<string, LinePosition[]>()
+  const byId = new Map(on.assignments.map((one) => [one.id, one]))
   for (const line of lines) {
-    if (line.kind !== 'solid' || line.state !== 'lands' || !line.to) continue
+    if (!lineDecides(on.assignments, line, day)) continue
     const key = positionKey(line.unitId, line.roleId)
-    if (line.assignmentId === undefined) lineFrom.set(key, line.to)
-    else ownFrom.set(key, [...ownFrom.get(key) ?? [], line.to])
+    if (line.assignmentId === undefined) { lineFrom.set(key, line.to); continue }
+    ownFrom.set(key, [...ownFrom.get(key) ?? [], line.to])
+    const holder = byId.get(line.assignmentId)
+    if (holder) {
+      const mine = positionKey(line.unitId, line.roleId, personOf(holder))
+      ownBy.set(mine, [...ownBy.get(mine) ?? [], line.to])
+    }
   }
-  return { lineFrom, ownFrom }
+  return { lineFrom, ownFrom, ownBy }
 }
 
 /** The strongly connected parts of a graph (Tarjan), each in the order met. */
@@ -175,7 +193,7 @@ function cycleFrom(start: string, next: ReadonlyMap<string, readonly string[]>, 
 
 /** One key for a chain, whichever role in it is read first. */
 export function chainKey(chain: readonly LinePosition[]): string {
-  return chain.map((at) => positionKey(at.unitId, at.roleId)).sort().join('\u0001')
+  return chain.map((at) => positionKey(at.unitId, at.roleId, at.person)).sort().join('\u0001')
 }
 
 /**
@@ -220,7 +238,7 @@ export function reportingFindings(organisation: Organisation, day: string): Repo
   for (const line of lines) {
     if (line.state === 'dangling') found.push({ kind: 'dangling', line })
     else if (line.state === 'ambiguous') found.push({ kind: 'ambiguous', line })
-    else if (line.state === 'lands' && line.to && holdersOn(on.assignments, line.to.unitId, line.to.roleId, day).length === 0) {
+    else if (line.state === 'lands' && line.to && holdersAt(on.assignments, line.to, day).length === 0) {
       found.push({ kind: 'vacant', line })
     }
   }
@@ -328,16 +346,20 @@ export function withAssignmentLines(organisation: Organisation, assignmentId: As
  * 2026): never to the holder's own role in their own unit, and a solid one
  * never closes a loop that was not there — on the day it is written or on
  * the line's first day, asked over the organisation with the assignment as
- * it will be. A dotted one is not asked about loops.
+ * it will be. A line to another person who holds the same role there is no
+ * line to oneself. A dotted one is not asked about loops.
  */
 export function refusePersonLines(
-  organisation: Organisation, assignment: Pick<Assignment, 'id' | 'unitId' | 'roleId'>, lines: readonly AssignmentReportingLine[], day: string,
+  organisation: Organisation, assignment: Pick<Assignment, 'id' | 'unitId' | 'roleId' | 'person'>, lines: readonly AssignmentReportingLine[], day: string,
 ): LineRefusal | undefined {
-  if (lines.some((line) => line.to.unit === assignment.unitId && line.to.role === assignment.roleId)) return { refusal: 'reportingLine.self' }
+  // To their own role in their own unit: to themselves, unless the line names somebody else who holds it there.
+  const self = (line: AssignmentReportingLine) => line.to.unit === assignment.unitId && line.to.role === assignment.roleId
+    && (line.to.person === undefined || line.to.person === personOf(assignment))
+  if (lines.some(self)) return { refusal: 'reportingLine.self' }
   const solid = lines.filter((line) => line.kind === 'solid')
   if (solid.length === 0) return undefined
   const placed = organisation.assignments.some((one) => one.id === assignment.id)
-  const before = placed ? organisation : { ...organisation, assignments: [...organisation.assignments, { ...assignment, person: { person: '' } } as Assignment] }
+  const before = placed ? organisation : { ...organisation, assignments: [...organisation.assignments, assignment as Assignment] }
   const after = withAssignmentLines(before, assignment.id, lines)
   for (const line of solid) {
     const refusal = loopMadeBy(before, after, day, line.from)

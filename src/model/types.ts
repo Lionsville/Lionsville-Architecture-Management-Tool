@@ -150,8 +150,13 @@ export type ElementId = string;
  */
 export type NodeShapeVariant = 'rounded' | 'sharp' | 'subtle' | 'figure';
 
-/** Where a unit's own reporting line lands (ADR-0039 §3): the scope that keeps the unit, by path, the unit, and the role. */
-export type UnitLineTarget = { scope: string; unit: ElementId; role: string };
+/**
+ * Where a unit's own reporting line lands (ADR-0039 §3), and a holder's own
+ * (ADR-0039, amended 17 October 2026): the scope that keeps the unit, by
+ * path, the unit, and the role — and, where one is named, the one holder of
+ * that role there it lands on, by register id; otherwise every holder.
+ */
+export type UnitLineTarget = { scope: string; unit: ElementId; role: string; person?: string };
 
 /**
  * A reporting line said on one unit (ADR-0039 §3): `solid` is a line

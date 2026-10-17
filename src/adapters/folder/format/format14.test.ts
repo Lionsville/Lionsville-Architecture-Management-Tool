@@ -41,7 +41,7 @@ function at(version: number, file: FolderFile): FolderFile {
 const own: Assignment = {
   id: 'as-1', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-bram' },
   reportsTo: [
-    { to: { scope: 'shipping', unit: 'parcel', role: 'ro-head' }, kind: 'solid' },
+    { to: { scope: 'shipping', unit: 'parcel', role: 'ro-head', person: 'pe-femke' }, kind: 'solid' },
     { to: { scope: '', unit: 'office', role: 'ro-arch' }, kind: 'dotted', from: '2027-01-01', until: '2027-12-31' },
   ],
 }

@@ -216,10 +216,13 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  *
  * **14 is 13, with a holder's own reporting lines** (ADR-0039, amended 17
  * October 2026): an assignment in `_assignments/assignments.json` may say
- * `reportsTo`, a list of lines to a role in a unit, each solid or dotted and
- * dated. A build that reads 13 reads an assignment field by field and would
+ * `reportsTo`, a list of lines to a role in a unit — or to one holder of it
+ * there, by register id — each solid or dotted and dated; and a unit's own
+ * line in `model.json` may name that one holder too (`to.person`). A build
+ * that reads 13 reads an assignment field by field and would
  * drop them on its way back — the person would report where the model says
- * again after somebody else's save, with nobody having said so — so the
+ * again after somebody else's save, with nobody having said so — and would
+ * read a unit's line to one holder as a line to all of them; so the
  * number turns, and a 3.7.2 build refuses the folder instead. Format 13 is
  * already public, so what it means is not changed after the fact. The field
  * is optional: a 13 is a 14 in which nobody has a line of their own, and the

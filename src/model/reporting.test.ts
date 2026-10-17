@@ -396,7 +396,7 @@ describe('a person\'s own line and a role held outside the slots (ADR-0039, amen
     expect(refusePersonLines(organisation, hot, [{ ...back, kind: 'dotted' }], TODAY)).toBeUndefined()
     expect(refusePersonLines(organisation, lead, [toCeo], TODAY)).toBeUndefined()
     // An assignment still to be added is asked as it will be.
-    expect(refusePersonLines(organisation, { id: 'as-new', unitId: 'tech', roleId: 'ro-hot' }, [back], TODAY)).toMatchObject({ refusal: 'reportingLine.loop' })
+    expect(refusePersonLines(organisation, { id: 'as-new', unitId: 'tech', roleId: 'ro-hot', person: { person: 'pe-new' } }, [back], TODAY)).toMatchObject({ refusal: 'reportingLine.loop' })
   })
 
   it('sets a holder\'s lines kind by kind, and takes them away', () => {
@@ -420,5 +420,46 @@ describe('a person\'s own line and a role held outside the slots (ADR-0039, amen
     expect(reportingLinesOn(unplaced, TODAY).find((one) => one.unitId === 'checkout' && one.roleId === 'ro-arch')).toBeUndefined()
     // No finding: an exception, not a fault.
     expect(reportingFindings(placed, TODAY)).toEqual(reportingFindings(unplaced, TODAY))
+  })
+})
+
+describe('a line to one person (ADR-0039, amended 17 October 2026: the owner\'s choice)', () => {
+  const lead = assignments.find((one) => one.roleId === 'ro-lead')!
+  const hot = assignments.find((one) => one.roleId === 'ro-hot')!
+  /** A second head of technology, beside the first. */
+  const second = held('tech', 'ro-hot', 'pe-hot2')
+  const two: Organisation = { ...organisation, assignments: [...assignments, second] }
+
+  it('lands a unit\'s own line on that one holder, who manages by override, and goes on from them', () => {
+    const named = withUnitLines(two, 'retail', [{ role: 'ro-lead', kind: 'solid', to: { scope: '', unit: 'tech', role: 'ro-hot', person: 'pe-hot2' } }])
+    expect(reportingLinesOn(named, TODAY).find((one) => one.unitId === 'retail' && one.roleId === 'ro-lead')?.to).toEqual({ unitId: 'tech', roleId: 'ro-hot', person: 'pe-hot2' })
+    const managers = people(managersOf(named, 'retail', TODAY, 'ro-lead'))
+    expect(managers[0]).toBe('pe-hot2:override')
+    expect(managers).not.toContain('pe-hot:override')
+    // The model's line would have made both heads of technology the lead's managers.
+    expect(people(managersOf(two, 'retail', TODAY, 'ro-lead')).slice(0, 2)).toEqual(['pe-hot:line', 'pe-hot2:line'])
+    expect(reachVia(managedReach(named, 'pe-hot2', TODAY), 'retail', 'ro-lead')).toBe('override')
+  })
+
+  it('lands a holder\'s own line on one colleague in their own role, which is no line to themselves', () => {
+    const peer = held('retail', 'ro-member', 'pe-senior')
+    const withPeer: Organisation = { ...organisation, assignments: [...assignments, peer] }
+    const member = assignments.find((one) => one.roleId === 'ro-member')!
+    const toPeer: AssignmentReportingLine = { to: { scope: '', unit: 'retail', role: 'ro-member', person: 'pe-senior' }, kind: 'solid' }
+    expect(refusePersonLines(withPeer, member, [toPeer], TODAY)).toBeUndefined()
+    expect(refusePersonLines(withPeer, member, [{ ...toPeer, to: { ...toPeer.to, person: 'pe-member' } }], TODAY)).toEqual({ refusal: 'reportingLine.self' })
+    expect(people(managersOfHolder(withAssignmentLines(withPeer, member.id, [toPeer]), member, TODAY))[0]).toBe('pe-senior:override')
+  })
+
+  it('is vacant where the person no longer holds the role there, and the model\'s answer stands', () => {
+    const gone = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'co', role: 'ro-ceo', person: 'pe-somebody' }, kind: 'solid' }])
+    expect(reportingFindings(gone, TODAY).map((one) => one.kind)).toEqual(['vacant'])
+    expect(people(managersOfHolder(gone, lead, TODAY))).toEqual(['pe-hot:line', 'pe-ceo:nesting'])
+  })
+
+  it('closes a loop through that one person, and is refused for it', () => {
+    const back: AssignmentReportingLine = { to: { scope: '', unit: 'retail', role: 'ro-lead', person: 'pe-lead' }, kind: 'solid' }
+    expect(refusePersonLines(organisation, hot, [back], TODAY)).toMatchObject({ refusal: 'reportingLine.loop' })
+    expect(reportingLoops(withAssignmentLines(organisation, hot.id, [back]), TODAY)).toHaveLength(1)
   })
 })

@@ -23,8 +23,9 @@
  * a name: the name is the register's, which is outside the history.
  *
  * **A holder's own reporting lines** ride on the row as `reportsTo` (format
- * 14; ADR-0039, amended 17 October 2026): each `{ to: { scope, unit, role },
- * kind, from?, until? }`, as a unit's own line is kept. A line without a whole
+ * 14; ADR-0039, amended 17 October 2026): each `{ to: { scope, unit, role,
+ * person? }, kind, from?, until? }`, as a unit's own line is kept — `person`
+ * the one holder there it lands on, by register id. A line without a whole
  * target or a kind is passed over, and the row is kept.
  *
  * Forgiving in one direction, as the other codecs are: it writes one exact
@@ -92,7 +93,7 @@ function linesOf(value: unknown): { reportsTo?: AssignmentReportingLine[] } {
     const role = text(to?.role)
     if (!line || !to || typeof to.scope !== 'string' || !unit || !role || !isLineKind(line.kind)) return []
     return [{
-      to: { scope: to.scope, unit, role }, kind: line.kind,
+      to: { scope: to.scope, unit, role, ...(text(to.person) !== undefined ? { person: text(to.person) } : {}) }, kind: line.kind,
       ...(text(line.from) !== undefined ? { from: text(line.from) } : {}),
       ...(text(line.until) !== undefined ? { until: text(line.until) } : {}),
     }]
