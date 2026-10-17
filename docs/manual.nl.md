@@ -2578,10 +2578,16 @@ eenheden van één type in hun eigen volgorde waar die is gezet, anders op
 naam. Elke lijst van eenheden houdt die volgorde aan: het overzicht, de
 kolommen van de Conway-kaart en elke plek waar je een eenheid kiest.
 
-**Het overzicht** naast het organogram toont dezelfde eenheden als een boom.
-Een eenheid daar kiezen gaat ernaartoe op het organogram — opengevouwen, in
-beeld gescrold en omlijnd — en kiest haar waar deze scope haar bijhoudt.
-Onder het overzicht verplaatsen **Omhoog** en **Omlaag** de gekozen eenheid
+**Het overzicht** naast het organogram toont dezelfde eenheden als een boom,
+en stuurt het organogram. Een eenheid daar kiezen, of openvouwen met haar
+pijltje, vouwt haar ook op het organogram open, met elke eenheid erboven,
+scrolt het organogram ernaartoe, omlijnt haar en kiest haar — waar deze scope
+haar bijhoudt. Een eenheid in het overzicht dichtvouwen vouwt alleen het
+overzicht en laat het organogram zoals het is. De breedte van het overzicht is
+van jou: sleep de naad aan de rechterkant, of geef de naad de focus en gebruik
+de pijltjestoetsen links en rechts (met Shift voor een grotere stap, Home voor
+de breedte waarmee het begon); het blijft tussen een minimum en een maximum en
+wordt bewaard met je andere paneelbreedtes. Onder het overzicht verplaatsen **Omhoog** en **Omlaag** de gekozen eenheid
 tussen de eenheden van haar type in dezelfde eenheid: één stap in elke scope
 die er een van bijhoudt. Waar ze allemaal in deze scope worden bijgehouden,
 neemt ongedaan maken de verplaatsing terug; waar sommige in andere scopes
@@ -2646,16 +2652,20 @@ wordt, biedt niets hiervan.
 **Een grote organisatie vouwt.** Het pijltje naast de naam van een eenheid
 vouwt de eenheden eronder dicht, en de eenheid zegt dan wat ze verbergt: haar
 eenheden en mensen, en de vacatures en bevindingen daaronder. De eerste keer
-dat een organogram met meer dan 30 eenheden wordt geopend, is alles onder het
-tweede niveau dichtgevouwen, en de pagina zegt dat. **Alles dichtvouwen** en
+dat een organogram wordt geopend, toont het twee niveaus — de eenheden
+bovenaan en de eenheden direct daaronder — en is alles daaronder
+dichtgevouwen, hoe groot het organogram ook is, en de pagina zegt dat; daarna
+houdt het je eigen vouwen aan. **Alles dichtvouwen** en
 **Alles openvouwen** staan in de balk; het overzicht vouwt los daarvan.
 **Zoek een eenheid** gaat naar de eerste eenheid waarvan de naam elk getypt
 woord bevat; dat, **Vind mij** en **Open de eenheid** bij een bevinding naast
 het organogram vouwen de weg open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
 is en wordt nooit bewaard.
 
-Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
-heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
+Elk vak noemt het type en de naam van de eenheid — een woord in de naam van
+het type dat langer is dan zeven letters ingekort tot de eerste zes en een
+punt, *Organisatieonderdeel* als *Organi.*, met de hele naam als je ernaar
+wijst en voor een schermlezer — en elke regel een rol die ze heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
 het register, het aandeel waar dat niet al iemands tijd is, *waarnemend*,
 *ext* voor iemand van buiten de organisatie, en *jij*. Een rode rand markeert
 iemand wiens aandelen samen meer zijn dan al zijn tijd in de hele organisatie.

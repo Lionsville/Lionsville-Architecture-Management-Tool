@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **9589 tests** and one of every config. The
+One codebase, in modules, with **9601 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 9589 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 9601 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -994,15 +994,22 @@ src/app/          The shell around the editor.
                                       (`conwayWords`), drawn in the tab through
                                       `UnitViewPages`, the chart's boxes in
                                       their grid (`ChartUnitBox`) and what a
-                                      badge and a folded unit say
-                                      (`chartWords`); its summary in the
+                                      badge and a folded unit say, and a
+                                      unit type's name with its long words
+                                      cut (`chartWords`), drawn with the
+                                      whole name on hover and to assistive
+                                      technology (`TypeLabel`, 3.7.3); its
+                                      summary in the
                                       inspector while nothing is picked —
                                       the counts, the findings, how to read
                                       it (`ChartSummary`), read off the page's
                                       own reading (`chartReading`); the
                                       chart's folds, for the session and keyed
-                                      by the view (`useChartFolds`), its
-                                      outline (`ChartOutline`) and a unit
+                                      by the view, two levels on a first
+                                      open (`useChartFolds`), its outline,
+                                      which leads the chart's unfolding and
+                                      is dragged wider on its seam
+                                      (`ChartOutline`, 3.7.3) and a unit
                                       moved among its siblings there
                                       (`useSiblingOrder`); the assignment a chip
                                       chooses, in the inspector beside the
@@ -1082,7 +1089,8 @@ src/app/          The shell around the editor.
                                       to the session — the handler, and every
                                       tool with it, fetched with the first
                                       request — and the way in for a person
-                    testing/          renderShell / renderApp: the shared harness
+                    testing/          renderShell / renderApp: the shared harness;
+                                      a chart left unfolded (`chartFolds`)
                     use*              the hooks: session, files, document, toasts
                     usePlans          the roadmap, a plan and Replace…, wired
 electron/         The desktop main process and preload.

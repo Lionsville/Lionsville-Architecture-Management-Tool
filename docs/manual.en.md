@@ -2363,9 +2363,15 @@ then the types that sit in it — and units of one type in their own order where
 one is set, otherwise by name. Every list of units keeps that order: the
 outline, the Conway map's columns and every place a unit is picked.
 
-**The outline** beside the chart lists the same units as a tree. Picking one
-there goes to it on the chart — unfolded, scrolled to and ringed — and chooses
-it where this scope keeps it. Under the outline, **Move up** and **Move down**
+**The outline** beside the chart lists the same units as a tree, and leads
+the chart. Picking a unit there, or unfolding it by its caret, unfolds it on
+the chart too, with every unit above it, scrolls the chart to it, rings it and
+picks it — chosen where this scope keeps it. Folding a unit in the outline
+folds the outline alone and leaves the chart as it is. The outline's width is
+yours: drag the seam on its right, or give the seam the focus and use the
+left and right arrow keys (with Shift for a larger step, Home for the width it
+started at); it stays between a minimum and a maximum and is kept with your
+other panel widths. Under the outline, **Move up** and **Move down**
 move the unit picked among the units of its type in the same unit: one step in
 each scope that keeps one of them. Where they are all kept in this scope, undo
 takes the move back; where some are kept in other scopes, each scope is put
@@ -2422,14 +2428,18 @@ and leads to the **Operating model**; with no unit types at all, it leads to
 
 **A large organisation folds.** The caret beside a unit's name folds the units
 under it, and the unit then says what it hides: its units and people, and the
-vacancies and findings among them. The first time a chart of more than 30
-units is opened, everything below the second level is folded, and the page
-says so. **Fold all** and **Unfold all** are on the bar; the outline folds on
-its own. **Find a unit** goes to the first unit whose name holds every word
+vacancies and findings among them. The first time a chart is opened it shows
+two levels — the units at the top and the units directly under them — and
+everything below them is folded, whatever the chart's size, and the page says
+so; from then on your own folds are what it keeps. **Fold all** and **Unfold
+all** are on the bar; the outline folds on its own. **Find a unit** goes to the first unit whose name holds every word
 typed; it, **Find me** and **Open the unit** on a finding beside the chart
 unfold the way to the unit they go to. A fold lasts while the app is open and is never saved.
 
-Each box says the unit's type and name, and each row a role it holds, with who
+Each box says the unit's type and name — a word of the type's name longer than
+seven letters cut to its first six and a full stop, *Organisational unit* as
+*Organi. unit*, with the whole name shown when you point at it and read out by
+a screen reader — and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it
 is not all of their time, *acting*, *ext* for someone from outside the
 organisation, and *you*. A red edge marks someone whose shares add up to more

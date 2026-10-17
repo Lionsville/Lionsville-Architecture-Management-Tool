@@ -32,7 +32,11 @@
   October 2026: a unit moves to another place in the organisation, its
   parent found anywhere in the tree, as the correction §6 says a move
   outside a plan is (*Amended, 17 October 2026 — a unit moves*, below); as
-  built and implemented, 17 October 2026
+  built and implemented, 17 October 2026. Amended, 17 October 2026 (3.7.3):
+  the chart opens two levels deep whatever its size, the outline leads the
+  chart's unfolding and is as wide as it is dragged, and a unit type's long
+  words are cut on the chart (*Amended, 17 October 2026 — the chart made
+  easier to read*, below); as built and implemented, 17 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
@@ -2471,6 +2475,69 @@ A unit kept in another scope is changed in that scope.
   (*Move…*, `projects/gestures.travelling`) keeps its `parentId` only where
   the scope it arrives in holds that parent, so a unit whose parent is kept
   elsewhere arrives at the top; left as it was, and *Move to…* puts it back.
+
+## Amended, 17 October 2026 — the chart made easier to read
+
+*Accepted and built 17 October 2026 (3.7.3): As built, below. The defaults
+marked as such are the owner's to overturn.* The amendment of 11 October
+folded a first open of more than thirty units below the second level and
+left a smaller chart whole, let the outline fold on its own, and gave the
+outline a fixed width. A chart of twenty units five levels deep therefore
+opened as a page to scroll through; opening a unit in the outline left the
+chart folded where the reader was looking; a deep outline ran out of width;
+and a type named *Organisational unit* took a line of every box.
+
+**A first open shows two levels**, whatever the chart's size: the chart's
+top units are the first level and the units directly under them the second
+(a default), so every unit on the second level with units under it is
+folded, in the chart and in the outline. After that the person's own folds
+are what is kept, for the session, as before; nothing of a fold is saved.
+
+**The outline leads the chart, one way.** The two still keep their folds
+apart. Opening goes from the outline to the chart: a unit unfolded or picked
+in the outline is unfolded on the chart, with every unit above it, scrolled
+to, ringed and picked. Folding in the outline folds the outline alone, and a
+fold on the chart never folds the outline — so the outline stays a way about
+that does not hide what the chart shows, and the chart is never folded by a
+reader looking for a way about.
+
+**The outline's width is the person's**, between 180 and 480 pixels, on a
+seam that is a separator with its value and limits, dragged by the pointer
+or moved by the arrow keys, Home putting it back. It is kept with the
+editor's panel widths, per person (`EditorPreferences.outlineWidth`), handed
+to the page through `PageView.outline`; a page drawn without one keeps its
+own while it is up.
+
+**A long word of a type's name is cut** on the chart's boxes and in its
+outline: a word longer than seven letters keeps its first six and a full
+stop, word by word, not the label as a whole (a default) — *Organisational
+unit* is *Organi. unit*. The whole name is shown on hover and is what
+assistive technology reads, so a box is named by its whole type.
+
+## As built, 17 October 2026: the chart made easier to read
+
+- **Two levels**: `model/orgChart.foldedOnFirstOpen` has no size rule any
+  more (`FOLD_OVER` is gone); `useChartFolds` opens with it as before, and
+  the page's note no longer counts units.
+- **The outline leads**: `useChartFolds.expand` unfolds a unit and the units
+  above it on the chart and the way to it in the outline, and lets the
+  first open's note go; `ChartOutline` calls it, through the page, for a
+  pick and for a caret that opens, and the page then goes to the unit as
+  *Find* does.
+- **The width**: `editor/panels.OUTLINE_LIMITS` and `outlineWidth`, which
+  clamps a stored width; `EditorPreferences.outlineWidth`;
+  `PageView.outline`, passed by `UnitViewPages`; the seam is
+  `widgets/SeamResizer` beside the outline, hidden on a narrow window where
+  the outline sits over the chart at the window's width.
+- **The labels**: `app/units/chartWords.shortTypeName`, counting letters as
+  a reader does (graphemes), and `TypeLabel`, which draws the cut name
+  hidden from assistive technology, the whole name for it alone, and the
+  whole name as the hover title; a name with nothing to cut is drawn as it
+  is.
+- **Tests** that pinned the old rule are flipped: the chart's own tests of a
+  small chart of three levels open it as left unfolded
+  (`app/testing/chartFolds.leftUnfolded`), and `ChartReading.test` reads the
+  four changes.
 
 ## Open
 

@@ -2724,9 +2724,17 @@ ihrer eigenen Reihenfolge, wo eine gesetzt ist, sonst nach Namen. Jede Liste
 von Einheiten hält diese Reihenfolge: die Gliederung, die Spalten der
 Conway-Karte und jede Stelle, an der eine Einheit gewählt wird.
 
-**Die Gliederung** neben dem Organigramm zeigt dieselben Einheiten als Baum.
-Eine Einheit dort zu wählen geht im Organigramm zu ihr — ausgeklappt, ins Bild
-gescrollt und umrandet — und wählt sie, wo dieser Bereich sie führt. Unter der
+**Die Gliederung** neben dem Organigramm zeigt dieselben Einheiten als Baum
+und führt das Organigramm. Eine Einheit dort zu wählen oder mit ihrem Pfeil
+aufzuklappen, klappt sie auch im Organigramm auf, mit jeder Einheit darüber,
+scrollt das Organigramm zu ihr, umrandet sie und wählt sie — wo dieser Bereich
+sie führt. Eine Einheit in der Gliederung einzuklappen, klappt nur die
+Gliederung ein und lässt das Organigramm, wie es ist. Die Breite der
+Gliederung bestimmen Sie: Ziehen Sie die Naht an ihrer rechten Seite, oder
+geben Sie der Naht den Fokus und nutzen Sie die Pfeiltasten links und rechts
+(mit Umschalt für einen größeren Schritt, Pos1 für die Anfangsbreite); sie
+bleibt zwischen einem Minimum und einem Maximum und wird mit Ihren anderen
+Bereichsbreiten gespeichert. Unter der
 Gliederung verschieben **Nach oben** und **Nach unten** die gewählte Einheit
 unter den Einheiten ihres Typs in derselben Einheit: ein Schritt in jedem
 Bereich, der eine davon führt. Wo alle in diesem Bereich geführt werden, nimmt
@@ -2795,16 +2803,20 @@ beginnen**. Ein Organigramm, das nur gelesen wird, bietet nichts davon.
 **Eine große Organisation klappt ein.** Der Pfeil neben dem Namen einer
 Einheit klappt die Einheiten darunter ein, und die Einheit sagt dann, was sie
 verbirgt: ihre Einheiten und Personen, und die unbesetzten Rollen und Befunde
-darunter. Wird ein Organigramm mit mehr als 30 Einheiten zum ersten Mal
-geöffnet, ist alles unterhalb der zweiten Ebene eingeklappt, und die Seite
-sagt es. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
+darunter. Wird ein Organigramm zum ersten Mal geöffnet, zeigt es zwei
+Ebenen — die Einheiten oben und die Einheiten direkt darunter — und alles
+darunter ist eingeklappt, wie groß das Organigramm auch ist, und die Seite
+sagt es; danach gelten Ihre eigenen Faltungen. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
 Gliederung klappt für sich. **Eine Einheit finden** geht zur ersten Einheit,
 deren Name jedes eingegebene Wort enthält; das, **Mich finden** und **Einheit
 öffnen** bei einem Befund neben dem Organigramm klappen den Weg zu der Einheit
 aus, zu der sie gehen.
 Eine Faltung gilt, solange die App offen ist, und wird nie gespeichert.
 
-Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
+Jeder Kasten nennt Typ und Namen der Einheit — ein Wort im Namen des Typs, das
+länger als sieben Buchstaben ist, gekürzt auf seine ersten sechs und einen
+Punkt, *Geschäftsbereich* als *Geschä.*, mit dem ganzen Namen, wenn Sie darauf
+zeigen, und für einen Bildschirmleser — und jede Zeile eine Rolle, die
 sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus
 dem Register, dem Anteil, wo es nicht die ganze Zeit ist, *vertretend*,
 *ext.* für jemanden von außerhalb der Organisation, und *Sie*. Ein roter Rand
