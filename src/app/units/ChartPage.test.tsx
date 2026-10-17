@@ -376,6 +376,30 @@ describe('the organisation chart', () => {
     fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
     expect(screen.queryByTestId('assign-dialog')).toBeNull()
   })
+
+  /** A manager reached by a reporting line (ADR-0039 §4): a solid line's role is theirs, a dotted one's is not. */
+  it('fills a vacancy of a role whose solid line lands on the manager\'s role, and none of one whose line is dotted', async () => {
+    const to = { scope: '', unit: 'data', role: 'ro-lead' }
+    const lined = (kind: 'solid' | 'dotted'): HostModel => ({
+      ...SHIPPING,
+      elements: SHIPPING.elements.map((one) => (one.id === 'tt' ? { ...one, reportingLines: [{ role: 'ro-dev', kind, to }] } : one)),
+    })
+    const kees = (shipping: HostModel) => managesPeople(indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: shipping }]).organisation(), 'pe-kees', TODAY)
+    const commands: Command[] = []
+    renderShell(<Harness commands={commands} readOnly shipping={lined('solid')} me="pe-kees" manages={kees(lined('solid'))} />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    fireEvent.click(within(dialog).getByTestId('person-pick-pe-tim'))
+    fireEvent.click(within(dialog).getByTestId('assign-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.add', assignment: { id: 'as-new', unitId: 'tt', roleId: 'ro-dev', person: { person: 'pe-tim' }, from: TODAY },
+    }])
+    cleanup()
+    const dotted = kees(lined('dotted'))
+    renderShell(<Harness commands={commands} readOnly shipping={lined('dotted')} me="pe-kees" {...(dotted ? { manages: dotted } : {})} />)
+    fireEvent.click(within(within(unitBox('tt')).getByTestId('chart-slot-ro-dev')).getByTestId('chart-vacant'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
+  })
 })
 
 describe('the reporting lines over the chart (ADR-0039 §7)', () => {

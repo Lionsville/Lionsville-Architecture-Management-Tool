@@ -104,14 +104,15 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
   register?: readonly Person[]; me?: string; manages?: ManagesPeople
   /** Marks as intended handed down, as the workspace hands them: this scope's through the session. */
   marking?: boolean
-  /** Scopes beyond the organisation and the customer domain. */
+  /** Scopes beyond the organisation and the customer domain, or one in the customer domain's place. */
   more?: readonly { path: string; model: HostModel }[]
   writeIn?: WriteIn
 }) {
   const [model, setModel] = useState(start)
   const [people, setPeople] = useState<readonly Person[]>(held)
   const heldPeople = useRef<readonly Person[]>(held)
-  const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }, ...more])
+  // A scope among `more` stands in for the one of the same path: the customer domain with lines of its own.
+  const index = indexScopes([{ path: '', model: root }, ...(more.some((one) => one.path === 'customer') ? [] : [{ path: 'customer', model: CUSTOMER }]), ...more])
   const dispatch = (command: Command) => {
     commands.push(command)
     const result = apply(fromArrays(model), command)
@@ -523,6 +524,63 @@ describe('a unit a manager changes the people of, where the scope is only read',
     const femke = managesPeople(index.organisation(), 'pe-femke', TODAY)
     renderShell(<Harness unit="customer" readOnly manages={femke} commands={[]} />)
     expect(screen.queryByTestId('unit-vacant')).toBeNull()
+    expect(screen.queryByTestId('unit-assign')).toBeNull()
+  })
+})
+
+/**
+ * A manager reached by a reporting line (ADR-0039 §4): a solid line from a
+ * role here that lands on a role they hold makes that role's people theirs to
+ * change, though nesting does not bring them the unit; a dotted line brings
+ * nothing. Ivo is the owner of a domain beside this one.
+ */
+describe('a unit whose role reports to a manager by a line, where the scope is only read', () => {
+  const LINED_ROOT: HostModel = {
+    ...ROOT,
+    elements: [actor('platform', 'Platform', { unitTypeId: 'ut-domain' })],
+    assignments: [as('as-p', 'platform', 'ro-owner', 'pe-ivo')],
+  }
+  const to = { scope: '', unit: 'platform', role: 'ro-owner' }
+  const LINED: HostModel = {
+    ...CUSTOMER,
+    elements: CUSTOMER.elements.map((one) => (one.id === 'webshop'
+      ? { ...one, reportingLines: [{ role: 'ro-dev', kind: 'solid' as const, to }, { role: 'ro-coach', kind: 'dotted' as const, to }] }
+      : one)),
+  }
+  const more = [{ path: 'customer', model: LINED }]
+  const ivo = () => managesPeople(indexScopes([{ path: '', model: LINED_ROOT }, ...more]).organisation(), 'pe-ivo', TODAY)
+
+  it('offers Assign for the role a solid line reaches, and nothing for the one a dotted line reaches or the rest', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness readOnly root={LINED_ROOT} model={LINED} more={more} me="pe-ivo" manages={ivo()} commands={commands} />)
+    expect(within(screen.getByTestId('unit-slot-ro-po')).queryByTestId('unit-assign')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-po')).getByTestId('unit-holder'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
+    // The coach reports by a dotted line: shown, and deciding nothing.
+    fireEvent.click(screen.getByText(/Team coach: Gijs Mulder/))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
+    const dialog = await screen.findByTestId('assign-dialog')
+    fireEvent.mouseDown(within(dialog).getByRole('combobox'))
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Developer'])
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    fireEvent.click(within(dialog).getByTestId('person-pick-pe-gijs'))
+    fireEvent.click(within(dialog).getByTestId('assign-save'))
+    expect(commands).toEqual([{
+      type: 'assignment.add', assignment: { id: 'as-new', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-gijs' }, from: TODAY },
+    }])
+  })
+
+  it('offers nothing where the line to the role is dotted', () => {
+    const dotted: HostModel = {
+      ...LINED,
+      elements: LINED.elements.map((one) => (one.id === 'webshop' ? { ...one, reportingLines: [{ role: 'ro-dev', kind: 'dotted' as const, to }] } : one)),
+    }
+    const tree = [{ path: 'customer', model: dotted }]
+    const reach = managesPeople(indexScopes([{ path: '', model: LINED_ROOT }, ...tree]).organisation(), 'pe-ivo', TODAY)
+    renderShell(<Harness readOnly root={LINED_ROOT} model={dotted} more={tree} me="pe-ivo" {...(reach ? { manages: reach } : {})} commands={[]} />)
+    fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
+    expect(screen.queryByTestId('assign-dialog')).toBeNull()
     expect(screen.queryByTestId('unit-assign')).toBeNull()
   })
 })

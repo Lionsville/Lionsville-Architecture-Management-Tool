@@ -35,7 +35,9 @@
  * (ADR-0036 §12), where the source grants that right
  * (`PeopleRegisterAccess.manages`): *Assign*, a holder's correction, end and
  * removal on a unit they manage — a managing role's only strictly below one
- * they hold — and nothing else of the unit.
+ * they hold — and nothing else of the unit. A role whose solid reporting
+ * line lands on one they hold is theirs in the same way, role by role, though
+ * nesting does not bring them the unit (ADR-0039 §4); a dotted line, nothing.
  *
  * **A unit comes first in its inspector** (as built 3.6.1). The host says
  * this section leads where the actor has a type (`UnitSlot`), so it sits under
@@ -185,9 +187,10 @@ export function UnitSection(props: UnitSectionProps) {
   const standIn = element.ref !== undefined
   const editable = !readOnly && !standIn
   // The unit's people: wherever the scope may be written, and — where it is only
-  // read — a unit the person manages, a managing role's only strictly below one they hold.
-  const peopleHere = people !== undefined && !standIn && (!readOnly || (people.manages?.units.has(element.id) ?? false))
-  const mayRole = (roleId: string) => peopleHere && (!readOnly || mayChangeIn(people?.manages, element.id, roleId))
+  // read — each role the person reaches, by nesting or by a solid line that lands on
+  // a role of theirs (ADR-0039 §4), a managing role's by nesting only strictly below one they hold.
+  const peopleHere = people !== undefined && !standIn
+  const mayRole = (roleId: string) => peopleHere && (!readOnly || mayChangeIn(people.manages, element.id, roleId))
   const name = (person: string) => personText(pickedPerson(person), facts.register, s)
   const update = (patch: Partial<DesignElement>) => dispatch({ type: 'element.update', id: element.id, patch })
   const unit = isUnit(element)
