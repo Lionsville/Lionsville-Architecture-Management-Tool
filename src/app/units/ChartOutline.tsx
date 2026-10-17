@@ -16,7 +16,8 @@
  * **Order among siblings** is moved here, under the tree: the unit picked, one
  * place up or down among the units of its type under the same parent
  * (`useSiblingOrder`) — buttons, so the keyboard has the same way as the
- * pointer. Every list of units follows it.
+ * pointer. Every list of units follows it. Beside them, *Move to…* puts the
+ * unit under another anywhere in the organisation (3.7.1, `useMoveUnit`).
  *
  * **A unit is made at the top from its header** (3.6.2): *+ Unit at the
  * top*, as on the chart's bar (`AddUnit.tsx`).
@@ -47,13 +48,15 @@ export type ChartOutlineProps = {
   order: SiblingOrder | undefined
   /** *+ Unit at the top*, in the header; absent where nothing is made from the chart. */
   addAtTop?: ReactNode
+  /** *Move to…* the current unit, beside *Move up* and *Move down*; absent where nothing may be moved here or none is current. */
+  moveTo?: (() => void) | undefined
   t: Translate
 }
 
 /** The attribute a row carries its unit's id in: not the chart's own, so a ring on the chart never lands here. */
 const ROW = 'data-outline-id'
 
-export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, t }: ChartOutlineProps) {
+export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, moveTo, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
   // The unit gone to is brought on screen here too: the way to it is opened in
   // the same render, and a fold turned elsewhere in the outline leaves the
@@ -72,12 +75,12 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
       {chart.roots.length === 0
         ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('chart.outlineEmpty')}</Typography>
         : <Rows units={chart.roots} depth={0} folded={folded} onToggle={onToggle} current={current} onPick={onPick} typeName={typeName} t={t} />}
-      {order && <OrderPanel order={order} t={t} />}
+      {(order || moveTo) && <OrderPanel order={order} moveTo={moveTo} t={t} />}
     </Box>
   )
 }
 
-function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop'> & { units: readonly ChartUnit[]; depth: number }) {
+function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop' | 'moveTo'> & { units: readonly ChartUnit[]; depth: number }) {
   const { folded, onToggle, current, onPick, typeName, t } = props
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -119,24 +122,41 @@ function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'ord
   )
 }
 
-/** The unit picked, one place up or down among the units of its type beside it: one step in each scope that keeps one of them. */
-function OrderPanel({ order, t }: { order: SiblingOrder; t: Translate }) {
+/**
+ * The unit picked: one place up or down among the units of its type beside
+ * it, one step in each scope that keeps one of them — and *Move to…*,
+ * somewhere else in the organisation (3.7.1).
+ */
+function OrderPanel({ order, moveTo, t }: { order: SiblingOrder | undefined; moveTo: (() => void) | undefined; t: Translate }) {
   return (
     <Box data-testid="chart-order" sx={{ mt: 1.5, pt: 1, borderTop: 1, borderColor: 'divider' }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{t('chart.orderHeading')}</Typography>
-      <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }} data-testid="chart-order-of">
-        {order.parent !== undefined ? t('chart.orderIn', { type: order.type, unit: order.parent }) : t('chart.orderAtTop', { type: order.type })}
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={order.writing || order.at <= 0} onClick={() => order.move(-1)} data-testid="chart-order-up">
-          {t('chart.moveUp')}
-        </Button>
-        <Button size="small" variant="outlined" disabled={order.writing || order.at >= order.of - 1} onClick={() => order.move(1)} data-testid="chart-order-down">
-          {t('chart.moveDown')}
-        </Button>
+      {order && (
+        <>
+          <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{t('chart.orderHeading')}</Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }} data-testid="chart-order-of">
+            {order.parent !== undefined ? t('chart.orderIn', { type: order.type, unit: order.parent }) : t('chart.orderAtTop', { type: order.type })}
+          </Typography>
+        </>
+      )}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+        {order && (
+          <>
+            <Button size="small" variant="outlined" disabled={order.writing || order.at <= 0} onClick={() => order.move(-1)} data-testid="chart-order-up">
+              {t('chart.moveUp')}
+            </Button>
+            <Button size="small" variant="outlined" disabled={order.writing || order.at >= order.of - 1} onClick={() => order.move(1)} data-testid="chart-order-down">
+              {t('chart.moveDown')}
+            </Button>
+          </>
+        )}
+        {moveTo && (
+          <Button size="small" variant="outlined" onClick={moveTo} data-testid="chart-outline-move-to" data-guide="chart.outlineMoveTo">
+            {t('unitMove.open')}
+          </Button>
+        )}
       </Box>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{t('chart.orderHint')}</Typography>
-      {order.said && (
+      {order && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{t('chart.orderHint')}</Typography>}
+      {order?.said && (
         <Typography role="status" data-testid="chart-order-said" sx={{ fontSize: 11.5, mt: 0.5, color: order.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>
           {order.said.text}
         </Typography>

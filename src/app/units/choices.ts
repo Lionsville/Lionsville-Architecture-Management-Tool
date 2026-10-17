@@ -17,7 +17,7 @@ import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import type { HostModel } from '../../model/hostModel'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
-import { unitsOn } from '../../model/units'
+import { organisationOn, unitsAbove, unitsBelow, unitsOn } from '../../model/units'
 import type { Organisation, UnitLike } from '../../model/units'
 import { isServable } from '../../model/serving'
 import type { FiledIn } from '../../model/serving'
@@ -101,4 +101,47 @@ export function functionChoices(at: ChoiceWords & {
     ...here.map((element) => row(element.id, element.name, element.parentId, scope)),
     ...elsewhere.map((entry) => row(entry.id, entry.name, entry.parentId, entry.master!)),
   ].filter((option) => !leave.has(option.id))
+}
+
+/** The row for *At the top*: no unit's id is the empty string. */
+export const AT_THE_TOP = ''
+
+/**
+ * Where units may be moved to (3.7.1): *At the top* and every unit there on
+ * `day`, the places where every unit moved may sit by its type first, then
+ * the others under a heading of their own — a move there is allowed and
+ * leaves the unit misplaced. Each unit says the units it sits in, by path, so
+ * two of one name are told apart, and the search finds it by them too; one
+ * the units moved hold, or the place they sit now, is shown and not offered.
+ */
+export function parentChoices(at: ChoiceWords & {
+  organisation: Organisation
+  /** The units moved; the first is the one the dialog is about. */
+  unitIds: readonly ElementId[]
+  /** Where the first sits now: its parent on the day, absent at the top. */
+  current: ElementId | undefined
+  day: string
+  /** Whether every unit moved may sit under this parent — absent, the top — by its type. */
+  fits: (parentId: ElementId | undefined) => boolean
+}): PickOption[] {
+  const { organisation, day, s } = at
+  const on = organisationOn(organisation, day).units
+  const inside = new Set(at.unitIds.flatMap((id) => [id, ...unitsBelow(on, id)]))
+  const name = new Map(on.map((unit) => [unit.id, unit.name]))
+  const fitting = s('unitMove.fitting')
+  const others = s('unitMove.misfitting')
+  const top: PickOption = {
+    id: AT_THE_TOP, label: s('unitMove.top'), group: at.fits(undefined) ? fitting : others,
+    ...(at.current === undefined ? { note: s('unitMove.current'), disabled: true } : {}),
+  }
+  const rows = unitsOn(organisation, day).sort(compareUnits(unitTypeRank(organisation.unitTypes))).map((unit): PickOption => {
+    const trail = unitsAbove(on, unit.id).reverse().map((id) => name.get(id) ?? id).join(' › ')
+    const refused = inside.has(unit.id) ? s('unitMove.inside') : unit.id === at.current ? s('unitMove.current') : undefined
+    return {
+      id: unit.id, label: unit.name, group: at.fits(unit.id) ? fitting : others,
+      ...(refused !== undefined ? { note: refused, disabled: true } : trail ? { note: s('pick.in', { name: trail }) } : {}),
+    }
+  })
+  const all = [top, ...rows]
+  return [...all.filter((one) => one.group === fitting), ...all.filter((one) => one.group !== fitting)]
 }

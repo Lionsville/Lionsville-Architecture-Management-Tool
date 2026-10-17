@@ -140,11 +140,13 @@ describe('a unit moved among its siblings', () => {
     await waitFor(() => expect(screen.getByTestId('chart-order-said').textContent).toBe('Nothing was written: a scope it writes may only be read here.'))
   })
 
-  it('offers no move for a unit with no sibling of its type, nor where the scope is only read', () => {
+  it('offers no move among siblings for a unit with no sibling of its type — only Move to… — and nothing where the scope is only read', () => {
     const answer = vi.fn(ok)
     renderShell(<Harness landed={[]} answer={answer} />)
     pick('Cluster Parcel & Freight')
-    expect(screen.queryByTestId('chart-order')).toBeNull()
+    expect(screen.queryByTestId('chart-order-up')).toBeNull()
+    expect(screen.queryByTestId('chart-order-of')).toBeNull()
+    expect(within(screen.getByTestId('chart-order')).getByRole('button', { name: 'Move to…' })).toBeTruthy()
     cleanup()
     renderShell(<Harness landed={[]} answer={answer} readOnly />)
     pick('Team Track & Trace')

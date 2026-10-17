@@ -80,7 +80,8 @@ export function useWorkspaceOwnership(deps: {
    * How a unit deleted here lands over every scope it writes (3.6.2): the
    * structure's lander, which no managing role's right reaches, and where a
    * refusal is said. Absent = a delete of a unit takes only what its own
-   * scope keeps.
+   * scope keeps. A unit moved from its section's *Sits under* lands through
+   * the same lander (3.7.1); absent, it is not moved there.
    */
   deleting?: { land: LandPeopleMoves; onRefused(text: string): void }
   s: Translate
@@ -149,6 +150,8 @@ export function useWorkspaceOwnership(deps: {
         people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
         ...(units.writeIn ? { writeIn: units.writeIn } : {}),
         ...(units.openHome ? { onOpenHome: units.openHome } : {}),
+        // Sits under moves the unit as a delete's units are moved: the structure's lander, all or none (3.7.1).
+        ...(deleting ? { move: deleting.land } : {}),
       }),
       leads: isUnit(element),
     }),

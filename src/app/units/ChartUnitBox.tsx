@@ -32,7 +32,9 @@
  *
  * **A unit is made inside one from its name row** (3.6.2): a quiet *+* that
  * shows on hover, on focus and on the unit picked (`AddUnit.tsx`), never on a
- * chart that is only read.
+ * chart that is only read. **And moved from there** (3.7.1): *Move to…*
+ * beside it, as quiet, opens the dialog that puts the unit under another
+ * anywhere in the organisation (`useMoveUnit`).
  */
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
@@ -49,8 +51,8 @@ import type { PersonId } from '../../model/person'
 import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
-import { CaretIcon } from '../../widgets/icons'
-import { AddInside, showsAddInside } from './AddUnit'
+import { CaretIcon, MoveToIcon } from '../../widgets/icons'
+import { ADD_INSIDE, AddInside, showsAddInside } from './AddUnit'
 import { rollUpWords, unitBadges } from './chartWords'
 import type { RollUpPart } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
@@ -88,6 +90,8 @@ export type Drawing = {
   optional: boolean
   /** *+ Unit* inside a unit: what it offers there, and the dialog it opens. Absent: nothing is made from the chart. */
   add?: { offer: (unit: ChartUnit) => UnitOffer; open: (unit: ChartUnit) => void }
+  /** *Move to…* a unit: the dialog that puts it somewhere else in the organisation (3.7.1). Absent: nothing is moved from the chart. */
+  move?: (unit: ChartUnit) => void
 }
 
 /** What the boxes read of the chart's folds. */
@@ -148,6 +152,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
           <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
         </ButtonBase>
         {drawing.add && <AddInside name={unit.name} offer={drawing.add.offer(unit)} picked={selected} onAdd={() => drawing.add?.open(unit)} t={t} />}
+        {drawing.move && <MoveTo name={unit.name} picked={selected} onMove={() => drawing.move?.(unit)} t={t} />}
       </Box>
       {folded && <RollUp parts={rollUpWords(folds.rollUp(unit), t)} />}
       <UnitBadges unit={unit} drawing={drawing} />
@@ -164,6 +169,21 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
       )}
       {unit.children.length > 0 && !folded && <UnitGrid units={unit.children} depth={depth + 1} drawing={drawing} />}
     </Box>
+  )
+}
+
+/** A unit's own *Move to…*, quiet as its *+* is: shown on hover, on focus and on the unit picked. */
+function MoveTo({ name, picked, onMove, t }: { name: string; picked: boolean; onMove: () => void; t: Translate }) {
+  return (
+    <Tooltip title={t('unitMove.openNamed', { name })}>
+      <IconButton
+        size="small" aria-label={t('unitMove.openNamed', { name })} onClick={onMove}
+        data-guide="chart.moveTo" data-testid="chart-move-to" {...{ [ADD_INSIDE]: '', 'data-shown': picked ? 'true' : undefined }}
+        sx={{ width: 22, height: 22, mt: 0.25, color: 'text.secondary' }}
+      >
+        <MoveToIcon size={14} />
+      </IconButton>
+    </Tooltip>
   )
 }
 

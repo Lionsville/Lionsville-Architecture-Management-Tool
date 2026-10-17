@@ -39,6 +39,10 @@
  * line lands on one they hold is theirs in the same way, role by role, though
  * nesting does not bring them the unit (ADR-0039 §4); a dotted line, nothing.
  *
+ * **Where it sits** (3.7.1): *Sits under* names its parent on the day, and
+ * where the section may change the unit it opens *Move to…* — any unit in the
+ * organisation, or the top — as the chart's box does (`useMoveUnit`).
+ *
  * **A unit comes first in its inspector** (as built 3.6.1). The host says
  * this section leads where the actor has a type (`UnitSlot`), so it sits under
  * the name: the type says what the unit is, with where it is filed beneath
@@ -79,6 +83,8 @@ import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { InteractDialog, InteractionsSection } from './Interactions'
 import { UnitLines } from './UnitLines'
+import { useMoveUnit } from './useMoveUnit'
+import type { LandPeopleMoves } from './landPeopleMoves'
 import type { Interacting, InteractionLine } from './Interactions'
 import { organisationHere } from './organisationHere'
 import { functionChoices, scopeChoices } from './choices'
@@ -124,6 +130,12 @@ export type UnitSectionProps = {
   writeIn?: WriteIn
   /** A scope's home, opened from a domain the unit serves. Absent: the domains are not ways out. */
   onOpenHome?: (path: ScopePath) => void
+  /**
+   * How *Sits under* moves the unit to another place in the organisation
+   * (3.7.1): a step in each scope that keeps a unit moved (`landPeopleMoves`).
+   * Absent: where it sits is said, and not changed here.
+   */
+  move?: LandPeopleMoves
   s: Translate
 }
 
@@ -207,7 +219,7 @@ export function UnitSection(props: UnitSectionProps) {
         {...(unit ? { filedIn: s('unit.filedInLine', { scope: scopeLabel(scope) }) } : {})} s={s} />
       {standIn && <Typography sx={QUIET}>{s('unit.elsewhere', { scope: scopeLabel(element.ref ?? '') })}</Typography>}
       {unit && (
-        <UnitParts {...props} today={today} looking={today !== props.today} facts={facts} editable={editable}
+        <UnitParts {...props} today={today} now={props.today} looking={today !== props.today} facts={facts} editable={editable}
           mayRole={mayRole} name={name} onAssign={setAssigning} update={update} />
       )}
       {assigning && people && (
@@ -242,12 +254,15 @@ function dialogRoles(element: DesignElement, facts: Facts, assigning: Assigning)
  * the checks say of it.
  */
 function UnitParts(props: UnitSectionProps & {
+  /** Today, whatever day the section is looked at on: what a move is checked against. */
+  now: string
   looking: boolean; facts: Facts; editable: boolean; mayRole: (roleId: string) => boolean
   name: (person: string) => string; onAssign: (assigning: Assigning) => void; update: (patch: Partial<DesignElement>) => void
 }) {
   const { element, facts, editable, update, scopeLabel, s } = props
   return (
     <>
+      <SitsUnder {...props} />
       <Slots {...props} />
       {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
       {/* Its why? folds again for the next unit picked, as the element's fields do. */}
@@ -276,6 +291,40 @@ function UnitParts(props: UnitSectionProps & {
         </>
       )}
     </>
+  )
+}
+
+/**
+ * Where it sits (3.7.1): the unit it sits under on the day, or the top, and —
+ * where the section may change it — the way to *Move to…* another place
+ * anywhere in the organisation, in the dialog that says what the move does
+ * before it lands (`useMoveUnit`).
+ */
+function SitsUnder({ element, facts, editable, move, now, scopeLabel, name, s }: UnitSectionProps & {
+  now: string; facts: Facts; editable: boolean; name: (person: string) => string
+}) {
+  const moving = useMoveUnit({
+    organisation: facts.organisation, scopeOf: facts.scopeOf, scopeLabel, name: facts.unitName, personName: name, today: now, t: s,
+    land: editable ? move : undefined,
+  })
+  const where = facts.parent === undefined ? s('unitMove.top') : facts.unitName(facts.parent)
+  return (
+    <Box data-testid="unit-sits-under">
+      <Typography sx={SECTION}>{s('unitMove.parent')}</Typography>
+      {moving.open
+        ? (
+          <Button
+            size="small" variant="text" onClick={() => moving.open?.(element.id)} aria-label={s('unitMove.sitsUnderMove', { parent: where })}
+            title={s('unitMove.openNamed', { name: element.name })}
+            data-testid="unit-sits-under-move" data-guide="unit.sitsUnder"
+            sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 13, textTransform: 'none', justifyContent: 'flex-start' }}
+          >
+            {where}
+          </Button>
+        )
+        : <Typography sx={LINE} data-testid="unit-sits-under-parent">{where}</Typography>}
+      {moving.dialog}
+    </Box>
   )
 }
 

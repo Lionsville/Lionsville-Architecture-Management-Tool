@@ -60,6 +60,12 @@
  * name row for a unit inside it (`useNewUnit`, `AddUnit.tsx`). Only where
  * the workspace hands the chart a way to write (`make`), and never on a chart
  * that is only read.
+ *
+ * **And moved where they are seen** (3.7.1): *Move to…* on a unit's name row
+ * and in the outline beside *Move up* and *Move down* puts it under another
+ * unit anywhere in the organisation, or at the top (`useMoveUnit`), landed
+ * the way a move among siblings is (`reorder`); the chart then goes to it in
+ * its new place.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -76,6 +82,7 @@ import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
 import { FOLD_OVER, rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
 import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
+import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { dayBefore, hasReportingLines, loadOn } from '../../model/units'
@@ -83,6 +90,7 @@ import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
 import { registerOf, resolvePerson } from '../../people/shown'
 import { usePersonNames } from '../../people/ui/names'
+import type { PersonNames } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
@@ -107,6 +115,7 @@ import type { ChartFolds } from './useChartFolds'
 import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
+import { useMoveUnit } from './useMoveUnit'
 
 export type ChartPageProps = {
   /** The view, with the day it is looked at on (`asOf`; absent is today). */
@@ -133,7 +142,11 @@ export type ChartPageProps = {
   scope?: ScopePath
   /** Where the chart's folds are kept for the session (`sessionFolds.ts`). Absent: they last while the page is on screen. */
   folds?: SessionFolds
-  /** How a unit's move among its siblings lands, a step in each scope that keeps one (`landPeopleMoves`). Absent: the outline moves nothing. */
+  /**
+   * How a unit's move among its siblings, or to another place in the
+   * organisation (3.7.1), lands: a step in each scope that keeps one
+   * (`landPeopleMoves`). Absent: the chart moves nothing.
+   */
   reorder?: LandPeopleMoves
   /** How a unit is made from the chart: a step in the scope it is filed in (`useNewUnit`). Absent: no *+ Unit*. */
   make?: UnitMaking
@@ -199,6 +212,7 @@ export function ChartPage(props: ChartPageProps) {
   const order = useSiblingOrder({
     here, day, scope: props.scope ?? '', unitId: current, land: props.readOnly ? undefined : props.reorder, t,
   })
+  const moving = useChartMove(props, names, goTo, current, t)
 
   const findMe = () => {
     if (me === undefined) { setNote(t('chart.findMeWho')); return }
@@ -238,6 +252,7 @@ export function ChartPage(props: ChartPageProps) {
     folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, byUnit) },
     optional: folds.optional,
     ...(newUnit.offer ? { add: { offer: newUnit.offer, open: newUnit.open } } : {}),
+    ...moving.drawing,
   }
   const atTop = (guide: string, testId: string, variant?: 'outlined' | 'contained') => addAtTop(newUnit, props.make, guide, testId, t, variant)
   return (
@@ -249,7 +264,7 @@ export function ChartPage(props: ChartPageProps) {
       <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
         <ChartOutline
           chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={goTo} typeName={typeName} order={order}
-          addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} t={t}
+          addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} moveTo={moving.outline} t={t}
         />
         <Box ref={page} data-testid="chart-body" sx={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, overflow: 'auto', p: 2, bgcolor: 'background.default', ...locatedRing(locatedId) }}>
           {chart.roots.length === 0
@@ -278,8 +293,28 @@ export function ChartPage(props: ChartPageProps) {
         />
       )}
       {newUnit.dialog}
+      {moving.dialog}
     </Box>
   )
+}
+
+/**
+ * *Move to…* on the chart (3.7.1): on a unit's box, and in the outline for
+ * the current unit, landed as a move among siblings is; nothing on a chart
+ * that is only read. The chart goes to the unit in its new place.
+ */
+function useChartMove(props: ChartPageProps, names: PersonNames, goTo: (id: ElementId) => void, current: ElementId | undefined, t: Translate) {
+  const { here, today } = props
+  const moving = useMoveUnit({
+    organisation: here.at.organisation, scopeOf: here.scopeOf, scopeLabel: props.scopeLabel, name: here.name, today, t, onMoved: goTo,
+    personName: (person) => names.text(pickedPerson(person)), land: props.readOnly ? undefined : props.reorder,
+  })
+  const open = moving.open
+  return {
+    dialog: moving.dialog,
+    drawing: open ? { move: (unit: ChartUnit) => open(unit.id) } : {},
+    outline: open && current !== undefined ? () => open(current) : undefined,
+  }
 }
 
 /** A unit type's name by its id, worked out once per organisation. */

@@ -111,14 +111,21 @@ export function PickToAdd({ options, label, field, nothing, onPick, guide, testI
   )
 }
 
-/** The field: a combobox over the options, grouped where they say a group, that takes the cursor when it opens. */
-export function GroupedPicker({ options, field, nothing, onPick, onClose, testId }: {
+/**
+ * The field: a combobox over the options, grouped where they say a group,
+ * that takes the cursor when it opens. Given `value`, it holds the option
+ * picked and shows it, as a form's field does; without, every pick is handed
+ * over and the field is empty again.
+ */
+export function GroupedPicker({ options, field, nothing, onPick, onClose, testId, value }: {
   options: readonly PickOption[]
   field: string
   nothing: string
   onPick: (id: string) => void
   onClose?: () => void
   testId?: string
+  /** The id of the option held; `null` holds none yet. */
+  value?: string | null
 }) {
   const grouped = options.some((option) => option.group !== undefined)
   const id = useId()
@@ -126,7 +133,7 @@ export function GroupedPicker({ options, field, nothing, onPick, onClose, testId
     <Autocomplete
       size="small" openOnFocus autoHighlight fullWidth
       options={options}
-      value={null}
+      value={value === undefined || value === null ? null : options.find((option) => option.id === value) ?? null}
       {...(grouped ? { groupBy: (option: PickOption) => option.group ?? '' } : {})}
       // A group the listbox's own way (ARIA's `group`, named by its heading),
       // rather than a list inside the list, which a reader cannot follow.

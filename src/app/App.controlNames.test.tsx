@@ -403,7 +403,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('chart-page')
   }]],
   // A chart of the organisation's own teams: a unit's + makes a unit inside it, in a dialog.
-  [['an organisation chart with a unit', ['chart.addInside'], async () => {
+  [['an organisation chart with a unit', ['chart.addInside', 'chart.moveTo'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
     await screen.findAllByTestId('chart-add-inside')
@@ -411,6 +411,17 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['its dialog for a new unit', ['chart.newUnit'], async () => {
     fireEvent.click(screen.getAllByTestId('chart-add-inside')[0])
     await screen.findByTestId('new-unit-dialog')
+  }]],
+  // A unit picked on the chart: Move to… in the outline, Sits under in its inspector, and the dialog they open (3.7.1).
+  [['a unit picked on the chart', ['chart.outlineMoveTo', 'unit.sitsUnder'], async () => {
+    const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
+    renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
+    fireEvent.click((await screen.findAllByTestId('chart-unit-open'))[0])
+    await screen.findByTestId('unit-sits-under-move')
+  }],
+  ['its dialog for a move', ['chart.moveUnit'], async () => {
+    fireEvent.click(screen.getByTestId('chart-outline-move-to'))
+    await screen.findByTestId('move-unit-dialog')
   }]],
   // Deleting a unit with a unit inside it, from its card's Remove / delete… (3.6.2).
   [['a unit asked to be deleted', ['unitDelete.end', 'unitDelete.inside'], async () => {

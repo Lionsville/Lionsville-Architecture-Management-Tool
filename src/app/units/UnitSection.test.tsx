@@ -36,6 +36,8 @@ import { organisationHere } from './organisationHere'
 import { UnitSection } from './UnitSection'
 import { checkMarking, CheckMarkingContext } from '../checkMarking'
 import type { WriteIn } from './writeIn'
+import type { LandPeopleMoves } from './landPeopleMoves'
+import { UNIT_MOVE_BARRIER } from './useMoveUnit'
 
 afterEach(() => cleanup())
 
@@ -97,7 +99,7 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false, onOpenHome, tree }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false, onOpenHome, tree, move }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
   onOpenHome?: (path: string) => void
   /** The scope tree offered, each by its name; absent, the organisation, the customer domain and shipping. */
@@ -108,6 +110,8 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
   /** Scopes beyond the organisation and the customer domain, or one in the customer domain's place. */
   more?: readonly { path: string; model: HostModel }[]
   writeIn?: WriteIn
+  /** How Sits under lands a move (3.7.1); absent, it only says where the unit sits. */
+  move?: LandPeopleMoves
 }) {
   const [model, setModel] = useState(start)
   const [people, setPeople] = useState<readonly Person[]>(held)
@@ -147,7 +151,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
       makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
       scopeLabel={tree ? (path) => tree[path] ?? path : (path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
-      scopes={tree ? Object.keys(tree) : ['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} {...(onOpenHome ? { onOpenHome } : {})} s={s}
+      scopes={tree ? Object.keys(tree) : ['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} {...(onOpenHome ? { onOpenHome } : {})} {...(move ? { move } : {})} s={s}
     />
   )
   if (!marking) return section
@@ -826,5 +830,43 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     renderShell(<Harness root={lined} readOnly commands={[]} />)
     expect(screen.getAllByTestId('unit-line')).toHaveLength(2)
     expect(screen.queryByTestId('unit-line-override')).toBeNull()
+  })
+})
+
+describe('where a unit sits, from its own inspector (3.7.1)', () => {
+  const landing = (landed: { steps: ReadonlyMap<string, readonly Command[]>; barrier?: string }[]): LandPeopleMoves => (steps, barrier) => {
+    landed.push({ steps, ...(barrier !== undefined ? { barrier } : {}) })
+    return Promise.resolve({ ok: true, changed: [...steps.keys()], ended: 0, begun: 0 })
+  }
+
+  it('says the unit it sits under, and opens Move to… from it, landing the move in the scope that keeps it', async () => {
+    const landed: { steps: ReadonlyMap<string, readonly Command[]>; barrier?: string }[] = []
+    renderShell(<Harness commands={[]} move={landing(landed)} />)
+    const sits = within(screen.getByTestId('unit-sits-under'))
+    expect(sits.getByText('Sits under')).toBeTruthy()
+    fireEvent.click(sits.getByRole('button', { name: 'Sits under Customer. Move to…' }))
+    expect(screen.getByRole('heading', { name: 'Move Webshop to…' })).toBeTruthy()
+    const input = screen.getByTestId('move-unit-parent')
+    fireEvent.focus(input)
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.click(screen.getByRole('option', { name: /^At the top/ }))
+    expect(screen.getByTestId('move-unit-misfit').textContent).toContain('Webshop is a Team, which may not sit there')
+    expect(screen.getByTestId('move-unit-managed-before').textContent).toContain('Domain owner, Customer')
+    expect(screen.getByTestId('move-unit-managed-after').textContent).toBe('After: nobody above it')
+    fireEvent.click(screen.getByTestId('move-unit-move'))
+    await waitFor(() => expect(landed).toHaveLength(1))
+    expect(landed[0]).toEqual({
+      steps: new Map([['customer', [{ type: 'element.update', id: 'webshop', patch: { parentId: undefined, order: undefined } }]]]),
+      barrier: UNIT_MOVE_BARRIER,
+    })
+  })
+
+  it('only says where it sits where the scope is only read, or nothing hands it a way to move', () => {
+    renderShell(<Harness commands={[]} move={landing([])} readOnly />)
+    expect(screen.getByTestId('unit-sits-under-parent').textContent).toBe('Customer')
+    expect(screen.queryByTestId('unit-sits-under-move')).toBeNull()
+    cleanup()
+    renderShell(<Harness commands={[]} unit="customer" />)
+    expect(screen.getByTestId('unit-sits-under-parent').textContent).toBe('At the top')
   })
 })
