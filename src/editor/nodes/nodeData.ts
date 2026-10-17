@@ -3,6 +3,7 @@
 
 import type { Node, NodeProps } from '@xyflow/react';
 import type { AspectConfigEntry, DesignElement, PlacedNode, Lifecycle } from '../../model/types';
+import type { OverlayMark } from '../theme/overlayColors';
 
 /**
  * What a card says about a record another scope defines (ADR-0012 §3).
@@ -66,11 +67,13 @@ export interface ElementNodeData extends Record<string, unknown> {
   /** See {@link StandInNote}. Absent on a record this scope defines. */
   note?: StandInNote;
   /**
-   * The wash this card takes under the landscape's *Colour by* overlay
-   * (ADR-0013): a resolved colour, so the card paints it without knowing what
-   * it means. Absent = no overlay, which is every card on every other view.
+   * What this card wears under the landscape's *Colour by* overlay
+   * (ADR-0013): the wash, the ink of its edge bar and tag, and the legend's
+   * number — resolved, so the card paints them without knowing what they
+   * mean. One object per band, so identity says "same band". Absent = no
+   * overlay, which is every card on every other view.
    */
-  overlayTint?: string;
+  overlay?: OverlayMark;
   /** Under the one-thing overlay (ADR-0020): this card does not stand on it, and fades. */
   overlayFaded?: true;
 }

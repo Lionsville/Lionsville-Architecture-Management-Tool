@@ -189,7 +189,7 @@ const colourBy: ViewField = (args, model, patch) => {
   if (args.colourBy === null || args.colourBy === '') patch.colourBy = undefined
   else if (typeof args.colourBy === 'string') {
     if (!isColourBy(args.colourBy)) {
-      return refused('agent.badArguments', `"colourBy" is one of ${COLOUR_BY.join(', ')}, or one:<id>`)
+      return refused('agent.badArguments', `"colourBy" is one of ${COLOUR_BY.join(', ')}, aspect:<key>, or one:<id>`)
     }
     const one = oneColouredBy(args.colourBy)
     if (one !== undefined) {

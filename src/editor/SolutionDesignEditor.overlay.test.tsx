@@ -77,7 +77,9 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
 }
 
 const open = () => fireEvent.click(screen.getByLabelText('Colour by'));
-const choose = (label: string) => fireEvent.click(screen.getByRole('menuitem', { name: label }));
+/** A choice by its group's words: the *Platform* overlay and the *Platform* aspect column share a name and not a group. */
+const choose = (label: string, group = 'What it stands on') =>
+  fireEvent.click(within(screen.getByRole('group', { name: group })).getByRole('menuitem', { name: label }));
 /**
  * What a card is wearing, as the class Emotion hashed its style into: two
  * cards in the same band share it and two in different bands do not, which is
@@ -110,9 +112,43 @@ describe('colour by', () => {
     // …and a partner system is left exactly as it was: somebody else's
     // deployment is not what this picture is about.
     expect(wash('partner')).toBe(before.partner);
-    open();
+    // The legend stands on the canvas while the overlay is up, with each band's number and count; the button says what the board is coloured by.
+    const legend = screen.getByTestId('overlay-legend');
+    expect(legend.getAttribute('aria-label')).toBe('Legend: coloured by Platform');
     expect(within(screen.getByTestId('overlay-legend-openshift')).getByText('OpenShift')).toBeTruthy();
+    expect(screen.getByTestId('overlay-legend-openshift').textContent).toBe('1OpenShift2');
     expect(screen.getByTestId('overlay-legend-none').textContent).toContain('On nothing yet');
+    expect(screen.getByLabelText('Colour by').textContent).toBe('Platform');
+    // Every card in a band wears the band's number, so a band is found by reading and not by matching a hue.
+    expect(within(document.querySelector('.react-flow__node[data-id="wms"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('1');
+    expect(within(document.querySelector('.react-flow__node[data-id="crm"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('2');
+    // Closing the legend takes the overlay off.
+    fireEvent.click(within(legend).getByLabelText('Take the colouring off'));
+    await measured();
+    expect(screen.queryByTestId('overlay-legend')).toBeNull();
+    expect(wash('wms')).toBe(before.wms);
+  });
+
+  it('colours by what the record says — a category, an aspect column — and names the band for it', async () => {
+    const held = model();
+    held.elements[0].category = 'Warehouse';
+    held.elements[1].category = 'Warehouse';
+    held.elements[3].aspects = { dr: { status: 'atRisk' } };
+    renderEditor({ model: held });
+    await measured();
+    open();
+    choose('Category', 'What its record says');
+    await measured();
+    expect(wash('wms')).toBe(wash('portal'));
+    expect(wash('crm')).not.toBe(wash('wms'));
+    expect(screen.getByTestId('overlay-legend-value:Warehouse').textContent).toBe('1Warehouse2');
+    expect(screen.getByTestId('overlay-legend-unset').textContent).toContain('Not set');
+    open();
+    fireEvent.click(screen.getByTestId('colour-by-aspect-dr'));
+    await measured();
+    expect(screen.getByLabelText('Colour by').textContent).toBe('Disaster recovery');
+    expect(screen.getByTestId('overlay-legend-atRisk').textContent).toBe('1At risk1');
+    expect(screen.getByTestId('overlay-legend-unset').textContent).toBe('2Not set3');
   });
 
   it('keeps the answer on the view', async () => {
@@ -134,9 +170,9 @@ describe('colour by', () => {
     // Both on the cluster wear its wash; the one on nothing is faded, not washed.
     expect(wash('wms')).toBe(wash('portal'));
     expect(wash('crm')).not.toBe(wash('wms'));
-    open();
     expect(within(screen.getByTestId('overlay-legend-openshift')).getByText('OpenShift')).toBeTruthy();
     expect(screen.getByTestId('overlay-legend-none').textContent).toContain('Not standing on it');
+    expect(screen.getByLabelText('Colour by').textContent).toBe('OpenShift');
   });
 
   it('is not offered on a view that is not a landscape', async () => {

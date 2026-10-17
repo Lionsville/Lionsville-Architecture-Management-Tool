@@ -15,7 +15,8 @@ import type { DesignDiagram, DesignModel, ElementId } from '../model/types';
 import type { PlatformTree } from '../model/deployment';
 import { overlayBands, type ColourBy } from '../model/overlay';
 import { today } from '../model/lifecycle';
-import { overlayTint } from './theme/overlayColors';
+import { overlayIndex, overlayInk, overlayTint, type OverlayMark } from './theme/overlayColors';
+import { usePersonNames } from '../people/ui/names';
 import { shownAsOf, useShownDays, type ShownDays } from './useShownDays';
 import type { EditorActions } from './useEditorState';
 
@@ -90,10 +91,14 @@ function useShownDiagram(model: DesignModel, diagram: DesignDiagram | undefined,
 }
 
 /**
- * The landscape coloured by what its applications stand on (ADR-0013): the
- * bands, the wash each card takes, the cards faded rather than washed, and
- * what the one-thing overlay may ask about (ADR-0020) — this scope's
- * platforms and offerings, a shared one with a stand-in here among them.
+ * The landscape coloured by what its applications stand on (ADR-0013), or
+ * by what their records say (3.7.0): the bands, what each card wears — one
+ * mark per band, so two cards in one band share the object and a card stays
+ * out of a re-render while its band stands — the cards faded rather than
+ * washed, and what the one-thing overlay may ask about (ADR-0020) — this
+ * scope's platforms and offerings, a shared one with a stand-in here among
+ * them. The owner bands read through the register (ADR-0036 §8), so a
+ * picked person is a name and not an id.
  */
 function useOverlay(
   model: DesignModel,
@@ -102,18 +107,21 @@ function useOverlay(
   platformTree: PlatformTree | undefined,
   theme: Theme,
 ) {
+  const names = usePersonNames();
   const overlay = useMemo(
-    () => (shownDiagram ? overlayBands(model, shownDiagram, colourBy, shownDiagram.asOf ?? today(), platformTree) : []),
-    [model, shownDiagram, colourBy, platformTree],
+    () => (shownDiagram
+      ? overlayBands(model, shownDiagram, colourBy, shownDiagram.asOf ?? today(), platformTree, { owner: (ref) => names.text(ref) })
+      : []),
+    [model, shownDiagram, colourBy, platformTree, names],
   );
-  const overlayTints = useMemo(() => {
-    const tints = new Map<ElementId, string>();
+  const overlayMarks = useMemo(() => {
+    const marks = new Map<ElementId, OverlayMark>();
     for (const band of overlay) {
       if (band.faded) continue;
-      const colour = overlayTint(theme, band);
-      for (const id of band.memberIds) tints.set(id, colour);
+      const mark: OverlayMark = { tint: overlayTint(theme, band), ink: overlayInk(theme, band), index: overlayIndex(band) };
+      for (const id of band.memberIds) marks.set(id, mark);
     }
-    return tints;
+    return marks;
   }, [overlay, theme]);
   const overlayFaded = useMemo(
     () => new Set<ElementId>(overlay.filter((band) => band.faded).flatMap((band) => band.memberIds)),
@@ -126,5 +134,5 @@ function useOverlay(
       .sort((a, b) => a.name.localeCompare(b.name)),
     [model.elements],
   );
-  return { overlay, overlayTints, overlayFaded, overlayCandidates };
+  return { overlay, overlayMarks, overlayFaded, overlayCandidates };
 }

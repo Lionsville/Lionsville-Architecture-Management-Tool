@@ -89,6 +89,16 @@ export function NodeShell({
           opacity: dim ? 0.55 : 1,
           ...sx,
           /**
+           * The pointer over a card that is not selected: a thin ring in the
+           * selection's hue, so a board of forty cards says which one a click
+           * would take before the click. Not on a selected card, whose ring
+           * is already there, and not on the boundary, which shows selection
+           * another way. On the wrapper's hover for the focus ring's reason.
+           */
+          ...(!selected && selectionRing
+            ? { '.react-flow__node:hover &': { boxShadow: `0 0 0 1px ${alpha(tokens.card.selectedRing, 0.7)}, ${restingShadow}` } }
+            : {}),
+          /**
            * The keyboard focus ring (4B). React Flow puts `tabIndex` on its own
            * `.react-flow__node` wrapper, which is this box's PARENT — so the
            * selector reaches up rather than using `&:focus-visible`, which would

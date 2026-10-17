@@ -27,17 +27,43 @@ import { ancestorPlatforms, hostingOf, rootPlatformsOf } from './hosting'
 import type { PlatformTree } from './hosting'
 import { leverageOf } from './leverage'
 import { phaseAt } from './lifecycle'
-import type { DesignDiagram, DesignElement, ElementId, Lifecycle, Relation } from './types'
+import { derivedPlatformAspect, ASPECT_STATUSES } from './aspects'
+import type { AspectStatus, DesignDiagram, DesignElement, ElementId, Lifecycle, Relation } from './types'
 
 /**
- * What the landscape is coloured by; absent on the view means nothing. The
- * third names the one platform or offering asked about, `one:<id>`, so the
- * view keeps one string as it always has.
+ * What the landscape is coloured by; absent on the view means nothing. Two
+ * name an element or a column — the one platform or offering asked about,
+ * `one:<id>` (ADR-0020), and an operational aspect's column, `aspect:<key>` —
+ * so the view keeps one string as it always has.
+ *
+ * The five value overlays (3.7.0) ask the record rather than the rows: the
+ * card's own phase on the day, its category, who answers for it, its vendor
+ * and its technology. *Which of these does nobody own*, *which are still on
+ * the old vendor* are the questions a landscape review opens with, and they
+ * are answered by looking, as the platform question is.
  */
-export type ColourBy = 'platform' | 'technologyLifecycle' | `one:${string}`
+export type ColourBy =
+  | 'platform' | 'technologyLifecycle'
+  | 'lifecycle' | 'category' | 'owner' | 'vendor' | 'technology'
+  | `one:${string}` | `aspect:${string}`
 
-/** The two overlays that name no element. */
-export const COLOUR_BY: readonly ColourBy[] = ['platform', 'technologyLifecycle']
+/** The overlays that name no element and no column, in the order a menu lists them. */
+export const COLOUR_BY: readonly ColourBy[] = [
+  'platform', 'technologyLifecycle', 'lifecycle', 'category', 'owner', 'vendor', 'technology',
+]
+
+/** The overlays that read the record, not the rows: `aspect:<key>` is one more. */
+export const VALUE_COLOUR_BY: readonly ColourBy[] = ['lifecycle', 'category', 'owner', 'vendor', 'technology']
+
+/** The overlay for one operational aspect's column. */
+export function colourByAspect(key: string): ColourBy {
+  return `aspect:${key}`
+}
+
+/** The aspect column an `aspect:` overlay asks about; nothing for the others. */
+export function aspectColouredBy(by: ColourBy | undefined): string | undefined {
+  return by !== undefined && by.startsWith('aspect:') ? by.slice('aspect:'.length) : undefined
+}
 
 /** The overlay for one platform or offering (ADR-0020). */
 export function colourByOne(id: ElementId): ColourBy {
@@ -51,7 +77,9 @@ export function oneColouredBy(by: ColourBy | undefined): ElementId | undefined {
 
 /** Whether a string a file or a tool call carries is an overlay. */
 export function isColourBy(value: string): value is ColourBy {
-  return COLOUR_BY.includes(value as ColourBy) || (value.startsWith('one:') && value.length > 'one:'.length)
+  return COLOUR_BY.includes(value as ColourBy)
+    || (value.startsWith('one:') && value.length > 'one:'.length)
+    || (value.startsWith('aspect:') && value.length > 'aspect:'.length)
 }
 
 /**
@@ -63,16 +91,27 @@ export function isColourBy(value: string): value is ColourBy {
  * colour because another card was added above it.
  */
 export type OverlayBand = {
-  /** The platform\'s id, a lifecycle phase, or `none`. */
+  /**
+   * The platform's id, a lifecycle phase, an aspect status, a value
+   * (`value:<text>`), `none` (on nothing) or `unset` (the record says nothing).
+   */
   key: string
-  /** A platform\'s name; absent on the phase bands and on `none`, which the caller names. */
+  /** A platform's or a value's name; absent on the phase, status, `none` and `unset` bands, which the caller names. */
   name?: string
-  /** For the lifecycle overlay: which phase this band is. */
+  /** For the lifecycle overlays: which phase this band is. */
   phase?: Lifecycle
+  /** For an aspect overlay: which status this band is; `unset` where the record has no entry. */
+  status?: AspectStatus | 'unset'
   /** For the one-thing overlay: the cards that do not stand on it, faded rather than washed. */
   faded?: true
   slot: number
   memberIds: ElementId[]
+}
+
+/** What a value overlay reads off a record, and how it is named. */
+export interface OverlayNames {
+  /** Who answers for it, in words: the register's name for a picked person, the text as typed. */
+  owner?(ref: NonNullable<DesignElement['owner']>): string
 }
 
 /** Worst first: what a card on several platforms takes. */
@@ -92,12 +131,18 @@ export function overlayBands(
   colourBy: ColourBy | undefined,
   today?: string,
   tree: PlatformTree = {},
+  names: OverlayNames = {},
 ): OverlayBand[] {
   if (colourBy === undefined || diagram.kind !== 'layer7') return []
   const byId = new Map(model.elements.map((element) => [element.id, element]))
   const drawn = diagram.members
     .map((member) => byId.get(member.id))
     .filter((element): element is DesignElement => element?.kind === 'application')
+
+  // The record's own answer (3.7.0): a phase, a status or a value per card.
+  const aspect = aspectColouredBy(colourBy)
+  if (aspect !== undefined) return aspectBands(drawn, aspect, model)
+  if (VALUE_COLOUR_BY.includes(colourBy)) return valueBands(drawn, colourBy, today, names)
 
   // The reverse question (ADR-0020): who stands on this one thing. The one
   // band first, and the rest faded — a second band only where there is a rest.
@@ -149,6 +194,93 @@ export function overlayBands(
       slot,
       memberIds: band.memberIds,
     }))
+}
+
+/** The phases in the order a legend lists them, as `aspectLegend` does. */
+const PHASES: readonly Lifecycle[] = ['planned', 'live', 'retiring', 'retired']
+
+/**
+ * One band per answer the record gives. A phase band keeps the phase's
+ * colour, so the overlay and the badge agree; a text band — a category, an
+ * owner, a vendor — is ordered by name, for the reason the platform bands
+ * are; and a card whose record says nothing goes last, in `unset`, which is
+ * the absence of an answer and not one more value.
+ */
+function valueBands(
+  drawn: readonly DesignElement[],
+  colourBy: ColourBy,
+  today: string | undefined,
+  names: OverlayNames,
+): OverlayBand[] {
+  const bands = new Map<string, { name?: string; phase?: Lifecycle; order: string; memberIds: ElementId[] }>()
+  const put = (key: string, order: string, memberId: ElementId, rest: { name?: string; phase?: Lifecycle } = {}) => {
+    const held = bands.get(key)
+    if (held) { held.memberIds.push(memberId); return }
+    bands.set(key, { ...rest, order, memberIds: [memberId] })
+  }
+  for (const element of drawn) {
+    if (colourBy === 'lifecycle') {
+      const phase = today ? phaseAt(element, today) : element.lifecycle
+      put(phase, String(PHASES.indexOf(phase)), element.id, { phase })
+      continue
+    }
+    const value = valueOf(element, colourBy, names)
+    if (value === undefined) { put('unset', '\uffff', element.id); continue }
+    put(`value:${value}`, value.toLocaleLowerCase(), element.id, { name: value })
+  }
+  return [...bands.entries()]
+    .sort(([, a], [, b]) => a.order.localeCompare(b.order))
+    .map(([key, band], slot) => ({
+      key,
+      ...(band.name !== undefined ? { name: band.name } : {}),
+      ...(band.phase !== undefined ? { phase: band.phase } : {}),
+      slot,
+      memberIds: band.memberIds,
+    }))
+}
+
+/** What a record says under a value overlay, trimmed; nothing where it says nothing. */
+function valueOf(element: DesignElement, colourBy: ColourBy, names: OverlayNames): string | undefined {
+  const text = (held: string | undefined) => {
+    const trimmed = held?.trim()
+    return trimmed ? trimmed : undefined
+  }
+  switch (colourBy) {
+    case 'category': return text(element.category)
+    case 'vendor': return text(element.vendor)
+    case 'technology': return text(element.technology)
+    case 'owner': {
+      const owner = element.owner
+      if (owner === undefined) return undefined
+      if (names.owner) return text(names.owner(owner))
+      return text(typeof owner === 'string' ? owner : owner.person)
+    }
+    default: return undefined
+  }
+}
+
+/**
+ * One band per status of one aspect column, in the model's order, then the
+ * cards with no entry. The platform column reads the rows' opinion where
+ * nobody typed one (ADR-0013), as the badge does, so the two cannot disagree.
+ */
+function aspectBands(
+  drawn: readonly DesignElement[],
+  key: string,
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+): OverlayBand[] {
+  const members = new Map<AspectStatus | 'unset', ElementId[]>()
+  for (const element of drawn) {
+    const status = element.aspects?.[key]?.status
+      ?? (key === 'platform' ? derivedPlatformAspect(element, model)?.status : undefined)
+      ?? 'unset'
+    const held = members.get(status)
+    if (held) held.push(element.id)
+    else members.set(status, [element.id])
+  }
+  return [...ASPECT_STATUSES, 'unset' as const]
+    .filter((status) => members.has(status))
+    .map((status, slot) => ({ key: status, status, slot, memberIds: members.get(status) ?? [] }))
 }
 
 /**

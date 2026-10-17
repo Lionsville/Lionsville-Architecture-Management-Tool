@@ -23,12 +23,49 @@ const HUES = [
   '#ef4444', '#14b8a6', '#eab308', '#ec4899',
 ] as const;
 
+/**
+ * The band's own colour at full strength: the hue, a phase's or a status's
+ * ink, or the disabled ink for the two neutral bands. What the card's edge
+ * bar, its number tag and the legend's swatch are drawn in — the part of the
+ * overlay that is not a wash, so a band reads at the zoom where a wash is a
+ * faint tint and under a colour vision that tells two hues apart poorly.
+ */
+export function overlayInk(theme: Theme, band: OverlayBand): string {
+  const tokens = getNodeTokens(theme);
+  // The neutral bands' ink is the second ink, not the disabled one: the
+  // number drawn on it is a word, and reads at the contrast a word needs.
+  if (band.key === 'none' || band.key === 'unset') return theme.palette.text.secondary;
+  if (band.phase) return tokens.lifecycle[band.phase].fg;
+  if (band.status) return band.status === 'unset' ? theme.palette.text.secondary : tokens.aspects[band.status].fg;
+  return HUES[band.slot % HUES.length];
+}
+
+/**
+ * The wash over the card's ground. Deepened in 3.7.0 — a sixth over white
+ * was a tint nobody could see at the zoom a landscape of forty cards fits
+ * at — and the two neutral bands stay a grey: "on nothing" and "not set" are
+ * the absence of an answer, and giving them a hue would make them look like
+ * one more platform or one more value.
+ */
 export function overlayTint(theme: Theme, band: OverlayBand): string {
   const dark = theme.palette.mode === 'dark';
-  const wash = dark ? 0.26 : 0.16;
-  // "On nothing" is neutral rather than a ninth colour: it is the absence of an
-  // answer, and giving it a hue would make it look like one more platform.
-  if (band.key === 'none') return alpha(theme.palette.text.disabled, dark ? 0.14 : 0.08);
-  if (band.phase) return alpha(getNodeTokens(theme).lifecycle[band.phase].fg, wash);
-  return alpha(HUES[band.slot % HUES.length], wash);
+  const wash = dark ? 0.34 : 0.26;
+  if (band.key === 'none' || band.key === 'unset' || band.status === 'unset') {
+    return alpha(theme.palette.text.disabled, dark ? 0.16 : 0.1);
+  }
+  if (band.status === 'none') return alpha(theme.palette.text.secondary, dark ? 0.2 : 0.12);
+  return alpha(overlayInk(theme, band), wash);
+}
+
+/** The band's number in the legend, 1-based: what the card's tag says. */
+export function overlayIndex(band: OverlayBand): number {
+  return band.slot + 1;
+}
+
+/** What one card wears under the overlay, resolved once per band (`useBoardView`). */
+export interface OverlayMark {
+  tint: string;
+  ink: string;
+  /** The legend's number for this band. */
+  index: number;
 }

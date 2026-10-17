@@ -873,13 +873,20 @@ export interface DesignDiagram {
   showDeployment?: boolean;
   /**
    * What the landscape's cards are tinted by (layer7, ADR-0013): the platform
-   * of their roll-up, or the worst lifecycle among the platforms they stand
-   * on. Absent = nothing, which is what every board opens as.
+   * of their roll-up, the worst lifecycle among the platforms they stand on,
+   * who stands on one platform or offering (`one:<id>`, ADR-0020) — or, since
+   * format 13, what the record itself says: its own phase, category, owner,
+   * vendor or technology, or the status in one aspect column
+   * (`aspect:<key>`). A 12 folder holds only the first three, and reads.
+   * Absent = nothing, which is what every board opens as.
    *
    * Presentation and nothing else: no geometry, no rows, and the bands are
-   * derived on every render from the rows themselves.
+   * derived on every render from the rows themselves (`model/overlay.ts`).
    */
-  colourBy?: 'platform' | 'technologyLifecycle' | `one:${string}`;
+  colourBy?:
+    | 'platform' | 'technologyLifecycle'
+    | 'lifecycle' | 'category' | 'owner' | 'vendor' | 'technology'
+    | `one:${string}` | `aspect:${string}`;
   /**
    * Where it all ended up. A separate file, and a separate question (§6).
    *

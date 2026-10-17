@@ -4,6 +4,7 @@
 import { MarkerType, type Edge } from '@xyflow/react';
 import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
 import type { ElementNode, ElementNodeData, StandInNote } from './nodes/nodeData';
+import type { OverlayMark } from './theme/overlayColors';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import type { EdgeAnchors } from '../model/floatingEdgeMath';
 import { aspectConfigFor, withDerivedAspects } from '../model/aspects';
@@ -101,12 +102,12 @@ export interface BuildGraphArgs {
    */
   noteFor?(elementId: ElementId): StandInNote | undefined;
   /**
-   * The wash each card takes under the landscape's *Colour by* overlay
+   * What each card wears under the landscape's *Colour by* overlay
    * (ADR-0013), by element id. A map rather than a function for `noteFor`'s
    * reason inverted: the caller memoises it once, so every card that is not in
    * it compares equal and stays out of a re-render.
    */
-  overlayTints?: ReadonlyMap<ElementId, string>;
+  overlayMarks?: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
   overlayFaded?: ReadonlySet<ElementId>;
 }
@@ -134,7 +135,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
     const figure = nodeFigure(element, placement.zone);
     const note = args.noteFor?.(element.id);
-    const tint = args.overlayTints?.get(element.id);
+    const mark = args.overlayMarks?.get(element.id);
     const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
@@ -168,7 +169,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         showLifecycle: args.showLifecycle ?? true,
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
         ...(note !== undefined ? { note } : {}),
-        ...(tint !== undefined ? { overlayTint: tint } : {}),
+        ...(mark !== undefined ? { overlay: mark } : {}),
         ...(faded ? { overlayFaded: true as const } : {}),
       },
     });
@@ -491,7 +492,7 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     // and replaces it only when the tree changes, so this costs one comparison
     // rather than two string compares per card per derive.
     held.note === next.note &&
-    held.overlayTint === next.overlayTint &&
+    held.overlay === next.overlay &&
     held.overlayFaded === next.overlayFaded &&
     held.resizeLimits.min.width === next.resizeLimits.min.width &&
     held.resizeLimits.min.height === next.resizeLimits.min.height &&

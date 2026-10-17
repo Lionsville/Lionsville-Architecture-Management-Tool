@@ -9,6 +9,8 @@ import type { AttachSidesPatch } from '../model/routes';
 import type { TidyOptions } from '../layout/tidy';
 import type { ExistingAt } from './props';
 import type { StandInNote } from './nodes/nodeData';
+import type { OverlayMark } from './theme/overlayColors';
+import type { OverlayLegendProps } from './canvas/OverlayLegend';
 import type { ViewportMemory } from './canvas/viewportMemory';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
@@ -42,10 +44,12 @@ export interface CanvasForDiagramProps {
   showDeployment: boolean;
   /** The platform tree, where another scope answers for it (ADR-0013, ADR-0014). */
   platformTree?: PlatformTree;
-  /** The wash each card takes under the landscape's overlay (ADR-0013). */
-  overlayTints: ReadonlyMap<ElementId, string>;
+  /** What each card wears under the landscape's overlay (ADR-0013). */
+  overlayMarks: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
   overlayFaded: ReadonlySet<ElementId>;
+  /** The overlay's legend on the canvas, while one is up; absent = none. */
+  overlayLegend?: OverlayLegendProps;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
   groupTidyOptions: TidyOptions;

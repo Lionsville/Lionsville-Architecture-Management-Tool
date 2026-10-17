@@ -11,6 +11,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { DesignDiagram, ElementKind } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
 import { allowedKindsOn } from '../model/kindChange';
+import { aspectConfigFor } from '../model/aspects';
 import { useStrings } from '../i18n/LanguageContext';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
 import { newDomainGroup } from './canvas/domainGroupPlacement';
@@ -124,8 +125,14 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         onLineDoubleClick={clicks.handleLineDoubleClick}
         showDeployment={board.showDeployment}
         platformTree={props.ownership?.platformTree}
-        overlayTints={board.overlayTints}
+        overlayMarks={board.overlayMarks}
         overlayFaded={board.overlayFaded}
+        overlayLegend={board.colourBy !== undefined ? {
+          colourBy: board.colourBy,
+          bands: board.overlay,
+          aspectColumns: aspectConfigFor(diagram),
+          onClose: () => board.chooseColourBy(undefined),
+        } : undefined}
         onOpenDocumentation={parts.docs.open}
         onTidyGroup={writable((name: string) => void layout.handleTidyGroup(name))}
         groupTidyOptions={view.groupTidyOptions}

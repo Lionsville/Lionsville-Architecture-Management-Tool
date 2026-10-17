@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { placedNodes } from '../model/placement';
-import { colourByOne } from '../model/overlay';
+import { colourByAspect, colourByOne, VALUE_COLOUR_BY } from '../model/overlay';
 import type { ColourBy, OverlayBand } from '../model/overlay';
-import { overlayTint } from './theme/overlayColors';
+import { COLOUR_BY_LABEL, overlayTitle } from './overlayWords';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -35,10 +35,10 @@ import { OWN_MENU_ATTR } from './isEditableTarget';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
-import type { DesignDiagram, DesignModel, ElementId, Lifecycle, Point } from '../model/types';
+import type { AspectConfigEntry, DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
 import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
-import { badgeLegend } from '../model/aspects';
+import { aspectConfigFor, badgeLegend } from '../model/aspects';
 import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { useStrings } from '../i18n/LanguageContext';
 import { formatDay } from '../i18n/dates';
@@ -657,6 +657,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           onChange={props.onColourByChange}
           bands={props.overlayBands ?? []}
           candidates={props.overlayCandidates ?? []}
+          aspectColumns={aspectConfigFor(props.activeDiagram)}
         />
       )}
       {props.onToggleDeployment && (
@@ -1269,41 +1270,73 @@ function AsOfControl(
   );
 }
 
-/** Lifecycle colour key: one swatch + label + note per state (plan D4). */
 /**
- * *Colour by* — LeanIX\'s picture of a landscape (ADR-0013, redone).
+ * What the landscape is coloured by (ADR-0013, ADR-0020; the record's own
+ * values and the aspect columns since 3.7.0), and the way to say it.
  *
- * The control and its legend are one thing: a wash of colour on forty cards
- * says nothing without the list that names the hues, so the list is under the
- * same button rather than somewhere else on the bar. Nothing here writes a
- * row — what a view SHOWS is a reader\'s to change, which is why it is offered
- * read-only too.
+ * The button says which overlay is up, in words, for the reason the day
+ * button says the day: a board coloured by owner looks exactly like a board
+ * coloured by vendor, and a person who has forgotten which they chose would
+ * otherwise read one as the other. The legend moved onto the canvas
+ * (`OverlayLegend`), where it stays while a person reads the board; this menu
+ * only chooses. Nothing here writes a row — what a view SHOWS is a reader's
+ * to change, which is why it is offered read-only too.
  */
 function ColourByControl(props: {
   colourBy: ColourBy | undefined;
   onChange(by: ColourBy | undefined): void;
   bands: readonly OverlayBand[];
   candidates: readonly { id: ElementId; name: string }[];
+  aspectColumns: readonly AspectConfigEntry[];
 }) {
   const { t } = useStrings();
   const theme = useTheme();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const on = props.colourBy !== undefined;
+  const choose = (by: ColourBy | undefined) => { props.onChange(by); setAnchor(null); };
+  const item = (value: ColourBy | undefined, label: string, testId?: string) => (
+    <MenuItem
+      key={value ?? 'none'}
+      dense
+      selected={props.colourBy === value}
+      data-testid={testId}
+      onClick={() => choose(value)}
+    >
+      {label}
+    </MenuItem>
+  );
+  const group = (title: string, items: ReactNode[]) => (
+    <Box key={title} role="group" aria-label={title}>
+      <ListSubheader component="div" disableSticky sx={{ lineHeight: '24px', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', px: 1.5 }}>{title}</ListSubheader>
+      {items}
+    </Box>
+  );
   return (
     <>
       <Tooltip title={t('toolbar.colourByTip')}>
-        <IconButton
+        <Button
           size="small"
           aria-label={t('toolbar.colourBy')}
           aria-pressed={on}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(anchor)}
+          data-testid="colour-by"
           onClick={(e) => setAnchor(e.currentTarget)}
           sx={{
+            minWidth: 0,
+            px: on ? 1 : 0.6,
+            textTransform: 'none',
+            fontSize: 12,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
             color: on ? 'primary.main' : 'text.secondary',
             backgroundColor: on ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+            '& .MuiButton-startIcon': { mr: on ? 0.5 : 0, ml: 0 },
           }}
+          startIcon={<PaletteIcon />}
         >
-          <PaletteIcon />
-        </IconButton>
+          {props.colourBy !== undefined && overlayTitle(props.colourBy, props.aspectColumns, t, props.bands)}
+        </Button>
       </Tooltip>
       <Popover
         open={Boolean(anchor)}
@@ -1311,81 +1344,31 @@ function ColourByControl(props: {
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        slotProps={{ paper: { sx: { p: 1, mt: 0.5, minWidth: 200 } } }}
+        slotProps={{ paper: { sx: { py: 0.5, mt: 0.5, minWidth: 220, maxHeight: 420, overflow: 'auto' } } }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-          {/* A MenuItem stands in a MenuList since MUI 9, which is also what
-              gives the choices their arrow keys inside a popover. */}
-          <MenuList
-            dense
-            disablePadding
-            aria-label={t('toolbar.colourBy')}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}
-          >
-            {COLOUR_BY_OPTIONS.map((option) => (
-              <MenuItem
-                key={option.value ?? 'none'}
-                dense
-                selected={props.colourBy === option.value}
-                onClick={() => { props.onChange(option.value); setAnchor(null); }}
-              >
-                {t(option.labelKey)}
-              </MenuItem>
-            ))}
-          </MenuList>
+        {/* A MenuItem stands in a MenuList since MUI 9, which is also what
+            gives the choices their arrow keys inside a popover. */}
+        <MenuList dense disablePadding aria-label={t('toolbar.colourBy')}>
+          {item(undefined, t('common.none'))}
+          {group(t('overlay.groupRows'), [
+            item('platform', t(COLOUR_BY_LABEL.platform)),
+            item('technologyLifecycle', t(COLOUR_BY_LABEL.technologyLifecycle)),
+          ])}
+          {group(t('overlay.groupRecord'), VALUE_COLOUR_BY.map((by) => item(by, t(COLOUR_BY_LABEL[by as keyof typeof COLOUR_BY_LABEL]))))}
+          {props.aspectColumns.length > 0 && group(
+            t('overlay.groupAspects'),
+            props.aspectColumns.map((column) => item(colourByAspect(column.key), column.label, `colour-by-aspect-${column.key}`)),
+          )}
           {/* The reverse question (ADR-0020): who stands on this one thing. */}
-          {props.candidates.length > 0 && (
-            <>
-              <ListSubheader component="div" disableSticky sx={{ lineHeight: '28px', fontSize: 11 }}>{t('overlay.one')}</ListSubheader>
-              <MenuList dense disablePadding aria-label={t('overlay.one')} sx={{ maxHeight: 240, overflow: 'auto' }}>
-                {props.candidates.map((candidate) => (
-                  <MenuItem
-                    key={candidate.id}
-                    dense
-                    data-testid={`colour-by-one-${candidate.id}`}
-                    selected={props.colourBy === colourByOne(candidate.id)}
-                    onClick={() => { props.onChange(colourByOne(candidate.id)); setAnchor(null); }}
-                  >
-                    {candidate.name}
-                  </MenuItem>
-                ))}
-              </MenuList>
-            </>
+          {props.candidates.length > 0 && group(
+            t('overlay.one'),
+            props.candidates.map((candidate) => item(colourByOne(candidate.id), candidate.name, `colour-by-one-${candidate.id}`)),
           )}
-          {props.bands.length > 0 && (
-            <Box sx={{ mt: 0.75, pt: 0.75, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {props.bands.map((band) => (
-                <Box key={band.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }} data-testid={`overlay-legend-${band.key}`}>
-                  <Box sx={{
-                    width: 14, height: 14, borderRadius: '3px', flexShrink: 0,
-                    backgroundColor: overlayTint(theme, band),
-                    border: `1px solid ${theme.palette.divider}`,
-                  }} />
-                  <Typography sx={{ fontSize: 11 }}>
-                    {band.name ?? (band.phase ? t(LIFECYCLE_LABEL[band.phase]) : band.faded ? t('overlay.notOnIt') : t('overlay.onNothing'))}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
+        </MenuList>
       </Popover>
     </>
   );
 }
-
-const COLOUR_BY_OPTIONS: { value: ColourBy | undefined; labelKey: StringKey }[] = [
-  { value: undefined, labelKey: 'common.none' },
-  { value: 'platform', labelKey: 'overlay.platform' },
-  { value: 'technologyLifecycle', labelKey: 'overlay.technologyLifecycle' },
-];
-
-const LIFECYCLE_LABEL = {
-  planned: 'lifecycle.planned',
-  live: 'lifecycle.live',
-  retiring: 'lifecycle.retiring',
-  retired: 'lifecycle.retired',
-} as const satisfies Record<Lifecycle, StringKey>;
 
 /**
  * What the badges mean, for this board: each column's code with its long

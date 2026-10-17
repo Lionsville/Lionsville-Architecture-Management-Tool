@@ -249,7 +249,7 @@ const ELEMENT_FIELDS = {
   platformArchetype: { type: 'string', description: 'A platform only: what it is (ADR-0014) — a place something is hostedOn (a cluster, a namespace, an account: the deployment boxes draw these), a service something consumes (a broker, a bus, a vault), or a network. Service when unsaid.', enum: PLATFORM_ARCHETYPES },
   shared: { type: 'boolean', description: 'A platformService only: offered for use beyond the team that maintains it (ADR-0014). False or null takes it off. Where unsaid, a service assigned to one actor and used by an application of another team is reported as check.offeredNotShared rather than assumed.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
-  isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
+  isManaged: { type: 'boolean', description: 'Kept on the record for the files that carry it; nothing in the app reads or shows it since 3.7.0. Whose a system is, is `outside`.' },
   owner: personArgument('Who answers for it — a person or a team. Which scope owns it is the scope it is kept in. Where none is written, an application\'s owner may be worked out from the operating model\'s rule (answered as ownerByRule).'),
   outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
   partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said: one this scope keeps or one a scope above it keeps. Only meaningful with outside.' },
@@ -2482,6 +2482,8 @@ const SPECS = [
           type: 'string',
           description: 'A landscape: what the application cards are tinted by (ADR-0013) — "platform" groups them '
             + 'by what they run on, "technologyLifecycle" by the worst phase among the platforms they stand on, '
+            + '"lifecycle", "category", "owner", "vendor" or "technology" by what each card\'s record says, '
+            + '"aspect:<key>" by the status in one of the board\'s aspect columns, '
             + 'and "one:<id>" (ADR-0020) colours every application that uses, is hosted on or leverages the '
             + 'platform or platformService with that id and fades the rest. Null: nothing. Presentation only; '
             + 'no rows change.',

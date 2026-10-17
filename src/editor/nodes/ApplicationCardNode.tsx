@@ -14,6 +14,7 @@ import { DocGlyph, DrillGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
+import type { OverlayMark } from '../theme/overlayColors';
 import { shownDescription } from './nodeData';
 import { hasDocumentation, shortDescription } from '../../documentation/documentation';
 
@@ -56,13 +57,34 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         // The overlay's wash, laid OVER the card's own ground (ADR-0013): a
         // colour that says which group the card is in, never one that replaces
         // what the card says. A flat gradient rather than `color-mix`, which
-        // this build's browser target does not have.
-        ...(data.overlayTint
-          ? { backgroundImage: `linear-gradient(${data.overlayTint}, ${data.overlayTint})` }
+        // this build's browser target does not have. Beside the wash, a bar
+        // down the card's left edge in the band's full ink and the number tag
+        // in the header: the wash alone was a tint nobody could see at the
+        // zoom a landscape fits at, and two hues apart are not apart to every
+        // eye — the number is.
+        ...(data.overlay
+          ? {
+            backgroundImage: `linear-gradient(${data.overlay.tint}, ${data.overlay.tint})`,
+            // A pseudo-element and not an inset shadow: the shell's
+            // `boxShadow` is the selection ring, and a card in a band is
+            // selected like any other.
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              backgroundColor: data.overlay.ink,
+              pointerEvents: 'none',
+            },
+          }
           : {}),
         // The reverse question's answer for this card is no (ADR-0020): it
-        // fades, so the ones that do stand on the thing are what is left.
-        ...(data.overlayFaded ? { opacity: 0.35 } : {}),
+        // fades and loses its colour, so the ones that do stand on the thing
+        // are what is left.
+        ...(data.overlayFaded ? { opacity: 0.3, filter: 'grayscale(1)' } : {}),
         border: `1px solid ${tokens.card.border}`,
         borderRadius: shapeRadiusFor('application', element.shapeVariant, false),
         overflow: 'hidden',
@@ -113,6 +135,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
             </Box>
           </Tooltip>
         )}
+        {data.overlay && <OverlayTag mark={data.overlay} />}
         {element.vendor && (
           <Typography
             sx={{
@@ -156,3 +179,34 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
     </NodeShell>
   );
 });
+
+/**
+ * The band's number in the card's header, in the band's ink: what the legend
+ * says beside the same number, so a band is found by reading.
+ */
+function OverlayTag({ mark }: { mark: OverlayMark }) {
+  const theme = useTheme();
+  const { t } = useStrings();
+  return (
+    <Box
+      data-testid="overlay-tag"
+      aria-label={t('node.overlayBand', { index: String(mark.index) })}
+      sx={{
+        flexShrink: 0,
+        minWidth: 16,
+        height: 15,
+        px: 0.4,
+        borderRadius: '3px',
+        fontSize: 9.5,
+        fontWeight: 800,
+        lineHeight: '15px',
+        textAlign: 'center',
+        fontVariantNumeric: 'tabular-nums',
+        backgroundColor: mark.ink,
+        color: theme.palette.getContrastText(mark.ink),
+      }}
+    >
+      {mark.index}
+    </Box>
+  );
+}

@@ -10,7 +10,7 @@
  * how healthy it is.
  */
 import { describe, expect, it } from 'vitest'
-import { colourByOne, isColourBy, oneColouredBy, overlayBandOf, overlayBands } from './overlay'
+import { aspectColouredBy, colourByAspect, colourByOne, isColourBy, oneColouredBy, overlayBandOf, overlayBands } from './overlay'
 import { element } from './testFixtures'
 import type { DesignDiagram, DesignElement, Relation } from './types'
 
@@ -197,5 +197,70 @@ describe('colouring by one platform or offering', () => {
     expect(isColourBy('one:')).toBe(false)
     expect(isColourBy('platform')).toBe(true)
     expect(isColourBy('service')).toBe(false)
+    expect(colourByAspect('dr')).toBe('aspect:dr')
+    expect(aspectColouredBy('aspect:dr')).toBe('dr')
+    expect(aspectColouredBy('owner')).toBeUndefined()
+    expect(isColourBy('aspect:dr')).toBe(true)
+    expect(isColourBy('aspect:')).toBe(false)
+    for (const by of ['lifecycle', 'category', 'owner', 'vendor', 'technology']) expect(isColourBy(by)).toBe(true)
+  })
+})
+
+/**
+ * The record's own answers (3.7.0): a band per value, ordered by name with
+ * the cards that say nothing last; the phases in their own order and colour;
+ * an aspect column's statuses in the model's order, the platform column
+ * reading the rows where nobody typed it, as the badge does.
+ */
+describe('colouring by what the record says', () => {
+  const records = [
+    element('wms', { name: 'WMS', category: 'Warehouse', vendor: 'Acme', owner: 'Logistics', lifecycle: 'retiring' }),
+    element('portal', { name: 'Portal', category: 'warehouse', owner: { person: 'pe-1' }, lifecycle: 'live' }),
+    element('billing', { name: 'Billing', category: 'Finance', vendor: ' ', lifecycleDates: { retired: '2026-01-01' } }),
+    element('partner', { name: 'Partner', outside: true, aspects: { dr: { status: 'atRisk' } } }),
+    platform('openshift', 'OpenShift'),
+  ]
+  const drawn = { kind: 'layer7' as const, members: records.map(({ id }) => ({ id })) }
+  const rows = [host('h1', 'wms', 'openshift')]
+
+  it('bands the cards by a value, case apart, and keeps the ones that say nothing last', () => {
+    const bands = overlayBands({ elements: records, relations: rows }, drawn, 'category')
+    expect(bands.map((band) => [band.key, band.name, band.memberIds])).toEqual([
+      ['value:Finance', 'Finance', ['billing']],
+      ['value:Warehouse', 'Warehouse', ['wms']],
+      ['value:warehouse', 'warehouse', ['portal']],
+      ['unset', undefined, ['partner']],
+    ])
+    // A vendor of blanks is no vendor.
+    expect(overlayBandOf(overlayBands({ elements: records, relations: rows }, drawn, 'vendor')).get('billing')?.key).toBe('unset')
+  })
+
+  it('reads the owner through the names it is handed, and the text as typed without them', () => {
+    const names = { owner: (ref: string | { readonly person: string }) => (typeof ref === 'string' ? ref : 'Eva') }
+    const named = overlayBands({ elements: records, relations: rows }, drawn, 'owner', undefined, {}, names)
+    expect(named.map((band) => band.name)).toEqual(['Eva', 'Logistics', undefined])
+    const plain = overlayBands({ elements: records, relations: rows }, drawn, 'owner')
+    expect(plain.map((band) => band.name)).toEqual(['Logistics', 'pe-1', undefined])
+  })
+
+  it('bands the cards by their own phase on the day, in the lifecycle order', () => {
+    const bands = overlayBands({ elements: records, relations: rows }, drawn, 'lifecycle', '2026-06-01')
+    expect(bands.map((band) => [band.key, band.phase, band.memberIds])).toEqual([
+      ['live', 'live', ['portal', 'partner']],
+      ['retiring', 'retiring', ['wms']],
+      ['retired', 'retired', ['billing']],
+    ])
+    expect(overlayBandOf(overlayBands({ elements: records, relations: rows }, drawn, 'lifecycle', '2025-06-01')).get('billing')?.key).toBe('live')
+  })
+
+  it('bands the cards by the status in one aspect column, the platform column read off the rows', () => {
+    const dr = overlayBands({ elements: records, relations: rows }, drawn, colourByAspect('dr'))
+    expect(dr.map((band) => [band.key, band.status, band.memberIds])).toEqual([
+      ['atRisk', 'atRisk', ['partner']],
+      ['unset', 'unset', ['wms', 'portal', 'billing']],
+    ])
+    const platformColumn = overlayBandOf(overlayBands({ elements: records, relations: rows }, drawn, colourByAspect('platform')))
+    expect(platformColumn.get('wms')?.key).toBe('managed')
+    expect(platformColumn.get('portal')?.key).toBe('none')
   })
 })

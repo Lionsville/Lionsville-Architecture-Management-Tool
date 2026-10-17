@@ -71,6 +71,8 @@ import { isRectFullyVisible, toRect } from './viewportFit';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { ZoomControls } from './ZoomControls';
+import { OverlayLegend, type OverlayLegendProps } from './OverlayLegend';
+import type { OverlayMark } from '../theme/overlayColors';
 import { FIT_ALL, MAX_ZOOM, MIN_ZOOM, viewportOverNodes } from './fitAll';
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
@@ -327,10 +329,12 @@ export interface DiagramCanvasProps {
    * which is what it does everywhere else.
    */
   onLineDoubleClick?(relationId: string): void;
-  /** The wash each card takes under the landscape's overlay (ADR-0013). */
-  overlayTints?: ReadonlyMap<ElementId, string>;
+  /** What each card wears under the landscape's overlay (ADR-0013). */
+  overlayMarks?: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
   overlayFaded?: ReadonlySet<ElementId>;
+  /** The overlay's legend, drawn on the canvas while an overlay is up. */
+  overlayLegend?: OverlayLegendProps;
   /** "Open documentation" on an element: the editor shows its page. */
   onOpenDocumentation?(elementId: ElementId): void;
   /**
@@ -530,14 +534,14 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
         asOfDay,
-        overlayTints: props.overlayTints,
+        overlayMarks: props.overlayMarks,
         overlayFaded: props.overlayFaded,
         noteFor: props.noteFor,
       }, lastNodes.current);
       lastNodes.current = next;
       return next;
     },
-    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor, props.overlayTints, props.overlayFaded],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor, props.overlayMarks, props.overlayFaded],
   );
   const derivedEdges = useMemo(
     () => {
@@ -1720,6 +1724,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
               onDistribute: handleDistribute,
             }}
           />
+          {props.overlayLegend && <OverlayLegend {...props.overlayLegend} />}
           <HelperLines
             horizontal={helperLines.horizontal}
             vertical={helperLines.vertical}
