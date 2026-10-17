@@ -47,6 +47,8 @@ export type LineTargetFormProps = {
   fromUnit: ElementId
   /** The kind a line opens at, where only one kind is said here. */
   kind?: LineKind
+  /** The person the line is said for, not offered as the one they report to. */
+  leavePerson?: string
   /** A role in a unit not offered: a unit's line from a role does not report to that role there, whoever holds it. */
   leaveOut?: { unitId: ElementId; roleId: string }
   /** The test id every field's starts with. */
@@ -96,14 +98,14 @@ export function LineTargetForm(props: LineTargetFormProps) {
     const there = new Set(units.map((one) => one.unit.id))
     const held = new Map<string, { unitId: string; roleId: string }[]>()
     for (const one of organisation.assignments) {
-      if (!runsOn(one, day) || !there.has(one.unitId)) continue
       const who = personOf(one)
+      if (!runsOn(one, day) || !there.has(one.unitId) || who === props.leavePerson) continue
       const at = held.get(who) ?? []
       if (!at.some((place) => place.unitId === one.unitId && place.roleId === one.roleId)) at.push({ unitId: one.unitId, roleId: one.roleId })
       held.set(who, at)
     }
     return [...held].map(([id, places]) => ({ id, name: names.text(pickedPerson(id)), places })).sort((a, b) => a.name.localeCompare(b.name))
-  }, [organisation, day, names, units])
+  }, [organisation, day, names, units, props.leavePerson])
   const whose = people.find((one) => one.id === person)
   const place = whose ? (whose.places.length === 1 ? whose.places[0] : whose.places.find((one) => `${one.unitId}\u0000${one.roleId}` === position)) : undefined
   const placeLabel = (one: { unitId: string; roleId: string }) => `${roleName(one.roleId)} · ${unitPath(organisation.units, one.unitId)}`
@@ -126,7 +128,7 @@ export function LineTargetForm(props: LineTargetFormProps) {
       </TextField>
       {mode === 'role' && (
         <>
-          <TextField select label={s('unit.lineTarget')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget(''); setHolder(ANY) }} slotProps={field('unit')}>
+          <TextField select label={s('line.unit')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget(''); setHolder(ANY) }} slotProps={field('unit')}>
             {units.map(({ unit, path }) => (
               <MenuItem key={unit.id} value={unit.id}>{unit.id === props.fromUnit ? s('unit.lineThisUnit', { unit: path }) : path}</MenuItem>
             ))}

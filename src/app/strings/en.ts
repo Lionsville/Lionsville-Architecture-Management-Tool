@@ -1323,6 +1323,7 @@ export const EN = {
   'unit.lineNotHeld': '{person} no longer holds it',
   'unit.reportedToByHolder': '{person} — {role}, {unit} → {target}',
   'unit.exceptionPlacement': 'An exception to the model: {role} is not one of the roles {unit} holds.',
+  'line.unit': 'Unit',
   'line.toWhat': 'Reports to',
   'line.toRole': 'A role in a unit',
   'line.toPerson': 'One person',

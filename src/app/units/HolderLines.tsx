@@ -102,7 +102,7 @@ export function HolderLines(props: HolderLinesProps) {
       )}
       {editable && editing && (
         <LineTargetForm
-          organisation={organisation} day={day} scopeOf={props.scopeOf} names={names} fromUnit={held.unitId} testId="holder-line" s={s}
+          organisation={organisation} day={day} scopeOf={props.scopeOf} names={names} fromUnit={held.unitId} leavePerson={personOf(held)} testId="holder-line" s={s}
           title={s('holder.overrideTitle', { person: names.text(pickedPerson(personOf(held))) })}
           onCancel={() => { setEditing(false); setRefused(undefined) }}
           onSave={(said) => {

@@ -1096,6 +1096,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unit.lineNotHeld': '{person} hat die Rolle nicht mehr inne',
   'unit.reportedToByHolder': '{person} — {role}, {unit} → {target}',
   'unit.exceptionPlacement': 'Eine Ausnahme vom Modell: {role} ist keine der Rollen, die {unit} hat.',
+  'line.unit': 'Einheit',
   'line.toWhat': 'Berichtet an',
   'line.toRole': 'Eine Rolle in einer Einheit',
   'line.toPerson': 'Eine Person',
