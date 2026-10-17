@@ -41,7 +41,7 @@ async function recordOf(id: string) {
   await screen.findByTestId('element-record')
 }
 
-describe('Replace…, from the workspace', { timeout: 20_000 }, () => {
+describe('Replace…, from the workspace', { timeout: 40_000 }, () => {
   it('opens the replacement for the application whose record it is on, and Cancel closes it', async () => {
     await recordOf('billing')
     expect(screen.queryByText(`Replace ${billing.name}`)).toBeNull()

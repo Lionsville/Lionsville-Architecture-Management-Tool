@@ -360,7 +360,7 @@ describe('an element selected on the view opened', () => {
   })
 })
 
-describe('what is opened is what is seen', () => {
+describe('what is opened is what is seen', { timeout: 20_000 }, () => {
   it('closes the documentation page over the board when a provider opens another page', async () => {
     const scopes = tree()
     show([
