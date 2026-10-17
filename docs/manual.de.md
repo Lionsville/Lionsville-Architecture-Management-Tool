@@ -2274,13 +2274,18 @@ einer Führungskraft, durch die eine Kette von Führungskräften dorthin
 zurückkehrt, wo sie begann, und eine Linie von einer Rolle zu sich selbst in
 derselben Einheit werden dort sofort abgelehnt, mit dem Grund.
 
-**Die Struktur zeichnet die Linien** zwischen den Rollen auf ihren Karten: auf
-der Karte selbst für eine Linie in derselben Einheit, zu den Karten darüber,
-die die Rolle haben, sonst zu jeder Karte, die sie hat — in der Warnfarbe, wo
-eine Einheit sagen müsste, welche. Durchgezogen für die einer Führungskraft,
-gepunktet für eine fachliche. Wählen Sie eine Rolle, und ihre Linien leuchten
-auf, mit den Rollen, an die sie berichtet, und den Rollen, die an sie
-berichten; der Rest verblasst.
+**Die Struktur zeichnet die Linien einer Rolle, wenn Sie sie wählen**, und
+sonst keine, damit die Karten lesbar bleiben. Wählen Sie den Chip einer Rolle
+auf einer Karte, und die Linien aus diesem Chip und in ihn werden gezeichnet,
+wie sie für den Typ dieser Karte gelten: auf der Karte selbst für eine Linie
+in derselben Einheit, zu den Karten darüber, die die Rolle haben, sonst zu
+jeder Karte, die sie hat — in der Warnfarbe, wo eine Einheit sagen müsste,
+welche. Die Chips am anderen Ende leuchten auf; eine Karte, die die Rolle auch
+hat, zeichnet nichts, bis ihr eigener Chip gewählt ist. Wählen Sie die Rolle
+anderswo — in der Ablage oder auf dem Reiter **Verantwortungen** —, werden ihre Linien
+von jeder Karte gezeichnet, die sie hat. Einen Einheitstyp zu wählen zeichnet
+keine Linien. Durchgezogen für die einer Führungskraft, gepunktet für eine
+fachliche.
 
 **Regeln, die das Modell liest** sagen, wessen Rolle wofür einsteht:
 Verantwortlich für eine Anwendung ist, wer eine gewählte Rolle in der Einheit
@@ -2726,17 +2731,19 @@ Leiste zeichnet sie, jede mit **+ zuordnen**, wo Sie jemanden zuordnen dürfen,
 und der Inspektor der Einheit führt immer jede Rolle. Wie eine Faltung gilt
 der Schalter, solange die App offen ist, und wird nie gespeichert.
 
-**Berichtslinien** in der Leiste zeichnet die Linien über die Kästen, am Tag
-des Organigramms: von der Zeile jeder Rolle mit einer Linie zur Zeile der
-Rolle, bei der sie endet, durchgezogen für die einer Führungskraft und
-gepunktet für eine fachliche; eine Linie zwischen zwei Rollen einer Einheit
-ist ein Haken neben ihrem Kasten. Eine Linie zu einer Rolle, die niemand
-innehat, wird in der Warnfarbe gezeichnet, und eine, die Teil einer Schleife
-ist, in der Fehlerfarbe. Eine Linie zu oder von einer weggefalteten Einheit
-endet an der Faltung. Klicken Sie eine Einheit an, und ihre Linien leuchten
-auf, während der Rest verblasst. Der Schalter ist von Anfang an an, wo die
-Organisation eine Linie hat, und aus, wo sie keine hat; so oder so bleibt er,
-solange die Seite offen ist.
+**Berichtslinien** werden für die Person gezeichnet, die Sie wählen, am Tag
+des Organigramms: von ihrem Chip zum Chip derer, die die Rolle innehaben, an
+die sie berichtet, und von den Chips derer, die an sie berichten, zu ihrem —
+durchgezogen für die einer Führungskraft und gepunktet für eine fachliche.
+Eine Linie zwischen zwei Rollen einer Einheit verbindet die beiden Chips in
+ihrem Kasten. Wo niemand die Rolle am anderen Ende innehat, endet die Linie
+am Namen der Rolle, in der Warnfarbe; eine, die Teil einer Schleife ist, steht
+in der Fehlerfarbe. Wo das andere Ende weggefaltet ist, endet die Linie am
+Namen der eingeklappten Einheit, und ihr Tooltip sagt es. Ist niemand gewählt,
+oder eine Einheit, wird keine Linie gezeichnet. **Berichtslinien** in der
+Leiste schaltet sie ganz ab; der Schalter ist von Anfang an an, wo die
+Organisation eine Linie hat, und aus, wo sie keine hat, und bleibt, solange
+die Seite offen ist.
 
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
 in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
@@ -2759,12 +2766,13 @@ seiner ganzen Zeit, *führt* markiert eine Rolle, deren Inhaber die Personen
 der Einheit führt, und ein gestrichelter Kasten ist eine aufgelöste Einheit,
 der noch Personen zugeordnet sind.
 
-Eine Einheit zu wählen, die dieser Bereich führt, öffnet sie im Inspektor
-neben dem Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die
-Einheiten, mit denen sie arbeitet. Eine Einheit, die ein anderer Bereich
-führt, öffnet sich dort, im Organigramm dieses Bereichs, gewählt, mit demselben
-Inspektor daneben — oder auf ihrem Datensatz, wo dieser Bereich kein
-Organigramm hat. **Mich finden** geht zu der Einheit, in der Sie eine Rolle
+Ein Klick wählt, ein Doppelklick öffnet, wie auf einem Board. Ein Klick auf
+eine Einheit, die dieser Bereich führt, öffnet sie im Inspektor neben dem
+Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die Einheiten,
+mit denen sie arbeitet. Ein Klick auf eine Einheit, die ein anderer Bereich
+führt, geht in diesem Organigramm zu ihr; ein Doppelklick öffnet sie dort, im
+Organigramm dieses Bereichs, gewählt, mit demselben Inspektor daneben — oder
+auf ihrem Datensatz, wo dieser Bereich kein Organigramm hat. **Mich finden** geht zu der Einheit, in der Sie eine Rolle
 haben; sagen Sie zuerst, wer Sie sind, mit **Das bin ich** auf der Seite
 Personen.
 
@@ -2777,7 +2785,9 @@ vorausschauen, sonst heute, und nie vor dem ersten Tag. Eine beendete Zuordnung
 bleibt: Sie ist, was die Person innehatte. **Korrigieren…** öffnet für alles
 andere den Dialog der Einheit, und **In Personen öffnen** geht zur Seite
 Personen mit dieser Person gewählt. Eine Person in einer Einheit, die ein
-anderer Bereich führt, öffnet diese Einheit dort.
+anderer Bereich führt, wird ebenso gezeigt, nur zum Lesen: Der Inspektor sagt,
+welcher Bereich die Zuordnung führt, und **In** diesem Bereich **öffnen** geht
+dorthin, um sie zu ändern, wie ein Doppelklick auf die Person.
 
 ### Die Conway-Karte
 

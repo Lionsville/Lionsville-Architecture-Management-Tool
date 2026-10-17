@@ -55,19 +55,30 @@ describe('picking with reporting lines on the structure (ADR-0039 §7, amended)'
     from: { typeId: from[0], roleId: from[1] }, to: { typeId: to[0], roleId: to[1] },
   })
 
-  it('lights, for a role, the roles it reports to and the roles that report to it, and the lines at either end', () => {
-    const looks = pickLooks(types, { kind: 'role', id: 'po' }, roles)
+  // The coach reports to the team's product owner in the team, and to the domain owner from the guild; the lead to the domain owner.
+  const lines = [line(['team', 'coach'], ['team', 'po']), line(['guild', 'coach'], ['domain', 'owner']), line(['cluster', 'lead'], ['domain', 'owner'])]
+  const keys = (drawn: readonly RoleLine[]) => drawn.map((one) => one.key)
+
+  it('draws no line where nothing is picked, or a type is', () => {
+    expect(pickLooks(types, undefined, roles, lines).roleLines).toEqual([])
+    expect(pickLooks(types, { kind: 'unitType', id: 'cluster' }, roles, lines).roleLines).toEqual([])
+  })
+
+  it('draws, for a role picked off the cards, its lines on every card that holds it, and lights the roles at either end', () => {
+    const looks = pickLooks(types, { kind: 'role', id: 'po' }, roles, lines)
     expect([looks.role('po'), looks.role('coach'), looks.role('owner'), looks.role('lead')]).toEqual(['picked', 'lit', 'plain', 'plain'])
-    expect(looks.roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('lit')
-    expect(looks.roleLine(line(['cluster', 'lead'], ['domain', 'owner']))).toBe('dim')
-    const lead = pickLooks(types, { kind: 'role', id: 'lead' }, roles)
+    expect(keys(looks.roleLines)).toEqual(['team/coach>team/po'])
+    expect(keys(pickLooks(types, { kind: 'role', id: 'coach' }, roles, lines).roleLines)).toEqual(['team/coach>team/po', 'guild/coach>domain/owner'])
+    const lead = pickLooks(types, { kind: 'role', id: 'lead' }, roles, lines)
     expect([lead.role('owner'), lead.role('po')]).toEqual(['lit', 'plain'])
   })
 
-  it('lights, for a type, the lines from and to its cards', () => {
-    const looks = pickLooks(types, { kind: 'unitType', id: 'cluster' }, roles)
-    expect(looks.roleLine(line(['cluster', 'lead'], ['domain', 'owner']))).toBe('lit')
-    expect(looks.roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('dim')
-    expect(pickLooks(types, undefined, roles).roleLine(line(['team', 'coach'], ['team', 'po']))).toBe('plain')
+  it('draws, for a role picked by its chip on one card, only the lines from and into that chip, and lights the chips they reach', () => {
+    const looks = pickLooks(types, { kind: 'role', id: 'coach', inType: 'guild' }, roles, lines)
+    expect(keys(looks.roleLines)).toEqual(['guild/coach>domain/owner'])
+    expect([looks.role('coach', 'guild'), looks.role('coach', 'team'), looks.role('owner', 'domain'), looks.role('po', 'team')]).toEqual(['picked', 'plain', 'lit', 'plain'])
+    expect(types.map((one) => looks.type(one.id))).toEqual(['lit', 'dim', 'dim', 'picked'])
+    // Into a chip: the owner on the domain's card has two lines coming in.
+    expect(keys(pickLooks(types, { kind: 'role', id: 'owner', inType: 'domain' }, roles, lines).roleLines)).toEqual(['guild/coach>domain/owner', 'cluster/lead>domain/owner'])
   })
 })

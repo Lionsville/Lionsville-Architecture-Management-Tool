@@ -1975,12 +1975,16 @@ A line manager's line that would make a chain of managers come back to where
 it started, and a line from a role to itself in the same unit, are refused
 there and then, and said why.
 
-**The structure draws the lines** between the roles on its cards: on the card
+**The structure draws a role's lines when you pick it**, and none otherwise,
+so the cards stay readable. Pick a role's chip on a card and the lines from
+that chip and into it are drawn, as they are for that card's type: on the card
 itself for a line in the same unit, to the cards above it that hold the role,
 else to every card that holds it — in the warning colour where a unit would
-have to say which. Solid for a line manager's, dotted for a functional one.
-Pick a role and its lines light up, with the roles it reports to and the
-roles that report to it; the rest fades.
+have to say which. The chips at the other ends light up; a card that holds
+the role too draws nothing until its own chip is picked. Pick the role
+anywhere else — in the tray, or on the **Responsibilities** tab — and its
+lines are drawn from every card that holds it. Picking a unit type draws no
+lines. Solid for a line manager's, dotted for a functional one.
 
 **Rules the model reads** say whose role answers for what: an application's
 owner is the holder of a chosen role in the unit it belongs to, and a domain's
@@ -2363,15 +2367,17 @@ roles** on the bar draws them, each with **+ assign** where you may assign
 someone, and the unit's inspector always lists every role. Like a fold, the
 switch lasts while the app is open and is never saved.
 
-**Reporting lines** on the bar draws the lines over the boxes, on the chart's
-day: from the row of each role with a line to the row of the role it lands
-on, solid for a line manager's and dotted for a functional one; a line
-between two roles of one unit is a hook beside its box. A line to a role
-nobody holds is drawn in the warning colour, and one that is part of a loop
-in the error colour. A line to or from a unit folded away ends at the fold.
-Press a unit and its lines light up while the rest fade. The switch is on
-from the start where the organisation has any line, and off where it has
-none; either way it lasts while the page is up.
+**Reporting lines** are drawn for the person you pick, on the chart's day:
+from their chip to the chip of whoever holds the role they report to, and
+from the chips of the people who report to them to theirs — solid for a line
+manager's and dotted for a functional one. A line between two roles of one
+unit joins the two chips inside its box. Where nobody holds the role at the
+far end, the line ends at the role's name, in the warning colour; one that is
+part of a loop is in the error colour. Where the far end is folded away, the
+line ends at the folded unit's name, and its tooltip says so. With nobody
+picked, or a unit, no line is drawn. **Reporting lines** on the bar turns them
+off altogether; it is on from the start where the organisation has any line,
+and off where it has none, and lasts while the page is up.
 
 The chart is drawn on a day, as a board is: the day control on the bar looks at
 any other day, and **Save** keeps that day on the chart (see *Time, and the day
@@ -2391,14 +2397,16 @@ requires and nobody holds, a red edge is someone over all of their time,
 *manages* marks a role whose holder manages the unit's people, and a dashed
 box is a unit that has ended with people still in it.
 
-Choosing a unit this scope keeps opens it in the inspector beside the chart —
-its people, its roles, who manages it and the units it works with. A unit kept
-in another scope opens there, on that scope's chart, chosen, with the same
-inspector beside it — or on its record where that scope has no chart. **Find
+A click picks and a double-click opens, as on a board. Clicking a unit this
+scope keeps opens it in the inspector beside the chart — its people, its
+roles, who manages it and the units it works with. Clicking a unit kept in
+another scope goes to it on this chart; double-click it to open it there, on
+that scope's chart, chosen, with the same inspector beside it — or on its
+record where that scope has no chart. **Find
 me** goes to the unit where you hold a role; say who you are first, with **This
 is me** on the People page.
 
-Pressing a person opens their assignment in the inspector instead: who holds
+Clicking a person opens their assignment in the inspector instead: who holds
 it, the role and the unit, its first and last day, the part of their time it
 takes, and a note where they hold more than all of their time on the chart's
 day. **End on this day** ends it, as one step, on the last day you choose — the
@@ -2406,7 +2414,9 @@ day before the chart's day where you are looking ahead, today otherwise, and
 never before its first. An ended assignment stays: it is what the person held.
 **Correct…** opens the unit's dialog for everything else, and **Open in
 People** goes to the People page with the person picked. A person in a unit kept
-in another scope opens that unit there.
+in another scope is shown the same way, read only: the inspector says which
+scope keeps the assignment, and **Open in** that scope goes there to change it,
+as a double-click on the person does.
 
 ### The Conway map
 

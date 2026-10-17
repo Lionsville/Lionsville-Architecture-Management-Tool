@@ -9,12 +9,15 @@
  * Each type is a card in its lane (`StructureLanes`), with a line from every
  * place it may sit. Picking a card lights where the type may sit, the types
  * that may sit in it and its roles; picking a role lights the types that hold
- * it; everything else dims, and pressing the pick again lets it go. Both open
+ * it; everything else dims, and pressing the pick again lets it go. The
+ * reporting lines are drawn for a role picked and for nothing else: picked by
+ * its chip on a card, the lines from and into that chip; picked in the tray or
+ * elsewhere, its lines on every card that holds it. Both open
  * in the inspector beside, where *Sits in* and the order in the lane are
  * edited. A type that sits nowhere waits in a tray of its own, since no unit
  * can be made of it, and so does a role no type holds.
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -59,21 +62,33 @@ export function UnitsAndRoles(props: Props) {
   const { model, readOnly, selected, onSelect, dispatch, makeId, empty, onFromLibrary, fresh } = props
   const { t } = useStrings()
   const structure = useMemo(() => unitTypeLanes(model.unitTypes), [model.unitTypes])
-  const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected), model.roles), [model, selected])
-  // The reporting lines between the cards' role chips (ADR-0039 §7, amended): drawn always, lit at the pick.
+  // A role picked by its chip says which card it was picked on; picked anywhere else — the tray, the matrix, a link — it says none.
+  const [pickedIn, setPickedIn] = useState<{ roleId: RoleId; typeId: UnitTypeId } | undefined>(undefined)
+  const inType = pickedIn?.roleId === selected ? pickedIn?.typeId : undefined
+  // Every reporting line the structure could draw (ADR-0039 §7, amended); only the pick's are drawn.
   const lines = useMemo(() => roleLines(structure, model.unitTypes, model.roles), [structure, model.unitTypes, model.roles])
+  const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected, inType), model.roles, lines), [model, selected, inType, lines])
   const roles = useMemo(() => new Map(model.roles.map((role) => [role.id, role])), [model.roles])
   const add = (command: CommandOf<'unitType.add'> | CommandOf<'role.add'>) => {
     dispatch(command)
     onSelect(command.type === 'unitType.add' ? command.unitType.id : command.role.id)
   }
   // Pressing the pick again lets it go.
-  const pick = (id: string) => onSelect(selected === id ? undefined : id)
+  const pick = (id: string) => {
+    setPickedIn(undefined)
+    onSelect(selected === id ? undefined : id)
+  }
+  // A role's chip on a card: the role, on that card; pressed again there, let go; pressed on another card, moved there.
+  const pickChip = (roleId: RoleId, typeId: UnitTypeId) => {
+    const again = selected === roleId && inType === typeId
+    setPickedIn(again ? undefined : { roleId, typeId })
+    onSelect(again ? undefined : roleId)
+  }
   const card = (type: UnitType) => (
     <TypeCard
       type={type} roles={roles} look={looks.type(type.id)} source={sourceOf(type, props.libraries, t)}
       meta={metaOf(type, props.unitCounts, t)} place={placeOf(type, model.unitTypes, t)} named="operating.typeCard"
-      onPick={() => pick(type.id)} onPickRole={pick} roleLook={looks.role} fresh={fresh?.has(type.id) === true}
+      onPick={() => pick(type.id)} onPickRole={(roleId) => pickChip(roleId, type.id)} roleLook={(roleId) => looks.role(roleId, type.id)} fresh={fresh?.has(type.id) === true}
     />
   )
   return (
@@ -114,7 +129,7 @@ export function UnitsAndRoles(props: Props) {
           structure={structure} label={t('operating.structure')} named="operating.structure"
           organisation={{ name: t('operating.theOrganisation'), note: t('operating.organisationNote'), look: looks.organisation }}
           laneLabel={(lane) => (lane === 0 ? t('operating.theOrganisation') : t('operating.lane', { lane }))}
-          card={card} lineLook={looks.line} roleLines={{ lines, look: looks.roleLine }}
+          card={card} lineLook={looks.line} roleLines={looks.roleLines}
         />
       </Box>
       {lines.length > 0 && (
@@ -141,9 +156,10 @@ export function UnitsAndRoles(props: Props) {
 }
 
 /** What is picked, as the structure reads it: a unit type or a role, and nothing for a responsibility. */
-function pickOf(model: OperatingModel, selected: string | undefined): StructurePick | undefined {
+function pickOf(model: OperatingModel, selected: string | undefined, inType: UnitTypeId | undefined): StructurePick | undefined {
   const picked = itemOf(model, selected)
-  return picked && picked.kind !== 'responsibility' ? { kind: picked.kind, id: picked.item.id } : undefined
+  if (!picked || picked.kind === 'responsibility') return undefined
+  return picked.kind === 'role' && inType !== undefined ? { kind: 'role', id: picked.item.id, inType } : { kind: picked.kind, id: picked.item.id }
 }
 
 /** Where a type came from: its library's name, or the organisation's own. */

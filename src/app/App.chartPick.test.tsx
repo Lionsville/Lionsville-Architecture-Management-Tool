@@ -48,6 +48,7 @@ const customer: ScopeSnapshot = {
   model: {
     name: 'Customer', relations: [],
     elements: [actor('customer', 'Customer', { unitTypeId: 'ut-domain' }), actor('sales', 'Sales', { unitTypeId: 'ut-cluster', parentId: 'customer' })],
+    assignments: [{ id: 'as-sales', unitId: 'sales', roleId: 'ro-lead', person: { person: 'pe-ines' }, from: '2026-01-05' }],
     diagrams: [{ id: 'oc-customer', kind: 'chart', name: 'Customer chart', members: [], geometry: { nodes: [] } }],
   },
   activeDiagramId: 'oc-customer',
@@ -57,13 +58,17 @@ const customer: ScopeSnapshot = {
 const inspector = () => document.querySelector<HTMLElement>(controlSelector('board.inspector'))!
 const unitOpen = (id: string) => document.querySelector<HTMLElement>(`[data-testid="chart-unit"][data-element-id="${id}"] [data-testid="chart-unit-open"]`)
 
-async function press(id: string) {
+async function press(id: string, twice = false) {
   const button = await waitFor(() => {
     const found = unitOpen(id)
     expect(found, id).not.toBeNull()
     return found!
   })
   fireEvent.click(button)
+  if (twice) {
+    fireEvent.click(button)
+    fireEvent.doubleClick(button)
+  }
 }
 
 describe('pressing a unit on the organisation chart', { timeout: 20_000 }, () => {
@@ -77,14 +82,38 @@ describe('pressing a unit on the organisation chart', { timeout: 20_000 }, () =>
     expect(await axeFindings(inspector())).toEqual([])
   })
 
-  it('opens one another scope keeps there, on its chart, selected, with the unit\'s inspector', async () => {
+  it('goes to one another scope keeps on a click, and opens it there on a double-click, on its chart, selected, with the unit\'s inspector', async () => {
     renderApp({ repositories: heldRepositories([organisation, customer]), today: () => TODAY, boot: { initialProject: organisation } })
     await screen.findByTestId('chart-summary')
     await press('sales')
+    // A click stays on this chart: the summary is still the inspector's.
+    expect(within(inspector()).getByTestId('chart-summary')).toBeTruthy()
+    expect(within(inspector()).queryByTestId('unit-section')).toBeNull()
+    await press('sales', true)
     await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
     expect(within(inspector()).getByDisplayValue('Sales')).toBeTruthy()
     expect(within(inspector()).queryByText(/selected/)).toBeNull()
     expect(screen.getByTestId('chart-page')).toBeTruthy()
     expect(await axeFindings(inspector())).toEqual([])
+  })
+
+  it('chooses a person in a unit another scope keeps by a click, without leaving the chart: the inspector reads the assignment and opens it there on request', async () => {
+    renderApp({ repositories: heldRepositories([organisation, customer]), today: () => TODAY, boot: { initialProject: organisation } })
+    await screen.findByTestId('chart-summary')
+    const chip = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[data-testid="chart-unit"][data-element-id="sales"] [data-testid="chart-holder"]')
+      expect(found).not.toBeNull()
+      return found!
+    })
+    fireEvent.click(chip)
+    const read = await within(inspector()).findByTestId('assignment-inspector')
+    expect(within(read).getByTestId('assignment-role').textContent).toContain('Lead in Sales')
+    expect(within(read).getByTestId('assignment-kept-in').textContent).toBe('Kept in Customer: it is changed there.')
+    expect(within(read).queryByTestId('assignment-end')).toBeNull()
+    expect(screen.getByTestId('chart-page')).toBeTruthy()
+    expect(document.querySelector('[data-testid="chart-holder"][data-chosen="true"]')).toBe(chip)
+    fireEvent.click(within(read).getByTestId('assignment-open-there'))
+    await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
+    expect(within(inspector()).getByDisplayValue('Sales')).toBeTruthy()
   })
 })

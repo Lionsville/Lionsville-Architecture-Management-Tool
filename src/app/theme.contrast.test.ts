@@ -380,9 +380,8 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // a dim that says "not this", where the words are there to be found, not read.
   'src/operating/ui/TypeCard.tsx': [2, 'out-of-pick dim and its transition'],
   // The organisation's card out of the pick, and a reporting line away from the pick: lines, no words (ADR-0039 §7, amended).
-  'src/operating/ui/StructureLanes.tsx': [2, 'out-of-pick dim, off-pick line'],
+  'src/operating/ui/StructureLanes.tsx': [1, 'out-of-pick dim'],
   // A reporting line on the chart away from the unit picked: a line, no words.
-  'src/app/units/ChartLinesOverlay.tsx': [1, 'off-pick line'],
 }
 
 /** A text colour given as an alpha: `color: alpha(…)`, directly or from the theme. */

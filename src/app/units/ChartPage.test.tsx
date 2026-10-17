@@ -217,13 +217,15 @@ describe('the organisation chart', () => {
     expect(screen.getByTestId('chart-note').textContent).toMatch(/This is me/)
   })
 
-  it('opens a unit kept here by choosing it, and one kept elsewhere where it is kept', () => {
+  it('selects a unit kept here by a click, goes to one kept elsewhere on this chart, and opens that one where it is kept only on a double-click', () => {
     const onSelect = vi.fn()
     const onOpenElsewhere = vi.fn()
     renderShell(<Harness commands={[]} onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} />)
     fireEvent.click(within(unitBox('tt')).getAllByTestId('chart-unit-open')[0])
     expect(onSelect).toHaveBeenCalledWith('tt')
     fireEvent.click(within(unitBox('data')).getAllByTestId('chart-unit-open')[0])
+    expect(onOpenElsewhere).not.toHaveBeenCalled()
+    fireEvent.doubleClick(within(unitBox('data')).getAllByTestId('chart-unit-open')[0])
     expect(onOpenElsewhere).toHaveBeenCalledWith('', 'data')
   })
 
@@ -241,13 +243,17 @@ describe('the organisation chart', () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  it('opens the unit where it is kept from a chip in a unit kept elsewhere, and the unit here where nothing chooses', () => {
+  it('chooses a person in a unit kept elsewhere by a click without leaving the chart, opens the unit there on a double-click, and selects the unit here where nothing chooses', () => {
     const onSelect = vi.fn()
     const onOpenElsewhere = vi.fn()
     renderShell(<Harness commands={[]} onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} />)
-    fireEvent.click(within(unitBox('data')).getByTestId('chart-holder'))
+    const chip = () => within(unitBox('data')).getByTestId('chart-holder')
+    fireEvent.click(chip())
+    expect(onOpenElsewhere).not.toHaveBeenCalled()
+    expect(onSelect).toHaveBeenLastCalledWith(undefined)
+    expect(chip().getAttribute('data-chosen')).toBe('true')
+    fireEvent.doubleClick(chip())
     expect(onOpenElsewhere).toHaveBeenCalledWith('', 'data')
-    expect(screen.getAllByTestId('chart-holder').some((one) => one.getAttribute('data-chosen') === 'true')).toBe(false)
     cleanup()
     renderShell(<Harness commands={[]} onSelect={onSelect} choosing={false} />)
     fireEvent.click(within(within(unitBox('pf')).getByTestId('chart-slot-ro-lead')).getByTestId('chart-holder'))
@@ -412,30 +418,92 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     ] }],
   }
 
-  it('draws the lines from the start where the organisation says any, each solid or dotted, lit at the unit pressed, and none once Reporting lines is off', () => {
-    const rect = { left: 10, right: 110, top: 0, bottom: 20, width: 100, height: 20, x: 10, y: 0, toJSON: () => ({}) }
-    const measured = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+  /** Where each chip and row is on the stage: the people's chips by their assignment, everything else the stage itself. */
+  const CHIPS: Record<string, { left: number; top: number }> = {
+    'as-1': { left: 20, top: 40 }, 'as-2': { left: 200, top: 120 }, 'as-3': { left: 300, top: 200 }, 'as-4': { left: 300, top: 240 },
+  }
+  const rect = (left: number, top: number, width: number, height: number) => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+  const measured = () => vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const at = this.dataset.testid === 'chart-holder' ? CHIPS[this.dataset.assignmentId ?? ''] : undefined
+    if (at) return rect(at.left, at.top, 80, 20)
+    if (this.dataset.testid === 'chart-unit-open') return rect(20, 100, 120, 30)
+    return rect(0, 0, 1000, 1000)
+  })
+  const holder = (unitId: string, roleId: string) => within(within(unitBox(unitId)).getByTestId(`chart-slot-${roleId}`)).getAllByTestId('chart-holder')[0]
+  /** The lines drawn, each as its kind, where it starts and where it ends. */
+  const drawn = () => [...document.querySelectorAll<SVGGElement>('[data-testid^="chart-line-"]')].map((line) => {
+    const d = line.querySelector('path')!.getAttribute('d')!
+    const start = /^M(-?[\d.]+),(-?[\d.]+)/.exec(d)!
+    const end = /(-?[\d.]+),(-?[\d.]+)$/.exec(d)!
+    return [line.dataset.testid, `${start[1]},${start[2]}`, `${end[1]},${end[2]}`]
+  })
+  /** A team's product owner reports to the domain owner; a developer to the product owner in the team, and on the side to the cluster lead. */
+  const chipped: HostModel = {
+    ...ROOT,
+    unitTypes: [domain, cluster, { ...team, slots: [
+      { role: 'ro-po', min: 1, max: 1, reportsTo: [{ role: 'ro-owner', kind: 'solid' }] },
+      { role: 'ro-dev', min: 2, reportsTo: [{ role: 'ro-po', kind: 'solid', within: true }, { role: 'ro-lead', kind: 'dotted' }] },
+    ] }],
+  }
+
+  it('draws no line until a person is picked, and none for a unit picked', () => {
+    const spy = measured()
     try {
       renderShell(<Harness root={lined} commands={[]} />)
-      expect(screen.getByTestId('chart-lines')).toBeTruthy()
-      expect(screen.getAllByTestId('chart-line-solid').map((one) => [one.getAttribute('data-tone'), one.getAttribute('data-look')])).toEqual([['plain', 'plain']])
-      expect(screen.getAllByTestId('chart-line-dotted').map((one) => one.getAttribute('data-tone'))).toEqual(['plain'])
-      // A unit picked lights its lines and fades the rest.
+      expect(within(screen.getByTestId('chart-show-lines')).getByRole('switch')).toHaveProperty('checked', true)
+      expect(screen.queryByTestId('chart-lines')).toBeNull()
       cleanup()
       renderShell(<Harness root={lined} commands={[]} selectedId="shipping" />)
-      expect(screen.getAllByTestId('chart-line-solid').map((one) => one.getAttribute('data-look'))).toEqual(['lit'])
-      expect(screen.getAllByTestId('chart-line-dotted').map((one) => one.getAttribute('data-look'))).toEqual(['dim'])
-      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
       expect(screen.queryByTestId('chart-lines')).toBeNull()
     } finally {
-      measured.mockRestore()
+      spy.mockRestore()
     }
   })
 
-  it('draws nothing where the organisation says no line, until Reporting lines is turned on', () => {
+  it('draws, for the person picked, their lines from chip to chip: up to whom they report to, and in from who reports to them', () => {
+    const spy = measured()
+    try {
+      renderShell(<Harness root={chipped} commands={[]} />)
+      // Sara as the team's product owner: from her chip to Noor's, the domain owner, out of her chip's left edge into the right of Noor's.
+      fireEvent.click(holder('tt', 'ro-po'))
+      expect(drawn()).toEqual([
+        ['chart-line-solid', '300,210', '100,50'],
+        // And in from the developer's chip, within the team: a hook from the left of the one chip to the left of the other.
+        ['chart-line-solid', '300,250', '300,210'],
+      ])
+      // Omar, the cluster lead: the developer's dotted line in, from her chip to his.
+      fireEvent.click(holder('pf', 'ro-lead'))
+      expect(drawn()).toEqual([['chart-line-dotted', '300,250', '280,130']])
+      // Reporting lines off: nothing, whoever is picked.
+      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+      expect(screen.queryByTestId('chart-lines')).toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('ends a line whose far end is folded away at the folded unit\'s name, and says so', () => {
+    const spy = measured()
+    try {
+      renderShell(<Harness root={chipped} commands={[]} />)
+      fireEvent.click(holder('shipping', 'ro-owner'))
+      fireEvent.click(within(unitBox('pf')).getAllByTestId('chart-fold')[0])
+      const line = document.querySelector<SVGGElement>('[data-testid="chart-line-solid"]')!
+      expect(line.dataset.folded).toBe('true')
+      expect(line.querySelector('title')?.textContent).toBe('Ends at Parcel & Freight, folded: unfold it to see whose role the line reaches.')
+      // From the folded unit's name, out of its right edge, into Noor's chip.
+      expect(drawn()).toEqual([['chart-line-solid', '140,115', '100,50']])
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('starts with Reporting lines off where the organisation says no line', () => {
     renderShell(<Harness root={ROOT} commands={[]} />)
-    expect(screen.queryByTestId('chart-lines')).toBeNull()
+    expect(within(screen.getByTestId('chart-show-lines')).getByRole('switch')).toHaveProperty('checked', false)
     fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+    fireEvent.click(holder('tt', 'ro-po'))
     expect(screen.getByTestId('chart-lines')).toBeTruthy()
+    expect(drawn()).toEqual([])
   })
 })

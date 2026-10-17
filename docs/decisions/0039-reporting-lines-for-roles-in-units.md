@@ -419,3 +419,27 @@ lines; a slot's `reportsTo` is the same list, one line of each kind at most,
 `within` where said, a line with no `roleId` on a slot saying by nesting.
 `roles.list`, `unitTypes.list` and `reportingLines.list` answer them, the last
 with `said` and `within`, filtered by `unitId`, `roleId` or `toUnitId`.
+
+## As built, 17 October 2026: drawn on a pick
+
+Every line at once crowded both screens, so each draws the lines of what is
+picked, and nothing else. **The structure**: a role picked by its chip on a
+card draws the lines from and into that chip, as resolved for that card's
+type; a role picked anywhere else — the tray, the responsibilities — draws its
+lines on every card that holds it; nothing picked, or a type, draws none.
+`StructurePick` says the card (`inType`), and `pickLooks` answers the lines
+to draw (`roleLines`) along with the looks, lighting the picked card and the
+chips at the far ends. **The organisation chart**: a person picked draws the
+lines of the role they hold in their unit — from their chip to the chips of
+whoever holds the role they report to, and from the chips of the people who
+report to them — measured from the chips themselves (`ChartLinesOverlay`), a
+line within a unit joining two chips in its box; a far end nobody holds ends
+at the role's name, and one folded away at the folded unit's name with a
+tooltip that says so. A unit picked draws none; the bar's switch still turns
+them off. `chartLines` says each line's two places unfolded (`at`, `lands`)
+and `linesOf` keeps a place's.
+
+On the chart a click picks and a double-click opens, as on a board: a person
+in a unit kept in another scope is chosen like any other, and the inspector
+reads the assignment there with the way to the scope that keeps it, where a
+click used to leave the chart.

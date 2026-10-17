@@ -25,11 +25,18 @@ import type { Organisation } from '../../model/units'
 /** One end of a line on the chart: a unit's box, and the row of a role where it is drawn. */
 export type ChartLineEnd = { unitId: ElementId; roleId?: string }
 
+/** A role in a unit, as the organisation says it, whatever the chart folds. */
+export type ChartPosition = { unitId: ElementId; roleId: string }
+
 export type ChartLine = {
   key: string
   kind: LineKind
+  /** Where the line is drawn from and to: a role's row, or the box of the fold that hides it. */
   from: ChartLineEnd
   to: ChartLineEnd
+  /** The role in a unit that reports, and the one it lands on. */
+  at: ChartPosition
+  lands: ChartPosition
   tone: 'plain' | 'vacant' | 'loop'
   /** Both ends in one box: a line between two roles of the same unit (ADR-0039 §2, amended). */
   within?: true
@@ -53,11 +60,23 @@ export function chartLines(organisation: Organisation, chart: OrgChart, day: str
     const loop = looped.has(positionKey(line.unitId, line.roleId)) && line.kind === 'solid'
     const vacant = holdersOn(organisation.assignments, to.unitId, to.roleId, day).length === 0
     drawn.push({
-      key: `${line.unitId}/${line.roleId}/${line.kind}`, kind: line.kind, from, to: end, tone: loop ? 'loop' : vacant ? 'vacant' : 'plain',
+      key: `${line.unitId}/${line.roleId}/${line.kind}`, kind: line.kind, from, to: end,
+      at: { unitId: line.unitId, roleId: line.roleId }, lands: { unitId: to.unitId, roleId: to.roleId }, tone: loop ? 'loop' : vacant ? 'vacant' : 'plain',
       ...(within ? { within: true } : {}),
     })
   }
   return drawn
+}
+
+/**
+ * The lines of one person's place, the only ones the chart draws (ADR-0039
+ * §7, amended 17 October 2026): the lines from the role they hold in the
+ * unit, and the lines that land on it.
+ */
+export function linesOf(lines: readonly ChartLine[], place: ChartPosition | undefined): ChartLine[] {
+  if (!place) return []
+  const same = (one: ChartPosition) => one.unitId === place.unitId && one.roleId === place.roleId
+  return lines.filter((line) => same(line.at) || same(line.lands))
 }
 
 /** Each unit drawn, by the box it is shown in: its own, or the topmost folded unit above it. */

@@ -11,7 +11,7 @@ import type { Role, UnitType } from '../../model/operatingModel'
 import { orgChart } from '../../model/orgChart'
 import type { DesignElement } from '../../model/types'
 import type { Assignment, Organisation } from '../../model/units'
-import { chartLines } from './chartLines'
+import { chartLines, linesOf } from './chartLines'
 
 const DAY = '2026-10-16'
 const division: UnitType = { id: 'ut-division', name: 'Division', top: true, within: [], slots: [{ role: 'ro-head', min: 1 }] }
@@ -35,14 +35,23 @@ const chart = orgChart(organisation, DAY)
 describe('the lines the chart draws', () => {
   it('runs from a role\'s row to the row it lands on, and says where nobody holds that role', () => {
     expect(chartLines(organisation, chart, DAY, new Set())).toEqual([
-      { key: 'team/ro-tl/solid', kind: 'solid', from: { unitId: 'team', roleId: 'ro-tl' }, to: { unitId: 'div', roleId: 'ro-head' }, tone: 'plain' },
-      { key: 'team/ro-dev/dotted', kind: 'dotted', from: { unitId: 'team', roleId: 'ro-dev' }, to: { unitId: 'grp', roleId: 'ro-lead' }, tone: 'vacant' },
+      {
+        key: 'team/ro-tl/solid', kind: 'solid', from: { unitId: 'team', roleId: 'ro-tl' }, to: { unitId: 'div', roleId: 'ro-head' },
+        at: { unitId: 'team', roleId: 'ro-tl' }, lands: { unitId: 'div', roleId: 'ro-head' }, tone: 'plain',
+      },
+      {
+        key: 'team/ro-dev/dotted', kind: 'dotted', from: { unitId: 'team', roleId: 'ro-dev' }, to: { unitId: 'grp', roleId: 'ro-lead' },
+        at: { unitId: 'team', roleId: 'ro-dev' }, lands: { unitId: 'grp', roleId: 'ro-lead' }, tone: 'vacant',
+      },
     ])
   })
 
   it('ends at the fold for a unit folded away, and draws none whose ends fold into one box', () => {
     expect(chartLines(organisation, chart, DAY, new Set(['grp']))).toEqual([
-      { key: 'team/ro-tl/solid', kind: 'solid', from: { unitId: 'grp' }, to: { unitId: 'div', roleId: 'ro-head' }, tone: 'plain' },
+      {
+        key: 'team/ro-tl/solid', kind: 'solid', from: { unitId: 'grp' }, to: { unitId: 'div', roleId: 'ro-head' },
+        at: { unitId: 'team', roleId: 'ro-tl' }, lands: { unitId: 'div', roleId: 'ro-head' }, tone: 'plain',
+      },
     ])
     expect(chartLines(organisation, chart, DAY, new Set(['div']))).toEqual([])
   })
@@ -55,5 +64,13 @@ describe('the lines the chart draws', () => {
     expect(chartLines(looped, orgChart(looped, DAY), DAY, new Set()).map((line) => [line.key, line.tone])).toEqual([
       ['div/ro-head/solid', 'loop'], ['team/ro-tl/solid', 'loop'], ['team/ro-dev/dotted', 'vacant'],
     ])
+  })
+
+  it('keeps, for a person\'s place, the lines from it and the lines into it, and none for no place', () => {
+    const lines = chartLines(organisation, chart, DAY, new Set())
+    expect(linesOf(lines, { unitId: 'team', roleId: 'ro-tl' }).map((line) => line.key)).toEqual(['team/ro-tl/solid'])
+    expect(linesOf(lines, { unitId: 'div', roleId: 'ro-head' }).map((line) => line.key)).toEqual(['team/ro-tl/solid'])
+    expect(linesOf(lines, { unitId: 'grp', roleId: 'ro-head' })).toEqual([])
+    expect(linesOf(lines, undefined)).toEqual([])
   })
 })

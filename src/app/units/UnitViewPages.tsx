@@ -110,22 +110,42 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
  */
 export function unitViewInspector(parts: WorkspaceParts, diagram: DesignDiagram): ReactNode {
   if (diagram.kind !== 'chart') return undefined
+  return <ChartInspector parts={parts} diagram={diagram} />
+}
+
+/**
+ * The assignment chosen — kept in this scope, or in another the chart draws
+ * a unit of, which it is read from and opened in — or the chart's summary.
+ */
+function ChartInspector({ parts, diagram }: { parts: WorkspaceParts; diagram: DesignDiagram }) {
   const { props, session } = parts
   const chosen = parts.pages.chartChoice.chosenOn(diagram.id)
   const onOpenPeople = props.navigation.onOpenPeople
-  if (chosen === undefined || !(session.model.assignments ?? []).some((one) => one.id === chosen)) {
+  const index = props.tree.index
+  const scope = props.project.path
+  const model = session.model
+  const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
+  const held = chosen === undefined ? undefined : here.at.organisation.assignments.find((one) => one.id === chosen)
+  if (!held) {
     return (
       <ChartSummary
-        diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model} today={parts.todayDay}
+        diagram={diagram} index={index} scope={scope} model={model} today={parts.todayDay}
         scopeLabel={parts.readings.scopeLabel} onGoTo={(unitId) => parts.pages.selectOn(diagram.id, unitId)} onOpenPeople={onOpenPeople}
       />
     )
   }
+  // One kept in another scope is read here and changed there: the inspector says where, and opens it there on request.
+  const keptHere = (model.assignments ?? []).some((one) => one.id === held.id)
+  const keptIn = keptHere ? undefined : here.scopeOf(held.unitId)
+  const onOpenScope = props.navigation.onOpenScope
   return (
     <AssignmentInspector
-      key={chosen} assignmentId={chosen} diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model}
-      today={parts.todayDay} readOnly={session.readOnly} people={props.shell.people} dispatch={session.dispatch} makeId={props.shell.makeId}
-      scopeName={parts.readings.scopeLabel(props.project.path)} {...(onOpenPeople ? { onOpenPeople } : {})}
+      key={held.id} assignmentId={held.id} diagram={diagram} index={index} scope={scope} model={model}
+      today={parts.todayDay} readOnly={session.readOnly || !keptHere} people={props.shell.people} dispatch={session.dispatch} makeId={props.shell.makeId}
+      scopeName={parts.readings.scopeLabel(scope)} {...(onOpenPeople ? { onOpenPeople } : {})}
+      {...(keptIn !== undefined ? {
+        keptIn: { name: parts.readings.scopeLabel(keptIn), ...(onOpenScope ? { open: () => onOpenScope(keptIn, { page: 'element', id: held.unitId }) } : {}) },
+      } : {})}
     />
   )
 }

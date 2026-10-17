@@ -16,17 +16,18 @@
  * bar's control looks at or saves (ADR-0027). Looking at next year shows the
  * units a plan brings and the people a reorganisation leaves behind.
  *
- * **A unit opens where it is kept.** Choosing one this scope holds selects it,
- * and the inspector docked beside the page edits it — its type, the people in
- * its roles, the interactions it declares. One kept in another scope opens
- * there, on that scope's chart, chosen, with the same inspector. A vacancy in
- * a unit kept here assigns someone at once.
+ * **A click picks, a double-click opens** (17 October 2026), as on a board.
+ * Pressing a unit this scope holds selects it, and the inspector docked beside
+ * the page edits it — its type, the people in its roles, the interactions it
+ * declares. Pressing one kept in another scope goes to it on this chart;
+ * double-clicking it opens it there, on that scope's chart, chosen, with the
+ * same inspector. A vacancy in a unit kept here assigns someone at once.
  *
- * **A person's chip opens their assignment.** In a unit kept here it chooses
- * the assignment, and the inspector shows it (`AssignmentInspector`, through
- * `useChartChoice`); in one kept elsewhere it opens the unit there. The
- * editor selecting anything lets the choice go, so the inspector shows one
- * thing at a time. The boxes themselves are `ChartUnitBox`.
+ * **A person's chip chooses their assignment**, wherever the unit is kept,
+ * and the inspector shows it (`AssignmentInspector`, through
+ * `useChartChoice`), with the way to the scope that keeps it where that is
+ * another. The editor selecting anything lets the choice go, so the inspector
+ * shows one thing at a time. The boxes themselves are `ChartUnitBox`.
  *
  * **A large organisation folds** (ADR-0036, amended 11 October 2026). A unit
  * with units under it folds, and says what it hides; a first open of more
@@ -46,11 +47,13 @@
  * `EditorPages.inspector`); a finding there goes to its unit here as any
  * request from outside does (`select`).
  *
- * **Reporting lines** (ADR-0039 §7): *Reporting lines* on the bar draws,
- * over the boxes, a solid or a dotted line from each role that reports by a
- * line to the role it lands on, on the chart's day — ending at the fold for a
- * unit folded away (`chartLines`, `ChartLinesOverlay`). Off until it is
- * turned on.
+ * **Reporting lines** (ADR-0039 §7, amended 17 October 2026): with a person
+ * picked, a solid or a dotted line from their chip to whoever holds the role
+ * they report to, and from the chips of the people who report to them, on
+ * the chart's day — ending at the fold for a unit folded away (`chartLines`,
+ * `ChartLinesOverlay`). Nothing picked, or a unit, draws none. *Reporting
+ * lines* on the bar turns them off altogether; it is on from the start where
+ * the organisation says any line.
  *
  * **Units are made where they are seen** (3.6.2): *+ Unit at the top* on the
  * bar, in the outline's header and on an empty chart, and *+* on a unit's
@@ -91,7 +94,7 @@ import { foldKey, SessionFolds } from '../sessionFolds'
 import { AddAtTop } from './AddUnit'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
-import { chartLines } from './chartLines'
+import { chartLines, linesOf } from './chartLines'
 import { ChartLinesOverlay } from './ChartLinesOverlay'
 import { ChartOutline } from './ChartOutline'
 import { UnitGrid } from './ChartUnitBox'
@@ -158,8 +161,16 @@ export function ChartPage(props: ChartPageProps) {
     () => (showLines ? chartLines(here.at.organisation, chart, day, folds.folded) : []),
     [showLines, here, chart, day, folds.folded],
   )
-  // The unit whose lines are lit: the one selected, or the one whose assignment is chosen.
-  const pickedUnit = props.selectedId ?? (props.chosen !== undefined ? here.at.organisation.assignments.find((one) => one.id === props.chosen)?.unitId : undefined)
+  // Whenever the boxes may have moved, the lines are measured again from the chips.
+  const redraw = useMemo(() => ({ optional: folds.optional, folded: folds.folded }), [folds.optional, folds.folded])
+  // The person picked, whose lines alone are drawn: the assignment chosen, while the editor selects nothing.
+  const chosenLines = useMemo(() => {
+    const held = props.selectedId === undefined && props.chosen !== undefined
+      ? here.at.organisation.assignments.find((one) => one.id === props.chosen) : undefined
+    if (!held) return undefined
+    const place = { unitId: held.unitId, roleId: held.roleId }
+    return { chosen: { id: held.id, place }, lines: linesOf(lines, place) }
+  }, [props.selectedId, props.chosen, here, lines])
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
     const scope = here.scopeOf(id)
@@ -168,13 +179,20 @@ export function ChartPage(props: ChartPageProps) {
   const { onChoose, chosen } = props
   // The editor selecting anything — a unit pressed, a finding followed, a link — lets the assignment go.
   useEffect(() => { if (props.selectedId !== undefined && chosen !== undefined) onChoose?.(undefined) }, [props.selectedId, chosen, onChoose])
+  // A person's chip picks their assignment, wherever the unit is kept: nothing leaves the chart on a single click.
   const choose = useCallback((holder: ChartHolder, unit: ChartUnit) => {
-    if (!onChoose || !here.heldHere(unit.id)) { open(unit.id); return }
+    if (!onChoose) { if (here.heldHere(unit.id)) props.onSelect(unit.id); return }
     props.onSelect(undefined)
     onChoose(holder.assignment.id)
-  }, [onChoose, here, open, props.onSelect])
+  }, [onChoose, here, props.onSelect])
   const { locatedId, locate } = useLocated(page, (id) => { if (here.heldHere(id)) props.onSelect(id) })
   const { current, goTo } = useGoTo(chart, folds, locate, props)
+  // A unit's name picks it: selected where it is kept here, gone to on this chart where it is kept elsewhere.
+  const pick = useCallback((id: ElementId) => {
+    if (here.heldHere(id)) { props.onSelect(id); return }
+    onChoose?.(undefined)
+    goTo(id)
+  }, [here, props.onSelect, onChoose, goTo])
   useSelectRequest(props.select, (id) => [...walk(chart.roots)].some((unit) => unit.id === id), goTo)
   usePageHandle(page, diagram.id, props.selectedId, props.onHandle, theme.palette.background.default)
   const order = useSiblingOrder({
@@ -211,7 +229,7 @@ export function ChartPage(props: ChartPageProps) {
   }
   const drawing: Drawing = {
     chart, roles, typeName, names, external, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
-    day, today, language, t, selectedId: props.selectedId, chosen, open, choose, mayAssign,
+    day, today, language, t, selectedId: props.selectedId, chosen, pick, open, choose, mayAssign,
     vacancy: editable ? (unit, roleId) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
       else open(unit.id)
@@ -243,7 +261,7 @@ export function ChartPage(props: ChartPageProps) {
             : (
               <Box ref={stage} sx={{ position: 'relative' }}>
                 <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
-                {showLines && <ChartLinesOverlay stage={stage} lines={lines} redraw={folds.optional} picked={pickedUnit} />}
+                {showLines && chosenLines && <ChartLinesOverlay stage={stage} lines={chosenLines.lines} redraw={redraw} chosen={chosenLines.chosen} />}
               </Box>
             )}
         </Box>

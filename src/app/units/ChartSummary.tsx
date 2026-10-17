@@ -168,6 +168,7 @@ function HowToRead({ t }: { t: Translate }) {
         ))}
       </Box>
       <Typography sx={{ ...QUIET, mt: 0.75 }} data-testid="chart-read-optional">{t('chart.readOptional')}</Typography>
+      <Typography sx={{ ...QUIET, mt: 0.75 }} data-testid="chart-read-lines">{t('chart.readLines')}</Typography>
     </>
   )
 }

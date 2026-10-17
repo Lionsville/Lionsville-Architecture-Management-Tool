@@ -134,11 +134,17 @@ describe('the units and roles drawn as a structure', () => {
     expect(screen.getByText('Pick a unit type, a role or a responsibility.')).toBeTruthy()
   })
 
-  it('lights the types that hold a picked role, wherever it is drawn', () => {
+  it('picks a role on the card its chip is pressed on, and a role picked off the cards on every card that holds it', () => {
     show()
     fireEvent.click(within(card('ut-guild')).getByTestId('role-ro-coach'))
-    expect(looks('ut-team', 'ut-guild', 'ut-domain', 'ut-cluster')).toEqual(['lit', 'lit', 'dim', 'dim'])
+    expect(looks('ut-team', 'ut-guild', 'ut-domain', 'ut-cluster')).toEqual(['dim', 'picked', 'dim', 'dim'])
     expect(screen.getByTestId('structure-organisation').dataset.look).toBe('dim')
+    expect(screen.getAllByTestId('role-ro-coach').map((one) => one.dataset.look)).toEqual(['plain', 'picked'])
+    // Picked in the responsibilities' list instead: on every card that holds it.
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Team coach' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    expect(looks('ut-team', 'ut-guild', 'ut-domain', 'ut-cluster')).toEqual(['lit', 'lit', 'dim', 'dim'])
     expect(screen.getAllByTestId('role-ro-coach').map((one) => one.dataset.look)).toEqual(['picked', 'picked'])
     expect(within(screen.getByTestId('operating-inspector')).getByDisplayValue('Team coach')).toBeTruthy()
     fireEvent.click(within(screen.getByTestId('tray-loose')).getByTestId('role-ro-inc'))
@@ -195,7 +201,7 @@ describe('the units and roles drawn as a structure', () => {
     expect(lit.filter((one) => one === 'dim')).toHaveLength(4)
   })
 
-  it('draws the reporting lines between the cards\' role chips, lit at the role picked and dimmed away from it (ADR-0039 §7, amended)', () => {
+  it('draws a role\'s reporting lines only while it is picked, from and into the chip pressed (ADR-0039 §7, amended)', () => {
     // Every card and chip somewhere on the stage, so each line has two ends to measure.
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
       const lane = Number(this.closest<HTMLElement>('[data-lane]')?.dataset.lane ?? 0)
@@ -205,19 +211,24 @@ describe('the units and roles drawn as a structure', () => {
     })
     show()
     const stage = screen.getByTestId('structure-lanes')
-    const drawn = () => [...stage.querySelectorAll<SVGGElement>('[data-testid^="structure-role-line-"]')]
-    // The developer's two lines: within the team, and to the cluster lead above it.
-    expect(drawn().map((one) => [one.dataset.testid, one.dataset.within ?? '', one.dataset.look])).toEqual([
-      ['structure-role-line-solid', 'true', 'plain'], ['structure-role-line-dotted', '', 'plain'],
-    ])
-    expect(screen.getByTestId('structure-lines-legend')).toBeTruthy()
+    const drawn = () => [...stage.querySelectorAll<SVGGElement>('[data-testid^="structure-role-line-"]')].map((one) => [one.dataset.testid, one.dataset.within ?? ''])
+    // Nothing picked: no line, and the legend says to pick a role.
+    expect(drawn()).toEqual([])
+    expect(screen.getByTestId('structure-lines-legend').textContent).toContain('Pick a role')
+    // The developer's chip: its two lines, within the team and to the cluster lead above it.
+    fireEvent.click(within(card('ut-team')).getByTestId('role-ro-dev'))
+    expect(drawn()).toEqual([['structure-role-line-solid', 'true'], ['structure-role-line-dotted', '']])
+    // The cluster lead's chip: only the line into it; the roles at its far end are lit on their card.
     fireEvent.click(within(card('ut-cluster')).getByTestId('role-ro-lead'))
-    expect(drawn().map((one) => one.dataset.look)).toEqual(['dim', 'lit'])
-    // The roles at either end of the picked role's lines are lit.
+    expect(drawn()).toEqual([['structure-role-line-dotted', '']])
+    expect(within(card('ut-cluster')).getByTestId('role-ro-lead').dataset.look).toBe('picked')
     expect(within(card('ut-team')).getByTestId('role-ro-dev').dataset.look).toBe('lit')
     expect(within(card('ut-team')).getByTestId('role-ro-po').dataset.look).toBe('plain')
+    // Pressed again, let go: no line. A type picked draws none either.
+    fireEvent.click(within(card('ut-cluster')).getByTestId('role-ro-lead'))
+    expect(drawn()).toEqual([])
     pickType('Team')
-    expect(drawn().map((one) => one.dataset.look)).toEqual(['lit', 'lit'])
+    expect(drawn()).toEqual([])
   })
 
   it('says how many people hold a role, and where, before it is removed', async () => {

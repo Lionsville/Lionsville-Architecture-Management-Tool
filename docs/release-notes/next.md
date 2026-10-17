@@ -57,11 +57,13 @@ organisation, each with the days it runs. A unit type says otherwise for its
 own units under the role it holds, or **By nesting in this type**; a unit that
 differs says so in its inspector, under **Reporting lines**, with **Override…**
 offering the unit itself first. The structure on the Operating model page
-draws the lines between its roles, and picking a role lights its lines, the
-roles it reports to and the roles that report to it — **Reported to by** says
-the same in its inspector. The organisation chart's **Reporting lines** are on
-from the start where the organisation has any, a line within a unit is a hook
-beside its box, and pressing a unit lights its lines. A unit's inspector says
+draws a role's lines when you pick it and none otherwise: picked by its chip
+on a card, the lines from and into that chip; picked anywhere else, its lines
+on every card that holds it — **Reported to by** says the same in its
+inspector. The organisation chart draws the lines of the person you pick, from
+their chip to the chip of whoever they report to and from the chips of the
+people who report to them, a line within a unit joining two chips in its box;
+**Reporting lines** on its bar turns them off. A unit's inspector says
 whose each line is and who reports into the unit; the People page says where
 each role held reports. A line manager's line decides who manages the people
 in the role — **Who manages it** says *by line* — and a functional one is
@@ -72,6 +74,13 @@ or in more than one place, and one to a role nobody holds. An agent sets them
 with `reportsTo` on `role.add`, `role.update`, `unitType.add` and
 `unitType.update`, with `reportingLine.set` on a unit, and reads them with
 `reportingLines.list`, filtered by unit, role or the unit reported into.
+
+**On the organisation chart, a click picks and a double-click opens**, as on
+a board. Clicking a person in a unit another scope keeps used to leave the
+chart for that unit, or its documentation page where that scope has no chart;
+now it picks the person, and the inspector shows the assignment, read only,
+with **Open in** the scope that keeps it. A unit kept elsewhere is gone to on
+the chart by a click and opened there by a double-click.
 
 **A scope is picked by its path.** Two scopes may have the same name under
 different parents, and a list of bare names showed them as one row twice.

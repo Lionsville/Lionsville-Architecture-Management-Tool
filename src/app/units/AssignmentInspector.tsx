@@ -66,6 +66,8 @@ export type AssignmentInspectorProps = {
   scopeName: string
   /** The People page with this person picked. Absent: there is nowhere to go. */
   onOpenPeople?: (person: PersonId) => void
+  /** Kept in another scope: read here, changed there, and opened there by its button. Absent: kept in this one. */
+  keptIn?: { name: string; open?: () => void }
 }
 
 const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
@@ -85,8 +87,8 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
   const unit = organisation.units.find((one) => one.id === held.unitId)
   const roles = new Map(organisation.roles.map((role) => [role.id, role]))
   const entry = resolvePerson(personOf(held), registerOf(people?.people ?? []))
-  // Where the scope is only read, a manager of the unit still ends and corrects it (ADR-0036 §12).
-  const mayWrite = !props.readOnly || mayChangeIn(people?.manages, held.unitId, held.roleId)
+  const keptIn = props.keptIn
+  const mayWrite = mayWriteHere(props, held)
   const load = (person: PersonId) => loadOn(organisation.assignments, person, day, names.canonical)
   return (
     <Box data-testid="assignment-inspector" sx={{ pt: 0.5 }}>
@@ -96,6 +98,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
         <EndOn key={held.id} held={held} day={day} today={props.today} language={language} t={t}
           onEnd={(until) => props.dispatch({ type: 'assignment.update', id: held.id, patch: { until } })} />
       )}
+      {keptIn && <KeptIn keptIn={keptIn} t={t} />}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
         {mayWrite && people && unit && (
           <Button size="small" variant="outlined" onClick={() => setCorrecting(true)} data-testid="assignment-correct">{t('chart.assignmentCorrect')}</Button>
@@ -117,6 +120,26 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
         />
       )}
     </Box>
+  )
+}
+
+/** Where the scope is only read, a manager of the unit still ends and corrects it (ADR-0036 §12); one kept elsewhere is changed there. */
+function mayWriteHere(props: AssignmentInspectorProps, held: Assignment): boolean {
+  if (props.keptIn !== undefined) return false
+  return !props.readOnly || mayChangeIn(props.people?.manages, held.unitId, held.roleId)
+}
+
+/** Where an assignment kept in another scope is changed, and the way there. */
+function KeptIn({ keptIn, t }: { keptIn: NonNullable<AssignmentInspectorProps['keptIn']>; t: Translate }) {
+  return (
+    <>
+      <Typography sx={{ ...QUIET, mt: 1 }} data-testid="assignment-kept-in">{t('chart.assignmentKeptIn', { scope: keptIn.name })}</Typography>
+      {keptIn.open && (
+        <Button size="small" variant="outlined" onClick={keptIn.open} data-testid="assignment-open-there" sx={{ mt: 1 }}>
+          {t('chart.assignmentOpenThere', { scope: keptIn.name })}
+        </Button>
+      )}
+    </>
   )
 }
 

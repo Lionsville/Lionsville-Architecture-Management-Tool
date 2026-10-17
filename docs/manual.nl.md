@@ -2146,13 +2146,17 @@ weghaalt. Een eenheid zegt het voor zichzelf anders in haar inspector
 keten van managers terugkomt waar ze begon, en een lijn van een rol naar
 zichzelf in dezelfde eenheid, worden daar meteen geweigerd, met de reden.
 
-**De structuur tekent de lijnen** tussen de rollen op haar kaarten: op de
-kaart zelf voor een lijn in dezelfde eenheid, naar de kaarten erboven die de
-rol hebben, anders naar elke kaart die haar heeft — in de waarschuwingskleur
-waar een eenheid zou moeten zeggen welke. Doorgetrokken voor die van een
-lijnmanager, gestippeld voor een functionele. Kies een rol en haar lijnen
-lichten op, met de rollen waaraan ze rapporteert en de rollen die aan haar
-rapporteren; de rest vervaagt.
+**De structuur tekent de lijnen van een rol als je haar kiest**, en anders
+geen, zodat de kaarten leesbaar blijven. Kies de chip van een rol op een kaart
+en de lijnen uit die chip en naar die chip worden getekend, zoals ze voor het
+type van die kaart gelden: op de kaart zelf voor een lijn in dezelfde
+eenheid, naar de kaarten erboven die de rol hebben, anders naar elke kaart die
+haar heeft — in de waarschuwingskleur waar een eenheid zou moeten zeggen
+welke. De chips aan de andere kant lichten op; een kaart die de rol ook heeft,
+tekent niets tot haar eigen chip gekozen is. Kies je de rol ergens anders — in
+de bak, of op het tabblad **Verantwoordelijkheden** — dan worden haar lijnen vanaf elke kaart
+getekend die haar heeft. Een eenheidstype kiezen tekent geen lijnen.
+Doorgetrokken voor die van een lijnmanager, gestippeld voor een functionele.
 
 **Regels die het model leest** zeggen wiens rol waarvoor instaat: de eigenaar
 van een applicatie is wie een gekozen rol heeft in de eenheid waar de
@@ -2582,17 +2586,19 @@ met **+ toewijzen** waar je iemand mag toewijzen, en de inspector van de
 eenheid noemt altijd elke rol. Net als een vouw duurt de schakelaar zolang de
 app open is en wordt nooit bewaard.
 
-**Rapportagelijnen** in de balk tekent de lijnen over de vakken, op de dag
-van het organogram: van de rij van elke rol met een lijn naar de rij van de
-rol waar ze uitkomt, doorgetrokken voor die van een lijnmanager en gestippeld
-voor een functionele; een lijn tussen twee rollen van één eenheid is een haak
-naast haar vak. Een lijn naar een rol die niemand vervult, wordt in de
-waarschuwingskleur getekend, en een die deel is van een lus in de
-foutkleur. Een lijn naar of van een eenheid die is weggevouwen, eindigt bij
-de vouw. Klik op een eenheid en haar lijnen lichten op terwijl de rest
-vervaagt. De schakelaar staat van begin af aan waar de organisatie een lijn
-heeft, en uit waar ze er geen heeft; hoe dan ook blijft ze staan zolang de
-pagina open is.
+**Rapportagelijnen** worden getekend voor de persoon die je kiest, op de dag
+van het organogram: van diens chip naar de chip van wie de rol vervult
+waaraan die persoon rapporteert, en van de chips van wie aan die persoon
+rapporteert naar de hare — doorgetrokken voor die van een lijnmanager en
+gestippeld voor een functionele. Een lijn tussen twee rollen van één eenheid
+verbindt de twee chips binnen haar vak. Waar niemand de rol aan de andere kant
+vervult, eindigt de lijn bij de naam van de rol, in de waarschuwingskleur; een
+die deel is van een lus staat in de foutkleur. Waar de andere kant is
+weggevouwen, eindigt de lijn bij de naam van de ingeklapte eenheid, en haar
+tooltip zegt dat. Met niemand gekozen, of een eenheid, wordt geen lijn
+getekend. **Rapportagelijnen** in de balk zet ze helemaal uit; de schakelaar
+staat van begin af aan waar de organisatie een lijn heeft, en uit waar ze er
+geen heeft, en blijft staan zolang de pagina open is.
 
 Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
 balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het
@@ -2613,11 +2619,13 @@ een rode rand is iemand boven al zijn tijd, *stuurt aan* markeert een rol
 waarvan wie hem vervult de mensen van de eenheid aanstuurt, en een gestreept
 vak is een eenheid die is opgeheven terwijl er nog mensen in zitten.
 
-Een eenheid kiezen die deze scope bijhoudt opent haar in de inspector naast
-het organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden
-waarmee ze samenwerkt. Een eenheid die een andere scope bijhoudt opent daar,
-op het organogram van die scope, gekozen, met dezelfde inspector ernaast — of
-op haar record waar die scope geen organogram heeft. **Vind mij** gaat naar de
+Een klik kiest en een dubbelklik opent, zoals op een bord. Een klik op een
+eenheid die deze scope bijhoudt opent haar in de inspector naast het
+organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden
+waarmee ze samenwerkt. Een klik op een eenheid die een andere scope bijhoudt
+gaat naar haar op dit organogram; dubbelklik om haar daar te openen, op het
+organogram van die scope, gekozen, met dezelfde inspector ernaast — of op
+haar record waar die scope geen organogram heeft. **Vind mij** gaat naar de
 eenheid waar jij een rol vervult; zeg eerst wie je bent, met **Dit ben ik** op
 de pagina Mensen.
 
@@ -2630,7 +2638,9 @@ organogram als je vooruitkijkt, anders vandaag, en nooit vóór de eerste dag.
 Een beëindigde toewijzing blijft: het is wat de persoon had. **Corrigeren…**
 opent het venster van de eenheid voor al het andere, en **Openen in Mensen**
 gaat naar de pagina Mensen met die persoon gekozen. Een persoon in een eenheid
-die een andere scope bijhoudt opent die eenheid daar.
+die een andere scope bijhoudt wordt net zo getoond, alleen te lezen: de
+inspector zegt welke scope de toewijzing bijhoudt, en **Openen in** die scope
+gaat erheen om haar te wijzigen, zoals een dubbelklik op de persoon doet.
 
 ### De Conway-kaart
 

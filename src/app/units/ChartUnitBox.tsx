@@ -6,10 +6,12 @@
  * is worth saying beside them, a row per role with the people in it on the
  * chart's day, and the units under it, each a box of its own.
  *
- * **A chip is a person's assignment.** Pressing one in a unit this scope keeps
- * chooses that assignment, and the inspector beside the chart shows it; in a
- * unit kept elsewhere it opens that unit there, as pressing the unit does. A
- * vacancy assigns someone. The chip says who — the register's name, *you* —
+ * **A click picks, a double-click opens** (17 October 2026), as on a board.
+ * Pressing a person's chip chooses their assignment, wherever the unit is
+ * kept, and the inspector beside the chart shows it; pressing a unit's name
+ * picks the unit. Double-clicking either opens a unit kept in another scope
+ * there; nothing leaves the chart on a single click. A vacancy assigns
+ * someone. The chip says who — the register's name, *you* —
  * their share where it is not all of their time, *acting*, and *ext* for
  * someone from outside the organisation. A leaver's name stays plain: the
  * register says when a name goes (`people/shown.ts`).
@@ -71,8 +73,11 @@ export type Drawing = {
   selectedId: ElementId | undefined
   /** The assignment chosen on this chart, while nothing else is selected. */
   chosen: string | undefined
+  /** A unit's name pressed: the unit picked, on the chart. */
+  pick: (id: ElementId) => void
+  /** A unit or a chip in it double-clicked: a unit kept in another scope opened there, one kept here picked. */
   open: (id: ElementId) => void
-  /** A holder's chip pressed: their assignment chosen, or the unit opened where it is kept. */
+  /** A holder's chip pressed: their assignment chosen. */
   choose: (holder: ChartHolder, unit: ChartUnit) => void
   vacancy: ((unit: ChartUnit, roleId: string) => void) | undefined
   /** Whether a vacancy of this unit and role is one to press: every one where the scope may be written, a managed unit's where it is only read. */
@@ -120,7 +125,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
   const folded = folds !== undefined && unit.children.length > 0 && folds.folded.has(unit.id)
   return (
     <Box
-      data-testid="chart-unit" data-element-id={unit.id} data-ended={unit.ended ? 'true' : undefined} data-folded={folded ? 'true' : undefined}
+      data-testid="chart-unit" data-element-id={unit.id} data-unit-name={unit.name} data-ended={unit.ended ? 'true' : undefined} data-folded={folded ? 'true' : undefined}
       data-wide={wide ? 'true' : undefined}
       sx={{
         border: 1, borderRadius: 1.5, p: 1, minWidth: 0, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
@@ -138,7 +143,7 @@ function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: numbe
             <CaretIcon />
           </IconButton>
         )}
-        <ButtonBase onClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, borderRadius: 1 }} data-testid="chart-unit-open">
+        <ButtonBase onClick={() => drawing.pick(unit.id)} onDoubleClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, borderRadius: 1 }} data-testid="chart-unit-open">
           <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
           <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
         </ButtonBase>
@@ -197,7 +202,7 @@ function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; dr
   const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
   return (
     <Box data-testid={`chart-slot-${slot.roleId}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
-      <Typography sx={{ fontSize: 11.5, minWidth: 110, color: 'text.secondary' }}>
+      <Typography sx={{ fontSize: 11.5, minWidth: 110, color: 'text.secondary' }} data-testid="chart-role-name">
         {role?.name ?? slot.roleId}
         {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 9.5 }}>{t('unit.managesBadge')}</Box>}
       </Typography>
@@ -236,7 +241,7 @@ function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolde
       size="small" label={label} color={you ? 'primary' : 'default'} variant={you ? 'filled' : 'outlined'}
       data-testid="chart-holder" data-assignment-id={holder.assignment.id} data-you={you ? 'true' : undefined}
       data-over={holder.overloaded ? 'true' : undefined} data-chosen={chosen ? 'true' : undefined} aria-pressed={chosen}
-      onClick={() => drawing.choose(holder, unit)}
+      onClick={() => drawing.choose(holder, unit)} onDoubleClick={() => drawing.open(unit.id)}
       sx={{
         height: 22,
         ...(holder.overloaded ? { borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' } : {}),
