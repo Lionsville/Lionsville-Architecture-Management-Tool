@@ -2333,6 +2333,9 @@ zoals die was, met **Eenheid** onder zijn tabblad Algemeen.
 
 De onderdelen van een eenheid, in die volgorde:
 
+- **Valt onder**: de eenheid waaronder ze op de dag valt, of *Bovenaan*. Waar
+  je de eenheid mag wijzigen, is het een knop die **Verplaatsen naar…** opent
+  (zie *Een eenheid naar een andere plek verplaatsen*, onder *Het organogram*).
 - **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
   en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
   dat niet al iemands tijd is, *waarnemend*, en *jij*. Elke rol staat erin,
@@ -2556,6 +2559,10 @@ Een agent zet een eenheid op de dag van een plan onder een nieuwe
 bovenliggende eenheid met `plan.move`, dateert een eenheidstype of rol met
 `unitType.update` en `role.update` (`from`, `until`, `successors`), en leest
 de organisatie van een dag met `assignments.list` en `checks.list` (`on`).
+Waar een eenheid staat, corrigeert hij zonder dag met `element.update` en
+`parentId` — elke eenheid in de organisatie, gevonden op haar id, of geen voor
+bovenaan — in de scope die de eenheid bijhoudt: een kringloop wordt geweigerd,
+en een plek waar haar type niet mag staan wordt gemeld (`misplaced`).
 
 ### Het organogram
 
@@ -2579,6 +2586,38 @@ tussen de eenheden van haar type in dezelfde eenheid: één stap in elke scope
 die er een van bijhoudt. Waar ze allemaal in deze scope worden bijgehouden,
 neemt ongedaan maken de verplaatsing terug; waar sommige in andere scopes
 worden bijgehouden, zet je elke scope apart terug.
+
+**Een eenheid naar een andere plek verplaatsen.** Een eenheid die op de
+verkeerde plek staat, verhuist zonder dat je haar opnieuw koppelt:
+**Verplaatsen naar…** op haar naamregel (zichtbaar als je hem aanwijst, als hij
+de focus heeft en op de gekozen eenheid), naast **Omhoog** en **Omlaag** onder
+het overzicht, of **Valt onder** in haar inspector. Het venster zegt waar ze nu
+staat en vraagt waar ze moet komen: elke eenheid in de organisatie, welke scope
+haar ook bijhoudt, te vinden op haar naam of op de eenheden waaronder ze valt —
+*Board Technology* vindt de eenheden onder Technology onder de Board — of
+**Bovenaan**. De plekken waar haar type mag staan komen eerst; de andere volgen
+onder een eigen kop, en een verplaatsing daarheen mag, maar laat de eenheid in
+de controles als misplaatst staan, tot ze weer verplaatst wordt of het
+operating model haar type daar toelaat. De eenheid zelf en de eenheden eronder
+worden getoond en niet aangeboden: een eenheid onder zichzelf, of onder een
+eenheid eronder, is een kringloop, en een plek die door een latere verplaatsing
+in een plan een kringloop wordt ook — dat wordt geweigerd, met de reden.
+**Deze ook verplaatsen** noemt de eenheden ernaast onder dezelfde bovenliggende
+eenheid, geen ervan aangevinkt, zodat een hele rij eenheden in één keer
+verhuist. Voordat er iets wordt geschreven, zegt **Wie haar aanstuurt** wie
+elke eenheid van erboven aanstuurt, vandaag en na de verplaatsing, via de
+nesting of via een lijn — een rol waarvan de lijn naar de dichtstbijzijnde
+houder van een rol erboven gaat, kan bij iemand anders uitkomen — en wordt een
+verplaatsing van de eenheid in een plan genoemd met haar dag, omdat de eenheid
+vanaf die dag staat waar het plan zegt. **Verplaatsen** schrijft het: de
+eenheid houdt haar id, dus haar mensen, haar rapportagelijnen, de scopes die ze
+bedient en haar opmerkingen blijven bij haar, en de eenheden eronder gaan mee.
+Haar plek tussen haar nieuwe gelijken begint opnieuw. Het is één stap in elke
+scope die een verplaatste eenheid bijhoudt, allemaal of geen; waar dat alleen
+deze scope is, neemt ⌘Z hem terug, en waar ook andere scopes zijn geschreven,
+zet je elke scope apart terug. Een verplaatsing is een correctie, zonder dag:
+een verplaatsing vanaf een dag hoort in een plan (*Een reorganisatie is een
+plan*). Een organogram dat alleen gelezen wordt, biedt hiervan niets.
 
 **Een eenheid maken op het organogram.** **+ Eenheid bovenaan** staat op de
 balk, in de kop van het overzicht en op een leeg organogram; de eigen **+**

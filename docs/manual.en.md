@@ -2146,6 +2146,9 @@ was, with **Unit** under its General tab.
 
 A unit's sections, in that order:
 
+- **Sits under**: the unit it sits in on the day, or *At the top*. Where you
+  may change the unit, it is a button that opens **Move to…** (see *Moving a
+  unit to another place*, under *The organisation chart*).
 - **Roles, today**: each role its type holds, with how many it wants, and who
   holds it today — by name from the register, with their share where it is not
   all of their time, *acting*, and *you*. Every role is listed, optional ones
@@ -2343,6 +2346,10 @@ An agent puts a unit under a new parent on a plan's day with `plan.move`,
 dates a unit type or a role with `unitType.update` and `role.update` (`from`,
 `until`, `successors`), and reads the organisation of a day with
 `assignments.list` and `checks.list` (`on`).
+It corrects where a unit sits, with no day, with `element.update` and
+`parentId` — any unit in the organisation, found by its id, or none for the
+top — in the scope that keeps the unit: a loop is refused, and a place its
+type may not sit in is said (`misplaced`).
 
 ### The organisation chart
 
@@ -2363,6 +2370,34 @@ move the unit picked among the units of its type in the same unit: one step in
 each scope that keeps one of them. Where they are all kept in this scope, undo
 takes the move back; where some are kept in other scopes, each scope is put
 back on its own.
+
+**Moving a unit to another place.** A unit filed in the wrong place moves
+without being linked again: **Move to…** on its name row (shown on hover, on
+focus and on the unit picked), beside **Move up** and **Move down** under the
+outline, or **Sits under** in its inspector. The dialog says where it sits
+now and asks where it is to sit: any unit in the organisation, whatever scope
+keeps it, found by its name or by the units it sits in — *Board Technology*
+finds the units under Technology under the Board — or **At the top**. The
+places where its type may sit come first; the others follow under their own
+heading, and a move there is allowed but leaves the unit showing as misplaced
+in the checks, until it moves again or the operating model lets its type sit
+there. The unit itself and the units inside it are shown and not offered: a
+unit under itself, or under a unit inside it, would be a loop, and so would a
+place a plan's later move makes into one — that is refused, with why.
+**Move these too** lists the units beside it under the same parent, none
+ticked, so a whole row of units moves in one go. Before anything is written,
+**Who manages it** says who manages each unit from above, today and after
+the move, by nesting or by a line — a role whose line goes to the nearest
+holder of a role above may land on someone else — and a plan's move of the
+unit is named with its day, since from that day the unit sits where the plan
+says. **Move** writes it: the unit keeps its id, so its people, its reporting
+lines, the scopes it serves and its comments stay with it, and the units
+inside it come along. Its place among its new siblings starts afresh. It is
+one step in each scope that keeps a unit moved, all of them or none; where
+that is only this scope, ⌘Z takes it back, and where other scopes were
+written too, each is put back on its own. A move is a correction, with no
+day: a move from a day on is a plan's (*A reorganisation is a plan*). A chart
+that is only read offers none of it.
 
 **Making a unit on the chart.** **+ Unit at the top** is on the bar, in the
 outline's header and on an empty chart; a unit's own **+**, on its name row,

@@ -2469,6 +2469,10 @@ Reiter Allgemein.
 
 Die Abschnitte einer Einheit, in dieser Reihenfolge:
 
+- **Steht unter**: die Einheit, in der sie an dem Tag steht, oder *Ganz oben*.
+  Wo Sie die Einheit ändern dürfen, ist es eine Schaltfläche, die
+  **Verschieben nach…** öffnet (siehe *Eine Einheit an eine andere Stelle
+  verschieben*, unter *Das Organigramm*).
 - **Rollen, heute**: jede Rolle, die ihr Typ hat, mit der gewünschten Anzahl,
   und wer sie heute innehat — mit dem Namen aus dem Register, dem Anteil, wo
   es nicht die ganze Zeit ist, *kommissarisch* und *Sie*. Jede Rolle steht
@@ -2699,6 +2703,11 @@ Ein Agent stellt eine Einheit am Tag eines Plans mit `plan.move` unter eine
 neue übergeordnete Einheit, datiert einen Einheitstyp oder eine Rolle mit
 `unitType.update` und `role.update` (`from`, `until`, `successors`) und liest
 die Organisation eines Tages mit `assignments.list` und `checks.list` (`on`).
+Wo eine Einheit steht, korrigiert er ohne Tag mit `element.update` und
+`parentId` — jede Einheit der Organisation, gefunden über ihre ID, oder keine
+für ganz oben — in dem Bereich, der die Einheit führt: Eine Schleife wird
+abgelehnt, und eine Stelle, an der ihr Typ nicht stehen darf, wird genannt
+(`misplaced`).
 
 ### Das Organigramm
 
@@ -2723,6 +2732,40 @@ unter den Einheiten ihres Typs in derselben Einheit: ein Schritt in jedem
 Bereich, der eine davon führt. Wo alle in diesem Bereich geführt werden, nimmt
 Rückgängig die Verschiebung zurück; wo einige in anderen Bereichen geführt
 werden, wird jeder Bereich für sich zurückgesetzt.
+
+**Eine Einheit an eine andere Stelle verschieben.** Eine Einheit, die an der
+falschen Stelle eingeordnet ist, zieht um, ohne neu verknüpft zu werden:
+**Verschieben nach…** in ihrer Namenszeile (sichtbar beim Zeigen, mit dem Fokus
+und an der gewählten Einheit), neben **Nach oben** und **Nach unten** unter der
+Gliederung, oder **Steht unter** in ihrem Inspektor. Der Dialog sagt, wo sie
+jetzt steht, und fragt, wo sie stehen soll: jede Einheit der Organisation,
+gleich welcher Bereich sie führt, gefunden über ihren Namen oder die Einheiten,
+in denen sie steht — *Board Technology* findet die Einheiten unter Technology
+unter dem Board — oder **Ganz oben**. Die Stellen, an denen ihr Typ stehen
+darf, kommen zuerst; die anderen folgen unter einer eigenen Überschrift, und
+eine Verschiebung dorthin ist erlaubt, lässt die Einheit in den Prüfungen aber
+als falsch eingeordnet stehen, bis sie wieder verschoben wird oder das
+Betriebsmodell ihren Typ dort zulässt. Die Einheit selbst und die Einheiten in
+ihr werden gezeigt und nicht angeboten: eine Einheit unter sich selbst oder
+unter einer Einheit in ihr wäre eine Schleife, und ebenso eine Stelle, die eine
+spätere Verschiebung eines Plans zu einer macht — das wird abgelehnt, mit dem
+Grund. **Diese auch verschieben** nennt die Einheiten neben ihr unter derselben
+übergeordneten Einheit, keine angekreuzt, sodass eine ganze Reihe von Einheiten
+auf einmal umzieht. Bevor etwas geschrieben wird, sagt **Wer sie führt**, wer
+jede Einheit von oben führt, heute und nach der Verschiebung, über die
+Verschachtelung oder über eine Linie — eine Rolle, deren Linie zur nächsten
+Inhaberin einer Rolle darüber geht, kann bei jemand anderem landen — und eine
+Verschiebung der Einheit in einem Plan wird mit ihrem Tag genannt, denn ab
+diesem Tag steht die Einheit, wo der Plan sagt. **Verschieben** schreibt es:
+Die Einheit behält ihre ID, also bleiben ihre Personen, ihre Berichtslinien,
+die Bereiche, die sie bedient, und ihre Kommentare bei ihr, und die Einheiten
+in ihr kommen mit. Ihr Platz unter ihren neuen Geschwistern beginnt neu. Es ist
+ein Schritt in jedem Bereich, der eine verschobene Einheit führt, alle oder
+keiner; wo das nur dieser Bereich ist, nimmt ⌘Z ihn zurück, und wo auch andere
+Bereiche geschrieben wurden, wird jeder für sich zurückgesetzt. Eine
+Verschiebung ist eine Korrektur, ohne Tag: Eine Verschiebung ab einem Tag
+gehört in einen Plan (*Eine Umorganisation ist ein Plan*). Ein Organigramm, das
+nur gelesen wird, bietet nichts davon an.
 
 **Eine Einheit im Organigramm anlegen.** **+ Einheit oben** steht in der
 Leiste, im Kopf der Gliederung und auf einem leeren Organigramm; das eigene

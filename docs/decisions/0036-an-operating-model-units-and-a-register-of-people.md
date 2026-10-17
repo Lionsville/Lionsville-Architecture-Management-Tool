@@ -28,7 +28,11 @@
   17 October 2026: a scope's type is a unit type of the operating model,
   offered before the built-in kinds, following the unit linked to it, and
   checked against the units that serve it (*Amended, 17 October 2026*,
-  below); as built and implemented, 17 October 2026
+  below); as built and implemented, 17 October 2026. Amended again, 17
+  October 2026: a unit moves to another place in the organisation, its
+  parent found anywhere in the tree, as the correction §6 says a move
+  outside a plan is (*Amended, 17 October 2026 — a unit moves*, below); as
+  built and implemented, 17 October 2026
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
@@ -2363,6 +2367,110 @@ reads a 13 header with the key and carries it through a save
   tool, closes that. The new-scope dialog asks no type: a scope served from
   the start takes its unit's type, and one served by nobody is typed in its
   settings.
+
+## Amended, 17 October 2026 — a unit moves to another place in the organisation
+
+*Accepted and built 17 October 2026: As built, below.* §6 says a move
+outside a plan is a correction, an edit of `parentId`, and Considered
+Options 5 kept the dated parent off the unit for that reason. Nothing
+offered the correction across the tree. A business sheet's *Sits under*
+reaches the actors of its own scope; a unit's inspector had no parent at
+all; the chart moved a unit only among its siblings; and the agent's
+`element.update` looked the parent up in the scope open. A chart whose units
+were filed in the wrong places — a row of units under one unit where they
+belong under another, a unit beside the one it belongs in — could be put
+right only by deleting each unit and making it again, which loses its id
+and, with the id, everything keyed by it.
+
+**A move keeps the unit.** Its assignments, its own reporting lines, the
+scopes it serves and its comments are keyed by its id and kept where it is
+kept, so moving it is one `element.update` of `parentId` in the scope that
+keeps it, and nothing is linked again. A line said on a role or a type
+lands, as §2 of ADR-0039 says, on the nearest unit above that holds its
+target, so it may land elsewhere after a move: that is the organisation as
+it now is, and it is said before the move lands. The units inside a unit
+moved keep their own parent, so they come with it.
+
+**The parent is any unit in the organisation**, kept in any scope, or none —
+the top. Ids are unique across the organisation (§3), so it is found by its
+id like any parent; the screens offer it by its path through the units
+above it.
+
+**Its type's place is said, not enforced.** The places where its type may
+sit (`top`, `within`) are offered first; the others are offered below,
+marked, and a move there is made and leaves `check.unitMisplaced` standing,
+as a delete may leave the units inside it where their type may not sit
+(*Amended, 12 October 2026*). Refusing it would make a reorganisation that
+passes through a misfit impossible to write. *Owner's default, open to
+overturning.*
+
+**A loop is refused**: a unit under itself or a unit inside it, on the day
+the move is asked or on any later day a plan's move reaches — what
+`plan.move` already refuses for a move on a day.
+
+**The units beside it move along when asked.** The dialog lists the units
+under the same parent, unticked, so a row of units moves in one go; there is
+no multi-select on the chart. *Owner's default, open to overturning.*
+
+**What changes is said before it lands**: who manages each unit from above,
+today, before and after, by nesting or by a line, from `managersOf` on the
+organisation as it would be — the holders of the unit's own roles and of the
+units inside it left out, since a move changes neither — and every plan's
+move of the unit, with its day, since from that day the unit sits where the
+plan says whatever its own parent.
+
+**One change, undated.** An `element.update {parentId, order: undefined}` in
+each scope that keeps a unit moved, as that scope's one step, all or none;
+the open scope's through its session, so ⌘Z takes it back where it is the
+only one written, and with a barrier where others were written too. Its
+`order` among its new siblings starts afresh. A move on a day stays a
+plan's. *Owner's default, open to overturning.*
+
+**The agent** corrects a unit's place with `element.update` and `parentId`,
+the parent found anywhere in the organisation, a loop looked for over the
+whole of it, and a place its type may not sit in answered `misplaced: true`.
+A unit kept in another scope is changed in that scope.
+
+## As built, 17 October 2026: a unit moved
+
+- **The arithmetic**, `model/unitMove.ts`, pure: `unitMove` answers a
+  refusal — `notAUnit`, `unknownParent`, `parentNotAUnit`, `itself`, `loop`
+  with its day, `notKept` — or the commands per scope, the units that move
+  (one already there is left out), `fits` per unit, the managers before and
+  after, and the plans' moves of the units (`planned`, `reached` where the
+  day has come). `withUnitsMoved` lays the move over an organisation,
+  `unitFits` asks a type of a parent, and `unitsBeside` lists the units
+  under the same parent on the day.
+- **The dialog**, `app/units/MoveUnitDialog.tsx` (a `FieldsDialog`): where
+  the unit sits now; *Sits under*, a `GroupedPicker` that now holds the
+  option picked, over `choices.parentChoices` — *At the top* and every unit
+  there today, the fitting ones under *Where its type may sit* and the
+  others under *Where its type may not sit*, each saying the units it sits
+  in, the unit's own place and the units inside it shown and not offered;
+  *Move these too*; the misfit, a plan's move, *Who manages it* now and
+  after; *Move*.
+- **The ways in**: *Move to…* on a unit's name row on the chart, quiet as
+  its *+* (`chart.moveTo`), and beside *Move up* and *Move down* under the
+  outline (`chart.outlineMoveTo`), landed as a move among siblings is
+  (`ChartPage.reorder`) and gone to afterwards; *Sits under* in a unit's
+  inspector (`unit.sitsUnder`), landed through the structure's lander a
+  delete uses. Both through `useMoveUnit`, its barrier `unitMove.barrier`;
+  the dialog is `chart.moveUnit`. Nothing is offered where the chart or the
+  section is only read, or for a stand-in.
+- **The agent**: `element.update`'s `parentId` on a unit this scope keeps
+  is asked of `unitMove` over `agent/write/organisation.organisationKnown`
+  (the tree's units and plans' moves with this scope's own as the session
+  holds them — what `plan.move` reads too, through `unitsKnown`), clears
+  the unit's `order` unless the call says one, and answers `misplaced` with
+  a hint; a unit another scope keeps is refused with `agent.scopeNotOpen`
+  naming that scope. A parent that is no unit — an actor that is only a
+  group here — is read as before.
+- **Open here**: a stand-in's `parentId` is where this scope draws it, and
+  stays an edit of the stand-in. The business sheet's own *Sits under*
+  still offers its scope's actors only. Refiling a unit to another scope
+  (*Move…*, `projects/gestures.travelling`) keeps its `parentId` only where
+  the scope it arrives in holds that parent, so a unit whose parent is kept
+  elsewhere arrives at the top; left as it was, and *Move to…* puts it back.
 
 ## Open
 

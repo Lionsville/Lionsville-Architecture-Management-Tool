@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **9555 tests** and one of every config. The
+One codebase, in modules, with **9588 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 9555 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 9588 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -328,6 +328,14 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       rows kept elsewhere — one list of
                                       commands per scope, for the screens and
                                       the agent's `element.remove`
+                    unitMove          a unit moved to another place in the
+                                      organisation (3.7.1): any unit in the
+                                      tree, or the top, a loop refused today
+                                      and on every later day a plan's move
+                                      reaches, a misfit allowed and said, who
+                                      manages it before and after — one
+                                      `element.update` of `parentId` per unit,
+                                      in the scope that keeps it
                     orgChart · conway   the two views of the organisation on a
                                       day (ADR-0036 §7): the units as a tree
                                       with each role's holders, vacancies, the
@@ -1025,6 +1033,12 @@ src/app/          The shell around the editor.
                                       (`UnitDeletionParts`), and the delete
                                       landed over every scope it writes
                                       (`unitDeletionSlot`)
+                                      …and a unit moved (3.7.1): where it may
+                                      go (`choices.parentChoices`), the dialog
+                                      (`MoveUnitDialog`) and the move landed
+                                      over every scope it writes, from the
+                                      chart's box and outline and the unit's
+                                      *Sits under* (`useMoveUnit`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
