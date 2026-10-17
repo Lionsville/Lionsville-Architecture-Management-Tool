@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../layout/tidy';
-import { PANEL_LIMITS, panelWidth } from './panels';
+import { OUTLINE_LIMITS, PANEL_LIMITS, outlineWidth, panelWidth } from './panels';
 
 /**
  * The editor's view settings — everything the toolbar and the panels remember
@@ -36,6 +36,8 @@ export interface EditorPreferences {
   paletteWidth: number;
   /** Right inspector width in px when expanded (4B, drag handle). */
   inspectorWidth: number;
+  /** The width of the outline a laid-out page docks on its left — the organisation chart's (3.7.3, drag handle). */
+  outlineWidth: number;
   /** The React Flow minimap (4B): off by default — it costs board area. */
   showMinimap: boolean;
   /**
@@ -89,6 +91,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   inspectorCollapsed: false,
   paletteWidth: PANEL_LIMITS.palette.default,
   inspectorWidth: PANEL_LIMITS.inspector.default,
+  outlineWidth: OUTLINE_LIMITS.default,
   showMinimap: false,
   showEdgeLabels: false,
   tidyOptions: BOARD_TIDY_DEFAULTS,
@@ -142,6 +145,7 @@ export function mergePreferences(stored: unknown): EditorPreferences {
     // than a forgotten preference.
     paletteWidth: panelWidth('palette', raw.paletteWidth),
     inspectorWidth: panelWidth('inspector', raw.inspectorWidth),
+    outlineWidth: outlineWidth(raw.outlineWidth),
     showMinimap: bool(raw.showMinimap, defaults.showMinimap),
     showEdgeLabels: bool(raw.showEdgeLabels, defaults.showEdgeLabels),
     tidyOptions: tidyOptions(raw.tidyOptions, defaults.tidyOptions),
@@ -174,6 +178,7 @@ export function preferencesEqual(a: EditorPreferences, b: EditorPreferences): bo
     a.inspectorCollapsed === b.inspectorCollapsed &&
     a.paletteWidth === b.paletteWidth &&
     a.inspectorWidth === b.inspectorWidth &&
+    a.outlineWidth === b.outlineWidth &&
     a.showMinimap === b.showMinimap &&
     a.showEdgeLabels === b.showEdgeLabels &&
     tidyEqual(a.tidyOptions, b.tidyOptions) &&

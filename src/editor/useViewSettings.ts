@@ -32,6 +32,8 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   const [inspectorCollapsed, setInspectorCollapsed] = useState(initial.inspectorCollapsed);
   const [paletteWidth, setPaletteWidth] = useState(initial.paletteWidth);
   const [inspectorWidth, setInspectorWidth] = useState(initial.inspectorWidth);
+  // The outline a laid-out page docks on its left (3.7.3), dragged on its own seam.
+  const [outlineWidth, setOutlineWidth] = useState(initial.outlineWidth);
   // The minimap (4B), off by default: it costs board area on a landscape that
   // already fills the window. Line labels: off, one shows only on hover or
   // selection.
@@ -40,14 +42,14 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
 
   const settings: EditorPreferences = {
     snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   };
   useReportPreferences(settings, initial, preferences?.onChange);
 
   return {
     ...settings,
     setTidyOptions, setGroupTidyOptions, setSnapToGrid, setShowGrid, setShowLifecycle,
-    setPaletteCollapsed, setInspectorCollapsed, setPaletteWidth, setInspectorWidth,
+    setPaletteCollapsed, setInspectorCollapsed, setPaletteWidth, setInspectorWidth, setOutlineWidth,
     setShowMinimap, setShowEdgeLabels,
   };
 }
@@ -72,19 +74,19 @@ function useReportPreferences(
   const last = useRef<EditorPreferences>(initial);
   const {
     snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   } = next;
   useEffect(() => {
     if (!onChange) return;
     const settings: EditorPreferences = {
       snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-      paletteWidth, inspectorWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+      paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
     };
     if (preferencesEqual(last.current, settings)) return;
     last.current = settings;
     onChange(settings);
   }, [
     onChange, snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   ]);
 }

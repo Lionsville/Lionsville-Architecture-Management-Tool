@@ -9,14 +9,21 @@
  * this minute, as the scope tree's are: kept in the shell's memory for as long
  * as the window is open (`sessionFolds.ts`), under the view's own key, so a
  * tab closed and opened again — or a scope left and come back to — is as it
- * was left, and nothing of it is ever saved. The chart and the outline fold
- * each on its own: the outline is for finding a way about, and folding it
- * leaves the chart as it is.
+ * was left, and nothing of it is ever saved.
  *
- * **A first open of a large chart folds.** The first time a view is opened
- * with units on it, more than thirty of them fold everything below the second
- * level (`model/orgChart.foldedOnFirstOpen`), in the chart and in the outline,
- * and the page says so until a fold is changed. A chart that fits opens whole.
+ * **Two sets, and the outline leads** (3.7.3). The chart and the outline keep
+ * a set each, so folding the outline — to find a way about — leaves the chart
+ * as it is. Opening goes the other way: a unit unfolded or picked in the
+ * outline is unfolded on the chart too, with every unit above it (`expand`),
+ * and the page goes to it there. One direction only: a fold on the chart
+ * never folds the outline, and one in the outline never folds the chart.
+ *
+ * **A first open shows two levels** (3.7.3). The first time a view is opened
+ * with units on it, every unit below the second level is folded
+ * (`model/orgChart.foldedOnFirstOpen`), in the chart and in the outline,
+ * whatever the chart's size, and the page says so until a fold is changed.
+ * From then on the person's own folds are what is kept. (Until 3.7.3 only a
+ * chart of more than thirty units folded.)
  *
  * **Going somewhere unfolds the way.** *Find*, *Find me*, a finding, a pick in
  * the outline and a request from outside unfold every unit above the one they
@@ -47,6 +54,8 @@ export type ChartFolds = {
   unfoldAll: () => void
   /** Unfold every unit above this one, on the chart and in the outline. */
   reveal: (id: ElementId) => void
+  /** Unfold this unit and every unit above it on the chart, and the way to it in the outline: what the outline asks of the chart. */
+  expand: (id: ElementId) => void
   /** Whether the chart draws the optional roles nobody holds. */
   optional: boolean
   toggleOptional: () => void
@@ -93,11 +102,20 @@ export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldK
       return next.chart === was.chart && next.outline === was.outline ? was : next
     })
   }, [chart])
+  const expand = useCallback((id: ElementId) => {
+    const above = unitsAboveIn(chart, id)
+    setHeld((was) => {
+      const next = { ...was, chart: opened(was.chart, [...above, id]), outline: opened(was.outline, above) }
+      if (next.chart === was.chart && next.outline === was.outline) return was
+      // A unit opened from the outline is the person's own fold: the page no longer says why it opened folded.
+      return { ...next, foldedOnOpen: next.chart === was.chart ? was.foldedOnOpen : false }
+    })
+  }, [chart])
   const [optional, setOptional] = useState(() => memory.recall(keys.optional)?.has(SHOWN) ?? false)
   useEffect(() => memory.keep(keys.optional, new Set(optional ? [SHOWN] : [])), [optional, memory, keys])
   const toggleOptional = useCallback(() => setOptional((was) => !was), [])
   return {
-    folded: held.chart, outline: held.outline, foldedOnOpen: held.foldedOnOpen, toggle, toggleOutline, foldAll, unfoldAll, reveal,
+    folded: held.chart, outline: held.outline, foldedOnOpen: held.foldedOnOpen, toggle, toggleOutline, foldAll, unfoldAll, reveal, expand,
     optional, toggleOptional,
   }
 }

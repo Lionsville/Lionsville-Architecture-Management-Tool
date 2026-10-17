@@ -70,12 +70,13 @@ export function PaletteDock({ parts, diagram }: { parts: EditorParts; diagram: D
  * defines resolved here, off the ownership seam.
  */
 export function LaidOutView({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
-  const { props, state, readOnly } = parts;
+  const { props, state, readOnly, view } = parts;
   const technology = props.ownership?.technology;
   return (
     <Box data-testid="laid-out-view" sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {props.pages?.render(diagram, {
         readOnly,
+        outline: { width: view.outlineWidth, onWidth: view.setOutlineWidth },
         ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
         onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
         onAdd: (seed) => state.actions.addElement(seed),

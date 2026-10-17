@@ -54,6 +54,12 @@ export interface PageView {
    */
   onHost(elementId: ElementId, platformId: ElementId): void;
   onUse(elementId: ElementId, targetIds: readonly ElementId[]): void;
+  /**
+   * The width of the outline a page docks on its left — the organisation
+   * chart's (3.7.3) — kept with the editor's panel widths, per person, as the
+   * palette's is (`preferences.ts`). Absent: the page keeps its own while up.
+   */
+  outline?: { width: number; onWidth(next: number): void };
 }
 
 /**

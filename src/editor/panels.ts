@@ -52,3 +52,18 @@ export function panelWidth(kind: PanelKind, stored: unknown): number {
     ? clampPanelWidth(kind, stored)
     : PANEL_LIMITS[kind].default;
 }
+
+/**
+ * The outline a laid-out page docks on its left — the organisation chart's
+ * (3.7.3) — where the palette would be beside a board. It has no rail: it
+ * does not collapse. Its floor is the palette's, below which a unit's type and
+ * name stop fitting on a row; its ceiling is wider, because a deep chart
+ * indents, and a page has no inspector of its own competing for the width.
+ */
+export const OUTLINE_LIMITS = { default: 240, min: 180, max: 480 } as const;
+
+/** A stored outline width made usable, the way {@link panelWidth} makes a panel's. */
+export function outlineWidth(stored: unknown): number {
+  if (typeof stored !== 'number' || !Number.isFinite(stored)) return OUTLINE_LIMITS.default;
+  return Math.round(Math.min(Math.max(stored, OUTLINE_LIMITS.min), OUTLINE_LIMITS.max));
+}

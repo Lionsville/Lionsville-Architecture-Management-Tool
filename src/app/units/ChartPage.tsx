@@ -40,6 +40,11 @@
  * a unit — a pick in the outline, *Find*, *Find me*, a finding, a request
  * from outside — unfolds the way to it and scrolls to it.
  *
+ * **Two levels, and the outline leads** (3.7.3): a first open shows the top
+ * units and the units under them, whatever the chart's size, and a unit
+ * unfolded or picked in the outline is unfolded on the chart as well, gone
+ * to and picked there. The outline's width is dragged on its seam.
+ *
  * **Each thing in one place** (3.6.1). The chart draws the units, in a grid
  * that uses the width, and what needs attention in them; an optional role
  * nobody holds waits for *Show optional roles* on the bar. What the chart
@@ -151,6 +156,8 @@ export type ChartPageProps = {
   reorder?: LandPeopleMoves
   /** How a unit is made from the chart: a step in the scope it is filed in (`useNewUnit`). Absent: no *+ Unit*. */
   make?: UnitMaking
+  /** The outline's width, kept with the editor's panel widths (3.7.3). Absent: the outline keeps its own while it is up. */
+  outline?: { width: number; onWidth(next: number): void }
 }
 
 export function ChartPage(props: ChartPageProps) {
@@ -264,8 +271,8 @@ export function ChartPage(props: ChartPageProps) {
       />
       <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
         <ChartOutline
-          chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={goTo} typeName={typeName} order={order}
-          addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} moveTo={moving.outline} t={t}
+          chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={(id) => { folds.expand(id); goTo(id) }}
+          typeName={typeName} order={order} addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} moveTo={moving.outline} width={props.outline} t={t}
         />
         <Box ref={page} data-testid="chart-body" sx={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, overflow: 'auto', p: 2, bgcolor: 'background.default', ...locatedRing(locatedId) }}>
           {chart.roots.length === 0

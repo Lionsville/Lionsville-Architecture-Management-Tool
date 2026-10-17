@@ -8,10 +8,21 @@
  * first build, which narrowed the chart to one unit; the outline leaves the
  * chart whole and goes to the unit instead.
  *
- * **It folds on its own**, for the session (`useChartFolds`): folding the
- * outline leaves the chart as it is. **Picking a unit** unfolds the way to it
- * on the chart and here, scrolls the chart to it and rings it, and chooses it
- * where the open scope keeps it, as pressing it on the chart does.
+ * **It leads the chart** (3.7.3). Unfolding a unit here, or picking it,
+ * unfolds it on the chart too, with every unit above it, scrolls the chart to
+ * it, rings it and picks it there — chosen where the open scope keeps it, as
+ * pressing it on the chart does. Folding here folds the outline alone: the
+ * two keep their folds apart, for the session (`useChartFolds`), and only
+ * opening goes from here to the chart.
+ *
+ * **Its width is the person's** (3.7.3): a seam on its right drags it, or
+ * the arrow keys on the seam, between a minimum and a maximum
+ * (`editor/panels.OUTLINE_LIMITS`), kept with the editor's panel widths
+ * where the workspace hands it one. On a narrow window the outline sits over
+ * the chart, the window's width, and has no seam.
+ *
+ * **A type's long words are cut** (3.7.3, `TypeLabel`), the whole name on
+ * hover and in each row's name.
  *
  * **Order among siblings** is moved here, under the tree: the unit picked, one
  * place up or down among the units of its type under the same parent
@@ -19,13 +30,10 @@
  * pointer. Every list of units follows it. Beside them, *Move to…* puts the
  * unit under another anywhere in the organisation (3.7.1, `useMoveUnit`).
  *
- * **A type's long words are cut** (3.7.3, `TypeLabel`), the whole name on
- * hover and in each row's name.
- *
  * **A unit is made at the top from its header** (3.6.2): *+ Unit at the
  * top*, as on the chart's bar (`AddUnit.tsx`).
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -34,7 +42,9 @@ import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { ChartUnit, OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
+import { OUTLINE_LIMITS } from '../../editor/panels'
 import { CaretIcon } from '../../widgets/icons'
+import { SeamResizer } from '../../widgets/SeamResizer'
 import { locatedSelector } from '../../widgets/useLocated'
 import { TypeLabel } from './TypeLabel'
 import type { SiblingOrder } from './useSiblingOrder'
@@ -43,10 +53,14 @@ export type ChartOutlineProps = {
   chart: OrgChart
   /** The outline's own folds. */
   folded: ReadonlySet<ElementId>
+  /** Fold or unfold a unit here; unfolding one also leads the chart to it (`onPick`). */
   onToggle: (id: ElementId) => void
   /** The unit gone to: picked here, found, or chosen on the chart. */
   current: ElementId | undefined
+  /** Lead the chart to a unit: it and the units above it unfolded there, scrolled to and picked. */
   onPick: (id: ElementId) => void
+  /** Its width and where a new one goes; absent, it keeps its own while it is up. */
+  width?: { width: number; onWidth(next: number): void } | undefined
   typeName: (id: string | undefined) => string
   /** The current unit's place among its siblings; absent where it has none of its type or may not be moved here. */
   order: SiblingOrder | undefined
@@ -60,8 +74,11 @@ export type ChartOutlineProps = {
 /** The attribute a row carries its unit's id in: not the chart's own, so a ring on the chart never lands here. */
 const ROW = 'data-outline-id'
 
-export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, moveTo, t }: ChartOutlineProps) {
+export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, moveTo, width, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
+  const [own, setOwn] = useState<number>(OUTLINE_LIMITS.default)
+  const wide = width?.width ?? own
+  const onWidth = width?.onWidth ?? setOwn
   // The unit gone to is brought on screen here too: the way to it is opened in
   // the same render, and a fold turned elsewhere in the outline leaves the
   // outline where the person put it.
@@ -70,9 +87,10 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
     box.current?.querySelector<HTMLElement>(locatedSelector(current, ROW))?.scrollIntoView?.({ block: 'nearest' })
   }, [current])
   return (
+    <>
     <Box
       component="nav" ref={box} aria-label={t('chart.outline')} data-testid="chart-outline" data-guide="chart.outline"
-      sx={{ width: { xs: 'auto', md: 240 }, flex: '0 0 auto', maxHeight: { xs: 200, md: 'none' }, overflow: 'auto', p: 1, borderRight: { md: 1 }, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', bgcolor: 'background.paper' }}
+      sx={{ width: { xs: 'auto', md: wide }, flex: '0 0 auto', maxHeight: { xs: 200, md: 'none' }, overflow: 'auto', p: 1, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', bgcolor: 'background.paper' }}
     >
       {addAtTop && <Box data-testid="chart-outline-header" sx={{ mb: 0.5 }}>{addAtTop}</Box>}
       <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.5 }}>{t('chart.outlineHint')}</Typography>
@@ -81,10 +99,17 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
         : <Rows units={chart.roots} depth={0} folded={folded} onToggle={onToggle} current={current} onPick={onPick} typeName={typeName} t={t} />}
       {(order || moveTo) && <OrderPanel order={order} moveTo={moveTo} t={t} />}
     </Box>
+    <Box data-testid="chart-outline-seam" sx={{ display: { xs: 'none', md: 'flex' } }}>
+      <SeamResizer
+        orientation="vertical" region="before" value={wide} min={OUTLINE_LIMITS.min} max={OUTLINE_LIMITS.max}
+        defaultValue={OUTLINE_LIMITS.default} onChange={onWidth} label={t('chart.resizeOutline')}
+      />
+    </Box>
+    </>
   )
 }
 
-function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop' | 'moveTo'> & { units: readonly ChartUnit[]; depth: number }) {
+function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop' | 'moveTo' | 'width'> & { units: readonly ChartUnit[]; depth: number }) {
   const { folded, onToggle, current, onPick, typeName, t } = props
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -97,7 +122,7 @@ function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'ord
               {unit.children.length > 0 ? (
                 <IconButton
                   size="small" aria-label={t(shut ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!shut}
-                  onClick={() => onToggle(unit.id)} data-testid="chart-outline-fold"
+                  onClick={() => { onToggle(unit.id); if (shut) onPick(unit.id) }} data-testid="chart-outline-fold"
                   sx={{ width: 22, height: 22, color: 'text.secondary', transform: shut ? 'rotate(-90deg)' : undefined }}
                 >
                   <CaretIcon />

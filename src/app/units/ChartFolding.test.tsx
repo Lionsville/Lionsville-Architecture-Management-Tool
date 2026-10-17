@@ -8,8 +8,9 @@
  * teams. A first open folds below the second level and says so; a folded
  * unit says what it hides; a caret folds one, *Fold all* and *Unfold all*
  * fold every one; *Find* and the outline unfold the way to a unit; the outline
- * folds on its own; and the folds — and *Show optional roles* — last for the
- * session, keyed by the view.
+ * folds on its own and leads the chart when it opens a unit (3.7.3); and the
+ * folds — and *Show optional roles* — last for the session, keyed by the
+ * view.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
@@ -158,17 +159,41 @@ describe('a large organisation on its chart', () => {
     }
   })
 
-  it('goes to a unit picked in the outline, unfolding its way on the chart; the outline folds on its own', () => {
+  // 3.7.3: unfolding in the outline unfolds on the chart too; until then the outline's caret left the chart as it was.
+  it('leads the chart from the outline: a unit unfolded there is unfolded, gone to and picked on the chart; folding there folds the outline alone', () => {
     const onSelect = vi.fn()
     renderShell(<Harness onSelect={onSelect} />)
-    const caret = within(outline()).getByRole('button', { name: 'Unfold Cluster 5.0' })
-    fireEvent.click(caret)
-    // The outline unfolded, the chart did not.
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Unfold Cluster 5.0' }))
     expect(outlined()).toContain('d5c0t1')
-    expect(drawn()).not.toContain('d5c0t1')
-    fireEvent.click(within(outline()).getByRole('button', { name: 'Team Team 5.0.1' }))
+    expect(drawn()).toEqual(expect.arrayContaining(['d5c0t0', 'd5c0t1', 'd5c0t2']))
+    expect(box('d5c0').getAttribute('data-folded')).not.toBe('true')
+    expect(onSelect).toHaveBeenLastCalledWith('d5c0')
+    // Opened by the person: the page no longer says why it opened folded.
+    expect(screen.queryByTestId('chart-folded-note')).toBeNull()
+    // Folding it again in the outline leaves the chart open.
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Fold Cluster 5.0' }))
+    expect(outlined()).not.toContain('d5c0t1')
     expect(drawn()).toContain('d5c0t1')
-    expect(onSelect).toHaveBeenLastCalledWith('d5c0t1')
+    // And a fold on the chart leaves the outline as it is.
+    fireEvent.click(within(box('d5c0')).getByRole('button', { name: 'Fold Cluster 5.0' }))
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Unfold Cluster 5.0' }))
+    expect(drawn()).toContain('d5c0t1')
+  })
+
+  it('goes to a unit picked in the outline: it and the units above it unfolded on the chart, and picked', () => {
+    const onSelect = vi.fn()
+    renderShell(<Harness onSelect={onSelect} />)
+    // A cluster folded on the first open, picked by its name: unfolded on the chart with its teams, and picked.
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Cluster Cluster 2.1' }))
+    expect(drawn()).toEqual(expect.arrayContaining(['d2c1t0', 'd2c1t1', 'd2c1t2']))
+    expect(onSelect).toHaveBeenLastCalledWith('d2c1')
+    // A domain folded on the chart by hand comes open again for a unit inside it picked in the outline.
+    fireEvent.click(within(box('d4')).getByRole('button', { name: 'Fold Domain 4' }))
+    expect(drawn()).not.toContain('d4c0')
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Unfold Cluster 4.0' }))
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Team Team 4.0.1' }))
+    expect(drawn()).toContain('d4c0t1')
+    expect(onSelect).toHaveBeenLastCalledWith('d4c0t1')
   })
 
   it('keeps its folds for the session, keyed by the view: a second open is as it was left, another view opens on its own', () => {

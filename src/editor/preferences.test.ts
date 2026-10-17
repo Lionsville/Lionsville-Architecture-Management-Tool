@@ -9,7 +9,7 @@ import {
   mergePreferences,
   preferencesEqual,
 } from './preferences';
-import { PANEL_LIMITS } from './panels';
+import { OUTLINE_LIMITS, PANEL_LIMITS } from './panels';
 
 describe('mergePreferences', () => {
   it('returns the defaults for nothing at all', () => {
@@ -148,6 +148,22 @@ describe('mergePreferences — 4B fields', () => {
     expect(merged.paletteWidth).toBe(PANEL_LIMITS.palette.default);
     expect(merged.showMinimap).toBe(false);
     expect(merged.showGrid).toBe(false);
+  });
+});
+
+describe('mergePreferences — the outline a page docks (3.7.3)', () => {
+  it('defaults the outline to its own width, keeps one inside its limits, and clamps or drops the rest', () => {
+    expect(mergePreferences({}).outlineWidth).toBe(OUTLINE_LIMITS.default);
+    expect(mergePreferences({ outlineWidth: 333 }).outlineWidth).toBe(333);
+    expect(mergePreferences({ outlineWidth: 9000 }).outlineWidth).toBe(OUTLINE_LIMITS.max);
+    expect(mergePreferences({ outlineWidth: 10 }).outlineWidth).toBe(OUTLINE_LIMITS.min);
+    expect(mergePreferences({ outlineWidth: '300' }).outlineWidth).toBe(OUTLINE_LIMITS.default);
+    expect(mergePreferences({ outlineWidth: Number.NaN }).outlineWidth).toBe(OUTLINE_LIMITS.default);
+  });
+
+  it('notices an outline width change', () => {
+    const a = mergePreferences({});
+    expect(preferencesEqual(a, { ...a, outlineWidth: a.outlineWidth + 1 })).toBe(false);
   });
 });
 
