@@ -42,7 +42,8 @@ export function groupColors(
   if (!color || !HEX.test(color)) return tokens.domainGroup;
   return {
     border: color,
-    fill: alpha(color, theme.palette.mode === 'dark' ? 0.1 : 0.06),
+    // Deeper on the light ground: a tint at a sixteenth over white was a region nobody could see.
+    fill: alpha(color, theme.palette.mode === 'dark' ? 0.1 : 0.12),
     // Drawn on a patch of the ground (the label's own background, below).
     label: legibleOn(color, theme.palette.background.default),
   };

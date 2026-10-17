@@ -352,7 +352,6 @@ export const EN = {
   'record.title': 'Record',
   'record.open': 'Details',
   'record.empty': 'Nothing on the record yet',
-  'record.emptyAdd': 'Nothing on the record yet \u2014 add it on the page \u203a',
   'record.openTip': 'Open this element\'s page, where its owner, vendor and dates are kept',
   'record.outsideOf': 'Outside \u00b7 {name}',
   'record.ownerWorkedOut': '{who}, the {role} of {unit}: worked out from the role today, not stored',

@@ -11,7 +11,6 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Link from '@mui/material/Link';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -169,32 +168,40 @@ export function OwnedElsewhere({ owned }: { owned: NonNullable<ElementInspectorP
 export function MoveRecord({ move }: { move: NonNullable<ElementInspectorProps['move']> }) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-      <Tooltip title={move.tip}>
-        <Button
-          size="small"
-          color="inherit"
-          data-testid="move-record"
-          sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-          onClick={move.onMove}
-        >
-          {move.label}
-        </Button>
-      </Tooltip>
+      <MoveButton move={move} />
     </Box>
   );
 }
 
+function MoveButton({ move }: { move: NonNullable<ElementInspectorProps['move']> }) {
+  return (
+    <Tooltip title={move.tip}>
+      <Button
+        size="small"
+        color="inherit"
+        data-testid="move-record"
+        sx={{ fontSize: 11, minWidth: 0, px: 1, flexShrink: 0 }}
+        onClick={move.onMove}
+      >
+        {move.label}
+      </Button>
+    </Tooltip>
+  );
+}
+
 /**
- * The record, as the panel beside the canvas shows it: one line and a way to
- * the page, where the fields are. Outside the tabs because it is about the
- * whole record, like the name above it.
+ * The record, as the panel beside the canvas shows it: one line, outside the
+ * tabs because it is about the whole record, like the name above it. The way
+ * to the page, where the fields are, is *Details ›* beside the kind above —
+ * the one link; an empty record says so and no more. *Move…*, where it is
+ * offered, sits at the end of this line rather than on a line of its own.
  */
-export function RecordSummaryLine({ element, model, parties, answeredBy, onOpenDocumentation }: {
+export function RecordSummaryLine({ element, model, parties, answeredBy, move }: {
   element: DesignElement;
   model: DesignModel;
   parties?: readonly PartyElsewhere[];
   answeredBy?: AnsweredBy;
-  onOpenDocumentation?(elementId: ElementId): void;
+  move?: ElementInspectorProps['move'];
 }) {
   const { t } = useStrings();
   // Who answers for it reads through the register: a name, or a pseudonym once forgotten (ADR-0036 §8).
@@ -203,26 +210,9 @@ export function RecordSummaryLine({ element, model, parties, answeredBy, onOpenD
   return (
     <Box data-testid="record-summary" sx={{ display: 'flex', alignItems: 'center', gap: 1, ...STRIP }}>
       <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
-        {summary.length
-          ? summary.join(' · ')
-          : (onOpenDocumentation
-            // A way to fill it in, where an empty record used to be a
-            // sentence and nothing else: the page is where the owner,
-            // the vendor and the dates are kept.
-            ? (
-              <Link
-                component="button"
-                type="button"
-                underline="hover"
-                data-testid="record-empty-add"
-                sx={{ font: 'inherit', textAlign: 'left' }}
-                onClick={() => onOpenDocumentation(element.id)}
-              >
-                {t('record.emptyAdd')}
-              </Link>
-            )
-            : t('record.empty'))}
+        {summary.length ? summary.join(' · ') : t('record.empty')}
       </Typography>
+      {move && <MoveButton move={move} />}
     </Box>
   );
 }

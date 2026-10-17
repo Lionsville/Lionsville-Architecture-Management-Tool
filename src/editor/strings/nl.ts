@@ -338,7 +338,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'record.title': 'Stamgegevens',
   'record.open': 'Details',
   'record.empty': 'Nog geen stamgegevens',
-  'record.emptyAdd': 'Nog geen stamgegevens \u2014 vul ze in op de pagina \u203a',
   'record.openTip': 'De pagina van dit element openen, waar eigenaar, leverancier en datums worden bijgehouden',
   'record.outsideOf': 'Extern \u00b7 {name}',
   'record.ownerWorkedOut': '{who}, de {role} van {unit}: vandaag afgeleid uit de rol, niet opgeslagen',

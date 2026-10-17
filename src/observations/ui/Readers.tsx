@@ -35,6 +35,7 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { fillEmptySections } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
@@ -358,7 +359,8 @@ export function ObservationReader(props: ObservationReaderProps) {
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : observation.body
-  const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
+  const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatObservationNumber(observation.number)
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
@@ -660,7 +662,8 @@ export function CauseReader(props: CauseReaderProps) {
   }
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : cause.body
-  const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
+  const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const root = isRootCause(cause)
   const label = causeLabel(cause)
   const flipped = formatCauseNumber(cause.number, !root)

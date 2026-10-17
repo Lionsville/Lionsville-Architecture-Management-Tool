@@ -222,8 +222,9 @@ export function OrganisationCards({
   return (
     // A grid rather than a wrapping row: equal columns, so six cards are two
     // rows of three the same size and left-aligned, not four and two wider ones
-    // starting half a gutter in.
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards" data-guide="org.cards">
+    // starting half a gutter in. 220 px a card: four across at the narrow
+    // measure, five at the wide one, so the root's ten are two rows.
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards" data-guide="org.cards">
       {shows.documentation && (
         <OnePage
           icon={<DocumentIcon />}

@@ -246,7 +246,9 @@ export function usesChoices(element: DesignElement, model: DesignModel, technolo
   };
   /** A pill's words: the name, and where it comes from when that is somewhere else. */
   const pillLabel = (id: ElementId) => (noteOf(id) ? `${nameOf(id)} · ${noteOf(id)}` : nameOf(id));
-  return { usesIds, usable, heldIds, pillLabel };
+  /** The pill itself says the name; where it comes from is said under the pointer, so a chip never truncates its platform. */
+  const pill = (id: ElementId) => ({ name: nameOf(id), note: noteOf(id) });
+  return { usesIds, usable, heldIds, pillLabel, pill };
 }
 
 /**

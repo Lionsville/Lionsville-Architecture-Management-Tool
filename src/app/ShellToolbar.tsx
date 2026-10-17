@@ -352,12 +352,17 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
 }) {
   // Narrow windows: the crumbs give way before anything else does, the
   // leftmost first — an ancestor's name is the one a reader can most afford
-  // to lose — each to an ellipsis rather than a wrap.
+  // to lose — each to an ellipsis rather than a wrap. The bar wraps its
+  // items (`WRAPS`), and a wrapping bar lays an item out at its own width
+  // before it shrinks anything, so a crumb at its natural width is what sent
+  // ⋯ to a line of its own at 1024 px. A basis of nothing, grown up to the
+  // crumbs' own width and no further: on the bar's first line whatever the
+  // window, and shorter than their names only where the line is short.
   const shrinking = (order: number) => ({
     minWidth: 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
   return (
-    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flexShrink: 1 }}>
+    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flex: '1 1 0', maxWidth: 'max-content' }}>
       {crumbs.map((crumb, index) => (
         <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(crumbs.length - index + 1) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>

@@ -435,8 +435,10 @@ export function OrganisationScreen({
 
       <Box sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
         {/* Wider on a wide screen, where the cards and the tables have use
-            for the room; the sentences keep their own measure (720). */}
-        <Box sx={{ maxWidth: { xs: 980, xl: 1280 }, mx: 'auto' }}>
+            for the room; the sentences keep their own measure (720). From
+            1200 px the cards stand five across, so ten of them are two rows
+            and not three with one alone on the last. */}
+        <Box sx={{ maxWidth: { xs: 980, lg: 1180, xl: 1280 }, mx: 'auto' }}>
           {/* Identity. A folder nobody has named asks for a name where the
               heading would be, rather than showing a blank one. */}
           {named || !atRoot || !mayWrite ? (
@@ -502,6 +504,12 @@ export function OrganisationScreen({
             </Stack>
           )}
 
+          {/* What the checks find here, counted by weight, each count a way to
+              the Checks page on the first check of its weight. Above the
+              cards: what needs attention is read first, and under three rows
+              of cards it was below the fold of a laptop screen. */}
+          <NeedsAttention counts={checks.counts} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))} s={s} />
+
           {/* Not before the document is read at a level below the root: the
               row of cards is the level's shape, and drawing a domain's row and
               then a landscape's is a flicker on every step down. At the root,
@@ -529,10 +537,6 @@ export function OrganisationScreen({
           {/* Who serves this scope (ADR-0036, amended): the units whose
               domains name it, written where each unit is kept. */}
           <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
-
-          {/* What the checks find here, counted by weight, each count a way to
-              the Checks page on the first check of its weight. */}
-          <NeedsAttention counts={checks.counts} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))} s={s} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —

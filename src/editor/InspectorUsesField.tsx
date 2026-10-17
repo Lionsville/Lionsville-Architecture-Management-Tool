@@ -17,6 +17,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
+import Tooltip from '@mui/material/Tooltip';
 import ListSubheader from '@mui/material/ListSubheader';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -38,15 +39,21 @@ export function UsesField({ field, uses, picker }: { field: InspectorField; uses
       <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.uses')}</Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
         {usesIds.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('field.usesNothing')}</Typography>}
-        {usesIds.map((id) => (
-          <Chip
-            key={id}
-            size="small"
-            data-testid={`uses-pill-${id}`}
-            label={uses.pillLabel(id)}
-            onDelete={locked ? undefined : () => actions.setUses(element.id, usesIds.filter((held) => held !== id))}
-          />
-        ))}
+        {usesIds.map((id) => {
+          const { name, note } = uses.pill(id);
+          return (
+            // The chip carries the service; the platform it comes from, and
+            // *shared*, go under the pointer rather than truncating the chip.
+            <Tooltip key={id} title={note ?? ''}>
+              <Chip
+                size="small"
+                data-testid={`uses-pill-${id}`}
+                label={name}
+                onDelete={locked ? undefined : () => actions.setUses(element.id, usesIds.filter((held) => held !== id))}
+              />
+            </Tooltip>
+          );
+        })}
       </Box>
       {!locked && usable.length > 0 && <UsesPicker uses={uses} picker={picker} />}
     </Box>

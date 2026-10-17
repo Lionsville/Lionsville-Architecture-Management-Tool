@@ -2,10 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import type { ComponentType } from 'react';
-import { Panel } from '@xyflow/react';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
@@ -51,21 +49,18 @@ const ALIGN_BUTTONS: Array<{
 ];
 
 /**
- * Canvas-overlay placement toolbar (top-centre): grid-snap toggle plus the
- * align/distribute groups. Rendered only when the canvas is editable; the
- * align/distribute groups appear once two or more things are selected —
- * eight disabled buttons on an empty board were a row a person tried to
- * work out rather than a row that said "select two things first".
+ * The placement buttons of the canvas's one floating cluster (`ZoomControls`,
+ * bottom left): the grid and snap toggles, and the align and distribute
+ * groups. Drawn only when the canvas is editable; the align/distribute groups
+ * appear once two or more things are selected — eight disabled buttons on an
+ * empty board were a row a person tried to work out rather than a row that
+ * said "select two things first".
  */
 export function PlacementToolbar(props: PlacementToolbarProps) {
   const theme = useTheme();
   const { t } = useStrings();
   return (
-    <Panel position="top-center">
-      <Paper
-        elevation={2}
-        sx={{ display: 'flex', alignItems: 'center', gap: 0.25, px: 0.5, py: 0.25, borderRadius: 2 }}
-      >
+    <>
         <Tooltip title={props.showGrid ? t('canvas.gridOn') : t('canvas.gridOff')}>
           <IconButton
             size="small"
@@ -145,7 +140,6 @@ export function PlacementToolbar(props: PlacementToolbarProps) {
           </span>
         </Tooltip>
         </>)}
-      </Paper>
-    </Panel>
+    </>
   );
 }

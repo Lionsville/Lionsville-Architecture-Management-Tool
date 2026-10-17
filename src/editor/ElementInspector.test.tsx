@@ -1086,7 +1086,9 @@ describe('ElementInspector — what an application uses (ADR-0020)', () => {
     ];
     const { setUses } = renderInspector(element(), { others: [...held(), managedDb], relations, technology: technology() });
     expect(screen.getByTestId('uses-pill-brokering').textContent).toBe('Message brokering');
-    expect(screen.getByTestId('uses-pill-managed-db').textContent).toBe('Managed database · shared · platforms');
+    // The chip carries the service; where it comes from is under the pointer.
+    expect(screen.getByTestId('uses-pill-managed-db').textContent).toBe('Managed database');
+    expect(screen.getByTestId('uses-pill-managed-db').getAttribute('aria-label')).toBe('shared · platforms');
     fireEvent.click(within(screen.getByTestId('uses-pill-brokering')).getByTestId('CancelIcon'));
     expect(setUses).toHaveBeenCalledWith('e1', ['managed-db']);
     cleanup();

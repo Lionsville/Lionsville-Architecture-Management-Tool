@@ -85,7 +85,8 @@ export function ElementInspector(props: ElementInspectorProps) {
         more={leads ? <ElementMore inspector={props} /> : undefined}
       />
       {props.owned && <OwnedElsewhere owned={props.owned} />}
-      {!leads && !readOnly && props.move && <MoveRecord move={props.move} />}
+      {/* Beside the canvas, Move… sits at the end of the record's line (`RecordSummaryLine`); on the page it is a strip of its own. */}
+      {stacked && !leads && !readOnly && props.move && <MoveRecord move={props.move} />}
       {leads ? (
         <>
           {unit.section}
@@ -124,7 +125,12 @@ function ElementFields({ inspector, field, tab, uses, picker, underGeneral }: {
 
   return (
     <>
-      {!stacked && <RecordSummaryLine element={element} model={inspector.model} parties={inspector.parties} answeredBy={inspector.answeredBy} onOpenDocumentation={inspector.onOpenDocumentation} />}
+      {!stacked && (
+        <RecordSummaryLine
+          element={element} model={inspector.model} parties={inspector.parties} answeredBy={inspector.answeredBy}
+          move={inspector.unitSection?.leads === true || readOnly ? undefined : inspector.move}
+        />
+      )}
 
       {stacked && sectionTitle(t('record.title'))}
       {stacked && (

@@ -161,6 +161,15 @@ function Slots({ type, model, readOnly, dispatch, taking }: {
   return (
     <Box>
       <Typography sx={heading}>{t('operating.slots')}</Typography>
+      {type.slots.length > 0 && (
+        // What the two boxes on every row hold, said once above them.
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }} aria-hidden="true">
+          <Box sx={{ flex: 1 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ width: 68, textAlign: 'center' }}>{t('operating.slotMin')}</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ width: 68, textAlign: 'center' }}>{t('operating.slotMax')}</Typography>
+          {!readOnly && <Box sx={{ width: 30 }} />}
+        </Box>
+      )}
       {type.slots.map((slot, index) => {
         const name = model.roles.find((role) => role.id === slot.role)?.name ?? slot.role
         return (

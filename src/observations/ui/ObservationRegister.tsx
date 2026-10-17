@@ -104,7 +104,8 @@ export function ObservationRegister(props: ObservationRegisterProps) {
           label={<Typography sx={{ fontSize: 12 }}>{s('observation.showArchived')}</Typography>}
         />
       </Box>
-      <Table size="small" stickyHeader>
+      {/* The table keeps a measure of its own and the pane scrolls sideways, rather than every column squeezing the title to a word a line and the last three to nothing. */}
+      <Table size="small" stickyHeader sx={{ minWidth: 820 }}>
         <TableHead>
           <TableRow>
             <TableCell>{s('observation.colNumber')}</TableCell>
@@ -188,7 +189,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {formatObservationNumber(one.number)}
       </TableCell>
-      <TableCell sx={{ fontWeight: 600 }}>
+      <TableCell sx={{ fontWeight: 600, minWidth: 220 }}>
         {one.title}
         {bright && <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} sx={{ height: 18, fontSize: 10, ml: 1 }} data-testid={`observation-bright-${key}`} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
@@ -196,8 +197,8 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       </TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDay(one.date, props.language)}</TableCell>
       <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
-      <TableCell><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
-      <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
+      <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, whiteSpace: 'nowrap' }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
       <TableCell sx={{ fontSize: 12 }}>
         {merged
           ? <Typography variant="caption" color="text.secondary"><MergedNote merged={merged} s={s} day={(date) => formatDay(date, props.language)} /></Typography>

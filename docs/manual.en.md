@@ -100,7 +100,7 @@ each domain there opening that domain's home again.
 app makes, by what it is about, with why each matters, how to fix it and
 where it finds something at or under this home (*The Checks page*, below).
 
-**Needs attention**, under the cards, when the checks find anything: how much,
+**Needs attention**, above the cards, when the checks find anything: how much,
 by weight — so many **to fix**, so many **to review**, so many **notes** —
 each a link to the Checks page, on the first check of that weight that finds
 something. A finding marked as intended is not counted. What the checks find

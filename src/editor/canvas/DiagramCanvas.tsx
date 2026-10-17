@@ -83,7 +83,6 @@ import {
   type NodeBounds,
 } from '../../layout/alignDistribute';
 import { getHelperLines, HelperLines, type HelperLineResult } from './HelperLines';
-import { PlacementToolbar } from './PlacementToolbar';
 import { serializeSelection, type ClipboardPayload } from '../../model/clipboard';
 
 const edgeTypes = { floating: FloatingEdge };
@@ -1709,19 +1708,18 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
               style={{ border: `1px solid ${tokens.card.border}`, borderRadius: 4 }}
             />
           )}
-          <ZoomControls />
-          {!props.readOnly && (
-            <PlacementToolbar
-              snapToGrid={props.snapToGrid}
-              onToggleSnapToGrid={props.onToggleSnapToGrid}
-              showGrid={props.showGrid}
-              onToggleShowGrid={props.onToggleShowGrid}
-              canAlign={selectedElementIds.size >= 2}
-              canDistribute={selectedElementIds.size >= 3}
-              onAlign={handleAlign}
-              onDistribute={handleDistribute}
-            />
-          )}
+          <ZoomControls
+            placement={props.readOnly ? undefined : {
+              snapToGrid: props.snapToGrid,
+              onToggleSnapToGrid: props.onToggleSnapToGrid,
+              showGrid: props.showGrid,
+              onToggleShowGrid: props.onToggleShowGrid,
+              canAlign: selectedElementIds.size >= 2,
+              canDistribute: selectedElementIds.size >= 3,
+              onAlign: handleAlign,
+              onDistribute: handleDistribute,
+            }}
+          />
           <HelperLines
             horizontal={helperLines.horizontal}
             vertical={helperLines.vertical}

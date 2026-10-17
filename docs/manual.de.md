@@ -114,7 +114,7 @@ Prüfungen**: jede Prüfung, die die App vornimmt, nach dem, worum es geht, mit
 warum jede wichtig ist, wie man es behebt und wo sie in oder unter dieser
 Startseite etwas findet (*Die Seite Prüfungen*, weiter unten).
 
-**Braucht Aufmerksamkeit**, unter den Karten, sobald die Prüfungen etwas
+**Braucht Aufmerksamkeit**, über den Karten, sobald die Prüfungen etwas
 finden: wie viel, nach Gewicht — so viele **zu beheben**, so viele **zu
 prüfen**, so viele **Hinweise** — jedes ein Link zur Seite Prüfungen, auf der
 ersten Prüfung dieses Gewichts, die etwas findet. Ein als beabsichtigt

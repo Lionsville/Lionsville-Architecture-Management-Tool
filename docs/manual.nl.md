@@ -104,7 +104,7 @@ elke controle die de app doet, naar waar ze over gaat, met waarom elke
 controle ertoe doet, hoe je het oplost en waar ze iets vindt in of onder deze
 startpagina (*De pagina Controles*, hieronder).
 
-**Vraagt aandacht**, onder de kaarten, zodra de controles iets vinden:
+**Vraagt aandacht**, boven de kaarten, zodra de controles iets vinden:
 hoeveel, per gewicht — zoveel **te herstellen**, zoveel **om na te kijken**,
 zoveel **notities** — elk een link naar de pagina Controles, op de eerste
 controle van dat gewicht die iets vindt. Een bevinding die als bedoeld is

@@ -173,12 +173,15 @@ function buildTokens(theme: Theme): NodeTokens {
       outline: alpha(text, 0.12),
     },
     zone: {
-      // Subtle per-zone identity tints; landscape stays paper.
+      // Subtle per-zone identity tints; landscape stays paper. Twice as deep
+      // on the light ground as the dark one's share: a tint at a twentieth
+      // over white was a lane nobody could see, where the same over near-black
+      // reads.
       fill: {
-        actors: alpha(palette.primary.main, dark ? 0.07 : 0.045),
-        inputChannels: alpha(palette.info.main, dark ? 0.07 : 0.045),
-        externalSystems: alpha(palette.secondary.main, dark ? 0.08 : 0.05),
-        management: alpha(palette.warning.main, dark ? 0.07 : 0.05),
+        actors: alpha(palette.primary.main, dark ? 0.07 : 0.1),
+        inputChannels: alpha(palette.info.main, dark ? 0.07 : 0.1),
+        externalSystems: alpha(palette.secondary.main, dark ? 0.08 : 0.11),
+        management: alpha(palette.warning.main, dark ? 0.07 : 0.12),
         landscape: 'transparent',
       },
       // A band's name is words at 11px: the secondary ink, not a fainter one.
@@ -186,13 +189,13 @@ function buildTokens(theme: Theme): NodeTokens {
     },
     domainGroup: {
       border: alpha(text, 0.35),
-      fill: alpha(text, dark ? 0.04 : 0.02),
+      fill: alpha(text, dark ? 0.04 : 0.045),
       label: palette.text.secondary,
     },
     card: {
       bg: palette.background.paper,
       border: palette.divider,
-      headerBg: alpha(text, dark ? 0.06 : 0.035),
+      headerBg: alpha(text, dark ? 0.06 : 0.06),
       title: text,
       subtitle: palette.text.secondary,
       description: palette.text.secondary,

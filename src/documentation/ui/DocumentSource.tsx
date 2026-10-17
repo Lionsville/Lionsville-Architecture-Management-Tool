@@ -20,7 +20,7 @@
  * value rather than the prop, because a paste lands while the value is
  * whatever was just typed and the prop may be one render behind.
  */
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ClipboardEvent, DragEvent, KeyboardEvent, ReactNode, RefObject } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -81,7 +81,7 @@ export type DocumentSourceProps = {
 export function DocumentSource(props: DocumentSourceProps) {
   const { value, onChange, onAddImage, images, preview } = props
   const { t } = useStrings()
-  const narrow = useMediaQuery('(max-width: 1100px)')
+  const { narrow, setBar } = useNarrowBar()
   const ownRef = useRef<HTMLTextAreaElement>(null)
   const areaRef = props.textareaRef ?? ownRef
 
@@ -167,7 +167,7 @@ export function DocumentSource(props: DocumentSourceProps) {
     // `flex: 1` because the pane sits in a column on two of its three pages
     // and must take the height the page has left; a grid cell ignores it.
     <Box data-testid="document-source" sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
+      <Box ref={setBar} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider', '& .MuiButton-root': { whiteSpace: 'nowrap', flexShrink: 0 } }}>
         {/* One line, however narrow the pane: the help button beside it says the rest. */}
         <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
           {onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
@@ -294,4 +294,30 @@ export function DocumentSource(props: DocumentSourceProps) {
       />
     </Box>
   )
+}
+
+/** The bar's width is under this where the words give way to glyphs: the three buttons and the help, with room for the hint. */
+const NARROW_BAR = 640
+
+/**
+ * Whether the bar is too narrow for its words: half a screen, or half a page.
+ * The edit pane is half the documentation page beside its preview, so at
+ * 1440 px it is as narrow as a window of 720 — by the window's width alone
+ * the words gave way to glyphs too late, and the three buttons broke over
+ * three lines each in the meantime. So the bar's own box is measured too;
+ * where nothing can measure (a test), the window's width decides.
+ */
+function useNarrowBar(): { narrow: boolean; setBar: (bar: HTMLElement | null) => void } {
+  const narrowWindow = useMediaQuery('(max-width: 1100px)')
+  const [bar, setBar] = useState<HTMLElement | null>(null)
+  const [narrowBar, setNarrowBar] = useState(false)
+  useEffect(() => {
+    if (!bar || typeof ResizeObserver === 'undefined') return undefined
+    const measure = () => setNarrowBar(bar.getBoundingClientRect().width < NARROW_BAR)
+    measure()
+    const watch = new ResizeObserver(measure)
+    watch.observe(bar)
+    return () => watch.disconnect()
+  }, [bar])
+  return { narrow: narrowWindow || narrowBar, setBar }
 }

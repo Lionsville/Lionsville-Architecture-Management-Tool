@@ -7,6 +7,7 @@ import {
   SHORT_DESCRIPTION_LABELS,
   documentTemplate,
   documentedElements,
+  fillEmptySections,
   hasDocumentation,
   headingId,
   linkElementRefs,
@@ -196,5 +197,20 @@ describe('reading a description more than once', () => {
     expect(hasDocumentation(undefined)).toBe(false);
     expect(hasDocumentation('')).toBe(false);
     expect(hasDocumentation('   ')).toBe(false);
+  });
+});
+
+describe('fillEmptySections', () => {
+  it('says the placeholder under a heading with nothing before the next, and leaves written sections alone', () => {
+    const text = '## What we saw\n\n## Evidence\nA log.\n\n### Detail\n\n';
+    expect(fillEmptySections(text, 'Nothing yet')).toBe(
+      '## What we saw\n\n*Nothing yet*\n\n## Evidence\nA log.\n\n### Detail\n\n*Nothing yet*',
+    );
+  });
+
+  it('leaves text with no headings, and a # inside a fence, as they are', () => {
+    expect(fillEmptySections('Just a line.', 'Nothing yet')).toBe('Just a line.');
+    const fenced = '## Code\n```\n# not a heading\n```\n';
+    expect(fillEmptySections(fenced, 'Nothing yet')).toBe(fenced);
   });
 });

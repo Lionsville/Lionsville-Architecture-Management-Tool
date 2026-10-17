@@ -386,3 +386,45 @@ export function documentTemplate(t: Translate): string {
 export interface MarkdownRenderOptions {
   onElementLink?(elementId: string): void;
 }
+
+/**
+ * A section with nothing under its heading says so.
+ *
+ * A template leaves headings — *What we saw*, *Evidence* — for a writer to
+ * fill, and a reader drawn from it before they did showed the headings over
+ * nothing, where the rows above say *Nothing yet*. This puts the same words
+ * under every heading that has no text before the next heading or the end,
+ * in italics, so the page reads the same from top to bottom. Fenced code is
+ * left alone: a `#` inside it is not a heading.
+ */
+export function fillEmptySections(markdown: string, placeholder: string): string {
+  const lines = markdown.split('\n');
+  const out: string[] = [];
+  let fenced = false;
+  let open: number | undefined;
+  let filledLast = false;
+  /** The open heading gets the placeholder: one blank line, the words, one blank line. */
+  const close = () => {
+    if (open === undefined) return;
+    while (out.length > open + 1 && out[out.length - 1].trim() === '') out.pop();
+    out.push('', `*${placeholder}*`, '');
+    open = undefined;
+    filledLast = true;
+  };
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
+    const heading = !fenced && /^\s{0,3}#{1,6}\s/.test(line);
+    if (heading) {
+      close();
+      out.push(line);
+      open = out.length - 1;
+      continue;
+    }
+    if (open !== undefined && line.trim() !== '') open = undefined;
+    filledLast = false;
+    out.push(line);
+  }
+  close();
+  if (filledLast) out.pop();
+  return out.join('\n');
+}

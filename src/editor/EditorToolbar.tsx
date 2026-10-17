@@ -420,7 +420,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
               else props.onActiveDiagramChange(value);
             }}
             variant="scrollable"
-            sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.5 } }}
+            // The tabs scroll before the tools take a second row: a basis of
+            // nothing, grown up to the tabs' own width, keeps the tools on the
+            // tabs' line at 1024 px, where the tabs at their natural width
+            // sent them under.
+            sx={{ minHeight: 40, flex: '1 1 0', maxWidth: 'max-content', minWidth: 0, '& .MuiTab-root': { minHeight: 40, py: 0.5 } }}
           >
             {tabs.map((diagram) => (
               <Tab

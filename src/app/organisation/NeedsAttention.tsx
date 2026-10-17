@@ -48,7 +48,7 @@ export function NeedsAttention({ counts, onOpen, s }: {
   const weights = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0)
   if (weights.length === 0) return null
   return (
-    <Box sx={{ mb: 4, maxWidth: 760 }} data-testid="needs-attention" data-guide="org.attention">
+    <Box sx={{ mt: 3, maxWidth: 760 }} data-testid="needs-attention" data-guide="org.attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 0.5, textTransform: 'uppercase', color: 'warning.main' }}>
         {s('org.attention')}
       </Typography>
