@@ -190,7 +190,7 @@ describe('a unit made at the top', () => {
       commands: [{ type: 'element.create', element: expect.objectContaining({ id: 'u-warehouse', unitTypeId: 'ut-domain', scopes: ['warehouse'] }) }],
     })
     // The domain served takes the unit's type, in its own header (ADR-0036, amended 17 October 2026).
-    expect(written[1]).toEqual({ path: 'warehouse', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: undefined } }] })
+    expect(written[1]).toEqual({ path: 'warehouse', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: null } }] })
     await waitFor(() => expect(screen.queryByTestId('new-unit-dialog')).toBeNull())
   })
 

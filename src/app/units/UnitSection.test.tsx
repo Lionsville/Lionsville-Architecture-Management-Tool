@@ -376,7 +376,7 @@ describe('a unit in its inspector', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'Customer' }))
     expect(commands[0]).toEqual({ type: 'element.update', id: 'ops', patch: { scopes: ['customer'] } })
     // The domain takes the unit's type, in its own header, as that scope's step (ADR-0036, amended 17 October 2026).
-    await waitFor(() => expect(asked).toEqual([{ path: 'customer', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: undefined } }] }]))
+    await waitFor(() => expect(asked).toEqual([{ path: 'customer', commands: [{ type: 'scope.describe', patch: { unitTypeId: 'ut-domain', kind: null } }] }]))
     // Its one domain now, and a type that serves one says so; the domain may be taken off again.
     expect(screen.queryByTestId('unit-serves-add')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-serves')).getByTestId('CancelIcon'))

@@ -66,14 +66,18 @@ export function typeToFollow(scope: ScopeTyped, unitType: string | undefined, se
   return scope.unitTypeId === unitType ? undefined : unitType
 }
 
-/** The header patch that gives a scope a unit type: the kind goes, since one of the two is said. */
-export function typedByUnitType(unitTypeId: string): { unitTypeId: string; kind: undefined } {
-  return { unitTypeId, kind: undefined }
+/**
+ * The header patch that gives a scope a unit type: the kind goes, since one
+ * of the two is said — cleared with `null`, which a step kept as JSON keeps
+ * where it would lose `undefined`.
+ */
+export function typedByUnitType(unitTypeId: string): { unitTypeId: string; kind: null } {
+  return { unitTypeId, kind: null }
 }
 
 /** The header patch that gives a scope a built-in kind, or none: the unit type goes. */
-export function typedByKind(kind: ScopeKind | undefined): { kind: ScopeKind | undefined; unitTypeId: undefined } {
-  return { kind, unitTypeId: undefined }
+export function typedByKind(kind: ScopeKind | undefined): { kind: ScopeKind | null; unitTypeId: null } {
+  return { kind: kind ?? null, unitTypeId: null }
 }
 
 /**
@@ -89,7 +93,7 @@ export function typeChoiceOf(scope: ScopeTyped): TypeChoice {
 }
 
 /** What a picker's value says: the header's two fields, as a patch that sets one and clears the other. */
-export function typeChosen(choice: string): { kind?: ScopeKind | undefined; unitTypeId?: string | undefined } {
+export function typeChosen(choice: string): { kind?: ScopeKind | null; unitTypeId?: string | null } {
   if (choice.startsWith('unit:') && choice.length > 5) return typedByUnitType(choice.slice(5))
   if (choice.startsWith('kind:')) return typedByKind(choice.slice(5) as ScopeKind)
   return typedByKind(undefined)

@@ -126,7 +126,13 @@ export type ImageCommand =
   | { type: 'image.remove'; name: ImageName }
 
 /** A change to what a scope says about itself. A key present with `undefined` clears it, as a model patch does. */
-export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription }
+/**
+ * A patch on what the scope says about itself: a key set to `null` clears it
+ * as `undefined` does, because a step that crosses a wire as JSON keeps no
+ * `undefined` (ADR-0036, amended 17 October 2026).
+ */
+export type DescribePatch = { [K in keyof ScopeDescription]?: ScopeDescription[K] | null }
+export type DescribeCommand = { type: 'scope.describe'; patch: DescribePatch }
 
 /**
  * A scope's content made equal to a content that arrives whole, and used for
@@ -404,7 +410,7 @@ const DESCRIPTION_KEYS: Record<keyof ScopeDescription, true> = {
  * refused whole, as the reducer refuses one on a model patch
  * (`command.notAField`), and so is a kind that is not one of the labels.
  */
-function describe(working: Working, patch: ScopeDescription): Outcome {
+function describe(working: Working, patch: DescribePatch): Outcome {
   if (typeof patch !== 'object' || patch === null) return { ok: false, refused: 'command.notAField' }
   const next: Record<string, unknown> = { ...working.description }
   for (const [key, value] of Object.entries(patch)) {
