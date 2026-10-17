@@ -26,14 +26,21 @@
  * - **The day it is asked**: from the first day of the assignment to its
  *   last, never on a planned date.
  *
+ * - **A holder's own line** (ADR-0039, amended 17 October 2026) carries the
+ *   right as any solid line does: the person it lands on reaches that one
+ *   assignment, and whoever reached it only by the model's default — the
+ *   nesting, or the line of the role in that unit — no longer does.
+ *
  * **What a host asks** (hosted's managing right): {@link managedReach} for a
  * person on the day, then {@link reachesAssignment} of each assignment as it
  * was and as it is after — or {@link onlyPeopleIn} of a whole step — with
- * {@link managingRoleIds}; {@link reachesPosition} where the managing rule is
+ * {@link managingRoleIds}; {@link reachesHolder} where the managing rule is
  * not asked (whose people they are), and {@link holdsAllIn} for an answer
- * about two entries of the register. `units` alone is the nesting half: a
- * door that asks whose people a person manages asks {@link reachesPosition}
- * of the unit *and* the role.
+ * about two entries of the register. `units` alone is the nesting half, and
+ * a role in a unit is not the whole answer either: a door that asks whose
+ * people a person manages asks {@link reachesHolder} of the assignment, which
+ * reads the holder's own line; {@link reachesPosition} answers for the role
+ * in the unit as the model says it.
  *
  * Pure, with no words and no paths, so a server imports it by its path.
  */
@@ -45,7 +52,7 @@ import type { PersonId } from './person'
 import { apply } from './reducer'
 import type { ElementId } from './types'
 import { isUnit, managedBy, personOf, positionKey, runsOn } from './units'
-import type { Assignment, ManagedVia, Organisation } from './units'
+import type { Assignment, AssignmentId, ManagedVia, Organisation } from './units'
 
 /** What one person reaches by a managing role, or by the solid lines that land on their roles, on a day. */
 export type ManagedReach = {
@@ -63,6 +70,12 @@ export type ManagedReach = {
   readonly elsewhere?: ReadonlySet<string>
   /** The roles reached by a solid line, as {@link positionKey}s: never one the person holds. Absent is none. */
   readonly lines?: ReadonlySet<string>
+  /** Those of `lines` a unit's own line brings: reached by an override. Absent is none. */
+  readonly overrides?: ReadonlySet<string>
+  /** The assignments reached by their holder's own solid line (ADR-0039, amended): never one of the person's own. Absent is none. */
+  readonly holders?: ReadonlySet<AssignmentId>
+  /** The assignments whose holder's own solid line lands where the person does not reach: not reached through their role. Absent is none. */
+  readonly away?: ReadonlySet<AssignmentId>
 }
 
 /**
@@ -75,27 +88,53 @@ export function managedReach(
   organisation: Organisation, person: PersonId, day: string, canonical?: (id: PersonId) => PersonId,
 ): ManagedReach | undefined {
   const reached = managedBy(organisation, person, day, canonical)
-  if (reached.held.length === 0 && reached.lines.length === 0) return undefined
+  if (reached.held.length === 0 && reached.lines.length === 0 && reached.holders.length === 0) return undefined
+  const keys = (list: readonly { unitId: ElementId; roleId: RoleId }[]) => new Set(list.map((at) => positionKey(at.unitId, at.roleId)))
   return {
     held: reached.held,
     units: new Set(reached.units),
     below: new Set(reached.below),
-    elsewhere: new Set(reached.elsewhere.map((at) => positionKey(at.unitId, at.roleId))),
-    lines: new Set(reached.lines.map((at) => positionKey(at.unitId, at.roleId))),
+    elsewhere: keys(reached.elsewhere),
+    lines: keys(reached.lines),
+    overrides: keys(reached.overrides),
+    holders: new Set(reached.holders),
+    away: new Set(reached.away),
   }
 }
 
-/** How a role in a unit is reached: by a line, by nesting, or not at all. */
+/** How a role in a unit is reached, as the model says it for its holders: by a line (`override` for a unit's own), by nesting, or not at all. */
 export function reachVia(reach: ManagedReach | undefined, unitId: ElementId, roleId: RoleId): ManagedVia | undefined {
   if (!reach) return undefined
   const key = positionKey(unitId, roleId)
-  if (reach.lines?.has(key)) return 'line'
+  if (reach.lines?.has(key)) return reach.overrides?.has(key) ? 'override' : 'line'
   return reach.units.has(unitId) && !reach.elsewhere?.has(key) ? 'nesting' : undefined
 }
 
-/** Whether the holders of a role in a unit are among the people a person manages, the managing rule not asked. */
+/**
+ * How one holder is reached (ADR-0039, amended 17 October 2026): by their own
+ * solid line (`override`); not at all where their own line lands elsewhere;
+ * otherwise as their role in that unit is ({@link reachVia}). An assignment
+ * with no id is asked as its role in its unit.
+ */
+export function reachViaHolder(
+  reach: ManagedReach | undefined, assignment: Pick<Assignment, 'unitId' | 'roleId'> & { readonly id?: AssignmentId },
+): ManagedVia | undefined {
+  if (!reach) return undefined
+  if (assignment.id !== undefined) {
+    if (reach.holders?.has(assignment.id)) return 'override'
+    if (reach.away?.has(assignment.id)) return undefined
+  }
+  return reachVia(reach, assignment.unitId, assignment.roleId)
+}
+
+/** Whether the holders of a role in a unit are among the people a person manages, the managing rule not asked, as the model says it for that role there. */
 export function reachesPosition(reach: ManagedReach, unitId: ElementId, roleId: RoleId): boolean {
   return reachVia(reach, unitId, roleId) !== undefined
+}
+
+/** Whether one holder is among the people a person manages, the managing rule not asked: their own line read first. */
+export function reachesHolder(reach: ManagedReach, assignment: Pick<Assignment, 'unitId' | 'roleId'> & { readonly id?: AssignmentId }): boolean {
+  return reachViaHolder(reach, assignment) !== undefined
 }
 
 /** What a person reaches, with the roles that manage: what a screen asks of each unit and role it offers a change of. */
@@ -112,9 +151,9 @@ export function managesPeople(
   return reach && { ...reach, managing: managingRoleIds(organisation) }
 }
 
-/** Whether a person who manages may change an assignment in this unit and role (a screen's question, before it offers one). */
-export function mayChangeIn(manages: ManagesPeople | undefined, unitId: ElementId, roleId: RoleId): boolean {
-  return manages !== undefined && reachesAssignment(manages, { unitId, roleId }, manages.managing)
+/** Whether a person who manages may change an assignment in this unit and role (a screen's question, before it offers one) — that one holder's, where its id is said. */
+export function mayChangeIn(manages: ManagesPeople | undefined, unitId: ElementId, roleId: RoleId, assignmentId?: AssignmentId): boolean {
+  return manages !== undefined && reachesAssignment(manages, { unitId, roleId, ...(assignmentId !== undefined ? { id: assignmentId } : {}) }, manages.managing)
 }
 
 /** The roles marked as managing their unit, whatever their days: a role that manages is one to hand out with care on any day. */
@@ -123,15 +162,18 @@ export function managingRoleIds(organisation: Pick<Organisation, 'roles'>): Read
 }
 
 /**
- * Whether an assignment in this unit and role is in reach: a role reached by
- * a line, whatever it is; else a unit reached by nesting where the role does
- * not report elsewhere, and a managing role's only strictly below one held.
+ * Whether an assignment in this unit and role is in reach: one whose holder's
+ * own line reaches, or a role reached by a line, whatever it is; else a unit
+ * reached by nesting where the role does not report elsewhere, and a managing
+ * role's only strictly below one held. An assignment whose holder's own line
+ * lands elsewhere is not reached through its role. Without an id, the role in
+ * the unit is asked as the model says it.
  */
 export function reachesAssignment(
-  reach: ManagedReach, assignment: Pick<Assignment, 'unitId' | 'roleId'>, managing: ReadonlySet<RoleId>,
+  reach: ManagedReach, assignment: Pick<Assignment, 'unitId' | 'roleId'> & { readonly id?: AssignmentId }, managing: ReadonlySet<RoleId>,
 ): boolean {
-  const via = reachVia(reach, assignment.unitId, assignment.roleId)
-  if (via === 'line') return true
+  const via = reachViaHolder(reach, assignment)
+  if (via === 'line' || via === 'override') return true
   return via === 'nesting' && (!managing.has(assignment.roleId) || reach.below.has(assignment.unitId))
 }
 
@@ -151,7 +193,7 @@ export function holdsAllIn(
   const found = new Set<PersonId>()
   for (const assignment of organisation.assignments) {
     const who = canonical(personOf(assignment))
-    if (wanted.has(who) && runsOn(assignment, day) && reachesPosition(reach, assignment.unitId, assignment.roleId)) found.add(who)
+    if (wanted.has(who) && runsOn(assignment, day) && reachesHolder(reach, assignment)) found.add(who)
   }
   return wanted.size > 0 && found.size === wanted.size
 }

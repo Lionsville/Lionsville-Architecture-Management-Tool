@@ -9,15 +9,18 @@
  * how the work is done.
  */
 import { describe, expect, it } from 'vitest'
-import { managedReach, reachesAssignment, reachVia } from './managing'
+import { holdsAllIn, managedReach, reachesAssignment, reachesHolder, reachesPosition, reachVia, reachViaHolder } from './managing'
 import type { Role, UnitType } from './operatingModel'
 import {
-  loopMadeBy, refuseRoleLines, refuseSlotLine, refuseUnitLine, reportingFindings, reportingLoops, unitLinesWith, unitLinesWithout, withRoleLines,
-  withUnitLines,
+  loopMadeBy, personLinesWith, personLinesWithout, refusePersonLines, refuseRoleLines, refuseSlotLine, refuseUnitLine, reportingFindings, reportingLoops,
+  unitLinesWith, unitLinesWithout, withAssignmentLines, withRoleLines, withUnitLines,
 } from './reporting'
 import type { DesignElement } from './types'
-import { dottedLinesOf, managedBy, managersOf, reportingLinesOn, solidLineOf } from './units'
-import type { Assignment, Organisation } from './units'
+import {
+  dottedLinesOf, everyLineOn, isExceptionPlacement, linesOfHolder, managedBy, managersOf, managersOfHolder, personLinesOn, reportingLinesOn,
+  solidLineOf,
+} from './units'
+import type { Assignment, AssignmentReportingLine, Organisation } from './units'
 
 const company: UnitType = { id: 'ut-company', name: 'Company', top: true, within: [], slots: [{ role: 'ro-ceo', min: 1, max: 1 }] }
 const department: UnitType = {
@@ -143,7 +146,8 @@ describe('who manages, and why', () => {
 
   it('stops a chain at the first role it meets twice, so a loop still answers', () => {
     const loop = withUnitLines(organisation, 'tech', [{ role: 'ro-hot', kind: 'solid', to: { scope: '', unit: 'retail', role: 'ro-lead' } }])
-    expect(people(managersOf(loop, 'retail', TODAY, 'ro-lead'))).toEqual(['pe-hot:line', 'pe-lead:line'])
+    // The type's line brings the head of technology; the unit's own line back is an override.
+    expect(people(managersOf(loop, 'retail', TODAY, 'ro-lead'))).toEqual(['pe-hot:line', 'pe-lead:override'])
   })
 })
 
@@ -297,5 +301,124 @@ describe('a line said on the role, and one in the same unit (ADR-0039 §2, §3, 
   it('finds a role\'s line that lands nowhere, once per unit it is held in', () => {
     const found = reportingFindings(amended, TODAY).flatMap((one) => (one.kind === 'dangling' && one.line.roleId === 'ro-member' ? [one.line.unitId] : []))
     expect(found).toEqual(['retail', 'wholesale'])
+  })
+})
+
+describe('a person\'s own line and a role held outside the slots (ADR-0039, amended 17 October 2026)', () => {
+  const lead = assignments.find((one) => one.roleId === 'ro-lead')!
+  const toCeo: AssignmentReportingLine = { to: { scope: '', unit: 'co', role: 'ro-ceo' }, kind: 'solid' }
+  /** The retail technology lead reports to the chief executive, by an agreement of their own. */
+  const own = withAssignmentLines(organisation, lead.id, [toCeo])
+
+  it('is a line of the holder alone, an override, and replaces their role\'s solid line for them', () => {
+    expect(personLinesOn(own, TODAY)).toEqual([{
+      unitId: 'retail', roleId: 'ro-lead', kind: 'solid', source: 'person', override: true, assignmentId: lead.id, reportsTo: 'ro-ceo',
+      state: 'lands', to: { unitId: 'co', roleId: 'ro-ceo' },
+    }])
+    // The role in the unit keeps the model's line: a second lead there would report to the head of technology.
+    expect(reportingLinesOn(own, TODAY).find((one) => one.unitId === 'retail' && one.roleId === 'ro-lead')).toMatchObject({ source: 'type', override: false })
+    expect(linesOfHolder(own, lead, TODAY).map((one) => [one.kind, one.source])).toEqual([['solid', 'person']])
+    expect(everyLineOn(own, TODAY).filter((one) => one.override).map((one) => one.source)).toEqual(['person'])
+  })
+
+  it('keeps the model\'s dotted line beside a solid one of the holder\'s own, and replaces it with a dotted one', () => {
+    const arch = assignments.find((one) => one.roleId === 'ro-arch')!
+    const solid = withAssignmentLines(organisation, arch.id, [{ to: { scope: '', unit: 'retail', role: 'ro-head' }, kind: 'solid' }])
+    expect(linesOfHolder(solid, arch, TODAY).map((one) => [one.kind, one.source])).toEqual([['solid', 'person'], ['dotted', 'type']])
+    const dotted = withAssignmentLines(organisation, arch.id, [{ to: { scope: '', unit: 'co', role: 'ro-ceo' }, kind: 'dotted' }])
+    expect(linesOfHolder(dotted, arch, TODAY).map((one) => [one.kind, one.source, one.to?.roleId])).toEqual([['dotted', 'person', 'ro-ceo']])
+  })
+
+  it('runs on its days and the assignment\'s, and ends with the assignment', () => {
+    const later = withAssignmentLines(organisation, lead.id, [{ ...toCeo, from: '2027-01-01' }])
+    expect(personLinesOn(later, TODAY)).toEqual([])
+    expect(personLinesOn(later, '2027-01-01')).toHaveLength(1)
+    const ended: Organisation = { ...own, assignments: own.assignments.map((one) => (one.id === lead.id ? { ...one, until: '2026-12-31' } : one)) }
+    expect(personLinesOn(ended, '2027-01-01')).toEqual([])
+  })
+
+  it('says who manages that holder: the line\'s target by override, then in turn; the role there as the model says it', () => {
+    expect(people(managersOfHolder(own, lead, TODAY))).toEqual(['pe-ceo:override'])
+    expect(people(managersOf(own, 'retail', TODAY, 'ro-lead'))).toEqual(['pe-hot:line', 'pe-ceo:nesting'])
+    // A team lead reports to the retail lead by the type's line, and so — in turn — to whoever the lead reports to by their own.
+    const tl = assignments.find((one) => one.roleId === 'ro-tl')!
+    expect(people(managersOfHolder(own, tl, TODAY))).toEqual(['pe-lead:line', 'pe-ceo:override'])
+    // A line that lands nowhere says nothing, and the model's answer stands.
+    const nowhere = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'gone', role: 'ro-ceo' }, kind: 'solid' }])
+    expect(people(managersOfHolder(nowhere, lead, TODAY))).toEqual(['pe-hot:line', 'pe-ceo:nesting'])
+  })
+
+  it('says a unit\'s own line manages by override, not by the model\'s line', () => {
+    const unitLine = withUnitLines(organisation, 'retail', [{ role: 'ro-lead', kind: 'solid', to: { scope: '', unit: 'co', role: 'ro-ceo' } }])
+    expect(people(managersOf(unitLine, 'retail', TODAY, 'ro-lead'))).toEqual(['pe-ceo:override'])
+    expect(reportingLinesOn(unitLine, TODAY).find((one) => one.unitId === 'retail' && one.roleId === 'ro-lead')).toMatchObject({ source: 'unit', override: true })
+    expect(reachVia(managedReach(unitLine, 'pe-ceo', TODAY), 'retail', 'ro-lead')).toBe('override')
+  })
+
+  it('moves the managing right with the holder: the line\'s target reaches them, the model\'s manager no longer', () => {
+    const managing = new Set(roles.filter((role) => role.manages).map((role) => role.id))
+    const hot = managedReach(own, 'pe-hot', TODAY)!
+    const ceo = managedReach(own, 'pe-ceo', TODAY)!
+    expect(reachesAssignment(hot, lead, managing)).toBe(false)
+    expect(reachViaHolder(hot, lead)).toBeUndefined()
+    // The role in the unit is still the head of technology's for anybody else who comes to hold it.
+    expect(reachesPosition(hot, 'retail', 'ro-lead')).toBe(true)
+    expect(reachViaHolder(ceo, lead)).toBe('override')
+    expect(reachesAssignment(ceo, lead, managing)).toBe(true)
+    expect(reachesHolder(ceo, lead)).toBe(true)
+    expect(managedBy(own, 'pe-hot', TODAY).away).toEqual([lead.id])
+    expect(managedBy(own, 'pe-ceo', TODAY).holders).toEqual([lead.id])
+    expect(holdsAllIn(own, hot, ['pe-lead'], TODAY)).toBe(false)
+    // A line of the holder's own reaches a person with no managing role at all, and nothing of their own.
+    const toChief = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'tech', role: 'ro-chief' }, kind: 'solid' }])
+    expect(managedReach(toChief, 'pe-chief', TODAY)?.holders).toEqual(new Set([lead.id]))
+    const self = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'retail', role: 'ro-head' }, kind: 'solid' }])
+    expect(managedBy(self, 'pe-lead', TODAY).holders).toEqual([])
+  })
+
+  it('finds a holder\'s line that lands nowhere, on nobody, or round a loop', () => {
+    const nowhere = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'gone', role: 'ro-ceo' }, kind: 'solid' }])
+    expect(reportingFindings(nowhere, TODAY).map((one) => [one.kind, one.kind !== 'loop' && one.line.assignmentId])).toEqual([['dangling', lead.id]])
+    const vacant = withAssignmentLines(organisation, lead.id, [{ to: { scope: '', unit: 'wholesale', role: 'ro-lead' }, kind: 'dotted' }])
+    expect(reportingFindings(vacant, TODAY).map((one) => [one.kind, one.kind !== 'loop' && one.line.assignmentId])).toEqual([['vacant', lead.id]])
+    const hot = assignments.find((one) => one.roleId === 'ro-hot')!
+    const loop = withAssignmentLines(organisation, hot.id, [{ to: { scope: '', unit: 'retail', role: 'ro-lead' }, kind: 'solid', from: '2027-02-01' }])
+    expect(reportingLoops(loop, TODAY)).toEqual([])
+    expect(reportingFindings(loop, TODAY)).toEqual([{ kind: 'loop', day: '2027-02-01', chain: [{ unitId: 'tech', roleId: 'ro-hot' }, { unitId: 'retail', roleId: 'ro-lead' }] }])
+  })
+
+  it('refuses a holder\'s line to their own role in their own unit, and a solid one that closes a loop', () => {
+    expect(refusePersonLines(organisation, lead, [{ to: { scope: '', unit: 'retail', role: 'ro-lead' }, kind: 'dotted' }], TODAY)).toEqual({ refusal: 'reportingLine.self' })
+    const hot = assignments.find((one) => one.roleId === 'ro-hot')!
+    const back: AssignmentReportingLine = { to: { scope: '', unit: 'retail', role: 'ro-lead' }, kind: 'solid' }
+    expect(refusePersonLines(organisation, hot, [back], TODAY)).toMatchObject({ refusal: 'reportingLine.loop', day: TODAY })
+    expect(refusePersonLines(organisation, hot, [{ ...back, from: '2027-01-01' }], TODAY)).toMatchObject({ refusal: 'reportingLine.loop', day: '2027-01-01' })
+    expect(refusePersonLines(organisation, hot, [{ ...back, kind: 'dotted' }], TODAY)).toBeUndefined()
+    expect(refusePersonLines(organisation, lead, [toCeo], TODAY)).toBeUndefined()
+    // An assignment still to be added is asked as it will be.
+    expect(refusePersonLines(organisation, { id: 'as-new', unitId: 'tech', roleId: 'ro-hot' }, [back], TODAY)).toMatchObject({ refusal: 'reportingLine.loop' })
+  })
+
+  it('sets a holder\'s lines kind by kind, and takes them away', () => {
+    const dotted: AssignmentReportingLine = { to: { scope: '', unit: 'tech', role: 'ro-chief' }, kind: 'dotted' }
+    const other: AssignmentReportingLine = { ...toCeo, to: { scope: '', unit: 'tech', role: 'ro-hot' } }
+    expect(personLinesWith(personLinesWith([toCeo], dotted), other)).toEqual([other, dotted])
+    expect(personLinesWithout([toCeo, dotted], 'solid')).toEqual([dotted])
+    expect(personLinesWithout([toCeo, dotted])).toEqual([])
+  })
+
+  it('marks a role held outside the unit\'s slots as an exception, and gives it the role\'s own line there', () => {
+    const outside = held('checkout', 'ro-arch', 'pe-arch2')
+    const placed: Organisation = withRoleLines({ ...organisation, assignments: [...assignments, outside] }, 'ro-arch', [{ role: 'ro-chief', kind: 'dotted' }])
+    expect(isExceptionPlacement(placed, outside)).toBe(true)
+    expect(isExceptionPlacement(placed, lead)).toBe(false)
+    expect(reportingLinesOn(placed, TODAY).find((one) => one.unitId === 'checkout' && one.roleId === 'ro-arch')).toMatchObject({
+      source: 'role', override: false, state: 'lands', to: { unitId: 'tech', roleId: 'ro-chief' },
+    })
+    // Nothing is said for the role there until somebody holds it there.
+    const unplaced = withRoleLines(organisation, 'ro-arch', [{ role: 'ro-chief', kind: 'dotted' }])
+    expect(reportingLinesOn(unplaced, TODAY).find((one) => one.unitId === 'checkout' && one.roleId === 'ro-arch')).toBeUndefined()
+    // No finding: an exception, not a fault.
+    expect(reportingFindings(placed, TODAY)).toEqual(reportingFindings(unplaced, TODAY))
   })
 })

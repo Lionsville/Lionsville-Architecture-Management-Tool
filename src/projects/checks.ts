@@ -809,9 +809,11 @@ function reportingFinding(found: ReportingFinding, said: Said, day: string): Fin
   const { line } = found
   const target = line.to ? [line.to.unitId, line.to.roleId] : []
   const says = (to: string) => `${role(line.roleId)} → ${to}`
+  // A holder's own line is that holder's finding, not their role's: its assignment is a field, so a mark of one is not a mark of the other.
+  const holder = line.assignmentId !== undefined ? [line.assignmentId] : []
   switch (found.kind) {
     case 'dangling':
-      return { key: 'check.reportingDangling', ...about(line.unitId), detail: role(line.roleId), fields: [line.roleId] }
+      return { key: 'check.reportingDangling', ...about(line.unitId), detail: role(line.roleId), fields: [line.roleId, ...holder] }
     case 'ambiguous':
       return {
         key: 'check.reportingAmbiguous', ...about(line.unitId), detail: role(line.roleId), fields: [line.roleId, ...(line.candidates ?? [])],
@@ -819,7 +821,7 @@ function reportingFinding(found: ReportingFinding, said: Said, day: string): Fin
       }
     case 'vacant':
       return {
-        key: 'check.reportingVacant', ...about(line.unitId), fields: [line.roleId, ...target],
+        key: 'check.reportingVacant', ...about(line.unitId), fields: [line.roleId, ...target, ...holder],
         detail: line.to ? says(`${role(line.to.roleId)} (${unitName(line.to.unitId)})`) : role(line.roleId),
       }
   }

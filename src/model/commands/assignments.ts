@@ -24,7 +24,7 @@ import { patchWrites } from './writes'
 
 /** Every field of an assignment but its id. */
 const ASSIGNMENT_FIELDS: PatchKeys<'assignment.update'> = {
-  unitId: true, roleId: true, person: true, share: true, from: true, until: true, acting: true,
+  unitId: true, roleId: true, person: true, share: true, from: true, until: true, acting: true, reportsTo: true,
 }
 
 /** Whether an assignment's days run forwards: no last day before its first. */

@@ -41,7 +41,7 @@ import { isDay, phaseAt } from './lifecycle'
 import type { PersonId, PickedPerson } from './person'
 import { LINE_KINDS, linesSaid } from './operatingModel'
 import type { LineKind, ReportsTo, Role, RoleId, RoleSlot, UnitType, UnitTypeId } from './operatingModel'
-import type { DesignElement, ElementId, UnitReportingLine } from './types'
+import type { DesignElement, ElementId, UnitLineTarget, UnitReportingLine } from './types'
 import type { Command, CommandMeta } from './commands'
 import type { TransitionMove } from './transition'
 
@@ -70,6 +70,30 @@ export type Assignment = {
   until?: string
   /** Holding the role until somebody is appointed to it. */
   acting?: true
+  /**
+   * The holder's own reporting lines (ADR-0039, amended 17 October 2026): an
+   * exception to the model for this holder only. A solid one running on a day
+   * replaces whatever the role, the type, the unit or nesting say for the
+   * holders of this role in this unit; a dotted one replaces their dotted
+   * line. Each points at a role in a unit, whoever holds it, and ends with the
+   * assignment.
+   */
+  reportsTo?: AssignmentReportingLine[]
+}
+
+/**
+ * One line of a holder's own (ADR-0039, amended 17 October 2026): to the
+ * holders of `to.role` in `to.unit`, kept in the scope at `to.scope`, as a
+ * unit's own line is addressed — solid or dotted, on the days between `from`
+ * and `until`, and never past the assignment's.
+ */
+export type AssignmentReportingLine = {
+  to: UnitLineTarget
+  kind: LineKind
+  /** `yyyy-mm-dd`, the first day. */
+  from?: string
+  /** `yyyy-mm-dd`, the last day. */
+  until?: string
 }
 
 /** As much of an element as the arithmetic over units reads: `order` is its place among its siblings (`model/unitOrder.ts`). */
@@ -392,20 +416,39 @@ export type LineState = 'lands' | 'nesting' | 'dangling' | 'ambiguous'
 /** A role in a unit: where a line runs from, and where it lands. */
 export type LinePosition = { unitId: ElementId; roleId: RoleId }
 
-/** Where a line was said (ADR-0039 §2, §3, amended): on the role for every unit, on the unit type's slot, or on the unit itself. */
-export type LineSource = 'role' | 'type' | 'unit'
+/**
+ * Where a line was said (ADR-0039 §2, §3, amended): on the role for every
+ * unit, on the unit type's slot, on the unit itself — or, since the amendment
+ * of 17 October 2026, on one holder's assignment (`person`).
+ */
+export type LineSource = 'role' | 'type' | 'unit' | 'person'
 
 /**
- * One reporting line on a day, from the holders of `roleId` in `unitId`:
- * whose it is (`source`: the role's, said for every unit that holds it; the
- * `type`'s, said on the unit type's slot; or the `unit`'s own), its kind and
- * days as written, and where it lands that day.
+ * Whether a line said there is an exception to the model (ADR-0039, amended
+ * 17 October 2026): a unit's own line and a holder's own are overrides; the
+ * role's and the type's lines, and nesting, are the model's defaults.
+ */
+export function isOverride(source: LineSource): boolean {
+  return source === 'unit' || source === 'person'
+}
+
+/**
+ * One reporting line on a day, from the holders of `roleId` in `unitId` — or,
+ * with `assignmentId`, from that one holder: whose it is (`source`: the
+ * role's, said for every unit that holds it; the `type`'s, said on the unit
+ * type's slot; the `unit`'s own; or the `person`'s, said on the assignment),
+ * whether that makes it an `override`, its kind and days as written, and
+ * where it lands that day.
  */
 export type ReportingLineOn = {
   unitId: ElementId
   roleId: RoleId
   kind: LineKind
   source: LineSource
+  /** A unit's own line or a holder's own: an exception to the model's defaults. */
+  override: boolean
+  /** The holder whose own line it is, for a `person` line: it holds for them alone. */
+  assignmentId?: AssignmentId
   from?: string
   until?: string
   state: LineState
@@ -425,10 +468,30 @@ export function positionKey(unitId: ElementId, roleId: RoleId): string {
 }
 
 /** Whether anything in the organisation says a reporting line at all: where nothing does, nesting answers everywhere, as before. */
-export function hasReportingLines(organisation: Pick<Organisation, 'units' | 'unitTypes' | 'roles'>): boolean {
+export function hasReportingLines(
+  organisation: Pick<Organisation, 'units' | 'unitTypes' | 'roles'> & { readonly assignments?: readonly Pick<Assignment, 'reportsTo'>[] },
+): boolean {
   return organisation.roles.some((role) => linesSaid(role.reportsTo).length > 0)
     || organisation.unitTypes.some((type) => type.slots.some((slot) => linesSaid(slot.reportsTo).length > 0))
     || organisation.units.some((unit) => (unit.reportingLines?.length ?? 0) > 0)
+    || (organisation.assignments ?? []).some((one) => (one.reportsTo?.length ?? 0) > 0)
+}
+
+/**
+ * Whether an assignment is an **exception placement** (ADR-0039, amended 17
+ * October 2026): to a role the unit's slots — its type's and its own
+ * `extraSlots` — do not have. Allowed, and said wherever the holder is shown;
+ * never a finding. A unit the organisation does not hold, or whose type it
+ * does not hold, is not asked.
+ */
+export function isExceptionPlacement(
+  organisation: Pick<Organisation, 'units' | 'unitTypes'>, assignment: Pick<Assignment, 'unitId' | 'roleId'>,
+): boolean {
+  const unit = organisation.units.find((one) => one.id === assignment.unitId)
+  if (!unit || !isUnit(unit)) return false
+  const type = organisation.unitTypes.find((one) => one.id === unit.unitTypeId)
+  if (!type) return false
+  return !slotsOf(unit, type).some((slot) => slot.role === assignment.roleId)
 }
 
 /**
@@ -441,11 +504,51 @@ export function hasReportingLines(organisation: Pick<Organisation, 'units' | 'un
  * parents the day gives the units (the plans' moves included), on the unit
  * itself where it says `within`, else on the nearest unit above that has a
  * slot for the target role, else on the one unit in the organisation that
- * has. Only units there that day and roles running that day draw lines.
+ * has. Only units there that day and roles running that day draw lines. A
+ * role held in a unit outside its slots, by an exception placement, draws the
+ * role's own line there, after the slots' roles.
+ *
+ * These are the lines of the roles in units, as the model says them; a
+ * holder's own lines, which hold for that holder alone, are
+ * {@link personLinesOn}'s, and {@link linesOfHolder} says which hold for one.
  */
 export function reportingLinesOn(organisation: Organisation, day: string): ReportingLineOn[] {
   if (!hasReportingLines(organisation)) return []
   return linesOver(organisationOn(organisation, day), day)
+}
+
+/**
+ * Every holder's own line on `day` (ADR-0039, amended 17 October 2026), in
+ * the order the assignments are kept: of each assignment running that day in
+ * a unit there that day and a role running that day, the first of its lines
+ * of each kind that runs then. It lands on the unit it names where that unit
+ * is there, and dangles otherwise, as a unit's own line does.
+ */
+export function personLinesOn(organisation: Organisation, day: string): ReportingLineOn[] {
+  if (!organisation.assignments.some((one) => (one.reportsTo?.length ?? 0) > 0)) return []
+  return personLinesOver(organisationOn(organisation, day), day)
+}
+
+/** Every line on `day`: the roles' in units ({@link reportingLinesOn}), then the holders' own ({@link personLinesOn}). */
+export function everyLineOn(organisation: Organisation, day: string): ReportingLineOn[] {
+  if (!hasReportingLines(organisation)) return []
+  const on = organisationOn(organisation, day)
+  return [...linesOver(on, day), ...personLinesOver(on, day)]
+}
+
+/**
+ * The lines that hold for one holder on `day`, kind by kind: their own line
+ * of a kind where one runs, else the line their role in that unit has. What a
+ * screen draws for a person picked, and what their inspector says.
+ */
+export function linesOfHolder(organisation: Organisation, assignment: Pick<Assignment, 'id' | 'unitId' | 'roleId'>, day: string): ReportingLineOn[] {
+  const lines = everyLineOn(organisation, day)
+  const own = lines.filter((line) => line.assignmentId === assignment.id)
+  const position = lines.filter((line) => line.assignmentId === undefined && line.unitId === assignment.unitId && line.roleId === assignment.roleId)
+  return LINE_KINDS.flatMap((kind) => {
+    const line = own.find((one) => one.kind === kind) ?? position.find((one) => one.kind === kind)
+    return line ? [line] : []
+  })
 }
 
 /** {@link reportingLinesOn} over an organisation already laid on its day. */
@@ -461,6 +564,8 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
     slotsBy.set(unit.id, slots)
     for (const slot of slots) holding.set(slot.role, [...holding.get(slot.role) ?? [], unit.id])
   }
+  const heldIn = new Map<ElementId, RoleId[]>()
+  for (const one of on.assignments) if (runsOn(one, day)) heldIn.set(one.unitId, [...heldIn.get(one.unitId) ?? [], one.roleId])
   const thereIds = new Set(there.map((unit) => unit.id))
   const found: ReportingLineOn[] = []
   for (const unit of there) {
@@ -468,7 +573,7 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
     const own = (unit.reportingLines ?? []).filter((line) => runsOn(line, day))
     const typeSays = type && unitTypeOn(type, day) ? type.slots : []
     const slots = slotsBy.get(unit.id) ?? []
-    const roleIds = [...new Set([...slots.map((slot) => slot.role), ...own.map((line) => line.role)])]
+    const roleIds = [...new Set([...slots.map((slot) => slot.role), ...own.map((line) => line.role), ...heldIn.get(unit.id) ?? []])]
     for (const roleId of roleIds) {
       const role = roles.get(roleId)
       if (!role || !roleOn(role, day)) continue
@@ -476,6 +581,25 @@ function linesOver(on: Organisation, day: string): ReportingLineOn[] {
         const line = lineOfKind({ on, day, holding, there: thereIds }, unit, role, kind, own, typeSays)
         if (line) found.push(line)
       }
+    }
+  }
+  return found
+}
+
+/** {@link personLinesOn} over an organisation already laid on its day. */
+function personLinesOver(on: Organisation, day: string): ReportingLineOn[] {
+  const there = new Set(on.units.filter((unit) => isUnit(unit) && unitOn(unit, day)).map((unit) => unit.id))
+  const running = new Set(on.roles.filter((role) => roleOn(role, day)).map((role) => role.id))
+  const found: ReportingLineOn[] = []
+  for (const one of on.assignments) {
+    if (!one.reportsTo?.length || !there.has(one.unitId) || !running.has(one.roleId) || !runsOn(one, day)) continue
+    for (const kind of LINE_KINDS) {
+      const line = one.reportsTo.find((held) => held.kind === kind && runsOn(held, day))
+      if (!line) continue
+      found.push({
+        unitId: one.unitId, roleId: one.roleId, kind, source: 'person', override: true, assignmentId: one.id,
+        ...datedOf(line), reportsTo: line.to.role, ...targetLanding(line.to, there),
+      })
     }
   }
   return found
@@ -494,7 +618,12 @@ function lineOfKind(
 ): ReportingLineOn | undefined {
   const roleId = role.id
   const mine = own.find((line) => line.role === roleId && (line.to ? line.kind : 'solid') === kind)
-  if (mine) return { unitId: unit.id, roleId, kind, source: 'unit', ...datedOf(mine), ...(mine.to ? { reportsTo: mine.to.role } : {}), ...ownLanding(mine, at.there) }
+  if (mine) {
+    return {
+      unitId: unit.id, roleId, kind, source: 'unit', override: true, ...datedOf(mine),
+      ...(mine.to ? { reportsTo: mine.to.role, ...targetLanding(mine.to, at.there) } : { state: 'nesting' as const }),
+    }
+  }
   const slotSays = linesSaid(typeSays.find((slot) => slot.role === roleId)?.reportsTo).find((line) => line.kind === kind)
   const said = slotSays ?? linesSaid(role.reportsTo).find((line) => line.kind === kind)
   if (!said || !runsOn(said, at.day)) return undefined
@@ -502,10 +631,10 @@ function lineOfKind(
   if (said.role === undefined) {
     // By nesting here, said on the slot: drawn only where it takes a line of the role's away, as a unit's is.
     const takesAway = source === 'type' && linesSaid(role.reportsTo).some((line) => line.kind === kind && line.role !== undefined)
-    return takesAway ? { unitId: unit.id, roleId, kind, source, ...datedOf(said), state: 'nesting' } : undefined
+    return takesAway ? { unitId: unit.id, roleId, kind, source, override: false, ...datedOf(said), state: 'nesting' } : undefined
   }
   return {
-    unitId: unit.id, roleId, kind, source, ...datedOf(said), reportsTo: said.role, ...(said.within ? { within: true } : {}),
+    unitId: unit.id, roleId, kind, source, override: false, ...datedOf(said), reportsTo: said.role, ...(said.within ? { within: true } : {}),
     ...landing(at.on.units, unit.id, roleId, { ...said, role: said.role }, at.holding, at.there),
   }
 }
@@ -515,10 +644,9 @@ function datedOf(line: { from?: string; until?: string }): { from?: string; unti
   return { ...(line.from !== undefined ? { from: line.from } : {}), ...(line.until !== undefined ? { until: line.until } : {}) }
 }
 
-/** Where a unit's own line lands: by nesting where it names no target, on the unit it names where that is there. */
-function ownLanding(line: UnitReportingLine, there: ReadonlySet<ElementId>): Pick<ReportingLineOn, 'state' | 'to'> {
-  if (!line.to) return { state: 'nesting' }
-  return there.has(line.to.unit) ? { state: 'lands', to: { unitId: line.to.unit, roleId: line.to.role } } : { state: 'dangling' }
+/** Where a line addressed to a unit lands — a unit's own, or a holder's: on the unit it names where that is there, and nowhere otherwise. */
+function targetLanding(to: UnitLineTarget, there: ReadonlySet<ElementId>): Pick<ReportingLineOn, 'state' | 'to'> {
+  return there.has(to.unit) ? { state: 'lands', to: { unitId: to.unit, roleId: to.role } } : { state: 'dangling' }
 }
 
 /**
@@ -544,16 +672,32 @@ function landing(
   return anywhere.length === 0 ? { state: 'dangling' } : { state: 'ambiguous', candidates: anywhere }
 }
 
-/** The solid lines that land, by the role in the unit they run from. */
-function solidLines(lines: readonly ReportingLineOn[]): Map<string, ReportingLineOn & { to: LinePosition }> {
-  const solid = new Map<string, ReportingLineOn & { to: LinePosition }>()
+/** A line that lands, with where. */
+type Landed = ReportingLineOn & { to: LinePosition }
+
+/** The solid lines of the roles in units that land, by the role in the unit they run from. */
+function solidLines(lines: readonly ReportingLineOn[]): Map<string, Landed> {
+  const solid = new Map<string, Landed>()
   for (const line of lines) {
-    if (line.kind === 'solid' && line.state === 'lands' && line.to) solid.set(positionKey(line.unitId, line.roleId), { ...line, to: line.to })
+    if (line.assignmentId === undefined && line.kind === 'solid' && line.state === 'lands' && line.to) solid.set(positionKey(line.unitId, line.roleId), { ...line, to: line.to })
   }
   return solid
 }
 
-/** The solid line that decides who manages the holders of a role in a unit on `day`, where one does. */
+/**
+ * The holders' own solid lines that land on `day`, by assignment. One that
+ * lands nowhere says nothing about who manages its holder, and the model's
+ * answer for their role in that unit stands.
+ */
+function personalSolid(on: Organisation, day: string): Map<AssignmentId, Landed> {
+  const solid = new Map<AssignmentId, Landed>()
+  for (const line of personLinesOver(on, day)) {
+    if (line.kind === 'solid' && line.state === 'lands' && line.to && line.assignmentId !== undefined) solid.set(line.assignmentId, { ...line, to: line.to })
+  }
+  return solid
+}
+
+/** The solid line that decides who manages the holders of a role in a unit on `day`, where one does — the model's, not a holder's own. */
 export function solidLineOf(organisation: Organisation, unitId: ElementId, roleId: RoleId, day: string): ReportingLineOn | undefined {
   return reportingLinesOn(organisation, day)
     .find((line) => line.unitId === unitId && line.roleId === roleId && line.kind === 'solid' && line.state === 'lands')
@@ -568,8 +712,19 @@ export function dottedLinesOf(organisation: Organisation, unitId: ElementId, day
 
 // --- who manages ------------------------------------------------------------------------
 
-/** Why someone manages: they hold a managing role in the unit or above it, or a solid line lands on their role (ADR-0039 §4). */
-export type ManagedVia = 'nesting' | 'line'
+/**
+ * Why someone manages (ADR-0039 §4, amended 17 October 2026): they hold a
+ * managing role in the unit or above it (`nesting`); a solid line of the
+ * model's — the role's or the type's — lands on their role (`line`); or one
+ * that is an exception to the model does, a unit's own line or the holder's
+ * own (`override`).
+ */
+export type ManagedVia = 'nesting' | 'line' | 'override'
+
+/** How a line that lands makes its target's holders managers: by `override` for a unit's own or a holder's own, else by `line`. */
+export function viaOf(line: Pick<ReportingLineOn, 'override'>): ManagedVia {
+  return line.override ? 'override' : 'line'
+}
 
 /** One person who manages a unit on a day, and from where: the unit whose role they hold, the role, and why. */
 export type Manager = {
@@ -583,25 +738,44 @@ export type Manager = {
 
 /**
  * Who manages on `day` (ADR-0036 §12, ADR-0039 §4): the people of a unit, or
- * — `roleId` given — the holders of one role in it.
+ * — `roleId` given — the holders of one role in it, as the model says it for
+ * that role there, whatever one holder's own line says (that is
+ * {@link managersOfHolder}'s).
  *
  * A role whose solid line runs that day and lands is managed by the holders
- * of the target role there (`via: 'line'`), and then by whoever manages
- * *those* holders, by the same rule. Otherwise, by nesting: whoever holds a
- * role marked `manages` in the unit or in a unit above it, nearest unit first
- * and in the order the assignments are listed within a unit — each managing
- * role on the way with a solid line of its own followed where it lands. A
- * chain that comes back to a role in a unit it has met stops there, so a loop
- * that time made still answers. Each assignment once. Dotted lines are
- * {@link dottedLinesOf}'s, and never a manager.
+ * of the target role there (`via: 'line'`, or `'override'` for a unit's own
+ * line), and then by whoever manages *those* holders, by the same rule — each
+ * of them by their own line where they have one. Otherwise, by nesting:
+ * whoever holds a role marked `manages` in the unit or in a unit above it,
+ * nearest unit first and in the order the assignments are listed within a
+ * unit — each managing holder on the way with a solid line of their own, or
+ * of their role there, followed where it lands. A chain that comes back to a
+ * role in a unit it has met stops there, so a loop that time made still
+ * answers. Each assignment once. Dotted lines are {@link dottedLinesOf}'s,
+ * and never a manager.
  *
  * Core grants nothing from this; a build that knows who people are may.
  */
 export function managersOf(organisation: Organisation, unitId: ElementId, day: string, roleId?: RoleId): Manager[] {
-  const on = organisationOn(organisation, day)
+  return managersFrom(organisationOn(organisation, day), day, { unitId, roleId })
+}
+
+/**
+ * Who manages one holder on `day` (ADR-0039, amended 17 October 2026): where
+ * their own solid line runs that day and lands, the holders of its target
+ * (`via: 'override'`) and whoever manages those in turn; otherwise who
+ * manages their role in that unit, as {@link managersOf} says it.
+ */
+export function managersOfHolder(organisation: Organisation, assignment: Pick<Assignment, 'id' | 'unitId' | 'roleId'>, day: string): Manager[] {
+  return managersFrom(organisationOn(organisation, day), day, { unitId: assignment.unitId, roleId: assignment.roleId, assignmentId: assignment.id })
+}
+
+/** Who manages, from a role in a unit — or a unit's people, with no role — or one holder there, over an organisation laid on its day. */
+function managersFrom(on: Organisation, day: string, from: { unitId: ElementId; roleId?: RoleId; assignmentId?: AssignmentId }): Manager[] {
   const units = byId(on.units)
   const managing = managingRoles(on.roles, day)
   const solid = solidLines(linesOver(on, day))
+  const personal = personalSolid(on, day)
   const found: Manager[] = []
   const listed = new Set<string>()
   const met = new Set<string>()
@@ -610,29 +784,48 @@ export function managersOf(organisation: Organisation, unitId: ElementId, day: s
     listed.add(assignment.id)
     found.push({ person: personOf(assignment), unitId: assignment.unitId, roleId: assignment.roleId, assignment, via })
   }
-  const follow = (at: ElementId, role: RoleId | undefined): void => {
-    if (role !== undefined) {
-      const key = positionKey(at, role)
-      if (met.has(key)) return
-      met.add(key)
-      const line = solid.get(key)
-      if (line) {
-        for (const one of holdersOn(on.assignments, line.to.unitId, line.to.roleId, day)) push(one, 'line')
-        follow(line.to.unitId, line.to.roleId)
-        return
-      }
-    }
+  const followLine = (line: Landed): void => {
+    for (const one of holdersOn(on.assignments, line.to.unitId, line.to.roleId, day)) push(one, viaOf(line))
+    followPosition(line.to.unitId, line.to.roleId)
+  }
+  // A holder with a solid line of their own is managed along it, and nothing else of theirs is asked.
+  const followHolder = (id: AssignmentId): boolean => {
+    const line = personal.get(id)
+    if (!line) return false
+    const key = `\u0001${id}`
+    if (!met.has(key)) { met.add(key); followLine(line) }
+    return true
+  }
+  const followDefault = (at: ElementId, role: RoleId | undefined): void => {
+    const line = role === undefined ? undefined : solid.get(positionKey(at, role))
+    if (line) followLine(line)
+    else nesting(at)
+  }
+  // The holders a line lands on are managed each as they are: by their own line, else by their role's there.
+  const followPosition = (at: ElementId, role: RoleId): void => {
+    const key = positionKey(at, role)
+    if (met.has(key)) return
+    met.add(key)
+    const holders = holdersOn(on.assignments, at, role, day)
+    const own = holders.filter((one) => followHolder(one.id))
+    if (holders.length > 0 && own.length === holders.length) return
+    followDefault(at, role)
+  }
+  const nesting = (at: ElementId): void => {
     for (const id of [at, ...unitsAbove(on.units, at)]) {
       const unit = units.get(id)
       if (!unit || !unitOn(unit, day)) continue
       const here = on.assignments.filter((one) => one.unitId === id && managing.has(one.roleId) && runsOn(one, day))
       for (const one of here) push(one, 'nesting')
+      for (const one of here) followHolder(one.id)
       for (const managingRole of new Set(here.map((one) => one.roleId))) {
-        if (solid.has(positionKey(id, managingRole))) follow(id, managingRole)
+        if (solid.has(positionKey(id, managingRole))) followPosition(id, managingRole)
       }
     }
   }
-  follow(unitId, roleId)
+  if (from.assignmentId !== undefined && followHolder(from.assignmentId)) return found
+  if (from.roleId !== undefined) met.add(positionKey(from.unitId, from.roleId))
+  followDefault(from.unitId, from.roleId)
   return found
 }
 
@@ -642,8 +835,8 @@ function managingRoles(roles: readonly Role[], day: string): Set<RoleId> {
 }
 
 /**
- * What one person manages on a day (ADR-0036 §12, ADR-0039 §4), by unit and
- * by role in a unit:
+ * What one person manages on a day (ADR-0036 §12, ADR-0039 §4), by unit, by
+ * role in a unit, and by holder:
  *
  * - `held`: the units in which they hold a managing role;
  * - `units`: those and every unit below each — and, where a solid line lands
@@ -654,7 +847,12 @@ function managingRoles(roles: readonly Role[], day: string): Set<RoleId> {
  * - `elsewhere`: the roles in those units whose holders report elsewhere by a
  *   solid line, which nesting no longer reaches;
  * - `lines`: the roles whose solid line lands on a role they hold or reach,
- *   and in turn the roles whose line lands on those — never one they hold.
+ *   and in turn the roles whose line lands on those — never one they hold;
+ *   `overrides` the ones among them a unit's own line brings;
+ * - `holders`: the assignments whose holder's own solid line lands on a role
+ *   they hold or reach, in turn as `lines` are — never one of their own;
+ * - `away`: the assignments whose holder's own solid line lands somewhere
+ *   they do not reach, which their role in that unit no longer brings.
  *
  * `canonical` maps an id to the entry that answers for it, so an assignment
  * kept under an id merged into this person's still counts.
@@ -665,6 +863,9 @@ export type ManagedPositions = {
   below: ElementId[]
   elsewhere: LinePosition[]
   lines: LinePosition[]
+  overrides: LinePosition[]
+  holders: AssignmentId[]
+  away: AssignmentId[]
 }
 
 export function managedBy(
@@ -674,9 +875,10 @@ export function managedBy(
   const units = byId(on.units)
   const managing = managingRoles(on.roles, day)
   const who = canonical(person)
+  const mine = new Set(on.assignments.filter((one) => canonical(personOf(one)) === who).map((one) => one.id))
   const theirs = on.assignments.filter((one) => {
     const unit = units.get(one.unitId)
-    return canonical(personOf(one)) === who && runsOn(one, day) && unit !== undefined && unitOn(unit, day)
+    return mine.has(one.id) && runsOn(one, day) && unit !== undefined && unitOn(unit, day)
   })
   const own = new Set(theirs.map((one) => positionKey(one.unitId, one.roleId)))
   const held: ElementId[] = []
@@ -693,11 +895,25 @@ export function managedBy(
   }
   for (const id of held) root(id, false)
   const lines = [...solidLines(linesOver(on, day)).values()]
+  const personal = personalSolid(on, day)
+  const holdersAt = new Map<string, AssignmentId[]>()
+  for (const one of on.assignments) {
+    if (!runsOn(one, day)) continue
+    const key = positionKey(one.unitId, one.roleId)
+    holdersAt.set(key, [...holdersAt.get(key) ?? [], one.id])
+  }
   const reportElsewhere = new Set(lines.map((line) => positionKey(line.unitId, line.roleId)))
-  const byLine = new Map<string, LinePosition>()
+  const byLine = new Map<string, Landed>()
+  const holders = new Set<AssignmentId>()
+  // A role in a unit whose every holder reports along a line of their own is no longer reached through it.
+  const allAway = (key: string) => {
+    const at = holdersAt.get(key) ?? []
+    return at.length > 0 && at.every((id) => personal.has(id))
+  }
   const reaches = (at: LinePosition) => {
     const key = positionKey(at.unitId, at.roleId)
-    return own.has(key) || byLine.has(key) || (inReach.has(at.unitId) && !reportElsewhere.has(key))
+    if (own.has(key) || (holdersAt.get(key) ?? []).some((id) => holders.has(id))) return true
+    return !allAway(key) && (byLine.has(key) || (inReach.has(at.unitId) && !reportElsewhere.has(key)))
   }
   // Until nothing more is reached: a role reached by a line may be one whose holders manage, or are reported to, in turn.
   for (let grew = true; grew;) {
@@ -705,18 +921,28 @@ export function managedBy(
     for (const line of lines) {
       const key = positionKey(line.unitId, line.roleId)
       if (byLine.has(key) || !reaches(line.to)) continue
-      byLine.set(key, { unitId: line.unitId, roleId: line.roleId })
+      byLine.set(key, line)
+      grew = true
+      if (managing.has(line.roleId)) root(line.unitId, true)
+    }
+    for (const [id, line] of personal) {
+      if (holders.has(id) || mine.has(id) || !reaches(line.to)) continue
+      holders.add(id)
       grew = true
       if (managing.has(line.roleId)) root(line.unitId, true)
     }
   }
+  const reachedLines = [...byLine].filter(([key]) => !own.has(key)).map(([, line]) => line)
   return {
     held,
     units: reached,
     below: [...below].filter((id) => inReach.has(id)),
     elsewhere: lines.filter((line) => inReach.has(line.unitId) && !byLine.has(positionKey(line.unitId, line.roleId)))
       .map((line) => ({ unitId: line.unitId, roleId: line.roleId })),
-    lines: [...byLine].filter(([key]) => !own.has(key)).map(([, at]) => at),
+    lines: reachedLines.map((line) => ({ unitId: line.unitId, roleId: line.roleId })),
+    overrides: reachedLines.filter((line) => line.override).map((line) => ({ unitId: line.unitId, roleId: line.roleId })),
+    holders: [...holders],
+    away: [...personal.keys()].filter((id) => !holders.has(id) && !mine.has(id)),
   }
 }
 

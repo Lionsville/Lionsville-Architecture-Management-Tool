@@ -456,7 +456,7 @@ describe('reporting lines at the agent (ADR-0039 §8)', () => {
     await ask('reportingLine.set', { unitId: 'webshop', roleId: 'ro-dev', to: { unitId: 'webshop', roleId: 'ro-po' } }, open)
     const listed = parsed(await ask('assignments.list', { unitId: 'webshop', roleId: 'ro-dev' }, open, shell()))
     expect((listed.assignments as Record<string, unknown>[])[0]).toMatchObject({
-      managedBy: [{ personId: 'pe-femke', via: 'line' }],
+      managedBy: [{ personId: 'pe-femke', via: 'override' }],
       dotted: [{ unitId: 'parcel', unit: 'Parcel', roleId: 'ro-dev', role: 'Developer' }],
     })
     const lines = parsed(await ask('reportingLines.list', {}, open, shell()))
