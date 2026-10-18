@@ -117,3 +117,4 @@ now, with their words unchanged.
 | [0037](0037-comments-on-any-record.md) | Comments on any record, through one interface | 2026-10-16 | — |
 | [0038](0038-an-observation-moves-and-a-bright-spot.md) | An observation moves to another scope, and a bright spot is analysed as a problem is | 2026-10-16 | — |
 | [0039](0039-reporting-lines-for-roles-in-units.md) | Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit | 2026-10-16 | — |
+| [0040](0040-an-agent-keeps-the-tree-and-maps-the-sheet.md) | The agent keeps the tree of scopes, and the sheet's functions are mapped to domains | 2026-10-18 | — |
