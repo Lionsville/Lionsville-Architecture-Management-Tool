@@ -304,13 +304,14 @@ describe('diagrams.list', () => {
 })
 
 describe('a function taken up from a scope above (ADR-0040 §5)', () => {
-  /** The organisation above defines Returns; a sibling defines Yard; this landscape defines Fulfilment and hands it to a team below. */
+  /** The organisation above defines Returns and Refunds under it; Retail beside defines Billing; this landscape defines Fulfilment and hands it to Shops below. */
   const ENTRIES: Record<string, TreeEntry> = {
     returns: { id: 'returns', kind: 'function', name: 'Returns', master: 'acme', declarations: [], drawnIn: [], stale: [] },
-    yard: { id: 'yard', kind: 'function', name: 'Yard', master: 'acme/depot', declarations: [], drawnIn: [], stale: [] },
+    refunds: { id: 'refunds', kind: 'function', name: 'Refunds', master: 'acme', parentId: 'returns', declarations: [], drawnIn: [], stale: [] },
+    'retail-billing': { id: 'retail-billing', kind: 'function', name: 'Billing', master: 'acme/retail', declarations: [], drawnIn: [], stale: [] },
     fulfilment: {
       id: 'fulfilment', kind: 'function', name: 'Fulfilment', master: 'acme/landscape', declarations: [],
-      drawnIn: ['acme/landscape/pickers', 'acme/depot'], stale: [],
+      drawnIn: ['acme/landscape/shops', 'acme/retail'], stale: [],
     },
   }
   const tree: TreeView = {
@@ -321,7 +322,23 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
     const entry = ENTRIES[id]
     return entry && { id, kind: entry.kind, name: entry.name, ref: entry.master, lifecycle: 'live' as const, isManaged: false, aspects: {} }
   }
-  const claiming = () => session({ tree, standInFor })
+  const claiming = (over: Partial<SessionView> = {}) => session({ tree, standInFor, ...over })
+  /** The same landscape with a second sheet: a root then needs to be told which. */
+  const twoSheets = (): Partial<SessionView> => {
+    const second = { ...SHEET, id: 'sh-2', name: 'Second sheet', areas: [] }
+    const model = fromArrays({ ...host(), diagrams: [...host().diagrams, second] })
+    let held = model
+    return {
+      indexed: () => held,
+      current: () => toArrays(held),
+      dispatch: (command) => {
+        const result = apply(held, command)
+        if (!result.ok) return undefined
+        held = result.model
+        return toArrays(held)
+      },
+    }
+  }
 
   it('lands as one step of the agent’s, a stand-in drawn as an area of the sheet', async () => {
     const at = claiming()
@@ -336,21 +353,39 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
     expect(at.history()).toHaveLength(1)
   })
 
+  it('files what it took up before under an area taken up after it', async () => {
+    const at = claiming()
+    await handle({ id: '1', tool: 'function.claim', args: { id: 'refunds' } }, at)
+    const out = parsed(await handle({ id: '2', tool: 'function.claim', args: { id: 'returns' } }, at))
+    expect(out.filedUnder).toEqual(['refunds'])
+    expect(at.current().elements.find((one) => one.id === 'refunds')?.parentId).toBe('returns')
+    expect(at.current().diagrams.find((one) => one.id === 'sh-1')?.areas).toEqual(['fulfilment', 'billing', 'returns'])
+  })
+
+  it('asks which sheet only for a root, where there are several', async () => {
+    const at = claiming(twoSheets())
+    expect(await handle({ id: '1', tool: 'function.claim', args: { id: 'returns' } }, at)).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    expect(await handle({ id: '2', tool: 'function.claim', args: { id: 'nobody' } }, at)).toMatchObject({ ok: false, refusal: 'agent.unknownId' })
+    expect(parsed(await handle({ id: '3', tool: 'function.claim', args: { id: 'returns', diagramId: 'sh-2' } }, at))).toMatchObject({ drawnOn: 'sh-2' })
+    expect(parsed(await handle({ id: '4', tool: 'function.claim', args: { id: 'returns' } }, at))).toMatchObject({ already: true })
+    expect(parsed(await handle({ id: '5', tool: 'function.claim', args: { id: 'refunds' } }, at))).toMatchObject({ parentId: 'returns' })
+  })
+
   it('refuses one defined here, one defined beside, and an id nobody defines', async () => {
     const at = claiming()
     expect(await handle({ id: '1', tool: 'function.claim', args: { id: 'fulfilment' } }, at)).toMatchObject({ ok: false, refusal: 'claim.definedHere' })
-    expect(await handle({ id: '2', tool: 'function.claim', args: { id: 'yard' } }, at))
-      .toMatchObject({ ok: false, refusal: 'claim.notAbove', detail: 'yard is defined in "acme/depot"' })
+    expect(await handle({ id: '2', tool: 'function.claim', args: { id: 'retail-billing' } }, at))
+      .toMatchObject({ ok: false, refusal: 'claim.notAbove', detail: 'retail-billing is defined in "acme/retail"' })
     expect(await handle({ id: '3', tool: 'function.claim', args: { id: 'nobody' } }, at)).toMatchObject({ ok: false, refusal: 'agent.unknownId' })
     expect(await handle({ id: '4', tool: 'function.claim', args: { id: 'returns', diagramId: 'mp-1' } }, at)).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 
   it('is said by element.describe: a definition’s domains, and the scopes below that took it up', async () => {
     const at = claiming()
-    await handle({ id: '1', tool: 'element.update', args: { id: 'fulfilment', scopes: ['acme/landscape/pickers'] } }, at)
+    await handle({ id: '1', tool: 'element.update', args: { id: 'fulfilment', scopes: ['acme/landscape/shops'] } }, at)
     const described = parsed(await handle({ id: '2', tool: 'element.describe', args: { id: 'fulfilment' } }, at))
-    expect(described.domains).toEqual(['acme/landscape/pickers'])
-    expect(described.claimedBy).toEqual(['acme/landscape/pickers'])
+    expect(described.domains).toEqual(['acme/landscape/shops'])
+    expect(described.claimedBy).toEqual(['acme/landscape/shops'])
     await handle({ id: '3', tool: 'function.claim', args: { id: 'returns' } }, at)
     const standIn = parsed(await handle({ id: '4', tool: 'element.describe', args: { id: 'returns' } }, at))
     expect(standIn.domains).toBeUndefined()

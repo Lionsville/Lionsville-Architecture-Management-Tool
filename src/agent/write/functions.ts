@@ -13,12 +13,17 @@
  * turned into the agent's.
  */
 import { claimCommand } from '../../business/claim'
+import type { ClaimRefusal } from '../../business/claim'
 import type { DesignDiagram } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, WriteView } from './shared'
 
-/** The sheet the claim is drawn on: the one named, the only one, none — or a question where there are several. */
+/**
+ * The sheet a root lands on: the one named, the only one, none — or a
+ * question where there are several. Asked only for a claim that lands as a
+ * root, because one filed under a parent here touches no sheet's list.
+ */
 function sheetOf(args: Args, view: WriteView): { sheet?: DesignDiagram } | AgentAnswer {
   const sheets = view.current().diagrams.filter((diagram) => diagram.kind === 'sheet')
   if (typeof args.diagramId === 'string') {
@@ -35,8 +40,6 @@ function sheetOf(args: Args, view: WriteView): { sheet?: DesignDiagram } | Agent
 
 export const claimFunction: Handler = (args, view) => {
   const id = args.id as string
-  const on = sheetOf(args, view)
-  if ('ok' in on) return on
   const entry = view.tree?.lookup(id)
   const standIn = view.standInFor?.(id)
   if (!entry || !standIn) {
@@ -44,24 +47,36 @@ export const claimFunction: Handler = (args, view) => {
     if (view.model.elements[id]) return claimed(view, id, entry?.master)
     return refused('agent.unknownId', `function ${id}`)
   }
-  const plan = claimCommand({
-    entry, scope: view.scopePath, model: view.current(), standIn, origin: 'agent',
-    ...(on.sheet ? { sheet: on.sheet } : {}),
-  })
-  if ('already' in plan) return json({ id, name: entry.name, claimedFrom: entry.master, already: true })
-  if ('refused' in plan) {
-    if (plan.refused === 'claim.unknown') return refused('agent.unknownId', `function ${id}`)
-    if (plan.refused === 'claim.notAFunction') return refused('agent.badArguments', `${plan.detail}: only an area, a grouping or a capability is taken up`)
-    return refused(plan.refused, plan.detail)
+  const at = {
+    entry, scope: view.scopePath, model: view.current(), standIn, origin: 'agent' as const,
+    parentOf: (held: string) => view.tree?.lookup(held)?.parentId,
   }
+  // Planned without a sheet first: what is held already, refused, or filed
+  // under a parent here is answered without asking which sheet.
+  const unsheeted = claimCommand(at)
+  if ('already' in unsheeted) return json({ id, name: entry.name, claimedFrom: entry.master, already: true })
+  if ('refused' in unsheeted) return refusal(unsheeted.refused, unsheeted.detail, id)
+  const on = unsheeted.parentId === undefined ? sheetOf(args, view) : {}
+  if ('ok' in on) return on
+  const plan = on.sheet ? claimCommand({ ...at, sheet: on.sheet }) : unsheeted
+  // The same plan with a sheet named: it cannot answer otherwise, and is said as stale if it ever does.
+  if (!('command' in plan)) return refused('agent.stale', id)
   return {
     command: plan.command,
     answer: json({
       id, name: entry.name, claimedFrom: entry.master,
       ...(plan.parentId !== undefined ? { parentId: plan.parentId } : {}),
       ...(plan.drawnOn !== undefined ? { drawnOn: plan.drawnOn } : {}),
+      ...(plan.adopted !== undefined ? { filedUnder: plan.adopted } : {}),
     }),
   }
+}
+
+/** The claim's own keys as the agent's: an unknown id and a non-function in the vocabulary every tool uses. */
+function refusal(key: ClaimRefusal, detail: string | undefined, id: string): AgentAnswer {
+  if (key === 'claim.unknown') return refused('agent.unknownId', `function ${id}`)
+  if (key === 'claim.notAFunction') return refused('agent.badArguments', `${detail}: only an area, a grouping or a capability is taken up`)
+  return refused(key, detail)
 }
 
 /** A record this scope holds already: a definition here is refused, a stand-in is the claim. */
