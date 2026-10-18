@@ -8,6 +8,11 @@
   merging a person in the register of people are a person's alone, and no
   tool does them
 
+*Extended by ADR-0040, 18 October 2026 (Q1): the tree's four gestures are
+tools — a scope made, described, moved and removed — and removing a scope
+that holds work is refused unless the call carries the person's own words,
+one scope per call.*
+
 **Built, 8 September 2026**, in the seven commits this record lists at the
 end, from one piece of evidence: the report an agent wrote after trying to
 bring a real landscape in line with a business-case deck through the tools of

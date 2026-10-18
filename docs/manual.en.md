@@ -2824,6 +2824,19 @@ remove or merge anyone, or change the policy: those are yours, on the People
 page. The register is no step, so what an agent does there is not in
 Activity and is not undone with ⌘Z.
 
+An agent can also keep the **tree of scopes**: make a scope under another — a
+domain, or a landscape scope with its first board, served by a unit from the
+start — rename and describe one, give it a type, file it somewhere else, and
+remove one. It removes one scope at a time, and never one with scopes under
+it. A scope that holds work goes only after the agent has told you what is in
+it and you have said, in your own words, that it is to go with all of it: your
+words go with the removal, and a notice on screen says what went. There is no
+⌘Z for that. Each change is that scope's own step, in its history, as a change
+made from a home is — not one the workspace's ⌘Z takes back. The agent leaves
+the scope open in the workspace where it is in the tree: to rename, move or
+remove that one, or to move or remove a scope above it, it goes to that
+scope's home first, as you would.
+
 ## Preferences
 
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the

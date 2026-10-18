@@ -1,6 +1,9 @@
 # ADR-0040 — The agent keeps the tree of scopes, and the sheet's functions are mapped to domains
 
-* Status: accepted 18 October 2026; not yet built
+* Status: accepted 18 October 2026; as built, 18 October 2026, the tree's
+  tools (§1–§3), the paths checked (§4, the agent's half) and the links made
+  findable (§7) — *As built, 18 October 2026: the tree's tools*, below; the
+  sheet's editor, the claim and the band (§4–§6) not yet built
 * Date: 2026-10-18
 * Deciders: Wouter Simons
 * Extends: ADR-0011 Q1 (the tree's four gestures are tools; a removal that
@@ -402,3 +405,63 @@ the stand-in it is, draws it, and refreshes it.
 * **A move and rights by address**: whether a host that grants rights by
   address takes them off the addresses a moved scope left, as a removal
   does, is the host's to decide and is not changed here.
+
+## As built, 18 October 2026: the tree's tools
+
+**The seam** is `agent/scopeTree.ts`: `ScopesView` on `ShellView.scopes`,
+beside `people`, and `answerTree`, which the handler calls for the four with
+or without a scope open (`handle.ts`'s `aboutTheApp`; a tree tool drives with
+nothing open, as the register's do). The shapes are as this record's build
+plan drew them. What every host gets for nothing is checked there: the
+arguments, a `parent` or a `path` that is not there — asked of `read`, which
+is fresh, rather than of the tree's listing, which a host may read again a
+moment after its own write — the organisation neither moved nor removed, a
+kind and a unit type said together, a unit type or a unit the organisation
+does not have, a parent under the scope, a move to where it is filed already,
+the subtree rule and the emptiness rule. `withBoard` defaults to false: the
+agent names a landscape when it wants one, and a scope it makes without is a
+domain. `personSaid` is at least three words, trimmed, and only ever with
+`removeContents`. `ON_THE_TREE` in `tools.ts` takes `scope` and `ifRevision`
+off the four; `write/handlers.ts` lists them as answered by the session, so
+no `batch` holds one.
+
+**The operations** are `projects/scopeTree.ts` — `createScopeAt` (the
+dialog's address; `ancestors: 'make'` for the screen, which makes missing
+scopes above as domains, `'required'` for the agent), `serveScopeBy`,
+`writeSettings` and `settingsCommands` (the dialog's whole form),
+`describeScopeAt` (a patch of only the fields that differ), `moveScopeUnder`
+(the dialog's destination; `strict` for the screen, which still fails a save
+whose carry was refused, the agent's otherwise, with `notCarried`) and
+`removeScopeAt` — and `projects/scopeHolds.ts` for what a scope holds and
+what empty is. `scopeAccess.moveScope` takes a `Carrying` to be told each
+carry rather than throw one, and `typeFollowingUnit` moved to
+`projects/scopeType.ts`. **The organisation screen's create, settings save
+and delete go through them** (`useOrganisation.ts`), its tests unchanged.
+
+**The desktop** fills the seam in `app/agentScopes.ts` (`useAgentScopes`,
+wired in `App.tsx`): `scope.isOpen` for describing the open scope and for
+moving or removing it or a scope above it; `agent.readOnly` before anything is
+built where the person may not write the scope, the parent or, for a move,
+either end; the repository's `shell.scopeReadOnly`, `shell.scopeMoved` and
+`shell.scopeGone` as `agent.readOnly`, `agent.stale` and
+`agent.unknownScope`, and a scope nobody can read in the way as
+`shell.scopeTaken`. `hiddenBelow` counts the addresses under the scope the
+tree could not read. After a write the tree and the index are read again,
+and the answer waits — at most three seconds — until the listing the next
+call reads says what landed. A removal at the person's word is a warning on
+screen (`agent.scopeRemoved`), in three languages.
+
+**Paths checked** (§4, the agent's half): `write/elements.ts` refuses a
+`scopes` path the tree does not hold (`agent.unknownScope`, `scopes[i]`) and a
+function's domain not below the scope defining it (`agent.badArguments`), for
+`element.add`, `element.update` and inside `batch`; `""` is dropped for a
+function as for a unit; an empty or absent listing takes the paths as given.
+**Findable** (§7): `TREE_TOOLS_PARAGRAPH` in `agent/method.ts`, appended to
+the desktop's instructions after `STRUCTURE_DEFAULTS`; `scopes.list`,
+`relation.add` and a function's `scopes` say which link each writes.
+
+Tests: `agent/scopeTree.test.ts`, `projects/scopeTree.test.ts`,
+`projects/scopeHolds.test.ts`, `app/agentScopes.test.ts`,
+`app/App.scopeTree.test.tsx`, and the path checks in
+`agent/assignments.test.ts`.
+

@@ -3263,6 +3263,22 @@ zusammenführen und die Richtlinie nicht ändern: Das tun Sie, auf der Seite
 Personen. Das Register ist kein Schritt, was ein Agent dort tut, steht also
 nicht in der Aktivität und wird nicht mit ⌘Z rückgängig gemacht.
 
+Ein Agent kann auch den **Baum der Scopes** pflegen: einen Scope unter einem
+anderen anlegen — eine Domäne oder einen Landschafts-Scope mit seinem ersten
+Board, von Anfang an von einer Einheit bedient —, einen umbenennen und
+beschreiben, ihm einen Typ geben, ihn woanders einordnen und einen entfernen.
+Er entfernt einen Scope nach dem anderen und nie einen mit Scopes darunter.
+Ein Scope, in dem Arbeit steckt, geht erst, nachdem der Agent Ihnen gesagt hat,
+was darin ist, und Sie mit eigenen Worten gesagt haben, dass er mit allem
+darin gehen soll: Ihre Worte gehen mit der Entfernung, und ein Hinweis auf
+dem Bildschirm sagt, was gegangen ist. Dafür gibt es kein ⌘Z. Jede Änderung
+ist ein eigener Schritt dieses Scopes, in seiner Historie, wie eine Änderung
+von einer Startseite aus — keiner, den ⌘Z im Arbeitsbereich zurücknimmt. Der
+Agent lässt den im Arbeitsbereich geöffneten Scope an seinem Platz im Baum:
+Um diesen umzubenennen, zu verschieben oder zu entfernen, oder einen Scope
+darüber zu verschieben oder zu entfernen, geht er zuerst auf die Startseite
+dieses Scopes, wie Sie es täten.
+
 ## Voreinstellungen
 
 Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,

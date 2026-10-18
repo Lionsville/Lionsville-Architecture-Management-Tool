@@ -8,6 +8,10 @@
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
+*Extended by ADR-0040, 18 October 2026: the tree's tools drive with nothing
+open, as the register's do; with a scope open, the desktop refuses changing
+that scope's place in the tree (`scope.isOpen`).*
+
 ## Context and Problem Statement
 
 ADR-0007 made an agent a peer of the menu: it reads the landscape on screen,

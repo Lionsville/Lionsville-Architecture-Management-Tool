@@ -75,3 +75,19 @@ export const STRUCTURE_DEFAULTS =
   + 'unit\'s slots — and you write one only when the person you act for explicitly asks for that exception, never because it '
   + 'is quicker; say in your answer that it is one. Where the model says something that is not true for many people, the '
   + 'model is what to change (role.update, unitType.update), and that is the person\'s decision: ask.'
+
+/**
+ * How the tree of scopes is kept, said once for an agent (ADR-0040 §1, §2).
+ * The four tools say what each call does; this says the one thing a model
+ * gets wrong when it is only told the calls: that removing a scope with work
+ * in it is the person's decision and not a refusal to argue past. Handed
+ * over on connect by every host, with no word about a screen in it.
+ */
+export const TREE_TOOLS_PARAGRAPH =
+  'The tree of scopes is kept with four tools about the tree rather than the scope open, each naming its scope by path: '
+  + 'scope.create makes one under a parent, scope.update renames and describes one, scope.move files one elsewhere and '
+  + 'scope.remove removes one. A removal is one scope per call and never one with scopes under it: remove those first, '
+  + 'deepest first. A scope that holds work is refused until you have told the person what is in it and they have said, '
+  + 'in their own words, that it is to go with all of it; pass those words in personSaid — never your own, never on your '
+  + 'own judgement, and never because a call was refused. A host that keeps the scope open in a workspace to that '
+  + 'workspace says scope.isOpen: open the home of the scope, or of the one above it, and call again.'

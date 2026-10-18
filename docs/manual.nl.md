@@ -3083,6 +3083,21 @@ niemand vergeten, verwijderen of samenvoegen, en het beleid niet wijzigen:
 dat doe jij, op de pagina Mensen. Het register is geen stap, dus wat een agent
 daar doet staat niet in Activiteit en is niet ongedaan te maken met ⌘Z.
 
+Een agent kan ook de **boom van scopes** bijhouden: een scope onder een andere
+maken — een domein, of een landschapsscope met zijn eerste bord, vanaf het
+begin bediend door een eenheid — er een hernoemen en beschrijven, er een type
+aan geven, hem ergens anders opbergen, en er een verwijderen. Hij verwijdert
+één scope tegelijk, en nooit een met scopes eronder. Een scope met werk erin
+gaat pas weg nadat de agent je heeft verteld wat erin zit en jij in je eigen
+woorden hebt gezegd dat hij met alles erin weg mag: je woorden gaan mee met de
+verwijdering, en een melding op het scherm zegt wat er weg is. Daarvoor is er
+geen ⌘Z. Elke wijziging is een eigen stap van die scope, in zijn
+geschiedenis, zoals een wijziging vanaf een startpagina — geen stap die ⌘Z in
+de werkruimte terugdraait. De agent laat de scope die in de werkruimte open
+is op zijn plek in de boom: om die te hernoemen, te verplaatsen of te
+verwijderen, of een scope erboven te verplaatsen of te verwijderen, gaat hij
+eerst naar de startpagina van die scope, zoals jij zou doen.
+
 ## Voorkeuren
 
 Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun

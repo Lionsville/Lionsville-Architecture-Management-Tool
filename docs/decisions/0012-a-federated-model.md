@@ -12,6 +12,11 @@
   folder": a scope has an address and an identity; §1's layout as a rule of
   the domain; and §7's history as a union of files
 
+*Extended by ADR-0040, 18 October 2026: a scope is made, described, moved and
+removed by an agent as by the organisation screen (§1); a claim is made by a
+gesture in the claiming scope, and the two answers are read together (§3);
+not yet mapped reads both, over a root and what is filed under it (§9).*
+
 *This is the 2.0.0 record. It decides what the model is built towards, not the
 order it is reached in; the last section sketches that order and is the least
 settled part of the document.*

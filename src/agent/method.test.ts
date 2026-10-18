@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { INSTRUCTIONS } from './mcpProtocol'
-import { OBSERVATIONS_METHOD, STRUCTURE_DEFAULTS } from './method'
+import { OBSERVATIONS_METHOD, STRUCTURE_DEFAULTS, TREE_TOOLS_PARAGRAPH } from './method'
 
 describe('the method sent on connect', () => {
   it('says a root cause is said by a person, and that the agent never says one on its own judgement', () => {
@@ -61,5 +61,16 @@ describe('the structure\'s defaults sent on connect (ADR-0039, amended 17 Octobe
   it('is part of what the desktop hands over, before the method', () => {
     expect(INSTRUCTIONS).toContain(STRUCTURE_DEFAULTS)
     expect(INSTRUCTIONS.indexOf(STRUCTURE_DEFAULTS)).toBeLessThan(INSTRUCTIONS.indexOf(OBSERVATIONS_METHOD))
+  })
+})
+
+describe('the tree\'s tools sent on connect (ADR-0040)', () => {
+  it('names the four, one scope per removal, and a scope with work in it only at the person\'s own words', () => {
+    for (const tool of ['scope.create', 'scope.update', 'scope.move', 'scope.remove']) expect(TREE_TOOLS_PARAGRAPH).toContain(tool)
+    expect(TREE_TOOLS_PARAGRAPH).toContain('A removal is one scope per call and never one with scopes under it')
+    expect(TREE_TOOLS_PARAGRAPH).toContain('in their own words, that it is to go with all of it')
+    expect(TREE_TOOLS_PARAGRAPH).toContain('never your own, never on your own judgement')
+    expect(TREE_TOOLS_PARAGRAPH).not.toMatch(/screen|banner/)
+    expect(INSTRUCTIONS).toContain(TREE_TOOLS_PARAGRAPH)
   })
 })

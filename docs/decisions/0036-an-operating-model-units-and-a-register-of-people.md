@@ -51,6 +51,11 @@
   (*This is me* is kept with the install), ADR-0031 §1 (a sixth repository,
   for people)
 
+*Extended by ADR-0040, 18 October 2026 (§13 and its amendment of 17 October):
+the open item a `scope.describe` tool is closed by `scope.update`, on every
+host; a unit's and a function's `scopes` are checked against the tree, and
+`""` is dropped for a function as for a unit.*
+
 ## Context and Problem Statement
 
 The model already holds half of an organisation. An actor is "a party,
