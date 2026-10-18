@@ -3088,6 +3088,12 @@ sich auf seiner eigenen Seite; ein Treffer aus einem anderen Bereich öffnet
 diesen Bereich dort, schreibgeschützt, wo Ihre Quelle es ist. ⌘F im Editor bleibt der schnelle
 Sucher, wenn alles, was Sie wollen, ein Kasten auf der Zeichenfläche ist.
 
+Die Startseite der Organisation und die jeder Domäne haben dasselbe **Suchen**
+in ihrer Leiste, und ⌘K wirkt dort auch, ohne dass etwas offen ist: Es liest
+zuerst den Bereich dieser Startseite und dann den Rest der Organisation, und
+ein Treffer öffnet den Bereich, der ihn enthält, auf derselben Seite wie ein
+Treffer von innerhalb des Bereichs.
+
 ## Kommentare
 
 Ein Eintrag sagt, was er sagt; ein **Kommentar** ist, was jemand *über* ihn

@@ -2921,6 +2921,12 @@ vastlegging opent op haar eigen pagina; een treffer uit een andere scope opent
 die scope daar, alleen-lezen waar uw bron dat is. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
 het canvas zoekt.
 
+De startpagina van de organisatie en die van elk domein hebben dezelfde
+**Zoeken** in hun balk, en ⌘K werkt daar ook, zonder dat er iets open is: het
+leest eerst de scope van die startpagina en dan de rest van de organisatie, en
+een treffer opent de scope die hem bevat, op dezelfde pagina als een treffer van
+binnen de scope.
+
 ## Reacties
 
 Een record zegt wat het zegt; een **reactie** is wat iemand *erover* zegt —

@@ -2672,6 +2672,11 @@ opens the box it leaves, and a record opens on its own page; a hit from
 another scope opens that scope there, read-only where your source is. ⌘F inside the editor remains the quick
 finder when all you want is a box on the canvas.
 
+The organisation's home and every domain's home have the same **Search** in
+their bar, and ⌘K works there too, with nothing open: it reads that home's
+scope first and then the rest of the organisation, and a hit opens the scope
+that holds it, on the same page a hit from inside the scope would.
+
 ## Comments
 
 A record says what it says; a **comment** is what somebody says *about* it — a

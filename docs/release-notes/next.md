@@ -12,3 +12,10 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   them again. What you open stays open while the app is.
 - **The chevron is easier to press.** It is now a target the height of its row
   rather than a 22-pixel caret.
+
+## Search from the organisation's home
+
+- **Search is on every home's bar.** The organisation's home and each
+  domain's home have **Search** beside the agent and the menu, and ⌘K opens
+  it there as it does inside a scope. It searches the whole organisation —
+  that home's scope first — and a hit opens the scope that holds it.

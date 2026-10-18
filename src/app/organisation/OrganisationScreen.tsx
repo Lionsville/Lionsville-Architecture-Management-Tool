@@ -93,6 +93,8 @@ import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
 import { FoldAll, ScopeTree } from './ScopeTree'
+import { HomeSearch } from './HomeSearch'
+import type { HomeSearchProps } from './HomeSearch'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
@@ -428,7 +430,7 @@ export function OrganisationScreen({
         onGoHome={onGoHome}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
-        agent={agent} barButton={barButton}
+        agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open }}
         s={s}
         windowChrome={windowChrome}
       />
@@ -827,7 +829,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
 function OrganisationBar({
   barRef, tree, home, heading, level, typeName, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
   waysIn = [],
-  onGoHome, onSettings, overflow, agent, barButton, s, windowChrome,
+  onGoHome, onSettings, overflow, agent, barButton, search, s, windowChrome,
 }: {
   /** Measured, so the pages that open under it know how far down to start. */
   barRef: (node: HTMLDivElement | null) => void
@@ -857,6 +859,8 @@ function OrganisationBar({
   agent?: ToolbarAgent
   /** The open source's provider's own button, already drawn: at the end, before the chip. */
   barButton?: ReactNode
+  /** What ⌘K reads on a home and where a hit opens (`HomeSearch`). */
+  search: Pick<HomeSearchProps, 'root' | 'treeRead' | 'onOpen'>
   s: Translate
   windowChrome: WindowChrome
 }) {
@@ -898,6 +902,7 @@ function OrganisationBar({
 
       <Box sx={{ flex: 1 }} />
 
+      <HomeSearch at={home.path} tree={tree} {...search} s={s} />
       {source && !atTheEnd && chip}
       {waysIn.map((way) => (
         <Button
