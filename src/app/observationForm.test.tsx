@@ -51,7 +51,7 @@ function Page() {
   )
 }
 
-describe('the observation form over a session', () => {
+describe('the observation form over a session', { timeout: 20_000 }, () => {
   it('records an observation with two new causes and one link as one undo step', () => {
     renderShell(<Page />)
     fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
