@@ -38,3 +38,20 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 - **The domains a unit serves, and a function's, are checked.** An agent that
   names a scope that is not there is told so, and a function is handed only to
   the scopes below the one that defines it.
+
+## The business sheet, mapped to the domains
+
+- **Hand an area or a capability to a domain from the sheet.** Its details
+  have **Domains**: a chip for each domain it is handed to, and **+ Domain**,
+  which offers the scopes below. **Taken up by** under it names the domains
+  that took it up, marks one that took it up without being handed it, and
+  says *not started* for one handed it that has not.
+- **Take one up from the sheet of a domain below.** **From above…** beside
+  **+ area** lists the areas and capabilities of the sheets above; picking one
+  puts it on the domain's own sheet, under its area where the domain holds it,
+  as one step you can undo. Nothing is written in the scope above.
+- **Not yet mapped counts both.** An area is waiting only while neither it nor
+  anything under it has been handed to a domain or taken up by one — on the
+  sheet's band and on the organisation's card alike.
+- **An agent can take one up too**, with `function.claim`, and
+  `element.describe` of a function says its domains and who took it up.

@@ -1941,10 +1941,38 @@ Fähigkeit ist abgedeckt, weil etwas in der Landschaft sie unterstützt.
 Unterstützung kann wie alles andere mit einem Datum ein Zeitfenster tragen,
 sodass eine ab März abgedeckte Fähigkeit ab März abgedeckt ist.
 
+**Domänen** im Inspektor eines Gebiets, einer Gruppierung oder einer Fähigkeit
+sagt, welchen Domänen es zugeordnet ist: ein Chip für jede, mit seinem ×
+entfernt, und **+ Domäne**, das die Bereiche unter dem anbietet, dessen Blatt
+es ist, mit ihrem Pfad und ihrem Typ. Jede hinzugefügte oder entfernte ist ein
+Schritt, mit ⌘Z rückgängig. Darunter nennt **Aufgegriffen von** jeden Bereich
+darunter, der es aufgegriffen hat, jeder ein Weg zu dessen Startseite: einer,
+der es aufgriff, ohne dass es ihm zugeordnet wurde, steht in der Warnfarbe, und
+eine Domäne, der es zugeordnet wurde und die es noch nicht aufgriff, sagt
+*noch nicht aufgegriffen*. Eine Fähigkeit, deren Gebiet zugeordnet wurde, sagt
+das unter ihren Chips — *Mit Finanzen: Handel* —, und eine Domäne, die die
+Fähigkeit aufgriff, bekam sie mit dem Gebiet. Ein Pfad, den kein Bereich mehr
+hat, steht als *kein bestehender Bereich* da. Eine Funktion, die ein anderer
+Bereich definiert, lässt sich hier nicht ändern: ihre Domänen werden dort
+gesagt, wo sie definiert ist.
+
+Eine Domäne greift eine Funktion auf ihrem eigenen Blatt auf: **Von oben…**
+neben **+ Gebiet** listet die Gebiete, Gruppierungen und Fähigkeiten jedes
+Blatts darüber, gruppiert nach dem Bereich, der sie definiert, und mit dem, worin
+jede sitzt. Wählen Sie eine, und das Blatt der Domäne hält sie als
+Stellvertreter — unter ihrem Gebiet, wo die Domäne das Gebiet hält, sonst als
+eigenes Gebiet —, ein Schritt, mit ⌘Z rückgängig, und im Bereich darüber wird
+nichts geschrieben. Was die Domäne darunter ablegt, ist ihre eigene
+Verfeinerung. Eine Funktion zuordnen und sie aufgreifen sind zwei Aussagen
+zweier Bereiche, zusammen gelesen: keine schreibt die andere.
+
 Am Ende steht ein Band für das, was **noch keiner Domäne zugeordnet** ist — die
-Gebiete, die niemandem gegeben wurden. Es ist ein Befund, kein Fehler: eine
-Liste dessen, was die Organisation zu tun gesagt hat und wofür sie noch nicht
-gesagt hat, wer es tut.
+Gebiete, die weder einer Domäne zugeordnet noch von einer aufgegriffen wurden,
+mit dem, was darunter abgelegt ist: ein Gebiet, dessen eine Fähigkeit
+zugeordnet oder darunter aufgegriffen wurde, ist zugeordnet. Es ist ein Befund,
+kein Fehler: eine Liste dessen, was die Organisation zu tun gesagt hat und wofür
+sie noch nicht gesagt hat, wer es tut. Die Zahl auf der Karte
+Geschäftsarchitektur der Organisation liest dasselbe.
 
 ### Die Beteiligten, und die Einheiten
 

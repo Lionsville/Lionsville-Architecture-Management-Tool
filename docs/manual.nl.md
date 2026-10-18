@@ -1834,10 +1834,37 @@ hoe die regel geschreven wordt, en zo'n ondersteuning kan een venster dragen
 zoals alles met een datum, dus een capability die vanaf maart is ingevuld is
 vanaf maart ingevuld.
 
+**Domeinen**, in het paneel van een gebied, een groepering of een capability,
+zegt aan welke domeinen het is toegewezen: een chip per domein, weg te halen
+met het ×, en **+ Domein**, dat de scopes aanbiedt onder de scope van wie het
+blad is, op hun pad en hun type. Elk domein erbij of eraf is één stap, terug te
+draaien met ⌘Z. Daaronder noemt **Opgepakt door** elke scope eronder die het
+heeft opgepakt, elk een weg naar het thuisscherm van die scope: een scope die
+het oppakte zonder dat het was toegewezen staat in de waarschuwingskleur, en
+een domein dat het kreeg en het nog niet oppakte zegt *nog niet opgepakt*. Een
+capability waarvan het gebied is toegewezen zegt dat onder haar chips — *Met
+Financiën: Retail* — en een domein dat de capability oppakte kreeg haar met het
+gebied mee. Een pad dat geen scope meer heeft staat er als *geen bestaande
+scope*. Een functie die een andere scope definieert laat zich hier niet
+wijzigen: haar domeinen worden gezegd waar ze gedefinieerd is.
+
+Een domein pakt een functie op vanaf zijn eigen blad: **Van boven…**, naast
+**+ gebied**, toont de gebieden, groeperingen en capabilities van elk blad
+erboven, gegroepeerd naar de scope die ze definieert en met waar elk in zit.
+Kies er een en het blad van het domein houdt hem als stand-in — onder
+zijn gebied waar het domein dat gebied heeft, anders als een eigen gebied — één
+stap, terug te draaien met ⌘Z, en in de scope erboven wordt niets geschreven.
+Wat het domein eronder zet is zijn eigen verfijning. Een functie toewijzen en
+haar oppakken zijn twee uitspraken van twee scopes, samen gelezen: geen van
+beide schrijft de andere.
+
 Onderaan staat een band voor wat **nog niet aan een domein is toegewezen** — de
-gebieden die nog aan niemand zijn gegeven. Dat is een bevinding, geen fout: een
-lijst van wat de organisatie gezegd heeft te doen en nog niet gezegd heeft wie
-het doet.
+gebieden die niet aan een domein zijn toegewezen en door geen domein zijn
+opgepakt, met wat eronder staat meegeteld: een gebied waarvan één capability is
+toegewezen, of eronder is opgepakt, telt als toegewezen. Dat is een bevinding,
+geen fout: een lijst van wat de organisatie gezegd heeft te doen en nog niet
+gezegd heeft wie het doet. Het getal op de kaart bedrijfsarchitectuur van de
+organisatie leest hetzelfde.
 
 ### De belanghebbenden, en de eenheden
 

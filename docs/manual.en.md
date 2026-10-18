@@ -1689,9 +1689,34 @@ inspector is how that row gets written, and support can carry a window like
 anything else with a date on it, so a capability covered from March is covered
 from March.
 
+**Domains**, in the inspector of an area, a grouping or a capability, says
+which domains it is handed to: a chip for each, taken off with its ×, and
+**+ Domain**, which offers the scopes below the one whose sheet it is, by
+their path and their type. Each one added or taken off is one step, undone
+with ⌘Z. Under it, **Taken up by** names every scope below that took it up,
+each a way to that scope's home: one that took it up without being handed it
+is marked in the warning colour, and a domain it was handed to that has not
+taken it up yet says *not started*. A capability whose area was handed on says
+so under its chips — *With Finance: Retail* — and a domain that took the
+capability up was handed it with the area. A path no scope has any more is
+marked *no such scope*. A function another scope defines offers no editor: its
+domains are said where it is defined.
+
+A domain takes a function up from its own sheet: **From above…**, beside
+**+ area**, lists the areas, groupings and capabilities of every sheet above
+it, grouped by the scope that defines them and saying what each sits in. Pick
+one and the domain's sheet holds it as a stand-in — under its area where the
+domain holds the area, as an area of its own otherwise — one step, undone
+with ⌘Z, and nothing is written in the scope above. What the domain files
+under it is its own refinement. Handing a function on and taking it up are two
+statements by two scopes, read together: neither writes the other.
+
 At the end is a band for what is **not yet mapped to a domain** — the areas
-nobody has been given. It is a finding, not an error: a list of what the
-organisation has said it does and has not yet said who does it.
+that neither have been handed to a domain nor taken up by one, counting what is
+filed under them: an area whose one capability was handed on, or taken up
+below, is mapped. It is a finding, not an error: a list of what the
+organisation has said it does and has not yet said who does it. The count on
+the organisation's business architecture card reads the same.
 
 ### The stakeholders, and the units
 
