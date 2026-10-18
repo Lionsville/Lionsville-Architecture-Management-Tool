@@ -220,6 +220,8 @@ export type OrganisationScreenProps = {
    * card's finding is the one the roadmap page puts first.
    */
   platformTree?: PlatformTree
+  /** The functions the scopes below took up (ADR-0040 §6), off the same index: the card's count leaves them out. */
+  takenUp?: ReadonlySet<ElementId>
   /** Open a row where it is answered for, with the element selected. */
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
   /** Open a row's page — the record and its document — where it is answered for. */
@@ -298,7 +300,7 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
-  overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
+  overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead,
 }: OrganisationScreenProps) {
@@ -344,7 +346,7 @@ export function OrganisationScreen({
     () => ({ ...tree, children: sortScopes(tree.children, order) }),
     [tree, order],
   )
-  const pages = useMemo(() => organisationPages(root, today, platformTree), [root, today, platformTree])
+  const pages = useMemo(() => organisationPages(root, today, platformTree, takenUp), [root, today, platformTree, takenUp])
   const registerHere = useMemo(() => registerWithin(register, at), [register, at])
   const registerCounts = useMemo(() => registerSummary(registerHere), [registerHere])
   const technologyHere = useMemo(() => technologyWithin(technology, at), [technology, at])

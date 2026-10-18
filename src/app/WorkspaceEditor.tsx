@@ -15,6 +15,7 @@ import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { sheetResponsibleFor } from './units/sheetResponsible'
+import { sheetClaimsFor, sheetDomainsFor, takenUpHere } from './sheetMapping'
 import type { SheetWaysOut } from './units/sheetResponsible'
 import type { TechnologyLandscapePage as TechnologyLandscapePageShape } from '../technology/ui/TechnologyLandscapePage'
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
@@ -234,6 +235,9 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
         ...(ownership.unitDeletion ? { unitDeletion: ownership.unitDeletion } : {}),
         open: sheetWaysOut(parts),
       })}
+      // The sheet mapped to the tree (ADR-0040 §4–§6): a function's domains, one taken up from above, and the band's reading.
+      takenUp={takenUpHere(parts.props.tree.index, parts.props.project.path)}
+      {...sheetMapping(parts, diagram)}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
       select={parts.pages.selectRequestFor(diagram.id)}
@@ -242,6 +246,27 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       notify={parts.props.shell.notify}
     />
   )
+}
+
+/** *Domains* and *From above…* on the open scope's sheet, over the index, as one step in its session. */
+function sheetMapping(parts: WorkspaceParts, diagram: DesignDiagram) {
+  const { session, readings } = parts
+  const at = {
+    index: parts.props.tree.index, scope: parts.props.project.path, model: session.model,
+    scopeName: readings.scopeLabel, s: parts.props.shell.s,
+  }
+  const claims = sheetClaimsFor({
+    ...at,
+    current: () => {
+      const model = session.current()
+      return { model, sheet: model.diagrams.find((held) => held.id === diagram.id) }
+    },
+    dispatch: (command) => session.dispatch(command),
+  })
+  return {
+    domains: sheetDomainsFor({ ...at, openScope: parts.props.navigation.onGoHome }),
+    ...(claims ? { claims } : {}),
+  }
 }
 
 /**

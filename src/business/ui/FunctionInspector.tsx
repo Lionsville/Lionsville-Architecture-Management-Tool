@@ -204,6 +204,23 @@ export type SheetResponsible = {
   } | undefined
 }
 
+/**
+ * Which domains a function is handed to, and which took it up (ADR-0040 §4,
+ * §5): the function's `scopes`, written here, and the scopes below that hold
+ * a stand-in of it, read off the tree. Handed in by the host, because
+ * `business` may not read the scope index nor know what a scope is called.
+ */
+export type SheetDomains = {
+  /** The scopes below the one that defines the function, by name and type, less the ones it is handed to. */
+  choices(functionId: ElementId): readonly PickOption[]
+  /** What a scope is called, as a trail from the organisation down. */
+  name(scope: string): string
+  /** The scopes holding a stand-in of it: the domains that took it up. */
+  takenUpBy(functionId: ElementId): readonly string[]
+  /** A scope's home, opened from its name. Absent: the names open nothing. */
+  openScope?(scope: string): void
+}
+
 export type FunctionInspectorProps = {
   /** Absent when nothing on the sheet is chosen. */
   element: DesignElement | undefined
@@ -242,6 +259,8 @@ export type FunctionInspectorProps = {
   nameFocus?: number
   /** Who may be made responsible, and what they are called. Absent: this scope's own actors. */
   responsible?: SheetResponsible
+  /** The domains a function is handed to and taken up by. Absent: no *Domains*. */
+  domains?: SheetDomains
   /** Something was deleted from here, so nothing is chosen any more. */
   onRemoved?(): void
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
@@ -406,6 +425,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
               applications={props.applications} elsewhere={props.elsewhere} responsible={props.responsible}
             />
           )}
+          <Domains element={element} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
 
           <MarkdownField
             value={element.description ?? ''}
@@ -738,6 +758,91 @@ function AssignedTo({ element, model, readOnly, actions, responsible, assigned, 
         />
       )}
       <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>{t('sheet.assignedFarEnd')}</Typography>
+    </Box>
+  )
+}
+
+/**
+ * Which domains it is handed to (ADR-0040 §4), and which took it up (§5).
+ *
+ * A chip per path in its `scopes`, taken off with its ×, and *+ Domain*,
+ * which offers the scopes below the one that defines it. Each change is one
+ * `element.update` of `scopes`: one step, one Activity line. A stand-in shows
+ * the chips and no editor — its domains are the definition's (ADR-0012 §10).
+ *
+ * *Taken up by* is the other half, read and never written here: every scope
+ * that holds a stand-in of it, a way to that scope's home. One that took it up
+ * without being handed it is marked in the warning colour, and a domain it was
+ * handed to that has not taken it up is said to be not started. Both are
+ * ADR-0012 §3's two findings, neither an error.
+ */
+function Domains({ element, readOnly, owned, actions, domains }: {
+  element: DesignElement
+  readOnly: boolean
+  owned: boolean
+  actions: SheetActions
+  domains: SheetDomains | undefined
+}) {
+  const { t } = useStrings()
+  if (!domains || element.kind !== 'function') return null
+  const handed = element.scopes ?? []
+  const takers = domains.takenUpBy(element.id)
+  const within = (path: string, scope: string) => scope === '' || path === scope || path.startsWith(`${scope}/`)
+  const started = (scope: string) => takers.some((taker) => within(taker, scope))
+  const editable = !readOnly && !owned
+  const place = (scope: string, warn: boolean) => (domains.openScope
+    ? (
+      <Link
+        component="button" type="button" underline="hover" key={scope}
+        sx={{ fontSize: 11.5, ...(warn ? { color: 'warning.main' } : {}) }}
+        onClick={() => domains.openScope?.(scope)}
+      >
+        {domains.name(scope)}
+      </Link>
+    )
+    : <Typography component="span" key={scope} sx={{ fontSize: 11.5, ...(warn ? { color: 'warning.main' } : {}) }}>{domains.name(scope)}</Typography>)
+  return (
+    <Box data-testid="sheet-domains" data-guide="sheet.domains">
+      <SectionHeading sx={{ mb: 0.5 }}>{t('sheet.domains')}</SectionHeading>
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        {handed.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsNone')}</Typography>}
+        {handed.map((scope) => {
+          const notStarted = !started(scope)
+          return (
+            <Chip
+              key={scope} size="small" data-testid="sheet-domain" data-scope={scope} data-not-started={notStarted || undefined}
+              variant={notStarted ? 'outlined' : 'filled'}
+              label={notStarted ? `${domains.name(scope)} · ${t('sheet.notStarted')}` : domains.name(scope)}
+              {...(editable ? { onDelete: () => actions.updateElement(element.id, { scopes: handed.filter((held) => held !== scope) }) } : {})}
+            />
+          )
+        })}
+      </Box>
+      {editable && (
+        <PickToAdd
+          options={domains.choices(element.id)} label={t('sheet.domainsAdd')} field={t('sheet.domainsFind')} nothing={t('sheet.domainsNothing')}
+          testId="sheet-domain-add" disabled={domains.choices(element.id).length === 0}
+          onPick={(scope) => actions.updateElement(element.id, { scopes: [...handed, scope] })}
+        />
+      )}
+      <Box data-testid="sheet-taken-up" sx={{ mt: 1 }}>
+        <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>{t('sheet.takenUpBy')}</Typography>
+        {takers.length === 0
+          ? <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.takenUpNobody')}</Typography>
+          : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              {takers.map((taker) => {
+                const unasked = !handed.some((scope) => within(taker, scope))
+                return (
+                  <Box key={taker} data-testid="sheet-taker" data-unasked={unasked || undefined}>
+                    {place(taker, unasked)}
+                    {unasked && <Typography component="span" sx={{ fontSize: 10.5, color: 'warning.main', ml: 0.5 }}>{t('sheet.takenUpUnasked')}</Typography>}
+                  </Box>
+                )
+              })}
+            </Box>
+          )}
+      </Box>
     </Box>
   )
 }

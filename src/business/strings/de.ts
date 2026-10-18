@@ -131,6 +131,21 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.unitLabelMore': '+{count}',
   'sheet.unitWhereKept': 'wo sie abgelegt ist',
 
+  // --- welchen Domänen es zugeordnet ist, und welche es aufgriffen (ADR-0040)
+  'sheet.domains': 'Domänen',
+  'sheet.domainsNone': 'Keiner Domäne zugeordnet',
+  'sheet.domainsAdd': '+ Domäne',
+  'sheet.domainsFind': 'Einen Bereich unter diesem suchen',
+  'sheet.domainsNothing': 'Kein Bereich mit diesem Namen',
+  'sheet.notStarted': 'noch nicht aufgegriffen',
+  'sheet.takenUpBy': 'Aufgegriffen von',
+  'sheet.takenUpNobody': 'Noch keine Domäne',
+  'sheet.takenUpUnasked': 'ohne dass es zugeordnet wurde',
+  'sheet.fromAbove': 'Von oben…',
+  'sheet.fromAboveTitle': 'Ein Gebiet oder eine Fähigkeit eines Blatts darüber aufgreifen',
+  'sheet.fromAboveFind': 'Ein Gebiet oder eine Fähigkeit darüber suchen',
+  'sheet.fromAboveNothing': 'Darüber nichts mit diesem Namen',
+
   'sheet.switchedBoard': '{name} wird gezeigt, dort ist es gezeichnet',
 
   'sheet.unmapped': 'Noch keiner Domäne zugeordnet',

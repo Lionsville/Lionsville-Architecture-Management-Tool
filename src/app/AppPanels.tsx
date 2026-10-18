@@ -41,6 +41,7 @@ import { reasonIn } from './messageFor'
 import { checkMarking, CheckMarkingContext } from './checkMarking'
 import type { CheckMarking } from './checkMarking'
 import { useWriteIn } from './units/writeIn'
+import { takenUpHere } from './sheetMapping'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
 export function AppScreen({ parts }: { parts: ShellParts }) {
@@ -273,6 +274,7 @@ function Home({ parts }: { parts: ShellParts }) {
           initiatives={findings.initiatives}
           localObservations={findings.localObservations}
           platformTree={findings.platformTree}
+          takenUp={takenUpHere(index, organisation.at)}
           onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
           onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
           onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}

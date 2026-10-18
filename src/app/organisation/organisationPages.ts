@@ -25,6 +25,7 @@ import { ADR_STATUSES } from '../../decisions'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
 import type { PlatformTree } from '../../model/hosting'
+import type { ElementId } from '../../model/types'
 import { findingTarget } from '../../roadmap/findingTarget'
 import type { FindingTarget } from '../../roadmap/findingTarget'
 import { TRANSITION_STATUSES } from '../../model/transition'
@@ -129,6 +130,11 @@ export function organisationPages(
    * card reading them without would name a different first one.
    */
   platformTree?: PlatformTree,
+  /**
+   * The functions a scope below holds a stand-in of (ADR-0040 §6): taken up,
+   * and so not counted as waiting. Absent, only what this scope handed on is read.
+   */
+  takenUp?: ReadonlySet<ElementId>,
 ): OrganisationPages {
   const model = scope?.model
   const elements = model?.elements ?? []
@@ -153,7 +159,7 @@ export function organisationPages(
       areas: elements.filter((element) => element.kind === 'function' && !element.parentId).length,
       functions: of('function'),
       stakeholders: of('actor'),
-      unmapped: unmappedFunctions(elements).length,
+      unmapped: unmappedFunctions(elements, takenUp).length,
       ...(diagrams.find((diagram) => diagram.kind === 'sheet')
         ? { sheetId: diagrams.find((diagram) => diagram.kind === 'sheet')!.id }
         : {}),

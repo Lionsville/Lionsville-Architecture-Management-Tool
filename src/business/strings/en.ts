@@ -151,6 +151,21 @@ export const EN = {
   'sheet.unitLabelMore': '+{count}',
   'sheet.unitWhereKept': 'where it is kept',
 
+  // --- which domains it is handed to, and which took it up (ADR-0040) ------
+  'sheet.domains': 'Domains',
+  'sheet.domainsNone': 'Not handed to a domain',
+  'sheet.domainsAdd': '+ Domain',
+  'sheet.domainsFind': 'Find a scope below this one',
+  'sheet.domainsNothing': 'No scope by that name',
+  'sheet.notStarted': 'not started',
+  'sheet.takenUpBy': 'Taken up by',
+  'sheet.takenUpNobody': 'No domain yet',
+  'sheet.takenUpUnasked': 'without being handed it',
+  'sheet.fromAbove': 'From above…',
+  'sheet.fromAboveTitle': 'Take up an area or a capability of a sheet above',
+  'sheet.fromAboveFind': 'Find an area or a capability above',
+  'sheet.fromAboveNothing': 'Nothing above by that name',
+
   // --- where an element is actually drawn ----------------------------------
   'sheet.switchedBoard': 'Showing {name}, which draws it',
 

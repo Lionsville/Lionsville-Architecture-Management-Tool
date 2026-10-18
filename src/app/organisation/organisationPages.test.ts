@@ -84,6 +84,10 @@ describe('organisationPages', () => {
       expect(organisationPages(held, TODAY).business.unmapped).toBe(1)
     })
 
+    it('leaves out of the count a root a scope below took up (ADR-0040 §6)', () => {
+      expect(organisationPages(held, TODAY, undefined, new Set(['billing'])).business.unmapped).toBe(0)
+    })
+
     it('names the sheet to open, and says nothing where there is none to', () => {
       expect(organisationPages(held, TODAY).business.sheetId).toBeUndefined()
       const withSheet = scope({ diagrams: [

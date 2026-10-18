@@ -70,3 +70,17 @@ describe('the rows an agent reads from the rest of the tree', () => {
     expect(view?.rowsTo?.('web', ['interacts']).map((row) => row.id)).toEqual(['i-far'])
   })
 })
+
+describe('what is not yet mapped, as the agent’s checks say it (ADR-0040 §6)', () => {
+  it('leaves out a root a scope below has taken up, and names the one nobody has', () => {
+    const fn = (id: string, over: Partial<DesignElement> = {}): DesignElement => ({ id, kind: 'function', name: id, lifecycle: 'live', isManaged: true, aspects: {}, ...over })
+    const root: HostModel = { ...ROOT, elements: [fn('billing'), fn('returns')] }
+    const below: HostModel = { ...CUSTOMER, elements: [fn('billing', { ref: '', isManaged: false })] }
+    const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: below }])
+    const view = agentTree({
+      session: { current: () => root } as unknown as ModelSession, scope: '', indexRef: { current: index },
+      rowsElsewhereRef: { current: [] as Relation[] }, scopes: {} as never, reader: {} as ScopeReader, people: () => [],
+    })
+    expect(view?.findings(TODAY).filter((one) => one.key === 'check.unmapped').map((one) => one.id)).toEqual(['returns'])
+  })
+})

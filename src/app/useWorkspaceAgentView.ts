@@ -25,6 +25,7 @@ import type { Person } from '../people/person'
 import { registerOf, resolvePerson } from '../people/shown'
 import { organisationHere } from './units/organisationHere'
 import { standInOf } from '../projects/library'
+import { takenUpHere } from './sheetMapping'
 import { mayApplyPatch } from '../projects/mayEdit'
 import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
@@ -263,7 +264,8 @@ export function agentTree(at: {
         ...documentFindings({
           scope, model, index: indexRef.current,
           business: {
-            unmapped: unmappedFunctions(model.elements).map((held) => held.id),
+            // Handed to a domain or taken up by one below (ADR-0040 §6), as the band reads it.
+            unmapped: unmappedFunctions(model.elements, takenUpHere(indexRef.current, scope)).map((held) => held.id),
             uncovered: model.elements
               .filter((held) => held.kind === 'function' && (coverage.get(held.id)?.coverage ?? 'uncovered') === 'uncovered')
               .map((held) => held.id),

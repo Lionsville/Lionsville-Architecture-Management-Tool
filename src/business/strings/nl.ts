@@ -131,6 +131,21 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.unitLabelMore': '+{count}',
   'sheet.unitWhereKept': 'waar ze bewaard wordt',
 
+  // --- aan welke domeinen het is toegewezen, en welke het oppakten (ADR-0040)
+  'sheet.domains': 'Domeinen',
+  'sheet.domainsNone': 'Niet aan een domein toegewezen',
+  'sheet.domainsAdd': '+ Domein',
+  'sheet.domainsFind': 'Zoek een scope onder deze',
+  'sheet.domainsNothing': 'Geen scope met die naam',
+  'sheet.notStarted': 'nog niet opgepakt',
+  'sheet.takenUpBy': 'Opgepakt door',
+  'sheet.takenUpNobody': 'Nog geen domein',
+  'sheet.takenUpUnasked': 'zonder dat het is toegewezen',
+  'sheet.fromAbove': 'Van boven…',
+  'sheet.fromAboveTitle': 'Een gebied of capability van een blad hierboven oppakken',
+  'sheet.fromAboveFind': 'Zoek een gebied of capability hierboven',
+  'sheet.fromAboveNothing': 'Niets hierboven met die naam',
+
   'sheet.switchedBoard': '{name} wordt getoond; daar staat het op',
 
   'sheet.unmapped': 'Nog niet aan een domein toegewezen',

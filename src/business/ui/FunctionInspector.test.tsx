@@ -29,11 +29,11 @@ function model(): DesignModel {
 const held = (id: string): DesignElement => model().elements.find((e) => e.id === id)!
 
 function open(
-  id: string,
+  id: string | DesignElement,
   readOnly = false,
   onRemoved = vi.fn(),
   ownerOf?: (id: string) => { label: string; fields: readonly string[]; onOpen?: () => void } | undefined,
-  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere' | 'responsible'> = {},
+  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere' | 'responsible' | 'domains'> = {},
 ) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
@@ -49,7 +49,7 @@ function open(
   }
   const result = renderShell(
     <FunctionInspector
-      element={held(id)} model={model()} readOnly={readOnly} actions={actions}
+      element={typeof id === 'string' ? held(id) : id} model={model()} readOnly={readOnly} actions={actions}
       onRemoved={onRemoved} ownerOf={ownerOf} {...over}
     />,
   )
@@ -460,5 +460,63 @@ describe('who is responsible for a capability', () => {
     open('packing', true, undefined, undefined, { responsible })
     expect(screen.queryByRole('button', { name: '+ Unit' })).toBeNull()
     expect(screen.getByTestId('sheet-assigned-to').textContent).toContain('Warehouse team')
+  })
+})
+
+describe('which domains it is handed to, and which took it up (ADR-0040)', () => {
+  const NAMES: Record<string, string> = { retail: 'Retail', 'retail/shops': 'Retail › Shops', wholesale: 'Wholesale', online: 'Online' }
+  const domains = (takers: string[] = []) => ({
+    choices: () => [{ id: 'wholesale', label: 'Wholesale', note: 'Domain' }, { id: 'online', label: 'Online' }],
+    name: (scope: string) => NAMES[scope] ?? scope,
+    takenUpBy: () => takers,
+    openScope: vi.fn(),
+  })
+  const handed = (scopes: string[]) => ({ ...held('fulfilment'), scopes })
+
+  it('chips each domain it is handed to, takes one off, and hands it to another by a pick', async () => {
+    const { actions } = open(handed(['retail', 'wholesale']), false, undefined, undefined, { domains: domains(['retail/shops']) })
+    const chips = screen.getAllByTestId('sheet-domain')
+    expect(chips.map((one) => one.textContent)).toEqual(['Retail', 'Wholesale · not started'])
+    expect(chips[1].getAttribute('data-not-started')).toBe('true')
+    fireEvent.click(within(chips[0]).getByTestId('CancelIcon'))
+    expect(actions.updateElement).toHaveBeenCalledWith('fulfilment', { scopes: ['wholesale'] })
+    fireEvent.click(screen.getByRole('button', { name: '+ Domain' }))
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Online/ }))
+    expect(actions.updateElement).toHaveBeenCalledWith('fulfilment', { scopes: ['retail', 'wholesale', 'online'] })
+  })
+
+  it('says who took it up, marks one that was never handed it, and opens a taker’s home', () => {
+    const shown = domains(['retail/shops', 'online'])
+    open(handed(['retail']), false, undefined, undefined, { domains: shown })
+    const takers = screen.getAllByTestId('sheet-taker')
+    expect(takers.map((one) => one.textContent)).toEqual(['Retail › Shops', 'Onlinewithout being handed it'])
+    expect(takers[0].getAttribute('data-unasked')).toBeNull()
+    expect(takers[1].getAttribute('data-unasked')).toBe('true')
+    fireEvent.click(within(takers[0]).getByRole('button', { name: 'Retail › Shops' }))
+    expect(shown.openScope).toHaveBeenCalledWith('retail/shops')
+  })
+
+  it('says nobody either way on a function nothing is said of', () => {
+    open('fulfilment', false, undefined, undefined, { domains: domains() })
+    expect(screen.getByTestId('sheet-domains').textContent).toContain('Not handed to a domain')
+    expect(screen.getByTestId('sheet-taken-up').textContent).toContain('No domain yet')
+  })
+
+  it('offers no editor where the sheet is only read, nor on a stand-in, whose domains are the definition’s', () => {
+    open(handed(['retail']), true, undefined, undefined, { domains: domains() })
+    expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
+    expect(within(screen.getByTestId('sheet-domain')).queryByTestId('CancelIcon')).toBeNull()
+    cleanup()
+    open(handed(['retail']), false, undefined, () => ({ label: 'Acme', fields: ['scopes', 'name'] }), { domains: domains() })
+    expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
+  })
+
+  it('is not drawn for a step, nor where the host lends no tree', () => {
+    open('ship', false, undefined, undefined, { domains: domains() })
+    expect(screen.queryByTestId('sheet-domains')).toBeNull()
+    cleanup()
+    open('fulfilment')
+    expect(screen.queryByTestId('sheet-domains')).toBeNull()
   })
 })

@@ -90,7 +90,9 @@ import type { LaidOutSheet, SheetActor, SheetArea, SheetCapability, SheetJourney
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
-import type { FunctionInspectorProps, NewLane, SheetActions, SheetResponsible, Supporter } from './FunctionInspector'
+import type { FunctionInspectorProps, NewLane, SheetActions, SheetDomains, SheetResponsible, Supporter } from './FunctionInspector'
+import { GroupedPicker } from '../../widgets/PickToAdd'
+import type { PickOption } from '../../widgets/PickToAdd'
 import { ResponsibleChips, UnitLabel, useWho } from './Responsible'
 import type { Who } from './Responsible'
 import { SheetBar } from './SheetBar'
@@ -155,6 +157,19 @@ export type SheetPageProps = {
    * responsible*, and *Assigned to* offers this scope's own actors.
    */
   responsible?: SheetResponsible
+  /**
+   * The functions a scope below holds a stand-in of (ADR-0040 §6): taken up,
+   * and not waiting in the band. A STABLE set, for the reason `elsewhere` is.
+   */
+  takenUp?: ReadonlySet<ElementId>
+  /** Which domains a function is handed to and taken up by (ADR-0040 §4, §5). Absent: no *Domains*. */
+  domains?: SheetDomains
+  /**
+   * The functions of the sheets above that this scope may take up, and the
+   * gesture that takes one (ADR-0040 §5): *From above…* beside *+ area*.
+   * Absent, or nothing to offer: no *From above…*.
+   */
+  claims?: SheetClaims
   /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
   onOpenDocumentation?(id: ElementId): void
   /**
@@ -176,6 +191,13 @@ export type SheetPageProps = {
   remember?: string
   /** A short note to the person: here, that a stakeholder typed as a unit is now on the organisation chart. */
   notify?(message: string): void
+}
+
+/** What *From above…* offers, and what a pick does: one step in this scope's session. */
+export type SheetClaims = {
+  /** Grouped by the scope that defines each, each saying what it sits in. */
+  choices: readonly PickOption[]
+  claim(id: ElementId): void
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
@@ -267,7 +289,7 @@ export function SheetPage(props: SheetPageProps) {
 
   const rail = useRail(model, { remember: props.remember, readOnly, sheet, notify: props.notify, note: t('sheet.nowAUnit') })
   const laidOut = useMemo(
-    () => (sheet ? sheetPage(model, sheet, props.elsewhere, rail.options) : undefined), [model, sheet, props.elsewhere, rail.options],
+    () => (sheet ? sheetPage(model, sheet, props.elsewhere, rail.options, props.takenUp) : undefined), [model, sheet, props.elsewhere, rail.options, props.takenUp],
   )
   const selected = selectedId === undefined
     ? undefined
@@ -473,28 +495,13 @@ export function SheetPage(props: SheetPageProps) {
                   )
                 })}
               </Box>
-              {author && (
-                <Box sx={{ mt: 1.5, display: 'flex' }}>
-                  <Add
-                    label={t('sheet.addArea')}
-                    title={t('sheet.newArea')}
-                    onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))}
-                    sx={{ py: 0.75, px: 1.5 }}
-                  />
-                </Box>
-              )}
+              {author && <AreaAdds author={author} claims={props.claims} label={t('sheet.addArea')} roomy />}
             </>
           ) : (
             <Empty
               text={t('sheet.noAreas')}
               hint={t('sheet.emptyHint')}
-              action={author && (
-                <Add
-                  label={t('sheet.newArea')}
-                  title={t('sheet.newArea')}
-                  onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))}
-                />
-              )}
+              action={author && <AreaAdds author={author} claims={props.claims} label={t('sheet.newArea')} />}
             />
           )}
 
@@ -523,7 +530,7 @@ export function SheetPage(props: SheetPageProps) {
               elsewhere={props.elsewhere}
               nameFocus={nameFocus} responsible={props.responsible}
               onRemoved={() => setSelectedId(undefined)}
-              ownerOf={props.ownerOf}
+              ownerOf={props.ownerOf} domains={props.domains}
             />
           </>
         )}
@@ -675,6 +682,45 @@ function useMeasuredSize(side: 'width' | 'height'): { ref: (node: HTMLDivElement
 type Author = { t: Translate; made(id: ElementId | undefined): void; actions: SheetActions }
 
 /** The one shape every *+* on this page has. */
+/**
+ * *+ area*, and *From above…* beside it (ADR-0040 §5): an area made here, or
+ * a function of a sheet above taken up — a stand-in in this scope's session,
+ * one step. The picker lists them by the scope that defines each, and is not
+ * offered where there is nothing to take up.
+ */
+function AreaAdds({ author, claims, label, roomy }: {
+  author: Author
+  claims: SheetClaims | undefined
+  label: string
+  /** Under the areas, as a row of its own; without, the empty sheet's line. */
+  roomy?: boolean
+}) {
+  const { t } = author
+  const [picking, setPicking] = useState(false)
+  const offered = claims?.choices ?? []
+  const size = roomy ? { sx: { py: 0.75, px: 1.5 } } : {}
+  return (
+    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', ...(roomy ? { mt: 1.5 } : {}) }}>
+      <Add label={label} title={t('sheet.newArea')} onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))} {...size} />
+      {claims && offered.length > 0 && (picking
+        ? (
+          <Box data-testid="sheet-from-above-field" sx={{ minWidth: 260, flex: '0 1 360px' }}>
+            <GroupedPicker
+              options={offered} field={t('sheet.fromAboveFind')} nothing={t('sheet.fromAboveNothing')}
+              testId="sheet-from-above-input"
+              onPick={(id) => { setPicking(false); claims.claim(id) }} onClose={() => setPicking(false)}
+            />
+          </Box>
+        )
+        : (
+          <Box data-guide="sheet.fromAbove" data-testid="sheet-from-above" sx={{ display: 'inline-flex' }}>
+            <Add label={t('sheet.fromAbove')} title={t('sheet.fromAboveTitle')} onClick={() => setPicking(true)} {...size} />
+          </Box>
+        ))}
+    </Box>
+  )
+}
+
 function Add({ label, title, onClick, disabled, sx }: {
   label: string
   /** What it says out loud — which of the many *+*s this is, and on what. */

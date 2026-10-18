@@ -18,6 +18,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetPage } from './SheetPage'
+import type { SheetClaims } from './SheetPage'
 import type { SheetActions, SheetResponsible } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
@@ -70,6 +71,8 @@ function open(over: {
   select?: { id: string; nonce: number }
   onHandle?: (handle: unknown) => void
   responsible?: SheetResponsible
+  takenUp?: ReadonlySet<string>
+  claims?: SheetClaims
 } = {}) {
   const acts = actions()
   const result = renderShell(
@@ -85,6 +88,8 @@ function open(over: {
       {...(over.select ? { select: over.select } : {})}
       {...(over.onHandle ? { onHandle: over.onHandle } : {})}
       {...(over.responsible ? { responsible: over.responsible } : {})}
+      {...(over.takenUp ? { takenUp: over.takenUp } : {})}
+      {...(over.claims ? { claims: over.claims } : {})}
       onClose={() => {}}
     />,
   )
@@ -381,6 +386,45 @@ describe('what is not yet mapped', () => {
   it('is absent when every root is drawn', () => {
     open()
     expect(screen.queryByTestId('sheet-unmapped')).toBeNull()
+  })
+
+  it('leaves out a root a scope below has taken up (ADR-0040 §6)', () => {
+    open({ sheet: { ...SHEET, areas: ['fulfilment'] }, takenUp: new Set(['invoice']) })
+    expect(screen.queryByTestId('sheet-unmapped')).toBeNull()
+  })
+})
+
+describe('taking a function up from a sheet above (ADR-0040 §5)', () => {
+  const claims = (): SheetClaims => ({
+    choices: [
+      { id: 'returns', label: 'Returns', group: 'Acme' },
+      { id: 'refunds', label: 'Refunds', group: 'Acme', note: 'in Returns' },
+      { id: 'yard', label: 'Yard', group: 'Acme › Operations' },
+    ],
+    claim: vi.fn(),
+  })
+
+  it('offers From above… beside + area, grouped by the scope that defines each, and a pick takes one up', async () => {
+    const offered = claims()
+    open({ claims: offered })
+    fireEvent.click(screen.getByRole('button', { name: 'Take up an area or a capability of a sheet above' }))
+    const list = screen.getByRole('listbox')
+    expect(within(list).getAllByRole('group').map((one) => one.firstChild?.textContent)).toEqual(['Acme', 'Acme › Operations'])
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(list).getByRole('option', { name: /Refunds/ }))
+    expect(offered.claim).toHaveBeenCalledWith('refunds')
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('is offered on a sheet with no areas yet, and not where there is nothing to take up or the page is only read', () => {
+    open({ claims: claims(), sheet: { ...SHEET, areas: [] }, model: model({ elements: [] }) })
+    expect(screen.getByTestId('sheet-from-above')).toBeTruthy()
+    cleanup()
+    open({ claims: { choices: [], claim: vi.fn() } })
+    expect(screen.queryByTestId('sheet-from-above')).toBeNull()
+    cleanup()
+    open({ claims: claims(), readOnly: true })
+    expect(screen.queryByTestId('sheet-from-above')).toBeNull()
   })
 })
 

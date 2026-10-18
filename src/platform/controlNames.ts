@@ -50,6 +50,8 @@ export const CONTROL_NAMES = [
   'sheet.canvas', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy', 'sheet.unmapped',
   // Who is responsible: a capability's *Assigned to*, and the bar's switch that names the units on the sheet.
   'sheet.assignedTo', 'sheet.showResponsible',
+  // Which domains a function is handed to and taken up by, and taking one up from a sheet above (ADR-0040).
+  'sheet.domains', 'sheet.fromAbove',
   // The rail's switch that draws every unit of the scope, not only the ones the sheet uses.
   'sheet.allUnits',
   'map.grid', 'map.summary',

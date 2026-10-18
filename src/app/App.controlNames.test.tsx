@@ -110,6 +110,15 @@ function divisionOnABoard(top: ScopeSnapshot): ScopeSnapshot {
   }
 }
 
+/** A landscape open on a business sheet of its own: one with areas of the organisation's still to take up. */
+function sheetBelow(scope: ScopeSnapshot): ScopeSnapshot {
+  return {
+    ...scope,
+    activeDiagramId: 'sh-below',
+    model: { ...scope.model, diagrams: [...scope.model.diagrams, { id: 'sh-below', kind: 'sheet', name: 'Our part', members: [] }] },
+  }
+}
+
 function show(opened: boolean) {
   return renderApp({
     repositories: heldRepositories(example),
@@ -251,13 +260,19 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
   [['the business architecture, a capability chosen', [
     'sheet.canvas', 'sheet.unmapped', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy',
-    'sheet.assignedTo', 'sheet.showResponsible', 'sheet.allUnits',
+    'sheet.assignedTo', 'sheet.showResponsible', 'sheet.allUnits', 'sheet.domains',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-business'))
     await screen.findByTestId('sheet-canvas')
     await waitFor(() => expect(document.querySelector('[data-testid^="sheet-capability-"]')).not.toBeNull())
     fireEvent.click(document.querySelector<HTMLElement>('[data-testid^="sheet-capability-"]')!)
+  }]],
+  // A landscape's own sheet, which may take up what the organisation's sheet holds (ADR-0040 §5).
+  [['a sheet below the organisation’s', ['sheet.fromAbove'], async () => {
+    const sheeted = example.map((one) => (one.path === landscape.path ? sheetBelow(one) : one))
+    renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: sheeted.find((one) => one.path === landscape.path)! } })
+    await screen.findByTestId('sheet-canvas')
   }]],
   [['the enterprise map', ['map.grid', 'map.summary'], async () => {
     show(false)
