@@ -224,6 +224,15 @@ export interface ScopeRepository {
    * `expects` as for a move; where the scope is no longer there, there is
    * nothing to lose, and the answer is that nothing was removed. The
    * organisation is refused: it is the root, not something to throw away.
+   *
+   * **`leafOnly`** removes the scope only while nothing is filed under it —
+   * a scope, or one that could not be read — and refuses
+   * `shell.scopeHasChildren` otherwise, decided where the removal is, so a
+   * child filed between a caller's look and the removal is never taken
+   * with it (ADR-0040 §2). Without it, the subtree goes, as before.
    */
-  remove(scope: ScopeId, expects?: Revision): Promise<Removed | Refused>
+  remove(scope: ScopeId, expects?: Revision, options?: RemoveOptions): Promise<Removed | Refused>
 }
+
+/** How a removal is made: `leafOnly`, one scope with nothing filed under it, or refused. */
+export type RemoveOptions = { readonly leafOnly?: boolean }

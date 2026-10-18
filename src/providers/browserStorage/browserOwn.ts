@@ -66,7 +66,7 @@ export function afterWrites(
     },
     create: (at, scope) => scopes.create(at, scope),
     move: (scope, to, expects) => scopes.move(scope, to, expects),
-    remove: (scope, expects) => scopes.remove(scope, expects),
+    remove: (scope, expects, options) => scopes.remove(scope, expects, options),
   }
 }
 

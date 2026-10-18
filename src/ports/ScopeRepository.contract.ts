@@ -692,6 +692,18 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
       })
 
+      it('removes one scope alone where asked to, and refuses it while anything is filed under it (leafOnly)', async () => {
+        const repositories = await fresh()
+        const rail = await repositories.scope('acme/rail', 'Rail')
+        const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+        const read = (await repositories.state(rail)).revision
+        expect(refusal(await repositories.remove(rail, read, { leafOnly: true }))).toBe('shell.scopeHasChildren')
+        expect(await addresses(repositories)).toEqual(['', 'acme', 'acme/rail', 'acme/rail/rolling-stock'])
+        expect(ok(await repositories.remove(stock, undefined, { leafOnly: true })).removed).toEqual([stock])
+        expect(ok(await repositories.remove(rail, read, { leafOnly: true })).removed).toEqual([rail])
+        expect(await addresses(repositories)).toEqual(['', 'acme'])
+      })
+
       it('removes nothing, and says so, for a scope that is gone already', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')

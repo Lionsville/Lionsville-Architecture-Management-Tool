@@ -71,7 +71,7 @@ export function answering(held: HeldRepositories, over: Partial<ScopeRepository>
     apply: (work) => scopes.apply(work),
     create: (at, scope) => scopes.create(at, scope),
     move: (scope, to, expects) => scopes.move(scope, to, expects),
-    remove: (scope, expects) => scopes.remove(scope, expects),
+    remove: (scope, expects, options) => scopes.remove(scope, expects, options),
   }
   return { ...held, scopes: { ...own, ...over } }
 }

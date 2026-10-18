@@ -138,4 +138,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.imageBytesGone': 'Deze afbeelding is niet toegevoegd: ze wordt hier niet meer bewaard. Voeg de afbeelding opnieuw toe vanaf waar je haar hebt.',
   'shell.scopeTaken': 'Op dat adres staat al een ander onderdeel, dus er is niets weggeschreven. Kies een andere naam of plek.',
   'shell.scopeIntoItself': 'Een onderdeel kan niet onder zichzelf worden geplaatst, dus er is niets verplaatst.',
+  'shell.scopeHasChildren': 'Onder dit onderdeel staat nog een ander, dus er is niets verwijderd. Verwijder of verplaats dat eerst.',
 }

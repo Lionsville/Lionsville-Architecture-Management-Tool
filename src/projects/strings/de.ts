@@ -138,4 +138,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.imageBytesGone': 'Dieses Bild wurde nicht hinzugefügt: Es wird hier nicht mehr aufbewahrt. Fügen Sie das Bild erneut hinzu, von dort, wo Sie es haben.',
   'shell.scopeTaken': 'An dieser Adresse steht schon ein anderer Bereich, deshalb wurde nichts geschrieben. Wählen Sie einen anderen Namen oder Ort.',
   'shell.scopeIntoItself': 'Ein Bereich kann nicht unter sich selbst verschoben werden, deshalb wurde nichts verschoben.',
+  'shell.scopeHasChildren': 'Unter diesem Bereich steht noch ein anderer, deshalb wurde nichts entfernt. Entfernen oder verschieben Sie zuerst diesen.',
 }

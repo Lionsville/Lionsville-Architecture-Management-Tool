@@ -43,7 +43,7 @@ import { applySteps, emptyContent, partlyReadRefusal, putBackOf, STEP_ELSEWHERE 
 import type { ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import { reasonOf, ShellError } from '../../platform/errors'
 import type {
-  Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
+  Applied, Created, Moved, NewScope, Refused, Removed, RemoveOptions, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
 } from '../../ports/ScopeRepository'
 import { usablePath } from './FileSystemScopeStore'
 import {
@@ -565,7 +565,7 @@ export class FolderScopeRepository implements ScopeRepository {
     for (const node of moving) this.folder.forget(node.address)
   }
 
-  remove(scope: ScopeId, expects?: string): Promise<Removed | Refused> {
+  remove(scope: ScopeId, expects?: string, options: RemoveOptions = {}): Promise<Removed | Refused> {
     return this.folder.serial(async () => {
       const node = await this.folder.resolve(scope)
       if (!node) return { removed: [] }
@@ -573,9 +573,13 @@ export class FolderScopeRepository implements ScopeRepository {
       if (expects !== undefined && (await this.folder.read(scope))?.state.revision !== expects) {
         return { refused: 'shell.scopeMoved', scope }
       }
-      const removed = (await this.folder.walk()).nodes
+      const walked = await this.folder.walk()
+      const removed = walked.nodes
         .filter((held) => isWithinScope(held.address, node.address))
         .map((held) => held.id)
+      // A folder under it that could not be read is a scope all the same, and goes with it as one does.
+      const under = walked.unreadable.some((address) => address !== node.address && isWithinScope(address, node.address))
+      if (options.leafOnly && (removed.length > 1 || under)) return { refused: 'shell.scopeHasChildren', scope }
       await this.folder.store.remove(node.address)
       this.staging.drop(removed)
       this.folder.forget(node.address)

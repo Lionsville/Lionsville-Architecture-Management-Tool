@@ -43,7 +43,7 @@ import type { ImageRepository } from './ImageRepository'
 import type { PeopleRepository } from './PeopleRepository'
 import type { Repositories } from './Repositories'
 import type {
-  Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, StepsFor,
+  Applied, Created, Moved, NewScope, Refused, Removed, RemoveOptions, ScopeNode, ScopeRepository, StepsFor,
 } from './ScopeRepository'
 import type { SettingsRepository } from './SettingsRepository'
 
@@ -168,7 +168,7 @@ export function over(under: RepositoriesUnderTest) {
       apply: (work) => settled(scopes.apply(work)),
       create: (at, scope) => settled(scopes.create(at, scope)),
       move: (scope, to, expects) => settled(scopes.move(scope, to, expects)),
-      remove: (scope, expects) => settled(scopes.remove(scope, expects)),
+      remove: (scope, expects, options) => settled(scopes.remove(scope, expects, options)),
     } satisfies ScopeRepository,
     history: {
       id: history.id,
@@ -213,7 +213,8 @@ export function over(under: RepositoriesUnderTest) {
     create: (at: ScopeAddress, scope: NewScope): Promise<Created | Refused> => written.scopes.create(at, scope),
     move: (scope: ScopeId, to: ScopeAddress, expects?: Revision): Promise<Moved | Refused> =>
       written.scopes.move(scope, to, expects),
-    remove: (scope: ScopeId, expects?: Revision): Promise<Removed | Refused> => written.scopes.remove(scope, expects),
+    remove: (scope: ScopeId, expects?: Revision, options?: RemoveOptions): Promise<Removed | Refused> =>
+      written.scopes.remove(scope, expects, options),
     /** Steps on one scope, which must land. */
     steps: async (scope: ScopeId, ...commands: ScopeCommand[]): Promise<Revision> =>
       ok(await written.scopes.apply([{ scope, steps: commands.map(step) }])).revisions[0],

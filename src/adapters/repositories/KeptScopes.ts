@@ -16,7 +16,7 @@ import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scope
 import { applySteps, emptyContent, partlyReadRefusal, putBackOf, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import type {
-  Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
+  Applied, Created, Moved, NewScope, Refused, Removed, RemoveOptions, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
 } from '../../ports/ScopeRepository'
 import type { Transaction } from './KeyedStore'
 import {
@@ -138,7 +138,7 @@ export class KeptScopes implements ScopeRepository {
     })
   }
 
-  remove(scope: ScopeId, expects?: Revision): Promise<Removed | Refused> {
+  remove(scope: ScopeId, expects?: Revision, options: RemoveOptions = {}): Promise<Removed | Refused> {
     return this.source.write(async (tx) => {
       const scopes = await allScopes(tx)
       const kept = scopes.find((one) => one.id === scope)
@@ -146,6 +146,7 @@ export class KeptScopes implements ScopeRepository {
       if (kept.address === ROOT_SCOPE) return { refused: 'shell.badScopePath', scope }
       if (expects !== undefined && expects !== kept.revision) return { refused: 'shell.scopeMoved', scope }
       const removed = scopes.filter((one) => isWithinScope(one.address, kept.address)).map((one) => one.id)
+      if (options.leafOnly && removed.length > 1) return { refused: 'shell.scopeHasChildren', scope }
       for (const id of removed) forget(tx, id)
       const meta = await readMeta(tx)
       meta.treeRevision = mintId()

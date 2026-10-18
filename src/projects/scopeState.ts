@@ -205,6 +205,8 @@ export const SCOPE_REFUSALS = [
   'shell.scopeTaken',
   /** A scope moved to an address under itself. */
   'shell.scopeIntoItself',
+  /** A removal of one scope alone (`leafOnly`) met a scope filed under it. */
+  'shell.scopeHasChildren',
   /** An address no scope may have. */
   'shell.badScopePath',
   /** A step on a scope that was not read whole (`ScopeState.unreadable`), in a run that does not begin by putting it back. */
