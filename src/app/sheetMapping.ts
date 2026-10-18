@@ -67,6 +67,7 @@ function domainsOf(at: SheetMappingAt & { openScope?: (path: ScopePath) => void 
   const trail = (path: ScopePath) => scopeTrail(path, scopeName)
   const typeName = new Map(index.operatingModel().unitTypes.map((type) => [type.id, type.name]))
   const types = index.scopeTypes()
+  const known = new Set(index.scopes())
   const below = index.scopes().filter((path) => path !== scope && isWithinScope(path, scope))
   return {
     choices: (functionId) => {
@@ -77,6 +78,7 @@ function domainsOf(at: SheetMappingAt & { openScope?: (path: ScopePath) => void 
       })
     },
     name: trail,
+    known: (path) => path === '' || known.has(path),
     takenUpBy: (functionId) => takenUpBy(index, functionId),
     ...(at.openScope ? { openScope: open } : {}),
   }

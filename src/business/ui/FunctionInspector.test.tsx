@@ -497,6 +497,20 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
     expect(shown.openScope).toHaveBeenCalledWith('retail/shops')
   })
 
+  it('reads a capability as handed on with the area it sits in, and a taker there as asked', () => {
+    const handedArea = { ...model(), elements: model().elements.map((one) => (one.id === 'fulfilment' ? { ...one, scopes: ['retail'] } : one)) }
+    renderShell(
+      <FunctionInspector element={held('picking')} model={handedArea} readOnly={false} actions={{} as SheetActions} domains={domains(['retail/shops'])} />,
+    )
+    expect(screen.getByTestId('sheet-domains-above').textContent).toBe('With Fulfilment: Retail')
+    expect(screen.getByTestId('sheet-taker').getAttribute('data-unasked')).toBeNull()
+  })
+
+  it('says so of a domain the tree does not hold', () => {
+    open(handed(['gone']), false, undefined, undefined, { domains: { ...domains(), known: (scope: string) => scope !== 'gone' } })
+    expect(screen.getByTestId('sheet-domain').textContent).toBe('gone · no such scope')
+  })
+
   it('says nobody either way on a function nothing is said of', () => {
     open('fulfilment', false, undefined, undefined, { domains: domains() })
     expect(screen.getByTestId('sheet-domains').textContent).toContain('Not handed to a domain')
@@ -508,8 +522,10 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
     expect(within(screen.getByTestId('sheet-domain')).queryByTestId('CancelIcon')).toBeNull()
     cleanup()
-    open(handed(['retail']), false, undefined, () => ({ label: 'Acme', fields: ['scopes', 'name'] }), { domains: domains() })
+    open({ ...held('fulfilment'), ref: '' }, false, undefined, () => ({ label: 'Acme', fields: ['scopes', 'name'] }), { domains: domains(['retail']) })
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
+    expect(screen.getByTestId('sheet-domains').textContent).toContain('Said where it is defined')
+    expect(screen.getByTestId('sheet-taker').getAttribute('data-unasked')).toBeNull()
   })
 
   it('is not drawn for a step, nor where the host lends no tree', () => {

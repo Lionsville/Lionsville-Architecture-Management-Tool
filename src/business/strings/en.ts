@@ -154,10 +154,13 @@ export const EN = {
   // --- which domains it is handed to, and which took it up (ADR-0040) ------
   'sheet.domains': 'Domains',
   'sheet.domainsNone': 'Not handed to a domain',
+  'sheet.domainsThere': 'Said where it is defined',
   'sheet.domainsAdd': '+ Domain',
   'sheet.domainsFind': 'Find a scope below this one',
   'sheet.domainsNothing': 'No scope by that name',
   'sheet.notStarted': 'not started',
+  'sheet.domainUnknown': 'no such scope',
+  'sheet.domainsThrough': 'With {name}: {scopes}',
   'sheet.takenUpBy': 'Taken up by',
   'sheet.takenUpNobody': 'No domain yet',
   'sheet.takenUpUnasked': 'without being handed it',

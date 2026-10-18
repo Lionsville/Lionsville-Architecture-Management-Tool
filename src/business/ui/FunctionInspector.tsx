@@ -215,6 +215,8 @@ export type SheetDomains = {
   choices(functionId: ElementId): readonly PickOption[]
   /** What a scope is called, as a trail from the organisation down. */
   name(scope: string): string
+  /** Is there such a scope? A path the tree does not hold is a domain nobody can open. Absent: every one is. */
+  known?(scope: string): boolean
   /** The scopes holding a stand-in of it: the domains that took it up. */
   takenUpBy(functionId: ElementId): readonly string[]
   /** A scope's home, opened from its name. Absent: the names open nothing. */
@@ -425,7 +427,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
               applications={props.applications} elsewhere={props.elsewhere} responsible={props.responsible}
             />
           )}
-          <Domains element={element} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
+          <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
 
           <MarkdownField
             value={element.description ?? ''}
@@ -776,8 +778,9 @@ function AssignedTo({ element, model, readOnly, actions, responsible, assigned, 
  * handed to that has not taken it up is said to be not started. Both are
  * ADR-0012 §3's two findings, neither an error.
  */
-function Domains({ element, readOnly, owned, actions, domains }: {
+function Domains({ element, model, readOnly, owned, actions, domains }: {
   element: DesignElement
+  model: DesignModel
   readOnly: boolean
   owned: boolean
   actions: SheetActions
@@ -786,9 +789,14 @@ function Domains({ element, readOnly, owned, actions, domains }: {
   const { t } = useStrings()
   if (!domains || element.kind !== 'function') return null
   const handed = element.scopes ?? []
+  const above = handedAbove(model.elements, element)
   const takers = domains.takenUpBy(element.id)
   const within = (path: string, scope: string) => scope === '' || path === scope || path.startsWith(`${scope}/`)
   const started = (scope: string) => takers.some((taker) => within(taker, scope))
+  const chipLabel = (scope: string) => {
+    if (domains.known && !domains.known(scope)) return `${domains.name(scope)} · ${t('sheet.domainUnknown')}`
+    return started(scope) ? domains.name(scope) : `${domains.name(scope)} · ${t('sheet.notStarted')}`
+  }
   const editable = !readOnly && !owned
   const place = (scope: string, warn: boolean) => (domains.openScope
     ? (
@@ -805,19 +813,27 @@ function Domains({ element, readOnly, owned, actions, domains }: {
     <Box data-testid="sheet-domains" data-guide="sheet.domains">
       <SectionHeading sx={{ mb: 0.5 }}>{t('sheet.domains')}</SectionHeading>
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-        {handed.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsNone')}</Typography>}
+        {/* A stand-in keeps none of its own: the scope that defines it says them, and they are read there. */}
+        {owned && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsThere')}</Typography>}
+        {!owned && handed.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsNone')}</Typography>}
         {handed.map((scope) => {
           const notStarted = !started(scope)
+          const unknown = domains.known ? !domains.known(scope) : false
           return (
             <Chip
               key={scope} size="small" data-testid="sheet-domain" data-scope={scope} data-not-started={notStarted || undefined}
-              variant={notStarted ? 'outlined' : 'filled'}
-              label={notStarted ? `${domains.name(scope)} · ${t('sheet.notStarted')}` : domains.name(scope)}
+              variant={notStarted ? 'outlined' : 'filled'} color={unknown ? 'warning' : 'default'}
+              label={chipLabel(scope)}
               {...(editable ? { onDelete: () => actions.updateElement(element.id, { scopes: handed.filter((held) => held !== scope) }) } : {})}
             />
           )
         })}
       </Box>
+      {above && (
+        <Typography data-testid="sheet-domains-above" sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>
+          {t('sheet.domainsThrough', { name: above.name, scopes: above.scopes.map(domains.name).join(', ') })}
+        </Typography>
+      )}
       {editable && (
         <PickToAdd
           options={domains.choices(element.id)} label={t('sheet.domainsAdd')} field={t('sheet.domainsFind')} nothing={t('sheet.domainsNothing')}
@@ -832,7 +848,7 @@ function Domains({ element, readOnly, owned, actions, domains }: {
           : (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               {takers.map((taker) => {
-                const unasked = !handed.some((scope) => within(taker, scope))
+                const unasked = !owned && ![...handed, ...(above?.scopes ?? [])].some((scope) => within(taker, scope))
                 return (
                   <Box key={taker} data-testid="sheet-taker" data-unasked={unasked || undefined}>
                     {place(taker, unasked)}
@@ -845,6 +861,27 @@ function Domains({ element, readOnly, owned, actions, domains }: {
       </Box>
     </Box>
   )
+}
+
+/**
+ * The nearest function above this one on the sheet that is handed to a
+ * domain, and the domains it is handed to: a capability goes where its area
+ * was handed, so a domain that took the capability up was handed it with the
+ * area. Nothing where nothing above it is handed on.
+ */
+function handedAbove(
+  elements: readonly DesignElement[], element: DesignElement,
+): { name: string; scopes: readonly string[] } | undefined {
+  const seen = new Set<string>([element.id])
+  let at = element.parentId
+  while (at !== undefined && !seen.has(at)) {
+    seen.add(at)
+    const parent = elements.find((held) => held.id === at)
+    if (!parent) return undefined
+    if (parent.scopes?.length) return { name: parent.name, scopes: parent.scopes }
+    at = parent.parentId
+  }
+  return undefined
 }
 
 /**

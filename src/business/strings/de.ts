@@ -134,10 +134,13 @@ export const DE: Record<keyof typeof EN, string> = {
   // --- welchen Domänen es zugeordnet ist, und welche es aufgriffen (ADR-0040)
   'sheet.domains': 'Domänen',
   'sheet.domainsNone': 'Keiner Domäne zugeordnet',
+  'sheet.domainsThere': 'Dort gesagt, wo es definiert ist',
   'sheet.domainsAdd': '+ Domäne',
   'sheet.domainsFind': 'Einen Bereich unter diesem suchen',
   'sheet.domainsNothing': 'Kein Bereich mit diesem Namen',
   'sheet.notStarted': 'noch nicht aufgegriffen',
+  'sheet.domainUnknown': 'kein bestehender Bereich',
+  'sheet.domainsThrough': 'Mit {name}: {scopes}',
   'sheet.takenUpBy': 'Aufgegriffen von',
   'sheet.takenUpNobody': 'Noch keine Domäne',
   'sheet.takenUpUnasked': 'ohne dass es zugeordnet wurde',

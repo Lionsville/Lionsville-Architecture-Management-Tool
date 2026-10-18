@@ -40,6 +40,7 @@ describe('the inspector’s Domains', () => {
 
   it('names a scope by its trail and says who took a function up', () => {
     expect(domains.name('retail/shops')).toBe('Retail › Shops')
+    expect([domains.known?.('retail'), domains.known?.('gone'), domains.known?.('')]).toEqual([true, false, true])
     expect(domains.takenUpBy('billing')).toEqual(['retail'])
     expect(domains.takenUpBy('returns')).toEqual([])
   })

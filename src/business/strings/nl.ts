@@ -134,10 +134,13 @@ export const NL: Record<keyof typeof EN, string> = {
   // --- aan welke domeinen het is toegewezen, en welke het oppakten (ADR-0040)
   'sheet.domains': 'Domeinen',
   'sheet.domainsNone': 'Niet aan een domein toegewezen',
+  'sheet.domainsThere': 'Gezegd waar het gedefinieerd is',
   'sheet.domainsAdd': '+ Domein',
   'sheet.domainsFind': 'Zoek een scope onder deze',
   'sheet.domainsNothing': 'Geen scope met die naam',
   'sheet.notStarted': 'nog niet opgepakt',
+  'sheet.domainUnknown': 'geen bestaande scope',
+  'sheet.domainsThrough': 'Met {name}: {scopes}',
   'sheet.takenUpBy': 'Opgepakt door',
   'sheet.takenUpNobody': 'Nog geen domein',
   'sheet.takenUpUnasked': 'zonder dat het is toegewezen',
