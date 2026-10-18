@@ -1614,6 +1614,31 @@ const SPECS = [
     },
   },
   {
+    name: 'function.claim',
+    tier: 'write',
+    description:
+      'Take up an area, a grouping or a capability of a scope above this one (ADR-0040 §5): the domain says it '
+      + 'does that function, by keeping a stand-in of it on its own business sheet — what From above… on a sheet '
+      + 'does. One step in this scope, nothing written in the scope above. It is filed under its parent where this '
+      + 'scope holds the parent, and otherwise is a root of the sheet, drawn as one of its areas; the domain\'s own '
+      + 'capabilities go under it with element.add parentId, which is its refinement. Three links between the '
+      + 'business sheet and the tree, told apart: who answers for a function is relation.add assigned from a unit, in '
+      + 'the scope that defines the function; which domain it is handed to is element.update scopes on the '
+      + 'definition, in that scope; which domain took it up is this tool, in the scope below. element.describe of '
+      + 'a function says its domains and claimedBy. Refused claim.notAbove for a function defined beside or below '
+      + 'this scope, claim.definedHere for one this scope defines; one it holds already is answered with already. '
+      + 'Taking it back is element.remove of the stand-in. Answers with where it landed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('area, grouping or capability of a scope above, as elements.list with that scope names it'),
+        diagramId: { type: 'string', description: 'The business sheet to draw it on, where this scope has several (diagrams.list).' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'relation.update',
     tier: 'write',
     description:
@@ -3367,6 +3392,10 @@ export type AgentRefusal =
   | 'reportingLine.self'
   /** A solid line that would close a loop of managers, on the day it is written or its first day; the chain in the detail (ADR-0039 §5). */
   | 'reportingLine.loop'
+  /** A function taken up from a scope that is not above this one (ADR-0040 §5); where it is defined in the detail. */
+  | 'claim.notAbove'
+  /** A function this scope defines: it is handed on from here, not taken up (ADR-0040 §5). */
+  | 'claim.definedHere'
   /** No people register answers here: the host lent the agent none (ADR-0036 §13). */
   | 'agent.noRegister'
   /** `person.add` met somebody similar in the register, said in the detail (ADR-0036 §9). */
@@ -3450,6 +3479,12 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
     'The solid line would close a loop: following who manages whom from it, along the lines and the nesting, comes back to '
     + 'where it started — the chain, and the day, are in the detail. Ask the person which line in the chain is wrong; a dotted '
     + 'line decides nothing and is never refused.',
+  'claim.notAbove':
+    'Only a function of a scope above this one can be taken up here; the detail says where it is defined. A function '
+    + 'beside or below is that scope\'s to take up or hand on: open the scope above both, or the one that defines it.',
+  'claim.definedHere':
+    'This scope defines that function, so there is nothing above to take up. To hand it to a domain below, write its '
+    + 'scopes with element.update; the domain then takes it up with function.claim in its own scope.',
   'agent.noRegister': 'This app lends no people register to an agent here.',
   'agent.possibleDuplicate':
     'The register holds somebody who may be this person; the detail lists them. Use their id, or call again with '

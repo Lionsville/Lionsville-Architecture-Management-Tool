@@ -91,3 +91,19 @@ export const TREE_TOOLS_PARAGRAPH =
   + 'in their own words, that it is to go with all of it; pass those words in personSaid — never your own, never on your '
   + 'own judgement, and never because a call was refused. A host that keeps the scope open in a workspace to that '
   + 'workspace says scope.isOpen: open the home of the scope, or of the one above it, and call again.'
+
+/**
+ * How the organisation's business sheet is mapped to the tree, said once for
+ * an agent (ADR-0040 §4–§7). Three links join a function of the sheet to the
+ * scopes, each written by a different tool in a different scope, and an
+ * agent that is not told which is which writes the one it found first.
+ * Handed over on connect beside {@link STRUCTURE_DEFAULTS} by every host.
+ */
+export const SHEET_MAPPING_PARAGRAPH =
+  'A function of a business sheet — an area, a grouping or a capability — is joined to the tree three ways, and they are told '
+  + 'apart. Who answers for it is a unit: relation.add with type assigned from the unit to the function, in the scope that defines '
+  + 'the function. Which domain it is handed to is the organisation\'s intent, top-down: element.update scopes on the definition, '
+  + 'in the scope that defines it, naming scopes below that one. Which domain took it up is the domain\'s own statement, '
+  + 'bottom-up: function.claim in the domain\'s scope, a stand-in of the function on its sheet, under which the domain files its '
+  + 'own capabilities. element.describe of a function says its domains and claimedBy; a function nobody handed on and no domain '
+  + 'took up is not yet mapped (checks.list). Handing on and taking up are two statements by two scopes: neither writes the other.'

@@ -27,6 +27,7 @@ import type { SessionView } from './handle'
 import { RendererRefused } from './renderer'
 import type { RendererView, SheetShot } from './renderer'
 import type { AgentAnswer } from './tools'
+import type { TreeEntry, TreeView } from './tree'
 
 const SHEET = {
   id: 'sh-1',
@@ -299,5 +300,61 @@ describe('diagrams.list', () => {
         expect.objectContaining({ id: 'l7', kind: 'layer7' }),
         expect.objectContaining({ id: 'sh-1', kind: 'sheet' }),
       ]))
+  })
+})
+
+describe('a function taken up from a scope above (ADR-0040 §5)', () => {
+  /** The organisation above defines Returns; a sibling defines Yard; this landscape defines Fulfilment and hands it to a team below. */
+  const ENTRIES: Record<string, TreeEntry> = {
+    returns: { id: 'returns', kind: 'function', name: 'Returns', master: 'acme', declarations: [], drawnIn: [], stale: [] },
+    yard: { id: 'yard', kind: 'function', name: 'Yard', master: 'acme/depot', declarations: [], drawnIn: [], stale: [] },
+    fulfilment: {
+      id: 'fulfilment', kind: 'function', name: 'Fulfilment', master: 'acme/landscape', declarations: [],
+      drawnIn: ['acme/landscape/pickers', 'acme/depot'], stale: [],
+    },
+  }
+  const tree: TreeView = {
+    scopes: () => [], lookup: (id) => ENTRIES[id], register: () => [], findings: () => [], initiativesBelow: () => [],
+    read: async () => undefined,
+  }
+  const standInFor = (id: string) => {
+    const entry = ENTRIES[id]
+    return entry && { id, kind: entry.kind, name: entry.name, ref: entry.master, lifecycle: 'live' as const, isManaged: false, aspects: {} }
+  }
+  const claiming = () => session({ tree, standInFor })
+
+  it('lands as one step of the agent’s, a stand-in drawn as an area of the sheet', async () => {
+    const at = claiming()
+    const out = await handle({ id: '1', tool: 'function.claim', args: { id: 'returns' } }, at)
+    expect(parsed(out)).toEqual({ id: 'returns', name: 'Returns', claimedFrom: 'acme', drawnOn: 'sh-1', revision: 1 })
+    const model = at.current()
+    expect(model.elements.find((one) => one.id === 'returns')).toMatchObject({ ref: 'acme', isManaged: false })
+    expect(model.diagrams.find((one) => one.id === 'sh-1')?.areas).toEqual(['fulfilment', 'billing', 'returns'])
+    expect(at.history().map((step) => step.commands[0].origin)).toEqual(['agent'])
+    const again = await handle({ id: '2', tool: 'function.claim', args: { id: 'returns' } }, at)
+    expect(parsed(again)).toMatchObject({ id: 'returns', already: true })
+    expect(at.history()).toHaveLength(1)
+  })
+
+  it('refuses one defined here, one defined beside, and an id nobody defines', async () => {
+    const at = claiming()
+    expect(await handle({ id: '1', tool: 'function.claim', args: { id: 'fulfilment' } }, at)).toMatchObject({ ok: false, refusal: 'claim.definedHere' })
+    expect(await handle({ id: '2', tool: 'function.claim', args: { id: 'yard' } }, at))
+      .toMatchObject({ ok: false, refusal: 'claim.notAbove', detail: 'yard is defined in "acme/depot"' })
+    expect(await handle({ id: '3', tool: 'function.claim', args: { id: 'nobody' } }, at)).toMatchObject({ ok: false, refusal: 'agent.unknownId' })
+    expect(await handle({ id: '4', tool: 'function.claim', args: { id: 'returns', diagramId: 'mp-1' } }, at)).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+  })
+
+  it('is said by element.describe: a definition’s domains, and the scopes below that took it up', async () => {
+    const at = claiming()
+    await handle({ id: '1', tool: 'element.update', args: { id: 'fulfilment', scopes: ['acme/landscape/pickers'] } }, at)
+    const described = parsed(await handle({ id: '2', tool: 'element.describe', args: { id: 'fulfilment' } }, at))
+    expect(described.domains).toEqual(['acme/landscape/pickers'])
+    expect(described.claimedBy).toEqual(['acme/landscape/pickers'])
+    await handle({ id: '3', tool: 'function.claim', args: { id: 'returns' } }, at)
+    const standIn = parsed(await handle({ id: '4', tool: 'element.describe', args: { id: 'returns' } }, at))
+    expect(standIn.domains).toBeUndefined()
+    expect(standIn.claimedBy).toEqual([])
+    expect(parsed(await handle({ id: '5', tool: 'element.describe', args: { id: 'erp' } }, at)).claimedBy).toBeUndefined()
   })
 })

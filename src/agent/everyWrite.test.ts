@@ -91,6 +91,8 @@ const host: HostModel = {
   }],
 }
 
+const ABOVE = { id: 'invoicing', kind: 'function' as const, name: 'Invoicing' }
+
 function view(model: Model, scopePath = 'acme/landscape'): WriteView {
   let counter = 0
   return {
@@ -104,7 +106,9 @@ function view(model: Model, scopePath = 'acme/landscape'): WriteView {
     today: () => '2026-09-20',
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
-    tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
+    // One function the organisation above defines, for function.claim to take up (ADR-0040 §5).
+    tree: { lookup: (id) => (id === ABOVE.id ? { ...ABOVE, master: 'acme', declarations: [], drawnIn: [], stale: [] } : undefined), initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
+    standInFor: (id) => (id === ABOVE.id ? { ...ABOVE, ref: 'acme', lifecycle: 'live', isManaged: false, aspects: {} } : undefined),
     me: () => 'pe-femke',
     now: () => '2026-09-20T10:00:00.000Z',
   }
@@ -175,6 +179,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'connections.remove': [{ args: { ids: ['c1', 'c2'] } }],
   'relation.add': [{ args: { type: 'supports', sourceId: 'billing', targetId: 'crm' } }],
   'technology.use': [{ args: { elementId: 'billing', targetIds: ['bus'] } }],
+  'function.claim': [{ args: { id: 'invoicing' } }],
   'relation.update': [{ args: { id: 'c1', type: 'realises' } }],
   'relation.remove': [{ args: { id: 'c1' } }],
 

@@ -172,7 +172,7 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
         standIn: element.ref !== undefined,
         // Who answers for it across the organisation, and who else draws it
         // (ADR-0012 §9) — the element's page header, said to an agent.
-        identity: identityOf(view.tree, element.id),
+        identity: identityOf(view.tree, element.id), ...functionMapping(element, view),
         // `parent`, not `parentApplication`: one field says what a thing sits
         // inside whatever kind it is (ADR-0012 §3) — a component's
         // application, a function's area, a step's phase, an actor's group.
@@ -1220,5 +1220,23 @@ function searchLine(hit: SearchHit, view: ReadView): Record<string, unknown> {
     }
     default:
       return line
+  }
+}
+
+/**
+ * Which domains a function is handed to and which took it up (ADR-0040 §5):
+ * its `scopes`, said by the scope that defines it and so answered only on the
+ * definition — a stand-in's are the definition's, read there — and every
+ * scope strictly below the one that defines it holding a stand-in of it.
+ * Nothing for anything that is not a function.
+ */
+function functionMapping(element: DesignElement, view: ReadView): { domains?: readonly string[]; claimedBy?: readonly string[] } {
+  if (element.kind !== 'function') return {}
+  const entry = view.tree?.lookup(element.id)
+  const master = entry?.master ?? (element.ref === undefined ? view.scopePath : undefined)
+  const below = (path: string) => master !== undefined && path !== master && (master === '' || path.startsWith(`${master}/`))
+  return {
+    ...(element.ref === undefined ? { domains: element.scopes ?? [] } : {}),
+    claimedBy: (entry?.drawnIn ?? []).filter(below),
   }
 }

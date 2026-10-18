@@ -22,6 +22,7 @@ import {
 import { proposeDecision, removeDecision, transitionDecision, updateDecision } from './decisions'
 import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
+import { claimFunction } from './functions'
 import {
   addCause, archiveObservation, linkCauseTool, observationSeen, recordObservation, removeCauseTool,
   removeObservationTool, unlinkCauseTool, updateCauseTool, updateObservationTool,
@@ -78,6 +79,7 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'connections.remove': removeConnections,
   'relation.add': addRelation,
   'technology.use': useTechnology,
+  'function.claim': claimFunction,
   'relation.update': updateRelation,
   'relation.remove': removeRelation,
 
