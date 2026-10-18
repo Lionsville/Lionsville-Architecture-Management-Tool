@@ -54,6 +54,7 @@ import type { MergeKind } from '../observations/merge'
 import type { ReadTool } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
 import { answerPeople, isPeopleTool } from './people'
+import { answerTree, isTreeTool } from './scopeTree'
 import type { ShellView } from './shell'
 import { drives } from './drives'
 import { commandFor, isCommandTool } from './commandFor'
@@ -260,8 +261,11 @@ async function handled(request: AgentRequest, session: SessionView | undefined, 
   // not put a banner up on the way. Only moving the app drives from a home —
   // and the register's writes, which are the organisation's and work with
   // nothing open: a person added, someone marked as left and their
-  // assignments ended across the tree.
-  if (!session && toolSpec(request.tool).tier !== 'drive' && !isPeopleTool(request.tool)) return answerRequest(request, session, shell)
+  // assignments ended across the tree — and the tree's own, a scope made,
+  // described, moved or removed (ADR-0040 §1).
+  if (!session && toolSpec(request.tool).tier !== 'drive' && !isPeopleTool(request.tool) && !isTreeTool(request.tool)) {
+    return answerRequest(request, session, shell)
+  }
   const gate = shell.driving.admit(request.tool, shell.client())
   if (gate) return refused(gate)
   return untilStopped(shell, answerRequest(request, session, shell))
@@ -511,6 +515,11 @@ function aboutTheApp(
   if (isPeopleTool(request.tool)) {
     const tool = request.tool
     return wrongFirst(() => answerPeople(tool, request.args, shell?.people))
+  }
+  // So is the tree of scopes: each change its scope's own step through the host (ADR-0040 §1).
+  if (isTreeTool(request.tool)) {
+    const tool = request.tool
+    return wrongFirst(() => answerTree(tool, request.args, shell?.scopes, shell?.tree ?? session?.tree))
   }
   switch (request.tool) {
     case 'app.current': return wrongFirst(() => currentApp(session, shell))

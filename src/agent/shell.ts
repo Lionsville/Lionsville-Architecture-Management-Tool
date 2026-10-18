@@ -23,6 +23,7 @@ import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 import type { TreeView } from './tree'
 import type { PeopleView } from './people'
+import type { ScopesView } from './scopeTree'
 
 /**
  * What the handler needs from the shell (ADR-0019). Absent in a test with no
@@ -33,6 +34,8 @@ export type ShellView = {
   tree?: TreeView
   /** The organisation's people register (ADR-0036 §13), where the host lends one. */
   people?: PeopleView
+  /** The tree of scopes, to make, describe, move and remove one in (ADR-0040 §1), where the host lends it. */
+  scopes?: ScopesView
   /** Where the app is, now. */
   screen(): Screen
   /**

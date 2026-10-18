@@ -135,6 +135,9 @@ export type ToolSpec<Name extends string = ToolName> = {
 
 const NO_ARGUMENTS: InputSchema = { type: 'object', properties: {}, additionalProperties: false }
 
+/** A scope's built-in kinds (`projects/scope.ts`'s `SCOPE_KINDS`, said again: `agent` may not import `projects`). */
+const SCOPE_KINDS = ['organisation', 'domain', 'programme', 'team', 'landscape'] as const
+
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
 /**
@@ -697,6 +700,112 @@ const SPECS = [
         information: { type: 'boolean', description: 'The same as notes, by its older name.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
+      additionalProperties: false,
+    },
+  },
+
+  // --- the tree (ADR-0040 §1–§2): about the tree, not the scope open; each its scope's own step ---
+  {
+    name: 'scope.create',
+    tier: 'write',
+    description:
+      'Make a scope under another (ADR-0040), as the organisation screen\'s new-scope dialog does, with or without a scope open: '
+      + 'at the address the dialog gives it — the name\'s slug under the parent, suffixed where that is taken or a reserved word '
+      + '(the answer says the path). withBoard makes a landscape scope with one board; without, a domain, which files others '
+      + 'and draws nothing itself. servedBy links a unit (an actor with a unit type, element.describe) to serve it from the '
+      + 'start: the unit\'s scopes are written in the scope that keeps the unit and the new scope takes the unit\'s type, as '
+      + 'Served by does; a link refused leaves the scope made and the answer says where the link is made instead. Refused '
+      + 'agent.unknownScope for a parent that is not there. Not a step on the scope open, so not in a batch and not undone '
+      + 'with undo. Answers the path, the name, the kind, the board and what the link came to.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent: { type: 'string', description: 'The scope to file it under, by path; "" is the organisation (scopes.list).' },
+        name: { type: 'string', description: 'What it is called. Its address is made from it.' },
+        withBoard: { type: 'boolean', description: 'Give it a first board, making it a landscape scope. Default false: a domain.' },
+        servedBy: ID('unit to serve it from the start'),
+      },
+      required: ['parent', 'name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scope.update',
+    tier: 'write',
+    description:
+      'Change what a scope says about itself (ADR-0040), as its settings dialog does: its name and description, and what it '
+      + 'is — a unit type of the operating model (unitTypeId, unitTypes.list) or a built-in kind, never both: the one given '
+      + 'clears the other — the client its drawings are made out to, and its links. Only the fields given change; null clears '
+      + 'an optional one. The organisation is described like any scope. The address stays: scope.move files it elsewhere. '
+      + 'Answers which fields changed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The scope, by path; "" is the organisation.' },
+        name: { type: 'string', description: 'What it is called. A scope keeps a name.' },
+        description: { type: 'string', description: 'What it is, in a sentence or two. Null or empty clears it.' },
+        kind: { type: 'string', description: 'A built-in kind. Clears unitTypeId. Null clears it.', enum: SCOPE_KINDS },
+        unitTypeId: { type: 'string', description: 'A unit type of the operating model, by id (unitTypes.list). Clears kind. Null clears it.' },
+        client: { type: 'string', description: 'Who drawings made here are addressed to, where not the scope itself. Null or empty clears it.' },
+        links: {
+          type: 'array',
+          description: 'Where its material lives, whole. Empty or null clears them.',
+          items: {
+            type: 'object',
+            description: 'One link.',
+            properties: {
+              label: { type: 'string', description: 'What it is called.' },
+              url: { type: 'string', description: 'Where it is: an http, https or mailto address.' },
+            },
+            required: ['label', 'url'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['path'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scope.move',
+    tier: 'write',
+    description:
+      'File a scope, and everything filed under it, under another parent (ADR-0040): its last address segment kept, '
+      + 'suffixed where taken. Every identity, state and history goes with it, and every stand-in elsewhere that named an '
+      + 'address in it is re-addressed as that scope\'s own step; one kept in a scope the person may not write is listed '
+      + 'in notCarried, and the move stands. Refused scope.organisation for the organisation, shell.scopeIntoItself for a '
+      + 'parent under the scope itself. Answers from, to, carried and notCarried.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The scope to move, by path.' },
+        parent: { type: 'string', description: 'The scope to file it under, by path; "" is the organisation.' },
+      },
+      required: ['path', 'parent'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'scope.remove',
+    tier: 'write',
+    description:
+      'Remove one scope (ADR-0040). There is no undo for this. An empty scope goes on request — what it says about itself is '
+      + 'not work. One with scopes under it is refused scope.scopesBelow, naming them: remove those first, deepest first, '
+      + 'one call each. One that holds work — views, elements, records, plans, assignments, comments, pictures — is refused '
+      + 'scope.notEmpty with what it holds: tell the person, and only if they then say in their own words that it is to go '
+      + 'with all of it, call again with removeContents and their words in personSaid. Answers what went, by kind.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The scope to remove, by path. Never the organisation.' },
+        removeContents: {
+          type: 'boolean',
+          description: 'Set only when the person you act for said, in their own words, after you told them what the scope '
+            + 'holds, that it is to go with all of it. Never on your own judgement, and never because a call was refused.',
+        },
+        personSaid: { type: 'string', description: 'Their words, quoted, with removeContents and only with it: kept with the removal, and shown to them.' },
+      },
+      required: ['path'],
       additionalProperties: false,
     },
   },
@@ -3076,6 +3185,13 @@ export const TREE_WIDE: readonly string[] = [
 export const ON_THE_REGISTER: readonly string[] = ['people.list', 'person.add', 'person.leave']
 
 /**
+ * About the tree of scopes rather than the scope open (ADR-0040 §1): each
+ * names the scope it is about by `path`, and lands as that scope's own step,
+ * never on the open session — so no `scope`, and no project revision to guard.
+ */
+export const ON_THE_TREE: readonly string[] = ['scope.create', 'scope.update', 'scope.move', 'scope.remove']
+
+/**
  * About the app rather than a document (ADR-0019): `app.open` spells `scope`
  * as its destination, and the other three are about whatever is on screen.
  * No revision to guard either — none of them writes the model.
@@ -3085,9 +3201,10 @@ export const ABOUT_THE_APP: readonly string[] = ['app.current', 'app.open', 'ses
 export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
   const properties = {
     ...tool.inputSchema.properties,
-    ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
+    ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)
+      || ON_THE_TREE.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
     ...(tool.tier === 'read' || tool.tier === 'drive' || LOOKS_ONLY.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)
-      ? {} : { ifRevision: REVISION_GUARD }),
+      || ON_THE_TREE.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
   }
   return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
 })
@@ -3171,6 +3288,23 @@ export type AgentRefusal =
   | 'agent.scopeNotOpen'
   /** `scope` names a path the tree has no scope at. */
   | 'agent.unknownScope'
+  /** No tree of scopes answers here: the host lent the agent none (ADR-0040 §1). */
+  | 'agent.noTree'
+  /**
+   * The scope open in the workspace, or one above it, has its place in the
+   * tree changed only from a home: the open session's to change (ADR-0040 §3).
+   */
+  | 'scope.isOpen'
+  /** The organisation is the root of the tree: neither moved nor removed. */
+  | 'scope.organisation'
+  /** Scopes are filed under the one to remove; the detail names those the person may see and counts the rest (ADR-0040 §2). */
+  | 'scope.scopesBelow'
+  /** The scope holds work, counted in the detail: it goes only at the person's own words (ADR-0040 §2). */
+  | 'scope.notEmpty'
+  /** The repository's own refusals of a scope's address, passed through (ADR-0040 §1). */
+  | 'shell.scopeTaken'
+  | 'shell.scopeIntoItself'
+  | 'shell.badScopePath'
   /**
    * A unit removed has units inside it whose type may not sit in its parent
    * (3.6.2): where they go is the person's to say, and the detail names the
@@ -3247,6 +3381,21 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.unknownId': 'Nothing in the project has that id.',
   'agent.scopeNotOpen': 'That scope is not the one open in the app. Reads over it are answered; a change, a picture or undo needs a person to open it.',
   'agent.unknownScope': 'No scope in the organisation has that path. scopes.list says which there are.',
+  'agent.noTree': 'This app lends no tree of scopes to an agent here: a person makes, describes, moves and removes scopes on the organisation screen.',
+  'scope.isOpen':
+    'That scope is open in the workspace, or is filed above the one that is, and its place in the tree is the open session\'s to '
+    + 'change. Call app.open with page home on the scope — or on the one above it, for a move or a removal — then call again.',
+  'scope.organisation': 'The organisation is the root of the tree: it is neither moved nor removed. scope.update describes it.',
+  'scope.scopesBelow':
+    'Scopes are filed under this one; the detail names those you can see and counts those you cannot. A scope is removed one '
+    + 'at a time: remove the ones below first, deepest first, one call each, each meeting this rule itself — or move them elsewhere.',
+  'scope.notEmpty':
+    'The scope holds work, counted by kind in the detail, and removing it cannot be undone. Tell the person what is in it and '
+    + 'ask; never decide it yourself. Only if they then say, in their own words, that it is to go with all of it, call again '
+    + 'with removeContents true and their words, quoted, in personSaid.',
+  'shell.scopeTaken': 'A scope is at that address already, or one nobody can read is in the way. Read scopes.list again and choose another.',
+  'shell.scopeIntoItself': 'A scope cannot be filed under itself or under a scope filed under it. Choose a parent outside it.',
+  'shell.badScopePath': 'No scope may have that address. Use a path from scopes.list.',
   'agent.unitsInside':
     'The unit has units inside it whose type may not sit where it sits, so where they go is the person\'s to say. '
     + 'Ask them, naming the choices in the detail, then call element.remove again with units: "into:<id>" for '

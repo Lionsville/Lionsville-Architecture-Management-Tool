@@ -55,6 +55,8 @@ export const ANSWERED_BY_SESSION = [
   'observation.move',
   'diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus',
   'person.add', 'person.leave',
+  // The tree's (ADR-0040 §1): each its scope's own step through the host, never a command here, and no batch holds one.
+  'scope.create', 'scope.update', 'scope.move', 'scope.remove',
 ] as const satisfies readonly ToolOfTier<'write' | 'see'>[]
 
 /** A tool whose request is built into one command here. */
