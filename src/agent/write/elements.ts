@@ -359,6 +359,28 @@ function unitPlaced(view: WriteView, held: DesignElement, parentId: string): tru
 }
 
 /**
+ * The domains a unit or a function names, checked against the tree (ADR-0040
+ * §4): a path the tree does not hold is a link to nothing, and a function is
+ * handed only to a scope below the one that defines it, because handing it
+ * on is said by the scope above. A unit may serve any scope. Where no tree
+ * is lent — or one not read yet, which lists nothing — the paths are taken
+ * as given, as an id is.
+ */
+function domainsWrong(paths: readonly string[], held: DesignElement, view: WriteView): AgentAnswer | undefined {
+  const listed = view.tree?.scopes?.()
+  const known = listed && listed.length > 0 ? new Set(listed.map((one) => one.path)) : undefined
+  for (const [index, path] of paths.entries()) {
+    if (!isServable(path)) continue
+    if (known && !known.has(path)) return refused('agent.unknownScope', `scopes[${index}]: ${path}`)
+    const below = view.scopePath === '' || path.startsWith(`${view.scopePath}/`)
+    if (held.kind !== 'actor' && !below) {
+      return refused('agent.badArguments', `scopes[${index}]: ${path} — a function is handed to the scopes below the one that defines it`)
+    }
+  }
+  return undefined
+}
+
+/**
  * An actor as a unit (ADR-0036 §3): its unit type, the domains it serves and
  * its roles beyond its type's. A unit type and a role are checked against
  * the organisation's operating model where this scope can see it; what the
@@ -377,8 +399,10 @@ const unit: FieldReader = (args, held, view, patch) => {
   }
   if (args.scopes === null) patch.scopes = undefined
   else if (Array.isArray(args.scopes)) {
-    // The organisation is no domain a unit serves (`model/serving.isServable`); a function's domains read it the same way.
-    const domains = [...new Set(args.scopes as string[])].filter((one) => held.kind !== 'actor' || isServable(one))
+    const wrong = domainsWrong(args.scopes as string[], held, view)
+    if (wrong) return wrong
+    // The organisation is no domain, for a unit or a function (`model/serving.isServable`; ADR-0036, amended 13 October 2026).
+    const domains = [...new Set(args.scopes as string[])].filter(isServable)
     patch.scopes = domains.length ? domains : undefined
   }
   if (args.extraSlots === null) patch.extraSlots = undefined

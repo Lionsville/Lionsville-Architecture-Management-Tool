@@ -277,10 +277,12 @@ const ELEMENT_FIELDS = {
   },
   scopes: {
     type: 'array',
-    description: 'A function: the domains the organisation assigned it to. A unit: the domains it serves, by scope path — absent means '
+    description: 'A function: the domains it is handed to, by scope path, each below the scope that defines it — the scope above\'s '
+      + 'intent; a domain taking it up is a stand-in in its own sheet, which this does not write. A unit: the domains it serves, by scope path — absent means '
       + 'the scope it is kept in, or no domain where that is the organisation ("" is never a domain, and is dropped); several only where '
       + 'its unit type spans domains (a check says so otherwise). Replaces the list; null clears it. Each domain named takes the unit\'s '
-      + 'type as its own (ADR-0036, amended 17 October 2026) unless its type already agrees with a unit serving it; the answer\'s scopeTypes says which did.',
+      + 'type as its own (ADR-0036, amended 17 October 2026) unless its type already agrees with a unit serving it; the answer\'s scopeTypes says which did. '
+      + 'Every path is checked against the tree (ADR-0040): one it does not hold is agent.unknownScope, naming the entry.',
     items: { type: 'string' },
   },
   extraSlots: {
@@ -586,10 +588,13 @@ const SPECS = [
       + 'operating model (unitTypeId and unitType, ADR-0036) or a built-in kind (organisation, domain, programme, team '
       + 'or landscape — a landscape scope, which is not the same thing as a landscape board) — the units that serve it '
       + 'today with their types (servedBy), how its type stands to theirs (typeLink: agrees, disagrees, unserved, gone '
-      + 'or unsaid), how many views it holds, and which one is open in the app. A scope\'s type follows the unit linked to it: '
+      + 'or unsaid), how many views it holds, and which one is open in the app. The tree is kept with scope.create, '
+      + 'scope.update, scope.move and scope.remove (ADR-0040). A scope\'s type follows the unit linked to it: '
       + 'a unit\'s scopes written by element.add or element.update give each scope the unit\'s type where this host writes '
       + 'other scopes, and the answer\'s scopeTypes says which did. A path is what `scope` takes on every other tool; '
-      + '"" is the organisation itself.',
+      + '"" is the organisation itself. A function of a business sheet and the tree are linked three ways, told apart: a unit '
+      + 'answers for it (relation.add, assigned), it is handed to a domain (element.update, its scopes), and a domain takes it up '
+      + '(a stand-in of it in that domain\'s sheet).',
     inputSchema: NO_ARGUMENTS,
   },
   {
@@ -1571,7 +1576,9 @@ const SPECS = [
       + 'a while — the roadmap draws the window. One end may be an element another scope defines, as '
       + 'long as register.list or scopes.list knows the id: an organisation\'s capability supported by a '
       + 'landscape\'s application is written on the organisation. For a flow between two applications use '
-      + 'connect, which also takes a protocol and a direction. Answers with the relation\'s id.',
+      + 'connect, which also takes a protocol and a direction. assigned from a unit to an area, a grouping or a capability of a '
+      + 'business sheet says the unit answers for that function, and is written in the scope that defines the function, the unit '
+      + 'kept anywhere; which domain the function is handed to is its scopes (element.update). Answers with the relation\'s id.',
     inputSchema: {
       type: 'object',
       properties: {

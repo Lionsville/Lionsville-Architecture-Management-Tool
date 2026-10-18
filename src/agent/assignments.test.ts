@@ -344,6 +344,32 @@ describe('an actor made a unit through the element tools', () => {
     expect(open.sent[1]).toMatchObject({ patch: { scopes: undefined } })
   })
 
+  it('checks every domain named against the tree, and hands a function only to the scopes below its own (ADR-0040 §4)', async () => {
+    const listed = (at: string, start: HostModel) => {
+      const open = session(at, start)
+      const paths = ['', 'customer', 'customer/returns', 'shipping']
+      return { ...open, tree: { ...open.tree!, scopes: () => paths.map((path) => ({ path, name: path, views: 0 })) } }
+    }
+    const fulfil: DesignElement = { ...actor('fulfil', 'Fulfilment'), kind: 'function' }
+    const open = listed('customer', { ...customer, elements: [...customer.elements, fulfil] })
+    expect(refusal(await ask('element.update', { id: 'partners', scopes: ['shipping', 'nowhere'] }, open))).toEqual(['agent.unknownScope', 'scopes[1]: nowhere'])
+    expect(refusal(await ask('element.update', { id: 'fulfil', scopes: ['customer/returns', 'shipping'] }, open))?.[0]).toBe('agent.badArguments')
+    expect(refusal(await ask('element.update', { id: 'fulfil', scopes: ['customer'] }, open))?.[1]).toContain('below the one that defines it')
+    expect(open.sent).toEqual([])
+    // A unit serves any scope; a function's own, below, goes — and "" is dropped for both.
+    parsed(await ask('element.update', { id: 'partners', scopes: ['shipping'] }, open))
+    parsed(await ask('element.update', { id: 'fulfil', scopes: ['', 'customer/returns'] }, open))
+    expect(open.sent.map((one) => (one as { patch?: unknown }).patch)).toEqual([{ scopes: ['shipping'] }, { scopes: ['customer/returns'] }])
+    // element.add and a batch go through the same reading.
+    expect(refusal(await ask('element.add', { kind: 'function', name: 'Returns', scopes: ['shipping'] }, open))?.[1]).toContain('below the one that defines it')
+    const batched = await ask('batch', { steps: [{ tool: 'element.update', args: { id: 'partners', scopes: ['gone'] } }] }, open)
+    expect(refusal(batched)).toEqual(['agent.unknownScope', 'steps[0]: scopes[0]: gone'])
+    // At the organisation, every scope is below.
+    const top = listed('', { ...organisation, elements: [fulfil] })
+    parsed(await ask('element.update', { id: 'fulfil', scopes: ['shipping'] }, top))
+    expect(top.sent).toHaveLength(1)
+  })
+
   it('refuses a type nobody holds, a type on what is not an actor, and a role or a count that does not stand', async () => {
     const open = session('customer', { ...customer, elements: [...customer.elements, { ...actor('crm', 'CRM'), kind: 'application' }] })
     expect(refusal(await ask('element.update', { id: 'partners', unitTypeId: 'ut-gone' }, open))?.[0]).toBe('agent.unknownId')
