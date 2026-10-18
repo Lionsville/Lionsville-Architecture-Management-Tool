@@ -62,6 +62,27 @@ describe('claimCommand', () => {
     expect(commands(plan.command)[1]).toEqual({ type: 'diagram.update', id: 'sh', patch: { areas: ['invoicing'] } })
   })
 
+  it('takes in what it already took up under it, off every sheet’s list, as one step', () => {
+    const invoicing = { ...capability('invoicing', 'Invoicing', 'billing'), parentId: undefined, ref: '' }
+    const own = area('own', 'Own work')
+    const other = { id: 'sh-2', kind: 'sheet' as const, name: 'Other', areas: ['invoicing'], members: [] }
+    const plan = claimCommand({
+      entry: BILLING, scope: 'acme/retail', standIn: standIn(BILLING),
+      model: { elements: [own, invoicing], diagrams: [other] },
+      sheet: { id: 'sh', areas: ['own', 'invoicing'] },
+      parentOf: (id) => (id === 'invoicing' ? 'billing' : undefined),
+    })
+    if (!('command' in plan)) throw new Error(JSON.stringify(plan))
+    expect(plan.adopted).toEqual(['invoicing'])
+    expect(plan.command.type).toBe('transaction')
+    expect(commands(plan.command)).toEqual([
+      { type: 'element.create', element: standIn(BILLING) },
+      { type: 'element.update', id: 'invoicing', patch: { parentId: 'billing' } },
+      { type: 'diagram.update', id: 'sh-2', patch: { areas: [] } },
+      { type: 'diagram.update', id: 'sh', patch: { areas: ['own', 'billing'] } },
+    ])
+  })
+
   it('marks the step as the agent’s when asked', () => {
     const plan = claimCommand({ entry: BILLING, scope: 'acme/retail', model: { elements: [] }, standIn: standIn(BILLING), origin: 'agent', sheet: { id: 'sh', areas: [] } })
     if (!('command' in plan)) throw new Error(JSON.stringify(plan))

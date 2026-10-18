@@ -108,6 +108,51 @@ describe('From above…', () => {
     expect(at.current()).toEqual(toArrays(fromArrays(retail)))
   })
 
+  it('takes an area up after its capability as one step, filing the capability under it', () => {
+    const wholesale: HostModel = {
+      name: 'Wholesale',
+      elements: [{ ...fn('invoicing', 'Invoicing'), ref: '', isManaged: false }],
+      relations: [],
+      diagrams: [{ id: 'sh-w', kind: 'sheet', name: 'Ours', areas: ['invoicing'], members: [] }],
+    }
+    let model = fromArrays(wholesale)
+    const undo: Command[] = []
+    const claims = sheetClaimsFor({
+      index, scope: 'wholesale', model: wholesale, scopeName, s: DEFAULT_TRANSLATE,
+      current: () => ({ model: toArrays(model), sheet: toArrays(model).diagrams[0] }),
+      dispatch: (command) => {
+        const applied = apply(model, command)
+        if (!applied.ok) throw new Error(applied.reason)
+        model = applied.model
+        undo.push(applied.inverse)
+      },
+    })!
+    claims.claim('billing')
+    expect(undo).toHaveLength(1)
+    expect(toArrays(model).elements.find((one) => one.id === 'invoicing')?.parentId).toBe('billing')
+    expect(toArrays(model).diagrams[0].areas).toEqual(['billing'])
+    const back = apply(model, undo[0])
+    if (!back.ok) throw new Error(back.reason)
+    expect(toArrays(back.model)).toEqual(toArrays(fromArrays(wholesale)))
+  })
+
+  it('says so when a pick lands nothing: held already, or not one to take up any more', () => {
+    const at = session()
+    const told: [string, string | undefined][] = []
+    const claims = sheetClaimsFor({
+      index, scope: 'retail', model: retail, scopeName, s: DEFAULT_TRANSLATE,
+      current: () => ({ model: at.current(), sheet: at.current().diagrams[0] }), dispatch: at.dispatch,
+      notify: (message, severity) => { told.push([message, severity]) },
+    })!
+    claims.claim('billing')
+    claims.claim('gone')
+    expect(at.steps()).toBe(0)
+    expect(told).toEqual([
+      ['Billing is taken up here already.', 'info'],
+      ['gone was not taken up: it is no longer a function of a scope above this one.', 'warning'],
+    ])
+  })
+
   it('offers nothing at the organisation, which has nothing above it', () => {
     expect(sheetClaimsFor({ index, scope: '', model: top, scopeName, s: DEFAULT_TRANSLATE, current: () => ({ model: top, sheet: undefined }), dispatch: () => {} })).toBeUndefined()
   })

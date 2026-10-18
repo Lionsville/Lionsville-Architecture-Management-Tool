@@ -1707,8 +1707,10 @@ A domain takes a function up from its own sheet: **From above…**, beside
 it, grouped by the scope that defines them and saying what each sits in. Pick
 one and the domain's sheet holds it as a stand-in — under its area where the
 domain holds the area, as an area of its own otherwise — one step, undone
-with ⌘Z, and nothing is written in the scope above. What the domain files
-under it is its own refinement. Handing a function on and taking it up are two
+with ⌘Z, and nothing is written in the scope above. An area taken up after one
+of its capabilities takes that capability in under it, in the same step. A
+pick that lands nothing — taken up already, or no longer above — says so. What
+the domain files under it is its own refinement. Handing a function on and taking it up are two
 statements by two scopes, read together: neither writes the other.
 
 At the end is a band for what is **not yet mapped to a domain** — the areas

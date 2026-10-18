@@ -94,6 +94,8 @@ export type SheetClaimsAt = SheetMappingAt & {
   /** The sheet as it stands when the pick lands, which is what the step is built against. */
   current: () => { model: HostModel; sheet: Pick<DesignDiagram, 'id' | 'areas'> | undefined }
   dispatch: (command: Command) => unknown
+  /** A pick that lands nothing — held already, or no longer one to take up — is said here. */
+  notify?: (message: string, severity?: 'info' | 'warning') => void
 }
 
 export function sheetClaimsFor(at: SheetClaimsAt): SheetClaims | undefined {
@@ -122,11 +124,21 @@ function claimsOf(at: SheetClaimsAt, latest: () => SheetClaimsAt): SheetClaims {
   return {
     choices,
     claim: (id) => {
+      const here = latest()
       const entry = index.lookup(id)
-      if (entry?.master === undefined) return
-      const now = latest().current()
-      const plan = claimCommand({ entry, scope, model: now.model, ...(now.sheet ? { sheet: now.sheet } : {}), standIn: standInOf(entry, entry.master) })
-      if ('command' in plan) latest().dispatch(plan.command)
+      const name = entry?.name ?? id
+      if (entry?.master === undefined) {
+        here.notify?.(s('sheetClaim.refused', { name }), 'warning')
+        return
+      }
+      const now = here.current()
+      const plan = claimCommand({
+        entry, scope, model: now.model, ...(now.sheet ? { sheet: now.sheet } : {}), standIn: standInOf(entry, entry.master),
+        parentOf: (held) => index.lookup(held)?.parentId,
+      })
+      if ('command' in plan) here.dispatch(plan.command)
+      else if ('already' in plan) here.notify?.(s('sheetClaim.already', { name }), 'info')
+      else here.notify?.(s('sheetClaim.refused', { name }), 'warning')
     },
   }
 }

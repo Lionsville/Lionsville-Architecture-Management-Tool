@@ -1854,7 +1854,9 @@ erboven, gegroepeerd naar de scope die ze definieert en met waar elk in zit.
 Kies er een en het blad van het domein houdt hem als stand-in — onder
 zijn gebied waar het domein dat gebied heeft, anders als een eigen gebied — één
 stap, terug te draaien met ⌘Z, en in de scope erboven wordt niets geschreven.
-Wat het domein eronder zet is zijn eigen verfijning. Een functie toewijzen en
+Een gebied dat wordt opgepakt na een van zijn capabilities neemt die capability
+in dezelfde stap onder zich. Een keuze die niets oplevert — al opgepakt, of niet
+meer van boven — zegt dat. Wat het domein eronder zet is zijn eigen verfijning. Een functie toewijzen en
 haar oppakken zijn twee uitspraken van twee scopes, samen gelezen: geen van
 beide schrijft de andere.
 

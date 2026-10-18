@@ -815,6 +815,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Von einem Typ, den das Modell nicht kennt',
   'pick.otherActors': 'Andere in diesem Bereich',
+  'sheetClaim.already': '{name} ist hier schon aufgegriffen.',
+  'sheetClaim.refused': '{name} wurde nicht aufgegriffen: es ist keine Funktion eines Bereichs über diesem mehr.',
   'pick.servesOne': 'ein {type} bedient eine Domäne',
   'pick.readOnly': 'geführt, wo Sie nur lesen dürfen',
   'pick.notWritten': 'Es wurde nichts geschrieben.',

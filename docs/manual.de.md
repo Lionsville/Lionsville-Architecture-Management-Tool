@@ -1962,8 +1962,10 @@ Blatts darüber, gruppiert nach dem Bereich, der sie definiert, und mit dem, wor
 jede sitzt. Wählen Sie eine, und das Blatt der Domäne hält sie als
 Stellvertreter — unter ihrem Gebiet, wo die Domäne das Gebiet hält, sonst als
 eigenes Gebiet —, ein Schritt, mit ⌘Z rückgängig, und im Bereich darüber wird
-nichts geschrieben. Was die Domäne darunter ablegt, ist ihre eigene
-Verfeinerung. Eine Funktion zuordnen und sie aufgreifen sind zwei Aussagen
+nichts geschrieben. Ein Gebiet, das nach einer seiner Fähigkeiten aufgegriffen
+wird, nimmt diese Fähigkeit im selben Schritt unter sich. Eine Wahl, die nichts
+bewirkt — schon aufgegriffen, oder nicht mehr darüber —, sagt das. Was die
+Domäne darunter ablegt, ist ihre eigene Verfeinerung. Eine Funktion zuordnen und sie aufgreifen sind zwei Aussagen
 zweier Bereiche, zusammen gelesen: keine schreibt die andere.
 
 Am Ende steht ein Band für das, was **noch keiner Domäne zugeordnet** ist — die

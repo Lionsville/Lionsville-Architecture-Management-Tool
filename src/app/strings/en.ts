@@ -1037,6 +1037,8 @@ export const EN = {
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Of a type the model does not hold',
   'pick.otherActors': 'Others in this scope',
+  'sheetClaim.already': '{name} is taken up here already.',
+  'sheetClaim.refused': '{name} was not taken up: it is no longer a function of a scope above this one.',
   'pick.servesOne': 'a {type} serves one domain',
   'pick.readOnly': 'kept where you may only read',
   'pick.notWritten': 'Nothing was written.',

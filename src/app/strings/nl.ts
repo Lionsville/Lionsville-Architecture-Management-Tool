@@ -814,6 +814,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'pick.in': 'in {name}',
   'pick.otherUnits': 'Van een type dat het model niet kent',
   'pick.otherActors': 'Anderen in deze scope',
+  'sheetClaim.already': '{name} is hier al opgepakt.',
+  'sheetClaim.refused': '{name} is niet opgepakt: het is geen functie meer van een scope boven deze.',
   'pick.servesOne': 'een {type} bedient één domein',
   'pick.readOnly': 'bijgehouden waar u alleen mag lezen',
   'pick.notWritten': 'Er is niets weggeschreven.',

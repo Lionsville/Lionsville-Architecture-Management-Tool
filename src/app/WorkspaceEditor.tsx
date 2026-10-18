@@ -262,6 +262,7 @@ function sheetMapping(parts: WorkspaceParts, diagram: DesignDiagram) {
       return { model, sheet: model.diagrams.find((held) => held.id === diagram.id) }
     },
     dispatch: (command) => session.dispatch(command),
+    notify: parts.props.shell.notify,
   })
   return {
     domains: sheetDomainsFor({ ...at, openScope: parts.props.navigation.onGoHome }),

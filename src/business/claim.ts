@@ -51,6 +51,8 @@ export type ClaimPlan =
     readonly parentId?: ElementId
     /** The sheet it is an area of, where it lands as a root and a sheet was named. */
     readonly drawnOn?: string
+    /** The roots this scope held of what is under it, filed under it now. */
+    readonly adopted?: readonly ElementId[]
   }
   | { readonly refused: ClaimRefusal; readonly detail?: string }
   /** This scope holds a stand-in of it already: an answer, not a refusal. */
@@ -69,13 +71,21 @@ export function isAbove(above: string, scope: string): boolean {
  * the two caches and nothing of the owner's detail. `sheet` is the sheet the
  * claim is made on, where there is one; a scope with no sheet still takes the
  * function up, and its first sheet draws it as one more root.
+ *
+ * A function taken up after something under it was — an area after its
+ * capability — takes what this scope holds of it in: each root stand-in whose
+ * master files it under this function is filed under the new one, and comes
+ * off the list of every sheet that drew it as an area. `parentOf` says what a
+ * master files an id under; without it nothing is taken in. All of it is one
+ * step, so ⌘Z takes the claim back whole.
  */
 export function claimCommand(at: {
   entry: ClaimEntry | undefined
   scope: string
-  model: { readonly elements: readonly DesignElement[] }
+  model: { readonly elements: readonly DesignElement[]; readonly diagrams?: readonly DesignDiagram[] }
   sheet?: Pick<DesignDiagram, 'id' | 'areas'>
   standIn: DesignElement
+  parentOf?: (id: ElementId) => ElementId | undefined
   origin?: 'agent'
 }): ClaimPlan {
   const { entry, scope, model, sheet, standIn } = at
@@ -97,14 +107,44 @@ export function claimCommand(at: {
     ...(parent ? { parentId: parent.id } : {}),
     ...(order !== undefined ? { order } : {}),
   }
-  const commands: Command[] = [{ type: 'element.create', element }]
-  // A root on a sheet that lists its areas is drawn only once it is on the
-  // list; a sheet with no list draws every root, this one included.
-  if (!parent && sheet?.areas) commands.push({ type: 'diagram.update', id: sheet.id, patch: { areas: [...sheet.areas, element.id] } })
+  const adopted = model.elements
+    .filter((one) => one.kind === 'function' && one.ref !== undefined && one.parentId === undefined && at.parentOf?.(one.id) === entry.id)
+    .map((one) => one.id)
+  const commands: Command[] = [
+    { type: 'element.create', element },
+    ...adopted.map((id): Command => ({ type: 'element.update', id, patch: { parentId: element.id } })),
+    ...areasAfter({ sheets: model.diagrams ?? [], sheet, adopted, root: parent ? undefined : element.id }),
+  ]
   const meta = at.origin ? { origin: at.origin } : {}
   return {
     command: commands.length === 1 ? { ...commands[0], ...meta } as Command : transaction(commands, meta),
     ...(parent ? { parentId: parent.id } : {}),
     ...(!parent && sheet ? { drawnOn: sheet.id } : {}),
+    ...(adopted.length > 0 ? { adopted } : {}),
   }
+}
+
+/**
+ * Every sheet's list of areas after the claim: the roots taken in off every
+ * list that names them, and a new root put on the list of the sheet the claim
+ * is made on. A sheet with no list draws every root and is not touched.
+ */
+function areasAfter(at: {
+  sheets: readonly DesignDiagram[]
+  sheet: Pick<DesignDiagram, 'id' | 'areas'> | undefined
+  adopted: readonly ElementId[]
+  root: ElementId | undefined
+}): Command[] {
+  const lists = new Map<string, readonly ElementId[]>()
+  for (const one of at.sheets) if (one.kind === 'sheet' && one.areas) lists.set(one.id, one.areas)
+  if (at.sheet?.areas) lists.set(at.sheet.id, at.sheet.areas)
+  const out: Command[] = []
+  for (const [id, areas] of lists) {
+    const kept = areas.filter((area) => !at.adopted.includes(area))
+    const next = at.root !== undefined && id === at.sheet?.id ? [...kept, at.root] : kept
+    if (next.length !== areas.length || next.some((area, index) => area !== areas[index])) {
+      out.push({ type: 'diagram.update', id, patch: { areas: next } })
+    }
+  }
+  return out
 }
