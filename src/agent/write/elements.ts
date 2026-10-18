@@ -362,15 +362,20 @@ function unitPlaced(view: WriteView, held: DesignElement, parentId: string): tru
  * The domains a unit or a function names, checked against the tree (ADR-0040
  * §4): a path the tree does not hold is a link to nothing, and a function is
  * handed only to a scope below the one that defines it, because handing it
- * on is said by the scope above. A unit may serve any scope. Where no tree
- * is lent — or one not read yet, which lists nothing — the paths are taken
- * as given, as an id is.
+ * on is said by the scope above. A unit may serve any scope.
+ *
+ * Only a path the element does not name already is checked: one it holds —
+ * a scope hidden from this person, one removed since, one handed on before
+ * the rule — is the list as it stands, and writing the list back keeps it.
+ * Where no tree is lent, or the tree says its listing has not been read yet
+ * (`TreeView.listed`), the paths are taken as given, as an id is.
  */
 function domainsWrong(paths: readonly string[], held: DesignElement, view: WriteView): AgentAnswer | undefined {
-  const listed = view.tree?.scopes?.()
-  const known = listed && listed.length > 0 ? new Set(listed.map((one) => one.path)) : undefined
+  const tree = view.tree
+  const known = tree?.scopes && tree.listed?.() !== false ? new Set(tree.scopes().map((one) => one.path)) : undefined
+  const already = new Set(held.scopes ?? [])
   for (const [index, path] of paths.entries()) {
-    if (!isServable(path)) continue
+    if (!isServable(path) || already.has(path)) continue
     if (known && !known.has(path)) return refused('agent.unknownScope', `scopes[${index}]: ${path}`)
     const below = view.scopePath === '' || path.startsWith(`${view.scopePath}/`)
     if (held.kind !== 'actor' && !below) {

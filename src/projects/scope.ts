@@ -354,6 +354,18 @@ export function scopeTree(
   return root
 }
 
+/**
+ * The tree before anybody has listed it: the organisation alone, and the one
+ * value a listing read since never is — what a reader asks to tell *not read
+ * yet* from *nothing there* (`TreeView.listed`).
+ */
+export const NOT_LISTED: ScopeSummary = Object.freeze(scopeTree([]))
+
+/** Whether a tree is one somebody has listed. */
+export function isListed(tree: ScopeSummary): boolean {
+  return tree !== NOT_LISTED
+}
+
 /** Every scope in a tree, depth first, the root first. */
 export function flattenScopes(root: ScopeSummary): ScopeSummary[] {
   return [root, ...root.children.flatMap(flattenScopes)]

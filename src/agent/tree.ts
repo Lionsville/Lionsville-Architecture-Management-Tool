@@ -134,6 +134,12 @@ export type ForeignScope = {
 /** What the handler needs from the tree. Absent in a test with no index, and every answer here is then over nothing. */
 export type TreeView = {
   scopes(): readonly TreeScope[]
+  /**
+   * Whether the listing `scopes` answers from has been read yet: before it
+   * has, it lists the organisation alone, and says nothing of what else is
+   * there. Absent, the listing is the tree.
+   */
+  listed?(): boolean
   lookup(id: ElementId): TreeEntry | undefined
   /** Every application in the organisation, by name (§2). */
   register(): readonly TreeEntry[]

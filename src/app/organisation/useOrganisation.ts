@@ -28,7 +28,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../../i18n'
-import { bareScope, flattenScopes, scopeTree } from '../../projects/scope'
+import { bareScope, flattenScopes, NOT_LISTED } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
 import { removeContainerDiagram, toDiagram } from '../../model'
@@ -204,7 +204,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   revision: number
   onFailure: UseOrganisationInput['onFailure']
 }): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean; listedNow: boolean } {
-  const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
+  const [tree, setTree] = useState<ScopeSummary>(NOT_LISTED)
   const [listed, setListed] = useState(false)
   /** The revision the listing on screen was read at. */
   const [listedAt, setListedAt] = useState(-1)
@@ -237,7 +237,8 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
       (held) => { if (live) { setTree(summaryOf(held)); setListed(true); setListedAt(revision) } },
       (cause: unknown) => {
         if (!live) return
-        setTree(scopeTree([]))
+        // Not read, as before any read: an agent's check of a path takes it as given (`TreeView.listed`).
+        setTree(NOT_LISTED)
         setListed(true)
         setListedAt(revision)
         failedRef.current('organisation.list', cause, 'picker.listFailed')

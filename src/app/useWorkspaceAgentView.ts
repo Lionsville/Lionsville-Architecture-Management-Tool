@@ -26,7 +26,7 @@ import { registerOf, resolvePerson } from '../people/shown'
 import { organisationHere } from './units/organisationHere'
 import { standInOf } from '../projects/library'
 import { mayApplyPatch } from '../projects/mayEdit'
-import { flattenScopes } from '../projects/scope'
+import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes } from '../projects/scopePath'
@@ -229,6 +229,7 @@ export function agentTree(at: {
 }): WorkspaceAgentView['tree'] {
   const { session, scope, indexRef, rowsElsewhereRef, scopes, reader } = at
   return {
+    listed: () => isListed(scopes),
     scopes: () => flattenScopes(scopes).map((held) => ({
       path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
       ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,

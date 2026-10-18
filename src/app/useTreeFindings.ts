@@ -14,7 +14,7 @@ import { useIndex } from './useIndex'
 import type { Failed } from './useShellServices'
 import type { TreeView } from '../agent/tree'
 import { findingsByScope, identityFindings, organisationFindings } from '../projects/checks'
-import { flattenScopes } from '../projects/scope'
+import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
@@ -104,6 +104,7 @@ function useShellTree(
   const treeRef = useRef({ tree, index, identity })
   treeRef.current = { tree, index, identity }
   return useMemo<TreeView>(() => ({
+    listed: () => isListed(treeRef.current.tree),
     scopes: () => flattenScopes(treeRef.current.tree).map((held) => ({
       path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
       ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,

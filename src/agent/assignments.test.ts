@@ -60,7 +60,7 @@ const people: Person[] = [
 
 function tree(): TreeView {
   return {
-    scopes: () => [],
+    scopes: () => ['', 'customer', 'shipping'].map((path) => ({ path, name: path, views: 0 })),
     lookup: (id) => (id === 'parcel' ? { id, kind: 'actor', name: 'Parcel', declarations: [], drawnIn: [], stale: [] } : undefined),
     register: () => [],
     findings: () => [],
@@ -364,6 +364,13 @@ describe('an actor made a unit through the element tools', () => {
     expect(refusal(await ask('element.add', { kind: 'function', name: 'Returns', scopes: ['shipping'] }, open))?.[1]).toContain('below the one that defines it')
     const batched = await ask('batch', { steps: [{ tool: 'element.update', args: { id: 'partners', scopes: ['gone'] } }] }, open)
     expect(refusal(batched)).toEqual(['agent.unknownScope', 'steps[0]: scopes[0]: gone'])
+    // A domain the unit names already is the list as it stands, whatever the tree says of it now.
+    const holding = listed('customer', { ...customer, elements: [actor('partners', 'Partners', { scopes: ['retired-domain'] })] })
+    parsed(await ask('element.update', { id: 'partners', scopes: ['retired-domain', 'shipping'] }, holding))
+    expect(holding.sent.map((one) => (one as { patch?: unknown }).patch)).toEqual([{ scopes: ['retired-domain', 'shipping'] }])
+    // A tree that says it has not been read yet takes the paths as given.
+    const unread = { ...open, tree: { ...open.tree, listed: () => false } }
+    expect(refusal(await ask('element.update', { id: 'partners', scopes: ['not-listed-yet'] }, unread))).toBeUndefined()
     // At the organisation, every scope is below.
     const top = listed('', { ...organisation, elements: [fulfil] })
     parsed(await ask('element.update', { id: 'fulfil', scopes: ['shipping'] }, top))
