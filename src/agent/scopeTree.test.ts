@@ -215,6 +215,14 @@ describe('scope.remove', () => {
     }]])
   })
 
+  it('keeps the person\'s words as one line, and refuses more than a few sentences of them', async () => {
+    const held = host({ 'acme/rail': { name: 'Rail', holds: { comments: 1 } } })
+    const gone = parsed(await ask('scope.remove', { path: 'acme/rail', removeContents: true, personSaid: 'Yes,\nremove\u0007 it\r\n  all' }, held))
+    expect(gone.personSaid).toBe('Yes, remove it all')
+    const long = 'remove it all '.repeat(40)
+    expect(refusal(await ask('scope.remove', { path: 'acme/rail', removeContents: true, personSaid: long }, held))).toBe('agent.badArguments')
+  })
+
   it('refuses the override without the person\'s words, the words without the override, and the organisation', async () => {
     const held = host({ 'acme/rail': { name: 'Rail', holds: { comments: 1 } } })
     expect(refusal(await ask('scope.remove', { path: 'acme/rail', removeContents: true }, held))).toBe('agent.badArguments')

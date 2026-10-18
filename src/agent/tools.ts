@@ -808,7 +808,7 @@ const SPECS = [
           description: 'Set only when the person you act for said, in their own words, after you told them what the scope '
             + 'holds, that it is to go with all of it. Never on your own judgement, and never because a call was refused.',
         },
-        personSaid: { type: 'string', description: 'Their words, quoted, with removeContents and only with it: kept with the removal, and shown to them.' },
+        personSaid: { type: 'string', description: 'Their words, quoted, at most 500 characters, with removeContents and only with it: kept with the removal, and shown to them.' },
       },
       required: ['path'],
       additionalProperties: false,

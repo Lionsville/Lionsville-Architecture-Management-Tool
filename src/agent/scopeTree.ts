@@ -113,6 +113,8 @@ type Args = Record<string, unknown>
 
 /** The fewest words a person's own words may be: enough to be a sentence somebody said, not a token. */
 export const PERSON_SAID_WORDS = 3
+/** At most this many characters of the person's words: what they said, not a document. */
+export const PERSON_SAID_LENGTH = 500
 
 const ORGANISATION = ''
 
@@ -241,7 +243,9 @@ async function removeScope(view: ScopesView, args: Args): Promise<AgentAnswer> {
   const path = args.path as string
   if (path === ORGANISATION) return refused('scope.organisation')
   const contents = args.removeContents === true
-  const said = typeof args.personSaid === 'string' ? args.personSaid.trim() : ''
+  // One line of words: control characters and runs of space are one space, so what is kept can never read as more lines than were said.
+  const said = typeof args.personSaid === 'string' ? args.personSaid.replace(/[\s\p{Cc}]+/gu, ' ').trim() : ''
+  if (said.length > PERSON_SAID_LENGTH) return refused('agent.badArguments', `personSaid is at most ${PERSON_SAID_LENGTH} characters: their words, not more`)
   // The two are only ever set together: the words are what the override rests on.
   if (contents && said.split(/\s+/).filter(Boolean).length < PERSON_SAID_WORDS) {
     return refused('agent.badArguments', `removeContents needs personSaid: the person's own words, quoted, at least ${PERSON_SAID_WORDS} words`)
