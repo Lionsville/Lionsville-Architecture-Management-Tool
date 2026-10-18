@@ -599,6 +599,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.treeEmptyLandscape': 'Eine Landschaft führt ihre eigenen Ansichten. Legen Sie nur dann einen Bereich darunter an, wenn Sie sie aufteilen wollen.',
   'org.expand': 'Zeigen, was unter {name} liegt',
   'org.collapse': 'Verbergen, was unter {name} liegt',
+  'org.openAll': 'Alle zeigen',
+  'org.foldAll': 'Alle einklappen',
+  'org.underOne': '{count} Bereich darunter',
+  'org.underOther': '{count} Bereiche darunter',
 
   'org.copyHere': 'In diesen Ordner kopieren\u2026',
 

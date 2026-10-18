@@ -54,10 +54,14 @@ const show = (scopes = TREE()) => {
   return { store, ...renderApp({ repositories: store, today: TODAY }) }
 }
 
+/** The tree starts folded: open the scope at `path` to see what is under it. */
+const unfold = async (path: string) => fireEvent.click(await screen.findByTestId(`fold-${path}`))
+
 describe('the tree', () => {
   it('nests a scope under its parent, and does not list the root in it', async () => {
     show()
     expect((await screen.findByTestId('scope-retail')).dataset.depth).toBe('0')
+    await unfold('retail')
     expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('1')
     // The root is the screen; a row for it would be the organisation inside
     // itself.
@@ -67,19 +71,40 @@ describe('the tree', () => {
   it('sums a subtree on a scope that has one, and a leaf on one that has not', async () => {
     show()
     const retail = await screen.findByTestId('scope-retail')
+    expect(retail.textContent).toContain('1 scope under it')
     expect(retail.textContent).toContain('1 scope with boards')
     expect(retail.textContent).toContain('1 diagram')
     expect(screen.getByTestId('scope-finance').textContent).toContain('1 diagram')
   })
 
-  /** Per session and not a preference: a fold is what you are doing now. */
-  it('folds a scope shut and hides everything inside it', async () => {
+  /**
+   * Folded until opened, so a home lists its first column; per session and
+   * not a preference: a fold is what you are doing now.
+   */
+  it('starts with every scope folded, and opens and shuts one', async () => {
     show()
     const retail = await screen.findByTestId('scope-retail')
-    fireEvent.click(within(retail).getByRole('button', { name: 'Hide what is under Retail' }))
     expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
-    fireEvent.click(within(screen.getByTestId('scope-retail')).getByRole('button', { name: 'Show what is under Retail' }))
+    fireEvent.click(within(retail).getByRole('button', { name: 'Show what is under Retail' }))
     expect(screen.getByTestId('scope-retail/warehouse')).toBeDefined()
+    fireEvent.click(within(screen.getByTestId('scope-retail')).getByRole('button', { name: 'Hide what is under Retail' }))
+    expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
+  })
+
+  /** One press for the whole tree, offered only where there is something below to fold. */
+  it('shows all of the tree and folds it again', async () => {
+    show([...TREE(), scope('retail/warehouse/dock', 'Dock')])
+    await screen.findByTestId('scope-retail')
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }))
+    expect(screen.getByTestId('scope-retail/warehouse/dock').dataset.depth).toBe('2')
+    fireEvent.click(screen.getByRole('button', { name: 'Fold all' }))
+    expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
+  })
+
+  it('offers no Show all on a tree with nothing to fold', async () => {
+    show([scope('', 'Acme Logistics', false), scope('finance', 'Finance')])
+    await screen.findByTestId('scope-finance')
+    expect(screen.queryByTestId('tree-fold-all')).toBeNull()
   })
 
   /**
@@ -89,7 +114,7 @@ describe('the tree', () => {
    */
   it('opens a scope on its home, and not on one of its boards', async () => {
     show()
-    await screen.findByTestId('scope-retail')
+    await unfold('retail')
     fireEvent.click(screen.getByTestId('open-retail/warehouse'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Warehouse')
     expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
@@ -435,6 +460,7 @@ describe('a domain’s home', () => {
 describe('the crumbs over an open scope', () => {
   it('name the organisation, the domain and the landscape, in that order', async () => {
     show()
+    await unfold('retail')
     fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
     fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
@@ -446,6 +472,7 @@ describe('the crumbs over an open scope', () => {
 
   it('land on the home of the crumb pressed', async () => {
     show()
+    await unfold('retail')
     fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
     fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
@@ -499,6 +526,7 @@ describe('the cards, per level', () => {
 
   it('give a landscape its documentation, its decisions and its plans', async () => {
     show()
+    await unfold('retail')
     fireEvent.click(await screen.findByTestId('home-retail/warehouse'))
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(within(cards).getByTestId('open-documentation')).toBeDefined())

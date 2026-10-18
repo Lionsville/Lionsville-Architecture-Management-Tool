@@ -534,12 +534,27 @@ describe('useOrganisation', () => {
     })
   })
 
-  it('folds a scope shut and open again', async () => {
-    const { held } = mount()
+  /** Retail with a scope under it, so it has something to fold. */
+  const nested = (): ScopeSnapshot[] => ['retail', 'retail/stores'].map((path) => ({
+    path, model: { name: path, elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
+  }))
+
+  it('starts every scope with children folded, and opens and folds one', async () => {
+    const { held } = mount(nested())
     await settle()
-    act(() => held().toggleCollapsed('retail'))
     expect(held().collapsed.has('retail')).toBe(true)
     act(() => held().toggleCollapsed('retail'))
     expect(held().collapsed.has('retail')).toBe(false)
+    act(() => held().toggleCollapsed('retail'))
+    expect(held().collapsed.has('retail')).toBe(true)
+  })
+
+  it('opens the whole tree and folds it all again', async () => {
+    const { held } = mount(nested())
+    await settle()
+    act(() => held().openAll())
+    expect(held().collapsed.size).toBe(0)
+    act(() => held().foldAll())
+    expect(held().collapsed.has('retail')).toBe(true)
   })
 })

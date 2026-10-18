@@ -138,9 +138,14 @@ ene eindverantwoordelijke rol. De rest van *Eén naam in de hele organisatie*
 hieronder zegt wat elk betekent.
 
 **Scopes binnen** de organisatie, eronder: één regel per onderdeel, de
-kinderen ingesprongen, met een pijltje om een domein dicht te klappen, en een
-label met wat het onderdeel zegt te zijn. Een regel zegt hoeveel erin zit —
-scopes met borden en diagrammen over de hele tak voor een domein, diagrammen
+kinderen ingesprongen, en een label met wat het onderdeel zegt te zijn. De boom
+begint ingeklapt, zodat een startpagina alleen de scopes direct eronder toont:
+druk op het pijltje voor een domein om te tonen wat eronder zit en nog eens om
+het dicht te klappen, of op **Alles tonen** boven de boom om alle niveaus in
+één keer te openen (**Alles inklappen** klapt ze weer dicht). Het inklappen
+blijft zolang de app open is. Een regel zegt hoeveel erin zit — voor een domein
+hoeveel scopes eronder vallen, en scopes met borden en diagrammen over de hele
+tak, diagrammen
 voor een onderdeel waar niets onder valt — en wanneer het laatst iets
 veranderde.
 **Volgorde** sorteert op naam of op wat je het laatst hebt gewijzigd. Een

@@ -129,9 +129,13 @@ sits nowhere or a responsibility without its one accountable role. The rest
 of *One name across the organisation* below says what each means.
 
 **Scopes within** the organisation, beneath: one row per scope, the children
-indented, with a chevron to fold a domain shut, and a badge saying what the
-scope says it is. A row says how much is inside it — scopes with boards and
-diagrams over the whole subtree for a domain, diagrams for a scope with nothing
+indented, and a badge saying what the scope says it is. The tree starts folded,
+so a home lists only the scopes directly under it: press the chevron in front
+of a domain to show what is under it and again to fold it shut, or **Show all**
+above the tree to open every level at once (**Fold all** shuts them again). The
+fold lasts while the app is open. A row says how much is inside it — for a
+domain how many scopes are under it, and scopes with boards and diagrams over
+the whole subtree, diagrams for a scope with nothing
 under it — and when it last changed. **Order** lists by name or by what you
 changed most recently. An organisation with nothing filed under it yet says so
 in a sentence. A scope that draws lists its **Boards** above the tree instead,

@@ -9,10 +9,11 @@
  * orderings come to disagree. **The root is not a row**: it is the screen this
  * sits on, and a row for it would be an organisation listed inside itself.
  *
- * A scope with children can be folded shut. That is per session and not a
- * preference — a fold is what you are doing this minute, and a tool that
- * remembered it would open next week with half the tree hidden for a reason
- * nobody can reconstruct.
+ * A scope with children can be folded shut, and starts so: a home lists its
+ * first column, and a person opens what they came for. What is opened is per
+ * session and not a preference — a fold is what you are doing this minute,
+ * and a tool that remembered it would open next week with half the tree
+ * hidden for a reason nobody can reconstruct.
  *
  * A row says how much is in it and when it changed, and nothing about what
  * the tree contradicts: the findings used to be counted here in the warning
@@ -37,6 +38,8 @@ import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
 import { scopeTypeLabel } from './ScopeSettingsDialog'
 import type { TypeLink } from '../../projects/scopeType'
+import { foldsBelow } from './useScopeFolds'
+import type { ScopeFolds } from './useScopeFolds'
 
 /** Whether the badge warns: the scope's type and its serving units disagree, or its type is gone. */
 function typeWarns(link: TypeLink | undefined): boolean {
@@ -51,8 +54,8 @@ export type ScopeTreeProps = {
   tree: ScopeSummary
   /** What the top of the tree is called, for the sentence an empty one shows. */
   name: string
-  collapsed: ReadonlySet<ScopePath>
-  onToggleCollapsed: (path: ScopePath) => void
+  /** What is folded shut, and the press that turns one (`useScopeFolds`). */
+  folds: Pick<ScopeFolds, 'collapsed' | 'toggleCollapsed'>
   /**
    * To the scope's home: its own pages, its boards and the tree under it.
    * Every row has one, and **the whole row is it** — opening a scope is
@@ -119,29 +122,35 @@ function metaOf(scope: ScopeSummary, s: Translate): string {
   }
   const totals = subtreeTotals(scope)
   return [
+    // First, because a folded row is the only place left that says there is
+    // anything to open.
+    plural(s, { one: 'org.underOne', other: 'org.underOther' }, flattenScopes(scope).length - 1),
     plural(s, { one: 'org.landscapesOne', other: 'org.landscapesOther' }, totals.landscapes),
     plural(s, { one: 'org.diagramsOne', other: 'org.diagramsOther' }, totals.diagrams),
   ].join(' · ')
 }
 
-/** The rows to draw: depth first, minus anything inside a folded scope. */
+/**
+ * The rows to draw: depth first, minus anything inside a folded scope. Only a
+ * fold below the top counts — the top is the screen, and its own fold is the
+ * one its parent's home would show.
+ */
 function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): ScopeSummary[] {
   return tree.children.flatMap((child) => (
-    collapsed.has(child.path)
-      ? [child]
-      : flattenScopes(child).filter((scope) => (
-        // A scope inside a folded one stays hidden however deep it is.
-        ![...collapsed].some((shut) => scope.path !== shut && scope.path.startsWith(`${shut}/`))
-      ))
+    [child, ...(collapsed.has(child.path) ? [] : visibleRows(child, collapsed))]
   ))
 }
+
+/** How wide the fold's press is: the whole height of a row, not the caret's. */
+const FOLD = 32
 
 const ANYWHERE = () => true
 
 export function ScopeTree({
-  tree, name, collapsed, onToggleCollapsed, onHome, onSettings, onDelete, writable = ANYWHERE, landscape = false,
+  tree, name, folds, onHome, onSettings, onDelete, writable = ANYWHERE, landscape = false,
   typeName, typeLink, language, s,
 }: ScopeTreeProps) {
+  const { collapsed, toggleCollapsed } = folds
   const rows = visibleRows(tree, collapsed)
   // The top of the tree is the screen, so its children are the first column.
   const base = scopeSegments(tree.path).length
@@ -175,8 +184,8 @@ export function ScopeTree({
             onClick={() => onHome(scope.path)}
             sx={{
               alignItems: 'center',
-              ml: depth * 2.5,
-              py: 0.75,
+              ml: depth * 3,
+              py: 0.5,
               borderBottom: 1,
               borderColor: 'divider',
               cursor: 'pointer',
@@ -188,19 +197,29 @@ export function ScopeTree({
                 <IconButton
                   size="small"
                   aria-label={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}
-                  onClick={(event) => { event.stopPropagation(); onToggleCollapsed(scope.path) }}
+                  onClick={(event) => { event.stopPropagation(); toggleCollapsed(scope.path) }}
+                  data-testid={`fold-${scope.path}`}
                   sx={{
-                    width: 22, height: 22, color: 'text.secondary',
-                    transform: shut ? 'rotate(-90deg)' : undefined,
+                    width: FOLD, height: FOLD, flex: '0 0 auto', color: 'text.secondary',
+                    '&:hover': { color: 'text.primary', bgcolor: 'action.selected' },
                   }}
                 >
-                  <CaretIcon />
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      transform: shut ? 'rotate(-90deg)' : undefined,
+                      transition: 'transform 120ms',
+                    }}
+                  >
+                    <CaretIcon size={16} />
+                  </Box>
                 </IconButton>
               </Tooltip>
             ) : (
-              // The same 22px a chevron takes, so the names of the leaves line
+              // The same width a fold takes, so the names of the leaves line
               // up with the names of the scopes that have one.
-              <Box sx={{ width: 22, flex: '0 0 auto' }} />
+              <Box sx={{ width: FOLD, flex: '0 0 auto' }} />
             )}
 
             {/* `open-…` is the row's body, name and counts together: the id a
@@ -263,5 +282,29 @@ export function ScopeTree({
         )
       })}
     </Box>
+  )
+}
+
+/**
+ * One press for the whole tree beneath a home: *Show all* while anything in it
+ * is folded, *Fold all* once nothing is. Not offered on a tree one level deep,
+ * which has nothing to fold.
+ */
+export function FoldAll({ tree, folds, s }: {
+  tree: ScopeSummary
+  folds: Pick<ScopeFolds, 'collapsed' | 'openAll' | 'foldAll'>
+  s: Translate
+}) {
+  const below = foldsBelow(tree)
+  if (below.length === 0) return null
+  const anyShut = below.some((path) => folds.collapsed.has(path))
+  return (
+    <Button
+      size="small" color="inherit" data-testid="tree-fold-all"
+      onClick={anyShut ? folds.openAll : folds.foldAll}
+      sx={{ fontSize: 11, textTransform: 'none', color: 'text.secondary' }}
+    >
+      {s(anyShut ? 'org.openAll' : 'org.foldAll')}
+    </Button>
   )
 }

@@ -99,6 +99,8 @@ describe('a scope whose record will not save', () => {
 
     const { diagnostics } = renderApp({ repositories: projects })
 
+    // The tree starts folded: the warehouse is under acme.
+    fireEvent.click(await screen.findByTestId('fold-acme'))
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Warehouse' }))
     fireEvent.change(await screen.findByLabelText('Name'), {
       target: { value: 'Warehouse renamed' },

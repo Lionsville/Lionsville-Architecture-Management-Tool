@@ -148,9 +148,14 @@ eine Verantwortung ohne ihre eine rechenschaftspflichtige Rolle. Der Rest von
 *Ein Name in der ganzen Organisation* weiter unten sagt, was jeder bedeutet.
 
 **Bereiche in** der Organisation, darunter: eine Zeile je Bereich, die Kinder
-eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen, und einem Etikett mit
-dem, was der Bereich von sich sagt. Eine Zeile sagt, wie viel darin steckt —
-Bereiche mit Tafeln und Diagramme über den ganzen Teilbaum bei einer Domäne,
+eingerückt, und einem Etikett mit dem, was der Bereich von sich sagt. Der Baum
+beginnt zugeklappt, sodass eine Startseite nur die Bereiche direkt darunter
+zeigt: Drücken Sie den Pfeil vor einer Domäne, um zu zeigen, was darunter
+liegt, und noch einmal, um sie zuzuklappen, oder **Alle zeigen** über dem Baum,
+um alle Ebenen auf einmal zu öffnen (**Alle einklappen** klappt sie wieder zu).
+Das Zuklappen hält, solange die App offen ist. Eine Zeile sagt, wie viel darin
+steckt — bei einer Domäne, wie viele Bereiche darunter liegen, und Bereiche mit
+Tafeln und Diagramme über den ganzen Teilbaum,
 Diagramme bei einem Bereich, unter dem nichts liegt — und wann sie sich zuletzt
 geändert hat. **Reihenfolge** sortiert nach Name oder nach dem, was Sie zuletzt
 geändert haben. Eine Organisation, unter der noch nichts abgelegt ist, sagt das

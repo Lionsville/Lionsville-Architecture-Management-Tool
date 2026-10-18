@@ -92,7 +92,7 @@ import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
-import { ScopeTree } from './ScopeTree'
+import { FoldAll, ScopeTree } from './ScopeTree'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
@@ -593,6 +593,7 @@ export function OrganisationScreen({
                   </ToggleButtonGroup>
                 </>
               )}
+              <FoldAll tree={home} folds={organisation} s={s} />
               {/* The one way to a new scope, on the home it is filed under —
                   for somebody who may write here. */}
               {mayWrite && (
@@ -607,8 +608,7 @@ export function OrganisationScreen({
             <ScopeTree
               tree={ordered}
               name={named || !atRoot ? heading : s('common.organisation')}
-              collapsed={organisation.collapsed}
-              onToggleCollapsed={organisation.toggleCollapsed}
+              folds={organisation}
               onHome={onGoHome}
               onSettings={organisation.editScope}
               onDelete={organisation.askDelete}

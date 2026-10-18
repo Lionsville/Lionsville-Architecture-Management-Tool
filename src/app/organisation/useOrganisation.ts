@@ -49,7 +49,7 @@ import {
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
-import { toggled } from '../sessionFolds'
+import { useScopeFolds } from './useScopeFolds'
 import { exampleOf } from '../../projects/examples/catalogue'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
@@ -145,9 +145,11 @@ export type Organisation = {
   listedNow: boolean
   refresh: () => void
   dialog: OrganisationDialog
-  /** Which scopes are folded shut. Per session: a fold is not a preference. */
+  /** Which scopes are folded shut (`useScopeFolds`). Per session: a fold is not a preference. */
   collapsed: ReadonlySet<ScopePath>
   toggleCollapsed: (path: ScopePath) => void
+  openAll: () => void
+  foldAll: () => void
   addUnder: (parent: ScopePath) => void
   editScope: (target: ScopeSummary) => void
   askDelete: (target: ScopeSummary) => void
@@ -281,15 +283,13 @@ export function useOrganisation({
 }: UseOrganisationInput): Organisation {
   const { scopes } = repositories
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
-  const [collapsed, setCollapsed] = useState<ReadonlySet<ScopePath>>(() => new Set())
   const [revision, setRevision] = useState(0)
 
   const refresh = useCallback(() => setRevision((held) => held + 1), [])
   const { tree, root, ready, listed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
 
 
-  // A fold for the session and never saved, as the chart's are (`sessionFolds`).
-  const toggleCollapsed = useCallback((path: ScopePath) => setCollapsed((held) => toggled(held, path)), [])
+  const folds = useScopeFolds(tree)
 
   const addUnder = useCallback((parent: ScopePath) => {
     setDialog({ kind: 'newScope', parent, name: '', withBoard: true })
@@ -617,13 +617,13 @@ export function useOrganisation({
   }, [applySettings])
 
   return useMemo(() => ({
-    tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, listedNow, at, root, ready, refresh, dialog, ...folds,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
-    tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, listedNow, at, root, ready, refresh, dialog, folds,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,

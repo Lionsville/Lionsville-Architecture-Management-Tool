@@ -598,6 +598,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.treeEmptyLandscape': 'Een landschap houdt zijn eigen weergaven bij. Voeg er alleen een scope onder toe om het op te splitsen.',
   'org.expand': 'Toon wat onder {name} zit',
   'org.collapse': 'Verberg wat onder {name} zit',
+  'org.openAll': 'Alles tonen',
+  'org.foldAll': 'Alles inklappen',
+  'org.underOne': '{count} scope eronder',
+  'org.underOther': '{count} scopes eronder',
 
   'org.copyHere': 'In deze map kopi\u00ebren\u2026',
 
