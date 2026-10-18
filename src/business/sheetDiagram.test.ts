@@ -86,4 +86,29 @@ describe('unmappedFunctions', () => {
     ]
     expect(unmappedFunctions(elements)).toEqual([])
   })
+
+  // ADR-0040 §6: a root waits while neither it nor anything under it is handed on or taken up.
+  describe('reads both halves, over a root and what is filed under it', () => {
+    const tree = () => scope().filter((element) => element.kind === 'function')
+    const ids = (elements: ReturnType<typeof tree>, takenUp?: ReadonlySet<string>) => unmappedFunctions(elements, takenUp).map((e) => e.id)
+
+    it('waits with nothing said either way', () => {
+      expect(ids(tree())).toEqual(['billing', 'fulfilment'])
+    })
+
+    it('is mapped when a capability under it was handed to a domain on its own', () => {
+      const elements = tree().map((one) => (one.id === 'picking' ? { ...one, scopes: ['retail'] } : one))
+      expect(ids(elements)).toEqual(['billing'])
+    })
+
+    it('is mapped when a scope below took it up, or took up something under it', () => {
+      expect(ids(tree(), new Set(['billing']))).toEqual(['fulfilment'])
+      expect(ids(tree(), new Set(['picking']))).toEqual(['billing'])
+    })
+
+    it('never waits for a stand-in: it is the claim', () => {
+      const standIn = { ...area('invoicing', 'Invoicing'), ref: 'acme' }
+      expect(ids([...tree(), standIn])).toEqual(['billing', 'fulfilment'])
+    })
+  })
 })

@@ -162,10 +162,10 @@ export type LaidOutSheet = {
   journey?: SheetJourney
   areas: SheetArea[]
   /**
-   * Function roots no domain has been given and this sheet does not draw
-   * (ADR-0012 §9). Until scopes exist, no function has one — so this is the
-   * roots the sheet was not told to draw, which is the same band and the same
-   * question: nobody has said where this belongs.
+   * Function roots this sheet does not draw that nobody has mapped
+   * (ADR-0012 §9, ADR-0040 §6): neither they nor anything under them handed
+   * to a domain or taken up by one — the question nobody has answered yet,
+   * where this belongs.
    */
   unmapped: DesignElement[]
 }
@@ -197,6 +197,12 @@ export function sheetPage(
   elsewhere: readonly Relation[] = [],
   /** How this person has the rail drawn, for the session. Absent: the parties and the units the sheet uses. */
   rail: RailOptions = {},
+  /**
+   * The functions a scope below holds a stand-in of (ADR-0040 §6): taken up,
+   * and so not waiting in the band. The host's, because `business` reads no
+   * tree; absent, only what this scope handed on is read.
+   */
+  takenUp?: ReadonlySet<ElementId>,
 ): LaidOutSheet {
   const { elements, relations } = model
   const byId = new Map(elements.map((element) => [element.id, element]))
@@ -221,7 +227,7 @@ export function sheetPage(
     // The rule itself is `unmappedFunctions`; what this band adds is "and this
     // sheet is not already drawing it", which is about the page and not about
     // the model.
-    unmapped: unmappedFunctions(elements).filter((element) => !drawn.includes(element.id)),
+    unmapped: unmappedFunctions(elements, takenUp).filter((element) => !drawn.includes(element.id)),
   }
 }
 

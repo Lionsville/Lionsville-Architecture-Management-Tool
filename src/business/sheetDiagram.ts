@@ -33,24 +33,49 @@ export function rootsOfKind(
 }
 
 /**
- * The function roots nobody has said a domain for (ADR-0012 §9).
+ * The function roots nobody has said a domain for (ADR-0012 §9, ADR-0040 §6).
  *
- * The *top-down* half of who owns a capability, and the only half there is
- * until a stand-in below can be derived from the tree: a function root with an
- * empty `scopes` is one the organisation has named and not yet handed to
- * anybody. That is a finding rather than a fault — it is the normal state of
- * every capability on the day it is written down.
+ * A root is *not yet mapped* while neither it nor anything filed under it has
+ * been handed to a domain or taken up by one: no `scopes` on any of them — the
+ * organisation's intent, top-down — and none of them in `takenUp`, the ids a
+ * scope below holds a stand-in of — the domain's claim, bottom-up. That is a
+ * finding rather than a fault: it is the normal state of every capability on
+ * the day it is written down.
  *
- * Here rather than inline in the sheet's own pass because two screens ask it
- * now: the sheet draws them in its *not yet mapped* band, and the
- * organisation's business-architecture card counts them. Two spellings of one
- * rule is how the band and the number come to disagree by one.
+ * Anything under the root counts, because the band is of roots and a
+ * capability handed on its own has been handed to somebody. A stand-in is
+ * never itself waiting: it is the claim. `takenUp` comes from the host,
+ * because `business` reads no tree; absent, only the top-down half is read.
  *
- * Roots only. A capability under an area inherits where the area was assigned,
- * and counting it separately would count the same gap twice.
+ * Here rather than inline in the sheet's own pass because three readers ask
+ * it: the sheet draws them in its *not yet mapped* band, the organisation's
+ * business-architecture card counts them, and the agent's `check.unmapped`
+ * names them. Two spellings of one rule is how the band and the number come
+ * to disagree by one.
  */
-export function unmappedFunctions(elements: readonly DesignElement[]): DesignElement[] {
-  return rootsOfKind(elements, 'function').filter((element) => !element.scopes?.length)
+export function unmappedFunctions(
+  elements: readonly DesignElement[],
+  takenUp?: ReadonlySet<ElementId>,
+): DesignElement[] {
+  const functions = elements.filter((element) => element.kind === 'function')
+  const below = new Map<ElementId, DesignElement[]>()
+  for (const element of functions) {
+    if (element.parentId === undefined) continue
+    const held = below.get(element.parentId) ?? []
+    held.push(element)
+    below.set(element.parentId, held)
+  }
+  const mapped = (root: DesignElement): boolean => {
+    const seen = new Set<ElementId>()
+    const walk = (element: DesignElement): boolean => {
+      if (seen.has(element.id)) return false
+      seen.add(element.id)
+      if (element.scopes?.length || takenUp?.has(element.id)) return true
+      return (below.get(element.id) ?? []).some(walk)
+    }
+    return walk(root)
+  }
+  return rootsOfKind(elements, 'function').filter((element) => element.ref === undefined && !mapped(element))
 }
 
 /**
