@@ -418,7 +418,12 @@ is fresh, rather than of the tree's listing, which a host may read again a
 moment after its own write — the organisation neither moved nor removed, a
 kind and a unit type said together, a unit type or a unit the organisation
 does not have, a parent under the scope, a move to where it is filed already,
-the subtree rule and the emptiness rule. `withBoard` defaults to false: the
+the subtree rule and the emptiness rule — and a scope not read whole, part
+of it unreadable, written by a later version or with no document, or read
+with no revision to expect, which is never removed from here
+(`scope.unreadable`, `ScopeRead.unreadable`): what could not be read is not
+known to be empty. A `path`, a `parent` or a `name` that is not text — null
+passes the schema check — is `agent.badArguments`. `withBoard` defaults to false: the
 agent names a landscape when it wants one, and a scope it makes without is a
 domain. `personSaid` is at least three words, trimmed, and only ever with
 `removeContents`. `ON_THE_TREE` in `tools.ts` takes `scope` and `ifRevision`
@@ -432,15 +437,33 @@ scopes above as domains, `'required'` for the agent), `serveScopeBy`,
 `describeScopeAt` (a patch of only the fields that differ), `moveScopeUnder`
 (the dialog's destination; `strict` for the screen, which still fails a save
 whose carry was refused, the agent's otherwise, with `notCarried`) and
-`removeScopeAt` — and `projects/scopeHolds.ts` for what a scope holds and
-what empty is. `scopeAccess.moveScope` takes a `Carrying` to be told each
+`removeScopeAt` — and `projects/scopeHolds.ts` for what a scope holds,
+what empty is and whether a scope was read whole (`readWhole`).
+`scopesAMoveWrites` says which scopes outside a subtree a move of it would
+write, before anything moves.
+
+**A removal takes one scope alone**: `ScopeRepository.remove` gains a third
+argument, `{ leafOnly: true }`, under which the repository removes the scope
+only while nothing is filed under it — a scope, or a folder of one it could
+not read — and refuses `shell.scopeHasChildren` otherwise, decided inside its
+own serial section, so a child filed between the agent's look and the
+removal is never taken with it. The contract suite holds every repository to
+it (*removes one scope alone where asked to, and refuses it while anything is
+filed under it (leafOnly)*); the memory, browser and folder repositories keep
+it, `removeScopeAt` looks again just before the call, and the screen's
+delete of a subtree is unchanged. `scopeAccess.moveScope` takes a `Carrying` to be told each
 carry rather than throw one, and `typeFollowingUnit` moved to
 `projects/scopeType.ts`. **The organisation screen's create, settings save
 and delete go through them** (`useOrganisation.ts`), its tests unchanged.
 
 **The desktop** fills the seam in `app/agentScopes.ts` (`useAgentScopes`,
 wired in `App.tsx`): `scope.isOpen` for describing the open scope and for
-moving or removing it or a scope above it; `agent.readOnly` before anything is
+moving or removing it or a scope above it, and — because nothing is written
+behind the open session — for linking a unit kept in the scope open (the
+answer says to write its `scopes` there with `element.update`; a
+`scope.create` with `servedBy` makes the scope and says so of the link) and
+for a move that would re-address a stand-in, a cause or a line kept in the
+scope open; `agent.readOnly` before anything is
 built where the person may not write the scope, the parent or, for a move,
 either end; the repository's `shell.scopeReadOnly`, `shell.scopeMoved` and
 `shell.scopeGone` as `agent.readOnly`, `agent.stale` and
@@ -448,14 +471,21 @@ either end; the repository's `shell.scopeReadOnly`, `shell.scopeMoved` and
 `shell.scopeTaken`. `hiddenBelow` counts the addresses under the scope the
 tree could not read. After a write the tree and the index are read again,
 and the answer waits — at most three seconds — until the listing the next
-call reads says what landed. A removal at the person's word is a warning on
+call reads says what landed: the path made or moved, the name, kind or type
+described, the unit's `scopes` and the type it gave. A removal always
+expects the revision it read, and is `leafOnly`; `shell.scopeHasChildren`
+arrives as `scope.scopesBelow`. A removal at the person's word is a warning on
 screen (`agent.scopeRemoved`), in three languages.
 
 **Paths checked** (§4, the agent's half): `write/elements.ts` refuses a
 `scopes` path the tree does not hold (`agent.unknownScope`, `scopes[i]`) and a
 function's domain not below the scope defining it (`agent.badArguments`), for
 `element.add`, `element.update` and inside `batch`; `""` is dropped for a
-function as for a unit; an empty or absent listing takes the paths as given.
+function as for a unit. Only a path the element does not name already is
+checked, so a list holding a scope hidden from the person, or removed since,
+is written back as it stands. A tree says whether its listing has been read
+(`TreeView.listed`, false before the first read — `projects/scope.NOT_LISTED`
+— and after a failed one), and until it has, the paths are taken as given.
 **Findable** (§7): `TREE_TOOLS_PARAGRAPH` in `agent/method.ts`, appended to
 the desktop's instructions after `STRUCTURE_DEFAULTS`; `scopes.list`,
 `relation.add` and a function's `scopes` say which link each writes.
