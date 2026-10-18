@@ -14,9 +14,21 @@
  * where a person changes the tree too. Making a scope anywhere, and
  * describing one above, need nothing moved.
  *
+ * **Nor does it write behind the open session**: a unit kept in the scope
+ * open is linked there, with `element.update`, and a move that would
+ * re-address a stand-in, a cause or a line kept in the scope open is refused
+ * `scope.isOpen` too, before anything moves.
+ *
+ * A scope this build could not read whole — part of it unreadable, written by
+ * a later version, or no document at all — is said as `unreadable` and never
+ * removed from here; a removal always expects the revision it was read at,
+ * and takes that one scope alone (`leafOnly`), so a scope filed under it in
+ * the meantime is refused, not taken with it.
+ *
  * After every write the tree and the index are read again, and the answer
  * waits — a little, never for ever — until the listing the agent's next call
- * reads says so, so a scope made a moment ago is one the next call can name.
+ * reads says so, so a scope made, renamed, retyped or moved a moment ago is
+ * one the next call reads as it now is.
  * A removal that took work with it is said on the person's screen as well,
  * because there is no ⌘Z for it.
  */
@@ -26,13 +38,13 @@ import type { Translate } from '../i18n'
 import type { ElementId } from '../model'
 import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
-import { HOLDS_NOTHING, holdsOf } from '../projects/scopeHolds'
+import { HOLDS_NOTHING, holdsOf, readWhole } from '../projects/scopeHolds'
 import type { ScopeHolds } from '../projects/scopeHolds'
 import { nodeAt, nodesOf, readScope } from '../projects/scopeAccess'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { isWithinScope } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, serveScopeBy } from '../projects/scopeTree'
+import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, scopesAMoveWrites, serveScopeBy } from '../projects/scopeTree'
 
 export type AgentScopesDeps = {
   repositories: Pick<Repositories, 'scopes' | 'index'>
@@ -44,8 +56,8 @@ export type AgentScopesDeps = {
   openPath: () => ScopePath | undefined
   /** Read the tree and the index again. */
   treeChanged: () => void
-  /** The paths the agent's next call reads the tree as; absent, nothing is waited for. */
-  listed?: () => readonly ScopePath[]
+  /** The tree as the agent's next call reads it; absent, nothing is waited for. */
+  listed?: () => readonly ListedScope[]
   /** What a new scope's first board is called. */
   boardName: () => string
   today: () => string
@@ -54,6 +66,9 @@ export type AgentScopesDeps = {
   client: () => string | undefined
   s: Translate
 }
+
+/** One scope as the listing the agent reads says it (`TreeView.scopes`). */
+export type ListedScope = { readonly path: ScopePath; readonly name: string; readonly kind?: string; readonly unitTypeId?: string }
 
 /** How long an answer waits for the listing to say what landed, and how often it looks. */
 const SETTLE_MS = 3000
@@ -65,6 +80,7 @@ const AS_AGENT: Readonly<Record<string, TreeRefusal>> = {
   'shell.scopeMoved': 'agent.stale',
   'shell.scopeGone': 'agent.unknownScope',
   'shell.unreadableInTheWay': 'shell.scopeTaken',
+  'shell.scopeHasChildren': 'scope.scopesBelow',
 }
 
 function refusedAs(key: string, scope?: ScopePath): TreeRefused {
@@ -86,7 +102,15 @@ function holdsTheOpen(path: ScopePath, open: ScopePath | undefined): boolean {
   return open !== undefined && isWithinScope(open, path)
 }
 
-const IS_OPEN = (scope: ScopePath): TreeRefused => ({ refused: 'scope.isOpen', scope })
+const IS_OPEN = (scope: ScopePath, detail?: string): TreeRefused => ({ refused: 'scope.isOpen', scope, ...(detail ? { detail } : {}) })
+const UNREADABLE = (scope: ScopePath): TreeRefused => ({ refused: 'scope.unreadable', scope })
+
+/** Does the listing say what a describe asked for: the name, and the kind or the type, where those were given? */
+function saysHeader(row: ListedScope | undefined, header: ScopeHeader): boolean {
+  if (!row) return false
+  const same = (asked: string | null | undefined, held: string | undefined) => asked === undefined || (asked ?? undefined) === held
+  return same(header.name?.trim(), row.name) && same(header.kind, row.kind) && same(header.unitTypeId, row.unitTypeId)
+}
 const READ_ONLY = (scope: ScopePath): TreeRefused => ({ refused: 'agent.readOnly', scope })
 
 /** How many records a removal took beyond its views, for the screen to say. */
@@ -98,7 +122,7 @@ function recordsIn(holds: ScopeHolds): number {
 export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
   const { repositories: { scopes, index }, writable, openPath, s } = deps
   /** The tree read again, and the answer held until the listing says what landed. */
-  const settled = async (until: (paths: readonly ScopePath[]) => boolean) => {
+  const settled = async (until: (listed: readonly ListedScope[]) => boolean) => {
     deps.treeChanged()
     const listed = deps.listed
     if (!listed) return
@@ -117,6 +141,8 @@ export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
       holds: state ? holdsOf(state) : HOLDS_NOTHING,
       below: nodesOf(node).slice(1).map((one) => one.address),
       hiddenBelow: unreadable.length,
+      // No document, part of one, or one a later version wrote: not known to be empty.
+      ...(state && readWhole(state) ? {} : { unreadable: true as const }),
     }
   }
   return {
@@ -125,14 +151,21 @@ export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
       if (!writable(parent)) return READ_ONLY(parent)
       const made = await createScopeAt(scopes, { parent, name, withBoard, boardName: deps.boardName(), ancestors: 'required' })
       if ('refused' in made) return refusedAs(made.refused, parent)
-      await settled((paths) => paths.includes(made.path))
+      await settled((listed) => listed.some((one) => one.path === made.path))
       const revision = (await readScope(scopes, made.path))?.revision ?? ''
       return { path: made.path, name: made.name, kind: made.kind, revision, ...(made.board ? { board: made.board } : {}) }
     }, parent),
     serve: (path, unitId: ElementId) => caught(async () => {
+      const keptIn = deps.index().units().find(({ unit }) => unit.id === unitId)?.scope
+      if (keptIn !== undefined && keptIn === openPath()) {
+        return IS_OPEN(keptIn, `the unit is kept in the scope open in the workspace: link it there, with element.update of its scopes`)
+      }
+      if (path === openPath()) return IS_OPEN(path)
       const served = await serveScopeBy({ scopes, index: deps.index(), writable, today: deps.today() }, path, unitId)
       if ('refused' in served) return refusedAs(served.refused, served.scope)
-      await settled(() => true)
+      // Until the index says the unit serves it, and the listing says the type it took.
+      await settled((listed) => (deps.index().units().find(({ unit }) => unit.id === unitId)?.unit.scopes ?? []).includes(path)
+        && (served.scopeType === undefined || listed.find((one) => one.path === path)?.unitTypeId === served.scopeType))
       return served
     }, path),
     describe: (path, header: ScopeHeader) => caught(async () => {
@@ -140,28 +173,35 @@ export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
       if (!writable(path)) return READ_ONLY(path)
       const changed = await describeScopeAt(scopes, path, header)
       if (!changed) return refusedAs('shell.scopeGone', path)
-      if (changed.changed.length) await settled(() => true)
+      if (changed.changed.length) await settled((listed) => saysHeader(listed.find((one) => one.path === path), header))
       return { path, changed: changed.changed }
     }, path),
     move: (path, parent) => caught(async () => {
       if (holdsTheOpen(path, openPath())) return IS_OPEN(path)
       if (!writable(path)) return READ_ONLY(path)
       if (!writable(parent)) return READ_ONLY(parent)
+      const open = openPath()
+      if (open !== undefined && (await scopesAMoveWrites(index, path)).includes(open)) {
+        return IS_OPEN(open, `the scope open in the workspace names ${path} and would be re-addressed behind its session: open a home first`)
+      }
       const moved = await moveScopeUnder(scopes, index, path, parent)
       if (!moved) return refusedAs('shell.scopeGone', path)
-      await settled((paths) => paths.includes(moved.to) && !paths.includes(path))
+      await settled((listed) => listed.some((one) => one.path === moved.to) && !listed.some((one) => one.path === path))
       return moved
     }, path),
     remove: (path, why) => caught(async () => {
       if (holdsTheOpen(path, openPath())) return IS_OPEN(path)
       if (!writable(path)) return READ_ONLY(path)
-      const name = (await read(path))?.name ?? path
-      const removed = await removeScopeAt(scopes, path, why.expects || undefined)
+      // Never without what was read: a scope with no revision is one nothing could be read of.
+      if (!why.expects) return UNREADABLE(path)
+      const held = await read(path)
+      if (held?.unreadable) return UNREADABLE(path)
+      const removed = await removeScopeAt(scopes, path, why.expects, { leafOnly: true })
       if (!removed) return refusedAs('shell.scopeGone', path)
-      await settled((paths) => !paths.includes(path))
+      await settled((listed) => !listed.some((one) => one.path === path))
       if (why.personSaid !== undefined) {
         const what = s('agent.scopeRemovedWhat', { views: why.holds.views, records: recordsIn(why.holds) })
-        deps.notify(s('agent.scopeRemoved', { agent: deps.client() ?? s('agent.someone'), name, what, said: why.personSaid }), 'warning')
+        deps.notify(s('agent.scopeRemoved', { agent: deps.client() ?? s('agent.someone'), name: held?.name ?? path, what, said: why.personSaid }), 'warning')
       }
       return { removed }
     }, path),

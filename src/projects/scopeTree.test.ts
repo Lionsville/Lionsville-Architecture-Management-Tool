@@ -15,7 +15,7 @@ import type { Repositories } from '../ports/Repositories'
 import { contentOf, landed, modelsOf, placeWhole, readScope, summaryOf } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
 import { indexScopes } from './scopeIndex'
-import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, serveScopeBy, settingsCommands, writeSettings } from './scopeTree'
+import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, scopesAMoveWrites, serveScopeBy, settingsCommands, writeSettings } from './scopeTree'
 import type { TreeScopes } from './scopeTree'
 
 const DAY = '2026-10-18'
@@ -53,7 +53,7 @@ function closedAt(repositories: Repositories, closed: string): TreeScopes {
     state: (id) => scopes.state(id),
     create: (at, scope) => scopes.create(at, scope),
     move: (id, to, expects) => scopes.move(id, to, expects),
-    remove: (id, expects) => scopes.remove(id, expects),
+    remove: (id, expects, options) => scopes.remove(id, expects, options),
     apply: (work) => (work.some((one) => one.scope === closed)
       ? Promise.resolve({ refused: 'shell.scopeReadOnly', scope: closed } as never)
       : scopes.apply(work)),
@@ -180,6 +180,12 @@ describe('moving a scope', () => {
     expect(await readScope(repositories.scopes, 'group/acme-2/crews')).toBeDefined()
   })
 
+  it('says which scopes outside the subtree a move would write, before anything moves', async () => {
+    const repositories = await landscape()
+    expect((await scopesAMoveWrites(repositories.index, 'acme')).sort()).toEqual(['globex', 'initech'])
+    expect(await scopesAMoveWrites(repositories.index, 'globex')).toEqual([])
+  })
+
   it('throws a carry refused where the screen asks for it strictly, and answers nothing for a scope not there', async () => {
     const repositories = await landscape()
     const initech = (await readScope(repositories.scopes, 'initech'))!.id!
@@ -200,6 +206,21 @@ describe('removing a scope', () => {
     expect(await removeScopeAt(repositories.scopes, 'acme', now!.revision)).toEqual(['acme'])
     expect(await removeScopeAt(repositories.scopes, 'acme')).toBeUndefined()
     expect(await paths(repositories)).toEqual([''])
+  })
+
+  it('removes one scope alone when asked to, refusing it while a scope is filed under it — looked at, and decided at the removal', async () => {
+    const repositories = memoryRepositories()
+    landed(await repositories.scopes.create('acme/rail', { name: 'Rail' }))
+    await expect(removeScopeAt(repositories.scopes, 'acme', undefined, { leafOnly: true })).rejects.toEqual(new ShellError('shell.scopeHasChildren'))
+    // A child filed after the look: the tree read says none, the repository knows better.
+    const scopes = repositories.scopes
+    const stale: TreeScopes = { ...closedAt(repositories, 'none'), tree: async () => {
+      const tree = await scopes.tree()
+      return { ...tree, root: { ...tree.root, children: tree.root.children.map((node) => ({ ...node, children: [] })) } }
+    } }
+    await expect(removeScopeAt(stale, 'acme', undefined, { leafOnly: true })).rejects.toEqual(new ShellError('shell.scopeHasChildren'))
+    expect(await paths(repositories)).toEqual(['', 'acme', 'acme/rail'])
+    expect(await removeScopeAt(repositories.scopes, 'acme/rail', undefined, { leafOnly: true })).toEqual(['acme/rail'])
   })
 
   it('removes the subtree the repository takes with it, and refuses the organisation', async () => {

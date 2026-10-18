@@ -27,7 +27,7 @@ const NOTHING: ScopeHolds = {
   assignments: 0, comments: 0, marks: 0, operatingModel: 0, pictures: 0, viewNames: [],
 }
 
-type Held = { name: string; holds?: Partial<ScopeHolds>; hidden?: number }
+type Held = { name: string; holds?: Partial<ScopeHolds>; hidden?: number; unreadable?: true; revision?: string }
 
 /** A host over a map of paths: what each holds, and every call it was asked to make. */
 function host(start: Record<string, Held> = {}, refuse: Partial<Record<keyof ScopesView, TreeRefused>> = {}) {
@@ -39,7 +39,8 @@ function host(start: Record<string, Held> = {}, refuse: Partial<Record<keyof Sco
       const held = scopes.get(path)
       if (!held) return undefined
       const read: ScopeRead = {
-        path, name: held.name, revision: `r-${path}`, holds: { ...NOTHING, ...held.holds }, below: below(path), hiddenBelow: held.hidden ?? 0,
+        path, name: held.name, revision: held.revision ?? `r-${path}`, holds: { ...NOTHING, ...held.holds }, below: below(path), hiddenBelow: held.hidden ?? 0,
+        ...(held.unreadable ? { unreadable: held.unreadable } : {}),
       }
       return read
     },
@@ -221,6 +222,31 @@ describe('scope.remove', () => {
     expect(refusal(await ask('scope.remove', { path: 'acme/rail', personSaid: 'yes remove it all' }, held))).toBe('agent.badArguments')
     expect(refusal(await ask('scope.remove', { path: '' }, held))).toBe('scope.organisation')
     expect(refusal(await ask('scope.remove', { path: 'gone' }, held))).toBe('agent.unknownScope')
+    expect(held.asked).toEqual([])
+  })
+
+  it('never removes a scope not read whole, nor one read without a revision to expect', async () => {
+    const held = host({ 'acme/rail': { name: 'Rail', unreadable: true }, 'acme/road': { name: 'Road', revision: '' } })
+    expect(refusal(await ask('scope.remove', { path: 'acme/rail' }, held))).toBe('scope.unreadable')
+    expect(refusal(await ask('scope.remove', { path: 'acme/rail', removeContents: true, personSaid: 'yes it can all go' }, held))).toBe('scope.unreadable')
+    expect(refusal(await ask('scope.remove', { path: 'acme/road' }, held))).toBe('scope.unreadable')
+    expect(REFUSAL_SENTENCE['scope.unreadable']).toMatch(/open/)
+    expect(held.asked).toEqual([])
+  })
+
+  it('passes on a host that found a scope filed under it at the removal itself', async () => {
+    const held = host({ 'acme/rail': { name: 'Rail' } }, { remove: { refused: 'scope.scopesBelow', scope: 'acme/rail' } })
+    expect(refusal(await ask('scope.remove', { path: 'acme/rail' }, held))).toBe('scope.scopesBelow')
+  })
+
+  it('refuses a path or a parent that is null rather than text', async () => {
+    const held = host()
+    for (const [tool, args] of [
+      ['scope.move', { path: 'acme', parent: null }], ['scope.move', { path: null, parent: '' }], ['scope.remove', { path: null }],
+      ['scope.update', { path: null, name: 'A' }], ['scope.create', { parent: null, name: 'Rail' }], ['scope.create', { parent: '', name: null }],
+    ] as const) {
+      expect(refusal(await ask(tool, args, held)), `${tool} ${JSON.stringify(args)}`).toBe('agent.badArguments')
+    }
     expect(held.asked).toEqual([])
   })
 

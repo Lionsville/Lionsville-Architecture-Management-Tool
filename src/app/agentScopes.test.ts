@@ -29,13 +29,19 @@ async function place(repositories: Repositories, path: string, held: HostModel) 
 
 async function organisation() {
   const repositories = memoryRepositories()
-  await place(repositories, 'acme', model('Acme'))
+  await place(repositories, '', model('Acme Logistics', { unitTypes: [{ id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [] }] }))
+  await place(repositories, 'acme', model('Acme', {
+    elements: [{ id: 'freight', kind: 'actor', name: 'Freight', unitTypeId: 'ut-domain', lifecycle: 'live', isManaged: false, aspects: {} }],
+  }))
   await place(repositories, 'acme/rail', model('Rail', {
     diagrams: [{ id: 'board', kind: 'layer7', name: 'Rail board', members: [], geometry: { nodes: [] } }],
   }))
   await place(repositories, 'globex', model('Globex'))
+  await place(repositories, 'initech', model('Initech', {
+    elements: [{ id: 'crews', kind: 'application', name: 'Crews', lifecycle: 'live', isManaged: false, aspects: {}, ref: 'acme/rail' }],
+  }))
   let index: ScopeIndex = indexScopes(modelsOf(await repositories.index.read()))
-  let listing: string[] = []
+  let listing: { path: string; name: string; kind?: string; unitTypeId?: string }[] = []
   const notices: [string, string][] = []
   let changed = 0
   const deps = (over: Partial<AgentScopesDeps> = {}): AgentScopesDeps => ({
@@ -45,7 +51,11 @@ async function organisation() {
     openPath: () => undefined,
     treeChanged: () => {
       changed += 1
-      void repositories.scopes.tree().then((tree) => { listing = flattenScopes(summaryOf(tree)).map((one) => one.path) })
+      void repositories.scopes.tree().then((tree) => {
+        listing = flattenScopes(summaryOf(tree)).map((one) => ({
+          path: one.path, name: one.name, ...(one.kind ? { kind: one.kind } : {}), ...(one.unitTypeId ? { unitTypeId: one.unitTypeId } : {}),
+        }))
+      })
       void repositories.index.read().then((read) => { index = indexScopes(modelsOf(read)) })
     },
     listed: () => listing,
@@ -56,7 +66,7 @@ async function organisation() {
     s,
     ...over,
   })
-  return { repositories, deps, notices, changed: () => changed }
+  return { repositories, deps, notices, changed: () => changed, listing: () => listing, index: () => index }
 }
 
 describe('the tree lent to the agent on the desktop', () => {
@@ -104,6 +114,51 @@ describe('the tree lent to the agent on the desktop', () => {
     expect(await view.remove('globex', { expects: read!.revision, holds: read!.holds })).toEqual({ refused: 'agent.stale', scope: 'globex' })
     expect(await view.describe('gone', { name: 'G' })).toEqual({ refused: 'agent.unknownScope', scope: 'gone' })
     expect(await view.serve('globex', 'nobody')).toEqual({ refused: 'agent.unknownId' })
+  })
+
+  it('never writes behind the open session: a unit kept in the scope open, a move that would re-address it', async () => {
+    const { deps } = await organisation()
+    const atAcme = scopesViewOver(deps({ openPath: () => 'acme' }))
+    expect(await atAcme.serve('globex', 'freight')).toMatchObject({ refused: 'scope.isOpen', scope: 'acme' })
+    expect(await scopesViewOver(deps({ openPath: () => 'globex' })).serve('globex', 'freight')).toEqual({ refused: 'scope.isOpen', scope: 'globex' })
+    const atInitech = scopesViewOver(deps({ openPath: () => 'initech' }))
+    expect(await atInitech.move('acme/rail', 'globex')).toMatchObject({ refused: 'scope.isOpen', scope: 'initech' })
+    // A move nobody open names goes.
+    expect(await atInitech.move('globex', 'acme')).toMatchObject({ from: 'globex', to: 'acme/globex' })
+  })
+
+  it('answers once the listing and the index say what a describe and a link changed', async () => {
+    const { deps, listing, index } = await organisation()
+    const view = scopesViewOver(deps())
+    expect(await view.describe('globex', { name: 'Globex Freight' })).toEqual({ path: 'globex', changed: ['name'] })
+    expect(listing().find((one) => one.path === 'globex')?.name).toBe('Globex Freight')
+    expect(await view.serve('globex', 'freight')).toEqual({ unit: 'freight', keptIn: 'acme', scopeType: 'ut-domain' })
+    expect(index().units().find(({ unit }) => unit.id === 'freight')?.unit.scopes).toContain('globex')
+    expect(listing().find((one) => one.path === 'globex')?.unitTypeId).toBe('ut-domain')
+  })
+
+  it('never removes a scope it could not read whole, nor without the revision it read, nor one with a scope under it', async () => {
+    const { deps, repositories } = await organisation()
+    const globex = (await readScope(repositories.scopes, 'globex'))!.id!
+    const scopes = repositories.scopes
+    const later: AgentScopesDeps['repositories'] = {
+      index: repositories.index,
+      scopes: { ...scopes, tree: () => scopes.tree(), state: async (id) => {
+        const state = await scopes.state(id)
+        return state && id === globex ? { ...state, later: true } : state
+      }, apply: (work) => scopes.apply(work), create: (at, made) => scopes.create(at, made), move: (id, to, expects) => scopes.move(id, to, expects),
+      remove: (id, expects, options) => scopes.remove(id, expects, options) },
+    }
+    const view = scopesViewOver(deps({ repositories: later }))
+    const read = await view.read('globex')
+    expect(read?.unreadable).toBe(true)
+    expect(await view.remove('globex', { expects: read!.revision, holds: read!.holds })).toEqual({ refused: 'scope.unreadable', scope: 'globex' })
+    const plain = scopesViewOver(deps())
+    expect(await plain.remove('initech', { expects: '', holds: (await plain.read('initech'))!.holds })).toEqual({ refused: 'scope.unreadable', scope: 'initech' })
+    const acme = await plain.read('acme')
+    expect(await plain.remove('acme', { expects: acme!.revision, holds: acme!.holds })).toEqual({ refused: 'scope.scopesBelow', scope: 'acme' })
+    expect(await readScope(repositories.scopes, 'globex')).toBeDefined()
+    expect(await readScope(repositories.scopes, 'acme/rail')).toBeDefined()
   })
 
   it('removes a scope, and says one that went with its work at the person\'s word on their screen', async () => {

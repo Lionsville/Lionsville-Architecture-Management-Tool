@@ -3308,6 +3308,8 @@ export type AgentRefusal =
   | 'scope.scopesBelow'
   /** The scope holds work, counted in the detail: it goes only at the person's own words (ADR-0040 §2). */
   | 'scope.notEmpty'
+  /** The scope was not read whole — part unreadable, a later version's, or no document — so it is not removed from here (ADR-0040 §2). */
+  | 'scope.unreadable'
   /** The repository's own refusals of a scope's address, passed through (ADR-0040 §1). */
   | 'shell.scopeTaken'
   | 'shell.scopeIntoItself'
@@ -3400,6 +3402,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
     'The scope holds work, counted by kind in the detail, and removing it cannot be undone. Tell the person what is in it and '
     + 'ask; never decide it yourself. Only if they then say, in their own words, that it is to go with all of it, call again '
     + 'with removeContents true and their words, quoted, in personSaid.',
+  'scope.unreadable':
+    'Part of that scope could not be read, or a later version of the app wrote it, so what it holds is not known and it is '
+    + 'not removed from here. Tell the person: they open it in the app, where it can be put back or kept, and decide there.',
   'shell.scopeTaken': 'A scope is at that address already, or one nobody can read is in the way. Read scopes.list again and choose another.',
   'shell.scopeIntoItself': 'A scope cannot be filed under itself or under a scope filed under it. Choose a parent outside it.',
   'shell.badScopePath': 'No scope may have that address. Use a path from scopes.list.',

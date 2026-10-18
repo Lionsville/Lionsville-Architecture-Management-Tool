@@ -75,6 +75,16 @@ export function holdsOf(scope: CountedScope): ScopeHolds {
   }
 }
 
+/**
+ * Whether this build read the scope whole: nothing of it set aside as
+ * unreadable, and nothing written by a later version. A scope that was not
+ * is not known to be empty, whatever its count says, and is not removed on an
+ * agent's word (ADR-0040 §2): a person opens it in the app first.
+ */
+export function readWhole(state: { readonly unreadable?: readonly unknown[]; readonly later?: true }): boolean {
+  return (state.unreadable?.length ?? 0) === 0 && state.later !== true
+}
+
 /** Nothing of any kind: what a scope that may go on request holds. */
 export function isEmpty(holds: ScopeHolds): boolean {
   return Object.entries(holds).every(([key, value]) => key === 'viewNames' || value === 0)

@@ -63,12 +63,20 @@ export type ScopeRead = {
   readonly below: readonly string[]
   /** Scopes filed under it that the person may NOT read: counted over the whole tree, never named. */
   readonly hiddenBelow: number
+  /**
+   * Its content was not read whole — part of it unreadable, written by a
+   * later version, or no document at all — so what it holds is not known,
+   * and it is not removed from here (`scope.unreadable`). Absent: read whole.
+   */
+  readonly unreadable?: true
 }
 
 /** The refusals a host answers with; the handler maps the repository's own (§1 of the ADR). */
 export type TreeRefusal =
   | 'agent.readOnly' | 'agent.unknownScope' | 'agent.unknownId' | 'agent.stale'
   | 'scope.isOpen' | 'scope.organisation'
+  /** A host's own look found a scope filed under it, or a scope not read whole (ADR-0040 §2). */
+  | 'scope.scopesBelow' | 'scope.unreadable'
   | 'shell.scopeTaken' | 'shell.scopeIntoItself' | 'shell.badScopePath'
 
 export type TreeRefused = { readonly refused: TreeRefusal; readonly scope?: string; readonly detail?: string }
@@ -130,6 +138,12 @@ function holdsNothing(holds: ScopeHolds): boolean {
   return Object.entries(holds).every(([key, value]) => key === 'viewNames' || value === 0)
 }
 
+/** The text arguments a call must give, or the refusal that says which is not text. Null passes the schema check and is caught here. */
+function texts(args: Args, keys: readonly string[]): AgentAnswer | undefined {
+  const odd = keys.find((key) => typeof args[key] !== 'string')
+  return odd === undefined ? undefined : refused('agent.badArguments', `"${odd}" must be a string`)
+}
+
 /** The scope at a path, or the refusal that says there is none. */
 async function there(view: ScopesView, path: string): Promise<ScopeRead | AgentAnswer> {
   return (await view.read(path)) ?? refused('agent.unknownScope', path || 'the organisation')
@@ -138,6 +152,8 @@ async function there(view: ScopesView, path: string): Promise<ScopeRead | AgentA
 const isAnswer = (value: ScopeRead | AgentAnswer): value is AgentAnswer => 'ok' in value
 
 async function createScope(view: ScopesView, args: Args, tree: TreeView | undefined): Promise<AgentAnswer> {
+  const wrong = texts(args, ['parent', 'name'])
+  if (wrong) return wrong
   const parent = args.parent as string
   const name = String(args.name ?? '').trim()
   if (!name) return refused('agent.badArguments', 'a scope needs a name')
@@ -191,6 +207,8 @@ function headerAsked(args: Args, tree: TreeView | undefined): ScopeHeader | Agen
 }
 
 async function updateScope(view: ScopesView, args: Args, tree: TreeView | undefined): Promise<AgentAnswer> {
+  const wrong = texts(args, ['path'])
+  if (wrong) return wrong
   const path = args.path as string
   const header = headerAsked(args, tree)
   if ('ok' in header) return header as AgentAnswer
@@ -201,6 +219,8 @@ async function updateScope(view: ScopesView, args: Args, tree: TreeView | undefi
 }
 
 async function moveScope(view: ScopesView, args: Args): Promise<AgentAnswer> {
+  const wrong = texts(args, ['path', 'parent'])
+  if (wrong) return wrong
   const path = args.path as string
   const parent = args.parent as string
   if (path === ORGANISATION) return refused('scope.organisation')
@@ -216,6 +236,8 @@ async function moveScope(view: ScopesView, args: Args): Promise<AgentAnswer> {
 }
 
 async function removeScope(view: ScopesView, args: Args): Promise<AgentAnswer> {
+  const wrong = texts(args, ['path'])
+  if (wrong) return wrong
   const path = args.path as string
   if (path === ORGANISATION) return refused('scope.organisation')
   const contents = args.removeContents === true
@@ -227,6 +249,8 @@ async function removeScope(view: ScopesView, args: Args): Promise<AgentAnswer> {
   if (!contents && said) return refused('agent.badArguments', 'personSaid goes with removeContents, and only after the person said the scope is to go with all it holds')
   const held = await there(view, path)
   if (isAnswer(held)) return held
+  // What could not be read is not known to be empty, and a removal never goes without the revision it read.
+  if (held.unreadable || !held.revision) return refused('scope.unreadable', path)
   // Never a subtree in one call, whatever else the call says (ADR-0040 §2).
   if (held.below.length + held.hiddenBelow > 0) {
     return refused('scope.scopesBelow', JSON.stringify({ below: held.below, ...(held.hiddenBelow ? { hiddenBelow: held.hiddenBelow } : {}) }))

@@ -587,7 +587,7 @@ function useShellParts(props: AppProps): ShellParts {
   // The tree's four gestures, lent to the agent over the same operations the organisation screen uses (ADR-0040 §3).
   const scopes = useAgentScopes({
     repositories, index: () => tree.index, writable, openPath: () => project?.path, treeChanged,
-    listed: () => findings.shellTree.scopes().map((one) => one.path), boardName: () => s('shell.newDiagram'),
+    listed: () => findings.shellTree.scopes(), boardName: () => s('shell.newDiagram'),
     today: props.today ?? localToday, notify: toasts.notify, s,
     client: () => (agentServer.status.kind === 'connected' ? agentServer.status.client.name : undefined),
   })

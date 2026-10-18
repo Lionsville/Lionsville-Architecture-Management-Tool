@@ -26,15 +26,16 @@ import { scopesWith } from '../model/serving'
 import type { UnitTypeId } from '../model/operatingModel'
 import { ShellError } from '../platform/errors'
 import type { OrganisationIndex } from '../ports/OrganisationIndex'
-import type { ScopeRepository } from '../ports/ScopeRepository'
+import type { RemoveOptions, ScopeRepository } from '../ports/ScopeRepository'
 import { normaliseLinks } from './links'
 import type { RecordLink } from './links'
 import { bareScope, emptyScope, flattenScopes, namesUnder, unreadableAt } from './scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
-import { changeScope, changeScopes, ensureScope, landed, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
+import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
+import { analysisNamesWithin, linesNameWithin } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import type { ScopeIndex } from './scopeIndex'
-import { ancestorScopes, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
+import { ancestorScopes, isWithinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
 import type { ScopeCommand, ScopeId } from './scopeState'
 import { typeChosen, typeFollowingUnit, typedByUnitType } from './scopeType'
@@ -268,6 +269,20 @@ export type MovedUnder = {
 }
 
 /**
+ * The scopes outside the subtree at `from` that a move of it writes: those
+ * whose stand-ins, causes, observations or reporting lines name an address
+ * in it (`scopeAccess.moveScope`'s carry), by where they are. What a host
+ * asks before a move that must not write behind a session open on one.
+ */
+export async function scopesAMoveWrites(index: Pick<OrganisationIndex, 'read'>, from: ScopePath): Promise<ScopePath[]> {
+  return modelsOf(await index.read())
+    .filter(({ path, model }) => !isWithinScope(path, from) && (
+      model.elements.some((element) => element.ref !== undefined && isWithinScope(element.ref, from))
+      || analysisNamesWithin(model, from) || linesNameWithin(model, from)))
+    .map(({ path }) => path)
+}
+
+/**
  * A scope and everything filed under it, to `parent`, at the address the
  * settings dialog gives a move: its last segment kept, suffixed where that is
  * taken under the new parent. The repository's move and the carry that
@@ -295,14 +310,21 @@ export async function moveScopeUnder(
 /**
  * One scope removed, expecting the revision it was read at where `expects`
  * is given, so a scope somebody added to between the look and the removal is
- * refused rather than taken. The repository removes the subtree; a caller
- * that must not take one asks first. Answers the addresses that went, and
- * nothing where no scope is there.
+ * refused rather than taken. The repository removes the subtree — the
+ * screen's delete, which the person confirmed for the whole of it; with
+ * `leafOnly`, the agent's, it removes this one scope alone and refuses
+ * `shell.scopeHasChildren` while anything is filed under it, looked at again
+ * here and decided once more where the removal is (`ScopeRepository.remove`).
+ * Answers the addresses that went, and nothing where no scope is there.
  */
-export async function removeScopeAt(scopes: TreeScopes, path: ScopePath, expects?: string): Promise<ScopePath[] | undefined> {
+export async function removeScopeAt(
+  scopes: TreeScopes, path: ScopePath, expects?: string, options: RemoveOptions = {},
+): Promise<ScopePath[] | undefined> {
   const tree = await scopes.tree()
   const node = nodeAt(tree, path)
   if (!node) return undefined
-  const gone = new Set(landed(await scopes.remove(node.id, expects)).removed)
+  const under = node.children.length > 0 || (tree.unreadable ?? []).some((address) => address !== path && isWithinScope(address, path))
+  if (options.leafOnly && under) throw new ShellError('shell.scopeHasChildren')
+  const gone = new Set(landed(await scopes.remove(node.id, expects, options)).removed)
   return nodesOf(node).filter((one) => gone.has(one.id)).map((one) => one.address)
 }
