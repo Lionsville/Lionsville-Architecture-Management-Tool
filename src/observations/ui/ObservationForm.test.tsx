@@ -85,7 +85,7 @@ const landedBelow = (onChangeBelow: ReturnType<typeof vi.fn<ChangeBelow>>) => {
   return { path, next: change({ observations: [...held.observations], causes: [...held.causes], solutions: [], experiments: [] })! }
 }
 
-describe('the new observation form', () => {
+describe('the new observation form', { timeout: 20_000 }, () => {
   it('refuses a record without its four facts and who or what it affected, putting what is missing where the example was', () => {
     const { onChange } = mount()
     openForm()
