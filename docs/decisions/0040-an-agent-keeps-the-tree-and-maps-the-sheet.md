@@ -1,9 +1,7 @@
 # ADR-0040 — The agent keeps the tree of scopes, and the sheet's functions are mapped to domains
 
-* Status: accepted 18 October 2026; as built, 18 October 2026, the tree's
-  tools (§1–§3), the paths checked (§4, the agent's half) and the links made
-  findable (§7) — *As built, 18 October 2026: the tree's tools*, below; the
-  sheet's editor, the claim and the band (§4–§6) not yet built
+* Status: accepted 18 October 2026; as built, 18 October 2026 — *the tree's
+  tools* and *the sheet mapped*, below; implemented 18 October 2026
 * Date: 2026-10-18
 * Deciders: Wouter Simons
 * Extends: ADR-0011 Q1 (the tree's four gestures are tools; a removal that
@@ -495,3 +493,40 @@ Tests: `agent/scopeTree.test.ts`, `projects/scopeTree.test.ts`,
 `app/App.scopeTree.test.tsx`, and the path checks in
 `agent/assignments.test.ts`.
 
+## As built, 18 October 2026: the sheet mapped
+
+**The editor** (§4): the inspector of an area, a grouping or a capability
+shows *Domains* — a chip per path in the function's `scopes`, taken off with
+its ×, and *+ Domain* over the scopes below the one that defines it, each
+change one `element.update` — and *Taken up by*, every scope below holding a
+stand-in of it, read off the index (`app/sheetMapping.ts`,
+`projects/claims.ts`). A capability whose area was handed on says so (*With
+Finance: Retail*), and a taker within that domain counts as asked; a path no
+scope holds reads *no such scope*; a stand-in offers no editor and says its
+domains are said where it is defined.
+
+**The claim** (§5): *From above…* beside *+ area* and the agent's
+`function.claim` share one rule, `business/claim.claimCommand`: a stand-in
+filed under its parent where the scope holds the parent, otherwise a root
+added to the sheet's list of areas. An area taken up after one of its
+capabilities files that capability under it and takes it off every sheet's
+list, in the same step, so ⌘Z takes the claim back whole. A pick that lands
+nothing — held already, or no longer above — says which on screen.
+`function.claim` plans without a sheet first, and asks for `diagramId` only
+when the claim lands as a root in a scope with several sheets.
+
+**The band** (§6): `unmappedFunctions(elements, takenUp)` reads both halves
+over a root and everything filed under it, for the sheet's band, the
+organisation's card (`organisationPages`' fourth argument) and
+`check.unmapped`. Any function stand-in in a scope below counts as taken up,
+including a capability a landscape keeps only for a `supports` row.
+
+**The agent** (§5, §7): `element.describe` of a function answers `domains`
+on the definition and `claimedBy`, the scopes below the defining one that
+hold a stand-in; `SHEET_MAPPING_PARAGRAPH` tells the three links apart in the
+desktop's instructions, after `TREE_TOOLS_PARAGRAPH`. The format stays at 14.
+
+Tests: `business/claim.test.ts`, `business/sheetDiagram.test.ts`,
+`projects/claims.test.ts`, `app/sheetMapping.test.ts`,
+`business/ui/FunctionInspector.test.tsx`, `business/ui/SheetPage.test.tsx`,
+`agent/handle.sheet.test.ts` and `app/useWorkspaceAgentView.test.ts`.
