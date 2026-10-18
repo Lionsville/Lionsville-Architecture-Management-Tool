@@ -27,7 +27,12 @@
  * nothing serves it, or its type is no unit type the operating model holds —
  * and the checks say the last three ({@link TypeLink}).
  */
+import type { ElementId } from '../model'
+import type { UnitTypeId } from '../model/operatingModel'
+import { isServable, servingUnits } from '../model/serving'
 import type { ScopeKind } from './scope'
+import type { ScopeIndex } from './scopeIndex'
+import type { ScopePath } from './scopePath'
 
 /** A scope's type as it says it: one of the two, where it says either. */
 export type ScopeTyped = { readonly kind?: ScopeKind | undefined; readonly unitTypeId?: string | undefined }
@@ -97,4 +102,19 @@ export function typeChosen(choice: string): { kind?: ScopeKind | null; unitTypeI
   if (choice.startsWith('unit:') && choice.length > 5) return typedByUnitType(choice.slice(5))
   if (choice.startsWith('kind:')) return typedByKind(choice.slice(5) as ScopeKind)
   return typedByKind(undefined)
+}
+
+/**
+ * The type a scope takes when `unitId` is linked to it (`typeToFollow`):
+ * the unit's, unless the scope's own still agrees with a unit serving it
+ * once the link is made. Nothing where the type stays.
+ */
+export function typeFollowingUnit(index: ScopeIndex, scope: ScopePath, unitId: ElementId, day: string): UnitTypeId | undefined {
+  const organisation = index.organisation()
+  const unit = organisation.units.find((one) => one.id === unitId)
+  if (!unit?.unitTypeId || !isServable(scope)) return undefined
+  const kept = new Map(index.units().map(({ scope: at, unit: one }) => [one.id, at]))
+  const serving = servingUnits(organisation, scope, day, (id) => kept.get(id)).units
+  const after = [...new Set([...serving.map((one) => one.unitTypeId ?? ''), unit.unitTypeId].filter(Boolean))]
+  return typeToFollow({ unitTypeId: index.scopeTypes().get(scope) }, unit.unitTypeId, after)
 }

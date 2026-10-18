@@ -300,6 +300,11 @@ export async function placeWhole(
  * the address taken, a scope into itself, a scope gone — leaves every
  * address naming the scope where it still is. The ones inside the subtree
  * are written at their new addresses.
+ *
+ * A carry the repository refuses is thrown, after the move has landed — or,
+ * where `carrying` is handed in, said to it and the next one written: an
+ * agent's move answers which scopes it could not carry into rather than
+ * failing a move that stands (ADR-0040 §1).
  */
 export async function moveScope(
   scopes: ScopeReader & Pick<ScopeRepository, 'apply' | 'move'>,
@@ -307,6 +312,7 @@ export async function moveScope(
   from: ScopeAddress,
   to: ScopeAddress,
   expects?: Revision,
+  carrying?: Carrying,
 ): Promise<ScopeSnapshot | undefined> {
   const node = nodeAt(await scopes.tree(), from)
   if (!node) return undefined
@@ -327,8 +333,24 @@ export async function moveScope(
     })
   }
   landed(await scopes.move(node.id, to, expects))
-  for (const [path, refs] of carried) await carry(inside(path) ? readdressRef(path, from, to) : path, refs)
+  for (const [path, refs] of carried) {
+    const at = inside(path) ? readdressRef(path, from, to) : path
+    if (!carrying) { await carry(at, refs); continue }
+    try {
+      await carry(at, refs)
+      carrying.carried(at)
+    } catch (cause) {
+      if (!(cause instanceof ShellError)) throw cause
+      carrying.refused(at, cause.key)
+    }
+  }
   return readScope(scopes, to)
+}
+
+/** What a move is told of each scope it re-addresses: written, or refused with the repository's key. */
+export type Carrying = {
+  carried(address: ScopeAddress): void
+  refused(address: ScopeAddress, key: string): void
 }
 
 /**

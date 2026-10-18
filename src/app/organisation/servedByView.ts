@@ -22,8 +22,11 @@ import { managersOf } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
-import { typeLinkOf, typeToFollow } from '../../projects/scopeType'
+import { typeLinkOf } from '../../projects/scopeType'
 import type { TypeLink } from '../../projects/scopeType'
+
+/** Moved to `projects/scopeType.ts`, where a host with no screen links a unit too (ADR-0040 §1). */
+export { typeFollowingUnit } from '../../projects/scopeType'
 import type { PickOption } from '../../widgets/PickToAdd'
 import { unitChoices } from '../units/choices'
 import type { ChoiceWords } from '../units/choices'
@@ -155,19 +158,4 @@ export function unitTypeChoicesOf(index: ScopeIndex, day: string): { id: UnitTyp
   return index.organisation().unitTypes
     .filter((type) => (type.from === undefined || type.from <= day) && (type.until === undefined || type.until >= day))
     .map((type) => ({ id: type.id, name: type.name }))
-}
-
-/**
- * The type a scope takes when `unitId` is linked to it (`typeToFollow`):
- * the unit's, unless the scope's own still agrees with a unit serving it
- * once the link is made. Nothing where the type stays.
- */
-export function typeFollowingUnit(index: ScopeIndex, scope: ScopePath, unitId: ElementId, day: string): UnitTypeId | undefined {
-  const organisation = index.organisation()
-  const unit = organisation.units.find((one) => one.id === unitId)
-  if (!unit?.unitTypeId || !isServable(scope)) return undefined
-  const kept = new Map(index.units().map(({ scope: at, unit: one }) => [one.id, at]))
-  const serving = servingUnits(organisation, scope, day, (id) => kept.get(id)).units
-  const after = [...new Set([...serving.map((one) => one.unitTypeId ?? ''), unit.unitTypeId].filter(Boolean))]
-  return typeToFollow({ unitTypeId: index.scopeTypes().get(scope) }, unit.unitTypeId, after)
 }

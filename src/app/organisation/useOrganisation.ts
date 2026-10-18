@@ -28,25 +28,19 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../../i18n'
-import {
-  bareScope, emptyScope, flattenScopes, namesUnder, scopeTree, unreadableAt,
-} from '../../projects/scope'
+import { bareScope, flattenScopes, scopeTree } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
 import { removeContainerDiagram, toDiagram } from '../../model'
 import type { Command, DesignDiagram, ElementId } from '../../model'
 import { isBoardKind } from '../../model/placement'
-import { normaliseLinks } from '../../projects/links'
 import { ShellError } from '../../platform/errors'
 import {
-  ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
+  parentScope, ROOT_SCOPE, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { typeChosen } from '../../projects/scopeType'
-import {
-  blank, changeScope, ensureScope, landed, moveScope, nodeAt, readScope, summaryOf,
-} from '../../projects/scopeAccess'
-import type { ScopeCommand } from '../../projects/scopeState'
+import { blank, changeScope, ensureScope, readScope, summaryOf } from '../../projects/scopeAccess'
+import { createScopeAt, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
 import { useScopeFolds } from './useScopeFolds'
@@ -338,29 +332,14 @@ export function useOrganisation({
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void (async () => {
-      const held = summaryOf(await scopes.tree())
-      const all = flattenScopes(held)
-      const path = scopePathFor(wanted.parent, wanted.name, namesUnder(all.find((scope) => scope.path === wanted.parent)))
-      // Free by the listing: a scope the listing could not read is still there,
-      // and the repository refuses to make one where it is.
-      if (unreadableAt(held, path) !== undefined) return refuseInTheWay(onFailure)
-      for (const missing of ancestorScopes(path).reverse()) {
-        if (missing === ROOT_SCOPE || all.some((scope) => scope.path === missing)) continue
-        await ensureScope(scopes, missing, { name: scopePathLabel(missing), kind: 'domain' })
-      }
-      // A scope that draws is a landscape and one that does not is a domain
-      // (§1) — labels for a screen, said here from what the person asked for
-      // rather than read back later from the shape.
-      const fresh = wanted.withBoard
-        ? emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape')
-        : bareScope(path, wanted.name, 'domain')
-      const id = await ensureScope(scopes, path, { name: wanted.name, ...(fresh.kind ? { kind: fresh.kind } : {}) })
-      const boards: ScopeCommand[] = fresh.model.diagrams.map((diagram) => ({ type: 'diagram.create', diagram: toDiagram(diagram) }))
-      if (boards.length) {
-        await changeScope(scopes, path, () => [...boards, { type: 'scope.describe', patch: { activeDiagramId: fresh.activeDiagramId } }])
-      }
-      if (id) await entered(path, s('shell.scopeCreated', { name: wanted.name }))
-      if (id && wanted.servedBy !== undefined && link) await link(path, wanted.servedBy, wanted.name)
+      // The tree's own gesture (`projects/scopeTree.ts`), the agent's as well:
+      // a scope the listing could not read in the way is refused, not written over.
+      const made = await createScopeAt(scopes, {
+        parent: wanted.parent, name: wanted.name, withBoard: wanted.withBoard, boardName: s('shell.newDiagram'), ancestors: 'make',
+      })
+      if ('refused' in made) return refuseInTheWay(onFailure)
+      await entered(made.path, s('shell.scopeCreated', { name: wanted.name }))
+      if (wanted.servedBy !== undefined && link) await link(made.path, wanted.servedBy, wanted.name)
     })().catch((cause: unknown) => {
       // Where work is kept refusing is what the standing notice says, and it
       // is latched, so a burst says it once.
@@ -472,12 +451,8 @@ export function useOrganisation({
       const name = patch.name.trim() || scopePathLabel(path)
       const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
       try {
-        await ensureScope(scopes, path, { name })
-        await changeScope(scopes, path, () => settingsCommands(name, patch))
-        if (moving) {
-          const siblings = namesUnder(flattenScopes(listing).find((scope) => scope.path === patch.parent))
-          await moveScope(scopes, repositories.index, path, scopePathFor(patch.parent!, scopePathLabel(path), siblings))
-        }
+        await writeSettings(scopes, path, name, patch)
+        if (moving) await moveScopeUnder(scopes, repositories.index, path, patch.parent!, { listing, strict: true })
       } catch (cause) {
         // A refusal is the repository's answer, said in its words.
         onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')
@@ -504,10 +479,7 @@ export function useOrganisation({
     if (dialog.kind !== 'delete') return
     const target = dialog.target
     setDialog({ kind: 'none' })
-    void (async () => {
-      const node = nodeAt(await scopes.tree(), target.path)
-      if (node) landed(await scopes.remove(node.id))
-    })().then(
+    void removeScopeAt(scopes, target.path).then(
       refresh,
       (cause: unknown) => onFailure('organisation.remove', cause, 'picker.deleteFailed'),
     )
@@ -630,24 +602,6 @@ export function useOrganisation({
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
 }
-
-/** What the settings dialog says about a scope, as the steps that say it. */
-function settingsCommands(name: string, patch: ScopeSettingsPatch): ScopeCommand[] {
-  const links = normaliseLinks(patch.links)
-  return [
-    { type: 'project.settings', patch: { name, description: patch.description?.trim() || undefined } },
-    {
-      type: 'scope.describe',
-      patch: {
-        client: patch.client?.trim() || undefined,
-        links: links.length ? links : undefined,
-        // The one picker says both fields; a caller speaking kinds alone sets the kind as before.
-        ...(patch.type !== undefined ? typeChosen(patch.type) : patch.kind ? { kind: patch.kind } : {}),
-      },
-    },
-  ]
-}
-
 
 /** The new-scope dialog with the unit picked to serve it, or none. Any other dialog stays as it is. */
 export function servedByPicked(held: OrganisationDialog, unitId: ElementId | undefined): OrganisationDialog {
