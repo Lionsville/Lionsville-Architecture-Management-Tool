@@ -315,7 +315,9 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
     },
   }
   const tree: TreeView = {
-    scopes: () => [], lookup: (id) => ENTRIES[id], register: () => [], findings: () => [], initiativesBelow: () => [],
+    // The tree as it is, so the domains an element.update names are checked against it (ADR-0040 §4).
+    scopes: () => ['', 'acme', 'acme/landscape', 'acme/landscape/shops', 'acme/retail'].map((path) => ({ path, name: path || 'Acme', views: 0 })),
+    lookup: (id) => ENTRIES[id], register: () => [], findings: () => [], initiativesBelow: () => [],
     read: async () => undefined,
   }
   const standInFor = (id: string) => {
@@ -382,7 +384,7 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
 
   it('is said by element.describe: a definition’s domains, and the scopes below that took it up', async () => {
     const at = claiming()
-    await handle({ id: '1', tool: 'element.update', args: { id: 'fulfilment', scopes: ['acme/landscape/shops'] } }, at)
+    expect((await handle({ id: '1', tool: 'element.update', args: { id: 'fulfilment', scopes: ['acme/landscape/shops'] } }, at)).ok).toBe(true)
     const described = parsed(await handle({ id: '2', tool: 'element.describe', args: { id: 'fulfilment' } }, at))
     expect(described.domains).toEqual(['acme/landscape/shops'])
     expect(described.claimedBy).toEqual(['acme/landscape/shops'])
