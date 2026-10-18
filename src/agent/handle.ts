@@ -578,6 +578,22 @@ function treeWide(
 }
 
 /**
+ * The functions this scope defines that a scope below holds a stand-in of —
+ * taken up (ADR-0040 §6) — off the tree's index, so `diagram.inspect`'s band
+ * reads what the page's does.
+ */
+function takenUpBelow(model: Model, session: SessionView): ReadonlySet<ElementId> {
+  const here = session.scopePath()
+  const below = (path: string) => path !== here && (here === '' || path.startsWith(`${here}/`))
+  const taken = new Set<ElementId>()
+  for (const element of Object.values(model.elements)) {
+    if (element.kind !== 'function' || element.ref !== undefined) continue
+    if (session.tree?.lookup(element.id)?.drawnIn.some(below)) taken.add(element.id)
+  }
+  return taken
+}
+
+/**
  * `diagram.inspect`: a layout report on a board, and on a laid-out view —
  * which has no geometry to report on — the page it draws instead.
  */
@@ -586,7 +602,7 @@ function inspectDiagram(model: Model, activeDiagramId: string, args: Record<stri
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
   const limit = args.limit as number | undefined
   switch (diagram.kind) {
-    case 'sheet': return json(inspectSheet(model, diagram, limit))
+    case 'sheet': return json(inspectSheet(model, diagram, limit, takenUpBelow(model, session)))
     case 'map': return json(inspectMap(model, diagram, limit, session.today()))
     case 'technology': return json(inspectTechnology(model, diagram, limit, sharedElsewhereOf(session.tree, session.scopePath())))
     // The organisation chart and the Conway map (ADR-0036 §7): what each draws, off the tree.

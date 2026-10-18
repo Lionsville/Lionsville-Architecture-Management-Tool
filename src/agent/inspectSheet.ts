@@ -125,9 +125,14 @@ export type SheetCapabilityReport = {
   assignedTo: ElementId[]
 }
 
-export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT): SheetReport {
+/**
+ * `takenUp` is what scopes below hold a stand-in of (ADR-0040 §6), so the
+ * unmapped band reads both halves, as the page does; absent, only what this
+ * scope handed on.
+ */
+export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT, takenUp?: ReadonlySet<ElementId>): SheetReport {
   const arrays = toArrays(model)
-  const page = sheetPage(arrays, diagram)
+  const page = sheetPage(arrays, diagram, [], {}, takenUp)
 
   const said = (capability: {
     element: { id: ElementId; name: string }

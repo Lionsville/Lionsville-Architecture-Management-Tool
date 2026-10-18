@@ -10,6 +10,7 @@
  * rather than from the canvas; and tidy and route are refused as questions
  * about the model rather than about the drawing.
  */
+import type { SheetReport } from './inspectSheet'
 import { describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
@@ -393,5 +394,12 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
     expect(standIn.domains).toBeUndefined()
     expect(standIn.claimedBy).toEqual([])
     expect(parsed(await handle({ id: '5', tool: 'element.describe', args: { id: 'erp' } }, at)).claimedBy).toBeUndefined()
+  })
+
+  it('is read by diagram.inspect: an area a scope below took up is not waiting in the band', async () => {
+    const at = claiming()
+    expect((await handle({ id: '1', tool: 'diagram.update', args: { id: 'sh-1', areas: ['billing'] } }, at)).ok).toBe(true)
+    const report = parsed(await handle({ id: '2', tool: 'diagram.inspect', args: { diagramId: 'sh-1' } }, at)) as never as SheetReport
+    expect(report.unmapped.some.map((row) => row.id)).not.toContain('fulfilment')
   })
 })

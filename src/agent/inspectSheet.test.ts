@@ -56,4 +56,12 @@ describe('inspectSheet', () => {
     expect(held.actors.some[3]).toMatchObject({ responsibleFor: ['invoice'], lane: false })
     expect(held.actors.some[0].responsibleFor).toBeUndefined()
   })
+
+  it('counts an area as mapped once a scope below took up something under it (ADR-0040 §6)', () => {
+    const { elements, relations } = shippingScope()
+    const sheet = { ...SHEET, areas: ['fulfilment'] }
+    const model = fromArrays({ name: 'Acme', elements, relations, diagrams: [sheet] })
+    expect(inspectSheet(model, model.diagrams[sheet.id]).unmapped.some.map((row) => row.id)).toEqual(['billing'])
+    expect(inspectSheet(model, model.diagrams[sheet.id], undefined, new Set(['invoice'])).unmapped.total).toBe(0)
+  })
 })
