@@ -1156,9 +1156,13 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     // scope's home, where its boards are listed by name; the board is opened
     // from there. Each press is on something scrolled into view first, as a
     // person would have to: the tree starts below the fold of a laptop window.
+    // The tree starts folded too (3.7.4), so the landscape has no row until the
+    // scope it is filed under is opened, with the press on its chevron.
     await page(`
       (async () => {
         const press = (element) => { element.scrollIntoView({ block: 'center' }); element.click() }
+        await ${waitFor(`document.querySelector('[data-testid="fold-${EXAMPLE.path}"]') && 'fold'`, 'the example scope with its chevron')}
+        if (!document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]')) press(document.querySelector('[data-testid="fold-${EXAMPLE.path}"]'))
         await ${waitFor(`document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]') && 'row'`, 'the landscape row')}
         press(document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]'))
         await ${waitFor(`(document.querySelector('[data-testid="organisation-name"]') || {}).textContent === ${JSON.stringify(EXAMPLE.landscapeName)}
