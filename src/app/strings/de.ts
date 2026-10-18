@@ -394,6 +394,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'agent.drivingHint': 'Was Sie inzwischen anklicken, kann \u00e4ndern, was der Agent tut. Stopp beendet die Sitzung und teilt es dem Agenten mit.',
   'agent.stop': 'Stopp',
   'agent.stoppedToast': '{name} wurde gestoppt. Der Agent erf\u00e4hrt es beim n\u00e4chsten Aufruf und kann fragen, ob er weitermachen darf.',
+  'agent.scopeRemoved': '{agent} hat {name} mit {what} entfernt, wie Sie sagten: „{said}“. Das lässt sich nicht rückgängig machen.',
+  'agent.scopeRemovedWhat': '{views} Ansichten und {records} weiteren Einträgen',
 
   // --- Per Link teilen… (ADR-0033, geändert) ---------------------------------
   'share.title': 'Per Link teilen',

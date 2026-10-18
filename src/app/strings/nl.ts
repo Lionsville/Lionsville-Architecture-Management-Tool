@@ -393,6 +393,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.drivingHint': 'Wat je ondertussen aanklikt, kan veranderen wat de agent doet. Stoppen beëindigt de sessie en zegt dat tegen de agent.',
   'agent.stop': 'Stoppen',
   'agent.stoppedToast': '{name} is gestopt. De agent hoort dat bij de volgende aanroep en kan vragen om door te gaan.',
+  'agent.scopeRemoved': '{agent} heeft {name} verwijderd met {what}, zoals je zei: “{said}”. Dit kan niet ongedaan worden gemaakt.',
+  'agent.scopeRemovedWhat': '{views} weergaven en {records} andere records',
 
   // --- Delen met een link… (ADR-0033, gewijzigd) -----------------------------
   'share.title': 'Delen met een link',

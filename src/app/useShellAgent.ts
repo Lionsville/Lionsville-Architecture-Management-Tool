@@ -16,6 +16,7 @@ import type { Translate } from '../i18n'
 import type { Place } from '../agent/place'
 import { arrived, HOME_PAGES, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { PeopleView } from '../agent/people'
+import type { ScopesView } from '../agent/scopeTree'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -76,6 +77,8 @@ export function useShellAgent(deps: {
   report?: (cause: unknown) => void
   /** The people register, lent to the agent (ADR-0036 §13). */
   people?: PeopleView
+  /** The tree of scopes, lent to the agent (ADR-0040 §3). */
+  scopes?: ScopesView
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
@@ -238,7 +241,7 @@ export function useShellAgent(deps: {
     providerMove.current = undefined
     openFor(to)
   }, [openFor])
-  const agentShell = useAgentShell({ gateway, status, tree, people: deps.people, screen: screenNow, open: agentOpen, onStopped: agentStopped })
+  const agentShell = useAgentShell({ gateway, status, tree, people: deps.people, scopes: deps.scopes, screen: screenNow, open: agentOpen, onStopped: agentStopped })
   const driving = agentShell.driving.session !== undefined
   agentDriving.current = driving
   // A session that ends — Stop, `session.end`, the client gone — may end in the

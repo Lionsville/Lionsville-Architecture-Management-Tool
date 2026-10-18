@@ -50,6 +50,7 @@ import type {
 import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
 import { useOrganisation } from './organisation/useOrganisation'
+import { useAgentScopes } from './agentScopes'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import { usePasswordPrompt } from './usePasswordPrompt'
@@ -478,7 +479,7 @@ export function App(props: AppProps) {
 function useShellParts(props: AppProps): ShellParts {
   const { agent, diagnostics, repositories } = props
   const base = useShellBase(props)
-  const { source, host, services, nav, tree, agentServer, commands, organisation, refreshTree } = base
+  const { source, host, services, nav, tree, agentServer, commands, organisation, refreshTree, writable } = base
   const { toasts, s, failedRef } = services
   const { project } = nav
 
@@ -583,6 +584,13 @@ function useShellParts(props: AppProps): ShellParts {
     ...(props.provider?.people ? { source: props.provider.people } : {}),
     readText: (file) => props.documents.readBytes(file).then(textFromBytes), copyText: (text) => { void props.hostControls.copyText(text).catch((cause: unknown) => services.failed('people.copy', cause)) },
   })
+  // The tree's four gestures, lent to the agent over the same operations the organisation screen uses (ADR-0040 §3).
+  const scopes = useAgentScopes({
+    repositories, index: () => tree.index, writable, openPath: () => project?.path, treeChanged,
+    listed: () => findings.shellTree.scopes().map((one) => one.path), boardName: () => s('shell.newDiagram'),
+    today: props.today ?? localToday, notify: toasts.notify, s,
+    client: () => (agentServer.status.kind === 'connected' ? agentServer.status.client.name : undefined),
+  })
   // What the boot has to say about the address it landed from (ADR-0033), once, as the app comes up.
   const noticed = useRef(false)
   useEffect(() => {
@@ -593,7 +601,7 @@ function useShellParts(props: AppProps): ShellParts {
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
-    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, people: people.agent,
+    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, people: people.agent, scopes,
     report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
     watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined
       || props.provider?.barButton !== undefined,
@@ -750,6 +758,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef, selectedRef, share,
+    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable,
   }
 }

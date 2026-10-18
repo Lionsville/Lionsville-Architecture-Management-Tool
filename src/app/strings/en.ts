@@ -550,6 +550,9 @@ export const EN = {
   'agent.drivingHint': 'What you click meanwhile can change what it does. Stop ends its session and tells it so.',
   'agent.stop': 'Stop',
   'agent.stoppedToast': '{name} was stopped. It hears so on its next call, and may ask to continue.',
+  /** A scope removed with what it held, at the person's word (ADR-0040 §3): there is no ⌘Z for it. */
+  'agent.scopeRemoved': '{agent} removed {name} with {what}, as you said: “{said}”. This cannot be undone.',
+  'agent.scopeRemovedWhat': '{views} views and {records} other records',
 
   // --- Share with a Link… (ADR-0033, amended) --------------------------------
   'share.title': 'Share with a link',

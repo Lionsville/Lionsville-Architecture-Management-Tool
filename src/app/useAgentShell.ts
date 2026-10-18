@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ShellView } from '../agent/shell'
 import type { PeopleView } from '../agent/people'
+import type { ScopesView } from '../agent/scopeTree'
 import { Driving } from '../agent/driving'
 import type { DrivingState } from '../agent/driving'
 import type { SessionView } from '../agent/handle'
@@ -56,6 +57,8 @@ export type UseAgentShellOptions = {
   tree: TreeView
   /** The people register, where the shell lends one (ADR-0036 §13). */
   people?: PeopleView
+  /** The tree of scopes, to make, describe, move and remove one in (ADR-0040 §3). */
+  scopes?: ScopesView
   /** Where the app is, read at call time. */
   screen: () => Screen
   /** Move the app somewhere a scope's home or a workspace can show. */
@@ -74,7 +77,7 @@ export type AgentShell = {
   session: () => WorkspaceAgentView | undefined
 }
 
-export function useAgentShell({ gateway, status, tree, people, screen, open, onStopped }: UseAgentShellOptions): AgentShell {
+export function useAgentShell({ gateway, status, tree, people, scopes, screen, open, onStopped }: UseAgentShellOptions): AgentShell {
   const driving = useMemo(() => new Driving(), [])
   const [state, setState] = useState<DrivingState>(() => driving.current())
   useEffect(() => driving.onChange(() => setState(driving.current())), [driving])
@@ -85,12 +88,13 @@ export function useAgentShell({ gateway, status, tree, people, screen, open, onS
 
   // Read through refs so the handler, which keeps the shell object across
   // renders, always reaches the current screen and the current tree.
-  const latest = useRef({ tree, people, screen, open, status })
-  latest.current = { tree, people, screen, open, status }
+  const latest = useRef({ tree, people, scopes, screen, open, status })
+  latest.current = { tree, people, scopes, screen, open, status }
 
   const shell = useMemo<ShellView>(() => ({
     get tree() { return latest.current.tree },
     get people() { return latest.current.people },
+    get scopes() { return latest.current.scopes },
     screen: () => latest.current.screen(),
     open: (to) => latest.current.open(to),
     client: () => {
