@@ -558,24 +558,12 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       drawnIn: row.standIns.map((one) => one.path),
       stale,
       ...(tied.length > 1 ? { conflict: tied.map((one) => one.path).sort() } : {}),
-      ...(definitions.some((one) => one.unit) && definitions.some((one) => !one.unit)
-        ? { kindClash: [...new Set(definitions.map((one) => one.path))].sort() } : {}),
+      ...kindClashOf(definitions),
     })
   }
 
   const inIdOrder = [...entries.values()].sort((a, b) => a.id.localeCompare(b.id))
-  // A unit is answered for where its deepest definition as a unit is, the
-  // master among units: a declaration above it is a cache, and a record of
-  // another kind under the same id (`kindClash`) does not take it away.
-  const deepestUnit = new Map<ElementId, { scope: ScopePath; depth: number }>()
-  for (const { scope, unit } of unitDefinitions) {
-    const depth = scopeSegments(scope).length
-    const held = deepestUnit.get(unit.id)
-    if (!held || depth > held.depth || (depth === held.depth && scope.localeCompare(held.scope) < 0)) deepestUnit.set(unit.id, { scope, depth })
-  }
-  const units = unitDefinitions
-    .filter(({ scope, unit }) => deepestUnit.get(unit.id)?.scope === scope)
-    .sort((a, b) => a.unit.id.localeCompare(b.unit.id))
+  const units = unitsAtTheirMaster(unitDefinitions)
   const organisation = organisationOf(units, assignments, operating, moves)
 
   return {
@@ -613,6 +601,33 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     scopes: () => [...paths],
     scopeTypes: () => scopeTypes,
   }
+}
+
+/**
+ * Every scope that defines an id, where some define a unit and others
+ * something that is not one (3.7.5); nothing otherwise.
+ */
+function kindClashOf(definitions: readonly { path: ScopePath; unit: boolean }[]): { kindClash?: ScopePath[] } {
+  return definitions.some((one) => one.unit) && definitions.some((one) => !one.unit)
+    ? { kindClash: [...new Set(definitions.map((one) => one.path))].sort() } : {}
+}
+
+/**
+ * Each unit where its deepest definition as a unit is — the master among
+ * units, a tie to the first path: a declaration above it is a cache, and a
+ * record of another kind under the same id (`kindClash`) does not take it
+ * away. In id order.
+ */
+function unitsAtTheirMaster(definitions: readonly IndexedUnit[]): IndexedUnit[] {
+  const deepest = new Map<ElementId, { scope: ScopePath; depth: number }>()
+  for (const { scope, unit } of definitions) {
+    const depth = scopeSegments(scope).length
+    const held = deepest.get(unit.id)
+    if (!held || depth > held.depth || (depth === held.depth && scope.localeCompare(held.scope) < 0)) deepest.set(unit.id, { scope, depth })
+  }
+  return definitions
+    .filter(({ scope, unit }) => deepest.get(unit.id)?.scope === scope)
+    .sort((a, b) => a.unit.id.localeCompare(b.unit.id))
 }
 
 /** A scope's findings marked as intended, each with the scope that keeps it, in the scope's order. */
