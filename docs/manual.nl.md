@@ -179,7 +179,11 @@ technologielandschap.
   gezegd, nooit beide. Het **Bediend door** erin is dat van het
   thuis, en elke wijziging ervan wordt weggeschreven zodra je hem maakt, niet
   met **Opslaan**; de naam van een eenheid daar opent haar zoals op de
-  startpagina, en sluit de dialoog.
+  startpagina, en sluit de dialoog. Een verplaatsing neemt de eenheden mee
+  die de scope en de scopes eronder bedienen: hun bediende scopes noemen de
+  nieuwe plek. Een eenheid die nog een plek noemt waar geen scope is — een
+  verwijderde scope, of een die vóór 3.7.5 is verplaatst — is een bevinding
+  op de pagina Controles, *Een eenheid die een scope bedient die er niet is*.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
   bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,
   zijn records uit deze browser. Een werkbestand dat je elders hebt bewaard

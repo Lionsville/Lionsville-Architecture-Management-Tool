@@ -680,6 +680,8 @@ const SPECS = [
       + 'check.assignmentEnded, check.assignmentOrphaned (an assignment, running or over, in a unit that is not there: '
       + 'the person in person; a person removes it, from the Checks page — tell them), check.unitTypeEnded, check.personOverloaded and check.unitNotServing (an area, grouping or '
       + 'capability assigned to a unit that serves neither its domain nor sits under a unit that does; the unit in detail); '
+      + 'check.servedScopeGone (a unit that serves a path no scope is at — a scope removed, or moved before 3.7.5 — '
+      + 'the path in detail: put it right with element.update on the unit\'s scopes); '
       + 'and the reporting lines\' (ADR-0039), about the unit a line runs from: check.reportingLoop (solid lines that come '
       + 'back to where they started, the chain in detail), check.reportingDangling, check.reportingAmbiguous and '
       + 'check.reportingVacant (reportingLines.list says each line), '
@@ -777,9 +779,10 @@ const SPECS = [
     description:
       'File a scope, and everything filed under it, under another parent (ADR-0040): its last address segment kept, '
       + 'suffixed where taken. Every identity, state and history goes with it, and every stand-in elsewhere that named an '
-      + 'address in it is re-addressed as that scope\'s own step; one kept in a scope the person may not write is listed '
+      + 'address in it is re-addressed as that scope\'s own step, and so is every unit whose served scopes name one (listed in '
+      + 'units, by id and the scope that keeps it); one kept in a scope the person may not write is listed '
       + 'in notCarried, and the move stands. Refused scope.organisation for the organisation, shell.scopeIntoItself for a '
-      + 'parent under the scope itself. Answers from, to, carried and notCarried.',
+      + 'parent under the scope itself. Answers from, to, carried, notCarried and units.',
     inputSchema: {
       type: 'object',
       properties: {

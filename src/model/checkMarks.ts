@@ -161,6 +161,8 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.scopeTypeDisagrees': withFields,
   'check.scopeTypeUnserved': withFields,
   'check.scopeTypeGone': withFields,
+  /** The unit, and the path it serves that is not there. */
+  'check.servedScopeGone': withFields,
   /** The capability, the unit and the `assigned` row. */
   'check.unitNotServing': withFields,
   /** The unit and role a line runs from, and where it lands: the line's target changed is another question. */

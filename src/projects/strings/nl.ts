@@ -49,6 +49,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.scopeTypeDisagrees': '{scope} zegt een {detail} te zijn, en de eenheden die haar bedienen zijn van een ander type: {name}',
   'check.scopeTypeUnserved': '{scope} zegt een {detail} te zijn, en nog geen eenheid bedient haar',
   'check.scopeTypeGone': '{scope} zegt een eenheidstype te zijn dat het operating model niet kent ({detail})',
+  'check.servedScopeGone': '{name} bedient {detail}, en daar is geen scope',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -114,6 +115,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.scopeTypeUnserved.other': '{count} getypeerde scopes die geen eenheid bedient',
   'check.short.scopeTypeGone.one': '{count} scope van een verdwenen eenheidstype',
   'check.short.scopeTypeGone.other': '{count} scopes van een verdwenen eenheidstype',
+  'check.short.servedScopeGone.one': '{count} eenheid die een scope bedient die er niet is',
+  'check.short.servedScopeGone.other': '{count} eenheden die scopes bedienen die er niet zijn',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

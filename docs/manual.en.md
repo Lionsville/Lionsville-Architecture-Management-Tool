@@ -164,7 +164,11 @@ landscape.
   behaves differently for it. One of the two is said, never both. Its
   **Served by** is the home's, and each change to it is written as you make
   it, not with **Save**; a unit's name there opens it as it does on the
-  home, closing the dialog.
+  home, closing the dialog. A move takes along the units that serve the
+  scope and the scopes under it: their served scopes name the new place.
+  A unit that still names a place where no scope is — a scope removed, or
+  one moved before 3.7.5 — is a finding on the Checks page, *A unit serving
+  a scope that is not there*.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,
   its records from this browser. A working file you saved elsewhere is not

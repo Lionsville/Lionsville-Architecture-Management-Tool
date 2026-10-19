@@ -189,7 +189,12 @@ Unternehmenskarte oder eine Technologielandschaft.
   **Bedient von** ist das der
   Startseite, und jede Änderung daran wird geschrieben, sobald Sie sie machen,
   nicht mit **Speichern**; der Name einer Einheit dort öffnet sie wie auf der
-  Startseite und schließt den Dialog.
+  Startseite und schließt den Dialog. Eine Verschiebung nimmt die Einheiten
+  mit, die den Bereich und die Bereiche darunter bedienen: Ihre bedienten
+  Bereiche nennen den neuen Ort. Eine Einheit, die noch einen Ort nennt, an
+  dem kein Bereich ist — ein entfernter Bereich oder einer, der vor 3.7.5
+  verschoben wurde —, ist ein Befund auf der Seite Prüfungen, *Eine Einheit,
+  die einen Bereich bedient, den es nicht gibt*.
 - **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und
   die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
   einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo

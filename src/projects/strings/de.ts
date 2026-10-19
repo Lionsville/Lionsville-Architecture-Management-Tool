@@ -49,6 +49,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.scopeTypeDisagrees': '{scope} sagt, er sei ein {detail}, und die Einheiten, die ihn bedienen, sind von anderem Typ: {name}',
   'check.scopeTypeUnserved': '{scope} sagt, er sei ein {detail}, und noch keine Einheit bedient ihn',
   'check.scopeTypeGone': '{scope} sagt, er sei ein Einheitentyp, den das Betriebsmodell nicht kennt ({detail})',
+  'check.servedScopeGone': '{name} bedient {detail}, und dort gibt es keinen Bereich',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -114,6 +115,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.scopeTypeUnserved.other': '{count} typisierte Bereiche, die keine Einheit bedient',
   'check.short.scopeTypeGone.one': '{count} Bereich eines verschwundenen Einheitentyps',
   'check.short.scopeTypeGone.other': '{count} Bereiche eines verschwundenen Einheitentyps',
+  'check.short.servedScopeGone.one': '{count} Einheit, die einen Bereich bedient, den es nicht gibt',
+  'check.short.servedScopeGone.other': '{count} Einheiten, die Bereiche bedienen, die es nicht gibt',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

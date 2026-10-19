@@ -32,7 +32,7 @@ import type { RecordLink } from './links'
 import { bareScope, emptyScope, flattenScopes, namesUnder, unreadableAt } from './scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
-import { analysisNamesWithin, linesNameWithin } from './readdress'
+import { analysisNamesWithin, linesNameWithin, readdressRef, servedNamesWithin } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
@@ -262,15 +262,18 @@ export async function describeScopeAt(
 export type MovedUnder = {
   from: ScopePath
   to: ScopePath
-  /** The scopes elsewhere whose stand-ins, causes or lines were re-addressed. */
+  /** The scopes elsewhere whose stand-ins, causes, lines or served scopes were re-addressed. */
   carried: ScopePath[]
   /** The scopes that could not be: the move stands, and the check for drift says it until somebody refreshes them. */
   notCarried: { scope: ScopePath; reason: string }[]
+  /** The units whose served scopes were re-addressed, by where they are kept after the move (3.7.5); absent where there were none. */
+  units?: { id: string; scope: ScopePath }[]
 }
 
 /**
  * The scopes outside the subtree at `from` that a move of it writes: those
- * whose stand-ins, causes, observations or reporting lines name an address
+ * whose stand-ins, causes, observations, reporting lines or units' served
+ * scopes name an address
  * in it (`scopeAccess.moveScope`'s carry), by where they are. What a host
  * asks before a move that must not write behind a session open on one.
  */
@@ -278,7 +281,7 @@ export async function scopesAMoveWrites(index: Pick<OrganisationIndex, 'read'>, 
   return modelsOf(await index.read())
     .filter(({ path, model }) => !isWithinScope(path, from) && (
       model.elements.some((element) => element.ref !== undefined && isWithinScope(element.ref, from))
-      || analysisNamesWithin(model, from) || linesNameWithin(model, from)))
+      || analysisNamesWithin(model, from) || linesNameWithin(model, from) || servedNamesWithin(model, from)))
     .map(({ path }) => path)
 }
 
@@ -298,11 +301,16 @@ export async function moveScopeUnder(
   const to = scopePathFor(parent, scopePathLabel(from), siblings)
   const carried: ScopePath[] = []
   const notCarried: { scope: ScopePath; reason: string }[] = []
+  const serving = modelsOf(await index.read()).flatMap(({ path, model }) => model.elements
+    .filter((element) => element.ref === undefined && (element.scopes ?? []).some((scope) => isWithinScope(scope, from)))
+    .map((element) => ({ id: element.id, scope: readdressRef(path, from, to) })))
   const moved = await moveScope(scopes, index, from, to, undefined, options.strict ? undefined : {
     carried: (address) => carried.push(address),
     refused: (address, key) => notCarried.push({ scope: address, reason: key }),
   })
-  return moved ? { from, to, carried, notCarried } : undefined
+  if (!moved) return undefined
+  const units = serving.filter((unit) => !notCarried.some((one) => one.scope === unit.scope))
+  return { from, to, carried, notCarried, ...(units.length ? { units } : {}) }
 }
 
 // --- removing it ------------------------------------------------------------------

@@ -94,9 +94,9 @@ export type ScopesView = {
   serve(path: string, unitId: string): Promise<ServedFrom | TreeRefused>
   /** project.settings + scope.describe, one change, worked out again over a scope that moved in between. */
   describe(path: string, header: ScopeHeader): Promise<{ path: string; changed: readonly (keyof ScopeHeader)[] } | TreeRefused>
-  /** To `parent`, the last segment kept or suffixed; stand-ins elsewhere re-addressed, each scope its own step. */
+  /** To `parent`, the last segment kept or suffixed; stand-ins and units' served scopes elsewhere re-addressed, each scope its own step. */
   move(path: string, parent: string): Promise<
-    { from: string; to: string; carried: readonly string[]; notCarried: readonly { scope: string; reason: string }[] } | TreeRefused>
+    { from: string; to: string; carried: readonly string[]; notCarried: readonly { scope: string; reason: string }[]; units?: readonly { id: string; scope: string }[] } | TreeRefused>
   /** This one scope, expecting `why.expects`. Called only for a scope with nothing below (the handler checked). */
   remove(path: string, why: { expects: string; holds: ScopeHolds; personSaid?: string }): Promise<
     { removed: readonly string[]; rightsRevoked?: number } | TreeRefused>

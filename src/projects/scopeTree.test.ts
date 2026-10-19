@@ -186,6 +186,23 @@ describe('moving a scope', () => {
     expect(await scopesAMoveWrites(repositories.index, 'globex')).toEqual([])
   })
 
+  it('carries the units that serve the moved scope and the scopes under it, and lists them (3.7.5)', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, '', { ...model('Org', [{ ...unit('freight', 'ut-domain'), scopes: ['a/b', 'a/b/x', 'c'] }]), unitTypes: types })
+    await place(repositories, 'a', model('A'))
+    await place(repositories, 'a/b', model('B', [{ ...unit('crew', 'ut-team'), scopes: ['a/b/x'] }]))
+    await place(repositories, 'a/b/x', model('X'))
+    await place(repositories, 'c', model('C'))
+    expect(await scopesAMoveWrites(repositories.index, 'a/b')).toEqual([''])
+    const moved = await moveScopeUnder(repositories.scopes, repositories.index, 'a/b', 'c')
+    expect(moved).toEqual({
+      from: 'a/b', to: 'c/b', carried: ['', 'c/b'], notCarried: [],
+      units: [{ id: 'freight', scope: '' }, { id: 'crew', scope: 'c/b' }],
+    })
+    expect((await readScope(repositories.scopes, ''))?.model.elements[0].scopes).toEqual(['c/b', 'c/b/x', 'c'])
+    expect((await readScope(repositories.scopes, 'c/b'))?.model.elements[0].scopes).toEqual(['c/b/x'])
+  })
+
   it('throws a carry refused where the screen asks for it strictly, and answers nothing for a scope not there', async () => {
     const repositories = await landscape()
     const initech = (await readScope(repositories.scopes, 'initech'))!.id!

@@ -65,3 +65,16 @@ describe('a scope\'s type against the units that serve it', () => {
     expect(organisationFindings(index, DAY).filter((one) => one.key.startsWith('check.scopeType'))).toEqual([])
   })
 })
+
+describe('a unit serving a scope that is not there (3.7.5)', () => {
+  it('is a finding about the scope that keeps the unit, once per path that is gone', () => {
+    const models = tree()
+    models[0] = { ...models[0], model: { ...models[0].model, elements: [unit('ops', 'Operations', 'ut-domain', { scopes: ['warehouse', 'yard', 'yard', 'yard/gates'] })] } }
+    const found = organisationFindings(indexScopes(models), DAY).filter((one) => one.key === 'check.servedScopeGone')
+    expect(found).toEqual([
+      { key: 'check.servedScopeGone', scope: '', id: 'ops', name: 'Operations', detail: 'yard', fields: ['yard'] },
+      { key: 'check.servedScopeGone', scope: '', id: 'ops', name: 'Operations', detail: 'yard/gates', fields: ['yard/gates'] },
+    ])
+    expect(findingSentence(found[0], s, name)).toBe('Operations serves yard, and no scope is there')
+  })
+})

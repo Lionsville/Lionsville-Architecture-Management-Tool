@@ -54,7 +54,7 @@ export const TREE_CHECK_KEYS = [
   'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
   'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
-  'check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone',
+  'check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone', 'check.servedScopeGone',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -345,6 +345,11 @@ const ENTRIES = {
   'check.scopeTypeGone': {
     name: 'check.name.scopeTypeGone', why: 'check.why.scopeTypeGone', how: 'check.how.scopeTypeGone',
     category: 'organisation', weight: 'fix', actions: ['openScope', 'openType'],
+  },
+  // A unit serving a scope that is not there (3.7.5): about the unit.
+  'check.servedScopeGone': {
+    name: 'check.name.servedScopeGone', why: 'check.why.servedScopeGone', how: 'check.how.servedScopeGone',
+    category: 'organisation', weight: 'fix', actions: ['openUnit'],
   },
   'check.reportingVacant': {
     name: 'check.name.reportingVacant', why: 'check.why.reportingVacant', how: 'check.how.reportingVacant',

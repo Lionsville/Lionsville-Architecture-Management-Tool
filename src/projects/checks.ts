@@ -120,6 +120,9 @@ import type { TreeCheckKey } from '../model/checkCatalogue'
  *   as `name`, the scope's own as `detail`); one typed and served by nobody
  *   (`check.scopeTypeUnserved`); one typed by a unit type the operating model
  *   does not hold (`check.scopeTypeGone`);
+ * - `check.servedScopeGone` — a unit that says it serves a path no scope is
+ *   at (3.7.5): a move or a removal the unit was not carried through. About
+ *   the scope that keeps the unit; the path in `detail` and `fields`;
  * - `check.unitNotServing` — an area, a grouping or a capability assigned to
  *   a unit that serves neither its domain — the scope that defines it, or one
  *   above or below that — nor sits under a unit that does (ADR-0036, amended
@@ -178,6 +181,7 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.scopeTypeDisagrees': 'check.scopeTypeDisagrees',
   'check.scopeTypeUnserved': 'check.scopeTypeUnserved',
   'check.scopeTypeGone': 'check.scopeTypeGone',
+  'check.servedScopeGone': 'check.servedScopeGone',
 }
 
 /**
@@ -258,6 +262,7 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.scopeTypeDisagrees': { one: 'check.short.scopeTypeDisagrees.one', other: 'check.short.scopeTypeDisagrees.other' },
   'check.scopeTypeUnserved': { one: 'check.short.scopeTypeUnserved.one', other: 'check.short.scopeTypeUnserved.other' },
   'check.scopeTypeGone': { one: 'check.short.scopeTypeGone.one', other: 'check.short.scopeTypeGone.other' },
+  'check.servedScopeGone': { one: 'check.short.servedScopeGone.one', other: 'check.short.servedScopeGone.other' },
 }
 
 /**
@@ -697,6 +702,12 @@ export type OrganisationAt = {
    * headers, and nothing is then said of them.
    */
   scopeTypes?: ReadonlyMap<ScopePath, string>
+  /**
+   * Every scope there is, by path: what `check.servedScopeGone` reads a
+   * unit's served scopes against. Absent where nobody read the tree, and
+   * nothing is then said of them.
+   */
+  scopePaths?: ReadonlySet<ScopePath>
 }
 
 /** An `assigned` row to a function, the scope that keeps it, and the function's name and the scope that defines it. */
@@ -727,6 +738,7 @@ export function organisationAt(index: ScopeIndex): OrganisationAt {
     owns: ownsOf(index.register()),
     assigned: () => assignedRowsOf(index),
     scopeTypes: index.scopeTypes(),
+    scopePaths: new Set(index.scopes()),
   }
 }
 
@@ -748,6 +760,7 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string, canonica
     ...unitFindings(organisation, day, { owns: at.owns, ...(canonical ? { canonical } : {}) }).flatMap((one) => organisationFinding(one, said)),
     ...notServingFindings(at, day),
     ...scopeTypeFindings(at, day, said),
+    ...servedGoneFindings(at),
     ...reportingFindings(organisation, day).map((one) => reportingFinding(one, said, day)),
   ]
 }
@@ -784,6 +797,22 @@ function scopeTypeFindings(at: OrganisationAt, day: string, said: Said): Finding
     }
   }
   return found
+}
+
+/**
+ * Every unit that says it serves a path no scope is at (3.7.5), once per
+ * path: about the scope that keeps the unit, the path in `detail`.
+ */
+function servedGoneFindings(at: OrganisationAt): Finding[] {
+  const there = at.scopePaths
+  if (!there?.size) return []
+  return at.organisation.units.flatMap((unit) => {
+    const kept = at.unitAt(unit.id)
+    if (!kept) return []
+    return [...new Set(unit.scopes ?? [])].filter((path) => !there.has(path)).map((path): Finding => ({
+      key: 'check.servedScopeGone', scope: kept.scope, id: unit.id, name: unit.name, detail: path, fields: [path],
+    }))
+  })
 }
 
 /**

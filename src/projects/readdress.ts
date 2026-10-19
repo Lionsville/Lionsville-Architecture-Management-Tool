@@ -201,3 +201,26 @@ export function readdressLines(model: LinesHeld, from: ScopePath, to: ScopePath)
   })
   return [...units, ...holders]
 }
+
+/**
+ * A unit names the scopes it serves by their paths (`DesignElement.scopes`,
+ * ADR-0036 §4): a move carries them as it carries a stand-in's `ref`, or the
+ * moved scopes read unserved and the unit serves addresses that are not
+ * there (3.7.5). Only a definition's: a stand-in holds none of the owner's
+ * detail.
+ */
+export function servedNamesWithin(model: { elements: readonly DesignElement[] }, from: ScopePath): boolean {
+  if (from === ROOT_SCOPE) return false
+  return model.elements.some((element) => element.ref === undefined
+    && (element.scopes ?? []).some((scope) => isWithinScope(scope, from)))
+}
+
+/** One `element.update` per unit of the scope whose served scopes name an address inside the subtree at `from`, carried to `to`. */
+export function readdressServed(model: { elements: readonly DesignElement[] }, from: ScopePath, to: ScopePath): Command[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  return model.elements.flatMap((element): Command[] => {
+    if (element.ref !== undefined || !element.scopes?.length) return []
+    const scopes = element.scopes.map((scope) => readdressRef(scope, from, to))
+    return scopes.some((scope, at) => scope !== element.scopes![at]) ? [{ type: 'element.update', id: element.id, patch: { scopes } }] : []
+  })
+}
