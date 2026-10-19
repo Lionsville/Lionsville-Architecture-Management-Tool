@@ -16,6 +16,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'entry.andMore': ' und {count} weitere',
 
   'check.conflict': '{name} ist sowohl hier als auch in {scope} definiert — behalten Sie eine Definition und machen Sie die andere mit Verknüpfen… zu einem Platzhalter',
+  'check.kindClash': '{name} ist in einem Bereich eine Einheit und in {scope} etwas anderes, unter derselben ID',
   'check.drift': 'Die Kopie von {name} hier stimmt nicht mehr mit {scope} überein — aktualisieren Sie sie, oder ändern Sie es dort',
   'check.dangling': '{name} steht für etwas, das nirgends in der Organisation definiert ist — definieren Sie es hier, oder löschen Sie den Platzhalter',
   'check.danglingEnd': 'Eine Zeile an {name} endet an etwas, das dieser Bereich nicht hält — löschen Sie die Zeile, oder zeichnen Sie, worauf sie zeigt',
@@ -53,6 +54,8 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
+  'check.short.kindClash.one': '{count} ID, die eine Einheit mit etwas anderem teilt',
+  'check.short.kindClash.other': '{count} IDs, die Einheiten mit etwas anderem teilen',
   'check.short.drift.one': '{count} veraltet',
   'check.short.drift.other': '{count} veraltet',
   'check.short.dangling.one': '{count} undefiniert',

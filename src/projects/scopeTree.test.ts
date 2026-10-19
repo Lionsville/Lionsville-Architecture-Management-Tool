@@ -14,6 +14,7 @@ import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import { contentOf, landed, modelsOf, placeWhole, readScope, summaryOf } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
+import { identityFindings } from './checks'
 import { indexScopes } from './scopeIndex'
 import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, scopesAMoveWrites, serveScopeBy, settingsCommands, writeSettings } from './scopeTree'
 import type { TreeScopes } from './scopeTree'
@@ -114,6 +115,19 @@ describe('a unit serving a scope from the start', () => {
     expect(served).toEqual({ unit: 'freight', keptIn: 'acme', scopeType: 'ut-domain' })
     expect((await readScope(repositories.scopes, 'acme'))?.model.elements[0].scopes).toEqual(['acme', 'acme/rail'])
     expect((await readScope(repositories.scopes, 'acme/rail'))?.unitTypeId).toBe('ut-domain')
+  })
+
+  it('serves it from a unit whose id an application deeper in the tree also has, and the checks say the clash (3.7.5)', async () => {
+    const { repositories } = await organisation()
+    await place(repositories, 'acme/rail/crews', model('Crews', [app('freight')]))
+    const index = indexScopes(modelsOf(await repositories.index.read()))
+    expect(index.lookup('freight')).toMatchObject({ master: 'acme/rail/crews', kind: 'application', kindClash: ['acme', 'acme/rail/crews'] })
+    expect(index.units().map(({ scope, unit }) => [scope, unit.id])).toEqual([['acme', 'freight']])
+    const served = await serveScopeBy({ scopes: repositories.scopes, index, writable: () => true, today: DAY }, 'acme/rail', 'freight')
+    expect(served).toEqual({ unit: 'freight', keptIn: 'acme', scopeType: 'ut-domain' })
+    expect(identityFindings(index).filter((one) => one.key === 'check.kindClash').map((one) => [one.scope, one.scopes])).toEqual([
+      ['acme', ['acme/rail/crews']], ['acme/rail/crews', ['acme']],
+    ])
   })
 
   it('refuses a unit nobody keeps, a scope the person may not write, and says the repository\'s own refusal', async () => {

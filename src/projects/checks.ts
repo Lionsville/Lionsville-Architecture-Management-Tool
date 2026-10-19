@@ -150,6 +150,7 @@ export type { TreeCheckKey } from '../model/checkCatalogue'
  */
 export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.conflict': 'check.conflict',
+  'check.kindClash': 'check.kindClash',
   'check.drift': 'check.drift',
   'check.dangling': 'check.dangling',
   'check.danglingEnd': 'check.danglingEnd',
@@ -229,6 +230,7 @@ export function findingSentence(
  */
 export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKey }> = {
   'check.conflict': { one: 'check.short.conflict.one', other: 'check.short.conflict.other' },
+  'check.kindClash': { one: 'check.short.kindClash.one', other: 'check.short.kindClash.other' },
   'check.drift': { one: 'check.short.drift.one', other: 'check.short.drift.other' },
   'check.dangling': { one: 'check.short.dangling.one', other: 'check.short.dangling.other' },
   'check.danglingEnd': { one: 'check.short.danglingEnd.one', other: 'check.short.danglingEnd.other' },
@@ -371,6 +373,16 @@ export function identityFindings(index: ScopeIndex): Finding[] {
         found.push({
           key: 'check.conflict', scope, id: entry.id, name: entry.name,
           scopes: entry.conflict.filter((held) => held !== scope),
+        })
+      }
+    }
+    // One id, a unit in one scope and something else in another (3.7.5): on
+    // every scope that defines it, since either may be the one to give way.
+    if (entry.kindClash) {
+      for (const scope of entry.kindClash) {
+        found.push({
+          key: 'check.kindClash', scope, id: entry.id, name: entry.name,
+          scopes: entry.kindClash.filter((held) => held !== scope),
         })
       }
     }

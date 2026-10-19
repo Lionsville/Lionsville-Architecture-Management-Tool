@@ -666,7 +666,8 @@ const SPECS = [
     tier: 'read',
     description:
       'What the tree contradicts about itself (ADR-0012 §9), as findings with a key: check.conflict (two '
-      + 'scopes define one id), check.drift (a stand-in\'s cached name disagrees with its master), '
+      + 'scopes define one id at one depth), check.kindClash (a unit in one scope and something else in another share one id: neither may be reused as the other; '
+      + 'the unit still serves and is read as a unit), check.drift (a stand-in\'s cached name disagrees with its master), '
       + 'check.dangling (a stand-in nobody defines), check.danglingEnd (a relation end nobody holds), '
       + 'check.proposal (a domain names a function no ancestor has), check.ownedElsewhere (the owner\'s '
       + 'detail written on a stand-in), check.unattributed (outside, and nobody has said whose), '

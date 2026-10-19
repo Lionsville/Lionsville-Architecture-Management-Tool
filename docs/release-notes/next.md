@@ -9,3 +9,9 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   units it rewrote under `units`. A unit that still serves a place where no
   scope is — after a removal, or a move made before this release — is a new
   finding on the Checks page, *A unit serving a scope that is not there*.
+- **A unit and something else under one id.** Where one scope defines a unit
+  and another scope defines something that is not a unit — an application,
+  say — under the same id, the unit is still read as a unit: it serves
+  scopes, sits in the organisation chart and can be picked to serve a new
+  scope. The Checks page says the clash on both scopes, *A unit and
+  something else share one id*, so a person can decide which keeps it.

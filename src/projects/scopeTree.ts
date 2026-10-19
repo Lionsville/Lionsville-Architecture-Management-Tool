@@ -310,6 +310,7 @@ export async function moveScopeUnder(
   })
   if (!moved) return undefined
   const units = serving.filter((unit) => !notCarried.some((one) => one.scope === unit.scope))
+    .sort((one, other) => one.scope.localeCompare(other.scope) || one.id.localeCompare(other.id))
   return { from, to, carried, notCarried, ...(units.length ? { units } : {}) }
 }
 

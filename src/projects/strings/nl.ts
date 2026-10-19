@@ -16,6 +16,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'entry.andMore': ' en nog {count}',
 
   'check.conflict': '{name} is zowel hier als in {scope} gedefinieerd — houd één definitie en maak van de andere een plaatsvervanger met Koppelen…',
+  'check.kindClash': '{name} is in de ene scope een eenheid en in {scope} iets anders, onder hetzelfde id',
   'check.drift': 'De kopie van {name} hier komt niet meer overeen met {scope} — ververs haar, of wijzig het daar',
   'check.dangling': '{name} is een verwijzing naar iets wat nergens in de organisatie gedefinieerd is — definieer het hier, of verwijder de plaatsvervanger',
   'check.danglingEnd': 'Een regel op {name} eindigt op iets wat deze scope niet heeft — verwijder de regel, of teken waar hij naar wijst',
@@ -53,6 +54,8 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
+  'check.short.kindClash.one': '{count} id gedeeld door een eenheid en iets anders',
+  'check.short.kindClash.other': '{count} id\'s gedeeld door een eenheid en iets anders',
   'check.short.drift.one': '{count} verouderd',
   'check.short.drift.other': '{count} verouderd',
   'check.short.dangling.one': '{count} ongedefinieerd',

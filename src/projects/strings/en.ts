@@ -32,6 +32,7 @@ export const EN = {
    * itself where the path is the root's, which is the empty string.
    */
   'check.conflict': '{name} is defined both here and in {scope} — keep one definition and make the other a stand-in with Link…',
+  'check.kindClash': '{name} is a unit in one scope and something else in {scope} under the same id',
   'check.drift': 'The copy of {name} here no longer matches {scope} — refresh it, or change it there',
   'check.dangling': '{name} stands in for something nothing in the organisation defines — define it here, or delete the stand-in',
   'check.danglingEnd': 'A row on {name} ends on something this scope does not hold — delete the row, or draw what it points to',
@@ -75,6 +76,8 @@ export const EN = {
    */
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicts',
+  'check.short.kindClash.one': '{count} id shared by a unit and something else',
+  'check.short.kindClash.other': '{count} ids shared by a unit and something else',
   'check.short.drift.one': '{count} drifting',
   'check.short.drift.other': '{count} drifting',
   'check.short.dangling.one': '{count} undefined',

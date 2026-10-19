@@ -47,7 +47,7 @@ import type { ConwayFinding } from './conway'
  * operating model, and the organisation on a day (ADR-0036).
  */
 export const TREE_CHECK_KEYS = [
-  'check.conflict', 'check.drift', 'check.dangling', 'check.danglingEnd', 'check.proposal',
+  'check.conflict', 'check.kindClash', 'check.drift', 'check.dangling', 'check.danglingEnd', 'check.proposal',
   'check.ownedElsewhere', 'check.unattributed', 'check.notDrawn', 'check.drawingLinkMissing',
   'check.unmapped', 'check.uncovered', 'check.offeredNotShared', 'check.causeExplainsObservationBelow',
   'check.accountability', 'check.unitTypeNowhere',
@@ -188,6 +188,11 @@ const ENTRIES = {
   'check.conflict': {
     name: 'check.name.conflict', why: 'check.why.conflict', how: 'check.how.conflict',
     category: 'landscape', weight: 'fix', actions: ['link', 'openElement', 'openDefinition'],
+  },
+  // One id, a unit in one scope and something else in another (3.7.5).
+  'check.kindClash': {
+    name: 'check.name.kindClash', why: 'check.why.kindClash', how: 'check.how.kindClash',
+    category: 'landscape', weight: 'fix', actions: ['openElement'],
   },
   'check.drift': {
     name: 'check.name.drift', why: 'check.why.drift', how: 'check.how.drift',

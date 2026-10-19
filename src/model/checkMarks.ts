@@ -121,6 +121,7 @@ const withFields = (finding: ScopedFinding): string[] => [finding.id, ...(findin
  */
 const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string[]> = {
   'check.conflict': own,
+  'check.kindClash': own,
   'check.drift': own,
   'check.dangling': own,
   /** The row, and the end nobody holds. */
