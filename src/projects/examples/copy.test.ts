@@ -33,7 +33,7 @@ describe('where a copy lands', () => {
   /** The common case: an empty folder, and somebody who wants to see the tool. */
   it('makes the example the organisation when the root is unnamed and empty', () => {
     const copied = copyExampleInto(example, root())
-    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape', 'platforms'])
+    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape', 'platforms', 'topics', 'topics/integration'])
     expect(copied[0].model.name).toBe('Acme Logistics')
     expect(copied[0].kind).toBe('organisation')
   })
@@ -41,7 +41,7 @@ describe('where a copy lands', () => {
   it('files a copy under a child of the root it lands in, and gives a second one its own address', () => {
     const copied = copyExampleInto(example, root({ name: 'Globex' }))
     expect(copied.map((scope) => scope.path))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms', 'acme-logistics/topics', 'acme-logistics/topics/integration'])
     const copied2 = copyExampleInto(example, root({ children: [
       { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
     ] }))
@@ -52,7 +52,7 @@ describe('where a copy lands', () => {
       { path: 'acme-logistics', name: 'Acme Logistics', diagrams: 0, children: [] },
     ] }))
     expect(copied3.map((scope) => scope.path))
-      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms'])
+      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms', 'acme-logistics-2/topics', 'acme-logistics-2/topics/integration'])
   })
 
   /** No name and no board is not nothing: records in the root are somebody's work. */

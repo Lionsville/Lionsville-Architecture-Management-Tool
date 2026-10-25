@@ -16,7 +16,7 @@ describe('the shipped examples, from node', () => {
   it('names every example that ships, and reads each as its scopes', async () => {
     expect(SHIPPED.map((entry) => entry.key)).toEqual(['acme-logistics'])
     const example = await shippedExample('acme-logistics')
-    expect(example?.scopes.map((scope) => scope.path)).toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
+    expect(example?.scopes.map((scope) => scope.path)).toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms', 'acme-logistics/topics', 'acme-logistics/topics/integration'])
     expect(await shippedExample('nowhere')).toBeUndefined()
   })
 
@@ -27,17 +27,17 @@ describe('the shipped examples, from node', () => {
     const into = memoryRepositories()
     const read = await readWorkingFile(into, file.bytes)
     if ('refused' in read) throw new Error(read.refused)
-    expect(read.landed).toEqual(['', 'application-landscape', 'platforms'])
+    expect(read.landed).toEqual(['', 'application-landscape', 'platforms', 'topics', 'topics/integration'])
     expect(read.arrival.accounted).toBe(true)
     expect(await exampleWorkingFile('nowhere')).toBeUndefined()
   })
 
   it('seeds a blank organisation with it, and files a second copy under a scope of its own', async () => {
     const repositories = memoryRepositories()
-    expect(await seedExample(repositories, 'acme-logistics')).toEqual(['', 'application-landscape', 'platforms'])
+    expect(await seedExample(repositories, 'acme-logistics')).toEqual(['', 'application-landscape', 'platforms', 'topics', 'topics/integration'])
     expect((await readScope(repositories.scopes, ''))?.model.name).toBe('Acme Logistics')
     expect(await seedExample(repositories, 'acme-logistics'))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms', 'acme-logistics/topics', 'acme-logistics/topics/integration'])
     expect(await seedExample(repositories, 'nowhere')).toBeUndefined()
   })
 })

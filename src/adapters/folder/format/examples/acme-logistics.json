@@ -103,6 +103,134 @@
     "]",
     ""
   ],
+  "_principles/0001-buy-before-build.md": [
+    "---",
+    "id: pr-buy-before-build",
+    "number: 1",
+    "title: Buy before build",
+    "regime: flexible",
+    "status: accepted",
+    "acceptedOn: 2026-09-01",
+    "groups: grp-buying",
+    "lastAspect: 2",
+    "aspects:",
+    "  - id: pr-buy-before-build-a1",
+    "    number: 1",
+    "    nature: design",
+    "    text: Compare at least one product before building",
+    "  - id: pr-buy-before-build-a2",
+    "    number: 2",
+    "    nature: design",
+    "    text: Keep what is built small and replaceable",
+    "---",
+    "",
+    "Where a product does the job, Acme buys it and builds only what sets it apart.",
+    ""
+  ],
+  "_principles/0002-one-source-for-every-fact.md": [
+    "---",
+    "id: pr-one-source",
+    "number: 2",
+    "title: One source for every fact",
+    "regime: fixed",
+    "status: accepted",
+    "acceptedOn: 2026-09-01",
+    "groups: grp-data",
+    "lastAspect: 2",
+    "aspects:",
+    "  - id: pr-one-source-a1",
+    "    number: 1",
+    "    nature: design",
+    "    text: A price is decided in one place",
+    "  - id: pr-one-source-a2",
+    "    number: 2",
+    "    nature: design",
+    "    text: A copy says where it came from",
+    "---",
+    "",
+    "Every fact has one system that decides it; the others read it from there.",
+    ""
+  ],
+  "_principles/0003-tell-do-not-ask.md": [
+    "---",
+    "id: pr-events-first",
+    "number: 3",
+    "title: \"Tell, do not ask\"",
+    "regime: flexible",
+    "status: candidate",
+    "question: \"Do we stop polling between the warehouse and dispatch?\"",
+    "lastAspect: 0",
+    "---",
+    "",
+    "A system says what happened when it happens, rather than being asked over and over.",
+    ""
+  ],
+  "_principles/groups.json": [
+    "[",
+    "  {",
+    "    \"id\": \"grp-buying\",",
+    "    \"name\": \"Buying and building\"",
+    "  },",
+    "  {",
+    "    \"id\": \"grp-data\",",
+    "    \"name\": \"Data\"",
+    "  }",
+    "]",
+    ""
+  ],
+  "application-landscape/_evaluations/topics.integration~blk-message-gateway.json": [
+    "{",
+    "  \"block\": {",
+    "    \"id\": \"blk-message-gateway\",",
+    "    \"scope\": \"topics/integration\"",
+    "  },",
+    "  \"contexts\": [",
+    "    \"cx-partners\"",
+    "  ],",
+    "  \"coverage\": {",
+    "    \"sb-bus\": {",
+    "      \"cap-audit\": {",
+    "        \"level\": 4",
+    "      },",
+    "      \"cap-map\": {",
+    "        \"how\": \"Mapping is ours to write\",",
+    "        \"level\": 2",
+    "      },",
+    "      \"cap-route\": {",
+    "        \"level\": 4",
+    "      }",
+    "    },",
+    "    \"sb-relay\": {",
+    "      \"cap-audit\": {",
+    "        \"level\": 4",
+    "      },",
+    "      \"cap-map\": {",
+    "        \"level\": 4",
+    "      },",
+    "      \"cap-route\": {",
+    "        \"level\": 3",
+    "      }",
+    "    },",
+    "    \"sb-router\": {",
+    "      \"cap-audit\": {",
+    "        \"level\": 1",
+    "      },",
+    "      \"cap-map\": {",
+    "        \"level\": 3",
+    "      },",
+    "      \"cap-route\": {",
+    "        \"level\": 3",
+    "      }",
+    "    }",
+    "  },",
+    "  \"options\": [",
+    "    \"sb-relay\",",
+    "    \"sb-bus\",",
+    "    \"sb-router\"",
+    "  ]",
+    "}",
+    ""
+  ],
   "application-landscape/decisions/0001-one-place-where-a-price-is-decided.md": [
     "---",
     "id: adr-one-price",
@@ -4373,6 +4501,40 @@
     "",
     ""
   ],
+  "platforms/_evaluations/topics.integration~blk-message-gateway.json": [
+    "{",
+    "  \"block\": {",
+    "    \"id\": \"blk-message-gateway\",",
+    "    \"scope\": \"topics/integration\"",
+    "  },",
+    "  \"contexts\": [",
+    "    \"cx-internal\"",
+    "  ],",
+    "  \"coverage\": {",
+    "    \"sb-bus\": {",
+    "      \"cap-audit\": {",
+    "        \"level\": 4",
+    "      },",
+    "      \"cap-route\": {",
+    "        \"level\": 4",
+    "      }",
+    "    },",
+    "    \"sb-relay\": {",
+    "      \"cap-audit\": {",
+    "        \"level\": 4",
+    "      },",
+    "      \"cap-route\": {",
+    "        \"level\": 3",
+    "      }",
+    "    }",
+    "  },",
+    "  \"options\": [",
+    "    \"sb-relay\",",
+    "    \"sb-bus\"",
+    "  ]",
+    "}",
+    ""
+  ],
   "platforms/diagrams/technology-landscape.geometry.json": {
     "nodes": []
   },
@@ -4670,6 +4832,138 @@
     ],
     "kind": "organisation",
     "name": "Acme Logistics",
+    "type": "lionsville-architecture",
+    "version": 15
+  },
+  "topics/integration/_principles/0001-one-format-per-partner-message.md": [
+    "---",
+    "id: pr-one-format",
+    "number: 1",
+    "title: One format per partner message",
+    "regime: flexible",
+    "status: accepted",
+    "acceptedOn: 2026-09-01",
+    "lastAspect: 1",
+    "aspects:",
+    "  - id: pr-one-format-a1",
+    "    number: 1",
+    "    nature: design",
+    "    text: \"A new carrier is mapped to it, not the other way round\"",
+    "---",
+    "",
+    "A message to or from a carrier has one agreed format, kept with the integration team.",
+    ""
+  ],
+  "topics/integration/docs/blk-message-gateway.md": [
+    "What every exchange with a carrier or between our systems goes through.",
+    "",
+    "## Many partners",
+    "",
+    "Dozens of carriers, each on its own schedule.",
+    "",
+    "## Internal events",
+    "",
+    "The warehouse and dispatch telling each other what happened.",
+    ""
+  ],
+  "topics/integration/model.json": {
+    "elements": [
+      {
+        "aspects": {},
+        "id": "blk-message-gateway",
+        "isManaged": false,
+        "kind": "buildingBlock",
+        "lifecycle": "live",
+        "name": "Message gateway",
+        "capabilities": [
+          {
+            "id": "cap-route",
+            "text": "Routes a message by what it says"
+          },
+          {
+            "id": "cap-map",
+            "text": "Maps a partner format to ours"
+          },
+          {
+            "id": "cap-audit",
+            "text": "Keeps an audit trail of every message",
+            "must": true
+          }
+        ],
+        "contexts": [
+          {
+            "id": "cx-partners",
+            "name": "Many partners",
+            "needs": {
+              "cap-route": 3,
+              "cap-map": 4,
+              "cap-audit": 3
+            }
+          },
+          {
+            "id": "cx-internal",
+            "name": "Internal events",
+            "needs": {
+              "cap-route": 4,
+              "cap-audit": 2
+            }
+          }
+        ],
+        "sbbs": [
+          {
+            "id": "sb-relay",
+            "name": "Relay Broker",
+            "supplier": "Northwind Software",
+            "sort": "product",
+            "status": "evaluated"
+          },
+          {
+            "id": "sb-bus",
+            "name": "Hosted message bus",
+            "supplier": "Contoso Cloud",
+            "sort": "service",
+            "status": "evaluated"
+          },
+          {
+            "id": "sb-router",
+            "name": "In-house router",
+            "sort": "inHouse",
+            "status": "candidate"
+          }
+        ]
+      }
+    ],
+    "relations": []
+  },
+  "topics/integration/scope.json": {
+    "activeDiagramId": "",
+    "description": "How the systems talk to each other, inside Acme and with its carriers.",
+    "diagrams": [],
+    "kind": "domain",
+    "name": "Integration",
+    "relevantTo": [
+      {
+        "path": "application-landscape",
+        "from": "2026-01-01"
+      },
+      {
+        "path": "platforms",
+        "from": "2026-03-01"
+      }
+    ],
+    "type": "lionsville-architecture",
+    "version": 15
+  },
+  "topics/model.json": {
+    "elements": [],
+    "relations": []
+  },
+  "topics/scope.json": {
+    "activeDiagramId": "",
+    "description": "Subjects across the organisation.",
+    "diagrams": [],
+    "kind": "domain",
+    "name": "Topics",
     "type": "lionsville-architecture",
     "version": 15
   }

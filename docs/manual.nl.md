@@ -1242,6 +1242,20 @@ afbeelding die niet getoond kan worden, toont haar bijschrift. Alleen
 afbeeldingen die bij het onderdeel bewaard zijn worden getekend: een webadres
 toont als bijschrift, en de app haalt nooit iets op.
 
+### Verwijzingen in een document
+
+Een document kan tonen waar het over gaat in plaats van het over te nemen.
+Typ `[[` of een losse `@` waar je schrijft, of kies een soort bij
+**Invoegen ▾**, en kies een principe, de eisen van een bouwsteen, de
+beoordeling van een scope, een besluit, een waarneming, een view of een
+element. Het document bewaart een verwijzing, en bij het lezen wordt het
+getekend zoals het nu is: een principe als citaat, de eisen en de beoordeling
+als hun raster, een besluit of een waarneming als een regel die het opent, en
+een view live en alleen-lezen op zijn eigen grootte, met zijn naam eronder
+die hem opent. Een beoordeling kan worden vastgezet op hoe ze was toen ernaar
+verwezen werd; ze zegt dan wanneer ze sindsdien veranderd is. Wat er niet
+meer is, zegt dat.
+
 ## Besluiten
 
 **Besluiten** in de bovenbalk opent de architectuurbesluiten (ADR's): een boom
@@ -2885,6 +2899,87 @@ volgorde van het organogram en nooit dichtgevouwen, of de kolommen, de
 overschrijdingen en de bevindingen, elk met de sleutel, het gewicht en de
 categorie van haar controle, zoals `checks.list` ze geeft. Een samenwerking legt hij
 vast met `relation.add`, type `interacts` en een `mode`.
+
+## Principes
+
+Een principe stuurt de ontwerpen en besluiten in een scope: *least
+privilege*, *kopen voor bouwen*. Elke scope kan eigen principes hebben, en
+een principe geldt in de scope die het bewaart, in elke scope daaronder, en
+overal waar een onderwerp dat het bewaart relevant is (zie *Onderwerpen*). De
+kaart **Principes** op een home zegt hoeveel er van de scope zelf zijn en
+hoeveel er gelden, en opent de pagina.
+
+**Nieuw principe** vraagt een titel en een uitspraak, een regime — *vast*,
+altijd aan te houden, of *flexibel*, af te wegen — en de status: een
+*kandidaat* waarover nog gesproken wordt, met de vraag waar het om gaat;
+*aanvaard*; of *ingetrokken*. Een principe heeft een nummer in zijn scope,
+`PR-0007`, en zijn **aspecten** zijn daaronder genummerd, `PR-0007.2`: de
+delen die een record één voor één kan volgen of waarvan het kan afwijken.
+Groepen ordenen de lijst; **Groepen beheren** geeft ze een naam en een
+volgorde. Wie de uitspraak of de aspecten van een aanvaard principe wijzigt,
+**scherpt** het aan: je wordt om een notitie gevraagd, die met de dag onder
+het principe blijft staan. Twee principes die hetzelfde zeggen worden
+**samengevoegd**; een principe waar een record naar verwijst wordt
+ingetrokken in plaats van verwijderd.
+
+**Verwijzen.** Een besluit, een waarneming, een oplossing, een plan, een
+element en een bouwsteen hebben elk een sectie **Principes**: de principes
+die het record volgt, of waarvan het met een reden afwijkt, of — bij een
+waarneming — dat een principe standhoudt, wringt of ontbrak. *Kan gelden*
+stelt de principes voor waarvan de woorden bij die van het record passen. Een
+verwijzing naar een principe dat er niet meer is, is een bevinding op de
+pagina Controles, net als principes die niemand gebruikt en principes die
+wringen.
+
+## Onderwerpen
+
+Een onderwerp loopt door de organisatie heen — *beveiliging*, *integratie*,
+*data* — en is relevant voor sommige scopes en niet voor andere. Onderwerpen
+zijn eigen scopes onder de plek **Onderwerpen** van de organisatie, die
+ontstaat bij het eerste onderwerp; een onderwerp kan subonderwerpen hebben.
+De kaart **Onderwerpen** op de home van de organisatie opent de catalogus:
+elk onderwerp, waar het relevant is, en hoeveel bouwstenen en principes het
+bewaart.
+
+Een onderwerp wordt **vanaf een dag** aan een scope gekoppeld, en de
+koppeling kan op een dag eindigen: **+ Scope…** bij het onderwerp, of
+**+ Onderwerp…** onder *Relevante onderwerpen* op de home van een scope —
+dezelfde koppeling, van beide kanten. **Beëindigen** bewaart de koppeling als
+geschiedenis; **Verwijderen** is voor een vergissing. De principes van een
+onderwerp gelden overal waar het vandaag relevant is, en de scopeboom toont
+een onderwerp als een rij ↗ onder elke scope waarvoor het relevant is. Een
+onderwerp kan worden hernoemd, beschreven, onder een ander onderwerp
+geplaatst, en verwijderd zolang het niets bewaart.
+
+## Bouwstenen
+
+Een bouwsteen is wat veel oplossingen hergebruiken: een *message gateway*,
+een *identiteitsdienst*. Hij wordt bewaard in een onderwerp of een scope, en
+de kaart **Bouwstenen** opent het register van alle bouwstenen. De pagina van
+een bouwsteen heeft vier tabbladen:
+
+- **Over** — zijn document, met een hoofdstuk per gebruikscontext, en de
+  principes die hij volgt.
+- **Eisen** — zijn **capabilities**, elk één zin en een *must* waar een
+  oplossing die volledig moet afdekken, en zijn **gebruikscontexten**, de
+  situaties waarin hij gebruikt wordt, in woorden, die elk zeggen hoeveel ze
+  van elke capability nodig hebben: een Harvey ball van leeg tot vol, met een
+  klik in te stellen.
+- **Oplossingen** — de catalogus: producten, diensten en wat zelf gebouwd
+  wordt dat hem kan leveren, elk met leverancier en status, en de elementen
+  in het landschap die het zijn.
+- **Waar gebruikt** — de **beoordeling** van elke scope. **Beoordelen
+  voor…** begint er een voor een scope, met de contexten die daar gelden,
+  eventueel met de scores van de beoordeling van een andere scope. In het
+  raster wordt elke optie gescoord op elke capability; de **fit** is hoeveel
+  van wat deze scope nodig heeft zij afdekt, en een optie die een must niet
+  volledig afdekt valt af, wat haar fit ook is.
+
+**Een besluit voorstellen…** bij een beoordeling zet een besluit klaar in die
+scope, met de opties, hun fit en de drijfveren ingevuld. Zodra het besluit op
+de besluitenpagina van zijn scope is aanvaard, legt de beoordeling de gekozen
+oplossing vast, en zeggen de inspectors van haar elementen en de bibliotheek
+dat ze voor die scope gekozen zijn.
 
 ## Een tekening
 

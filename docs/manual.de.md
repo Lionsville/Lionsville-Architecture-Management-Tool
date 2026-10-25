@@ -1317,6 +1317,20 @@ Bildunterschrift. Nur Bilder, die beim Bereich aufbewahrt sind, werden
 gezeichnet: eine Webadresse erscheint als Bildunterschrift, und die App holt
 nie etwas.
 
+### Verweise in einem Dokument
+
+Ein Dokument kann zeigen, wovon es handelt, statt es abzuschreiben. Tippen
+Sie `[[` oder ein einzelnes `@`, wo Sie schreiben, oder wählen Sie eine Art
+unter **Einfügen ▾**, und wählen Sie ein Prinzip, die Anforderungen eines
+Bausteins, die Bewertung eines Bereichs, eine Entscheidung, eine Beobachtung,
+eine Ansicht oder ein Element. Das Dokument behält einen Verweis, und beim
+Lesen wird das Ziel so gezeichnet, wie es jetzt ist: ein Prinzip als Zitat,
+die Anforderungen und die Bewertung als ihr Raster, eine Entscheidung oder
+eine Beobachtung als Zeile, die sie öffnet, und eine Ansicht live und nur
+lesbar in ihrer eigenen Größe, mit ihrem Namen darunter, der sie öffnet. Eine
+Bewertung kann auf ihren Stand beim Verweisen festgelegt werden; sie sagt
+dann, wann sie sich seither geändert hat. Was es nicht mehr gibt, sagt das.
+
 ## Entscheidungen
 
 **Entscheidungen** in der oberen Leiste öffnet die Architekturentscheidungen
@@ -3050,6 +3064,87 @@ Spalten, die Überschreitungen und die Befunde, jeder mit Schlüssel, Gewicht un
 Kategorie seiner Prüfung, wie `checks.list` sie nennt. Eine
 Zusammenarbeit hält er mit `relation.add` fest, Typ `interacts` und ein
 `mode`.
+
+## Prinzipien
+
+Ein Prinzip leitet die Entwürfe und Entscheidungen in einem Bereich: *Least
+Privilege*, *Kaufen vor Bauen*. Jeder Bereich kann eigene Prinzipien haben,
+und ein Prinzip gilt in dem Bereich, der es hält, in jedem Bereich darunter
+und überall, wo ein Thema relevant ist, das es hält (siehe *Themen*). Die
+Karte **Prinzipien** auf einer Startseite sagt, wie viele dem Bereich selbst
+gehören und wie viele dort gelten, und öffnet die Seite.
+
+**Neues Prinzip** fragt nach einem Titel und einer Aussage, einem Regime —
+*fest*, immer einzuhalten, oder *flexibel*, abzuwägen — und dem Status: ein
+*Kandidat*, über den noch gesprochen wird, mit der Frage, um die es geht;
+*angenommen*; oder *zurückgezogen*. Ein Prinzip hat eine Nummer in seinem
+Bereich, `PR-0007`, und seine **Aspekte** sind darunter nummeriert,
+`PR-0007.2`: die Teile, denen ein Eintrag einzeln folgen oder von denen er
+abweichen kann. Gruppen ordnen die Liste; **Gruppen verwalten** benennt sie
+und legt ihre Reihenfolge fest. Wer die Aussage oder die Aspekte eines
+angenommenen Prinzips ändert, **schärft** es: Sie werden um eine Notiz
+gebeten, die mit dem Tag unter dem Prinzip steht. Zwei Prinzipien, die
+dasselbe sagen, werden **zusammengeführt**; eines, auf das ein Eintrag
+verweist, wird zurückgezogen statt entfernt.
+
+**Verweisen.** Eine Entscheidung, eine Beobachtung, eine Lösung, ein Plan,
+ein Element und ein Baustein haben je einen Abschnitt **Prinzipien**: die
+Prinzipien, denen der Eintrag folgt oder von denen er mit einem Grund
+abweicht, oder — bei einer Beobachtung — dass ein Prinzip trägt, reibt oder
+fehlte. *Könnte gelten* schlägt die geltenden vor, deren Worte zu denen des
+Eintrags passen. Ein Verweis auf ein Prinzip, das es nicht mehr gibt, ist ein
+Befund auf der Seite Prüfungen, ebenso Prinzipien, die niemand nutzt, und
+Prinzipien, die reiben.
+
+## Themen
+
+Ein Thema zieht sich durch die Organisation — *Sicherheit*, *Integration*,
+*Daten* — und ist für manche Bereiche relevant und für andere nicht. Themen
+sind eigene Bereiche unter dem Ort **Themen** der Organisation, der mit dem
+ersten Thema entsteht; ein Thema kann Unterthemen haben. Die Karte **Themen**
+auf der Startseite der Organisation öffnet den Katalog: jedes Thema, wo es
+relevant ist und wie viele Bausteine und Prinzipien es hält.
+
+Ein Thema wird **ab einem Tag** mit einem Bereich verknüpft, und die
+Verknüpfung kann an einem Tag enden: **+ Bereich…** beim Thema oder
+**+ Thema…** unter *Relevante Themen* auf der Startseite eines Bereichs —
+dieselbe Verknüpfung, von beiden Seiten. **Beenden** behält die Verknüpfung
+als Geschichte; **Entfernen** ist für einen Irrtum. Die Prinzipien eines
+Themas gelten überall, wo es heute relevant ist, und der Bereichsbaum zeigt
+ein Thema als Zeile ↗ unter jedem Bereich, für den es relevant ist. Ein Thema
+kann umbenannt, beschrieben, unter ein anderes Thema verschoben und entfernt
+werden, solange es nichts hält.
+
+## Bausteine
+
+Ein Baustein ist das, was viele Lösungen wiederverwenden: ein *Message
+Gateway*, ein *Identitätsdienst*. Er wird in einem Thema oder einem Bereich
+gehalten, und die Karte **Bausteine** öffnet das Register aller Bausteine.
+Die Seite eines Bausteins hat vier Reiter:
+
+- **Über** — sein Dokument, mit einem Kapitel je Nutzungskontext, und die
+  Prinzipien, denen er folgt.
+- **Anforderungen** — seine **Fähigkeiten**, je ein Satz und ein *Muss*, wo
+  eine Lösung sie vollständig abdecken muss, und seine **Nutzungskontexte**,
+  die Situationen, in denen er genutzt wird, in Worten, die je sagen, wie viel
+  sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit
+  einem Klick gesetzt.
+- **Lösungen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
+  ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
+  Landschaft, die sie sind.
+- **Wo verwendet** — die **Bewertung** jedes Bereichs. **Bewerten für…**
+  beginnt eine für einen Bereich, mit den dort geltenden Kontexten, auf Wunsch
+  mit den Bewertungen eines anderen Bereichs als Ausgangspunkt. Im Raster wird
+  jede Option gegen jede Fähigkeit bewertet; die **Passung** ist, wie viel von
+  dem, was dieser Bereich braucht, sie abdeckt, und eine Option, die ein Muss
+  nicht vollständig abdeckt, scheidet aus, wie gut sie auch passt.
+
+**Eine Entscheidung vorschlagen…** bei einer Bewertung entwirft eine
+Entscheidung in diesem Bereich, mit den Optionen, ihrer Passung und den
+Treibern ausgefüllt. Sobald die Entscheidung auf der Entscheidungsseite ihres
+Bereichs angenommen ist, hält die Bewertung die gewählte Lösung fest, und die
+Inspektoren ihrer Elemente und die Bibliothek sagen, dass sie für diesen
+Bereich gewählt wurden.
 
 ## Eine Zeichnung
 

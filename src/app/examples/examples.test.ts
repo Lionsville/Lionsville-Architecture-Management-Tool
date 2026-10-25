@@ -62,7 +62,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     // The one thing that would make every other check in this file vacuous,
     // and the one an example in a form the tool no longer writes would fail.
     expect(scopes.map((scope) => scope.path))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms', 'acme-logistics/topics', 'acme-logistics/topics/integration'])
     expect(model.diagrams.length).toBeGreaterThan(0)
   })
 

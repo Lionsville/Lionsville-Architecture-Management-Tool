@@ -1146,6 +1146,19 @@ quickly and nothing on it moves when the pictures arrive. A picture that cannot
 be shown shows its caption. Only pictures kept with the scope are drawn: a web
 address shows as its caption, and the app never fetches anything.
 
+### References in a document
+
+A document can show what it is about rather than copy it. Type `[[` or a
+lone `@` where you are writing, or choose a kind from **Insert ▾**, and pick
+a principle, a building block's requirements, a scope's evaluation, a
+decision, an observation, a view or an element. The document keeps a
+reference, and reading it draws the thing as it is now: a principle as a
+quote, the requirements and the evaluation as their grids, a decision or an
+observation as a line that opens it, and a view drawn live and read-only at
+its own size, with its name under it opening it. An evaluation can be pinned
+to how it stood when it was referred to; it then says when it has changed
+since. Something that is no longer there says so.
+
 ## Decisions
 
 **Decisions** in the top bar opens the architecture decision records: a tree
@@ -2639,6 +2652,79 @@ lists them and never folded, or the columns, the crossings and the findings,
 each with its check's key, weight and category as `checks.list` gives them.
 It declares an interaction with `relation.add`,
 type `interacts` and a `mode`.
+
+## Principles
+
+A principle is what guides designs and decisions in a scope: *least
+privilege*, *buy before build*. Every scope can keep its own, and a principle
+holds in the scope that keeps it, in every scope under it, and wherever a
+topic that keeps it is relevant (see *Topics*). The **Principles** card on a
+home says how many are the scope's own and how many are in force there, and
+opens the page.
+
+**New principle** asks for a title and a statement, a regime — *fixed*, kept
+to always, or *flexible*, to be weighed — and its status: a *candidate*
+still being discussed, with the question it is about; *accepted*; or
+*retired*. A principle is numbered in its scope, `PR-0007`, and its
+**aspects** are numbered under it, `PR-0007.2`: the parts a record can follow
+or depart from one by one. Groups sort the list; **Manage groups** names them
+and puts them in order. Changing an accepted principle's statement or aspects
+**sharpens** it: you are asked for a note, kept under the principle with the
+day. Two principles that say the same are **merged** into one; one that a
+record cites is retired rather than removed.
+
+**Citing.** A decision, an observation, a solution, a plan, an element and a
+building block each have a **Principles** section: the principles the record
+follows, or departs from with a reason, or — on an observation — that a
+principle holds, chafes or was missing. *May apply* suggests the ones in
+force whose words match the record's. A citation that names a principle that
+is gone is a finding on the Checks page, as are principles nothing uses and
+principles that chafe.
+
+## Topics
+
+A topic is a subject that runs across the organisation — *security*,
+*integration*, *data* — and is relevant to some of its scopes and not to
+others. Topics are scopes of their own under the organisation's **Topics**
+place, made the first time one is; a topic can have subtopics. The
+**Topics** card on the organisation's home opens the catalogue: every topic,
+where it is relevant, and how many building blocks and principles it keeps.
+
+A topic is linked to a scope **from a day**, and the link can end on a day:
+**+ Scope…** on the topic, or **+ Topic…** under *Relevant topics* on a
+scope's home — the same link, from either end. **End** keeps the link as
+history; **Remove** is for a link made by mistake. A topic's principles are in
+force wherever it is relevant today, and the scope tree shows a topic as a
+row ↗ under each scope it is relevant to. A topic can be renamed, described,
+moved under another topic, and removed while it keeps nothing.
+
+## Building blocks
+
+A building block is what many solutions reuse: a *message gateway*, an
+*identity service*. It is kept in a topic or a scope, and the **Building
+blocks** card opens the register of all of them. A block's page has four
+tabs:
+
+- **About** — its document, with a chapter per usage context, and the
+  principles it follows.
+- **Requirements** — its **capabilities**, one sentence each and a *must*
+  where a solution has to cover it fully, and its **usage contexts**, the
+  situations it is used in, said in words, each saying how much it needs of
+  every capability: a Harvey ball from empty to full, set with a click.
+- **Solutions** — the catalogue: products, services and what is built in
+  house that could deliver it, each with its supplier and status, and the
+  elements in the landscape that are it.
+- **Where used** — every scope's **evaluation**. **Evaluate for…** starts
+  one for a scope, with the contexts that apply there, optionally copying the
+  ratings of another scope's. In the grid each option is rated against each
+  capability; the **fit** is how much of what this scope needs it covers, and
+  an option that does not fully cover a must fails whatever its fit.
+
+**Propose a decision…** on an evaluation drafts a decision in that scope
+with the options, their fit and the drivers filled in. Once the decision is
+accepted on its scope's decisions page, the evaluation records the chosen
+solution, and its elements' inspectors and the library say they were chosen
+for that scope.
 
 ## A drawing
 
