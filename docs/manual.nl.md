@@ -2951,6 +2951,19 @@ een onderwerp als een rij ↗ onder elke scope waarvoor het relevant is. Een
 onderwerp kan worden hernoemd, beschreven, onder een ander onderwerp
 geplaatst, en verwijderd zolang het niets bewaart.
 
+**+ Onderwerp…** op de home van een scope opent een keuzevenster dat gemaakt
+is voor veel onderwerpen: typ om er een te vinden op naam of op waar het over
+gaat, of blader erdoor zoals de catalogus ze nest. Elke rij zegt waar het
+onderwerp vandaag geldt en wat het bewaart, en het aangewezen onderwerp is
+naast de lijst helemaal te lezen. Vink er zoveel aan als er gelden en voeg ze
+samen toe; een subonderwerp komt mee met zijn onderwerp. Past er niets, dan
+maakt **Nieuw onderwerp…** er een met de getypte naam, relevant voor die scope.
+
+Het type van een onderwerp is **Onderwerp**, en dat van de plek Onderwerpen
+ook. Een scope die al bestaat wordt een onderwerp in zijn **Instellingen**:
+kies **Onderwerp** onder *Wat dit is*, en opslaan zet hem onder Onderwerpen —
+of onder het onderwerp dat bij *Ondergebracht bij* gekozen is — met alles eronder.
+
 ## Bouwstenen
 
 Een bouwsteen is wat veel oplossingen hergebruiken: een *message gateway*,

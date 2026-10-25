@@ -22,9 +22,8 @@ import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { ensureScope } from '../../projects/scopeAccess'
 import type { OrganisationIndex } from '../../ports/OrganisationIndex'
-import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt } from '../../projects/scopeTree'
+import { createScopeAt, describeScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt } from '../../projects/scopeTree'
 import type { TreeScopes } from '../../projects/scopeTree'
 import type { InitialPage } from '../App'
 import {
@@ -106,8 +105,8 @@ function said(deps: TopicsDeps, cause: unknown): undefined {
 async function create(deps: TopicsDeps, name: string, parent: ScopePath | undefined, relevantTo: readonly ScopePath[]): Promise<ScopePath | undefined> {
   const under = parent ?? TOPICS_PLACE
   try {
-    if (parent === undefined) await ensureScope(deps.scopes, TOPICS_PLACE, { name: deps.s('topics.title'), kind: 'domain' })
-    const made = await createScopeAt(deps.scopes, { parent: under, name: name.trim(), withBoard: false, boardName: '', ancestors: 'required' })
+    if (parent === undefined) await fileTopicsPlace(deps.scopes, deps.s('topics.title'))
+    const made = await createScopeAt(deps.scopes, { parent: under, name: name.trim(), withBoard: false, boardName: '', ancestors: 'required', kind: 'topic' })
     if ('refused' in made) return said(deps, new ShellError(made.refused))
     if (relevantTo.length) {
       const today = deps.today
@@ -125,7 +124,7 @@ async function update(deps: TopicsDeps, topic: ScopePath, patch: { name: string;
     await describeScopeAt(deps.scopes, topic, { name: patch.name, description: patch.description || null })
     const to = patch.parent === undefined ? undefined : patch.parent || TOPICS_PLACE
     if (to !== undefined && to !== parentScope(topic) && !isWithinScope(to, topic)) {
-      if (to === TOPICS_PLACE) await ensureScope(deps.scopes, TOPICS_PLACE, { name: deps.s('topics.title'), kind: 'domain' })
+      if (to === TOPICS_PLACE) await fileTopicsPlace(deps.scopes, deps.s('topics.title'))
       await moveScopeUnder(deps.scopes, deps.index, topic, to, { strict: true })
     }
     deps.written()

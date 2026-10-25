@@ -63,7 +63,7 @@ describe('the topics over a home', () => {
     const made = await access.create('Security', undefined, ['sales'])
     expect(made).toBe('topics/security')
     const topics = await readScope(repositories.scopes, 'topics')
-    expect([topics?.model.name, topics?.kind]).toEqual(['Topics', 'domain'])
+    expect([topics?.model.name, topics?.kind]).toEqual(['Topics', 'topic'])
     const now = await again()
     expect(now.list()).toEqual([{ id: 'topics/security', name: 'Security', links: [{ path: 'sales', from: DAY }] }])
     expect(now.relevantAt('sales').map((one) => one.id)).toEqual(['topics/security'])

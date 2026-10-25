@@ -136,7 +136,7 @@ export type ToolSpec<Name extends string = ToolName> = {
 const NO_ARGUMENTS: InputSchema = { type: 'object', properties: {}, additionalProperties: false }
 
 /** A scope's built-in kinds (`projects/scope.ts`'s `SCOPE_KINDS`, said again: `agent` may not import `projects`). */
-const SCOPE_KINDS = ['organisation', 'domain', 'programme', 'team', 'landscape'] as const
+const SCOPE_KINDS = ['organisation', 'domain', 'programme', 'team', 'landscape', 'topic'] as const
 
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
@@ -585,8 +585,8 @@ const SPECS = [
     tier: 'read',
     description:
       'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is — a unit type of the '
-      + 'operating model (unitTypeId and unitType, ADR-0036) or a built-in kind (organisation, domain, programme, team '
-      + 'or landscape — a landscape scope, which is not the same thing as a landscape board) — the units that serve it '
+      + 'operating model (unitTypeId and unitType, ADR-0036) or a built-in kind (organisation, domain, programme, team, '
+      + 'landscape — a landscape scope, which is not the same thing as a landscape board — or topic, ADR-0042) — the units that serve it '
       + 'today with their types (servedBy), how its type stands to theirs (typeLink: agrees, disagrees, unserved, gone '
       + 'or unsaid), how many views it holds, and which one is open in the app. The tree is kept with scope.create, '
       + 'scope.update, scope.move and scope.remove (ADR-0040). A scope\'s type follows the unit linked to it: '
@@ -764,13 +764,16 @@ const SPECS = [
       + 'start: the unit\'s scopes are written in the scope that keeps the unit and the new scope takes the unit\'s type, as '
       + 'Served by does; a link refused leaves the scope made and the answer says where the link is made instead. Refused '
       + 'agent.unknownScope for a parent that is not there. Not a step on the scope open, so not in a batch and not undone '
-      + 'with undo. Answers the path, the name, the kind, the board and what the link came to.',
+      + 'with undo. topic makes a topic (ADR-0042): filed under the organisation\'s topics place, made on first use, '
+      + 'unless parent is in that place or is a topic itself, which makes a subtopic; its links are written with scope.update '
+      + 'relevantTo. Answers the path, the name, the kind, the board and what the link came to.',
     inputSchema: {
       type: 'object',
       properties: {
         parent: { type: 'string', description: 'The scope to file it under, by path; "" is the organisation (scopes.list).' },
         name: { type: 'string', description: 'What it is called. Its address is made from it.' },
         withBoard: { type: 'boolean', description: 'Give it a first board, making it a landscape scope. Default false: a domain.' },
+        topic: { type: 'boolean', description: 'Make a topic, filed under the topics place unless parent is in it or is a topic. Default false.' },
         servedBy: ID('unit to serve it from the start'),
       },
       required: ['parent', 'name'],

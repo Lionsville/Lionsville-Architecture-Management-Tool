@@ -138,15 +138,47 @@ describe('a topic on a home', () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  it('adds a topic here, writing the link the topic keeps', () => {
+  it('adds topics here from the chooser, writing the link each topic keeps', async () => {
     const { access } = accessOver()
     renderShell(<TopicsProvider value={access}><RelevantTopics at="stock" /></TopicsProvider>)
     expect(screen.getByText(s('topics.relevantNone'))).toBeTruthy()
     fireEvent.click(screen.getByTestId('relevant-add'))
-    const field = screen.getByRole('combobox', { name: s('topics.pick') })
-    fireEvent.keyDown(field, { key: 'ArrowDown' })
-    fireEvent.click(screen.getByRole('option', { name: 'Data' }))
+    const chooser = await screen.findByRole('dialog', { name: 'Topics relevant to Stock' })
+    // Nested as the catalogue nests them, each saying where it applies and what it keeps.
+    expect(within(chooser).getAllByRole('listitem').map((row) => row.textContent)).toEqual([
+      'DataNot relevant anywhere yet · Principles 0 · Building blocks 0',
+      'SecurityRelevant to Sales · Principles 0 · Building blocks 0',
+      'IdentityRelevant to Sales · Principles 0 · Building blocks 0',
+    ])
+    fireEvent.click(within(chooser).getByRole('checkbox', { name: 'Security' }))
+    // The subtopic comes with its topic.
+    expect(within(screen.getByTestId('topic-choice-topics/security/identity')).getByRole('checkbox')).toHaveProperty('disabled', true)
+    expect(within(screen.getByTestId('topic-choice-topics/security/identity')).getByText('With Security')).toBeTruthy()
+    fireEvent.click(within(chooser).getByRole('checkbox', { name: 'Data' }))
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Add 2 topics' }))
+    expect(access.relate).toHaveBeenCalledWith('topics/security', 'stock')
     expect(access.relate).toHaveBeenCalledWith('topics/data', 'stock')
+    await waitFor(() => expect(screen.queryByTestId('topic-chooser')).toBeNull())
+  })
+
+  it('finds a topic by what it is about, keeps the topic a match is under, and says those already here', async () => {
+    const { access } = accessOver()
+    renderShell(<TopicsProvider value={access}><RelevantTopics at="sales" /></TopicsProvider>)
+    fireEvent.click(screen.getByTestId('relevant-add'))
+    fireEvent.change(await screen.findByTestId('topic-chooser-find'), { target: { value: 'ident' } })
+    const rows = screen.getAllByRole('listitem')
+    expect(rows.map((row) => row.getAttribute('data-testid'))).toEqual(['topic-choice-topics/security', 'topic-choice-topics/security/identity'])
+    expect(within(rows[0]!).getByText('Relevant here')).toBeTruthy()
+    expect(screen.getByText('1 of 3 topics')).toBeTruthy()
+    expect(within(screen.getByTestId('topic-chooser-about')).getByRole('heading', { name: 'Identity' })).toBeTruthy()
+    fireEvent.change(screen.getByTestId('topic-chooser-find'), { target: { value: 'privacy' } })
+    expect(screen.getByText(s('topics.chooseNone'))).toBeTruthy()
+    // Nothing found: a new topic, named as typed and relevant here.
+    fireEvent.click(screen.getByTestId('topic-chooser-new'))
+    expect((screen.getByTestId('topic-name') as HTMLInputElement).value).toBe('privacy')
+    fireEvent.click(screen.getByTestId('topic-create'))
+    await waitFor(() => expect(access.create).toHaveBeenCalledWith('privacy', undefined, ['sales']))
   })
 
   it('says on a topic\'s own home that it is one, and opens it in the catalogue', () => {

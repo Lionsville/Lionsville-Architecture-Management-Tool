@@ -34,6 +34,7 @@ import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
 import { analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressRef, servedNamesWithin } from './readdress'
 import type { ScopeReader } from './scopeAccess'
+import { TOPICS_PLACE } from './topics'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -59,13 +60,15 @@ export type CreateAsked = {
    * names a parent that is there, and is told it is not.
    */
   ancestors?: 'make' | 'required'
+  /** What it is said to be where neither a board nor its absence says it: a topic is a topic (ADR-0042). */
+  kind?: 'topic'
 }
 
 export type Made = {
   path: ScopePath
   id: ScopeId
   name: string
-  kind: 'landscape' | 'domain'
+  kind: 'landscape' | 'domain' | 'topic'
   board?: { id: string; name: string }
 }
 
@@ -98,7 +101,7 @@ export async function createScopeAt(scopes: TreeScopes, asked: CreateAsked): Pro
   // than read back later from the shape.
   const fresh = asked.withBoard
     ? emptyScope(path, { design: name, diagram: asked.boardName }, 'landscape')
-    : bareScope(path, name, 'domain')
+    : bareScope(path, name, asked.kind ?? 'domain')
   const id = await ensureScope(scopes, path, { name, ...(fresh.kind ? { kind: fresh.kind } : {}) })
   const boards: ScopeCommand[] = fresh.model.diagrams.map((diagram) => ({ type: 'diagram.create', diagram: toDiagram(diagram) }))
   if (boards.length) {
@@ -106,7 +109,7 @@ export async function createScopeAt(scopes: TreeScopes, asked: CreateAsked): Pro
   }
   const board = fresh.model.diagrams[0]
   return {
-    path, id, name, kind: asked.withBoard ? 'landscape' : 'domain',
+    path, id, name, kind: asked.withBoard ? 'landscape' : asked.kind ?? 'domain',
     ...(board ? { board: { id: board.id, name: board.name } } : {}),
   }
 }
@@ -157,6 +160,15 @@ export async function serveScopeBy(
 }
 
 // --- describing it ----------------------------------------------------------------
+
+/**
+ * The organisation's topics place (ADR-0042 §2), made on first use under the
+ * name given: a *Topics* scope at the organisation, said to be a topic as
+ * every scope under it is.
+ */
+export async function fileTopicsPlace(scopes: TreeScopes, name: string): Promise<void> {
+  await ensureScope(scopes, TOPICS_PLACE, { name, kind: 'topic' })
+}
 
 /** What the settings dialog says about a scope, the whole form at once. */
 export type ScopeSettings = {

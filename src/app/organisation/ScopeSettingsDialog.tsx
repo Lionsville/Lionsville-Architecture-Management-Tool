@@ -40,7 +40,8 @@ import Tooltip from '@mui/material/Tooltip'
 import type { StringKey, Translate } from '../../i18n'
 import { isSafeLinkUrl } from '../../projects/links'
 import type { RecordLink } from '../../projects/links'
-import { SCOPE_KINDS } from '../../projects/scope'
+import { flattenScopes, SCOPE_KINDS } from '../../projects/scope'
+import { isTopic } from '../../projects/topics'
 import type { ScopeKind, ScopeSummary } from '../../projects/scope'
 import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
@@ -60,6 +61,7 @@ export const SCOPE_KIND_LABEL = {
   programme: 'org.kindProgramme',
   team: 'org.kindTeam',
   landscape: 'org.kindLandscape',
+  topic: 'org.kindTopic',
 } as const satisfies Record<ScopeKind, StringKey>
 
 /**
@@ -73,6 +75,7 @@ export const SCOPE_KIND_COUNT = {
   programme: { one: 'org.programmesOne', other: 'org.programmesOther' },
   team: { one: 'org.teamsOne', other: 'org.teamsOther' },
   landscape: { one: 'org.landscapeScopesOne', other: 'org.landscapeScopesOther' },
+  topic: { one: 'org.topicsOne', other: 'org.topicsOther' },
   unsaid: { one: 'org.scopesOne', other: 'org.scopesOther' },
 } as const satisfies Record<ScopeKind | 'unsaid', { one: StringKey; other: StringKey }>
 
@@ -168,7 +171,7 @@ export function ScopeSettingsDialog({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <TypeField type={type} unitTypes={unitTypes} onChange={setType} s={s} />
+          <TypeField type={type} unitTypes={unitTypes} onChange={setType} s={s} {...(becomesTopic(type, target, tree) ? { help: s('org.kindTopicMoves') } : {})} />
           {canMove && (
             <ScopeField
               tree={tree}
@@ -225,8 +228,13 @@ export function ScopeSettingsDialog({
  */
 const HEADING = { fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary', minHeight: 0, py: 0.5, '&.Mui-disabled': { opacity: 1 } } as const
 
-function TypeField({ type, unitTypes, onChange, s }: {
-  type: TypeChoice; unitTypes: readonly { id: string; name: string }[]; onChange: (type: TypeChoice) => void; s: Translate
+/** Said a topic and not one yet: saving files it under the topics place (ADR-0042 §2), which the field says. */
+function becomesTopic(type: TypeChoice, target: ScopeSummary | undefined, tree: ScopeSummary | undefined): boolean {
+  return type === 'kind:topic' && target !== undefined && target.kind !== 'topic' && !isTopic(target.path, tree ? flattenScopes(tree) : [])
+}
+
+function TypeField({ type, unitTypes, onChange, help, s }: {
+  type: TypeChoice; unitTypes: readonly { id: string; name: string }[]; onChange: (type: TypeChoice) => void; help?: string; s: Translate
 }) {
   const grouped = unitTypes.length > 0
   const gone = type.startsWith('unit:') && !unitTypes.some((one) => `unit:${one.id}` === type)
@@ -235,7 +243,7 @@ function TypeField({ type, unitTypes, onChange, s }: {
       select
       fullWidth
       label={s('org.kind')}
-      helperText={s(grouped ? 'org.typeHelp' : 'org.kindHelp')}
+      helperText={help ?? s(grouped ? 'org.typeHelp' : 'org.kindHelp')}
       value={type}
       onChange={(e) => onChange(e.target.value as TypeChoice)}
       slotProps={{ select: { 'data-testid': 'scope-type-field' } as object }}

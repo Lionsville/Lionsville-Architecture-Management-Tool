@@ -444,14 +444,11 @@ export function OrganisationScreen({
    * heading at the root. Never its path.
    */
   const rootName = tree.name.trim() || s('picker.organisation')
-  const registerScopeName = useCallback(
-    (path: ScopePath) => scopeDisplayName(path, everyScope, rootName),
-    [everyScope, rootName],
-  )
-
+  const registerScopeName = useCallback((path: ScopePath) => scopeDisplayName(path, everyScope, rootName), [everyScope, rootName])
+  const closePagesAndGoHome = (path: ScopePath) => { homePages.close(); onGoHome(path) }
   return (
     <HomeRecords
-      store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={onGoHome}
+      store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={closePagesAndGoHome}
       openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
     >
     <Box sx={{
@@ -469,7 +466,7 @@ export function OrganisationScreen({
         sourceLabelKey={sourceSayings.labelKey}
         sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
         waysIn={atRoot ? waysIn : undefined}
-        onGoHome={(path) => { homePages.close(); onGoHome(path) }}
+        onGoHome={closePagesAndGoHome}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
         agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open }}

@@ -85,6 +85,38 @@ describe('topics on the homes', () => {
     expect(await screen.findByTestId('block-tab-requirements')).toBeTruthy()
     expect((await wire.ask('app.current')).page).toEqual({ page: 'blocks' })
   })
+
+  it('goes to a topic\'s own home from its page, and the page closes so the home shows', async () => {
+    renderApp({ repositories: heldRepositories(TREE), today: TODAY })
+    fireEvent.click(await screen.findByTestId('open-topic-catalogue'))
+    fireEvent.click(within(await screen.findByTestId('topics-catalogue')).getByTestId('topic-row-topics/security'))
+    fireEvent.click(await screen.findByTestId('topic-home'))
+    await waitFor(() => expect(screen.queryByTestId('topics-catalogue')).toBeNull())
+    expect(await screen.findByTestId('topic-in-catalogue')).toBeTruthy()
+  })
+
+  it('makes a scope a topic from its settings: typed Topic, it is filed under the Topics place, made on first use', async () => {
+    const repositories = heldRepositories(TREE.slice(0, 2))
+    renderApp({ repositories, today: TODAY })
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Sales' }))
+    fireEvent.mouseDown(await screen.findByLabelText('What this is'))
+    fireEvent.click(screen.getByRole('option', { name: 'Topic' }))
+    expect(screen.getByText(/saving moves it there/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(async () => expect((await readScope(repositories.scopes, 'topics/sales'))?.kind).toBe('topic'))
+    expect((await readScope(repositories.scopes, 'topics'))?.kind).toBe('topic')
+    expect(await readScope(repositories.scopes, 'sales')).toBeUndefined()
+  })
+
+  it('makes a topic for an agent, under the Topics place or under a topic as a subtopic (ADR-0042 §2)', async () => {
+    const wire = gateway()
+    const repositories = heldRepositories(TREE)
+    renderApp({ repositories, today: TODAY, agent: wire.gateway })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    expect(await wire.ask('scope.create', { parent: 'sales', name: 'Privacy', topic: true })).toMatchObject({ path: 'topics/privacy', kind: 'topic' })
+    expect(await wire.ask('scope.create', { parent: 'topics/security', name: 'Identity', topic: true })).toMatchObject({ path: 'topics/security/identity', kind: 'topic' })
+    expect((await readScope(repositories.scopes, 'topics/privacy'))?.kind).toBe('topic')
+  })
 })
 
 /** A gateway that keeps whoever subscribed, and says a client is connected. */

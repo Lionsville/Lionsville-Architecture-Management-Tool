@@ -4939,7 +4939,7 @@
     "activeDiagramId": "",
     "description": "How the systems talk to each other, inside Acme and with its carriers.",
     "diagrams": [],
-    "kind": "domain",
+    "kind": "topic",
     "name": "Integration",
     "relevantTo": [
       {
@@ -4962,7 +4962,7 @@
     "activeDiagramId": "",
     "description": "Subjects across the organisation.",
     "diagrams": [],
-    "kind": "domain",
+    "kind": "topic",
     "name": "Topics",
     "type": "lionsville-architecture",
     "version": 15

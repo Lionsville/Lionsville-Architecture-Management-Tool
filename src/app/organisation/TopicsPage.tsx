@@ -26,21 +26,10 @@ import { linkHolds, useTopics } from './TopicsContext'
 import type { TopicSummary, TopicsAccess } from './TopicsContext'
 import { TopicDetail } from './TopicDetail'
 import { NewTopicDialog } from './topicDialogs'
+import { nested } from './topicChoices'
+import type { NestedTopic } from './topicChoices'
 
 const CELL = { borderBottom: 1, borderColor: 'divider', px: 1.5, py: 0.75, fontSize: 13, textAlign: 'left', verticalAlign: 'top' } as const
-
-/** The topics in catalogue order: each followed by its subtopics, nested. */
-export function nested(list: readonly TopicSummary[]): { topic: TopicSummary; depth: number }[] {
-  const out: { topic: TopicSummary; depth: number }[] = []
-  const walk = (parent: string | undefined, depth: number) => {
-    for (const topic of list.filter((one) => one.parent === parent).sort((a, b) => a.name.localeCompare(b.name))) {
-      out.push({ topic, depth })
-      walk(topic.id, depth + 1)
-    }
-  }
-  walk(undefined, 0)
-  return out
-}
 
 /** Where a row says its topic is relevant: through its parent, and its own links today. */
 function relevantWords(access: TopicsAccess, topic: TopicSummary, as: (name: string) => string): string {
@@ -51,7 +40,7 @@ function relevantWords(access: TopicsAccess, topic: TopicSummary, as: (name: str
 }
 
 function Catalogue({ access, rows, current, onPick }: {
-  access: TopicsAccess; rows: { topic: TopicSummary; depth: number }[]; current: TopicSummary | undefined; onPick: (id: string) => void
+  access: TopicsAccess; rows: NestedTopic[]; current: TopicSummary | undefined; onPick: (id: string) => void
 }) {
   const { t } = useStrings()
   return (

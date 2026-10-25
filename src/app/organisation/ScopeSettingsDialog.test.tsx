@@ -50,7 +50,7 @@ describe('ScopeSettingsDialog — what this is (ADR-0036, amended 17 October 202
   it('offers the operating model\'s unit types first and the built-in kinds below them, under their headings', async () => {
     openTyped({ kind: 'domain' })
     fireEvent.mouseDown(screen.getByLabelText('What this is'))
-    expect(options()).toEqual(['Not said', 'From the operating model', 'Division', 'Squad', 'Built-in kinds', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope'])
+    expect(options()).toEqual(['Not said', 'From the operating model', 'Division', 'Squad', 'Built-in kinds', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope', 'Topic'])
     // The two headings cannot be picked.
     expect(screen.getByRole('option', { name: 'From the operating model' }).getAttribute('aria-disabled')).toBe('true')
     expect(screen.getByRole('option', { name: 'Built-in kinds' }).getAttribute('aria-disabled')).toBe('true')
@@ -60,7 +60,7 @@ describe('ScopeSettingsDialog — what this is (ADR-0036, amended 17 October 202
   it('offers the kinds alone, as before, where the organisation has no operating model', () => {
     open({ kind: 'domain' })
     fireEvent.mouseDown(screen.getByLabelText('What this is'))
-    expect(options()).toEqual(['Not said', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope'])
+    expect(options()).toEqual(['Not said', 'Organisation', 'Domain', 'Programme', 'Team', 'Landscape scope', 'Topic'])
     expect(screen.queryByText('From the operating model')).toBeNull()
   })
 

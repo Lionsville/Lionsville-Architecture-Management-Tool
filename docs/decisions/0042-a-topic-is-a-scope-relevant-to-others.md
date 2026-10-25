@@ -156,7 +156,7 @@ change the topic; *+ Topic…* offers only the topics they may change. A
 topic's own home says it is one and opens it in the catalogue.
 
 **The topics place** is its default so far, `topics` at the organisation,
-made as a domain named *Topics* the first time a topic is made. Every rule
+made as a scope named *Topics* the first time a topic is made. Every rule
 in `projects/topics.ts` takes the place as a parameter; the setting that
 names another (§2) is not yet built, and is built with the agent's tools.
 
@@ -188,3 +188,20 @@ where it is a list of links whose days are days, and as nothing otherwise;
 the listing carries it, so the homes read every topic without reading a
 scope's records.
 
+**A topic's type is *Topic*** (`ScopeKind` `topic`), and so is the topics
+place's: a label like every kind (ADR-0012 §1), said where a topic is made
+— in the catalogue, by the agent's `scope.create` with `topic`, or as the
+place is — and never read to decide what is a topic, which stays the place
+and the links. Saying it of a scope that is not a topic yet, in the scope's
+settings, files the scope under the place, or under the topic chosen as its
+parent, with everything under it: a scope is made a topic by moving it.
+The place is not counted among the topics on a home's line.
+
+**Choosing topics on a home.** *+ Topic…* opens a chooser of its own, made
+for an organisation with fifty topics or more: found by name or by what a
+topic is about, browsed nested as the catalogue nests them, each row saying
+where the topic applies today and what it keeps, the topic pointed at read
+in full beside the list. Several are added at once, each the topic's own
+step; a subtopic is shown as coming with its topic, picked or relevant, and
+is not offered again. Where nothing matches, *New topic…* starts one named
+as typed and relevant to the scope.

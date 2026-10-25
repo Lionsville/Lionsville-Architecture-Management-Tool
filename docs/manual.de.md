@@ -3115,6 +3115,20 @@ ein Thema als Zeile ↗ unter jedem Bereich, für den es relevant ist. Ein Thema
 kann umbenannt, beschrieben, unter ein anderes Thema verschoben und entfernt
 werden, solange es nichts hält.
 
+**+ Thema…** auf der Startseite eines Bereichs öffnet eine Auswahl, die für
+viele Themen gemacht ist: tippen Sie, um eines nach Namen oder Inhalt zu
+finden, oder blättern Sie verschachtelt wie im Katalog. Jede Zeile sagt, wo
+das Thema heute gilt und was es hält, und das Thema, auf das Sie zeigen, steht
+neben der Liste in voller Länge. Haken Sie so viele an, wie gelten, und fügen
+Sie sie zusammen hinzu; ein Unterthema kommt mit seinem Thema. Passt nichts,
+macht **Neues Thema…** eines mit dem getippten Namen, relevant für diesen
+Bereich.
+
+Der Typ eines Themas ist **Thema**, ebenso der des Orts Themen. Ein Bereich,
+der schon besteht, wird in seinen **Einstellungen** zum Thema: wählen Sie
+**Thema** unter *Was das ist*, und Speichern legt ihn unter Themen ab — oder
+unter das bei *Abgelegt unter* gewählte Thema — mit allem darunter.
+
 ## Bausteine
 
 Ein Baustein ist das, was viele Lösungen wiederverwenden: ein *Message

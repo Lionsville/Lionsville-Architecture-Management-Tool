@@ -57,7 +57,7 @@ function today(): string {
 export type TreeScope = {
   readonly path: string
   readonly name: string
-  /** A label for a screen (`organisation` · `domain` · `programme` · `landscape`), never a branch. */
+  /** A label for a screen (`organisation` · `domain` · `programme` · `landscape` · `topic`), never a branch. */
   readonly kind?: string
   /** Its type from the operating model, a unit type's id, where it says one (ADR-0036, amended 17 October 2026). */
   readonly unitTypeId?: string

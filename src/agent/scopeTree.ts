@@ -33,7 +33,7 @@ import type { TreeView } from './tree'
 export type ScopeHeader = {
   name?: string
   description?: string | null
-  kind?: 'organisation' | 'domain' | 'programme' | 'team' | 'landscape' | null
+  kind?: 'organisation' | 'domain' | 'programme' | 'team' | 'landscape' | 'topic' | null
   unitTypeId?: string | null
   client?: string | null
   links?: readonly { label: string; url: string }[] | null
@@ -87,9 +87,13 @@ export type ServedFrom = { readonly unit: string; readonly keptIn: string; reado
 export type ScopesView = {
   /** One scope, read fresh; nothing where the person may not read one at that path. */
   read(path: string): Promise<ScopeRead | undefined>
-  /** Made at the dialog's address under `parent` (scopePathFor); a landscape with one board where `withBoard`, a domain otherwise. */
-  create(asked: { parent: string; name: string; withBoard: boolean }): Promise<
-    { path: string; name: string; kind: 'landscape' | 'domain'; revision: string; board?: { id: string; name: string } } | TreeRefused>
+  /**
+   * Made at the dialog's address under `parent` (scopePathFor); a landscape with one board where `withBoard`, a domain
+   * otherwise — and a topic where `topic`, filed under the topics place, made on first use, unless `parent` is in it or
+   * is a topic itself (ADR-0042 §2).
+   */
+  create(asked: { parent: string; name: string; withBoard: boolean; topic?: boolean }): Promise<
+    { path: string; name: string; kind: 'landscape' | 'domain' | 'topic'; revision: string; board?: { id: string; name: string } } | TreeRefused>
   /** A unit linked to serve a scope: the unit's `scopes` where it is kept, the scope's type following, one apply. */
   serve(path: string, unitId: string): Promise<ServedFrom | TreeRefused>
   /** project.settings + scope.describe, one change, worked out again over a scope that moved in between. */
@@ -163,9 +167,11 @@ async function createScope(view: ScopesView, args: Args, tree: TreeView | undefi
   const units = tree?.units?.()
   const keeper = servedBy === undefined ? undefined : units?.find(({ unit }) => unit.id === servedBy && unit.unitTypeId !== undefined)
   if (servedBy !== undefined && units && !keeper) return refused('agent.unknownId', `unit ${servedBy}`)
-  const above = await there(view, parent)
-  if (isAnswer(above)) return above
-  const made = await view.create({ parent, name, withBoard: args.withBoard === true })
+  const topic = args.topic === true
+  // A topic's place is the host's to find, and to make on first use.
+  const above = topic ? undefined : await there(view, parent)
+  if (above && isAnswer(above)) return above
+  const made = await view.create({ parent, name, withBoard: args.withBoard === true, ...(topic ? { topic } : {}) })
   if (isRefused(made)) return hostRefused(made)
   if (servedBy === undefined) return json(made)
   // The scope stays whatever the link comes to: it was asked for first, and is there.

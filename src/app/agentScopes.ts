@@ -40,11 +40,13 @@ import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import { HOLDS_NOTHING, holdsOf, readWhole } from '../projects/scopeHolds'
 import type { ScopeHolds } from '../projects/scopeHolds'
-import { nodeAt, nodesOf, readScope } from '../projects/scopeAccess'
+import { nodeAt, nodesOf, readScope, summaryOf } from '../projects/scopeAccess'
+import { flattenScopes } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { isWithinScope } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt, scopesAMoveWrites, serveScopeBy } from '../projects/scopeTree'
+import { createScopeAt, describeScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, scopesAMoveWrites, serveScopeBy } from '../projects/scopeTree'
+import { TOPICS_PLACE, topicFiledUnder } from '../projects/topics'
 
 export type AgentScopesDeps = {
   repositories: Pick<Repositories, 'scopes' | 'index'>
@@ -147,14 +149,18 @@ export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
   }
   return {
     read,
-    create: ({ parent, name, withBoard }) => caught(async () => {
+    create: ({ parent: asked, name, withBoard, topic }) => caught(async () => {
+      const parent = topic ? topicFiledUnder(flattenScopes(summaryOf(await scopes.tree())), asked) : asked
       if (!writable(parent)) return READ_ONLY(parent)
-      const made = await createScopeAt(scopes, { parent, name, withBoard, boardName: deps.boardName(), ancestors: 'required' })
+      if (topic && parent === TOPICS_PLACE) await fileTopicsPlace(scopes, s('topics.title'))
+      const made = await createScopeAt(scopes, {
+        parent, name, withBoard, boardName: deps.boardName(), ancestors: 'required', ...(topic ? { kind: 'topic' as const } : {}),
+      })
       if ('refused' in made) return refusedAs(made.refused, parent)
       await settled((listed) => listed.some((one) => one.path === made.path))
       const revision = (await readScope(scopes, made.path))?.revision ?? ''
       return { path: made.path, name: made.name, kind: made.kind, revision, ...(made.board ? { board: made.board } : {}) }
-    }, parent),
+    }, asked),
     serve: (path, unitId: ElementId) => caught(async () => {
       const keptIn = deps.index().units().find(({ unit }) => unit.id === unitId)?.scope
       if (keptIn !== undefined && keptIn === openPath()) {

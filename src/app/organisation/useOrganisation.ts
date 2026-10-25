@@ -40,7 +40,7 @@ import {
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { blank, changeScope, ensureScope, readScope, summaryOf } from '../../projects/scopeAccess'
-import { createScopeAt, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
+import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
 import { useScopeFolds } from './useScopeFolds'
@@ -48,6 +48,7 @@ import { exampleOf } from '../../projects/examples/catalogue'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
+import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
 export type OrganisationDialog =
@@ -270,6 +271,24 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   return { tree, root, ready, listed, listedNow: listed && listedAt === revision }
 }
 
+/**
+ * Where a scope's settings file it: where the person asked, and — where they
+ * said it is a topic and it is not one yet — under the topics place, or the
+ * topic it was to go under (ADR-0042 §2): making a scope a topic moves it.
+ */
+function filedTo(listing: ScopeSummary, path: ScopePath, patch: ScopeSettingsPatch): ScopePath {
+  const asked = patch.parent ?? parentScope(path) ?? ROOT_SCOPE
+  const nodes = flattenScopes(listing)
+  if (patch.type !== 'kind:topic' || path === TOPICS_PLACE || isTopic(path, nodes)) return asked
+  return topicFiledUnder(nodes, asked)
+}
+
+/** A scope filed under `to` by its settings, the topics place made first where that is where it goes. */
+async function moveFiled(scopes: Repositories['scopes'], index: Repositories['index'], path: ScopePath, to: ScopePath, placeName: string): Promise<void> {
+  if (to === TOPICS_PLACE) await fileTopicsPlace(scopes, placeName)
+  await moveScopeUnder(scopes, index, path, to, { listing: summaryOf(await scopes.tree()), strict: true })
+}
+
 /** Every scope may be written: what the hook is told by every source that ships. */
 const ANYWHERE = () => true
 
@@ -447,13 +466,13 @@ export function useOrganisation({
   const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch) => {
     void (async () => {
       const listing = summaryOf(await scopes.tree())
-      const from = parentScope(path) ?? ROOT_SCOPE
-      const moving = patch.parent !== undefined && patch.parent !== from && path !== ROOT_SCOPE
+      const to = filedTo(listing, path, patch)
+      const moving = to !== (parentScope(path) ?? ROOT_SCOPE) && path !== ROOT_SCOPE
       const name = patch.name.trim() || scopePathLabel(path)
       const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
       try {
         await writeSettings(scopes, path, name, patch)
-        if (moving) await moveScopeUnder(scopes, repositories.index, path, patch.parent!, { listing, strict: true })
+        if (moving) await moveFiled(scopes, repositories.index, path, to, s('topics.title'))
       } catch (cause) {
         // A refusal is the repository's answer, said in its words.
         onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')

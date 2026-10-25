@@ -19,6 +19,7 @@
  * Everything here is arithmetic without an outside world: no storage, no React,
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
+import { TOPICS_PLACE } from './topics'
 import type { TopicLink } from './topics'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, Relation, Transition, UploadedLogo,
@@ -46,10 +47,10 @@ import type { ScopeId } from './scopeState'
  * says the wrong word about itself stops working, and a folder saying the wrong
  * word about itself is a person's business and not a fault.
  */
-export type ScopeKind = 'organisation' | 'domain' | 'programme' | 'team' | 'landscape'
+export type ScopeKind = 'organisation' | 'domain' | 'programme' | 'team' | 'landscape' | 'topic'
 
 export const SCOPE_KINDS: readonly ScopeKind[] = [
-  'organisation', 'domain', 'programme', 'team', 'landscape',
+  'organisation', 'domain', 'programme', 'team', 'landscape', 'topic',
 ]
 
 export function isScopeKind(value: unknown): value is ScopeKind {
@@ -627,8 +628,9 @@ export function countScopes(root: ScopeSummary): { domains: number; landscapes: 
  * {@link isOpenableScope}).
  */
 export function countScopeKinds(root: ScopeSummary): { kind: ScopeKind | undefined; count: number }[] {
-  // A scope typed by the operating model is counted by its type ({@link countScopeTypes}), not here.
-  const under = flattenScopes(root).slice(1).filter((scope) => scope.unitTypeId === undefined)
+  // A scope typed by the operating model is counted by its type ({@link countScopeTypes}), not here; the
+  // topics place files topics and is not one (ADR-0042 §2).
+  const under = flattenScopes(root).slice(1).filter((scope) => scope.unitTypeId === undefined && scope.path !== TOPICS_PLACE)
   return [...SCOPE_KINDS, undefined]
     .map((kind) => ({ kind, count: under.filter((scope) => scope.kind === kind).length }))
     .filter(({ count }) => count > 0)

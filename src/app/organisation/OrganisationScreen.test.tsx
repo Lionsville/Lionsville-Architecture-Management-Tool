@@ -651,7 +651,7 @@ describe('the organisation screen — the shipped example', () => {
     // The line counts what each scope beneath says it is, in the badges'
     // words — never "landscape" alone, which is what a board is called.
     await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
-      .toContain('3 domains · 1 landscape scope'))
+      .toContain('1 domain · 1 landscape scope · 1 topic'))
     // The sheet is the ORGANISATION's now that a cross-scope id resolves
     // (ADR-0012 §1): the journey, the rail and the areas are what this level
     // holds, and the applications are the row beneath it.

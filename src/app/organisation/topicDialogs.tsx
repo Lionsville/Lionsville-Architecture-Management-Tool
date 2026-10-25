@@ -55,11 +55,14 @@ export function EditTopicDialog({ topic, access, onClose }: { topic: TopicSummar
   )
 }
 
-export function NewTopicDialog({ access, parent, onClose }: { access: TopicsAccess; parent?: string; onClose: (id?: string) => void }) {
+/** A new topic, under `parent` where one is said; `name` and `relevantTo` start the form where it is opened from somewhere that knows them. */
+export function NewTopicDialog({ access, parent, name: named = '', relevantTo = [], onClose }: {
+  access: TopicsAccess; parent?: string; name?: string; relevantTo?: readonly string[]; onClose: (id?: string) => void
+}) {
   const { t } = useStrings()
-  const [name, setName] = useState('')
+  const [name, setName] = useState(named)
   const [under, setUnder] = useState(parent ?? '')
-  const [places, setPlaces] = useState<ScopeChoice[]>([])
+  const [places, setPlaces] = useState<ScopeChoice[]>(() => access.scopeChoices().filter((one) => relevantTo.includes(one.path)))
   const [busy, setBusy] = useState(false)
   const make = () => {
     setBusy(true)

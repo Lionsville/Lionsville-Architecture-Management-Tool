@@ -2698,6 +2698,19 @@ force wherever it is relevant today, and the scope tree shows a topic as a
 row ↗ under each scope it is relevant to. A topic can be renamed, described,
 moved under another topic, and removed while it keeps nothing.
 
+**+ Topic…** on a scope's home opens a chooser made for many topics: type to
+find one by its name or by what it is about, or browse them nested as the
+catalogue nests them. Each row says where the topic applies today and what it
+keeps, and the topic pointed at is read in full beside the list. Tick as many
+as apply and add them together; a subtopic comes with its topic. Where
+nothing matches, **New topic…** makes one with the name typed, relevant to
+that scope.
+
+A topic's type is **Topic**, and so is the Topics place's. A scope that already
+exists becomes a topic in its **Settings**: choose **Topic** under *What this
+is*, and saving files it under Topics — or under the topic chosen under
+*Filed under* — with everything under it.
+
 ## Building blocks
 
 A building block is what many solutions reuse: a *message gateway*, an

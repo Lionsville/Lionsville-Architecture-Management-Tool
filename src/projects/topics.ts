@@ -203,3 +203,13 @@ export function choosableScopes(
   return [...kept, ...scopes]
 }
 
+
+/**
+ * Where a scope said to be a topic is filed (§2): under the scope it was to
+ * be filed under where that is the topics place or a topic — a subtopic —
+ * and under the topics place otherwise, so making a scope a topic moves it
+ * there.
+ */
+export function topicFiledUnder(nodes: readonly TopicNode[], parent: ScopePath, place: ScopePath = TOPICS_PLACE): ScopePath {
+  return isWithinScope(parent, place) || isTopic(parent, nodes, place) ? parent : place
+}
