@@ -12,6 +12,7 @@
  * body renders and is edited beside its rendering, and read-only hides every
  * way of writing.
  */
+import { RecordChangesProvider } from '../../comments/ui/RecordChanges'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
@@ -442,6 +443,19 @@ describe('leaving a plan being written (ADR-0044 §2)', () => {
     }
     fireEvent.click(screen.getByTestId('page-close'))
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a plan\'s changes (ADR-0038, amended §11)', () => {
+  it('says who proposed it and who changed it, read from the history by the plan', async () => {
+    const entriesOf = vi.fn(async () => ({ entries: [{ id: 'e2', at: Date.UTC(2026, 9, 20, 9), by: 'Bo Example' }, { id: 'e1', at: Date.UTC(2026, 9, 1, 9), by: 'Ada Example' }], more: false }))
+    renderShell(
+      <RecordChangesProvider value={{ entriesOf, whatOf: async () => ['changed the window', 'Created'] }}>
+        <PlanPage open plan={PLAN} model={MODEL} decisions={ADRS} today="2026-09-08" readOnly={false} onClose={vi.fn()} actions={{} as PlanActions} />
+      </RecordChangesProvider>,
+    )
+    expect((await screen.findByTestId('record-changes-line')).textContent).toContain('Proposed by Ada Example')
+    expect(entriesOf).toHaveBeenCalledWith({ kind: 'transition', id: PLAN.id }, undefined)
   })
 })
 
