@@ -81,6 +81,12 @@ export type CommandRefusal =
    * after.
    */
   | 'command.recordedByFixed'
+  /**
+   * A new observation said to be recorded by somebody other than whoever
+   * sends it (ADR-0038, amended §10): refused by a source that knows its
+   * accounts, never by the reducer, which knows nobody.
+   */
+  | 'command.recordedByNotYours'
   /** A principle with no aspect (ADR-0041 §2): one idea says at least one thing. */
   | 'command.aspectsEmpty'
   /** An aspect numbered twice, or past the highest ever given (ADR-0041 §2): a number is never given again. */
@@ -148,6 +154,7 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
   'command.recordedByFixed': true,
+  'command.recordedByNotYours': true,
   'command.aspectsEmpty': true,
   'command.aspectNumber': true,
   'command.titleEmpty': true,

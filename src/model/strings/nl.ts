@@ -287,6 +287,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.badBlock': 'De capabilities, gebruikscontexten en oplossingen van een bouwsteen hebben elk een eigen id en een naam; een context heeft alleen capabilities van de bouwsteen nodig, elk op een niveau van 0 tot 4; een oplossing is een product, een dienst of zelf gebouwd. Alleen een bouwsteen heeft ze.',
   'command.badEvaluation': 'Een beoordeling heet naar de bouwsteen die ze beoordeelt, scoort de dekking van elke oplossing van 0 tot 4, en kiest alleen een oplossing die ze afweegt.',
   'command.recordedByFixed': 'Wie een observatie vastlegde, blijft zoals het werd vastgelegd en wordt daarna niet gewijzigd.',
+  'command.recordedByNotYours': 'Een observatie wordt vastgelegd door wie haar vastlegt: deze noemde iemand anders, en de server nam haar niet aan.',
   'command.rootExplained': 'Een oorzaak die door een andere oorzaak verklaard wordt, kan geen grondoorzaak zijn: bij een grondoorzaak houdt de keten op. Ontkoppel de diepere oorzaak, of maak die tot grondoorzaak.',
   'command.rootAddressed': 'Een grondoorzaak waar een oplossing zich op richt, kan niet weer een oorzaak worden: een oplossing richt zich alleen op grondoorzaken. Verplaats de oplossing eerst naar een andere grondoorzaak, of ontkoppel haar.',
   'command.markFix': 'Alleen een nakijkpunt of een notitie kan als bedoeld worden gemarkeerd. Herstellen betekent dat het model zichzelf tegenspreekt: herstel het in het model.',

@@ -294,6 +294,7 @@ export const EN = {
   'command.badBlock': 'A building block\'s capabilities, usage contexts and solutions each have an id of their own and a name; a context needs only capabilities the block has, each at a level from 0 to 4; a solution is a product, a service or built in house. Only a building block has them.',
   'command.badEvaluation': 'An evaluation is named by the block it evaluates, rates each solution\'s coverage from 0 to 4, and chooses only a solution it weighs.',
   'command.recordedByFixed': 'Who recorded an observation is kept as it was recorded and is not changed afterwards.',
+  'command.recordedByNotYours': 'An observation is recorded by whoever records it: this one named somebody else, and the server did not take it.',
   'command.rootExplained': 'A cause that another cause explains cannot be a root cause: a root cause ends the chain. Unlink the deeper cause, or make that one the root cause instead.',
   'command.rootAddressed': 'A root cause that a solution addresses cannot become a cause again: a solution addresses root causes only. Move the solution to another root cause, or unlink it, first.',
   'command.markFix': 'Only a review or a note can be marked as intended. A fix says the model contradicts itself: fix it in the model.',

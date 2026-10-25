@@ -287,6 +287,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'command.badBlock': 'Die Fähigkeiten, Nutzungskontexte und Lösungen eines Bausteins haben je eine eigene ID und einen Namen; ein Kontext braucht nur Fähigkeiten des Bausteins, jede auf einer Stufe von 0 bis 4; eine Lösung ist ein Produkt, ein Dienst oder selbst gebaut. Nur ein Baustein hat sie.',
   'command.badEvaluation': 'Eine Bewertung heißt nach dem Baustein, den sie bewertet, bewertet die Abdeckung jeder Lösung von 0 bis 4 und wählt nur eine Lösung, die sie abwägt.',
   'command.recordedByFixed': 'Wer eine Beobachtung erfasst hat, bleibt so, wie es erfasst wurde, und wird danach nicht geändert.',
+  'command.recordedByNotYours': 'Eine Beobachtung wird von dem erfasst, der sie erfasst: diese nannte jemand anderen, und der Server hat sie nicht angenommen.',
   'command.rootExplained': 'Eine Ursache, die eine andere Ursache erklärt, kann keine Grundursache sein: Mit einer Grundursache endet die Kette. Lösen Sie die tiefere Ursache, oder machen Sie diese zur Grundursache.',
   'command.rootAddressed': 'Eine Grundursache, auf die eine Lösung zielt, kann nicht wieder eine Ursache werden: Eine Lösung zielt nur auf Grundursachen. Verschieben Sie die Lösung zuerst auf eine andere Grundursache, oder lösen Sie sie.',
   'command.markFix': 'Nur ein Prüfpunkt oder ein Hinweis kann als beabsichtigt markiert werden. Beheben heißt, das Modell widerspricht sich selbst: Beheben Sie es im Modell.',
