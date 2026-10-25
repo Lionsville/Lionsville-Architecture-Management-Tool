@@ -17,7 +17,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CloseIcon } from '../../widgets/icons'
-import { CITABLE, formatAspectNumber, formatPrincipleNumber } from '../principle'
+import { formatAspectNumber, formatPrincipleNumber, stancesOf } from '../principle'
 import type { Citation, CitationStance, CitingKind, CitingRecord, PrincipleRef } from '../principle'
 import { suggestPrinciples } from '../suggest'
 import type { Suggestion } from '../suggest'
@@ -34,7 +34,7 @@ export function CitationsSection({ about, subject, readOnly = false }: {
 }) {
   const access = usePrinciples()
   const { t } = useStrings()
-  const [citing, setCiting] = useState<{ ref?: PrincipleRef; aspect?: number; stance?: CitationStance } | undefined>(undefined)
+  const [citing, setCiting] = useState<{ ref?: PrincipleRef; aspect?: number; stance?: CitationStance; deviating?: boolean } | undefined>(undefined)
   const here = access?.here ?? ''
   const version = access?.version ?? 0
   const citations = useMemo(() => access?.citationsOf(about, here) ?? [], [access, about, here, version])
@@ -43,13 +43,18 @@ export function CitationsSection({ about, subject, readOnly = false }: {
     alreadyCited: citations.map((one) => one.principle), limit: 3,
   }) : []), [access, subject, here, about, citations, version])
   if (!access) return null
-  const quickStance = CITABLE[about.kind][0]!
+  // Written where the record is kept, and only where that scope may be written.
+  readOnly = readOnly || !access.mayWrite(here)
+  const quickStance = stancesOf(about.kind)[0]!
   return (
     <Box data-testid="citations-section" sx={{ mt: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant="overline" color="text.secondary" sx={{ flex: 1 }}>{t('principles.sectionTitle')}</Typography>
         {!readOnly && (
           <Button size="small" onClick={() => setCiting({})} data-testid="cite-open">{t('principles.cite')}</Button>
+        )}
+        {!readOnly && about.kind === 'element' && access.deviate && (
+          <Button size="small" onClick={() => setCiting({ deviating: true })} data-testid="deviate-open">{t('principles.deviate')}</Button>
         )}
       </Box>
       {citations.length === 0 && (
@@ -74,7 +79,7 @@ export function CitationsSection({ about, subject, readOnly = false }: {
       )}
       {citing && (
         <CiteDialog
-          open about={about as CitingRecord} here={here} initial={citing} onClose={() => setCiting(undefined)}
+          open about={about as CitingRecord} here={here} initial={citing} deviating={citing.deviating === true} onClose={() => setCiting(undefined)}
         />
       )}
     </Box>

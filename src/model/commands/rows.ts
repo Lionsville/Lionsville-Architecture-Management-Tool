@@ -24,6 +24,7 @@ import type { Assignment } from '../units'
 import type { CheckMark } from '../checkMarks'
 import type { Comment } from '../comment'
 import type { Principle } from '../principle'
+import type { Citation } from '../citable'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
@@ -206,6 +207,17 @@ export function withCheckMarks(model: Model, rows: Rows<CheckMark>): Model {
     return out
   }
   return { ...model, checkMarks: rows.by, order }
+}
+
+/** The citations, put back: emptied means gone, as every list of records (ADR-0041 §7). */
+export function withCitations(model: Model, rows: Rows<Citation>): Model {
+  const order = withOrder(model, 'citations', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.citations
+    return out
+  }
+  return { ...model, citations: rows.by, order }
 }
 
 /** The principles, put back: emptied means gone, as every list of records (ADR-0041). */

@@ -91,6 +91,10 @@ export type CommandRefusal =
   | 'command.sharpenNote'
   /** A scope's groups of principles with one unnamed, or an id said twice (ADR-0041 §3). */
   | 'command.badGroups'
+  /** A kind that does not cite, or a stance it may not take (ADR-0041 §7, `model/citable.ts`). */
+  | 'command.notCitable'
+  /** A departure from a principle without its reason (ADR-0041 §7). */
+  | 'command.reasonMissing'
   /**
    * A root cause made a cause again while a solution addresses it (ADR-0032
    * §3): a solution addresses root causes only (ADR-0026). Move the solution
@@ -145,6 +149,8 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.titleEmpty': true,
   'command.sharpenNote': true,
   'command.badGroups': true,
+  'command.notCitable': true,
+  'command.reasonMissing': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

@@ -42,6 +42,9 @@
  */
 import type { Cause, CauseStrength, Observation, ObservationEvent, ScopeAnalysis } from '../model/observation'
 import type { Comment } from '../model/comment'
+import type { RecordKey } from '../model/recordKey'
+import { carryCitations } from '../model/citable'
+import type { Citation } from '../model/citable'
 import { carryThread, threadSize } from '../comments/travel'
 import {
   isArchived, isCauseMerged, isMerged, isMoved, isRootCause, nextObservationNumber,
@@ -230,7 +233,7 @@ function said(event: ObservationEvent, was: string, lives: string): ObservationE
 /** The lists a move writes, copied as they are first written. */
 class Lists {
   private readonly held: Held
-  readonly changed = new Map<string, { observations: Observation[]; comments?: Comment[] }>()
+  readonly changed = new Map<string, { observations: Observation[]; comments?: Comment[]; citations?: Citation[] }>()
 
   constructor(held: Held) {
     this.held = held
@@ -240,7 +243,11 @@ class Lists {
     let lists = this.changed.get(scope)
     if (!lists) {
       const from = this.held.get(scope)!
-      lists = { observations: [...from.observations], ...(from.comments ? { comments: [...from.comments] } : {}) }
+      lists = {
+        observations: [...from.observations],
+        ...(from.comments ? { comments: [...from.comments] } : {}),
+        ...(from.citations ? { citations: [...from.citations] } : {}),
+      }
       this.changed.set(scope, lists)
     }
     return lists
@@ -257,6 +264,21 @@ class Lists {
 
   setComments(scope: string, comments: Comment[]): void {
     this.of(scope).comments = comments
+  }
+
+  citations(scope: string): readonly Citation[] | undefined {
+    return this.changed.get(scope)?.citations ?? this.held.get(scope)?.citations
+  }
+
+  /** The observation's citations of principles go with it to the scope it now lives in (ADR-0041 §7). */
+  carryCitations(about: RecordKey, from: string, to: string): void {
+    const leaving = this.citations(from)
+    const arriving = this.citations(to)
+    if (!leaving || !arriving) return
+    const carried = carryCitations(leaving, arriving, about, about, false)
+    if (carried.moved === 0) return
+    this.of(from).citations = carried.from
+    this.of(to).citations = carried.to
   }
 
   /** Every scope written, `first` and `second` before the rest. */
@@ -332,6 +354,7 @@ export function planMove(request: MoveRequest): MovePlan {
     lists.setComments(from.scope, carried.from)
     lists.setComments(to, carried.to)
   }
+  lists.carryCitations(about, from.scope, to)
   return {
     ok: true,
     number,

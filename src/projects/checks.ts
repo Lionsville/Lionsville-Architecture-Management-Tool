@@ -183,6 +183,9 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.scopeTypeUnserved': 'check.scopeTypeUnserved',
   'check.scopeTypeGone': 'check.scopeTypeGone',
   'check.servedScopeGone': 'check.servedScopeGone',
+  'check.principleUnused': 'check.principleUnused',
+  'check.principleChafes': 'check.principleChafes',
+  'check.citationGone': 'check.citationGone',
 }
 
 /**
@@ -265,6 +268,9 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.scopeTypeUnserved': { one: 'check.short.scopeTypeUnserved.one', other: 'check.short.scopeTypeUnserved.other' },
   'check.scopeTypeGone': { one: 'check.short.scopeTypeGone.one', other: 'check.short.scopeTypeGone.other' },
   'check.servedScopeGone': { one: 'check.short.servedScopeGone.one', other: 'check.short.servedScopeGone.other' },
+  'check.principleUnused': { one: 'check.short.principleUnused.one', other: 'check.short.principleUnused.other' },
+  'check.principleChafes': { one: 'check.short.principleChafes.one', other: 'check.short.principleChafes.other' },
+  'check.citationGone': { one: 'check.short.citationGone.one', other: 'check.short.citationGone.other' },
 }
 
 /**

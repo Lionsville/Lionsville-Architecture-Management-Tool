@@ -23,17 +23,23 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import { CITABLE, citationRefusal, formatAspectNumber, formatPrincipleNumber } from '../principle'
+import { citationRefusal, formatAspectNumber, formatPrincipleNumber, stancesOf } from '../principle'
 import type { CitationStance, CitingRecord, PrincipleRef } from '../principle'
 import type { PrincipleInForce } from '../suggest'
 import { usePrinciples } from './PrinciplesContext'
 import { REFUSAL_WORD, REGIME_WORD, STANCE_TIP, STANCE_WORD } from './words'
 
-export function CiteDialog({ open, about, here, initial, onClose }: {
+export function CiteDialog({ open, about, here, initial, deviating = false, onClose }: {
   open: boolean
   about: CitingRecord
   here: string
   initial: { ref?: PrincipleRef; aspect?: number; stance?: CitationStance }
+  /**
+   * *Deviates…* from an element (ADR-0041 §9): not a citation of the element,
+   * which only supports, but a new decision about it that departs from the
+   * principle, with its reason — so the departure is a decision, as it must be.
+   */
+  deviating?: boolean
   onClose: () => void
 }) {
   const access = usePrinciples()
@@ -43,16 +49,17 @@ export function CiteDialog({ open, about, here, initial, onClose }: {
     () => options.find((one) => initial.ref && one.scope === initial.ref.scope && one.principle.id === initial.ref.id) ?? null,
   )
   const [aspect, setAspect] = useState<number | ''>(initial.aspect ?? '')
-  const stances = CITABLE[about.kind]
-  const [stance, setStance] = useState<CitationStance>(initial.stance ?? stances[0]!)
+  const stances = deviating ? ['deviates' as const] : stancesOf(about.kind)
+  const [stance, setStance] = useState<CitationStance>(deviating ? 'deviates' : initial.stance ?? stances[0]!)
   const [reason, setReason] = useState('')
   const [said, setSaid] = useState<string | undefined>(undefined)
   if (!access) return null
   const fixed = picked?.principle.regime === 'fixed'
-  const refusal = picked ? citationRefusal(picked.principle, about.kind, stance, reason) : undefined
+  const refusal = picked ? citationRefusal(picked.principle, deviating ? 'decision' : about.kind, stance, reason) : undefined
   const submit = () => {
     if (!picked) return
-    const refused = access.cite({
+    const ref = { scope: picked.scope, id: picked.principle.id }
+    const refused = deviating ? access.deviate?.(about, ref, aspect === '' ? undefined : aspect, reason.trim()) : access.cite({
       about, scope: here, principle: { scope: picked.scope, id: picked.principle.id },
       ...(aspect !== '' ? { aspect } : {}), stance, ...(reason.trim() ? { reason: reason.trim() } : {}),
     })
@@ -65,7 +72,7 @@ export function CiteDialog({ open, about, here, initial, onClose }: {
   }
   return (
     <FieldsDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('principles.citeTitle')}</DialogTitle>
+      <DialogTitle>{t(deviating ? 'principles.deviateTitle' : 'principles.citeTitle')}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
         <Autocomplete
           options={options}
@@ -124,7 +131,7 @@ export function CiteDialog({ open, about, here, initial, onClose }: {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={submit} disabled={!picked || refusal !== undefined} data-testid="cite-submit">{t('principles.citeSubmit')}</Button>
+        <Button variant="contained" onClick={submit} disabled={!picked || refusal !== undefined} data-testid="cite-submit">{t(deviating ? 'principles.deviateSubmit' : 'principles.citeSubmit')}</Button>
       </DialogActions>
     </FieldsDialog>
   )

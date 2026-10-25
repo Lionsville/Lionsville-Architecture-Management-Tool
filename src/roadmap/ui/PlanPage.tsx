@@ -41,6 +41,7 @@ import { formatAdrNumber } from '../../decisions'
 import { linkElementRefs } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
+import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
@@ -654,6 +655,7 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
       {showPreview && (
         <DocumentSheet dense={editing}>
           <Box sx={{ fontSize: 14 }} data-document>{rendered}</Box>
+          <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />
           <CommentThread about={{ kind: 'transition', id: plan.id }} />
         </DocumentSheet>
       )}

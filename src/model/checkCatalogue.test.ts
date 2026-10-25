@@ -99,9 +99,11 @@ describe('the catalogue', () => {
     expect(of('fix')).toEqual([
       'assignmentEnded', 'assignmentOrphaned', 'conflict', 'dangling', 'danglingEnd', 'drawingLinkMissing', 'kindClash', 'lineOutlivesEnd', 'platformRetiresFirst',
       'reportingAmbiguous', 'reportingDangling', 'reportingLoop', 'scopeTypeGone', 'servedScopeGone', 'successorTooLate', 'unitMisplaced', 'unitTypeEnded', 'unitTypeNowhere',
-    ])
-    expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'proposal', 'scopeTypeUnserved'])
-    expect(of('review')).toHaveLength(CHECK_KEYS.length - 22)
+      // A citation of a principle that is not there (ADR-0041 §10).
+      'citationGone',
+    ].sort())
+    expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'principleUnused', 'proposal', 'scopeTypeUnserved'])
+    expect(of('review')).toHaveLength(CHECK_KEYS.length - 24)
   })
 
   it('reads a key it does not know as nothing', () => {

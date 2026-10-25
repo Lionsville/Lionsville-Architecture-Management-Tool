@@ -65,6 +65,7 @@ import {
 } from './readerActions'
 import type { LinkMode, Mode } from './readerActions'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { ToneBar } from './ToneBar'
 import type { CommentThreadProps } from '../../comments/ui/CommentThread'
@@ -434,6 +435,7 @@ export function ObservationReader(props: ObservationReaderProps) {
             />
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
 
+            {!fromScope && <CitationsSection about={{ kind: 'observation', id: observation.id }} subject={`${observation.title}\n${observation.body}`} readOnly={!canEdit} />}
             <RecordChanges about={{ kind: 'observation', id: observation.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
 
             <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />

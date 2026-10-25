@@ -26,6 +26,7 @@
  * its top bar takes over the window's two jobs — keep clear of the traffic
  * lights, and be the surface the window is dragged by.
  */
+import type { Citation } from '../../model/citable'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -110,6 +111,8 @@ export type ObservationWork = Analysis & SolutionWork & {
    * the comments are as they were.
    */
   comments?: Comment[]
+  /** The scope's citations of principles (ADR-0041 §7), handed back where a merge or a move carries a record's. Absent, as they were. */
+  citations?: readonly Citation[]
 }
 
 /**
@@ -537,8 +540,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const analysis = useMemo<Analysis>(() => ({ observations: [...observations], causes: [...causes] }), [observations, causes])
   const solutions = useMemo(() => model.solutions ?? [], [model.solutions])
   const experiments = useMemo(() => model.experiments ?? [], [model.experiments])
-  const work = useMemo<ObservationWork>(() => ({ ...analysis, solutions: [...solutions], experiments: [...experiments], comments: [...model.comments ?? []] }),
-    [analysis, solutions, experiments, model.comments])
+  const work = useMemo<ObservationWork>(() => ({ ...analysis, solutions: [...solutions], experiments: [...experiments], comments: [...model.comments ?? []], citations: [...model.citations ?? []] }),
+    [analysis, solutions, experiments, model.comments, model.citations])
   const plans = useMemo<SolutionPlan[]>(() => (model.transitions ?? []).map(solutionPlanOf), [model.transitions])
   const context = useMemo<SolutionContext>(() => ({
     causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),

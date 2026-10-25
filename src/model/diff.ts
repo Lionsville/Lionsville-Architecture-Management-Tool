@@ -35,6 +35,8 @@ import type { OperatingRule, Responsibility, Role, UnitType } from './operatingM
 import type { Assignment } from './units'
 import { checkMarkId } from './checkMarks'
 import type { CheckMark } from './checkMarks'
+import type { Principle } from './principle'
+import type { Citation } from './citable'
 import type { Comment } from './comment'
 import { RECORD_LISTS } from './recordKey'
 import type { RecordKey } from './recordKey'
@@ -46,7 +48,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
   | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'comment' | 'membership' | 'geometry'
+  | 'comment' | 'principle' | 'citation' | 'membership' | 'geometry'
 
 export type ModelChange = {
   kind: ChangeKind
@@ -283,7 +285,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
     'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark',
-    'comment', 'membership', 'geometry',
+    'comment', 'principle', 'citation', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }
@@ -307,7 +309,29 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
   each<Assignment>('assignment', before.assignments, after.assignments, (held) => unitName(held.unitId))
   changes.push(...markChanges(before, after))
   changes.push(...commentChanges(before, after))
+  changes.push(...principleChanges(before, after))
   return changes
+}
+
+/**
+ * The principles (ADR-0041), by their titles, and the citations of them by
+ * this scope's records (§7), named by the record that cites, as a comment is.
+ */
+function principleChanges(before: HostModel, after: HostModel): ModelChange[] {
+  const was = byId(before.principles ?? [])
+  const now = byId(after.principles ?? [])
+  const principles = ids(was, now).flatMap((id) => compare<Principle>('principle', id, was.get(id), now.get(id), (held) => held.title))
+  const wasCited = byId(before.citations ?? [])
+  const nowCited = byId(after.citations ?? [])
+  const nameOf = (citation: Citation) => recordName(after, citation.about) ?? recordName(before, citation.about) ?? citation.about.id
+  return [...principles, ...ids(wasCited, nowCited).flatMap((id) => compare<Citation>('citation', id, wasCited.get(id), nowCited.get(id), nameOf))]
+}
+
+/** What a scope calls one of its records, by its key: its title or its name. */
+function recordName(model: HostModel, about: RecordKey): string | undefined {
+  const list = about.kind in RECORD_LISTS ? model[RECORD_LISTS[about.kind as keyof typeof RECORD_LISTS]] : undefined
+  const held = (list as readonly { id: string; title?: string; name?: string }[] | undefined)?.find((one) => one.id === about.id)
+  return held?.title ?? held?.name
 }
 
 /**

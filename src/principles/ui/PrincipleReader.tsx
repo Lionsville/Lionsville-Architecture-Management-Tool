@@ -15,6 +15,7 @@ import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { plural } from '../../i18n/strings'
 import { useStrings } from '../../i18n/LanguageContext'
 import { formatDay } from '../../i18n/dates'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
@@ -64,7 +65,7 @@ export function PrincipleReader({ found, here, onEdit, onPick }: {
       </Box>}
       {refused && (
         <Alert severity="warning" sx={{ mt: 1.5 }} onClose={() => setRefused(false)} action={principle.status !== 'retired' ? <Button size="small" onClick={() => { setStatus('retired'); setRefused(false) }}>{t('principles.retire')}</Button> : undefined}>
-          {t('principles.removeRefused', { count: citations.length })}
+          {plural(t, { one: 'principles.removeRefusedOne', other: 'principles.removeRefused' }, citations.length)}
         </Alert>
       )}
 

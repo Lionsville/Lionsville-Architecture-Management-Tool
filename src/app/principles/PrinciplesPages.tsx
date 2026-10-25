@@ -40,6 +40,8 @@ export function ScopePrinciples({ parts, children }: { parts: WorkspaceParts; ch
     makeId: props.shell.makeId,
     today: parts.today,
     openHere: pages.openPrinciples,
+    openDecision: pages.openDecisions,
+    t: props.shell.s,
     ...(onOpenScope ? { openThere: (path: ScopePath, id: string) => onOpenScope(path, { page: 'principles', id }) } : {}),
   })
   return <PrinciplesProvider value={access}>{children}</PrinciplesProvider>

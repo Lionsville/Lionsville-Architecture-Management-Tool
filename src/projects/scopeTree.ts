@@ -32,7 +32,7 @@ import type { RecordLink } from './links'
 import { bareScope, emptyScope, flattenScopes, namesUnder, unreadableAt } from './scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
-import { analysisNamesWithin, linesNameWithin, readdressRef, servedNamesWithin } from './readdress'
+import { analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressRef, servedNamesWithin } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
@@ -281,7 +281,7 @@ export async function scopesAMoveWrites(index: Pick<OrganisationIndex, 'read'>, 
   return modelsOf(await index.read())
     .filter(({ path, model }) => !isWithinScope(path, from) && (
       model.elements.some((element) => element.ref !== undefined && isWithinScope(element.ref, from))
-      || analysisNamesWithin(model, from) || linesNameWithin(model, from) || servedNamesWithin(model, from)))
+      || analysisNamesWithin(model, from) || linesNameWithin(model, from) || servedNamesWithin(model, from) || principlesNameWithin(model, from)))
     .map(({ path }) => path)
 }
 

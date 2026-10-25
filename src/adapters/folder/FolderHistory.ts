@@ -72,6 +72,7 @@ import { ASSIGNMENTS_FILE } from './format/assignmentFile'
 import { CHECK_MARKS_FILE } from './format/checkMarkFile'
 import { COMMENTS_FOLDER } from './format/commentFile'
 import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER } from './format/principleFile'
+import { CITATIONS_FOLDER } from './format/citationFile'
 import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */
@@ -143,6 +144,7 @@ const KIND_PATHS: Record<RecordKind, readonly string[]> = {
   checkMark: [CHECK_MARKS_FILE],
   comment: [COMMENTS_FOLDER],
   principle: [PRINCIPLES_FOLDER],
+  citation: [CITATIONS_FOLDER],
   image: ['scope.json', PICTURES],
   // The groups of principles are the scope's own (ADR-0041 §3).
   scope: ['scope.json', 'model.json', PRINCIPLE_GROUPS_FILE],
@@ -167,6 +169,7 @@ const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   checkMark: (path) => path === CHECK_MARKS_FILE,
   comment: (path) => path.startsWith(`${COMMENTS_FOLDER}/`),
   principle: (path) => isPrinciplePath(path),
+  citation: (path) => path.startsWith(`${CITATIONS_FOLDER}/`),
   image: (path) => path === 'scope.json' || path.startsWith(`${PICTURES}/`),
   scope: (path) => path === 'scope.json' || path === 'model.json' || path === PRINCIPLE_GROUPS_FILE,
 }

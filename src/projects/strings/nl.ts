@@ -51,6 +51,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.scopeTypeUnserved': '{scope} zegt een {detail} te zijn, en nog geen eenheid bedient haar',
   'check.scopeTypeGone': '{scope} zegt een eenheidstype te zijn dat het operating model niet kent ({detail})',
   'check.servedScopeGone': '{name} bedient {detail}, en daar is geen scope',
+  'check.principleUnused': '{name} is aanvaard, en niets haalt het aan',
+  'check.principleChafes': '{name} schuurt in {count} observaties',
+  'check.citationGone': 'Een record haalt {name} aan, dat hier niet geldt',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -120,6 +123,12 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.scopeTypeGone.other': '{count} scopes van een verdwenen eenheidstype',
   'check.short.servedScopeGone.one': '{count} eenheid die een scope bedient die er niet is',
   'check.short.servedScopeGone.other': '{count} eenheden die scopes bedienen die er niet zijn',
+  'check.short.principleUnused.one': '{count} principe dat nergens wordt aangehaald',
+  'check.short.principleUnused.other': '{count} principes die nergens worden aangehaald',
+  'check.short.principleChafes.one': '{count} principe dat schuurt',
+  'check.short.principleChafes.other': '{count} principes die schuren',
+  'check.short.citationGone.one': '{count} verwijzing naar een principe dat er niet is',
+  'check.short.citationGone.other': '{count} verwijzingen naar principes die er niet zijn',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

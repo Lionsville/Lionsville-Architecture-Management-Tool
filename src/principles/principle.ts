@@ -23,52 +23,31 @@ export {
 } from '../model/principle'
 import type { Principle, PrincipleGroup, PrincipleRef } from '../model/principle'
 
-/** A record that may cite a principle, by kind and id. */
+export type { CitationStance, CitingKind } from '../model/citable'
+export { CITATION_STANCES, CITING_KINDS, stancesOf } from '../model/citable'
+import { citationPrincipleRefusal, stancesOf } from '../model/citable'
+import type { Citation as KeptCitation, CitationStance, CitingKind } from '../model/citable'
+
+/** A record that may cite a principle, by kind and id: a plan is the model's `transition`. */
 export type CitingRecord = { kind: CitingKind; id: string }
 
-export type CitingKind = 'decision' | 'element' | 'plan' | 'solution' | 'observation'
+/** A citation as a screen reads it: the model's, with the scope that keeps the record that cites. */
+export type Citation = KeptCitation & { about: CitingRecord; scope: string }
 
-export type CitationStance = 'supports' | 'deviates' | 'holds' | 'chafes' | 'missing'
-
-/**
- * Which kinds cite, and with which stances (ADR-0041): one table, as
- * `commentable.ts` is for comments. A decision supports or deviates; a design
- * supports; an observation says whether the principle holds, chafes or was
- * missing where it was seen.
- */
-export const CITABLE: Readonly<Record<CitingKind, readonly CitationStance[]>> = {
-  decision: ['supports', 'deviates'],
-  element: ['supports'],
-  plan: ['supports'],
-  solution: ['supports'],
-  observation: ['holds', 'chafes', 'missing'],
-}
-
-export type Citation = {
-  id: string
-  about: CitingRecord
-  /** The scope the citing record is kept in. */
-  scope: string
-  principle: PrincipleRef
-  /** The aspect cited, by its number, where one is. */
-  aspect?: number
-  stance: CitationStance
-  /** Why: required on `deviates`. */
-  reason?: string
-  /** The day it was cited, `yyyy-mm-dd`: a citation older than a sharpening says so. */
-  on: string
-}
-
-/** Why a citation is refused. */
+/** Why a citation is refused, as the screen says it. */
 export type CitationRefusal = 'principleFixed' | 'principleRetired' | 'reasonMissing' | 'stanceNotHere'
 
-/** Whether a citation may be written as it stands (ADR-0041). */
+/**
+ * Whether a citation may be written as it stands (ADR-0041 §7): a stance the
+ * kind may take, a principle that may be cited anew and, to depart, one that
+ * is flexible, with a reason.
+ */
 export function citationRefusal(
-  principle: Pick<Principle, 'regime' | 'status'>, about: CitingKind, stance: CitationStance, reason: string | undefined,
+  principle: Pick<Principle, 'regime' | 'status' | 'mergedInto'>, about: CitingKind, stance: CitationStance, reason: string | undefined,
 ): CitationRefusal | undefined {
-  if (!CITABLE[about].includes(stance)) return 'stanceNotHere'
-  if (principle.status === 'retired') return 'principleRetired'
-  if (stance === 'deviates' && principle.regime === 'fixed') return 'principleFixed'
+  if (!stancesOf(about).includes(stance)) return 'stanceNotHere'
+  const said = citationPrincipleRefusal(principle, stance)
+  if (said) return said
   if (stance === 'deviates' && !reason?.trim()) return 'reasonMissing'
   return undefined
 }

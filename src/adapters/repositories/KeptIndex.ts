@@ -77,7 +77,7 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
   const {
     elements, relations, transitions, observations, causes, solutions, experiments,
-    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups,
+    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups, citations,
   } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
@@ -103,6 +103,8 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
       // The principles and their groups, which the scopes below read (ADR-0041).
       ...(principles ? { principles } : {}),
       ...(principleGroups ? { principleGroups } : {}),
+      // And the citations of principles, which say how each principle is used across the tree (§7).
+      ...(citations ? { citations } : {}),
     },
   }
 }

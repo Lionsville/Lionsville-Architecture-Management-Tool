@@ -17,6 +17,7 @@ import { SectionHeading } from '../widgets/CompactForms';
 import { GeneralTab } from './InspectorGeneralTab';
 import { AppearanceTab } from './InspectorAppearanceTab';
 import { aspectCount, DataTab } from './InspectorDataTab';
+import { CitationsSection } from '../principles/ui/CitationsSection';
 import { CommentThread } from '../comments/ui/threadPart';
 
 export type { ElementInspectorProps };
@@ -96,6 +97,8 @@ export function ElementInspector(props: ElementInspectorProps) {
         </>
       ) : fields}
 
+      {/* The principles it follows, on the record's page (ADR-0041 §12). */}
+      {stacked && <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} />}
       <CommentThread about={{ kind: 'element', id: element.id }} />
       {!readOnly && <DeleteAction inspector={props} />}
     </Box>

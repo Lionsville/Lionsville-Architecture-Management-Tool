@@ -61,6 +61,7 @@ import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { isUnit } from '../model/units'
 import type { Assignment, Organisation, UnitMove } from '../model/units'
+import type { Citation } from '../model/citable'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { KeptCheckMark } from '../model/checkMarks'
 import { ShellError } from '../platform/errors'
@@ -348,6 +349,14 @@ export type ScopeIndex = {
    */
   principlesAt(path: ScopePath): ScopePrinciples
   /**
+   * Every citation of a principle, by any scope's records, with the scope
+   * that keeps it (ADR-0041 §7): how a principle is used is counted across
+   * the tree, and a principle something cites is not removed.
+   */
+  citations(): readonly KeptCitation[]
+  /** Every scope that keeps principles or groups of them, in path order. */
+  principleScopes(): readonly ScopePath[]
+  /**
    * What the scopes above `path` say explains its records (ADR-0032 §4), by
    * the id of the record explained: every cause above whose link names a
    * record of `path`. Derived from the explaining cause, because the link is
@@ -462,13 +471,17 @@ export const EMPTY_INDEX: ScopeIndex = indexScopes([])
  * decided by depth and then by path, so the answer does not depend on the order
  * a store happened to enumerate its folders in.
  */
+/** A citation, with the scope that keeps the record that cites. */
+export type KeptCitation = { readonly scope: ScopePath; readonly citation: Citation }
+
 /** One scope's principles and groups, as the index reads them (ADR-0041). */
 export type ScopePrinciples = { readonly principles: readonly Principle[]; readonly groups: readonly PrincipleGroup[] }
 
 const NO_PRINCIPLES: ScopePrinciples = { principles: [], groups: [] }
 
-/** A scope's principles and groups kept by its path, in number order, where it has either. */
-function keepPrinciples(kept: Map<ScopePath, ScopePrinciples>, path: ScopePath, model: ScopeModel['model']): void {
+/** A scope's principles and groups kept by its path, in number order, where it has either; and its citations, each with the path. */
+function keepPrinciples(kept: Map<ScopePath, ScopePrinciples>, cited: KeptCitation[], path: ScopePath, model: ScopeModel['model']): void {
+  for (const citation of model.citations ?? []) cited.push({ scope: path, citation })
   if (!model.principles?.length && !model.principleGroups?.length) return
   kept.set(path, { principles: [...(model.principles ?? [])].sort((a, b) => a.number - b.number), groups: model.principleGroups ?? [] })
 }
@@ -488,6 +501,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
   const principles = new Map<ScopePath, ScopePrinciples>()
+  const citations: KeptCitation[] = []
   // The type each scope says it is from the operating model (ADR-0036, amended 17 October 2026).
   const scopeTypes = new Map<ScopePath, string>(models.flatMap((one) => (one.unitTypeId !== undefined ? [[one.path, one.unitTypeId] as const] : [])))
   const initiatives: IndexedTransition[] = []
@@ -543,7 +557,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     moves.push(...movesOf(path, model))
     unitPlans.push(...unitPlansOf(path, model))
     if (path === '') operating = operatingOf(model)
-    keepPrinciples(principles, path, model)
+    keepPrinciples(principles, citations, path, model)
   }
 
   const entries = new Map<ElementId, IndexEntry>()
@@ -607,6 +621,8 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     )),
     analyses: () => [...analyses],
     principlesAt: (path) => principles.get(path) ?? NO_PRINCIPLES,
+    citations: () => citations,
+    principleScopes: () => [...principles.keys()].sort(),
     explainedFromAbove: (path) => new Map(fromAbove.get(path) ?? []),
     absorbedFrom: (path) => {
       const found = new Map<string, Absorption>()

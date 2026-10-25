@@ -51,6 +51,7 @@ import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
+import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { CompactForms } from '../../widgets/CompactForms'
 
@@ -224,6 +225,7 @@ export function AdrReader(props: AdrReaderProps) {
               day={day}
               onChange={(signers) => onUpdate({ signers })}
             />
+            {props.keptIn === undefined && <CitationsSection about={{ kind: 'decision', id: adr.id }} subject={`${adr.title}\n${adr.body}`} readOnly={!canEdit} />}
             <CommentThread about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} />
           </DocumentSheet>
         )}

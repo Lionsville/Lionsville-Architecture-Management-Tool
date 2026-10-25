@@ -27,11 +27,6 @@ export function aboutRecord(change: ModelChange, about: RecordKey): boolean {
   return change.what === about.kind && change.id === about.id
 }
 
-/** One row of the diff as a line: the sentence, and which fields where a record changed. */
-function described(change: ModelChange, s: Translate): string {
-  const line = changeLine(change, s)
-  return change.kind === 'changed' && change.fields?.length ? `${line} (${change.fields.join(', ')})` : line
-}
 
 /**
  * What each entry did to the record, newest first: `models[i]` is the
@@ -47,6 +42,6 @@ export function recordChangeLines(
     const before = models[index + 1]
     if (index === models.length - 1) return complete ? first : ''
     if (!after || !before) return ''
-    return diffModels(before, after).filter((change) => aboutRecord(change, about)).map((change) => described(change, s)).join('; ')
+    return diffModels(before, after).filter((change) => aboutRecord(change, about)).map((change) => changeLine(change, s)).join('; ')
   })
 }

@@ -24,7 +24,7 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  assignmentsOf, causesOf, checkMarksOf, commentsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
+  assignmentsOf, causesOf, checkMarksOf, citationsOf, commentsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
   solutionsOf, transitionsOf, unitTypesOf,
 } from './normalised'
 import { checkEntry } from './checkCatalogue'
@@ -268,11 +268,12 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
 }
 
 /** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand | CitationCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
   if (isCommentCommand(lead)) return commentStep(lead, before)
   if (isPrincipleCommand(lead)) return principleStep(lead, before)
+  if (isCitationCommand(lead)) return citationStep(lead, before)
   if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
 }
@@ -293,6 +294,24 @@ function principleStep(lead: PrincipleCommand, before: Model): StepSummary {
   if (lead.type === 'principle.add') return { key: 'activity.principleAdded', name: lead.principle.title }
   const name = principlesOf(before)[lead.id]?.title
   return { key: lead.type === 'principle.update' ? 'activity.principleChanged' : 'activity.principleRemoved', name }
+}
+
+/** A citation's commands (ADR-0041 §7): named by the record that cites. */
+type CitationCommand = Extract<CommandBody, { type: `citation.${'add' | 'update' | 'remove'}` }>
+
+function isCitationCommand(command: CommandBody): command is CitationCommand {
+  return command.type.startsWith('citation.')
+}
+
+const CITATION_STEP: Record<CitationCommand['type'], StringKey> = {
+  'citation.add': 'activity.citationAdded',
+  'citation.update': 'activity.citationChanged',
+  'citation.remove': 'activity.citationRemoved',
+}
+
+function citationStep(lead: CitationCommand, before: Model): StepSummary {
+  const citation = lead.type === 'citation.add' ? lead.citation : citationsOf(before)[lead.id]
+  return { key: CITATION_STEP[lead.type], name: citation ? commentedName(before, citation.about) : undefined }
 }
 
 /** A comment's commands (ADR-0037). */

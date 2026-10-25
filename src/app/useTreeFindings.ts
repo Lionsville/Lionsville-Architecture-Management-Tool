@@ -14,6 +14,7 @@ import { useIndex } from './useIndex'
 import type { Failed } from './useShellServices'
 import type { TreeView } from '../agent/tree'
 import { findingsByScope, identityFindings, organisationFindings } from '../projects/checks'
+import { principleFindings } from '../projects/principleFindings'
 import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
@@ -68,7 +69,7 @@ export function useTreeFindings(deps: {
    * §3); the ones that need a scope's own records belong to the scope that
    * is open.
    */
-  const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index)], [index])
+  const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index), ...principleFindings(index)], [index])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => index.initiativesBelow(home).length, [index, home])
   /** Every open observation anywhere below this home (ADR-0032 §1), for the observations card. */
@@ -124,7 +125,7 @@ function useShellTree(
     // Today's are folded once with the index; another day's organisation is read when asked (ADR-0036 §6).
     findings: (day) => (day === undefined
       ? treeRef.current.identity
-      : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day)]),
+      : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day), ...principleFindings(treeRef.current.index)]),
     read: async (path) => {
       const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
       if (!held) return undefined

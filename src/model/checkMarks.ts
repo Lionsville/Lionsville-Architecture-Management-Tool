@@ -164,6 +164,11 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.scopeTypeGone': withFields,
   /** The unit, and the path it serves that is not there. */
   'check.servedScopeGone': withFields,
+  /** The principle (ADR-0041 §10). */
+  'check.principleUnused': own,
+  'check.principleChafes': own,
+  /** The citing record and the principle it names. */
+  'check.citationGone': withFields,
   /** The capability, the unit and the `assigned` row. */
   'check.unitNotServing': withFields,
   /** The unit and role a line runs from, and where it lands: the line's target changed is another question. */

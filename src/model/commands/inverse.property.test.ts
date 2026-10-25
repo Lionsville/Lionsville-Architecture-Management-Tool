@@ -86,6 +86,7 @@ function someModel(r: Random): Model {
         ? { edgeRoutes: [{ relationId: relations[0].id, waypoints: [{ x: 1, y: 2 }] }] } : {}),
     })
   }
+  const observed = r.chance(0.6)
   const held = fromArrays({
     name: 'Design',
     elements,
@@ -93,7 +94,7 @@ function someModel(r: Random): Model {
     diagrams: [view('d1', 'layer7'), view('d2', r.chance(0.5) ? 'layer7' : 'container')],
     ...(r.chance(0.6) ? { decisions: [adr(r, 'adr-1', 1)] } : {}),
     ...(r.chance(0.6) ? { transitions: [plan(r, 'tr-1', 1)] } : {}),
-    ...(r.chance(0.6) ? { observations: [observation(r, 'ob-1', 1)] } : {}),
+    ...(observed ? { observations: [observation(r, 'ob-1', 1)] } : {}),
     ...(r.chance(0.6) ? { causes: [cause(r, 'ca-1', 1)] } : {}),
     ...(r.chance(0.6) ? { solutions: [solution(r, 'so-1', 1)] } : {}),
     ...(r.chance(0.6) ? { experiments: [experiment(r, 'ex-1', 1)] } : {}),
@@ -108,6 +109,8 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { comments: [thread(r, 'cm-1'), ...(r.chance(0.5) ? [{ ...thread(r, 'cm-2'), replyTo: 'cm-1' }] : [])] } : {}),
     ...(r.chance(0.6) ? { principles: [principle(r, 'pr-1'), ...(r.chance(0.5) ? [{ ...principle(r, 'pr-2'), status: 'accepted' as const }] : [])] } : {}),
     ...(r.chance(0.4) ? { principleGroups: [{ id: 'pg-1', name: 'Data' }] } : {}),
+    // A citation needs the record that cites: the observation above, where there is one.
+    ...(observed && r.chance(0.5) ? { citations: [{ id: 'ci-1', about: { kind: 'observation' as const, id: 'ob-1' }, principle: { scope: '', id: 'pr-1' }, stance: 'holds' as const, on: '2026-10-25' }] } : {}),
   })
   return held
 }
@@ -421,6 +424,21 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     }
   },
   'principle.remove': (r, m) => ({ type: 'principle.remove', id: held(r, m.order.principles, 'pr') }),
+  'citation.add': (r, m) => ({
+    type: 'citation.add',
+    citation: {
+      id: r.chance(0.85) ? `ci-${3 + r.int(100)}` : 'ci-1',
+      // Mostly a record the scope holds; sometimes one it does not, which is refused.
+      about: { kind: 'observation', id: held(r, m.order.observations, 'ob') },
+      principle: { scope: '', id: 'pr-1' }, stance: r.pick(['holds', 'chafes', 'missing', 'supports'] as const), on: '2026-10-25',
+    },
+    ...(r.chance(0.3) ? { at: r.int(m.order.citations.length + 1) } : {}),
+  }),
+  'citation.update': (r, m) => ({
+    type: 'citation.update', id: held(r, m.order.citations, 'ci'),
+    patch: { ...(r.chance(0.6) ? { stance: r.pick(['holds', 'chafes', 'missing'] as const) } : {}), ...(r.chance(0.4) ? { aspect: either(r, 1 + r.int(3)) } : {}) },
+  }),
+  'citation.remove': (r, m) => ({ type: 'citation.remove', id: held(r, m.order.citations, 'ci') }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

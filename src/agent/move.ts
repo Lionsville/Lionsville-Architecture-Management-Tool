@@ -24,7 +24,7 @@
  * refused `agent.scopeNotOpen`.
  */
 import type { Model } from '../model/normalised'
-import { causeList, commentList, experimentList, observationList, solutionList } from '../model/normalised'
+import { causeList, citationList, commentList, experimentList, observationList, solutionList } from '../model/normalised'
 import type { ScopeAnalysis } from '../model/observation'
 import { planMove, scopesForMove } from '../observations/move'
 import type { MoveLink, MovePlan, MoveRequest, ObservationMoveRefusal } from '../observations/move'
@@ -58,7 +58,7 @@ const LABEL = /^(?:ob-?)?(\d+)$/i
 function analysisOf(scope: string, model: Model): ScopeAnalysis {
   return {
     scope, observations: observationList(model), causes: causeList(model), solutions: solutionList(model),
-    experiments: experimentList(model), comments: commentList(model),
+    experiments: experimentList(model), comments: commentList(model), citations: citationList(model),
   }
 }
 
@@ -206,6 +206,7 @@ function workOf(write: ScopeAnalysis): AcrossWork {
   return {
     observations: [...write.observations], causes: [...write.causes], solutions: [...write.solutions], experiments: [...write.experiments],
     ...(write.comments ? { comments: [...write.comments] } : {}),
+    ...(write.citations ? { citations: [...write.citations] } : {}),
   }
 }
 

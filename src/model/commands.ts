@@ -38,12 +38,13 @@ import type {
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
 import type { CheckMark, CheckMarkId } from './checkMarks'
+import type { Citation, CitationId } from './citable'
 import type { Principle, PrincipleGroup, PrincipleId } from './principle'
 import type { Comment, CommentId, CommentRemoved } from './comment'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
-import { causesOf, commentsOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
+import { causesOf, citationsOf, commentsOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
@@ -239,6 +240,13 @@ export type CommandBody =
   | { type: 'principle.update'; id: PrincipleId; patch: Partial<Principle> }
   /** Taken out: only while nothing anywhere cites it, which the caller asks first. */
   | { type: 'principle.remove'; id: PrincipleId }
+
+  // --- a citation of a principle by a record of the scope (ADR-0041 §7) ---
+  /** Made: a kind and a stance of the table, a record the scope holds, a reason to depart. */
+  /** `put`: put back as it was, by an undo or a record's deletion undone, and not asked again whether it may be. */
+  | { type: 'citation.add'; citation: Citation; at?: number; put?: true }
+  | { type: 'citation.update'; id: CitationId; patch: Partial<Citation> }
+  | { type: 'citation.remove'; id: CitationId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }
@@ -551,6 +559,23 @@ export function experimentsToCommands(model: Model, next: readonly Experiment[])
     else if (JSON.stringify(before) !== JSON.stringify(one)) {
       commands.push({ type: 'experiment.update', id: one.id, patch: replacement(before, one) })
     }
+  }
+  return commands
+}
+
+/**
+ * A whole list of citations, said as the changes that get there (ADR-0041
+ * §7): what a merge or a move hands back for a scope it writes. Those gone are
+ * removed first and the rest added or changed in the list's order.
+ */
+export function citationsToCommands(model: Model, next: readonly Citation[]): Command[] {
+  const held = citationsOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = model.order.citations.filter((id) => !wanted.has(id)).map((id) => ({ type: 'citation.remove' as const, id }))
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'citation.add', citation: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push({ type: 'citation.update', id: one.id, patch: replacement(before, one) })
   }
   return commands
 }

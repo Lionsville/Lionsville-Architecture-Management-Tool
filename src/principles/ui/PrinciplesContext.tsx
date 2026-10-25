@@ -63,8 +63,12 @@ export type PrinciplesAccess = {
   open?(ref: PrincipleRef): void
   /** Open a citing record where it is kept. */
   openRecord?(citation: Citation): void
-  /** A new decision about an element that departs from a principle (*Deviates…*). */
-  deviate?(about: CitingRecord, ref: PrincipleRef, aspect?: number): void
+  /**
+   * A new decision about an element that departs from a principle
+   * (*Deviates…*, ADR-0041 §9), its departure cited with the reason, in one
+   * step, and opened; or why not.
+   */
+  deviate?(about: CitingRecord, ref: PrincipleRef, aspect: number | undefined, reason: string): CitationRefusal | undefined
   /** Whether a scope's principles may be changed here: the open scope's, while it is not only read. */
   mayWrite(scope: string): boolean
   /** Today, `yyyy-mm-dd`. */

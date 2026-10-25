@@ -409,6 +409,17 @@ describe('what travels with a merge (ADR-0037 §6)', () => {
     expect(writes.get('north')?.comments).toEqual([said('cm-6', 'o9')])
   })
 
+  it('carries the absorbed record\'s citations of principles across scopes, as its thread (ADR-0041 §7)', () => {
+    const cites = (id: string, about: string) => ({ id, about: { kind: 'observation' as const, id: about }, principle: { scope: '', id: 'pr-1' }, stance: 'chafes' as const, on: DAY })
+    const top = scope('', { observations: [observation('o1')], citations: [] })
+    const below = scope('north', { observations: [observation('o5')], citations: [cites('ci-5', 'o5'), cites('ci-6', 'o9')] })
+    const writes = written(planMerge({
+      kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: 'north', id: 'o5' }], scopes: [top, below], date: DAY,
+    }))
+    expect(writes.get('')?.citations).toEqual([cites('ci-5', 'o1')])
+    expect(writes.get('north')?.citations).toEqual([cites('ci-6', 'o9')])
+  })
+
   it('leaves the threads where they are when a scope is handed in without its comments', () => {
     const here = scope('', { observations: [observation('o1'), observation('o2')] })
     const plan = planMerge({ kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: '', id: 'o2' }], scopes: [here], date: DAY })

@@ -72,8 +72,22 @@ export type AttentionItem = {
    * model's, where the finding is about a unit type or a responsibility,
    * which no board draws (ADR-0036 §2).
    */
-  page?: 'operating' | 'home'
+  page?: 'operating' | 'home' | 'principles' | 'record'
   text: string
+}
+
+/** The findings about a principle (ADR-0041 §10): opened on the principles page of its scope, the principle picked there. */
+const ON_THE_PRINCIPLES_PAGE: ReadonlySet<string> = new Set(['check.principleUnused', 'check.principleChafes'])
+
+/** A citation that names a principle not there: opened on the record that cites, where it is fixed. */
+const ON_THE_RECORD: ReadonlySet<string> = new Set(['check.citationGone'])
+
+/** Where a finding opens other than on the record it names as an element. */
+function pageOf(key: string): Pick<AttentionItem, 'page'> {
+  if (ON_THE_OPERATING_PAGE.has(key)) return { page: 'operating' }
+  if (ABOUT_A_SCOPE.has(key)) return { page: 'home' }
+  if (ON_THE_PRINCIPLES_PAGE.has(key)) return { page: 'principles' }
+  return ON_THE_RECORD.has(key) ? { page: 'record' } : {}
 }
 
 /** The findings about the operating model: opened on its page at the organisation, the item picked there. */
@@ -120,7 +134,7 @@ export function attentionItems(
         ...(elsewhere !== undefined ? { elsewhere } : {}),
         ...(finding.fields ? { fields: finding.fields } : {}), ...(finding.scopes ? { scopes: finding.scopes } : {}),
         ...(finding.person !== undefined ? { person: finding.person } : {}),
-        ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : ABOUT_A_SCOPE.has(finding.key) ? { page: 'home' as const } : {}),
+        ...pageOf(finding.key),
         text: findingSentence(finding, s, scopeName, personName),
       })
     }

@@ -3543,6 +3543,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.titleEmpty': 'A principle needs a title.',
   'command.sharpenNote': 'Changing an accepted principle\'s statement or aspects sharpens it: pass note, saying why, with the change.',
   'command.badGroups': 'Every group needs a name, and each is listed once.',
+  'command.notCitable': 'Which kinds cite with which stances: decision supports or deviates; element, plan (transition) and solution support; observation holds, chafes or missing.',
+  'command.reasonMissing': 'stance deviates needs reason: why this record departs from the principle.',
   'command.recordedByFixed': 'Who recorded an observation is written once, when it is recorded, from whoever recorded it; it is never an argument.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',

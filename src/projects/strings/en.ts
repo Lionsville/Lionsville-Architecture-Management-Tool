@@ -67,6 +67,9 @@ export const EN = {
   'check.scopeTypeUnserved': '{scope} says it is a {detail}, and no unit serves it yet',
   'check.scopeTypeGone': '{scope} says it is a unit type the operating model does not hold ({detail})',
   'check.servedScopeGone': '{name} serves {detail}, and no scope is there',
+  'check.principleUnused': '{name} is accepted, and nothing cites it',
+  'check.principleChafes': '{name} chafes in {count} observations',
+  'check.citationGone': 'A record cites {name}, which does not read here',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -142,6 +145,12 @@ export const EN = {
   'check.short.scopeTypeGone.other': '{count} scopes of a unit type that is gone',
   'check.short.servedScopeGone.one': '{count} unit serving a scope that is not there',
   'check.short.servedScopeGone.other': '{count} units serving scopes that are not there',
+  'check.short.principleUnused.one': '{count} principle nothing cites',
+  'check.short.principleUnused.other': '{count} principles nothing cites',
+  'check.short.principleChafes.one': '{count} principle that chafes',
+  'check.short.principleChafes.other': '{count} principles that chafe',
+  'check.short.citationGone.one': '{count} citation of a principle that is not there',
+  'check.short.citationGone.other': '{count} citations of principles that are not there',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

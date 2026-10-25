@@ -51,6 +51,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.scopeTypeUnserved': '{scope} sagt, er sei ein {detail}, und noch keine Einheit bedient ihn',
   'check.scopeTypeGone': '{scope} sagt, er sei ein Einheitentyp, den das Betriebsmodell nicht kennt ({detail})',
   'check.servedScopeGone': '{name} bedient {detail}, und dort gibt es keinen Bereich',
+  'check.principleUnused': '{name} ist angenommen, und nichts zitiert es',
+  'check.principleChafes': '{name} reibt in {count} Beobachtungen',
+  'check.citationGone': 'Ein Eintrag zitiert {name}, das hier nicht gilt',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -120,6 +123,12 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.scopeTypeGone.other': '{count} Bereiche eines verschwundenen Einheitentyps',
   'check.short.servedScopeGone.one': '{count} Einheit, die einen Bereich bedient, den es nicht gibt',
   'check.short.servedScopeGone.other': '{count} Einheiten, die Bereiche bedienen, die es nicht gibt',
+  'check.short.principleUnused.one': '{count} Prinzip, das nirgends zitiert wird',
+  'check.short.principleUnused.other': '{count} Prinzipien, die nirgends zitiert werden',
+  'check.short.principleChafes.one': '{count} Prinzip, das reibt',
+  'check.short.principleChafes.other': '{count} Prinzipien, die reiben',
+  'check.short.citationGone.one': '{count} Verweis auf ein Prinzip, das nicht da ist',
+  'check.short.citationGone.other': '{count} Verweise auf Prinzipien, die nicht da sind',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

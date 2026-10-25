@@ -23,6 +23,7 @@ import { ASSIGNMENT_COMMANDS } from './assignments'
 import { CHECK_MARK_COMMANDS } from './checkMarks'
 import { COMMENT_COMMANDS } from './commenting'
 import { PRINCIPLE_COMMANDS } from './principleRecords'
+import { CITATION_COMMANDS } from './citing'
 import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
 import { RELATION_COMMANDS } from './relations'
@@ -56,6 +57,7 @@ const EVERY_TYPE: Record<CommandType, true> = {
   'checkMark.add': true, 'checkMark.remove': true,
   'comment.add': true, 'comment.update': true, 'comment.remove': true, 'comment.take': true, 'comment.put': true,
   'principle.add': true, 'principle.update': true, 'principle.remove': true,
+  'citation.add': true, 'citation.update': true, 'citation.remove': true,
   'project.settings': true, 'transaction': true, 'restore': true,
 }
 
@@ -63,7 +65,7 @@ const FAMILIES = [
   ELEMENT_COMMANDS, RELATION_COMMANDS, MEMBER_COMMANDS, GROUP_COMMANDS, ROUTE_COMMANDS,
   DIAGRAM_COMMANDS, DECISION_COMMANDS, TRANSITION_COMMANDS, OBSERVATION_COMMANDS,
   CAUSE_COMMANDS, SOLUTION_COMMANDS, EXPERIMENT_COMMANDS, UNIT_TYPE_COMMANDS, ROLE_COMMANDS,
-  RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, ASSIGNMENT_COMMANDS, CHECK_MARK_COMMANDS, COMMENT_COMMANDS, PRINCIPLE_COMMANDS, PROJECT_COMMANDS,
+  RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, ASSIGNMENT_COMMANDS, CHECK_MARK_COMMANDS, COMMENT_COMMANDS, PRINCIPLE_COMMANDS, CITATION_COMMANDS, PROJECT_COMMANDS,
 ]
 
 describe('the command table', () => {

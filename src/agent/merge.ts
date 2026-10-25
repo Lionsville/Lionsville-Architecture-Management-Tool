@@ -29,7 +29,7 @@
  * `agent.scopeNotOpen`, as every other write to another scope is.
  */
 import type { Model } from '../model/normalised'
-import { causeList, commentList, experimentList, observationList, solutionList } from '../model/normalised'
+import { causeList, citationList, commentList, experimentList, observationList, solutionList } from '../model/normalised'
 import type { Comment } from '../model/comment'
 import type { CauseState, CauseStrength, Experiment, ObservationImpact, ScopeAnalysis, Solution } from '../model/observation'
 import { planMerge, scopesForMerge } from '../observations/merge'
@@ -157,7 +157,7 @@ function askedOf(kind: MergeKind, args: Args, here: string, known: ReadonlyMap<s
 function analysisOf(scope: string, model: Model): ScopeAnalysis {
   return {
     scope, observations: observationList(model), causes: causeList(model), solutions: solutionList(model), experiments: experimentList(model),
-    comments: commentList(model),
+    comments: commentList(model), citations: citationList(model),
   }
 }
 
@@ -362,6 +362,7 @@ function workOf(write: ScopeAnalysis): AcrossWork {
   return {
     observations: [...write.observations], causes: [...write.causes], solutions: [...write.solutions], experiments: [...write.experiments],
     ...(write.comments ? { comments: [...write.comments] } : {}),
+    ...(write.citations ? { citations: [...write.citations] } : {}),
   }
 }
 

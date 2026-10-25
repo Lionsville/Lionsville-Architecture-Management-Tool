@@ -63,6 +63,7 @@ import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { solutionKey } from '../solutionGraph'
 
@@ -427,7 +428,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 </Box>
               ))}
             </Box>
-            <SolutionFooter id={solution.id} nameOf={props.nameOf} onOpen={props.onOpen} /></DocumentSheet>
+            <SolutionFooter id={solution.id} subject={`${solution.title}\n${solution.body}`} nameOf={props.nameOf} onOpen={props.onOpen} /></DocumentSheet>
         )}
       </Box>
     </ReaderRoot>
@@ -652,10 +653,11 @@ export function ExperimentReader(props: ExperimentReaderProps) {
   )
 }
 
-/** Under a solution: who proposed and changed it (ADR-0038, amended §11), and its thread (ADR-0037). */
-function SolutionFooter({ id, nameOf, onOpen }: { id: string; nameOf: (id: string) => string; onOpen: (key: string) => void }) {
+/** Under a solution: the principles it follows (ADR-0041), who proposed and changed it (ADR-0038, amended §11), and its thread (ADR-0037). */
+function SolutionFooter({ id, subject, nameOf, onOpen }: { id: string; subject: string; nameOf: (id: string) => string; onOpen: (key: string) => void }) {
   return (
     <>
+      <CitationsSection about={{ kind: 'solution', id }} subject={subject} />
       <RecordChanges about={{ kind: 'solution', id }} first="proposed" />
       <CommentThread about={{ kind: 'solution', id }} nameOf={(from) => nameOf(from.id)} openFrom={(from) => () => onOpen(solutionKey(from.id))} />
     </>

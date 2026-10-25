@@ -29,10 +29,10 @@
 import { isAdrLocked } from './adr'
 import { isMarkable } from './checkMarks'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
-import { commentsToCommands } from './commands'
+import { citationsToCommands, commentsToCommands } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  assignmentsOf, boxesOf, causesOf, checkMarksOf, commentList, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  assignmentsOf, boxesOf, causesOf, checkMarksOf, citationList, commentList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
@@ -118,7 +118,12 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
   // record they are about goes and takes them with it, and those put back
   // last, once every record they are about is back.
   const threads = commentsToCommands(now, commentList(then))
-  const commands: Command[] = threads.filter((command) => command.type === 'comment.take')
+  // The citations likewise (ADR-0041 §7): those that go, first; the rest last.
+  const cited = citationsToCommands(now, citationList(then))
+  const commands: Command[] = [
+    ...threads.filter((command) => command.type === 'comment.take'),
+    ...cited.filter((command) => command.type === 'citation.remove'),
+  ]
   let dropped = 0
   let kept = 0
 
@@ -249,10 +254,28 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
   }
   commands.push(...operatingBack(then, now))
+  commands.push(...principlesBack(then, now))
   commands.push(...threads.filter((command) => command.type !== 'comment.take'))
+  commands.push(...cited.filter((command) => command.type !== 'citation.remove'))
 
   const restored: Restored = { what: 'project', name: then.name, asOf }
   return { ok: true, command: { type: 'restore', restored, commands }, dropped, kept }
+}
+
+/** The principles as they were (ADR-0041): the list whole, as the observations restore. */
+function principlesBack(then: Model, now: Model): Command[] {
+  const was = principlesOf(then)
+  const is = principlesOf(now)
+  const commands: Command[] = []
+  for (const id of then.order.principles) {
+    if (!is[id]) commands.push({ type: 'principle.add', principle: was[id] })
+    else {
+      const patch = differing(is[id], was[id])
+      if (Object.keys(patch).length) commands.push({ type: 'principle.update', id, patch })
+    }
+  }
+  for (const id of now.order.principles) if (!was[id]) commands.push({ type: 'principle.remove', id })
+  return commands
 }
 
 /**
@@ -445,7 +468,7 @@ function ownFields(
   return own
 }
 
-const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig'] as const
+const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig', 'principleGroups'] as const
 
 function projectSettings(model: Model): ProjectPatch {
   return pick(model, PROJECT_FIELDS) as ProjectPatch

@@ -49,6 +49,8 @@ import {
   causeEvidence, isArchived, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow, toneOf, tonesMerge,
 } from './observation'
 import type { LinkRefusal } from './observation'
+import { carryCitations } from '../model/citable'
+import type { Citation } from '../model/citable'
 import { carryThread } from '../comments/travel'
 import type { Comment } from '../model/comment'
 
@@ -501,6 +503,7 @@ export function planMerge(request: MergeRequest): MergePlan {
     : foldCauses(work, request, absorbedAt)
   moveLinks(work, links, request.choices ?? {}, held, absorbed)
   const comments = carryThreads(work, request, absorbedAt)
+  carryCited(work, request, absorbedAt)
   return { ok: true, links, writes: work.changed(request.survivor.scope), survivor: written, comments }
 }
 
@@ -525,6 +528,20 @@ function carryThreads(work: Work, request: MergeRequest, absorbedAt: readonly Re
   return moved
 }
 
+/** The absorbed records' citations of principles, about the survivor now (ADR-0041 §7), where the scopes' citations were handed in. */
+function carryCited(work: Work, request: MergeRequest, absorbedAt: readonly RecordAt[]): void {
+  const into = { kind: request.kind, id: request.survivor.id }
+  for (const at of absorbedAt) {
+    const from = work.citations(at.scope)
+    const to = work.citations(request.survivor.scope)
+    if (!from || !to) continue
+    const carried = carryCitations(from, to, { kind: request.kind, id: at.id }, into, at.scope === request.survivor.scope)
+    if (carried.moved === 0) continue
+    work.setCitations(at.scope, carried.from)
+    work.setCitations(request.survivor.scope, carried.to)
+  }
+}
+
 /** A value that cannot be the survivor's. */
 function valuesRefusal(request: MergeRequest, survivor: Observation | Cause): MergeRefusal | undefined {
   if (request.kind === 'observation') {
@@ -542,7 +559,7 @@ function valuesRefusal(request: MergeRequest, survivor: Observation | Cause): Me
 /** The lists of the scopes a merge writes, copied as they are first written, and what changed. */
 class Work {
   private readonly held: Held
-  private readonly lists = new Map<string, { observations: Observation[]; causes: Cause[]; solutions: Solution[]; comments?: Comment[] }>()
+  private readonly lists = new Map<string, { observations: Observation[]; causes: Cause[]; solutions: Solution[]; comments?: Comment[]; citations?: Citation[] }>()
 
   constructor(held: Held) {
     this.held = held
@@ -555,6 +572,7 @@ class Work {
       lists = {
         observations: [...from.observations], causes: [...from.causes], solutions: [...from.solutions],
         ...(from.comments ? { comments: [...from.comments] } : {}),
+        ...(from.citations ? { citations: [...from.citations] } : {}),
       }
       this.lists.set(scope, lists)
     }
@@ -585,6 +603,15 @@ class Work {
     this.of(scope).comments = comments
   }
 
+  /** A scope's citations as written so far; nothing where they were not handed in. */
+  citations(scope: string): readonly Citation[] | undefined {
+    return this.lists.get(scope)?.citations ?? this.held.get(scope)?.citations
+  }
+
+  setCitations(scope: string, citations: Citation[]): void {
+    this.of(scope).citations = citations
+  }
+
   observations(scope: string): readonly Observation[] {
     return this.lists.get(scope)?.observations ?? this.held.get(scope)!.observations
   }
@@ -595,8 +622,9 @@ class Work {
     for (const [scope, lists] of this.lists) {
       const from = this.held.get(scope)!
       const moved = (a: readonly unknown[], b: readonly unknown[]) => a.some((one, at) => one !== b[at])
-      const commentsMoved = lists.comments !== undefined && (lists.comments.length !== (from.comments ?? []).length || moved(lists.comments, from.comments ?? []))
-      if (!moved(lists.observations, from.observations) && !moved(lists.causes, from.causes) && !moved(lists.solutions, from.solutions) && !commentsMoved) continue
+      const listMoved = (now: readonly unknown[] | undefined, was: readonly unknown[] | undefined) => now !== undefined && (now.length !== (was ?? []).length || moved(now, was ?? []))
+      const carriedMoved = listMoved(lists.comments, from.comments) || listMoved(lists.citations, from.citations)
+      if (!moved(lists.observations, from.observations) && !moved(lists.causes, from.causes) && !moved(lists.solutions, from.solutions) && !carriedMoved) continue
       out.push({ ...from, ...lists })
     }
     return out.sort((a, b) => (a.scope === first ? -1 : b.scope === first ? 1 : a.scope.localeCompare(b.scope)))

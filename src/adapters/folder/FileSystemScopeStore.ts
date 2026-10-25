@@ -69,6 +69,7 @@ import type { Transition } from '../../model/transition'
 import { transitionFromFile } from './format/transitionFile'
 import { OPERATING_FILES, operatingFrom } from './format/operatingFile'
 import { ASSIGNMENT_FILES, assignmentsFrom } from './format/assignmentFile'
+import { CITATIONS_FOLDER, citationsFrom, isCitationsPath } from './format/citationFile'
 import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER, principleGroupsFrom, principlesFrom } from './format/principleFile'
 import { CHECK_MARK_FILES, checkMarksFrom } from './format/checkMarkFile'
 
@@ -408,6 +409,7 @@ export class FileSystemScopeStore implements ScopeStore {
         ...analysis,
         ...await this.organisationIn(folder),
         ...await this.principlesIn(folder),
+        ...await this.citationsIn(folder),
         causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
@@ -478,6 +480,20 @@ export class FileSystemScopeStore implements ScopeStore {
     }
     const textAt = (path: string) => files.find((one) => one.path === path)?.text
     return { ...principlesFrom(files), ...principleGroupsFrom(textAt) }
+  }
+
+  /** The citations of principles (ADR-0041 §7), likewise: how each principle is used is read across the tree. */
+  private async citationsIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], 'citations'>> {
+    const held = await folder.getDirectoryHandle(CITATIONS_FOLDER).catch(this.orAbsent('the citations folder'))
+    if (!held) return {}
+    const texts = new Map<string, string>()
+    for await (const entry of held.values()) {
+      const path = `${CITATIONS_FOLDER}/${entry.name}`
+      if (entry.kind !== 'file' || !isCitationsPath(path)) continue
+      const text = await this.textOf(entry, 'a record\'s citations')
+      if (text !== undefined) texts.set(path, text)
+    }
+    return citationsFrom([...texts.keys()], (path) => texts.get(path))
   }
 
   /**

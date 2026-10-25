@@ -48,6 +48,7 @@ import { checkMarkId } from './checkMarks'
 import type { CheckMark, CheckMarkId } from './checkMarks'
 import type { Comment, CommentId } from './comment'
 import type { Principle, PrincipleId } from './principle'
+import type { Citation, CitationId } from './citable'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -85,6 +86,8 @@ export type ModelOrder = {
   comments: CommentId[]
   /** The principles, in the order they are kept: by number (ADR-0041). */
   principles: PrincipleId[]
+  /** The citations of principles by the scope's records, in the order they were made (ADR-0041 §7). */
+  citations: CitationId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -132,7 +135,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
 
 export type Model = Omit<HostModel,
   | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
-  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments' | 'principles'> & {
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments' | 'principles' | 'citations'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -159,6 +162,8 @@ export type Model = Omit<HostModel,
   comments?: Record<CommentId, Comment>
   /** The principles (ADR-0041), likewise. */
   principles?: Record<PrincipleId, Principle>
+  /** The citations (ADR-0041 §7), likewise. */
+  citations?: Record<CitationId, Citation>
   order: ModelOrder
 }
 
@@ -225,6 +230,17 @@ export function checkMarksOf(model: Model): Record<CheckMarkId, CheckMark> {
 /** The comments on this model, likewise. */
 export function commentsOf(model: Model): Record<CommentId, Comment> {
   return model.comments ?? {}
+}
+
+/** The citations on this model, likewise (ADR-0041 §7). */
+export function citationsOf(model: Model): Record<CitationId, Citation> {
+  return model.citations ?? {}
+}
+
+/** The citations in the order they were made. */
+export function citationList(model: Model): Citation[] {
+  const by = citationsOf(model)
+  return model.order.citations.map((id) => by[id])
 }
 
 /** The principles on this model, likewise (ADR-0041). */
@@ -571,6 +587,12 @@ export function fromArrays(host: HostModel): Model {
     out.comments = comments
     commentOrder = order
   }
+  let citationOrder: CitationId[] = []
+  if (host.citations !== undefined) {
+    const [citations, order] = index(host.citations, (one) => one.id)
+    out.citations = citations
+    citationOrder = order
+  }
   let principleOrder: PrincipleId[] = []
   if (host.principles !== undefined) {
     const [principles, order] = index(host.principles, (one) => one.id)
@@ -595,6 +617,7 @@ export function fromArrays(host: HostModel): Model {
     checkMarks: markOrder,
     comments: commentOrder,
     principles: principleOrder,
+    citations: citationOrder,
   }
   return out
 }
@@ -635,6 +658,7 @@ export function toArrays(model: Model): HostModel {
   if (model.checkMarks !== undefined) out.checkMarks = unindex(model.checkMarks, model.order.checkMarks)
   if (model.comments !== undefined) out.comments = unindex(model.comments, model.order.comments)
   if (model.principles !== undefined) out.principles = unindex(model.principles, model.order.principles)
+  if (model.citations !== undefined) out.citations = unindex(model.citations, model.order.citations)
   delete out.order
   return out
 }

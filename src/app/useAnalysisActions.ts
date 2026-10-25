@@ -13,7 +13,7 @@ import type { Translate } from '../i18n'
 import {
   causeList, causesToCommands, decisionList, decisionsToCommands, experimentList, experimentsToCommands,
   nextTransitionNumber, observationList, observationsToCommands, replacement, solutionList, solutionsOf,
-  solutionsToCommands, transaction, transitionList, commentsToCommands,
+  solutionsToCommands, transaction, transitionList, commentsToCommands, citationsToCommands,
 } from '../model'
 import { newAdr, nextAdrNumber } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
@@ -50,6 +50,8 @@ export function useAnalysisActions(deps: {
       ...solutionsToCommands(indexed, next.solutions), ...experimentsToCommands(indexed, next.experiments),
       // A thread a merge carried to its survivor (ADR-0037 §6).
       ...(next.comments ? commentsToCommands(indexed, next.comments) : []),
+      // And its citations of principles (ADR-0041 §7).
+      ...(next.citations ? citationsToCommands(indexed, next.citations) : []),
     ]
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])

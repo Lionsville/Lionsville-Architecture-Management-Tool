@@ -117,7 +117,7 @@ describe('the page of every check', () => {
     const rows = checksByCategory(splitInstances(all(), []))
     const keys = rows.flatMap((one) => one.rows.map((row) => row.key))
     expect([...keys].sort()).toEqual([...CHECK_KEYS].sort())
-    expect(rows.map((one) => one.category)).toEqual(['landscape', 'plans', 'organisation', 'teams', 'analysis'])
+    expect(rows.map((one) => one.category)).toEqual(['landscape', 'plans', 'organisation', 'teams', 'analysis', 'principles'])
     for (const { rows: some } of rows) {
       const ranks = some.map((row) => ['fix', 'review', 'note'].indexOf(row.entry.weight))
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))

@@ -12,7 +12,9 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
-import { analysisNamesWithin, applyRefPatch, linesNameWithin, readdressAnalysis, readdressLines, readdressRef, readdressRefs } from './readdress'
+import {
+  analysisNamesWithin, applyRefPatch, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
+} from './readdress'
 import type { Cause, Observation } from '../model/observation'
 
 function element(id: string, ref?: string): DesignElement {
@@ -198,5 +200,32 @@ describe('a holder\'s own reporting lines (ADR-0039, amended 17 October 2026)', 
     expect(readdressLines(model, 'acme/rail', 'group/rail')).toEqual([
       { type: 'assignment.update', id: 'as-1', patch: { reportsTo: [line('group/rail'), line('globex')] } },
     ])
+  })
+})
+
+describe('a move carries the principles a scope cites and relates to (ADR-0041 §5, §7)', () => {
+  const model = {
+    citations: [
+      { id: 'c1', about: { kind: 'observation', id: 'o1' }, principle: { scope: 'acme/rail', id: 'pr-1' }, stance: 'holds', on: '2026-10-25' },
+      { id: 'c2', about: { kind: 'observation', id: 'o1' }, principle: { scope: '', id: 'pr-9' }, stance: 'holds', on: '2026-10-25' },
+    ],
+    principles: [{
+      id: 'pr-5', number: 5, title: 'T', statement: '', aspects: [{ id: 'a', number: 1, text: 'x', nature: 'design' }], lastAspect: 1,
+      groups: [], regime: 'flexible', status: 'accepted', relations: [{ kind: 'refines', to: { scope: 'acme/rail/yard', id: 'pr-2' } }],
+    }],
+  } as const
+
+  it('finds a scope that names a principle kept inside the moved subtree, and none for the organisation', () => {
+    expect(principlesNameWithin(model as never, 'acme/rail')).toBe(true)
+    expect(principlesNameWithin(model as never, 'acme/road')).toBe(false)
+    expect(principlesNameWithin(model as never, '')).toBe(false)
+  })
+
+  it('rewrites each citation and relation that names one, and nothing else', () => {
+    expect(readdressPrinciples(model as never, 'acme/rail', 'freight/rail')).toEqual([
+      { type: 'citation.update', id: 'c1', patch: { principle: { scope: 'freight/rail', id: 'pr-1' } } },
+      { type: 'principle.update', id: 'pr-5', patch: { relations: [{ kind: 'refines', to: { scope: 'freight/rail/yard', id: 'pr-2' } }] } },
+    ])
+    expect(readdressPrinciples(model as never, 'acme/rail', 'acme/rail')).toEqual([])
   })
 })

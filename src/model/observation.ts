@@ -25,6 +25,7 @@
  * say what it holds without importing the module that decides what may happen
  * to one.
  */
+import type { Citation } from './citable'
 import type { Comment } from './comment'
 import type { PersonRef } from './person'
 
@@ -351,6 +352,12 @@ export type ScopeAnalysis = {
    * nothing of this scope's threads is known, and none travels.
    */
   comments?: readonly Comment[]
+  /**
+   * The scope's citations of principles, where the reader has them (ADR-0041
+   * §7): a merge and a move carry an observation's citations through them, as
+   * its thread. Absent, none travels.
+   */
+  citations?: readonly Citation[]
 }
 
 /**

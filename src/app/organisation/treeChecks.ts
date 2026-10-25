@@ -103,6 +103,21 @@ export type TreeChecksInput = {
  */
 const ABOUT_A_PERSON: ReadonlySet<CheckKey> = new Set<CheckKey>(['check.personOverloaded', 'check.assignmentOrphaned'])
 
+/**
+ * The page a finding about a record opens on: a principle on its page, the
+ * record a citation names on the page of its kind (`fields` say the kind and
+ * the id), and anything else as the element it names.
+ */
+function pageOfItem(item: AttentionItem): InitialPage {
+  if (item.page === 'principles') return { page: 'principles', id: item.id }
+  if (item.page !== 'record') return { page: 'element', id: item.id }
+  const [kind, id = item.id] = item.fields ?? []
+  if (kind === 'decision') return { page: 'decisions', id }
+  if (kind === 'transition') return { page: 'plan', id }
+  if (kind === 'observation' || kind === 'solution') return { page: 'observations', id }
+  return { page: 'element', id }
+}
+
 /** The tree's findings, where *Needs attention* opened each: the record, its view, the operating model, or the person. */
 function fromTree(item: AttentionItem): CheckInstance {
   const opens: CheckPlace = ABOUT_A_PERSON.has(item.key) && item.person !== undefined
@@ -113,7 +128,7 @@ function fromTree(item: AttentionItem): CheckInstance {
         ? { scope: ROOT_SCOPE, page: { page: 'operating', id: item.id } }
         : item.page === 'home'
           ? { home: item.scope }
-          : { scope: item.scope, page: { page: 'element', id: item.id } }
+          : { scope: item.scope, page: pageOfItem(item) }
   return {
     key: item.key, scope: item.scope, text: item.text, finding: item, id: `${item.key}|${item.scope}|${item.id}`, opens,
     // The home's own row id and kind word, so whatever pointed at a row of Needs attention finds it here.

@@ -25,6 +25,8 @@ import type { Command, DesignElement, ElementId } from '../model'
 import type { Comment } from '../model/comment'
 import type { Cause, Observation } from '../model/observation'
 import type { Assignment } from '../model/units'
+import type { Citation } from '../model/citable'
+import type { Principle } from '../model/principle'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -223,4 +225,34 @@ export function readdressServed(model: { elements: readonly DesignElement[] }, f
     const scopes = element.scopes.map((scope) => readdressRef(scope, from, to))
     return scopes.some((scope, at) => scope !== element.scopes![at]) ? [{ type: 'element.update', id: element.id, patch: { scopes } }] : []
   })
+}
+
+/**
+ * A citation names the principle it cites by the path of the scope that keeps
+ * it, and a principle names the one it relates to the same way (ADR-0041 §5,
+ * §7): a move carries both, or a citation reads a principle that is not there.
+ */
+type PrinciplesHeld = { principles?: readonly Principle[]; citations?: readonly Citation[] }
+
+/** Whether a scope's citations or principles name a principle kept inside the subtree at `from`. */
+export function principlesNameWithin(model: PrinciplesHeld, from: ScopePath): boolean {
+  if (from === ROOT_SCOPE) return false
+  return (model.citations ?? []).some((one) => isWithinScope(one.principle.scope, from))
+    || (model.principles ?? []).some((one) => (one.relations ?? []).some((relation) => isWithinScope(relation.to.scope, from)))
+}
+
+/** One update per citation and per principle naming a principle inside the subtree at `from`, carried to `to`. */
+export function readdressPrinciples(model: PrinciplesHeld, from: ScopePath, to: ScopePath): Command[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  const citations = (model.citations ?? []).flatMap((one): Command[] => {
+    const scope = readdressRef(one.principle.scope, from, to)
+    return scope === one.principle.scope ? [] : [{ type: 'citation.update', id: one.id, patch: { principle: { ...one.principle, scope } } }]
+  })
+  const principles = (model.principles ?? []).flatMap((one): Command[] => {
+    if (!one.relations?.length) return []
+    const relations = one.relations.map((relation) => ({ ...relation, to: { ...relation.to, scope: readdressRef(relation.to.scope, from, to) } }))
+    return relations.some((relation, at) => relation.to.scope !== one.relations![at].to.scope)
+      ? [{ type: 'principle.update', id: one.id, patch: { relations } }] : []
+  })
+  return [...citations, ...principles]
 }

@@ -28,6 +28,7 @@ import type { ImageEntry } from '../model/imageName'
 import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
+import type { Citation } from '../model/citable'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { CheckMark } from '../model/checkMarks'
 import type { RecordLink } from './links'
@@ -312,6 +313,8 @@ export type ScopeModel = {
      */
     principles?: readonly Principle[]
     principleGroups?: readonly PrincipleGroup[]
+    /** The citations of principles by the scope's records (ADR-0041 §7): how a principle is used, read across the tree. */
+    citations?: readonly Citation[]
   }
 }
 

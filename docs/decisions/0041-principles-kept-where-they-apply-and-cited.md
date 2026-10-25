@@ -1,7 +1,8 @@
 # ADR-0041 — Architecture principles, kept where they apply, and cited by what follows or departs from them
 
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
-  the principle, its groups and its page (§1–§6, §8, §12, §14)
+  the principle, its groups and its page (§1–§6, §8, §12, §14); citing,
+  suggestions and the checks (§7, §9, §10)
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §7 (a scope's records are read up the tree, *From
@@ -316,3 +317,38 @@ the card on its home, a search hit or `app.open`. Its own principles are
 written there, each change a step of the open scope's session; the
 principles from above are read there and written where they live. Removal is
 not yet refused for citations, which arrive with §7.
+
+## As built, 25 October 2026: citing, suggestions and the checks
+
+**The table** is `model/citable.ts`, as §7 says, with a plan as the model's
+`transition`; each line names the command that deletes a record of the kind,
+and `commands/table.ts` wraps it so a record removed takes its citations in
+the same step and undo puts them back. A citation put back so — by an undo
+— is not asked again whether it may be (`put`), as a comment put back is not.
+
+**Who refuses what.** The reducer refuses what one scope can answer: a kind
+or a stance not in the table (`command.notCitable`), a record the scope does
+not hold (`command.unknownRecord`) and a departure with no reason
+(`command.reasonMissing`). What the principle says — fixed, retired or
+absorbed, kept where it does not read — is asked where the principle is read,
+before the step: by the page (`citationRefusal`) and by the agent's tools.
+A principle may be kept in another scope than the citing record's, and no
+one scope's step can read it. Removing a principle any scope cites is
+refused the same way, off the index's citations of the whole tree.
+
+**Carried.** A merge and a move of an observation carry its citations as its
+thread (`carryCitations`): to the survivor, once each where the survivor
+already says the same, and to the scope it now lives in. A move of a scope
+carries every citation's and every relation's principle scope that names the
+subtree (`readdressPrinciples`), in the same writes as the other addresses a
+move carries. A scope's restore puts its principles, groups and citations
+back with the rest.
+
+**On the screens**, the section is mounted on the decision's, the
+observation's, the solution's and the plan's reader and on an element's
+page; written only where the scope may be. *May apply* is
+`principles/suggest.ts` with what decisions about the same element cite.
+*Deviates…* on an element proposes a new decision about it, its departure
+cited with the reason, as one step, and opens it. The three checks are
+`projects/principleFindings.ts`, in a category of their own, opened on the
+principles page or on the record that cites.

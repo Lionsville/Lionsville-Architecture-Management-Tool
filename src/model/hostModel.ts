@@ -18,6 +18,7 @@ import type { OperatingRule, Responsibility, Role, UnitType } from './operatingM
 import type { Transition } from './transition'
 import type { Assignment } from './units'
 import type { CheckMark } from './checkMarks'
+import type { Citation } from './citable'
 import type { Principle, PrincipleGroup } from './principle'
 import type { Comment } from './comment'
 
@@ -95,6 +96,12 @@ export interface HostExtras {
    * them is a change of the scope's own record.
    */
   principleGroups?: PrincipleGroup[]
+  /**
+   * The citations of principles by this scope's records (ADR-0041 §7): each
+   * about a citing record of the scope, of a principle here, above or in a
+   * topic relevant here.
+   */
+  citations?: Citation[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

@@ -35,6 +35,7 @@
  * shell maps them onto its own screens.
  */
 import type { Adr } from './adr'
+import type { Citation } from './citable'
 import type { Principle } from './principle'
 import type { Comment } from './comment'
 import type { CommentableKind } from './commentable'
@@ -146,6 +147,7 @@ export type SearchableRecords = {
   checkMarks: CheckMark
   comments: Comment
   principles: Principle
+  citations: Citation
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -460,6 +462,8 @@ export const SEARCHABLE: SearchTable = {
   checkMarks: [],
   comments: [comment],
   principles: [principle],
+  // A citation is found where it is drawn, on the record that cites and on the principle.
+  citations: [],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

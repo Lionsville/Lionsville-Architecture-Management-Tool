@@ -51,7 +51,7 @@ function Harness({ initial, steps, readOnly = false }: { initial: HostModel; ste
   }), [model, readOnly, steps])
   const access = usePrinciplesAccess({
     session, scope: 'acme',
-    index: { principlesAt: (path: string): ScopePrinciples => (path === '' ? { principles: [above], groups: [] } : { principles: [], groups: [] }) },
+    index: { principlesAt: (path: string): ScopePrinciples => (path === '' ? { principles: [above], groups: [] } : { principles: [], groups: [] }), citations: () => [] },
     scopeLabel: (path) => (path === '' ? 'Organisation' : 'Acme'),
     makeId: (prefix) => { counter.current += 1; return `${prefix}-${counter.current}` },
     today: () => '2026-10-25',

@@ -55,6 +55,7 @@ export const TREE_CHECK_KEYS = [
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
   'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
   'check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone', 'check.servedScopeGone',
+  'check.principleUnused', 'check.principleChafes', 'check.citationGone',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -108,7 +109,7 @@ export const CHECK_WEIGHTS = ['fix', 'review', 'note'] as const
 export type CheckWeight = (typeof CHECK_WEIGHTS)[number]
 
 /** What a kind is about, in the order a page of every check lists them. */
-export const CHECK_CATEGORIES = ['landscape', 'plans', 'organisation', 'teams', 'analysis'] as const
+export const CHECK_CATEGORIES = ['landscape', 'plans', 'organisation', 'teams', 'analysis', 'principles'] as const
 export type CheckCategory = (typeof CHECK_CATEGORIES)[number]
 
 /**
@@ -151,7 +152,7 @@ export const CHECK_ACTIONS = [
   'openElement', 'openDefinition', 'openView', 'openRow', 'openInterface', 'openPlan',
   'openUnit', 'openUnits', 'openApplication', 'openType', 'openOperating', 'openPerson', 'openCause',
   'link', 'acceptInterface', 'declareInteraction', 'removeInteraction', 'modelInterface', 'assign', 'endAssignment',
-  'removeAssignment', 'setOwner', 'setType', 'markShared', 'setSuccessor', 'openScope',
+  'removeAssignment', 'setOwner', 'setType', 'markShared', 'setSuccessor', 'openScope', 'openPrinciple', 'openRecord',
 ] as const
 export type CheckAction = (typeof CHECK_ACTIONS)[number]
 
@@ -381,6 +382,19 @@ const ENTRIES = {
     how: 'check.how.causeExplainsObservationBelow',
     category: 'analysis', weight: 'review', actions: ['openCause'],
   },
+  // --- principles (ADR-0041 §10) -------------------------------------------
+  'check.principleUnused': {
+    name: 'check.name.principleUnused', why: 'check.why.principleUnused', how: 'check.how.principleUnused',
+    category: 'principles', weight: 'note', actions: ['openPrinciple'],
+  },
+  'check.principleChafes': {
+    name: 'check.name.principleChafes', why: 'check.why.principleChafes', how: 'check.how.principleChafes',
+    category: 'principles', weight: 'review', actions: ['openPrinciple'],
+  },
+  'check.citationGone': {
+    name: 'check.name.citationGone', why: 'check.why.citationGone', how: 'check.how.citationGone',
+    category: 'principles', weight: 'fix', actions: ['openRecord'],
+  },
 } satisfies { readonly [K in CheckKey]: Said<K> & Pick<CheckEntry, 'category' | 'weight' | 'actions'> }
 
 /** Every kind's entry. */
@@ -400,6 +414,7 @@ export const CHECK_CATEGORY_LABEL: Record<CheckCategory, StringKey> = {
   organisation: 'check.category.organisation',
   teams: 'check.category.teams',
   analysis: 'check.category.analysis',
+  principles: 'check.category.principles',
 }
 
 /** What each action's button says. */
@@ -417,6 +432,8 @@ export const CHECK_ACTION_LABEL: Record<CheckAction, StringKey> = {
   openOperating: 'check.action.openOperating',
   openPerson: 'check.action.openPerson',
   openCause: 'check.action.openCause',
+  openPrinciple: 'check.action.openPrinciple',
+  openRecord: 'check.action.openRecord',
   link: 'check.action.link',
   acceptInterface: 'check.action.acceptInterface',
   declareInteraction: 'check.action.declareInteraction',
