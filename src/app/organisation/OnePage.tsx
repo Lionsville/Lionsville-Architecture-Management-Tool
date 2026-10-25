@@ -50,7 +50,7 @@ export function OnePage({ icon, title, description, count, finding, actions = []
       title={description}
       sx={{
         position: 'relative', p: 1.25, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.25,
-        [`&:hover .${WAYS}, &:has(.Mui-focusVisible) .${WAYS}`]: { opacity: 1, pointerEvents: 'auto' },
+        [`&:hover .${WAYS}, &:has(.Mui-focusVisible) .${WAYS}`]: { opacity: 1 },
       }}
     >
       <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
@@ -86,7 +86,9 @@ function CardWays({ title, actions }: { title: string; actions: readonly CardAct
       data-testid="card-ways"
       sx={{
         // Under the title row, which stays: the card still says what it is while its ways in are up.
-        position: 'absolute', top: TITLE_ROW, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', opacity: 0, pointerEvents: 'none',
+        // Pressable while hidden: a press on the card under its title is a press of a way in — on a
+        // touch screen, which never hovers, and wherever a press comes before the pointer has moved.
+        position: 'absolute', top: TITLE_ROW, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', opacity: 0,
         transition: 'opacity 120ms', bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', overflow: 'hidden',
         borderBottomLeftRadius: 'inherit', borderBottomRightRadius: 'inherit',
       }}
