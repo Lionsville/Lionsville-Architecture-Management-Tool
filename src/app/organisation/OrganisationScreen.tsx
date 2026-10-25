@@ -74,6 +74,8 @@ import { NewScopeDialog } from './NewScopeDialog'
 import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
+import { PrinciplesCard } from './PrinciplesCard'
+import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { PeopleCard } from './PeopleCard'
 import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPage } from '../useShellAgent'
@@ -254,6 +256,8 @@ export type OrganisationScreenProps = {
    * scope may be written where absent, which is every source that ships.
    */
   writable?: (path: ScopePath) => boolean
+  /** Each scope's principles, off the shell's index (ADR-0041): what the *Principles* card counts. */
+  principlesAt?: (path: ScopePath) => ScopePrinciples
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -302,7 +306,7 @@ export function OrganisationScreen({
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
-  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead,
+  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
@@ -533,7 +537,7 @@ export function OrganisationScreen({
               onOpenRegister={() => homePages.open('register')}
               onOpenTechnology={() => homePages.open('technologyRegister')}
               writable={mayWrite}
-              extra={<><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
+              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} /><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
               s={s}
             />}
           </Box>

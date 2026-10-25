@@ -283,6 +283,7 @@ function Home({ parts }: { parts: ShellParts }) {
           people={parts.people}
           servedBy={servedBy}
           writable={writableFor(parts)}
+          principlesAt={index.principlesAt}
           today={parts.todayDay}
           language={prefs.language}
           s={s}

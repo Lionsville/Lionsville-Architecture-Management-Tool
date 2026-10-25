@@ -1,6 +1,7 @@
 # ADR-0041 — Architecture principles, kept where they apply, and cited by what follows or departs from them
 
-* Status: accepted, 25 October 2026; not yet built (3.8.0)
+* Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
+  the principle, its groups and its page (§1–§6, §8, §12, §14)
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §7 (a scope's records are read up the tree, *From
@@ -274,3 +275,44 @@ written before has no principles and no citations.
   understanding; it says why it suggests, so a wrong one is plain.
 * Neutral: a principle's text is not versioned beyond `sharpened`; *History…*
   on the principle shows every step.
+
+## As built, 25 October 2026: the principle, its groups and its page
+
+**The model** (`model/principle.ts`): the fields of §1, and one more,
+`lastAspect` — the highest aspect number ever given, so a removed aspect's
+number is never given again, which a list of the aspects alone cannot say.
+Two rules are the reducer's whoever sends the step (`commands/principleRecords.ts`):
+a principle keeps at least one aspect, numbered once each and never past
+`lastAspect` (`command.aspectsEmpty`, `command.aspectNumber`), and a change
+that sharpens an accepted principle carries one more note in `sharpened`
+than it had (`command.sharpenNote`); an undo that takes the note back takes
+the change with it and is let through.
+
+**Fewer commands than §11 names.** A principle is `principle.add`,
+`principle.update` and `principle.remove`; a transition, a relation, an
+aspect added or changed and a merge are each a patch of the principle, and a
+merge is a transaction of the survivor's patch and each absorbed one's
+`mergedInto`. The groups are part of the scope's own record (§3), so they are
+set whole by `project.settings` with `principleGroups` (refused with
+`command.badGroups` for a nameless group or an id said twice). A group made on
+the spot lands with its principle as one step; a group removed is taken off its
+principles in the same step. The agent's tools keep the names of §13 and land
+these commands.
+
+**On disk** the statement is the body, as §14 says, and everything else —
+the aspects with their numbers, rationale and implications included — is
+front matter, rows where there are several, so a heading in a statement is
+never taken for one of its sections and a number is kept exactly.
+
+**Read up the tree off the index.** Every store's index entry carries the
+scope's principles and groups (`ScopeModel.model.principles`, the
+`OrganisationIndex` contract), and `ScopeIndex.principlesAt` answers them, so
+the page of a scope below and the *Principles* card on every home read the
+principles above without a load.
+
+**The page** is a page of the scope, opened on it as the decisions page is
+(`InitialPage { page: 'principles', id? }`, `#/<scope>/-/principles/<id>`), from
+the card on its home, a search hit or `app.open`. Its own principles are
+written there, each change a step of the open scope's session; the
+principles from above are read there and written where they live. Removal is
+not yet refused for citations, which arrive with §7.

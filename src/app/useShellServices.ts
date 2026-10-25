@@ -6,6 +6,7 @@
  * this person's preferences and the words they chose, the storage notice, and
  * one way to say that something failed.
  */
+import type { SeamWidths } from '../widgets/useSeamWidth'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { translator } from '../i18n'
@@ -139,6 +140,24 @@ export function useOpeningFailures(deps: {
     const { notify: tell, s: words, failureKey: key } = say.current
     tell(words((key ?? 'shell.sourceNotOpened') as StringKey, { message: reasonOf(failure) }), 'error')
   }, [failure])
+}
+
+/**
+ * The widths the columns were dragged to (ADR-0044 §4), by seam: a
+ * preference, remembered with the rest, under `seams`. A width that is not a
+ * positive number is none.
+ */
+export function useSeamWidths(prefs: ShellPreferences): SeamWidths {
+  return useMemo(() => {
+    const held = { ...((prefs.preferences as Record<string, unknown> | undefined)?.seams as Record<string, unknown> | undefined) }
+    return {
+      widthOf: (seam) => (typeof held[seam] === 'number' && (held[seam] as number) > 0 ? held[seam] as number : undefined),
+      keep: (seam, width) => {
+        held[seam] = Math.round(width)
+        prefs.writePreference({ seams: { ...held } })
+      },
+    }
+  }, [prefs])
 }
 
 /** How the organisation's lists are ordered: a preference, remembered with the rest. */

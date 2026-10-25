@@ -47,6 +47,7 @@ import type { Assignment, AssignmentId } from './units'
 import { checkMarkId } from './checkMarks'
 import type { CheckMark, CheckMarkId } from './checkMarks'
 import type { Comment, CommentId } from './comment'
+import type { Principle, PrincipleId } from './principle'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -82,6 +83,8 @@ export type ModelOrder = {
   checkMarks: CheckMarkId[]
   /** The comments on the scope's records, in the order they were written (ADR-0037). */
   comments: CommentId[]
+  /** The principles, in the order they are kept: by number (ADR-0041). */
+  principles: PrincipleId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -129,7 +132,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
 
 export type Model = Omit<HostModel,
   | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
-  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments'> & {
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments' | 'principles'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -154,6 +157,8 @@ export type Model = Omit<HostModel,
   checkMarks?: Record<CheckMarkId, CheckMark>
   /** The comments (ADR-0037). Absent exactly as `decisions` is. */
   comments?: Record<CommentId, Comment>
+  /** The principles (ADR-0041), likewise. */
+  principles?: Record<PrincipleId, Principle>
   order: ModelOrder
 }
 
@@ -220,6 +225,11 @@ export function checkMarksOf(model: Model): Record<CheckMarkId, CheckMark> {
 /** The comments on this model, likewise. */
 export function commentsOf(model: Model): Record<CommentId, Comment> {
   return model.comments ?? {}
+}
+
+/** The principles on this model, likewise (ADR-0041). */
+export function principlesOf(model: Model): Record<PrincipleId, Principle> {
+  return model.principles ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -319,6 +329,12 @@ export function assignmentList(model: Model): Assignment[] {
 export function checkMarkList(model: Model): CheckMark[] {
   const by = checkMarksOf(model)
   return model.order.checkMarks.map((id) => by[id])
+}
+
+/** The principles in the order they are kept. */
+export function principleList(model: Model): Principle[] {
+  const by = principlesOf(model)
+  return model.order.principles.map((id) => by[id])
 }
 
 /** The comments in the order they were written. */
@@ -555,6 +571,12 @@ export function fromArrays(host: HostModel): Model {
     out.comments = comments
     commentOrder = order
   }
+  let principleOrder: PrincipleId[] = []
+  if (host.principles !== undefined) {
+    const [principles, order] = index(host.principles, (one) => one.id)
+    out.principles = principles
+    principleOrder = order
+  }
   out.order = {
     elements: elementOrder,
     relations: relationOrder,
@@ -572,6 +594,7 @@ export function fromArrays(host: HostModel): Model {
     assignments: assignmentOrder,
     checkMarks: markOrder,
     comments: commentOrder,
+    principles: principleOrder,
   }
   return out
 }
@@ -611,6 +634,7 @@ export function toArrays(model: Model): HostModel {
   if (model.assignments !== undefined) out.assignments = unindex(model.assignments, model.order.assignments)
   if (model.checkMarks !== undefined) out.checkMarks = unindex(model.checkMarks, model.order.checkMarks)
   if (model.comments !== undefined) out.comments = unindex(model.comments, model.order.comments)
+  if (model.principles !== undefined) out.principles = unindex(model.principles, model.order.principles)
   delete out.order
   return out
 }

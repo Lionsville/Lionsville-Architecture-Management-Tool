@@ -37,6 +37,7 @@ export function opensOnNothing(page: InitialPage | undefined): boolean {
     case 'decisions':
     case 'observations':
     case 'operating':
+    case 'principles':
       return page.id === undefined
     case 'roadmap':
     case 'documentation':

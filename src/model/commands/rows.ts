@@ -23,6 +23,7 @@ import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
 import type { Assignment } from '../units'
 import type { CheckMark } from '../checkMarks'
 import type { Comment } from '../comment'
+import type { Principle } from '../principle'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
@@ -205,6 +206,17 @@ export function withCheckMarks(model: Model, rows: Rows<CheckMark>): Model {
     return out
   }
   return { ...model, checkMarks: rows.by, order }
+}
+
+/** The principles, put back: emptied means gone, as every list of records (ADR-0041). */
+export function withPrinciples(model: Model, rows: Rows<Principle>): Model {
+  const order = withOrder(model, 'principles', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.principles
+    return out
+  }
+  return { ...model, principles: rows.by, order }
 }
 
 /** The comments, put back: emptied means gone, as every list of records (ADR-0037). */

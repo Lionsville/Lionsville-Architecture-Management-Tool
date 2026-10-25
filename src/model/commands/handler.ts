@@ -81,6 +81,16 @@ export type CommandRefusal =
    * after.
    */
   | 'command.recordedByFixed'
+  /** A principle with no aspect (ADR-0041 §2): one idea says at least one thing. */
+  | 'command.aspectsEmpty'
+  /** An aspect numbered twice, or past the highest ever given (ADR-0041 §2): a number is never given again. */
+  | 'command.aspectNumber'
+  /** A principle with no title. */
+  | 'command.titleEmpty'
+  /** An accepted principle's statement or aspects changed without the note that says why (ADR-0041 §4). */
+  | 'command.sharpenNote'
+  /** A scope's groups of principles with one unnamed, or an id said twice (ADR-0041 §3). */
+  | 'command.badGroups'
   /**
    * A root cause made a cause again while a solution addresses it (ADR-0032
    * §3): a solution addresses root causes only (ADR-0026). Move the solution
@@ -130,6 +140,11 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
   'command.recordedByFixed': true,
+  'command.aspectsEmpty': true,
+  'command.aspectNumber': true,
+  'command.titleEmpty': true,
+  'command.sharpenNote': true,
+  'command.badGroups': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

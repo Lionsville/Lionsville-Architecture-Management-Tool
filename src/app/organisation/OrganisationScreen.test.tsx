@@ -500,8 +500,8 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
     const cards = await screen.findByTestId('organisation-cards')
-    // The seven pages of the root, the operating model, the people register beside them (ADR-0036), and the checks.
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(10))
+    // The seven pages of the root, the operating model, the people register beside them (ADR-0036), the checks and the principles (ADR-0041).
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(11))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
     expect(said).toContain('Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.')
     expect(said).toContain('What the app checks the model for, by what it is about: why each check matters, how to fix it, and where it is found.')

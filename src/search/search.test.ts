@@ -133,6 +133,15 @@ const everything: HostModel = {
     id: 'cm-2', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-1' }, at: '2026-10-16T09:00:00Z',
     body: '', removed: { at: '2026-10-16T10:00:00Z', by: { person: 'pe-1' } },
   }],
+  principles: [{
+    id: 'pr-1', number: 4, title: 'One gate for the harbour', statement: 'Every crossing is one door.',
+    aspects: [{ id: 'a1', number: 2, text: 'Badges at the quay', nature: 'design' }], lastAspect: 2,
+    groups: [], regime: 'fixed', status: 'accepted', keywords: ['crossing'],
+  }, {
+    // Absorbed by another: history, found by the survivor.
+    id: 'pr-2', number: 5, title: 'Harbour gate twice', statement: '', aspects: [{ id: 'b1', number: 1, text: 'x', nature: 'design' }],
+    lastAspect: 1, groups: [], regime: 'flexible', status: 'accepted', mergedInto: 'pr-1',
+  }],
 }
 
 describe('every kind of record a scope holds', () => {
@@ -158,6 +167,9 @@ describe('every kind of record a scope holds', () => {
     // A comment opens on the record it is about, and a removed one is found nowhere.
     expect(place('comment')).toEqual({ page: 'observations', id: 'ob-1' })
     expect(hits.filter((hit) => hit.kind === 'comment').map((hit) => [hit.id, hit.title])).toEqual([['cm-1', 'Seen at the harbour gate again']])
+    // A principle opens on the principles page, and one absorbed by another is found nowhere (ADR-0041 §12).
+    expect(place('principle')).toEqual({ page: 'principles', id: 'pr-1' })
+    expect(hits.filter((hit) => hit.kind === 'principle').map((hit) => hit.id)).toEqual(['pr-1'])
     expect(hits.every((hit) => hit.scope === 'port')).toBe(true)
   })
 
@@ -167,6 +179,15 @@ describe('every kind of record a scope holds', () => {
     expect(hits.find((hit) => hit.kind === 'milestone')).toMatchObject({ title: 'Harbour cut-over', label: 'TR-0003' })
     expect(hits.find((hit) => hit.kind === 'element')).toMatchObject({ variant: 'platformService' })
     expect(hits.find((hit) => hit.kind === 'relation')).toMatchObject({ about: ['Berth planner', 'Quay system'], variant: 'flow' })
+  })
+
+  it('finds a principle by its number, an aspect\'s number and words, and its keywords', () => {
+    const found = (query: string) => searchAll({ sources: scopeSources({ model: everything }), query, kinds: ['principle'] }).map((hit) => hit.id)
+    expect(found('PR-0004')).toEqual(['pr-1'])
+    expect(found('PR-0004.2')).toEqual(['pr-1'])
+    expect(found('badges quay')).toEqual(['pr-1'])
+    expect(found('crossing')).toEqual(['pr-1'])
+    expect(hits.find((hit) => hit.kind === 'principle')).toMatchObject({ label: 'PR-0004', status: 'accepted', detail: 'fixed' })
   })
 
   it('narrows to the kinds asked for', () => {

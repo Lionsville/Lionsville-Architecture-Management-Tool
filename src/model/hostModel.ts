@@ -18,6 +18,7 @@ import type { OperatingRule, Responsibility, Role, UnitType } from './operatingM
 import type { Transition } from './transition'
 import type { Assignment } from './units'
 import type { CheckMark } from './checkMarks'
+import type { Principle, PrincipleGroup } from './principle'
 import type { Comment } from './comment'
 
 /**
@@ -83,6 +84,17 @@ export interface HostExtras {
    * the scope by its key, its author by register id.
    */
   comments?: Comment[]
+  /**
+   * The scope's architecture principles (ADR-0041), by number: each with its
+   * aspects, groups, regime and status, read by the scopes below.
+   */
+  principles?: Principle[]
+  /**
+   * The scope's own ordered groups of principles (ADR-0041 §3). Part of what
+   * the scope says about its principles, not a list of records: a change to
+   * them is a change of the scope's own record.
+   */
+  principleGroups?: PrincipleGroup[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

@@ -57,6 +57,7 @@ import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import { CommentsProvider } from '../comments/ui/CommentsContext'
 import { RecordChangesProvider } from '../comments/ui/RecordChanges'
 import { useRecordChangesAccess } from './history/useRecordChangesAccess'
+import { ScopePrinciples } from './principles/PrinciplesPages'
 import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'
@@ -125,7 +126,7 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
   )
   return (
     <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf}>
-      <ScopeComments parts={parts}><ScopeChanges parts={parts}>{children}</ScopeChanges></ScopeComments>
+      <ScopeComments parts={parts}><ScopeChanges parts={parts}><ScopePrinciples parts={parts}>{children}</ScopePrinciples></ScopeChanges></ScopeComments>
     </ViewEmbedsProvider>
   )
 }

@@ -178,7 +178,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
     'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.card.operating', 'org.card.checks', 'org.attention',
-    'org.attentionCount',
+    'org.attentionCount', 'org.card.principles',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
@@ -188,6 +188,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['the Checks page, from a count under Needs attention', ['checks.weight', 'checks.row', 'checks.instance', 'findings.markIntended'], async () => {
     fireEvent.click(await screen.findByTestId('attention-count-review'))
     await screen.findByTestId('checks-instances')
+  }]],
+  // The organisation's principles (ADR-0041), opened from its card.
+  [['the principles page, from the organisation’s card', ['principles.new'], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('open-principles'))
+    await screen.findByTestId('principles-list', {}, { timeout: 5000 })
   }]],
   // Who serves a scope is said where the organisation has units: one at the
   // organisation, of a type it holds, serving a landscape by name — the

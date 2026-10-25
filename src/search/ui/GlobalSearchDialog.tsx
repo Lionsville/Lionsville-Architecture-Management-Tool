@@ -69,6 +69,7 @@ const KIND_LABEL: Record<SearchKind, StringKey> = {
   role: 'gsearch.kind.role',
   responsibility: 'gsearch.kind.responsibility',
   comment: 'gsearch.kind.comment',
+  principle: 'gsearch.kind.principle',
 }
 
 const VIEW_LABEL = {

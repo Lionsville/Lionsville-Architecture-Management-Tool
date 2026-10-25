@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest'
 import acmeLogistics from './examples/acme-logistics.json' with { type: 'json' }
 import type { Observation } from '../../../model/observation'
+import type { Principle } from '../../../model/principle'
 import { bareScope, flattenScopes } from '../../../projects/scope'
 import type { ScopeSnapshot } from '../../../projects/scope'
 import { FakeDirectory } from '../fakeDirectory'
@@ -107,6 +108,32 @@ describe('format 15', () => {
     const read = observationFromFile(odd, 'observations/0003-seen-3.md')
     expect(read?.tone).toBeUndefined()
     expect(read?.recordedBy).toBeUndefined()
+  })
+})
+
+describe('format 15: principles (ADR-0041 §14)', () => {
+  const principle: Principle = {
+    id: 'pr-1', number: 1, title: 'Reuse first', statement: 'Reuse before buy before build.',
+    aspects: [{ id: 'a1', number: 1, text: 'Look for one first', nature: 'design' }], lastAspect: 1,
+    groups: ['pg-1'], regime: 'flexible', status: 'accepted', acceptedOn: '2026-10-01',
+  }
+  const withPrinciples = (): ScopeSnapshot => {
+    const scope = customer()
+    return { ...scope, model: { ...scope.model, principles: [principle], principleGroups: [{ id: 'pg-1', name: 'Reuse' }] } }
+  }
+
+  it('keeps a scope\'s principles and its groups, read back through the folder and a working file', () => {
+    const back = scopeFromFolder(scopeFiles(withPrinciples()), 'customer')
+    expect(back?.model.principles).toEqual([principle])
+    expect(back?.model.principleGroups).toEqual([{ id: 'pg-1', name: 'Reuse' }])
+    const held = withPrinciples()
+    const opened = openDocumentBytes(workingFileBytes([held]), held)
+    expect(opened.ok && opened.scope.model.principles).toEqual([principle])
+  })
+
+  it('opens a scope whose groups file is not a list to be read and not written', () => {
+    const files = scopeFiles(withPrinciples()).map((file) => (file.path === '_principles/groups.json' ? { path: file.path, text: '{}' } : file))
+    expect(scopeFromFolder(files, 'customer')?.unread).toContain('_principles/groups.json')
   })
 })
 

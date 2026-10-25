@@ -61,6 +61,7 @@ import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { isUnit } from '../model/units'
 import type { Assignment, Organisation, UnitMove } from '../model/units'
+import type { Principle, PrincipleGroup } from '../model/principle'
 import type { KeptCheckMark } from '../model/checkMarks'
 import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
@@ -340,6 +341,13 @@ export type ScopeIndex = {
    */
   analyses(): IndexedAnalysis[]
   /**
+   * A scope's principles and its groups of them (ADR-0041), by number and in
+   * the scope's order; both empty where it keeps none. What every scope below
+   * reads as *From <scope>*, and a scope a topic is relevant to as the
+   * topic's (ADR-0042).
+   */
+  principlesAt(path: ScopePath): ScopePrinciples
+  /**
    * What the scopes above `path` say explains its records (ADR-0032 §4), by
    * the id of the record explained: every cause above whose link names a
    * record of `path`. Derived from the explaining cause, because the link is
@@ -454,6 +462,17 @@ export const EMPTY_INDEX: ScopeIndex = indexScopes([])
  * decided by depth and then by path, so the answer does not depend on the order
  * a store happened to enumerate its folders in.
  */
+/** One scope's principles and groups, as the index reads them (ADR-0041). */
+export type ScopePrinciples = { readonly principles: readonly Principle[]; readonly groups: readonly PrincipleGroup[] }
+
+const NO_PRINCIPLES: ScopePrinciples = { principles: [], groups: [] }
+
+/** A scope's principles and groups kept by its path, in number order, where it has either. */
+function keepPrinciples(kept: Map<ScopePath, ScopePrinciples>, path: ScopePath, model: ScopeModel['model']): void {
+  if (!model.principles?.length && !model.principleGroups?.length) return
+  kept.set(path, { principles: [...(model.principles ?? [])].sort((a, b) => a.number - b.number), groups: model.principleGroups ?? [] })
+}
+
 export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   type Held = {
     id: ElementId
@@ -468,6 +487,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const incoming = new Map<ElementId, IndexedRelation[]>()
   const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
+  const principles = new Map<ScopePath, ScopePrinciples>()
   // The type each scope says it is from the operating model (ADR-0036, amended 17 October 2026).
   const scopeTypes = new Map<ScopePath, string>(models.flatMap((one) => (one.unitTypeId !== undefined ? [[one.path, one.unitTypeId] as const] : [])))
   const initiatives: IndexedTransition[] = []
@@ -523,6 +543,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     moves.push(...movesOf(path, model))
     unitPlans.push(...unitPlansOf(path, model))
     if (path === '') operating = operatingOf(model)
+    keepPrinciples(principles, path, model)
   }
 
   const entries = new Map<ElementId, IndexEntry>()
@@ -585,6 +606,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),
     analyses: () => [...analyses],
+    principlesAt: (path) => principles.get(path) ?? NO_PRINCIPLES,
     explainedFromAbove: (path) => new Map(fromAbove.get(path) ?? []),
     absorbedFrom: (path) => {
       const found = new Map<string, Absorption>()

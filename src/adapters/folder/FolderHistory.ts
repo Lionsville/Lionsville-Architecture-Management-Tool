@@ -71,6 +71,7 @@ import { RESPONSIBILITIES_FILE, ROLES_FILE, RULES_FILE, UNIT_TYPES_FILE } from '
 import { ASSIGNMENTS_FILE } from './format/assignmentFile'
 import { CHECK_MARKS_FILE } from './format/checkMarkFile'
 import { COMMENTS_FOLDER } from './format/commentFile'
+import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER } from './format/principleFile'
 import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */
@@ -141,8 +142,10 @@ const KIND_PATHS: Record<RecordKind, readonly string[]> = {
   assignment: [ASSIGNMENTS_FILE],
   checkMark: [CHECK_MARKS_FILE],
   comment: [COMMENTS_FOLDER],
+  principle: [PRINCIPLES_FOLDER],
   image: ['scope.json', PICTURES],
-  scope: ['scope.json', 'model.json'],
+  // The groups of principles are the scope's own (ADR-0041 §3).
+  scope: ['scope.json', 'model.json', PRINCIPLE_GROUPS_FILE],
 }
 
 /** Where a commit could hold a record of a kind, by a path inside the scope's folder: the paths above, more finely. */
@@ -163,8 +166,9 @@ const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   assignment: (path) => path === ASSIGNMENTS_FILE,
   checkMark: (path) => path === CHECK_MARKS_FILE,
   comment: (path) => path.startsWith(`${COMMENTS_FOLDER}/`),
+  principle: (path) => isPrinciplePath(path),
   image: (path) => path === 'scope.json' || path.startsWith(`${PICTURES}/`),
-  scope: (path) => path === 'scope.json' || path === 'model.json',
+  scope: (path) => path === 'scope.json' || path === 'model.json' || path === PRINCIPLE_GROUPS_FILE,
 }
 
 /**

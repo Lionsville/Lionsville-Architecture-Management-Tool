@@ -69,6 +69,7 @@ import type { Transition } from '../../model/transition'
 import { transitionFromFile } from './format/transitionFile'
 import { OPERATING_FILES, operatingFrom } from './format/operatingFile'
 import { ASSIGNMENT_FILES, assignmentsFrom } from './format/assignmentFile'
+import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER, principleGroupsFrom, principlesFrom } from './format/principleFile'
 import { CHECK_MARK_FILES, checkMarksFrom } from './format/checkMarkFile'
 
 import {
@@ -406,6 +407,7 @@ export class FileSystemScopeStore implements ScopeStore {
         transitions: await this.transitionsIn(folder),
         ...analysis,
         ...await this.organisationIn(folder),
+        ...await this.principlesIn(folder),
         causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
@@ -457,6 +459,25 @@ export class FileSystemScopeStore implements ScopeStore {
       if (plan) found.push(plan)
     }
     return found.sort((a, b) => a.number - b.number)
+  }
+
+  /**
+   * The principles and their groups (ADR-0041), likewise: every scope below
+   * reads them, and so does every scope a topic is relevant to (ADR-0042).
+   */
+  private async principlesIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], 'principles' | 'principleGroups'>> {
+    const held = await folder.getDirectoryHandle(PRINCIPLES_FOLDER).catch(this.orAbsent('the principles folder'))
+    if (!held) return {}
+    const files: { path: string; text: string }[] = []
+    for await (const entry of held.values()) {
+      if (entry.kind !== 'file') continue
+      const path = `${PRINCIPLES_FOLDER}/${entry.name}`
+      if (!isPrinciplePath(path) && path !== PRINCIPLE_GROUPS_FILE) continue
+      const text = await this.textOf(entry, 'a principle')
+      if (text !== undefined) files.push({ path, text })
+    }
+    const textAt = (path: string) => files.find((one) => one.path === path)?.text
+    return { ...principlesFrom(files), ...principleGroupsFrom(textAt) }
   }
 
   /**

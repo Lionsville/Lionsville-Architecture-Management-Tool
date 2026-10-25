@@ -17,6 +17,7 @@ import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
 import { ASSIGNMENT_COMMANDS } from './assignments'
 import { CHECK_MARK_COMMANDS } from './checkMarks'
+import { PRINCIPLE_COMMANDS } from './principleRecords'
 import { COMMENT_COMMANDS } from './commenting'
 import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operatingModel'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
@@ -52,6 +53,7 @@ const ENTRIES: CommandTable = {
   ...ASSIGNMENT_COMMANDS,
   ...CHECK_MARK_COMMANDS,
   ...COMMENT_COMMANDS,
+  ...PRINCIPLE_COMMANDS,
   ...PROJECT_COMMANDS,
 }
 

@@ -438,3 +438,21 @@ describe('the index — the analysis below, what was absorbed above, and what ex
     expect(tree().explainedFromAbove('acme').size).toBe(0)
   })
 })
+
+describe('the index — a scope\'s principles (ADR-0041 §1)', () => {
+  const principle = (id: string, number: number) => ({
+    id, number, title: id, statement: '', aspects: [{ id: `${id}-a`, number: 1, text: 'x', nature: 'design' as const }], lastAspect: 1,
+    groups: [], regime: 'flexible' as const, status: 'accepted' as const,
+  })
+
+  it('answers each scope\'s own, in number order, with its groups, and nothing for a scope that keeps none', () => {
+    const index = indexScopes([
+      { path: '', model: { elements: [], relations: [], principles: [principle('pr-2', 2), principle('pr-1', 1)], principleGroups: [{ id: 'pg-1', name: 'Data' }] } },
+      scope('acme', []),
+    ])
+    expect(index.principlesAt('').principles.map((one) => one.id)).toEqual(['pr-1', 'pr-2'])
+    expect(index.principlesAt('').groups).toEqual([{ id: 'pg-1', name: 'Data' }])
+    expect(index.principlesAt('acme')).toEqual({ principles: [], groups: [] })
+    expect(index.principlesAt('nowhere')).toEqual({ principles: [], groups: [] })
+  })
+})

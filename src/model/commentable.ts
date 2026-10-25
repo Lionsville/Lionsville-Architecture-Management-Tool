@@ -29,6 +29,8 @@ export const COMMENTABLE = {
   element: 'element.delete',
   decision: 'decision.remove',
   transition: 'transition.remove',
+  // An architecture principle (ADR-0041 §12): its thread goes with it when it is removed.
+  principle: 'principle.remove',
 } as const satisfies Partial<Record<keyof typeof RECORD_LISTS, CommandType>>
 
 /** A kind that may be commented on. */

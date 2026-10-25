@@ -31,6 +31,8 @@ export const CONTROL_NAMES = [
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',
   'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape', 'org.card.people',
   'org.card.operating',
+  // The scope's principles (ADR-0041): its card, and writing one on its page.
+  'org.card.principles', 'principles.new',
   'org.attention', 'org.boards', 'org.newBoard',
   // Who serves a scope (ADR-0036, amended 11 October 2026): on its home and in its settings.
   'org.servedBy',

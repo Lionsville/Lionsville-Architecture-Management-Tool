@@ -49,7 +49,11 @@ export function useWorkspacePages(deps: {
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
   const platformReading = usePlatformReport()
   const records = useRecordPages()
-  const operating = useOperatingPage()
+  const scopePages = useScopePages()
+  const operating = useMemo(() => ({
+    page: scopePages.stateOf('operating'), show: (id?: string) => scopePages.show('operating', id), close: scopePages.close,
+  }), [scopePages])
+  const principlesPage = scopePages.stateOf('principles')
   const { showDecision } = records
   const plans = usePlans({
     session, makeId, s, viewing,
@@ -59,7 +63,7 @@ export function useWorkspacePages(deps: {
   const unitViews = useUnitViews({ session, makeId, s })
   /** The assignment chosen on an organisation chart, which the inspector beside it shows (ADR-0036 §7). */
   const chartChoice = useChartChoice()
-  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating })
+  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating, scopePages })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
@@ -94,10 +98,11 @@ export function useWorkspacePages(deps: {
     if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
     if (plans.roadmapOpen) return { page: 'roadmap' }
     if (operating.page.open) return withOperatingId(operating.page.id)
+    if (principlesPage.open) return { page: 'principles', ...(principlesPage.id !== undefined ? { id: principlesPage.id } : {}) }
     if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
-  }, [documentationShown, adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, platformReading.platformId, platformReading.serviceId])
+  }, [documentationShown, adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, operating.page, principlesPage, platformReading.platformId, platformReading.serviceId])
   useLeaveWithDocumentation(documentationShown, page, leaveIfNothingToDraw)
   /** Has the record page that is up — the same one `page` names — said what it landed on for the latest request? */
   const settled = useCallback((): boolean => {
@@ -109,6 +114,7 @@ export function useWorkspacePages(deps: {
   return {
     adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw, chartChoice,
     operatingPage: operating.page, closeOperating: operating.close,
+    principlesPage, closePrinciples: scopePages.close,
     selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,
     decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,
@@ -137,17 +143,27 @@ function withOperatingId(id: string | undefined): ScreenPage {
   return { page: 'operating', ...(id !== undefined ? { id } : {}) }
 }
 
+/** The pages a scope keeps of its own besides its records: the operating model's (ADR-0036) and the principles' (ADR-0041). */
+export type ScopePageName = 'operating' | 'principles'
+
+/** One of them as its page reads it: up or not, the item it was asked to open on, and the request's number. */
+export type ScopePageState = { open: boolean; id?: string; nonce: number }
+
 /**
- * The operating model's page (ADR-0036): up or not, and the item it was asked
- * to open on, with the request's number, as a record page's request carries.
+ * Which of a scope's own pages is up, one at a time by construction: the
+ * item it was asked to open on, with the request's number, as a record
+ * page's request carries.
  */
-function useOperatingPage() {
-  const [page, setPage] = useState<{ open: boolean; id?: string; nonce: number }>({ open: false, nonce: 0 })
-  const show = useCallback((id?: string) => {
-    setPage((was) => ({ open: true, ...(id !== undefined ? { id } : {}), nonce: was.nonce + 1 }))
+function useScopePages() {
+  const [held, setHeld] = useState<{ page?: ScopePageName; id?: string; nonce: number }>({ nonce: 0 })
+  const show = useCallback((page: ScopePageName, id?: string) => {
+    setHeld((was) => ({ page, ...(id !== undefined ? { id } : {}), nonce: was.nonce + 1 }))
   }, [])
-  const close = useCallback(() => setPage((was) => ({ open: false, nonce: was.nonce })), [])
-  return { page, show, close }
+  const close = useCallback(() => setHeld((was) => ({ nonce: was.nonce })), [])
+  const stateOf = useCallback((page: ScopePageName): ScopePageState => (
+    { open: held.page === page, ...(held.page === page && held.id !== undefined ? { id: held.id } : {}), nonce: held.nonce }
+  ), [held])
+  return { held, show, close, stateOf }
 }
 
 function withId(page: 'decisions' | 'observations', id: string | undefined): ScreenPage {
@@ -222,7 +238,8 @@ function usePageOpeners(deps: {
   landscapes: TechnologyLandscapes
   drawings: Drawings
   unitViews: UnitViews
-  operating: ReturnType<typeof useOperatingPage>
+  operating: { show: (id?: string) => void; close: () => void }
+  scopePages: { show: (page: ScopePageName, id?: string) => void }
 }) {
   const { session, maps, landscapes, drawings, unitViews } = deps
   const { show: showOperating, close: closeOperating } = deps.operating
@@ -257,6 +274,13 @@ function usePageOpeners(deps: {
     closeReport()
     showOperating(id)
   }, [closeRecords, closePlans, closeReport, showOperating])
+  /** The scope's principles (ADR-0041), the same one-at-a-time rule; on a principle where one is named. */
+  const openPrinciples = useCallback((id?: string) => {
+    closeRecords()
+    closePlans()
+    closeReport()
+    deps.scopePages.show('principles', id)
+  }, [closeRecords, closePlans, closeReport, deps.scopePages])
   /** Every page beside the canvas shut, so the tab shows: what opening a view does first. */
   const closePages = useCallback(() => {
     closeRecords()
@@ -303,7 +327,7 @@ function usePageOpeners(deps: {
     showPlatform(platformId)
   }, [closePlans, closeOperating, showPlatform])
   return {
-    openDecisions, openObservations, openRoadmap, openOperating, closePages, openView, createMap,
+    openDecisions, openObservations, openRoadmap, openOperating, openPrinciples, closePages, openView, createMap,
     openTechnology, openTechnologyFor, createTechnology, createDrawing, createDrawingFor, createUnitView, openServiceReport, openPlatformReport,
   }
 }

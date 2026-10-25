@@ -58,7 +58,7 @@ import { relative } from 'node:path'
  * so `platform`'s shorter row must not be the one left standing.
  */
 const MODULES = [
-  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'decisions', 'observations',
+  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'principles', 'decisions', 'observations',
   'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
   'app',
 ]
@@ -78,15 +78,18 @@ const MAY_IMPORT = {
   comments: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people'],
   // A page with a field that names a person asks the register what a reference
   // reads as, and offers its picker (ADR-0036 §8): the people module, beside it.
-  decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments'],
-  observations: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments'],
+  // A principle is cited from the records that follow it (ADR-0041): its
+  // section is drawn on every citable reader, so it sits under them.
+  principles: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments'],
+  decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments', 'principles'],
+  observations: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments', 'principles'],
   operating: ['model', 'i18n', 'platform', 'widgets'],
-  roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'people', 'comments'],
+  roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'people', 'comments', 'principles'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports', 'people'],
-  editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search', 'people', 'comments'],
+  editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search', 'people', 'comments', 'principles'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people', 'comments'],
   ports: ['model', 'platform', 'projects', 'agent', 'people'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations', 'people'],
@@ -106,6 +109,7 @@ const WHY = {
   people: 'The register of people is kept outside the history (ADR-0036): its rules, what a reference reads as, and its page. It reads the model\'s shape of a reference and nothing a scope holds, and every module that shows a person asks it for the name.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   comments: 'A thread of comments on a record (ADR-0037): the pure rules of a thread and of what travels with a record, and the one thread every reader mounts. It reads the model, renders a body as a description is rendered, and names its author from the register.',
+  principles: 'A principle is a record of any scope that guides designs and decisions (ADR-0041): its rules, its citations and the section every citable reader mounts. It does not know how the model is drawn or where it is saved.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
   observations: 'An observation is what was seen and a cause what lies behind it (ADR-0021): markdown over the model, laid out in lanes. It does not know how the model is drawn or where it is saved.',
   operating: 'The operating model is records at the organisation (ADR-0036): the libraries it starts from, bringing them in, and the page that edits it. It does not know how the model is drawn or where it is saved.',
@@ -163,7 +167,7 @@ const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*'
  * spellings a barrel has from inside `src/` are written out instead.
  */
 const BARRELS_THAT_DRAW = [
-  'i18n', 'widgets', 'people', 'comments', 'decisions', 'observations', 'operating', 'roadmap', 'business', 'technology', 'search',
+  'i18n', 'widgets', 'people', 'comments', 'principles', 'decisions', 'observations', 'operating', 'roadmap', 'business', 'technology', 'search',
 ]
 
 /** A barrel as it is written from inside `src/`: one level up, or two from `platform/node`. */

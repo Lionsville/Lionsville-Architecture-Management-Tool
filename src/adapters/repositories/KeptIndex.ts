@@ -77,7 +77,7 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
   const {
     elements, relations, transitions, observations, causes, solutions, experiments,
-    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks,
+    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups,
   } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
@@ -100,6 +100,9 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
       ...(assignments ? { assignments } : {}),
       // The findings marked as intended, which the organisation's list reads of every scope.
       ...(checkMarks ? { checkMarks } : {}),
+      // The principles and their groups, which the scopes below read (ADR-0041).
+      ...(principles ? { principles } : {}),
+      ...(principleGroups ? { principleGroups } : {}),
     },
   }
 }

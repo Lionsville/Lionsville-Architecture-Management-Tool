@@ -25,6 +25,7 @@ import { DE as business } from '../business/strings/de'
 import { DE as technology } from '../technology/strings/de'
 import { DE as people } from '../people/strings/de'
 import { DE as comments } from '../comments/strings/de'
+import { DE as principles } from '../principles/strings/de'
 
 export const DE = {
   ...adapters,
@@ -45,4 +46,5 @@ export const DE = {
   ...technology,
   ...people,
   ...comments,
+  ...principles,
 } as const

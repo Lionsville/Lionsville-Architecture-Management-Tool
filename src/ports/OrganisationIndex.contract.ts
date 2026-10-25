@@ -116,6 +116,26 @@ export function describeOrganisationIndex(name: string, make: MakeRepositories):
       expect(held?.checkMarks?.map((mark) => mark.check)).toEqual(['check.notDrawn', 'check.roleVacant'])
     })
 
+    /**
+     * A scope's principles and its groups of them are read by every scope
+     * below it (ADR-0041 §1), off the index.
+     */
+    it('holds every scope’s principles and groups, as its steps left them', async () => {
+      const repositories = await fresh()
+      const claims = await repositories.scope('claims', 'Claims')
+      await repositories.steps(claims,
+        { type: 'project.settings', patch: { principleGroups: [{ id: 'pg-1', name: 'Reuse' }] } },
+        { type: 'principle.add', principle: {
+          id: 'pr-1', number: 1, title: 'Reuse first', statement: 'Reuse before buy before build.',
+          aspects: [{ id: 'a1', number: 1, text: 'Look for one first', nature: 'design' }], lastAspect: 1,
+          groups: ['pg-1'], regime: 'flexible', status: 'accepted',
+        } })
+      const held = part((await repositories.index.read()).scopes, claims)?.model
+      const state = (await repositories.state(claims)).model
+      expect(held?.principles).toEqual(state.principles)
+      expect(held?.principleGroups).toEqual([{ id: 'pg-1', name: 'Reuse' }])
+    })
+
     it('answers one revision while nothing changes, and another once a step lands', async () => {
       const repositories = await fresh()
       const acme = await repositories.scope('acme', 'Acme Logistics')

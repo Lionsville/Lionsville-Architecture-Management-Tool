@@ -9,7 +9,8 @@
 import { NOTHING, reverse } from '../commands'
 import type { Command } from '../commands'
 import { ok } from './handler'
-import type { CommandTable, PatchKeys } from './handler'
+import type { CommandTable, PatchKeys, Refused } from './handler'
+import type { PrincipleGroup } from '../principle'
 import { patched } from './rows'
 import { patchWrites } from './writes'
 
@@ -22,7 +23,17 @@ import { patchWrites } from './writes'
  * scope with whatever came with it.
  */
 const PROJECT_FIELDS: PatchKeys<'project.settings'> = {
-  name: true, description: true, defaultAuthor: true, defaultAspectConfig: true,
+  name: true, description: true, defaultAuthor: true, defaultAspectConfig: true, principleGroups: true,
+}
+
+/** Why a scope's groups cannot be as they would be (ADR-0041 §3): a group with no name, or an id said twice. */
+function groupsRefusal(groups: unknown): Refused | undefined {
+  if (!Array.isArray(groups)) return undefined
+  const ids = groups.map((one: PrincipleGroup) => one.id)
+  if (groups.some((one: PrincipleGroup) => !one.id || !one.name?.trim()) || new Set(ids).size !== ids.length) {
+    return { ok: false, reason: 'command.badGroups' }
+  }
+  return undefined
 }
 
 export const PROJECT_COMMANDS = {
@@ -31,6 +42,8 @@ export const PROJECT_COMMANDS = {
     patch: { keys: PROJECT_FIELDS, row: (model) => model },
     writes: (command) => patchWrites('project', command.patch),
     apply(model, command, { meta }) {
+      const refused = groupsRefusal(command.patch.principleGroups)
+      if (refused) return refused
       const { row, inverse } = patched(model, command.patch)
       return ok(row, { type: 'project.settings', patch: inverse }, meta)
     },

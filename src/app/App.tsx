@@ -61,6 +61,8 @@ import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
+import { useSeamWidths } from './useShellServices'
+import { SeamWidthsProvider } from '../widgets/useSeamWidth'
 import { useProviderParts } from './useProviderParts'
 import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
@@ -350,6 +352,8 @@ export type InitialPage =
    * on one unit type, role or responsibility when an id is given.
    */
   | { page: 'operating'; id?: string }
+  /** A scope's principles (ADR-0041), on one principle when an id is given. */
+  | { page: 'principles'; id?: string }
   /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
   | { page: 'platform'; id: ElementId }
   | { page: 'service'; id: ElementId }
@@ -432,6 +436,8 @@ export function App(props: AppProps) {
   const { prefs, s, toasts } = parts.services
   // Every page under the shell reads a person through the one register (ADR-0036 §8).
   const names = useMemo(() => personNames(parts.people, s), [parts.people, s])
+  // How wide each column was left (ADR-0044 §4), kept with the preferences.
+  const seams = useSeamWidths(prefs)
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
@@ -444,6 +450,7 @@ export function App(props: AppProps) {
       <PersonNamesProvider names={names}>
       {/* What each list of findings has unfolded, and its notes shown, for as long as the window is open. */}
       <SessionMemoryContext.Provider value={parts.folds}>
+      <SeamWidthsProvider value={seams}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -461,6 +468,7 @@ export function App(props: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </SeamWidthsProvider>
       </SessionMemoryContext.Provider>
       </PersonNamesProvider>
       </ProblemOfferContext.Provider>

@@ -25,7 +25,7 @@ import type { Comment } from '../model/comment'
 import { COMMENTABLE_KINDS, commentedName, isCommentable } from '../model/commentable'
 import type { CommentableKind } from '../model/commentable'
 import {
-  causeList, commentList, commentsOf, decisionList, experimentList, observationList, solutionList, transitionList,
+  causeList, commentList, commentsOf, decisionList, experimentList, observationList, principleList, solutionList, transitionList,
 } from '../model/normalised'
 import type { Model } from '../model/normalised'
 import { pickedPerson } from '../model/person'
@@ -58,6 +58,7 @@ export function recordId(model: Model, kind: CommentableKind, idOrLabel: string)
     case 'experiment': return numbered(experimentList(model), idOrLabel, 'ex')
     case 'transition': return findTransition(transitionList(model), idOrLabel)?.id
     case 'decision': return numbered(decisionList(model), idOrLabel, 'adr')
+    case 'principle': return numbered(principleList(model), idOrLabel, 'pr')
   }
 }
 

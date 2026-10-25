@@ -30,4 +30,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'common.organisation': 'die Organisation',
   'common.partNotLoaded': 'Das konnte nicht geladen werden.',
   'common.tryAgain': 'Erneut versuchen',
+  'common.resizeColumn': 'Ziehen, um dieser Spalte mehr oder weniger Platz zu geben; Doppelklick setzt sie zurück',
+  'common.backToReading': 'Zurück zum Lesen',
 }

@@ -38,4 +38,6 @@ export const EN = {
   /** Where a part of the app that arrives later would not load (`widgets/lazyPart`): offline, or a network that dropped it. */
   'common.partNotLoaded': 'This could not be loaded.',
   'common.tryAgain': 'Try again',
+  'common.resizeColumn': 'Drag to give this column more or less room; double-click to put it back',
+  'common.backToReading': 'Back to reading',
 } as const

@@ -24,8 +24,8 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  assignmentsOf, causesOf, checkMarksOf, commentsOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
-  transitionsOf, unitTypesOf,
+  assignmentsOf, causesOf, checkMarksOf, commentsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
+  solutionsOf, transitionsOf, unitTypesOf,
 } from './normalised'
 import { checkEntry } from './checkCatalogue'
 import { commentedName } from './commentable'
@@ -255,7 +255,7 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       return { key: 'activity.experimentRemoved', name: experimentsOf(before)[lead.id]?.title }
 
     case 'project.settings':
-      return { key: 'activity.projectSettings' }
+      return { key: settingsKey(lead.patch) }
 
     case 'transaction':
     case 'restore':
@@ -268,12 +268,31 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
 }
 
 /** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
   if (isCommentCommand(lead)) return commentStep(lead, before)
+  if (isPrincipleCommand(lead)) return principleStep(lead, before)
   if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
+}
+
+/** The scope's settings, or its groups of principles alone (ADR-0041 §3), which a person changes on their own page. */
+function settingsKey(patch: Record<string, unknown>): StringKey {
+  return Object.keys(patch).length === 1 && 'principleGroups' in patch ? 'activity.principleGroups' : 'activity.projectSettings'
+}
+
+/** A principle's commands (ADR-0041). */
+type PrincipleCommand = Extract<CommandBody, { type: `principle.${'add' | 'update' | 'remove'}` }>
+
+function isPrincipleCommand(command: CommandBody): command is PrincipleCommand {
+  return command.type.startsWith('principle.')
+}
+
+function principleStep(lead: PrincipleCommand, before: Model): StepSummary {
+  if (lead.type === 'principle.add') return { key: 'activity.principleAdded', name: lead.principle.title }
+  const name = principlesOf(before)[lead.id]?.title
+  return { key: lead.type === 'principle.update' ? 'activity.principleChanged' : 'activity.principleRemoved', name }
 }
 
 /** A comment's commands (ADR-0037). */

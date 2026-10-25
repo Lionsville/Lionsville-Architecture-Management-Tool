@@ -19,6 +19,7 @@
  * deep-equal, order arrays included. A refusal of the inverse is a failure:
  * an undo that cannot be done is the bug this looks for.
  */
+import type { Principle } from '../principle'
 import { describe, expect, it } from 'vitest'
 import type { Command } from '../commands'
 import type { Model } from '../normalised'
@@ -105,6 +106,8 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { checkMarks: [{ ...checkMark(r, 'r-1 a b'), check: 'check.interactionUnused' as const }] } : {}),
     // A thread on the first element, which every model has: a comment, and now and then a reply under it.
     ...(r.chance(0.6) ? { comments: [thread(r, 'cm-1'), ...(r.chance(0.5) ? [{ ...thread(r, 'cm-2'), replyTo: 'cm-1' }] : [])] } : {}),
+    ...(r.chance(0.6) ? { principles: [principle(r, 'pr-1'), ...(r.chance(0.5) ? [{ ...principle(r, 'pr-2'), status: 'accepted' as const }] : [])] } : {}),
+    ...(r.chance(0.4) ? { principleGroups: [{ id: 'pg-1', name: 'Data' }] } : {}),
   })
   return held
 }
@@ -165,6 +168,15 @@ const responsibility = (r: Random, id: string) => ({
 // --- a command of every kind --------------------------------------------------
 
 /** An id the model holds, or now and then one it does not. */
+/** A principle with one aspect, accepted or not: what a page writes. */
+function principle(r: Random, id: string): Principle {
+  return {
+    id, number: 1 + r.int(20), title: r.pick(WORDS) || 'Reuse first', statement: 'Reuse before buy before build.',
+    aspects: [{ id: `${id}-a1`, number: 1, text: 'Look for one first', nature: 'design' }], lastAspect: 1,
+    groups: r.chance(0.5) ? ['pg-1'] : [], regime: r.pick(['fixed', 'flexible'] as const), status: r.pick(['candidate', 'accepted'] as const),
+  }
+}
+
 function held(r: Random, ids: readonly string[], prefix: string): string {
   return ids.length && r.chance(0.9) ? r.pick(ids) : `${prefix}-missing`
 }
@@ -384,6 +396,31 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     type: 'comment.put', comment: thread(r, r.chance(0.5) ? held(r, m.order.comments, 'cm') : `cm-${3 + r.int(100)}`),
     ...(r.chance(0.3) ? { at: r.int(m.order.comments.length + 1) } : {}),
   }),
+  'principle.add': (r, m) => ({
+    type: 'principle.add',
+    principle: principle(r, r.chance(0.85) ? `pr-${3 + r.int(100)}` : 'pr-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.principles.length + 1) } : {}),
+  }),
+  'principle.update': (r, m) => {
+    const id = held(r, m.order.principles, 'pr')
+    const was = m.principles?.[id]
+    return {
+      type: 'principle.update', id,
+      patch: {
+        ...(r.chance(0.5) ? { title: r.pick(WORDS) || 'Renamed' } : {}),
+        ...(r.chance(0.4) ? { status: r.pick(['candidate', 'accepted', 'retired'] as const) } : {}),
+        ...(r.chance(0.3) ? { question: either(r, 'Does it hold?') } : {}),
+        ...(r.chance(0.3) ? { groups: r.some(['pg-1', 'pg-2']) } : {}),
+        // An aspect added, with its note where an accepted one is sharpened: what the editor sends.
+        ...(was && r.chance(0.3) ? {
+          aspects: [...was.aspects, { id: `as-${r.int(1000)}`, number: was.lastAspect + 1, text: 'Also this', nature: 'design' as const }],
+          lastAspect: was.lastAspect + 1,
+          ...(r.chance(0.8) ? { sharpened: [...(was.sharpened ?? []), { on: '2026-10-25', note: 'Said more' }] } : {}),
+        } : {}),
+      },
+    }
+  },
+  'principle.remove': (r, m) => ({ type: 'principle.remove', id: held(r, m.order.principles, 'pr') }),
 
   'project.settings': (r) => ({
     type: 'project.settings',
@@ -391,6 +428,7 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
       ...(r.chance(0.6) ? { name: r.pick(WORDS) || 'Named' } : {}),
       ...(r.chance(0.5) ? { description: either(r, 'What this is.') } : {}),
       ...(r.chance(0.4) ? { defaultAuthor: either(r, 'Somebody') } : {}),
+      ...(r.chance(0.3) ? { principleGroups: r.chance(0.8) ? [{ id: 'pg-1', name: 'Data' }, { id: 'pg-2', name: 'Reuse' }] : [{ id: 'pg-1', name: '' }] } : {}),
     },
   }),
   'transaction': (r, m) => ({ type: 'transaction', commands: someCommands(r, m) }),

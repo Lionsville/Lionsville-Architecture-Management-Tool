@@ -38,6 +38,7 @@ import type {
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
 import type { CheckMark, CheckMarkId } from './checkMarks'
+import type { Principle, PrincipleGroup, PrincipleId } from './principle'
 import type { Comment, CommentId, CommentRemoved } from './comment'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
@@ -55,6 +56,8 @@ export type ProjectPatch = Partial<{
   description: string
   defaultAuthor: string
   defaultAspectConfig: NonNullable<Diagram['aspectConfig']>
+  /** The scope's own ordered groups of principles (ADR-0041 §3): the whole list, as it is to be. */
+  principleGroups: PrincipleGroup[]
 }>
 
 /**
@@ -228,6 +231,14 @@ export type CommandBody =
    * agent's to send.
    */
   | { type: 'comment.put'; comment: Comment; at?: number }
+
+  // --- an architecture principle of the scope (ADR-0041) -------------------
+  /** Added: with at least one aspect, numbered once each. */
+  | { type: 'principle.add'; principle: Principle; at?: number }
+  /** Changed: a change that sharpens an accepted one carries its note (`sharpened`). */
+  | { type: 'principle.update'; id: PrincipleId; patch: Partial<Principle> }
+  /** Taken out: only while nothing anywhere cites it, which the caller asks first. */
+  | { type: 'principle.remove'; id: PrincipleId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }

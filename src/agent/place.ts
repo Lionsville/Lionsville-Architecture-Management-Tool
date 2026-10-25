@@ -357,6 +357,7 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
     case 'plan':
       return { scope, page: 'roadmap' }
     case 'operating':
+    case 'principles':
       return { scope, page }
     default:
       return first

@@ -119,6 +119,15 @@ function make(kind: Extract<InitialPage, { page: 'make' }>['kind'], by: { pages:
   }
 }
 
+const SCOPE_PAGE = {
+  operating: (pages: WorkspacePages) => pages.openOperating,
+  principles: (pages: WorkspacePages) => pages.openPrinciples,
+} as const
+
+function isScopePage(page: InitialPage): page is Extract<InitialPage, { page: keyof typeof SCOPE_PAGE }> {
+  return page.page in SCOPE_PAGE
+}
+
 /** One page, shown the way its door shows it. */
 function showInitialPage(page: InitialPage, by: {
   pages: WorkspacePages
@@ -130,11 +139,12 @@ function showInitialPage(page: InitialPage, by: {
 }): void {
   const { pages } = by
   if (page.page === 'make') { make(page.kind, by); return }
+  // The scope's own pages besides its records (ADR-0036, ADR-0041), on an item where one is named.
+  if (isScopePage(page)) { SCOPE_PAGE[page.page](pages)(page.id); return }
   switch (page.page) {
     case 'decisions': pages.openDecisions(page.id); break
     case 'observations': pages.openObservations(page.id, page.tab); break
     case 'roadmap': pages.openRoadmap(); break
-    case 'operating': pages.openOperating(page.id); break
     case 'board': case 'sheet': case 'map': case 'technology': case 'drawing': case 'chart': case 'conway':
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)

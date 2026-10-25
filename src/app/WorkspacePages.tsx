@@ -23,6 +23,7 @@ import { Crumbs } from './ShellToolbar'
 import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
+import { PrinciplesPages } from './principles/PrinciplesPages'
 import { lazyPart } from '../widgets/lazyPart'
 import { ArrivingDialog, arrivingPage } from '../widgets/Arriving'
 import type { WorkspaceParts } from './workspaceParts'
@@ -117,6 +118,7 @@ export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
       <PlanPages parts={parts} />
       <ReportPages parts={parts} />
       <OperatingPages parts={parts} />
+      <PrinciplesPages parts={parts} />
     </>
   )
 }

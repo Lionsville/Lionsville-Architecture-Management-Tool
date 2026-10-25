@@ -35,6 +35,7 @@
  * shell maps them onto its own screens.
  */
 import type { Adr } from './adr'
+import type { Principle } from './principle'
 import type { Comment } from './comment'
 import type { CommentableKind } from './commentable'
 import type { PersonId, PersonRef } from './person'
@@ -57,7 +58,7 @@ import type { DesignDiagram, DesignElement, ElementKind, Relation } from './type
 export const SEARCH_KINDS = [
   'element', 'documentation', 'view', 'relation', 'decision', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'comment',
+  'unitType', 'role', 'responsibility', 'comment', 'principle',
 ] as const
 
 export type SearchKind = (typeof SEARCH_KINDS)[number]
@@ -69,7 +70,7 @@ export type SearchKind = (typeof SEARCH_KINDS)[number]
  */
 export type SearchPage =
   | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
-  | 'decisions' | 'plan' | 'observations' | 'operating'
+  | 'decisions' | 'plan' | 'observations' | 'operating' | 'principles'
 
 export type SearchPlace = { readonly page: SearchPage; readonly id: string }
 
@@ -144,6 +145,7 @@ export type SearchableRecords = {
   assignments: Assignment
   checkMarks: CheckMark
   comments: Comment
+  principles: Principle
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -378,7 +380,7 @@ const responsibility: Searchable<Responsibility> = {
 /** The page a record commented on opens on: the page of its kind. */
 const COMMENTED_PAGE: Record<CommentableKind, SearchPage> = {
   observation: 'observations', cause: 'observations', solution: 'observations', experiment: 'observations',
-  element: 'element', decision: 'decisions', transition: 'plan',
+  element: 'element', decision: 'decisions', transition: 'plan', principle: 'principles',
 }
 
 /** A comment's first line, as short as a title is: what a hit on it reads as. */
@@ -404,6 +406,29 @@ const comment: Searchable<Comment> = {
     detail: held.at.slice(0, 10),
     ...(held.about.kind === 'element' ? { about: [held.about.id] } : {}),
     opens: { page: COMMENTED_PAGE[held.about.kind as CommentableKind], id: held.about.id },
+  }),
+}
+
+/**
+ * A principle (ADR-0041 §12): found by its number and its aspects' numbers,
+ * by its words and its aspects' words, and by its keywords; opened on the
+ * principles page. One absorbed by another is history, found by the survivor.
+ */
+const principle: Searchable<Principle> = {
+  kind: 'principle',
+  order: 'file',
+  describe: (held) => (held.mergedInto !== undefined ? undefined : {
+    id: held.id,
+    title: held.title,
+    fields: [
+      ...held.aspects.map((one) => `${numbered('PR', held.number)}.${one.number} ${one.text}`),
+      ...(held.keywords ?? []),
+    ],
+    prose: [held.statement, held.rationale, held.implications].filter(Boolean).join('\n\n'),
+    label: numbered('PR', held.number),
+    status: held.status,
+    detail: held.regime,
+    opens: { page: 'principles', id: held.id },
   }),
 }
 
@@ -434,6 +459,7 @@ export const SEARCHABLE: SearchTable = {
   // no record of it to open, and its reason is found on the Checks page.
   checkMarks: [],
   comments: [comment],
+  principles: [principle],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

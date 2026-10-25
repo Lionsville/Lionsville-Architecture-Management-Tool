@@ -51,8 +51,8 @@ function undone(model: Model, command: Command): Model {
 }
 
 describe('the registry', () => {
-  it('opts in the analysis, then elements, decisions and plans, one line each, and nothing else', () => {
-    expect(COMMENTABLE_KINDS).toEqual(['observation', 'cause', 'solution', 'experiment', 'element', 'decision', 'transition'])
+  it('opts in the analysis, then elements, decisions and plans, then principles (ADR-0041), one line each, and nothing else', () => {
+    expect(COMMENTABLE_KINDS).toEqual(['observation', 'cause', 'solution', 'experiment', 'element', 'decision', 'transition', 'principle'])
     expect(isCommentable('diagram')).toBe(false)
     expect(isCommentable('comment')).toBe(false)
     expect(holdsCommentable(scope(), { kind: 'element', id: 'web' })).toBe(true)

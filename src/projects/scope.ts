@@ -28,6 +28,7 @@ import type { ImageEntry } from '../model/imageName'
 import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
+import type { Principle, PrincipleGroup } from '../model/principle'
 import type { CheckMark } from '../model/checkMarks'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
@@ -305,6 +306,12 @@ export type ScopeModel = {
      * organisation's — leaves out what a scope below accepted.
      */
     checkMarks?: readonly CheckMark[]
+    /**
+     * The principles and their groups (ADR-0041), which every scope below
+     * reads, and every scope a topic is relevant to (ADR-0042).
+     */
+    principles?: readonly Principle[]
+    principleGroups?: readonly PrincipleGroup[]
   }
 }
 

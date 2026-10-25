@@ -26,6 +26,8 @@
  * _assignments/assignments.json     who holds which role in which unit here (ADR-0036)
  * _checks/marks.json                the findings about this scope marked as intended (ADR-0036, amended)
  * _comments/<kind>-<id>.json        the comments on one record, oldest first (ADR-0037)
+ * _principles/NNNN-<slug>.md        an architecture principle, its aspects and groups (ADR-0041)
+ * _principles/groups.json           the scope's groups of principles, in order (ADR-0041)
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -92,6 +94,10 @@ import {
   ASSIGNMENT_FILES, ASSIGNMENTS_FOLDER, assignmentFileUnreadable, assignmentFiles, assignmentsFrom,
 } from './assignmentFile'
 import { CHECK_MARK_FILES, CHECKS_FOLDER, checkMarkFileUnreadable, checkMarkFiles, checkMarksFrom } from './checkMarkFile'
+import {
+  isPrinciplePath, PRINCIPLE_LIST_FILES, principleFiles, principleGroupFiles, principleGroupsFrom, principleGroupsUnreadable,
+  PRINCIPLES_FOLDER, principlesFrom,
+} from './principleFile'
 import { COMMENTS_FOLDER, commentFileUnreadable, commentFiles, commentsFrom, isThreadPath } from './commentFile'
 import { dataUrl, readDataUrl } from '../../../projects/dataUrl'
 import { markdownBody, markdownFile } from './fileText'
@@ -118,7 +124,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER, PRINCIPLES_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -130,11 +136,11 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FO
  */
 export const SCOPE_FOLDERS: readonly string[] = [
   DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
-  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER,
+  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER, PRINCIPLES_FOLDER,
 ]
 
 /** The files of the three folders that hold one JSON list each (ADR-0036). */
-const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, ...CHECK_MARK_FILES]
+const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, ...CHECK_MARK_FILES, ...PRINCIPLE_LIST_FILES]
 
 /**
  * 6, and the same 6 as the working file's version — a `.lvarch` is a folder in
@@ -477,6 +483,8 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
   files.push(...assignmentFiles(model))
   files.push(...checkMarkFiles(model))
   files.push(...commentFiles(model))
+  files.push(...principleFiles(model))
+  files.push(...principleGroupFiles(model))
 
   files.push(...imageFiles(scope.imageLibrary ?? []))
   files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
@@ -679,6 +687,7 @@ export function isFormatPath(path: string): boolean {
   }
   if (folder === OPERATING_FOLDER || folder === ASSIGNMENTS_FOLDER || folder === CHECKS_FOLDER) return LIST_FILES.includes(path)
   if (folder === COMMENTS_FOLDER) return rest.length === 1 && isThreadPath(path)
+  if (folder === PRINCIPLES_FOLDER) return isPrinciplePath(path) || PRINCIPLE_LIST_FILES.includes(path)
   return false
 }
 
@@ -1244,6 +1253,8 @@ export function scopeFromFolder(
     ...assignmentsFrom((at) => textAt(folder, at)),
     ...checkMarksFrom((at) => textAt(folder, at)),
     ...commentsFrom([...folder.keys()], (at) => textAt(folder, at)),
+    ...principlesFrom([...folder.keys()].map((at) => ({ path: at, text: textAt(folder, at) }))),
+    ...principleGroupsFrom((at) => textAt(folder, at)),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
@@ -1293,7 +1304,7 @@ function carriedOf(held: ScopeFile): Pick<ScopeSnapshot, 'carried'> {
 
 /** Whether one of those is there and is not a list. */
 function listFileUnreadable(text: string | undefined): boolean {
-  return operatingFileUnreadable(text) || assignmentFileUnreadable(text) || checkMarkFileUnreadable(text)
+  return operatingFileUnreadable(text) || assignmentFileUnreadable(text) || checkMarkFileUnreadable(text) || principleGroupsUnreadable(text)
 }
 
 /** What a reading left out, and what of that the scope cannot do without — see {@link scopeFromFolder}. */

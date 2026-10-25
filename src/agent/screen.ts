@@ -26,7 +26,7 @@ import type { ObservationTab } from '../observations/tabs'
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks',
+  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -102,6 +102,8 @@ export type ScreenPage =
   | { readonly page: 'roadmap' }
   /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
   | { readonly page: 'operating'; readonly id?: string }
+  /** The scope's principles (ADR-0041), on one principle where one is picked. */
+  | { readonly page: 'principles'; readonly id?: string }
   /** A record's page over the board (the documentation page), on the element whose page it is. */
   | { readonly page: 'document'; readonly id: string }
   | { readonly page: 'plan'; readonly id: string }
@@ -166,7 +168,7 @@ export function scopeOf(screen: Screen): string | undefined {
  * says so at once, before the request for another record has reached it, so
  * the page alone is no arrival: the record it names is.
  */
-function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'observations' | 'operating' }): boolean {
+function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'observations' | 'operating' | 'principles' }): boolean {
   const up = screen.page
   if (up?.page !== to.page || (to.id !== undefined && up.id !== to.id)) return false
   return to.tab === undefined || (up.page === 'observations' && up.tab === to.tab)
@@ -195,6 +197,7 @@ export function arrived(screen: Screen, to: Destination, scope: string): boolean
     case 'decisions':
     case 'observations':
     case 'operating':
+    case 'principles':
       return onRecord(screen, { ...to, page })
     case 'roadmap': return screen.page?.page === 'roadmap'
     case 'plan':

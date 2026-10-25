@@ -162,7 +162,7 @@ const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'manag
 export const SEARCH_HIT_KINDS = [
   'element', 'documentation', 'view', 'relation', 'adr', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'comment',
+  'unitType', 'role', 'responsibility', 'comment', 'principle',
 ] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
@@ -170,7 +170,7 @@ const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
  * and an id or a label. Written out for the reason the search's kinds are: a
  * schema is a protocol contract, and the registry is checked against it.
  */
-export const COMMENTABLE_TOOL_KINDS = ['observation', 'cause', 'solution', 'experiment', 'element', 'decision', 'transition'] as const
+export const COMMENTABLE_TOOL_KINDS = ['observation', 'cause', 'solution', 'experiment', 'element', 'decision', 'transition', 'principle'] as const
 const COMMENT_ABOUT: RowSchema = {
   type: 'object',
   description: 'The record: its kind (a plan is transition) and its id, or the label people call it by (OB-0007, ADR-0003).',
@@ -3131,7 +3131,8 @@ const SPECS = [
       + 'responsibilities and the libraries — kept at the organisation, so its scope is "" and may be left out; '
       + 'optionally on one unit type, role or responsibility), checks (every check by category over the scope\'s home — '
       + 'what it finds there, why each matters and how to fix it, and what was marked as intended — optionally on one '
-      + 'check, its key as id). `select` names an element to select on the board, sheet, map, technology '
+      + 'check, its key as id), principles (the scope\'s architecture principles, with those above it and of the topics '
+      + 'relevant to it — optionally on one principle). `select` names an element to select on the board, sheet, map, technology '
       + 'landscape, organisation chart (a unit) or Conway map (a unit or an application) being opened; where that view does not '
       + 'draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
@@ -3147,7 +3148,7 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks',
+            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles',
           ],
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },
@@ -3537,6 +3538,11 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.taken': 'Something in the scope already has that id, so the record you meant to add would have overwritten it. Read the scope again and add it under a free id.',
   'command.notAField': 'A patch names a field the record does not have. Nothing was changed; send only the record\'s own fields.',
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',
+  'command.aspectsEmpty': 'A principle has at least one aspect; aspect.remove of the last one is refused — change it with aspect.update instead.',
+  'command.aspectNumber': 'Aspect numbers are given by the tool, once each, and never again; pass the number an aspect has, not a new one.',
+  'command.titleEmpty': 'A principle needs a title.',
+  'command.sharpenNote': 'Changing an accepted principle\'s statement or aspects sharpens it: pass note, saying why, with the change.',
+  'command.badGroups': 'Every group needs a name, and each is listed once.',
   'command.recordedByFixed': 'Who recorded an observation is written once, when it is recorded, from whoever recorded it; it is never an argument.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
