@@ -116,6 +116,10 @@ describe('topics on the homes', () => {
     expect(await wire.ask('scope.create', { parent: 'sales', name: 'Privacy', topic: true })).toMatchObject({ path: 'topics/privacy', kind: 'topic' })
     expect(await wire.ask('scope.create', { parent: 'topics/security', name: 'Identity', topic: true })).toMatchObject({ path: 'topics/security/identity', kind: 'topic' })
     expect((await readScope(repositories.scopes, 'topics/privacy'))?.kind).toBe('topic')
+    // Its links, written whole as topics.list reads them.
+    expect(await wire.ask('scope.update', { path: 'topics/privacy', relevantTo: [{ path: 'sales', from: '2026-09-12' }] })).toMatchObject({ changed: ['relevantTo'] })
+    expect((await readScope(repositories.scopes, 'topics/privacy'))?.relevantTo).toEqual([{ path: 'sales', from: '2026-09-12' }])
+    await expect(wire.ask('scope.update', { path: 'topics/privacy', relevantTo: [{ path: 'sales', from: '12 September' }] })).rejects.toThrow(/yyyy-mm-dd/)
   })
 })
 

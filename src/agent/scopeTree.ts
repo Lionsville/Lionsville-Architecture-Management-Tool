@@ -37,6 +37,8 @@ export type ScopeHeader = {
   unitTypeId?: string | null
   client?: string | null
   links?: readonly { label: string; url: string }[] | null
+  /** A topic's links to the scopes it is relevant to, whole (ADR-0042 §1): each from a day and until one, `yyyy-mm-dd`. */
+  relevantTo?: readonly { path: string; from?: string; until?: string }[] | null
 }
 
 /** What a scope holds, by kind (ADR-0040 §2). All zero is empty. */
@@ -186,6 +188,22 @@ async function createScope(view: ScopesView, args: Args, tree: TreeView | undefi
   })
 }
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** A topic's links as a call gives them (`projects/topics.ts` says them again: `agent` may not import `projects`), or what is wrong with them. */
+function topicLinksAsked(value: unknown): ScopeHeader['relevantTo'] | string {
+  if (value === null) return null
+  if (!Array.isArray(value)) return '"relevantTo" is a list of links, or null'
+  for (const link of value as Record<string, unknown>[]) {
+    if (link === null || typeof link !== 'object' || typeof link.path !== 'string') return 'every link names the scope it reaches by path'
+    for (const day of ['from', 'until'] as const) {
+      if (link[day] !== undefined && (typeof link[day] !== 'string' || !DAY.test(link[day]))) return `a link's ${day} is a day, yyyy-mm-dd`
+    }
+    if (typeof link.from === 'string' && typeof link.until === 'string' && link.until < link.from) return 'a link ends on or after the day it begins'
+  }
+  return value as NonNullable<ScopeHeader['relevantTo']>
+}
+
 /** The header a call asks for, or what is wrong with it. */
 function headerAsked(args: Args, tree: TreeView | undefined): ScopeHeader | AgentAnswer {
   const header: ScopeHeader = {}
@@ -193,6 +211,11 @@ function headerAsked(args: Args, tree: TreeView | undefined): ScopeHeader | Agen
   if (typeof args.name === 'string') header.name = args.name
   for (const field of ['description', 'client', 'links'] as const) {
     if (args[field] !== undefined) (header as Record<string, unknown>)[field] = args[field]
+  }
+  if (args.relevantTo !== undefined) {
+    const links = topicLinksAsked(args.relevantTo)
+    if (typeof links === 'string') return refused('agent.badArguments', links)
+    header.relevantTo = links
   }
   const kind = args.kind
   const unitTypeId = args.unitTypeId

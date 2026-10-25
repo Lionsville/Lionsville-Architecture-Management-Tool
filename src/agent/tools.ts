@@ -788,7 +788,10 @@ const SPECS = [
       + 'is — a unit type of the operating model (unitTypeId, unitTypes.list) or a built-in kind, never both: the one given '
       + 'clears the other — the client its drawings are made out to, and its links. Only the fields given change; null clears '
       + 'an optional one. The organisation is described like any scope. The address stays: scope.move files it elsewhere. '
-      + 'Answers which fields changed.',
+      + 'relevantTo is a topic\'s links to the scopes it is relevant to (ADR-0042), given whole as topics.list reads them: '
+      + 'to link one, give the list with it added and from the day it begins — today, for a link made now; to end one, give it an until, its last day, and '
+      + 'keep it as history; leave a link out only where it was made by mistake. A scope that says where it is relevant is '
+      + 'a topic. Answers which fields changed.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -809,6 +812,21 @@ const SPECS = [
               url: { type: 'string', description: 'Where it is: an http, https or mailto address.' },
             },
             required: ['label', 'url'],
+            additionalProperties: false,
+          },
+        },
+        relevantTo: {
+          type: 'array',
+          description: 'A topic\'s links, whole: every link it is to keep, ended ones included. Empty or null clears them.',
+          items: {
+            type: 'object',
+            description: 'One link to a scope it is relevant to.',
+            properties: {
+              path: { type: 'string', description: 'The scope it is relevant to, by path.' },
+              from: { type: 'string', description: 'Its first day, yyyy-mm-dd. Absent: since always.' },
+              until: { type: 'string', description: 'Its last day, yyyy-mm-dd, once it ends. Absent: it holds on.' },
+            },
+            required: ['path'],
             additionalProperties: false,
           },
         },

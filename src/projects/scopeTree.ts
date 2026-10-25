@@ -35,6 +35,7 @@ import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, no
 import { analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressRef, servedNamesWithin } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import { TOPICS_PLACE } from './topics'
+import type { TopicLink } from './topics'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -217,9 +218,11 @@ export type ScopeHeader = {
   unitTypeId?: string | null
   client?: string | null
   links?: readonly RecordLink[] | null
+  /** Where it is relevant, as a topic (ADR-0042 §1), whole: dated links, ended ones kept. */
+  relevantTo?: readonly TopicLink[] | null
 }
 
-const HEADER_FIELDS = ['name', 'description', 'kind', 'unitTypeId', 'client', 'links'] as const
+const HEADER_FIELDS = ['name', 'description', 'kind', 'unitTypeId', 'client', 'links', 'relevantTo'] as const
 
 /** A header field as the scope holds it, for telling a change from a field said again. */
 function heldField(held: ScopeSnapshot, field: (typeof HEADER_FIELDS)[number]): unknown {
@@ -237,6 +240,7 @@ function landing(field: (typeof HEADER_FIELDS)[number], value: unknown): unknown
     const links = normaliseLinks([...(value as readonly RecordLink[])])
     return links.length ? links : undefined
   }
+  if (field === 'relevantTo') return (value as readonly TopicLink[]).length ? value : undefined
   if (typeof value === 'string' && field !== 'kind' && field !== 'unitTypeId') return value.trim() || undefined
   return value
 }

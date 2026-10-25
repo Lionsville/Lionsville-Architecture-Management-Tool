@@ -207,3 +207,8 @@ is not offered again. Where nothing matches, *New topic…* starts one named
 as typed and relevant to the scope. *Relevant topics* lists the topics as the
 tree's ↗ rows do: a subtopic goes with its topic's chip unless it has a link
 of its own there.
+
+**The agent's links** (§6, in part): `scope.update` takes `relevantTo`
+whole, as `topics.list` reads it — a link added with its first day, one
+ended with its last, one left out only where it was made by mistake — and
+lands it as the topic's one `scope.describe`, as the catalogue does.
