@@ -45,6 +45,7 @@ import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
 import { SCOPE_FORMAT_VERSION } from '../../src/adapters/folder/format/scopeHeader'
+import { writePlace } from '../../src/agent/place'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
@@ -70,8 +71,8 @@ const EXAMPLE = {
   path: 'acme-logistics',
   landscape: 'acme-logistics/application-landscape',
   landscapeName: 'Application landscape',
-  /** The root, the example's organisation, its landscape and its platforms (ADR-0013). */
-  scopes: 4,
+  /** The root, the example's organisation, its landscape and its platforms (ADR-0013), its Topics place and the integration topic (ADR-0042). */
+  scopes: 6,
   applications: 20,
   activeDiagram: 'landscape',
 }
@@ -766,7 +767,8 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // again, Forward is greyed. Each move is waited for as the address says
   // it, because a move is written once it has settled.
   results.push(await checkHere('Back after opening a scope from a home returns to that home, and Forward to the scope', async () => {
-    const landscapeHash = `#place?scope=${encodeURIComponent(EXAMPLE.landscape)}&page=board`
+    // The address as the app writes it (ADR-0033, amended 17 October 2026): `#/<scope>/-/board/<view>`.
+    const landscapeHash = writePlace({ scope: EXAMPLE.landscape, page: 'board' })
     const onBoard = `location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow')`
     /** The bar's two, as a person sees them: which of Back and Forward can be pressed. */
     const bar = async () => JSON.parse(await page(`(() => {
@@ -790,7 +792,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     sendCommand({ type: 'back' })
     const home = await page(waitFor(`(() => {
       const cards = document.querySelector('[data-testid="organisation-cards"]')
-      return cards && !document.querySelector('.react-flow') && location.hash.includes('page=home') && location.hash
+      return cards && !document.querySelector('.react-flow') && location.hash.endsWith('/-/home') && location.hash
     })()`, 'a home after Back'))
     await expectBar('on the home after Back', { forward: true })
     await page(`(() => { document.querySelectorAll('[data-testid="back-forward"] button')[1].click(); return 'pressed' })()`)
