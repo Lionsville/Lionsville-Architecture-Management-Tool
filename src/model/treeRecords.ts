@@ -8,6 +8,7 @@
  * fills it is `projects/treeRecords.ts`, over the tree's index, so the app and
  * a server answer the same question the same way.
  */
+import type { Citation } from './citable'
 import type { Evaluation } from './evaluation'
 import type { Principle, PrincipleGroup } from './principle'
 import type { DesignElement } from './types'
@@ -37,4 +38,6 @@ export type TreeRecords = {
   topics(): readonly TreeTopic[]
   blocks(): readonly { readonly scope: string; readonly block: DesignElement }[]
   evaluations(): readonly { readonly scope: string; readonly evaluation: Evaluation }[]
+  /** Every citation of a principle, with the scope that keeps it: what a building block cites is copied onto its decision (ADR-0043 §7). */
+  citations(): readonly { readonly scope: string; readonly citation: Citation }[]
 }

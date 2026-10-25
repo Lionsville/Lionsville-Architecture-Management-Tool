@@ -702,6 +702,22 @@ const SPECS = [
     },
   },
   {
+    name: 'references.list',
+    tier: 'read',
+    description:
+      'What a document may refer to (ADR-0043 §9, §10), in the open scope or the scope named: its views and elements, the '
+      + 'principles in force there and each of their aspects, every building block\'s requirements and every scope\'s '
+      + 'evaluation of one, and its decisions and observations — each with the markdown that refers to it, to write into a '
+      + 'description or a decision\'s body as it is: an element by [[Name]] in a sentence, a view by ![name](view:id), the '
+      + 'rest as a ref fence on lines of its own, drawn from the model each time it is read. query narrows them; at most 50, '
+      + 'best first.',
+    inputSchema: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'Words the label, the detail or the kind must hold.' } },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'checks.list',
     tier: 'read',
     description:
@@ -1868,6 +1884,103 @@ const SPECS = [
         how: { type: 'string', description: 'How it covers it, where that helps.' },
       },
       required: ['block', 'option', 'capability', 'level'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'evaluation.add',
+    tier: 'write',
+    description:
+      'Start the open scope\'s evaluation of a building block (ADR-0043 §4), kept here or anywhere (blocks.list): the usage '
+      + 'contexts that apply here, by id or name — all of the block\'s where none are given — and, with copyFrom, the options '
+      + 'and ratings another scope\'s evaluation of it holds, to change from there. One evaluation of a block per scope. Then '
+      + 'evaluation.rate rates the options, and evaluation.propose proposes the decision.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        block: { type: 'string', description: 'The building block\'s id.' },
+        contexts: { type: 'array', description: 'The usage contexts that apply here, by id or name. Absent: all of them.', items: { type: 'string' } },
+        copyFrom: { type: 'string', description: 'A scope that evaluates the block already, by path, whose options and ratings this one starts from.' },
+      },
+      required: ['block'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'evaluation.propose',
+    tier: 'write',
+    description:
+      'Propose the decision the open scope\'s evaluation of a building block becomes (ADR-0043 §7), as the block\'s page '
+      + 'does: a decision record, proposed, choosing one option weighed here, drafted with the context, what is needed here as '
+      + 'its drivers, every option with its fit and the evaluation referred to; the principles the block cites are cited as '
+      + 'supporting it. Its consequences and signers are the person\'s; accepting it (decision.transition) marks the option '
+      + 'chosen in the evaluation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        block: { type: 'string', description: 'The building block\'s id.' },
+        option: { type: 'string', description: 'The solution chosen, by id or name: one of the options weighed here.' },
+      },
+      required: ['block', 'option'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'block.update',
+    tier: 'write',
+    description:
+      'Change a building block kept in the open scope (ADR-0043 §2, §3): its requirements — the capabilities it must provide '
+      + '(a must fails any solution that does not cover it fully) and its usage contexts, each with what it needs of each '
+      + 'capability, 0 to 4 — and its catalogue of solutions. Each list given is the whole list: keep an item by giving it '
+      + 'back with its id; an item without an id is new. A context names a capability by its id or by its words. Its name '
+      + 'and description are element.update\'s. Answers the ids each item has.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('building block'),
+        capabilities: {
+          type: 'array', description: 'What it must provide, whole.',
+          items: {
+            type: 'object', description: 'One capability.',
+            properties: {
+              id: { type: 'string', description: 'Its id, to keep one already there.' },
+              text: { type: 'string', description: 'What it provides, in words.' },
+              must: { type: 'boolean', description: 'Not covered fully, a solution fails whatever its fit.' },
+              function: { type: 'string', description: 'A function on a business sheet it serves, by id.' },
+            },
+            required: ['text'], additionalProperties: false,
+          },
+        },
+        contexts: {
+          type: 'array', description: 'The uses it serves, whole.',
+          items: {
+            type: 'object', description: 'One usage context.',
+            properties: {
+              id: { type: 'string', description: 'Its id, to keep one already there.' },
+              name: { type: 'string', description: 'What the use is called.' },
+              description: { type: 'string', description: 'The use, in a sentence or two.' },
+              needs: { type: 'object', description: 'What it needs of each capability, by the capability\'s id or words: a level from 0 (not needed) to 4.', additionalProperties: true },
+            },
+            required: ['name', 'needs'], additionalProperties: false,
+          },
+        },
+        sbbs: {
+          type: 'array', description: 'Its catalogue of solutions, whole: what each is, never how well it fits.',
+          items: {
+            type: 'object', description: 'One solution.',
+            properties: {
+              id: { type: 'string', description: 'Its id, to keep one already there.' },
+              name: { type: 'string', description: 'What it is called.' },
+              supplier: { type: 'string', description: 'Who supplies it.' },
+              sort: { type: 'string', description: 'A product, a service, or built in house.', enum: ['product', 'service', 'inHouse'] },
+              status: { type: 'string', description: 'Where it stands. Default candidate.', enum: ['candidate', 'evaluated', 'inUse', 'retired'] },
+              elements: { type: 'array', description: 'The landscape elements that are this solution, by id.', items: { type: 'string' } },
+            },
+            required: ['name', 'sort'], additionalProperties: false,
+          },
+        },
+      },
+      required: ['id'],
       additionalProperties: false,
     },
   },

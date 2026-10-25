@@ -3,7 +3,7 @@
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
   building blocks, their evaluations, the decision and where the choice is
   seen (§1–§8, §13); references in documents and live views (§9–§11); the
-  agent's tools (§12) not yet built
+  agent's tools (§12), by other names and without `evaluation.remove`
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -336,3 +336,22 @@ handlers at the frame, which the canvas's own pan and zoom listen beneath. A
 paragraph of pictures only is a block, since a canvas is no phrasing content.
 Under every view, a drawing included, the caption names it and opens it.
 
+## As built, 25 October 2026: the agent's tools (§12)
+
+The tools are fewer than §12 names, and named for what they write. An agent
+makes a block with `element.add` (`kind: "buildingBlock"`) and reads every
+block with `blocks.list` — its requirements, its catalogue and every scope's
+evaluation with the fit of each option and the musts it fails — in place of
+`buildingBlocks.list` and `buildingBlock.read`. `block.update` writes the
+capabilities, the usage contexts and the catalogue, each list whole, in
+place of nine add, update and remove tools: an item given back with its id
+is kept, one without is new, and a context may name a capability by its
+words. `evaluation.add` (`block`, `contexts`, `copyFrom`) starts the open
+scope's evaluation, in place of `evaluation.start`; `evaluation.rate` rates
+one option against one capability; `evaluation.propose` (`block`, `option`)
+proposes the decision as the block's page does, in place of
+`buildingBlock.decide` — one drafting, `decisions/blockDecision.ts`, for
+both. Removing an evaluation stays the page's. `references.list` answers the
+catalogue the editor's *Insert ▾* reads (`search/referables.ts`, moved there
+so the agent may read it), and the method sent on connect
+(`RECORDS_PARAGRAPH`) says to refer rather than copy.

@@ -17,6 +17,7 @@
  * status leaves *connected*, and a banner naming a client that is no longer
  * there would be a lie.
  */
+import type { Translate } from '../i18n'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ShellView } from '../agent/shell'
 import type { PeopleView } from '../agent/people'
@@ -65,6 +66,8 @@ export type UseAgentShellOptions = {
   open: (to: Destination & { scope: string }) => void
   /** Said once when the person presses Stop, so the toast can name the client. */
   onStopped?: (client: string | undefined) => void
+  /** The app's words, for a read that says some with nothing open. */
+  translate?: Translate
 }
 
 export type AgentShell = {
@@ -77,7 +80,7 @@ export type AgentShell = {
   session: () => WorkspaceAgentView | undefined
 }
 
-export function useAgentShell({ gateway, status, tree, people, scopes, screen, open, onStopped }: UseAgentShellOptions): AgentShell {
+export function useAgentShell({ gateway, status, tree, people, scopes, screen, open, onStopped, translate }: UseAgentShellOptions): AgentShell {
   const driving = useMemo(() => new Driving(), [])
   const [state, setState] = useState<DrivingState>(() => driving.current())
   useEffect(() => driving.onChange(() => setState(driving.current())), [driving])
@@ -88,13 +91,14 @@ export function useAgentShell({ gateway, status, tree, people, scopes, screen, o
 
   // Read through refs so the handler, which keeps the shell object across
   // renders, always reaches the current screen and the current tree.
-  const latest = useRef({ tree, people, scopes, screen, open, status })
-  latest.current = { tree, people, scopes, screen, open, status }
+  const latest = useRef({ tree, people, scopes, screen, open, status, translate })
+  latest.current = { tree, people, scopes, screen, open, status, translate }
 
   const shell = useMemo<ShellView>(() => ({
     get tree() { return latest.current.tree },
     get people() { return latest.current.people },
     get scopes() { return latest.current.scopes },
+    get translate() { return latest.current.translate },
     screen: () => latest.current.screen(),
     open: (to) => latest.current.open(to),
     client: () => {

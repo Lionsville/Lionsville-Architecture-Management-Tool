@@ -108,3 +108,24 @@ export const SHEET_MAPPING_PARAGRAPH =
   + 'bottom-up: function.claim in the domain\'s scope, a stand-in of the function on its sheet, under which the domain files its '
   + 'own capabilities. element.describe of a function says its domains and claimedBy; a function nobody handed on and no domain '
   + 'took up is not yet mapped (checks.list). Handing on and taking up are two statements by two scopes: neither writes the other.'
+
+/**
+ * How principles, topics and building blocks hang together, said once for an
+ * agent (ADR-0041, ADR-0042, ADR-0043). The tools say each call; this says
+ * which record a sentence belongs in, and that a document refers to a record
+ * rather than copying it — what an agent gets wrong when it writes a
+ * principle's words into a decision or invents a topic per scope. Handed over
+ * on connect by every host, with no word about a screen in it.
+ */
+export const RECORDS_PARAGRAPH =
+  'Principles, topics and building blocks are records of their own. A principle is kept where it applies and holds in every '
+  + 'scope under it and wherever a topic that keeps it is relevant (principles.list says which hold at a scope, and how); a '
+  + 'record that follows, deviates from or supports one cites it with citation.add rather than restating it. A topic is a '
+  + 'scope filed under the organisation\'s Topics, made with scope.create topic, and linked to the scopes it is relevant to '
+  + 'with dated links, given whole with scope.update relevantTo — one topic for a subject, linked wherever it applies, never '
+  + 'one per scope (topics.list). A building block says what many solutions must provide — its capabilities, its usage '
+  + 'contexts with what each needs, and its catalogue of solutions (block.update); a scope that is choosing evaluates it '
+  + '(evaluation.add, evaluation.rate) and proposes the decision (evaluation.propose), which the person accepts. In a '
+  + 'description or a decision\'s body, refer to these with the markdown references.list gives — a view, an element, a '
+  + 'principle and its aspect, an evaluation, a decision, an observation — and the reference is drawn from the record each '
+  + 'time it is read.'

@@ -17,7 +17,7 @@ import type { TopicNode } from './topics'
 /** A scope as the fold needs it: its path, its name and its topic links. */
 export type RecordScope = TopicNode & { readonly name: string }
 
-export function treeRecords(index: Pick<ScopeIndex, 'principleScopes' | 'principlesAt' | 'buildingBlocks' | 'evaluations'>, scopes: readonly RecordScope[], day: string): TreeRecords {
+export function treeRecords(index: Pick<ScopeIndex, 'principleScopes' | 'principlesAt' | 'buildingBlocks' | 'evaluations' | 'citations'>, scopes: readonly RecordScope[], day: string): TreeRecords {
   const own = (path: ScopePath) => index.principlesAt(path)
   const live = (path: ScopePath) => own(path).principles.filter((one) => one.mergedInto === undefined)
   return {
@@ -45,5 +45,6 @@ export function treeRecords(index: Pick<ScopeIndex, 'principleScopes' | 'princip
     },
     blocks: () => index.buildingBlocks(),
     evaluations: () => index.evaluations(),
+    citations: () => index.citations(),
   }
 }

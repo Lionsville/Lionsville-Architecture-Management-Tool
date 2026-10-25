@@ -12,11 +12,11 @@
  */
 import { useMemo, useRef } from 'react'
 import type { Translate } from '../../i18n'
-import { draftedBody, newAdr, nextAdrNumber } from '../../decisions/adr'
+import { blockDecision, supportsCopied } from '../../decisions/blockDecision'
 import { replacement } from '../../model/commands'
 import type { Command } from '../../model/commands'
-import { evaluationId, needsOf, percent, ranking, startedEvaluation } from '../../model/evaluation'
-import type { Evaluation, Fit } from '../../model/evaluation'
+import { evaluationId, startedEvaluation } from '../../model/evaluation'
+import type { Evaluation } from '../../model/evaluation'
 import { formatAspectNumber, formatPrincipleNumber } from '../../model/principle'
 import type { DesignElement } from '../../model/types'
 import { flattenScopes } from '../../projects/scope'
@@ -26,7 +26,7 @@ import { scopeDisplayName } from '../../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { choosableScopes, topicsInForce } from '../../projects/topics'
-import type { BlockRow, BlocksAccess, EvaluationRow } from '../../blocks/ui/BlocksContext'
+import type { BlocksAccess, EvaluationRow } from '../../blocks/ui/BlocksContext'
 import type { InitialPage } from '../App'
 import type { BelowScopes } from '../useChangeBelow'
 import { refusalKey, writeIn } from '../units/writeIn'
@@ -60,47 +60,6 @@ async function land(deps: BlocksDeps, path: ScopePath, change: (held: ScopeSnaps
 /** An evaluation without the keys said empty, as the record keeps it. */
 function kept(evaluation: Evaluation): Evaluation {
   return Object.fromEntries(Object.entries(evaluation).filter(([, value]) => value !== undefined)) as Evaluation
-}
-
-/**
- * The decision a scope's evaluation becomes (§7), in the record's own
- * sections: the context, what is needed here as its drivers, each option
- * with its fit, the option chosen as the outcome, and the evaluation referred
- * to as it stood. Its consequences and its signers are the person's to write.
- */
-function proposal(deps: BlocksDeps, held: ScopeSnapshot, row: BlockRow, evaluation: Evaluation, option: string, scopeName: string) {
-  const { s } = deps
-  const fitWords = (fit: Fit) => (fit.failsMust.length ? s('blockDecision.failsMust') : fit.fit !== undefined ? `${percent(fit.fit)} %` : '—')
-  const ranked = ranking(row.block, evaluation)
-  const chosen = ranked.find((one) => one.sbb.id === option)
-  const name = chosen?.sbb.name ?? option
-  const needs = needsOf(row.block, evaluation.contexts)
-  const drivers = (row.block.capabilities ?? []).filter((one) => (needs[one.id] ?? 0) > 0)
-    .map((one) => s('blockDecision.driver', { capability: one.text, level: needs[one.id]! }))
-  const reference = ['```ref', `evaluation: ${row.block.id}`, `scope: ${held.path}`, ...(held.revision ? [`at: ${held.revision}`] : []), '```'].join('\n')
-  const body = draftedBody(s, {
-    context: s('blockDecision.context', { block: row.block.name, scope: scopeName }),
-    drivers,
-    options: ranked.map(({ sbb, fit }) => `${sbb.name} \u2014 ${fitWords(fit)}`),
-    outcome: s('blockDecision.outcome', { name, fit: chosen ? fitWords(chosen.fit) : '—' }),
-    more: reference,
-  })
-  const decision = newAdr({
-    id: deps.makeId('adr'), number: nextAdrNumber(held.model.decisions ?? []), date: deps.today, t: s,
-    title: s('blockDecision.title', { name, block: row.block.name, scope: scopeName }),
-    ...(held.model.elements.some((one) => one.id === row.block.id) ? { subjectId: row.block.id } : {}),
-  })
-  return { ...decision, body, chooses: { evaluation: evaluation.id, option } }
-}
-
-/** The citations of principles the block makes, copied onto the decision as *supports* (§7). */
-function supportsOf(deps: BlocksDeps, row: BlockRow, decision: string): Command[] {
-  return deps.index.citations()
-    .filter(({ scope, citation }) => scope === row.scope && citation.about.kind === 'element' && citation.about.id === row.block.id)
-    .map(({ citation }) => ({
-      type: 'citation.add',
-      citation: { id: deps.makeId('ci'), about: { kind: 'decision', id: decision }, principle: citation.principle, ...(citation.aspect !== undefined ? { aspect: citation.aspect } : {}), stance: 'supports', on: deps.today },
-    }))
 }
 
 type Reads = Pick<BlocksAccess, 'blocks' | 'block' | 'evaluationsOf' | 'blocksAt' | 'scopeLabel' | 'aspectLabel' | 'citationsOf' | 'aspectChoices' | 'elementName' | 'elementChoices' | 'placeChoices' | 'evaluateChoices'>
@@ -186,9 +145,15 @@ export function blocksAccess(deps: BlocksDeps, version: number): BlocksAccess {
       if (!row || !evaluation || evaluation.id !== evaluationId(evaluation.block)) return undefined
       let made: string | undefined
       const landed = await land(deps, scope, (held) => {
-        const decision = proposal(deps, held, row, evaluation, option, read.scopeLabel(scope))
+        const decision = blockDecision({
+          block: row.block, evaluation, option, id: deps.makeId('adr'), date: deps.today, s: deps.s,
+          scope: {
+            path: held.path, name: read.scopeLabel(scope), decisions: held.model.decisions ?? [], keepsBlock: held.model.elements.some((one) => one.id === row.block.id),
+            ...(held.revision ? { revision: held.revision } : {}),
+          },
+        })
         made = decision.id
-        return [{ type: 'decision.add', decision }, ...supportsOf(deps, row, decision.id)]
+        return [{ type: 'decision.add', decision }, ...supportsCopied(deps.index.citations(), { scope: row.scope, id: row.block.id }, decision.id, deps.makeId, deps.today)]
       })
       return landed ? made : undefined
     },

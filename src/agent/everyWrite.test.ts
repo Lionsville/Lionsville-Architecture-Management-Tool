@@ -53,6 +53,13 @@ const host: HostModel = {
     element('api', 'Billing API', { kind: 'component', parentId: 'billing' }),
     element('who', 'Clerk', { kind: 'actor' }),
     element('bus', 'Message brokering', { kind: 'platformService' }),
+    // A building block kept here (ADR-0043), for block.update, evaluation.add and evaluation.propose.
+    element('blk-id', 'Identity service', {
+      kind: 'buildingBlock', isManaged: false,
+      capabilities: [{ id: 'cap-sso', text: 'Signs a person in once', must: true }],
+      contexts: [{ id: 'cx-staff', name: 'Staff', needs: { 'cap-sso': 3 } }],
+      sbbs: [{ id: 'sb-gate', name: 'Gatekeeper', sort: 'product', status: 'candidate' }],
+    }),
   ],
   relations: [
     { type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', isBidirectional: false },
@@ -197,6 +204,18 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
     on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare'] }]],
   }],
   'evaluation.rate': [{ args: { block: { id: 'blk-gw' }, option: 'sb-a', capability: 'cap-route', level: 3 } }],
+  'evaluation.add': [{ args: { block: 'blk-id', contexts: ['Staff'] } }],
+  'evaluation.propose': [{
+    args: { block: 'blk-id', option: 'Gatekeeper' },
+    on: [['evaluation.add', { block: 'blk-id' }], ['evaluation.rate', { block: { id: 'blk-id' }, option: 'sb-gate', capability: 'cap-sso', level: 4 }]],
+  }],
+  'block.update': [{
+    args: {
+      id: 'blk-id', capabilities: [{ id: 'cap-sso', text: 'Signs a person in once', must: true }, { text: 'Asks for a second factor' }],
+      contexts: [{ id: 'cx-staff', name: 'Staff', needs: { 'cap-sso': 3, 'asks for a second factor': 4 } }],
+      sbbs: [{ id: 'sb-gate', name: 'Gatekeeper', sort: 'product', status: 'evaluated' }, { name: 'Our own sign-in', sort: 'inHouse' }],
+    },
+  }],
 
   'observation.record': [{ args: { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' } }],
   'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],

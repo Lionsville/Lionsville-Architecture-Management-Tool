@@ -6,28 +6,33 @@
  * scope's views and elements, the principles in force there and each of
  * their aspects, every building block's requirements and every scope's
  * evaluation of one, and the scope's decisions and observations — each with
- * the markdown that refers to it (`documentation/references.ts`).
+ * the markdown that refers to it (`documentation/references.ts`). Here, beside
+ * search, so the editor's *Insert ▾*, the completion while typing and the
+ * agent's `references.list` read one catalogue.
  */
-import type { Translate } from '../../i18n'
-import { STATUS_LABEL } from '../../decisions/adrScope'
-import { formatAdrNumber } from '../../decisions/adr'
-import { formatObservationNumber } from '../../observations/observation'
-import type { HostModel } from '../../model/hostModel'
-import { kindLabel } from '../../model/kinds'
-import { formatAspectNumber, formatPrincipleNumber } from '../../model/principle'
-import type { Principle } from '../../model/principle'
-import { principleRef, refFence } from '../../documentation/references'
-import type { Referable } from '../../documentation/references'
-import type { KeptBlock, KeptEvaluation } from '../../projects/scopeIndex'
-import type { ScopePath } from '../../projects/scopePath'
+import type { Translate } from '../i18n/strings'
+import { STATUS_LABEL } from '../decisions/adrScope'
+import { formatAdrNumber } from '../decisions/adr'
+import { formatObservationNumber } from '../observations/observation'
+import type { Evaluation } from '../model/evaluation'
+import type { HostModel } from '../model/hostModel'
+import { kindLabel } from '../model/kinds'
+import { formatAspectNumber, formatPrincipleNumber } from '../model/principle'
+import type { Principle } from '../model/principle'
+import type { DesignElement } from '../model/types'
+import { principleRef, refFence } from '../documentation/references'
+import type { Referable } from '../documentation/references'
+
+/** A scope's path: the organisation is the empty string. */
+type ScopePath = string
 
 export type ReferablesFrom = {
   /** The open scope's model. */
   model: Pick<HostModel, 'diagrams' | 'elements' | 'decisions' | 'observations'>
   /** The principles in force here, each with the scope that keeps it. */
   principles: readonly { scope: ScopePath; principle: Principle }[]
-  blocks: readonly KeptBlock[]
-  evaluations: readonly KeptEvaluation[]
+  blocks: readonly { readonly scope: ScopePath; readonly block: DesignElement }[]
+  evaluations: readonly { readonly scope: ScopePath; readonly evaluation: Evaluation }[]
   scopeLabel: (path: ScopePath) => string
   s: Translate
 }

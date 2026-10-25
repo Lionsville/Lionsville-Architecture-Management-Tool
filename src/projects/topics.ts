@@ -20,7 +20,7 @@ import type { ScopePath } from './scopePath'
 /** One link from a topic to a scope it is relevant to: from a day, and until one once it ends. Days are `yyyy-mm-dd`. */
 export type TopicLink = { path: ScopePath; from?: string; until?: string }
 
-/** The organisation's topics place where no setting says another (§2): a *Topics* scope at the organisation. */
+/** The organisation's topics place (§2, amended): a *Topics* scope at the organisation, at a fixed address. */
 export const TOPICS_PLACE = joinScope(ROOT_SCOPE, 'topics')
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/

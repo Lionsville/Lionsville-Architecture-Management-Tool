@@ -23,7 +23,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import type { WorkspaceParts } from '../workspaceParts'
 import { drawRef } from './RefDrawings'
 import type { RefReads } from './RefDrawings'
-import { referablesIn } from './referables'
+import { referablesIn } from '../../search/referables'
 
 /** How many of an evaluation's entries are read back for the one a pin names, newest first. */
 const PINNED_LOOKBACK = 20

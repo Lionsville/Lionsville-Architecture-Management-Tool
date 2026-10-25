@@ -2967,6 +2967,17 @@ the scope open in the workspace where it is in the tree: to rename, move or
 remove that one, or to move or remove a scope above it, it goes to that
 scope's home first, as you would.
 
+An agent reads the **principles** in force at a scope and how each comes to
+hold there, the **topics** and where each applies, and the **building
+blocks** with every scope's evaluation of them. It can propose and change a
+principle and cite one from a record; make a topic and link it to the scopes
+it is relevant to; change a block's capabilities, usage contexts and
+catalogue; start a scope's evaluation of a block, rate its options and
+propose the decision it becomes, as **Propose a decision…** on the block's page
+does — accepting it is yours. When it writes a description or a decision, it
+refers to a view, an element, a principle, an evaluation, a decision or an
+observation in the same words *Insert ▾* writes.
+
 ## Preferences
 
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the

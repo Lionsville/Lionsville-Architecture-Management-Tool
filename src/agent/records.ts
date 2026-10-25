@@ -21,7 +21,7 @@ type Args = Record<string, unknown>
 /** Nothing to give: a shell built before these records lends none, and says so rather than refusing. */
 const NONE: TreeRecords = {
   principleScopes: () => [], principlesAt: () => ({ principles: [], groups: [] }), inForce: () => [],
-  topics: () => [], blocks: () => [], evaluations: () => [],
+  topics: () => [], blocks: () => [], evaluations: () => [], citations: () => [],
 }
 
 const recordsOf = (tree: TreeView | undefined): TreeRecords => tree?.records?.() ?? NONE

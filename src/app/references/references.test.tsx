@@ -18,7 +18,7 @@ import type { Principle } from '../../model/principle'
 import type { DesignElement } from '../../model/types'
 import { drawRef } from './RefDrawings'
 import type { RefReads } from './RefDrawings'
-import { referablesIn } from './referables'
+import { referablesIn } from '../../search/referables'
 
 afterEach(cleanup)
 

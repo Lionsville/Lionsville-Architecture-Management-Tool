@@ -253,7 +253,7 @@ export function useShellAgent(deps: {
     providerMove.current = undefined
     openFor(to)
   }, [openFor])
-  const agentShell = useAgentShell({ gateway, status, tree, people: deps.people, scopes: deps.scopes, screen: screenNow, open: agentOpen, onStopped: agentStopped })
+  const agentShell = useAgentShell({ gateway, status, tree, people: deps.people, scopes: deps.scopes, screen: screenNow, open: agentOpen, onStopped: agentStopped, translate: deps.s })
   const driving = agentShell.driving.session !== undefined
   agentDriving.current = driving
   // A session that ends — Stop, `session.end`, the client gone — may end in the

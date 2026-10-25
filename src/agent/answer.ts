@@ -106,7 +106,7 @@ export type ReadView = {
   readonly account?: () => { readonly id: string; readonly name: string } | undefined
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
   readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'
-    | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register' | 'scopes' | 'listed'>>
+    | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register' | 'scopes' | 'listed' | 'records'>>
   /**
    * The register as the agent is told it (ADR-0036 §8, §13): what a person
    * picked from it reads as — the name, or the pseudonym the policy gives —

@@ -25,6 +25,7 @@ const index = {
   principlesAt: (path: string) => ({ principles: kept[path] ?? [], groups: [] }),
   buildingBlocks: () => [],
   evaluations: () => [],
+  citations: () => [],
 }
 
 const scopes = [

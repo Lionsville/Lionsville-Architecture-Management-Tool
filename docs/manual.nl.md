@@ -3239,6 +3239,19 @@ is op zijn plek in de boom: om die te hernoemen, te verplaatsen of te
 verwijderen, of een scope erboven te verplaatsen of te verwijderen, gaat hij
 eerst naar de startpagina van die scope, zoals jij zou doen.
 
+Een agent leest de **principes** die in een scope gelden en hoe elk daar
+komt te gelden, de **onderwerpen** en waar elk geldt, en de **bouwstenen** met
+de evaluatie die elke scope ervan maakte. Hij kan een principe voorstellen en
+wijzigen en er een citeren vanuit een record; een onderwerp maken en het
+koppelen aan de scopes waarvoor het relevant is; de capabilities,
+gebruikscontexten en catalogus van een bouwsteen wijzigen; de evaluatie van
+een bouwsteen in een scope beginnen, de opties beoordelen en het besluit
+voorstellen dat eruit volgt, zoals **Een besluit voorstellen…** op de pagina van
+de bouwsteen doet — aannemen doe jij. Als hij een beschrijving of een besluit
+schrijft, verwijst hij naar een view, een element, een principe, een
+evaluatie, een besluit of een observatie met dezelfde woorden die
+*Invoegen ▾* schrijft.
+
 ## Voorkeuren
 
 Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun

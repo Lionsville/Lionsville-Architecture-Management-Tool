@@ -12,6 +12,7 @@
  * scope open, which is the point — an agent that arrives at the organisation
  * screen used to be told *no project* and nothing else.
  */
+import type { Translate } from '../i18n/strings'
 import type { Adr } from '../model/adr'
 import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
@@ -36,6 +37,8 @@ export type ShellView = {
   people?: PeopleView
   /** The tree of scopes, to make, describe, move and remove one in (ADR-0040 §1), where the host lends it. */
   scopes?: ScopesView
+  /** The words the app speaks, for what a read says in them with nothing open (`references.list`); absent, their keys. */
+  translate?: Translate
   /** Where the app is, now. */
   screen(): Screen
   /**

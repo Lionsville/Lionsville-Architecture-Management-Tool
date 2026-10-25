@@ -1,8 +1,9 @@
 # ADR-0042 — A topic is a scope that is relevant to other scopes, by dated links
 
-* Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
-  the topic, its links, the catalogue, the homes and the checks (§1, §3–§5,
-  §7); the topics place's setting (§2) and the agent's tools (§6) not yet built
+* Status: accepted, 25 October 2026; implemented, 25 October 2026 (3.8.0),
+  with the topics place's setting (§2) withdrawn — the place is `topics` at
+  the organisation — and the agent's tools of §6 built as the tree's own
+  (*As built*)
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §1 (every scope is the same document, nested; the label
@@ -155,10 +156,8 @@ not one a subtopic has through its topic — and only to a person who may
 change the topic; *+ Topic…* offers only the topics they may change. A
 topic's own home says it is one and opens it in the catalogue.
 
-**The topics place** is its default so far, `topics` at the organisation,
-made as a scope named *Topics* the first time a topic is made. Every rule
-in `projects/topics.ts` takes the place as a parameter; the setting that
-names another (§2) is not yet built, and is built with the agent's tools.
+**The topics place** is `topics` at the organisation, made as a scope
+named *Topics* the first time a topic is made (§2, amended below).
 
 **The catalogue** is a page over the home it is opened from, by the
 *Topics* card on the organisation's home, a chip, a check, or `app.open`
@@ -212,3 +211,18 @@ of its own there.
 whole, as `topics.list` reads it — a link added with its first day, one
 ended with its last, one left out only where it was made by mistake — and
 lands it as the topic's one `scope.describe`, as the catalogue does.
+
+**The topics place is fixed** (§2 amended, 25 October 2026): `topics` at
+the organisation, named *Topics* where it is made and renamed like any scope.
+The setting `topics.place` is withdrawn: every rule about what a topic is
+would read it from the organisation's document, which the tree's listing —
+what every home and the agent's reads stand on — does not carry, and a scope
+is made a topic by being filed there (its type *Topic*), which a second place
+would not make simpler.
+
+**The agent's tools** (§6) are the tree's own rather than five of a topic's:
+`scope.create` with `topic` makes one; `scope.update` writes its name, its
+description and `relevantTo` whole — a link added, ended with its last day,
+or left out where it was a mistake; `scope.move` and `scope.remove` move and
+remove it; `topics.list` reads them. A link is one `scope.describe` of the
+topic, as the catalogue writes it, so the four commands of §6 are not needed.

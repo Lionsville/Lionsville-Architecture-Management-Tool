@@ -22,7 +22,8 @@ import {
 import { proposeDecision, removeDecision, transitionDecision, updateDecision } from './decisions'
 import { addPrinciple, updatePrinciple } from './principleRecords'
 import { citePrinciple } from './citing'
-import { rateEvaluation } from './evaluations'
+import { proposeChoice, rateEvaluation, startEvaluation } from './evaluations'
+import { updateBlock } from './buildingBlocks'
 import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
 import { claimFunction } from './functions'
@@ -96,6 +97,9 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'principle.update': updatePrinciple,
   'citation.add': citePrinciple,
   'evaluation.rate': rateEvaluation,
+  'evaluation.add': startEvaluation,
+  'evaluation.propose': proposeChoice,
+  'block.update': updateBlock,
 
   'observation.record': recordObservation,
   'observation.update': updateObservationTool,

@@ -12,6 +12,7 @@ import type { Principle } from '../model/principle'
 import type { TreeRecords } from '../model/treeRecords'
 import type { DesignElement } from '../model/types'
 import { listBlocks, listPrinciples, listTopics } from './records'
+import { listReferences } from './references'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
 
@@ -40,6 +41,7 @@ const records: TreeRecords = {
   topics: () => [{ path: 'topics/integration', name: 'Integration', links: [{ path: 'sales', from: '2026-01-01' }], relevantTo: ['sales'] }],
   blocks: () => [{ scope: 'topics/integration', block: gateway }],
   evaluations: () => [{ scope: 'sales', evaluation: sales }],
+  citations: () => [],
 }
 
 const tree = { records: () => records } as unknown as TreeView
@@ -82,5 +84,32 @@ describe('the tree’s principles, topics and building blocks, for an agent', ()
 
   it('answers empty, not refused, where the shell lends no records', () => {
     expect(body(listTopics({} as TreeView, {})).topics).toEqual([])
+  })
+})
+
+describe('what a document may refer to, for an agent (ADR-0043 §9)', () => {
+  const host = {
+    name: 'Sales', elements: [{ id: 'crm', kind: 'application' as const, name: 'CRM', lifecycle: 'live' as const, isManaged: true, aspects: {} }],
+    relations: [], diagrams: [], decisions: [{ id: 'adr-1', number: 1, title: 'Keep the ledger', status: 'proposed' as const, date: '2026-09-01', body: '', signers: [] }],
+  }
+  const read = { ...tree, scopes: () => [{ path: '', name: 'Acme' }, { path: 'topics/integration', name: 'Integration' }] } as unknown as TreeView
+
+  it('lists the open scope\'s catalogue with the markdown that refers to each, narrowed by a query', async () => {
+    const all = body(await listReferences({}, read, { path: 'sales', current: host }, (key) => key))
+    expect(all.scope).toBe('sales')
+    const references = all.references as { kind: string; label: string; markdown: string }[]
+    expect(references.map((one) => one.kind)).toEqual(['element', 'principle', 'principle', 'evaluation', 'evaluation', 'decision'])
+    expect(references.find((one) => one.kind === 'element')?.markdown).toBe('[[CRM]]')
+    expect(references.find((one) => one.kind === 'decision')?.markdown).toBe('```ref\ndecision: adr-1\n```')
+    const found = body(await listReferences({ query: 'privilege' }, read, { path: 'sales', current: host })).references as { markdown: string }[]
+    expect(found.map((one) => one.markdown)).toEqual(['```ref\nprinciple: pr-1\n```'])
+    const aspect = body(await listReferences({ query: 'one role' }, read, { path: 'sales', current: host })).references as { markdown: string }[]
+    expect(aspect.map((one) => one.markdown)).toEqual(['```ref\nprinciple: pr-1\naspect: 1\n```'])
+  })
+
+  it('reads another scope as it is kept, and says nothing is open where none is named', async () => {
+    const elsewhere = { ...read, read: async (path: string) => (path === 'sales' ? { model: host } : undefined) } as unknown as TreeView
+    expect(body(await listReferences({ scope: 'sales' }, elsewhere, undefined)).scope).toBe('sales')
+    expect((await listReferences({}, elsewhere, undefined)).ok).toBe(false)
   })
 })

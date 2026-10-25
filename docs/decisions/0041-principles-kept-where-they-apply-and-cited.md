@@ -2,7 +2,8 @@
 
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
   the principle, its groups and its page (§1–§6, §8, §12, §14); citing,
-  suggestions and the checks (§7, §9, §10)
+  suggestions and the checks (§7, §9, §10); the agent's first tools (§13, in
+  part; the rest scheduled after 3.8.0)
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §7 (a scope's records are read up the tree, *From
@@ -352,3 +353,20 @@ page; written only where the scope may be. *May apply* is
 cited with the reason, as one step, and opens it. The three checks are
 `projects/principleFindings.ts`, in a category of their own, opened on the
 principles page or on the record that cites.
+
+## As built, 25 October 2026: the agent's first tools (§13, in part)
+
+An agent reads the principles with `principles.list` — at a scope, those in
+force there, each with where it is kept and how it holds (kept there, from
+above, or through a topic), or every scope's own — and writes with three
+tools: `principle.add` (a candidate or an accepted principle, its aspects
+numbered, its groups by name), `principle.update` (its title, statement,
+regime, status and rationale), and `citation.add` (a record of the open scope
+follows, deviates from or supports a principle, or a part of it, with its
+reason). The method sent on connect says to cite rather than restate.
+
+The rest of §13 — `principle.read` and `principles.suggest`, relating,
+merging and removing principles, the aspects' own tools, the groups set
+whole, `principle.uncite`, and `principles` on the decision and observation
+tools — is scheduled after 3.8.0 (the roadmap, *Open*); until then those are
+the principles page's.

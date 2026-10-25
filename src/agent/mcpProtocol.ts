@@ -31,7 +31,7 @@ import type { AgentAnswer, AgentRequest, ToolContent, ToolSpec } from './tools'
 import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, refused } from './tools'
 import { randomUUID } from 'node:crypto'
 import type { AgentClient } from '../platform/agentServer'
-import { OBSERVATIONS_METHOD, SHEET_MAPPING_PARAGRAPH, STRUCTURE_DEFAULTS, TREE_TOOLS_PARAGRAPH } from './method'
+import { OBSERVATIONS_METHOD, RECORDS_PARAGRAPH, SHEET_MAPPING_PARAGRAPH, STRUCTURE_DEFAULTS, TREE_TOOLS_PARAGRAPH } from './method'
 
 /**
  * The newest version this server speaks, and the ones it will answer a client
@@ -100,6 +100,7 @@ export const INSTRUCTIONS =
   + STRUCTURE_DEFAULTS + ' '
   + TREE_TOOLS_PARAGRAPH + ' '
   + SHEET_MAPPING_PARAGRAPH + ' '
+  + RECORDS_PARAGRAPH + ' '
   + OBSERVATIONS_METHOD
 
 /**

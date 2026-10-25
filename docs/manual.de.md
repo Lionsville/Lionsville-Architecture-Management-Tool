@@ -3423,6 +3423,19 @@ Um diesen umzubenennen, zu verschieben oder zu entfernen, oder einen Scope
 darüber zu verschieben oder zu entfernen, geht er zuerst auf die Startseite
 dieses Scopes, wie Sie es täten.
 
+Ein Agent liest die **Prinzipien**, die in einem Scope gelten, und wie jedes
+dort zu gelten kommt, die **Themen** und wo jedes gilt, und die **Bausteine**
+mit der Bewertung, die jeder Scope davon gemacht hat. Er kann ein Prinzip
+vorschlagen und ändern und eines aus einem Datensatz zitieren; ein Thema
+anlegen und mit den Scopes verknüpfen, für die es relevant ist; die
+Fähigkeiten, Nutzungskontexte und den Katalog eines Bausteins ändern; die
+Bewertung eines Bausteins in einem Scope beginnen, seine Optionen bewerten und
+die Entscheidung vorschlagen, die daraus folgt, wie **Eine
+Entscheidung vorschlagen…** auf der Seite des Bausteins — sie anzunehmen ist Ihre Sache.
+Schreibt er eine Beschreibung oder eine Entscheidung, verweist er auf eine
+Ansicht, ein Element, ein Prinzip, eine Bewertung, eine Entscheidung oder eine
+Beobachtung mit denselben Worten, die *Einfügen ▾* schreibt.
+
 ## Voreinstellungen
 
 Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,

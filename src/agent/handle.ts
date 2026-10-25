@@ -16,6 +16,7 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
+import { listReferences } from './references'
 import { listBlocks, listPrinciples, listTopics } from './records'
 import { listChanges } from './changes'
 import type { ChangesOf } from './changes'
@@ -575,6 +576,8 @@ function treeWide(
     case 'principles.list': return listPrinciples(tree, request.args)
     case 'topics.list': return listTopics(tree, request.args)
     case 'blocks.list': return listBlocks(tree, request.args)
+    // What a document may refer to: the open scope's, or the scope named (ADR-0043 §9).
+    case 'references.list': return listReferences(request.args, tree, openDocument(session), session?.translate ?? shell?.translate)
     // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).
     case ASSIGNMENTS_LIST: return listAssignments(request.args, tree, openDocument(session), shell?.people)
     // Where each role in each unit reports, and what the lines contradict (ADR-0039 §8).
