@@ -72,6 +72,8 @@ const host: HostModel = {
       ],
     }),
   ],
+  // This scope's evaluation of a building block another scope keeps (ADR-0043 §4), for evaluation.rate.
+  evaluations: [{ id: 'topics.integration~blk-gw', block: { scope: 'topics/integration', id: 'blk-gw' }, contexts: [], options: [], coverage: {} }],
   decisions: [
     { id: 'adr-1', number: 1, title: 'Keep the ledger', status: 'proposed', date: '2026-09-01', body: '# body', signers: [] },
     { id: 'adr-2', number: 2, title: 'Split the API', status: 'reviewing', date: '2026-09-01', body: '# body', signers: [] },
@@ -187,6 +189,14 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'decision.update': [{ args: { id: 'adr-1', title: 'Keep the ledger, for now' } }],
   'decision.remove': [{ args: { id: 'adr-1' } }],
   'decision.transition': [{ args: { id: 'adr-2', status: 'rejected', reason: 'Not now.' } }],
+
+  'principle.add': [{ args: { title: 'Buy before build', statement: 'We buy what does the job.', aspects: ['Compare a product first'] } }],
+  'principle.update': [{ args: { id: 'pr-new-1', status: 'accepted' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare'] }]] }],
+  'citation.add': [{
+    args: { about: { kind: 'decision', id: 'adr-1' }, principle: { id: 'pr-new-1' }, stance: 'deviates', reason: 'The ledger is ours.' },
+    on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare'] }]],
+  }],
+  'evaluation.rate': [{ args: { block: { id: 'blk-gw' }, option: 'sb-a', capability: 'cap-route', level: 3 } }],
 
   'observation.record': [{ args: { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' } }],
   'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],

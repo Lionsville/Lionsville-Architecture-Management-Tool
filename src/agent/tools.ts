@@ -1772,6 +1772,85 @@ const SPECS = [
     },
   },
   {
+    name: 'principle.add',
+    tier: 'write',
+    description:
+      'Propose an architecture principle in the open scope (ADR-0041): a title, a statement, and its aspects — the parts a '
+      + 'record follows or departs from one by one, at least one. A candidate by default, with the question it is about; '
+      + 'accepted where the person said it is. It holds in this scope, every scope under it, and where a topic that keeps it is relevant.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Its title.' }, statement: { type: 'string', description: 'What it says, in markdown.' },
+        aspects: { type: 'array', description: 'Its aspects, in order: at least one.', items: { type: 'string' } },
+        regime: { type: 'string', description: 'fixed: kept to always; flexible (default): weighed.', enum: ['fixed', 'flexible'] },
+        status: { type: 'string', description: 'candidate (default) or accepted, where the person said so.', enum: ['candidate', 'accepted'] },
+        question: { type: 'string', description: 'What a candidate asks.' },
+        rationale: { type: 'string', description: 'Why it holds.' },
+      },
+      required: ['title', 'statement', 'aspects'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.update',
+    tier: 'write',
+    description:
+      'Change a principle of the open scope: its title, statement, regime, status (candidate, accepted, retired) or rationale. '
+      + 'An accepted principle\'s statement changed is sharpened, which the page asks a note for; say what changed in your answer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('principle'), title: { type: 'string', description: 'Its new title.' }, statement: { type: 'string', description: 'Its new statement.' },
+        regime: { type: 'string', description: 'fixed or flexible.', enum: ['fixed', 'flexible'] },
+        status: { type: 'string', description: 'candidate, accepted or retired.', enum: ['candidate', 'accepted', 'retired'] },
+        rationale: { type: 'string', description: 'Why it holds.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'citation.add',
+    tier: 'write',
+    description:
+      'A record of the open scope cites a principle in force here (principles.list with scope): a decision, solution, plan, '
+      + 'element or building block supports it or deviates from it (a reason required); an observation says it holds, '
+      + 'chafes or was missing. aspect narrows it to one aspect by its number.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        about: { type: 'object', description: 'The citing record of the open scope.', properties: { kind: { type: 'string', description: 'decision, observation, solution, transition, element.', enum: ['decision', 'observation', 'solution', 'transition', 'element'] }, id: { type: 'string', description: 'Its id.' } }, required: ['kind', 'id'], additionalProperties: false },
+        principle: { type: 'object', description: 'The principle, with the scope that keeps it ("" the organisation).', properties: { scope: { type: 'string', description: 'The scope that keeps it.' }, id: { type: 'string', description: 'Its id.' } }, required: ['id'], additionalProperties: false },
+        aspect: { type: 'integer', description: 'One aspect, by its number.', minimum: 1 },
+        stance: { type: 'string', description: 'supports or deviates for a decision, solution, plan or element; holds, chafes or missing for an observation.', enum: ['supports', 'deviates', 'holds', 'chafes', 'missing'] },
+        reason: { type: 'string', description: 'Why; required on deviates.' },
+      },
+      required: ['about', 'principle', 'stance'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'evaluation.rate',
+    tier: 'write',
+    description:
+      'Rate one option against one capability in the open scope\'s evaluation of a building block (ADR-0043 §5): level 0 '
+      + '(not covered) to 4 (fully), with how where it helps. An option not yet weighed here is added. blocks.list says the '
+      + 'capabilities, the options and the fit that follows.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        block: { type: 'object', description: 'The building block, with the scope that keeps it.', properties: { scope: { type: 'string', description: 'The scope that keeps it.' }, id: { type: 'string', description: 'Its id.' } }, required: ['id'], additionalProperties: false },
+        option: { type: 'string', description: 'A solution\'s id in the block\'s catalogue.' },
+        capability: { type: 'string', description: 'A capability\'s id.' },
+        level: { type: 'integer', description: '0 (not covered) to 4 (fully).', minimum: 0, maximum: 4 },
+        how: { type: 'string', description: 'How it covers it, where that helps.' },
+      },
+      required: ['block', 'option', 'capability', 'level'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'decision.remove',
     tier: 'write',
     description: 'Throw away a record that is still proposed or reviewing. A locked record stays; its number is never reused.',

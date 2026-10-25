@@ -20,6 +20,7 @@ import {
   align, distribute, drawElement, groupElements, moveBy, placeElement, placeNextTo, undrawElement, ungroup,
 } from './canvas'
 import { proposeDecision, removeDecision, transitionDecision, updateDecision } from './decisions'
+import { addPrinciple, citePrinciple, rateEvaluation, updatePrinciple } from './citing'
 import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
 import { claimFunction } from './functions'
@@ -87,6 +88,12 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'decision.update': updateDecision,
   'decision.remove': removeDecision,
   'decision.transition': transitionDecision,
+
+  // Principles, citing them, and rating an evaluation (ADR-0041, ADR-0043).
+  'principle.add': addPrinciple,
+  'principle.update': updatePrinciple,
+  'citation.add': citePrinciple,
+  'evaluation.rate': rateEvaluation,
 
   'observation.record': recordObservation,
   'observation.update': updateObservationTool,
