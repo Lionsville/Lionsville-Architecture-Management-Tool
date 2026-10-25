@@ -62,6 +62,11 @@ export const PALETTE_ITEMS: Record<PaletteKey, PaletteItem> = {
     labelKey: KIND_LABEL_KEYS.platformService,
     descriptionKey: 'paletteDescription.platformService',
   },
+  buildingBlock: {
+    key: 'buildingBlock',
+    labelKey: KIND_LABEL_KEYS.buildingBlock,
+    descriptionKey: 'paletteDescription.buildingBlock',
+  },
   domainGroup: {
     key: 'domainGroup',
     labelKey: 'kind.domainGroup',
@@ -112,6 +117,8 @@ export const PALETTE_SECTIONS: PaletteSection[] = [
   // (ADR-0014): its own caption, because a cluster offered between an
   // application and an actor reads as one of them.
   { id: 'technology', titleKey: 'palette.section.technology', keys: ['platform', 'platformService'] },
+  // What solutions reuse (ADR-0043 §1): a concept on no layer, under a caption of its own.
+  { id: 'architecture', titleKey: 'palette.section.architecture', keys: ['buildingBlock'] },
 ];
 
 /**

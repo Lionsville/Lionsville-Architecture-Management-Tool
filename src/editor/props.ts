@@ -620,6 +620,12 @@ export interface EditorOwnership {
       shared?: true; realisedBy?: readonly ElementId[];
     }[];
     standInFor(id: ElementId): DesignElement | undefined;
+    /**
+     * The services and platforms chosen for this scope as a building block's
+     * solution (ADR-0043 §8), each with what the picker says of it: offered
+     * first, under a heading of their own.
+     */
+    chosen?: ReadonlyMap<ElementId, string>;
   };
   /**
    * The parties the scopes above this one keep and this one does not

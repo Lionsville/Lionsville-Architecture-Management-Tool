@@ -36,6 +36,7 @@
  */
 import type { Adr } from './adr'
 import type { Citation } from './citable'
+import type { Evaluation } from './evaluation'
 import type { Principle } from './principle'
 import type { Comment } from './comment'
 import type { CommentableKind } from './commentable'
@@ -148,6 +149,7 @@ export type SearchableRecords = {
   comments: Comment
   principles: Principle
   citations: Citation
+  evaluations: Evaluation
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -464,6 +466,8 @@ export const SEARCHABLE: SearchTable = {
   principles: [principle],
   // A citation is found where it is drawn, on the record that cites and on the principle.
   citations: [],
+  // An evaluation is found on its block, where its grid is drawn.
+  evaluations: [],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

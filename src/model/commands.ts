@@ -39,12 +39,13 @@ import type {
 import type { Assignment, AssignmentId } from './units'
 import type { CheckMark, CheckMarkId } from './checkMarks'
 import type { Citation, CitationId } from './citable'
+import type { Evaluation, EvaluationId } from './evaluation'
 import type { Principle, PrincipleGroup, PrincipleId } from './principle'
 import type { Comment, CommentId, CommentRemoved } from './comment'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
-import { causesOf, citationsOf, commentsOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
+import { causesOf, citationsOf, commentsOf, decisionsOf, evaluationsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
@@ -247,6 +248,12 @@ export type CommandBody =
   | { type: 'citation.add'; citation: Citation; at?: number; put?: true }
   | { type: 'citation.update'; id: CitationId; patch: Partial<Citation> }
   | { type: 'citation.remove'; id: CitationId }
+
+  // --- a scope's evaluation of a building block (ADR-0043 §4) ---
+  /** One per block in a scope, named by the block; its levels on the balls, a choice among its options. */
+  | { type: 'evaluation.add'; evaluation: Evaluation; at?: number }
+  | { type: 'evaluation.update'; id: EvaluationId; patch: Partial<Evaluation> }
+  | { type: 'evaluation.remove'; id: EvaluationId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }
@@ -576,6 +583,23 @@ export function citationsToCommands(model: Model, next: readonly Citation[]): Co
     const before = held[one.id]
     if (!before) commands.push({ type: 'citation.add', citation: one })
     else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push({ type: 'citation.update', id: one.id, patch: replacement(before, one) })
+  }
+  return commands
+}
+
+/**
+ * A whole list of evaluations of building blocks, said as the changes that get
+ * there (ADR-0043 §4): what a restore hands back. Those gone are removed first
+ * and the rest added or changed in the list's order.
+ */
+export function evaluationsToCommands(model: Model, next: readonly Evaluation[]): Command[] {
+  const held = evaluationsOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = model.order.evaluations.filter((id) => !wanted.has(id)).map((id) => ({ type: 'evaluation.remove' as const, id }))
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'evaluation.add', evaluation: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push({ type: 'evaluation.update', id: one.id, patch: replacement(before, one) })
   }
   return commands
 }

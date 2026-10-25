@@ -237,6 +237,12 @@ export type WorkspaceNavigation = {
    */
   onOpenPeople?: (person: PersonId) => void
   /**
+   * A building block's page, on a scope's evaluation where one is named
+   * (ADR-0043 §8): the organisation's, over its home, so this leaves the
+   * scope as a crumb does. Absent where the shell has nowhere to go.
+   */
+  onOpenBlock?: (block: string, evaluation?: string) => void
+  /**
    * Read this scope again and start over from what is kept, nothing carried
    * over: what a scope that could not be read whole is opened with once it
    * has been put back. Absent where there is nothing to read again.

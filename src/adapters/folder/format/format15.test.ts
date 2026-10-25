@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest'
 import acmeLogistics from './examples/acme-logistics.json' with { type: 'json' }
 import type { Observation } from '../../../model/observation'
 import type { Principle } from '../../../model/principle'
+import type { Evaluation } from '../../../model/evaluation'
+import type { DesignElement } from '../../../model/types'
 import { bareScope, flattenScopes } from '../../../projects/scope'
 import type { ScopeSnapshot } from '../../../projects/scope'
 import { FakeDirectory } from '../fakeDirectory'
@@ -158,6 +160,43 @@ describe('format 15: topics (ADR-0042 §7)', () => {
       ? { path: file.path, text: textOf(file).replace(/"relevantTo": \[[^\]]*\]/s, '"relevantTo": [{ "path": "sales", "from": "soon" }]') }
       : file))
     expect(scopeFromFolder(files, 'topics/security')?.relevantTo).toBeUndefined()
+  })
+})
+
+describe('format 15: building blocks and evaluations (ADR-0043 §13)', () => {
+  const block: DesignElement = {
+    id: 'blk-gw', kind: 'buildingBlock', name: 'Message gateway', lifecycle: 'live', isManaged: false, aspects: {},
+    description: 'What it is.\n\n## Many partners\n',
+    capabilities: [{ id: 'cap-route', text: 'Routes by content', must: true }],
+    contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-route': 4 } }],
+    sbbs: [{ id: 'sb-a', name: 'Broker A', supplier: 'A Example', sort: 'product', status: 'candidate', elements: ['app-broker'] }],
+  }
+  const evaluation: Evaluation = {
+    id: 'topics.integration~blk-gw', block: { scope: 'topics/integration', id: 'blk-gw' }, contexts: ['cx-partners'], options: ['sb-a'],
+    coverage: { 'sb-a': { 'cap-route': { level: 3, how: 'By header only' } } }, chosen: 'sb-a', decidedBy: 'adr-1',
+  }
+  const withBlocks = (): ScopeSnapshot => {
+    const scope = customer()
+    return { ...scope, model: { ...scope.model, elements: [block], evaluations: [evaluation] } }
+  }
+
+  it('keeps a block\'s fields on its element and a scope\'s evaluation in a file named by the block', () => {
+    const files = scopeFiles(withBlocks())
+    expect(files.map((file) => file.path)).toContain('_evaluations/topics.integration~blk-gw.json')
+    const back = scopeFromFolder(files, 'customer')
+    expect(back?.model.elements[0]).toEqual(block)
+    expect(back?.model.evaluations).toEqual([evaluation])
+    const held = withBlocks()
+    const opened = openDocumentBytes(workingFileBytes([held]), held)
+    expect(opened.ok && [opened.scope.model.elements[0], opened.scope.model.evaluations]).toEqual([block, [evaluation]])
+  })
+
+  it('passes over an evaluation whose block does not agree with its name, and opens one that is not an object to be read only', () => {
+    const files = scopeFiles(withBlocks())
+    const renamed = files.map((file) => (file.path.startsWith('_evaluations/') ? { path: '_evaluations/-~blk-other.json', text: textOf(file) } : file))
+    expect(scopeFromFolder(renamed, 'customer')?.model.evaluations).toBeUndefined()
+    const broken = files.map((file) => (file.path.startsWith('_evaluations/') ? { path: file.path, text: '[]' } : file))
+    expect(scopeFromFolder(broken, 'customer')?.unread).toContain('_evaluations/topics.integration~blk-gw.json')
   })
 })
 

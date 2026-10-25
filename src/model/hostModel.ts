@@ -19,6 +19,7 @@ import type { Transition } from './transition'
 import type { Assignment } from './units'
 import type { CheckMark } from './checkMarks'
 import type { Citation } from './citable'
+import type { Evaluation } from './evaluation'
 import type { Principle, PrincipleGroup } from './principle'
 import type { Comment } from './comment'
 
@@ -102,6 +103,8 @@ export interface HostExtras {
    * topic relevant here.
    */
   citations?: Citation[]
+  /** This scope's evaluations of building blocks, kept here or anywhere (ADR-0043 §4): one per block. */
+  evaluations?: Evaluation[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

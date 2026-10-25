@@ -108,7 +108,13 @@ export type ElementKind =
   /** Technology: what runs the applications and carries their interfaces (ADR-0013). */
   | 'platform'
   /** Technology offered: what a platform team is accountable for, and a platform realises (ADR-0014). */
-  | 'platformService';
+  | 'platformService'
+  /**
+   * An architecture building block (ADR-0043): what every solution reuses
+   * rather than rebuilds, said by what it must provide and in which uses,
+   * with the solutions that could deliver it. A concept, on no layer.
+   */
+  | 'buildingBlock';
 /**
  * What a platform IS, as far as the model needs to know (ADR-0014).
  *
@@ -356,7 +362,51 @@ export interface DesignElement {
   iconKey?: string;
   /** See {@link NodeIconSize}; absent = `small` (the header mark). */
   iconSize?: NodeIconSize;
+  /** A building block's capabilities: what it must provide (ADR-0043 §2). On a `buildingBlock` only. */
+  capabilities?: BlockCapability[];
+  /** A building block's usage contexts: the uses it serves, said in words, each with what it needs (ADR-0043 §2). */
+  contexts?: UsageContext[];
+  /** A building block's catalogue of solutions: what could deliver it, never how well (ADR-0043 §3). */
+  sbbs?: SolutionBlock[];
 }
+
+/** A level on a Harvey ball: not at all, a quarter, a half, three quarters, fully (ADR-0043 §6). */
+export type BlockLevel = 0 | 1 | 2 | 3 | 4;
+
+/** One thing a building block must provide (ADR-0043 §2). */
+export type BlockCapability = {
+  id: string;
+  text: string;
+  /** Not covered fully, and a solution fails whatever its fit (§5). */
+  must?: true;
+  /** A function on a business sheet this capability serves, by id. */
+  function?: ElementId;
+  /** A principle's aspect it delivers: the principle where it is kept, and the aspect's number. */
+  aspect?: { scope: string; id: string; number: number };
+};
+
+/** A use the building block serves, said in words, and how much it needs of each capability there (ADR-0043 §2). */
+export type UsageContext = {
+  id: string;
+  name: string;
+  description?: string;
+  /** By capability id; absent is 0, not needed. */
+  needs: Record<string, BlockLevel>;
+};
+
+export type SolutionSort = 'product' | 'service' | 'inHouse';
+export type SolutionBlockStatus = 'candidate' | 'evaluated' | 'inUse' | 'retired';
+
+/** A solution in a building block's catalogue (ADR-0043 §3): what it is, never how well it fits. */
+export type SolutionBlock = {
+  id: string;
+  name: string;
+  supplier?: string;
+  sort: SolutionSort;
+  status: SolutionBlockStatus;
+  /** The landscape elements that are this solution, by id. */
+  elements?: ElementId[];
+};
 
 /** Line dash style for a relation; absent = solid. */
 export type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';

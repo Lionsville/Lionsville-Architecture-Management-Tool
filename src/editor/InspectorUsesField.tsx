@@ -83,7 +83,7 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
       renderGroup={(params) => (
         <li key={params.key} role="group" aria-labelledby={`${params.key}-uses-group`}>
           <ListSubheader id={`${params.key}-uses-group`} component="div" sx={{ lineHeight: '28px' }}>
-            {params.group === 'here' ? t('field.usesHere') : t('field.hostedOnElsewhere')}
+            {params.group === 'chosen' ? t('field.usesChosen') : params.group === 'here' ? t('field.usesHere') : t('field.hostedOnElsewhere')}
           </ListSubheader>
           <ul role="presentation" style={{ padding: 0 }}>{params.children}</ul>
         </li>

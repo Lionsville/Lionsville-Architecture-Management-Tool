@@ -10,7 +10,7 @@ import { categoryColor } from '../theme/categoryColors';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
-import { DocGlyph, DrillGlyph } from './glyphs';
+import { BlockGlyph, DocGlyph, DrillGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
@@ -107,7 +107,8 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
           backgroundColor: tokens.card.headerBg,
         }}
       >
-        {!bodyIcon && <NodeIcon element={element} size={14} color={tokens.card.subtitle} />}
+        {/* A building block is drawn as a card, marked as one (ADR-0043 §1). */}
+        {!bodyIcon && <NodeIcon element={element} size={14} color={tokens.card.subtitle} {...(element.kind === 'buildingBlock' ? { fallback: <BlockGlyph /> } : {})} />}
         <Typography
           sx={{
             fontSize: 12,

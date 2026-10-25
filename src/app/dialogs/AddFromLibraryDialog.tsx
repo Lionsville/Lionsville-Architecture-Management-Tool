@@ -99,6 +99,8 @@ export function AddFromLibraryDialog({
   const shown = rows.filter((row) => matchesQuery(query, [row.name, row.id]))
   const where = (row: LibraryRow) => {
     const kind = row.kind === 'application' ? '' : `${s(row.kind === 'platform' ? 'kind.platform' : 'kind.platformService')} · `
+    // The solution chosen here as a building block says so first (ADR-0043 §8).
+    if (row.chosen !== undefined) return kind + row.chosen
     if (row.held) return kind + s('library.heldHere')
     if (row.master !== undefined) return kind + s('library.definedIn', { scope: scopeLabel(row.master) })
     return s('library.nobodyDefines')

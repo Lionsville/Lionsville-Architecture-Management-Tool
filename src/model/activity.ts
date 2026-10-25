@@ -24,7 +24,7 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  assignmentsOf, causesOf, checkMarksOf, citationsOf, commentsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
+  assignmentsOf, causesOf, checkMarksOf, citationsOf, commentsOf, evaluationsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
   solutionsOf, transitionsOf, unitTypesOf,
 } from './normalised'
 import { checkEntry } from './checkCatalogue'
@@ -268,12 +268,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
 }
 
 /** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand | CitationCommand
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand | CitationCommand | EvaluationCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
   if (isCommentCommand(lead)) return commentStep(lead, before)
   if (isPrincipleCommand(lead)) return principleStep(lead, before)
   if (isCitationCommand(lead)) return citationStep(lead, before)
+  if (isEvaluationCommand(lead)) return evaluationStep(lead, before)
   if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
 }
@@ -312,6 +313,25 @@ const CITATION_STEP: Record<CitationCommand['type'], StringKey> = {
 function citationStep(lead: CitationCommand, before: Model): StepSummary {
   const citation = lead.type === 'citation.add' ? lead.citation : citationsOf(before)[lead.id]
   return { key: CITATION_STEP[lead.type], name: citation ? commentedName(before, citation.about) : undefined }
+}
+
+/** An evaluation's commands (ADR-0043 §4): named by the block, where this scope knows it, and by its id where not. */
+type EvaluationCommand = Extract<CommandBody, { type: `evaluation.${'add' | 'update' | 'remove'}` }>
+
+function isEvaluationCommand(command: CommandBody): command is EvaluationCommand {
+  return command.type.startsWith('evaluation.')
+}
+
+const EVALUATION_STEP: Record<EvaluationCommand['type'], StringKey> = {
+  'evaluation.add': 'activity.evaluationAdded',
+  'evaluation.update': 'activity.evaluationChanged',
+  'evaluation.remove': 'activity.evaluationRemoved',
+}
+
+function evaluationStep(lead: EvaluationCommand, before: Model): StepSummary {
+  const evaluation = lead.type === 'evaluation.add' ? lead.evaluation : evaluationsOf(before)[lead.id]
+  const block = evaluation?.block.id
+  return { key: EVALUATION_STEP[lead.type], name: block === undefined ? undefined : before.elements[block]?.name ?? block }
 }
 
 /** A comment's commands (ADR-0037). */

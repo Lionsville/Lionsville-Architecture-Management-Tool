@@ -40,6 +40,8 @@ export type TopicsDeps = {
   tree: ScopeSummary
   /** Each scope's principles, off the index: what a topic keeps. */
   principlesAt: ((path: ScopePath) => ScopePrinciples) | undefined
+  /** How many building blocks a scope keeps, off the index (ADR-0043): what a topic keeps besides. */
+  blocksAt?: (path: ScopePath) => number
   scopes: TreeScopes
   index: Pick<OrganisationIndex, 'read'>
   writable: (path: ScopePath) => boolean
@@ -77,7 +79,7 @@ function summariesOf(scopes: readonly ScopeSummary[]): TopicSummary[] {
 function keepsOf(deps: TopicsDeps, scopes: readonly ScopeSummary[], topic: ScopePath): TopicKeeps {
   const principles = deps.principlesAt?.(topic).principles.filter((one) => one.mergedInto === undefined).length ?? 0
   const subtopics = scopes.filter((one) => parentScope(one.path) === topic).length
-  return { principles, blocks: 0, subtopics }
+  return { principles, blocks: deps.blocksAt?.(topic) ?? 0, subtopics }
 }
 
 /** A step in the topic: its links, worked out again from what it holds. Said where it is refused; the tree read again where it lands. */
@@ -187,7 +189,7 @@ export function useTopicsAccess(deps: TopicsDeps): TopicsAccess {
   const latest = useRef(deps)
   latest.current = deps
   const version = useRef(0)
-  const { tree, today, principlesAt } = deps
+  const { tree, today, principlesAt, blocksAt } = deps
   return useMemo(() => {
     version.current += 1
     const now = latest.current
@@ -198,5 +200,5 @@ export function useTopicsAccess(deps: TopicsDeps): TopicsAccess {
       goHome: (path) => latest.current.goHome(path),
       openCatalogue: (topic) => latest.current.openCatalogue(topic),
     }, version.current)
-  }, [tree, today, principlesAt])
+  }, [tree, today, principlesAt, blocksAt])
 }

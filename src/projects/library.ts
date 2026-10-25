@@ -46,6 +46,8 @@ export type LibraryRow = {
   master?: ScopePath
   /** This scope holds a record of it already — it is only not on this board. */
   held: boolean
+  /** It is the solution chosen for this scope as a building block (ADR-0043 §8), said as the picker says it. */
+  chosen?: string
 }
 
 export type LibraryPlan =
@@ -93,6 +95,8 @@ export function libraryRows(
   index: ScopeIndex,
   model: { elements: readonly DesignElement[] },
   diagram: Pick<DesignDiagram, 'members'>,
+  /** The elements chosen for this scope as a building block's solution, said as a row says it: listed first (ADR-0043 §8). */
+  chosen: ReadonlyMap<ElementId, string> = new Map(),
 ): LibraryRow[] {
   const drawn = new Set(diagram.members.map((member) => member.id))
   const held = new Set(model.elements.map((element) => element.id))
@@ -110,7 +114,10 @@ export function libraryRows(
       kind: entry.kind as LibraryRow['kind'],
       ...(entry.master !== undefined ? { master: entry.master } : {}),
       held: held.has(entry.id),
+      ...(chosen.has(entry.id) ? { chosen: chosen.get(entry.id)! } : {}),
     }))
+    // Stable: the register's order within each half.
+    .sort((a, b) => Number(b.chosen !== undefined) - Number(a.chosen !== undefined))
 }
 
 /**

@@ -3148,7 +3148,7 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics',
+            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
           ],
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },
@@ -3545,6 +3545,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.badGroups': 'Every group needs a name, and each is listed once.',
   'command.notCitable': 'Which kinds cite with which stances: decision supports or deviates; element, plan (transition) and solution support; observation holds, chafes or missing.',
   'command.reasonMissing': 'stance deviates needs reason: why this record departs from the principle.',
+  'command.badBlock': 'A building block\'s capabilities, contexts and solutions each need an id of their own and a name; a context needs only the block\'s capabilities, each 0 to 4; a solution\'s sort is product, service or inHouse and its status candidate, evaluated, inUse or retired. Only a buildingBlock has these fields.',
+  'command.badEvaluation': 'An evaluation is named by its block, every coverage level is 0 to 4, and chosen must be one of its options.',
   'command.recordedByFixed': 'Who recorded an observation is written once, when it is recorded, from whoever recorded it; it is never an argument.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',

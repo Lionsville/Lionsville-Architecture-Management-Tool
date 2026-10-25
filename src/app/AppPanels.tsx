@@ -30,7 +30,7 @@ import { scopeDisplayName } from '../projects/scopeLabel'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { useServedBy } from './organisation/useServedBy'
-import type { TopicsStore } from './organisation/HomeTopics'
+import type { HomeStore } from './organisation/HomeRecords'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
@@ -163,6 +163,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         onShareLink: parts.share.shareTo,
         // The People page is the organisation's, on its home: an assignment's *Open in People* goes there with the person picked.
         ...(parts.people ? { onOpenPeople: (person: string) => parts.agent.openSomewhere({ scope: '', page: 'people', select: person }) } : {}),
+        onOpenBlock: parts.agent.openBlock,
       }}
       settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}
       host={{
@@ -231,20 +232,23 @@ function useHomeMarking(parts: ShellParts): CheckMarking {
 }
 
 /**
- * Where a home writes its topics (ADR-0042): the source's scopes, its index
- * to move one by, and — once a step lands — the listing and the index read
- * again, so every home draws the link from either end.
+ * Where a home writes its topics (ADR-0042) and its building blocks and
+ * evaluations (ADR-0043): the source's scopes, its index to move one by, the
+ * tree's index to read, and — once a step lands — the listing and the index
+ * read again, so every home draws the change from either end.
  */
-function useHomeTopics(parts: ShellParts): TopicsStore {
+function useHomeTopics(parts: ShellParts): HomeStore {
   const { repositories } = parts.props
   const { refresh } = parts.organisation
   const { notify } = parts.services.toasts
   const written = useRef(parts.writes.treeChanged)
   written.current = parts.writes.treeChanged
+  const treeIndex = parts.tree.index
+  const { makeId } = parts.props
   return useMemo(() => ({
-    scopes: repositories.scopes, index: repositories.index, notify,
+    scopes: repositories.scopes, index: repositories.index, notify, treeIndex, makeId,
     written: () => { refresh(); written.current() },
-  }), [repositories, refresh, notify])
+  }), [repositories, refresh, notify, treeIndex, makeId])
 }
 
 function Home({ parts }: { parts: ShellParts }) {

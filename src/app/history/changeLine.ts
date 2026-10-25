@@ -83,6 +83,10 @@ const KEYS: Record<LineKey, StringKey> = {
   'citation:added': 'change.citationAdded',
   'citation:removed': 'change.citationRemoved',
   'citation:changed': 'change.citationChanged',
+  // A scope's evaluation of a building block, by the block (ADR-0043 §4).
+  'evaluation:added': 'change.evaluationAdded',
+  'evaluation:removed': 'change.evaluationRemoved',
+  'evaluation:changed': 'change.evaluationChanged',
   // What came onto a board and what left it. Named, not counted: a card put on
   // a view is a decision somebody made (ADR-0012 §6).
   'membership:added': 'change.membershipAdded',

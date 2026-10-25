@@ -34,6 +34,7 @@ import { EN as technology } from '../technology/strings/en'
 import { EN as people } from '../people/strings/en'
 import { EN as comments } from '../comments/strings/en'
 import { EN as principles } from '../principles/strings/en'
+import { EN as blocks } from '../blocks/strings/en'
 
 export const EN = {
   ...adapters,
@@ -55,4 +56,5 @@ export const EN = {
   ...people,
   ...comments,
   ...principles,
+  ...blocks,
 } as const

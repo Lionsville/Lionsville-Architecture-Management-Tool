@@ -21,7 +21,7 @@ export type HomePagesState = {
   openPage: OrgPage | undefined
   /** The last request a page reads what to pick from: the shell's, or a press here. */
   asked: OrgPageRequest | undefined
-  open: (page: OrgPage, select?: string) => void
+  open: (page: OrgPage, select?: string, evaluation?: string) => void
   close: () => void
 }
 
@@ -39,9 +39,9 @@ export function useHomePages(
   }, [request])
   useEffect(() => { onPageChange?.(openPage) }, [onPageChange, openPage])
   useEffect(() => () => onPageChange?.(undefined), [onPageChange])
-  const open = useCallback((page: OrgPage, select?: string) => {
+  const open = useCallback((page: OrgPage, select?: string, evaluation?: string) => {
     setOpenPage(page)
-    setAsked((was) => ({ page, nonce: (was?.nonce ?? 0) + 1, ...(select !== undefined ? { select } : {}) }))
+    setAsked((was) => ({ page, nonce: (was?.nonce ?? 0) + 1, ...(select !== undefined ? { select } : {}), ...(evaluation !== undefined ? { evaluation } : {}) }))
   }, [])
   const close = useCallback(() => setOpenPage(undefined), [])
   return { openPage, asked, open, close }

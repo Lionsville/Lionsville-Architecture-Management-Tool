@@ -19,6 +19,7 @@ import { ASSIGNMENT_COMMANDS } from './assignments'
 import { CHECK_MARK_COMMANDS } from './checkMarks'
 import { PRINCIPLE_COMMANDS } from './principleRecords'
 import { CITATION_COMMANDS } from './citing'
+import { EVALUATION_COMMANDS } from './evaluations'
 import { CITABLE, CITING_KINDS, isAboutRecord } from '../citable'
 import type { CitingKind } from '../citable'
 import { COMMENT_COMMANDS } from './commenting'
@@ -58,6 +59,7 @@ const ENTRIES: CommandTable = {
   ...COMMENT_COMMANDS,
   ...PRINCIPLE_COMMANDS,
   ...CITATION_COMMANDS,
+  ...EVALUATION_COMMANDS,
   ...PROJECT_COMMANDS,
 }
 

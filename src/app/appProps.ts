@@ -64,7 +64,7 @@ export type AppBoot = {
    * `bootLanding`'s `placeLanding`). Absent: the view, and the bare home.
    */
   initialPage?: InitialPage
-  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
   /**

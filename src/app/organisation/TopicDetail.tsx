@@ -24,6 +24,7 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { linkHolds } from './TopicsContext'
 import type { TopicLink, TopicSummary, TopicsAccess } from './TopicsContext'
 import { EditTopicDialog } from './topicDialogs'
+import { useBlocks } from '../../blocks/ui/BlocksContext'
 
 const HEADING = { display: 'block', mt: 3, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary' } as const
 const SMALL = { fontSize: 11, minWidth: 0, px: 0.75 } as const
@@ -125,6 +126,33 @@ function Links({ topic, access }: { topic: TopicSummary; access: TopicsAccess })
   )
 }
 
+/** The building blocks the topic keeps (ADR-0043), each opening its page, and a new one kept here. */
+function TopicBlocks({ topic, may }: { topic: TopicSummary; may: boolean }) {
+  const blocks = useBlocks()
+  const { t } = useStrings()
+  const [name, setName] = useState('')
+  if (!blocks) return null
+  const kept = blocks.blocksAt(topic.id).kept.filter((one) => one.scope === topic.id)
+  const make = () => { void blocks.create(topic.id, name).then((id) => { if (id) blocks.openBlock(id) }); setName('') }
+  return (
+    <>
+      <Typography component="h3" sx={HEADING}>{t('topics.blocks')}</Typography>
+      {kept.length === 0 && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('topics.blocksNone')}</Typography>}
+      {kept.map(({ block }) => (
+        <Box key={block.id}>
+          <Link component="button" type="button" underline="hover" onClick={() => blocks.openBlock(block.id)} sx={{ fontSize: 14 }} data-testid={`topic-block-${block.id}`}>{block.name}</Link>
+        </Box>
+      ))}
+      {may && (
+        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+          <TextField size="small" value={name} onChange={(event) => setName(event.target.value)} placeholder={t('topics.blockName')} sx={{ flex: 1 }} slotProps={{ htmlInput: { 'aria-label': t('topics.blockName') } }} />
+          <Button size="small" disabled={!name.trim()} onClick={make} data-testid="topic-new-block">{t('topics.newBlock')}</Button>
+        </Box>
+      )}
+    </>
+  )
+}
+
 export function TopicDetail({ topic, access, onSubtopic }: { topic: TopicSummary; access: TopicsAccess; onSubtopic: () => void }) {
   const { t } = useStrings()
   const [editing, setEditing] = useState(false)
@@ -163,6 +191,7 @@ export function TopicDetail({ topic, access, onSubtopic }: { topic: TopicSummary
         <Link component="button" type="button" underline="hover" onClick={() => access.openPrinciples(topic.id)} sx={{ fontSize: 13 }} data-testid="topic-open-principles">{t('topics.openPrinciples')}</Link>
       </Box>
       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('topics.principlesApply')}</Typography>
+      <TopicBlocks topic={topic} may={may} />
       {editing && <EditTopicDialog topic={topic} access={access} onClose={() => setEditing(false)} />}
       <ConfirmDialog
         open={removing} title={t('topics.removeTitle', { name: topic.name })} body={t('topics.removeBody')}

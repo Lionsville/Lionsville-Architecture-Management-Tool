@@ -9,6 +9,8 @@
  * each a step in the topic, read back from where it is kept.
  */
 import { afterEach, describe, expect, it } from 'vitest'
+import type { AgentAnswer, AgentRequest } from '../../agent/tools'
+import type { AgentGateway } from '../../ports/AgentGateway'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from '../testing/heldRepositories'
 import { renderApp } from '../testing/renderShell'
@@ -67,4 +69,45 @@ describe('topics on the homes', () => {
     await screen.findByTestId('relevant-topics')
     expect(screen.queryByTestId('open-topic-catalogue')).toBeNull()
   })
+
+  it('opens for an agent on the topic it names, and on a building block\'s page (ADR-0042, ADR-0043)', async () => {
+    const wire = gateway()
+    const blocks = [
+      ...TREE.slice(0, 3), scope('topics/data', 'Data', { kind: 'domain' }),
+      { ...TREE[3]!, model: { ...TREE[3]!.model, elements: [{ id: 'blk-gw', kind: 'buildingBlock' as const, name: 'Message gateway', lifecycle: 'live' as const, isManaged: false, aspects: {} }] } },
+    ]
+    renderApp({ repositories: heldRepositories(blocks), today: TODAY, agent: wire.gateway })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    await wire.ask('app.open', { scope: '', page: 'topics', id: 'topics/security' })
+    expect(within(await screen.findByTestId('topic-detail')).getByRole('heading', { name: 'Security' })).toBeTruthy()
+    expect((await wire.ask('app.current')).page).toEqual({ page: 'topics' })
+    await wire.ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw' })
+    expect(await screen.findByTestId('block-tab-requirements')).toBeTruthy()
+    expect((await wire.ask('app.current')).page).toEqual({ page: 'blocks' })
+  })
 })
+
+/** A gateway that keeps whoever subscribed, and says a client is connected. */
+function gateway() {
+  let handler: ((request: AgentRequest) => Promise<AgentAnswer>) | undefined
+  const connected = { kind: 'connected' as const, port: 51733, token: 't'.repeat(24), client: { name: 'Claude Code', version: '2.0' } }
+  const held: AgentGateway = {
+    id: 'fake',
+    on(next) {
+      handler = next
+      return () => { if (handler === next) handler = undefined }
+    },
+    status: () => Promise.resolve(connected),
+    onStatus: () => () => {},
+    configure: () => Promise.resolve(connected),
+    newToken: () => Promise.resolve(connected),
+  }
+  let n = 0
+  const ask = async (tool: string, args: unknown = {}): Promise<Record<string, unknown>> => {
+    if (!handler) throw new Error('nobody is listening')
+    const answer = await handler({ id: `r${++n}`, tool, args })
+    if (!answer.ok || answer.content[0].type !== 'text') throw new Error(`refused: ${JSON.stringify(answer)}`)
+    return JSON.parse(answer.content[0].text) as Record<string, unknown>
+  }
+  return { gateway: held, ask, bound: () => handler !== undefined }
+}

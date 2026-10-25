@@ -153,6 +153,14 @@ describe('what the Uses picker offers', () => {
     expect(uses.usable.map((one) => `${one.group}:${one.id}`)).toEqual(['here:s', 'here:svc', 'elsewhere:shared', 'elsewhere:broker']);
   });
 
+  it('offers what a building block\'s evaluation chose for this scope first, under its own heading (ADR-0043 §8)', () => {
+    const app = el('a', 'application');
+    const m = model([app, el('s', 'platformService'), el('svc', 'platform', { platformArchetype: 'service' })]);
+    const uses = usesChoices(app, m, { ...technology, chosen: new Map([['broker', 'Chosen as Messaging for Sales']]) }, t);
+    expect(uses.usable.map((one) => `${one.group}:${one.id}`)).toEqual(['chosen:broker', 'here:s', 'here:svc', 'elsewhere:shared']);
+    expect(uses.usable[0]?.where).toBe('Chosen as Messaging for Sales');
+  });
+
   it('offers nothing to a kind that uses nothing', () => {
     expect(usesChoices(el('x', 'actor'), model([el('x', 'actor')]), technology, t).usable).toEqual([]);
   });

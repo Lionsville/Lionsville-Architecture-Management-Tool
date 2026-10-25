@@ -13,8 +13,9 @@ import type { Translate } from '../i18n'
 import {
   causeList, causesToCommands, decisionList, decisionsToCommands, experimentList, experimentsToCommands,
   nextTransitionNumber, observationList, observationsToCommands, replacement, solutionList, solutionsOf,
-  solutionsToCommands, transaction, transitionList, commentsToCommands, citationsToCommands,
+  solutionsToCommands, transaction, transitionList, commentsToCommands, citationsToCommands, evaluationsOf,
 } from '../model'
+import { choicesAccepted } from '../model/evaluation'
 import { newAdr, nextAdrNumber } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type { ObservationWork } from '../observations/ui/ObservationsPage'
@@ -38,7 +39,12 @@ export function useAnalysisActions(deps: {
 }): AnalysisActions {
   const { session, makeId, today, s } = deps
   const onDecisionsChange = useCallback((next: Adr[]) => {
-    const commands = decisionsToCommands(session.indexed(), next)
+    const indexed = session.indexed()
+    const commands = [
+      ...decisionsToCommands(indexed, next),
+      // A decision accepted that chooses in an evaluation writes the choice in the same step (ADR-0043 §7).
+      ...choicesAccepted(evaluationsOf(indexed), decisionList(indexed), next),
+    ]
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])
 

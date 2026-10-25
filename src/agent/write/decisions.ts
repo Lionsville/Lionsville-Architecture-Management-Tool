@@ -11,7 +11,8 @@
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../../model/adr'
 import type { Command } from '../../model/commands'
 import { transaction } from '../../model/commands'
-import { decisionList, decisionsOf } from '../../model/normalised'
+import { decisionList, decisionsOf, evaluationsOf } from '../../model/normalised'
+import { choicesAccepted } from '../../model/evaluation'
 import { isDay } from '../../model/lifecycle'
 import {
   adrGate, adrOpenItems, formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, selfAccepted,
@@ -226,6 +227,8 @@ export const transitionDecision: Handler = (args, view) => {
     if (adr.reason !== before.reason) patch.reason = adr.reason
     return { type: 'decision.update', id: adr.id, patch }
   })
+  // A decision accepted that chooses in an evaluation writes the choice in the same step (ADR-0043 §7).
+  commands.push(...choicesAccepted(evaluationsOf(model), list, moved))
   const self = changed.find((adr) => adr.id === id)!
   const superseded = changed.filter((adr) => adr.id !== id).map((adr) => adr.id)
   return {

@@ -49,6 +49,7 @@ import type { CheckMark, CheckMarkId } from './checkMarks'
 import type { Comment, CommentId } from './comment'
 import type { Principle, PrincipleId } from './principle'
 import type { Citation, CitationId } from './citable'
+import type { Evaluation, EvaluationId } from './evaluation'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -88,6 +89,8 @@ export type ModelOrder = {
   principles: PrincipleId[]
   /** The citations of principles by the scope's records, in the order they were made (ADR-0041 §7). */
   citations: CitationId[]
+  /** The evaluations of building blocks, in the order they were started (ADR-0043 §4). */
+  evaluations: EvaluationId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -135,7 +138,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
 
 export type Model = Omit<HostModel,
   | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
-  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments' | 'principles' | 'citations'> & {
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks' | 'comments' | 'principles' | 'citations' | 'evaluations'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -164,6 +167,8 @@ export type Model = Omit<HostModel,
   principles?: Record<PrincipleId, Principle>
   /** The citations (ADR-0041 §7), likewise. */
   citations?: Record<CitationId, Citation>
+  /** The evaluations (ADR-0043 §4), likewise. */
+  evaluations?: Record<EvaluationId, Evaluation>
   order: ModelOrder
 }
 
@@ -241,6 +246,17 @@ export function citationsOf(model: Model): Record<CitationId, Citation> {
 export function citationList(model: Model): Citation[] {
   const by = citationsOf(model)
   return model.order.citations.map((id) => by[id])
+}
+
+/** The evaluations of building blocks on this model, likewise (ADR-0043 §4). */
+export function evaluationsOf(model: Model): Record<EvaluationId, Evaluation> {
+  return model.evaluations ?? {}
+}
+
+/** The evaluations in the order they were started. */
+export function evaluationList(model: Model): Evaluation[] {
+  const by = evaluationsOf(model)
+  return model.order.evaluations.map((id) => by[id])
 }
 
 /** The principles on this model, likewise (ADR-0041). */
@@ -593,6 +609,12 @@ export function fromArrays(host: HostModel): Model {
     out.citations = citations
     citationOrder = order
   }
+  let evaluationOrder: EvaluationId[] = []
+  if (host.evaluations !== undefined) {
+    const [evaluations, order] = index(host.evaluations, (one) => one.id)
+    out.evaluations = evaluations
+    evaluationOrder = order
+  }
   let principleOrder: PrincipleId[] = []
   if (host.principles !== undefined) {
     const [principles, order] = index(host.principles, (one) => one.id)
@@ -618,6 +640,7 @@ export function fromArrays(host: HostModel): Model {
     comments: commentOrder,
     principles: principleOrder,
     citations: citationOrder,
+    evaluations: evaluationOrder,
   }
   return out
 }
@@ -659,6 +682,7 @@ export function toArrays(model: Model): HostModel {
   if (model.comments !== undefined) out.comments = unindex(model.comments, model.order.comments)
   if (model.principles !== undefined) out.principles = unindex(model.principles, model.order.principles)
   if (model.citations !== undefined) out.citations = unindex(model.citations, model.order.citations)
+  if (model.evaluations !== undefined) out.evaluations = unindex(model.evaluations, model.order.evaluations)
   delete out.order
   return out
 }

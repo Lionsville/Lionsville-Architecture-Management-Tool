@@ -26,7 +26,7 @@ import type { ObservationTab } from '../observations/tabs'
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics',
+  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -65,7 +65,7 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
 }
 
 /** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics']
+export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks']
 
 /** Pages that need an id to mean anything. */
 export const NEEDS_ID: readonly Page[] = ['plan', 'element', 'document', 'platform', 'service']
@@ -117,6 +117,8 @@ export type ScreenPage =
   | { readonly page: 'checks' }
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
   | { readonly page: 'topics' }
+  /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
+  | { readonly page: 'blocks' }
 
 /** The active view of an open scope, named so a reader does not have to look it up. */
 export type ScreenView = {

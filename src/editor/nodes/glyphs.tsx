@@ -143,6 +143,17 @@ export function ServiceGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   );
 }
 
+/** Building block (ADR-0043): three blocks stacked, what is built on. */
+export function BlockGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" strokeWidth={strokeWidth} />
+      <rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" strokeWidth={strokeWidth} />
+      <rect x="8" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth={strokeWidth} />
+    </svg>
+  );
+}
+
 /** Domain group: the dashed rectangle the landscape draws around a group. */
 export function DomainGroupGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   return (

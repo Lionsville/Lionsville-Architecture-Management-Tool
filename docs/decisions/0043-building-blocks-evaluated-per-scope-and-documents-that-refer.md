@@ -1,6 +1,9 @@
 # ADR-0043 — Building blocks, evaluated by each scope that adopts them, and documents that refer rather than copy
 
-* Status: accepted, 25 October 2026; not yet built (3.8.0)
+* Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
+  building blocks, their evaluations, the decision and where the choice is
+  seen (§1–§8, §13 but the `ref` fence); references in documents (§9–§11)
+  and the agent's tools (§12) not yet built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -243,3 +246,56 @@ documents, part of the turn to **format 15** (ADR-0041 §14).
   document of many large views is slow where a page of pictures was not.
 * Neutral: checking a landscape against its scope's chosen solution, and an
   ABB drawn as the technology service that delivers it, are later decisions.
+
+## As built, 25 October 2026: building blocks, evaluations and the choice
+
+**The block** is the element kind `buildingBlock`, in every table over the
+kinds, on the landscape board's palette under *Architecture* and drawn as a
+card with a mark of its own. Its requirements and catalogue are three fields
+of the element — `capabilities`, `contexts`, `sbbs` — and its document is
+its description. A solution's `elements` name landscape elements by id, ids
+being the organisation's. **No command of its own**: the three fields are
+written by `element.update` like any other, and the reducer refuses, whoever
+sends the step, fields that do not hold together or on an element that is
+no block (`command.badBlock`, `model/buildingBlock.ts`). A usage context
+added writes its chapter, `## <name>`, in the same step.
+
+**An evaluation** is a record of the evaluating scope (`evaluation`, in
+`model/evaluation.ts` with the arithmetic), its id named by the block —
+`<block scope>~<block id>`, the scope's slashes as dots and the organisation
+as `-` — so a scope evaluates a block once and the file says which without
+being opened: `_evaluations/<id>.json`. The reducer refuses one not named by
+its block, a ball off the levels or a choice it does not weigh
+(`command.badEvaluation`); the block, which may be kept anywhere, is asked
+where it is read. A diff, the history and a restore know it.
+
+**The decision** proposed from an evaluation is kept in the evaluating
+scope and says the option it chooses — `chooses { evaluation, option }`, on
+the record and as two fields of its file. Its body is the record's own
+sections written from the evaluation (`decisions/adr.draftedBody`): the
+context, what is needed here as its drivers, each option with its fit, the
+chosen option as the outcome, and the evaluation referred to as it stood
+under *More information* (the `ref` fence, drawn from step 7 on); its
+consequences and its approval are left to the person, which is all the
+acceptance gate then asks. It copies the block's citations as *supports*. Accepting it
+writes the evaluation's `chosen` and `decidedBy` in the same step, from the
+decisions page and the agent alike (`choicesAccepted`), not in the reducer,
+which enforces no lifecycle (ADR-0008).
+
+**The pages** are the organisation's and over its homes: the register, from
+a *Building blocks* card on the organisation's home and on any home that
+keeps or evaluates one, and a block's page over it, from a row, a topic in
+the catalogue, the block's inspector on a board, or `app.open` with `page:
+'blocks'` and the block's id. Every write is a step in the scope that keeps
+the record, under its rights, whatever is open. *Evaluate for a scope…*
+offers *Copy the ratings from <scope>* where another scope evaluated it: its
+options and balls, never its choice. The principles a block cites are read
+on its page and cited where the block is open, as an element's are.
+
+**Where the choice is seen**: an element that is a chosen solution says *Is
+<solution>, the <block> chosen for <scope>* in its inspector, linked to that
+evaluation; the *Uses* picker and *Existing application…* offer the elements
+chosen for the scope first — its own choice of a block, else the nearest
+scope's above — under *Chosen for this scope* (`projects/chosenSolutions.ts`).
+A chosen solution with no element yet is linked from the block's catalogue.
+

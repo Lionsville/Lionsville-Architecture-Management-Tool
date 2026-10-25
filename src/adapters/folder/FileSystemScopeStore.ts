@@ -70,6 +70,7 @@ import { transitionFromFile } from './format/transitionFile'
 import { OPERATING_FILES, operatingFrom } from './format/operatingFile'
 import { ASSIGNMENT_FILES, assignmentsFrom } from './format/assignmentFile'
 import { CITATIONS_FOLDER, citationsFrom, isCitationsPath } from './format/citationFile'
+import { EVALUATIONS_FOLDER, evaluationsFrom, isEvaluationPath } from './format/evaluationFile'
 import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER, principleGroupsFrom, principlesFrom } from './format/principleFile'
 import { CHECK_MARK_FILES, checkMarksFrom } from './format/checkMarkFile'
 
@@ -410,6 +411,7 @@ export class FileSystemScopeStore implements ScopeStore {
         ...await this.organisationIn(folder),
         ...await this.principlesIn(folder),
         ...await this.citationsIn(folder),
+        ...await this.evaluationsIn(folder),
         causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
@@ -480,6 +482,20 @@ export class FileSystemScopeStore implements ScopeStore {
     }
     const textAt = (path: string) => files.find((one) => one.path === path)?.text
     return { ...principlesFrom(files), ...principleGroupsFrom(textAt) }
+  }
+
+  /** The evaluations of building blocks (ADR-0043 §4), likewise: where each block is weighed and chosen is read across the tree. */
+  private async evaluationsIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], 'evaluations'>> {
+    const held = await folder.getDirectoryHandle(EVALUATIONS_FOLDER).catch(this.orAbsent('the evaluations folder'))
+    if (!held) return {}
+    const texts = new Map<string, string>()
+    for await (const entry of held.values()) {
+      const path = `${EVALUATIONS_FOLDER}/${entry.name}`
+      if (entry.kind !== 'file' || !isEvaluationPath(path)) continue
+      const text = await this.textOf(entry, 'an evaluation')
+      if (text !== undefined) texts.set(path, text)
+    }
+    return evaluationsFrom([...texts.keys()], (path) => texts.get(path))
   }
 
   /** The citations of principles (ADR-0041 §7), likewise: how each principle is used is read across the tree. */

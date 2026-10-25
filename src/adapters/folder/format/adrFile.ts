@@ -101,6 +101,9 @@ export function adrFileText(adr: Adr): string {
     date: adr.date,
     subjectId: adr.subjectId,
     supersededBy: adr.supersededBy,
+    // The solution chosen in an evaluation (ADR-0043 §7), as two plain fields.
+    choosesEvaluation: adr.chooses?.evaluation,
+    choosesOption: adr.chooses?.option,
     // The records this one replaces, as a list of ids the way a plan writes
     // the decisions it rests on: a reference is one value, and a row with one
     // column reads like a mistake.
@@ -182,6 +185,8 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     ?? frontMatterString(fields, 'applicationId')
     ?? folder
   const supersededBy = frontMatterString(fields, 'supersededBy')
+  const choosesEvaluation = frontMatterString(fields, 'choosesEvaluation')
+  const choosesOption = frontMatterString(fields, 'choosesOption')
   const supersedes = idsFrom(frontMatterRows(fields, 'supersedes'))
   const proposedBy = frontMatterPerson(fields, 'proposedBy')
   const proposedAs = isPicked(proposedBy) ? frontMatterString(fields, 'proposedAs') : undefined
@@ -196,6 +201,7 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     body: markdownBody(headingEnd === -1 ? rest : rest.slice(headingEnd + 1).replace(/^\n/, '')),
     ...(subjectId ? { subjectId } : {}),
     ...(supersededBy ? { supersededBy } : {}),
+    ...(choosesEvaluation && choosesOption ? { chooses: { evaluation: choosesEvaluation, option: choosesOption } } : {}),
     ...(supersedes.length ? { supersedes } : {}),
     ...(proposedBy !== undefined ? { proposedBy } : {}),
     ...(proposedAs ? { proposedAs } : {}),

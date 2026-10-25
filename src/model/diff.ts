@@ -38,6 +38,7 @@ import type { CheckMark } from './checkMarks'
 import type { Principle } from './principle'
 import type { Citation } from './citable'
 import type { Comment } from './comment'
+import type { Evaluation } from './evaluation'
 import { RECORD_LISTS } from './recordKey'
 import type { RecordKey } from './recordKey'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
@@ -48,7 +49,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
   | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'comment' | 'principle' | 'citation' | 'membership' | 'geometry'
+  | 'comment' | 'principle' | 'citation' | 'evaluation' | 'membership' | 'geometry'
 
 export type ModelChange = {
   kind: ChangeKind
@@ -285,7 +286,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
     'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark',
-    'comment', 'principle', 'citation', 'membership', 'geometry',
+    'comment', 'principle', 'citation', 'evaluation', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }
@@ -310,7 +311,17 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
   changes.push(...markChanges(before, after))
   changes.push(...commentChanges(before, after))
   changes.push(...principleChanges(before, after))
+  changes.push(...evaluationChanges(before, after))
   return changes
+}
+
+/** The evaluations of building blocks (ADR-0043 §4), named by the block where this scope knows it. */
+function evaluationChanges(before: HostModel, after: HostModel): ModelChange[] {
+  const was = byId(before.evaluations ?? [])
+  const now = byId(after.evaluations ?? [])
+  const nameOf = (held: Evaluation) => after.elements.find((one) => one.id === held.block.id)?.name
+    ?? before.elements.find((one) => one.id === held.block.id)?.name ?? held.block.id
+  return ids(was, now).flatMap((id) => compare<Evaluation>('evaluation', id, was.get(id), now.get(id), nameOf))
 }
 
 /**

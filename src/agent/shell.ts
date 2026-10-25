@@ -229,12 +229,19 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
 }
 
 /**
+ * The home pages that pick what their id names, which no scope's document
+ * holds: a check by its key, a topic by its path (ADR-0042), a building
+ * block by its id across the tree (ADR-0043).
+ */
+const PICKING_PAGES: ReadonlySet<string> = new Set(['checks', 'topics', 'blocks'])
+
+/**
  * Whether a destination names something a scope's own document must hold —
- * a record, or a view — which is read before the app is moved. Not a check
- * the Checks page picks, which is the catalogue's.
+ * a record, or a view — which is read before the app is moved. Not what a
+ * picking home page picks.
  */
 function aboutSomething(asked: Destination): boolean {
-  if (asked.page === 'checks') return false
+  if (asked.page !== undefined && PICKING_PAGES.has(asked.page)) return false
   return asked.id !== undefined || (asked.page !== undefined && VIEW_PAGES.includes(asked.page))
 }
 
@@ -244,9 +251,9 @@ function unknownCheck(asked: Destination): AgentAnswer | undefined {
   return refused('agent.unknownId', `check ${asked.id}: checks.list answers each finding's key`)
 }
 
-/** A page of a home is opened as itself, with nothing more than the check the Checks page picks. */
+/** A page of a home is opened as itself, with nothing more than what a picking page picks. */
 function asItsHome(target: Resolved): Resolved {
-  if (target.page === undefined || !HOME_PAGES.includes(target.page) || target.page === 'checks') return target
+  if (target.page === undefined || !HOME_PAGES.includes(target.page) || PICKING_PAGES.has(target.page)) return target
   return { page: target.page }
 }
 

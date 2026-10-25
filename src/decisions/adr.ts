@@ -73,6 +73,25 @@ export function madrTemplate(t: Translate): string {
   ].join('').trimEnd().concat('\n')
 }
 
+/**
+ * A record's body with its sections written where the record was drafted
+ * from something already decided on — a building block's evaluation
+ * (ADR-0043 §7) — and the rest left to the person: the template's headings,
+ * the context, drivers, options and outcome said, the consequences the
+ * template's placeholders, and what more there is to read.
+ */
+export function draftedBody(t: Translate, said: { context: string; drivers: readonly string[]; options: readonly string[]; outcome: string; more?: string }): string {
+  const bullets = (lines: readonly string[]) => lines.map((line) => `* ${line}`).join('\n')
+  return [
+    `## ${t('adr.tplContext')}`, said.context,
+    `## ${t('adr.tplDrivers')}`, bullets(said.drivers),
+    `## ${t('adr.tplOptions')}`, bullets(said.options),
+    `## ${t('adr.tplOutcome')}`, said.outcome,
+    `### ${t('adr.tplConsequences')}`, bullets([t('adr.tplGood'), t('adr.tplBad')]),
+    `## ${t('adr.tplMore')}`, said.more ?? '',
+  ].filter((part) => part !== '').join('\n\n').concat('\n')
+}
+
 function h3Text(text: string): string {
   return `### ${text}\n\n`
 }

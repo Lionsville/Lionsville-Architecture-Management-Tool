@@ -87,6 +87,12 @@ describe('adrFromFile', () => {
     expect(adrFileText(record())).not.toContain('reason')
   })
 
+  it('reads back the solution it chooses in an evaluation, and nothing where it chooses none (ADR-0043 §7)', () => {
+    const choosing = record({ chooses: { evaluation: 'topics.integration~blk-gw', option: 'sb-a' } })
+    expect(adrFromFile(adrFileText(choosing), adrPath(choosing))).toEqual(choosing)
+    expect(adrFileText(record())).not.toContain('chooses')
+  })
+
   it('takes the number and the application from the path of a hand-written file, or refuses it', () => {
     const held = adrFromFile('# ADR-0012 — Written by hand\n\nprose\n', 'decisions/0012-written-by-hand.md')
     expect(held).toMatchObject({ number: 12, title: 'Written by hand', body: 'prose', status: 'proposed' })

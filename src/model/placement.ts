@@ -39,10 +39,10 @@ import type { BoardGeometry } from './zones';
  * it is drawn.
  */
 export const CANVAS_KINDS: readonly ElementKind[] & readonly CanvasKind[] =
-  ['application', 'component', 'actor', 'platform', 'platformService'];
+  ['application', 'component', 'actor', 'platform', 'platformService', 'buildingBlock'];
 
 /** One of {@link CANVAS_KINDS} — narrower than a kind, where a canvas is meant. */
-export type CanvasKind = 'application' | 'component' | 'actor' | 'platform' | 'platformService';
+export type CanvasKind = 'application' | 'component' | 'actor' | 'platform' | 'platformService' | 'buildingBlock';
 
 /**
  * Is a view of this kind a board — geometry a canvas draws (ADR-0012 §6)?

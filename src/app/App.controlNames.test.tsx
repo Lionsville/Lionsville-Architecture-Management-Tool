@@ -178,7 +178,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
     'org.card.technology', 'org.card.landscape', 'org.card.people', 'org.card.operating', 'org.card.checks', 'org.attention',
-    'org.attentionCount', 'org.card.principles', 'org.card.topics', 'org.relevantTopics',
+    'org.attentionCount', 'org.card.principles', 'org.card.topics', 'org.relevantTopics', 'org.card.blocks',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
@@ -194,6 +194,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     show(false)
     fireEvent.click(await screen.findByTestId('open-topic-catalogue'))
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
+  }]],
+  // The register of building blocks (ADR-0043), opened from the organisation's card.
+  [['the building blocks, from the organisation’s card', ['blocks.new'], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('open-block-register'))
+    await screen.findByText('Every building block in the organisation', {}, { timeout: 5000 })
   }]],
   // The organisation's principles (ADR-0041), opened from its card.
   [['the principles page, from the organisation’s card', ['principles.new'], async () => {

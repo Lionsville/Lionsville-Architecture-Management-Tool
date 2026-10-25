@@ -81,7 +81,7 @@ export type KindChangeCheck =
  * row of buttons: `canChangeKind` below refuses a kind the diagram may not show,
  * and the palette offers exactly what the rule allows by importing these.
  */
-export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform'];
+export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform', 'buildingBlock'];
 
 /**
  * C4 container-diagram kinds.

@@ -29,7 +29,7 @@ export type BootLanding = {
   /** The page over the scope that is open, where a place in the address named one (ADR-0033). */
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
-  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
   /**
    * What to say once the app is up, where the address did not land where it
    * pointed: a page this app has no such thing as, or a view or record that
@@ -144,7 +144,7 @@ export function placeToRead(place: Place): ScopePath | undefined {
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
   if (page !== undefined && HOME_PAGES.includes(page)) {
-    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' }) }
+    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' }) }
   }
   // A scope that is not there lands on the organisation's home, and says so
   // where the address pointed at something in it.

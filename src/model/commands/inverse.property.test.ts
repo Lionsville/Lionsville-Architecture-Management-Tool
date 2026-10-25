@@ -111,9 +111,17 @@ function someModel(r: Random): Model {
     ...(r.chance(0.4) ? { principleGroups: [{ id: 'pg-1', name: 'Data' }] } : {}),
     // A citation needs the record that cites: the observation above, where there is one.
     ...(observed && r.chance(0.5) ? { citations: [{ id: 'ci-1', about: { kind: 'observation' as const, id: 'ob-1' }, principle: { scope: '', id: 'pr-1' }, stance: 'holds' as const, on: '2026-10-25' }] } : {}),
+    // An evaluation of a block kept elsewhere: the reducer asks only that it holds together (ADR-0043 §4).
+    ...(r.chance(0.5) ? { evaluations: [evaluation(r, 'blk-1')] } : {}),
   })
   return held
 }
+
+const evaluation = (r: Random, block: string) => ({
+  id: `topics.security~${block}`, block: { scope: 'topics/security', id: block }, contexts: ['cx-1'], options: ['sb-1', 'sb-2'],
+  coverage: { 'sb-1': { 'cap-1': { level: r.pick([0, 1, 2, 3, 4] as const) } } },
+  ...(r.chance(0.3) ? { chosen: 'sb-1', decidedBy: 'adr-1' } : {}),
+})
 
 const adr = (r: Random, id: string, number: number) => ({
   id, number, title: r.pick(WORDS), status: 'proposed' as const, date: r.pick(DAYS), body: 'Why.', signers: [],
@@ -439,6 +447,21 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     patch: { ...(r.chance(0.6) ? { stance: r.pick(['holds', 'chafes', 'missing'] as const) } : {}), ...(r.chance(0.4) ? { aspect: either(r, 1 + r.int(3)) } : {}) },
   }),
   'citation.remove': (r, m) => ({ type: 'citation.remove', id: held(r, m.order.citations, 'ci') }),
+  'evaluation.add': (r, m) => ({
+    type: 'evaluation.add',
+    // Mostly a block not yet evaluated here; sometimes the one that is, which is refused as taken.
+    evaluation: evaluation(r, r.chance(0.8) ? `blk-${2 + r.int(50)}` : 'blk-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.evaluations.length + 1) } : {}),
+  }),
+  'evaluation.update': (r, m) => ({
+    type: 'evaluation.update', id: held(r, m.order.evaluations, 'ev'),
+    patch: {
+      ...(r.chance(0.5) ? { coverage: { 'sb-2': { 'cap-1': { level: r.pick([0, 2, 4] as const), how: 'Said so' } } } } : {}),
+      ...(r.chance(0.4) ? { chosen: either(r, r.pick(['sb-1', 'sb-2', 'sb-9'])) } : {}),
+      ...(r.chance(0.3) ? { contexts: r.some(['cx-1', 'cx-2']) } : {}),
+    },
+  }),
+  'evaluation.remove': (r, m) => ({ type: 'evaluation.remove', id: held(r, m.order.evaluations, 'ev') }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

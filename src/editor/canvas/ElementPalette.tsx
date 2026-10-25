@@ -21,7 +21,7 @@ import {
   DomainGroupGlyph,
   PersonGlyph,
   PlatformGlyph,
-  ServiceGlyph,
+  ServiceGlyph, BlockGlyph,
 } from '../nodes/glyphs';
 import { ColorField } from '../ColorField';
 import { defaultGroupName } from './domainGroupPlacement';
@@ -119,6 +119,7 @@ const KIND_GLYPHS: Record<PaletteKey, FC<{ size?: number; strokeWidth?: number }
   component: ComponentGlyph,
   platform: PlatformGlyph,
   platformService: ServiceGlyph,
+  buildingBlock: BlockGlyph,
   domainGroup: DomainGroupGlyph,
 };
 

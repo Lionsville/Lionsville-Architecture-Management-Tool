@@ -499,6 +499,7 @@ export const DEFAULT_NAME_KEYS: Record<ElementKind, StringKey> = {
   component: 'newName.component',
   platform: 'newName.platform',
   platformService: 'newName.platformService',
+  buildingBlock: 'newName.buildingBlock',
 };
 
 export function defaultElementName(
@@ -521,6 +522,7 @@ export function defaultElementNames(
     component: defaultElementName('component', translate),
     platform: defaultElementName('platform', translate),
     platformService: defaultElementName('platformService', translate),
+    buildingBlock: defaultElementName('buildingBlock', translate),
   };
 }
 
@@ -542,6 +544,8 @@ const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
   platform: true,
   // And somebody is accountable for an offering (ADR-0014).
   platformService: true,
+  // A concept: nobody runs a building block, its solutions are what is run.
+  buildingBlock: false,
 };
 
 /**

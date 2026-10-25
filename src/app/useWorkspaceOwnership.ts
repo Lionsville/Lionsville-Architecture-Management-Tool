@@ -9,6 +9,7 @@
  * list of fields and the words come from `projects/` and the way out comes
  * from the shell — which is the one thing that knows how to open a scope.
  */
+import { chosenFor } from '../projects/chosenSolutions'
 import { createElement, useMemo } from 'react'
 import type { ComponentProps } from 'react'
 import type { Translate } from '../i18n'
@@ -128,6 +129,8 @@ export function useWorkspaceOwnership(deps: {
         const ref = entry?.master ?? entry?.cachedRef
         return entry && ref !== undefined ? standInOf(entry, ref) : undefined
       },
+      // A building block's solution chosen for this scope, offered first (ADR-0043 §8).
+      chosen: new Map([...chosenFor(index, scope)].map(([id, one]) => [id, s('library.chosenAs', { block: one.block.name, scope: scopeLabel(one.scope) })])),
     },
     // The actors the scopes above keep (ADR-0012 §4), for *Belongs to*: an
     // outside application in a landscape usually belongs to one of the

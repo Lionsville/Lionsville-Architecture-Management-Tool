@@ -17,9 +17,9 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { MODEL_ENGLISH } from './words'
 import type { DesignDiagram, DesignElement, ElementId, ElementKind, Layer7Zone } from './types'
 
-/** Every kind, in the order ADR-0012 §4 names them, then ADR-0013's and ADR-0014's. */
+/** Every kind, in the order ADR-0012 §4 names them, then ADR-0013's, ADR-0014's and ADR-0043's. */
 export const ELEMENT_KINDS: readonly ElementKind[] = [
-  'actor', 'step', 'function', 'process', 'application', 'component', 'platform', 'platformService',
+  'actor', 'step', 'function', 'process', 'application', 'component', 'platform', 'platformService', 'buildingBlock',
 ]
 
 export function isElementKind(held: unknown): held is ElementKind {
@@ -35,6 +35,7 @@ export const KIND_LABEL_KEYS: Record<ElementKind, StringKey> = {
   component: 'kind.component',
   platform: 'kind.platform',
   platformService: 'kind.platformService',
+  buildingBlock: 'kind.buildingBlock',
 }
 
 /** An element kind's name, in the given language (English when none is given). */

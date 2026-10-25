@@ -9,7 +9,7 @@
  * older one with its blocks as text instead of as nothing.
  */
 import { describe, expect, it } from 'vitest'
-import { BLOCKS, blockFor, blockNameOf } from './blocks'
+import { BLOCKS, blockFor, blockNameOf } from './fenceBlocks'
 
 describe('blockNameOf', () => {
   it('reads the language off a fence', () => {

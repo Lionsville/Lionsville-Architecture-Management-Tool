@@ -41,6 +41,12 @@ describe('libraryRows', () => {
     expect(rows.find((row) => row.id === 'crm')).toEqual({ id: 'crm', name: 'CRM', kind: 'application', master: '', held: true })
     expect(rows.find((row) => row.id === 'ledger')).toEqual({ id: 'ledger', name: 'Ledger', kind: 'application', held: false })
   })
+
+  it('lists the solutions chosen for this scope first, said as such (ADR-0043 §8)', () => {
+    const rows = libraryRows(index, { elements: [] }, board('portal'), new Map([['wms', 'Chosen as Warehouse for Retail']]))
+    expect(rows.map((row) => row.id)).toEqual(['wms', 'crm', 'ledger', 'erp'])
+    expect(rows[0]).toMatchObject({ id: 'wms', chosen: 'Chosen as Warehouse for Retail' })
+  })
 })
 
 describe('rowsToImport', () => {

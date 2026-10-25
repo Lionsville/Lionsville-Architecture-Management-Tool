@@ -243,7 +243,7 @@ export function sharedNote(shared: boolean | undefined, offeredBeyond: readonly 
 }
 
 /** One thing the *Uses* picker offers: this scope's, or another's with where it comes from (ADR-0020). */
-export type UseOption = { id: ElementId; name: string; group: 'here' | 'elsewhere'; where?: string; platform: boolean };
+export type UseOption = { id: ElementId; name: string; group: 'chosen' | 'here' | 'elsewhere'; where?: string; platform: boolean };
 
 /**
  * What it uses, as written (ADR-0020): the rows from this element, and what
@@ -268,6 +268,12 @@ export function usesChoices(element: DesignElement, model: DesignModel, technolo
         .map((one): UseOption => ({ id: one.id, name: one.name, group: 'elsewhere', where: one.where, platform: one.kind === 'platform' })),
     ]
     : [];
+  // What a building block's evaluation chose for this scope comes first, said as such (ADR-0043 §8).
+  const chosen = technology?.chosen;
+  if (chosen?.size) {
+    usable.sort((a, b) => Number(chosen.has(b.id)) - Number(chosen.has(a.id)));
+    for (const option of usable) if (chosen.has(option.id)) Object.assign(option, { group: 'chosen' as const, where: chosen.get(option.id) });
+  }
   const nameOf = (id: ElementId) => model.elements.find((held) => held.id === id)?.name ?? elsewhereById.get(id)?.name ?? id;
   const noteOf = (id: ElementId) => {
     const one = elsewhereById.get(id);

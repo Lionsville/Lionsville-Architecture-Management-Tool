@@ -75,8 +75,9 @@ import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
 import { PrinciplesCard } from './PrinciplesCard'
-import { HomeTopics } from './HomeTopics'
-import type { TopicsStore } from './HomeTopics'
+import { HomeRecords } from './HomeRecords'
+import type { HomeStore } from './HomeRecords'
+import { BlocksCard } from './BlocksCard'
 import { RelevantTopics } from './RelevantTopics'
 import { TopicsCard } from './TopicsCard'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
@@ -263,7 +264,7 @@ export type OrganisationScreenProps = {
   /** Each scope's principles, off the shell's index (ADR-0041): what the *Principles* card counts. */
   principlesAt?: (path: ScopePath) => ScopePrinciples
   /** Where the topics are written (ADR-0042): the card, the catalogue and *Relevant topics*, where the shell keeps one. */
-  topics?: TopicsStore
+  topics?: HomeStore
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -449,9 +450,9 @@ export function OrganisationScreen({
   )
 
   return (
-    <HomeTopics
+    <HomeRecords
       store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={onGoHome}
-      openCatalogue={(topic) => homePages.open('topics', topic)} s={s}
+      openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
     >
     <Box sx={{
       height: '100vh', width: '100vw', overflowY: 'auto',
@@ -556,7 +557,7 @@ export function OrganisationScreen({
               onOpenRegister={() => homePages.open('register')}
               onOpenTechnology={() => homePages.open('technologyRegister')}
               writable={mayWrite}
-              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} />{atRoot && <TopicsCard onOpen={() => homePages.open('topics')} s={s} />}<PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
+              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} />{atRoot && <TopicsCard onOpen={() => homePages.open('topics')} s={s} />}<BlocksCard at={at} onOpen={() => homePages.open('blocks')} s={s} /><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
               s={s}
             />}
           </Box>
@@ -710,7 +711,7 @@ export function OrganisationScreen({
         onConfirm={organisation.confirmDeleteBoard}
       />
     </Box>
-    </HomeTopics>
+    </HomeRecords>
   )
 }
 

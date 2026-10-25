@@ -18,6 +18,7 @@ import { GeneralTab } from './InspectorGeneralTab';
 import { AppearanceTab } from './InspectorAppearanceTab';
 import { aspectCount, DataTab } from './InspectorDataTab';
 import { CitationsSection } from '../principles/ui/CitationsSection';
+import { BlockFacts } from '../blocks/ui/BlockFacts';
 import { CommentThread } from '../comments/ui/threadPart';
 
 export type { ElementInspectorProps };
@@ -88,6 +89,8 @@ export function ElementInspector(props: ElementInspectorProps) {
         more={leads ? <ElementMore inspector={props} /> : undefined}
       />
       {props.owned && <OwnedElsewhere owned={props.owned} />}
+      {/* A building block's page, and the choice an element is the solution of (ADR-0043 §8). */}
+      <BlockFacts element={element} />
       {/* Beside the canvas, Move… sits at the end of the record's line (`RecordSummaryLine`); on the page it is a strip of its own. */}
       {stacked && !leads && !readOnly && props.move && <MoveRecord move={props.move} />}
       {leads ? (

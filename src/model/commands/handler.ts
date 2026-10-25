@@ -95,6 +95,10 @@ export type CommandRefusal =
   | 'command.notCitable'
   /** A departure from a principle without its reason (ADR-0041 §7). */
   | 'command.reasonMissing'
+  /** A building block's fields that do not hold together, or on an element that is no building block (ADR-0043 §2, §3). */
+  | 'command.badBlock'
+  /** An evaluation not named by its block, a level off the balls, or a choice it does not weigh (ADR-0043 §4). */
+  | 'command.badEvaluation'
   /**
    * A root cause made a cause again while a solution addresses it (ADR-0032
    * §3): a solution addresses root causes only (ADR-0026). Move the solution
@@ -151,6 +155,8 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.badGroups': true,
   'command.notCitable': true,
   'command.reasonMissing': true,
+  'command.badBlock': true,
+  'command.badEvaluation': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

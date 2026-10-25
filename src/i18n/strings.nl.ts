@@ -26,6 +26,7 @@ import { NL as technology } from '../technology/strings/nl'
 import { NL as people } from '../people/strings/nl'
 import { NL as comments } from '../comments/strings/nl'
 import { NL as principles } from '../principles/strings/nl'
+import { NL as blocks } from '../blocks/strings/nl'
 
 export const NL = {
   ...adapters,
@@ -47,4 +48,5 @@ export const NL = {
   ...people,
   ...comments,
   ...principles,
+  ...blocks,
 } as const

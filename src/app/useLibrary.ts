@@ -22,6 +22,7 @@ import type { Command, DesignElement, ElementId } from '../model'
 import { placeOn, transaction } from '../model/commands'
 import { seedPlacement } from '../model/placement'
 import { isLibraryRefusal, LIBRARY_REFUSAL, libraryRows, planFromLibrary, rowsToImport } from '../projects/library'
+import { chosenFor } from '../projects/chosenSolutions'
 import type { LibraryPlan, LibraryRow } from '../projects/library'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ExistingAt } from '../editor/props'
@@ -93,8 +94,10 @@ export function useLibrary(deps: {
     const diagram = activeBoard()
     if (!diagram) return
     atRef.current = at
-    setChoice({ kind: 'picking', rows: libraryRows(index, session.current(), diagram) })
-  }, [activeBoard, index, session])
+    // The solutions chosen for this scope come first, said as such (ADR-0043 §8).
+    const chosen = new Map([...chosenFor(index, scope)].map(([id, one]) => [id, s('library.chosenAs', { block: one.block.name, scope: scopeLabel(one.scope) })]))
+    setChoice({ kind: 'picking', rows: libraryRows(index, session.current(), diagram, chosen) })
+  }, [activeBoard, index, session, scope, s, scopeLabel])
 
   const close = useCallback(() => { atRef.current = undefined; setChoice(undefined) }, [])
 

@@ -30,6 +30,7 @@ import type { Cause, Experiment, Observation, Solution } from '../model/observat
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
 import type { Citation } from '../model/citable'
+import type { Evaluation } from '../model/evaluation'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { CheckMark } from '../model/checkMarks'
 import type { RecordLink } from './links'
@@ -320,6 +321,8 @@ export type ScopeModel = {
     principleGroups?: readonly PrincipleGroup[]
     /** The citations of principles by the scope's records (ADR-0041 §7): how a principle is used, read across the tree. */
     citations?: readonly Citation[]
+    /** The scope's evaluations of building blocks (ADR-0043 §4): where each block is weighed and chosen. */
+    evaluations?: readonly Evaluation[]
   }
 }
 

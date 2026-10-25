@@ -35,6 +35,8 @@ const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.badGroups': true,
   'command.notCitable': true,
   'command.reasonMissing': true,
+  'command.badBlock': true,
+  'command.badEvaluation': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

@@ -29,6 +29,7 @@
  * _principles/NNNN-<slug>.md        an architecture principle, its aspects and groups (ADR-0041)
  * _principles/groups.json           the scope's groups of principles, in order (ADR-0041)
  * _citations/<kind>-<id>.json       the principles one record cites (ADR-0041 §7)
+ * _evaluations/<scope>~<block>.json this scope's evaluation of a building block (ADR-0043 §4)
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -98,6 +99,7 @@ import {
 } from './assignmentFile'
 import { CHECK_MARK_FILES, CHECKS_FOLDER, checkMarkFileUnreadable, checkMarkFiles, checkMarksFrom } from './checkMarkFile'
 import { CITATIONS_FOLDER, citationFiles, citationFileUnreadable, citationsFrom, isCitationsPath } from './citationFile'
+import { EVALUATIONS_FOLDER, evaluationFiles, evaluationFileUnreadable, evaluationsFrom, isEvaluationPath } from './evaluationFile'
 import {
   isPrinciplePath, PRINCIPLE_LIST_FILES, principleFiles, principleGroupFiles, principleGroupsFrom, principleGroupsUnreadable,
   PRINCIPLES_FOLDER, principlesFrom,
@@ -128,7 +130,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER, PRINCIPLES_FOLDER, CITATIONS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER, PRINCIPLES_FOLDER, CITATIONS_FOLDER, EVALUATIONS_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -141,6 +143,7 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FO
 export const SCOPE_FOLDERS: readonly string[] = [
   DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
   LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER, COMMENTS_FOLDER, PRINCIPLES_FOLDER, CITATIONS_FOLDER,
+  EVALUATIONS_FOLDER,
 ]
 
 /** The files of the three folders that hold one JSON list each (ADR-0036). */
@@ -492,6 +495,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
   files.push(...principleFiles(model))
   files.push(...principleGroupFiles(model))
   files.push(...citationFiles(model))
+  files.push(...evaluationFiles(model))
 
   files.push(...imageFiles(scope.imageLibrary ?? []))
   files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
@@ -697,6 +701,7 @@ export function isFormatPath(path: string): boolean {
   if (folder === COMMENTS_FOLDER) return rest.length === 1 && isThreadPath(path)
   if (folder === PRINCIPLES_FOLDER) return isPrinciplePath(path) || PRINCIPLE_LIST_FILES.includes(path)
   if (folder === CITATIONS_FOLDER) return rest.length === 1 && isCitationsPath(path)
+  if (folder === EVALUATIONS_FOLDER) return rest.length === 1 && isEvaluationPath(path)
   return false
 }
 
@@ -1262,6 +1267,7 @@ export function scopeFromFolder(
     ...principlesFrom([...folder.keys()].map((at) => ({ path: at, text: textAt(folder, at) }))),
     ...principleGroupsFrom((at) => textAt(folder, at)),
     ...citationsFrom([...folder.keys()], (at) => textAt(folder, at)),
+    ...evaluationsFrom([...folder.keys()], (at) => textAt(folder, at)),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
@@ -1317,6 +1323,13 @@ function carriedOf(held: ScopeFile): Pick<ScopeSnapshot, 'carried'> {
   return Object.keys(carried).length ? { carried } : {}
 }
 
+/** Whether a file of the kinds read whole is there and is not what it should be: a list, or an evaluation's object. */
+function fileUnreadable(path: string, text: string | undefined): boolean {
+  if (isThreadPath(path)) return commentFileUnreadable(text)
+  if (isCitationsPath(path)) return citationFileUnreadable(text)
+  return isEvaluationPath(path) ? evaluationFileUnreadable(text) : listFileUnreadable(text)
+}
+
 /** Whether one of those is there and is not a list. */
 function listFileUnreadable(text: string | undefined): boolean {
   return operatingFileUnreadable(text) || assignmentFileUnreadable(text) || checkMarkFileUnreadable(text) || principleGroupsUnreadable(text)
@@ -1336,11 +1349,9 @@ function leftOut(
   // a list would be written back empty, as a `model.json` that is not a model
   // would (ADR-0036).
   // A thread's file likewise (ADR-0037): written back, it would lose the thread.
-  // A record's citations likewise (ADR-0041 §7).
-  const threads = [...folder.keys()].filter((path) => isThreadPath(path) || isCitationsPath(path))
-  const lists = [...LIST_FILES, ...threads].filter((path) => !failed.includes(path) && (
-    isThreadPath(path) ? commentFileUnreadable(textAt(folder, path))
-      : isCitationsPath(path) ? citationFileUnreadable(textAt(folder, path)) : listFileUnreadable(textAt(folder, path))))
+  // A record's citations likewise (ADR-0041 §7), and an evaluation (ADR-0043 §4).
+  const threads = [...folder.keys()].filter((path) => isThreadPath(path) || isCitationsPath(path) || isEvaluationPath(path))
+  const lists = [...LIST_FILES, ...threads].filter((path) => !failed.includes(path) && fileUnreadable(path, textAt(folder, path)))
   const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped), ...lists].sort()
   const unreadable = [
     ...(modelFailed ? [MODEL_FILE] : []),

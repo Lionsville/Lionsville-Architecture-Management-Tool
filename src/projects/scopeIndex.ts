@@ -62,6 +62,7 @@ import type { OperatingRule, Responsibility, Role, UnitType } from '../model/ope
 import { isUnit } from '../model/units'
 import type { Assignment, Organisation, UnitMove } from '../model/units'
 import type { Citation } from '../model/citable'
+import type { Evaluation } from '../model/evaluation'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { KeptCheckMark } from '../model/checkMarks'
 import { ShellError } from '../platform/errors'
@@ -354,6 +355,14 @@ export type ScopeIndex = {
    * the tree, and a principle something cites is not removed.
    */
   citations(): readonly KeptCitation[]
+  /**
+   * Every building block defined anywhere, with the scope that keeps it, in
+   * path order (ADR-0043 §8): what the register of building blocks lists.
+   * A stand-in of one is not a second block.
+   */
+  buildingBlocks(): readonly KeptBlock[]
+  /** Every scope's evaluations of building blocks, with the scope that evaluates (ADR-0043 §4, §8). */
+  evaluations(): readonly KeptEvaluation[]
   /** Every scope that keeps principles or groups of them, in path order. */
   principleScopes(): readonly ScopePath[]
   /**
@@ -471,6 +480,18 @@ export const EMPTY_INDEX: ScopeIndex = indexScopes([])
  * decided by depth and then by path, so the answer does not depend on the order
  * a store happened to enumerate its folders in.
  */
+/** A building block, with the scope that keeps it (ADR-0043 §1). */
+export type KeptBlock = { readonly scope: ScopePath; readonly block: DesignElement }
+
+/** An evaluation of a building block, with the scope that evaluates it (ADR-0043 §4). */
+export type KeptEvaluation = { readonly scope: ScopePath; readonly evaluation: Evaluation }
+
+/** A scope's building blocks and its evaluations, each with the path. */
+function keepBlocks(blocks: KeptBlock[], evaluations: KeptEvaluation[], path: ScopePath, model: ScopeModel['model']): void {
+  for (const element of model.elements) if (element.kind === 'buildingBlock' && element.ref === undefined) blocks.push({ scope: path, block: element })
+  for (const evaluation of model.evaluations ?? []) evaluations.push({ scope: path, evaluation })
+}
+
 /** A citation, with the scope that keeps the record that cites. */
 export type KeptCitation = { readonly scope: ScopePath; readonly citation: Citation }
 
@@ -502,6 +523,8 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const paths: ScopePath[] = []
   const principles = new Map<ScopePath, ScopePrinciples>()
   const citations: KeptCitation[] = []
+  const blocks: KeptBlock[] = []
+  const evaluations: KeptEvaluation[] = []
   // The type each scope says it is from the operating model (ADR-0036, amended 17 October 2026).
   const scopeTypes = new Map<ScopePath, string>(models.flatMap((one) => (one.unitTypeId !== undefined ? [[one.path, one.unitTypeId] as const] : [])))
   const initiatives: IndexedTransition[] = []
@@ -558,6 +581,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     unitPlans.push(...unitPlansOf(path, model))
     if (path === '') operating = operatingOf(model)
     keepPrinciples(principles, citations, path, model)
+    keepBlocks(blocks, evaluations, path, model)
   }
 
   const entries = new Map<ElementId, IndexEntry>()
@@ -622,6 +646,8 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     analyses: () => [...analyses],
     principlesAt: (path) => principles.get(path) ?? NO_PRINCIPLES,
     citations: () => citations,
+    buildingBlocks: () => [...blocks].sort((a, b) => a.scope.localeCompare(b.scope) || a.block.name.localeCompare(b.block.name)),
+    evaluations: () => evaluations,
     principleScopes: () => [...principles.keys()].sort(),
     explainedFromAbove: (path) => new Map(fromAbove.get(path) ?? []),
     absorbedFrom: (path) => {

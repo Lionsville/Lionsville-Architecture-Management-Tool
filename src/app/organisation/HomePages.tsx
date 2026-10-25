@@ -3,7 +3,7 @@
 
 /**
  * The pages over a home's cards: the two registers, the people register, the
- * topics catalogue and the Checks page — one at a time (`useHomePages`), each below the home's bar
+ * topics catalogue, the building blocks and the Checks page — one at a time (`useHomePages`), each below the home's bar
  * so the crumbs stay and the way home is the same as from every other page.
  *
  * The first view of a home is its cards, so each page's script arrives when
@@ -27,6 +27,8 @@ import { lazyPart } from '../../widgets/lazyPart'
 import { arrivingPage } from '../../widgets/Arriving'
 import type { ChecksPage as ChecksPageShape } from './ChecksPage'
 import type { TopicsPage as TopicsPageShape } from './TopicsPage'
+import type { BlocksRegisterPage as BlocksRegisterPageShape } from '../../blocks/ui/BlocksRegisterPage'
+import type { BlockPage as BlockPageShape } from '../../blocks/ui/BlockPage'
 import { OnePage } from './OrganisationCards'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
@@ -50,6 +52,13 @@ const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
 /** The topics catalogue (ADR-0042 §3), likewise: it reads the topics the home hands down. */
 const TopicsPage = lazyPart<ComponentProps<typeof TopicsPageShape>>(
   () => import('./TopicsPage').then((held) => held.TopicsPage), { until: (props) => props.open, fallback: arrivingPage },
+)
+/** The register of building blocks and a block's page (ADR-0043 §8), likewise: they read the blocks the home hands down. */
+const BlocksRegisterPage = lazyPart<ComponentProps<typeof BlocksRegisterPageShape>>(
+  () => import('../../blocks/ui/BlocksRegisterPage').then((held) => held.BlocksRegisterPage), { until: (props) => props.open, fallback: arrivingPage },
+)
+const BlockPage = lazyPart<ComponentProps<typeof BlockPageShape>>(
+  () => import('../../blocks/ui/BlockPage').then((held) => held.BlockPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 /** The Checks page (ADR-0036, amended 11 October 2026), likewise. */
 const ChecksPage = lazyPart<ComponentProps<typeof ChecksPageShape>>(
@@ -136,10 +145,30 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
         open={openPage === 'topics'} onClose={close} {...(asked?.page === 'topics' && asked.select !== undefined ? { select: asked.select } : {})}
         nonce={asked?.nonce ?? 0} windowChrome={windowChrome}
       />
+      <BlocksDoors pages={pages} at={at} windowChrome={windowChrome} />
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} scopeName={scopeName} onGo={go}
         s={s} windowChrome={windowChrome}
+      />
+    </>
+  )
+}
+
+/**
+ * The register of building blocks over this home, and a block's page over it
+ * where one is picked (ADR-0043 §8): closing a block's page comes back to the
+ * register it was opened over.
+ */
+function BlocksDoors({ pages, at, windowChrome }: { pages: HomePagesState; at: ScopePath; windowChrome: WindowChrome }) {
+  const { openPage, asked, close } = pages
+  const picked = openPage === 'blocks' && asked?.page === 'blocks' ? asked.select : undefined
+  return (
+    <>
+      <BlocksRegisterPage open={openPage === 'blocks'} at={at} onClose={close} windowChrome={windowChrome} />
+      <BlockPage
+        open={picked !== undefined} id={picked} {...(asked?.evaluation !== undefined ? { evaluation: asked.evaluation } : {})}
+        nonce={asked?.nonce ?? 0} onClose={() => pages.open('blocks')} windowChrome={windowChrome}
       />
     </>
   )

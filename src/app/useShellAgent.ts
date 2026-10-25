@@ -34,7 +34,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics'
+export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
 
 /**
  * What the shell asks of the organisation screen: one of its pages, or the
@@ -43,7 +43,11 @@ export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 
  * `select` is the person the People page picks, where one was asked for:
  * not part of the place, as an element selected on a view is not.
  */
-export type OrgPageRequest = { page: OrgPage | 'home'; nonce: number; select?: string }
+export type OrgPageRequest = {
+  page: OrgPage | 'home'; nonce: number; select?: string
+  /** On a block's page, the scope whose evaluation to open on (ADR-0043). */
+  evaluation?: string
+}
 
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
 const NOBODY = () => {}
@@ -93,11 +97,16 @@ export function useShellAgent(deps: {
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string) => {
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string) => {
     goHome(scope)
-    const picks = page === 'people' || page === 'checks'
-    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}) }))
+    const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks'
+    setOrgPageRequest((prev) => ({
+      page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
+      ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
+    }))
   }, [goHome])
+  /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
+  const openBlock = useCallback((block: string, evaluation?: string) => homeAt(ROOT_SCOPE, 'blocks', block, evaluation), [homeAt])
   // A request is for the screen that is up. Once a scope is open that screen
   // is gone, and the home that comes back later — by a crumb, or a scope with
   // nothing to show — comes back as itself, not with the page last asked for.
@@ -121,7 +130,7 @@ export function useShellAgent(deps: {
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person `select` names.
-      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' ? to.id : to.select)
+      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.select)
       return
     }
     const open = agentSessionRef.current
@@ -265,7 +274,7 @@ export function useShellAgent(deps: {
     if (view) lookAgainRef.current()
   }, [registerAgent])
   return {
-    orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
+    orgPageRequest, setOrgPage, openSomewhere, openBlock, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
     screen: where?.screen, movedBy: where?.by ?? 'person', screenNow, selectedNow, openSession,
   }
 }

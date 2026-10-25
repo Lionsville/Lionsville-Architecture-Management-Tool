@@ -83,6 +83,12 @@ export type Adr = {
   /** Set with the `superseded` status: the record that replaced this one. */
   supersededBy?: string
   /**
+   * The solution this decision chooses in a scope's evaluation of a building
+   * block (ADR-0043 §7): accepting it writes the evaluation's `chosen` and
+   * `decidedBy` in the same step.
+   */
+  chooses?: { evaluation: string; option: string }
+  /**
    * The accepted records this one replaces, named while it is written
    * (ADR-0008, amended 28 September 2026). The two ends of a supersession are
    * written together: accepting this record moves each of these to

@@ -29,10 +29,10 @@
 import { isAdrLocked } from './adr'
 import { isMarkable } from './checkMarks'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
-import { citationsToCommands, commentsToCommands } from './commands'
+import { citationsToCommands, commentsToCommands, evaluationsToCommands } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  assignmentsOf, boxesOf, causesOf, checkMarksOf, citationList, commentList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  assignmentsOf, boxesOf, causesOf, checkMarksOf, citationList, commentList, evaluationList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
@@ -257,6 +257,8 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
   commands.push(...principlesBack(then, now))
   commands.push(...threads.filter((command) => command.type !== 'comment.take'))
   commands.push(...cited.filter((command) => command.type !== 'citation.remove'))
+  // The evaluations of building blocks as they were (ADR-0043 §4): records of their own, named by their block.
+  commands.push(...evaluationsToCommands(now, evaluationList(then)))
 
   const restored: Restored = { what: 'project', name: then.name, asOf }
   return { ok: true, command: { type: 'restore', restored, commands }, dropped, kept }

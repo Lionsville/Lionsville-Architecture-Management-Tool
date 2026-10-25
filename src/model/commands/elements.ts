@@ -8,6 +8,7 @@ import { asStandIn, isLinked, writesOwnersDetail } from '../standIn'
 import type { Model } from '../normalised'
 import { assignmentsOf, routesOf } from '../normalised'
 import { datesInOrder } from '../lifecycle'
+import { blockRefusal } from '../buildingBlock'
 import type { DesignElement, ElementId } from '../types'
 import { gone, ok, outOfOrder, taken } from './handler'
 import type { ApplyResult, CommandTable, PatchKeys } from './handler'
@@ -23,7 +24,10 @@ const ELEMENT_FIELDS: PatchKeys<'element.update'> = {
   description: true, outside: true, partyId: true, scopes: true, unitTypeId: true, extraSlots: true, reportingLines: true,
   lifecycle: true, lifecycleDates: true, successorId: true, owner: true, isManaged: true, aspects: true,
   accentColor: true, shapeVariant: true, iconKey: true, iconSize: true,
+  capabilities: true, contexts: true, sbbs: true,
 }
+
+const badBlock = { ok: false, reason: 'command.badBlock' } as const
 
 export const ELEMENT_COMMANDS = {
   'element.create': {
@@ -32,6 +36,7 @@ export const ELEMENT_COMMANDS = {
     apply(model, command, { meta }) {
       const { element, at } = command
       if (element.id in model.elements) return taken
+      if (blockRefusal(element)) return badBlock
       const rows = put(model.elements, model.order.elements, element.id, element, at)
       return ok(withElements(model, rows), { type: 'element.delete', id: element.id }, meta)
     },
@@ -57,6 +62,8 @@ export const ELEMENT_COMMANDS = {
       // and refusing here rather than in the inspector means the agent, a
       // paste and an undo all get the same answer (ADR-0009).
       if (!datesInOrder(row.lifecycleDates)) return outOfOrder
+      // A building block's fields hold together, and only a building block has them (ADR-0043 §2, §3).
+      if (blockRefusal(row)) return badBlock
       const rows = put(model.elements, model.order.elements, command.id, row)
       return ok(withElements(model, rows), { type: 'element.update', id: command.id, patch: inverse }, meta)
     },
