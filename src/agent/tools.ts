@@ -983,13 +983,15 @@ const SPECS = [
       + 'instead (ADR-0032): local to those scopes, each with the path of the scope it lives in and the causes of '
       + 'that scope that explain it. An observation merged into another is listed only when includeMerged is true, '
       + 'with mergedInto — and mergedIntoScope where the survivor lives in another scope (ADR-0035); '
-      + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true. A bright spot — '
-      + 'something that works (ADR-0038) — says bright: true; tone lists the problems or the bright spots alone.',
+      + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true. Each says its '
+      + 'tone — bright (something that works), neutral or problem (ADR-0038) — and who recorded it where that was kept; tone '
+      + 'lists one tone alone, and recordedBy: "me" what the person you act for recorded or saw.',
     inputSchema: {
       type: 'object',
       properties: {
         impact: { type: 'string', description: 'Only observations of this impact.', enum: ['minor', 'major', 'critical'] },
-        tone: { type: 'string', description: 'problems: only what goes wrong; bright: only the bright spots, what works; all (the default): both.', enum: ['all', 'problems', 'bright'] },
+        tone: { type: 'string', description: 'Only observations of this tone: bright, something that works; neutral, not said either way; problem, something that goes wrong. Default: every tone. all and problems (everything but the bright spots) are read for one release.', enum: ['bright', 'neutral', 'problem', 'all', 'problems'] },
+        recordedBy: { type: 'string', description: 'me: only what the person you act for recorded, or saw.', enum: ['me'] },
         analysed: { type: 'boolean', description: 'true: only those linked to a cause; false: only those not yet analysed.' },
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
         includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },
@@ -1344,6 +1346,23 @@ const SPECS = [
     inputSchema: {
       type: 'object',
       properties: { limit: { type: 'integer', description: 'At most this many. Default 20.', minimum: 1, maximum: 200 } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'changes.list',
+    tier: 'read',
+    description:
+      'A record\'s changes (ADR-0038): the history\'s entries that wrote it, newest first — when, who, via which client, '
+      + 'and what each did to it in the record\'s own terms. The history keeps runs of steps, not each step, so one entry may '
+      + 'be several changes. kept is false where the source keeps no history. History… in the app shows the whole scope.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        about: COMMENT_ABOUT,
+        limit: { type: 'integer', description: 'At most this many entries. Default 20.', minimum: 1, maximum: 100 },
+      },
+      required: ['about'],
       additionalProperties: false,
     },
   },
@@ -1762,7 +1781,8 @@ const SPECS = [
         by: personArgument('Who saw it, or who wrote it down. Required.'),
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future.' },
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
-        bright: { type: 'boolean', description: 'true: a bright spot — something that works, analysed the same way: its causes are what make it work, and a solution on its root spreads it (ADR-0038). Default: a problem.' },
+        tone: { type: 'string', description: 'bright: something that works, analysed the same way — its causes are what make it work, and a solution on its root spreads it; problem: something that goes wrong; neutral: not said either way (ADR-0038). Default: neutral. Who recorded it is never an argument: it is the person you act for.', enum: ['bright', 'neutral', 'problem'] },
+        bright: { type: 'boolean', description: 'Deprecated, read for one release: true is tone bright, false tone problem.' },
       },
       required: ['title', 'where', 'by'],
       additionalProperties: false,
@@ -1773,7 +1793,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, '
-      + 'who, date or impact, or whether it is a bright spot. Title, where and who may be corrected, never blanked. The count moves only through '
+      + 'who, date, impact or tone. Who recorded it stays as it was. Title, where and who may be corrected, never blanked. The count moves only through '
       + 'observation.seen and observation.merge; closing it is observation.archive.',
     inputSchema: {
       type: 'object',
@@ -1785,7 +1805,8 @@ const SPECS = [
         by: personArgument('Who saw it. Not blank.'),
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
-        bright: { type: 'boolean', description: 'true: a bright spot, something that works; false: a problem.' },
+        tone: { type: 'string', description: 'bright, neutral or problem.', enum: ['bright', 'neutral', 'problem'] },
+        bright: { type: 'boolean', description: 'Deprecated, read for one release: true is tone bright, false tone problem.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -3516,6 +3537,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.taken': 'Something in the scope already has that id, so the record you meant to add would have overwritten it. Read the scope again and add it under a free id.',
   'command.notAField': 'A patch names a field the record does not have. Nothing was changed; send only the record\'s own fields.',
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',
+  'command.recordedByFixed': 'Who recorded an observation is written once, when it is recorded, from whoever recorded it; it is never an argument.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
   'command.markFix': 'A fix is never marked as intended: the model contradicts itself, and the answer is a change to the model. A review or a note is marked by a person, never by a tool.',

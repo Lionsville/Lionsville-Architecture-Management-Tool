@@ -53,7 +53,7 @@ import type { Mention } from '../../people/hold'
 import type {
   DistinctAnswered, DistinctTakenBack, PeopleRefused, PersonRemoved, PersonWritten,
 } from '../../ports/PeopleRepository'
-import type { SourcePeople } from '../../ports/ProviderParts'
+import type { SourceAccount, SourcePeople } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { searchAll } from '../../search/search'
 import type { SearchableModel } from '../../model/searchable'
@@ -76,6 +76,8 @@ export type PeopleAccess = {
   meSaid: boolean
   /** Whether the register may be changed here. */
   readOnly: boolean
+  /** The account using the app, where the source has accounts (`SourcePeople.account`). */
+  account?: () => SourceAccount | undefined
   /** Whether this person may make one kind of change, of one entry where it is the entry's; where the source says (`SourcePeople.may`). */
   may?: (action: PeopleAction, id?: PersonId) => boolean
   /** Whether an entry has an address this person is not shown; where the source says. */
@@ -297,6 +299,7 @@ export function usePeopleRegister(deps: {
   return useMemo<PeopleAccess>(() => ({
     ...held,
     meSaid: source?.me !== undefined,
+    ...(source?.account ? { account: source.account } : {}),
     readOnly,
     ...(source?.may ? { may: source.may } : {}),
     ...(source?.withheld ? { withheld: source.withheld } : {}),

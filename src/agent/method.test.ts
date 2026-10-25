@@ -33,9 +33,9 @@ describe('the method sent on connect', () => {
   })
 
   it('says what a bright spot is, that a solution on its root spreads it, and that it is never merged with a problem', () => {
-    expect(OBSERVATIONS_METHOD).toContain('bright true is a bright spot, analysed the same way')
+    expect(OBSERVATIONS_METHOD).toContain('a bright spot — something that works')
     expect(OBSERVATIONS_METHOD).toContain('a solution on its root cause spreads it')
-    expect(OBSERVATIONS_METHOD).toContain('a bright spot and a problem are never merged')
+    expect(OBSERVATIONS_METHOD).toContain('A bright spot and a problem are never merged; neutral merges with either')
   })
 
   it('asks for where and by whom rather than guessing them', () => {

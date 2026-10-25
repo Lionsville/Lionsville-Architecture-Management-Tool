@@ -55,6 +55,12 @@ export type HistoryEntry = {
   at: number
   /** Who made it, in the repository's word: never a claim a sender made about itself. */
   by: string
+  /**
+   * The client it came through, where the repository knows it and it was not
+   * the app itself: an agent's name. A record's *Changes* say it beside `by`
+   * (ADR-0038, amended §11). Absent where nothing said.
+   */
+  via?: string
   /** What the entry says it was, where somebody said. */
   subject?: string
   /** What people have called this version since (ADR-0008); usually none. */

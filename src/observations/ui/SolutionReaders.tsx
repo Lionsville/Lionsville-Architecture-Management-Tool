@@ -63,6 +63,7 @@ import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { solutionKey } from '../solutionGraph'
 
 /** A section of the reader, under the same heading every panel's sections wear. */
@@ -426,7 +427,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 </Box>
               ))}
             </Box>
-            <CommentThread about={{ kind: 'solution', id: solution.id }} nameOf={(from) => props.nameOf(from.id)} openFrom={(from) => () => props.onOpen(solutionKey(from.id))} /></DocumentSheet>
+            <SolutionFooter id={solution.id} nameOf={props.nameOf} onOpen={props.onOpen} /></DocumentSheet>
         )}
       </Box>
     </ReaderRoot>
@@ -648,5 +649,15 @@ export function ExperimentReader(props: ExperimentReaderProps) {
         )}
       </Box>
     </ReaderRoot>
+  )
+}
+
+/** Under a solution: who proposed and changed it (ADR-0038, amended §11), and its thread (ADR-0037). */
+function SolutionFooter({ id, nameOf, onOpen }: { id: string; nameOf: (id: string) => string; onOpen: (key: string) => void }) {
+  return (
+    <>
+      <RecordChanges about={{ kind: 'solution', id }} first="proposed" />
+      <CommentThread about={{ kind: 'solution', id }} nameOf={(from) => nameOf(from.id)} openFrom={(from) => () => onOpen(solutionKey(from.id))} />
+    </>
   )
 }

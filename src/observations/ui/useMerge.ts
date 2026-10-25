@@ -19,7 +19,7 @@
  */
 import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../../i18n'
-import type { Cause, CauseStrength, Observation, ScopeAnalysis } from '../observation'
+import type { Cause, CauseStrength, Observation, ObservationTone, ScopeAnalysis } from '../observation'
 import { OBSERVATION_IMPACTS } from '../../model/observation'
 import { personRefFromKey, personRefKey } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
@@ -31,7 +31,7 @@ import {
 } from '../mergeScreen'
 import type { MergeHit } from '../mergeScreen'
 import { nodeKey } from '../graph'
-import { isBright, isScopeBelow } from '../observation'
+import { isScopeBelow, toneOf } from '../observation'
 import { IMPACT_LABEL, STATE_LABEL } from '../observationScope'
 import type { ChangeAcross, ObservationWork } from './ObservationsPage'
 
@@ -283,11 +283,12 @@ export function useMerge(deps: MergeDeps) {
   const survivorAt = opened?.survivor
   const absorbed = useMemo(() => records.filter(({ at }) => !survivorAt || !same(at, survivorAt)), [records, survivorAt])
   const survivor = records.find(({ at }) => survivorAt && same(at, survivorAt))?.one
-  // Records of the survivor's tone only: a problem and a bright spot are never one (ADR-0038 §6).
-  const bright = kind === 'observation' && survivor ? isBright(survivor as Observation) : undefined
+  // Records that merge with the set's tone only: a problem and a bright spot are never one, and the
+  // set takes the tone of its first record that has one, the survivor first (ADR-0038, amended §9).
+  const tone = kind === 'observation' ? setTone(survivor, absorbed) : undefined
   const hits = useMemo(
-    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query, scopeName: trail, bright }) : []),
-    [opened, kind, scopes, here, c.across, c.query, trail, bright],
+    () => (opened ? mergeCandidates({ kind, scopes, here, across: c.across, query: c.query, scopeName: trail, tone }) : []),
+    [opened, kind, scopes, here, c.across, c.query, trail, tone],
   )
   const values = useMemo<Chosen>(() => {
     const others = absorbed.flatMap(({ one }) => (one ? [one] : []))
@@ -356,3 +357,10 @@ export function useMerge(deps: MergeDeps) {
 
 /** The strengths a moved link may be given, strongest first. */
 export const STRENGTHS: readonly CauseStrength[] = ['strong', 'normal', 'weak']
+
+/** The tone of a merge's set: its first record's that has one, the survivor first; none while all are neutral. */
+function setTone(survivor: Picked['one'], absorbed: readonly Picked[]): ObservationTone | undefined {
+  return [survivor, ...absorbed.map(({ one }) => one)]
+    .map((one) => (one ? toneOf(one as Observation) : 'neutral'))
+    .find((tone) => tone !== 'neutral')
+}

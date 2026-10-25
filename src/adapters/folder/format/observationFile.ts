@@ -115,8 +115,14 @@ export function observationFileText(observation: Observation): string {
     where: observation.where,
     ...personFrontMatter('by', observation.by),
     impact: observation.impact,
-    // Only on a bright spot (ADR-0038 §6): a problem is written as every observation before was.
-    bright: observation.bright,
+    // A bright spot or a problem (ADR-0038, amended §9); a neutral one says nothing, as every
+    // observation before was written. A 14's `bright` is read as `tone: bright` and written so.
+    tone: observation.tone ?? (observation.bright ? 'bright' : undefined),
+    // Who recorded it, where it was kept (§10): the name, the account and the entry, and the agent.
+    recordedBy: observation.recordedBy?.name,
+    recordedByAccount: observation.recordedBy?.account,
+    recordedByPerson: observation.recordedBy?.person,
+    recordedByVia: observation.recordedBy?.via,
     seen: observation.seen,
     archived: observation.archived,
     // None at all is said, so it reads back as none rather than as the one a hand-written file is given.
@@ -245,7 +251,8 @@ export function observationFromFile(text: string, path: string): Observation | u
     ...(where ? { where } : {}),
     ...(by !== undefined ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
-    ...(frontMatterString(fields, 'bright') === 'true' ? { bright: true as const } : {}),
+    ...toneFrom(frontMatterString(fields, 'tone'), frontMatterString(fields, 'bright')),
+    ...recordedByFrom(fields),
     seen: seen !== undefined && seen >= 1 ? Math.trunc(seen) : 1,
     // `shared: true` in a file written before ADR-0032 is read past and not
     // written again: nothing is shared any more, and the events stay as history.
@@ -421,4 +428,20 @@ export function experimentFromFile(fileText: string, path: string): Experiment |
     outcome: oneOf<ExperimentOutcome>(EXPERIMENT_OUTCOMES, string('outcome')) ?? 'planned',
     body,
   }
+}
+
+/** Format 15's tone, or a 14's `bright: true` read as a bright spot; anything else is neutral (ADR-0038, amended §9). */
+function toneFrom(tone: string | undefined, bright: string | undefined): Pick<Observation, 'tone'> {
+  if (tone === 'bright' || tone === 'problem') return { tone }
+  return bright === 'true' ? { tone: 'bright' } : {}
+}
+
+/** Who recorded it (§10): a name, and the account, the entry and the agent where they were written; none without a name. */
+function recordedByFrom(fields: Parameters<typeof frontMatterString>[0]): Pick<Observation, 'recordedBy'> {
+  const name = frontMatterString(fields, 'recordedBy')?.trim()
+  if (!name) return {}
+  const account = frontMatterString(fields, 'recordedByAccount')
+  const person = frontMatterString(fields, 'recordedByPerson')
+  const via = frontMatterString(fields, 'recordedByVia')
+  return { recordedBy: { name, ...(account ? { account } : {}), ...(person ? { person } : {}), ...(via ? { via } : {}) } }
 }

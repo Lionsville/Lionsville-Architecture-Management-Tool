@@ -16,6 +16,8 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
+import { listChanges } from './changes'
+import type { ChangesOf } from './changes'
 import type { StringKey } from '../i18n/strings'
 import type { StepSummary } from '../model/activity'
 import { nodeFigure } from '../model/kinds'
@@ -51,7 +53,7 @@ import type { Prepared } from './write/shared'
 import { scopeTypesToFollow } from './scopeTypes'
 import type { ScopeTypeFollowed } from './scopeTypes'
 import type { MergeKind } from '../observations/merge'
-import type { ReadTool } from './answer'
+import type { ReadTool, ReadView } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
 import { answerPeople, isPeopleTool } from './people'
 import { answerTree, isTreeTool } from './scopeTree'
@@ -91,6 +93,8 @@ export type SessionView = {
   scopePath(): string
   /** The records of the scope above this one, which are not on this model. */
   ancestorDecisions(): readonly Adr[]
+  /** A record's changes from the source's history (ADR-0038, amended §11); absent where it keeps none. */
+  changesOf?: ChangesOf
   /**
    * Why nothing may change right now, or nothing: the person is resolving a
    * conflict, or the project is read-only. A read still answers.
@@ -332,16 +336,13 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   // `scope` on every tool: another scope's document, read as it stands on
   // disk — or, for anything that needs a session, a refusal with a key.
   const asked = scopeAsked(request.args)
+  // A record's changes are read from the history, wherever it is kept.
+  if (request.tool === 'changes.list') return listChanges(request.args, session)
   if (asked !== undefined && asked !== view.scopePath) {
     if (spec.tier !== 'read' || SESSION_BOUND.includes(request.tool)) return notOpen(asked)
     return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree, register)
   }
-  // Three reads that need the session rather than the model: the log, the
-  // pictures, and the revision on the orientation answer.
-  if (request.tool === 'activity.list') return listActivity(request.args, session)
-  if (request.tool === 'images.list') return listImages(view.model, session)
-  if (request.tool === 'project.current') return withRevision(answer(request.tool, request.args, view), session)
-  if (spec.tier === 'read') return answer(request.tool as ReadTool, request.args, view)
+  if (spec.tier === 'read') return readHere(request, view, session)
 
   const wrong = checkArguments(spec.inputSchema, request.args)
   if (wrong) return refused('agent.badArguments', wrong)
@@ -706,6 +707,17 @@ function withRevision(held: AgentAnswer, session: SessionView): AgentAnswer {
 }
 
 // --- the session's own: the log, undo, save, and the pictures -----------------------------
+
+/**
+ * A read of the open scope. Three need the session rather than the model:
+ * the log, the pictures, and the revision on the orientation answer.
+ */
+function readHere(request: AgentRequest, view: ReadView, session: SessionView): AgentAnswer {
+  if (request.tool === 'activity.list') return listActivity(request.args, session)
+  if (request.tool === 'images.list') return listImages(view.model, session)
+  if (request.tool === 'project.current') return withRevision(answer(request.tool, request.args, view), session)
+  return answer(request.tool as ReadTool, request.args, view)
+}
 
 function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
   const wrong = checkArguments(toolSpec('activity.list').inputSchema, rawArgs)

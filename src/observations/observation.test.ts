@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
   absorbFromBelow, absorbedBy, causeDepth, causeEvidence, causeLabel, explainedBy, formatCauseNumber, formatObservationNumber,
-  isArchived, isBright, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
+  isArchived, isBright, isMerged, toneOf, tonesMerge, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
   setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
@@ -79,16 +79,35 @@ describe('seeing and editing', () => {
     expect(updateObservation([fresh], 'x', { by: 'The desk' })[0].by).toBe('The desk')
   })
 
-  it('is a problem unless it is said to be a bright spot, and may be changed either way (ADR-0038 §6)', () => {
-    const problem = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t })
-    expect('bright' in problem).toBe(false)
-    expect(isBright(problem)).toBe(false)
-    const bright = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, bright: true })
-    expect(bright.bright).toBe(true)
-    expect(isBright(updateObservation([problem], 'x', { bright: true })[0])).toBe(true)
-    const back = updateObservation([bright], 'x', { bright: false })[0]
-    expect('bright' in back).toBe(false)
-    expect(updateObservation([bright], 'x', { title: 'U' })[0].bright).toBe(true)
+  it('is neutral unless a tone is said, and may be changed any way (ADR-0038 §6, amended §9)', () => {
+    const plain = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t })
+    expect('tone' in plain).toBe(false)
+    expect(toneOf(plain)).toBe('neutral')
+    const bright = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, tone: 'bright' })
+    expect(bright.tone).toBe('bright')
+    expect(isBright(bright)).toBe(true)
+    expect(toneOf(updateObservation([plain], 'x', { tone: 'problem' })[0])).toBe('problem')
+    const back = updateObservation([bright], 'x', { tone: 'neutral' })[0]
+    expect('tone' in back).toBe(false)
+    expect(updateObservation([bright], 'x', { title: 'U' })[0].tone).toBe('bright')
+  })
+
+  it('reads a 14\'s bright spot as bright, writes the tone in its place, and keeps who recorded it', () => {
+    const old = { ...newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t }), bright: true as const }
+    expect(toneOf(old)).toBe('bright')
+    const changed = updateObservation([old], 'x', { tone: 'problem' })[0]
+    expect(changed).toMatchObject({ tone: 'problem' })
+    expect('bright' in changed).toBe(false)
+    const recorded = newObservation({ id: 'y', number: 2, title: 'T', date: '2026-09-10', t, recordedBy: { name: 'Ada', account: 'a-1' } })
+    expect(recorded.recordedBy).toEqual({ name: 'Ada', account: 'a-1' })
+  })
+
+  it('merges neutral with either tone and never a bright spot with a problem (ADR-0038, amended §9)', () => {
+    expect(tonesMerge({ tone: 'bright' }, {})).toBe(true)
+    expect(tonesMerge({}, { tone: 'problem' })).toBe(true)
+    expect(tonesMerge({ tone: 'bright' }, { bright: true })).toBe(true)
+    expect(tonesMerge({ tone: 'bright' }, { tone: 'problem' })).toBe(false)
+    expect(tonesMerge({ bright: true }, { tone: 'problem' })).toBe(false)
   })
 })
 

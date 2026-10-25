@@ -38,8 +38,8 @@ import { matchesQuery } from '../model/textSearch'
 import { refText } from '../model/person'
 import type { PersonRef } from '../model/person'
 import { absorbedKeys, experimentKey, pictureKey, solutionKey } from './graph'
-import { causeLabel, formatObservationNumber, isArchived, isBright, isRootCause } from './observation'
-import type { ScopeAnalysis } from './observation'
+import { causeLabel, formatObservationNumber, isArchived, isBright, isRootCause, toneOf } from './observation'
+import type { Observation, ObservationTone, ScopeAnalysis } from './observation'
 import { formatExperimentNumber, formatSolutionNumber, isLive } from './solution'
 
 /**
@@ -50,8 +50,8 @@ export type Tone = 'all' | 'problems' | 'bright'
 
 export const TONES: readonly Tone[] = ['all', 'problems', 'bright']
 
-/** Whether an observation is of `tone`. */
-export function ofTone(one: { bright?: true }, tone: Tone): boolean {
+/** Whether an observation is of `tone`, as the agent's `observations.list` asked it before 3.8.0. */
+export function ofTone(one: { bright?: true; tone?: ObservationTone }, tone: Tone): boolean {
   return tone === 'all' || (tone === 'bright') === isBright(one)
 }
 
@@ -65,10 +65,13 @@ export type Filters = {
   roots: string
   /** Text in every record. */
   search: string
-  tone: Tone
+  /** The tones switched off (ADR-0038, amended): all three are on by default. */
+  tonesOff: readonly ObservationTone[]
+  /** Only mine: recorded by my account, or seen by the person it is linked to. */
+  mine: boolean
 }
 
-export const NO_FILTERS: Filters = { scopesOff: [], observations: '', causes: '', roots: '', search: '', tone: 'all' }
+export const NO_FILTERS: Filters = { scopesOff: [], observations: '', causes: '', roots: '', search: '', tonesOff: [], mine: false }
 
 export type FilterKind = 'observation' | 'cause' | 'root' | 'solution' | 'experiment'
 
@@ -85,8 +88,10 @@ export type FilterRecord = {
    * count is about.
    */
   counted: boolean
-  /** An observation that is a bright spot (ADR-0038 §6). */
-  bright?: true
+  /** An observation's tone (ADR-0038, amended). */
+  tone?: ObservationTone
+  /** An observation recorded by me, or seen by me. */
+  mine?: true
 }
 
 /** From the record on the left to the record behind it. */
@@ -109,7 +114,7 @@ const TEXT = ['observations', 'causes', 'roots', 'search'] as const
 /** How many filters are on, for the count on *Filters*: each text filter, the scopes as one, and the tone. */
 export function activeFilters(filters: Filters, scopes: readonly string[]): number {
   const texts = TEXT.filter((field) => filters[field].trim() !== '').length
-  return texts + (scopes.some((scope) => filters.scopesOff.includes(scope)) ? 1 : 0) + (filters.tone !== 'all' ? 1 : 0)
+  return texts + (scopes.some((scope) => filters.scopesOff.includes(scope)) ? 1 : 0) + (filters.tonesOff.length > 0 ? 1 : 0) + (filters.mine ? 1 : 0)
 }
 
 /**
@@ -117,13 +122,14 @@ export function activeFilters(filters: Filters, scopes: readonly string[]): numb
  * dropped, with everything behind them that no observation of this tone
  * leads to as well. Nothing, while it is `all`.
  */
-function toneKeeps(pool: readonly FilterRecord[], behind: ReadonlyMap<string, readonly string[]>, tone: Tone): Set<string> | undefined {
-  if (tone === 'all') return undefined
+function toneKeeps(pool: readonly FilterRecord[], behind: ReadonlyMap<string, readonly string[]>, filters: Filters): Set<string> | undefined {
+  if (filters.tonesOff.length === 0 && !filters.mine) return undefined
   const kept = new Set<string>()
   const dropped = new Set<string>()
   for (const record of pool) {
     if (record.kind !== 'observation') continue
-    const into = ofTone(record, tone) ? kept : dropped
+    const shown = !filters.tonesOff.includes(record.tone ?? 'neutral') && (!filters.mine || record.mine === true)
+    const into = shown ? kept : dropped
     for (const key of walk(record.key, behind)) into.add(key)
   }
   return new Set(pool.filter((record) => kept.has(record.key) || !dropped.has(record.key)).map((record) => record.key))
@@ -181,7 +187,7 @@ export function applyFilters(
     }
     kept.push(keep)
   }
-  const toned = toneKeeps(pool, behind, filters.tone)
+  const toned = toneKeeps(pool, behind, filters)
   if (toned) kept.push(toned)
   const visible = new Set(pool.filter((record) => kept.every((set) => set.has(record.key))).map((record) => record.key))
   return {
@@ -204,6 +210,7 @@ export function applyFilters(
  */
 export function filterRecords(
   scopes: readonly ScopeAnalysis[], here: string, named: (ref: PersonRef | undefined) => string | undefined = refText,
+  isMine: (one: Observation) => boolean = () => false,
 ): FilterRecord[] {
   const gone = absorbedKeys(scopes, here)
   return scopes.flatMap(({ scope, observations, causes, solutions, experiments }): FilterRecord[] => [
@@ -211,7 +218,8 @@ export function filterRecords(
       const key = pictureKey(here, scope, one.id)
       return {
         key, scope, kind: 'observation', counted: !gone.has(key) && !isArchived(one),
-        ...(isBright(one) ? { bright: true as const } : {}),
+        tone: toneOf(one),
+        ...(isMine(one) ? { mine: true as const } : {}),
         text: [formatObservationNumber(one.number), one.title, one.where, named(one.by), one.body],
       }
     }),
@@ -269,7 +277,10 @@ export function readSavedFilters(stored: unknown): SavedFilter[] {
       name: name.trim(),
       filters: {
         scopesOff, observations: text(held.observations), causes: text(held.causes), roots: text(held.roots), search: text(held.search),
-        tone: TONES.includes(held.tone as Tone) ? held.tone as Tone : 'all',
+        tonesOff: Array.isArray(held.tonesOff)
+          ? held.tonesOff.filter((one): one is ObservationTone => one === 'bright' || one === 'neutral' || one === 'problem')
+          : held.tone === 'bright' ? ['neutral', 'problem'] : held.tone === 'problems' ? ['bright'] : [],
+        mine: held.mine === true,
       },
     }]
   })

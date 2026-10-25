@@ -13,10 +13,11 @@ import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
 import { drop, patched, put, withCauses, withExperiments, withObservations, withSolutions } from './rows'
 import { patchWrites } from './writes'
+import { sameValue } from '../recordKey'
 
 /** Every field of an observation but its id. */
 const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
-  number: true, title: true, date: true, where: true, by: true, impact: true, bright: true, seen: true,
+  number: true, title: true, date: true, where: true, by: true, impact: true, bright: true, tone: true, recordedBy: true, seen: true,
   archived: true, body: true, history: true,
 }
 
@@ -77,6 +78,12 @@ export const OBSERVATION_COMMANDS = {
     apply(model, command, { meta }) {
       const held = observationsOf(model)[command.id]
       if (!held) return gone
+      // Written once, by whoever recorded it (ADR-0038, amended §10): a patch
+      // that names it and says what it already is — a whole row's
+      // replacement — is no change and is let through.
+      if ('recordedBy' in command.patch && !sameValue(command.patch.recordedBy, held.recordedBy)) {
+        return { ok: false, reason: 'command.recordedByFixed' }
+      }
       const { row, inverse } = patched(held, command.patch)
       const rows = put(observationsOf(model), model.order.observations, command.id, row)
       return ok(withObservations(model, rows), { type: 'observation.update', id: command.id, patch: inverse }, meta)

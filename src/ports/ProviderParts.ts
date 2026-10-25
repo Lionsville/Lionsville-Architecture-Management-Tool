@@ -147,6 +147,9 @@ export type SourceComments = {
  * person using it, hears the register change elsewhere, or knows who may do
  * what with it.
  */
+/** An account of the source, as a record names who recorded it. */
+export type SourceAccount = { readonly id: string; readonly name: string }
+
 export type SourcePeople = {
   /**
    * The source applies the organisation's policy itself, on a schedule of its
@@ -160,6 +163,13 @@ export type SourcePeople = {
    * the source says, *you* is marked from it and *This is me* is not offered.
    */
   readonly me?: () => PersonId | undefined
+  /**
+   * The account using the app, where the source has accounts: its id and the
+   * name it goes by. What an observation is recorded by (ADR-0038, amended
+   * §10), and what *Mine* matches besides the entry {@link me} names. Absent
+   * on a source with no accounts, where *This is me* says who.
+   */
+  readonly account?: () => SourceAccount | undefined
   /**
    * Hear when the register changed other than through this window, and the
    * way to stop: the app reads it again, so a forget shows everywhere at once.

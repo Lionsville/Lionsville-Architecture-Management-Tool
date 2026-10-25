@@ -83,6 +83,14 @@ export type ObservationEventKind =
 export const OBSERVATION_EVENT_KINDS: readonly ObservationEventKind[] =
   ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored', 'moved', 'movedIn']
 
+/** What an observation says, left to right as the form asks it (ADR-0038, amended). */
+export type ObservationTone = 'bright' | 'neutral' | 'problem'
+
+export const OBSERVATION_TONES: readonly ObservationTone[] = ['bright', 'neutral', 'problem']
+
+/** The account that recorded a record, and the register entry it is linked to where there is one. */
+export type RecordedBy = { name: string; account?: string; person?: string; via?: string }
+
 export type Observation = {
   /** Stable, never shown. The number is what people call it. */
   id: string
@@ -106,6 +114,18 @@ export type Observation = {
    * a solution on its root spreads it — and a merge never mixes the two.
    */
   bright?: true
+  /**
+   * What it says (ADR-0038, amended): a bright spot, a problem, or neutral
+   * where absent. Format 15 writes this; a 14's `bright` reads as `bright`,
+   * and every other observation of before reads as neutral.
+   */
+  tone?: ObservationTone
+  /**
+   * Who recorded it, written when it is recorded and never sent by a client
+   * (ADR-0038, amended): the account of the recording step, with the person
+   * it is linked to where there is one. Absent on a record from before.
+   */
+  recordedBy?: RecordedBy
   /** How often it has been seen, this record's own sightings and the absorbed ones together. */
   seen: number
   /**

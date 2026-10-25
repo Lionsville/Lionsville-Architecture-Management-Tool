@@ -24,7 +24,8 @@ import type { Translate } from '../../i18n'
 import { matchesQuery } from '../../model/textSearch'
 import { BookmarkIcon, CaretIcon, CloseIcon, ScopeIcon } from '../../widgets/icons'
 import type { Filters, SavedFilter } from '../filter'
-import { TONE_LABEL } from '../observationScope'
+import { TONE_WORD } from '../observationScope'
+import { OBSERVATION_TONES } from '../observation'
 
 /** A button in the filter row that opens a popover under itself. */
 function PopoverButton(props: {
@@ -135,7 +136,8 @@ export function describeFilters(filters: Filters, s: Translate): string {
     filters.roots.trim() && `${s('observation.filterRoot')}: ${filters.roots.trim()}`,
     filters.search.trim() && `“${filters.search.trim()}”`,
     filters.scopesOff.length > 0 && s('observation.savedScopesOff', { count: filters.scopesOff.length }),
-    filters.tone !== 'all' && s(TONE_LABEL[filters.tone]),
+    filters.tonesOff.length > 0 && OBSERVATION_TONES.filter((one) => !filters.tonesOff.includes(one)).map((one) => s(TONE_WORD[one])).join(', '),
+    filters.mine && s('observation.whoseMine'),
   ].filter(Boolean).join(' · ')
 }
 

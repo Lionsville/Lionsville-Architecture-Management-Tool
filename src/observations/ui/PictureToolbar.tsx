@@ -27,9 +27,11 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { AddIcon, CloseIcon, FilterIcon, FitIcon, MinusIcon, SearchIcon } from '../../widgets/icons'
-import { TONES } from '../filter'
-import type { Filters, Tone } from '../filter'
-import { TONE_LABEL } from '../observationScope'
+import type { Filters } from '../filter'
+import { TONE_WORD } from '../observationScope'
+import { OBSERVATION_TONES } from '../observation'
+import type { ObservationTone } from '../observation'
+import { ToneBar } from './ToneBar'
 import type { PictureSize } from '../graph'
 import { SavedPopover, ScopesPopover } from './FilterPopovers'
 import type { ScopeOption } from './FilterPopovers'
@@ -150,7 +152,7 @@ function ZoomControls({ f, s }: { f: PictureFilters; s: Translate }) {
 
 /** One text filter: a short label in the box, an example as its placeholder, and what it keeps on hover. */
 function FilterField(props: {
-  field: Exclude<keyof Filters, 'scopesOff' | 'tone'>
+  field: Exclude<keyof Filters, 'scopesOff' | 'tonesOff' | 'mine'>
   short?: string
   label: string
   example: string
@@ -189,29 +191,45 @@ function FilterField(props: {
   )
 }
 
-/** Problems, bright spots, or both: which observations are in view, and what lies behind them. */
+/**
+ * Which tones are in view (ADR-0038, amended): three toggles, all on by
+ * default, each with its bar; and *Everyone · Mine* beside them.
+ */
 function ToneSwitch({ f, s }: { f: PictureFilters; s: Translate }) {
+  const on = OBSERVATION_TONES.filter((one) => !f.filters.tonesOff.includes(one))
   return (
-    <Tooltip title={s('observation.toneTip')} describeChild>
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={f.filters.tone}
-        onChange={(_event, tone: Tone | null) => { if (tone) f.setFilters({ ...f.filters, tone }) }}
-        aria-label={s('observation.toneLabel')}
-        data-testid="filter-tone"
-        data-guide="observations.tone"
-      >
-        {TONES.map((tone) => (
-          <ToggleButton
-            key={tone} value={tone} data-testid={`filter-tone-${tone}`} color={tone === 'bright' ? 'success' : 'primary'}
-            sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13 }}
-          >
-            {s(TONE_LABEL[tone])}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </Tooltip>
+    <>
+      <Tooltip title={s('observation.toneFilterTip')} describeChild>
+        <ToggleButtonGroup
+          size="small"
+          value={on}
+          onChange={(_event, next: ObservationTone[]) => f.setFilters({ ...f.filters, tonesOff: OBSERVATION_TONES.filter((one) => !next.includes(one)) })}
+          aria-label={s('observation.toneLabel')}
+          data-testid="filter-tone"
+          data-guide="observations.tone"
+        >
+          {OBSERVATION_TONES.map((tone) => (
+            <ToggleButton key={tone} value={tone} data-testid={`filter-tone-${tone}`} sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13, gap: 0.75 }}>
+              <ToneBar tone={tone} />
+              {s(TONE_WORD[tone])}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Tooltip>
+      <Tooltip title={s('observation.whoseMineTip')} describeChild>
+        <ToggleButtonGroup
+          exclusive size="small" value={f.filters.mine ? 'mine' : 'everyone'}
+          onChange={(_event, next: 'mine' | 'everyone' | null) => { if (next) f.setFilters({ ...f.filters, mine: next === 'mine' }) }}
+          aria-label={s('observation.whoseLabel')} data-testid="filter-whose" data-guide="observations.mine"
+        >
+          <ToggleButton value="everyone" sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13 }}>{s('observation.whoseEveryone')}</ToggleButton>
+          <ToggleButton value="mine" data-testid="filter-mine" sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13 }}>{s('observation.whoseMine')}</ToggleButton>
+        </ToggleButtonGroup>
+      </Tooltip>
+      {f.filters.mine && f.nobodyIsMe && (
+        <Typography variant="caption" color="text.secondary" data-testid="filter-mine-nobody" sx={{ maxWidth: 280 }}>{s('observation.mineNobody')}</Typography>
+      )}
+    </>
   )
 }
 

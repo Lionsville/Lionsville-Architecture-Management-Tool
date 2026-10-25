@@ -29,6 +29,11 @@ import type { MakeId } from '../../model/keys'
 import { causeLabel, linkCause, linkRefusal, liveCauses, nextCauseNumber, seenAgain } from '../observation'
 import type { Cause, CauseLink, LinkContext, ScopeAnalysis } from '../observation'
 import { addCauseLinked, recordObservation } from '../form'
+import { usePersonNames } from '../../people/ui/names'
+import { meIn } from '../../people/me'
+import { registerOf } from '../../people/shown'
+import type { RecordedBy } from '../observation'
+import { whoRecords } from '../recordedBy'
 import { nodeKey } from '../graph'
 import { LinkDialog } from './LinkForm'
 import type { LinkCandidate, LinkSpec } from './LinkForm'
@@ -107,9 +112,10 @@ export function useAnalysisForms(deps: {
     changeBelow(scope, (held) => ({ ...held, causes: change(held.causes) }), landed)
   }
 
+  const recordedBy = useRecordedBy()
   const record = (request: RecordRequest) => {
     setCreating(false)
-    const args = { fields: request.fields, causes: request.causes, makeId, t: s }
+    const args = { fields: { ...request.fields, ...(recordedBy ? { recordedBy } : {}) }, causes: request.causes, makeId, t: s }
     if (request.scope === undefined) {
       const made = recordObservation(work, args)
       commit(made.analysis)
@@ -284,4 +290,14 @@ function linkSpec(target: LinkTarget, o: {
       behind: list.filter((cause) => cause.id !== id).map((cause) => ({ ...candidate(cause), key: cause.id })),
     },
   }
+}
+
+/**
+ * Who records, as the source says it (ADR-0038, amended §10): the account
+ * where it has accounts, *This is me* where it has none, and nobody otherwise.
+ */
+function useRecordedBy(): RecordedBy | undefined {
+  const register = usePersonNames().access
+  const me = meIn(register?.me, registerOf(register?.people ?? []))
+  return whoRecords(register?.account?.(), me?.name ? { id: me.id, name: me.name } : undefined)
 }

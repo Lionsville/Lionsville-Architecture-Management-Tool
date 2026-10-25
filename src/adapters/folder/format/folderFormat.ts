@@ -227,11 +227,22 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  * already public, so what it means is not changed after the fact. The field
  * is optional: a 13 is a 14 in which nobody has a line of their own, and the
  * pass that brings it up moves no scope and rewrites nothing but the headers.
+ *
+ * **15 is 14, with what release 3.8.0 keeps** (ADR-0038, amended; ADR-0041;
+ * ADR-0042; ADR-0043), one turn for all of it: an observation's `tone` in
+ * place of `bright`, and who recorded it (`recordedBy`, with its account, its
+ * entry and its agent). A build that reads 14 would read a neutral
+ * observation as a problem and drop who recorded it on its way back, so the
+ * number turns and a 3.7.5 build refuses the folder instead. Every addition is
+ * optional: a 14 is a 15 in which a bright spot says `bright`, which reads as
+ * the tone, every other observation is neutral and nobody is said to have
+ * recorded anything, and the pass that brings it up rewrites the headers and
+ * nothing else.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 /**
  * The second half of a view's pair of files: where it ended up.

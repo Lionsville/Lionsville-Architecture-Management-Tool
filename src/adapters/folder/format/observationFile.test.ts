@@ -54,13 +54,28 @@ describe('an observation as a file', () => {
     expect(observationFromFile(observationFileText(local), observationPath(local))).toEqual(local)
   })
 
-  it('writes a bright spot as `bright: true`, reads it back, and reads its absence as a problem (ADR-0038 §6)', () => {
-    const bright: Observation = { ...observation, bright: true }
-    const text = observationFileText(bright)
-    expect(text).toContain('impact: major\nbright: true\nseen: 4\n')
-    expect(observationFromFile(text, observationPath(bright))).toEqual(bright)
-    expect(observationFileText(observation)).not.toContain('bright')
-    expect(observationFromFile(text.replace('bright: true\n', 'bright: false\n'), observationPath(bright))).toEqual(observation)
+  it('writes a bright spot and a problem as their tone, reads them back, and reads none as neutral (ADR-0038, amended §9)', () => {
+    for (const tone of ['bright', 'problem'] as const) {
+      const toned: Observation = { ...observation, tone }
+      const text = observationFileText(toned)
+      expect(text).toContain(`impact: major\ntone: ${tone}\nseen: 4\n`)
+      expect(observationFromFile(text, observationPath(toned))).toEqual(toned)
+    }
+    expect(observationFileText(observation)).not.toMatch(/bright|tone/)
+    expect(observationFromFile(observationFileText(observation), observationPath(observation))?.tone).toBeUndefined()
+  })
+
+  it('reads a 14\'s `bright: true` as a bright spot, and `bright: false` as neutral', () => {
+    const fourteen = observationFileText(observation).replace('impact: major\n', 'impact: major\nbright: true\n')
+    expect(observationFromFile(fourteen, observationPath(observation))).toEqual({ ...observation, tone: 'bright' })
+    expect(observationFromFile(fourteen.replace('bright: true', 'bright: false'), observationPath(observation))).toEqual(observation)
+  })
+
+  it('writes who recorded it, its account, its entry and its agent, and reads them back (ADR-0038, amended §10)', () => {
+    const recorded: Observation = { ...observation, recordedBy: { name: 'Ada Example', account: 'acc-1', person: 'pe-1', via: 'An agent' } }
+    const text = observationFileText(recorded)
+    expect(text).toContain('recordedBy: Ada Example\nrecordedByAccount: acc-1\nrecordedByPerson: pe-1\nrecordedByVia: An agent\n')
+    expect(observationFromFile(text, observationPath(recorded))).toEqual(recorded)
   })
 
   it('writes a move both ways, the scope always and the organisation as the empty path, and reads it back (ADR-0038 §1)', () => {

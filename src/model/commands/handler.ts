@@ -76,6 +76,12 @@ export type CommandRefusal =
    */
   | 'command.rootExplained'
   /**
+   * Who recorded an observation changed after it was recorded (ADR-0038,
+   * amended §10): it is written once, from whoever recorded it, and never
+   * after.
+   */
+  | 'command.recordedByFixed'
+  /**
    * A root cause made a cause again while a solution addresses it (ADR-0032
    * §3): a solution addresses root causes only (ADR-0026). Move the solution
    * to another root cause, or unlink it, first.
@@ -123,6 +129,7 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.notAField': true,
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
+  'command.recordedByFixed': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

@@ -261,6 +261,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.taken': 'Iets hier heeft dat id al — een andere auteur nam het terwijl deze wijziging werd gemaakt. Probeer het opnieuw.',
   'command.notAField': 'Deze wijziging bevat een veld dat dit record niet heeft, dus er is niets van doorgevoerd.',
   'command.ownedElsewhere': 'Dit is een verwijzing: de levenscyclus, data, eigenaar, leverancier, naam en beschrijving worden geschreven in de scope die het definieert. Open die scope om ze te wijzigen.',
+  'command.recordedByFixed': 'Wie een observatie vastlegde, blijft zoals het werd vastgelegd en wordt daarna niet gewijzigd.',
   'command.rootExplained': 'Een oorzaak die door een andere oorzaak verklaard wordt, kan geen grondoorzaak zijn: bij een grondoorzaak houdt de keten op. Ontkoppel de diepere oorzaak, of maak die tot grondoorzaak.',
   'command.rootAddressed': 'Een grondoorzaak waar een oplossing zich op richt, kan niet weer een oorzaak worden: een oplossing richt zich alleen op grondoorzaken. Verplaats de oplossing eerst naar een andere grondoorzaak, of ontkoppel haar.',
   'command.markFix': 'Alleen een nakijkpunt of een notitie kan als bedoeld worden gemarkeerd. Herstellen betekent dat het model zichzelf tegenspreekt: herstel het in het model.',

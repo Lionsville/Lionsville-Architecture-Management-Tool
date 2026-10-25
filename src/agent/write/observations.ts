@@ -10,7 +10,11 @@ import { causesToCommands, observationsToCommands, solutionsToCommands, transact
 import type { Model } from '../../model/normalised'
 import { causeList, fromArrays, observationList, solutionList, toArrays } from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
-import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
+import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ObservationTone, RecordedBy } from '../../model/observation'
+import { OBSERVATION_TONES } from '../../model/observation'
+import { whoRecords } from '../../observations/recordedBy'
+import { meIn } from '../../people/me'
+import { registerOf } from '../../people/shown'
 import { forgetCause, formatSolutionNumber } from '../../observations/solution'
 import {
   causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
@@ -122,12 +126,17 @@ export const recordObservation: Handler = (args, view) => {
   const date = typeof args.date === 'string' ? args.date : today
   if (!isDay(date)) return refused('agent.badArguments', `date ${date} is not yyyy-mm-dd`)
   if (date > today) return refused('agent.badArguments', `date ${date} is in the future; today is ${today}`)
+  const tone = toneArgument(args)
+  if (typeof tone === 'object') return tone
+  // Who recorded it is the person the agent acts for, via the agent, and never an argument (ADR-0038, amended §10).
+  const recordedBy = recorderOf(view)
   const fresh = newObservation({
     id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
     where: args.where,
     by: by.ref,
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
-    ...(args.bright === true ? { bright: true } : {}),
+    ...(tone ? { tone } : {}),
+    ...(recordedBy ? { recordedBy } : {}),
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
   const after = { ...before, observations: [...before.observations, fresh] }
@@ -162,8 +171,10 @@ function observationPatch(args: Args, view: WriteView): ObservationPatch | Agent
   }
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
-  // A problem or a bright spot, and may be changed either way (ADR-0038 §6).
-  if (typeof args.bright === 'boolean') patch.bright = args.bright
+  // Its tone, and may be changed any way (ADR-0038, amended §9).
+  const tone = toneArgument(args)
+  if (typeof tone === 'object') return tone
+  if (tone) patch.tone = tone
   if (typeof args.date === 'string') {
     if (!isDay(args.date)) return refused('agent.badArguments', `date ${args.date} is not yyyy-mm-dd`)
     patch.date = args.date
@@ -349,3 +360,25 @@ export const removeCauseTool = onCause((held, _args, _view, work) => {
     answer: json({ id: held.id, label: causeLabel(held), title: held.title, removed: true }),
   }
 })
+
+/**
+ * The tone an argument says (ADR-0038, amended §9): `tone`, or 3.7's
+ * `bright` for one release — true a bright spot, false a problem. Nothing
+ * where neither is given, and a refusal for a tone that is none of the three.
+ */
+function toneArgument(args: Args): ObservationTone | AgentAnswer | undefined {
+  if (args.tone !== undefined) {
+    return (OBSERVATION_TONES as readonly unknown[]).includes(args.tone)
+      ? args.tone as ObservationTone
+      : refused('agent.badArguments', `tone is one of ${OBSERVATION_TONES.join(', ')}`)
+  }
+  if (typeof args.bright === 'boolean') return args.bright ? 'bright' : 'problem'
+  return undefined
+}
+
+/** Who records through the agent: the account where the source has one, or the person the agent acts for, via the agent. */
+function recorderOf(view: WriteView): RecordedBy | undefined {
+  const me = view.me?.()
+  const person = me === undefined ? undefined : meIn(me, registerOf(view.people?.() ?? []))
+  return whoRecords(view.account?.(), person?.name ? { id: person.id, name: person.name } : undefined, view.client)
+}

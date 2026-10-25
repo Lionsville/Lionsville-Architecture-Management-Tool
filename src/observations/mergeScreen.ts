@@ -14,7 +14,8 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { matchesQuery } from '../model/textSearch'
 import type { Cause, Observation, ScopeAnalysis } from '../model/observation'
 import { absorbedKeys, pictureKey } from './graph'
-import { absorbedBy, causeAbsorbedBy, causeLabel, formatObservationNumber, isArchived, isBright, isCauseMerged, isMerged, mergedInto } from './observation'
+import { absorbedBy, causeAbsorbedBy, causeLabel, formatObservationNumber, isArchived, isCauseMerged, isMerged, mergedInto, tonesMerge } from './observation'
+import type { ObservationTone } from './observation'
 import { formatSolutionNumber } from './solution'
 import type { MergeKind, MergeLinkRefusal, MergePlan, MergeRefusal, RecordAt } from './merge'
 
@@ -76,8 +77,8 @@ export function recordLabel(kind: MergeKind, record: Observation | Cause): strin
  * observation) by every word of `query` — and, where `scopeName` is given,
  * on what it calls the scope of a record from elsewhere, so a scope's path
  * finds what it holds. A record a survivor anywhere says it absorbed is
- * history, and is not offered. With `bright` given, only observations of
- * that tone are.
+ * history, and is not offered. With `tone` given, only observations that
+ * merge with that tone are (ADR-0038, amended §9).
  */
 export function mergeCandidates(o: {
   kind: MergeKind
@@ -86,8 +87,8 @@ export function mergeCandidates(o: {
   across: boolean
   query: string
   scopeName?: ((path: string) => string) | undefined
-  /** Observations of this tone only, where given: a problem and a bright spot are never merged (ADR-0038 §6). */
-  bright?: boolean | undefined
+  /** Observations that merge with this tone only, where given: a problem and a bright spot are never merged. */
+  tone?: ObservationTone | undefined
 }): MergeHit[] {
   const gone = absorbedKeys(o.scopes, o.here)
   const pool = o.across ? o.scopes : o.scopes.filter((one) => one.scope === o.here)
@@ -98,7 +99,7 @@ export function mergeCandidates(o: {
     const standing: (Observation | Cause)[] = o.kind === 'cause'
       ? scope.causes.filter((one) => !isCauseMerged(scope.causes, one.id))
       : scope.observations.filter((one) => (
-        !isMerged(scope.observations, one.id) && !isArchived(one) && (o.bright === undefined || isBright(one) === o.bright)
+        !isMerged(scope.observations, one.id) && !isArchived(one) && (o.tone === undefined || tonesMerge(one, { tone: o.tone }))
       ))
     return standing
       .filter((one) => !gone.has(pictureKey(o.here, scope.scope, one.id)))

@@ -763,6 +763,27 @@ describe('apply — a create on an id the model already holds', () => {
  * the chain contradicts, whoever sent them: made a root while a cause
  * explains it, made a cause again while a solution addresses it.
  */
+describe('apply — who recorded an observation (ADR-0038, amended §10)', () => {
+  const recorded = {
+    id: 'ob1', number: 1, title: 'Seen', date: '2026-10-01', impact: 'minor' as const, seen: 1, body: '',
+    history: [{ date: '2026-10-01', kind: 'recorded' as const }], recordedBy: { name: 'Ada', account: 'acc-1' },
+  }
+
+  it('refuses a change to it, and lets a patch through that says what it already is', () => {
+    const m = sample({ observations: [recorded] })
+    expect(apply(m, { type: 'observation.update', id: 'ob1', patch: { recordedBy: { name: 'Bo', account: 'acc-2' } } }))
+      .toEqual({ ok: false, reason: 'command.recordedByFixed' })
+    ok(apply(m, { type: 'observation.update', id: 'ob1', patch: { ...recorded, title: 'Seen again' } }))
+  })
+
+  it('refuses taking it away, and lets every other field change', () => {
+    const m = sample({ observations: [recorded] })
+    expect(apply(m, { type: 'observation.update', id: 'ob1', patch: { recordedBy: undefined } }))
+      .toEqual({ ok: false, reason: 'command.recordedByFixed' })
+    ok(apply(m, { type: 'observation.update', id: 'ob1', patch: { tone: 'problem' } }))
+  })
+})
+
 describe('apply — a root cause is said', () => {
   const deeper = (id: string, number: number, explains: string): Cause => ({
     ...because(id, number), explains: [{ id: explains, strength: 'normal' }],

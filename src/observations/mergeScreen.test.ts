@@ -70,11 +70,14 @@ describe('mergeCandidates', () => {
     expect(at(mergeCandidates({ kind: 'observation', scopes, here: 'north', across: true, query: 'ob-0007' }))).toEqual(['south#s1'])
     expect(mergeCandidates({ kind: 'observation', scopes, here: 'north', across: true, query: 'quay seen nothing' })).toEqual([])
   })
-  it('offers observations of the survivor\'s tone only, where it is given (ADR-0038 §6)', () => {
-    const toned = [scope('north', { observations: [observation('n1', 1), observation('n2', 2, { bright: true })] })]
-    expect(at(mergeCandidates({ kind: 'observation', scopes: toned, here: 'north', across: false, query: '' }))).toEqual(['north#n2', 'north#n1'])
-    expect(at(mergeCandidates({ kind: 'observation', scopes: toned, here: 'north', across: false, query: '', bright: true }))).toEqual(['north#n2'])
-    expect(at(mergeCandidates({ kind: 'observation', scopes: toned, here: 'north', across: false, query: '', bright: false }))).toEqual(['north#n1'])
+  it('offers observations that merge with the set\'s tone only, neutral with either (ADR-0038, amended §9)', () => {
+    const toned = [scope('north', {
+      observations: [observation('n1', 1), observation('n2', 2, { tone: 'bright' }), observation('n3', 3, { tone: 'problem' })],
+    })]
+    const offered = (tone?: 'bright' | 'problem') => at(mergeCandidates({ kind: 'observation', scopes: toned, here: 'north', across: false, query: '', tone }))
+    expect(offered()).toEqual(['north#n3', 'north#n2', 'north#n1'])
+    expect(offered('bright')).toEqual(['north#n2', 'north#n1'])
+    expect(offered('problem')).toEqual(['north#n3', 'north#n1'])
   })
   it('offers causes that are not merged', () => {
     expect(at(mergeCandidates({ kind: 'cause', scopes, here: 'north', across: true, query: '' }))).toEqual(['north#c1'])

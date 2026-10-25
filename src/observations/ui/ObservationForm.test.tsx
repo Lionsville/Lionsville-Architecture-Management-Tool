@@ -108,19 +108,31 @@ describe('the new observation form', { timeout: 20_000 }, () => {
     expect((screen.getByTestId('form-date') as HTMLInputElement).max).toBe('2026-09-20')
   })
 
-  it('asks a problem or a bright spot first, problem chosen, and records a bright spot as one (ADR-0038 §6)', () => {
-    const { onChange } = mount()
+  it('asks the tone first, neutral chosen, and records the one chosen (ADR-0038, amended §9)', () => {
+    const { onChange } = mount({ model: { ...model, observations: [observation({ tone: 'problem' })] } })
     openForm()
-    expect(screen.getByTestId('form-tone-problem').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('form-tone-neutral').getAttribute('aria-pressed')).toBe('true')
+    expect(['bright', 'neutral', 'problem'].map((one) => screen.getByTestId(`form-tone-${one}`).textContent)).toEqual(['Bright spot', 'Neutral', 'Problem'])
     fill('Releases never slip')
-    // Seen before lists those of the kind chosen: the problem written before is not a bright spot seen again.
+    // Seen before leaves out the opposite tone: a problem written before is not a bright spot seen again.
     fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'The nightly batch overruns again' } })
     expect(screen.getByTestId('form-seen-before').textContent).toContain('OB-0001')
     fireEvent.click(screen.getByTestId('form-tone-bright'))
     expect(screen.getByTestId('form-tone-bright').getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByTestId('form-seen-before')?.textContent ?? '').not.toContain('OB-0001')
     fireEvent.click(screen.getByTestId('form-record'))
-    expect(lastChange(onChange).observations.at(-1)).toMatchObject({ title: 'The nightly batch overruns again', bright: true })
+    expect(lastChange(onChange).observations.at(-1)).toMatchObject({ title: 'The nightly batch overruns again', tone: 'bright' })
+  })
+
+  it('records a neutral observation with no tone, and who recorded it where somebody is said', () => {
+    const { onChange } = mount()
+    openForm()
+    fill('Labels print twice')
+    fireEvent.click(screen.getByTestId('form-record'))
+    const made = lastChange(onChange).observations.at(-1)!
+    expect(made).not.toHaveProperty('tone')
+    // Nobody is said in this window: nothing is written rather than a word that names no one (owner, 25 October).
+    expect(made).not.toHaveProperty('recordedBy')
   })
 
   it('says a title reads like a cause, and records it anyway', () => {
@@ -275,23 +287,31 @@ describe('the new observation form', { timeout: 20_000 }, () => {
   })
 })
 
-describe('a bright spot, read and changed (ADR-0038 §6)', () => {
-  it('is changed from a problem in the reader\'s edit, as a step', () => {
+describe('a tone, read and changed (ADR-0038, amended §9)', () => {
+  it('is changed in the reader\'s edit, as a step', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
     const reader = within(screen.getByTestId('observation-reader'))
-    expect(reader.queryByTestId('observation-bright')).toBeNull()
+    expect(reader.getByTestId('observation-tone-neutral')).toBeTruthy()
     fireEvent.click(reader.getByTestId('reader-edit'))
-    expect(reader.getByRole('button', { name: 'Problem' }).getAttribute('aria-pressed')).toBe('true')
+    expect(reader.getByRole('button', { name: 'Neutral' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(reader.getByRole('button', { name: 'Bright spot' }))
     // Leaving the edit commits it.
     fireEvent.click(reader.getByTestId('reader-read'))
-    expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', bright: true })
+    expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', tone: 'bright' })
   })
 
-  it('says so on its chip', () => {
-    mount({ model: { ...model, observations: [observation({ bright: true })] } })
+  it('says so on its chip, a 14\'s bright spot too, and who recorded it', () => {
+    mount({ model: { ...model, observations: [observation({ bright: true, recordedBy: { name: 'Ada Example', via: 'An agent' } })] } })
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
-    expect(within(screen.getByTestId('observation-reader')).getByTestId('observation-bright').textContent).toBe('Bright spot')
+    const reader = within(screen.getByTestId('observation-reader'))
+    expect(reader.getByTestId('observation-tone-bright').textContent).toBe('Bright spot')
+    expect(reader.getByTestId('observation-recorded-by').textContent).toBe('Ada Example via An agent')
+  })
+
+  it('says when who recorded it was not kept', () => {
+    mount()
+    fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
+    expect(within(screen.getByTestId('observation-reader')).getByTestId('observation-recorded-by').textContent).toBe('Who recorded it was not kept')
   })
 })

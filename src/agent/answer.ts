@@ -35,7 +35,7 @@ import { ELEMENT_KINDS } from '../model/kinds'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
 import { personIdOf } from '../model/person'
-import type { PersonRef } from '../model/person'
+import type { PersonId, PersonRef } from '../model/person'
 import type { AgentRegister } from './persons'
 import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
@@ -57,13 +57,14 @@ import {
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
-  absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isCauseMerged, isMerged, isRootCause,
+  absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isCauseMerged, isMerged, isRootCause, toneOf,
   mergedInto, movedTo, observationsBelow,
 } from '../observations/observation'
 import { planAnswer } from './merge'
 import { movePlanAnswer } from './move'
 import { ofTone, TONES } from '../observations/filter'
 import type { Tone } from '../observations/filter'
+import { isMine } from '../observations/recordedBy'
 import type { ObservationBelow } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
@@ -92,6 +93,17 @@ export type ReadView = {
   readonly scopePath: string
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
+  /**
+   * The person the agent acts for (ADR-0037 §8): who the source says is
+   * using the app, or this install's *This is me*. Absent, or nobody, and a
+   * comment cannot be signed and nothing is *mine*.
+   */
+  readonly me?: () => PersonId | undefined
+  /**
+   * The account using the app, where the source has accounts (ADR-0038,
+   * amended §10): who records an observation, and whose are *mine*.
+   */
+  readonly account?: () => { readonly id: string; readonly name: string } | undefined
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
   readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'
     | 'rowsOf' | 'assignments'> & Partial<Pick<TreeView, 'register' | 'scopes' | 'listed'>>
@@ -719,7 +731,7 @@ export function findCause(list: readonly Cause[], idOrLabel: string): Cause | un
 /** `observations.list`: this scope's own, or with `below` those of every scope below it. */
 function observationLines(args: Args, view: ReadView) {
   if (args.below === true) return observationsBelowLines(args, view)
-  return observationRows(args, observationList(view.model), causeList(view.model))
+  return observationRows(args, observationList(view.model), causeList(view.model), view)
 }
 
 /** `causes.list`: this scope's causes as filtered, a merged one only when asked for (ADR-0035 §4). */
@@ -753,15 +765,17 @@ function wentTo(absorbing: { id: string } | undefined, history: Parameters<typeo
 }
 
 /** One scope's observations as `observations.list` filters them, each with the causes of that scope that explain it. */
-function observationRows(args: Args, own: readonly Observation[], causes: readonly Cause[]) {
+function observationRows(args: Args, own: readonly Observation[], causes: readonly Cause[], view: ReadView) {
   const impact = args.impact as string | undefined
   const analysed = args.analysed as boolean | undefined
   return own
     .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
     .filter((one) => args.includeArchived === true || !one.archived)
     .filter((one) => impact === undefined || one.impact === impact)
-    // Problems, bright spots or both (ADR-0038 §6); an unknown tone is both.
-    .filter((one) => ofTone(one, TONES.includes(args.tone as Tone) ? args.tone as Tone : 'all'))
+    // One tone, or every one (ADR-0038, amended §9); 3.7's all, problems and bright are read for one release.
+    .filter((one) => listedTone(one, args.tone))
+    // Mine: recorded by the account, by the person, or seen by them (§10).
+    .filter((one) => args.recordedBy !== 'me' || isMine(one, view.account?.()?.id, view.me?.()))
     .filter((one) => analysed === undefined || (explainedBy(causes, one.id).length > 0) === analysed)
     .map((one) => observationLine(one, causes, own))
 }
@@ -777,7 +791,7 @@ function observationsBelowLines(args: Args, view: ReadView) {
   return (view.tree?.analysisBelow?.(view.scopePath) ?? []).flatMap(({ scope, observations, causes }) => {
     const absorbed = new Set(observations.filter((one) => absorbedBy(own, one.id, scope)).map((one) => one.id))
     const shown = args.includeMerged === true ? observations : observations.filter((one) => !absorbed.has(one.id))
-    return observationRows(args, shown, causes).map((line) => ({ scope, ...line }))
+    return observationRows(args, shown, causes, view).map((line) => ({ scope, ...line }))
   })
 }
 
@@ -792,7 +806,8 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(observation.where ? { where: observation.where } : {}),
     ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
-    ...(observation.bright ? { bright: true } : {}),
+    tone: toneOf(observation),
+    ...(observation.recordedBy ? { recordedBy: recordedByLine(observation.recordedBy) } : {}),
     seen: observation.seen,
     ...(observation.archived ? { archived: true } : {}),
     ...wentTo(merged, observation.history),
@@ -1239,4 +1254,20 @@ function functionMapping(element: DesignElement, view: ReadView): { domains?: re
     ...(element.ref === undefined ? { domains: element.scopes ?? [] } : {}),
     claimedBy: (entry?.drawnIn ?? []).filter(below),
   }
+}
+
+/**
+ * Whether an observation is of the tone `observations.list` asks for
+ * (ADR-0038, amended §9): bright, neutral or problem, or every one where
+ * none or an unknown one is asked. 3.7's `all`, `problems` and `bright` are
+ * read for one release, `problems` as everything that is not a bright spot.
+ */
+function listedTone(one: Observation, asked: unknown): boolean {
+  if (asked === 'neutral' || asked === 'problem') return toneOf(one) === asked
+  return ofTone(one, TONES.includes(asked as Tone) ? asked as Tone : 'all')
+}
+
+/** Who recorded an observation, as a read says it: the name, and the agent it came through. */
+function recordedByLine(by: NonNullable<Observation['recordedBy']>): { name: string; via?: string } {
+  return { name: by.name, ...(by.via ? { via: by.via } : {}) }
 }

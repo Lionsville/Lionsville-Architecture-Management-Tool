@@ -261,6 +261,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'command.taken': 'Etwas hier hat diese Kennung bereits — jemand anders hat sie genommen, während diese Änderung entstand. Bitte noch einmal versuchen.',
   'command.notAField': 'Diese Änderung enthält ein Feld, das dieser Datensatz nicht hat, deshalb wurde nichts davon übernommen.',
   'command.ownedElsewhere': 'Dies ist ein Platzhalter: Lebenszyklus, Daten, Verantwortliche, Hersteller, Name und Beschreibung werden in dem Bereich geschrieben, der ihn definiert. \u00d6ffnen Sie diesen Bereich, um sie zu \u00e4ndern.',
+  'command.recordedByFixed': 'Wer eine Beobachtung erfasst hat, bleibt so, wie es erfasst wurde, und wird danach nicht geändert.',
   'command.rootExplained': 'Eine Ursache, die eine andere Ursache erklärt, kann keine Grundursache sein: Mit einer Grundursache endet die Kette. Lösen Sie die tiefere Ursache, oder machen Sie diese zur Grundursache.',
   'command.rootAddressed': 'Eine Grundursache, auf die eine Lösung zielt, kann nicht wieder eine Ursache werden: Eine Lösung zielt nur auf Grundursachen. Verschieben Sie die Lösung zuerst auf eine andere Grundursache, oder lösen Sie sie.',
   'command.markFix': 'Nur ein Prüfpunkt oder ein Hinweis kann als beabsichtigt markiert werden. Beheben heißt, das Modell widerspricht sich selbst: Beheben Sie es im Modell.',

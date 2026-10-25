@@ -23,6 +23,7 @@
  * this scope's to change.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { toneOf } from '../observation'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -85,7 +86,7 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
   // The chains behind bright spots only are drawn in the success colour (ADR-0038 §6).
   const bright = useMemo(() => {
     const keys = brightChains(scopes, here)
-    for (const node of picture.nodes) if (node.kind === 'observation' && node.observation.bright) keys.add(node.key)
+    for (const node of picture.nodes) if (node.kind === 'observation' && toneOf(node.observation) === 'bright') keys.add(node.key)
     return keys
   }, [scopes, here, picture.nodes])
   const [hot, setHot] = useState<string | undefined>(undefined)
@@ -355,7 +356,7 @@ function Nodes(props: NodesProps) {
             matched={(props.filter?.filtering ?? false) && (props.filter?.matched.has(node.key) ?? false)}
             openEnd={props.open.has(node.key)}
             marker={markerOf(node, props, drawn)}
-            fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen, node.observation.bright) : theme.palette.background.paper}
+            fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen, toneOf(node.observation)) : theme.palette.background.paper}
             s={props.s}
           />
         </g>

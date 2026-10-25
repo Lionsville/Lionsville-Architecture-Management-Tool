@@ -22,6 +22,9 @@ import type { SavedFilter } from '../filter'
 import type { Cause, CauseAbove, Observation, ScopeAnalysis } from '../observation'
 import { newSolution } from '../solution'
 import { ObservationsPage } from './ObservationsPage'
+import { DEFAULT_POLICY } from '../../people/policy'
+import { personNames, PersonNamesProvider } from '../../people/ui/names'
+import type { PeopleRegisterAccess } from '../../people/ui/access'
 
 afterEach(() => cleanup())
 
@@ -441,11 +444,50 @@ describe('what a look at the page found (ADR-0032 §2)', () => {
   })
 })
 
-describe('bright spots (ADR-0038 §6)', () => {
-  // o2 works rather than goes wrong; c2 is behind it alone.
+describe('mine (ADR-0038, amended §10)', () => {
+  // o1 was recorded by the account using the app; o2 by somebody else; o3 by nobody said.
+  const recorded: HostModel = {
+    ...model,
+    observations: model.observations!.map((one) => (one.id === 'o1'
+      ? { ...one, recordedBy: { name: 'Ada', account: 'acc-1' } }
+      : one.id === 'o2' ? { ...one, recordedBy: { name: 'Bo', account: 'acc-2' } } : one)),
+  }
+  const mountAs = (account: { id: string; name: string } | undefined) => {
+    // Only what the names read of a register: who the account is.
+    const register = { people: [], policy: DEFAULT_POLICY, me: undefined, readOnly: true, ...(account ? { account: () => account } : {}) } as unknown as PeopleRegisterAccess
+    renderShell(
+      <PersonNamesProvider names={personNames(register, translator('en'))}>
+        <ObservationsPage
+          open onClose={() => {}} model={recorded} groupName="Acme" below={below} path="acme/claims"
+          scopeLabel={(path) => path} onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix}
+          today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
+        />
+      </PersonNamesProvider>,
+    )
+  }
+
+  it('keeps what my account recorded, with who recorded each in the register', () => {
+    mountAs({ id: 'acc-1', name: 'Ada' })
+    expect(screen.getByTestId('observation-recorded-by-o1').textContent).toBe('Ada')
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('observation-row-o1')).toBeTruthy()
+    expect(screen.queryByTestId('observation-row-o2')).toBeNull()
+    expect(screen.queryByTestId('filter-mine-nobody')).toBeNull()
+  })
+
+  it('says where to say who you are when nobody is said', () => {
+    mountAs(undefined)
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('filter-mine-nobody').textContent).toContain('This is me')
+    expect(screen.queryByTestId('observation-row-o1')).toBeNull()
+  })
+})
+
+describe('a tone (ADR-0038 §6, amended §9)', () => {
+  // o2 works rather than goes wrong, c2 is behind it alone; o1 is marked a problem, and o3 neutral.
   const toned: HostModel = {
     ...model,
-    observations: model.observations!.map((one) => (one.id === 'o2' ? { ...one, bright: true as const } : one)),
+    observations: model.observations!.map((one) => (one.id === 'o2' ? { ...one, tone: 'bright' as const } : one.id === 'o1' ? { ...one, tone: 'problem' as const } : one)),
   }
   const mountToned = () => {
     renderShell(
@@ -458,34 +500,36 @@ describe('bright spots (ADR-0038 §6)', () => {
     )
   }
 
-  it('marks one in the register with its chip, and counts it apart over the picture', () => {
+  it('stripes every row in the register by its tone, said in words too, and counts bright spots apart over the picture', () => {
     mountToned()
-    expect(screen.getByTestId('observation-bright-o2').textContent).toBe('Bright spot')
-    expect(screen.queryByTestId('observation-bright-o1')).toBeNull()
+    expect(screen.getByTestId('observation-row-o2').getAttribute('data-tone')).toBe('bright')
+    expect(screen.getByTestId('observation-row-o1').getAttribute('data-tone')).toBe('problem')
+    expect(screen.getByTestId('observation-row-o2').textContent).toContain('Bright spot')
+    expect(screen.queryByTestId('observation-bright-o2')).toBeNull()
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     const phases = screen.getByTestId('analysis-phases').textContent
-    expect(phases).toContain('2observed')
     expect(phases).toContain('1bright spot')
-    expect(phases).toContain('1bright spot analysed')
     // The line from the bright spot to the cause behind it alone is drawn in the success colour.
     const bright = [...picture().querySelectorAll('[data-testid="analysis-link"][data-bright="true"]')]
     expect(bright).toHaveLength(1)
   })
 
-  it('narrows every tab to problems or bright spots with the tone, counted as a filter', () => {
+  it('turns each tone off and on, on every tab, counted as one filter', () => {
     mountToned()
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
-    fireEvent.click(screen.getByTestId('filter-tone-bright'))
+    fireEvent.click(screen.getByTestId('filter-tone-neutral'))
+    fireEvent.click(screen.getByTestId('filter-tone-problem'))
     expect(drawn()).toEqual(['c2', 'o2'])
     expect(screen.getByTestId('filters-toggle').textContent).toContain('1')
-    fireEvent.click(screen.getByTestId('filter-tone-problems'))
+    fireEvent.click(screen.getByTestId('filter-tone-problem'))
+    fireEvent.click(screen.getByTestId('filter-tone-bright'))
     expect(drawn()).not.toContain('o2')
     expect(drawn()).not.toContain('c2')
     expect(drawn()).toContain('o1')
     fireEvent.click(screen.getByTestId('observation-tab-register'))
     expect(screen.queryByTestId('observation-row-o2')).toBeNull()
     expect(screen.getByTestId('observation-row-o1')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('filter-tone-all'))
+    fireEvent.click(screen.getByTestId('filter-tone-bright'))
     expect(screen.getByTestId('observation-row-o2')).toBeTruthy()
   })
 })

@@ -150,35 +150,71 @@ describe('applyFilters', () => {
   })
 })
 
-describe('the tone (ADR-0038 §6)', () => {
-  // o2 is a bright spot here; the rest are problems. r2 explains o2's chain and,
-  // through b1, a problem below.
+describe('the tone (ADR-0038 §6, amended §9)', () => {
+  // o2 is a bright spot here, o3 a problem, and o1 is neutral: marked as
+  // nothing. r2 explains o2's chain and, through b1, an observation below.
   const toned: ScopeAnalysis[] = scopes.map((one) => (one.scope === ''
-    ? { ...one, observations: one.observations.map((ob) => (ob.id === 'o2' ? { ...ob, bright: true as const } : ob)) }
+    ? {
+      ...one,
+      observations: one.observations.map((ob) => (ob.id === 'o2' ? { ...ob, tone: 'bright' as const } : ob.id === 'o3' ? { ...ob, tone: 'problem' as const } : ob)),
+    }
     : one))
-  const tonedRun = (tone: Filters['tone']) => applyFilters(filterRecords(toned, ''), pictureLinks(toned, ''), { ...NO_FILTERS, tone })
+  const tonedRun = (tonesOff: Filters['tonesOff']) => applyFilters(filterRecords(toned, ''), pictureLinks(toned, ''), { ...NO_FILTERS, tonesOff })
 
-  it('marks a bright spot among the records', () => {
-    expect(filterRecords(toned, '').find((one) => one.key === 'o2')?.bright).toBe(true)
-    expect(filterRecords(toned, '').find((one) => one.key === 'o1')?.bright).toBeUndefined()
+  it('says every observation\'s tone among the records, neutral where none is marked', () => {
+    const records = filterRecords(toned, '')
+    expect(records.find((one) => one.key === 'o2')?.tone).toBe('bright')
+    expect(records.find((one) => one.key === 'o3')?.tone).toBe('problem')
+    expect(records.find((one) => one.key === 'o1')?.tone).toBe('neutral')
   })
 
-  it('shows both by default', () => {
-    expect(tonedRun('all').filtering).toBe(false)
+  it('reads a 14\'s bright spot as bright', () => {
+    const old = scopes.map((one) => (one.scope === ''
+      ? { ...one, observations: one.observations.map((ob) => (ob.id === 'o2' ? { ...ob, bright: true as const } : ob)) }
+      : one))
+    expect(filterRecords(old, '').find((one) => one.key === 'o2')?.tone).toBe('bright')
   })
 
-  it('keeps the bright spots and what lies behind them, and drops the problems and what only they lead to', () => {
-    const result = tonedRun('bright')
+  it('shows all three by default', () => {
+    expect(tonedRun([]).filtering).toBe(false)
+  })
+
+  it('keeps the bright spots and what lies behind them, and drops the rest and what only they lead to', () => {
+    const result = tonedRun(['neutral', 'problem'])
     expect(sorted(result.visible)).toEqual(['c2', 'o2', 'r2', solutionKey('s2')])
     expect(result.matched.size).toBe(0)
   })
 
-  it('keeps the problems, with a root cause that explains a bright spot too', () => {
-    const result = tonedRun('problems')
+  it('drops the bright spots, keeping a root cause that explains one shown too', () => {
+    const result = tonedRun(['bright'])
     expect(result.visible.has('o2')).toBe(false)
     expect(result.visible.has('c2')).toBe(false)
-    // r2 explains b1 below as well, a problem: it stays.
+    // r2 explains b1 below as well, which is shown: it stays.
     expect(['o1', 'o3', 'c1', 'r1', 'r2', 'acme#a1', 'acme#b1'].every((key) => result.visible.has(key))).toBe(true)
+  })
+
+  it('switches one tone off at a time', () => {
+    const result = tonedRun(['problem'])
+    expect(result.visible.has('o3')).toBe(false)
+    expect(result.visible.has('o1')).toBe(true)
+    expect(result.visible.has('o2')).toBe(true)
+  })
+})
+
+describe('mine (ADR-0038, amended §10)', () => {
+  const mine = (one: Observation) => one.id === 'o1'
+  const records = filterRecords(scopes, '', undefined, mine)
+
+  it('marks the observations the page says are mine, and no other', () => {
+    expect(records.find((one) => one.key === 'o1')?.mine).toBe(true)
+    expect(records.find((one) => one.key === 'o2')?.mine).toBeUndefined()
+  })
+
+  it('keeps mine and what lies behind them', () => {
+    const result = applyFilters(records, pictureLinks(scopes, ''), { ...NO_FILTERS, mine: true })
+    expect(result.filtering).toBe(true)
+    expect(result.visible.has('o1')).toBe(true)
+    expect(result.visible.has('o2')).toBe(false)
   })
 })
 
@@ -189,7 +225,8 @@ describe('activeFilters', () => {
     expect(activeFilters({ ...NO_FILTERS, roots: '  ' }, [''])).toBe(0)
     expect(activeFilters({ ...NO_FILTERS, scopesOff: ['acme', 'zeta'] }, ['', 'acme'])).toBe(1)
     expect(activeFilters({ ...NO_FILTERS, scopesOff: ['zeta'] }, ['', 'acme'])).toBe(0)
-    expect(activeFilters({ ...NO_FILTERS, tone: 'bright' }, [''])).toBe(1)
+    expect(activeFilters({ ...NO_FILTERS, tonesOff: ['neutral', 'problem'] }, [''])).toBe(1)
+    expect(activeFilters({ ...NO_FILTERS, tonesOff: ['bright'], mine: true }, [''])).toBe(2)
   })
 })
 
@@ -223,7 +260,8 @@ describe('saved filters', () => {
       ],
     })).toEqual([
       { name: 'Pricing', filters: { ...NO_FILTERS, roots: 'pricing', scopesOff: ['acme'] } },
-      { name: 'Bright', filters: { ...NO_FILTERS, tone: 'bright' } },
+      // A filter saved before three tones: bright alone is the other two off.
+      { name: 'Bright', filters: { ...NO_FILTERS, tonesOff: ['neutral', 'problem'] } },
       { name: 'Odd tone', filters: NO_FILTERS },
     ])
   })

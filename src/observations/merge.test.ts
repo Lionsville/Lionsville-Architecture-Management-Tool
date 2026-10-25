@@ -186,13 +186,30 @@ describe('merging observations across the tree', () => {
       .toMatchObject({ ok: false, refusal: 'notADay' })
   })
 
-  it('refuses a problem and a bright spot in one merge, naming the one of the other tone (ADR-0038 §6)', () => {
+  it('refuses a problem and a bright spot in one merge, naming the one of the other tone (ADR-0038 §6, amended §9)', () => {
     const survivor = { scope: 'north', id: 'o1' }
-    const toned = [scope('north', { observations: [observation('o1'), observation('o2'), observation('o3', { bright: true })] })]
-    expect(planMerge({ kind: 'observation', survivor, absorbed: [{ scope: 'north', id: 'o2' }, { scope: 'north', id: 'o3' }], scopes: toned, date: DAY }))
-      .toMatchObject({ ok: false, refusal: 'mixedTone', record: { scope: 'north', id: 'o3' } })
-    const bright = [scope('north', { observations: [observation('o1', { bright: true }), observation('o3', { bright: true })] })]
-    expect(planMerge({ kind: 'observation', survivor, absorbed: [{ scope: 'north', id: 'o3' }], scopes: bright, date: DAY }).ok).toBe(true)
+    const at = (id: string) => ({ scope: 'north', id })
+    const toned = [scope('north', { observations: [observation('o1', { tone: 'problem' }), observation('o2'), observation('o3', { tone: 'bright' })] })]
+    expect(planMerge({ kind: 'observation', survivor, absorbed: [at('o2'), at('o3')], scopes: toned, date: DAY }))
+      .toMatchObject({ ok: false, refusal: 'mixedTone', record: at('o3') })
+    const bright = [scope('north', { observations: [observation('o1', { tone: 'bright' }), observation('o3', { bright: true })] })]
+    expect(planMerge({ kind: 'observation', survivor, absorbed: [at('o3')], scopes: bright, date: DAY }).ok).toBe(true)
+  })
+
+  it('merges neutral with either tone, and refuses a neutral survivor taking both (ADR-0038, amended §9)', () => {
+    const survivor = { scope: 'north', id: 'o1' }
+    const at = (id: string) => ({ scope: 'north', id })
+    const toned = [scope('north', { observations: [observation('o1'), observation('o2', { tone: 'bright' }), observation('o3', { tone: 'problem' })] })]
+    const plan = (ids: string[]) => planMerge({ kind: 'observation', survivor, absorbed: ids.map(at), scopes: toned, date: DAY })
+    expect(plan(['o2']).ok).toBe(true)
+    expect(plan(['o3']).ok).toBe(true)
+    expect(plan(['o2', 'o3'])).toMatchObject({ ok: false, refusal: 'mixedTone', record: at('o3') })
+  })
+
+  it('keeps the survivor\'s tone', () => {
+    const toned = [scope('north', { observations: [observation('o1'), observation('o2', { tone: 'bright' })] })]
+    const made = planMerge({ kind: 'observation', survivor: { scope: 'north', id: 'o1' }, absorbed: [{ scope: 'north', id: 'o2' }], scopes: toned, date: DAY })
+    expect(made.ok && (made.survivor as Observation).tone).toBeUndefined()
   })
 })
 

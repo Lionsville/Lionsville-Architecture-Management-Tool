@@ -19,6 +19,8 @@
  * done with it (`PictureMenu`).
  */
 import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { toneOf } from '../observation'
+import type { ObservationTone } from '../observation'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -132,7 +134,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
     refuted: theme.palette.error.main, inconclusive: theme.palette.text.secondary,
   }
   const maxSeen = Math.max(1, ...graph.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const tint = (seen: number, bright?: boolean) => seenTint(theme, seen, maxSeen, bright)
+  const tint = (seen: number, tone: ObservationTone) => seenTint(theme, seen, maxSeen, tone)
   const halfWidth = (node: SolutionGraphNode | undefined): number => {
     if (!node) return BOX.width / 2
     if (node.kind === 'observation') return RADIUS[node.observation.impact]
@@ -249,7 +251,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
             'data-testid': `solution-picture-${node.kind}`, dim,
           }
           if (node.kind === 'observation') {
-            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen, node.observation.bright)} {...common} />
+            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen, toneOf(node.observation))} {...common} />
           }
           if (node.kind === 'cause') {
             return <CauseMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} s={s} flag={flag?.text} {...common} />

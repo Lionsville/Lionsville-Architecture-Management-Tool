@@ -25,7 +25,7 @@ import type { PersonRef } from '../model/person'
 import {
   causeTemplate, linkCause, newCause, newObservation, nextCauseNumber, nextObservationNumber, withReason,
 } from './observation'
-import type { Analysis, Cause, CauseLink, CauseStrength, ObservationImpact } from './observation'
+import type { Analysis, Cause, CauseLink, CauseStrength, ObservationImpact, ObservationTone, RecordedBy } from './observation'
 
 /** What the form asks of a new observation. */
 export type ObservationFields = {
@@ -36,8 +36,10 @@ export type ObservationFields = {
   /** `yyyy-mm-dd`: the day it was first seen. */
   date: string
   impact: ObservationImpact
-  /** A bright spot rather than a problem (ADR-0038 §6); the form asks it first, problem chosen. */
-  bright?: boolean
+  /** What it says (ADR-0038, amended); the form asks it first, neutral chosen. */
+  tone?: ObservationTone
+  /** Stamped by the page from the account, never asked by the form (ADR-0038, amended). */
+  recordedBy?: RecordedBy
   body: string
 }
 

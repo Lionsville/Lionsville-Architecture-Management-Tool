@@ -55,6 +55,8 @@ import type { WorkspaceParts } from './workspaceParts'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import { CommentsProvider } from '../comments/ui/CommentsContext'
+import { RecordChangesProvider } from '../comments/ui/RecordChanges'
+import { useRecordChangesAccess } from './history/useRecordChangesAccess'
 import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'
@@ -123,7 +125,7 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
   )
   return (
     <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf}>
-      <ScopeComments parts={parts}>{children}</ScopeComments>
+      <ScopeComments parts={parts}><ScopeChanges parts={parts}>{children}</ScopeChanges></ScopeComments>
     </ViewEmbedsProvider>
   )
 }
@@ -157,6 +159,19 @@ function ScopeComments({ parts, children }: { parts: WorkspaceParts; children: R
     ...(pointed ? { pointed } : {}),
   }), [path, comments, dispatch, mayComment, mayModerate, makeId, pointed])
   return <CommentsProvider value={value}>{children}</CommentsProvider>
+}
+
+/**
+ * What every reader's *Changes* reads (ADR-0038, amended §11): the source's
+ * history, by record, of the open scope or the one a reader names.
+ */
+function ScopeChanges({ parts, children }: { parts: WorkspaceParts; children: ReactNode }) {
+  const { props } = parts
+  const path = useRef(props.project.path)
+  path.current = props.project.path
+  const here = useCallback(() => path.current, [])
+  const value = useRecordChangesAccess({ history: props.snapshots.history, scopes: props.source.repositories.scopes, here })
+  return <RecordChangesProvider value={value}>{children}</RecordChangesProvider>
 }
 
 function localToday(): string {
@@ -472,6 +487,7 @@ function useScreenParts(
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
     changeAcross: tree.agentChangeAcross, landSteps: tree.agentLandSteps, writeIn: tree.unitWrites.writeIn, people: shell.people,
     ...(source.comments ? { comments: source.comments } : {}),
+    ...(props.snapshots.history ? { history: props.snapshots.history } : {}),
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,

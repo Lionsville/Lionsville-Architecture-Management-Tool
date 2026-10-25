@@ -74,12 +74,6 @@ export type WriteView = ReadView & {
    * then taken as given.
    */
   readonly people?: () => readonly Person[] | undefined
-  /**
-   * The person the agent acts for (ADR-0037 §8): who the source says is
-   * using the app, or this install's *This is me*. Absent, or nobody, and a
-   * comment cannot be signed.
-   */
-  readonly me?: () => PersonId | undefined
   /** Whether that person may remove other people's comments in this scope; absent, they may where they may write. */
   readonly mayModerate?: () => boolean
   /** The connected client's name, from its handshake: what an agent's comment says it was written via. */

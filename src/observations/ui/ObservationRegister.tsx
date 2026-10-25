@@ -33,13 +33,15 @@ import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { nodeKey, pictureKey } from '../graph'
-import { causeLabel, formatObservationNumber, isArchived, isBright, isCauseMerged, isRootCause, sortCauses } from '../observation'
+import { causeLabel, formatObservationNumber, isArchived, isCauseMerged, isRootCause, sortCauses, toneOf } from '../observation'
 import type { Cause, Observation, ObservationBelow, ScopeAnalysis } from '../observation'
-import { BRIGHT_LABEL, IMPACT_COLOR, IMPACT_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
+import { IMPACT_COLOR, IMPACT_LABEL, TONE_WORD, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
 import { formatExperimentNumber, formatSolutionNumber, isLive, solutionPhase } from '../solution'
 import type { Experiment, Solution, SolutionPhase } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
-import { MergedNote } from './Readers'
+import { MergedNote, recordedByText } from './Readers'
+import { visuallyHidden } from './FormParts'
+import { toneStripe } from './ToneBar'
 import type { MergedInto } from './Readers'
 import { CommentBadge } from '../../comments/ui/CommentBadge'
 
@@ -80,7 +82,7 @@ export function ObservationRegister(props: ObservationRegisterProps) {
   const { s } = props
   const heading = (text: string) => (
     <TableRow>
-      <TableCell colSpan={7} sx={{ bgcolor: 'background.default', py: 0.5, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>{text}</TableCell>
+      <TableCell colSpan={8} sx={{ bgcolor: 'background.default', py: 0.5, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>{text}</TableCell>
     </TableRow>
   )
   // The same look as the table's section headings above: one list, one treatment.
@@ -105,7 +107,7 @@ export function ObservationRegister(props: ObservationRegisterProps) {
         />
       </Box>
       {/* The table keeps a measure of its own and the pane scrolls sideways, rather than every column squeezing the title to a word a line and the last three to nothing. */}
-      <Table size="small" stickyHeader sx={{ minWidth: 820 }}>
+      <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
         <TableHead>
           <TableRow>
             <TableCell>{s('observation.colNumber')}</TableCell>
@@ -114,6 +116,7 @@ export function ObservationRegister(props: ObservationRegisterProps) {
             <TableCell>{s('observation.colWhere')}</TableCell>
             <TableCell>{s('observation.colImpact')}</TableCell>
             <TableCell>{s('observation.colSeen')}</TableCell>
+            <TableCell>{s('observation.colRecordedBy')}</TableCell>
             <TableCell>{s('observation.colCauses')}</TableCell>
           </TableRow>
         </TableHead>
@@ -121,7 +124,7 @@ export function ObservationRegister(props: ObservationRegisterProps) {
           {heading(s('observation.scopeHere'))}
           {props.own.map((one) => <ObservationRow key={one.id} one={one} {...props} />)}
           {props.own.length === 0 && (
-            <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }} data-testid="observation-register-empty">{props.empty}</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} sx={{ color: 'text.secondary' }} data-testid="observation-register-empty">{props.empty}</TableCell></TableRow>
           )}
           {props.below.map(([scope, held]) => (
             <Fragment key={scope}>
@@ -172,7 +175,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
   const into = props.analysedInto(one.id, scope)
   const merged = scope === undefined ? props.mergedInto(one) : undefined
   const archived = isArchived(one)
-  const bright = isBright(one)
+  const tone = toneOf(one)
   return (
     <TableRow
       hover
@@ -180,18 +183,20 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       onClick={() => props.onSelect(key)}
       sx={{
         cursor: 'pointer', opacity: merged || archived ? 0.55 : 1,
-        ...(bright ? { boxShadow: (theme) => `inset 3px 0 0 ${theme.palette.success.main}` } : {}),
+        ...toneStripe(tone),
       }}
       data-testid={`observation-row-${key}`}
       data-key={key}
+      data-tone={tone}
       data-guide="observations.row"
     >
       <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {formatObservationNumber(one.number)}
+        {/* The stripe says the tone to the eye; a reader is told it in words, so it is never said by colour alone. */}
+        <Box component="span" sx={visuallyHidden}>{` ${s(TONE_WORD[tone])}`}</Box>
       </TableCell>
       <TableCell sx={{ fontWeight: 600, minWidth: 220 }}>
         {one.title}
-        {bright && <Chip size="small" color="success" variant="outlined" label={s(BRIGHT_LABEL)} sx={{ height: 18, fontSize: 10, ml: 1 }} data-testid={`observation-bright-${key}`} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
         {scope === undefined && <CommentBadge about={{ kind: 'observation', id: one.id }} />}
       </TableCell>
@@ -199,6 +204,9 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
       <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, whiteSpace: 'nowrap' }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
+      <TableCell sx={{ fontSize: 12, whiteSpace: 'nowrap', color: one.recordedBy ? 'inherit' : 'text.secondary' }} data-testid={`observation-recorded-by-${key}`}>
+        {one.recordedBy ? recordedByText(one.recordedBy, s) : '—'}
+      </TableCell>
       <TableCell sx={{ fontSize: 12 }}>
         {merged
           ? <Typography variant="caption" color="text.secondary"><MergedNote merged={merged} s={s} day={(date) => formatDay(date, props.language)} /></Typography>

@@ -40,13 +40,16 @@ import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { AddIcon, EyeIcon, LinkIcon } from '../../widgets/icons'
 import {
-  causeLabel, formatCauseNumber, formatObservationNumber, isBright, liveObservations, nextCauseNumber, OBSERVATION_IMPACTS,
+  causeLabel, formatCauseNumber, formatObservationNumber, liveObservations, nextCauseNumber, OBSERVATION_IMPACTS, OBSERVATION_TONES,
+  tonesMerge,
 } from '../observation'
+import type { ObservationTone } from '../observation'
 import type { Cause, CauseStrength, Observation } from '../observation'
 import { newObservationProblems, observationBody } from '../form'
 import type { CauseChoice, CauseDraft, ObservationFields, ObservationSections, RequiredField } from '../form'
 import { hintWords, similarTitles, wordingHint } from '../wording'
-import { BRIGHT_LABEL, IMPACT_LABEL } from '../observationScope'
+import { IMPACT_LABEL, TONE_TIP, TONE_WORD } from '../observationScope'
+import { ToneBar } from './ToneBar'
 import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
 import { FormDialog, problemsLine } from './FormDialog'
@@ -144,11 +147,11 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
 
   const scope = scopes[scopeIndex] ?? scopes[0]
   const alike = useMemo(
-    // Seen before among those of the same kind: a problem is never a bright spot seen again.
+    // Seen before, leaving out the opposite tone: a problem is never a bright spot seen again.
     () => (fields.title.trim().length >= 6 && scope
-      ? similarTitles(fields.title, liveObservations(scope.observations).filter((one) => isBright(one) === Boolean(fields.bright)))
+      ? similarTitles(fields.title, liveObservations(scope.observations).filter((one) => tonesMerge(one, { tone: fields.tone ?? 'neutral' })))
       : []),
-    [fields.title, fields.bright, scope],
+    [fields.title, fields.tone, scope],
   )
   const hint = wordingHint(fields.title, hintWords(s('observation.formHintWords')))
   const forget = (key: string) => {
@@ -200,7 +203,7 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
               {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
             </ExampleField>
           )}
-          <ToneChoice bright={fields.bright === true} onChange={(bright) => setFields((held) => ({ ...held, bright }))} s={s} />
+          <ToneChoice tone={fields.tone ?? 'neutral'} onChange={(tone) => setFields((held) => ({ ...held, tone }))} s={s} />
           <ExampleField
             required autoFocus label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
             example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
@@ -266,28 +269,28 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
 
 
 /**
- * What an observation is, asked first: *Problem | Bright spot*, problem
- * chosen (ADR-0038 §6). The reader's edit asks the same, so it may be changed
- * later as a step.
+ * What an observation says, asked first: *Bright spot · Neutral · Problem*,
+ * left to right, neutral chosen (ADR-0038, amended). Each button carries the
+ * 3 px bar the register draws down the row, in the same colour, so the form
+ * and the list read alike. The reader's edit asks the same.
  */
-export function ToneChoice({ bright, onChange, s }: { bright: boolean; onChange: (bright: boolean) => void; s: Translate }) {
-  const option = (value: 'problem' | 'bright', label: string, tip: string) => (
-    <Tooltip title={tip} describeChild>
-      <ToggleButton value={value} data-testid={`form-tone-${value}`} color={value === 'bright' ? 'success' : 'standard'} sx={{ px: 1.5, py: 0.25, textTransform: 'none' }}>
-        {label}
-      </ToggleButton>
-    </Tooltip>
-  )
+export function ToneChoice({ tone, onChange, s }: { tone: ObservationTone; onChange: (tone: ObservationTone) => void; s: Translate }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
       <Typography variant="body2" color="text.secondary">{s('observation.toneField')}</Typography>
       <ToggleButtonGroup
-        exclusive size="small" value={bright ? 'bright' : 'problem'} aria-label={s('observation.toneField')}
-        onChange={(_event, value: 'problem' | 'bright' | null) => { if (value) onChange(value === 'bright') }}
+        exclusive size="small" value={tone} aria-label={s('observation.toneField')}
+        onChange={(_event, value: ObservationTone | null) => { if (value) onChange(value) }}
         data-testid="form-tone" data-guide="observationForm.tone"
       >
-        {option('problem', s('observation.problem'), s('observation.problemTip'))}
-        {option('bright', s(BRIGHT_LABEL), s('observation.brightTip'))}
+        {OBSERVATION_TONES.map((one) => (
+          <Tooltip key={one} title={s(TONE_TIP[one])} describeChild>
+            <ToggleButton value={one} data-testid={`form-tone-${one}`} sx={{ px: 1.5, py: 0.25, textTransform: 'none', gap: 0.75 }}>
+              <ToneBar tone={one} />
+              {s(TONE_WORD[one])}
+            </ToggleButton>
+          </Tooltip>
+        ))}
       </ToggleButtonGroup>
     </Box>
   )

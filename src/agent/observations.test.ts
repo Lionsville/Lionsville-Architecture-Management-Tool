@@ -130,25 +130,72 @@ describe('archiving', () => {
   })
 })
 
-describe('bright spots (ADR-0038 §6)', () => {
-  it('records one, says bright where it is set, lists by tone, and changes it either way', () => {
-    const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Releases never slip', where: 'Release desk', by: 'W.S.', bright: true })
-    expect(said).toMatchObject({ label: 'OB-0003', bright: true })
-    expect(model.observations!['ob-new-1'].bright).toBe(true)
+describe('a tone (ADR-0038 §6, amended §9)', () => {
+  it('records one, says it on every read, lists by tone, and changes it any way', () => {
+    const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Releases never slip', where: 'Release desk', by: 'W.S.', tone: 'bright' })
+    expect(said).toMatchObject({ label: 'OB-0003', tone: 'bright' })
+    expect(model.observations!['ob-new-1'].tone).toBe('bright')
     const ids = (tone: string) => (read(model, 'observations.list', { tone }) as { observations: { id: string }[] }).observations.map((one) => one.id)
     expect(ids('bright')).toEqual(['ob-new-1'])
-    expect(ids('problems')).toEqual(['ob-1', 'ob-2'])
-    expect(ids('all')).toEqual(['ob-1', 'ob-2', 'ob-new-1'])
-    expect(read(model, 'observation.read', { id: 'OB-1' })).not.toHaveProperty('bright')
-    const back = write(model, 'observation.update', { id: 'ob-new-1', bright: false })
-    expect(back.answer).not.toHaveProperty('bright')
-    expect(back.model.observations!['ob-new-1']).not.toHaveProperty('bright')
-    expect(write(fromArrays(host), 'observation.update', { id: 'ob-2', bright: true }).answer).toMatchObject({ bright: true })
+    expect(ids('neutral')).toEqual(['ob-1', 'ob-2'])
+    expect(ids('problem')).toEqual([])
+    expect(read(model, 'observation.read', { id: 'OB-1' })).toMatchObject({ tone: 'neutral' })
+    const back = write(model, 'observation.update', { id: 'ob-new-1', tone: 'problem' })
+    expect(back.answer).toMatchObject({ tone: 'problem' })
+    expect(back.model.observations!['ob-new-1'].tone).toBe('problem')
+    expect(write(model, 'observation.update', { id: 'ob-new-1', tone: 'neutral' }).model.observations!['ob-new-1']).not.toHaveProperty('tone')
   })
 
-  it('refuses to merge a problem and a bright spot', () => {
-    const model = write(fromArrays(host), 'observation.update', { id: 'ob-2', bright: true }).model
-    expect(refusal(model, 'observation.merge', { id: 'ob-1', into: 'ob-2' })).toContain('merge.mixedTone')
+  it('reads 3.7\'s bright and tones for one release', () => {
+    const { model } = write(fromArrays(host), 'observation.record', { title: 'Releases never slip', where: 'Release desk', by: 'W.S.', bright: true })
+    expect(model.observations!['ob-new-1'].tone).toBe('bright')
+    expect(write(model, 'observation.update', { id: 'ob-new-1', bright: false }).model.observations!['ob-new-1'].tone).toBe('problem')
+    const ids = (tone: string) => (read(model, 'observations.list', { tone }) as { observations: { id: string }[] }).observations.map((one) => one.id)
+    expect(ids('problems')).toEqual(['ob-1', 'ob-2'])
+    expect(ids('all')).toEqual(['ob-1', 'ob-2', 'ob-new-1'])
+  })
+
+  it('refuses a tone that is none of the three', () => {
+    expect(refusal(fromArrays(host), 'observation.record', { title: 'T', where: 'W', by: 'B', tone: 'sunny' })).toContain('agent.badArguments')
+  })
+
+  it('refuses to merge a problem and a bright spot, and merges neutral with either', () => {
+    const model = write(fromArrays(host), 'observation.update', { id: 'ob-2', tone: 'bright' }).model
+    expect(write(model, 'observation.merge', { id: 'ob-1', into: 'ob-2' }).model.observations!['ob-2'].tone).toBe('bright')
+    const mixed = write(write(fromArrays(host), 'observation.update', { id: 'ob-2', tone: 'bright' }).model, 'observation.update', { id: 'ob-1', tone: 'problem' }).model
+    expect(refusal(mixed, 'observation.merge', { id: 'ob-1', into: 'ob-2' })).toContain('merge.mixedTone')
+  })
+})
+
+describe('who recorded it (ADR-0038, amended §10)', () => {
+  const people = () => [{ id: 'pe-ada', name: 'Ada Example', state: 'active' as const }] as never
+  const as = (over: Partial<WriteView>) => (model: Model, args: unknown) => {
+    const out = prepared(commandFor('observation.record', args, view(model, over)))
+    const applied = apply(model, out.command)
+    if (!applied.ok) throw new Error(applied.reason)
+    return { model: applied.model, answer: parse(out.answer) }
+  }
+  const fact = { title: 'Seen', where: 'Desk', by: 'W.S.' }
+
+  it('is the account and the entry it is linked to, via the agent', () => {
+    const { model, answer: said } = as({ account: () => ({ id: 'acc-1', name: 'Ada' }), me: () => 'pe-ada', people, client: 'An agent' })(fromArrays(host), fact)
+    expect(model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada', account: 'acc-1', person: 'pe-ada', via: 'An agent' })
+    expect(said).toMatchObject({ recordedBy: { name: 'Ada', via: 'An agent' } })
+  })
+
+  it('is This is me with no accounts, and nobody with neither', () => {
+    expect(as({ me: () => 'pe-ada', people })(fromArrays(host), fact).model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada Example', person: 'pe-ada' })
+    counter = 0
+    expect(write(fromArrays(host), 'observation.record', fact).model.observations!['ob-new-1']).not.toHaveProperty('recordedBy')
+  })
+
+  it('is never an argument, and lists mine', () => {
+    expect(refusal(fromArrays(host), 'observation.record', { ...fact, recordedBy: { name: 'Bo' } })).toContain('agent.badArguments')
+    expect(refusal(fromArrays(host), 'observation.update', { id: 'ob-1', recordedBy: { name: 'Bo' } })).toContain('agent.badArguments')
+    const recorded = as({ account: () => ({ id: 'acc-1', name: 'Ada' }) })(fromArrays(host), fact)
+    expect(recorded.model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada', account: 'acc-1' })
+    const mine = answer('observations.list', { recordedBy: 'me' }, view(recorded.model, { account: () => ({ id: 'acc-1', name: 'Ada' }) }))
+    expect((parse(mine) as { observations: { id: string }[] }).observations.map((one) => one.id)).toEqual(['ob-new-1'])
   })
 })
 

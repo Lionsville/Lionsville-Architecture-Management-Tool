@@ -45,17 +45,17 @@ import { CompactForms, Term, Value } from '../../widgets/CompactForms'
 
 export { Term, Value }
 import {
-  causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
+  causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS, toneOf,
 } from '../observation'
 import type {
-  Cause, CauseLink, CausePatch, Observation, ObservationEvent, ObservationImpact, ObservationPatch,
+  Cause, CauseLink, CausePatch, Observation, ObservationEvent, ObservationImpact, ObservationPatch, ObservationTone, RecordedBy,
 } from '../observation'
 import { observationProblems } from '../form'
 import type { PersonRef } from '../../model/person'
 import type { PersonNames } from '../../people/ui/names'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
-import { BRIGHT_LABEL, EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { EVENT_LABEL, TONE_WORD, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
 import { ExampleField, TitleField } from './FormParts'
@@ -65,6 +65,8 @@ import {
 } from './readerActions'
 import type { LinkMode, Mode } from './readerActions'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { RecordChanges } from '../../comments/ui/RecordChanges'
+import { ToneBar } from './ToneBar'
 import type { CommentThreadProps } from '../../comments/ui/CommentThread'
 import type { CommentFrom } from '../../model/comment'
 import { nodeKey } from '../graph'
@@ -356,7 +358,7 @@ export function ObservationReader(props: ObservationReaderProps) {
   const canEdit = !readOnly && !fromScope && !mergedInto && !archived
   const stored = useMemo(() => ({
     title: observation.title, body: observation.body, where: observation.where ?? '', by: observation.by ?? '',
-    date: observation.date, impact: observation.impact, bright: observation.bright === true,
+    date: observation.date, impact: observation.impact, tone: toneOf(observation),
   }), [observation])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
   // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
@@ -378,7 +380,7 @@ export function ObservationReader(props: ObservationReaderProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
-          <BrightChip bright={observation.bright} s={s} />
+          <ToneChip tone={toneOf(observation)} s={s} />
           <Chip variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
           {archived && <Chip variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
           <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
@@ -425,43 +427,16 @@ export function ObservationReader(props: ObservationReaderProps) {
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : observation.title}
             </Typography>
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
-              <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
-              <Term>{s('observation.whereField')}</Term>
-              <Value><Box component="span" sx={{ color: observation.where ? 'inherit' : 'text.secondary' }}>{observation.where || '—'}</Box></Value>
-              <Term>{s('observation.byField')}</Term>
-              <Value testId="observation-by"><Box component="span" sx={{ color: observation.by ? 'inherit' : 'text.secondary' }}>{names.text(observation.by) || '—'}</Box></Value>
-              <Term>{s('observation.impactField')}</Term><Value>{s(IMPACT_LABEL[observation.impact])}</Value>
-              <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
-              <Term>{s('observation.colScope')}</Term>
-              <Value>{fromScope ? fromScope.label : s('observation.local')}</Value>
-              <Term>{s('observation.explainedBy')}</Term>
-              <Value testId="observation-explained-by">
-                <ExplainedBy
-                  links={props.explainedBy} label={label} s={s} onOpen={props.onOpen}
-                  onUnlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
-                />
-              </Value>
-            </Box>
+            <ObservationFacts
+              observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
+              explainedBy={props.explainedBy} onOpen={props.onOpen}
+              unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
+            />
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
 
-            <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
-            <Box component="ol" data-testid="observation-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
-              {observation.history.map((event, index) => (
-                <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
-                  <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
-                  <Box component="span">
-                    {event.kind === 'absorbed'
-                      ? s('observation.eventAbsorbed', { name: nameOf(event.id ?? '', event.scope), count: event.seen ?? 0 })
-                      : event.kind === 'merged'
-                        ? s('observation.eventMerged', { name: nameOf(event.id ?? '') })
-                        : event.kind === 'moved' || event.kind === 'movedIn' ? movedWords(event, s, props.scopeLabel)
-                          : s(EVENT_LABEL[event.kind])}
-                    {event.note ? ` — ${event.note}` : ''}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
+            <RecordChanges about={{ kind: 'observation', id: observation.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
+
+            <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />
             <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
           </DocumentSheet>
         )}
@@ -470,15 +445,89 @@ export function ObservationReader(props: ObservationReaderProps) {
   )
 }
 
-/** A bright spot's chip in the success colour (ADR-0038 §6); nothing on a problem. */
-function BrightChip({ bright, s }: { bright: true | undefined; s: Translate }) {
-  return bright ? <Chip color="success" variant="outlined" label={s(BRIGHT_LABEL)} data-testid="observation-bright" /> : null
+/** The facts of an observation as its reader lists them: when, where, who, how much, who recorded it, and what explains it. */
+function ObservationFacts({ observation, names, s, day, fromScope, label, explainedBy, onOpen, unlink }: {
+  observation: Observation
+  names: PersonNames
+  s: Translate
+  day: (date: string) => string
+  fromScope: ObservationReaderProps['fromScope']
+  label: string
+  explainedBy: ObservationReaderProps['explainedBy']
+  onOpen: ObservationReaderProps['onOpen']
+  unlink: (causeId: string, scope: string | undefined) => (() => void) | undefined
+}) {
+  const quiet = (shown: boolean) => ({ color: shown ? 'inherit' : 'text.secondary' })
+  return (
+    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
+      <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
+      <Term>{s('observation.whereField')}</Term>
+      <Value><Box component="span" sx={quiet(Boolean(observation.where))}>{observation.where || '—'}</Box></Value>
+      <Term>{s('observation.byField')}</Term>
+      <Value testId="observation-by"><Box component="span" sx={quiet(Boolean(observation.by))}>{names.text(observation.by) || '—'}</Box></Value>
+      <Term>{s('observation.impactField')}</Term><Value>{s(IMPACT_LABEL[observation.impact])}</Value>
+      <Term>{s('observation.colRecordedBy')}</Term>
+      <Value testId="observation-recorded-by">
+        <Box component="span" sx={quiet(Boolean(observation.recordedBy))}>
+          {observation.recordedBy ? recordedByText(observation.recordedBy, s) : s('observation.recordedByUnknown')}
+        </Box>
+      </Value>
+      <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
+      <Term>{s('observation.colScope')}</Term>
+      <Value>{fromScope ? fromScope.label : s('observation.local')}</Value>
+      <Term>{s('observation.explainedBy')}</Term>
+      <Value testId="observation-explained-by">
+        <ExplainedBy links={explainedBy} label={label} s={s} onOpen={onOpen} onUnlink={unlink} />
+      </Value>
+    </Box>
+  )
+}
+
+/** What happened to an observation, oldest first: recorded, seen again, merged, moved, archived. */
+function ObservationHistory({ history, s, day, nameOf, scopeLabel }: {
+  history: Observation['history']
+  s: Translate
+  day: (date: string) => string
+  nameOf: ObservationReaderProps['nameOf']
+  scopeLabel: ObservationReaderProps['scopeLabel']
+}) {
+  const said = (event: ObservationEvent) => {
+    if (event.kind === 'absorbed') return s('observation.eventAbsorbed', { name: nameOf(event.id ?? '', event.scope), count: event.seen ?? 0 })
+    if (event.kind === 'merged') return s('observation.eventMerged', { name: nameOf(event.id ?? '') })
+    if (event.kind === 'moved' || event.kind === 'movedIn') return movedWords(event, s, scopeLabel)
+    return s(EVENT_LABEL[event.kind])
+  }
+  return (
+    <>
+      <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
+      <Box component="ol" data-testid="observation-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
+        {history.map((event, index) => (
+          <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
+            <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
+            <Box component="span">{said(event)}{event.note ? ` — ${event.note}` : ''}</Box>
+          </Box>
+        ))}
+      </Box>
+    </>
+  )
+}
+
+/** Who recorded it, and through which client where it was an agent. */
+export function recordedByText(by: RecordedBy, s: Translate): string {
+  return by.via ? `${by.name} ${s('comments.via', { agent: by.via })}` : by.name
+}
+
+/** The tone, said with its bar (ADR-0038, amended): the same bar the register's stripe and the form's buttons carry. */
+function ToneChip({ tone, s }: { tone: ObservationTone; s: Translate }) {
+  return (
+    <Chip variant="outlined" icon={<Box sx={{ display: 'flex', pl: 1 }}><ToneBar tone={tone} /></Box>} label={s(TONE_WORD[tone])} data-testid={`observation-tone-${tone}`} />
+  )
 }
 
 /** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
 function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
-  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; bright: boolean }
-  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; bright: boolean }>) => void
+  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; tone: ObservationTone }
+  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; tone: ObservationTone }>) => void
   onBlur: () => void
   today: string
   names: PersonNames
@@ -495,7 +544,7 @@ function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
   )
   return (
     <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1.5, gridTemplateColumns: '1fr 1fr' }}>
-      <Box sx={{ gridColumn: '1 / -1' }}><ToneChoice bright={draft.bright} onChange={(bright) => onChange({ bright })} s={s} /></Box>
+      <Box sx={{ gridColumn: '1 / -1' }}><ToneChoice tone={draft.tone} onChange={(tone) => onChange({ tone })} s={s} /></Box>
       {field('title', 'observation.titleField', true)}
       {field('where', 'observation.whereField')}
       <PersonRefField

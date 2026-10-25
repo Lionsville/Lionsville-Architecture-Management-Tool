@@ -26,6 +26,24 @@ export const IMPACT_COLOR: Record<ObservationImpact, 'default' | 'warning' | 'er
 /** What a bright spot is called, on its chip and in the form (ADR-0038 §6). */
 export const BRIGHT_LABEL: StringKey = 'observation.bright'
 
+/** Each tone's word, as the form's buttons and the register's filter say it (ADR-0038, amended). */
+export const TONE_WORD: Record<'bright' | 'neutral' | 'problem', StringKey> = {
+  bright: 'observation.bright',
+  neutral: 'observation.neutral',
+  problem: 'observation.problem',
+}
+
+export const TONE_TIP: Record<'bright' | 'neutral' | 'problem', StringKey> = {
+  bright: 'observation.brightTip',
+  neutral: 'observation.neutralTip',
+  problem: 'observation.problemTip',
+}
+
+/** The theme's colour for each tone's stripe and bar: success, grey, error. */
+export const TONE_COLOR: Record<'bright' | 'neutral' | 'problem', 'success' | 'grey' | 'error'> = {
+  bright: 'success', neutral: 'grey', problem: 'error',
+}
+
 /** The tone filter's three choices, in the order the toolbar shows them. */
 export const TONE_LABEL: Record<'all' | 'problems' | 'bright', StringKey> = {
   all: 'observation.toneAll',

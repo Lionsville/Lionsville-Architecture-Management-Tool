@@ -268,6 +268,7 @@ export const EN = {
   'command.taken': 'Something here already has that id — another author took it while this change was being made. Try again.',
   'command.notAField': 'That change carries a field this record does not have, so none of it was made.',
   'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it. Open that scope to change them.',
+  'command.recordedByFixed': 'Who recorded an observation is kept as it was recorded and is not changed afterwards.',
   'command.rootExplained': 'A cause that another cause explains cannot be a root cause: a root cause ends the chain. Unlink the deeper cause, or make that one the root cause instead.',
   'command.rootAddressed': 'A root cause that a solution addresses cannot become a cause again: a solution addresses root causes only. Move the solution to another root cause, or unlink it, first.',
   'command.markFix': 'Only a review or a note can be marked as intended. A fix says the model contradicts itself: fix it in the model.',

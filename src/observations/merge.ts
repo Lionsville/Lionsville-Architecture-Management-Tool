@@ -46,7 +46,7 @@ import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ScopeAnalysis, Solution,
 } from '../model/observation'
 import {
-  causeEvidence, isArchived, isBright, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow,
+  causeEvidence, isArchived, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow, toneOf, tonesMerge,
 } from './observation'
 import type { LinkRefusal } from './observation'
 import { carryThread } from '../comments/travel'
@@ -283,11 +283,14 @@ function recordRefusal(request: MergeRequest, held: Held, absorbed: readonly Rec
     if (mergedBefore(held, request.kind, at)) return { refusal: 'merged', record: at }
     if (request.kind === 'observation' && isArchived(record as Observation)) return { refusal: 'archived', record: at }
   }
-  // A problem and a bright spot are not one thing seen twice (ADR-0038 §6):
-  // the first record of the other tone than the survivor's is named.
+  // A problem and a bright spot are not one thing seen twice (ADR-0038 §6,
+  // amended §9); neutral goes with either. The set takes the tone of its first
+  // record that has one, the survivor first, and the first absorbed record
+  // of the opposite tone is named.
   if (request.kind === 'observation') {
-    const tone = isBright(recordOf(held, 'observation', request.survivor)!)
-    const other = absorbed.find((at) => isBright(recordOf(held, 'observation', at)!) !== tone)
+    const toneAt = (at: RecordAt) => toneOf(recordOf(held, 'observation', at) as Observation)
+    const set = [request.survivor, ...absorbed].map(toneAt).find((tone) => tone !== 'neutral')
+    const other = set && absorbed.find((at) => !tonesMerge({ tone: toneAt(at) }, { tone: set }))
     if (other) return { refusal: 'mixedTone', record: other }
   }
   return undefined

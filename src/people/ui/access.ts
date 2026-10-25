@@ -38,6 +38,8 @@ export type PeopleRegisterAccess = {
   me: PersonId | undefined
   /** Who *you* are is the source's word (an account linked to an entry), and *This is me* is not offered. */
   meSaid?: boolean
+  /** The account using the app, where the source has accounts: who records, and whose is *Mine*. */
+  account?(): { readonly id: string; readonly name: string } | undefined
   readOnly: boolean
   /**
    * Whether this person may make one kind of change — of one entry, where the

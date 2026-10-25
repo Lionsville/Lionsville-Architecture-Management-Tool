@@ -21,6 +21,8 @@
  * Drawn at the origin of the record's slot; the picture places it.
  */
 import { useTheme } from '@mui/material/styles'
+import { toneColor } from './ToneBar'
+import { toneOf } from '../observation'
 import type { Theme } from '@mui/material/styles'
 import type { Translate } from '../../i18n'
 import { inkOn, mix } from '../../widgets'
@@ -73,7 +75,7 @@ export function anchorOf(node: PictureNode, side: 'left' | 'right', size: Pictur
 /** The outline a record is drawn with: its colour, its weight, and a dash while it is assumed. */
 function outline(theme: Theme, node: PictureNode): { stroke: string; width: number; dash?: string } {
   const { palette } = theme
-  if (node.kind === 'observation') return node.observation.bright ? { stroke: palette.success.main, width: 1.8 } : { stroke: palette.text.secondary, width: 1.2 }
+  if (node.kind === 'observation') return toneOf(node.observation) === 'neutral' ? { stroke: palette.text.secondary, width: 1.2 } : { stroke: toneColor(theme, toneOf(node.observation)), width: 1.8 }
   if (node.kind === 'solution') return { stroke: palette.primary.main, width: 1.4 }
   const dash = node.cause.state === 'assumed' ? '5 4' : undefined
   if (node.root) return { stroke: palette.secondary.main, width: 2.6, ...(dash ? { dash } : {}) }
@@ -158,7 +160,7 @@ function SmallMark({ node, selected, matched, openEnd, marker, fill, s }: Record
       )}
       {node.kind === 'observation' && (
         <>
-          <circle cx={cx} cy={cy} r={reach} fill={fill} stroke={node.observation.bright ? theme.palette.success.main : theme.palette.primary.main} strokeWidth={1.2} />
+          <circle cx={cx} cy={cy} r={reach} fill={fill} stroke={toneColor(theme, toneOf(node.observation))} strokeWidth={1.2} />
           {reach >= 13 && (
             <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize={10} fontWeight={700} fill={inkOn(theme, fill)}>
               {s('observation.seenTimes', { count: node.observation.seen })}

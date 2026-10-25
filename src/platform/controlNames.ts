@@ -69,8 +69,8 @@ export const CONTROL_NAMES = [
   'cause.root',
   // Over the observations page's tabs: the filters, their row, View local and the picture's two sizes.
   'observations.filters', 'observations.filterRow', 'observations.viewLocal', 'observations.size',
-  // The tone among the filters: problems, bright spots, or both (ADR-0038 §6).
-  'observations.tone',
+  // The tones among the filters, each on or off, and whose: everyone's or mine (ADR-0038, amended §9, §10).
+  'observations.tone', 'observations.mine',
   // The form that records an observation, with its causes (ADR-0032 §6).
   'observationForm.causes', 'observationForm.existingCause', 'observationForm.record', 'observationForm.description',
   // Problem or bright spot, asked first (ADR-0038 §6).

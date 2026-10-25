@@ -27,6 +27,7 @@ const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.notAField': true,
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
+  'command.recordedByFixed': true,
   'command.rootAddressed': true,
   'command.markFix': true,
   'command.notCommentable': true,

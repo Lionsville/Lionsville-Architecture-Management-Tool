@@ -7,6 +7,9 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
+import type { HistoryRepository } from '../ports/HistoryRepository'
+import type { ChangesOf } from '../agent/changes'
+import { useRecordChangesAccess } from './history/useRecordChangesAccess'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
@@ -93,6 +96,8 @@ export function useWorkspaceAgentView(deps: {
    * thread is told it (ADR-0037 §5). Absent, whoever may write may.
    */
   comments?: SourceComments
+  /** The source's history, which a record's changes are read from (ADR-0038, amended §11); absent where it keeps none. */
+  history?: HistoryRepository
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
@@ -118,9 +123,18 @@ export function useWorkspaceAgentView(deps: {
     const register = peopleRef.current
     return register?.current ? register.current() : register?.people
   }, [])
+  const here = useCallback(() => scope, [scope])
+  const changes = useRecordChangesAccess({ history: deps.history, scopes: reader, here })
+  const changesOf = useMemo<ChangesOf | undefined>(() => (changes ? async (about, elsewhere, limit) => {
+    const { entries, more } = await changes.entriesOf(about, elsewhere)
+    const shown = entries.slice(0, limit)
+    const what = await changes.whatOf(about, elsewhere, shown, more || shown.length < entries.length)
+    return { changes: shown.map((one, index) => ({ ...one, what: what[index] ?? '' })), more: more || shown.length < entries.length }
+  } : undefined), [changes])
   const agentView = useMemo<WorkspaceAgentView>(() => ({
     ...throughSession(session, putPicture),
     scopePath: () => scope,
+    ...(changesOf ? { changesOf } : {}),
     ancestorDecisions: () => ancestorRecords,
     /**
      * Why nothing may change right now: a source that is read-only, or a person
@@ -147,6 +161,8 @@ export function useWorkspaceAgentView(deps: {
     people: peopleNow,
     // Whom an agent's comment is signed by (ADR-0037 §8): *you*, as the register says.
     me: () => peopleRef.current?.me,
+    // And who records an observation, where the source has accounts (ADR-0038, amended §10).
+    account: () => peopleRef.current?.account?.(),
     // And whether they may remove somebody else's, where the source says (ADR-0037 §5).
     ...(comments?.mayModerate ? { mayModerate: () => comments.mayModerate?.(scope) ?? true } : {}),
     ...(changeAcross ? { changeAcross } : {}),
@@ -156,7 +172,7 @@ export function useWorkspaceAgentView(deps: {
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
-    followScopeTypes, comments,
+    followScopeTypes, comments, changesOf,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)

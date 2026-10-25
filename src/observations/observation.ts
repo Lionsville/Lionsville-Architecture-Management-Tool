@@ -64,7 +64,7 @@ import { personRefOf } from '../model/person'
 import type { PersonRef } from '../model/person'
 import type {
   Cause, CauseAbove, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact,
-  ScopeAnalysis, Solution,
+  ObservationTone, RecordedBy, ScopeAnalysis, Solution,
 } from '../model/observation'
 import { DE } from './strings/de'
 import { EN } from './strings/en'
@@ -72,9 +72,9 @@ import { NL } from './strings/nl'
 
 export type {
   Cause, CauseAbove, CauseEvent, CauseEventKind, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
-  ObservationImpact, ScopeAnalysis,
+  ObservationImpact, ObservationTone, RecordedBy, ScopeAnalysis,
 } from '../model/observation'
-export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_IMPACTS } from '../model/observation'
+export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_IMPACTS, OBSERVATION_TONES } from '../model/observation'
 
 /** A scope's observations and causes together: what every operation that touches both takes. */
 export type Analysis = {
@@ -168,6 +168,10 @@ export function newObservation(args: {
   impact?: ObservationImpact
   /** A bright spot: something that works (ADR-0038 §6). */
   bright?: boolean
+  /** What it says (ADR-0038, amended); neutral where absent. */
+  tone?: ObservationTone
+  /** Who recorded it: the account of the step, never a client's say (ADR-0038, amended). */
+  recordedBy?: RecordedBy
   body?: string
 }): Observation {
   const { id, number, title, date, t } = args
@@ -181,7 +185,8 @@ export function newObservation(args: {
     ...(where ? { where } : {}),
     ...(by ? { by } : {}),
     impact: args.impact ?? 'minor',
-    ...(args.bright ? { bright: true as const } : {}),
+    ...toneField(args.tone ?? (args.bright ? 'bright' : 'neutral')),
+    ...(args.recordedBy ? { recordedBy: args.recordedBy } : {}),
     seen: 1,
     body: args.body?.trim() ? args.body : observationTemplate(t),
     history: [{ date, kind: 'recorded' }],
@@ -218,11 +223,12 @@ function withEvent(one: Observation, event: ObservationEvent): Observation {
  */
 export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'by' | 'impact' | 'date'>> & {
   bright?: boolean
+  tone?: ObservationTone
 }
 
 export function updateObservation(list: readonly Observation[], id: string, patch: ObservationPatch): Observation[] {
   return replace(list, id, (one) => {
-    const { bright, ...rest } = patch
+    const { bright, tone, ...rest } = patch
     const next: Observation = { ...one, ...rest }
     if (patch.where !== undefined && !patch.where.trim()) delete next.where
     if (patch.by !== undefined) {
@@ -231,15 +237,42 @@ export function updateObservation(list: readonly Observation[], id: string, patc
       else delete next.by
     }
     if (patch.title !== undefined) next.title = patch.title.trim()
-    if (bright === true) next.bright = true
-    else if (bright === false) delete next.bright
+    const toned = tone ?? (bright === true ? 'bright' : bright === false ? 'problem' : undefined)
+    if (toned !== undefined) {
+      delete next.bright
+      delete next.tone
+      Object.assign(next, toneField(toned))
+    }
     return next
   })
 }
 
-/** A bright spot: something that works (ADR-0038 §6). Absent is a problem. */
-export function isBright(one: Pick<Observation, 'bright'>): boolean {
-  return one.bright === true
+/** The field a tone is kept in: none for neutral, which is what an absent tone reads as. */
+export function toneField(tone: ObservationTone): Pick<Observation, 'tone'> {
+  return tone === 'neutral' ? {} : { tone }
+}
+
+/**
+ * What an observation says (ADR-0038, amended): its `tone`, or a 14's
+ * `bright`, and neutral otherwise — anything not explicitly marked before
+ * reads as neutral.
+ */
+export function toneOf(one: Pick<Observation, 'bright' | 'tone'>): ObservationTone {
+  return one.tone ?? (one.bright === true ? 'bright' : 'neutral')
+}
+
+/** A bright spot: something that works (ADR-0038 §6). */
+export function isBright(one: Pick<Observation, 'bright' | 'tone'>): boolean {
+  return toneOf(one) === 'bright'
+}
+
+/**
+ * Whether two observations may be one thing seen twice (ADR-0038, amended):
+ * a bright spot and a problem never are; neutral goes with either.
+ */
+export function tonesMerge(a: Pick<Observation, 'bright' | 'tone'>, b: Pick<Observation, 'bright' | 'tone'>): boolean {
+  const pair = new Set([toneOf(a), toneOf(b)])
+  return !(pair.has('bright') && pair.has('problem'))
 }
 
 /** Why a day cannot be the day an observation was seen again. */
@@ -397,7 +430,7 @@ export function mergeObservations(analysis: Analysis, from: string, into: string
   if (isMerged(observations, from) || isMerged(observations, into)) return analysis
   if (isArchived(absorbed) || isArchived(survivor)) return analysis
   // A problem and a bright spot are not one thing seen twice (ADR-0038 §6).
-  if (isBright(absorbed) !== isBright(survivor)) return analysis
+  if (!tonesMerge(absorbed, survivor)) return analysis
   return {
     observations: observations.map((one) => {
       if (one.id === into) {
