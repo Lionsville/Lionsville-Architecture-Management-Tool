@@ -14,7 +14,10 @@ import { useIndex } from './useIndex'
 import type { Failed } from './useShellServices'
 import type { TreeView } from '../agent/tree'
 import { findingsByScope, identityFindings, organisationFindings } from '../projects/checks'
+import type { Finding } from '../projects/checks'
 import { principleFindings } from '../projects/principleFindings'
+import { principleReadsAt, topicFindings } from '../projects/topics'
+import { today } from '../model/lifecycle'
 import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
@@ -26,6 +29,17 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { OrganisationIndex } from '../ports/OrganisationIndex'
 import { registerRows } from './organisation/register'
 import { platformTreeOf } from './platformTree'
+
+/**
+ * What the principles and the topics say about themselves (ADR-0041 §10,
+ * ADR-0042 §5): a citation reads where its principle is in force — above it,
+ * or through a topic relevant there on the day — and a topic's link names a
+ * scope the tree still holds.
+ */
+function topicalFindings(index: ScopeIndex, tree: ScopeSummary, day: string = today()): Finding[] {
+  const scopes = flattenScopes(tree)
+  return [...principleFindings(index, principleReadsAt(scopes, day)), ...topicFindings(scopes)]
+}
 
 /**
  * The organisation's index (ADR-0012 §2), held by the shell rather than the
@@ -69,7 +83,7 @@ export function useTreeFindings(deps: {
    * §3); the ones that need a scope's own records belong to the scope that
    * is open.
    */
-  const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index), ...principleFindings(index)], [index])
+  const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index), ...topicalFindings(index, tree)], [index, tree])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => index.initiativesBelow(home).length, [index, home])
   /** Every open observation anywhere below this home (ADR-0032 §1), for the observations card. */
@@ -125,7 +139,7 @@ function useShellTree(
     // Today's are folded once with the index; another day's organisation is read when asked (ADR-0036 §6).
     findings: (day) => (day === undefined
       ? treeRef.current.identity
-      : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day), ...principleFindings(treeRef.current.index)]),
+      : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day), ...topicalFindings(treeRef.current.index, treeRef.current.tree, day)]),
     read: async (path) => {
       const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
       if (!held) return undefined

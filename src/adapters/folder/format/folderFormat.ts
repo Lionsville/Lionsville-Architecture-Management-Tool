@@ -67,6 +67,8 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
+import { isTopicLinkList } from '../../../projects/topics'
+import type { TopicLink } from '../../../projects/topics'
 import { ADR_STATUSES } from '../../../model/adr'
 import type { Adr } from '../../../model/adr'
 import type {
@@ -341,6 +343,8 @@ type ScopeFile = {
   client?: string
   description?: string
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   activeDiagramId: string
   /** Diagram ids in tab order — the one list whose order is a decision. */
   diagrams: string[]
@@ -628,6 +632,7 @@ function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(model.description !== undefined ? { description: model.description } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
+    ...(scope.relevantTo !== undefined ? { relevantTo: scope.relevantTo } : {}),
     activeDiagramId: scope.activeDiagramId,
     diagrams: model.diagrams.map((diagram) => diagram.id),
     ...(model.defaultAuthor !== undefined || model.defaultAspectConfig !== undefined
@@ -804,11 +809,8 @@ export function scopeSummaryFrom(
   return {
     path,
     name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
-    ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
-    ...headerType(held),
-    ...(typeof held.client === 'string' ? { client: held.client } : {}),
+    ...headerSays(held),
     ...(typeof held.description === 'string' ? { description: held.description } : {}),
-    ...(isLinkList(held.links) ? { links: held.links } : {}),
     diagrams: Array.isArray(held.diagrams) ? held.diagrams.length : 0,
     children: [],
     ...(updatedAt ? { updatedAt } : {}),
@@ -1269,10 +1271,7 @@ export function scopeFromFolder(
   return {
     path,
     model,
-    ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
-    ...headerType(held),
-    ...(typeof held.client === 'string' ? { client: held.client } : {}),
-    ...(isLinkList(held.links) ? { links: held.links } : {}),
+    ...headerSays(held),
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
@@ -1284,14 +1283,25 @@ export function scopeFromFolder(
   }
 }
 
-/** The scope's type from the operating model, where the header says one (ADR-0036, amended 17 October 2026): a unit type's id, never blank. */
-function headerType(held: Pick<ScopeFile, 'unitTypeId'>): { unitTypeId?: string } {
-  return typeof held.unitTypeId === 'string' && held.unitTypeId ? { unitTypeId: held.unitTypeId } : {}
+/**
+ * What the header says about the scope, each where it says it well: its
+ * kind, its type from the operating model (ADR-0036, amended 17 October 2026)
+ * — a unit type's id, never blank — its client, its links, and where it is
+ * relevant as a topic (ADR-0042 §7).
+ */
+function headerSays(held: ScopeFile): Pick<ScopeSnapshot, 'kind' | 'unitTypeId' | 'client' | 'links' | 'relevantTo'> {
+  return {
+    ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
+    ...(typeof held.unitTypeId === 'string' && held.unitTypeId ? { unitTypeId: held.unitTypeId } : {}),
+    ...(typeof held.client === 'string' ? { client: held.client } : {}),
+    ...(isLinkList(held.links) ? { links: held.links } : {}),
+    ...(isTopicLinkList(held.relevantTo) && held.relevantTo.length ? { relevantTo: held.relevantTo } : {}),
+  }
 }
 
 /** The keys of `scope.json` the header itself writes; any other is carried through a save. */
 const HEADER_KEYS: ReadonlySet<string> = new Set<keyof ScopeFile>([
-  'type', 'version', 'name', 'kind', 'unitTypeId', 'client', 'description', 'links', 'activeDiagramId', 'diagrams',
+  'type', 'version', 'name', 'kind', 'unitTypeId', 'client', 'description', 'links', 'relevantTo', 'activeDiagramId', 'diagrams',
   'defaults', 'logos', 'interchange',
 ])
 

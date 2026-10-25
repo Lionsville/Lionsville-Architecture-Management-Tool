@@ -25,13 +25,14 @@ import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
+import { readdressLinks } from './topics'
 import {
   analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
   readdressServed, servedNamesWithin,
 } from './readdress'
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
-import { isWithinScope } from './scopePath'
+import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { CarriedDrawingPicture, CarriedImage, ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { drawingPictureAddresses } from '../model/drawing'
 import { STEP_ELSEWHERE } from './scopeState'
@@ -55,6 +56,7 @@ function summaryOfNode(node: ScopeNode): ScopeSummary {
     ...(node.client !== undefined ? { client: node.client } : {}),
     ...(node.description !== undefined ? { description: node.description } : {}),
     ...(node.links !== undefined ? { links: node.links } : {}),
+    ...(node.relevantTo !== undefined ? { relevantTo: node.relevantTo } : {}),
     diagrams: node.diagrams,
     children: node.children.map(summaryOfNode),
     ...(node.updatedAt !== undefined ? { updatedAt: node.updatedAt } : {}),
@@ -76,7 +78,7 @@ export function nodeAt(tree: ScopeTree, address: ScopeAddress): ScopeNode | unde
  * it opens on resolved against the views it has, and the marks as a list.
  */
 export function snapshotOf(state: ScopeState): ScopeSnapshot {
-  const { id, address, model, activeDiagramId, logoLibrary, kind, unitTypeId, client, links, updatedAt, unreadable, later, revision, images } = state
+  const { id, address, model, activeDiagramId, logoLibrary, kind, unitTypeId, client, links, relevantTo, updatedAt, unreadable, later, revision, images } = state
   return {
     path: address,
     id,
@@ -87,6 +89,7 @@ export function snapshotOf(state: ScopeState): ScopeSnapshot {
     ...(unitTypeId !== undefined ? { unitTypeId } : {}),
     ...(client !== undefined ? { client } : {}),
     ...(links !== undefined ? { links } : {}),
+    ...(relevantTo !== undefined ? { relevantTo } : {}),
     ...(updatedAt !== undefined ? { updatedAt } : {}),
     ...(unreadable?.length ? { unreadable } : {}),
     ...(later ? { later } : {}),
@@ -268,6 +271,7 @@ export function contentOf(scope: ScopeSnapshot, images: ScopeContent['images'] =
     ...(scope.unitTypeId !== undefined ? { unitTypeId: scope.unitTypeId } : {}),
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
+    ...(scope.relevantTo !== undefined ? { relevantTo: scope.relevantTo } : {}),
     images,
   }
 }
@@ -318,10 +322,11 @@ export async function moveScope(
   expects?: Revision,
   carrying?: Carrying,
 ): Promise<ScopeSnapshot | undefined> {
-  const node = nodeAt(await scopes.tree(), from)
+  const tree = await scopes.tree()
+  const node = nodeAt(tree, from)
   if (!node) return undefined
   const models = modelsOf(await index.read())
-  const carried = carriedBy(models, from, to)
+  const carried = carriedBy(models, from, to, topicsNamingWithin(tree, from))
   const inside = (address: ScopeAddress) => isWithinScope(address, from)
   const carry = async (address: ScopeAddress, refs: readonly { id: string; ref: string }[]) => {
     await changeScope(scopes, address, (held) => {
@@ -334,8 +339,12 @@ export async function moveScope(
         ...readdressServed(held.model, from, to),
         ...readdressPrinciples(held.model, from, to),
       ]
-      if (commands.length === 0) return undefined
-      return [commands.length === 1 ? commands[0] : { type: 'transaction', commands }]
+      // A topic's links name scopes by their paths (ADR-0042 §5): carried as the topic's own record.
+      const links = held.relevantTo ?? []
+      const relinked = readdressLinks(links, from, to)
+      const describe: ScopeCommand[] = relinked.some((one, at) => one.path !== links[at]?.path) ? [{ type: 'scope.describe', patch: { relevantTo: relinked } }] : []
+      if (commands.length === 0 && describe.length === 0) return undefined
+      return [...(commands.length === 0 ? [] : [commands.length === 1 ? commands[0] : { type: 'transaction' as const, commands }]), ...describe]
     })
   }
   landed(await scopes.move(node.id, to, expects))
@@ -353,6 +362,18 @@ export async function moveScope(
   return readScope(scopes, to)
 }
 
+/** The topics whose links name a scope inside the subtree at `from` (ADR-0042 §5), by where they are. */
+function topicsNamingWithin(tree: ScopeTree, from: ScopeAddress): ScopeAddress[] {
+  if (from === ROOT_SCOPE) return []
+  const found: ScopeAddress[] = []
+  const walk = (node: ScopeTree['root']) => {
+    if ((node.relevantTo ?? []).some((link) => isWithinScope(link.path, from))) found.push(node.address)
+    node.children.forEach(walk)
+  }
+  walk(tree.root)
+  return found
+}
+
 /** What a move is told of each scope it re-addresses: written, or refused with the repository's key. */
 export type Carrying = {
   carried(address: ScopeAddress): void
@@ -365,11 +386,12 @@ export type Carrying = {
  * subtree first, as `readdressRefs` orders them, then those inside it.
  */
 function carriedBy(
-  models: readonly ScopeModel[], from: ScopeAddress, to: ScopeAddress,
+  models: readonly ScopeModel[], from: ScopeAddress, to: ScopeAddress, topics: readonly ScopeAddress[] = [],
 ): Map<ScopeAddress, readonly { id: string; ref: string }[]> {
   const carried = new Map<ScopeAddress, readonly { id: string; ref: string }[]>()
   for (const patch of readdressRefs(models, from, to)) carried.set(patch.path, patch.refs)
   if (from === to) return carried
+  for (const topic of topics) if (!carried.has(topic)) carried.set(topic, [])
   for (const one of models) {
     if (!carried.has(one.path) && (analysisNamesWithin(one.model, from) || linesNameWithin(one.model, from) || servedNamesWithin(one.model, from)
       || principlesNameWithin(one.model, from))) carried.set(one.path, [])
@@ -606,7 +628,7 @@ async function wholeOf(images: Pick<ImageRepository, 'bytes' | 'bytesAt'>, state
 export function blank(scope: ScopeState | ScopeSnapshot): boolean {
   const { model } = scope
   const said = Object.entries(model).some(([key, value]) => key !== 'name' && (Array.isArray(value) ? value.length > 0 : value !== undefined))
-  const described = scope.kind !== undefined || scope.client !== undefined || (scope.links?.length ?? 0) > 0
+  const described = scope.kind !== undefined || scope.client !== undefined || (scope.links?.length ?? 0) > 0 || (scope.relevantTo?.length ?? 0) > 0
     || (scope.logoLibrary?.length ?? 0) > 0
   return model.name.trim() === '' && !said && !described && (scope.images?.length ?? 0) === 0
 }

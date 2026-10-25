@@ -446,7 +446,7 @@ export const GROWN = {
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 211 },
   'src/app/organisation/OrganisationCards.tsx': { complexity: 38, lines: 171 },
-  'src/app/organisation/OrganisationScreen.tsx': { complexity: 53, lines: 290 },
+  'src/app/organisation/OrganisationScreen.tsx': { complexity: 50, lines: 282 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
   'src/app/organisation/useOrganisation.ts': { lines: 207 },
   'src/app/useModelSession.ts': { lines: 330 },
@@ -477,7 +477,7 @@ export const GROWN = {
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
   'src/observations/ui/SolutionReaders.tsx': { complexity: 48, lines: 253 },
   'src/projects/documentSession.ts': { complexity: 34 },
-  'src/adapters/folder/format/folderFormat.ts': { complexity: 35 },
+  'src/adapters/folder/format/folderFormat.ts': { complexity: 32 },
   'src/roadmap/ui/RoadmapPage.tsx': { lines: 254 },
   'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 351 },
 }

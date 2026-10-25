@@ -19,6 +19,7 @@
  * Everything here is arithmetic without an outside world: no storage, no React,
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
+import type { TopicLink } from './topics'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, Relation, Transition, UploadedLogo,
 } from '../model'
@@ -111,6 +112,8 @@ export type ScopeSnapshot = {
   client?: string
   /** A ticket queue, a wiki space, a dashboard. */
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   /**
    * The pictures the documents show, with their bytes (ADR-0009).
    *
@@ -213,6 +216,8 @@ export type ScopeSummary = {
   description?: string
   /** A ticket queue, a wiki space, a dashboard — a screen shows these. */
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   /** How many views it holds. Zero is ordinary: a domain need draw nothing. */
   diagrams: number
   /** The scopes filed directly under it, in the order the store listed them. */
@@ -328,6 +333,7 @@ export function summarise(scope: ScopeSnapshot): ScopeSummary {
     ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(scope.model.description !== undefined ? { description: scope.model.description } : {}),
     ...(scope.links !== undefined ? { links: scope.links } : {}),
+    ...(scope.relevantTo !== undefined ? { relevantTo: scope.relevantTo } : {}),
     diagrams: scope.model.diagrams.length,
     children: [],
     ...(scope.updatedAt ? { updatedAt: scope.updatedAt } : {}),

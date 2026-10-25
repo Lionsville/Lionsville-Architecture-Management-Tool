@@ -5,8 +5,9 @@
  * What the principles screens read and write through, filled from the open
  * scope (ADR-0041): its own principles and groups from the session, each
  * change one step there — undone with ⌘Z, in the Activity list — and the
- * principles of every scope above from the index, read-only here because a
- * record is edited where it lives (ADR-0012 §7).
+ * principles of every scope above, and of every topic relevant here or above
+ * (ADR-0042 §4), from the index, read-only here because a record is edited
+ * where it lives (ADR-0012 §7).
  *
  * The citations (§7) are read the same way — the open scope's from its
  * session, every other scope's from the index — so how a principle is used
@@ -42,6 +43,11 @@ export type PrinciplesDeps = {
   session: Pick<ModelSession, 'model' | 'indexed' | 'dispatch' | 'readOnly'>
   /** The open scope. */
   scope: ScopePath
+  /**
+   * The topics whose principles are in force at a scope today (ADR-0042 §4):
+   * relevant to it or to a scope above it. None where absent.
+   */
+  topics?: (scope: ScopePath) => readonly ScopePath[]
   /** The tree's index as it stands: the principles of every other scope. */
   index: Pick<ScopeIndex, 'principlesAt' | 'citations'>
   /** What a scope is called, as the tree says it. */
@@ -164,7 +170,8 @@ function land(deps: PrinciplesDeps, command: Command): { refused: string } | und
 export function principlesAccess(deps: PrinciplesDeps, version: number): PrinciplesAccess {
   const here = deps.scope
   const own = (scope: ScopePath) => ownOf(deps, scope)
-  const inForce = (scope: ScopePath): PrincipleInForce[] => [scope, ...ancestorScopes(scope)].flatMap((at) => {
+  const sources = (scope: ScopePath): ScopePath[] => [...new Set([scope, ...ancestorScopes(scope), ...(deps.topics?.(scope) ?? [])])]
+  const inForce = (scope: ScopePath): PrincipleInForce[] => sources(scope).flatMap((at) => {
     const { principles, groups } = own(at)
     return principles.filter((one) => one.mergedInto === undefined).map((principle) => ({ scope: at, principle, groups }))
   })
@@ -180,7 +187,9 @@ export function principlesAccess(deps: PrinciplesDeps, version: number): Princip
     scopeLabel: deps.scopeLabel,
     own,
     inForce,
-    sourceOf: (at: ScopePath, scope: ScopePath): PrincipleSource => (scope === at ? { kind: 'here' } : { kind: 'above', scope }),
+    sourceOf: (at: ScopePath, scope: ScopePath): PrincipleSource => (scope === at
+      ? { kind: 'here' }
+      : ancestorScopes(at).includes(scope) ? { kind: 'above', scope } : { kind: 'topic', scope }),
     find: (ref) => inForce(here).find((one) => one.scope === ref.scope && one.principle.id === ref.id)
       ?? own(ref.scope).principles.filter((one) => one.id === ref.id).map((principle) => ({ scope: ref.scope, principle, groups: own(ref.scope).groups }))[0],
     citationsOf: (about, scope) => citationsIn(deps, scope).filter((one) => isAboutRecord(one, about)),
@@ -277,5 +286,5 @@ export function usePrinciplesAccess(deps: PrinciplesDeps): PrinciplesAccess {
     version.current += 1
     return principlesAccess(latest.current, version.current)
     // A new model or a new index is a new reading; the rest is read through the ref.
-  }, [model.principles, model.principleGroups, deps.index, deps.scope, deps.session.readOnly])
+  }, [model.principles, model.principleGroups, deps.index, deps.scope, deps.session.readOnly, deps.topics])
 }

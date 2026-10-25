@@ -34,7 +34,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks'
+export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics'
 
 /**
  * What the shell asks of the organisation screen: one of its pages, or the
@@ -121,7 +121,7 @@ export function useShellAgent(deps: {
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person `select` names.
-      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' ? to.id : to.select)
+      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' ? to.id : to.select)
       return
     }
     const open = agentSessionRef.current

@@ -54,6 +54,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.principleUnused': '{name} is aanvaard, en niets haalt het aan',
   'check.principleChafes': '{name} schuurt in {count} observaties',
   'check.citationGone': 'Een record haalt {name} aan, dat hier niet geldt',
+  'check.relevantGone': 'Een koppeling met {name}, dat er niet is',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -129,6 +130,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.principleChafes.other': '{count} principes die schuren',
   'check.short.citationGone.one': '{count} verwijzing naar een principe dat er niet is',
   'check.short.citationGone.other': '{count} verwijzingen naar principes die er niet zijn',
+  'check.short.relevantGone.one': '{count} koppeling met een scope die er niet is',
+  'check.short.relevantGone.other': '{count} koppelingen met scopes die er niet zijn',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

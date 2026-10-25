@@ -75,6 +75,10 @@ import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
 import { PrinciplesCard } from './PrinciplesCard'
+import { HomeTopics } from './HomeTopics'
+import type { TopicsStore } from './HomeTopics'
+import { RelevantTopics } from './RelevantTopics'
+import { TopicsCard } from './TopicsCard'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { PeopleCard } from './PeopleCard'
 import type { PeopleAccess } from './usePeopleRegister'
@@ -258,6 +262,8 @@ export type OrganisationScreenProps = {
   writable?: (path: ScopePath) => boolean
   /** Each scope's principles, off the shell's index (ADR-0041): what the *Principles* card counts. */
   principlesAt?: (path: ScopePath) => ScopePrinciples
+  /** Where the topics are written (ADR-0042): the card, the catalogue and *Relevant topics*, where the shell keeps one. */
+  topics?: TopicsStore
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -301,12 +307,37 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
   } satisfies Partial<OrganisationCardsProps>
 }
 
+/** The line under a home's heading: who it is for, what type it is, and when it last changed. */
+function HomeMeta({ home, typeLines, changed, language, s }: {
+  home: ScopeSummary; typeLines: readonly string[]; changed: string | undefined; language: Language; s: Translate
+}) {
+  return (
+    <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }} data-testid="organisation-meta">
+      {[
+        // The client only where it differs: "For Acme Logistics" under
+        // the heading "Acme Logistics" says nothing twice.
+        home.client?.trim() && home.client.trim() !== home.name.trim()
+          ? s('org.forClient', { name: home.client.trim() })
+          : '',
+        ...typeLines,
+        changed
+          ? s('org.lastChanged', {
+            when: new Date(changed).toLocaleString(LOCALE[language], {
+              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            }),
+          })
+          : s('picker.never'),
+      ].filter(Boolean).join(' · ')}
+    </Typography>
+  )
+}
+
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
-  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt,
+  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt, topics,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
@@ -418,6 +449,10 @@ export function OrganisationScreen({
   )
 
   return (
+    <HomeTopics
+      store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={onGoHome}
+      openCatalogue={(topic) => homePages.open('topics', topic)} s={s}
+    >
     <Box sx={{
       height: '100vh', width: '100vw', overflowY: 'auto',
       bgcolor: 'background.default', display: 'flex', flexDirection: 'column',
@@ -457,23 +492,7 @@ export function OrganisationScreen({
             <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />
           )}
 
-          <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }} data-testid="organisation-meta">
-            {[
-              // The client only where it differs: "For Acme Logistics" under
-              // the heading "Acme Logistics" says nothing twice.
-              home.client?.trim() && home.client.trim() !== home.name.trim()
-                ? s('org.forClient', { name: home.client.trim() })
-                : '',
-              ...typeLines,
-              changed
-                ? s('org.lastChanged', {
-                  when: new Date(changed).toLocaleString(LOCALE[language], {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                  }),
-                })
-                : s('picker.never'),
-            ].filter(Boolean).join(' · ')}
-          </Typography>
+          <HomeMeta home={home} typeLines={typeLines} changed={changed} language={language} s={s} />
 
           {/* What this screen is, and where things live: the first sentence
               every desktop session reads, so it says it plainly. At the root
@@ -537,7 +556,7 @@ export function OrganisationScreen({
               onOpenRegister={() => homePages.open('register')}
               onOpenTechnology={() => homePages.open('technologyRegister')}
               writable={mayWrite}
-              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} /><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
+              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} />{atRoot && <TopicsCard onOpen={() => homePages.open('topics')} s={s} />}<PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
               s={s}
             />}
           </Box>
@@ -545,6 +564,7 @@ export function OrganisationScreen({
           {/* Who serves this scope (ADR-0036, amended): the units whose
               domains name it, written where each unit is kept. */}
           <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
+          <RelevantTopics at={at} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —
@@ -690,6 +710,7 @@ export function OrganisationScreen({
         onConfirm={organisation.confirmDeleteBoard}
       />
     </Box>
+    </HomeTopics>
   )
 }
 

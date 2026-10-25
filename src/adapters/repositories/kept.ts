@@ -11,6 +11,7 @@
  * picture (`library`). The tree reads the first alone, a lookup of a picture
  * by name reads one entry, and only a scope's state reads all three.
  */
+import type { TopicLink } from '../../projects/topics'
 import type { ImageEntry } from '../../model/imageName'
 import { SCOPE_RECORD, sameValue } from '../../model/recordKey'
 import { rootsFromSolutions } from '../../observations/rootsFromSolutions'
@@ -39,6 +40,8 @@ export type NodeSays = {
   client?: string
   description?: string
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   diagrams: number
 }
 
@@ -105,7 +108,7 @@ export async function readMeta(tx: Transaction): Promise<Meta> {
 }
 
 export function says(content: ScopeContent): NodeSays {
-  const { model, kind, unitTypeId, client, links } = content
+  const { model, kind, unitTypeId, client, links, relevantTo } = content
   return {
     name: model.name, diagrams: model.diagrams.length,
     ...(kind !== undefined ? { kind } : {}),
@@ -113,6 +116,7 @@ export function says(content: ScopeContent): NodeSays {
     ...(client !== undefined ? { client } : {}),
     ...(model.description !== undefined ? { description: model.description } : {}),
     ...(links !== undefined ? { links } : {}),
+    ...(relevantTo !== undefined ? { relevantTo } : {}),
   }
 }
 

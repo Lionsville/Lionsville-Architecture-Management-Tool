@@ -169,6 +169,8 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   'check.principleChafes': own,
   /** The citing record and the principle it names. */
   'check.citationGone': withFields,
+  /** The scope a topic's link names that is not there (ADR-0042 §5). */
+  'check.relevantGone': withFields,
   /** The capability, the unit and the `assigned` row. */
   'check.unitNotServing': withFields,
   /** The unit and role a line runs from, and where it lands: the line's target changed is another question. */

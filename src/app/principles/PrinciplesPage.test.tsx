@@ -32,7 +32,10 @@ const above: Principle = {
   groups: [], regime: 'fixed', status: 'accepted',
 }
 
-function Harness({ initial, steps, readOnly = false }: { initial: HostModel; steps: Command[]; readOnly?: boolean }) {
+/** A topic's principle (ADR-0042 §4): in force wherever the topic is relevant. */
+const topical: Principle = { ...above, id: 'pr-sec', title: 'Least privilege', statement: 'Grant the least that works.' }
+
+function Harness({ initial, steps, readOnly = false, topics }: { initial: HostModel; steps: Command[]; readOnly?: boolean; topics?: (scope: string) => string[] }) {
   const [model, setModel] = useState(initial)
   const latest = useRef(model)
   const counter = useRef(0)
@@ -51,8 +54,12 @@ function Harness({ initial, steps, readOnly = false }: { initial: HostModel; ste
   }), [model, readOnly, steps])
   const access = usePrinciplesAccess({
     session, scope: 'acme',
-    index: { principlesAt: (path: string): ScopePrinciples => (path === '' ? { principles: [above], groups: [] } : { principles: [], groups: [] }), citations: () => [] },
-    scopeLabel: (path) => (path === '' ? 'Organisation' : 'Acme'),
+    index: {
+      principlesAt: (path: string): ScopePrinciples => (path === '' ? { principles: [above], groups: [] } : path === 'topics/security' ? { principles: [topical], groups: [] } : { principles: [], groups: [] }),
+      citations: () => [],
+    },
+    ...(topics ? { topics } : {}),
+    scopeLabel: (path) => (path === '' ? 'Organisation' : path === 'topics/security' ? 'Security' : 'Acme'),
     makeId: (prefix) => { counter.current += 1; return `${prefix}-${counter.current}` },
     today: () => '2026-10-25',
     openHere: () => {},
@@ -75,6 +82,13 @@ function write(title: string, statement: string, aspect: string) {
 }
 
 describe('the principles page (ADR-0041)', () => {
+  it('lists a topic\'s principles under the topic, apart from those above, wherever the topic is relevant (ADR-0042 §4)', () => {
+    renderShell(<Harness initial={blank} steps={[]} topics={(scope) => (scope === 'acme' ? ['topics/security'] : [])} />)
+    expect(screen.getByRole('heading', { name: 'From Security (a topic relevant here)' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'From Organisation' })).toBeTruthy()
+    expect(screen.getByText('Least privilege')).toBeTruthy()
+  })
+
   it('writes a principle with a group made on the spot, in one step', async () => {
     const steps: Command[] = []
     renderShell(<Harness initial={blank} steps={steps} />)

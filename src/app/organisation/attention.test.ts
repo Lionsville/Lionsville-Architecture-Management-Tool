@@ -49,6 +49,15 @@ describe('attentionItems', () => {
     expect(items.map((item) => [item.id, item.page])).toEqual([['crm', undefined], ['ut-guild', 'operating'], ['rs-release', 'operating']])
   })
 
+  it('opens a topic\'s link to a scope that is not there in the catalogue, said in a sentence that names it (ADR-0042 §5)', () => {
+    const findings = new Map<string, Finding[]>([
+      ['topics/security', [finding({ key: 'check.relevantGone', scope: 'topics/security', id: 'billing', name: 'billing', fields: ['billing'] })]],
+    ])
+    expect(attentionItems(findings, [], [], '', s, scopeName)).toMatchObject([
+      { key: 'check.relevantGone', scope: 'topics/security', id: 'billing', page: 'topics', text: 'A link to billing, which is not there' },
+    ])
+  })
+
   it('says the operating model\'s own findings off the organisation\'s document, once each', () => {
     const operating = {
       unitTypes: [{ id: 'ut-guild', name: 'Guild', within: [], slots: [] }],

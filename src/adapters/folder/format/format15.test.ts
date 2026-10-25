@@ -137,6 +137,30 @@ describe('format 15: principles (ADR-0041 §14)', () => {
   })
 })
 
+describe('format 15: topics (ADR-0042 §7)', () => {
+  const links = [{ path: 'sales', from: '2026-01-01' }, { path: 'stock', from: '2025-01-01', until: '2025-12-31' }]
+  const topic = (): ScopeSnapshot => ({ ...bareScope('topics/security', 'Security', 'domain'), relevantTo: links })
+
+  it('keeps where a scope is relevant in its header, read back through the folder, the listing and a working file', async () => {
+    expect(scopeFromFolder(scopeFiles(topic()), 'topics/security')?.relevantTo).toEqual(links)
+    const root = new FakeDirectory('Architecture')
+    await plant(root, scopeFiles(topic()), 'topics/security/')
+    const listed = flattenScopes(await new FileSystemScopeStore(root).list()).find((one) => one.path === 'topics/security')
+    expect(listed?.relevantTo).toEqual(links)
+    const held = topic()
+    const opened = openDocumentBytes(workingFileBytes([held]), held)
+    expect(opened.ok && opened.scope.relevantTo).toEqual(links)
+  })
+
+  it('reads a scope that says nothing, or something that is not a list of links, as relevant nowhere', () => {
+    expect(scopeFromFolder(scopeFiles(customer()), 'customer')?.relevantTo).toBeUndefined()
+    const files = scopeFiles(topic()).map((file) => (file.path === SCOPE_FILE
+      ? { path: file.path, text: textOf(file).replace(/"relevantTo": \[[^\]]*\]/s, '"relevantTo": [{ "path": "sales", "from": "soon" }]') }
+      : file))
+    expect(scopeFromFolder(files, 'topics/security')?.relevantTo).toBeUndefined()
+  })
+})
+
 describe('a folder written at format 14', () => {
   it('is brought up to 15 by the pass: the headers turn, every other file stays as it was, and no scope moves', async () => {
     const before = exampleFiles(acmeLogistics as ExampleFolder).map((file) => at(14, file))

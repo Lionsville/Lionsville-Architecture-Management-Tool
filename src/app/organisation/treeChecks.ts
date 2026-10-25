@@ -61,6 +61,8 @@ export const FOUND_WHERE_OPEN: ReadonlySet<CheckKey> = new Set<CheckKey>([
 
 /** Where an instance is fixed: a scope opened on a page, or a person on the People page. */
 export type CheckPlace = { readonly scope: ScopePath; readonly page: InitialPage } | { readonly person: string } | { readonly home: ScopePath }
+  /** A topic, picked in the catalogue over the organisation's home (ADR-0042 §5). */
+  | { readonly topic: ScopePath }
 
 /** One finding, as the Checks page lists it. */
 export type CheckInstance = {
@@ -128,7 +130,9 @@ function fromTree(item: AttentionItem): CheckInstance {
         ? { scope: ROOT_SCOPE, page: { page: 'operating', id: item.id } }
         : item.page === 'home'
           ? { home: item.scope }
-          : { scope: item.scope, page: pageOfItem(item) }
+          : item.page === 'topics'
+            ? { topic: item.scope }
+            : { scope: item.scope, page: pageOfItem(item) }
   return {
     key: item.key, scope: item.scope, text: item.text, finding: item, id: `${item.key}|${item.scope}|${item.id}`, opens,
     // The home's own row id and kind word, so whatever pointed at a row of Needs attention finds it here.

@@ -30,6 +30,11 @@ describe('the Principles card (ADR-0041 §12)', () => {
     expect(principleCounts('elsewhere', principlesAt)).toEqual({ own: 0, inForce: 1 })
   })
 
+  it('counts a topic\'s principles in force where the topic is relevant, once (ADR-0042 §4)', () => {
+    const withTopic = (path: string) => (path === 'topics/security' ? { principles: [one('sec-1'), one('sec-2')], groups: [] } : principlesAt(path))
+    expect(principleCounts('acme/rail', withTopic, ['topics/security', 'acme'])).toEqual({ own: 2, inForce: 6 })
+  })
+
   it('says how many, and opens the page', () => {
     const onOpen = vi.fn()
     renderShell(<PrinciplesCard at="acme/rail" principlesAt={principlesAt} onOpen={onOpen} s={translator('en')} />)

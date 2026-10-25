@@ -3148,7 +3148,7 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles',
+            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics',
           ],
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },

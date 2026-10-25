@@ -1,6 +1,8 @@
 # ADR-0042 — A topic is a scope that is relevant to other scopes, by dated links
 
-* Status: accepted, 25 October 2026; not yet built (3.8.0)
+* Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
+  the topic, its links, the catalogue, the homes and the checks (§1, §3–§5,
+  §7); the topics place's setting (§2) and the agent's tools (§6) not yet built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §1 (every scope is the same document, nested; the label
@@ -127,3 +129,62 @@ under the topics place.
   topic's owners' call.
 * Neutral: nothing about a topic is new storage: a scope, and one field on
   its record.
+
+## As built, 25 October 2026: the topic, its links, the catalogue and the homes
+
+**What makes a topic** (`projects/topics.ts`) is said once and read by
+every screen: a scope filed under the topics place — the place itself is
+not one — or one whose `relevantTo` says anything, and every scope under
+one of those. A link holds from its first day to its last, both included.
+Where a topic is relevant on a day is its own links that hold then and those
+of every topic it is under; the topics in force at a scope are those
+relevant to it or to a scope above it.
+
+**One step, not four commands** (§6). A link added, ended, given other days
+or removed is the topic's `scope.describe` with `relevantTo` as it is to be,
+worked out again over the topic as it stands and written under the topic's
+rights (`app/units/writeIn.ts`); the four names of §6 are the agent's, which
+land this step. A second link to a scope that a link already holds, or will,
+is not added; an ended one is history, and the scope may be linked again.
+A link ended before it began never held, and goes instead.
+
+**The × on a home's chip** stops the link from today: its last day is
+yesterday, so the chip goes the moment it is pressed, and a link made today
+never held and goes. It is offered only on a link the topic says itself —
+not one a subtopic has through its topic — and only to a person who may
+change the topic; *+ Topic…* offers only the topics they may change. A
+topic's own home says it is one and opens it in the catalogue.
+
+**The topics place** is its default so far, `topics` at the organisation,
+made as a domain named *Topics* the first time a topic is made. Every rule
+in `projects/topics.ts` takes the place as a parameter; the setting that
+names another (§2) is not yet built, and is built with the agent's tools.
+
+**The catalogue** is a page over the home it is opened from, by the
+*Topics* card on the organisation's home, a chip, a check, or `app.open`
+with `page: 'topics'` and the topic's path as `id`. A topic is named by its
+path. *Edit* writes its name and description as the settings dialog does
+and, where the topic it is under changes, moves it with the tree's own move,
+which carries every link that names what moved (§5). *Remove* is refused
+while the topic keeps a principle — any but one absorbed by another — a
+building block or a subtopic, and otherwise removes that one scope, after
+asking. The choices for a link are every scope that is not a topic and not
+the place; the organisation is one of them.
+
+**The tree's ↗ rows** open the topic's home, where it lives.
+
+**Principles in force** (§4): a topic's principles are listed on a scope's
+principles page under *From <topic> (a topic relevant here)*, apart from those
+of the scopes above, and counted on the scope's *Principles* card; a
+citation of one reads where the topic is in force on the day
+(`principleReadsAt`), so `check.citationGone` does not find it.
+
+**`check.relevantGone`** is a fix, found on the topic for each scope one of
+its links names — ended or not — that the tree no longer holds, and opened
+on the topic in the catalogue.
+
+**On disk** (§7) `relevantTo` is in `scope.json` beside `links`, read back
+where it is a list of links whose days are days, and as nothing otherwise;
+the listing carries it, so the homes read every topic without reading a
+scope's records.
+

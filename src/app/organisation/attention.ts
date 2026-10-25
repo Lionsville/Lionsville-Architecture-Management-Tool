@@ -72,7 +72,7 @@ export type AttentionItem = {
    * model's, where the finding is about a unit type or a responsibility,
    * which no board draws (ADR-0036 §2).
    */
-  page?: 'operating' | 'home' | 'principles' | 'record'
+  page?: 'operating' | 'home' | 'principles' | 'record' | 'topics'
   text: string
 }
 
@@ -85,6 +85,7 @@ const ON_THE_RECORD: ReadonlySet<string> = new Set(['check.citationGone'])
 /** Where a finding opens other than on the record it names as an element. */
 function pageOf(key: string): Pick<AttentionItem, 'page'> {
   if (ON_THE_OPERATING_PAGE.has(key)) return { page: 'operating' }
+  if (key === 'check.relevantGone') return { page: 'topics' }
   if (ABOUT_A_SCOPE.has(key)) return { page: 'home' }
   if (ON_THE_PRINCIPLES_PAGE.has(key)) return { page: 'principles' }
   return ON_THE_RECORD.has(key) ? { page: 'record' } : {}

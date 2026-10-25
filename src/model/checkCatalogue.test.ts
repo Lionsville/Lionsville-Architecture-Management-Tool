@@ -101,9 +101,11 @@ describe('the catalogue', () => {
       'reportingAmbiguous', 'reportingDangling', 'reportingLoop', 'scopeTypeGone', 'servedScopeGone', 'successorTooLate', 'unitMisplaced', 'unitTypeEnded', 'unitTypeNowhere',
       // A citation of a principle that is not there (ADR-0041 §10).
       'citationGone',
+      // A topic's link to a scope that is not there (ADR-0042 §5).
+      'relevantGone',
     ].sort())
     expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'principleUnused', 'proposal', 'scopeTypeUnserved'])
-    expect(of('review')).toHaveLength(CHECK_KEYS.length - 24)
+    expect(of('review')).toHaveLength(CHECK_KEYS.length - 25)
   })
 
   it('reads a key it does not know as nothing', () => {

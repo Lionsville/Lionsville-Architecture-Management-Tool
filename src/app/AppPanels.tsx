@@ -30,6 +30,7 @@ import { scopeDisplayName } from '../projects/scopeLabel'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { useServedBy } from './organisation/useServedBy'
+import type { TopicsStore } from './organisation/HomeTopics'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
@@ -229,10 +230,28 @@ function useHomeMarking(parts: ShellParts): CheckMarking {
   )
 }
 
+/**
+ * Where a home writes its topics (ADR-0042): the source's scopes, its index
+ * to move one by, and — once a step lands — the listing and the index read
+ * again, so every home draws the link from either end.
+ */
+function useHomeTopics(parts: ShellParts): TopicsStore {
+  const { repositories } = parts.props
+  const { refresh } = parts.organisation
+  const { notify } = parts.services.toasts
+  const written = useRef(parts.writes.treeChanged)
+  written.current = parts.writes.treeChanged
+  return useMemo(() => ({
+    scopes: repositories.scopes, index: repositories.index, notify,
+    written: () => { refresh(); written.current() },
+  }), [repositories, refresh, notify])
+}
+
 function Home({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, nav, findings, organisation } = parts
   const { openScopeAt } = nav
   const servedBy = useHomeServedBy(parts)
+  const topics = useHomeTopics(parts)
   const marking = useHomeMarking(parts)
   const { index, models } = parts.tree
   const treeRead = useMemo(() => ({ index, models }), [index, models])
@@ -284,6 +303,7 @@ function Home({ parts }: { parts: ShellParts }) {
           servedBy={servedBy}
           writable={writableFor(parts)}
           principlesAt={index.principlesAt}
+          topics={topics}
           today={parts.todayDay}
           language={prefs.language}
           s={s}

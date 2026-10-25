@@ -55,7 +55,7 @@ export const TREE_CHECK_KEYS = [
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
   'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
   'check.scopeTypeDisagrees', 'check.scopeTypeUnserved', 'check.scopeTypeGone', 'check.servedScopeGone',
-  'check.principleUnused', 'check.principleChafes', 'check.citationGone',
+  'check.principleUnused', 'check.principleChafes', 'check.citationGone', 'check.relevantGone',
 ] as const
 
 /** What the dates contradict (`checks.ts`, ADR-0009): `check.` and the finding's kind. */
@@ -394,6 +394,11 @@ const ENTRIES = {
   'check.citationGone': {
     name: 'check.name.citationGone', why: 'check.why.citationGone', how: 'check.how.citationGone',
     category: 'principles', weight: 'fix', actions: ['openRecord'],
+  },
+  // --- topics (ADR-0042 §5) ------------------------------------------------
+  'check.relevantGone': {
+    name: 'check.name.relevantGone', why: 'check.why.relevantGone', how: 'check.how.relevantGone',
+    category: 'organisation', weight: 'fix', actions: ['openScope'],
   },
 } satisfies { readonly [K in CheckKey]: Said<K> & Pick<CheckEntry, 'category' | 'weight' | 'actions'> }
 

@@ -39,6 +39,7 @@
  * `ScopeRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
+import type { TopicLink } from '../projects/topics'
 import type { ScopeKind } from '../projects/scope'
 import type { RecordLink } from '../projects/links'
 import type {
@@ -63,6 +64,8 @@ export type ScopeNode = {
   /** Its model's description. */
   description?: string
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   /** How many views it holds. Zero is ordinary: a domain need draw nothing. */
   diagrams: number
   /**

@@ -14,6 +14,7 @@ import type { PrinciplesPage as PrinciplesPageShape } from '../../principles/ui/
 import { PrinciplesProvider } from '../../principles/ui/PrinciplesContext'
 import { flattenScopes } from '../../projects/scope'
 import { scopeDisplayName } from '../../projects/scopeLabel'
+import { topicsInForce } from '../../projects/topics'
 import type { ScopePath } from '../../projects/scopePath'
 import { lazyPart } from '../../widgets/lazyPart'
 import { arrivingPage } from '../../widgets/Arriving'
@@ -32,10 +33,13 @@ export function ScopePrinciples({ parts, children }: { parts: WorkspaceParts; ch
   const listed = useMemo(() => flattenScopes(scopes), [scopes])
   const scopeLabel = useCallback((path: ScopePath) => scopeDisplayName(path, listed, groupName), [listed, groupName])
   const { onOpenScope } = props.navigation
+  const day = parts.today()
+  const topics = useCallback((path: ScopePath) => topicsInForce(path, listed, day), [listed, day])
   const access = usePrinciplesAccess({
     session: { model: session.model, indexed: session.indexed, dispatch: session.dispatch, readOnly },
     scope,
     index: props.tree.index,
+    topics,
     scopeLabel,
     makeId: props.shell.makeId,
     today: parts.today,

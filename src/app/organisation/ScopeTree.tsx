@@ -21,6 +21,7 @@
  * could not be pressed. They are sentences under the cards now
  * (`NeedsAttention`), each a way to the thing it is about.
  */
+import { Fragment } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -38,6 +39,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
 import { scopeTypeLabel } from './ScopeSettingsDialog'
 import type { TypeLink } from '../../projects/scopeType'
+import { TopicRows } from './TopicRows'
 import { foldsBelow } from './useScopeFolds'
 import type { ScopeFolds } from './useScopeFolds'
 
@@ -154,7 +156,7 @@ export function ScopeTree({
   const rows = visibleRows(tree, collapsed)
   // The top of the tree is the screen, so its children are the first column.
   const base = scopeSegments(tree.path).length
-  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  const rowProps = { onHome, onSettings, onDelete, typeName, typeLink, language, s, toggleCollapsed }
 
   if (rows.length === 0) {
     return (
@@ -168,120 +170,132 @@ export function ScopeTree({
     <Box data-guide="org.tree">
       {rows.map((scope) => {
         const depth = scopeSegments(scope.path).length - base - 1
-        const shut = collapsed.has(scope.path)
-        const mayWrite = writable(scope.path)
         return (
-          // The press anywhere on the row is the way home; the name is the
-          // button that carries it for a keyboard and a screen reader, and
-          // the controls at either end keep their press to themselves.
-          <Stack
-            key={scope.path}
-            direction="row"
-            spacing={0.5}
-            data-testid={`scope-${scope.path}`}
-            data-guide="org.tree.row"
-            data-depth={depth}
-            onClick={() => onHome(scope.path)}
-            sx={{
-              alignItems: 'center',
-              ml: depth * 3,
-              py: 0.5,
-              borderBottom: 1,
-              borderColor: 'divider',
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            {scope.children.length > 0 ? (
-              <Tooltip title={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}>
-                <IconButton
-                  size="small"
-                  aria-label={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}
-                  onClick={(event) => { event.stopPropagation(); toggleCollapsed(scope.path) }}
-                  data-testid={`fold-${scope.path}`}
-                  sx={{
-                    width: FOLD, height: FOLD, flex: '0 0 auto', color: 'text.secondary',
-                    '&:hover': { color: 'text.primary', bgcolor: 'action.selected' },
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      display: 'inline-flex',
-                      transform: shut ? 'rotate(-90deg)' : undefined,
-                      transition: 'transform 120ms',
-                    }}
-                  >
-                    <CaretIcon size={16} />
-                  </Box>
-                </IconButton>
-              </Tooltip>
-            ) : (
-              // The same width a fold takes, so the names of the leaves line
-              // up with the names of the scopes that have one.
-              <Box sx={{ width: FOLD, flex: '0 0 auto' }} />
-            )}
-
-            {/* `open-…` is the row's body, name and counts together: the id a
-                script pressed *Open* by, on what now does what *Open* did. */}
-            <Box sx={{ flex: 1, minWidth: 0 }} data-testid={`open-${scope.path}`}>
-              <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                {/* No handler of its own: its press is the row's. */}
-                <Button
-                  size="small"
-                  color="inherit"
-                  data-testid={`home-${scope.path}`}
-                  sx={{ fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.5, py: 0, textTransform: 'none' }}
-                >
-                  {scope.name}
-                </Button>
-                {(scope.unitTypeId !== undefined || scope.kind) && (
-                  <Chip
-                    size="small"
-                    label={scopeTypeLabel(scope, typeName, s)}
-                    color={typeWarns(typeLink?.(scope.path)) ? 'warning' : 'default'}
-                    variant={typeWarns(typeLink?.(scope.path)) ? 'outlined' : 'filled'}
-                    data-testid="scope-type" data-link={typeLink?.(scope.path)}
-                    sx={{ height: 16, fontSize: 10 }}
-                  />
-                )}
-              </Stack>
-              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                {metaOf(scope, s)} · {whenChanged(scope.updatedAt, language, s)}
-              </Typography>
-            </Box>
-
-            {mayWrite && (
-              <Tooltip title={s('group.openFor', { name: scope.name })}>
-                <Button
-                  size="small"
-                  color="inherit"
-                  onClick={(event) => { event.stopPropagation(); onSettings(scope) }}
-                  sx={quiet}
-                  aria-label={s('group.openFor', { name: scope.name })}
-                >
-                  {s('group.open')}
-                </Button>
-              </Tooltip>
-            )}
-            {/* Never the root, which is not a row here anyway — the guard is
-                stated so a tree that one day drew one cannot offer it. */}
-            {mayWrite && scope.path !== ROOT_SCOPE && (
-              <Tooltip title={s('picker.delete')}>
-                <IconButton
-                  size="small"
-                  aria-label={`${s('picker.delete')} ${scope.name}`}
-                  onClick={(event) => { event.stopPropagation(); onDelete(scope) }}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  ✕
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
+          <Fragment key={scope.path}>
+            <ScopeRow scope={scope} depth={depth} shut={collapsed.has(scope.path)} mayWrite={writable(scope.path)} {...rowProps} />
+            <TopicRows at={scope.path} depth={depth} s={s} />
+          </Fragment>
         )
       })}
     </Box>
+  )
+}
+
+type RowProps = Pick<ScopeTreeProps, 'onHome' | 'onSettings' | 'onDelete' | 'typeName' | 'typeLink' | 'language' | 's'> & { toggleCollapsed: (path: ScopePath) => void }
+
+/** One scope's row: its fold, its name and type, what it holds, and — for a person who may write it — its settings and removal. */
+function ScopeRow({ scope, depth, shut, mayWrite, onHome, onSettings, onDelete, typeName, typeLink, language, s, toggleCollapsed }: RowProps & {
+  scope: ScopeSummary; depth: number; shut: boolean; mayWrite: boolean
+}) {
+  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  return (
+    // The press anywhere on the row is the way home; the name is the
+    // button that carries it for a keyboard and a screen reader, and
+    // the controls at either end keep their press to themselves.
+    <Stack
+      direction="row"
+      spacing={0.5}
+      data-testid={`scope-${scope.path}`}
+      data-guide="org.tree.row"
+      data-depth={depth}
+      onClick={() => onHome(scope.path)}
+      sx={{
+        alignItems: 'center',
+        ml: depth * 3,
+        py: 0.5,
+        borderBottom: 1,
+        borderColor: 'divider',
+        cursor: 'pointer',
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+    >
+      {scope.children.length > 0 ? (
+        <Tooltip title={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}>
+          <IconButton
+            size="small"
+            aria-label={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}
+            onClick={(event) => { event.stopPropagation(); toggleCollapsed(scope.path) }}
+            data-testid={`fold-${scope.path}`}
+            sx={{
+              width: FOLD, height: FOLD, flex: '0 0 auto', color: 'text.secondary',
+              '&:hover': { color: 'text.primary', bgcolor: 'action.selected' },
+            }}
+          >
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                transform: shut ? 'rotate(-90deg)' : undefined,
+                transition: 'transform 120ms',
+              }}
+            >
+              <CaretIcon size={16} />
+            </Box>
+          </IconButton>
+        </Tooltip>
+      ) : (
+        // The same width a fold takes, so the names of the leaves line
+        // up with the names of the scopes that have one.
+        <Box sx={{ width: FOLD, flex: '0 0 auto' }} />
+      )}
+
+      {/* `open-…` is the row's body, name and counts together: the id a
+          script pressed *Open* by, on what now does what *Open* did. */}
+      <Box sx={{ flex: 1, minWidth: 0 }} data-testid={`open-${scope.path}`}>
+        <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+          {/* No handler of its own: its press is the row's. */}
+          <Button
+            size="small"
+            color="inherit"
+            data-testid={`home-${scope.path}`}
+            sx={{ fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.5, py: 0, textTransform: 'none' }}
+          >
+            {scope.name}
+          </Button>
+          {(scope.unitTypeId !== undefined || scope.kind) && (
+            <Chip
+              size="small"
+              label={scopeTypeLabel(scope, typeName, s)}
+              color={typeWarns(typeLink?.(scope.path)) ? 'warning' : 'default'}
+              variant={typeWarns(typeLink?.(scope.path)) ? 'outlined' : 'filled'}
+              data-testid="scope-type" data-link={typeLink?.(scope.path)}
+              sx={{ height: 16, fontSize: 10 }}
+            />
+          )}
+        </Stack>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+          {metaOf(scope, s)} · {whenChanged(scope.updatedAt, language, s)}
+        </Typography>
+      </Box>
+
+      {mayWrite && (
+        <Tooltip title={s('group.openFor', { name: scope.name })}>
+          <Button
+            size="small"
+            color="inherit"
+            onClick={(event) => { event.stopPropagation(); onSettings(scope) }}
+            sx={quiet}
+            aria-label={s('group.openFor', { name: scope.name })}
+          >
+            {s('group.open')}
+          </Button>
+        </Tooltip>
+      )}
+      {/* Never the root, which is not a row here anyway — the guard is
+          stated so a tree that one day drew one cannot offer it. */}
+      {mayWrite && scope.path !== ROOT_SCOPE && (
+        <Tooltip title={s('picker.delete')}>
+          <IconButton
+            size="small"
+            aria-label={`${s('picker.delete')} ${scope.name}`}
+            onClick={(event) => { event.stopPropagation(); onDelete(scope) }}
+            sx={{ color: 'text.secondary' }}
+          >
+            ✕
+          </IconButton>
+        </Tooltip>
+      )}
+    </Stack>
   )
 }
 

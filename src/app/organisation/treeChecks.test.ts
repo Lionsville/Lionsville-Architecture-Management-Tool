@@ -49,6 +49,7 @@ const ATTENTION: AttentionItem[] = [
   { key: 'check.drawingLinkMissing', kind: 'drawingLinkMissing', scope: 'retail', id: 'ctx:b', view: 'ctx', text: 'A shape points at nothing' },
   { key: 'check.unitTypeNowhere', kind: 'unitTypeNowhere', scope: '', id: 'ut-guild', page: 'operating', text: 'Guild sits nowhere' },
   { key: 'check.personOverloaded', kind: 'personOverloaded', scope: 'retail', id: 'pe-1', person: 'pe-1', text: 'Sara is over 100%' },
+  { key: 'check.relevantGone', kind: 'relevantGone', scope: 'topics/security', id: 'billing', page: 'topics', fields: ['billing'], text: 'A link to billing' },
 ]
 
 const all = () => treeInstances({ attention: ATTENTION, models, at: '', today: TODAY, index, home: ROOT, t })
@@ -61,6 +62,8 @@ describe('the findings at or under a home', () => {
       { scope: 'retail', page: { page: 'board', id: 'ctx' } },
       { scope: '', page: { page: 'operating', id: 'ut-guild' } },
       { person: 'pe-1' },
+      // A topic's link to nowhere is put right in the catalogue, on the topic (ADR-0042 §5).
+      { topic: 'topics/security' },
     ])
     expect(tree[0]!.attributes).toEqual({ 'data-testid': 'attention-retail-post', 'data-finding': 'unattributed' })
   })

@@ -70,6 +70,7 @@ export const EN = {
   'check.principleUnused': '{name} is accepted, and nothing cites it',
   'check.principleChafes': '{name} chafes in {count} observations',
   'check.citationGone': 'A record cites {name}, which does not read here',
+  'check.relevantGone': 'A link to {name}, which is not there',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -151,6 +152,8 @@ export const EN = {
   'check.short.principleChafes.other': '{count} principles that chafe',
   'check.short.citationGone.one': '{count} citation of a principle that is not there',
   'check.short.citationGone.other': '{count} citations of principles that are not there',
+  'check.short.relevantGone.one': '{count} link to a scope that is not there',
+  'check.short.relevantGone.other': '{count} links to scopes that are not there',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

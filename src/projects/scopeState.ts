@@ -26,6 +26,7 @@
  * are shaped as the model's commands are — a `type` and what it carries — so
  * a step is one vocabulary to whoever reads a log of them.
  */
+import type { TopicLink } from './topics'
 import type { StringKey } from '../i18n/strings'
 import type { UploadedLogo } from '../model'
 import type { Command } from '../model/commands'
@@ -65,6 +66,8 @@ export type ScopeDescription = {
   /** Who a drawing made here is addressed to, where that is not the scope's own name. */
   client?: string
   links?: RecordLink[]
+  /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
+  relevantTo?: TopicLink[]
   /** The view the scope opens on. */
   activeDiagramId?: string
   /** The marks uploaded here, for the cards that carry them. */
@@ -404,7 +407,7 @@ function replace(content: ScopeContent): Outcome {
 
 /** The keys a description may carry. */
 const DESCRIPTION_KEYS: Record<keyof ScopeDescription, true> = {
-  kind: true, unitTypeId: true, client: true, links: true, activeDiagramId: true, logoLibrary: true,
+  kind: true, unitTypeId: true, client: true, links: true, relevantTo: true, activeDiagramId: true, logoLibrary: true,
 }
 
 /**

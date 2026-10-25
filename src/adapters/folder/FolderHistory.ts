@@ -230,7 +230,7 @@ function recordsBetween(before: ScopeState | undefined, after: ScopeState): Reco
   const images: RecordKey[] = [...new Set([...is.keys(), ...was.keys()])]
     .filter((name) => !sameValue(was.get(name), is.get(name)))
     .map((name) => ({ kind: 'image', id: name }))
-  const said = (state: ScopeState | undefined) => [state?.kind, state?.client, state?.links, state?.activeDiagramId, state?.logoLibrary]
+  const said = (state: ScopeState | undefined) => [state?.kind, state?.client, state?.links, state?.relevantTo, state?.activeDiagramId, state?.logoLibrary]
   const scope = before === undefined || !sameValue(said(before), said(after))
   return [...inModel, ...images, ...(scope ? [SCOPE_RECORD] : [])]
 }

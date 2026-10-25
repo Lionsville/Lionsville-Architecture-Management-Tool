@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The pages over a home's cards: the two registers, the people register and
- * the Checks page — one at a time (`useHomePages`), each below the home's bar
+ * The pages over a home's cards: the two registers, the people register, the
+ * topics catalogue and the Checks page — one at a time (`useHomePages`), each below the home's bar
  * so the crumbs stay and the way home is the same as from every other page.
  *
  * The first view of a home is its cards, so each page's script arrives when
@@ -26,6 +26,7 @@ import { RegisterIcon } from '../../widgets/icons'
 import { lazyPart } from '../../widgets/lazyPart'
 import { arrivingPage } from '../../widgets/Arriving'
 import type { ChecksPage as ChecksPageShape } from './ChecksPage'
+import type { TopicsPage as TopicsPageShape } from './TopicsPage'
 import { OnePage } from './OrganisationCards'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
@@ -45,6 +46,10 @@ const TechnologyPage = lazyPart<ComponentProps<typeof TechnologyPageShape>>(
 /** The people register's page (ADR-0036), fetched the first time it is opened, as the registers are. */
 const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
   () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open, fallback: arrivingPage },
+)
+/** The topics catalogue (ADR-0042 §3), likewise: it reads the topics the home hands down. */
+const TopicsPage = lazyPart<ComponentProps<typeof TopicsPageShape>>(
+  () => import('./TopicsPage').then((held) => held.TopicsPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 /** The Checks page (ADR-0036, amended 11 October 2026), likewise. */
 const ChecksPage = lazyPart<ComponentProps<typeof ChecksPageShape>>(
@@ -112,6 +117,7 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
   const { openPage, asked, close } = pages
   const go = useCallback((place: CheckPlace) => {
     if ('person' in place) pages.open('people', place.person)
+    else if ('topic' in place) pages.open('topics', place.topic)
     else if ('home' in place) { close(); onHome(place.home) }
     else open(place.scope, place.page)
   }, [pages, open, close, onHome])
@@ -126,6 +132,10 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
         onOpen={onOpenRow} onOpenPage={onOpenRowPage} s={s} windowChrome={windowChrome}
       />
       <PeopleDoor open={openPage === 'people'} onClose={close} people={people} request={asked} s={s} windowChrome={windowChrome} />
+      <TopicsPage
+        open={openPage === 'topics'} onClose={close} {...(asked?.page === 'topics' && asked.select !== undefined ? { select: asked.select } : {})}
+        nonce={asked?.nonce ?? 0} windowChrome={windowChrome}
+      />
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} scopeName={scopeName} onGo={go}

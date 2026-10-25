@@ -131,6 +131,7 @@ function snapshotFor(
     ...(content.unitTypeId !== undefined ? { unitTypeId: content.unitTypeId } : {}),
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
+    ...(content.relevantTo !== undefined ? { relevantTo: content.relevantTo } : {}),
     ...(was?.snapshot?.unread ? { unread: was.snapshot.unread } : {}),
     carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library) } : {}) },
   }
@@ -189,6 +190,7 @@ export class FolderScopeRepository implements ScopeRepository {
         ...(summary.client !== undefined ? { client: summary.client } : {}),
         ...(summary.description !== undefined ? { description: summary.description } : {}),
         ...(summary.links !== undefined ? { links: summary.links } : {}),
+        ...(summary.relevantTo !== undefined ? { relevantTo: summary.relevantTo } : {}),
       }
     }
     const build = (node: FolderNode): ScopeNode => ({

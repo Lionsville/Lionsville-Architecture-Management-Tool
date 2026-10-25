@@ -186,6 +186,7 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.principleUnused': 'check.principleUnused',
   'check.principleChafes': 'check.principleChafes',
   'check.citationGone': 'check.citationGone',
+  'check.relevantGone': 'check.relevantGone',
 }
 
 /**
@@ -271,6 +272,7 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.principleUnused': { one: 'check.short.principleUnused.one', other: 'check.short.principleUnused.other' },
   'check.principleChafes': { one: 'check.short.principleChafes.one', other: 'check.short.principleChafes.other' },
   'check.citationGone': { one: 'check.short.citationGone.one', other: 'check.short.citationGone.other' },
+  'check.relevantGone': { one: 'check.short.relevantGone.one', other: 'check.short.relevantGone.other' },
 }
 
 /**
