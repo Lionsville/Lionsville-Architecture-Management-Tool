@@ -21,8 +21,11 @@ const workflow = (name: string) =>
 describe('the workflows', () => {
   it('audit the whole tree at high before the check, since everything bundled is a dev dependency', () => {
     const check = workflow('check.yml')
-    expect(check).toMatch(/- run: npm audit --audit-level=high\n\s+- run: npm run check/)
+    expect(check).toMatch(/- run: npm audit --audit-level=high\n\s+- run: npm run typecheck\n\s+- run: npm run lint/)
     expect(check).not.toMatch(/npm audit[^\n]*--omit=dev/)
+    // The tests in shards beside it, and `check` — what a release asks for — after both.
+    expect(check).toMatch(/- run: npm run test:runner -- --shard=\$\{\{ matrix\.shard \}\}\/2/)
+    expect(check).toMatch(/\n {2}check:\n {4}name: check\n {4}needs: \[static, tests\]/)
   })
 
   it('attest what a release publishes, with the sums it wrote, and may', () => {

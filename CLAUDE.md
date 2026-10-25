@@ -67,7 +67,13 @@ with its licence and why; every shipped licence in the allowed set or a named
 exception; a lockfile of registry packages with hashes. A new dependency fails
 it until its line is written.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
-reviewer step. It is fast on purpose so you run it constantly instead of
+reviewer step. **GitHub's runner runs the lean set**, what `npm run
+check:runner` runs here (`.github/workflows/check.yml`: the audit, the
+typecheck and the lint in one job, the tests in two shards beside it): the
+tests without coverage and without the heavy files listed in
+`build/runnerTests.ts` — the app's journeys, the canvas's and the pages'
+integration suites — in about five minutes. Everything runs here before a
+push. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
 
 ```bash

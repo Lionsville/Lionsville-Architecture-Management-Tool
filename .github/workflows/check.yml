@@ -30,8 +30,13 @@ env:
   NODE_VERSION: '26'
 
 jobs:
-  check:
-    name: check
+  # **The runner's set, about five minutes** (25 October 2026): the audit, the
+  # typecheck and the lint in one job, and the tests in two shards beside it —
+  # without coverage and without the files that run on a developer's machine
+  # only (`build/runnerTests.ts`). `npm run check` and `npm run verify`,
+  # everything, run there before a push. `check` is the one a release asks
+  # for (`release.yml`): it passes only where the three before it did.
+  static:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,4 +51,28 @@ jobs:
       # audit nothing here. The whole tree, then, and a high finding fails the
       # check the way a red test does.
       - run: npm audit --audit-level=high
-      - run: npm run check
+      - run: npm run typecheck
+      - run: npm run lint
+
+  tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run test:runner -- --shard=${{ matrix.shard }}/2
+
+  check:
+    name: check
+    needs: [static, tests]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "The audit, the typecheck, the lint and both shards of the tests passed."

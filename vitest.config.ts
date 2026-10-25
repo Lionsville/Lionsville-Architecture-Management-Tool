@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { LOCAL_ONLY } from './build/runnerTests'
 import react from '@vitejs/plugin-react'
 
 // Every test in the repository, in one runner, with one convention.
@@ -36,7 +37,18 @@ export default defineConfig({
     // loop whose whole value is that it takes a few.
     // The real-browser tests likewise (`vitest.browser.config.ts`): they start
     // Chromium and WebKit, and run as a gate of their own.
-    exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.perf.test.{ts,tsx}', 'src/**/*.browser.test.{ts,tsx}'],
+    // On GitHub's runner (`npm run check:runner`, `LVARCH_RUNNER=lean`), the
+    // files that run on a developer's machine only (`build/runnerTests.ts`).
+    exclude: [
+      '**/node_modules/**', '**/dist/**', 'src/**/*.perf.test.{ts,tsx}', 'src/**/*.browser.test.{ts,tsx}',
+      ...(process.env.LVARCH_RUNNER === 'lean' ? LOCAL_ONLY : []),
+    ],
+    // A test asserts what is answered, never how fast — the perf step measures
+    // time — and GitHub's two-core runner runs one up to four times as long as
+    // a laptop: a live view drawn in 1.5 s here timed out there at 5 s (the
+    // check of 25 October 2026). A test that sets a limit of its own keeps it.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
     // The date tests were written against a fixed zone. Not optional, so it is
     // here rather than in front of a command someone has to remember.
     env: { TZ: 'UTC' },
