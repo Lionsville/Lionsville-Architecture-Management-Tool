@@ -3,9 +3,10 @@
 
 /**
  * A building block's *About* (ADR-0043 §8): its document — the element's
- * description, a chapter per usage context — read or written, opened on a
- * context's chapter where one was asked for; and the principles it cites,
- * read here and cited where the block is open, as any element's are.
+ * description, a chapter per usage context, read from the scope that keeps
+ * the block — read or written, opened on a context's chapter where one was
+ * asked for; and the principles it cites, read here and cited where the
+ * block is open, as any element's are.
  */
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { useEffect, useRef, useState } from 'react'
@@ -35,18 +36,40 @@ function useChapter(chapter: string | undefined, shown: boolean, onShown: () => 
   return read
 }
 
+/**
+ * The block's document, read from the scope that keeps it — the row is the
+ * index's, which carries no description — and read again whenever the tree
+ * is, so a step landed is what it says; `undefined` until then.
+ */
+function useDocument(block: string): { text: string | undefined; wrote: (text: string) => void } {
+  const access = useBlocks()
+  const [text, setText] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    if (!access) return
+    let current = true
+    // `document` says its own failure and answers `undefined`; it does not reject.
+    void access.document(block).then((read) => { if (current) setText(read) })
+    return () => { current = false }
+  }, [access, block])
+  return { text, wrote: setText }
+}
+
 export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void }) {
   const access = useBlocks()
   const { t } = useStrings()
   const { block, scope } = row
-  const document = block.description ?? ''
+  const document = useDocument(block.id)
   const [mode, setMode] = useState<'read' | 'edit'>('read')
-  const [draft, setDraft] = useState(document)
-  useEffect(() => { setDraft(document) }, [document])
-  const read = useChapter(chapter, mode === 'read', onChapterShown)
+  const [draft, setDraft] = useState('')
+  const read = useChapter(chapter, mode === 'read' && document.text !== undefined, onChapterShown)
   if (!access) return null
   const may = access.mayWrite(scope)
-  const keep = () => { if (draft !== document) access.update(block.id, { description: draft }) }
+  const keep = () => {
+    if (draft === document.text) return
+    access.update(block.id, { description: draft })
+    // Shown at once, and the blur that comes before the press on *Read* keeps it once.
+    document.wrote(draft)
+  }
   const cited = access.citationsOf(block.id)
   return (
     <Box sx={{ maxWidth: 860 }}>
@@ -56,10 +79,12 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
           <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_event, next: 'read' | 'edit' | null) => {
             if (!next) return
             if (next === 'read') keep()
+            else setDraft(document.text ?? '')
             setMode(next)
           }}>
             <ToggleButton value="read">{t('blocks.read')}</ToggleButton>
-            <ToggleButton value="edit" data-testid="block-document-edit">{t('blocks.edit')}</ToggleButton>
+            {/* Not before the document is read: a draft started from nothing would be saved over it. */}
+            <ToggleButton value="edit" disabled={document.text === undefined} data-testid="block-document-edit">{t('blocks.edit')}</ToggleButton>
           </ToggleButtonGroup>
         )}
       </Box>
@@ -69,7 +94,8 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
         </Box>
       ) : (
         <Box ref={read} sx={{ fontSize: 15, '& [data-lit]': { bgcolor: 'action.selected', transition: 'background-color 600ms' } }} data-testid="block-document">
-          {document.trim() ? <MarkdownView markdown={document} /> : <Typography color="text.secondary">{t('blocks.documentEmpty')}</Typography>}
+          {document.text === undefined ? null
+            : document.text.trim() ? <MarkdownView markdown={document.text} /> : <Typography color="text.secondary">{t('blocks.documentEmpty')}</Typography>}
         </Box>
       )}
       <Typography component="h2" sx={{ mt: 4, mb: 1, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary' }}>

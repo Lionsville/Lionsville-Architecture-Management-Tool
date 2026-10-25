@@ -21,6 +21,7 @@ import { formatAspectNumber, formatPrincipleNumber } from '../../model/principle
 import type { DesignElement } from '../../model/types'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import { readScope } from '../../projects/scopeAccess'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
@@ -120,10 +121,24 @@ export function blocksAccess(deps: BlocksDeps, version: number): BlocksAccess {
       const element: DesignElement = { id, kind: 'buildingBlock', name: name.trim(), lifecycle: 'live', isManaged: false, aspects: {} }
       return await land(deps, scope, () => [{ type: 'element.create', element }]) ? id : undefined
     },
+    document: async (block) => {
+      const row = read.block(block)
+      if (!row) return undefined
+      try {
+        const held = await readScope(deps.scopes, row.scope)
+        return held?.model.elements.find((one) => one.id === block)?.description ?? ''
+      } catch {
+        deps.notify(deps.s('blocks.documentUnread'), 'error')
+        return undefined
+      }
+    },
     update: (block, patch) => {
       const row = read.block(block)
       if (!row) return
-      void land(deps, row.scope, (held) => (held.model.elements.some((one) => one.id === block) ? [{ type: 'element.update', id: block, patch }] : undefined))
+      void land(deps, row.scope, (held) => {
+        const element = held.model.elements.find((one) => one.id === block)
+        return element ? [{ type: 'element.update', id: block, patch: typeof patch === 'function' ? patch(element) : patch }] : undefined
+      })
     },
     evaluate: async (block, scope, contexts, copyFrom) => {
       const row = read.block(block)

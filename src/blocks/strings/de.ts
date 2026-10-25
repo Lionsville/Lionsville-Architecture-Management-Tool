@@ -15,6 +15,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.document': 'Das Dokument des Bausteins',
   'blocks.documentIntro': 'Was der Baustein ist und warum, mit einem Kapitel je Nutzungskontext.',
   'blocks.documentEmpty': 'Noch nichts geschrieben.',
+  'blocks.documentUnread': 'Das Dokument konnte nicht gelesen werden.',
   'blocks.principles': 'Prinzipien, die er zitiert',
   'blocks.citesNone': 'Er zitiert noch kein Prinzip.',
   'blocks.citeWhereOpen': 'Ein Prinzip zitieren Sie am Baustein selbst, wo sein Bereich offen ist.',

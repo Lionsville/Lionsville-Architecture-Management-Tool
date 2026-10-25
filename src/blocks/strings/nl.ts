@@ -15,6 +15,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.document': 'Het document van de bouwsteen',
   'blocks.documentIntro': 'Wat de bouwsteen is en waarom, met een hoofdstuk per gebruikscontext.',
   'blocks.documentEmpty': 'Nog niets geschreven.',
+  'blocks.documentUnread': 'Het document kon niet worden gelezen.',
   'blocks.principles': 'Principes die hij aanhaalt',
   'blocks.citesNone': 'Hij haalt nog geen principe aan.',
   'blocks.citeWhereOpen': 'Een principe haal je aan op de bouwsteen zelf, waar zijn scope open is.',

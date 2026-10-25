@@ -17,7 +17,11 @@ import { createContext, useContext, type ReactNode } from 'react'
 import type { Evaluation } from '../../model/evaluation'
 import type { BlockCapability, DesignElement } from '../../model/types'
 
-/** A building block where it is kept. */
+/**
+ * A building block where it is kept, as the tree's index has it: without its
+ * document, which no index carries (`ports/OrganisationIndex`) and which is
+ * read from the scope that keeps it (`BlocksAccess.document`).
+ */
 export type BlockRow = { readonly scope: string; readonly block: DesignElement }
 
 /** A scope's evaluation of a block. */
@@ -58,8 +62,14 @@ export type BlocksAccess = {
   evaluateChoices(block: string): readonly ScopeChoice[]
   /** A new building block, kept in `scope`: its id once it is there. */
   create(scope: string, name: string): Promise<string | undefined>
-  /** A block's fields changed, as one step in the scope that keeps it. */
-  update(block: string, patch: BlockPatch): void
+  /** A block's document, read from the scope that keeps it; `undefined` where it could not be read, which the access has said. */
+  document(block: string): Promise<string | undefined>
+  /**
+   * A block's fields changed, as one step in the scope that keeps it — a
+   * patch, or one worked out from the block as that scope holds it, for a
+   * change to its document that must not be made over what a screen read.
+   */
+  update(block: string, patch: BlockPatch | ((held: DesignElement) => BlockPatch)): void
   /** An evaluation started for a scope, with the contexts that apply there, its ratings copied from another scope's where said. */
   evaluate(block: string, scope: string, contexts: readonly string[], copyFrom?: string): Promise<boolean>
   /** A scope's evaluation changed, as one step there. */

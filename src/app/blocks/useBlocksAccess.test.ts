@@ -73,6 +73,30 @@ describe('the building blocks over a home', () => {
     await vi.waitFor(() => expect(notify).toHaveBeenCalledWith(s('command.badBlock'), 'error'))
   })
 
+  it('reads a block\'s document from the scope that keeps it, and writes a chapter onto that one', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, 'topics/integration', {
+      name: 'Integration',
+      elements: [{ id: 'blk-gw', kind: 'buildingBlock', name: 'Gateway', lifecycle: 'live', isManaged: false, aspects: {}, description: 'What it is.\n' }],
+    })
+    const { access } = await wired(repositories)
+    // The index carries no document; the scope does.
+    expect(access.block('blk-gw')?.block.description).toBeUndefined()
+    expect(await access.document('blk-gw')).toBe('What it is.\n')
+    access.update('blk-gw', (held) => ({ description: `${held.description ?? ''}\n## Regulators\n` }))
+    await vi.waitFor(async () => expect(await (await again(repositories)).document('blk-gw')).toBe('What it is.\n\n## Regulators\n'))
+    expect(await access.document('blk-none')).toBeUndefined()
+  })
+
+  it('says a document that could not be read', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, 'topics/integration', { name: 'Integration', elements: [{ id: 'blk-gw', kind: 'buildingBlock', name: 'Gateway', lifecycle: 'live', isManaged: false, aspects: {} }] })
+    const notify = vi.fn()
+    const { access } = await wired(repositories, { notify, scopes: { ...repositories.scopes, state: () => Promise.reject(new Error('down')) } })
+    expect(await access.document('blk-gw')).toBeUndefined()
+    expect(notify).toHaveBeenCalledWith(s('blocks.documentUnread'), 'error')
+  })
+
   it('evaluates a block in a scope, copies the ratings into another, and proposes the decision there', async () => {
     const repositories = memoryRepositories()
     await place(repositories, '', { name: 'Acme', principles: [least] })

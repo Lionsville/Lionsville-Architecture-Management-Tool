@@ -149,7 +149,8 @@ function ContextDialog({ row, onClose }: { row: BlockRow; onClose: () => void })
   const add = () => {
     const context: UsageContext = { id: access.makeId('cx'), name: name.trim(), ...(description.trim() ? { description: description.trim() } : {}), needs: {} }
     const contexts = [...(row.block.contexts ?? []), context]
-    access.update(row.block.id, { contexts, description: withChapters(row.block.description ?? '', [context]) })
+    // The chapter goes onto the document the scope keeps: the row is the index's, which carries none.
+    access.update(row.block.id, (held) => ({ contexts, description: withChapters(held.description ?? '', [context]) }))
     onClose()
   }
   return (

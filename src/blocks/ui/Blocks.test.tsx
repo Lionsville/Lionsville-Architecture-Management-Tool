@@ -41,8 +41,11 @@ const SALES: Evaluation = {
 
 const NAMES: Record<string, string> = { '': 'Acme', 'topics/integration': 'Integration', sales: 'Sales', stock: 'Stock' }
 
+/** The block as the tree's index has it: without its document, which is read from its scope. */
+const { description: _document, ...INDEXED } = GATEWAY
+
 function accessOver(over: Partial<BlocksAccess> = {}): BlocksAccess {
-  const row: BlockRow = { scope: 'topics/integration', block: GATEWAY }
+  const row: BlockRow = { scope: 'topics/integration', block: INDEXED }
   const evaluations: EvaluationRow[] = [{ scope: 'sales', evaluation: SALES }]
   return {
     version: 1,
@@ -58,7 +61,7 @@ function accessOver(over: Partial<BlocksAccess> = {}): BlocksAccess {
     elementChoices: () => [{ id: 'app-broker', name: 'Broker' }],
     placeChoices: () => [{ path: 'topics/integration', name: 'Integration', depth: 0, topic: true }, { path: '', name: 'Acme', depth: 0 }],
     evaluateChoices: () => [{ path: 'stock', name: 'Stock', depth: 1 }],
-    create: vi.fn(async () => 'blk-new'), update: vi.fn(), evaluate: vi.fn(async () => true), updateEvaluation: vi.fn(), removeEvaluation: vi.fn(),
+    document: vi.fn(async () => GATEWAY.description), create: vi.fn(async () => 'blk-new'), update: vi.fn(), evaluate: vi.fn(async () => true), updateEvaluation: vi.fn(), removeEvaluation: vi.fn(),
     propose: vi.fn(async () => 'adr-9'), openDecision: vi.fn(), openBlock: vi.fn(),
     makeId: (prefix) => `${prefix}-new`, today: () => '2026-11-02',
     ...over,
@@ -124,10 +127,12 @@ describe('a building block\'s page', () => {
     fireEvent.click(screen.getByTestId('block-add-context'))
     fireEvent.change(screen.getByTestId('context-name'), { target: { value: 'Regulators' } })
     fireEvent.click(screen.getByTestId('context-add'))
-    expect(access.update).toHaveBeenCalledWith('blk-gw', expect.objectContaining({
+    // Worked out over the document the scope keeps, which the page's row does not carry.
+    const patch = vi.mocked(access.update).mock.lastCall![1]
+    expect(typeof patch === 'function' ? patch(GATEWAY) : patch).toEqual({
       contexts: [...GATEWAY.contexts!, { id: 'cx-new', name: 'Regulators', needs: {} }],
       description: 'What it is.\n\n## Many partners\n\nEvery day.\n\n## Regulators\n',
-    }))
+    })
   })
 
   it('adds a capability that answers to a principle\'s aspect, and takes one off its contexts\' needs too', () => {
@@ -144,11 +149,37 @@ describe('a building block\'s page', () => {
     })
   })
 
-  it('reads its document, opens a context\'s chapter from its head, and lists the principles it cites', () => {
-    page(accessOver())
+  it('reads its document, opens a context\'s chapter from its head, and lists the principles it cites', async () => {
+    const access = accessOver()
+    page(access)
     fireEvent.click(screen.getByTestId('context-head-cx-partners'))
-    expect(within(screen.getByTestId('block-document')).getByRole('heading', { name: 'Many partners' })).toBeTruthy()
+    expect(await within(screen.getByTestId('block-document')).findByRole('heading', { name: 'Many partners' })).toBeTruthy()
+    expect(access.document).toHaveBeenCalledWith('blk-gw')
     expect(screen.getByText('PR-0001 Least privilege')).toBeTruthy()
+  })
+
+  it('writes its document from what was read, and reads what was written on going back', async () => {
+    const access = accessOver()
+    page(access)
+    fireEvent.click(screen.getByTestId('block-tab-about'))
+    const edit = screen.getByTestId('block-document-edit')
+    await waitFor(() => expect(edit).toHaveProperty('disabled', false))
+    fireEvent.click(edit)
+    const source = screen.getByRole('textbox', { name: s('blocks.document') })
+    expect(source).toHaveProperty('value', GATEWAY.description)
+    fireEvent.change(source, { target: { value: 'Written again.' } })
+    fireEvent.blur(source)
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.read') }))
+    expect(screen.getByTestId('block-document').textContent).toBe('Written again.')
+    // The blur kept it; the press on *Read* had nothing more to keep.
+    expect(access.update).toHaveBeenCalledTimes(1)
+    expect(access.update).toHaveBeenCalledWith('blk-gw', { description: 'Written again.' })
+  })
+
+  it('offers no editing of its document before it has been read', () => {
+    page(accessOver({ document: () => new Promise(() => {}) }))
+    fireEvent.click(screen.getByTestId('block-tab-about'))
+    expect(screen.getByTestId('block-document-edit')).toHaveProperty('disabled', true)
   })
 
   it('lists its solutions with where each is weighed and chosen, and the elements that are it', () => {

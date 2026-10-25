@@ -13,6 +13,7 @@ export const EN = {
   'blocks.document': 'The building block\'s document',
   'blocks.documentIntro': 'What the block is and why, with a chapter per usage context.',
   'blocks.documentEmpty': 'Nothing written yet.',
+  'blocks.documentUnread': 'The document could not be read.',
   'blocks.principles': 'Principles it cites',
   'blocks.citesNone': 'It cites no principle yet.',
   'blocks.citeWhereOpen': 'A principle is cited on the block itself, where its scope is open.',
