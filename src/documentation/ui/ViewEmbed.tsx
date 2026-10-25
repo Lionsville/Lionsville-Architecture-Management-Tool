@@ -7,13 +7,16 @@
  * A drawing is its picture, the same bytes a drawing view asks for, with one
  * transparent button per shape that points at an element. Choosing a button
  * opens that element through the destination the host was given — the one
- * `app.open` takes for an element. A view of another kind has no picture of
- * its own yet, and a view that is not in this scope says so. Both keep the
- * caption.
+ * `app.open` takes for an element. Every other kind is drawn live, read-only,
+ * by the host's own drawing of it (`live`), so it is the view as it is now in
+ * the reader's theme; where the host draws none, it says it has no picture.
+ * Under every view a caption names it and opens it. A view that is not in
+ * this scope says so.
  */
 import { createContext, useCallback, useContext, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
+import Link from '@mui/material/Link'
 import type { DesignDiagram } from '../../model/types'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { ViewSource } from '../viewRef'
@@ -27,6 +30,10 @@ type ViewEmbeds = {
   /** Open an element the way `app.open` opens one: `{ page: 'element', id }`. */
   openElement(elementId: string): void
   nameOf(elementId: string): string
+  /** A view drawn live and read-only, where the host can draw its kind. */
+  live?(diagram: DesignDiagram): ReactNode
+  /** Open the view itself, from the caption under it. */
+  openView?(diagramId: string): void
 }
 
 const NONE: ViewEmbeds = {
@@ -38,11 +45,13 @@ const NONE: ViewEmbeds = {
 
 const ViewEmbedsContext = createContext<ViewEmbeds>(NONE)
 
-export function ViewEmbedsProvider({ diagrams, bytesAt, openElement, nameOf, children }: {
+export function ViewEmbedsProvider({ diagrams, bytesAt, openElement, nameOf, live, openView, children }: {
   diagrams: readonly DesignDiagram[]
   bytesAt: (address: string) => Promise<PictureBytes | undefined>
   openElement: (elementId: string) => void
   nameOf?: (elementId: string) => string
+  live?: (diagram: DesignDiagram) => ReactNode
+  openView?: (diagramId: string) => void
   children: ReactNode
 }) {
   const byId = useMemo(() => {
@@ -53,8 +62,8 @@ export function ViewEmbedsProvider({ diagrams, bytesAt, openElement, nameOf, chi
   const view = useCallback((id: string) => byId.get(id), [byId])
   const named = useCallback((id: string) => nameOf?.(id) ?? id, [nameOf])
   const value = useMemo<ViewEmbeds>(
-    () => ({ view, bytesAt, openElement, nameOf: named }),
-    [view, bytesAt, openElement, named],
+    () => ({ view, bytesAt, openElement, nameOf: named, ...(live ? { live } : {}), ...(openView ? { openView } : {}) }),
+    [view, bytesAt, openElement, named, live, openView],
   )
   return <ViewEmbedsContext.Provider value={value}>{children}</ViewEmbedsContext.Provider>
 }
@@ -80,10 +89,32 @@ export function ViewEmbed({ source, caption }: { source: ViewSource; caption: st
   if (!('id' in source) || !diagram) {
     return <ViewWords caption={caption} words={t('doc.viewMissing')} testId="view-missing" />
   }
-  if (diagram.kind !== 'drawing') {
-    return <ViewWords caption={caption} words={t('doc.viewNoPicture')} testId="view-no-picture" />
-  }
-  return <DrawingEmbed diagram={diagram} caption={caption} embeds={embeds} />
+  const drawn = diagram.kind === 'drawing'
+    ? <DrawingEmbed diagram={diagram} caption={caption} embeds={embeds} />
+    : embeds.live?.(diagram)
+  if (!drawn) return <ViewWords caption={caption} words={t('doc.viewNoPicture')} testId="view-no-picture" />
+  return (
+    <Box component="span" data-testid="view-live" data-view={diagram.id} sx={{ display: 'block', my: '0.8em' }}>
+      <Box component="span" sx={{ display: 'block', border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', bgcolor: 'background.default' }}>{drawn}</Box>
+      <ViewCaption diagram={diagram} caption={caption} onOpen={embeds.openView} />
+    </Box>
+  )
+}
+
+/** The line under a view: what it is called, and the way to it. */
+function ViewCaption({ diagram, caption, onOpen }: { diagram: DesignDiagram; caption: string; onOpen: ((id: string) => void) | undefined }) {
+  const { t } = useStrings()
+  const name = caption || diagram.name
+  return (
+    <Box component="span" sx={{ display: 'flex', gap: 1, alignItems: 'baseline', mt: 0.5, fontSize: '0.8em', color: 'text.secondary' }}>
+      <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{name}</Box>
+      {onOpen && (
+        <Link component="button" type="button" underline="hover" onClick={() => onOpen(diagram.id)} data-testid="view-open" sx={{ fontSize: 'inherit', whiteSpace: 'nowrap' }}>
+          {t('doc.viewOpen', { name: diagram.name })}
+        </Link>
+      )}
+    </Box>
+  )
 }
 
 function DrawingEmbed({ diagram, caption, embeds }: {

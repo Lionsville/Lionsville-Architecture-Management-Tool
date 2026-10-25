@@ -55,6 +55,7 @@ import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
+import { useLiveViews } from './LiveViews'
 import { CommentsProvider } from '../comments/ui/CommentsContext'
 import { RecordChangesProvider } from '../comments/ui/RecordChanges'
 import { useRecordChangesAccess } from './history/useRecordChangesAccess'
@@ -125,8 +126,15 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
     (id: string) => session.model.elements.find((element) => element.id === id)?.name ?? id,
     [session.model.elements],
   )
+  // The view itself, from the caption under it in a document: the page the document was on steps out of the way.
+  const openView = useCallback((id: string) => {
+    const now = latest.current
+    showOn(now.pages, now.showElement.show, now.requests.openDocumentation, now.requests.leaveDocumentation)({ scope: now.path, page: 'board', id })
+    now.pages.closePages()
+  }, [])
+  const live = useLiveViews(parts)
   return (
-    <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf}>
+    <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf} live={live} openView={openView}>
       <ScopeComments parts={parts}><ScopeChanges parts={parts}><ScopePrinciples parts={parts}><ScopeBlockFacts parts={parts}>{children}</ScopeBlockFacts></ScopePrinciples></ScopeChanges></ScopeComments>
     </ViewEmbedsProvider>
   )

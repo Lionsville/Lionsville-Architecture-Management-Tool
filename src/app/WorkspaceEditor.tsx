@@ -189,7 +189,7 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
  * the active diagram and its own selection, and this draws the page where
  * the canvas would be. Rebuilt per render, as the editor's other props are.
  */
-function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
+export function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
   switch (diagram.kind) {
     case 'sheet':
       return sheetPage(parts, diagram, view)
