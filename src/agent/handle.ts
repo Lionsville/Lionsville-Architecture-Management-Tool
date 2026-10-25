@@ -134,6 +134,12 @@ export type SessionView = {
   /** The person the agent acts for, as the register says *you* (ADR-0037 §8). Absent where nobody is said. */
   me?(): PersonId | undefined
   /**
+   * The account using the app, where the source has accounts (ADR-0038,
+   * amended §10): who an observation the agent records is recorded by, and
+   * whose are *mine*. Absent on a source with no accounts.
+   */
+  account?(): { readonly id: string; readonly name: string } | undefined
+  /**
    * Whether that person may remove other people's comments in the scope the
    * call writes (ADR-0037 §5): what a source with accounts says, as
    * `ProviderParts.comments.mayModerate` says it to the screens. Absent,
@@ -317,6 +323,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
     ancestorDecisions: session.ancestorDecisions(),
     tree: session.tree,
     register,
+    ...whoOf(session),
   }
   if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions, view.scopePath)
   if (request.tool === RESOURCE_READ) return readResource(view, request.args, session.tree)
@@ -664,6 +671,14 @@ function clientOf(shell: ShellView | undefined): Partial<WriteView> {
   return client !== undefined ? { client } : {}
 }
 
+/** Who the agent acts for, as the session says: the person, and the account where the source has accounts. */
+function whoOf(session: SessionView): Pick<ReadView, 'me' | 'account'> {
+  return {
+    ...(session.me ? { me: session.me } : {}),
+    ...(session.account ? { account: session.account } : {}),
+  }
+}
+
 function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteView {
   return {
     model: session.indexed(),
@@ -680,7 +695,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     ...(session.standInFor ? { standInFor: session.standInFor } : {}),
     ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...(session.people ? { people: session.people } : {}),
-    ...(session.me ? { me: session.me } : {}),
+    ...whoOf(session),
     ...(session.mayModerate ? { mayModerate: session.mayModerate } : {}),
     ...over,
   }

@@ -23,6 +23,7 @@ import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { CHECK_CATALOGUE } from '../model/checkCatalogue'
 import { MODEL_WORDS } from '../model/words'
+import { Driving } from './driving'
 import { handle } from './handle'
 import type { SessionView } from './handle'
 import { ABOUT_THE_APP, ON_THE_REGISTER, ON_THE_TREE, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
@@ -436,5 +437,18 @@ describe('resources with a path', () => {
   it('refuses a path the tree has no scope at, and a URI with no element or decision in it', async () => {
     expect(refusal(await handle({ id: '1', tool: RESOURCE_READ, args: { uri: 'lvarch://acme/nowhere/element/x/description' } }, session()))).toBe('agent.unknownScope')
     expect(refusal(await handle({ id: '1', tool: RESOURCE_READ, args: { uri: 'lvarch://acme/retail' } }, session()))).toBe('agent.unknownId')
+  })
+})
+
+describe('the account a session says (ADR-0038, amended §10)', () => {
+  it('records an agent\'s observation by it, via the client, and lists it as mine', async () => {
+    const held = session({ account: () => ({ id: 'acc-1', name: 'Ada' }) })
+    const shell = { screen: () => ({}), open: () => {}, client: () => 'An agent', driving: new Driving() } as never
+    const recorded = parsed(await handle({ id: '1', tool: 'observation.record', args: { title: 'Seen twice', where: 'Desk', by: 'W.S.' } }, held, shell))
+    expect(recorded).toMatchObject({ recordedBy: { name: 'Ada', via: 'An agent' } })
+    const kept = Object.values(held.model().observations ?? {}).find((one) => one.title === 'Seen twice')
+    expect(kept?.recordedBy).toEqual({ name: 'Ada', account: 'acc-1', via: 'An agent' })
+    const mine = parsed(await handle({ id: '2', tool: 'observations.list', args: { recordedBy: 'me' } }, held))
+    expect((mine.observations as { title: string }[]).map((one) => one.title)).toEqual(['Seen twice'])
   })
 })
