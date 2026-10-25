@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  endedOn, isTopic, isTopicLinkList, linkHolds, principleReadsAt, readdressLinks, relevantPlaces, stoppedToday, TOPICS_PLACE,
+  choosableScopes, endedOn, isTopic, isTopicLinkList, linkHolds, principleReadsAt, readdressLinks, relevantPlaces, stoppedToday, TOPICS_PLACE,
   topicFindings, topicRowsAt, topicsInForce, topicsOf, topicsRelevantAt, withDays, withLink, withoutLink,
 } from './topics'
 import type { TopicLink, TopicNode } from './topics'
@@ -123,3 +123,28 @@ describe('what the topics contradict', () => {
     expect(topicFindings(TREE)).toEqual([])
   })
 })
+
+describe('the scopes a picker offers', () => {
+  const label = (path: string) => path || 'Acme'
+  const nodes = [
+    { path: '' }, { path: 'operations' }, { path: 'operations/retail' },
+    { path: 'topics' }, { path: 'topics/integration', relevantTo: [] }, { path: 'topics/integration/events' },
+  ]
+
+  it('lists every part of the organisation at its depth, and no topic and not the topics’ place', () => {
+    expect(choosableScopes(nodes, label, false)).toEqual([
+      { path: '', name: 'Acme', depth: 0 },
+      { path: 'operations', name: 'operations', depth: 1 },
+      { path: 'operations/retail', name: 'operations/retail', depth: 2 },
+    ])
+  })
+
+  it('puts the topics first where they may be chosen, counted from their place', () => {
+    expect(choosableScopes(nodes, label, true).slice(0, 3)).toEqual([
+      { path: 'topics/integration', name: 'topics/integration', depth: 0, topic: true },
+      { path: 'topics/integration/events', name: 'topics/integration/events', depth: 1, topic: true },
+      { path: '', name: 'Acme', depth: 0 },
+    ])
+  })
+})
+

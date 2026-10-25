@@ -9,7 +9,7 @@
  * reported filled in, and Copy going through the seam.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { translator } from '../../i18n'
 import type { AgentServerStatus } from '../../platform/agentServer'
 import { ConnectAgentDialog } from './ConnectAgentDialog'
@@ -40,6 +40,13 @@ describe('ConnectAgentDialog', () => {
     expect(screen.getByTestId('agent-desktop-only')).toBeDefined()
     expect(screen.queryByLabelText('Accept agent connections')).toBeNull()
     expect(screen.queryByTestId('agent-recipe')).toBeNull()
+  })
+
+  it('links to where the desktop app is downloaded, where it is needed (ADR-0044 §6)', () => {
+    renderShell(<ConnectAgentDialog {...base} status={undefined} />)
+    const link = within(screen.getByTestId('agent-desktop-only')).getByTestId('agent-download')
+    expect(link.getAttribute('href')).toBe('https://architecture.lionsville.nl/download')
+    expect(link.getAttribute('target')).toBe('_blank')
   })
 
   it('offers the switch on the desktop, off, with no recipe yet', () => {

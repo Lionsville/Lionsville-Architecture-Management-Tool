@@ -46,13 +46,13 @@
  * know which language the renderer settled on; a native menu in English is
  * the price of not building a channel for it.
  */
-import { Menu, MenuItem, webContents } from 'electron'
+import { Menu, MenuItem, shell, webContents } from 'electron'
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, goMenu, preferencesPlacement, titleCase,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
 import type { ThemeMode } from '../../src/platform/theme'
@@ -194,14 +194,16 @@ function editMenuFor(): MenuItemConstructorOptions[] {
 }
 
 /**
- * Help: the two commands, then Check for Updates…, main's own, in one place on
- * every platform — and only where this build checks for updates at all
- * (`helpMenuTail`). Without `onCheck` the item and the rule above it are both
- * absent, rather than an item that calls nothing.
+ * Help: the two commands and the product's site (ADR-0044 §6), then Check for
+ * Updates…, main's own, in one place on every platform — and only where this
+ * build checks for updates at all (`helpMenuTail`). Without `onCheck` the item
+ * and the rule above it are both absent, rather than an item that calls
+ * nothing.
  */
 function helpMenuFor(onCheck?: () => void): MenuItemConstructorOptions[] {
   return [
     ...HELP_MENU.map((entry): MenuItemConstructorOptions => (entry.kind === 'item' ? itemFor(entry) : { type: 'separator' })),
+    { label: label('menu.website'), click: () => { void shell.openExternal(WEBSITE_LINK.href) } },
     ...helpMenuTail(onCheck !== undefined).map((entry): MenuItemConstructorOptions => (
       entry.kind === 'separator' ? { type: 'separator' } : { label: label('menu.checkForUpdates'), click: onCheck }
     )),

@@ -639,6 +639,30 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()
   })
 
+  it('goes back to reading from ‹, × or Escape while a record is edited, and closes on the next press (ADR-0044 §2)', () => {
+    const onClose = vi.fn()
+    mount({ onClose })
+    const edit = () => {
+      fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+      rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+      fireEvent.click(screen.getByTestId('picture-menu-edit'))
+      expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')
+      expect(screen.getByTestId('page-back').getAttribute('aria-label')).toBe('Back to reading')
+    }
+    for (const leave of [
+      () => fireEvent.click(screen.getByTestId('page-back')),
+      () => fireEvent.click(screen.getByTestId('page-close')),
+      () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }),
+    ]) {
+      edit()
+      leave()
+      expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()
+    }
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('page-close'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('makes a link stronger or weaker, or takes it away, from the line', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))

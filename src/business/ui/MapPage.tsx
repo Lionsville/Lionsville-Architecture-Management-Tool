@@ -92,6 +92,9 @@ export type MapPageProps = {
   select?: SelectRequest
 }
 
+/** How tall the band naming who owns the columns is: the column names stick under it, so it has to be a number. */
+const OWNER_BAND = 24
+
 /** The first column's width, which is sticky and so has to be a number. */
 const FUNCTION_WIDTH = 260
 /** How tall a rotated application name may be before it is cut. */
@@ -182,7 +185,10 @@ export function MapPage(props: MapPageProps) {
       </Box>
 
       <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', ...locatedRing(locatedId) }}>
-        <Box data-testid="map-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
+        {/* No padding on the frame that scrolls: the headings and the first
+            column stick to its edge, and padding there was a strip the rows
+            scrolled through above the headings. The room is the grid's margin. */}
+        <Box data-testid="map-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto' }}>
           {laidOut && laidOut.rows.length > 0 ? (
             <Grid
               laidOut={laidOut}
@@ -242,7 +248,10 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
   const grouped = groups.length > 1 || groups.some((group) => group.where !== undefined)
   const line = `1px solid ${theme.palette.divider}`
   const sticky = { position: 'sticky' as const, bgcolor: 'background.default', zIndex: 1 }
-  const head = { ...sticky, top: 0, zIndex: 2 }
+  // Both heading rows stay: the band of who owns the columns on top, and the
+  // columns' names stuck just under it rather than over it.
+  const band = { ...sticky, top: 0, zIndex: 2, height: OWNER_BAND, boxSizing: 'border-box' as const }
+  const head = { ...sticky, top: grouped ? OWNER_BAND : 0, zIndex: 2 }
   /** The fixed headings, in the small capitals the sheet's bands use. */
   const label = {
     verticalAlign: 'bottom', px: 1, pb: 0.5, fontSize: 10, fontWeight: 700,
@@ -254,7 +263,7 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
       component="table"
       data-testid="map-grid" data-guide="map.grid"
       sx={{
-        borderCollapse: 'separate', borderSpacing: 0, fontSize: 11.5,
+        m: 2, borderCollapse: 'separate', borderSpacing: 0, fontSize: 11.5,
         '& th, & td': { p: 0, borderBottom: line, whiteSpace: 'nowrap' },
         '& td': { height: CELL, textAlign: 'center' },
       }}
@@ -262,19 +271,19 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
       <thead>
         {grouped && (
           <tr>
-            <th style={{ width: FUNCTION_WIDTH, minWidth: FUNCTION_WIDTH }} />
+            <Box component="th" sx={{ ...band, left: 0, zIndex: 3, width: FUNCTION_WIDTH, minWidth: FUNCTION_WIDTH }} />
             {groups.map((group, index) => (
               <Box
                 component="th"
                 key={group.where ?? '__own'}
                 colSpan={group.columns.length}
                 data-testid={`map-owner-${index}`}
-                sx={{ ...head, ...label, textAlign: 'center', borderLeft: line }}
+                sx={{ ...band, ...label, textAlign: 'center', borderLeft: line }}
               >
                 {group.where ?? t('map.thisScope')}
               </Box>
             ))}
-            <th colSpan={2} />
+            <Box component="th" colSpan={2} sx={band} />
           </tr>
         )}
         <tr>
@@ -285,7 +294,7 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
             {t('map.function')}
           </Box>
           {columns.map((column) => (
-            <Heading key={column.id} column={column} onOpen={onOpen} openable={openable(column.id)} t={t} />
+            <Heading key={column.id} column={column} onOpen={onOpen} openable={openable(column.id)} top={grouped ? OWNER_BAND : 0} t={t} />
           ))}
           <Box component="th" sx={{ ...head, ...label, textAlign: 'center', minWidth: 56, borderLeft: line }}>
             {t('map.people')}
@@ -305,10 +314,12 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
 }
 
 /** An application's name, on end, so forty of them fit across a page. */
-function Heading({ column, onOpen, openable, t }: {
+function Heading({ column, onOpen, openable, top, t }: {
   column: MapColumn
   onOpen(id: ElementId): void
   openable: boolean
+  /** Where it sticks: under the owners' band where there is one. */
+  top: number
   t: Translate
 }) {
   const label = column.known ? column.name : `${column.name} — ${t('map.unknownApplication')}`
@@ -317,7 +328,7 @@ function Heading({ column, onOpen, openable, t }: {
       component="th"
       data-testid={`map-column-${column.id}`}
       sx={{
-        position: 'sticky', top: 0, zIndex: 2, bgcolor: 'background.default',
+        position: 'sticky', top, zIndex: 2, bgcolor: 'background.default',
         height: HEADING_HEIGHT, verticalAlign: 'bottom', width: CELL, minWidth: CELL, maxWidth: CELL,
       }}
     >

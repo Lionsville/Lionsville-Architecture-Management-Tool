@@ -34,6 +34,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
 import { CloseIcon } from '../../widgets/icons'
+import { PageClose } from '../../widgets/PageClose'
 import { IMPACT_LABEL, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { MERGE_LINK_REFUSAL } from '../mergeScreen'
 import type { MergeLink, RecordAt } from '../merge'
@@ -292,6 +293,7 @@ export function MergePage({ state, s, renderMarkdown, windowChrome, note, onNote
           </IconButton>
         </Tooltip>
         <Typography variant="body1" component="h1" id={titleId} sx={{ fontWeight: 600 }}>{title}</Typography>
+        <PageClose onClose={close} />
       </Box>
       {state && (
         <>

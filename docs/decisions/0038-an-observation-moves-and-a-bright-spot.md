@@ -444,3 +444,12 @@ the scope's page with a restore.
 * `changes.list` (`about`) answers a record's changes.
 * `tone` and `recordedBy` are part of the turn to **format 15** (ADR-0041
   §14).
+
+## As built, 25 October 2026: a record's changes (§11)
+
+Every reader §11 names draws *Changes* (`comments/ui/RecordChanges.tsx`),
+read from the history by record: an observation, a cause, a solution, an
+experiment, a decision (its own scope's or one above it), a plan, a
+principle, an element's stacked inspector and a building block's page. On a
+home, where nothing is open, the readers name the scope they read.
+

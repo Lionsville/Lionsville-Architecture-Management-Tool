@@ -52,7 +52,11 @@ describe('the building blocks over a home', () => {
     await place(repositories, '', { name: 'Acme' })
     await place(repositories, 'topics/integration', { name: 'Integration' })
     const { access } = await wired(repositories)
-    expect(access.placeChoices().map((one) => one.path)).toEqual(['topics/integration', ''])
+    // The topics first, under their own heading and counted from their place; then the organisation, at its depth.
+    expect(access.placeChoices()).toEqual([
+      { path: 'topics/integration', name: 'Integration', depth: 0, topic: true },
+      { path: '', name: 'Acme', depth: 0 },
+    ])
     const id = await access.create('topics/integration', ' Message gateway ')
     expect(id).toBe('blk-1')
     const made = await again(repositories)
@@ -97,7 +101,8 @@ describe('the building blocks over a home', () => {
     await vi.waitFor(async () => expect((await again(repositories)).evaluationsOf('blk-gw')[0]?.evaluation.options).toEqual(['sb-a', 'sb-b']))
     // The second scope starts from the first's ratings; its own from then on.
     const copying = await again(repositories)
-    expect(copying.evaluateChoices('blk-gw').map((one) => one.path)).toEqual(['', 'stock', 'topics/integration'])
+    // Every scope of the organisation that has not yet, at its depth; a topic adopts nothing.
+    expect(copying.evaluateChoices('blk-gw')).toEqual([{ path: '', name: 'Acme', depth: 0 }, { path: 'stock', name: 'Stock', depth: 1 }])
     expect(await copying.evaluate('blk-gw', 'stock', [], 'sales')).toBe(true)
     const stock = (await again(repositories)).evaluationsOf('blk-gw').find((one) => one.scope === 'stock')!.evaluation
     expect([stock.contexts, stock.options, stock.coverage['sb-a']?.['cap-route']]).toEqual([[], ['sb-a', 'sb-b'], { level: 4 }])

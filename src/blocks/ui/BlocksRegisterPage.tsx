@@ -16,7 +16,6 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -29,6 +28,7 @@ import { PageClose } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow, BlocksAccess } from './BlocksContext'
+import { scopeMenuItems } from '../../widgets/ScopeChoices'
 
 const CELL = { borderBottom: 1, borderColor: 'divider', px: 1.5, py: 0.75, fontSize: 13, textAlign: 'left', verticalAlign: 'top' } as const
 
@@ -131,7 +131,7 @@ function NewBlockDialog({ access, at, onClose }: { access: BlocksAccess; at: str
       <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
         <TextField autoFocus label={t('blocks.name')} value={name} onChange={(event) => setName(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'block-name' } }} />
         <TextField select label={t('blocks.colKeptIn')} value={place} onChange={(event) => setPlace(event.target.value)} helperText={t('blocks.keptInHelp')} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          {places.map((one) => <MenuItem key={one.path} value={one.path}>{one.name}</MenuItem>)}
+          {scopeMenuItems(places, { topics: t('blocks.placeTopics'), scopes: t('blocks.placeScopes') })}
         </TextField>
       </DialogContent>
       <DialogActions>

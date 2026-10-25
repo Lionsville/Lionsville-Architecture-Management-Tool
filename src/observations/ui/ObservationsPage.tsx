@@ -33,14 +33,12 @@ import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import ListSubheader from '@mui/material/ListSubheader'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
@@ -52,8 +50,10 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { AddIcon } from '../../widgets/icons'
+import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidthsOf } from '../../widgets/useSeamWidth'
 import { useLocatedIn } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
@@ -302,6 +302,9 @@ const READER = {
   analysis: { default: 420, min: 320, max: 900 },
   solutions: { default: 640, min: 380, max: 1000 },
 } as const
+
+/** Each tab's reader at its own width until it is dragged. */
+const READER_WIDTHS = { register: READER.register.default, analysis: READER.analysis.default, solutions: READER.solutions.default }
 
 const DELETE_TITLE = {
   observation: 'observation.deleteTitle', cause: 'observation.deleteCauseTitle',
@@ -562,9 +565,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   )
 
   const [tab, setTab] = useState<Tab>('register')
-  const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({
-    register: READER.register.default, analysis: READER.analysis.default, solutions: READER.solutions.default,
-  })
+  const [readerWidth, setReaderWidth] = useSeamWidthsOf<Tab>('observations.reader', READER_WIDTHS)
   const [wholeChain, setWholeChain] = useState(false)
   const [showDropped, setShowDropped] = useState(false)
   /** A solution being proposed, from a cause or from the bar. */
@@ -939,9 +940,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const reader = <RecordReader selected={selected} selectedKey={selectedKey} ctx={readerCtx} />
 
   const crumbNames = crumbTrail(props.crumbs, groupName, model.name)
+  const leaving = useBackToReading(editing, () => setEditingKey(undefined), onClose, s('observation.close'))
 
   return (
-    <PageDialog open={open} topInset={chrome.topInset} onClose={onClose} aria-label={s('observation.title')}>
+    <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
         <Box
           data-testid="observation-topbar"
@@ -953,11 +955,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
           }}
         >
-          <Tooltip title={s('observation.close')}>
-            <IconButton size="small" aria-label={s('observation.close')} onClick={onClose}>
-              <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-            </IconButton>
-          </Tooltip>
+          <PageBack onBack={leaving.leave} label={leaving.said} />
           <Typography variant="body2" color="text.secondary" data-testid="observation-crumbs" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {crumbNames.map((name, index) => <Fragment key={index}>{name} &nbsp;/&nbsp; </Fragment>)}
             <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('observation.title')}</Box>
@@ -975,6 +973,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
                 : <Button size="small" variant="contained" onClick={forms.openNew} startIcon={<AddIcon size={14} />} sx={{ textTransform: 'none' }} data-guide="observations.new">{s('observation.new')}</Button>}
             </>
           )}
+          <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
         </Box>
         {!editing && <PictureToolbar f={f} tab={tab} scopeLabel={labelOf} s={s} />}
 
@@ -994,7 +993,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
               min={READER[tab].min}
               max={READER[tab].max}
               defaultValue={READER[tab].default}
-              onChange={(next) => setReaderWidth((held) => ({ ...held, [tab]: next }))}
+              onChange={(next) => setReaderWidth(tab, next)}
               label={s('observation.resizeReader')}
             />
           )}

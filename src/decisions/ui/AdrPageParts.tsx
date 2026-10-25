@@ -29,6 +29,7 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { ReasonDialog } from './AdrDialogs'
 import { STATUS_COLOR, STATUS_LABEL, fromScope, subjectScope } from '../adrScope'
 import type { AncestorRecords, ScopeKey } from '../adrScope'
+import { PageClose } from '../../widgets/PageClose'
 
 // --- the top bar ------------------------------------------------------------------------
 
@@ -81,6 +82,7 @@ export function AdrTopBar({ bar, crumbs, names, readOnly, s, onClose, onNew }: {
           + {s('adr.new')}
         </Button>
       )}
+      <PageClose onClose={onClose} />
     </Box>
   )
 }

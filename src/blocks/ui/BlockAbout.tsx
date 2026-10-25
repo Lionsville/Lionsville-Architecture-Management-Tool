@@ -7,6 +7,7 @@
  * context's chapter where one was asked for; and the principles it cites,
  * read here and cited where the block is open, as any element's are.
  */
+import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { useEffect, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import ToggleButton from '@mui/material/ToggleButton'
@@ -78,6 +79,8 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
         ? <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.citesNone')}</Typography>
         : cited.map((one) => <Typography key={one.label} sx={{ fontSize: 14 }}>{one.label} <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>· {one.stance}</Box></Typography>)}
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>{t('blocks.citeWhereOpen')}</Typography>
+      {/* Who added it and who changed it since (ADR-0038, amended §11): a block is an element of the scope that keeps it. */}
+      <RecordChanges about={{ kind: 'element', id: block.id }} scope={scope} first="added" />
     </Box>
   )
 }

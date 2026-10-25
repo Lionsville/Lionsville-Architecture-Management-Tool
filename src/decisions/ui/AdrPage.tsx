@@ -40,6 +40,8 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { useLocatedIn } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
@@ -203,6 +205,8 @@ export function AdrPage(props: AdrPageProps) {
   const [scope, setScope] = useState<ScopeKey>('landscape')
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
+  const [treeWidth, setTreeWidth] = useSeamWidth('decisions.tree', 240)
+  const [listWidth, setListWidth] = useSeamWidth('decisions.list', 320)
   const [creating, setCreating] = useState(false)
   const [superseding, setSuperseding] = useState<Adr | undefined>(undefined)
   const [deleting, setDeleting] = useState<Adr | undefined>(undefined)
@@ -387,12 +391,7 @@ export function AdrPage(props: AdrPageProps) {
   const fromAbove = selected ? ancestorAt(scopeOfRecord(selected)) : undefined
 
   return (
-    <PageDialog
-      open={open}
-      topInset={chrome.topInset}
-      onClose={onClose}
-      aria-label={s('adr.title')}
-    >
+    <PageDialog open={open} topInset={chrome.topInset} onClose={onClose} aria-label={s('adr.title')}>
       <LanguageProvider language={props.language}>
         <AdrTopBar
           bar={bar} crumbs={props.crumbs} names={[groupName, model.name]} readOnly={readOnly} s={s}
@@ -400,11 +399,12 @@ export function AdrPage(props: AdrPageProps) {
         />
 
         {/* ---- three columns ---- */}
-        <Box ref={columns} sx={{ display: 'grid', gridTemplateColumns: '240px 320px minmax(0, 1fr)', flex: 1, minHeight: 0, ...ring }}>
+        <Box ref={columns} sx={{ display: 'grid', gridTemplateColumns: `${treeWidth}px auto ${listWidth}px auto minmax(0, 1fr)`, flex: 1, minHeight: 0, ...ring }}>
           <AdrTree
             modelName={model.name} subjects={subjects} orphanIds={orphanIds} ancestors={ancestors}
             selected={trimmed ? undefined : scope} count={count} onChoose={chooseScope} s={s}
           />
+          <SeamResizer orientation="vertical" region="before" value={treeWidth} min={160} max={480} defaultValue={240} onChange={setTreeWidth} label={s('common.resizeColumn')} />
 
           <AdrRecordList
             query={query} onQuery={setQuery} shown={shown} selectedId={selectedId}
@@ -412,6 +412,7 @@ export function AdrPage(props: AdrPageProps) {
             empty={trimmed ? s('adr.searchEmpty', { query: trimmed }) : s('adr.listEmpty')}
             onChoose={chooseRecord} s={s}
           />
+          <SeamResizer orientation="vertical" region="before" value={listWidth} min={220} max={640} defaultValue={320} onChange={setListWidth} label={s('common.resizeColumn')} />
 
           {/* the record */}
           <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>

@@ -142,4 +142,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.factOpen': 'Pagina openen',
   'blocks.factChosen': 'Is {sbb}, de {block} gekozen voor {scope}.',
   'blocks.factEvaluation': 'De beoordeling',
+  'blocks.placeTopics': 'Onderwerpen',
+  'blocks.placeScopes': 'De organisatie',
 }

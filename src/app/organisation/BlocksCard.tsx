@@ -7,13 +7,12 @@
  * how many it keeps and how many it evaluates — and the way into the
  * register over that home. A home that has none says nothing about them.
  */
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import { RegisterIcon } from '../../widgets/icons'
-import { OnePage } from './OrganisationCards'
+import { OnePage } from './OnePage'
 
 export function BlocksCard({ at, onOpen, s }: { at: string; onOpen: () => void; s: Translate }) {
   const access = useBlocks()
@@ -30,11 +29,7 @@ export function BlocksCard({ at, onOpen, s }: { at: string; onOpen: () => void; 
       title={s('homeBlocks.card')}
       description={s('homeBlocks.describe')}
       count={count}
-      action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-block-register" data-guide="org.card.blocks" aria-label={s('picker.openNamed', { name: s('homeBlocks.card') })}>
-          {s('picker.open')}
-        </Button>
-      )}
+      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-block-register', guide: 'org.card.blocks', ariaLabel: s('picker.openNamed', { name: s('homeBlocks.card') }) }]}
     />
   )
 }

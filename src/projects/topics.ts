@@ -179,3 +179,27 @@ export function principleReadsAt(nodes: readonly TopicNode[], day: string, place
     return inForce.get(scope)!.includes(kept)
   }
 }
+
+/** A scope offered in a picker: where it stands, so the picker can indent it, and whether it is a topic. */
+export type ChoosableScope = { path: ScopePath; name: string; depth: number; topic?: true }
+
+const depthOf = (path: ScopePath) => (path === ROOT_SCOPE ? 0 : path.split('/').length)
+
+/**
+ * The scopes a picker offers, in the tree's order: every scope that is a part
+ * of the organisation, at its depth; and, with `topics`, the topics first,
+ * counted from the topics' own place. The topics' place itself is never one.
+ */
+export function choosableScopes(
+  nodes: readonly TopicNode[], label: (path: ScopePath) => string, topics: boolean, place: ScopePath = TOPICS_PLACE,
+): ChoosableScope[] {
+  const topical = new Set(topicsOf(nodes, place).map((one) => one.path))
+  const below = depthOf(place)
+  const scopes = nodes.filter((one) => one.path !== place && !topical.has(one.path))
+    .map((one) => ({ path: one.path, name: label(one.path), depth: depthOf(one.path) }))
+  if (!topics) return scopes
+  const kept = nodes.filter((one) => topical.has(one.path))
+    .map((one) => ({ path: one.path, name: label(one.path), depth: depthOf(one.path) - below - 1, topic: true as const }))
+  return [...kept, ...scopes]
+}
+

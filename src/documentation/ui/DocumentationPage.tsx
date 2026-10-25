@@ -42,6 +42,7 @@ import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
+import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose';
 import { SeamResizer } from '../../widgets/SeamResizer';
 import { DocumentSource } from './DocumentSource';
 import type { DocumentImages } from './DocumentSource';
@@ -232,6 +233,8 @@ export function DocumentationPage(props: DocumentationPageProps) {
     onClose();
   };
 
+  const exit = useBackToReading(mode === 'edit', () => switchMode('read'), close, t('doc.close'));
+
   const navigate = useCallback(
     (id: ElementId) => {
       commit();
@@ -327,11 +330,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
           flexShrink: 0,
         }}
       >
-        <Tooltip title={t('doc.close')}>
-          <IconButton size="small" aria-label={t('doc.close')} onClick={close}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
+        <PageBack onBack={exit.leave} label={exit.said}><BackIcon /></PageBack>
         <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {scopeLabel ?? model.name} &nbsp;/&nbsp; <ViewCrumb diagram={diagram} />
           <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{element.name}</Box>
@@ -358,6 +357,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
           <ToggleButton value="read">{t('doc.read')}</ToggleButton>
           {!readOnly && <ToggleButton value="edit">{t('doc.edit')}</ToggleButton>}
         </ToggleButtonGroup>
+        <PageClose onClose={exit.leave} label={exit.closeSaid} />
       </Box>
 
       {/* ---- three columns ---- */}

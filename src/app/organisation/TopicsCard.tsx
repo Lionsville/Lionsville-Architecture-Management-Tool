@@ -6,11 +6,10 @@
  * are, and the way into the catalogue — whether or not there are any, since
  * the first is made there.
  */
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { RegisterIcon } from '../../widgets/icons'
-import { OnePage } from './OrganisationCards'
+import { OnePage } from './OnePage'
 import { useTopics } from './TopicsContext'
 
 export function TopicsCard({ onOpen, s }: { onOpen: () => void; s: Translate }) {
@@ -23,11 +22,7 @@ export function TopicsCard({ onOpen, s }: { onOpen: () => void; s: Translate }) 
       title={s('topics.card')}
       description={s('topics.cardDescribe')}
       count={count > 0 ? plural(s, { one: 'topics.cardCountOne', other: 'topics.cardCount' }, count) : s('topics.cardNone')}
-      action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-topic-catalogue" data-guide="org.card.topics" aria-label={s('picker.openNamed', { name: s('topics.card') })}>
-          {s('picker.open')}
-        </Button>
-      )}
+      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-topic-catalogue', guide: 'org.card.topics', ariaLabel: s('picker.openNamed', { name: s('topics.card') }) }]}
     />
   )
 }

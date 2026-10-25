@@ -61,4 +61,5 @@ export const EN = {
   'window.unsavedDetail': 'Closing now loses the changes that are still only in this window.',
   'window.closeAnyway': 'Close anyway',
   'window.keepOpen': 'Keep the window open',
+  'menu.website': 'Website',
 } as const

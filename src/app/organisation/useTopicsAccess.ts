@@ -28,7 +28,7 @@ import { createScopeAt, describeScopeAt, moveScopeUnder, removeScopeAt } from '.
 import type { TreeScopes } from '../../projects/scopeTree'
 import type { InitialPage } from '../App'
 import {
-  endedOn, isTopic, relevantPlaces, stoppedToday, TOPICS_PLACE, topicRowsAt, topicsInForce, topicsOf, topicsRelevantAt, withDays, withLink, withoutLink,
+  choosableScopes, endedOn, relevantPlaces, stoppedToday, TOPICS_PLACE, topicRowsAt, topicsInForce, topicsOf, topicsRelevantAt, withDays, withLink, withoutLink,
 } from '../../projects/topics'
 import type { TopicLink } from '../../projects/topics'
 import { ShellError } from '../../platform/errors'
@@ -175,9 +175,7 @@ export function topicsAccess(deps: TopicsDeps, version: number): TopicsAccess {
     keeps: (topic) => keepsOf(deps, scopes, topic),
     today: () => deps.today,
     scopeLabel,
-    scopeChoices: () => scopes
-      .filter((one) => one.path !== TOPICS_PLACE && !isTopic(one.path, scopes))
-      .map((one) => ({ path: one.path, name: scopeLabel(one.path) })),
+    scopeChoices: () => choosableScopes(scopes, scopeLabel, false),
     openCatalogue: deps.openCatalogue,
     openPrinciples: (topic) => deps.open(topic, { page: 'principles' }),
     openHome: deps.goHome,

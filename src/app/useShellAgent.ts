@@ -47,6 +47,8 @@ export type OrgPageRequest = {
   page: OrgPage | 'home'; nonce: number; select?: string
   /** On a block's page, the scope whose evaluation to open on (ADR-0043). */
   evaluation?: string
+  /** Opened from another screen — a reader, a reference — so closing it goes back there (ADR-0033), not to the register. */
+  returns?: true
 }
 
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
@@ -97,16 +99,17 @@ export function useShellAgent(deps: {
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string) => {
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true) => {
     goHome(scope)
     const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks'
     setOrgPageRequest((prev) => ({
       page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
       ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
+      ...(returns ? { returns } : {}),
     }))
   }, [goHome])
   /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
-  const openBlock = useCallback((block: string, evaluation?: string) => homeAt(ROOT_SCOPE, 'blocks', block, evaluation), [homeAt])
+  const openBlock = useCallback((block: string, evaluation?: string) => homeAt(ROOT_SCOPE, 'blocks', block, evaluation, true), [homeAt])
   // A request is for the screen that is up. Once a scope is open that screen
   // is gone, and the home that comes back later — by a crumb, or a scope with
   // nothing to show — comes back as itself, not with the page last asked for.

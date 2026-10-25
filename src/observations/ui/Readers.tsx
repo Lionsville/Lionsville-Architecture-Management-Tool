@@ -785,6 +785,7 @@ export function CauseReader(props: CauseReaderProps) {
             </Typography>
             <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+            <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
             <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
           </DocumentSheet>
         )}

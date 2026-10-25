@@ -66,6 +66,9 @@ import type { RolesHeld } from './parts'
 import { PersonPanel } from './PersonPanel'
 import type { PeopleLook } from './PersonPanel'
 import { PolicyPanel } from './PolicyPanel'
+import { PageClose } from '../../widgets/PageClose'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 
 export type PeoplePageProps = {
   open: boolean
@@ -298,6 +301,7 @@ function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd,
           <Button size="small" variant="contained" onClick={onAdd} data-testid="people-add" data-guide="people.add">{s('people.add')}</Button>
         </>
       )}
+      <PageClose onClose={onClose} />
     </Box>
   )
 }
@@ -314,6 +318,7 @@ function useFindMe(me: PersonId | undefined, pick: (id: PersonId) => void, showA
 
 export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
   const [show, setShow] = useState<Show>('all')
+  const [asideWidth, setAsideWidth] = useSeamWidth('people.aside', 400)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<PersonId | undefined>(select)
   const [adding, setAdding] = useState(false)
@@ -370,8 +375,8 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={s('people.title')}>
       <TopBar chrome={windowChrome} show={show} onShow={setShow} query={query} onQuery={setQuery} counts={counts} readOnly={!mayDo(register, 'add')}
         onAdd={() => setAdding(true)} onImport={() => setImporting(true)} onFindMe={located.findMe} onClose={onClose} s={s} />
-      <Box ref={located.ref} sx={{ flex: 1, minHeight: 0, display: 'flex', flexWrap: 'wrap', overflowY: 'auto', ...located.ring }}>
-        <Box component="main" sx={{ flex: '2 1 420px', minWidth: 0, px: 3, py: 2 }}>
+      <Box ref={located.ref} sx={{ flex: 1, minHeight: 0, display: 'flex', ...located.ring }}>
+        <Box component="main" sx={{ flex: '1 1 auto', minWidth: 0, px: 3, py: 2, overflowY: 'auto' }}>
           <About readOnly={register.readOnly} s={s} />
           <Duplicates key={openings} pairs={pairs} register={register} saying={saying} roles={roles} onMerge={(keep, drop) => askMerge(drop, keep, true)} s={s} />
           {entries.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.empty')}</Typography>}
@@ -380,7 +385,8 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
             <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} roles={roles} day={day} today={register.today} onSelect={pick} s={s} />
           )}
         </Box>
-        <Box component="aside" aria-label={s('people.title')} sx={{ flex: '1 1 300px', minWidth: 0, px: 2, py: 2, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <SeamResizer orientation="vertical" region="after" value={asideWidth} min={280} max={800} defaultValue={400} onChange={setAsideWidth} label={s('common.resizeColumn')} />
+        <Box component="aside" aria-label={s('people.title')} sx={{ flex: `0 0 ${asideWidth}px`, minWidth: 0, px: 2, py: 2, overflowY: 'auto', bgcolor: 'background.paper' }}>
           {saying.said && (
             <Alert severity={saying.said.tone} role="status" sx={{ mb: 1.5, fontSize: 12 }} data-testid="people-said">{saying.said.text}</Alert>
           )}

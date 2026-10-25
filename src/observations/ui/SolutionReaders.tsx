@@ -645,6 +645,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
             </Box>
             {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+            <RecordChanges about={{ kind: 'experiment', id: experiment.id }} first="proposed" />
             <CommentThread about={{ kind: 'experiment', id: experiment.id }} />
           </DocumentSheet>
         )}

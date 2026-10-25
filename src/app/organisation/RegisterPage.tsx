@@ -57,6 +57,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageClose } from '../../widgets/PageClose'
 import { NothingDash } from '../../widgets/NothingDash'
 import { matchingTechnology, sortTechnology, technologySummary } from '../../projects/technologyRegister'
 import type { TechnologyOrder, TechnologyRow, TechnologySummary } from '../../projects/technologyRegister'
@@ -440,6 +441,7 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        <PageClose onClose={onClose} />
       </Box>
 
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 3, py: 2 }}>

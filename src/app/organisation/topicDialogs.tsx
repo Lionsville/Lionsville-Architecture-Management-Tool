@@ -19,6 +19,8 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { isWithinScope } from '../../projects/scopePath'
 import { FieldsDialog } from '../../widgets/CompactForms'
 import type { TopicSummary, TopicsAccess } from './TopicsContext'
+import { renderScopeOption } from '../../widgets/ScopeChoices'
+import type { ScopeChoice } from '../../widgets/ScopeChoices'
 
 /** The topics a topic may be filed under: none of its own subtree. */
 function underChoices(access: TopicsAccess, topic?: string): readonly TopicSummary[] {
@@ -57,7 +59,7 @@ export function NewTopicDialog({ access, parent, onClose }: { access: TopicsAcce
   const { t } = useStrings()
   const [name, setName] = useState('')
   const [under, setUnder] = useState(parent ?? '')
-  const [places, setPlaces] = useState<{ path: string; name: string }[]>([])
+  const [places, setPlaces] = useState<ScopeChoice[]>([])
   const [busy, setBusy] = useState(false)
   const make = () => {
     setBusy(true)
@@ -74,8 +76,8 @@ export function NewTopicDialog({ access, parent, onClose }: { access: TopicsAcce
           {underChoices(access).map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
         </TextField>
         <Autocomplete
-          multiple options={access.scopeChoices() as { path: string; name: string }[]} value={places} onChange={(_event, next) => setPlaces(next)}
-          getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path}
+          multiple options={access.scopeChoices() as ScopeChoice[]} value={places} onChange={(_event, next) => setPlaces(next)}
+          getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption}
           renderInput={(params) => <TextField {...params} label={t('topics.relevantTo')} />}
         />
       </DialogContent>

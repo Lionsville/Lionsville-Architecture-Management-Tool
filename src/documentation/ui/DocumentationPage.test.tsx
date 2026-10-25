@@ -403,6 +403,20 @@ describe('DocumentationPage', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('goes back to reading from ‹ and ×, which say so, and closes on the next press', () => {
+    const { props } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByTestId('page-back').getAttribute('aria-label')).toBe('Back to reading');
+    fireEvent.click(screen.getByTestId('page-back'));
+    expect(source()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByTestId('page-close'));
+    expect(source()).toBeNull();
+    expect(props.onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('page-close'));
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('starts its top bar after the window controls, and drags the window with it', () => {
     setup({ windowChrome: { controlsInset: 78, draggable: true } });
     const bar = screen.getByRole('button', { name: 'Close documentation' }).parentElement!;

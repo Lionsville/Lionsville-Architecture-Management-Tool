@@ -13,7 +13,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps } from 'react'
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { ElementId } from '../../model'
@@ -29,7 +28,7 @@ import type { ChecksPage as ChecksPageShape } from './ChecksPage'
 import type { TopicsPage as TopicsPageShape } from './TopicsPage'
 import type { BlocksRegisterPage as BlocksRegisterPageShape } from '../../blocks/ui/BlocksRegisterPage'
 import type { BlockPage as BlockPageShape } from '../../blocks/ui/BlockPage'
-import { OnePage } from './OrganisationCards'
+import { OnePage } from './OnePage'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
 import type { CheckPlace } from './treeChecks'
@@ -98,8 +97,10 @@ function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
   )
 }
 
-export function HomePages({ pages, at, heading, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, s, windowChrome }: {
+export function HomePages({ pages, at, heading, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, s, windowChrome, ready = true }: {
   pages: HomePagesState
+  /** The tree's index has been read: until then a page that reads it is arriving, not empty. */
+  ready?: boolean
   /** The home: what the Checks page keeps its weights under for the session. */
   at: ScopePath
   /** What the registers call the organisation or the scope whose home this is. */
@@ -145,7 +146,7 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
         open={openPage === 'topics'} onClose={close} {...(asked?.page === 'topics' && asked.select !== undefined ? { select: asked.select } : {})}
         nonce={asked?.nonce ?? 0} windowChrome={windowChrome}
       />
-      <BlocksDoors pages={pages} at={at} windowChrome={windowChrome} />
+      <BlocksDoors pages={pages} at={at} windowChrome={windowChrome} ready={ready} />
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} scopeName={scopeName} onGo={go}
@@ -160,15 +161,23 @@ export function HomePages({ pages, at, heading, register, technology, registerSc
  * where one is picked (ADR-0043 §8): closing a block's page comes back to the
  * register it was opened over.
  */
-function BlocksDoors({ pages, at, windowChrome }: { pages: HomePagesState; at: ScopePath; windowChrome: WindowChrome }) {
+export function BlocksDoors({ pages, at, windowChrome, ready, back = () => window.history.back() }: {
+  pages: HomePagesState; at: ScopePath; windowChrome: WindowChrome; ready: boolean
+  /** The place before, for a block's page opened from another screen. */
+  back?: () => void
+}) {
   const { openPage, asked, close } = pages
   const picked = openPage === 'blocks' && asked?.page === 'blocks' ? asked.select : undefined
+  // Opened before the tree is read — from a link, or by an agent — the block is
+  // not yet anywhere to be found: the page is arriving, not the home bare.
+  if (openPage === 'blocks' && !ready) return arrivingPage({ windowChrome })
   return (
     <>
       <BlocksRegisterPage open={openPage === 'blocks'} at={at} onClose={close} windowChrome={windowChrome} />
       <BlockPage
         open={picked !== undefined} id={picked} {...(asked?.evaluation !== undefined ? { evaluation: asked.evaluation } : {})}
-        nonce={asked?.nonce ?? 0} onClose={() => pages.open('blocks')} windowChrome={windowChrome}
+        // Back where it was opened from, as the POC's page over any screen closed onto it; from the register, to the register.
+        nonce={asked?.nonce ?? 0} onClose={asked?.returns ? back : () => pages.open('blocks')} windowChrome={windowChrome}
       />
     </>
   )
@@ -191,11 +200,7 @@ export function ChecksCard({ checks, onOpen, s }: { checks: HomeChecks; onOpen: 
         plural(s, { one: 'org.checksOne', other: 'org.checksOther' }, every.length),
         plural(s, { one: 'org.checksFoundOne', other: 'org.checksFoundOther' }, finding),
       ].join(' · ')}
-      action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-checks" data-guide="org.card.checks" aria-label={s('picker.openNamed', { name: s('org.checks') })}>
-          {s('picker.open')}
-        </Button>
-      )}
+      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-checks', guide: 'org.card.checks', ariaLabel: s('picker.openNamed', { name: s('org.checks') }) }]}
     />
   )
 }

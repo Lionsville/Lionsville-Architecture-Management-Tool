@@ -14,6 +14,7 @@
  * screens draw what the access says after it, and a refusal is said by the
  * access, not the screen.
  */
+import type { ScopeChoice } from '../../widgets/ScopeChoices'
 import { createContext, useContext, type ReactNode } from 'react'
 import type { TopicLink } from '../../projects/topics'
 import type { ScopePath } from '../../projects/scopePath'
@@ -72,7 +73,8 @@ export type TopicsAccess = {
   today(): string
   scopeLabel(path: ScopePath): string
   /** The scopes a topic may be made relevant to: every scope that is not a topic. */
-  scopeChoices(): readonly { path: ScopePath; name: string }[]
+  /** The scopes a topic may be relevant to, in the tree's order and at their depth. */
+  scopeChoices(): readonly ScopeChoice[]
   /** Open the catalogue, on a topic where one is named. */
   openCatalogue(topic?: ScopePath): void
   /** The topic's principles page. */

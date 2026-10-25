@@ -31,6 +31,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
+import Link from '@mui/material/Link'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -46,6 +47,7 @@ import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import type { AgentServerStatus } from '../../platform/agentServer'
 import { agentEndpoint } from '../../platform/agentServer'
+import { DESKTOP_APP_LINK } from '../../platform/menu'
 
 /** The clients the app carries a recipe for, and the one line for the rest. */
 const RECIPES: readonly { readonly id: string; readonly tab: StringKey; readonly recipe: StringKey }[] = [
@@ -124,7 +126,11 @@ export function ConnectAgentDialog({
             <Box data-testid="agent-source-panel">{sourcePanel}</Box>
           ) : (
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="agent-desktop-only">
-              {s('agent.desktopOnly')}
+              {s('agent.desktopOnly')}{' '}
+              {/* Where the desktop app is had, said where it is needed. */}
+              <Link href={DESKTOP_APP_LINK.href} target="_blank" rel="noreferrer" data-testid="agent-download" data-guide="agent.download" sx={{ whiteSpace: 'nowrap' }}>
+                {s('agent.download')}
+              </Link>
             </Typography>
           )) : !readOnly && (
             <>

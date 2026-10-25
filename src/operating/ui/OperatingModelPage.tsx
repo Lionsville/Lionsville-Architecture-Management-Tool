@@ -32,6 +32,9 @@ import { useStrings } from '../../i18n'
 import { barChromeFor, NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
+import { PageClose } from '../../widgets/PageClose'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { PageDialog } from '../../widgets/PageDialog'
 import { itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
@@ -119,6 +122,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const { t, language } = useStrings()
   const readOnly = props.readOnly || !props.atOrganisation
   const [tab, setTab] = useState<OperatingTab>('units')
+  const [asideWidth, setAsideWidth] = useSeamWidth('operating.aside', 340)
   const [selected, setSelected] = useState<string | undefined>(undefined)
   const [matrixView, setMatrixView] = useState<MatrixView>(ALL_OF_THE_MATRIX)
   const [removing, setRemoving] = useState<string | undefined>(undefined)
@@ -199,6 +203,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
         <Typography variant="caption" color="text.secondary" data-testid="operating-counts">
           {countsLine(t, model.unitTypes.length, model.roles.length, model.responsibilities.length)}
         </Typography>
+        <PageClose onClose={props.onClose} />
       </Box>
       {!props.atOrganisation && (
         <Typography variant="body2" color="text.secondary" sx={{ px: 2, pt: 1 }}>{t('operating.atOrganisation')}</Typography>
@@ -224,9 +229,12 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           )}
         </Box>
         {tab !== 'libraries' && (
+          <SeamResizer orientation="vertical" region="after" value={asideWidth} min={260} max={720} defaultValue={340} onChange={setAsideWidth} label={t('common.resizeColumn')} />
+        )}
+        {tab !== 'libraries' && (
           <Box
             component="aside" aria-label={t('operating.pick')}
-            sx={{ width: 340, flexShrink: 0, borderLeft: 1, borderColor: 'divider', overflow: 'auto', p: 2, bgcolor: 'background.paper' }}
+            sx={{ width: asideWidth, flexShrink: 0, overflow: 'auto', p: 2, bgcolor: 'background.paper' }}
           >
             <Inspector model={model} picked={picked} readOnly={readOnly} dispatch={dispatch} onRemove={setRemoving} aside={picked && props.aside?.(picked)}
               onRemoveSlot={removeSlotOf} slotAside={taking} {...(props.refuseLine ? { refuseLine: props.refuseLine } : {})} />

@@ -12,6 +12,7 @@
  * the access lands it, says a refusal, and the screens draw what it reads
  * after.
  */
+import type { ScopeChoice } from '../../widgets/ScopeChoices'
 import { createContext, useContext, type ReactNode } from 'react'
 import type { Evaluation } from '../../model/evaluation'
 import type { BlockCapability, DesignElement } from '../../model/types'
@@ -52,9 +53,9 @@ export type BlocksAccess = {
   /** The applications, platforms and services a solution may be: every one in the tree, once. */
   elementChoices(): readonly { id: string; name: string }[]
   /** The scopes a block may be kept in: the topics first, then every scope. */
-  placeChoices(): readonly { path: string; name: string }[]
+  placeChoices(): readonly ScopeChoice[]
   /** The scopes that may evaluate a block and have not yet. */
-  evaluateChoices(block: string): readonly { path: string; name: string }[]
+  evaluateChoices(block: string): readonly ScopeChoice[]
   /** A new building block, kept in `scope`: its id once it is there. */
   create(scope: string, name: string): Promise<string | undefined>
   /** A block's fields changed, as one step in the scope that keeps it. */

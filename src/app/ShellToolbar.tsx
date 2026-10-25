@@ -21,7 +21,7 @@
  * and no storage in it — which is what lets this component be exercised in a
  * test without an editor, without a model and without browser APIs.
  */
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -342,6 +342,13 @@ export function crumbsFor(
  * bold and not a button — it is where you already are. Shared by this bar and
  * a scope's home, so the two read the same and a crumb means one thing.
  */
+/**
+ * Said on every press of a crumb, before it goes anywhere: a crumb is a way
+ * out of whatever page is up over the screen, so every page that is not the
+ * screen's own — the ones opened over any screen — closes on it.
+ */
+export const CrumbPressContext = createContext<() => void>(() => undefined)
+
 export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   crumbs: readonly Crumb[]
   current: string
@@ -358,6 +365,8 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   // ⋯ to a line of its own at 1024 px. A basis of nothing, grown up to the
   // crumbs' own width and no further: on the bar's first line whatever the
   // window, and shorter than their names only where the line is short.
+  const pressed = useContext(CrumbPressContext)
+  const go = (path: ScopePath) => { pressed(); onGoHome(path) }
   const shrinking = (order: number) => ({
     minWidth: 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
@@ -369,7 +378,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
             <Button
               size="small"
               color="inherit"
-              onClick={() => onGoHome(crumb.path)}
+              onClick={() => go(crumb.path)}
               data-testid={`crumb-${crumb.path}`}
               sx={{
                 fontSize: 13, fontWeight: 500, px: 0.75, py: 0,
@@ -390,7 +399,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
         <Button
           size="small"
           color="inherit"
-          onClick={() => onGoHome(currentPath)}
+          onClick={() => go(currentPath)}
           data-testid="crumb-current"
           sx={{ fontSize: 13, fontWeight: 700, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
         >

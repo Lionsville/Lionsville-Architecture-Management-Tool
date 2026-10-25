@@ -25,7 +25,7 @@ import type { ScopeIndex } from '../../projects/scopeIndex'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { TOPICS_PLACE, topicsInForce, topicsOf } from '../../projects/topics'
+import { choosableScopes, topicsInForce } from '../../projects/topics'
 import type { BlockRow, BlocksAccess, EvaluationRow } from '../../blocks/ui/BlocksContext'
 import type { InitialPage } from '../App'
 import type { BelowScopes } from '../useChangeBelow'
@@ -142,14 +142,10 @@ function reads(deps: BlocksDeps): Reads {
     elementChoices: () => deps.index.entries()
       .filter((one) => one.kind === 'application' || one.kind === 'platform' || one.kind === 'platformService')
       .map((one) => ({ id: one.id, name: one.name })).sort((a, b) => a.name.localeCompare(b.name)),
-    placeChoices: () => {
-      const topics = topicsOf(scopes).map((one) => one.path)
-      const rest = scopes.map((one) => one.path).filter((path) => path !== TOPICS_PLACE && !topics.includes(path))
-      return [...topics, ...rest].map((path) => ({ path, name: scopeLabel(path) }))
-    },
+    placeChoices: () => choosableScopes(scopes, scopeLabel, true),
     evaluateChoices: (block) => {
       const taken = new Set(evaluationsOf(block).map((one) => one.scope))
-      return scopes.filter((one) => one.path !== TOPICS_PLACE && !taken.has(one.path)).map((one) => ({ path: one.path, name: scopeLabel(one.path) }))
+      return choosableScopes(scopes, scopeLabel, false).filter((one) => !taken.has(one.path))
     },
   }
 }

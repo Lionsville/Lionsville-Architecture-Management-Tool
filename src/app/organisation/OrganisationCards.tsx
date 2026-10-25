@@ -22,11 +22,6 @@
  * Nothing here loads, and nothing here counts.
  */
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import Link from '@mui/material/Link'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
@@ -34,7 +29,7 @@ import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisio
 // Each from its own module: the roadmap's index names its pages, which arrive when they are opened.
 import { PLAN_STATUS_LABEL } from '../../roadmap/labels'
 import type { FindingTarget } from '../../roadmap/findingTarget'
-import { FindingSentence } from '../../roadmap/ui/FindingSentence'
+import { findingWords } from '../../roadmap/ui/FindingSentence'
 import { STATE_LABEL as CAUSE_STATE_LABEL } from '../../observations/observationScope'
 import type { Finding } from '../../model/checks'
 import { DecisionIcon, DeploymentIcon, DocumentIcon, ObservationIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
@@ -42,6 +37,8 @@ import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
 import type { TechnologySummary } from '../../projects/technologyRegister'
 import { OperatingCard } from './OperatingCard'
+import { OnePage } from './OnePage'
+import type { CardAction } from './OnePage'
 
 export type OrganisationCardsProps = {
   pages: OrganisationPages
@@ -105,37 +102,14 @@ export type OrganisationCardsProps = {
   s: Translate
 }
 
-export function OnePage({ icon, title, description, count, finding, action }: {
-  icon: ReactNode
-  title: string
-  /** What you find behind *Open*, in the card's own voice, above the counts. */
-  description: string
-  count?: string
-  /** A sentence, or a link to what the sentence is about. */
-  finding?: ReactNode
-  action?: ReactNode
-}) {
-  return (
-    // One cell of the grid, the whole cell: every card the same height as its
-    // row, with the action pinned to the bottom so the buttons line up whatever
-    // the count above them wrapped to.
-    <Card variant="outlined" sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 0.5 }}>
-        <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>
-      </Stack>
-      <Typography sx={{ fontSize: 12, mb: 0.75 }} data-testid="card-description">
-        {description}
-      </Typography>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', minHeight: 16 }}>
-        {count ?? ''}
-      </Typography>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', minHeight: 16, mb: 1 }}>
-        {finding ?? ''}
-      </Typography>
-      <Box sx={{ mt: 'auto' }}>{action}</Box>
-    </Card>
-  )
+/** A way in where the card has somewhere to go, and none where it has not. */
+function wayIf(onClick: (() => void) | undefined, way: Omit<CardAction, 'onClick'>): CardAction[] {
+  return onClick ? [{ ...way, onClick }] : []
+}
+
+/** *Open*, said with the page's name for a reader. */
+function openWay(onClick: (() => void) | undefined, name: string, testId: string, guide: string | undefined, s: Translate): CardAction[] {
+  return wayIf(onClick, { label: s('picker.open'), ariaLabel: s('picker.openNamed', { name }), testId, ...(guide ? { guide } : {}) })
 }
 
 /**
@@ -149,26 +123,56 @@ function businessAction(hasSheet: boolean, s: Translate): { text: string; label:
     : { text: s('org.businessMake'), label: undefined }
 }
 
-/** A line on a card as a link to the one thing it names, where the home can open it. */
-function CardLink({ onOpen, testId, children }: { onOpen?: () => void; testId: string; children: string }) {
-  return onOpen
-    ? <Link component="button" type="button" onClick={onOpen} data-testid={testId} sx={{ fontSize: 'inherit', textAlign: 'left' }}>{children}</Link>
-    : <>{children}</>
+/** The business card's ways in: the sheet, and the map, which is the same layer read the other way. */
+function businessWays(pages: OrganisationPages, writable: boolean, onOpenBusiness: () => void, onOpenMap: () => void, s: Translate): CardAction[] {
+  const business = businessAction(pages.business.sheetId !== undefined, s)
+  const mapped = Boolean(pages.business.mapId)
+  return [
+    ...(pages.business.sheetId || writable ? wayIf(onOpenBusiness, { label: business.text, testId: 'open-business', guide: 'org.card.business', ...(business.label ? { ariaLabel: business.label } : {}) }) : []),
+    ...(mapped || writable ? wayIf(onOpenMap, {
+      label: mapped ? s('org.mapView') : s('org.mapMake'), testId: 'open-map', guide: 'org.card.map', ...(mapped ? { ariaLabel: s('org.openMap') } : {}),
+    }) : []),
+  ]
+}
+
+/** The decisions card's ways in: the page, and the latest decision. */
+function decisionWays(pages: OrganisationPages, onOpenDecisions: () => void, onOpenDecision: ((id: string) => void) | undefined, s: Translate): CardAction[] {
+  const latest = pages.decisions.latest
+  return [
+    ...openWay(onOpenDecisions, s('shell.decisions'), 'open-decisions', 'org.card.decisions', s),
+    ...(latest && onOpenDecision ? wayIf(() => onOpenDecision(latest.id), { label: s('org.latest', { name: formatAdrNumber(latest.number) }), testId: 'open-latest-decision' }) : []),
+  ]
+}
+
+/** The roadmap card's ways in: the page, and what its dates disagree about. */
+function roadmapWays(pages: OrganisationPages, counted: boolean, onOpenRoadmap: () => void, onOpenFinding: ((target: FindingTarget) => void) | undefined, s: Translate): CardAction[] {
+  const opens = counted ? pages.roadmap.findingOpens : undefined
+  return [
+    ...openWay(onOpenRoadmap, s('shell.roadmap'), 'open-roadmap', 'org.card.roadmap', s),
+    ...(opens && onOpenFinding ? wayIf(() => onOpenFinding(opens), { label: s('org.openFinding'), testId: 'open-roadmap-finding' }) : []),
+  ]
+}
+
+/** The technology card's ways in: the register, and the landscape, which is the same layer as a picture. */
+function technologyWays(pages: OrganisationPages, writable: boolean, onOpenTechnology: () => void, onOpenLandscape: () => void, s: Translate): CardAction[] {
+  const drawn = Boolean(pages.technology.landscapeId)
+  return [
+    ...openWay(onOpenTechnology, s('org.technology'), 'open-technology', 'org.card.technology', s),
+    ...(drawn || writable ? wayIf(onOpenLandscape, {
+      label: drawn ? s('org.technologyLandscapeView') : s('org.technologyLandscapeMake'), testId: 'open-technology-landscape', guide: 'org.card.landscape',
+      ...(drawn ? { ariaLabel: s('org.openTechnologyLandscape') } : {}),
+    }) : []),
+  ]
 }
 
 /**
  * The roadmap card's finding: the worst the dates disagree about, as the
- * roadmap page says it and as a link to what it is about (`FindingSentence`),
- * or that they agree.
+ * roadmap page says it (`findingWords`) — what it is about is the card's
+ * second way in — or that they agree.
  */
-function RoadmapFinding({ finding, opens, onOpen, s }: {
-  finding: Finding | undefined
-  opens: FindingTarget | undefined
-  onOpen: ((target: FindingTarget) => void) | undefined
-  s: Translate
-}) {
+function RoadmapFinding({ finding, s }: { finding: Finding | undefined; s: Translate }) {
   if (!finding) return <>{s('org.noFindings')}</>
-  return <FindingSentence problem={finding} t={s} onOpen={() => { if (opens) onOpen?.(opens) }} />
+  return <>{findingWords(finding, s)}</>
 }
 
 /** "3 accepted · 1 proposed", in the vocabulary's own order and without zeroes. */
@@ -197,15 +201,6 @@ function observationsLine(counts: OrganisationPages['observations'], s: Translat
   ].filter(Boolean).join(' · ')
 }
 
-/**
- * A card's buttons: in one row while they fit and on two when they do not,
- * each on one line — a label broken over two lines inside its button read as
- * two buttons.
- */
-function Actions({ children }: { children: ReactNode }) {
-  return <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>{children}</Stack>
-}
-
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, localObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
   onOpenDecision, onOpenObservations, onOpenRoadmap, onOpenFinding, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape,
@@ -215,7 +210,6 @@ export function OrganisationCards({
   // moves up to it: one sentence on each card rather than four zeroes, which
   // read as a fault rather than as a beginning.
   const nothing = ready && pages.empty
-  const quiet = { fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' } as const
 
   const businessCount = nothing ? s('org.nothingHere') : ready ? [
     plural(s, { one: 'org.journeysOne', other: 'org.journeysOther' }, pages.business.journeys),
@@ -230,7 +224,6 @@ export function OrganisationCards({
       ? plural(s, { one: 'org.unmappedOne', other: 'org.unmappedOther' }, pages.business.unmapped)
       : s('org.allMapped')
 
-  const business = businessAction(pages.business.sheetId !== undefined, s)
   return (
     // A grid rather than a wrapping row: equal columns, so six cards are two
     // rows of three the same size and left-aligned, not four and two wider ones
@@ -247,11 +240,7 @@ export function OrganisationCards({
               count: pages.documentation.described, total: pages.documentation.elements,
             })
             : undefined}
-          action={(
-            <Button size="small" onClick={onOpenDocumentation} sx={quiet} data-testid="open-documentation" aria-label={s('picker.openNamed', { name: s('shell.documentation') })}>
-              {s('picker.open')}
-            </Button>
-          )}
+          actions={openWay(onOpenDocumentation, s('shell.documentation'), 'open-documentation', undefined, s)}
         />
       )}
 
@@ -261,23 +250,7 @@ export function OrganisationCards({
         description={s('org.describeBusiness')}
         count={businessCount}
         finding={businessFinding}
-        action={(
-          <Actions>
-            {(pages.business.sheetId || writable) && (
-              <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business" aria-label={business.label}>
-                {business.text}
-              </Button>
-            )}
-            {/* The map is the same layer read the other way — what supports
-                each capability, across the tree — and lives behind the same
-                card rather than a fifth. */}
-            {(pages.business.mapId || writable) && (
-              <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map" data-guide="org.card.map">
-                {pages.business.mapId ? s('org.map') : s('org.mapMake')}
-              </Button>
-            )}
-          </Actions>
-        )}
+        actions={businessWays(pages, writable, onOpenBusiness, onOpenMap, s)}
       />}<OperatingCard shown={shows.operating} ready={ready} counts={pages.operating} onOpen={onOpenOperating} s={s} />
 
       <OnePage
@@ -290,16 +263,8 @@ export function OrganisationCards({
             tallyLine(pages.decisions.byStatus, ADR_STATUS_LABEL, s),
           ].filter(Boolean).join(' · ')
           : undefined}
-        finding={pages.decisions.latest && (
-          <CardLink onOpen={onOpenDecision ? () => onOpenDecision(pages.decisions.latest!.id) : undefined} testId="open-latest-decision">
-            {s('org.latest', { name: `${formatAdrNumber(pages.decisions.latest.number)} ${pages.decisions.latest.title}` })}
-          </CardLink>
-        )}
-        action={(
-          <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions" data-guide="org.card.decisions" aria-label={s('picker.openNamed', { name: s('shell.decisions') })}>
-            {s('picker.open')}
-          </Button>
-        )}
+        finding={pages.decisions.latest && s('org.latest', { name: `${formatAdrNumber(pages.decisions.latest.number)} ${pages.decisions.latest.title}` })}
+        actions={decisionWays(pages, onOpenDecisions, onOpenDecision, s)}
       />
 
       <OnePage
@@ -316,11 +281,7 @@ export function OrganisationCards({
             ? plural(s, { one: 'org.localBelowOne', other: 'org.localBelowOther' }, localObservations)
             : '',
         ].filter(Boolean).join(' · ') || undefined}
-        action={(
-          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations" data-guide="org.card.observations" aria-label={s('picker.openNamed', { name: s('shell.observations') })}>
-            {s('picker.open')}
-          </Button>
-        )}
+        actions={openWay(onOpenObservations, s('shell.observations'), 'open-observations', 'org.card.observations', s)}
       />
 
       <OnePage
@@ -341,13 +302,9 @@ export function OrganisationCards({
             : '',
         ].filter(Boolean).join(' · ') || undefined}
         finding={nothing || !ready ? undefined : (
-          <RoadmapFinding finding={pages.roadmap.finding} opens={pages.roadmap.findingOpens} onOpen={onOpenFinding} s={s} />
+          <RoadmapFinding finding={pages.roadmap.finding} s={s} />
         )}
-        action={(
-          <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap" data-guide="org.card.roadmap" aria-label={s('picker.openNamed', { name: s('shell.roadmap') })}>
-            {s('picker.open')}
-          </Button>
-        )}
+        actions={roadmapWays(pages, !nothing && ready, onOpenRoadmap, onOpenFinding, s)}
       />
 
       {/* The one card that is about the whole tree rather than about the
@@ -365,11 +322,7 @@ export function OrganisationCards({
           plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, register.ownedByADomain),
           plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
         ].join(' · ')}
-        action={(
-          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register" data-guide="org.card.register" aria-label={s('picker.openNamed', { name: s('org.register') })}>
-            {s('picker.open')}
-          </Button>
-        )}
+        actions={openWay(onOpenRegister, s('org.register'), 'open-register', 'org.card.register', s)}
       />}
 
       {/* The technology beside the applications (ADR-0014 §2.6): every
@@ -384,20 +337,7 @@ export function OrganisationCards({
           plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
           plural(s, { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther' }, technology.shared),
         ].join(' · ')}
-        action={(
-          <Actions>
-            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology" data-guide="org.card.technology" aria-label={s('picker.openNamed', { name: s('org.technology') })}>
-              {s('picker.open')}
-            </Button>
-            {/* The landscape is the same layer as a picture — who uses what,
-                what is offered, what delivers it — behind the same card. */}
-            {(pages.technology.landscapeId || writable) && (
-              <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape" data-guide="org.card.landscape">
-                {pages.technology.landscapeId ? s('org.technologyLandscape') : s('org.technologyLandscapeMake')}
-              </Button>
-            )}
-          </Actions>
-        )}
+        actions={technologyWays(pages, writable, onOpenTechnology, onOpenTechnologyLandscape, s)}
       />}
       {extra}
     </Box>

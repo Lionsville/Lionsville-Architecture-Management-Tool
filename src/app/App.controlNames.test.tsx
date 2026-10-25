@@ -190,10 +190,19 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('checks-instances')
   }]],
   // The topics catalogue (ADR-0042), opened from the organisation's card.
-  [['the topics catalogue, from the organisation’s card', ['topics.new'], async () => {
+  [['the topics catalogue, from the organisation’s card', ['topics.new', 'page.close', 'page.seam'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-topic-catalogue'))
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
+  }]],
+  // The overflow menu's Help, and Connect an agent from it, in a browser tab: where the desktop app is had (ADR-0044 §6).
+  [['the overflow menu', ['shell.website'], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('overflow-button'))
+    await screen.findByTestId('overflow-menu')
+  }], ['Connect an agent, from it', ['agent.download'], async () => {
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Connect an agent…' }))
+    await screen.findByTestId('agent-desktop-only')
   }]],
   // The register of building blocks (ADR-0043), opened from the organisation's card.
   [['the building blocks, from the organisation’s card', ['blocks.new'], async () => {

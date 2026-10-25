@@ -48,4 +48,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'window.unsavedDetail': 'Nu sluiten verliest de wijzigingen die alleen nog in dit venster staan.',
   'window.closeAnyway': 'Toch sluiten',
   'window.keepOpen': 'Venster open laten',
+  'menu.website': 'Website',
 }

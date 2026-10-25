@@ -469,7 +469,7 @@ export function OrganisationScreen({
         sourceLabelKey={sourceSayings.labelKey}
         sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
         waysIn={atRoot ? waysIn : undefined}
-        onGoHome={onGoHome}
+        onGoHome={(path) => { homePages.close(); onGoHome(path) }}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
         agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open }}
@@ -661,7 +661,7 @@ export function OrganisationScreen({
       <HomePages
         pages={homePages} at={at} heading={heading} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName}
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
-        onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome}
+        onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome} ready={ready}
       />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}

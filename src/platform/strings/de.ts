@@ -48,4 +48,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'window.unsavedDetail': 'Wenn Sie jetzt schließen, gehen die Änderungen verloren, die nur in diesem Fenster sind.',
   'window.closeAnyway': 'Trotzdem schließen',
   'window.keepOpen': 'Fenster geöffnet lassen',
+  'menu.website': 'Website',
 }

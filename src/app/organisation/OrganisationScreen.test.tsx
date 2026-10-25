@@ -246,14 +246,14 @@ describe('the organisation screen — its own pages', () => {
   it('opens what the roadmap card\u2019s finding is about, and the record the decisions card names', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
-    const finding = await within(cards).findByRole('button', { name: /was due to finish on 2026-08-01/ })
+    const finding = await within(cards).findByRole('button', { name: 'What the dates disagree about' })
     fireEvent.click(finding)
     expect(await screen.findByTestId('plan-topbar')).toBeTruthy()
     expect(screen.getByTestId('plan-topbar').textContent).toContain('Retire the rater')
     cleanup()
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const again = await screen.findByTestId('organisation-cards')
-    fireEvent.click(await within(again).findByRole('button', { name: 'Latest: ADR-0002 Federate the model' }))
+    fireEvent.click(await within(again).findByRole('button', { name: 'Latest: ADR-0002' }))
     const reader = await screen.findByTestId('adr-reader')
     expect(reader.textContent).toContain('Federate the model')
   })
@@ -278,7 +278,7 @@ describe('the organisation screen — its own pages', () => {
     // with the language.
     expect(detail.querySelector('[data-finding="unattributed"]')?.textContent)
       .toContain('Post office is outside the organisation')
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
@@ -324,7 +324,7 @@ describe('the organisation screen — its own pages', () => {
     expect(offered.textContent).toContain('is not marked shared — mark it shared, or move it')
     fireEvent.click(screen.getByTestId('checks-row-check.unrealised'))
     expect(screen.getByTestId('checks-detail').textContent).toContain('Message brokering is offered, but no platform delivers it')
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
 
     fireEvent.click(within(cards).getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
@@ -408,7 +408,7 @@ describe('the organisation screen — its own pages', () => {
       id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] },
     }]
     renderApp({ repositories: heldRepositories([withMap]), today: TODAY })
-    await waitFor(() => expect(screen.getByTestId('open-map').textContent).toBe('Map'))
+    await waitFor(() => expect(screen.getByTestId('open-map').textContent).toBe('Enterprise map'))
     fireEvent.click(screen.getByTestId('open-map'))
     // The root draws nothing; the map is what it was opened for.
     expect(await screen.findByTestId('map-grid', {}, { timeout: 3000 })).toBeDefined()
@@ -503,11 +503,11 @@ describe('the organisation screen — a fresh folder', () => {
     // The seven pages of the root, the operating model, the people register beside them (ADR-0036), the checks, the principles (ADR-0041), the topics (ADR-0042) and the building blocks (ADR-0043).
     await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(13))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
-    expect(said).toContain('Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.')
-    expect(said).toContain('What the app checks the model for, by what it is about: why each check matters, how to fix it, and where it is found.')
-    expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
-    expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
-    expect(said).toContain('The kinds of unit the organisation has, the roles each holds and what each role is responsible for, in its own words.')
+    expect(said).toContain('Who is who: one entry per person.')
+    expect(said).toContain('Where the model contradicts itself, and how to fix it.')
+    expect(said).toContain('A page for every record on this scope\'s boards.')
+    expect(said).toContain('Every application, and the scope that answers for it.')
+    expect(said).toContain('Unit types, their roles, and what each role answers for.')
     expect(said).toContain('Subjects across scopes; their principles apply there.')
     expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')
     expect(screen.getByRole('button', { name: 'New domain or team…' })).toBeDefined()

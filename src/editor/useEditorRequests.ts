@@ -13,6 +13,7 @@ import type { EditorRequests, SolutionDesignEditorProps } from './props';
 import { selectElement, type EditorState } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
 import { FIELDS_COLUMN } from '../documentation/ui/fieldsColumn';
+import { useSeamWidth } from '../widgets/useSeamWidth';
 
 /** Is `next` a request not yet adopted? A host re-asks for the same element by bumping only the nonce. */
 export function isNewRequest(
@@ -94,9 +95,10 @@ export function useCanvasRequests(
 export type CanvasRequests = ReturnType<typeof useCanvasRequests>;
 
 /**
- * The documentation page: which element's is open, the view it lists the
- * neighbours of, and the width of its fields column — session state, never
- * saved, and kept here because the page is remounted per element.
+ * The documentation page: which element's is open and the view it lists the
+ * neighbours of — session state, never saved, and kept here because the page
+ * is remounted per element — and the width of its fields column, the
+ * reader's, kept per seam like every column's (ADR-0044 §4).
  *
  * Opening a page selects the element as well, so closing it lands the reader
  * on the thing they were reading about, with its inspector open. A stand-in's
@@ -111,7 +113,7 @@ export function useDocumentation(
 ) {
   const [documentationId, setDocumentationId] = useState<ElementId | undefined>(undefined);
   const [diagramId, setDiagramId] = useState<string | undefined>(undefined);
-  const [fieldsWidth, setFieldsWidth] = useState<number>(FIELDS_COLUMN.default);
+  const [fieldsWidth, setFieldsWidth] = useSeamWidth('documentation.fields', FIELDS_COLUMN.default);
   const { setSelection } = state;
   const open = useCallback((elementId: ElementId) => {
     const held = state.model.elements.find((e) => e.id === elementId);

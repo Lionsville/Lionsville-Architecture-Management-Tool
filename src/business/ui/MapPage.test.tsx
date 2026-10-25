@@ -106,6 +106,24 @@ describe('the grid', () => {
     expect(screen.getByTestId('map-owner-1').textContent).toBe('Finance')
   })
 
+  it('keeps both headings on top while it scrolls: the owners’ band, and the column names just under it (ADR-0044 §7)', () => {
+    open({
+      describe: (id) => (id === 'erp' ? { name: 'Finance system', where: 'Finance' } : undefined),
+    })
+    const band = getComputedStyle(screen.getByTestId('map-owner-1'))
+    expect([band.position, band.top]).toEqual(['sticky', '0px'])
+    const column = getComputedStyle(screen.getByTestId('map-column-erp'))
+    expect(column.position).toBe('sticky')
+    expect(column.top).toBe(band.height)
+    // Nothing for the rows to scroll through above the headings.
+    expect(Number.parseFloat(getComputedStyle(screen.getByTestId('map-body')).paddingTop || '0')).toBe(0)
+  })
+
+  it('sticks the column names to the very top where there is no band', () => {
+    open()
+    expect(getComputedStyle(screen.getByTestId('map-column-erp')).top).toBe('0px')
+  })
+
   it('draws no owner band when every system is this scope’s own', () => {
     open()
     expect(screen.queryByTestId('map-owner-0')).toBeNull()

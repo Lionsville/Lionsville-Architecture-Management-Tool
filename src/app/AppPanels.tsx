@@ -247,6 +247,7 @@ function useHomeTopics(parts: ShellParts): HomeStore {
   const { makeId } = parts.props
   return useMemo(() => ({
     scopes: repositories.scopes, index: repositories.index, notify, treeIndex, makeId,
+    ...(repositories.history ? { history: repositories.history } : {}),
     written: () => { refresh(); written.current() },
   }), [repositories, refresh, notify, treeIndex, makeId])
 }

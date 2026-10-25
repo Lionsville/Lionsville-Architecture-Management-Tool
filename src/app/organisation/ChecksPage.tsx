@@ -48,6 +48,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { AcceptedFindings, MarkAsIntended } from '../../widgets/FindingMarks'
 import { WEIGHT_MARK } from '../../widgets/weightMark'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageClose } from '../../widgets/PageClose'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import { useCheckMarking } from '../checkMarking'
 import type { CheckMarking } from '../checkMarking'
@@ -134,6 +135,7 @@ export function ChecksPage(props: ChecksPageProps) {
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        <PageClose onClose={props.onClose} />
       </Box>
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2, sm: 3 }, py: 2 }}>
         <Box sx={{ maxWidth: 1180, mx: 'auto', display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-start' }}>

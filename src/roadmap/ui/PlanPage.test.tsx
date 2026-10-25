@@ -425,6 +425,26 @@ describe('the body', () => {
   })
 })
 
+describe('leaving a plan being written (ADR-0044 §2)', () => {
+  it('goes back to reading from ‹, × or Escape, and the next press closes the page', () => {
+    const onClose = vi.fn()
+    setup({ onClose })
+    for (const leave of [
+      () => fireEvent.click(screen.getByTestId('page-back')),
+      () => fireEvent.click(screen.getByTestId('page-close')),
+      () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }),
+    ]) {
+      fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+      expect(screen.getByTestId('page-close').getAttribute('aria-label')).toBe('Back to reading')
+      leave()
+      expect(screen.queryByLabelText('Plan source (markdown)')).toBeNull()
+      expect(onClose).not.toHaveBeenCalled()
+    }
+    fireEvent.click(screen.getByTestId('page-close'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('deleting', () => {
   it('asks first, then removes and closes', () => {
     const onClose = vi.fn()

@@ -161,7 +161,7 @@ describe('the Checks page', () => {
 
   it('closes from its bar', () => {
     const { props } = page()
-    fireEvent.click(within(screen.getByTestId('checks-topbar')).getByRole('button', { name: 'Close' }))
+    fireEvent.click(within(screen.getByTestId('checks-topbar')).getAllByRole('button', { name: 'Close' })[0]!)
     expect(props.onClose).toHaveBeenCalledOnce()
   })
 })

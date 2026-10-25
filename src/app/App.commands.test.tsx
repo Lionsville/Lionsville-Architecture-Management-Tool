@@ -381,6 +381,16 @@ describe('the overflow on the web', () => {
     expect(link.getAttribute('target')).toBe('_blank')
   })
 
+  it('offers the product’s site under Help, in a tab of its own (ADR-0044 §6)', async () => {
+    show()
+    await openOverflow()
+    const link = screen.getByTestId('overflow-website')
+    expect(link.textContent).toBe('Website')
+    expect(link.getAttribute('href')).toBe('https://architecture.lionsville.nl')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noreferrer')
+  })
+
   it('is absent on a host that has a menu bar of its own', () => {
     show({ host: { hostMenu: true } })
     expect(screen.queryByTestId('overflow-button')).toBeNull()

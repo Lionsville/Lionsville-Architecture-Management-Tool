@@ -8,13 +8,12 @@
  * off the index, as the home's other counts are. Retired principles and those
  * absorbed by another are counted by neither. Opens the scope on its page.
  */
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { ancestorScopes } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { DecisionIcon } from '../../widgets/icons'
-import { OnePage } from './OrganisationCards'
+import { OnePage } from './OnePage'
 import { useTopics } from './TopicsContext'
 
 /** What the card counts: the scope's own standing principles, and those in force there — above it, and from its topics (ADR-0042 §4). */
@@ -42,11 +41,7 @@ export function PrinciplesCard({ at, principlesAt, onOpen, s }: {
       title={s('principles.card')}
       description={s('principles.cardDescribe')}
       count={inForce > 0 ? s('principles.cardCount', { own, inForce }) : s('principles.cardNone')}
-      action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-principles" data-guide="org.card.principles" aria-label={s('picker.openNamed', { name: s('principles.card') })}>
-          {s('picker.open')}
-        </Button>
-      )}
+      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-principles', guide: 'org.card.principles', ariaLabel: s('picker.openNamed', { name: s('principles.card') }) }]}
     />
   )
 }

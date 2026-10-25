@@ -65,6 +65,7 @@ export function SeamResizer(props: SeamResizerProps) {
   return (
     <Box
       role="separator"
+      data-guide="page.seam"
       aria-orientation={orientation}
       aria-label={label}
       aria-valuenow={Math.round(value)}

@@ -7,13 +7,12 @@
  * the organisation's, so the card is the root's: handed no register — another
  * scope's home, or a source that keeps none — it draws nothing.
  */
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { entriesOf } from '../../people/person'
 import type { PeopleAccess } from './usePeopleRegister'
 import { PeopleIcon } from '../../widgets/icons'
-import { OnePage } from './OrganisationCards'
+import { OnePage } from './OnePage'
 
 export function PeopleCard({ people: register, atRoot, onOpen, s }: {
   people: PeopleAccess | undefined; atRoot: boolean; onOpen: () => void; s: Translate
@@ -31,11 +30,7 @@ export function PeopleCard({ people: register, atRoot, onOpen, s }: {
         plural(s, { one: 'org.peopleOne', other: 'org.peopleOther' }, entries.filter((person) => person.state !== 'forgotten').length),
         ...(left > 0 ? [plural(s, { one: 'org.peopleLeftOne', other: 'org.peopleLeftOther' }, left)] : []),
       ].join(' · ')}
-      action={(
-        <Button size="small" onClick={onOpen} sx={{ fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' }} data-testid="open-people" data-guide="org.card.people" aria-label={s('picker.openNamed', { name: s('org.people') })}>
-          {s('picker.open')}
-        </Button>
-      )}
+      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-people', guide: 'org.card.people', ariaLabel: s('picker.openNamed', { name: s('org.people') }) }]}
     />
   )
 }

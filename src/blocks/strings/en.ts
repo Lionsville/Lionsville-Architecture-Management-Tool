@@ -140,4 +140,6 @@ export const EN = {
   'blocks.factOpen': 'Open its page',
   'blocks.factChosen': 'Is {sbb}, the {block} chosen for {scope}.',
   'blocks.factEvaluation': 'The evaluation',
+  'blocks.placeTopics': 'Topics',
+  'blocks.placeScopes': 'The organisation',
 } as const

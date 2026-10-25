@@ -25,6 +25,7 @@ import { FieldsDialog } from '../../widgets/CompactForms'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { EvaluationView } from './EvaluationView'
+import { scopeMenuItems } from '../../widgets/ScopeChoices'
 
 const CELL = { borderBottom: 1, borderColor: 'divider', px: 1.5, py: 0.75, fontSize: 13, textAlign: 'left', verticalAlign: 'top' } as const
 
@@ -99,7 +100,7 @@ function EvaluateDialog({ row, onClose }: { row: BlockRow; onClose: (made?: stri
       <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.evaluateIntro')}</Typography>
         <TextField select label={t('blocks.colScope')} value={scope} onChange={(event) => setScope(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'evaluate-scope' }, inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          {choices.map((one) => <MenuItem key={one.path} value={one.path}>{one.name}</MenuItem>)}
+          {scopeMenuItems(choices, { topics: t('blocks.placeTopics'), scopes: t('blocks.placeScopes') })}
         </TextField>
         <Box>
           <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.5 }}>{t('blocks.contextsHere')}</Typography>

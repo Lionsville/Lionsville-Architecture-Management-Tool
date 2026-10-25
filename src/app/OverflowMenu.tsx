@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, WEBSITE_LINK, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
 
@@ -140,6 +140,17 @@ export function OverflowMenu({
           onClick={() => setAnchor(null)}
         >
           <ListItemText primary={s(DESKTOP_APP_LINK.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
+        </MenuItem>
+        <MenuItem
+          component="a"
+          href={WEBSITE_LINK.href}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="overflow-website"
+          data-guide="shell.website"
+          onClick={() => setAnchor(null)}
+        >
+          <ListItemText primary={s(WEBSITE_LINK.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
         </MenuItem>
         {/* The providers' own lines, last and under a rule. A rule and not a
             heading: a heading would be a word of ours about somewhere this shell

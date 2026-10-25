@@ -13,9 +13,15 @@ import type { HostCommand } from '../../src/platform/hostCommands'
 
 const sent = vi.hoisted(() => [] as unknown[])
 
+const opened = vi.hoisted(() => [] as string[])
+
 vi.mock('electron', () => ({
-  Menu: { setApplicationMenu: vi.fn(), buildFromTemplate: vi.fn() },
+  // A menu that can be built: what `installAppMenu` makes, with nothing of Electron's own under it.
+  Menu: Object.assign(vi.fn(function menu() { return { items: [], append: vi.fn() } }), {
+    setApplicationMenu: vi.fn(), buildFromTemplate: vi.fn(), getApplicationMenu: () => null,
+  }),
   MenuItem: vi.fn(),
+  shell: { openExternal: (url: string) => { opened.push(url); return Promise.resolve() } },
   webContents: {
     getAllWebContents: () => [{
       isDestroyed: () => false,
@@ -171,3 +177,17 @@ describe('the commands main sends the window', () => {
     expect(toAgain).toEqual([save])
   })
 })
+
+describe('the Help menu (ADR-0044 §6)', () => {
+  it('has the product’s site, which opens in the browser', async () => {
+    const menu = await fresh()
+    const { MenuItem } = await import('electron')
+    menu.installAppMenu({ recents: [], packaged: true })
+    const made = vi.mocked(MenuItem).mock.calls.map(([options]) => options as { label?: string; submenu?: { label?: string; click?: () => void }[] })
+    const help = made.find((options) => options.label === 'Help')!
+    const website = help.submenu!.find((item) => item.label === 'Website')!
+    website.click!()
+    expect(opened).toEqual(['https://architecture.lionsville.nl'])
+  })
+})
+

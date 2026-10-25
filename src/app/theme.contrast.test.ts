@@ -366,6 +366,8 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   'src/editor/AspectColumnsEditor.tsx': [1, 'switched off'],
   // The two headings among the type choices: options that cannot be picked, read at full ink rather than dimmed as a disabled choice is.
   'src/app/organisation/ScopeSettingsDialog.tsx': [1, 'headings among the choices, undimmed'],
+  // A home card's ways in, hidden until the card is pointed at or the keyboard is in it, and their fade: shown whole or not at all, never dimmed.
+  'src/app/organisation/OnePage.tsx': [3, 'ways in hidden until hover or keyboard focus'],
   // A chart unit's *+*, hidden until its name row is pointed at or focused, and the comment and fade that say so: an icon, no words.
   'src/app/units/AddUnit.tsx': [4, 'hidden + until hover or focus'],
   // The drop-zone highlight fading in: a tint, no words.

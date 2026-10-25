@@ -48,6 +48,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageClose } from '../../widgets/PageClose'
 
 /** What both pages are handed, bar the id of the thing being read. */
 type PageProps = {
@@ -272,6 +273,7 @@ function Report<R>(props: PageProps & { subjectId: ElementId | undefined; config
           </Typography>
         )}
         <Box sx={{ flex: 1 }} />
+        <PageClose onClose={props.onClose} />
       </Box>
 
       <Box data-testid={`${config.prefix}-body`} sx={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto', p: 2 }}>

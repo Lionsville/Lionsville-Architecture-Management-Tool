@@ -25,7 +25,6 @@ import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import Switch from '@mui/material/Switch'
 import MenuItem from '@mui/material/MenuItem'
@@ -43,6 +42,7 @@ import type { MarkdownRenderOptions } from '../../documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import { useStrings } from '../../i18n'
@@ -51,6 +51,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { AddElement, StatusField, WindowFields, namedSelect } from './PlanFacts'
 import { CompactForms, Fields, SectionHeading } from '../../widgets/CompactForms'
@@ -141,12 +142,13 @@ export function PlanPage(props: PlanPageProps) {
     setMode(next)
     setFullPage(next === 'edit')
   }
+  const leaving = useBackToReading(editing, () => switchMode('read'), props.onClose, t('plan.close'))
 
   return (
     <PageDialog
       open={props.open}
       topInset={chrome.topInset}
-      onClose={props.onClose}
+      onClose={leaving.leave}
       aria-label={t('plan.page')}
     >
       <Box
@@ -159,11 +161,7 @@ export function PlanPage(props: PlanPageProps) {
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
       >
-        <Tooltip title={t('plan.close')}>
-          <IconButton size="small" aria-label={t('plan.close')} onClick={props.onClose}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
+        <PageBack onBack={leaving.leave} label={leaving.said}><BackIcon /></PageBack>
         {plan && (
           <Typography sx={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <Box component="span" sx={{ color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace', mr: 1 }}>
@@ -188,6 +186,7 @@ export function PlanPage(props: PlanPageProps) {
             <Button size="small" color="error" onClick={() => setDeleting(true)}>{t('roadmap.delete')}</Button>
           </>
         )}
+        <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
       </Box>
 
       {plan && (
@@ -656,6 +655,7 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
         <DocumentSheet dense={editing}>
           <Box sx={{ fontSize: 14 }} data-document>{rendered}</Box>
           <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />
+          <RecordChanges about={{ kind: 'transition', id: plan.id }} first="proposed" />
           <CommentThread about={{ kind: 'transition', id: plan.id }} />
         </DocumentSheet>
       )}

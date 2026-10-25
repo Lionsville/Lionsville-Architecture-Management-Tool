@@ -25,6 +25,8 @@ import { linkHolds } from './TopicsContext'
 import type { TopicLink, TopicSummary, TopicsAccess } from './TopicsContext'
 import { EditTopicDialog } from './topicDialogs'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
+import { renderScopeOption } from '../../widgets/ScopeChoices'
+import type { ScopeChoice } from '../../widgets/ScopeChoices'
 
 const HEADING = { display: 'block', mt: 3, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary' } as const
 const SMALL = { fontSize: 11, minWidth: 0, px: 0.75 } as const
@@ -78,14 +80,14 @@ function LinkLine({ topic, link, access, day }: { topic: TopicSummary; link: Top
 /** *+ Scope…* with its first day: a link made from this end. */
 function AddLink({ topic, access, current }: { topic: TopicSummary; access: TopicsAccess; current: readonly TopicLink[] }) {
   const { t } = useStrings()
-  const [adding, setAdding] = useState<{ path: string; name: string } | null>(null)
+  const [adding, setAdding] = useState<ScopeChoice | null>(null)
   const [from, setFrom] = useState(access.today())
   const choices = access.scopeChoices().filter((one) => !current.some((link) => link.path === one.path))
   return (
     <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center' }}>
       <Autocomplete
-        size="small" options={choices as { path: string; name: string }[]} value={adding} onChange={(_event, next) => setAdding(next)}
-        getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} sx={{ flex: 1 }}
+        size="small" options={choices} value={adding} onChange={(_event, next) => setAdding(next)}
+        getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption} sx={{ flex: 1 }}
         renderInput={(params) => <TextField {...params} placeholder={t('topics.addScope')} slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps.htmlInput, 'aria-label': t('topics.addScope') } }} />}
       />
       <TextField type="date" size="small" label={t('topics.from')} value={from} onChange={(event) => setFrom(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />

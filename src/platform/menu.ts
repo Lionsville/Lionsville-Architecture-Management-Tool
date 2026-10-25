@@ -193,6 +193,12 @@ export const DESKTOP_APP_LINK: { readonly label: StringKey; readonly href: strin
   href: 'https://architecture.lionsville.nl/download',
 }
 
+/** The product's own site, under Help beside the way to the desktop app. */
+export const WEBSITE_LINK: { readonly label: StringKey; readonly href: string } = {
+  label: 'menu.website',
+  href: 'https://architecture.lionsville.nl',
+}
+
 /**
  * Preferences. On macOS it is **Settings… ⌘,** in the app menu; elsewhere
  * **Preferences…** above Quit in the File menu. Same command either way.

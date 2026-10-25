@@ -53,6 +53,7 @@ import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { Mode } from './AdrReaderParts'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
+import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { CompactForms } from '../../widgets/CompactForms'
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -226,6 +227,7 @@ export function AdrReader(props: AdrReaderProps) {
               onChange={(signers) => onUpdate({ signers })}
             />
             {props.keptIn === undefined && <CitationsSection about={{ kind: 'decision', id: adr.id }} subject={`${adr.title}\n${adr.body}`} readOnly={!canEdit} />}
+            <RecordChanges about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} first="proposed" />
             <CommentThread about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} />
           </DocumentSheet>
         )}

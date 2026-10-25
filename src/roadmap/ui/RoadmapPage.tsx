@@ -22,7 +22,7 @@
  * geometry, so the shell toolbar's drag strip stays live underneath and would
  * swallow every click on a control placed there.
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
@@ -43,6 +43,9 @@ import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon, CaretIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageClose } from '../../widgets/PageClose'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
@@ -149,6 +152,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const theme = useTheme()
   const phaseColour = phaseColours(theme)
   const [newTitle, setNewTitle] = useState<string | null>(null)
+  const names = useNamesSeam()
   // The period a person chose to look at. Both ends or neither: one end alone
   // is half a question, and the natural axis answers it until the other is set.
   const [window_, setWindow] = useState<{ from: string; to: string }>(() => defaultWindow(today))
@@ -234,11 +238,14 @@ export function RoadmapPage(props: RoadmapPageProps) {
             {t('roadmap.newPlan')}
           </Button>
         )}
+        <PageClose onClose={props.onClose} />
       </Box>
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {/* the axis */}
-        <Box sx={{ overflow: 'auto', p: 2, minWidth: 0, flex: 1 }}>
+        <Box sx={{ overflow: 'auto', p: 2, minWidth: 0, flex: 1, '--roadmap-labels': `${names.width}px` }}>
+          <Box sx={{ position: 'relative' }}>
+          {!empty && names.seam}
           {empty ? (
             <>
               <Box sx={{ color: 'text.secondary' }}>
@@ -251,49 +258,15 @@ export function RoadmapPage(props: RoadmapPageProps) {
             </>
           ) : (
             <>
-              {/* The window's two ends are the axis's two ends, so the fields
-                  that set them sit where the ends are, either side of the
-                  scrubber, with room for their labels. */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, pt: 1 }}>
-                <TextField
-                  type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
-                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
-                  sx={{ width: 160 }}
-                  onChange={(e) => setWindow((w) => ({ ...w, from: e.target.value }))}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Slider
-                    size="small"
-                    aria-label={t('roadmap.showing')}
-                    value={Math.max(0, daysBetween(roadmap.from, scrubDay))}
-                    min={0}
-                    max={Math.max(1, span)}
-                    disabled={readOnly}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(days: number) => addDays(roadmap.from, days)}
-                    onChange={(_event, value) => {
-                      const day = addDays(roadmap.from, Array.isArray(value) ? value[0] : value)
-                      actions.setAsOf(day === today ? undefined : day)
-                    }}
-                  />
-                </Box>
-                <TextField
-                  type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
-                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
-                  sx={{ width: 160 }}
-                  onChange={(e) => setWindow((w) => ({ ...w, to: e.target.value }))}
-                />
-                {cut ? (
-                  <Button size="small" onClick={() => setWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
-                ) : (
-                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>{roadmap.from} – {roadmap.to}</Typography>
-                )}
-              </Box>
+              <WindowBar
+                window_={window_} onWindow={setWindow} from={roadmap.from} to={roadmap.to} scrubDay={scrubDay} span={span}
+                today={today} cut={cut} readOnly={readOnly} onAsOf={actions.setAsOf}
+              />
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
                 {t('roadmap.scrubHelp')}
               </Typography>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+              <Box ref={names.rowsStart} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
                   {t('roadmap.applications')}
                 </Typography>
@@ -316,7 +289,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                 <Box
                   key={track.element.id}
                   data-testid={`row-${track.element.id}`}
-                  sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
+                  sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
                 >
                   <Box sx={{ minWidth: 0 }}>
                     <RowName onOpen={() => openBrought(track)}>{track.element.name}</RowName>
@@ -423,7 +396,8 @@ export function RoadmapPage(props: RoadmapPageProps) {
           )}
         </Box>
 
-      </Box>
+        </Box>
+        </Box>
 
       <NamePlanDialog title={newTitle} onTitle={setNewTitle} onMake={(title) => actions.addTransition(title)} />
     </PageDialog>
@@ -490,6 +464,81 @@ function RowName({ onOpen, children }: { onOpen?: () => void; children: ReactNod
 }
 
 /**
+ * The rows' names are one column, given more room by one seam down its edge
+ * (ADR-0044 §4): from where the rows begin, under the window's fields, to the
+ * end of the rows. The rows read the width as `--roadmap-labels`.
+ */
+function useNamesSeam() {
+  const { t } = useStrings()
+  const [width, setWidth] = useSeamWidth('roadmap.labels', 180)
+  const [top, setTop] = useState(0)
+  const rowsStart = useCallback((node: HTMLDivElement | null) => { if (node) setTop(node.offsetTop) }, [])
+  const seam = (
+    <Box sx={{ position: 'absolute', top, bottom: 0, left: width + 1, display: 'flex', zIndex: 1 }}>
+      <SeamResizer orientation="vertical" region="before" value={width} min={120} max={480} defaultValue={180} onChange={setWidth} label={t('common.resizeColumn')} />
+    </Box>
+  )
+  return { width, rowsStart, seam }
+}
+
+/**
+ * The period looked at: its two ends are the axis's two ends, so the fields
+ * that set them sit where the ends are, either side of the scrubber, with
+ * room for their labels.
+ */
+function WindowBar({ window_, onWindow, from, to, scrubDay, span, today, cut, readOnly, onAsOf }: {
+  window_: { from: string; to: string }
+  onWindow: (next: { from: string; to: string } | ((was: { from: string; to: string }) => { from: string; to: string })) => void
+  from: string
+  to: string
+  scrubDay: string
+  span: number
+  today: string
+  cut: boolean
+  readOnly: boolean
+  onAsOf: (day: string | undefined) => void
+}) {
+  const { t } = useStrings()
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, pt: 1 }}>
+      <TextField
+        type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
+        sx={{ width: 160 }}
+        onChange={(e) => onWindow((w) => ({ ...w, from: e.target.value }))}
+      />
+      <Box sx={{ flex: 1 }}>
+        <Slider
+          size="small"
+          aria-label={t('roadmap.showing')}
+          value={Math.max(0, daysBetween(from, scrubDay))}
+          min={0}
+          max={Math.max(1, span)}
+          disabled={readOnly}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(days: number) => addDays(from, days)}
+          onChange={(_event, value) => {
+            const day = addDays(from, Array.isArray(value) ? value[0] : value)
+            onAsOf(day === today ? undefined : day)
+          }}
+        />
+      </Box>
+      <TextField
+        type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
+        sx={{ width: 160 }}
+        onChange={(e) => onWindow((w) => ({ ...w, to: e.target.value }))}
+      />
+      {cut ? (
+        <Button size="small" onClick={() => onWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
+      ) : (
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>{from} – {to}</Typography>
+      )}
+    </Box>
+  )
+}
+
+/**
  * A line with a window of its own, as a hatched band: its name opens the
  * element it starts from, whose inspector holds the line's dates — the
  * board cannot yet be asked to select a line.
@@ -511,7 +560,7 @@ function RelationRow({ track, from, to, today, at, colour, ink, onOpen }: {
   const opens = isDay(relation.validFrom) ? relation.validFrom! : from
   const closes = isDay(relation.validUntil) ? relation.validUntil! : to
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
       <Box sx={{ minWidth: 0 }}>
         <RowName onOpen={onOpen}>{relation.label || `${sourceName} → ${targetName}`}</RowName>
         <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
@@ -556,7 +605,7 @@ function PlanRow({ plan, model, from, to, today, at, colour, ink, onOpen }: {
   const progress = portProgress(model, plan)
   const shadow = shadowRunOf(model, plan)
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
       <Box sx={{ minWidth: 0 }}>
         <RowName onOpen={onOpen}>{transitionLabel(plan)} {plan.title}</RowName>
         {progress.total > 0 && (
@@ -636,7 +685,7 @@ function InitiativeRow({ initiative, at, from, to, today, onOpen, t, colour }: {
   return (
     <Box
       data-testid={`initiative-${scope}-${plan.id}`}
-      sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
+      sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
     >
       <Box sx={{ minWidth: 0 }}>
         <RowName onOpen={open}>{transitionLabel(plan)} {plan.title}</RowName>

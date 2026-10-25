@@ -37,6 +37,9 @@ import type { HostModel } from '../../model/hostModel'
 import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
+import { PageClose } from '../../widgets/PageClose'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { HistoryEntry } from '../../ports/HistoryRepository'
@@ -89,6 +92,48 @@ export type HistoryPageProps = {
   windowChrome?: WindowChrome
 }
 
+/** The entries, newest first, each with its labels and who made it when; or that there are none. */
+function EntryList({ entries, chosenId, subject, language, onChoose, s }: {
+  entries: readonly HistoryEntry[]
+  chosenId: string | undefined
+  /** The list is of one thing's entries, not the scope's. */
+  subject: boolean
+  language: Language
+  onChoose: (id: string) => void
+  s: Translate
+}) {
+  return (
+    entries.length === 0 ? (
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', p: 2 }}>
+        {s(subject ? 'history.noneFor' : 'history.none')}
+      </Typography>
+    ) : (
+      <List component="div" dense disablePadding data-testid="history-list">
+        {entries.map((entry) => (
+          <ListItemButton
+            key={entry.id}
+            selected={entry.id === chosenId}
+            onClick={() => onChoose(entry.id)}
+            sx={{ display: 'block', py: 1 }}
+          >
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{titleOf(entry, s)}</Typography>
+            {entry.labels.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.5 }}>
+                {entry.labels.map((held) => (
+                  <Chip key={held} size="small" color="primary" variant="outlined" label={held} sx={{ height: 20, fontSize: 11 }} />
+                ))}
+              </Box>
+            )}
+            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+              {when(entry.at, language)} · {s('history.by', { author: entry.by })}
+            </Typography>
+          </ListItemButton>
+        ))}
+      </List>
+    )
+  )
+}
+
 /** The picker's value: one string per subject, and the empty one for everything. */
 const encode = (subject: HistorySubject | undefined): string => (subject ? `${subject.what}:${subject.id}` : '')
 function decode(value: string): HistorySubject | undefined {
@@ -112,6 +157,7 @@ export function HistoryPage(props: HistoryPageProps) {
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
+  const [listWidth, setListWidth] = useSeamWidth('history.list', 300)
   const [confirming, setConfirming] = useState(false)
   const [labelling, setLabelling] = useState(false)
 
@@ -217,6 +263,7 @@ export function HistoryPage(props: HistoryPageProps) {
             </optgroup>
           )}
         </NativeSelect>
+        <PageClose onClose={onClose} />
       </Box>
 
       {/* Where the list is coming from, when it is coming from more than one
@@ -237,37 +284,14 @@ export function HistoryPage(props: HistoryPageProps) {
         </Box>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        <Box sx={{ borderRight: 1, borderColor: 'divider', overflowY: 'auto' }}>
-          {entries.length === 0 ? (
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', p: 2 }}>
-              {s(subject ? 'history.noneFor' : 'history.none')}
-            </Typography>
-          ) : (
-            <List component="div" dense disablePadding data-testid="history-list">
-              {entries.map((entry) => (
-                <ListItemButton
-                  key={entry.id}
-                  selected={entry.id === chosen?.id}
-                  onClick={() => onChoose(entry.id)}
-                  sx={{ display: 'block', py: 1 }}
-                >
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{titleOf(entry, s)}</Typography>
-                  {entry.labels.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.5 }}>
-                      {entry.labels.map((held) => (
-                        <Chip key={held} size="small" color="primary" variant="outlined" label={held} sx={{ height: 20, fontSize: 11 }} />
-                      ))}
-                    </Box>
-                  )}
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                    {when(entry.at, language)} · {s('history.by', { author: entry.by })}
-                  </Typography>
-                </ListItemButton>
-              ))}
-            </List>
-          )}
+      <Box sx={{ display: 'grid', gridTemplateColumns: `${listWidth}px auto minmax(0, 1fr)`, flex: 1, minHeight: 0 }}>
+        <Box sx={{ overflowY: 'auto' }}>
+          <EntryList entries={entries} chosenId={chosen?.id} subject={subject !== undefined} language={language} onChoose={onChoose} s={s} />
         </Box>
+        <SeamResizer
+          orientation="vertical" region="before" value={listWidth} min={200} max={560} defaultValue={300}
+          onChange={setListWidth} label={s('common.resizeColumn')}
+        />
 
         <Box sx={{ overflowY: 'auto', p: 3 }} data-testid="history-diff">
           {chosenEntry && (

@@ -20,6 +20,7 @@ import { aspectCount, DataTab } from './InspectorDataTab';
 import { CitationsSection } from '../principles/ui/CitationsSection';
 import { BlockFacts } from '../blocks/ui/BlockFacts';
 import { CommentThread } from '../comments/ui/threadPart';
+import { RecordChanges } from '../comments/ui/RecordChanges';
 
 export type { ElementInspectorProps };
 export { shapeOptionsFor } from './elementInspectorFacts';
@@ -102,6 +103,7 @@ export function ElementInspector(props: ElementInspectorProps) {
 
       {/* The principles it follows, on the record's page (ADR-0041 §12). */}
       {stacked && <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} />}
+      {stacked && <RecordChanges about={{ kind: 'element', id: element.id }} first="added" />}
       <CommentThread about={{ kind: 'element', id: element.id }} />
       {!readOnly && <DeleteAction inspector={props} />}
     </Box>

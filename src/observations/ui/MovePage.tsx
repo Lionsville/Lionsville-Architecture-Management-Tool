@@ -34,6 +34,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
 import { BRIGHT_LABEL } from '../observationScope'
 import type { MoveRow, MoveScreenState } from './useMove'
+import { PageClose } from '../../widgets/PageClose'
 
 export type MovePageProps = {
   /** What the screen shows; closed while absent. */
@@ -170,6 +171,7 @@ export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePage
           </IconButton>
         </Tooltip>
         <Typography variant="body1" component="h1" id={titleId} sx={{ fontWeight: 600 }}>{s('observation.moveTitle')}</Typography>
+        <PageClose onClose={close} />
       </Box>
       {state && (
         <>
