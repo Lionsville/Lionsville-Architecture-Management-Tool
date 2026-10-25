@@ -20,7 +20,9 @@ import {
   align, distribute, drawElement, groupElements, moveBy, placeElement, placeNextTo, undrawElement, ungroup,
 } from './canvas'
 import { proposeDecision, removeDecision, transitionDecision, updateDecision } from './decisions'
-import { addPrinciple, citePrinciple, rateEvaluation, updatePrinciple } from './citing'
+import { addPrinciple, updatePrinciple } from './principleRecords'
+import { citePrinciple } from './citing'
+import { rateEvaluation } from './evaluations'
 import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
 import { claimFunction } from './functions'

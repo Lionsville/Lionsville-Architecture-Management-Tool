@@ -206,3 +206,6 @@ export function nameAsSigned(view: WriteView): ((id: PersonId) => string | undef
     return kept?.state === 'forgotten' ? undefined : kept?.name
   }
 }
+
+/** A string argument with something in it, trimmed; anything else is nothing. */
+export const text = (value: unknown): string | undefined => (typeof value === 'string' && value.trim() ? value.trim() : undefined)
