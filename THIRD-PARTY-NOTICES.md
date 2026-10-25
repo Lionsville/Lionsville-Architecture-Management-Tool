@@ -10,18 +10,18 @@ which is the safe direction for a notice to be wrong in.
 
 349 packages:
 
-- @antfu/install-pkg 2.0.1 — MIT
+- @antfu/install-pkg 2.1.0 — MIT
 - @babel/code-frame 7.29.7 — MIT
 - @babel/generator 7.29.8 — MIT
 - @babel/helper-globals 7.29.7 — MIT
 - @babel/helper-module-imports 7.29.7 — MIT
-- @babel/helper-string-parser 7.29.7 — MIT
+- @babel/helper-string-parser 7.29.11 — MIT
 - @babel/helper-validator-identifier 7.29.7 — MIT
-- @babel/parser 7.29.8 — MIT
-- @babel/runtime 7.29.7 — MIT
+- @babel/parser 7.29.11 — MIT
+- @babel/runtime 7.29.10 — MIT
 - @babel/template 7.29.7 — MIT
-- @babel/traverse 7.29.8 — MIT
-- @babel/types 7.29.8 — MIT
+- @babel/traverse 7.29.10 — MIT
+- @babel/types 7.29.11 — MIT
 - @braintree/sanitize-url 7.1.2 — MIT
 - @chevrotain/cst-dts-gen 13.2.0 — Apache-2.0
 - @chevrotain/gast 13.2.0 — Apache-2.0
@@ -41,34 +41,34 @@ which is the safe direction for a notice to be wrong in.
 - @emotion/use-insertion-effect-with-fallbacks 1.2.0 — MIT
 - @emotion/utils 1.4.2 — MIT
 - @emotion/weak-memoize 0.4.0 — MIT
-- @hono/node-server 2.1.1 — MIT
+- @hono/node-server 2.1.5 — MIT
 - @iconify/types 2.0.0 — MIT
-- @iconify/utils 3.1.5 — MIT
+- @iconify/utils 3.1.7 — MIT
 - @jridgewell/gen-mapping 0.3.13 — MIT
 - @jridgewell/resolve-uri 3.1.2 — MIT
 - @jridgewell/sourcemap-codec 1.6.0 — MIT
 - @jridgewell/trace-mapping 0.3.31 — MIT
 - @mermaid-js/parser 2.0.1 — MIT
-- @modelcontextprotocol/sdk 1.32.1 — MIT
-- @mui/core-downloads-tracker 9.4.0 — MIT
-- @mui/material 9.4.0 — MIT
-- @mui/private-theming 9.4.0 — MIT
-- @mui/styled-engine 9.4.0 — MIT
-- @mui/system 9.4.0 — MIT
-- @mui/types 9.4.0 — MIT
-- @mui/utils 9.4.0 — MIT
+- @modelcontextprotocol/sdk 1.32.2 — MIT
+- @mui/core-downloads-tracker 9.5.0 — MIT
+- @mui/material 9.5.0 — MIT
+- @mui/private-theming 9.5.0 — MIT
+- @mui/styled-engine 9.5.0 — MIT
+- @mui/system 9.5.0 — MIT
+- @mui/types 9.5.0 — MIT
+- @mui/utils 9.5.0 — MIT
 - @popperjs/core 2.11.8 — MIT
 - @ungap/structured-clone 1.4.0 — ISC
 - @upsetjs/venn.js 2.0.0 — MIT
 - @xyflow/react 12.12.0 — MIT
 - @xyflow/system 0.0.83 — MIT
 - accepts 2.0.0 — MIT
-- ajv 6.15.0 — MIT
+- ajv 8.20.0 — MIT
 - ajv-formats 3.0.1 — MIT
 - argparse 2.0.1 — Python-2.0
 - babel-plugin-macros 3.1.0 — MIT
 - bail 2.0.2 — MIT
-- body-parser 2.3.0 — MIT
+- body-parser 2.4.0 — MIT
 - builder-util-runtime 9.7.0 — MIT
 - bytes 3.1.2 — MIT
 - call-bind-apply-helpers 1.0.2 — MIT
@@ -84,7 +84,7 @@ which is the safe direction for a notice to be wrong in.
 - clsx 2.1.1 — MIT
 - comma-separated-tokens 2.0.3 — MIT
 - commander 5.1.0 — MIT
-- content-disposition 1.1.0 — MIT
+- content-disposition 2.0.1 — MIT
 - content-type 1.0.5 — MIT
 - convert-source-map 1.9.0 — MIT
 - cookie 0.7.2 — MIT
@@ -94,7 +94,7 @@ which is the safe direction for a notice to be wrong in.
 - cosmiconfig 7.1.0 — MIT
 - cross-spawn 7.0.6 — MIT
 - csstype 3.2.3 — MIT
-- cytoscape 3.34.2 — MIT
+- cytoscape 3.34.4 — MIT
 - cytoscape-cose-bilkent 4.1.0 — MIT
 - cytoscape-fcose 2.2.0 — MIT
 - d3 7.9.0 — ISC
@@ -138,28 +138,28 @@ which is the safe direction for a notice to be wrong in.
 - dequal 2.0.3 — MIT
 - devlop 1.1.0 — MIT
 - dom-helpers 5.2.1 — MIT
-- dompurify 3.4.16 — (MPL-2.0 OR Apache-2.0)
+- dompurify 3.4.17 — (MPL-2.0 OR Apache-2.0)
 - dunder-proto 1.0.1 — MIT
 - ee-first 1.1.1 — MIT
-- electron-updater 6.8.9 — MIT
+- electron-updater 6.8.11 — MIT
 - elkjs 0.12.0 — EPL-2.0 OR GPL-3.0-or-later
 - encodeurl 2.0.0 — MIT
 - error-ex 1.3.4 — MIT
 - es-define-property 1.0.1 — MIT
 - es-errors 1.3.0 — MIT
 - es-object-atoms 1.1.2 — MIT
-- es-toolkit 1.52.0 — MIT
+- es-toolkit 1.53.0 — MIT
 - escape-html 1.0.3 — MIT
 - escape-string-regexp 4.0.0 — MIT
 - estree-util-is-identifier-name 3.0.0 — MIT
 - etag 1.8.1 — MIT
 - eventsource 3.0.7 — MIT
 - eventsource-parser 3.1.1 — MIT
-- express 5.2.1 — MIT
-- express-rate-limit 8.7.0 — MIT
+- express 5.3.0 — MIT
+- express-rate-limit 8.7.1 — MIT
 - extend 3.0.2 — MIT
 - fast-deep-equal 3.1.3 — MIT
-- fast-json-stable-stringify 2.1.0 — MIT
+- fast-uri 3.1.9 — BSD-3-Clause
 - fflate 0.8.3 — MIT
 - finalhandler 2.1.1 — MIT
 - find-root 1.1.0 — MIT
@@ -177,36 +177,36 @@ which is the safe direction for a notice to be wrong in.
 - hast-util-to-jsx-runtime 2.3.6 — MIT
 - hast-util-whitespace 3.0.0 — MIT
 - hoist-non-react-statics 3.3.2 — BSD-3-Clause
-- hono 4.13.7 — MIT
+- hono 4.13.14 — MIT
 - html-to-image 1.11.13 — MIT
 - html-url-attributes 3.0.1 — MIT
 - http-errors 2.0.1 — MIT
-- iconv-lite 0.6.3 — MIT
+- iconv-lite 0.7.3 — MIT
 - import-fresh 3.3.1 — MIT
 - import-meta-resolve 4.2.0 — MIT
 - inherits 2.0.4 — ISC
 - inline-style-parser 0.2.7 — MIT
 - internmap 2.0.3 — ISC
-- ip-address 10.7.2 — MIT
+- ip-address 10.7.5 — MIT
 - ipaddr.js 1.9.1 — MIT
 - is-alphabetical 2.0.1 — MIT
 - is-alphanumerical 2.0.1 — MIT
 - is-arrayish 0.2.1 — MIT
-- is-core-module 2.16.2 — MIT
+- is-core-module 2.17.0 — MIT
 - is-decimal 2.0.1 — MIT
 - is-hexadecimal 2.0.1 — MIT
 - is-plain-obj 4.1.0 — MIT
 - is-promise 4.0.0 — MIT
 - isexe 2.0.0 — ISC
-- jose 6.2.12 — MIT
+- jose 6.2.13 — MIT
 - js-tokens 4.0.0 — MIT
 - js-yaml 4.3.2 — MIT
 - jsesc 3.1.0 — MIT
 - json-parse-even-better-errors 2.3.1 — MIT
-- json-schema-traverse 0.4.1 — MIT
+- json-schema-traverse 1.0.0 — MIT
 - json-schema-typed 8.0.2 — BSD-2-Clause
 - jsonfile 6.2.1 — MIT
-- katex 0.16.47 — MIT
+- katex 0.18.10 — MIT
 - khroma 2.1.0 — MIT
 - layout-base 1.0.2 — MIT
 - lazy-val 1.0.5 — MIT
@@ -220,12 +220,12 @@ which is the safe direction for a notice to be wrong in.
 - markdown-table 3.0.4 — MIT
 - marked 16.4.2 — MIT
 - math-intrinsics 1.1.0 — MIT
-- mdast-util-find-and-replace 3.0.2 — MIT
-- mdast-util-from-markdown 2.0.3 — MIT
+- mdast-util-find-and-replace 3.0.4 — MIT
+- mdast-util-from-markdown 2.1.0 — MIT
 - mdast-util-gfm 3.1.0 — MIT
 - mdast-util-gfm-autolink-literal 2.0.1 — MIT
 - mdast-util-gfm-footnote 2.1.0 — MIT
-- mdast-util-gfm-strikethrough 2.0.0 — MIT
+- mdast-util-gfm-strikethrough 2.0.1 — MIT
 - mdast-util-gfm-table 2.0.0 — MIT
 - mdast-util-gfm-task-list-item 2.0.0 — MIT
 - mdast-util-mdx-expression 2.0.1 — MIT
@@ -233,23 +233,23 @@ which is the safe direction for a notice to be wrong in.
 - mdast-util-mdxjs-esm 2.0.1 — MIT
 - mdast-util-phrasing 4.1.0 — MIT
 - mdast-util-to-hast 13.2.1 — MIT
-- mdast-util-to-markdown 2.1.2 — MIT
+- mdast-util-to-markdown 2.2.0 — MIT
 - mdast-util-to-string 4.0.0 — MIT
 - media-typer 1.1.1 — MIT
 - merge-descriptors 2.0.0 — MIT
-- mermaid 12.1.0 — MIT
-- micromark 4.0.2 — MIT
-- micromark-core-commonmark 2.0.3 — MIT
+- mermaid 12.2.0 — MIT
+- micromark 4.0.3 — MIT
+- micromark-core-commonmark 2.0.4 — MIT
 - micromark-extension-gfm 3.0.0 — MIT
 - micromark-extension-gfm-autolink-literal 2.1.0 — MIT
 - micromark-extension-gfm-footnote 2.1.0 — MIT
 - micromark-extension-gfm-strikethrough 2.1.0 — MIT
-- micromark-extension-gfm-table 2.1.1 — MIT
+- micromark-extension-gfm-table 2.1.2 — MIT
 - micromark-extension-gfm-tagfilter 2.0.0 — MIT
 - micromark-extension-gfm-task-list-item 2.1.0 — MIT
 - micromark-factory-destination 2.0.1 — MIT
 - micromark-factory-label 2.0.1 — MIT
-- micromark-factory-space 2.0.1 — MIT
+- micromark-factory-space 2.1.0 — MIT
 - micromark-factory-title 2.0.1 — MIT
 - micromark-factory-whitespace 2.0.1 — MIT
 - micromark-util-character 2.1.1 — MIT
@@ -258,6 +258,7 @@ which is the safe direction for a notice to be wrong in.
 - micromark-util-combine-extensions 2.0.1 — MIT
 - micromark-util-decode-numeric-character-reference 2.0.2 — MIT
 - micromark-util-decode-string 2.0.1 — MIT
+- micromark-util-edit-map 1.0.0 — MIT
 - micromark-util-encode 2.0.1 — MIT
 - micromark-util-html-tag-name 2.0.1 — MIT
 - micromark-util-normalize-identifier 2.0.1 — MIT
@@ -265,16 +266,16 @@ which is the safe direction for a notice to be wrong in.
 - micromark-util-sanitize-uri 2.0.1 — MIT
 - micromark-util-subtokenize 2.1.0 — MIT
 - micromark-util-symbol 2.0.1 — MIT
-- micromark-util-types 2.0.2 — MIT
-- mime-db 1.52.0 — MIT
-- mime-types 2.1.35 — MIT
+- micromark-util-types 2.0.3 — MIT
+- mime-db 1.54.0 — MIT
+- mime-types 3.0.2 — MIT
 - ms 2.1.3 — MIT
 - negotiator 1.1.0 — MIT
 - object-assign 4.1.1 — MIT
 - object-inspect 1.13.4 — MIT
-- on-finished 2.4.1 — MIT
+- on-finished 2.4.2 — MIT
 - once 1.4.0 — ISC
-- package-manager-detector 1.8.0 — MIT
+- package-manager-detector 1.9.0 — MIT
 - parent-module 1.0.1 — MIT
 - parse-entities 4.0.2 — MIT
 - parse-json 5.2.0 — MIT
@@ -291,20 +292,20 @@ which is the safe direction for a notice to be wrong in.
 - prop-types 15.8.1 — MIT
 - property-information 7.2.0 — MIT
 - proxy-addr 2.0.8 — MIT
-- punycode 2.3.1 — MIT
-- qs 6.16.0 — BSD-3-Clause
+- qs 6.16.1 — BSD-3-Clause
 - range-parser 1.3.0 — MIT
 - raw-body 3.0.2 — MIT
-- react 19.3.0 — MIT
-- react-dom 19.3.0 — MIT
-- react-is 19.3.0 — MIT
+- react 19.3.1 — MIT
+- react-dom 19.3.1 — MIT
+- react-is 19.3.1 — MIT
 - react-markdown 10.1.0 — MIT
 - react-transition-group 4.4.5 — BSD-3-Clause
 - remark-gfm 4.0.1 — MIT
 - remark-parse 11.0.0 — MIT
 - remark-rehype 11.1.2 — MIT
 - remark-stringify 11.0.0 — MIT
-- resolve 1.22.12 — MIT
+- require-from-string 2.0.2 — MIT
+- resolve 1.22.13 — MIT
 - resolve-from 4.0.0 — MIT
 - robust-predicates 3.0.3 — Unlicense
 - roughjs 4.6.6 — MIT
@@ -323,7 +324,7 @@ which is the safe direction for a notice to be wrong in.
 - side-channel-list 1.0.1 — MIT
 - side-channel-map 1.0.1 — MIT
 - side-channel-weakmap 1.0.2 — MIT
-- simple-icons 16.32.0 — CC0-1.0
+- simple-icons 16.36.0 — CC0-1.0
 - source-map 0.5.7 — BSD-3-Clause
 - space-separated-tokens 2.0.2 — MIT
 - statuses 2.0.2 — MIT
@@ -333,7 +334,7 @@ which is the safe direction for a notice to be wrong in.
 - stylis 4.2.0 — MIT
 - supports-preserve-symlinks-flag 1.0.0 — MIT
 - tiny-typed-emitter 2.1.0 — MIT
-- tinyexec 1.3.0 — MIT
+- tinyexec 1.3.1 — MIT
 - toidentifier 1.0.1 — MIT
 - trim-lines 3.0.1 — MIT
 - trough 2.2.0 — MIT
@@ -343,26 +344,25 @@ which is the safe direction for a notice to be wrong in.
 - unist-util-is 6.0.1 — MIT
 - unist-util-position 5.0.0 — MIT
 - unist-util-stringify-position 4.0.0 — MIT
-- unist-util-visit 5.1.0 — MIT
-- unist-util-visit-parents 6.0.2 — MIT
+- unist-util-visit 5.2.0 — MIT
+- unist-util-visit-parents 6.1.0 — MIT
 - universalify 2.0.1 — MIT
 - unpipe 1.0.0 — MIT
-- uri-js 4.4.1 — BSD-2-Clause
-- use-sync-external-store 1.6.0 — MIT
-- uuid 14.0.2 — MIT
+- use-sync-external-store 1.7.0 — MIT
+- uuid 14.0.3 — MIT
 - vary 1.1.2 — MIT
 - vfile 6.0.3 — MIT
 - vfile-message 4.0.3 — MIT
 - which 2.0.2 — ISC
 - wrappy 1.0.2 — ISC
-- zod 4.6.5 — MIT
+- zod 4.6.7 — MIT
 - zod-to-json-schema 3.25.2 — ISC
 - zustand 4.5.7 — MIT
 - zwitch 2.0.4 — MIT
 
 ---
 
-## @antfu/install-pkg 2.0.1
+## @antfu/install-pkg 2.1.0
 
 Licence: MIT
 
@@ -516,7 +516,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## @babel/helper-string-parser 7.29.7
+## @babel/helper-string-parser 7.29.11
 
 Licence: MIT
 
@@ -578,7 +578,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## @babel/parser 7.29.8
+## @babel/parser 7.29.11
 
 Licence: MIT
 
@@ -606,7 +606,7 @@ THE SOFTWARE.
 
 ---
 
-## @babel/runtime 7.29.7
+## @babel/runtime 7.29.10
 
 Licence: MIT
 
@@ -668,7 +668,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## @babel/traverse 7.29.8
+## @babel/traverse 7.29.10
 
 Licence: MIT
 
@@ -699,7 +699,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## @babel/types 7.29.8
+## @babel/types 7.29.11
 
 Licence: MIT
 
@@ -2205,7 +2205,7 @@ SOFTWARE.
 
 ---
 
-## @hono/node-server 2.1.1
+## @hono/node-server 2.1.5
 
 Licence: MIT
 
@@ -2265,7 +2265,7 @@ SOFTWARE.
 
 ---
 
-## @iconify/utils 3.1.5
+## @iconify/utils 3.1.7
 
 Licence: MIT
 
@@ -2437,7 +2437,7 @@ SOFTWARE.
 
 ---
 
-## @modelcontextprotocol/sdk 1.32.1
+## @modelcontextprotocol/sdk 1.32.2
 
 Licence: MIT
 
@@ -2467,7 +2467,7 @@ SOFTWARE.
 
 ---
 
-## @mui/core-downloads-tracker 9.4.0
+## @mui/core-downloads-tracker 9.5.0
 
 Licence: MIT
 
@@ -2497,7 +2497,7 @@ SOFTWARE.
 
 ---
 
-## @mui/material 9.4.0
+## @mui/material 9.5.0
 
 Licence: MIT
 
@@ -2527,7 +2527,7 @@ SOFTWARE.
 
 ---
 
-## @mui/private-theming 9.4.0
+## @mui/private-theming 9.5.0
 
 Licence: MIT
 
@@ -2557,7 +2557,7 @@ SOFTWARE.
 
 ---
 
-## @mui/styled-engine 9.4.0
+## @mui/styled-engine 9.5.0
 
 Licence: MIT
 
@@ -2587,7 +2587,7 @@ SOFTWARE.
 
 ---
 
-## @mui/system 9.4.0
+## @mui/system 9.5.0
 
 Licence: MIT
 
@@ -2617,7 +2617,7 @@ SOFTWARE.
 
 ---
 
-## @mui/types 9.4.0
+## @mui/types 9.5.0
 
 Licence: MIT
 
@@ -2647,7 +2647,7 @@ SOFTWARE.
 
 ---
 
-## @mui/utils 9.4.0
+## @mui/utils 9.5.0
 
 Licence: MIT
 
@@ -2853,14 +2853,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## ajv 6.15.0
+## ajv 8.20.0
 
 Licence: MIT
 
 ```
 The MIT License (MIT)
 
-Copyright (c) 2015-2017 Evgeny Poberezkin
+Copyright (c) 2015-2021 Evgeny Poberezkin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -3236,7 +3236,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## body-parser 2.3.0
+## body-parser 2.4.0
 
 Licence: MIT
 
@@ -3870,7 +3870,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## content-disposition 1.1.0
+## content-disposition 2.0.1
 
 Licence: MIT
 
@@ -4176,7 +4176,7 @@ SOFTWARE.
 
 ---
 
-## cytoscape 3.34.2
+## cytoscape 3.34.4
 
 Licence: MIT
 
@@ -5299,7 +5299,7 @@ SOFTWARE.
 
 ---
 
-## dompurify 3.4.16
+## dompurify 3.4.17
 
 Licence: (MPL-2.0 OR Apache-2.0)
 
@@ -5571,7 +5571,7 @@ THE SOFTWARE.
 
 ---
 
-## electron-updater 6.8.9
+## electron-updater 6.8.11
 
 Licence: MIT
 
@@ -6024,7 +6024,7 @@ SOFTWARE.
 
 ---
 
-## es-toolkit 1.52.0
+## es-toolkit 1.53.0
 
 Licence: MIT
 
@@ -6228,7 +6228,7 @@ SOFTWARE.
 
 ---
 
-## express 5.2.1
+## express 5.3.0
 
 Licence: MIT
 
@@ -6261,7 +6261,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## express-rate-limit 8.7.0
+## express-rate-limit 8.7.1
 
 Licence: MIT
 
@@ -6352,32 +6352,41 @@ SOFTWARE.
 
 ---
 
-## fast-json-stable-stringify 2.1.0
+## fast-uri 3.1.9
 
-Licence: MIT
+Licence: BSD-3-Clause
 
 ```
-This software is released under the MIT license:
+Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae
+Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fastify#team>
+All rights reserved.
 
-Copyright (c) 2017 Evgeny Poberezkin
-Copyright (c) 2013 James Halliday
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * The names of any contributors may not be used to endorse or promote
+      products derived from this software without specific prior written
+      permission.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+                                  *   *   *
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+The complete list of contributors can be found at:
+- https://github.com/garycourt/uri-js/graphs/contributors
 ```
 
 ---
@@ -6878,7 +6887,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-## hono 4.13.7
+## hono 4.13.14
 
 Licence: MIT
 
@@ -7000,7 +7009,7 @@ THE SOFTWARE.
 
 ---
 
-## iconv-lite 0.6.3
+## iconv-lite 0.7.3
 
 Licence: MIT
 
@@ -7194,7 +7203,7 @@ THIS SOFTWARE.
 
 ---
 
-## ip-address 10.7.2
+## ip-address 10.7.5
 
 Licence: MIT
 
@@ -7342,7 +7351,7 @@ THE SOFTWARE.
 
 ---
 
-## is-core-module 2.16.2
+## is-core-module 2.17.0
 
 Licence: MIT
 
@@ -7503,7 +7512,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ---
 
-## jose 6.2.12
+## jose 6.2.13
 
 Licence: MIT
 
@@ -7656,7 +7665,7 @@ distributed under the terms of the MIT license above.
 
 ---
 
-## json-schema-traverse 0.4.1
+## json-schema-traverse 1.0.0
 
 Licence: MIT
 
@@ -7776,7 +7785,7 @@ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHE
 
 ---
 
-## katex 0.16.47
+## katex 0.18.10
 
 Licence: MIT
 
@@ -8761,7 +8770,7 @@ SOFTWARE.
 
 ---
 
-## mdast-util-find-and-replace 3.0.2
+## mdast-util-find-and-replace 3.0.4
 
 Licence: MIT
 
@@ -8792,7 +8801,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## mdast-util-from-markdown 2.0.3
+## mdast-util-from-markdown 2.1.0
 
 Licence: MIT
 
@@ -8916,14 +8925,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## mdast-util-gfm-strikethrough 2.0.0
+## mdast-util-gfm-strikethrough 2.0.1
 
 Licence: MIT
 
 ```
 (The MIT License)
 
-Copyright (c) 2020 Titus Wormer <tituswormer@gmail.com>
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -9165,7 +9174,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## mdast-util-to-markdown 2.1.2
+## mdast-util-to-markdown 2.2.0
 
 Licence: MIT
 
@@ -9278,7 +9287,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-## mermaid 12.1.0
+## mermaid 12.2.0
 
 Licence: MIT
 
@@ -9308,7 +9317,7 @@ SOFTWARE.
 
 ---
 
-## micromark 4.0.2
+## micromark 4.0.3
 
 Licence: MIT
 
@@ -9339,7 +9348,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## micromark-core-commonmark 2.0.3
+## micromark-core-commonmark 2.0.4
 
 Licence: MIT
 
@@ -9494,7 +9503,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## micromark-extension-gfm-table 2.1.1
+## micromark-extension-gfm-table 2.1.2
 
 Licence: MIT
 
@@ -9649,7 +9658,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## micromark-factory-space 2.0.1
+## micromark-factory-space 2.1.0
 
 Licence: MIT
 
@@ -9928,6 +9937,37 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
+## micromark-util-edit-map 1.0.0
+
+Licence: MIT
+
+```
+(The MIT License)
+
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+---
+
 ## micromark-util-encode 2.0.1
 
 Licence: MIT
@@ -10145,7 +10185,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## micromark-util-types 2.0.2
+## micromark-util-types 2.0.3
 
 Licence: MIT
 
@@ -10176,7 +10216,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## mime-db 1.52.0
+## mime-db 1.54.0
 
 Licence: MIT
 
@@ -10208,7 +10248,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## mime-types 2.1.35
+## mime-types 3.0.2
 
 Licence: MIT
 
@@ -10363,7 +10403,7 @@ SOFTWARE.
 
 ---
 
-## on-finished 2.4.1
+## on-finished 2.4.2
 
 Licence: MIT
 
@@ -10419,7 +10459,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ---
 
-## package-manager-detector 1.8.0
+## package-manager-detector 1.9.0
 
 Licence: MIT
 
@@ -10881,36 +10921,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## punycode 2.3.1
-
-Licence: MIT
-
-```
-Copyright Mathias Bynens <https://mathiasbynens.be/>
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
----
-
-## qs 6.16.0
+## qs 6.16.1
 
 Licence: BSD-3-Clause
 
@@ -11011,7 +11022,7 @@ THE SOFTWARE.
 
 ---
 
-## react 19.3.0
+## react 19.3.1
 
 Licence: MIT
 
@@ -11041,7 +11052,7 @@ SOFTWARE.
 
 ---
 
-## react-dom 19.3.0
+## react-dom 19.3.1
 
 Licence: MIT
 
@@ -11071,7 +11082,7 @@ SOFTWARE.
 
 ---
 
-## react-is 19.3.0
+## react-is 19.3.1
 
 Licence: MIT
 
@@ -11292,7 +11303,37 @@ THE SOFTWARE.
 
 ---
 
-## resolve 1.22.12
+## require-from-string 2.0.2
+
+Licence: MIT
+
+```
+The MIT License (MIT)
+
+Copyright (c) Vsevolod Strukchinsky <floatdrop@gmail.com> (github.com/floatdrop)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+---
+
+## resolve 1.22.13
 
 Licence: MIT
 
@@ -11862,7 +11903,7 @@ SOFTWARE.
 
 ---
 
-## simple-icons 16.32.0
+## simple-icons 16.36.0
 
 Licence: CC0-1.0
 
@@ -12184,7 +12225,7 @@ SOFTWARE.
 
 ---
 
-## tinyexec 1.3.0
+## tinyexec 1.3.1
 
 Licence: MIT
 
@@ -12490,14 +12531,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## unist-util-visit 5.1.0
+## unist-util-visit 5.2.0
 
 Licence: MIT
 
 ```
 (The MIT License)
 
-Copyright (c) 2015 Titus Wormer <tituswormer@gmail.com>
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -12521,14 +12562,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## unist-util-visit-parents 6.0.2
+## unist-util-visit-parents 6.1.0
 
 Licence: MIT
 
 ```
 (The MIT License)
 
-Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -12612,27 +12653,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## uri-js 4.4.1
-
-Licence: BSD-2-Clause
-
-```
-Copyright 2011 Gary Court. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1.	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2.	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY GARY COURT "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GARY COURT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Gary Court.
-```
-
----
-
-## use-sync-external-store 1.6.0
+## use-sync-external-store 1.7.0
 
 Licence: MIT
 
@@ -12662,7 +12683,7 @@ SOFTWARE.
 
 ---
 
-## uuid 14.0.2
+## uuid 14.0.3
 
 Licence: MIT
 
@@ -12820,7 +12841,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ---
 
-## zod 4.6.5
+## zod 4.6.7
 
 Licence: MIT
 
