@@ -82,7 +82,7 @@ export function TopicChooser({ at, access, onClose }: { at: ScopePath; access: T
         {access.mayCreate() && <Button onClick={() => setMaking(true)} sx={{ mr: 'auto' }} data-testid="topic-chooser-new">{t('topics.chooseNew')}</Button>}
         <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant="contained" disabled={picked.size === 0} onClick={add} data-testid="topic-chooser-add">
-          {t(picked.size === 1 ? 'topics.chooseAddOne' : 'topics.chooseAddOther', { count: picked.size })}
+          {t(picked.size === 0 ? 'topics.chooseAdd' : picked.size === 1 ? 'topics.chooseAddOne' : 'topics.chooseAddOther', { count: picked.size })}
         </Button>
       </DialogActions>
     </FieldsDialog>
@@ -120,13 +120,13 @@ function ChoiceRow({ row, access, picked, onToggle, onPoint }: {
   )
 }
 
-/** Where a topic applies today, the first few by name, and what it keeps. */
+/** Where a topic applies today, the first few by name, and what it keeps where it keeps anything. */
 function placesLine(access: TopicsAccess, topic: TopicSummary, t: ReturnType<typeof useStrings>['t']): string {
   const places = access.relevantPlaces(topic.id).map((path) => access.scopeLabel(path))
   const named = places.length === 0 ? t('topics.chooseNowhere')
     : t('topics.chooseRelevantTo', { places: places.slice(0, PLACES_NAMED).join(', ') + (places.length > PLACES_NAMED ? ` +${places.length - PLACES_NAMED}` : '') })
   const keeps = access.keeps(topic.id)
-  return `${named} · ${t('topics.chooseKeeps', { principles: keeps.principles, blocks: keeps.blocks })}`
+  return keeps.principles + keeps.blocks === 0 ? named : `${named} · ${t('topics.chooseKeeps', { principles: keeps.principles, blocks: keeps.blocks })}`
 }
 
 /** The topic pointed at, read in full: what it is about, what it is under, where it applies, what it keeps. */

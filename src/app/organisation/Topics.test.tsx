@@ -131,8 +131,8 @@ describe('a topic on a home', () => {
     const chip = screen.getByTestId('relevant-topics/security')
     fireEvent.click(chip)
     expect(deps.openCatalogue).toHaveBeenCalledWith('topics/security')
-    // Through its topic, the subtopic is relevant too — with no link of its own here to stop.
-    expect(screen.getByTestId('relevant-topics/security/identity').querySelector('svg')).toBeNull()
+    // Through its topic, the subtopic is relevant too, and goes with its topic's chip as the tree lists it.
+    expect(screen.queryByTestId('relevant-topics/security/identity')).toBeNull()
     fireEvent.click(chip.querySelector('svg')!)
     expect(access.stopHere).toHaveBeenCalledWith('topics/security', 'sales')
     expect(await axeFindings()).toEqual([])
@@ -146,9 +146,9 @@ describe('a topic on a home', () => {
     const chooser = await screen.findByRole('dialog', { name: 'Topics relevant to Stock' })
     // Nested as the catalogue nests them, each saying where it applies and what it keeps.
     expect(within(chooser).getAllByRole('listitem').map((row) => row.textContent)).toEqual([
-      'DataNot relevant anywhere yet · Principles 0 · Building blocks 0',
-      'SecurityRelevant to Sales · Principles 0 · Building blocks 0',
-      'IdentityRelevant to Sales · Principles 0 · Building blocks 0',
+      'DataNot relevant anywhere yet',
+      'SecurityRelevant to Sales',
+      'IdentityRelevant to Sales',
     ])
     fireEvent.click(within(chooser).getByRole('checkbox', { name: 'Security' }))
     // The subtopic comes with its topic.

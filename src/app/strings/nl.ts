@@ -1200,6 +1200,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'topics.chooseNone': 'Geen onderwerp past bij wat er getypt is.',
   'topics.chooseNothing': 'Wijs een onderwerp aan om er hier over te lezen.',
   'topics.chooseNew': 'Nieuw onderwerp…',
+  'topics.chooseAdd': 'Onderwerpen toevoegen',
   'topics.chooseAddOne': '{count} onderwerp toevoegen',
   'topics.chooseAddOther': '{count} onderwerpen toevoegen',
   'topics.treeLabel': 'onderwerp',

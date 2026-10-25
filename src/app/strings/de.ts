@@ -1201,6 +1201,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'topics.chooseNone': 'Kein Thema passt zur Eingabe.',
   'topics.chooseNothing': 'Zeigen Sie auf ein Thema, um hier darüber zu lesen.',
   'topics.chooseNew': 'Neues Thema…',
+  'topics.chooseAdd': 'Themen hinzufügen',
   'topics.chooseAddOne': '{count} Thema hinzufügen',
   'topics.chooseAddOther': '{count} Themen hinzufügen',
   'topics.treeLabel': 'Thema',

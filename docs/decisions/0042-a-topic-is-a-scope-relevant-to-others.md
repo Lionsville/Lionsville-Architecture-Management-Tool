@@ -204,4 +204,6 @@ where the topic applies today and what it keeps, the topic pointed at read
 in full beside the list. Several are added at once, each the topic's own
 step; a subtopic is shown as coming with its topic, picked or relevant, and
 is not offered again. Where nothing matches, *New topic…* starts one named
-as typed and relevant to the scope.
+as typed and relevant to the scope. *Relevant topics* lists the topics as the
+tree's ↗ rows do: a subtopic goes with its topic's chip unless it has a link
+of its own there.

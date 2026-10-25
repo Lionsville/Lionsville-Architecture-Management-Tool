@@ -1429,6 +1429,7 @@ export const EN = {
   'topics.chooseNone': 'No topic matches what is typed.',
   'topics.chooseNothing': 'Point at a topic to read about it here.',
   'topics.chooseNew': 'New topic…',
+  'topics.chooseAdd': 'Add topics',
   'topics.chooseAddOne': 'Add {count} topic',
   'topics.chooseAddOther': 'Add {count} topics',
   'topics.treeLabel': 'topic',

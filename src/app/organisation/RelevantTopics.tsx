@@ -39,13 +39,15 @@ export function RelevantTopics({ at }: { at: string }) {
   }
   const today = access.today()
   const here = access.relevantAt(at)
+  // As the tree lists them: a subtopic goes with its topic's chip, unless it has a link of its own here.
+  const chips = access.treeRows(at)
   const choosable = access.mayCreate() || access.list().some((one) => access.mayWrite(one.id) && !here.some((held) => held.id === one.id))
   const ownLink = (topic: TopicSummary) => topic.links.some((link) => link.path === at && linkHolds(link, today))
   return (
     <Box sx={{ mt: 2.5, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }} data-testid="relevant-topics" data-guide="org.relevantTopics">
       <Typography component="h2" sx={LABEL}>{t('topics.relevantHere')}</Typography>
       {here.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('topics.relevantNone')}</Typography>}
-      {here.map((topic) => (
+      {chips.map((topic) => (
         <Chip
           key={topic.id} size="small" label={topic.name} onClick={() => access.openCatalogue(topic.id)}
           {...(ownLink(topic) && access.mayWrite(topic.id) ? { onDelete: () => access.stopHere(topic.id, at) } : {})}
