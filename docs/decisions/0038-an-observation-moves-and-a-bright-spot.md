@@ -2,7 +2,8 @@
 
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0):
   bright spots (§6), then the move (§1–§5); implemented, 16 October 2026
-  (3.7.0, not yet released)
+  (3.7.0); amended, 25 October 2026: a tone in three, who recorded it, and
+  a record's changes (§9–§12; not yet built, 3.8.0)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -177,6 +178,9 @@ as one change. The screen closes on the record in its new scope, or stays up
 and says why nothing moved.
 
 ### 6. A bright spot
+
+*Amended, 25 October 2026 (§9): `bright` becomes a tone of three — bright,
+neutral, problem — and an observation recorded before reads as neutral.*
 
 **`bright: true`** on an observation marks it as something that works,
 rather than something that goes wrong. Absent is a problem, as every
@@ -372,3 +376,71 @@ moved. The names are `observation.move`, `move.what`, `move.target`,
 
 **Not built**, as §2 says: bringing a cause that explains only this
 observation along with it.
+
+## Amendment, 25 October 2026: a tone, who recorded it, and a record's changes
+
+Three things §6 left out, found once bright spots were used.
+
+* **Most observations are neither.** A bright spot or a problem is a
+  judgement; much of what is seen is a fact first — *orders are re-keyed at
+  the depot* — and is judged later, or never. Forcing *problem* on it made
+  every register read as a list of complaints.
+* **Who recorded an observation is not on it.** The history knows the
+  author of the step, but the register, its filter and an export do not, and
+  *mine* cannot be asked.
+* **What changed a record since is a separate page.** *History…* lists a
+  scope's steps; a person reading one record wants that record's.
+
+### 9. A tone, in three
+
+`Observation.tone?: 'bright' | 'problem'`; absent is **neutral**. The
+format writes `tone` and no longer `bright`: a scope of format 14 reads
+`bright: true` as `bright`, and **every other observation of before as
+neutral** — nothing recorded before was explicitly marked a problem.
+
+* **The form** asks *Bright spot · Neutral · Problem*, in that order,
+  Neutral chosen; each button carries a 3 px bar in its tone's colour.
+* **The register** draws a row stripe for all three — success, grey, error —
+  and the *Bright spot* chip goes. Its filter is three toggles, all on.
+* **The analysis** tints an observation's mark by its tone.
+* **A merge never joins a bright spot and a problem**; neutral merges with
+  either, and the survivor keeps its tone (`merge.mixedTone` as before).
+  *Seen before?* leaves out the opposite tone.
+* `seenSinceImplemented` keeps ignoring bright spots only.
+* Nothing else in the method changes: a neutral observation has causes,
+  roots and solutions like any other.
+
+### 10. Who recorded it
+
+`Observation.recordedBy?: { name, account?, person? }`, written when the
+observation is recorded and never changed after:
+
+* **where the source has accounts**, from the account that sends the step,
+  with the register entry it is linked to (ADR-0036 §8) — the source says
+  how, and checks it;
+* **on its own**, from *This is me* where it is set, and otherwise **not at
+  all**;
+* an observation recorded before has none, and says so.
+
+The register gains a *Recorded by* column. **Mine** is: recorded by my
+account, or seen by (`by`) the person my account or *This is me* is linked
+to. With nobody said, *Mine* offers *This is me*. No new linking step.
+
+### 11. A record's changes
+
+Every reader of a record that has a page — observation, cause, solution,
+experiment, decision, plan, principle, building block, element — shows
+*Recorded by / proposed by X · last changed by Y · N changes* and a
+**Changes** list: when, who, via which client, and what, in the record's
+own terms (`model/diff`). It is read from the history by record
+(`HistoryRepository.list` with `record`, ADR-0031 §1). *History…* still opens
+the scope's page with a restore.
+
+### 12. The agent and the format
+
+* `tone` on `observation.record` and `observation.update` (`bright: true`
+  still accepted for one release); `observations.list` takes `tone` and
+  `recordedBy: "me"`; `recordedBy` is never an argument.
+* `changes.list` (`about`) answers a record's changes.
+* `tone` and `recordedBy` are part of the turn to **format 15** (ADR-0041
+  §14).

@@ -118,3 +118,7 @@ now, with their words unchanged.
 | [0038](0038-an-observation-moves-and-a-bright-spot.md) | An observation moves to another scope, and a bright spot is analysed as a problem is | 2026-10-16 | — |
 | [0039](0039-reporting-lines-for-roles-in-units.md) | Reporting lines for roles in units: solid or dotted, said on the unit type, overridden on a unit | 2026-10-16 | — |
 | [0040](0040-an-agent-keeps-the-tree-and-maps-the-sheet.md) | The agent keeps the tree of scopes, and the sheet's functions are mapped to domains | 2026-10-18 | — |
+| [0041](0041-principles-kept-where-they-apply-and-cited.md) | Architecture principles, kept where they apply, and cited by what follows or departs from them | 2026-10-25 | — |
+| [0042](0042-a-topic-is-a-scope-relevant-to-others.md) | A topic is a scope that is relevant to other scopes, by dated links | 2026-10-25 | — |
+| [0043](0043-building-blocks-evaluated-per-scope-and-documents-that-refer.md) | Building blocks, evaluated by each scope that adopts them, and documents that refer rather than copy | 2026-10-25 | — |
+| [0044](0044-one-way-every-page-behaves.md) | One way every page behaves: under the bar, closed the same way, columns that widen, cards that open | 2026-10-25 | — |
