@@ -322,9 +322,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['a proven solution, read', ['solution.decide'], async () => {
     const list = within(screen.getByRole('dialog')).getByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!)
-  }],
-  ['the analysis', ['observations.picture', 'observations.size'], async () => {
-    fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-analysis'))
+  }]],
+  // The page's other two tabs and its form, a journey of their own: as one
+  // with the register's, it ran past its limit on GitHub's runner.
+  [['the analysis', ['observations.picture', 'observations.size'], async () => {
+    const dialog = await page('Observations')
+    fireEvent.click(await within(dialog).findByTestId('observation-tab-analysis'))
   }],
   ['a cause, read', ['cause.root'], async () => {
     const picture = await within(screen.getByRole('dialog')).findByTestId('analysis-picture')
