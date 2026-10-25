@@ -7,6 +7,7 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
+import { treeRecords } from '../projects/treeRecords'
 import type { HistoryRepository } from '../ports/HistoryRepository'
 import type { ChangesOf } from '../agent/changes'
 import { useRecordChangesAccess } from './history/useRecordChangesAccess'
@@ -268,6 +269,8 @@ export function agentTree(at: {
     checkMarks: () => checkMarksHere(indexRef.current, scope, session.current()),
     moves: () => indexRef.current.moves(),
     operatingModel: () => indexRef.current.operatingModel(),
+    // Principles, topics and building blocks, off the index the pages read (ADR-0041–0043).
+    records: () => treeRecords(indexRef.current, flattenScopes(scopes), clockToday()),
     findings: (day) => {
       const model = session.current()
       const coverage = coverageOf(model.relations, rowsElsewhereRef.current)

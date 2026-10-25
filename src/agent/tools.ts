@@ -662,6 +662,46 @@ const SPECS = [
     },
   },
   {
+    name: 'principles.list',
+    tier: 'read',
+    description:
+      'Architecture principles (ADR-0041). With scope: those in force there today — its own, every scope\'s above it, '
+      + 'and those of the topics relevant to it (ADR-0042) — each with the scope that keeps it and via (here · above · topic); '
+      + 'with own: true, only the scope\'s own, with its groups. Without scope: every scope\'s own. Each principle says '
+      + 'its number (PR-NNNN on screen), title, statement, status (candidate · accepted · retired), regime and its aspects, '
+      + 'numbered under it. A merged one is left out. Cite one on a record from the app: an agent cannot cite yet.',
+    inputSchema: {
+      type: 'object',
+      properties: { own: { type: 'boolean', description: 'Only the scope\'s own principles, with its groups.' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'topics.list',
+    tier: 'read',
+    description:
+      'Topics (ADR-0042): scopes under the organisation\'s topics place that are relevant to other scopes by dated links, '
+      + 'and their subtopics. Each says its path, name, parent topic, its own links (path, from, until) and relevantTo — '
+      + 'where it holds today, through its parents too. A topic\'s principles are in force wherever it is relevant. '
+      + 'With scope: only the topics relevant there today.',
+    inputSchema: NO_ARGUMENTS,
+  },
+  {
+    name: 'blocks.list',
+    tier: 'read',
+    description:
+      'Building blocks (ADR-0043): each with the scope that keeps it, its capabilities (a must marked), its usage '
+      + 'contexts with what each needs of every capability (0–4), and its catalogue of solutions; and every scope\'s '
+      + 'evaluation of it — the contexts that apply there, the options weighed with their fit (0–100, the musts each fails), '
+      + 'the solution chosen and the decision that chose it. With id: that block only. With scope: the blocks kept '
+      + 'there and those it evaluates.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'A building block\'s id.' } },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'checks.list',
     tier: 'read',
     description:
@@ -3234,6 +3274,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
 export const TREE_WIDE: readonly string[] = [
   'scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list', 'reportingLines.list',
+  'principles.list', 'topics.list', 'blocks.list',
 ]
 
 /**

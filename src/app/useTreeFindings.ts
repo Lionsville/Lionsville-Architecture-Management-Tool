@@ -8,6 +8,7 @@
  * reads it while nothing is open. One fold each over the index, memoised on
  * it — nothing here commits anything, and nothing loads for it.
  */
+import { treeRecords } from '../projects/treeRecords'
 import { useMemo, useRef } from 'react'
 import type { SourceChanges } from '../ports/ProviderParts'
 import { useIndex } from './useIndex'
@@ -136,6 +137,8 @@ function useShellTree(
     checkMarks: () => treeRef.current.index.checkMarks(),
     moves: () => treeRef.current.index.moves(),
     operatingModel: () => treeRef.current.index.operatingModel(),
+    // Principles, topics and building blocks, off the same index the pages read (ADR-0041–0043).
+    records: () => treeRecords(treeRef.current.index, flattenScopes(treeRef.current.tree), today()),
     // Today's are folded once with the index; another day's organisation is read when asked (ADR-0036 §6).
     findings: (day) => (day === undefined
       ? treeRef.current.identity

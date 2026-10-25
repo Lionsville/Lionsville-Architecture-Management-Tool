@@ -37,6 +37,7 @@ import type { Assignment } from '../model/units'
 import { checkEntry } from '../model/checkCatalogue'
 import type { CheckCategory, CheckWeight } from '../model/checkCatalogue'
 import { splitMarked } from '../model/checkMarks'
+import type { TreeRecords } from '../model/treeRecords'
 import type { CheckMark, ScopedFinding } from '../model/checkMarks'
 import { matchesQuery } from '../model/textSearch'
 import { MODEL_ENGLISH } from '../model/words'
@@ -187,6 +188,11 @@ export type TreeView = {
   checkMarks?(): readonly { scope: string; mark: CheckMark }[]
   /** Every unit a plan moves under another parent on a day (ADR-0036 §6), with the scope that keeps the plan. */
   moves?(): readonly { scope: string; move: TransitionMove }[]
+  /**
+   * The principles, topics and building blocks the tree holds (ADR-0041, ADR-0042, ADR-0043), off its
+   * index (`projects/treeRecords`). Absent in a shell built before them.
+   */
+  records?(): TreeRecords
   /** The operating model the organisation keeps (ADR-0036 §2), whatever scope is open. */
   operatingModel?(): {
     unitTypes: readonly UnitType[]; roles: readonly Role[]; responsibilities: readonly Responsibility[]; operatingRules: readonly OperatingRule[]
