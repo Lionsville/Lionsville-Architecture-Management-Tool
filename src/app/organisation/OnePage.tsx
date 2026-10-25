@@ -89,7 +89,8 @@ function CardWays({ title, actions }: { title: string; actions: readonly CardAct
         // Pressable while hidden: a press on the card under its title is a press of a way in — on a
         // touch screen, which never hovers, and wherever a press comes before the pointer has moved.
         position: 'absolute', top: TITLE_ROW, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', opacity: 0,
-        transition: 'opacity 120ms', bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', overflow: 'hidden',
+        // No fade: shown or not, never half-drawn under a resting pointer, where its words would be read at no contrast.
+        bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', overflow: 'hidden',
         borderBottomLeftRadius: 'inherit', borderBottomRightRadius: 'inherit',
       }}
     >
