@@ -458,7 +458,7 @@ export const GROWN = {
   'src/decisions/ui/AdrPage.tsx': { lines: 248 },
   'src/documentation/bpmn.ts': { complexity: 31 },
   'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },
-  'src/documentation/ui/DocumentSource.tsx': { lines: 193 },
+  'src/documentation/ui/DocumentSource.tsx': { lines: 191 },
   'src/documentation/ui/DocumentationPage.tsx': { complexity: 36, lines: 277 },
   'src/editor/ConnectionInspector.tsx': { complexity: 55, lines: 403 },
   'src/editor/EditorToolbar.tsx': { complexity: 53, lines: 387 },

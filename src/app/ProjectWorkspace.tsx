@@ -16,6 +16,7 @@
  * draws is the bar, the editor, the pages beside it and the dialogs, each a
  * component of its own over those parts.
  */
+import { ScopeReferences } from './references/ScopeReferences'
 import { ScopeBlockFacts } from './blocks/ScopeBlockFacts'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import Box from '@mui/material/Box'
@@ -135,7 +136,7 @@ function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: Reac
   const live = useLiveViews(parts)
   return (
     <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf} live={live} openView={openView}>
-      <ScopeComments parts={parts}><ScopeChanges parts={parts}><ScopePrinciples parts={parts}><ScopeBlockFacts parts={parts}>{children}</ScopeBlockFacts></ScopePrinciples></ScopeChanges></ScopeComments>
+      <ScopeComments parts={parts}><ScopeChanges parts={parts}><ScopePrinciples parts={parts}><ScopeBlockFacts parts={parts}><ScopeReferences parts={parts}>{children}</ScopeReferences></ScopeBlockFacts></ScopePrinciples></ScopeChanges></ScopeComments>
     </ViewEmbedsProvider>
   )
 }

@@ -31,6 +31,7 @@ import type { ComponentType } from 'react'
 import { BpmnBlock } from './BpmnBlock'
 import { BusinessCaseBlock } from './BusinessCaseBlock'
 import { MermaidBlock } from './MermaidBlock'
+import { RefBlock } from './References'
 import type { MermaidRenderer } from './MermaidBlock'
 
 /** The prefix `react-markdown` puts on a fence's language. */
@@ -70,6 +71,8 @@ export const BLOCKS: ReadonlyMap<string, BlockRenderer> = new Map<string, BlockR
   ['mermaid', ({ code, context }) => <MermaidBlock code={code} render={context.renderMermaid} />],
   ['business-case', ({ code }) => <BusinessCaseBlock code={code} />],
   ['bpmn', ({ code }) => <BpmnBlock code={code} />],
+  // What a document refers to rather than copies, drawn as it stands (ADR-0043 §10).
+  ['ref', ({ code }) => <RefBlock code={code} />],
 ])
 
 /** The fence name in a `language-…` class, or nothing for inline code. */

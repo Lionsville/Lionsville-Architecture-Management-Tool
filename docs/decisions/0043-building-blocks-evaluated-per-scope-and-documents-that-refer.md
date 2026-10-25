@@ -2,8 +2,8 @@
 
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
   building blocks, their evaluations, the decision and where the choice is
-  seen (§1–§8, §13 but the `ref` fence); references in documents (§9–§11)
-  and the agent's tools (§12) not yet built
+  seen (§1–§8, §13); references in documents and live views (§9–§11); the
+  agent's tools (§12) not yet built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -298,4 +298,41 @@ evaluation; the *Uses* picker and *Existing application…* offer the elements
 chosen for the scope first — its own choice of a block, else the nearest
 scope's above — under *Chosen for this scope* (`projects/chosenSolutions.ts`).
 A chosen solution with no element yet is linked from the block's catalogue.
+
+## As built, 25 October 2026: references in documents and live views
+
+**The catalogue** is `documentation/references.ts` (pure: the fence, its
+fields, the completion's trigger and the insertion) and, per scope,
+`app/references/referables.ts`: the scope's views and elements, the
+principles in force there and each of their aspects, every block's
+requirements and every scope's evaluation of one, and the scope's decisions
+and observations. Plans are not in it; ADR-0043 §9 does not list them. The
+workspace hands it down with the drawings (`ScopeReferences`); a home hands
+down the principles and evaluations off the index, and draws a decision or an
+observation as it is written, since no scope's records are read there.
+
+**The ways in**: `[[` or a lone `@` opens the list at the caret, ↑ ↓,
+Enter or Tab, Escape; *Insert ▾* replaces the editor's *Add a business case*
+button and holds it, *Picture…* where a document takes pictures, and each
+kind by name.
+
+**The drawings**: a principle as a quote, its number opening it; a block's
+requirements and a scope's evaluation as their grids, read-only, with the way
+to the block's page; a decision or an observation as a line with *Open*;
+anything gone as a line that says so; with nothing handed down, the fence's
+source.
+
+**A pin** (`at:`) is a revision of the evaluating scope. The history keeps
+entries, runs of steps, not every revision, so a pinned evaluation is drawn
+as it stood where its scope is still at that revision or one of the
+evaluation's last twenty entries ends on it, and otherwise as it is now,
+saying it has changed since it was referred to.
+
+**A live view** is drawn by the code of its tab (`app/LiveViews.tsx`): a
+board by its canvas at its own size, a laid-out view by its page, in a frame
+the document's width that scrolls up to 600 px. It is **inert** — no pointer
+or key reaches it and nothing in it takes focus — rather than stopped by
+handlers at the frame, which the canvas's own pan and zoom listen beneath. A
+paragraph of pictures only is a block, since a canvas is no phrasing content.
+Under every view, a drawing included, the caption names it and opens it.
 

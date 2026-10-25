@@ -62,15 +62,13 @@ function boardSize(diagram: DesignDiagram): { width: number; height: number } {
 }
 
 /**
- * Stop a gesture before it reaches the view: a capture at the frame stops it
- * on its way down, so nothing is selected, dragged or zoomed, and the frame's
- * own scrolling — the browser's default — still happens.
+ * The view is read and never used: inert, so no pointer and no key reaches it
+ * — nothing is selected, dragged or zoomed, and nothing in it takes focus —
+ * while the frame around it, which is not, still scrolls through it. A
+ * capture of the events at the frame would not do: the canvas's pan and zoom
+ * listen on its own element, under any handler of ours.
  */
-const stop = (event: { stopPropagation(): void }) => event.stopPropagation()
-const READ_ONLY_GESTURES = {
-  onPointerDownCapture: stop, onMouseDownCapture: stop, onClickCapture: stop, onDoubleClickCapture: stop,
-  onContextMenuCapture: stop, onKeyDownCapture: stop, onWheelCapture: stop,
-}
+const READ_ONLY = { inert: true, 'data-testid': 'view-inert' } as const
 
 /** The slot: a view of the open scope, drawn live and read-only, or nothing for a kind that is a picture. */
 export function useLiveViews(parts: WorkspaceParts): (diagram: DesignDiagram) => ReactNode {
@@ -99,16 +97,15 @@ export function useLiveViews(parts: WorkspaceParts): (diagram: DesignDiagram) =>
       // view alone: its details pane, its outline and the seams beside them
       // are the tab's, not the document's.
       <Box
-        {...READ_ONLY_GESTURES}
         sx={{
           maxHeight: LIVE_VIEW_HEIGHT, width: '100%', overflow: 'auto', position: 'relative',
           '& [data-testid="sheet-inspector"], & [data-testid="chart-outline"], & [data-testid="chart-outline-seam"], & [role="separator"], & .react-flow__panel': { display: 'none !important' },
         }}
       >
         {size ? (
-          <Box sx={{ width: size.width, height: size.height, display: 'flex', '& > *': { flex: 1, minWidth: 0 } }}>{board(diagram)}</Box>
+          <Box {...READ_ONLY} sx={{ width: size.width, height: size.height, display: 'flex', '& > *': { flex: 1, minWidth: 0 } }}>{board(diagram)}</Box>
         ) : (
-          <Box sx={{ height: LAID_OUT_HEIGHT, display: 'flex', '& > *': { flex: 1, minWidth: 0 } }}>{laidOutPage(parts, diagram, READING)}</Box>
+          <Box {...READ_ONLY} sx={{ height: LAID_OUT_HEIGHT, display: 'flex', '& > *': { flex: 1, minWidth: 0 } }}>{laidOutPage(parts, diagram, READING)}</Box>
         )}
       </Box>
     )

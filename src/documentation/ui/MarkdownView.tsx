@@ -192,7 +192,8 @@ function components(
     h6: heading(6, '0.9em', 500),
     p: ({ children, node }) => (
       <Typography
-        component="p"
+        // A paragraph of pictures only is a block: a view in it is drawn live, and a canvas is no phrasing content.
+        component={isPictureParagraph(node) ? 'div' : 'p'}
         {...(isPictureParagraph(node) ? WIDE : {})}
         // As a heading's: room above only after a sibling.
         sx={{ fontSize: 'inherit', lineHeight: 1.6, mt: 0, mb: '0.7em', '* + &': { mt: '0.7em' }, '&:last-child': { mb: 0 } }}

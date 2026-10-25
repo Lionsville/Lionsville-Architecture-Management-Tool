@@ -27,13 +27,14 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { DocumentIcon, EyeIcon } from '../../widgets/icons'
+import { EyeIcon } from '../../widgets/icons'
 import Typography from '@mui/material/Typography'
 import type { ImageEntry } from '../../model/imageName'
 import { useStrings } from '../../i18n/LanguageContext'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { TrashIcon } from '../../widgets/icons'
 import { businessCaseTemplate } from '../businessCase'
+import { InsertMenu, useReferenceCompletion } from './ReferenceCompletion'
 import { imagesUsedIn, pictureMarkdown } from '../images'
 import { MarkdownHelp } from './MarkdownHelp'
 import { PictureThumbnail } from './Pictures'
@@ -98,8 +99,12 @@ export function DocumentSource(props: DocumentSourceProps) {
     })
   }, [areaRef, onChange])
 
+  /** `[[` or `@` while typing, and *Insert ▾*: what the document may refer to, at the caret (ADR-0043 §9). */
+  const completion = useReferenceCompletion(areaRef, onChange)
+
   // ⌘B / ⌘I wrap the selection; Tab indents rather than leaving the field.
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (completion.onKeyDown(event)) return
     const area = event.currentTarget
     const mod = event.metaKey || event.ctrlKey
     const wrap = (mark: string) => {
@@ -174,17 +179,11 @@ export function DocumentSource(props: DocumentSourceProps) {
         </Typography>
         {/* Half a screen: the three words become three glyphs with the words
             as tooltips, rather than a toolbar three rows tall. */}
-        {narrow ? (
-          <Tooltip title={t('doc.insertBusinessCase')}>
-            <IconButton size="small" aria-label={t('doc.insertBusinessCase')} onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
-              <DocumentIcon size={16} />
-            </IconButton>
-          </Tooltip>
-        ) : (
-          <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
-            {t('doc.insertBusinessCase')}
-          </Button>
-        )}
+        <InsertMenu
+          onBusinessCase={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}
+          {...(images ? { onPicture: () => setShowPictures(true) } : {})}
+          onInsert={completion.insert}
+        />
         {images && (narrow ? (
           <Tooltip title={`${t('doc.pictures')} (${library.length})`}>
             <IconButton
@@ -265,7 +264,8 @@ export function DocumentSource(props: DocumentSourceProps) {
         aria-label={props.label}
         value={value}
         spellCheck={false}
-        onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
+        onChange={(e: { target: { value: string } }) => { onChange(e.target.value); completion.onInput() }}
+        onSelect={completion.onInput}
         onBlur={props.onBlur}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
@@ -276,6 +276,8 @@ export function DocumentSource(props: DocumentSourceProps) {
           font: `13px/1.6 ${CODE_FONT}`, tabSize: 2,
         }}
       />
+
+      {completion.popper}
 
       {/* Deleting a picture is the one thing on a page ⌘Z cannot take back, so it asks. */}
       <ConfirmDialog

@@ -163,7 +163,8 @@ describe('MarkdownView', () => {
       '```business-case\ncurrency: EUR\nperiods: 2026\nlines:\n  - Thing: -1\n```',
     ].join('\n\n')))
     const wide = Array.from(container.querySelectorAll('[data-wide]'))
-    expect(wide.map((el) => el.tagName.toLowerCase())).toEqual(['p', 'div', 'pre', 'div'])
+    // A paragraph of pictures only is a block of its own, since a live view is no phrasing content.
+    expect(wide.map((el) => el.tagName.toLowerCase())).toEqual(['div', 'div', 'pre', 'div'])
     expect(container.querySelector('p:not([data-wide])')?.textContent).toBe('A paragraph.')
   })
 
