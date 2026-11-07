@@ -1,6 +1,8 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
-* Status: accepted, 11 October 2026; as built, 11 October 2026, in eight
+* Status: amended, 7 November 2026: an application's owner as one field, a leaving
+  taken back, and people found by search (*Amended, 7 November 2026*, below), as built
+  the same day (4.0.0, not yet released). Accepted, 11 October 2026; as built, 11 October 2026, in eight
   parts — the register of people, the operating model, units and
   assignments, change over time, names as references, the two views and the
   `interacts` row, the calls a review left open, and a managing role's right
@@ -2560,6 +2562,51 @@ assistive technology reads, so a box is named by its whole type.
   small chart of three levels open it as left unfolded
   (`app/testing/chartFolds.leftUnfolded`), and `ChartReading.test` reads the
   four changes.
+
+## Amended, 7 November 2026 — one owner, a leaving taken back, people in the search
+
+**An application's owner is one field** (`model/ownerField.ts`): a unit picked, or a
+name typed, flagged as not being a unit. It had two places, `partyId` and `owner`,
+and only the first counted, so a record saying who owned it could be told nobody
+did. The two keys stay, since the Conway map, the charts and every older folder read
+them, and everything that asks who owns an application asks `applicationOwner`.
+Setting one clears the other, in the reducer (`withOneOwner`), so every writer gets
+the same field; a patch naming both says exactly what it means, which is what an
+undo does. A record holding both reads as the unit, with what was written kept beside
+it until the owner is next set. A person picked from the register reads as a name.
+Other kinds keep their two keys' own meanings. §2's rule is unchanged.
+
+**The check and the register count by it.** `check.applicationUnowned` finds only
+what nobody answers for. A name is `check.applicationOwnerNamed`, a note: somebody
+answers, but the Conway map cannot place it and no role rule can work out who holds
+it. The register's summary says `owned`, `ownerNamed` and `unowned`; what it called
+*owned by a domain*, which only ever said where a record is filed, is `keptInADomain`
+and says so. So the register and the checks can no longer disagree about one row.
+
+**A leaving is taken back, until the name is forgotten.** A wrong *Mark as left* had
+no way out but a merge, and the register's no-undo rule exists so that a name can be
+forgotten, which a leaving does not do for its whole keep period.
+`PeopleRepository.takeBackLeaving` makes the entry active with no last day, refused
+`people.forgotten` and `people.notLeft`. An end made by leaving says so on the
+assignment, `endedByLeaving`, with the last day it had before, so `restoringFor`
+restores exactly what that leaving ended: not an end a person made on the same day,
+and not one whose last day somebody has changed since. It runs as a leave does
+(`people/leave.takeBackLeaving`): the steps first, one per scope, in Activity, then
+the register, so a scope that refuses marks nothing. A repository that says
+`endsAssignments` does it all itself and answers `restored`.
+
+An assignment the leave took away because it only began after the last day is gone,
+and does not come back: it was removed by a step, with nothing left to restore it
+from. An agent reaches this with `person.takeBackLeaving`.
+
+**The search finds people** (`PeopleMatch.entries`, `people/matching.ts`), for anyone
+who can read the register, since whoever holds it hands it in: a hit of kind `person`
+that opens on the People page. It reads what the reader may read of the entry, the
+same words as §8's matching: a forgotten or withheld entry by pseudonym and nothing
+else, and never an address. A redirect is no second entry. No index folds a name.
+
+**Format 17** carries `endedByLeaving`. A leaving from before it has no mark, so its
+ends do not come back: that is the safe side, since nothing says they were its.
 
 ## Open
 

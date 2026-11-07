@@ -1543,7 +1543,11 @@ replacement.
 a board showing 2028 does not look like a board showing now. Every card draws
 the phase it is in on that day, and a line with a window appears only inside it.
 Picking a day only changes what your window shows: nothing is saved, nobody else
-sees it, and a dashed outline round the button says so. To make the board open on
+sees it, and a dashed outline round the button says so. While you look at a day
+that is not the board's own, the board is read-only: the palette and the fields
+are put away, and **Back to…** brings them back. A board saved on its day stays
+editable on it, and who holds a role can still be changed on the day you are
+looking at. To make the board open on
 that day for everybody, choose **Save** under the date — that one is an edit, one
 entry in Activity, and ⌘Z takes it back. **Show today** and then **Save** puts a
 dated board back on the calendar.
@@ -1971,6 +1975,8 @@ something here uses one; a scope with no offerings at all shows the band
 as a strip and the platforms move up. Under *Leverages* on a board's
 record, *Show on technology landscape* opens the landscape on that card.
 The board itself still draws flows only.
+
+What you choose is yours and writes nothing; **Keep with the view**, in the same menu, makes it what everybody opens on.
 
 **Colour by** in the landscape's toolbar tints the cards by platform — the
 cluster, not the namespace — or by technology lifecycle, so the cards

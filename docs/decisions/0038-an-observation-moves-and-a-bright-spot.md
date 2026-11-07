@@ -8,7 +8,9 @@
   *Amendment, 7 November 2026*, below); amended again, 7 November 2026: who
   recorded it reads through the register, and an entry writes no name (§10,
   *Amendment, 7 November 2026: who recorded it, as a name*, below), with the
-  format at 16 for it; as built the same day
+  format at 16 for it; as built the same day; amended, 7 November 2026: *Noted*
+  (*Amendment, 7 November 2026: Noted*, below), as built the same day with the
+  format at 17 (4.0.0, not yet released)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -558,6 +560,19 @@ by*.
 as nobody, and so drops the entry, the account and the agent on its way back: the
 case the number exists for (`folderFormat.ts`). A 15 is a 16 whose records still
 hold both, read as above.
+
+## Amendment, 7 November 2026: Noted
+
+An observation left the waiting list by being explained or by being archived, and
+archiving says it stopped being true. A fact worth keeping, read and wanting no
+cause, had neither, so the list filled with what nobody meant to act on, and stopped
+being a list anybody acts from.
+
+**`noted`**, with `noted` and `unnoted` events in its history, a reason beside the
+day where one was given (`observations/setNoted`). It leaves the waiting list
+(`waitingObservations`) and is otherwise as live as any other: drawn, searchable, a
+merge target, and still explainable. The agent's `observation.note` takes `reason`
+and `takeBack`, and says to use it only when the person said so. Format 17.
 
 ## As built, 25 October 2026: a record's changes (§11)
 

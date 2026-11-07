@@ -1775,7 +1775,11 @@ und hebt sich hervor, sodass ein Board, das 2028 zeigt, nicht wie ein Board
 aussieht, das jetzt zeigt. Jede Karte zeichnet die Phase, in der sie an diesem
 Tag ist, und eine Linie mit Zeitfenster erscheint nur innerhalb davon. Einen Tag
 zu wählen ändert nur, was Ihr Fenster zeigt: Es wird nichts gespeichert, niemand
-sonst sieht es, und ein gestrichelter Rahmen um die Schaltfläche sagt das. Soll
+sonst sieht es, und ein gestrichelter Rahmen um die Schaltfläche sagt das. Solange
+Sie einen Tag ansehen, der nicht der eigene des Boards ist, ist das Board
+schreibgeschützt: Palette und Felder sind weg, und **Zurück zu…** bringt sie zurück.
+Ein auf seinem Tag gespeichertes Board bleibt an diesem Tag bearbeitbar, und wer
+eine Rolle innehat, lässt sich weiter an dem angesehenen Tag ändern. Soll
 das Board für alle an diesem Tag öffnen, wählen Sie **Speichern** unter dem
 Datum — das ist eine Bearbeitung, ein Eintrag in Aktivität, und ⌘Z nimmt sie
 zurück. **Heute zeigen** und dann **Speichern** stellt ein datiertes Board
@@ -2267,6 +2271,8 @@ ohne Dienste zeigt das Band als Streifen, und die Plattformen rücken
 hoch. Unter *Stützt sich auf* im Datensatz einer Tafel öffnet *Auf der
 Technologielandschaft zeigen* die Landschaft auf dieser Karte. Die Tafel
 selbst zeichnet weiterhin nur Flüsse.
+
+Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht behalten**, im selben Menü, macht es zu dem, was alle öffnen.
 
 **Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
 Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der

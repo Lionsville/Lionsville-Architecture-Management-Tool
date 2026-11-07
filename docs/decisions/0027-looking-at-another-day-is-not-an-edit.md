@@ -1,6 +1,8 @@
 # ADR-0027 — Looking at another day is not an edit
 
-* Status: accepted
+* Status: accepted; amended, 7 November 2026: a look is read-only, and a lens is
+  the reader's until it is kept (*Amended*, below), as built the same day in the
+  editor (4.0.0, not yet released)
 * Date: 2026-09-26
 * Deciders: Wouter Simons
 * Supersedes: ADR-0009 (time on the facts), its *A diagram carries `asOf` and
@@ -109,3 +111,41 @@ window, so what it sets is always the saved day, as before.
 * Neutral: boards whose `asOf` was set by looking around before this change
   keep that day, because it was saved. *Show today* and *Save* puts one back on
   the calendar.
+
+## Amended, 7 November 2026 — reading changes nothing
+
+The record left one thing open: *every write is still built from the model's
+diagram*, so a look could not leak into a write, but a person could still edit while
+looking. Picking a card on a board showing next year and renaming it renamed it
+today, with nothing but a dashed outline to say so. That is the mistake the first
+driver says a person must never make. And a *Colour by* wrote the view, so a person
+reading a shared board marked it changed.
+
+**A look is read-only.** While a board is shown on a day that is not its own
+(`isLookingAway`), the editor's `readOnly` is true: the palette, the inspector's
+fields, dragging, deleting, Tidy and routing are put away. One press, *Back to…*, is
+the way back. **A view saved on its day stays editable**, because a look that
+reaches the board's own day forgets itself: the way to work on a future is still a
+board for that day (*Duplicate as of…*).
+
+**What takes the day stays.** *Save*, undo and redo are about the look or about work
+already done. Who holds a role is written on the day being looked at (*End on this
+day*, an assignment's first and last day, a plan's move), so a unit's section and
+the chart are handed whether the source may be written (`EditorParts.writable`),
+and not `readOnly`. The agent has no window, so nothing here changes for it.
+
+**A lens is the reader's.** `chooseColourBy` writes nothing: it is held per board by
+the window, as a look is, and a reader may use it as before. *Keep with the view*,
+offered to whoever may write while the lens differs from what the view keeps, is the
+one write, as `diagram.update` with `colourBy`. A lens back on what the view keeps
+stops being the reader's. The agent's `diagram.update` still sets it directly.
+
+### Consequences of the amendment
+
+* Good: *read-only* now means it, and the band a screen draws for a look is true.
+* Bad, accepted: to correct a typo seen while looking, a person goes back first.
+* Bad, accepted: a lens is lost on reload unless kept, as a look is. One that used to
+  stick by being chosen now has to be kept.
+* Neutral: the container view's deployment boxes still write when toggled. They are
+  a setting of the view rather than a colouring of it, and have no *Keep* yet.
+

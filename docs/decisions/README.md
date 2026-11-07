@@ -123,3 +123,5 @@ now, with their words unchanged.
 | [0043](0043-building-blocks-evaluated-per-scope-and-documents-that-refer.md) | Building blocks, evaluated by each scope that adopts them, and documents that refer rather than copy | 2026-10-25 | — |
 | [0044](0044-one-way-every-page-behaves.md) | One way every page behaves: under the bar, closed the same way, columns that widen, cards that open | 2026-10-25 | — |
 | [0045](0045-one-design-system-tokens-and-a-kit.md) | One design system: tokens as the source, a kit the screens are composed from | 2026-11-07 | — |
+| [0046](0046-a-numeric-scale-on-an-aspect.md) | A numeric scale on an aspect, and a function rated on it | 2026-11-07 | — |
+| [0047](0047-a-confirmed-or-assumed-mark.md) | A confirmed or assumed mark on elements and lines | 2026-11-07 | — |

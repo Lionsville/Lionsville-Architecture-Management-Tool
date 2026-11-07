@@ -1685,7 +1685,11 @@ tot u een dag kiest; daarna staat die dag er, opgelicht, zodat een bord met 2028
 er niet uitziet als een bord van nu. Elke kaart tekent de fase waarin zij op die
 dag verkeert, en een lijn met een venster verschijnt alleen daarbinnen. Een dag
 kiezen verandert alleen wat uw venster toont: er wordt niets opgeslagen, niemand
-anders ziet het, en een gestippelde rand om de knop zegt dat. Wilt u dat het bord
+anders ziet het, en een gestippelde rand om de knop zegt dat. Zolang u naar een
+dag kijkt die niet die van het bord zelf is, is het bord alleen-lezen: het palet en
+de velden zijn weg, en **Terug naar…** brengt ze terug. Een bord dat op zijn dag is
+opgeslagen blijft op die dag bewerkbaar, en wie een rol heeft kan nog op de bekeken
+dag worden gewijzigd. Wilt u dat het bord
 voor iedereen op die dag opent, kies dan **Opslaan** onder de datum — dat is wel
 een bewerking, één regel in Activiteit, en ⌘Z draait hem terug. **Toon vandaag**
 en dan **Opslaan** zet een gedateerd bord weer op de kalender.
@@ -2142,6 +2146,8 @@ diensten toont de band als een strook en de platforms schuiven omhoog.
 Onder *Steunt op* op het record van een bord opent *Toon op
 technologielandschap* het landschap op die kaart. Het bord zelf tekent nog
 altijd alleen stromen.
+
+Wat u kiest is van u en schrijft niets; **Bewaren bij de weergave**, in hetzelfde menu, maakt het tot wat iedereen opent.
 
 **Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
 — het cluster, niet de namespace — of op levenscyclus van de techniek, zodat

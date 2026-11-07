@@ -4,7 +4,9 @@
   own, a tab and a selection in a destination, and an open that never makes
   a view), as built the same day; amended 11 October 2026 (`app.open` takes
   a solution or an experiment; `select` may ride in a link), accepted and
-  built
+  built; amended 7 November 2026 (a whole session taken back as one step,
+  *Amended, 7 November 2026*, below), the model built the same day (4.0.0, not
+  yet released)
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
@@ -297,3 +299,26 @@ ADR-0007 for the agent as a peer of the menu and the three tiers this adds a
 fourth to; ADR-0012 for the organisation of scopes the agent now moves
 through; ADR-0016 for a laid-out view being a tab, which is why `app.open`
 treats a sheet, a map and a landscape as views beside a board.
+
+## Amended, 7 November 2026 — a whole session taken back
+
+⌘Z goes one step at a time and an agent may land dozens, while the place a person
+decides whether they wanted the work is its end.
+
+**While its steps are the newest** (`projects/agentRun.ts`). The run is the unbroken
+stretch of the session's steps at the top of the history, from the session's start
+(`Driving.latest`, which outlives the banner). Anybody's step on top of it, a
+person's or a colleague's, means there is no run: taking an agent's work out from
+under somebody else's is not a thing to do in one press. A two-scope gesture is where
+it stops, as ⌘Z stops there, and the answer says so.
+
+**Undone as one step, where the stack is this person's.** `ModelSession.undoRun`
+applies every inverse as one change, puts one step on the redo stack, and refuses a
+run that is no longer the top. The agent asks with `undo` and `session: true`.
+
+**On a server, *Put back* as one new step.** The log there is everybody's, so nothing
+is taken out of it: `putBackRun` makes the run's inverses a `restore` with
+`restored.what` `agentSession`, one step by the person pressing it, which the writer
+refuses like any other if somebody got there first. Its run reads the author and the
+client the steps arrived under (`AgentSessionOf.remote`).
+
