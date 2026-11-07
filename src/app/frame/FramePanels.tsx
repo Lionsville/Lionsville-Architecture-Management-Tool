@@ -93,14 +93,14 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
     <>
       {trouble && (
         <PanelSection title={trouble.title}>
-          <p data-testid="work-trouble">{trouble.body}</p>
+          <p className="kit-work__say" data-testid="work-trouble">{trouble.body}</p>
           <div className="kit-work__acts">
             {trouble.acts.map((act) => <Button key={act.label} size="small" onClick={act.run} {...(act.testId ? { 'data-testid': act.testId } : {})}>{act.label}</Button>)}
           </div>
         </PanelSection>
       )}
-      {facts?.saveFailed && <PanelSection title={s('work.couldNotSave')}><p>{s('shell.keepFailed')}</p></PanelSection>}
-      {riskKey && !trouble && <p data-testid="work-risk">{s(riskKey as StringKey)}</p>}
+      {facts?.saveFailed && <PanelSection title={s('work.couldNotSave')}><p className="kit-work__say">{s('shell.keepFailed')}</p></PanelSection>}
+      {riskKey && !trouble && <p className="kit-work__say" data-testid="work-risk">{s(riskKey as StringKey)}</p>}
       {!props.provider?.publishesSteps && (
         <PanelSection>
           {facts?.savedAt && <Fact label={s('work.lastSaved')} value={day(facts.savedAt, prefs.language, s)} />}
@@ -108,7 +108,7 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
           {history && started !== undefined && <Fact label={s('work.history')} value={s(started ? 'work.historyKept' : 'work.historyNot')} />}
         </PanelSection>
       )}
-      {facts?.activity && !parts.provider.YourWork && <p>{s('frame.sessionChanges', { count: facts.activity().length })}</p>}
+      {facts?.activity && !parts.provider.YourWork && <p className="kit-work__say">{s('frame.sessionChanges', { count: facts.activity().length })}</p>}
     </>
   )
 }

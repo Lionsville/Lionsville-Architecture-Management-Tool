@@ -127,3 +127,5 @@
 .kit-work__fact { display: flex; justify-content: space-between; gap: var(--s-3); min-height: var(--row-prop); }
 .kit-work__fact-label { color: var(--ink-3); }
 .kit-work__acts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
+/* A sentence in the panel sits in the body's own rhythm, not a paragraph's browser margins. */
+.kit-work__say { margin: 0; }
