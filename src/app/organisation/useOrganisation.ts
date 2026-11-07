@@ -311,28 +311,20 @@ export function useOrganisation({
 
   const folds = useScopeFolds(tree)
 
-  const addUnder = useCallback((parent: ScopePath) => {
-    setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' })
-  }, [])
+  const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
   const editScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target }), [])
   const moveScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target, moving: true }), [])
   const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
   const askDelete = useCallback((target: ScopeSummary) => setDialog({ kind: 'delete', target }), [])
   const closeDialog = useCallback(() => setDialog({ kind: 'none' }), [])
-  const setNewScopeName = useCallback((name: string) => {
-    setDialog((held) => (held.kind === 'newScope' ? { ...held, name } : held))
-  }, [])
-  const setNewScopeParent = useCallback((parent: ScopePath) => {
-    setDialog((held) => (held.kind === 'newScope' ? { ...held, parent } : held))
-  }, [])
+  const setNewScopeName = useCallback((name: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, name } : held)), [])
+  const setNewScopeParent = useCallback((parent: ScopePath) => setDialog((held) => (held.kind === 'newScope' ? { ...held, parent } : held)), [])
   const setNewScopeWithBoard = useCallback((withBoard: boolean) => setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held)), [])
   const setNewScopeServedBy = useCallback((unitId: ElementId | undefined) => setDialog((held) => servedByPicked(held, unitId)), [])
   const addBoard = useCallback((path: ScopePath) => {
     setDialog({ kind: 'newBoard', path, name: s('shell.newDiagram') })
   }, [s])
-  const setNewBoardName = useCallback((name: string) => {
-    setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held))
-  }, [])
+  const setNewBoardName = useCallback((name: string) => setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held)), [])
 
   /** A scope made, entered, and said: the tree read again, and the index with it. */
   const entered = useCallback(async (path: ScopePath, message: string) => {

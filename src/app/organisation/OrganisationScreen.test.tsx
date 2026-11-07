@@ -24,6 +24,7 @@ import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { axeFindings } from '../testing/axe'
 import { EXAMPLES } from '../testing/examples'
 import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
@@ -141,6 +142,11 @@ function withTechnology(): ScopeSnapshot[] {
   ]
 }
 
+/** Named, with nothing kept and nothing filed. */
+function bareOrganisation(): ScopeSnapshot {
+  return { path: '', model: { name: 'Acme Logistics', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }
+}
+
 describe('the organisation screen — identity', () => {
   it('shows the root scope as the screen, name and description and links', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
@@ -165,7 +171,7 @@ describe('the organisation screen — identity', () => {
     })
     const meta = await screen.findByTestId('organisation-meta')
     // The whole tree beneath, in kind order; one that says nothing is a scope.
-    await waitFor(() => expect(meta.textContent).toContain('1 domain · 1 team · 1 landscape scope · 1 scope'))
+    await waitFor(() => expect(meta.getAttribute('title')).toContain('1 domain · 1 team · 1 landscape scope · 1 scope'))
   })
 
   /** "For Acme Logistics" under the heading "Acme Logistics" says it twice. */
@@ -225,10 +231,9 @@ describe('the organisation screen — its own pages', () => {
   it('counts the root’s records by status and names the newest', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(cards.textContent).toContain('2 records'))
-    expect(cards.textContent).toContain('1 proposed')
+    await waitFor(() => expect(cards.textContent).toContain('1 proposed'))
     expect(cards.textContent).toContain('1 accepted')
-    expect(cards.textContent).toContain('ADR-0002 Federate the model')
+    expect(within(cards).getByTestId('open-latest-decision').getAttribute('title')).toContain('ADR-0002 Federate the model')
   })
 
   it('shows the first thing the roadmap’s dates disagree about', async () => {
@@ -264,19 +269,17 @@ describe('the organisation screen — its own pages', () => {
    */
   it('counts the register over every scope, and opens it', async () => {
     renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
-    const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(cards.textContent).toContain('2 applications'))
-    expect(cards.textContent).toContain('0 owned')
-    expect(cards.textContent).toContain('1 outside')
-    // What the register disagrees about is counted under the cards and said
-    // on the Checks page, not tallied on the card: the card keeps the counts.
-    expect(cards.textContent).not.toContain('unattributed')
+    const place = await screen.findByTestId('tree-place-register')
+    // Filed in a domain, not owned: where a row is filed says nothing about who answers for it (`check.applicationNobodyOwns`).
+    await waitFor(() => expect(place.getAttribute('title')).toContain('2 applications'))
+    expect(place.getAttribute('title')).toContain('0 filed in a domain')
+    expect(place.getAttribute('title')).toContain('1 outside')
     const detail = await checkOnPage('review', 'check.unattributed')
     expect(pressFound(detail, within(detail).getByRole('row', { name: /Post office/ }).dataset.testid!).textContent)
       .toContain('Post office is outside the organisation and nobody has said whose it is')
     fireEvent.keyDown(window, { key: 'Escape' })
 
-    fireEvent.click(within(cards).getByTestId('open-register'))
+    fireEvent.click(screen.getByTestId('tree-place-register'))
     const table = await screen.findByTestId('register-table')
     // Kept in says the scope's name, never its path.
     expect(within(table).getByRole('row', { name: /Warehouse/ }).textContent).toContain('Retail')
@@ -310,10 +313,10 @@ describe('the organisation screen — its own pages', () => {
    */
   it('counts the technology over every scope, and opens it', async () => {
     renderApp({ repositories: heldRepositories(withTechnology()), today: TODAY })
-    const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(cards.textContent).toContain('2 services'))
-    expect(cards.textContent).toContain('1 platform')
-    expect(cards.textContent).toContain('1 shared')
+    const door = await screen.findByTestId('open-technology')
+    await waitFor(() => expect(door.getAttribute('title')).toContain('2 services'))
+    expect(door.getAttribute('title')).toContain('1 platform')
+    expect(door.getAttribute('title')).toContain('1 shared')
     // The two findings are said on the Checks page, each naming the service.
     const offered = await checkOnPage('review', 'check.offeredNotShared')
     const sentence = pressFound(offered, within(offered).getByRole('row', { name: /Message brokering/ }).dataset.testid!).textContent
@@ -324,7 +327,7 @@ describe('the organisation screen — its own pages', () => {
     expect(pressFound(unrealised, within(unrealised).getByRole('row', { name: /Message brokering/ }).dataset.testid!).textContent).toContain('Message brokering is offered, but no platform delivers it')
     fireEvent.keyDown(window, { key: 'Escape' })
 
-    fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-technology'))
+    fireEvent.click(screen.getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
     const containers = within(table).getByRole('row', { name: /Container/ }).textContent
     expect(containers).toContain('Platform team')
@@ -345,7 +348,7 @@ describe('the organisation screen — its own pages', () => {
     // these tests where React Flow needs jsdom's missing pieces.
     installReactFlowMocks()
     renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
-    fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-register'))
+    fireEvent.click(await screen.findByTestId('tree-place-register'))
     fireEvent.click(await screen.findByRole('row', { name: /Post office/ }))
     fireEvent.click(await screen.findByTestId('register-page-post'))
     // The landscape opens, and on it the page — with the record's fields
@@ -367,7 +370,7 @@ describe('the organisation screen — its own pages', () => {
 
   it('offers to make a sheet where the scope has none, and to open the one it has', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
-    expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
+    expect((await screen.findByTestId('open-business')).textContent).toContain('Business architecture')
 
     cleanup()
     const withSheet = organisation()
@@ -375,7 +378,7 @@ describe('the organisation screen — its own pages', () => {
       id: 'sh', kind: 'sheet', name: 'Business architecture', members: [], geometry: { nodes: [] },
     }]
     renderApp({ repositories: heldRepositories([withSheet]), today: TODAY })
-    await waitFor(() => expect(screen.getByTestId('open-business').textContent).toBe('Open'))
+    await waitFor(() => expect(screen.getByTestId('open-business').getAttribute('role')).toBe('row'))
   })
 
   /**
@@ -401,7 +404,7 @@ describe('the organisation screen — its own pages', () => {
 
   it('offers to make a map beside the sheet, and to open the one it has', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
-    expect((await screen.findByTestId('open-map')).textContent).toBe('Make a map…')
+    expect((await screen.findByTestId('open-map')).textContent).toBe('Enterprise map')
 
     cleanup()
     const withMap = organisation()
@@ -409,7 +412,7 @@ describe('the organisation screen — its own pages', () => {
       id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] },
     }]
     renderApp({ repositories: heldRepositories([withMap]), today: TODAY })
-    await waitFor(() => expect(screen.getByTestId('open-map').textContent).toBe('Enterprise map'))
+    await waitFor(() => expect(screen.getByTestId('open-map').getAttribute('role')).toBe('row'))
     fireEvent.click(screen.getByTestId('open-map'))
     // The root draws nothing; the map is what it was opened for.
     expect(await screen.findByTestId('map-grid', {}, { timeout: 3000 })).toBeDefined()
@@ -434,9 +437,10 @@ describe('the organisation screen — its own pages', () => {
   /** A fresh folder. Four zeroes read as a fault; a sentence reads as a start. */
   it('says nothing is here yet rather than showing zeroes', async () => {
     renderApp({ repositories: heldRepositories([]), today: TODAY })
-    const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(cards.textContent).toContain('Nothing at this level yet.'))
-    expect(cards.textContent).not.toContain('0 journeys')
+    const first = await screen.findByTestId('organisation-first')
+    expect(first.textContent).toContain('Map how your organisation works')
+    expect(first.textContent).not.toContain('0 journeys')
+    expect(screen.queryByTestId('scope-tree-panel')).toBeNull()
   })
 })
 
@@ -448,7 +452,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect(screen.queryByTestId('organisation-name')).toBeNull()
     const field = await screen.findByTestId('organisation-name-field')
     fireEvent.change(field, { target: { value: 'Globex' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
 
     await waitFor(async () => expect((await scopes.read(''))?.model.name).toBe('Globex'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
@@ -466,7 +470,7 @@ describe('the organisation screen — a fresh folder', () => {
     await waitFor(async () => expect((await scopes.read(''))?.model.name).toBe('Globex'))
   })
 
-  it('says the tree is empty, with the examples underneath', async () => {
+  it('offers the example beside starting your own', async () => {
     renderApp({
       repositories: heldRepositories([]),
       today: TODAY,
@@ -481,36 +485,22 @@ describe('the organisation screen — a fresh folder', () => {
         }, 'acme-logistics'),
       }],
     })
-    expect(await screen.findByText('Examples')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
-    expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing is filed under the organisation yet. Add a domain or a team below it.')
+    expect(await screen.findByRole('button', { name: 'Copy the example' })).toBeDefined()
+    expect(screen.getByRole('region', { name: 'Start your own' })).toBeDefined()
   })
 
   /**
-   * The first screen every desktop session lands on, read by somebody who
-   * has never seen it: one line saying what it is and where things live, a
-   * sentence on every card saying what is behind Open, and the empty tree
-   * saying it is empty rather than showing nothing.
+   * Named, and nothing filed: the next step in words, and where work is kept
+   * said here, once, rather than on every visit to a filled home.
    */
-  it('explains itself: the subtitle, a description on every card, and the empty tree', async () => {
-    renderApp({ repositories: heldRepositories([scope('', 'Acme Logistics')]), today: TODAY })
-    const subtitle = await screen.findByTestId('organisation-subtitle')
-    expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
-    expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
-    const cards = await screen.findByTestId('organisation-cards')
-    // The seven pages of the root, the operating model, the people register beside them (ADR-0036), the checks, the principles (ADR-0041), the topics (ADR-0042) and the building blocks (ADR-0043).
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(13))
-    const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
-    expect(said).toContain('Who is who: one entry per person.')
-    expect(said).toContain('Where the model contradicts itself, and how to fix it.')
-    expect(said).toContain('A page for every record on this scope\'s boards.')
-    expect(said).toContain('Every application, and the scope that answers for it.')
-    expect(said).toContain('Unit types, their roles, and what each role answers for.')
-    expect(said).toContain('Subjects across scopes; their principles apply there.')
-    expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')
-    expect(screen.getByRole('button', { name: 'New domain or team…' })).toBeDefined()
-    // Nothing to attend to, so no block at all — not an empty heading.
+  it('asks what to write down first, once it has a name', async () => {
+    renderApp({ repositories: heldRepositories([bareOrganisation()]), today: TODAY })
+    expect((await screen.findByTestId('organisation-next')).textContent).toContain('What do you want to write down first?')
+    expect(screen.getByTestId('organisation-subtitle').textContent).toContain('Everything here is kept in this browser.')
+    expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing filed yet. A division or a team goes here.')
+    expect(screen.getByRole('button', { name: 'New scope…' })).toBeDefined()
     expect(screen.queryByTestId('needs-attention')).toBeNull()
+    expect(await axeFindings()).toEqual([])
   })
 
   /**
@@ -524,7 +514,7 @@ describe('the organisation screen — a fresh folder', () => {
   it('says where work is kept in the provider’s own sentence for a registered source', async () => {
     registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
     renderApp({
-      repositories: heldRepositories([scope('', 'Acme Logistics')]),
+      repositories: heldRepositories([bareOrganisation()]),
       today: TODAY,
       source: { provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
       provider: { description: 'elsewhere.kept' },
@@ -532,8 +522,6 @@ describe('the organisation screen — a fresh folder', () => {
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toContain('Your work is kept elsewhere, and elsewhere says when.')
     expect(subtitle.textContent).not.toContain('in this browser')
-    // The rest of the sentence is this screen's own, and is still said.
-    expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
   })
 
   /**
@@ -543,12 +531,12 @@ describe('the organisation screen — a fresh folder', () => {
    */
   it('drops the clause where a registered source’s provider gave no sentence', async () => {
     renderApp({
-      repositories: heldRepositories([scope('', 'Acme Logistics')]),
+      repositories: heldRepositories([bareOrganisation()]),
       today: TODAY,
       source: { provider: 'nowords', name: 'Elsewhere', key: 'one' },
     })
-    const subtitle = await screen.findByTestId('organisation-subtitle')
-    expect(subtitle.textContent).toBe('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.')
+    await screen.findByTestId('organisation-next')
+    expect(screen.queryByTestId('organisation-subtitle')).toBeNull()
   })
 })
 
@@ -590,7 +578,7 @@ describe('the organisation screen — for somebody who may only read', () => {
     await screen.findByTestId('scope-retail')
     expect(screen.getByTestId('new-scope')).toBeDefined()
     expect(screen.getByRole('button', { name: 'More for Retail' })).toBeDefined()
-    expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
+    expect((await screen.findByTestId('open-business')).textContent).toContain('Business architecture')
   })
 })
 
@@ -638,7 +626,7 @@ describe('the organisation screen — the shipped example', () => {
     const scopes = heldRepositories([])
     renderApp({ repositories: scopes, today: TODAY, examples: EXAMPLES })
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
+    fireEvent.click(await screen.findByTestId('copy-example'))
     // Copying lands the person in the scope that has the work in it.
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     // The organisation's crumb is the way back to its home.
@@ -648,7 +636,7 @@ describe('the organisation screen — the shipped example', () => {
     expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
     // The line counts what each scope beneath says it is, in the badges'
     // words — never "landscape" alone, which is what a board is called.
-    await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
+    await waitFor(() => expect(screen.getByTestId('organisation-meta').getAttribute('title'))
       .toContain('1 domain · 1 landscape scope · 1 topic'))
     // The sheet is the ORGANISATION's now that a cross-scope id resolves
     // (ADR-0012 §1): the journey, the rail and the areas are what this level
@@ -656,9 +644,7 @@ describe('the organisation screen — the shipped example', () => {
     const cards = screen.getByTestId('organisation-cards').textContent ?? ''
     expect(cards).toContain('Business architecture')
     expect(cards).toContain('1 journey')
-    expect(cards).not.toContain('Nothing at this level yet.')
     // The folder holds architecture of its own now: no examples on offer.
-    expect(screen.queryByText('Examples')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
+    expect(screen.queryByTestId('copy-example')).toBeNull()
   }, COPY_THE_EXAMPLE_BUDGET)
 })

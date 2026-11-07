@@ -727,7 +727,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.nothingHere': 'Op dit niveau nog niets.',
 
   'org.tree': 'Scopes binnen {name}',
-  'org.treeEmpty': 'Er is nog niets ondergebracht bij {name}. Voeg er een domein of een team onder toe.',
+  'org.treeEmpty': 'Nog niets geplaatst. Een divisie of een team hoort hier.',
   'org.treeEmptyLandscape': 'Een landschap houdt zijn eigen weergaven bij. Voeg er alleen een scope onder toe om het op te splitsen.',
   'org.expand': 'Toon wat onder {name} zit',
   'org.collapse': 'Verberg wat onder {name} zit',

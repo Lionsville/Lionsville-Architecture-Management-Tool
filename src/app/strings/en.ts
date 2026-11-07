@@ -936,7 +936,7 @@ export const EN = {
 
   // The tree of scopes beneath.
   'org.tree': 'Scopes within {name}',
-  'org.treeEmpty': 'Nothing is filed under {name} yet. Add a domain or a team below it.',
+  'org.treeEmpty': 'Nothing filed yet. A division or a team goes here.',
   /** An empty tree under a landscape: what a scope under it would be for, not a request for one. */
   'org.treeEmptyLandscape': 'A landscape keeps its own views. Add a scope below it only to split it up.',
   'org.expand': 'Show what is under {name}',

@@ -48,33 +48,25 @@ at the top, a **domain** or a **team** under it, a **landscape scope** under
 that, as deep as your work needs. A landscape scope is a scope; a landscape is
 also a kind of board, which is a drawing inside a scope.
 
-The screen is the organisation's home rather than a list of documents. A line
-under the name says what it is and where things live: as files in the folder,
-in this browser, or nowhere yet. Then it has five parts.
+The screen is a scope's home with the **tree** beside it. The tree is always there on a home; ⌘\\ keeps it there on every other screen, and the chevron beside the trail opens it over the work.
 
 ![The organisation screen: the name and links at the top, the organisation's own pages as cards, the scopes within it, and the examples last](screenshot-organisation.png)
 
-**Its identity**, at the top: the name, the client if the drawings are made out
-to somebody else, how many scopes are filed under it by what each says it is
-(*2 domains · 1 team*, in the words of the badges on their rows), when
-anything in it last changed, the description, and its links. An organisation
-nobody has named yet asks for a name here instead of showing a heading; a
-folder goes by its own name until you give it one.
+**Its head**, at the top: the name, what it is and where it is filed, how many scopes are under it (hover for how many of each kind), when anything in it last changed, the description and its links. **New view…**, **New scope…** and **Settings…** are at its right. An organisation nobody has named yet asks for a name here instead of showing a heading.
 
-**Its own pages**, as cards. Each says in a sentence what is behind its
-**Open**, then counts: **Business architecture** the journeys, areas, functions
-and stakeholders the organisation itself holds, and how many functions nobody
-has handed to a domain yet; **Decisions** its records by status, naming the
-newest; **Roadmap** its plans, and the first thing their dates disagree about;
-**Register** every application in the whole folder, how many a domain answers
-for and how many are somebody else's; **Technology** every platform service and
-platform, and how many are shared; **Operating model** its unit types, roles
-and responsibilities, and whether each responsibility has its one accountable
-role. A scope that draws has a **Documentation**
-card too. Each card opens what it counts; closing the page brings you back
-here.
+A new organisation opens on a page of its own that says what this is and offers the three ways in: start your own, look around an example, or open work you already have. Once named, with nothing filed, it asks what to write down first.
 
-**Served by**, under the cards, wherever the organisation has units — but not
+**Continue** leads the organisation's home: the views and pages you last worked in, on this computer. Press one to go back there. With no address, the app opens here.
+
+**Views here**: one row per view, each with what is on it, and *Empty* where nothing is. The whole row opens it. A container diagram is indented under its landscape. The **⋯** at the end of a row has *Open* and *Delete…*.
+
+**Kept here**: one row each for what this scope holds: observations, principles, decisions, the roadmap with the first thing its dates disagree about, documentation, building blocks, and, on a scope with others under it, the register and the technology of that part of the tree. What it does not hold folds into one line, **Nothing here yet**, each name still a way to that page.
+
+**A scope that holds nothing** says so, and that this is fine, with its first steps: draw a view, record an observation, write a decision, add a plan, file a scope under it. Under them, what is in force from above, the nearest work, and every page of the scope on one line.
+
+**Across the organisation**, at the foot of the tree: the register, people, the operating model, principles and checks. Technology, topics and building blocks are under **More** and ⌘K, and on the organisation's home.
+
+**Served by**, under the head, wherever the organisation has units — but not
 on the organisation's own home, since the organisation is no domain and no
 unit serves it: the units that serve this scope, in the order of their types,
 each with who holds its managing role today and where it is filed when that
@@ -114,7 +106,7 @@ way, and the checks say the three cases that are off (*The Checks page*).
 app makes, by what it is about, with why each matters, how to fix it and
 where it finds something at or under this home (*The Checks page*, below).
 
-**Needs attention**, above the cards, when the checks find anything: how much,
+**Checks**, under the head: how much the checks find,
 by weight — so many **to fix**, so many **to review**, so many **notes** —
 each a link to the Checks page, on the first check of that weight that finds
 something. A finding marked as intended is not counted. What the checks find
@@ -133,28 +125,20 @@ indented, and a badge saying what the scope says it is. The tree starts folded,
 so a home lists only the scopes directly under it: press the chevron in front
 of a domain to show what is under it and again to fold it shut, or **Show all**
 above the tree to open every level at once (**Fold all** shuts them again). The
-fold lasts while the app is open. A row says how much is inside it — for a
-domain how many scopes are under it, and scopes with boards and diagrams over
-the whole subtree, diagrams for a scope with nothing
-under it — and when it last changed. **Order** lists by name or by what you
-changed most recently. An organisation with nothing filed under it yet says so
-in a sentence. A scope that draws lists its **Boards** above the tree instead,
-one row each, and **New board…** offers the same kinds the editor's `+` tab
-does: a landscape, a business architecture, an enterprise map or a technology
-landscape.
+fold lasts while the app is open. A row says how much is kept there and below, in one number under **Holds**, with the words on hover; a scope holding nothing keeps its place in a quieter ink. **All** shows every scope, **With work** only those holding something and the path down to them, and typing in **Find a scope** lists every match flat with its path, by name or by a topic relevant to it. Enter opens the first and Esc clears it. **Order** is under the tree's **⋯**, with **Show all** and **Fold all**. An organisation with nothing filed under it yet says so in a sentence.
 
-- **Open** on a row goes to that scope's home: its own cards, its boards, and
-  the scopes within it, each with a row of its own. A board is opened from its
-  row under **Boards**.
-- **New domain or team…**, once, at the head of the section, asks for a name
-  and files the new scope under the scope whose home you are on; **Filed
-  under** in the dialog puts it somewhere else. Where the organisation has
+- **Pressing a row** goes to that scope's home. A row's **⋯** has *Open*, *New
+  scope under it…*, *New view in it*, *Settings…*, *Move to…* and *Delete…*.
+- **New scope…** asks for a name and what it is, and files the new scope under
+  the scope whose home you are on; **Filed under** in the dialog puts it
+  somewhere else. It makes no view unless you tick *Start it with a landscape
+  view*, and you stay on the new scope's home. Where the organisation has
   units, **Served by** in the dialog picks the one that serves it, from the
   same list **+ Unit** offers; it is written when the scope is made, as one
   step in the scope that keeps the unit. Where that is refused — you may only
   read there — the scope is made all the same and a notice says the unit was
   not linked; **Served by** on the new scope's home is where it is set.
-- **Settings…** on any row holds its name, **what it is**, a client, a
+- **Settings…** on a row or a home holds its name, **what it is**, a client, a
   description, links, and **Filed under**, which moves it. **What it is** is
   one list: where the organisation has an operating model, its unit types
   come first under their own heading — *Division*, *Team*, whatever the
@@ -194,7 +178,7 @@ stand-in elsewhere in the folder that pointed into it is carried over to the
 new address in the same step, so a move never leaves a trail of stale copies
 behind it. So is every cause that explains one of its causes, and every
 observation that absorbed one of its observations: they name it by its
-address, and follow it. On boot the app reopens the scope you had open.
+address, and follow it. With no address the app opens on the organisation's home, with **Continue**.
 
 Seven names are refused, because a scope's own folders use them already:
 `diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` and `logos`.
@@ -263,7 +247,7 @@ yet, so it is a note, as a proposal is, and never coloured like a fault.
 Every list of findings is the same list: a unit's **Checks**, the
 organisation chart's summary, the Conway map's findings, a plan's **Still
 open** and the roadmap's **Where the dates disagree**. A home counts its
-findings under **Needs attention** and lists them on the Checks page.
+findings on the **Checks** line and lists them on the Checks page.
 
 - **One row per check**: its weight's mark, its name and how many, folded
   shut. Press the row to see each finding under it, in its own sentence.
@@ -299,7 +283,7 @@ findings under **Needs attention** and lists them on the Checks page.
 
 ### The Checks page
 
-**Checks** on a home's card, or a count under **Needs attention**, opens the
+**Checks** on a home, or a count on the **Checks** line, opens the
 Checks page over that home: what the checks find at or under it, and on the
 organisation's home in the whole tree.
 
@@ -2089,7 +2073,7 @@ role** add one, and **From a library…** beside them brings in what a library
 offers (below); a model with nothing in it yet offers **Start from a
 library** first. Under the lanes, **Sits nowhere yet** holds a unit type that is
 neither at the top nor in a unit type that sits anywhere: no unit of it can be
-placed where its type allows, and it is counted under **Needs attention** on the
+placed where its type allows, and it is counted on the **Checks** line on the
 organisation's home and listed on its Checks page. **Roles in no unit type yet** holds the roles no type
 holds.
 

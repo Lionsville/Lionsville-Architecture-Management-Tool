@@ -159,7 +159,7 @@ describe('the agent seam, bound to the shell', () => {
     // ROOT scope's pages, and this is the scope the agent is about to be asked
     // about — and its board from the home's list.
     fireEvent.click(screen.getByTestId('open-acme/landscape'))
-    fireEvent.click(await screen.findByTestId('board-name-d1'))
+    fireEvent.click(await screen.findByTestId('board-d1'))
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape' })
   })

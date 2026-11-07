@@ -74,7 +74,7 @@ describe('the organisation screen, when the store refuses', () => {
 describe('copying an example, when the store refuses', () => {
   it('does not sit there looking as though nothing was pressed', async () => {
     const { diagnostics } = show({ apply: refused })
-    fireEvent.click(await screen.findByText('Copy into this folder…'))
+    fireEvent.click((await screen.findAllByTestId('copy-example'))[0]!)
     await waitFor(() => expect(diagnostics.recent().some((e) => e.where === 'organisation.copyExample')).toBe(true))
     // A load that will not read is a store refusing, so the standing storage
     // message is the honest one — and it is latched, so it arrives once.
@@ -102,7 +102,7 @@ describe('a scope whose record will not save', () => {
     // The tree starts folded: the warehouse is under acme.
     fireEvent.click(await screen.findByTestId('fold-acme'))
     fireEvent.click(await screen.findByRole('button', { name: 'More for Warehouse' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Settings for Warehouse' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Settings…' }))
     fireEvent.change(await screen.findByLabelText('Name'), {
       target: { value: 'Warehouse renamed' },
     })

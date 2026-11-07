@@ -213,14 +213,15 @@ describe('useOrganisation', () => {
     expect((await store.read('acme/rail/rolling-stock'))?.model.name).toBe('Rolling stock')
   })
 
-  it('enters the scope it made, so a refresh does not lose it', async () => {
-    const { held, entered } = mount()
+  it('stays out of a scope it made, on its home', async () => {
+    const { held, entered, store } = mount()
     await settle()
     act(() => held().addUnder(''))
     act(() => held().setNewScopeName('Retail'))
     await act(async () => { held().create(); await Promise.resolve() })
     await settle()
-    expect(entered.mock.calls[0][0].path).toBe('retail')
+    expect(entered).not.toHaveBeenCalled()
+    expect((await store.read('retail'))?.model.diagrams).toEqual([])
   })
 
   /**

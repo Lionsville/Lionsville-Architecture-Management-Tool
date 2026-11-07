@@ -24,7 +24,7 @@ import { flattenScopes } from '../../projects/scope'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { DecisionIcon, DocumentIcon, ObservationIcon, RegisterIcon, TimelineIcon, DeploymentIcon } from '../../widgets/icons'
+import { DecisionIcon, DocumentIcon, ObservationIcon, RegisterIcon, TimelineIcon, DeploymentIcon, SheetIcon } from '../../widgets/icons'
 import { Button } from '../../widgets/kit/Button'
 import { List } from '../../widgets/kit/List'
 import type { ListRow } from '../../widgets/kit/List'
@@ -39,7 +39,7 @@ import { outlineBoards } from './boardOutline'
 import { heldInWords } from './ScopeTree'
 import type { Holdings, NearbyWork } from './holdings'
 import { nearestWork } from './holdings'
-import { decisionsFact, holdsObservations, observationsFact, roadmapFact, viewFact } from './homeRows'
+import { decisionsFact, holdsObservations, observationsFact, roadmapFact, sheetFact, viewFact } from './homeRows'
 import type { OrganisationPages } from './organisationPages'
 import { principleCounts } from './principleCounts'
 import { useTopics } from './TopicsContext'
@@ -81,6 +81,8 @@ export type ScopeHomeProps = HomeDoors & {
   technology: TechnologySummary
   principlesAt?: ((path: ScopePath) => ScopePrinciples) | undefined
   holdings: Holdings
+  /** The page's head and its labelled lines; `bare` where the scope holds nothing, and its first steps are on the page instead. */
+  head: (bare: boolean) => ReactNode
   /** Where this person worked last, on the organisation's home. */
   recent?: readonly RecentPlace[]
   onContinue?: ((place: RecentPlace) => void) | undefined
@@ -106,28 +108,34 @@ type Kept = {
 }
 
 function useKept(props: ScopeHomeProps): readonly Kept[] {
-  const { at, atRoot, home, pages, draws, localObservations, initiatives, register, technology, principlesAt, open, onHomePage, onFinding, s } = props
   const blocks = useBlocks()
   const topics = useTopics()
+  const { at, atRoot, home, principlesAt } = props
   const principles = principlesAt ? principleCounts(at, principlesAt, topics?.inForceAt(at)) : undefined
-  const blocksHere = blocks?.blocksAt(at)
-  const blocksAll = blocks?.blocks().length ?? 0
+  return [
+    ...ownRows(props, principles),
+    ...(blocks ? [blocksRow(props, blocks)] : []),
+    // Over what is filed under this scope, the part that is its business. The organisation's whole register is at the tree's foot.
+    ...(!atRoot && home.children.length > 0 ? belowRows(props) : []),
+    ...(atRoot ? rootRows(props, topics !== undefined) : []),
+  ]
+}
+
+/** What every scope keeps of its own. */
+function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: number } | undefined): Kept[] {
+  const { at, pages, draws, localObservations, initiatives, open, onFinding, s } = props
   const latest = pages.decisions.latest
   const finding = pages.roadmap.findingOpens
-  const under = !atRoot && home.children.length > 0
-  const views = props.views
-  const writes = props.writable
-  const hasOf = (kind: DesignDiagram['kind']) => views.some((one) => one.kind === kind)
-  const rows: (Kept | false)[] = [
+  return [
     {
       id: 'open-observations', label: s('shell.observations'), icon: <ObservationIcon />, guide: 'org.card.observations',
       fact: observationsFact(pages, localObservations, s), holds: holdsObservations(pages, localObservations), open: () => open(at, { page: 'observations' }),
     },
-    principlesAt !== undefined && principles !== undefined && {
+    ...(principles ? [{
       id: 'open-principles', label: s('principles.card'), icon: <DecisionIcon />, guide: 'org.card.principles',
       fact: s('principles.cardCount', { own: principles.own, inForce: principles.inForce }),
       holds: principles.own > 0, row: principles.inForce > 0, open: () => open(at, { page: 'principles' }),
-    },
+    }] : []),
     {
       id: 'open-decisions', label: s('shell.decisions'), icon: <DecisionIcon />, guide: 'org.card.decisions',
       fact: decisionsFact(pages, s), holds: pages.decisions.total > 0, open: () => open(at, { page: 'decisions' }),
@@ -144,21 +152,33 @@ function useKept(props: ScopeHomeProps): readonly Kept[] {
         <Button variant="quiet" size="small" data-testid="open-roadmap-finding" aria-label={s('org.openFinding')} onClick={() => onFinding(finding)}>{s('org.findingShow')}</Button>
       ) } : {}),
     },
-    draws && {
+    {
       id: 'open-documentation', label: s('shell.documentation'), icon: <DocumentIcon />,
-      fact: s(pages.documentation.described === 1 ? 'org.describedOne' : 'org.describedOther', { count: pages.documentation.described, total: pages.documentation.elements }),
-      holds: pages.documentation.described > 0, open: () => open(at, { page: 'documentation' }),
+      fact: draws ? s(pages.documentation.described === 1 ? 'org.describedOne' : 'org.describedOther', { count: pages.documentation.described, total: pages.documentation.elements }) : '',
+      holds: draws && pages.documentation.described > 0, open: () => open(at, { page: 'documentation' }),
     },
-    !draws && {
-      id: 'open-documentation', label: s('shell.documentation'), icon: <DocumentIcon />, fact: '', holds: false, open: () => open(at, { page: 'documentation' }),
-    },
-    blocks !== undefined && {
-      id: 'open-block-register', label: s('homeBlocks.card'), icon: <RegisterIcon />, guide: 'org.card.blocks',
-      fact: atRoot ? plural(s, { one: 'homeBlocks.countAllOne', other: 'homeBlocks.countAll' }, blocksAll) : s('homeBlocks.countHere', { kept: blocksHere?.kept.length ?? 0, evaluated: blocksHere?.evaluated.length ?? 0 }),
-      holds: atRoot ? blocksAll > 0 : (blocksHere?.kept.length ?? 0) + (blocksHere?.evaluated.length ?? 0) > 0, open: () => onHomePage('blocks'),
-    },
-    // Over what is filed under this scope, the part that is its business. The organisation's whole register is at the tree's foot.
-    under && {
+  ]
+}
+
+function blocksRow({ at, atRoot, onHomePage, s }: ScopeHomeProps, blocks: NonNullable<ReturnType<typeof useBlocks>>): Kept {
+  const all = blocks.blocks().length
+  const { kept, evaluated } = blocks.blocksAt(at)
+  return {
+    id: 'open-block-register', label: s('homeBlocks.card'), icon: <RegisterIcon />, guide: 'org.card.blocks',
+    fact: atRoot ? plural(s, { one: 'homeBlocks.countAllOne', other: 'homeBlocks.countAll' }, all) : s('homeBlocks.countHere', { kept: kept.length, evaluated: evaluated.length }),
+    holds: atRoot ? all > 0 : kept.length + evaluated.length > 0, open: () => onHomePage('blocks'),
+  }
+}
+
+const technologyFact = (technology: TechnologySummary, s: Translate) => [
+  plural(s, { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther' }, technology.services),
+  plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
+  plural(s, { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther' }, technology.shared),
+].join(', ')
+
+function belowRows({ register, technology, onHomePage, s }: ScopeHomeProps): Kept[] {
+  return [
+    {
       id: 'open-register', label: s('org.register'), icon: <RegisterIcon />, guide: 'org.card.register',
       fact: [
         plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, register.applications),
@@ -167,37 +187,37 @@ function useKept(props: ScopeHomeProps): readonly Kept[] {
       ].join(', '),
       holds: register.applications > 0, open: () => onHomePage('register'),
     },
-    under && {
+    {
       id: 'open-technology', label: s('org.technology'), icon: <DeploymentIcon />, guide: 'org.card.technology',
-      fact: [
-        plural(s, { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther' }, technology.services),
-        plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
-      ].join(', '),
-      holds: technology.services + technology.platforms > 0, open: () => onHomePage('technologyRegister'),
-    },
-    // A view the organisation has not been given yet is a word on the line, for somebody who may make it; one it has is a row of its views.
-    atRoot && writes && !hasOf('sheet') && {
-      id: 'open-business', label: s('org.newBoardSheet'), icon: null, guide: 'org.card.business', fact: '', holds: false, open: () => open(at, { page: 'make', kind: 'sheet' }),
-    },
-    atRoot && writes && !hasOf('map') && {
-      id: 'open-map', label: s('org.newBoardMap'), icon: null, guide: 'org.card.map', fact: '', holds: false, open: () => open(at, { page: 'make', kind: 'map' }),
-    },
-    atRoot && writes && !hasOf('technology') && {
-      id: 'open-technology-landscape', label: s('org.newBoardTechnology'), icon: null, guide: 'org.card.landscape', fact: '', holds: false, open: () => open(at, { page: 'make', kind: 'technology' }),
-    },
-    // More of the organisation's places, until they have merged into those at the tree's foot.
-    atRoot && {
-      id: 'open-technology', label: s('org.technology'), icon: null, guide: 'org.card.technology', across: true, holds: false, open: () => onHomePage('technologyRegister'),
-      fact: [
-        plural(s, { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther' }, technology.services),
-        plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
-      ].join(', '),
-    },
-    atRoot && topics !== undefined && {
-      id: 'open-topic-catalogue', label: s('topics.title'), icon: null, guide: 'org.card.topics', across: true, holds: false, fact: '', open: () => onHomePage('topics'),
+      fact: technologyFact(technology, s), holds: technology.services + technology.platforms > 0, open: () => onHomePage('technologyRegister'),
     },
   ]
-  return rows.filter((row): row is Kept => row !== false)
+}
+
+/** The organisation's: a view it has not been given yet, a word on the line for somebody who may make it; and more of its places, until they have merged into those at the tree's foot. */
+function rootRows({ at, views, pages, writable, technology, open, onHomePage, s }: ScopeHomeProps, hasTopics: boolean): Kept[] {
+  const lacks = (kind: DesignDiagram['kind']) => writable && !views.some((one) => one.kind === kind)
+  // The business layer may be written with no sheet drawn of it yet: what it holds is said all the same.
+  const { journeys, areas, functions, stakeholders } = pages.business
+  const businessHeld = journeys + areas + functions + stakeholders > 0
+  const make = (kind: 'map' | 'technology', id: string, label: StringKey, guide: string): Kept => ({
+    id, label: s(label), icon: null, guide, fact: '', holds: false, open: () => open(at, { page: 'make', kind }),
+  })
+  return [
+    ...(lacks('sheet') ? [{
+      id: 'open-business', label: s('org.newBoardSheet'), icon: <SheetIcon />, guide: 'org.card.business', fact: businessHeld ? sheetFact(pages, s) : '', holds: businessHeld,
+      open: () => open(at, { page: 'make', kind: 'sheet' }),
+    }] : []),
+    ...(lacks('map') ? [make('map', 'open-map', 'org.newBoardMap', 'org.card.map')] : []),
+    ...(lacks('technology') ? [make('technology', 'open-technology-landscape', 'org.newBoardTechnology', 'org.card.landscape')] : []),
+    {
+      id: 'open-technology', label: s('org.technology'), icon: null, guide: 'org.card.technology', across: true, holds: false, open: () => onHomePage('technologyRegister'),
+      fact: technologyFact(technology, s),
+    },
+    ...(hasTopics ? [{
+      id: 'open-topic-catalogue', label: s('topics.title'), icon: null, guide: 'org.card.topics', across: true, holds: false, fact: '', open: () => onHomePage('topics'),
+    }] : []),
+  ]
 }
 
 function keptRow(kept: Kept): ListRow {
@@ -270,8 +290,8 @@ const PAGE_WORD: Partial<Record<string, StringKey>> = {
 const STANDS: Record<NearbyWork['stands'], StringKey> = { below: 'org.nearBelow', beside: 'org.nearBeside', above: 'org.nearAbove' }
 
 /** The most common page in the product: a scope with nothing in it yet, which is fine, and the way on from it. */
-function EmptyScope({ at, tree, kept, holdings, doors, writable, atRoot, principles, s }: {
-  at: ScopePath; tree: ScopeSummary; kept: readonly Kept[]; holdings: Holdings; doors: HomeDoors; writable: boolean; atRoot: boolean
+function EmptyScope({ at, tree, kept, holdings, doors, writable, principles, s }: {
+  at: ScopePath; tree: ScopeSummary; kept: readonly Kept[]; holdings: Holdings; doors: HomeDoors; writable: boolean
   principles: { inForce: number } | undefined; s: Translate
 }) {
   const nearby = nearestWork(tree, at, holdings)
@@ -282,7 +302,7 @@ function EmptyScope({ at, tree, kept, holdings, doors, writable, atRoot, princip
         state="empty" title={s('org.emptyTitle')} body={s('org.emptyBody')} dataGuide="org.cards"
         {...(writable ? { steps: (
           <>
-            {!atRoot && <MenuButton label={s('org.stepView')} items={doors.onNewView} data-guide="org.newBoard" data-testid="new-board" />}
+            <MenuButton label={s('org.stepView')} items={doors.onNewView} data-guide="org.newBoard" data-testid="new-board" />
             <Button onClick={() => doors.open(at, { page: 'observations' })}>{s('org.stepObservation')}</Button>
             <Button onClick={() => doors.open(at, { page: 'decisions' })}>{s('org.stepDecision')}</Button>
             <Button onClick={() => doors.open(at, { page: 'roadmap' })}>{s('org.stepPlan')}</Button>
@@ -303,24 +323,28 @@ function EmptyScope({ at, tree, kept, holdings, doors, writable, atRoot, princip
           />
         </Section>
       )}
-      <LinkLine label={s('org.allPages')} links={kept.filter((one) => !one.across && !one.id.startsWith('open-business') && one.id !== 'open-map' && one.id !== 'open-technology-landscape').map(keptLink)} data-testid="all-pages" />
+      <LinkLine label={s('org.allPages')} links={kept.filter((one) => !one.across).map(keptLink)} data-testid="all-pages" />
+      <LinkLine label={s('org.alsoAcross')} links={kept.filter((one) => one.across).map(keptLink)} data-testid="also-across" />
     </>
   )
 }
 
 export function ScopeHome(props: ScopeHomeProps) {
-  const { at, atRoot, tree, views, pages, ready, writable, holdings, recent = [], onContinue, language, s, principlesAt, ...rest } = props
+  const { at, atRoot, tree, views, pages, ready, writable, holdings, recent = [], onContinue, language, s, principlesAt, head, ...rest } = props
   const kept = useKept(props)
   const topics = useTopics()
   const doors: HomeDoors = rest
-  if (!ready) return <div data-testid="organisation-cards" data-guide="org.cards" />
+  if (!ready) return <>{head(true)}<div data-testid="organisation-cards" data-guide="org.cards" /></>
   const holdsAny = views.length > 0 || kept.some((one) => one.holds)
   const principles = principlesAt ? principleCounts(at, principlesAt, topics?.inForceAt(at)) : undefined
   if (!holdsAny) {
     return (
-      <div data-testid="organisation-cards">
-        <EmptyScope at={at} tree={tree} kept={kept} holdings={holdings} doors={doors} writable={writable} atRoot={atRoot} principles={principles} s={s} />
-      </div>
+      <>
+        {head(true)}
+        <div data-testid="organisation-cards" data-guide="org.cards">
+          <EmptyScope at={at} tree={tree} kept={kept} holdings={holdings} doors={doors} writable={writable} principles={principles} s={s} />
+        </div>
+      </>
     )
   }
   const shown = kept.filter((one) => one.holds || one.row === true)
@@ -330,6 +354,8 @@ export function ScopeHome(props: ScopeHomeProps) {
     if (view) doors.open(at, { page: 'board', id })
   }
   return (
+    <>
+    {head(false)}
     <div data-testid="organisation-cards" data-guide="org.cards">
       {atRoot && onContinue && <Continue recent={recent} at={at} onContinue={onContinue} language={language} s={s} />}
       {views.length > 0 && (
@@ -348,6 +374,7 @@ export function ScopeHome(props: ScopeHomeProps) {
       <LinkLine label={s('org.nothingYet')} links={kept.filter((one) => !shown.includes(one) && !one.across).map(keptLink)} data-testid="nothing-yet" />
       <LinkLine label={s('org.alsoAcross')} links={across.map(keptLink)} data-testid="also-across" />
     </div>
+    </>
   )
 }
 

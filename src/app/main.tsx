@@ -57,7 +57,7 @@ import {
 } from './composition'
 import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
-import { readLanguage, readLastScope, withoutLastScope } from '../projects/preferences'
+import { readLanguage, withoutLastScope } from '../projects/preferences'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
 import {
@@ -588,9 +588,9 @@ void settled()
     // above; a home an address named is not read here at all — it reads its
     // own document once it is up (`scopeToRead`).
     const needed = sourceNeeded()
-    const decided = bootDecidedBy(
-      needed ? undefined : bootPlace, shell.opensAt, needed ? undefined : readLastScope(storedPreferences),
-    )
+    // A plain launch lands on the organisation's home, with Continue: the tree and the last place are both a
+    // press away there, and nobody opens on a page they did not expect. An address still wins.
+    const decided = bootDecidedBy(needed ? undefined : bootPlace, shell.opensAt, undefined)
     if ('place' in decided) {
       renderApp(storedPreferences, { ...await landingAtPlace(decided.place), dialog: askedDialog })
       return

@@ -291,7 +291,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     'register.row', 'register.tabs', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   ], async () => {
     show(false)
-    fireEvent.click(await screen.findByTestId('open-register'))
+    fireEvent.click(await screen.findByTestId('tree-place-register'))
     const table = await screen.findByTestId('register-table')
     // Also drawn in starts hidden, and opening is the preview's.
     fireEvent.click(screen.getByRole('button', { name: /^View/ }))
@@ -314,12 +314,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const held = heldRepositories(example)
     await held.people.add({ name: 'Pia Schulz' })
     renderApp({ repositories: held })
-    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByTestId('tree-place-people'))
     await screen.findByTestId('people-table')
   }]],
   [['its privacy tab', ['people.policy'], async () => {
     renderApp({ repositories: heldRepositories(example) })
-    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByTestId('tree-place-people'))
     fireEvent.click(await screen.findByRole('tab', { name: 'Privacy' }))
     await screen.findByTestId('people-policy')
   }]],
@@ -327,7 +327,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const held = heldRepositories(example)
     await held.people.add({ name: 'Pia Schulz' })
     renderApp({ repositories: held })
-    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByTestId('tree-place-people'))
     await screen.findByTestId('people-table')
     fireEvent.click(document.querySelector('[data-guide="people.row"]') as HTMLElement)
     await screen.findByTestId('people-person')
@@ -341,7 +341,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     }
     await held.people.answerDistinct(ids[2], ids[3], '2026-10-11')
     renderApp({ repositories: held })
-    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByTestId('tree-place-people'))
     fireEvent.click(await screen.findByRole('tab', { name: /To review/ }))
     fireEvent.click(await screen.findByTestId('people-answered-toggle').catch(() => screen.getByTestId('people-duplicates')))
   }]],
@@ -482,7 +482,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     'operating.rules', 'operating.structure', 'operating.startFromLibrary',
   ], async () => {
     show(false)
-    fireEvent.click(await screen.findByTestId('open-operating'))
+    fireEvent.click(await screen.findByTestId('tree-place-operating'))
     await screen.findByRole('tab', { name: 'Units and roles' })
   }],
   ['its dialog for a library', ['operating.libraryList', 'operating.comingIn', 'operating.bringIn'], async () => {
@@ -510,7 +510,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // role, each with its place in the own order.
   [['the operating model with a library in it', [], async () => {
     show(false)
-    fireEvent.click(await screen.findByTestId('open-operating'))
+    fireEvent.click(await screen.findByTestId('tree-place-operating'))
     fireEvent.click(await screen.findByRole('button', { name: 'Start from a library' }))
     const dialog = await screen.findByTestId('library-dialog')
     fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Scrum Team' }))

@@ -111,7 +111,7 @@ const pageUp = () => document.querySelector('[data-place-page]') !== null
 describe('a crumb (ADR-0044 §3)', () => {
   it('closes a page up over a home, the same home’s crumb included', async () => {
     await organisationOnScreen()
-    fireEvent.click(screen.getByTestId('open-register'))
+    fireEvent.click(screen.getByTestId('tree-place-register'))
     await waitFor(() => expect(pageUp()).toBe(true))
     fireEvent.click(screen.getByTestId('crumb-current'))
     await waitFor(() => expect(pageUp()).toBe(false))

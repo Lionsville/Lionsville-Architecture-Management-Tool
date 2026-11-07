@@ -55,7 +55,7 @@ export function viewFact(view: DesignDiagram, pages: OrganisationPages, language
   }
 }
 
-function sheetFact(pages: OrganisationPages, s: Translate): string {
+export function sheetFact(pages: OrganisationPages, s: Translate): string {
   const { journeys, areas, functions, stakeholders, unmapped } = pages.business
   if (journeys + areas + functions + stakeholders === 0) return s('org.viewEmpty')
   return [

@@ -40,7 +40,6 @@ describe('topics on the homes', () => {
     renderApp({ repositories, today: TODAY })
     // Not `open-topics`: that is the tree's row for the Topics place.
     const card = await screen.findByTestId('open-topic-catalogue')
-    await waitFor(() => expect(screen.getByTestId('organisation-cards').textContent).toContain('1 topic'))
     fireEvent.click(card)
     const catalogue = await screen.findByTestId('topics-catalogue')
     expect(within(catalogue).getByTestId('topic-row-topics/security').textContent).toContain('Sales')
@@ -97,7 +96,7 @@ describe('topics on the homes', () => {
   it('makes a scope a topic from its settings: typed Topic, it is filed under the Topics place, made on first use', async () => {
     const repositories = heldRepositories(TREE.slice(0, 2))
     renderApp({ repositories, today: TODAY })
-    await pressRowMenu('Sales', 'Settings for Sales')
+    await pressRowMenu('Sales', 'Settings…')
     fireEvent.mouseDown(await screen.findByLabelText('What this is'))
     fireEvent.click(screen.getByRole('option', { name: 'Topic' }))
     expect(screen.getByText(/saving moves it there/)).toBeTruthy()

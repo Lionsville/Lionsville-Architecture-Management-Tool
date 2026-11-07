@@ -15,8 +15,6 @@ import { translator } from '../../i18n'
 import type { ScopeSummary } from '../../projects/scope'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import { RelevantTopics } from './RelevantTopics'
-import { TopicRows } from './TopicRows'
-import { TopicsCard } from './TopicsCard'
 import { TopicsPage } from './TopicsPage'
 import { TopicsProvider } from './TopicsContext'
 import type { TopicsAccess } from './TopicsContext'
@@ -186,23 +184,5 @@ describe('a topic on a home', () => {
     renderShell(<TopicsProvider value={access}><RelevantTopics at="topics/data" /></TopicsProvider>)
     fireEvent.click(screen.getByTestId('topic-in-catalogue'))
     expect(deps.openCatalogue).toHaveBeenCalledWith('topics/data')
-  })
-
-  it('draws a ↗ row under a scope a topic is relevant to, which opens the topic\'s home', () => {
-    const { access, deps } = accessOver()
-    renderShell(<TopicsProvider value={access}><TopicRows at="sales" depth={0} s={s} /><TopicRows at="stock" depth={0} s={s} /></TopicsProvider>)
-    expect(screen.queryByTestId('topic-under-sales-topics/security/identity')).toBeNull()
-    fireEvent.click(within(screen.getByTestId('topic-under-sales-topics/security')).getByRole('button', { name: 'Security' }))
-    expect(deps.goHome).toHaveBeenCalledWith('topics/security')
-    expect(screen.queryByTestId('topic-under-stock-topics/security')).toBeNull()
-  })
-
-  it('counts the topics on the organisation\'s card, and opens the catalogue', () => {
-    const { access } = accessOver()
-    const onOpen = vi.fn()
-    renderShell(<TopicsProvider value={access}><TopicsCard onOpen={onOpen} s={s} /></TopicsProvider>)
-    expect(screen.getByText('3 topics')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('open-topic-catalogue'))
-    expect(onOpen).toHaveBeenCalled()
   })
 })

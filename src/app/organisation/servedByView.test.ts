@@ -97,7 +97,7 @@ describe('what a new scope may be served by', () => {
   })
 
   it('is held by the new-scope dialog alone, and taken back', () => {
-    const asked = { kind: 'newScope' as const, parent: '', name: 'Customer', withBoard: false }
+    const asked = { kind: 'newScope' as const, parent: '', name: 'Customer', withBoard: false, type: '' }
     expect(servedByPicked(asked, 'ops')).toEqual({ ...asked, servedBy: 'ops' })
     expect(servedByPicked({ ...asked, servedBy: 'ops' }, undefined)).toEqual(asked)
     expect(servedByPicked({ kind: 'none' }, 'ops')).toEqual({ kind: 'none' })

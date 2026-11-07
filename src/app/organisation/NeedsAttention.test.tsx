@@ -14,25 +14,25 @@ import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../../i18n'
 import { axeFindings } from '../testing/axe'
 import { renderShell } from '../testing/renderShell'
-import { NeedsAttention, weightCount } from './NeedsAttention'
+import { ChecksLine, mostlySaid, weightCount } from './NeedsAttention'
 
 afterEach(() => cleanup())
 
 const s = translator('en')
 
-describe('NeedsAttention', () => {
+describe('the Checks line', () => {
   it('counts what is found by weight, fix first, and leaves out a weight with nothing', async () => {
-    renderShell(<NeedsAttention counts={{ fix: 1, review: 31, note: 0 }} onOpen={vi.fn()} s={s} />)
+    renderShell(<ChecksLine counts={{ fix: 1, review: 31, note: 0 }} onOpen={vi.fn()} onPage={vi.fn()} s={s} />)
     const counts = screen.getAllByRole('button')
-    expect(counts.map((one) => one.textContent)).toEqual(['●1 to fix', '▲31 to review'])
-    expect(counts.map((one) => one.getAttribute('data-weight'))).toEqual(['fix', 'review'])
+    expect(counts.map((one) => one.textContent)).toEqual(['Checks', '1 to fix', '31 to review'])
+    expect(counts.map((one) => one.getAttribute('data-weight'))).toEqual([null, 'fix', 'review'])
     expect(screen.getByTestId('needs-attention').getAttribute('data-guide')).toBe('org.attention')
     expect(await axeFindings()).toEqual([])
   })
 
   it('opens the Checks page on the weight pressed, from the keyboard as from the pointer', () => {
     const onOpen = vi.fn()
-    renderShell(<NeedsAttention counts={{ fix: 0, review: 2, note: 13 }} onOpen={onOpen} s={s} />)
+    renderShell(<ChecksLine counts={{ fix: 0, review: 2, note: 13 }} onOpen={onOpen} onPage={vi.fn()} s={s} />)
     const notes = screen.getByRole('button', { name: /13 notes/ })
     // A button of its own: reached by Tab, pressed by Enter or Space.
     expect(notes.tagName).toBe('BUTTON')
@@ -42,9 +42,18 @@ describe('NeedsAttention', () => {
     expect(onOpen).toHaveBeenCalledWith('note')
   })
 
-  it('is not drawn where nothing is found', () => {
-    renderShell(<NeedsAttention counts={{ fix: 0, review: 0, note: 0 }} onOpen={vi.fn()} s={s} />)
+  it('keeps the page a press away where nothing is found', () => {
+    const onPage = vi.fn()
+    renderShell(<ChecksLine counts={{ fix: 0, review: 0, note: 0 }} onOpen={vi.fn()} onPage={onPage} s={s} />)
     expect(screen.queryByTestId('needs-attention')).toBeNull()
+    fireEvent.click(screen.getByTestId('open-checks'))
+    expect(onPage).toHaveBeenCalled()
+  })
+
+  it('says what most of them are, where one or two checks are over half of a long list', () => {
+    const many = (key: string, count: number) => Array.from({ length: count }, () => ({ key })) as never[]
+    expect(mostlySaid(many('check.roleVacant', 3), s)).toBe('')
+    expect(mostlySaid(many('check.roleVacant', 12), s)).toContain('12 ')
   })
 
   it('says each weight in the words of the page it opens, one and many', () => {

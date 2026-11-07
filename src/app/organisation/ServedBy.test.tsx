@@ -192,7 +192,7 @@ describe('who serves a scope, on its home', () => {
   it('is in the scope\'s settings too, the same field from the same end', async () => {
     renderApp({ repositories: await held(), today: TODAY })
     await shippingHome()
-    fireEvent.click(screen.getByRole('button', { name: 'Settings for Shipping' }))
+    fireEvent.click(screen.getByTestId('scope-settings'))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getAllByTestId('served-by-row').map((one) => one.textContent)[0]).toBe('Domain · ShippingNoor Haddad')
     expect(within(dialog).getByTestId('served-by-add')).toBeTruthy()
@@ -225,7 +225,7 @@ describe('the links between a unit and the scopes it serves', { timeout: 20_000 
   it('opens a unit from the scope\'s settings too, leaving the dialog', async () => {
     renderApp({ repositories: heldRepositories(charted()), today: TODAY })
     await shippingHome()
-    fireEvent.click(screen.getByRole('button', { name: 'Settings for Shipping' }))
+    fireEvent.click(screen.getByTestId('scope-settings'))
     const dialog = await screen.findByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Parcel & Freight' }))
     await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
@@ -242,8 +242,6 @@ describe('a new scope, served from the start', { timeout: 20_000 }, () => {
   async function newScope(name: string) {
     fireEvent.click(await screen.findByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: name } })
-    // A domain, which draws nothing: what a scope served by a unit usually is.
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape board' }))
     return screen.getByRole('dialog')
   }
 

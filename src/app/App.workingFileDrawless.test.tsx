@@ -105,7 +105,7 @@ describe('a working file whose top draws nothing', () => {
     if ('refused' in read) throw new Error(read.refused)
     renderApp({ repositories })
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
-    await waitFor(() => expect(screen.getByText('Retail')).toBeDefined())
+    await waitFor(() => expect(screen.getAllByText('Retail')[0]).toBeDefined())
     expect(screen.queryByTestId('editor')).toBeNull()
   })
 })

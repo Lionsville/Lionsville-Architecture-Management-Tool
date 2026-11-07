@@ -64,18 +64,18 @@ async function added(held: HeldRepositories, name: string, email?: string): Prom
 }
 
 async function openPeople() {
-  fireEvent.click(await screen.findByTestId('open-people'))
+  fireEvent.click(await screen.findByTestId('tree-place-people'))
   return screen.findByTestId('people-table')
 }
 
 const rowOf = (id: string) => document.querySelector(`[data-kit-row="row:${id}"]`) as HTMLElement
 
 describe('the People page in the app', () => {
-  it('is a card on the organisation’s home, and what is added on it lands in the register', async () => {
+  it('is at the foot of the tree, and what is added on it lands in the register', async () => {
     const held = heldRepositories([root])
     await added(held, 'Pia Schulz')
     renderApp({ repositories: held, today: () => TODAY })
-    await waitFor(() => expect(screen.getByTestId('open-people').closest('[class*="MuiCard"]')?.textContent).toContain('1 person'))
+    await screen.findByTestId('tree-place-people')
     await openPeople()
     fireEvent.click(screen.getByTestId('people-add'))
     fireEvent.change(screen.getByTestId('people-add-name'), { target: { value: 'Ruben Dekker' } })

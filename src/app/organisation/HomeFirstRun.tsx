@@ -7,6 +7,7 @@
  * whether to stay, and a dashboard of twelve empty cards does not help them.
  */
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import type { Page } from '../../agent/screen'
 import type { SourceWayIn } from '../../platform/sourceProvider'
@@ -18,7 +19,7 @@ import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { LinkLine } from '../../widgets/kit/Section'
 
-export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, where, places, goPlace, s }: {
+export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, where, chip, places, goPlace, s }: {
   examples: readonly ExampleOffer[]
   waysIn: readonly SourceWayIn[]
   onName: (name: string) => void
@@ -26,6 +27,8 @@ export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, whe
   onOpenFile?: (() => void) | undefined
   /** Where work is kept, in the source's own sentence. */
   where: string
+  /** What the place is called, where it is kept; it has a word of its own in row one only for a source that drew one. */
+  chip?: ReactNode
   places: readonly { readonly page: Page; readonly label: StringKey }[]
   goPlace: (page: Page) => void
   s: Translate
@@ -55,7 +58,7 @@ export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, whe
                 aria-label={s('org.nameThis')} placeholder={s('org.nameThis')} value={name} data-testid="organisation-name-field"
                 onChange={(event) => setName(event.target.value)}
                 // The Enter it acts on is consumed, so it cannot go on to press whatever button takes the focus next.
-                onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); start() } }}
+                onKeyDown={(event) => { if (event.key === 'Enter' && name.trim()) { event.preventDefault(); start() } }}
               />
               <Button variant="primary" reason={name.trim() ? undefined : s('picker.nameFirst')} onClick={start}>{s('org.firstStart')}</Button>
             </>
@@ -80,6 +83,7 @@ export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, whe
       ]}
       foot={(
         <>
+          {chip}{' '}
           {where && <span data-testid="organisation-subtitle">{where} </span>}
           <LinkLine label={s('org.firstAnyTime')} links={places.map((place) => ({ label: s(place.label), onPress: () => goPlace(place.page) }))} />
         </>

@@ -956,8 +956,8 @@ src/app/          The shell around the editor.
                                       scope tree's toggle, and the shell's one
                                       memory of each view's folds, by key
                     organisation/     the first screen: the root scope's home.
-                                      OrganisationScreen · OrganisationCards ·
-                                      ScopeTree · useOrganisation · the four
+                                      OrganisationScreen · ScopeHome · homeRows ·
+                                      holdings · ScopeTree · useOrganisation · the four
                                       dialogs every screen asks a scope about
                                       register · registerView · registerWords ·
                                       RegisterPage   every application, service
@@ -980,7 +980,7 @@ src/app/          The shell around the editor.
                                       treeChecks · useHomeChecks · checksView ·
                                       ChecksPage   every finding at or under a
                                       home off what the shell holds, split by the
-                                      marks, counted by weight under the cards
+                                      marks, counted by weight on the Checks line
                                       (`NeedsAttention`) and a work list on the
                                       Checks page (ADR-0036, amended);
                                       checkFixes · FindingActions, what puts a
@@ -1303,31 +1303,28 @@ save would lose the scope. **Creating a scope creates the ones above it** that
 are not there: a folder with no `scope.json` is not a scope, and a child filed
 under one would be filed under nothing.
 
-On boot the app reopens the scope you had open (a preference, `lastScope`), or
-shows the **organisation screen** (`src/app/organisation/`) — the root scope's
-home, not a list of documents: its name, client, links and description; its own
-four pages as cards with a count and a finding line each; the tree beneath it;
-the examples last. The root is never a row in its own tree, because it is the
-screen. Counts on the cards come from **one** `load(root)` — a listing carries a
-view count and nothing else (`ScopeSummary`), and a load per card is the shape
-ADR-0004 keeps catching.
+With no address the app lands on the **organisation screen**
+(`src/app/organisation/`), the root scope's home, where *Continue* lists the
+places last worked in on this computer (`app/frame/recentPlaces`). A home is its
+name, client, links and description, then one-line rows: the views here, what is
+kept here, and what it does not hold folded into one line of names. The tree is
+docked beside it (`app/frame/ScopeTreePanel`), each row saying how much is kept
+there and below (`organisation/holdings`). Counts come from **one** `load(root)`
+and the index: a load per row is the shape ADR-0004 keeps catching.
 
-**Every scope has this home**, not only the root: a domain's shows its own
-cards and the tree filed under it, a landscape's shows its documentation, its
-decisions and its plans as cards and **its boards as a table**, one row each
-with its own *Open* (so a future version is a row beside the current one), and
-which cards is decided by shape (`level` in `OrganisationScreen`) — never by
-the label. The bar over an
+**Every scope has this home**, not only the root, its views a row each (so a
+future version is a row beside the current one), and which rows is decided by
+what it holds, never by the label; a scope that holds nothing says so and offers
+its first steps. The bar over an
 open scope is a **breadcrumb** (`crumbsFor`, `Crumbs` in `ShellToolbar`):
 every scope above, root first, each a way to that scope's home, and the open
 one in bold; the *Projects…* button and the source chip left it — the source
 is a fact about the folder and is said on the root's home only. Which home is
 up is the shell's state (`home` in `App`), beside which scope is open.
 
-A card opens the scope **on a page** (`InitialPage`), because the root usually
+A row opens the scope **on a page** (`InitialPage`), because the root usually
 draws nothing at all; closing that page comes back to that scope's home rather
-than landing on an empty canvas. The register card is drawn and deliberately empty: it is
-derived over the whole tree and arrives in beta 3.
+than landing on an empty canvas.
 
 The tree lists **alphabetically by default**, with recency as a toggle
 (`sortScopes`, persisted as `projectOrder`); a scope with children folds shut,
@@ -1545,7 +1542,7 @@ identifiers is still a list of a customer's identifiers.
 | A host's own agent tools (ADR-0022, amended) | **`RespondOptions.hostTools`** in `agent/mcpProtocol.ts`: `ToolSpec<string>`s listed after the vocabulary in `tools/list`, whatever `tools` decides, and called through the relay with their arguments as they came — checking them is the host's. Never a vocabulary name; one that takes one is not listed. The desktop passes none |
 | A move a provider says is its own (ADR-0019, ADR-0022, amended) | `open(to, { by: 'provider' })` (`SourceOpenOptions`): every screen it brings in the scope it was sent to is `movedBy: 'provider'` until the app has **landed** (`agent/screen.ts`'s `landed`) and the page there has settled — a record's page picks its record and tab once it has the request (`WorkspaceAgentView.settled`), and that pick is the provider's too — or gone to another scope; never the person's. A step in the window's history as an agent's move is (ADR-0033) |
 | What a destination opens (ADR-0019, amended) | **an open never makes a view**: a view's page with no id — any of the four kinds — opens the one on the scope's tab where it is of that kind, else the first of that kind, and the scope's home where there is none (`viewFor`, `app/pageLanding.ts`); the person's own *Make…* and *New board…* ask for a new one by name (`InitialPage`'s `make`). `tab` opens the observations page on a tab, the record named selected there, and the screen says the tab that is up (`ScreenPage`'s `tab`), which a place carries (ADR-0033, amended); `select` is selected where the view draws it, and is no part of a place. Whatever a destination opens, the documentation page over the board closes first, but for a record's page (`EditorRequests.leaveDocumentation`) |
-| Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the last scope reopens as it was. The tree's *Open* goes to a scope's home too; a board is opened from the home's list |
+| Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the organisation's home, with *Continue*. The tree's *Open* goes to a scope's home too; a view is opened from the home's list |
 | A link to a place (ADR-0033, amended) | *Share with a Link…* (`{ type: 'share' }`, File menu, both hosts, no accelerator), answered by the shell from every screen: the open source's **`ProviderParts.shareAddress()`** — where somebody else reaches the same work, `undefined` for not now, absent for core's three — with the place as its fragment (`linkTo`, `agent/place.ts`), copied through `HostControls.copyText` and shown in `ShareLinkDialog`; with no address the dialog says why and nothing is copied (`app/useShareLink.ts`) |
 | A dialog an address may open (ADR-0022, amended) | `?open=preferences`, and nothing else (`BOOT_DIALOGS`): open at the first paint, taken out of the address at once |
 | What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A change to a scope outside the open session goes through `projects/scopeAccess.changeScope`, as steps that expect what was read and are worked out again over a scope that moved; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |

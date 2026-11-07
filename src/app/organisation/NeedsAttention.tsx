@@ -13,7 +13,6 @@ import type { CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import type { StringKey, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { Mark } from '../../widgets/kit/Mark'
-import { LinkLine } from '../../widgets/kit/Section'
 
 /** What each weight's count says. */
 const SAID: Record<CheckWeight, { one: StringKey; other: StringKey }> = {
@@ -44,18 +43,16 @@ export function ChecksLine({ counts, shown = [], onOpen, onPage, s }: {
   /** Open the Checks page on the first check of this weight. */
   onOpen: (weight: CheckWeight) => void
   /** Open it as it is. */
-  onPage?: () => void
+  onPage: () => void
   s: Translate
 }) {
   const weights = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0)
-  if (weights.length === 0) {
-    return onPage
-      ? <LinkLine label={s('org.checksNone')} links={[{ label: s('checks.title'), onPress: onPage, 'data-testid': 'open-checks' }]} />
-      : null
-  }
+  const found = weights.length > 0
+  // The same line either way, so a count arriving does not take the page's button from under a press.
   return (
-    <p className="kit-factline" data-testid="needs-attention" data-guide="org.attention">
+    <p className="kit-factline" {...(found ? { 'data-testid': 'needs-attention', 'data-guide': 'org.attention' } : {})}>
       <button type="button" className="kit-linkline__link" data-testid="open-checks" onClick={onPage}>{s('checks.title')}</button>
+      {!found && <span>{s('org.checksNone')}</span>}
       {weights.map((weight) => (
         <button
           key={weight} type="button" className="kit-checkcount" data-guide="org.attentionCount" data-testid={`attention-count-${weight}`} data-weight={weight}
@@ -65,7 +62,7 @@ export function ChecksLine({ counts, shown = [], onOpen, onPage, s }: {
           <span>{weightCount(weight, counts[weight], s)}</span>
         </button>
       ))}
-      <span>{mostlySaid(shown, s)}</span>
+      {found && <span>{mostlySaid(shown, s)}</span>}
     </p>
   )
 }

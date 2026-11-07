@@ -53,7 +53,7 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField, TextInput } from '../../widgets/kit/Field'
 import { MenuButton } from '../../widgets/kit/Menu'
-import { PageHead } from '../../widgets/kit/Section'
+import { LinkLine, PageHead } from '../../widgets/kit/Section'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { useFrameFacts } from '../frame/frameStore'
 import type { ScreenFacts } from '../frame/frameStore'
@@ -258,7 +258,7 @@ export function OrganisationScreen({
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt, topics,
   recent, onContinue, onOpenFile,
 }: OrganisationScreenProps) {
-  const { tree, at, root, ready, dialog } = organisation
+  const { tree, at, root, ready } = organisation
   const mayWrite = writable(at)
   /** Which of this screen's pages is up over its home, one at a time, and what it was asked to pick (`useHomePages`). */
   const homePages = useHomePages(pageRequest, onPageChange)
@@ -335,42 +335,16 @@ export function OrganisationScreen({
     if (isHomePage(page)) homePages.open(page)
     else organisation.open(ROOT_SCOPE, { page } as InitialPage)
   }
-  return (
-    <HomeRecords
-      store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={closePagesAndGoHome}
-      openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
-    >
-    <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <HomeFacts
-        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink} bare={firstRun}
-        bands={unread.length > 0 ? [unreadBand(unread, organisation.refresh, s)] : []}
-        {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
-        {...(root && root.path === at ? { views: root.model.diagrams } : {})}
-      />
-      <HomeSearch
-        at={home.path} tree={tree} root={root} treeRead={treeRead} onOpen={organisation.open} onOpenPerson={(person) => homePages.open('people', person)}
-        searchRef={(open) => { searchDoor.current = open }} s={s}
-      />
-      <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto' }}>
-        {firstRun
-          ? (
-            <FirstChoices
-              examples={examples} waysIn={waysIn ?? []} onName={organisation.nameOrganisation} onCopy={organisation.copyExample}
-              onOpenFile={onOpenFile} where={whereSaid(sourceSayings, sourceDescription, s)}
-              places={[...SCOPE_PLACES, ...ORGANISATION_PLACES, ...MORE_PLACES]} goPlace={goPlace} s={s}
-            />
-          )
-          : (
-            <div className="kit-page">
+  const head = (bare: boolean) => (
+    <>
               <PageHead
-                title={named || !atRoot || !mayWrite ? heading : <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />}
-                titleTestId="organisation-name" metaTestId="organisation-meta" metaTitle={typeLines.join(' · ')}
+                title={named || !atRoot || !mayWrite || !ready || !organisation.listed ? heading : <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />}
+                {...(named || !atRoot || !mayWrite ? { titleTestId: 'organisation-name' } : {})} metaTestId="organisation-meta" metaTitle={typeLines.join(' · ')}
                 meta={[homeMeta(home, tree, typeWord, changed, language, s), mayWrite ? '' : s('org.readOnlyHere')].filter(Boolean).join('. ')}
                 actions={(
                   <HomeActions
-                    empty={empty} writable={mayWrite} settingsAllowed={writable(home.path)} newView={newView}
+                    bare={bare} writable={mayWrite} settingsAllowed={writable(home.path)} newView={newView}
                     onNewScope={() => organisation.addUnder(at)} onSettings={() => organisation.editScope(home)}
-                    bareAtRoot={ready && !holdsAnyAt(root, at, tree)}
                     source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined} sourceDescription={sourceDescription}
                     sourceLabelKey={sourceSayings.labelKey} atTheEnd={sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined}
                     waysIn={atRoot ? waysIn : undefined} s={s}
@@ -394,17 +368,47 @@ export function OrganisationScreen({
                 counts={checks.counts} shown={checks.split.shown} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))}
                 onPage={() => homePages.open('checks')} s={s}
               />
+    </>
+  )
+  return (
+    <HomeRecords
+      store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={closePagesAndGoHome}
+      openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
+    >
+    <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <HomeFacts
+        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink} bare={firstRun}
+        bands={unread.length > 0 ? [unreadBand(unread, organisation.refresh, s)] : []}
+        {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
+        {...(root && root.path === at ? { views: root.model.diagrams } : {})}
+      />
+      <HomeSearch
+        at={home.path} tree={tree} root={root} treeRead={treeRead} onOpen={organisation.open} onOpenPerson={(person) => homePages.open('people', person)}
+        searchRef={(open) => { searchDoor.current = open }} s={s}
+      />
+      <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto' }}>
+        {firstRun
+          ? (
+            <FirstChoices
+              examples={examples} waysIn={waysIn ?? []} onName={organisation.nameOrganisation} onCopy={organisation.copyExample}
+              onOpenFile={onOpenFile} where={whereSaid(sourceSayings, sourceDescription, s)}
+              chip={source && <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceSayings.labelKey} s={s} />}
+              places={[...SCOPE_PLACES, ...ORGANISATION_PLACES, ...MORE_PLACES]} goPlace={goPlace} s={s}
+            />
+          )
+          : (
+            <div className="kit-page">
               {empty && named
                 ? (
-                  <NamedNothingYet
+                  <>{head(true)}<NamedNothingYet
                     writable={mayWrite} newView={newView} onNewScope={() => organisation.addUnder(at)} where={whereSaid(sourceSayings, sourceDescription, s)}
                     onObservation={() => organisation.open(at, { page: 'observations' })} onOperating={() => organisation.open(ROOT_SCOPE, { page: 'operating' })}
                     s={s}
-                  />
+                  /></>
                 )
                 : (
                   <ScopeHome
-                    at={at} atRoot={atRoot} home={home} tree={tree} views={root && root.path === at ? root.model.diagrams : []} pages={pages}
+                    head={head} at={at} atRoot={atRoot} home={home} tree={tree} views={root && root.path === at ? root.model.diagrams : []} pages={pages}
                     ready={atRoot ? organisation.listed && ready : ready} draws={draws} writable={mayWrite} localObservations={localObservations} initiatives={initiatives}
                     register={registerCounts} technology={technologyCounts} principlesAt={principlesAt} holdings={holdings}
                     open={organisation.open} onGoHome={onGoHome} onHomePage={(page) => homePages.open(page)} onFinding={(target) => organisation.open(at, target)}
@@ -413,6 +417,13 @@ export function OrganisationScreen({
                     {...(recent ? { recent } : {})} onContinue={onContinue} today={today} language={language} s={s}
                   />
                 )}
+              {/* For a place with nothing filed in it. Once the organisation holds a view or a scope, an offer to copy one in beside the real work is a way to file an example under it by accident. */}
+              {atRoot && mayWrite && holdsNothing(tree) && (
+                <LinkLine
+                  label={s('org.firstExample')}
+                  links={examples.map((one) => ({ label: one.label, title: one.description, onPress: () => organisation.copyExample(one), 'data-testid': 'copy-example' }))}
+                />
+              )}
             </div>
           )}
       </Box>
@@ -422,9 +433,30 @@ export function OrganisationScreen({
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
         onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome} ready={ready}
       />
+      <HomeDialogs organisation={organisation} at={at} tree={orderedTree} unitTypes={unitTypes} servedBy={servedBy} scopeName={scopeName} sourceSayings={sourceSayings} s={s} />
+    </Box>
+    </HomeRecords>
+  )
+}
+
+/** The questions a home asks, each up while the organisation's dialog says so. */
+function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, scopeName, sourceSayings, s }: {
+  organisation: Organisation
+  at: ScopePath
+  /** The whole tree in the frame tree's order, for the *filed under* selects. */
+  tree: ScopeSummary
+  unitTypes: readonly { id: string; name: string }[]
+  servedBy: ServedByAccess | undefined
+  scopeName: (path: ScopePath) => string
+  sourceSayings: SourceSayings
+  s: Translate
+}) {
+  const { dialog } = organisation
+  return (
+    <>
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
-        tree={orderedTree}
+        tree={tree}
         parent={dialog.kind === 'newScope' ? dialog.parent : at}
         name={dialog.kind === 'newScope' ? dialog.name : ''}
         withBoard={dialog.kind === 'newScope' ? dialog.withBoard : false}
@@ -449,7 +481,7 @@ export function OrganisationScreen({
       <ScopeSettingsDialog
         target={dialog.kind === 'settings' ? dialog.target : undefined}
         moving={dialog.kind === 'settings' && dialog.moving === true}
-        tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
+        tree={tree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
         unitTypes={unitTypes} onCancel={organisation.closeDialog}
         onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
         s={s}
@@ -473,8 +505,7 @@ export function OrganisationScreen({
         onCancel={organisation.closeDialog}
         onConfirm={organisation.confirmDeleteBoard}
       />
-    </Box>
-    </HomeRecords>
+    </>
   )
 }
 
@@ -580,15 +611,14 @@ function HomeFacts(facts: ScreenFacts) {
  * up here; each is simply not there for somebody who may only read.
  */
 function HomeActions({
-  writable, settingsAllowed, newView, onNewScope, onSettings, bareAtRoot, empty, source, sourceDescription, sourceLabelKey, atTheEnd, waysIn = [], s,
+  writable, settingsAllowed, newView, onNewScope, onSettings, bare, source, sourceDescription, sourceLabelKey, atTheEnd, waysIn = [], s,
 }: {
   writable: boolean
   settingsAllowed: boolean
   newView: Parameters<typeof MenuButton>[0]['items']
   onNewScope: () => void
   onSettings: () => void
-  bareAtRoot: boolean
-  empty: boolean
+  bare: boolean
   source?: WorkingSource | undefined
   sourceDescription?: StringKey | (string & {}) | undefined
   sourceLabelKey?: StringKey | (string & {}) | undefined
@@ -596,7 +626,7 @@ function HomeActions({
   waysIn?: readonly SourceWayIn[] | undefined
   s: Translate
 }) {
-  const steps = writable && !bareAtRoot && !empty
+  const steps = writable && !bare
   return (
     <>
       {source && !atTheEnd && <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} s={s} />}
@@ -610,15 +640,6 @@ function HomeActions({
       {settingsAllowed && <Button variant="quiet" data-testid="scope-settings" onClick={onSettings}>{s('group.open')}</Button>}
     </>
   )
-}
-
-/** Does this scope's own document or the tree under it hold anything: whether the home's page offers first steps instead of its head. */
-function holdsAnyAt(root: Organisation['root'], at: ScopePath, tree: ScopeSummary): boolean {
-  if (root?.path !== at) return true
-  const model = root.model
-  const here = flattenScopes(tree).find((one) => one.path === at)
-  return model.diagrams.length > 0 || (model.decisions?.length ?? 0) > 0 || (model.observations?.length ?? 0) > 0 || (model.transitions?.length ?? 0) > 0
-    || (model.principles?.length ?? 0) > 0 || (here?.children.length ?? 0) > 0
 }
 
 /**

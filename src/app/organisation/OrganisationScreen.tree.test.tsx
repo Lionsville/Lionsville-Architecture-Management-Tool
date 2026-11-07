@@ -61,11 +61,11 @@ const unfold = async (path: string) => fireEvent.click(await screen.findByTestId
 describe('the tree', () => {
   it('nests a scope under its parent, and does not list the root in it', async () => {
     show()
-    expect((await screen.findByTestId('scope-retail')).dataset.depth).toBe('0')
+    expect((await screen.findByTestId('scope-retail')).dataset.depth).toBe('1')
     await unfold('retail')
-    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('1')
-    // The root is the screen; a row for it would be the organisation inside
-    // itself.
+    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('2')
+    // The root has a row of its own over them, and none among them.
+    expect(screen.getByTestId('scope-root').textContent).toContain('Acme Logistics')
     expect(screen.queryByTestId('scope-')).toBeNull()
   })
 
@@ -73,10 +73,9 @@ describe('the tree', () => {
     show()
     const retail = await screen.findByTestId('scope-retail')
     // One number on the row; the words on hover and on the scope's home.
-    expect(retail.getAttribute('title')).toContain('1 scope under it')
-    expect(retail.getAttribute('title')).toContain('1 scope with boards')
+    expect(retail.getAttribute('title')).toContain('1 view')
     expect(within(retail).getByTestId('scope-holds').textContent).toBe('1')
-    expect(screen.getByTestId('scope-finance').getAttribute('title')).toContain('1 diagram')
+    expect(screen.getByTestId('scope-finance').getAttribute('title')).toContain('1 view')
   })
 
   /**
@@ -99,7 +98,7 @@ describe('the tree', () => {
     await screen.findByTestId('scope-retail')
     fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Show all' }))
-    expect(screen.getByTestId('scope-retail/warehouse/dock').dataset.depth).toBe('2')
+    expect(screen.getByTestId('scope-retail/warehouse/dock').dataset.depth).toBe('3')
     fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Fold all' }))
     expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
@@ -125,7 +124,7 @@ describe('the tree', () => {
     // Nothing open, so nothing waits: the word says so on a home too.
     expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
     // A board is opened from the home's list of boards, by its name.
-    fireEvent.click(await screen.findByTestId('board-name-l7'))
+    fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     fireEvent.click(screen.getByTestId('crumb-'))
     fireEvent.click(await screen.findByTestId('open-retail'))
@@ -143,7 +142,7 @@ describe('the tree', () => {
 
   it('keeps a row’s settings to itself: pressing them does not open the scope', async () => {
     show()
-    await pressRowMenu('Retail', 'Settings for Retail')
+    await pressRowMenu('Retail', 'Settings…')
     expect(await screen.findByRole('dialog')).toBeDefined()
     expect(screen.getByTestId('organisation-name').textContent).toBe('Acme Logistics')
   })
@@ -152,20 +151,20 @@ describe('the tree', () => {
     show()
     expect(await screen.findByRole('button', { name: 'More for Retail' })).toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: 'More for Acme Logistics' }))
-    expect(await screen.findByRole('menuitem', { name: 'Settings for Acme Logistics' })).toBeDefined()
+    expect(await screen.findByRole('menuitem', { name: 'Settings…' })).toBeDefined()
   })
 
   /** The root is the folder you opened; there is nowhere to remove it from. */
   it('does not offer to delete the root', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'More for Acme Logistics' }))
-    await screen.findByRole('menuitem', { name: 'Settings for Acme Logistics' })
-    expect(screen.queryByRole('menuitem', { name: 'Delete Acme Logistics' })).toBeNull()
+    await screen.findByRole('menuitem', { name: 'Settings…' })
+    expect(screen.queryByRole('menuitem', { name: 'Delete…' })).toBeNull()
   })
 
   it('removes a scope and everything filed under it, once confirmed', async () => {
     const { store } = show()
-    await pressRowMenu('Retail', 'Delete Retail')
+    await pressRowMenu('Retail', 'Delete…')
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByTestId('scope-retail')).toBeNull())
     expect(await store.read('retail/warehouse')).toBeUndefined()
@@ -209,17 +208,16 @@ describe('the tree', () => {
   })
 
   /**
-   * A scope made by hand draws by default; unticked, it is a domain on
-   * purpose — a folder for other scopes, which until now only came about as
-   * a missing ancestor.
+   * A scope is made bare unless a view is asked for, and stays on its own home:
+   * the default that made an empty board and landed on it is where most empty
+   * boards came from.
    */
-  it('makes a domain on purpose when the landscape board is unticked', async () => {
+  it('makes no board unless asked, and stays on the new scope\'s home', async () => {
     const { store } = show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Retail'))
     fireEvent.click(await screen.findByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape board' }))
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.read('retail/returns')).toBeDefined())
     const made = await store.read('retail/returns')
@@ -242,12 +240,63 @@ describe('the tree', () => {
     fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Decisions' } })
     expect(await screen.findByText(/cannot be called that/)).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Create' })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: 'Create' }).getAttribute('data-refused')).toBe('true')
+  })
+
+  it('makes a board where asked, and says what the scope is, still staying on its home', async () => {
+    const { store } = show()
+    await screen.findByTestId('scope-retail')
+    fireEvent.click(screen.getAllByTestId('new-scope')[0] as HTMLElement)
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Start it with a landscape view' }))
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /What this is/ }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Team' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(async () => expect((await store.read('returns'))?.kind).toBe('team'))
+    expect((await store.read('returns'))?.model.diagrams).toHaveLength(1)
+    await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
+    expect((await screen.findByTestId('boards')).textContent).toContain('New landscape')
+  })
+
+  it('opens Settings at Filed under from Move to', async () => {
+    show()
+    await pressRowMenu('Retail', 'Move to…')
+    expect(await screen.findByRole('dialog')).toBeDefined()
+    expect(document.activeElement?.closest('.MuiFormControl-root')?.textContent).toContain('Filed under')
+  })
+
+  it('narrows to scopes with work, keeping the path down, and finds flat with the path', async () => {
+    show([...TREE(), scope('retail/empty', 'Empty one', false), scope('quiet', 'Quiet', false)])
+    await screen.findByTestId('scope-quiet')
+    expect(screen.getByTestId('scope-quiet').getAttribute('data-quiet')).toBe('true')
+    fireEvent.click(screen.getByRole('tab', { name: /With work/ }))
+    expect(screen.queryByTestId('scope-quiet')).toBeNull()
+    expect(screen.getByTestId('scope-retail/warehouse')).toBeDefined()
+    expect(screen.queryByTestId('scope-retail/empty')).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: /^All/ }))
+    fireEvent.change(screen.getByTestId('tree-find'), { target: { value: 'ware' } })
+    expect(screen.getByTestId('home-retail/warehouse').textContent).toBe('Retail / Warehouse')
+    expect(screen.queryByTestId('scope-finance')).toBeNull()
+    fireEvent.keyDown(screen.getByTestId('tree-find'), { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse'))
+  })
+
+  it('leads the organisation\'s home with where this person worked last', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    fireEvent.click(await screen.findByTestId('board-l7'))
+    await screen.findByRole('tab', { name: /L7/, selected: true })
+    fireEvent.click(screen.getByTestId('crumb-'))
+    const continuing = await screen.findByTestId('continue')
+    expect(continuing.textContent).toContain('L7')
+    expect(continuing.textContent).toContain('Finance')
+    fireEvent.click(within(continuing).getByRole('row'))
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Finance'))
   })
 
   it('renames a scope without moving it', async () => {
     const { store } = show()
-    await pressRowMenu('Retail', 'Settings for Retail')
+    await pressRowMenu('Retail', 'Settings…')
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Retail & wholesale' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () => expect((await store.read('retail'))?.model.name).toBe('Retail & wholesale'))
@@ -263,7 +312,7 @@ describe('the tree', () => {
     const { store } = show()
     const before = [(await store.read('retail'))?.id, (await store.read('retail/warehouse'))?.id]
 
-    await pressRowMenu('Retail', 'Settings for Retail')
+    await pressRowMenu('Retail', 'Settings…')
     fireEvent.mouseDown(await screen.findByLabelText('Filed under'))
     fireEvent.click(screen.getByRole('option', { name: 'Finance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -383,7 +432,7 @@ describe('a domain’s home', () => {
     expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
     // One tree on every home: this scope marked, and what is under it open.
     expect(screen.getByTestId('scope-retail').getAttribute('aria-current')).toBe('page')
-    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('1')
+    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('2')
     expect(screen.getByTestId('scope-finance')).toBeDefined()
     // The folder is the root's fact, not the domain's.
     expect(screen.queryByTestId('working-source')).toBeNull()
@@ -392,8 +441,8 @@ describe('a domain’s home', () => {
   it('files a new scope under the domain, and settings are the domain’s', async () => {
     const { store } = show()
     fireEvent.click(await screen.findByTestId('home-retail'))
-    expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
-    fireEvent.click(screen.getByTestId('new-scope'))
+    expect(await screen.findByTestId('scope-settings')).toBeDefined()
+    fireEvent.click(await screen.findByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.read('retail/returns')).toBeDefined())
@@ -408,22 +457,18 @@ describe('a domain’s home', () => {
   })
 
   /**
-   * Flipped when a scope's first board became something its home offers: a
-   * domain shows the section empty, with the way to a landscape in it, rather
-   * than no section at all.
+   * A scope with no view has none of the section: its first steps say how to
+   * make one. A view's whole row opens it.
    */
-  it('offers the canvas on a scope that draws, and an empty landscapes section on one that does not', async () => {
+  it('offers the canvas on a scope that draws, and first steps on one that does not', async () => {
     show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     await waitFor(() => expect(screen.getByTestId('open-decisions')).toBeDefined())
-    const boards = await screen.findByTestId('boards')
-    expect(within(boards).getByTestId('boards-empty')).toBeDefined()
-    expect(within(boards).queryByTestId('board-l7')).toBeNull()
-    expect(within(boards).getByTestId('new-board')).toBeDefined()
+    expect(screen.queryByTestId('boards')).toBeNull()
+    expect(screen.getByTestId('new-board')).toBeDefined()
     fireEvent.click(screen.getByTestId('home-retail/warehouse'))
     expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse')
-    const row = await screen.findByTestId('board-l7')
-    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
+    fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
   })
 
@@ -438,10 +483,10 @@ describe('a domain’s home', () => {
     platforms.model.diagrams.push({ id: 'tl', kind: 'technology', name: 'Technology landscape', members: [], geometry: { nodes: [] } })
     show([...TREE(), platforms])
     fireEvent.click(await screen.findByTestId('home-platforms'))
-    const row = await screen.findByTestId('board-tl')
-    expect(row.textContent).toContain('Technology landscape · laid out from the rows')
+    const row = await screen.findByTestId('open-technology-landscape')
+    expect(row.textContent).toContain('Laid out from the rows')
     expect(row.textContent).not.toContain('on it')
-    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
+    fireEvent.click(row)
     await waitFor(() => expect(screen.getByTestId('landscape-topbar')).toBeDefined())
     expect(screen.getByTestId('landscape-summary').textContent).toBe('0 applications · 0 services · 0 platforms')
   })
@@ -458,7 +503,7 @@ describe('the crumbs over an open scope', () => {
     show()
     await unfold('retail')
     fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
-    fireEvent.click(await screen.findByTestId('board-name-l7'))
+    fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     const bar = screen.getByTestId('shell-toolbar').textContent ?? ''
     expect(bar.indexOf('Acme Logistics')).toBeLessThan(bar.indexOf('Retail'))
@@ -470,7 +515,7 @@ describe('the crumbs over an open scope', () => {
     show()
     await unfold('retail')
     fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
-    fireEvent.click(await screen.findByTestId('board-name-l7'))
+    fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     fireEvent.click(screen.getByTestId('crumb-retail'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')
@@ -490,9 +535,8 @@ describe('the cards, per level', () => {
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(within(cards).getByTestId('open-decisions')).toBeDefined())
     expect(within(cards).getByTestId('open-business')).toBeDefined()
-    expect(within(cards).getByTestId('open-register')).toBeDefined()
+    expect(screen.getByTestId('tree-place-register')).toBeDefined()
     expect(within(cards).queryByTestId('open-views')).toBeNull()
-    expect(within(cards).queryByTestId('open-documentation')).toBeNull()
   })
 
   it('give a domain its decisions, its plans and the register beneath it, and not the business layer', async () => {
@@ -555,39 +599,41 @@ describe('the boards on a landscape’s home', () => {
     logoLibrary: [],
   })
 
-  it('offers Delete on a container diagram only, and takes it off the scope once confirmed', async () => {
+  it('offers Delete under every view\'s menu, and takes it off the scope once confirmed', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
     const boards = await screen.findByTestId('boards')
-    expect(within(within(boards).getByTestId('board-now')).queryByRole('button', { name: 'Delete' })).toBeNull()
-    fireEvent.click(within(within(boards).getByTestId('board-cd')).getByRole('button', { name: 'Delete' }))
+    fireEvent.click(within(within(boards).getByTestId('board-now')).getByRole('button', { name: 'More for Finance today' }))
+    expect(await screen.findByRole('menuitem', { name: 'Delete…' })).toBeDefined()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    fireEvent.click(within(within(boards).getByTestId('board-cd')).getByRole('button', { name: 'More for Ledger' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete…' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(within(screen.getByTestId('boards')).queryByTestId('board-cd')).toBeNull())
     expect(within(screen.getByTestId('boards')).getByTestId('board-now')).toBeDefined()
   })
 
-  it('lists every board with the day it shows, and a laid-out view with its kind (ADR-0016)', async () => {
+  it('says Empty of a view with nothing on it, whatever kind it is', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
     const boards = await screen.findByTestId('boards')
-    expect(within(boards).getByTestId('board-now').textContent).toContain('Today')
-    expect(within(boards).getByTestId('board-next').textContent).toContain('2028')
-    expect(within(boards).getByTestId('board-sheet').textContent).toContain('Business architecture · laid out from the trees')
-    expect(within(boards).getByTestId('board-sheet').textContent).not.toContain('on it')
+    expect(within(boards).getByTestId('board-now').textContent).toContain('Empty')
+    expect(within(boards).getByTestId('board-next').textContent).toContain('Empty')
+    expect(within(boards).getByTestId('open-business').textContent).toContain('Empty')
   })
 
-  it('opens a board from its name as well as from Open', async () => {
+  it('opens a view from its row', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
-    fireEvent.click(await screen.findByTestId('board-name-next'))
+    fireEvent.click(await screen.findByTestId('board-next'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
   })
 
   it('opens the row’s own board, not the one that was active', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
-    const row = await screen.findByTestId('board-next')
-    fireEvent.click(within(row).getByRole('button', { name: /^Open / }))
+    fireEvent.click(await screen.findByTestId('board-next'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     expect(screen.getByRole('tab', { name: /Finance 2028/ }).getAttribute('aria-selected')).toBe('true')
     // Opened on it, not switched to it: nothing to undo and nothing unsaved.
@@ -605,7 +651,7 @@ describe('a scope’s first landscape', () => {
   // Every one of these lands on the canvas, and jsdom has no layout for it.
 
   const makeOne = async (name?: string) => {
-    // New board… offers the kinds the editor's + tab does; a landscape is the
+    // New view… offers the kinds the editor's + tab does; a landscape is the
     // first, and the only one that asks for a name here.
     fireEvent.click(await screen.findByTestId('new-board'))
     fireEvent.click(await screen.findByTestId('new-board-landscape'))

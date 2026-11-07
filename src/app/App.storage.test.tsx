@@ -83,14 +83,15 @@ describe('what the root’s home says you are working from', () => {
 
   it('says what it costs you when you hover the chip, in its provider\'s sentence', async () => {
     renderApp({ source: folder, provider: folderSays })
+    await screen.findByTestId('organisation-first')
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     expect((await screen.findByRole('tooltip')).textContent)
       .toBe('Your work is kept in this folder as files. Snapshots go into its history.')
   })
 
-  it('says where everything is kept under the organisation\'s name, in its provider\'s sentence', () => {
+  it('says where everything is kept on the first page, in its provider\'s sentence', async () => {
     renderApp({ source: folder, provider: folderSays })
-    expect(screen.getByText(/Everything here is kept as files in the folder above\./)).toBeDefined()
+    expect(await screen.findByText(/Everything here is kept as files in the folder above\./)).toBeDefined()
   })
 
   it('draws the source that keeps nothing in the warning colour', () => {
@@ -169,6 +170,7 @@ describe('a source a provider answers for', () => {
   it('describes where work is kept in the provider\'s own sentence', async () => {
     registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
     renderApp({ source: elsewhere, provider: { description: 'elsewhere.kept' } })
+    await screen.findByTestId('organisation-first')
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     expect((await screen.findByRole('tooltip')).textContent)
       .toBe('Your work is kept elsewhere, and elsewhere says when.')
@@ -181,6 +183,7 @@ describe('a source a provider answers for', () => {
    */
   it('says nothing about where work is kept where the provider gave no sentence', async () => {
     renderApp({ source: elsewhere })
+    await screen.findByTestId('organisation-first')
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     await act(() => Promise.resolve())
     expect(screen.queryByRole('tooltip')).toBeNull()
@@ -712,7 +715,7 @@ describe('a refusal where the source keeps work', () => {
     })
   }
 
-  const copy = async () => fireEvent.click(await screen.findByText('Copy into this folder\u2026'))
+  const copy = async () => fireEvent.click((await screen.findAllByTestId('copy-example'))[0]!)
 
   it('says the provider\u2019s sentence instead of ours', async () => {
     refuse({ provider: { keepFailure: () => 'Elsewhere is not taking changes: sign in again.' } })

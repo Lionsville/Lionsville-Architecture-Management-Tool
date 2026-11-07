@@ -68,11 +68,11 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
   // The sheet and the map are views, drawn in their tab over the editor
   // rather than in a page of their own.
   it.each<[string, () => Promise<HTMLElement>]>([
-    ['open-register', () => screen.findByTestId('register-table')],
+    ['tree-place-register', () => screen.findByTestId('register-table')],
     ['open-technology', () => screen.findByTestId('technology-register-table')],
-    ['open-people', () => screen.findByTestId('people-topbar')],
+    ['tree-place-people', () => screen.findByTestId('people-topbar')],
     ['open-checks', () => placePage()],
-    ['open-operating', () => placePage()],
+    ['tree-place-operating', () => placePage()],
     ['open-business', () => screen.findByRole('tab', { name: /Business architecture/, selected: true })],
     ['open-map', () => screen.findByRole('tab', { name: /Enterprise map/, selected: true })],
     ['open-decisions', () => placePage()],
