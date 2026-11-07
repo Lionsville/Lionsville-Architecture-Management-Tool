@@ -122,3 +122,4 @@ now, with their words unchanged.
 | [0042](0042-a-topic-is-a-scope-relevant-to-others.md) | A topic is a scope that is relevant to other scopes, by dated links | 2026-10-25 | — |
 | [0043](0043-building-blocks-evaluated-per-scope-and-documents-that-refer.md) | Building blocks, evaluated by each scope that adopts them, and documents that refer rather than copy | 2026-10-25 | — |
 | [0044](0044-one-way-every-page-behaves.md) | One way every page behaves: under the bar, closed the same way, columns that widen, cards that open | 2026-10-25 | — |
+| [0045](0045-one-design-system-tokens-and-a-kit.md) | One design system: tokens as the source, a kit the screens are composed from | 2026-11-07 | — |

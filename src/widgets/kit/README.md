@@ -1,0 +1,88 @@
+# The kit
+
+One design system, and the components every screen is composed from
+(ADR-0045). A screen says what it shows; how a list, a panel or a status looks
+and behaves is said here, once.
+
+## What is here
+
+| File | What it is |
+|---|---|
+| `tokens.ts` | every colour, type size and frame measure, in both modes. The only place a colour is written |
+| `oklch.ts` | OKLCH and sRGB both ways, and the WCAG ratio |
+| `accent.ts` | an accent somebody chose, as the shades each mode draws it in, or why it is refused |
+| `fonts/` | Source Sans 3 and Source Code Pro as woff2, with their licence |
+
+A component arrives with its own file, a test beside it, and a line in this
+table.
+
+## How a value reaches the screen
+
+```
+tokens.ts ─┬─ tokenVariables  → custom properties on the root, for static CSS   var(--ink)
+           ├─ MUI's palette   → MUI's CSS variables, for a control MUI draws    --mui-palette-…
+           └─ tokensOf(theme) → resolved values, for sums and for what is drawn
+                                outside the page: the canvas's tokens, an export
+```
+
+`app/theme.ts` does all three. `app/theme.contrast.test.ts` measures the pairs,
+in both modes: a token that carries words goes in that test.
+
+A subtree drawn in the other mode, such as a picture exported from a dark window
+in the light theme, sets `tokenVariables(mode)` on its own root.
+
+## The names
+
+These are the components the screens are composed from. A name stands for one
+component: a screen that needs a variant asks for it here, and does not draw its
+own.
+
+- **Frame**: Frame (row one, row two), Scope tree and trail, Status word and Your
+  work, Command palette and commands table, View bar, Segmented switch, Band
+- **Reading and editing**: Panel, Field and property row, List, Filter words,
+  Matrix, Next step, Record page, Comment thread, Settle row
+- **Speaking**: Dialog, Toast, Truthful page state, First-run page, Mark
+- **Canvas**: Colour menu and key strip, Day control, Canvas dock, Card, Zone and
+  boundary, Line and label, Picker, Time axis
+- **Helping**: Guide dock, Agent strip and steps
+- **Controls**: Button, Tabs, Menu, Tooltip
+
+Only what the table above lists is built. Each is added when a screen first needs
+it, under this name, so that the second screen finds it.
+
+## How a screen composes it
+
+- Imports from the kit by file. A kit component takes data and callbacks, and
+  knows no model, no scope and no store: `widgets` may import `i18n` and nothing
+  else, so a screen hands the kit what it has already worked out.
+- Words come from the screen's module, or from the kit's own strings for what a
+  control always says.
+- A main control still carries its `data-guide` name, passed in by the screen.
+- `readOnly` hides what writes: the screen decides, and the kit draws what it is
+  given.
+
+## How a kit component is styled
+
+**Static CSS on anything that repeats.** A row, a card or a cell is drawn hundreds
+of times, and measured over 500 cards a plain element with a class costs a
+fraction of a `Box` with `sx`. So a kit component keeps its own `Name.css` beside
+it, classes named `kit-<name>` and `kit-<name>__<part>`, every value a `var(--…)`
+from the tokens, and a state said as a data attribute. No `Box` or `Typography`
+inside a card or a row.
+
+**MUI behind the kit where it earns its place**: a dialog's focus trap, a menu's
+keyboard, an autocomplete. A screen gets the kit's name for it, and the props do
+not include `sx`.
+
+## What a screen may not do
+
+- Write a colour. `build/literalColours.test.ts` holds every file to the literals
+  it has now, and a new file to none; the count only goes down.
+- Draw a second list, panel, dialog, status text or empty state. Add what is
+  missing to the kit, generically, with a test.
+- Use `sx` for more than small layout: a gap, a margin, a flex.
+- Say a status by hue alone. A mark's shape carries the meaning, and colour
+  answers one question at a time.
+- Use the accent for anything but the accent's job: where you are, what is
+  picked, what the main action is. No status wears it, and no accent may look
+  like a status (`accent.ts`).

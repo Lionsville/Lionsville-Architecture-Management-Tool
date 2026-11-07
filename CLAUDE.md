@@ -752,6 +752,13 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   *Accepted (N)* with *Take back*), and a set kept for the
                   session under a key, from the shell's folds handed down as
                   a context (`sessionMemory`).
+                    kit/              one design system (ADR-0045; `kit/README.md`
+                                      says the architecture): `tokens`, every
+                                      colour and measure in both modes, read as
+                                      custom properties, as MUI's palette and
+                                      as values (`tokensOf`); `accent` over
+                                      `oklch`, a source's accent as shades or a
+                                      refusal; `fonts/`, the typefaces
 src/ports/        The seams. Interfaces only, no implementations.
                     PreferencesStore · DocumentGateway
                     Diagnostics · HostControls · UpdateSettings
@@ -1404,7 +1411,9 @@ whose contract is `ports/CommandChannel.contract.ts`.
   top, so the shell toolbar's drag strip stays live under a dialog and swallows
   every click on the controls placed there. `DocumentationPage` and `AdrPage`
   are the examples; both pin it in a test.
-- Both MUI themes must keep working; no hard-coded hex outside `theme/`.
+- Both themes must keep working; a colour is a token (`widgets/kit/tokens.ts`,
+  `build/literalColours.test.ts`), and a screen composes the kit
+  (`widgets/kit/README.md`).
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.
 - Errors from the pure modules and the adapters carry a **key**
