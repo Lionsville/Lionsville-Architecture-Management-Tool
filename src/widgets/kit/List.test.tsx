@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { List } from './List'
+import { ListMore } from './ListMore'
 import type { ListGroup, ListProps } from './List'
 
 afterEach(() => cleanup())
@@ -310,5 +311,25 @@ describe('a list a screen draws more on', () => {
     renderShell(<List label="Topics" groups={[{ id: '', label: '', rows: [{ id: 'a', text: 'Security' }, { id: 'b', text: 'Identity', depth: 1 }] }]} />)
     expect(screen.getByRole('row', { name: 'Identity' }).getAttribute('aria-level')).toBe('2')
     expect(screen.getByRole('row', { name: 'Security' }).getAttribute('aria-level')).toBeNull()
+  })
+})
+
+describe('the end of a list that is not all there', () => {
+  const more = <ListMore said="3 hidden by the filter" data-testid="more"><button type="button">Show all</button></ListMore>
+
+  it('stands after the rows and is reached by Tab, with what it says said aloud', async () => {
+    renderShell(<List label="Things" groups={GROUPS} more={more} />)
+    const bar = screen.getByTestId('more')
+    expect(screen.getByRole('treegrid').compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(bar).getByText('3 hidden by the filter').getAttribute('aria-live')).toBe('polite')
+    within(bar).getByRole('button', { name: 'Show all' }).focus()
+    expect(document.activeElement?.textContent).toBe('Show all')
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('stands under the empty line too, where a filter left no row', () => {
+    renderShell(<List label="Things" groups={[]} empty={<p>Nothing matches</p>} more={more} />)
+    expect(screen.getByText('Nothing matches')).toBeTruthy()
+    expect(screen.getByTestId('more')).toBeTruthy()
   })
 })

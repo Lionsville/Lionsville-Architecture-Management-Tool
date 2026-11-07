@@ -26,6 +26,7 @@ and behaves is said here, once.
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
 | `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row; `doors`, for rows that are ways on, as on a home: pressable at rest |
+| `ListMore.tsx` | **List more**: the end of a list that is not all there, how many are kept back and the button that brings them; `List`'s `more`, or under a map |
 | `listDensity.ts` | how close a person likes every list's rows: one choice for the product, which the app keeps |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |

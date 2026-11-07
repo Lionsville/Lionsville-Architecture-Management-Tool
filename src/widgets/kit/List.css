@@ -179,3 +179,19 @@
   transform: rotate(45deg);
 }
 .kit-list[data-doors] .kit-list__row:hover .kit-list__item::after { border-color: var(--ink); }
+
+.kit-list__more {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--bar-h);
+  padding: var(--s-1) var(--s-3);
+  background: var(--surface-2);
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}

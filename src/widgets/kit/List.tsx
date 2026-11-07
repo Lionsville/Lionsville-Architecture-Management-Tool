@@ -115,6 +115,8 @@ export type ListProps = {
    * like something to press before the pointer gets there.
    */
   readonly doors?: boolean
+  /** What stands at the end of the list, and under `empty` too: a `ListMore`, where a filter or a limit keeps rows back. */
+  readonly more?: ReactNode
   readonly dataGuide?: string
   readonly rowGuide?: string
 }
@@ -357,7 +359,7 @@ const INTERACTIVE = 'button, a, input, select, textarea, [data-kit-actions]'
 
 export function List({
   label, groups, wrap, density = 'normal', columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
-  checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, doors, dataGuide, rowGuide,
+  checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, more, doors, dataGuide, rowGuide,
 }: ListProps) {
   const { t } = useStrings()
   const root = useRef<HTMLDivElement>(null)
@@ -505,6 +507,7 @@ export function List({
           })}
         </div>
       )}
+      {more}
     </div>
   )
 }
