@@ -149,8 +149,12 @@ describe('what is kept back', () => {
   it('opens the map on this scope’s lanes, with the scopes below to the left of them', () => {
     mount()
     expect(screen.getByTestId('analysis-frame').scrollLeft).toBeGreaterThan(0)
-    fireEvent.click(screen.getByTestId('view-local'))
-    expect(within(picture()).queryByTestId('picture-boundary')).toBeNull()
+    // A filter that leaves only what is below goes back to where that stands.
+    openFilter()
+    fireEvent.click(screen.getByTestId('filter-scopes'))
+    fireEvent.click(within(screen.getByTestId('filter-scopes-list')).getAllByRole('checkbox')[0])
+    expect(drawn().every((key) => key?.startsWith('acme/claims/intake#'))).toBe(true)
+    expect(screen.getByTestId('analysis-frame').scrollLeft).toBe(0)
   })
 
   it('draws the toggle in the pressed look, never as the primary action', () => {

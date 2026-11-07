@@ -202,7 +202,8 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
    * Where the map opens along its width, where its start is not what it is read for.
    * The scopes below stand to the left of this scope's lanes, so at 100% they would
    * push this scope's own records out of the window. Past the end the browser stops
-   * at the end, which leaves the nearest scope below in view beside them.
+   * at the end, which leaves the nearest scope below in view beside them. Absent, as
+   * where a filter leaves nothing of this scope, the map stands at its start.
    */
   opensAt?: number | undefined
   view: PictureView
@@ -233,7 +234,7 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
   }, [])
 
   useLayoutEffect(() => {
-    if (frame.current && opensAt !== undefined) frame.current.scrollLeft = Math.max(0, opensAt * latest.current.zoom - OPENS_CLEAR)
+    if (frame.current) frame.current.scrollLeft = opensAt === undefined ? 0 : Math.max(0, opensAt * latest.current.zoom - OPENS_CLEAR)
   }, [opensAt])
 
   const zoomTo = useCallback((zoom: number, at?: { x: number; y: number }) => {
