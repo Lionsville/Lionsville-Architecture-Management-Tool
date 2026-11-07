@@ -67,15 +67,18 @@ or in a folder it opens for you. Want to change something? See
   (*Colour* over the board), and it reads at three distances: far off a name,
   closer what an element does, close up what it is made of. Bands and groups
   resize; groups can be tidied on their own.
-- **C4 container diagrams.** Double-click an application to open the container
-  view underneath it, or to create one. The application becomes the boundary of
-  that view and its components sit inside. Each landscape keeps a list of the
+- **C4 container diagrams.** Double-click an application, or pick it and press ⌘↓, to open
+  the container view underneath it; *Create container diagram* in its menu or
+  its panel makes one. The application becomes the boundary of that view and
+  its containers sit inside. Each landscape keeps a list of the
   container views under it, and you can step back up from any of them.
 
 ### Elements
 
-Seven kinds: application, component, external system, input channel, management
-tool, actor, and the domain group that holds them. Each carries a name,
+On a landscape you add applications, actors, platforms and building blocks, and
+the domain groups that hold them; on a container diagram, containers. The band an
+element is placed in says how it is drawn: a card among the external systems,
+the input channels or the management layer is drawn as one of those. Each carries a name,
 category, vendor, technology, a markdown description, an accent colour drawn
 as a thin rail, an icon and a **lifecycle** — planned, live, retiring, retired — which shows as a badge
 on the card (retired elements are dimmed, and the badges can be switched off for

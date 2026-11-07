@@ -166,8 +166,8 @@ keeps a size from being written anywhere else.
 ## As built: the screens on the kit
 
 Every screen composes the kit now: the frame and its two rows, the homes and the
-tree, the board and the container diagram with one View bar, Colour menu, Day control
-and dock, the sheet and its poster, the technology landscape, the chart and the
+tree, the board and the container diagram with one View bar, Day control and dock
+and the board's Colour menu, the sheet and its poster, the technology landscape, the chart and the
 Conway map, observations, decisions, the roadmap and a plan, the register and Checks,
 people and the operating model, Guidance, the drawing's edges, settings and
 preferences, and the first run. `kit/README.md` lists each part and what it is for.
