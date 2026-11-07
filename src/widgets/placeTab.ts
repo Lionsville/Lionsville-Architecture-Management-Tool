@@ -123,3 +123,14 @@ export function useViewFacets(viewId: string): readonly [ViewFacets, (patch: Vie
   }, [held, now, viewId])
   return [now, choose]
 }
+
+/**
+ * Another page of the scope on screen, the way `app.open` goes there: for pages
+ * that are one family with an address each, whose tabs are places. Absent with no
+ * frame above, as in a page's own test.
+ */
+export const PlaceGoContext = createContext<((page: string) => void) | undefined>(undefined)
+
+export function usePlaceGo(): ((page: string) => void) | undefined {
+  return useContext(PlaceGoContext)
+}

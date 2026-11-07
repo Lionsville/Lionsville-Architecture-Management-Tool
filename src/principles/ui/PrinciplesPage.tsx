@@ -2,37 +2,31 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A scope's principles (ADR-0041): one quiet line per principle, grouped in
- * the order the scope keeps, with the regime in words; then the principles in
- * force here from the scopes above and from the topics relevant here, each
- * under where it comes from. The reader on the right shows one.
+ * A scope's principles (ADR-0041), under Guidance: one quiet line per principle,
+ * grouped in the order the scope keeps; then those in force here from the scopes
+ * above and from the topics relevant here, each under where it comes from. A row
+ * says only what stands out, since nearly all are accepted and flexible and saying
+ * so on each is noise: the fixed ones are what a designer must not break. Selecting
+ * a row opens it large; an own principle's selection is carried by the address.
  *
  * A page over a home, reached from its card, never the first view: its script
  * arrives when it is first opened.
  */
 import { useEffect, useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
-import InputAdornment from '@mui/material/InputAdornment'
-import ListItemButton from '@mui/material/ListItemButton'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
-import { matchesQuery } from '../../model/textSearch'
-import { barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
+import { Button } from '../../widgets/kit/Button'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import { List } from '../../widgets/kit/List'
+import type { ListGroup } from '../../widgets/kit/List'
+import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
+import type { ListHow, ListView } from '../../widgets/kit/listView'
 import { PageDialog } from '../../widgets/PageDialog'
-import { SearchIcon } from '../../widgets/icons'
-import { PageClose } from '../../widgets/PageClose'
-import { SeamResizer } from '../../widgets/SeamResizer'
-import { useSeamWidth } from '../../widgets/useSeamWidth'
-import { formatAspectNumber, formatPrincipleNumber, groupedPrinciples, PRINCIPLE_STATUSES } from '../principle'
-import type { Principle, PrincipleGroup, PrincipleRef, PrincipleStatus } from '../principle'
+import { formatAspectNumber, formatPrincipleNumber, groupedPrinciples, PRINCIPLE_REGIMES, PRINCIPLE_STATUSES } from '../principle'
+import type { Principle, PrincipleRef } from '../principle'
 import type { PrincipleInForce } from '../suggest'
 import { GroupsDialog } from './GroupsDialog'
+import { GuidanceEmpty, GuidanceFrame } from './GuidanceFrame'
 import { PrincipleEditor } from './PrincipleEditor'
 import { PrincipleReader } from './PrincipleReader'
 import { usePrinciples } from './PrinciplesContext'
@@ -48,173 +42,157 @@ export type PrinciplesPageProps = {
   select?: string
   /** The request's number: asking for the same principle again is a new request. */
   nonce?: number
+  /** An own principle picked or let go of, for the address to carry. */
+  onSelect?: (id: string | undefined) => void
   windowChrome: WindowChrome
 }
 
-const MONO = { fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' } as const
+const rowId = (ref: PrincipleRef) => `${ref.scope}#${ref.id}`
 
-/** A principle's words, for the search: its number, its aspects' numbers, its words and keywords. */
-function searchTerms(principle: Principle): string[] {
-  return [
+const HOW: ListHow<PrincipleInForce> = {
+  // What Find covers: the number, its aspects' numbers, its words and keywords.
+  words: ({ principle }) => [
     formatPrincipleNumber(principle.number), principle.title, principle.statement, ...(principle.keywords ?? []),
     ...principle.aspects.flatMap((one) => [formatAspectNumber(principle.number, one.number), one.text]),
-  ]
+  ],
+  filterBy: {
+    status: ({ principle }) => principle.status,
+    regime: ({ principle }) => principle.regime,
+    group: ({ principle }) => principle.groups,
+  },
 }
 
-export function PrinciplesPage({ open, onClose, scope, select, nonce, windowChrome }: PrinciplesPageProps) {
+/** Retired ones stay out until somebody asks for them, in a search too: they no longer guide anything. */
+const keepRetired = (view: ListView) => (view.filters.status ?? []).includes('retired')
+
+/** The word on a row: nothing for accepted and flexible. */
+function noteOf(principle: Principle, word: (key: Parameters<ReturnType<typeof useStrings>['t']>[0]) => string): string | undefined {
+  const said = [
+    ...(principle.status === 'accepted' ? [] : [word(STATUS_WORD[principle.status])]),
+    ...(principle.regime === 'fixed' ? [word(REGIME_WORD.fixed)] : []),
+  ]
+  return said.length ? said.join(', ') : undefined
+}
+
+/** The principles in force here from elsewhere, under where each comes from: the scopes above, nearest first, then the topics. */
+function otherSources(access: PrinciplesAccess, here: string, list: readonly PrincipleInForce[]) {
+  const by = new Map<string, PrincipleInForce[]>()
+  for (const one of list) by.set(one.scope, [...(by.get(one.scope) ?? []), one])
+  return [...by.entries()].map(([scope, items]) => ({
+    scope, topic: access.sourceOf(here, scope).kind === 'topic', items: [...items].sort((a, b) => a.principle.number - b.principle.number),
+  }))
+}
+
+export function PrinciplesPage({ open, onClose, scope, select, nonce, onSelect, windowChrome }: PrinciplesPageProps) {
   const access = usePrinciples()
-  const { t } = useStrings()
-  const bar = barChromeFor(windowChrome)
-  const [query, setQuery] = useState('')
-  const [status, setStatus] = useState<PrincipleStatus | 'all'>('all')
+  const { t, language } = useStrings()
+  const [view, setView] = useState<ListView>(FRESH_VIEW)
   const [picked, setPicked] = useState<PrincipleRef | undefined>(undefined)
-  const [editing, setEditing] = useState<{ principle?: Principle; scope: string } | undefined>(undefined)
+  const [editing, setEditing] = useState<{ principle?: Principle; scope: string; title?: string } | undefined>(undefined)
   const [groupsOpen, setGroupsOpen] = useState(false)
-  const [listWidth, setListWidth] = useSeamWidth('principles.list', 400)
   useEffect(() => {
-    if (open && select) setPicked({ scope, id: select })
+    if (open) setPicked(select ? { scope, id: select } : undefined)
   }, [open, select, scope, nonce])
   const version = access?.version ?? 0
   const own = useMemo(() => access?.own(scope) ?? { principles: [], groups: [] }, [access, scope, version])
   const inForce = useMemo(() => access?.inForce(scope) ?? [], [access, scope, version])
+  const every = useMemo(() => {
+    const mine: PrincipleInForce[] = own.principles.filter((one) => !one.mergedInto).map((principle) => ({ scope, principle, groups: own.groups }))
+    return [...mine, ...inForce.filter((one) => one.scope !== scope)]
+  }, [own, inForce, scope])
+  const kept = useMemo(() => (listed(every, view, { ...HOW, language })[0]?.rows ?? []).filter((one) => keepRetired(view) || one.principle.status !== 'retired'), [every, view, language])
   if (!access) return null
-  const keep = (principle: Principle) => (status === 'all' ? principle.status !== 'retired' || query.trim() !== '' : principle.status === status)
-    && matchesQuery(query, searchTerms(principle))
-  const ownShown = own.principles.filter(keep)
-  const sections = groupedPrinciples(ownShown, own.groups)
-  const elsewhere = otherSources(access, scope, inForce.filter((one) => one.scope !== scope && keep(one.principle)))
-  const current = picked ? access.find(picked) : undefined
-  const first = current ?? (sections[0]?.principles[0] ? { scope, principle: sections[0].principles[0], groups: own.groups } : undefined)
   const label = access.scopeLabel(scope)
+  const mayWrite = access.mayWrite(scope)
+  const elsewhere = otherSources(access, scope, kept.filter((one) => one.scope !== scope))
+  const row = (one: PrincipleInForce) => {
+    const note = noteOf(one.principle, t)
+    return { id: rowId({ scope: one.scope, id: one.principle.id }), code: formatPrincipleNumber(one.principle.number), text: one.principle.title, ...(note ? { note } : {}) }
+  }
+  const sections = groupedPrinciples(kept.filter((one) => one.scope === scope).map((one) => one.principle), own.groups)
+  const groups: ListGroup[] = [
+    ...sections.map(({ group, principles }) => ({
+      id: group?.id ?? '-',
+      label: group?.name ?? (elsewhere.length ? t('principles.keptIn', { scope: label }) : t('principles.ungrouped')),
+      rows: principles.map((principle) => row({ scope, principle, groups: own.groups })),
+    })),
+    ...elsewhere.map((from) => ({
+      id: `from:${from.scope}`,
+      label: t(from.topic ? 'principles.fromTopicHeading' : 'principles.fromHeading', { scope: access.scopeLabel(from.scope) }),
+      rows: from.items.map(row),
+    })),
+  ]
+  const ids = groups.flatMap((group) => group.rows.map((one) => one.id))
+  const current = picked ? access.find(picked) : undefined
+  const pick = (ref: PrincipleRef | undefined) => {
+    setPicked(ref)
+    if (ref === undefined || ref.scope === scope) onSelect?.(ref?.id)
+  }
+  const refOf = (id: string): PrincipleRef | undefined => {
+    const one = every.find((held) => rowId({ scope: held.scope, id: held.principle.id }) === id)
+    return one ? { scope: one.scope, id: one.principle.id } : undefined
+  }
+  const count = (of: (one: PrincipleInForce) => boolean) => every.filter(of).length
+  const newOne = mayWrite ? { label: t('principles.new'), onPress: () => setEditing({ scope }), dataGuide: 'principles.new' } : undefined
+  const empty = every.length === 0
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={t('principles.title')}>
-      <Box
-        data-testid="principles-topbar"
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined, '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-        }}
-      >
-        <Tooltip title={t('common.close')}>
-          <IconButton size="small" aria-label={t('common.close')} onClick={onClose}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-          </IconButton>
-        </Tooltip>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>{t('principles.title')}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{label}</Typography>
-        <Box sx={{ flex: 1 }} />
-        <TextField
-          size="small" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('principles.search')}
-          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon size={14} /></InputAdornment> }, htmlInput: { 'aria-label': t('principles.search'), 'data-testid': 'principles-search' } }}
-          sx={{ width: 220, '& .MuiInputBase-input': { fontSize: 13, py: 0.75 } }}
-        />
-        <TextField
-          select size="small" value={status} onChange={(event) => setStatus(event.target.value as PrincipleStatus | 'all')}
-          label={t('principles.statusFilter')} sx={{ width: 150, '& .MuiInputBase-input': { fontSize: 13, py: 0.75 } }}
-          slotProps={{ htmlInput: { 'data-testid': 'principles-status' } }}
-        >
-          <MenuItem value="all">{t('principles.statusAll')}</MenuItem>
-          {PRINCIPLE_STATUSES.map((one) => <MenuItem key={one} value={one}>{t(STATUS_WORD[one])}</MenuItem>)}
-        </TextField>
-        {access.mayWrite(scope) && (
+      <GuidanceFrame tab="principles">
+        {empty ? <div className="guidance__body"><GuidanceEmpty tab="principles" {...(newOne ? { action: newOne } : {})} /></div> : (
           <>
-            <Button size="small" onClick={() => setGroupsOpen(true)} data-testid="principles-groups">{t('principles.manageGroups')}</Button>
-            <Button size="small" variant="contained" onClick={() => setEditing({ scope })} data-testid="principles-new" data-guide="principles.new">{t('principles.new')}</Button>
+            <div className="guidance__bar">
+              <FilterWords
+                find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={t('principles.search')}
+                filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
+                shown={{ count: kept.length, total: count((one) => one.principle.status !== 'retired') }}
+                fields={[
+                  { id: 'status', label: t('principles.statusFilter'), options: PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), count: count((held) => held.principle.status === one) })) },
+                  { id: 'regime', label: t('principles.regimeFilter'), options: PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), count: count((held) => held.principle.regime === one) })) },
+                  ...(own.groups.length ? [{ id: 'group', label: t('principles.groupFilter'), options: own.groups.map((one) => ({ value: one.id, label: one.name })) }] : []),
+                ]}
+                actions={mayWrite && (
+                  <>
+                    <Button variant="plain" onClick={() => setGroupsOpen(true)} data-testid="principles-groups">{t('principles.manageGroups')}</Button>
+                    <Button variant="primary" onClick={() => setEditing({ scope })} data-testid="principles-new" data-guide="principles.new">{t('principles.new')}</Button>
+                  </>
+                )}
+              />
+            </div>
+            {own.principles.length === 0 && mayWrite && <p className="guidance__note">{t('principles.noneOwn', { scope: label })}</p>}
+            <div className="guidance__list" data-testid="principles-list">
+              <List
+                label={t('principles.title')} groups={groups} selectedId={picked ? rowId(picked) : null}
+                onOpen={(id) => pick(refOf(id))}
+                empty={(
+                  <div className="guidance__note" role="status">
+                    <p>{t('principles.searchEmpty', { query: view.find })}</p>
+                    <p>{t('principles.searchReads')}</p>
+                    <Button variant="plain" onClick={() => setView((was) => ({ ...was, filters: { ...was.filters, status: [...PRINCIPLE_STATUSES] } }))}>{t('principles.includeRetired')}</Button>
+                    {mayWrite && view.find.trim() && <>{' '}<Button variant="quiet" onClick={() => setEditing({ scope, title: view.find.trim() })}>{t('principles.writeAsNew')}</Button></>}
+                  </div>
+                )}
+              />
+            </div>
           </>
         )}
-        <PageClose onClose={onClose} />
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: `${listWidth}px auto minmax(0, 1fr)`, flex: 1, minHeight: 0 }}>
-        <Box sx={{ overflow: 'auto', bgcolor: 'background.paper' }} data-testid="principles-list">
-          {sections.length === 0 && elsewhere.length === 0 && (
-            <Typography sx={{ p: 2, fontSize: 13, color: 'text.secondary' }}>
-              {query.trim() ? t('principles.searchEmpty', { query }) : t('principles.empty')}
-            </Typography>
-          )}
-          {sections.map(({ group, principles }) => (
-            <Section key={group?.id ?? '-'} heading={group?.name ?? t('principles.ungrouped')}>
-              {principles.map((principle) => (
-                <Line key={principle.id} principle={principle} selected={first?.scope === scope && first.principle.id === principle.id} onPick={() => setPicked({ scope, id: principle.id })} />
-              ))}
-            </Section>
-          ))}
-          {elsewhere.map(({ heading, items }) => (
-            <Section key={heading} heading={heading} quiet>
-              {items.map((one) => (
-                <Line key={`${one.scope}/${one.principle.id}`} principle={one.principle} selected={first?.scope === one.scope && first.principle.id === one.principle.id} onPick={() => setPicked({ scope: one.scope, id: one.principle.id })} />
-              ))}
-            </Section>
-          ))}
-        </Box>
-        <SeamResizer orientation="vertical" region="before" value={listWidth} min={260} max={720} defaultValue={400} onChange={setListWidth} label={t('common.resizeColumn')} />
-        <Box sx={{ overflow: 'auto', minWidth: 0 }}>
-          {first ? (
-            <PrincipleReader
-              key={`${first.scope}/${first.principle.id}`}
-              found={first}
-              here={scope}
-              onEdit={() => setEditing({ principle: first.principle, scope: first.scope })}
-              onPick={(ref) => setPicked(ref)}
-            />
-          ) : (
-            <Typography sx={{ p: 3, color: 'text.secondary', fontSize: 14 }}>{t('principles.noneSelected')}</Typography>
-          )}
-        </Box>
-      </Box>
+      </GuidanceFrame>
+      {current && picked && (
+        <PrincipleReader
+          key={rowId(picked)} found={current} here={scope} ids={ids} currentId={rowId(picked)}
+          onSelect={(id) => pick(id === null ? undefined : refOf(id))}
+          onEdit={() => setEditing({ principle: current.principle, scope: current.scope })}
+          onPick={(ref) => pick(ref)}
+        />
+      )}
       {editing && (
         <PrincipleEditor
-          open scope={editing.scope} {...(editing.principle ? { principle: editing.principle } : {})}
-          onClose={(made) => { setEditing(undefined); if (made) setPicked({ scope: editing.scope, id: made }) }}
+          open scope={editing.scope} windowChrome={windowChrome}
+          {...(editing.principle ? { principle: editing.principle } : {})}
+          {...(editing.title ? { title: editing.title } : {})}
+          onClose={(made) => { setEditing(undefined); if (made) pick({ scope: editing.scope, id: made }) }}
         />
       )}
       <GroupsDialog open={groupsOpen} scope={scope} onClose={() => setGroupsOpen(false)} />
     </PageDialog>
   )
 }
-
-/** The principles in force here from elsewhere, under where each comes from: the scopes above, nearest first, then the topics. */
-function otherSources(access: PrinciplesAccess, here: string, list: readonly PrincipleInForce[]) {
-  const by = new Map<string, PrincipleInForce[]>()
-  for (const one of list) {
-    const from = access.sourceOf(here, one.scope)
-    // The section's heading, said by `Section`: where it comes from, and the scope.
-    const heading = `${from.kind === 'topic' ? 'topic' : 'above'}\u0000${one.scope}`
-    by.set(heading, [...(by.get(heading) ?? []), one])
-  }
-  return [...by.entries()].map(([heading, items]) => ({ heading, items: items.sort((a, b) => a.principle.number - b.principle.number) }))
-}
-
-function Section({ heading, quiet = false, children }: { heading: string; quiet?: boolean; children: React.ReactNode }) {
-  const access = usePrinciples()
-  const { t } = useStrings()
-  const [kind, scope] = heading.includes('\u0000') ? heading.split('\u0000') as [string, string] : ['', '']
-  const said = kind === 'topic'
-    ? t('principles.fromTopicHeading', { scope: access?.scopeLabel(scope) ?? scope })
-    : kind === 'above' ? t('principles.fromHeading', { scope: access?.scopeLabel(scope) ?? scope }) : heading
-  return (
-    <Box component="section" sx={{ pb: 0.5 }}>
-      <Typography component="h2" sx={{ m: 0, px: 2, pt: 1.5, pb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: quiet ? 'text.secondary' : 'text.primary' }}>
-        {said}
-      </Typography>
-      {children}
-    </Box>
-  )
-}
-
-/** One quiet line: the number, the title, and the regime in words — or *Candidate* while it is one. */
-function Line({ principle, selected, onPick }: { principle: Principle; selected: boolean; onPick: () => void }) {
-  const { t } = useStrings()
-  const retired = principle.status === 'retired'
-  return (
-    <ListItemButton selected={selected} onClick={onPick} data-testid={`principle-row-${principle.id}`} sx={{ py: 0.5, px: 2, gap: 1.5, color: retired ? 'text.secondary' : 'text.primary' }}>
-      <Box component="span" sx={MONO}>{formatPrincipleNumber(principle.number)}</Box>
-      <Box component="span" sx={{ flex: 1, fontSize: 13 }}>{principle.title}</Box>
-      <Box component="span" sx={{ fontSize: 11, color: principle.status === 'candidate' ? 'info.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
-        {principle.status === 'accepted' ? t(REGIME_WORD[principle.regime]) : t(STATUS_WORD[principle.status])}
-      </Box>
-    </ListItemButton>
-  )
-}
-
-export type { PrincipleGroup }

@@ -38,6 +38,13 @@ export const STATUS_WORD: Record<PrincipleStatus, StringKey> = {
   retired: 'principles.statusRetired',
 }
 
+/** Where a principle stands, said once, where it is written. */
+export const STATUS_SENTENCE: Record<PrincipleStatus, StringKey> = {
+  candidate: 'principles.statusCandidateSentence',
+  accepted: 'principles.statusAcceptedSentence',
+  retired: 'principles.statusRetiredSentence',
+}
+
 export const NATURE_WORD: Record<AspectNature, StringKey> = {
   design: 'principles.natureDesign',
   behaviour: 'principles.natureBehaviour',

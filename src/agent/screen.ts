@@ -99,6 +99,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   operating: ['structure', 'rules', 'responsibilities', 'libraries'],
   principles: ['principles', 'topics', 'blocks'],
   checks: ['found', 'accepted'],
+  blocks: ['about', 'requirements', 'options', 'used'],
   decisions: ['all', 'here', 'above'],
   roadmap: ['plans', 'findings'],
   /** A Conway map's two readings. */

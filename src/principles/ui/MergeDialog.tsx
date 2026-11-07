@@ -2,20 +2,17 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * *Merge…* (ADR-0041): this principle absorbs others of its scope that say
- * the same thing, with their aspects, groups, citations and comments; the
- * absorbed are kept as history.
+ * *Merge another into this one…* (ADR-0041): this principle absorbs others of its
+ * scope that say the same thing, with their aspects, groups, citations and
+ * comments; the absorbed are kept as history. Typed to find, because the twin is
+ * hard to spot among fifty.
  */
 import { useState } from 'react'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
-import { FieldsDialog } from '../../widgets/CompactForms'
+import { matchesQuery } from '../../model/textSearch'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextInput } from '../../widgets/kit/Field'
 import { formatPrincipleNumber } from '../principle'
 import type { Principle } from '../principle'
 import { usePrinciples } from './PrinciplesContext'
@@ -24,25 +21,30 @@ export function MergeDialog({ open, scope, into, onClose }: { open: boolean; sco
   const access = usePrinciples()
   const { t } = useStrings()
   const [from, setFrom] = useState<string[]>([])
+  const [find, setFind] = useState('')
   if (!access) return null
   const others = access.own(scope).principles.filter((one) => one.id !== into.id && !one.mergedInto)
+  const shown = others.filter((one) => from.includes(one.id) || matchesQuery(find, [formatPrincipleNumber(one.number), one.title, one.statement]))
   return (
-    <FieldsDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('principles.mergeTitle', { number: formatPrincipleNumber(into.number) })}</DialogTitle>
-      <DialogContent>
-        <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{t('principles.mergeIntro')}</Typography>
-        {others.map((one) => (
-          <FormControlLabel
-            key={one.id} sx={{ display: 'flex' }}
-            control={<Checkbox size="small" checked={from.includes(one.id)} onChange={(event) => setFrom((held) => (event.target.checked ? [...held, one.id] : held.filter((id) => id !== one.id)))} />}
-            label={<Typography sx={{ fontSize: 13 }}>{formatPrincipleNumber(one.number)} {one.title}</Typography>}
-          />
+    <Dialog
+      open={open} size="m" title={t('principles.mergeTitle', { number: formatPrincipleNumber(into.number) })} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={from.length === 0} onClick={() => { access.merge(scope, into.id, from); onClose() }}>{t('principles.mergeSubmit')}</Button>
+        </>
+      )}
+    >
+      <p>{t('principles.mergeIntro')}</p>
+      <TextInput autoFocus type="search" value={find} onChange={(event) => setFind(event.target.value)} placeholder={t('principles.search')} aria-label={t('principles.search')} />
+      <div className="guidance-form__ticks">
+        {shown.map((one) => (
+          <label className="guidance-form__tick" key={one.id}>
+            <input type="checkbox" checked={from.includes(one.id)} onChange={(event) => setFrom((held) => (event.target.checked ? [...held, one.id] : held.filter((id) => id !== one.id)))} />
+            <span>{formatPrincipleNumber(one.number)} {one.title}</span>
+          </label>
         ))}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={from.length === 0} onClick={() => { access.merge(scope, into.id, from); onClose() }}>{t('principles.mergeSubmit')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+      </div>
+    </Dialog>
   )
 }

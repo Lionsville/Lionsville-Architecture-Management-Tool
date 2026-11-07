@@ -8,23 +8,24 @@
  */
 import { useState } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
-import Button from '@mui/material/Button'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
+import MuiTextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n/LanguageContext'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
+import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { isWithinScope } from '../../projects/scopePath'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import type { TopicSummary, TopicsAccess } from './TopicsContext'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField, TextField } from '../../widgets/kit/Field'
 import { renderScopeOption } from '../../widgets/ScopeChoices'
 import type { ScopeChoice } from '../../widgets/ScopeChoices'
+import type { TopicSummary, TopicsAccess } from './TopicsContext'
 
 /** The topics a topic may be filed under: none of its own subtree. */
-function underChoices(access: TopicsAccess, topic?: string): readonly TopicSummary[] {
-  return access.list().filter((one) => topic === undefined || !isWithinScope(one.id, topic))
+function underChoices(access: TopicsAccess, none: string, topic?: string) {
+  return [
+    { value: '', label: none },
+    ...access.list().filter((one) => topic === undefined || !isWithinScope(one.id, topic)).map((one) => ({ value: one.id, label: one.name })),
+  ]
 }
 
 export function EditTopicDialog({ topic, access, onClose }: { topic: TopicSummary; access: TopicsAccess; onClose: () => void }) {
@@ -37,21 +38,19 @@ export function EditTopicDialog({ topic, access, onClose }: { topic: TopicSummar
     onClose()
   }
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('topics.editTitle', { name: topic.name })}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <TextField autoFocus label={t('topics.name')} value={name} onChange={(event) => setName(event.target.value)} />
-        <TextField label={t('topics.description')} value={description} onChange={(event) => setDescription(event.target.value)} multiline minRows={2} />
-        <TextField select label={t('topics.under')} value={under} onChange={(event) => setUnder(event.target.value)} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          <MenuItem value="">{t('topics.underNone')}</MenuItem>
-          {underChoices(access, topic.id).map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!name.trim()} onClick={save}>{t('topics.save')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('topics.editTitle', { name: topic.name })} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={!name.trim()} onClick={save}>{t('topics.save')}</Button>
+        </>
+      )}
+    >
+      <TextField autoFocus label={t('topics.name')} value={name} onChange={setName} />
+      <MarkdownEditor label={t('topics.description')} value={description} onChange={setDescription} minRows={2} renderPreview={renderMarkdown} />
+      <SelectField label={t('topics.under')} value={under} onChange={setUnder} options={underChoices(access, t('topics.underNone'), topic.id)} />
+    </Dialog>
   )
 }
 
@@ -69,25 +68,23 @@ export function NewTopicDialog({ access, parent, name: named = '', relevantTo = 
     void access.create(name, under || undefined, places.map((one) => one.path)).then((made) => onClose(made))
   }
   return (
-    <FieldsDialog open onClose={() => onClose()} maxWidth="sm" fullWidth>
-      <DialogTitle>{under ? t('topics.newSubtopic') : t('topics.new')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('topics.newIntro')}</Typography>
-        <TextField autoFocus label={t('topics.name')} value={name} onChange={(event) => setName(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'topic-name' } }} />
-        <TextField select label={t('topics.under')} value={under} onChange={(event) => setUnder(event.target.value)} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          <MenuItem value="">{t('topics.underNone')}</MenuItem>
-          {underChoices(access).map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-        </TextField>
-        <Autocomplete
-          multiple options={access.scopeChoices() as ScopeChoice[]} value={places} onChange={(_event, next) => setPlaces(next)}
-          getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption}
-          renderInput={(params) => <TextField {...params} label={t('topics.relevantTo')} />}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => onClose()}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!name.trim() || busy} onClick={make} data-testid="topic-create">{t('topics.create')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={under ? t('topics.newSubtopic') : t('topics.new')} onClose={() => onClose()}
+      actions={(
+        <>
+          <Button variant="plain" onClick={() => onClose()}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={!name.trim() || busy} onClick={make} data-testid="topic-create">{t('topics.create')}</Button>
+        </>
+      )}
+    >
+      <p>{t('topics.newIntro')}</p>
+      <TextField autoFocus label={t('topics.name')} value={name} onChange={setName} data-testid="topic-name" />
+      <SelectField label={t('topics.under')} value={under} onChange={setUnder} options={underChoices(access, t('topics.underNone'))} />
+      <Autocomplete
+        multiple options={access.scopeChoices() as ScopeChoice[]} value={places} onChange={(_event, next) => setPlaces(next)}
+        getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption}
+        renderInput={(params) => <MuiTextField {...params} label={t('topics.relevantTo')} />}
+      />
+    </Dialog>
   )
 }

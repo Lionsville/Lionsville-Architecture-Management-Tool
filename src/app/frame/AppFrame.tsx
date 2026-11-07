@@ -11,7 +11,7 @@
  * `openSomewhere`, so a person's press and `app.open` cannot land in different
  * places. How a screen plugs in is written down in `widgets/kit/README.md`.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
@@ -31,7 +31,7 @@ import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
-import { PlaceFacetsContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
+import { PlaceFacetsContext, PlaceGoContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceTo, ViewFacets } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
@@ -45,7 +45,7 @@ import { commandsTable, keyCap } from './commandsTable'
 import type { CommandRow } from './commandsTable'
 import { FrameCommandsContext, useFrameState } from './frameStore'
 import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
-import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './places'
+import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
 import { ActivityPanel, YourWorkPanel } from './FramePanels'
 import { ScopeTreePanel } from './ScopeTreePanel'
@@ -100,6 +100,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     of: (viewId: string) => (state.facets?.of === viewId ? state.facets : undefined),
     choose: (viewId: string, chosen: ViewFacets) => { frame.set({ facets: { ...chosen, of: viewId } }); lookAgain() },
   }), [state.facets, frame, lookAgain])
+  const goToPage = useCallback((to: string) => go({ scope: at, page: to as Page }), [go, at])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return
@@ -112,6 +113,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       <PlaceTabContext.Provider value={tabs}>
         <PlaceListContext.Provider value={lists}>
         <PlaceFacetsContext.Provider value={facets}>
+        <PlaceGoContext.Provider value={goToPage}>
         <Frame
           pageUp={pageUp}
           controlsInset={windowChrome.controlsInset}
@@ -126,6 +128,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {children}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
+        </PlaceGoContext.Provider>
         </PlaceFacetsContext.Provider>
         </PlaceListContext.Provider>
       </PlaceTabContext.Provider>
@@ -213,6 +216,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     SCOPE_PLACES.forEach((one) => place(one, at))
     ORGANISATION_PLACES.forEach((one) => place(one, ROOT_SCOPE))
     MORE_PLACES.forEach((one) => place(one, ROOT_SCOPE))
+    FOUND_PLACES.forEach((one) => place(one, ROOT_SCOPE))
     rows.push({ id: 'place:work', group: s('frame.places'), label: s('frame.yourWork'), run: () => go({ scope: at, page: 'work' }) })
     rows.push({ id: 'place:activity', group: s('frame.places'), label: s('shell.activity'), run: () => go({ scope: at, page: 'activity' }) })
     rows.push({ id: 'place:settings', group: s('frame.places'), label: s('settings.title'), run: () => go({ scope: at, page: 'settings' }) })
@@ -461,7 +465,7 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
   const { services: { s }, agent } = parts
   const go = agent.openSomewhere
   const more: MenuEntry[] = [
-    ...ORGANISATION_PLACES.map((one) => ({ label: s(one.label), checked: page === one.page, onSelect: () => go({ scope: ROOT_SCOPE, page: one.page }) })),
+    ...ORGANISATION_PLACES.map((one) => ({ label: s(one.label), checked: placeShows(one, page), onSelect: () => go({ scope: ROOT_SCOPE, page: one.page }) })),
     { line: true },
     ...MORE_PLACES.map((one) => ({ label: s(one.label), checked: page === one.page, onSelect: () => go({ scope: HOME_PAGES.includes(one.page) ? at : ROOT_SCOPE, page: one.page }) })),
   ]

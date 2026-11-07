@@ -30,7 +30,7 @@ import { Tabs } from '../../widgets/kit/Tabs'
 import { heldInWords, RootRow, ScopeTree } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
-import { ORGANISATION_PLACES } from './places'
+import { ORGANISATION_PLACES, placeShows } from './places'
 
 /** What a row's ⋯ can do, each its own question on the home that answers it. */
 export type TreeActs = {
@@ -177,7 +177,7 @@ export function ScopeTreePanel({
           return (
             <button
               key={place.page} type="button" className="kit-tree__place" data-testid={`tree-place-${place.page}`} data-guide={place.guide}
-              aria-current={page === place.page ? 'page' : undefined} title={fact?.words}
+              aria-current={placeShows(place, page) ? 'page' : undefined} title={fact?.words}
               onClick={() => go({ scope: ROOT_SCOPE, page: place.page })}
             >
               <span>{s(place.label)}</span>

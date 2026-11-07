@@ -61,6 +61,7 @@ export function PrinciplesPages({ parts }: { parts: WorkspaceParts }) {
       scope={props.project.path}
       {...(page.id !== undefined ? { select: page.id } : {})}
       nonce={page.nonce}
+      onSelect={(id) => pages.openPrinciples(id)}
       onClose={() => { pages.closePrinciples(); pages.leaveIfNothingToDraw() }}
       windowChrome={pageChrome}
     />

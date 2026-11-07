@@ -21,6 +21,7 @@ import type { ScopeSummary } from '../../projects/scope'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, parentScope, ROOT_SCOPE } from '../../projects/scopePath'
+import { formatPrincipleNumber } from '../../model/principle'
 import type { ScopePath } from '../../projects/scopePath'
 import type { OrganisationIndex } from '../../ports/OrganisationIndex'
 import { createScopeAt, describeScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt } from '../../projects/scopeTree'
@@ -172,11 +173,14 @@ export function topicsAccess(deps: TopicsDeps, version: number): TopicsAccess {
     update: (topic, patch) => { void update(deps, topic, patch) },
     remove: (topic) => remove(deps, scopes, topic),
     keeps: (topic) => keepsOf(deps, scopes, topic),
+    principlesOf: (topic) => (deps.principlesAt?.(topic).principles ?? [])
+      .filter((one) => one.mergedInto === undefined)
+      .map((one) => ({ id: one.id, label: `${formatPrincipleNumber(one.number)} ${one.title}` })),
     today: () => deps.today,
     scopeLabel,
     scopeChoices: () => choosableScopes(scopes, scopeLabel, false),
     openCatalogue: deps.openCatalogue,
-    openPrinciples: (topic) => deps.open(topic, { page: 'principles' }),
+    openPrinciples: (topic, id) => deps.open(topic, { page: 'principles', ...(id !== undefined ? { id } : {}) }),
     openHome: deps.goHome,
   }
 }

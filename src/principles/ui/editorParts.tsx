@@ -8,14 +8,12 @@
  * it holds.
  */
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
+import { Button, IconButton } from '../../widgets/kit/Button'
+import { Select, TextInput } from '../../widgets/kit/Field'
+import { PanelSection } from '../../widgets/kit/Panel'
 import { ASPECT_NATURES, formatAspectNumber } from '../../model/principle'
 import type { Aspect, AspectNature, PrincipleGroup } from '../../model/principle'
 import { NATURE_WORD } from './words'
@@ -80,25 +78,20 @@ export function AspectList({ number, aspects, onAdd, onChange, onRemove, t }: {
   t: Translate
 }) {
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-        <Typography sx={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{t('principles.aspects')}</Typography>
-        <Button size="small" onClick={onAdd} data-testid="principle-add-aspect">{t('principles.addAspect')}</Button>
-      </Box>
-      {aspects.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('principles.aspectsHelp')}</Typography>}
+    <PanelSection title={t('principles.aspects')} aside={<Button variant="quiet" size="small" onClick={onAdd} data-testid="principle-add-aspect">{t('principles.addAspect')}</Button>}>
+      {aspects.length === 0 && <p className="guidance-read__empty">{t('principles.aspectsHelp')}</p>}
       {aspects.map((aspect) => (
-        <Box key={aspect.id} data-testid="principle-aspect" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr 150px 1fr max-content', gap: 1, alignItems: 'center', py: 0.5 }}>
-          <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 12, color: 'text.secondary' }}>
-            {number !== undefined ? formatAspectNumber(number, aspect.number) : `.${aspect.number}`}
-          </Box>
-          <TextField size="small" value={aspect.text} onChange={(event) => onChange(aspect.id, { text: event.target.value })} placeholder={t('principles.aspectText')} slotProps={{ htmlInput: { 'aria-label': t('principles.aspectText') } }} />
-          <TextField select size="small" value={aspect.nature} onChange={(event) => onChange(aspect.id, { nature: event.target.value as AspectNature })} slotProps={{ htmlInput: { 'aria-label': t('principles.natureField') } }}>
-            {ASPECT_NATURES.map((one) => <MenuItem key={one} value={one}>{t(NATURE_WORD[one])}</MenuItem>)}
-          </TextField>
-          <TextField size="small" value={aspect.signal ?? ''} onChange={(event) => onChange(aspect.id, { signal: event.target.value || undefined })} placeholder={t('principles.signalField')} slotProps={{ htmlInput: { 'aria-label': t('principles.signalField') } }} />
-          <IconButton size="small" aria-label={t('principles.removeAspect')} onClick={() => onRemove(aspect.id)}><CloseIcon size={14} /></IconButton>
-        </Box>
+        <div key={aspect.id} data-testid="principle-aspect" className="guidance-form__aspect">
+          <span className="guidance-read__code">{number !== undefined ? formatAspectNumber(number, aspect.number) : `.${aspect.number}`}</span>
+          <TextInput value={aspect.text} onChange={(event) => onChange(aspect.id, { text: event.target.value })} placeholder={t('principles.aspectText')} aria-label={t('principles.aspectText')} />
+          <Select
+            value={aspect.nature} onChange={(event) => onChange(aspect.id, { nature: event.target.value as AspectNature })} aria-label={t('principles.natureField')}
+            options={ASPECT_NATURES.map((one) => ({ value: one, label: t(NATURE_WORD[one]) }))}
+          />
+          <TextInput value={aspect.signal ?? ''} onChange={(event) => onChange(aspect.id, { signal: event.target.value || undefined })} placeholder={t('principles.signalField')} aria-label={t('principles.signalField')} />
+          <IconButton label={t('principles.removeAspect')} onClick={() => onRemove(aspect.id)}><CloseIcon size={14} /></IconButton>
+        </div>
       ))}
-    </Box>
+    </PanelSection>
   )
 }

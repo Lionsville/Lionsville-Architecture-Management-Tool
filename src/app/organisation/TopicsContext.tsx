@@ -70,6 +70,8 @@ export type TopicsAccess = {
   /** Removed while it keeps nothing (§3): answers whether it went. */
   remove(topic: ScopePath): Promise<boolean>
   keeps(topic: ScopePath): TopicKeeps
+  /** The principles a topic keeps, as a line says each. */
+  principlesOf(topic: ScopePath): readonly { id: string; label: string }[]
   today(): string
   scopeLabel(path: ScopePath): string
   /** The scopes a topic may be made relevant to: every scope that is not a topic. */
@@ -77,8 +79,8 @@ export type TopicsAccess = {
   scopeChoices(): readonly ScopeChoice[]
   /** Open the catalogue, on a topic where one is named. */
   openCatalogue(topic?: ScopePath): void
-  /** The topic's principles page. */
-  openPrinciples(topic: ScopePath): void
+  /** The topic's principles page, on one where one is named. */
+  openPrinciples(topic: ScopePath, id?: string): void
   /** The topic's own home, where it lives. */
   openHome(topic: ScopePath): void
 }

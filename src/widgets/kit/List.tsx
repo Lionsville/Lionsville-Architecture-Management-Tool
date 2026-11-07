@@ -38,6 +38,8 @@ export type ListRow = {
   readonly note?: string
   /** Not read yet by this person: said in words to a screen reader, and by weight and a dot on screen. */
   readonly unread?: boolean
+  /** How far under the row before it, where the items themselves nest. Drawn by indent; a row keeps its place in the order. */
+  readonly depth?: number
   /** Values for the columns somebody turned on, by column id. */
   readonly cells?: Readonly<Record<string, ReactNode>>
   /** What can be done from the row, drawn under it while it is the selected one. */
@@ -148,7 +150,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       data-state={row.state}
       draggable={draggable || undefined}
       aria-selected={selected}
-      aria-level={level ?? (row.depth !== undefined ? row.depth + 1 : undefined)}
+      aria-level={level === undefined && row.depth === undefined ? undefined : (level ?? 1) + (row.depth ?? 0)}
       tabIndex={focusable ? 0 : -1}
       {...row.attributes}
       style={row.depth ? ({ '--kit-list-depth': row.depth } as CSSProperties) : undefined}

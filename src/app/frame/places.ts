@@ -14,6 +14,13 @@ export type FramePlace = {
   readonly page: Page
   readonly label: StringKey
   readonly guide?: string
+  /** Other pages this one entry stands for: its tabs, each with its own address. */
+  readonly also?: readonly Page[]
+}
+
+/** Is this place the one on screen? */
+export function placeShows(place: FramePlace, page: Page | undefined): boolean {
+  return page !== undefined && (page === place.page || (place.also ?? []).includes(page))
 }
 
 /** A scope's own pages, on the right of row two, on every scope. */
@@ -29,12 +36,15 @@ export const ORGANISATION_PLACES: readonly FramePlace[] = [
   { page: 'register', label: 'frame.place.register', guide: 'org.card.register' },
   { page: 'people', label: 'frame.place.people', guide: 'org.card.people' },
   { page: 'operating', label: 'frame.place.operating', guide: 'org.card.operating' },
-  { page: 'principles', label: 'frame.place.principles' },
+  { page: 'principles', label: 'frame.place.guidance', also: ['topics', 'blocks'] },
   { page: 'checks', label: 'frame.place.checks', guide: 'org.card.checks' },
 ]
 
 /** The rest of More, until their pages have merged into the ones above. */
-export const MORE_PLACES: readonly FramePlace[] = [
+export const MORE_PLACES: readonly FramePlace[] = []
+
+/** What ⌘K finds by its own name, though one entry stands for it everywhere else. */
+export const FOUND_PLACES: readonly FramePlace[] = [
   { page: 'topics', label: 'frame.place.topics' },
   { page: 'blocks', label: 'frame.place.blocks' },
 ]
