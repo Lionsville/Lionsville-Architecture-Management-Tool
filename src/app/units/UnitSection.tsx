@@ -136,6 +136,8 @@ export type UnitSectionProps = {
    * Absent: where it sits is said, and not changed here.
    */
   move?: LandPeopleMoves
+  /** The Responsibilities tab of the operating model, narrowed to this unit. Absent: no way there. */
+  onOpenResponsibilities?: (unitId: string) => void
   s: Translate
 }
 
@@ -214,6 +216,9 @@ export function UnitSection(props: UnitSectionProps) {
     <Box data-testid="unit-section" sx={{ mt: unit ? 0.5 : 1 }}>
       {/* A unit leads its inspector, under its name, and its type says what it is; an actor that is not one says Unit over the choice. */}
       {!unit && <SectionHeading>{s('unit.title')}</SectionHeading>}
+      {unit && props.onOpenResponsibilities && (
+        <button type="button" className="kit-panel__link" data-testid="unit-responsibilities" onClick={() => props.onOpenResponsibilities?.(element.id)}>{s('unit.responsibilitiesLink')}</button>
+      )}
       {today !== props.today && <Typography sx={QUIET} data-testid="unit-day">{s('unit.onDay', { day: today })}</Typography>}
       <TypeField element={element} types={facts.types} editable={editable} onChange={(unitTypeId) => update({ unitTypeId })}
         {...(unit ? { filedIn: s('unit.filedInLine', { scope: scopeLabel(scope) }) } : {})} s={s} />

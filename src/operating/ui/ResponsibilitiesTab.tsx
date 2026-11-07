@@ -68,7 +68,9 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
   const [pick, setPick] = useState<MatrixPick | null>(null)
   const [find, setFind] = useState('')
   const lookNow: RaciLook = { ...look, ...(part !== undefined ? { part } : {}) }
-  const grid = useMemo(() => raciGrid(model, lookNow, view, unitRoles, added), [model, part, look.row, look.whole, look.needs, view, unitRoles, added]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A column being written in stays where it is, even once its last letter has gone.
+  const keeps = useMemo(() => (pick ? [...added, pick.column] : added), [added, pick])
+  const grid = useMemo(() => raciGrid(model, lookNow, view, unitRoles, keeps), [model, part, look.row, look.whole, look.needs, view, unitRoles, keeps]) // eslint-disable-line react-hooks/exhaustive-deps
   const needing = useMemo(() => rowsNeeding(model), [model])
   const needingHere = unitRoles ? needing.filter((row) => model.roles.some((role) => unitRoles.includes(role.id) && role.duties.some((duty) => duty.responsibility === row.id))).length : undefined
   const folks = find.trim().toLowerCase()
@@ -120,7 +122,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
     if (!onSave) return
     const wanted = whole ? raciGrid(model, { whole: true }, view, undefined, model.roles.map((role) => role.id)) : grid
     const csv = raciCsv([...wanted.columns, ...(whole ? [] : wanted.folded)], wanted.rows, {
-      group: t('operating.group'), responsibility: t('operating.responsibility'), needs: t('operating.needs'), noGroup: t('operating.noGroup'), need: (count) => needWords(count, t),
+      group: t('operating.groupWord'), responsibility: t('operating.responsibility'), needs: t('operating.needs'), noGroup: t('operating.noGroup'), need: (count) => needWords(count, t),
     }, model.roles)
     onSave(whole ? 'raci-organisation.csv' : `raci-${(unit?.name ?? part ?? 'view').replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.csv`, csv)
   }

@@ -167,6 +167,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         onShareLink: parts.share.shareTo,
         // The People page is the organisation's, on its home: an assignment's *Open in People* goes there with the person picked.
         ...(parts.people ? { onOpenPeople: (person: string) => parts.agent.openSomewhere({ scope: '', page: 'people', select: person }) } : {}),
+        onOpenUnitResponsibilities: (unitId: string) => parts.agent.openSomewhere({ scope: '', page: 'operating', tab: 'responsibilities', look: `unit=${encodeURIComponent(unitId)}` }),
         onOpenBlock: parts.agent.openBlock,
       }}
       settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}

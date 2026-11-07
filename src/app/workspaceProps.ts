@@ -223,6 +223,8 @@ export type WorkspaceNavigation = {
    * Absent where the shell has nowhere to go, and the button is not drawn.
    */
   onOpenPeople?: (person: PersonId) => void
+  /** The operating model's Responsibilities tab, narrowed to one unit: a unit's way to what its roles answer for. */
+  onOpenUnitResponsibilities?: (unitId: string) => void
   /**
    * A building block's page, on a scope's evaluation where one is named
    * (ADR-0043 §8): the organisation's, over its home, so this leaves the

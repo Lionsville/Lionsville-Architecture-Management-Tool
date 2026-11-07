@@ -53,7 +53,7 @@ export function TreeList({ label, nodes, selectedId, onSelect, open, onOpen, dat
   useLayoutEffect(() => {
     if (!wantFocus.current || !at) return
     wantFocus.current = false
-    root.current?.querySelector<HTMLElement>(`[data-kit-tree="${CSS.escape(at.node.id)}"]`)?.focus()
+    Array.from(root.current?.querySelectorAll<HTMLElement>('[data-kit-tree]') ?? []).find((row) => row.dataset.kitTree === at.node.id)?.focus()
   }, [at])
   const go = (id: string | undefined) => {
     if (id === undefined) return

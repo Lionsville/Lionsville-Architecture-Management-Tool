@@ -858,6 +858,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'library.owned': 'Dit niveau beheert {name} nu',
 
   // --- een eenheid, in haar inspector (ADR-0036 §3, §4) ------------------------
+  'unit.responsibilitiesLink': 'Waar de rollen voor instaan',
   'unit.title': 'Eenheid',
   'unit.type': 'Eenheidstype',
   'unit.notAUnit': 'Geen eenheid',

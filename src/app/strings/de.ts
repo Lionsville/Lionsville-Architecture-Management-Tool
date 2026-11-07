@@ -859,6 +859,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'library.owned': 'Dieser Bereich verantwortet {name} jetzt',
 
   // --- eine Einheit, in ihrem Inspektor (ADR-0036 §3, §4) ----------------------
+  'unit.responsibilitiesLink': 'Wofür ihre Rollen einstehen',
   'unit.title': 'Einheit',
   'unit.type': 'Einheitstyp',
   'unit.notAUnit': 'Keine Einheit',

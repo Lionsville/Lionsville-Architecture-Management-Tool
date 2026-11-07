@@ -77,7 +77,6 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
   return (
     <>
       <Matrix
-        key={`${columns.length}-${grid.folded.length}`}
         label={label} rowHeading={t('operating.responsibility')} rows={rows} columns={columns} wrapRows
         columnGroups={grid.folded.length ? [{ id: 'none', label: t('operating.noPartColumn'), short: `+${grid.folded.length}` }] : []}
         defaultFoldedGroups={['none']} cellOf={cellOf} answer={answer} selected={pick} onSelect={onPick}

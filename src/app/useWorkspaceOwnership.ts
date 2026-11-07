@@ -75,6 +75,7 @@ export function useWorkspaceOwnership(deps: {
     /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
     writeIn?: WriteIn
     /** A scope's home: where a domain a unit serves opens (ADR-0036, amended 13 October 2026). */
+    openResponsibilities?: (unitId: string) => void
     openHome?: (path: ScopePath) => void
   }
   /**
@@ -153,6 +154,7 @@ export function useWorkspaceOwnership(deps: {
         people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
         ...(units.writeIn ? { writeIn: units.writeIn } : {}),
         ...(units.openHome ? { onOpenHome: units.openHome } : {}),
+        ...(units.openResponsibilities ? { onOpenResponsibilities: units.openResponsibilities } : {}),
         // Sits under moves the unit as a delete's units are moved: the structure's lander, all or none (3.7.1).
         ...(deleting ? { move: deleting.land } : {}),
       }),

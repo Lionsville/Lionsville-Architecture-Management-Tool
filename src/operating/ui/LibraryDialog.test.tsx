@@ -201,12 +201,11 @@ describe('a library brought in from its dialog', () => {
     fireEvent.click(within(card('scrum-team')).getByRole('checkbox', { name: 'Scrum Team' }))
     fireEvent.click(within(pane()).getByRole('button', { name: /^Bring in 4 items/ }))
     await closed()
-    const toast = screen.getByTestId('operating-landed')
-    expect(toast.textContent).toContain('One step: 4 items brought in from Scrum. 2 matched to yours. What is new is marked until you leave the page.')
-    const fresh = () => [...document.querySelectorAll<HTMLElement>('[data-fresh]')].map((one) => one.textContent ?? '')
+    expect(screen.getByText('One step: 4 items brought in from Scrum. 2 matched to yours. What is new is marked until you leave the page.')).toBeTruthy()
+    const fresh = () => [...document.querySelectorAll<HTMLElement>('.op-card[data-fresh]')].map((one) => one.textContent ?? '')
     expect(fresh()).toEqual([expect.stringMatching(/^Scrum Team/)])
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(within(toast).getByRole('button', { name: 'Undo' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Undo/, hidden: true }))
     expect(kept.undone()).toBe(1)
     expect(unitTypeList(kept.model()).map((type) => type.name)).toEqual(['Domain', 'Cluster', 'Team'])
     expect(fresh()).toEqual([])
@@ -227,40 +226,40 @@ describe('a library brought in from its dialog', () => {
     fireEvent.click(within(pane()).getByRole('button', { name: /^Bring in 4 items/ }))
     await closed()
     fireEvent.click(screen.getByRole('button', { name: 'New role' }))
-    fireEvent.click(within(screen.getByTestId('operating-landed')).getByRole('button', { name: 'Undo' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Undo/, hidden: true }))
     expect(kept.undone()).toBe(0)
-    expect(screen.getByTestId('operating-landed').textContent).toContain('Not undone: another step came after it.')
+    expect(screen.getByText(/^Not undone: another step came after it\./)).toBeTruthy()
   })
 })
 
 describe('what came in, on the Libraries tab', () => {
-  it('lists each library\'s terms beside their names here, renames in place, opens an item and says what was matched', async () => {
+  const openCard = async (name: string) => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    fireEvent.click(screen.getByRole('row', { name: new RegExp(`^${name}`) }))
+    return screen.findByRole('dialog', { name })
+  }
+
+  it('reads each library\'s terms beside their names here, says what was matched, and opens an item to rename it', async () => {
     const kept = show()
     await openLibrary('Scrum')
     fireEvent.click(within(card('scrum-team')).getByRole('checkbox', { name: 'Scrum Team' }))
     fireEvent.change(within(pane()).getByLabelText('Scrum Team: called here'), { target: { value: 'Squad' } })
     fireEvent.click(within(pane()).getByRole('button', { name: /^Bring in 4 items/ }))
     await closed()
-    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    const scrum = screen.getByTestId('library-scrum')
-    expect(within(scrum).getByLabelText('Scrum Team: called here')).toHaveProperty('value', 'Squad')
-    expect(within(scrum).getByTestId('came-in-matched-developer').textContent).toContain('used your Developer')
-    // A rename chosen on the way in is not a change since; one made here is.
+    const scrum = await openCard('Scrum')
     const squad = unitTypeList(kept.model()).find((type) => type.name === 'Squad')!
-    expect(within(scrum).getByTestId(`came-in-${squad.id}`).textContent).not.toContain('the name')
-    fireEvent.change(within(scrum).getByLabelText('Scrum Team: called here'), { target: { value: 'Crew' } })
-    expect(kept.sent.at(-1)).toMatchObject({ type: 'unitType.update', id: squad.id, patch: { name: 'Crew' } })
-    expect(within(scrum).getByTestId(`came-in-${squad.id}`).textContent).toContain('the name')
-    expect(within(screen.getByTestId('library-safe')).getByText('Nothing from SAFe yet.')).toBeTruthy()
-    expect(screen.getByText(/SAFe is a registered trademark/)).toBeTruthy()
+    expect(within(scrum).getByTestId(`came-in-${squad.id}`).textContent).toBe('Squad')
+    expect(within(scrum).getByTestId('came-in-matched-developer').textContent).toContain('used your Developer')
+    // A rename chosen on the way in is not a change since.
+    expect(within(scrum).queryByText(/the name/)).toBeNull()
     expect(await axeFindings()).toEqual([])
     // Pressing the term opens the item where it is edited.
     fireEvent.click(within(scrum).getByRole('button', { name: 'Scrum Team' }))
-    expect(screen.getByRole('tab', { name: 'Units and roles', selected: true })).toBeTruthy()
-    expect(within(screen.getByTestId('operating-inspector')).getByDisplayValue('Crew')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Structure', selected: true })).toBeTruthy()
+    expect(within(screen.getByRole('complementary', { name: 'Squad' })).getByTestId('operating-inspector')).toBeTruthy()
   })
 
-  it('says nothing has changed of a type placed on the way in, and a move since against where it was put', async () => {
+  it('says nothing of a type placed on the way in, and a move since against where it was put', async () => {
     const kept = show()
     await openLibrary('Team Topologies')
     fireEvent.click(within(card('stream-aligned')).getByRole('checkbox', { name: 'Stream-aligned team' }))
@@ -268,26 +267,27 @@ describe('what came in, on the Libraries tab', () => {
     expect(within(pane()).getByLabelText('Stream-aligned team: sits in')).toHaveProperty('value', 'beside:ut-team')
     fireEvent.click(within(pane()).getByRole('button', { name: 'Bring in 1 item as one step' }))
     await closed()
-    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     const aligned = unitTypeList(kept.model()).find((type) => type.basedOn?.entry === 'stream-aligned')!
-    const row = () => within(screen.getByTestId('library-team-topologies')).getByTestId(`came-in-${aligned.id}`)
-    const compared = () => document.querySelector('[data-guide="operating.compare"]')!.textContent
-    expect(row().textContent).toContain('nothing')
-    expect(compared()).not.toContain('Stream-aligned team')
+    const library = await openCard('Team Topologies')
+    expect(within(library).queryByText(/sits at the top/)).toBeNull()
     // Moved to the top since, where the library has it: a move since all the same.
-    fireEvent.click(within(row()).getByRole('button', { name: 'Stream-aligned team' }))
-    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByLabelText('At the top, under the organisation itself'))
+    fireEvent.click(within(library).getByRole('button', { name: 'Stream-aligned team' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Team Topologies' })).toBeNull())
+    fireEvent.click(screen.getByTestId('operating-change-place'))
+    fireEvent.click(within(screen.getByTestId('operating-place-ticks')).getByRole('checkbox', { name: 'At the top, under the organisation itself' }))
     expect(kept.sent.at(-1)).toMatchObject({ type: 'unitType.update', id: aligned.id, patch: { top: true } })
-    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    expect(row().textContent).toContain('sits at the top')
-    expect(compared()).toContain('Stream-aligned team — sits at the top: here “yes”, when it came in “nothing”.')
-    expect(await axeFindings()).toEqual([])
+    const again = await openCard('Team Topologies')
+    expect(within(again).getByText(/sits at the top/)).toBeTruthy()
+    fireEvent.keyDown(again, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Team Topologies' })).toBeNull())
+    fireEvent.click(screen.getByTestId('operating-compare'))
+    expect(screen.getByText('Stream-aligned team — sits at the top: here “yes”, when it came in “nothing”.')).toBeTruthy()
   })
 
-  it('opens the dialog on the library whose card asked', async () => {
+  it('opens the dialog on the library whose preview asked', async () => {
     show()
-    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    fireEvent.click(within(screen.getByTestId('library-it4it')).getByRole('button', { name: /^From IT4IT/ }))
+    const it4it = await openCard('IT4IT')
+    fireEvent.click(within(it4it).getByRole('button', { name: /^From IT4IT/ }))
     await screen.findByTestId('library-dialog')
     expect(within(dialog()).getByRole('tab', { selected: true }).textContent).toMatch(/^IT4IT/)
     // A library of roles alone: each its own card, ticked on its own, with what it answers for to fold out.
@@ -297,5 +297,12 @@ describe('what came in, on the Libraries tab', () => {
     fireEvent.click(within(manager).getByRole('checkbox', { name: 'Release manager' }))
     expect(within(pane()).getByLabelText('Release manager: called here')).toBeTruthy()
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('says under a role that uses yours what happens to its letters', async () => {
+    show()
+    await openLibrary('Scrum')
+    fireEvent.click(within(card('scrum-team')).getByRole('checkbox', { name: 'Scrum Team' }))
+    expect(within(pane()).getByTestId('letters-developer').textContent).toMatch(/^(Takes its letters on what is new|No letters come with it)/)
   })
 })

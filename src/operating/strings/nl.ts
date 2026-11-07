@@ -385,4 +385,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.openOnRoles': 'Openen onder Rollen',
   'operating.lettersCome': 'Krijgt de letters op wat nieuw is: {letters}.',
   'operating.lettersNone': 'Er komen geen letters mee.',
+  'operating.groupWord': 'Groep',
 }

@@ -392,6 +392,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   const units = useMemo(() => ({
     people: shell.people, today, day, makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path), writeIn,
     openHome: onGoHome,
+    ...(navigation.onOpenUnitResponsibilities ? { openResponsibilities: navigation.onOpenUnitResponsibilities } : {}),
   }), [shell.people, today, day, shell.makeId, tree.scopes, writeIn, onGoHome])
   /** A unit deleted here, with what it takes in other scopes, landed as one change (3.6.2): structure, so no manager's right. */
   const landStructure = useLandPeopleMoves({

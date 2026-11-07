@@ -385,4 +385,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.openOnRoles': 'Unter Rollen öffnen',
   'operating.lettersCome': 'Bekommt die Buchstaben auf dem, was neu ist: {letters}.',
   'operating.lettersNone': 'Es kommen keine Buchstaben mit.',
+  'operating.groupWord': 'Gruppe',
 }

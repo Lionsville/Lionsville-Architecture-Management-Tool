@@ -396,4 +396,5 @@ export const EN = {
   'operating.openOnRoles': 'Open it under Roles',
   'operating.lettersCome': 'Takes its letters on what is new: {letters}.',
   'operating.lettersNone': 'No letters come with it.',
+  'operating.groupWord': 'Group',
 } as const

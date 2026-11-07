@@ -236,8 +236,8 @@ export function bringIn(ask: BringIn): Command | undefined {
   const { lists, library, language, makeId } = ask
   const reached = entriesReached(lists, library, ask.entries, ask)
   const entries = reached.filter((one) => one.fate.as === 'made')
-  const matches = matchesOf(lists, library, language, reached)
-  if (entries.length === 0 && matches.length === 0) return undefined
+  const firstMatches = matchesOf(lists, library, language, reached, new Map())
+  if (entries.length === 0 && firstMatches.length === 0) return undefined
   const ids = new Map<string, string>()
   const prefix = { unitType: 'ut', role: 'ro', responsibility: 'rs' } as const
   // Several ids of one kind in one step: an id the step or the model already
@@ -269,7 +269,7 @@ export function bringIn(ask: BringIn): Command | undefined {
     if (ids.has(item.entry)) commands.push({ type: 'unitType.add', unitType: unitTypeFrom(item, made) })
   }
   // The matches last, so the step leads with what it made and the activity line says a bring-in.
-  return transaction([...commands, ...lettersOntoYours(lists, library, reached, made, ids), ...matches])
+  return transaction([...commands, ...matchesOf(lists, library, language, reached, lettersOntoYours(library, reached, made, ids))])
 }
 
 /**
@@ -278,7 +278,7 @@ export function bringIn(ask: BringIn): Command | undefined {
  * entry the item names already, made from it or matched to it before, is not
  * said twice, and an item with nothing new is not written.
  */
-function matchesOf(lists: OperatingLists, library: Library, language: LibraryLanguage, reached: readonly ReachedEntry[]): Command[] {
+function matchesOf(lists: OperatingLists, library: Library, language: LibraryLanguage, reached: readonly ReachedEntry[], letters: ReadonlyMap<string, readonly Duty[]>): Command[] {
   const added = new Map<string, { kind: 'unitType' | 'role'; held: Based; also: BasedOn[] }>()
   for (const one of reached) {
     if (one.fate.as !== 'reused' || one.kind === 'responsibility') continue
@@ -290,9 +290,11 @@ function matchesOf(lists: OperatingLists, library: Library, language: LibraryLan
     if (!standsFor(held, library.id, one.entry)) at.also.push({ library: library.id, entry: one.entry, version: library.version, language })
   }
   return [...added].flatMap(([id, { kind, held, also }]): Command[] => {
-    if (also.length === 0) return []
+    const duties = letters.get(id) ?? []
+    if (also.length === 0 && duties.length === 0) return []
     const patch = { alsoBasedOn: [...held.alsoBasedOn ?? [], ...also] }
-    return [kind === 'role' ? { type: 'role.update', id, patch } : { type: 'unitType.update', id, patch }]
+    if (kind !== 'role') return [{ type: 'unitType.update', id, patch }]
+    return [{ type: 'role.update', id, patch: { ...patch, ...(duties.length ? { duties: [...(held as Role).duties, ...duties] } : {}) } }]
   })
 }
 
@@ -301,7 +303,7 @@ function matchesOf(lists: OperatingLists, library: Library, language: LibraryLan
  * that role, for the responsibilities this step makes: each row then arrives
  * with its A. Only new rows, so nothing the organisation said is written over.
  */
-function lettersOntoYours(lists: OperatingLists, library: Library, reached: readonly ReachedEntry[], made: Made, ids: ReadonlyMap<string, string>): Command[] {
+function lettersOntoYours(library: Library, reached: readonly ReachedEntry[], made: Made, ids: ReadonlyMap<string, string>): Map<string, Duty[]> {
   const letters = new Map<string, Duty[]>()
   for (const one of reached) {
     if (one.fate.as !== 'reused' || one.kind !== 'role') continue
@@ -312,10 +314,7 @@ function lettersOntoYours(lists: OperatingLists, library: Library, reached: read
     })
     if (duties.length > 0) letters.set(one.fate.id, [...letters.get(one.fate.id) ?? [], ...duties])
   }
-  return [...letters].flatMap(([id, duties]): Command[] => {
-    const role = lists.roles.find((held) => held.id === id)
-    return role ? [{ type: 'role.update', id, patch: { duties: [...role.duties, ...duties] } }] : []
-  })
+  return letters
 }
 
 /** An id no item holds yet, kept as taken: the one given, or it with a number after it. */

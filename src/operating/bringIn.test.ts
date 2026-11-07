@@ -230,8 +230,14 @@ describe('reuse chosen before the step', () => {
     const lists = listsOf(model)
     expect(lists.roles.filter((one) => one.basedOn?.entry === 'product-owner')).toEqual([])
     expect(lists.unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')?.slots[0]).toEqual({ role: lead.id, min: 1, max: 1 })
-    // Left as it was but for the match: its own name, no basedOn, no duties brought for it.
-    expect(roleNamed(model, 'Product lead')).toStrictEqual({ ...lead, alsoBasedOn: [{ library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }] })
+    // Its own name, no basedOn: only the match, and the entry's letters on what this step made, so those rows arrive with their A.
+    const now = roleNamed(model, 'Product lead')
+    expect(now).toStrictEqual({ ...lead, duties: now.duties, alsoBasedOn: [{ library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }] })
+    expect(now.duties.slice(0, lead.duties.length)).toEqual(lead.duties)
+    const made = new Set(lists.responsibilities.filter((one) => one.basedOn?.library === 'scrum').map((one) => one.id))
+    const added = now.duties.slice(lead.duties.length)
+    expect(added.some((duty) => duty.raci === 'A')).toBe(true)
+    for (const duty of added) expect(made.has(duty.responsibility)).toBe(true)
   })
 
   it('does not bring the responsibilities only a reused role would have had', () => {
@@ -300,7 +306,7 @@ describe('what a reuse records', () => {
     const step = bringIn({ lists: listsOf(before), library: SCRUM, entries: ['scrum-team'], language: 'en', makeId: counter(), reuse: { 'scrum-master': coach.id, developer: coach.id } })!
     const commands = (step as Extract<Command, { type: 'transaction' }>).commands
     expect(commands.map((one) => one.type).slice(-2)).toEqual(['unitType.add', 'role.update'])
-    expect(commands.at(-1)).toEqual({ type: 'role.update', id: coach.id, patch: { alsoBasedOn: [
+    expect(commands.at(-1)).toMatchObject({ type: 'role.update', id: coach.id, patch: { alsoBasedOn: [
       { library: 'scrum', entry: 'scrum-master', version: '1', language: 'en' }, { library: 'scrum', entry: 'developer', version: '1', language: 'en' },
     ] } })
     // The step leads with what it made, and says so.

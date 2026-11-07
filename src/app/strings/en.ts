@@ -1083,6 +1083,7 @@ export const EN = {
 
 
   // --- a unit, in its inspector (ADR-0036 §3, §4) ------------------------------
+  'unit.responsibilitiesLink': 'What its roles answer for',
   'unit.title': 'Unit',
   'unit.type': 'Unit type',
   'unit.notAUnit': 'Not a unit',
