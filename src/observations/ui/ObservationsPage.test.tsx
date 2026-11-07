@@ -485,8 +485,10 @@ describe('merging, moving, and a cause’s root step', () => {
       open onClose={() => {}} model={{ ...model, observations: next.observations, causes: next.causes }} groupName="Acme"
       onChange={onChange} s={translator('en')} language="en" makeId={(p) => p} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
     />)
-    await waitFor(() => expect(screen.queryAllByRole('dialog', { name: 'Merge observations' })).toHaveLength(0))
+    // Hidden too: a dialog on its way out still hides the page from role queries.
+    await waitFor(() => expect(screen.queryAllByRole('dialog', { name: 'Merge observations', hidden: true })).toHaveLength(0))
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(screen.queryByTestId('observation-reader')).toBeNull())
     expect(screen.queryByTestId('observation-row-o2')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /^Filter/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Show merged' }))
