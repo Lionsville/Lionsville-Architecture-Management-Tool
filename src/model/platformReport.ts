@@ -80,6 +80,15 @@ export type PlatformDescription = {
 
 export type PlatformDescribe = (id: ElementId) => PlatformDescription | undefined
 
+/**
+ * The application a container belongs to. One kept in another scope is told by
+ * the index, parent and all: without it the report counted each such container
+ * as an application of its own.
+ */
+function containerOf(kind: DesignElement['kind'] | undefined, held: DesignElement | undefined, told: PlatformDescription | undefined): ElementId | undefined {
+  return kind === 'component' ? held?.parentId ?? told?.parentId : undefined
+}
+
 /** One end of a row: what the report can say about the thing it names. */
 export type PlatformEnd = {
   id: ElementId
@@ -187,9 +196,7 @@ export function platformReport(
     // master's — which is what `describe` answers.
     const name = told?.name ?? held?.name ?? id
     const kind = held?.kind ?? told?.kind
-    // A container kept in another scope is told by the index, parent and all:
-    // without it the report counted each container as an application of its own.
-    const parentId = kind === 'component' ? held?.parentId ?? told?.parentId : undefined
+    const parentId = containerOf(kind, held, told)
     const parent = parentId === undefined ? undefined : byId.get(parentId)
     const place = on === undefined || on === platformId ? undefined : byId.get(on)
     return {
