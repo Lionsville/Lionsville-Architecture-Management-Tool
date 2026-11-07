@@ -31,6 +31,7 @@ import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
+import { handOver } from './handOver'
 import type { StringKey } from '../i18n'
 
 /**
@@ -445,12 +446,15 @@ function technologyWrites(parts: WorkspaceParts, view: PageView) {
   }
 }
 
-/** Keep the picture where a person says; a failure is said, and goes on the trail. */
+/** Keep the picture where a person says, and say so once it is kept; a failure is said, and goes on the trail. */
 function saveLandscapePicture(parts: WorkspaceParts, name: string, png: Uint8Array) {
   const { files: { documents }, shell: { notify, s }, host: { diagnostics } } = parts.props
-  Promise.resolve().then(() => documents.save({ name, mediaType: 'image/png', bytes: png })).catch((cause: unknown) => {
-    diagnostics.report({ level: 'error', where: 'landscapeExport', message: 'shell.saveFileFailed', cause })
-    notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
+  void handOver(() => documents.save({ name, mediaType: 'image/png', bytes: png }), {
+    saved: () => notify(s('shell.savedPicture'), 'success'),
+    failed: (cause) => {
+      diagnostics.report({ level: 'error', where: 'landscapeExport', message: 'shell.saveFileFailed', cause })
+      notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
+    },
   })
 }
 

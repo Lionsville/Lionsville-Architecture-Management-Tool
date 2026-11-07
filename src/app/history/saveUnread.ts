@@ -13,6 +13,7 @@ import { slug } from '../../model/keys'
 import { reasonOf } from '../../platform/errors'
 import type { SavedDocument } from '../../ports/DocumentGateway'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
+import { handOver } from '../handOver'
 import type { Notify } from '../useToasts'
 
 /** The file's name: the scope's, the entry's day, what it holds, and the ending the history gave it. */
@@ -31,11 +32,14 @@ export function useSaveUnread(deps: {
   const { history, keep, scopeName, notify, s } = deps
   const save = useCallback((entry: HistoryEntry) => {
     if (!history?.unreadAt) return
+    const failedWith = (cause: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error')
     void history.unreadAt(entry.scope, entry.id).then(async (kept) => {
       if (kept === undefined) { notify(s('history.gone'), 'warning'); return }
-      await keep({ name: unreadFileName(scopeName(), entry.at, kept.extension), mediaType: kept.mediaType, text: kept.text })
-      notify(s('history.savedUnread'), 'success')
-    }).catch((cause: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error'))
+      await handOver(() => keep({ name: unreadFileName(scopeName(), entry.at, kept.extension), mediaType: kept.mediaType, text: kept.text }), {
+        saved: () => notify(s('history.savedUnread'), 'success'),
+        failed: failedWith,
+      })
+    }).catch(failedWith)
   }, [history, keep, scopeName, notify, s])
   return history?.unreadAt ? save : undefined
 }

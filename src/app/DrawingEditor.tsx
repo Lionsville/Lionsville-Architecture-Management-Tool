@@ -66,6 +66,7 @@ import {
   newerDrawing, pointMessage, printMessage, replyTo, savedDrawing, savedStatus, savedXml, svgBytes, unsavedStatus,
   type DrawingLook, type DrawingMode, type FrameEvent, type PaletteElement,
 } from './drawingProtocol'
+import { handOver as handOverFile } from './handOver'
 import { printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
@@ -415,16 +416,13 @@ function handOver(heard: FrameEvent, props: Props): void {
     notify(s('shell.drawingExportFailed'), 'error')
     return
   }
-  // Inside the chain: a gateway that throws rather than rejects is a failure like any other.
-  Promise.resolve().then(() => documents.save(file)).then(
-    (answer) => {
-      if (answer !== 'cancelled') notify(s('shell.drawingExported', { name: file.name }), 'success')
-    },
-    (cause: unknown) => {
+  void handOverFile(() => documents.save(file), {
+    saved: () => notify(s('shell.drawingExported', { name: file.name }), 'success'),
+    failed: (cause) => {
       diagnostics.report({ level: 'error', where: 'drawingExport', message: 'shell.saveFileFailed', cause })
       notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error')
     },
-  )
+  })
 }
 
 /** The page in the editor on paper; what could not be printed is said, and a dialog closed is not that. */

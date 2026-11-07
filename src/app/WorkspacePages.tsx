@@ -6,6 +6,7 @@
  * decisions and the observations, the roadmap and a plan on it, and a
  * platform's report and a service's.
  */
+import { handOver } from './handOver'
 import { createElement, useMemo } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import { shownAsOf } from '../editor'
@@ -200,7 +201,10 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
         if (command && exception.scope !== undefined) void landMoves(new Map([[exception.scope, [command]]]))
       }}
       onSave={(name, text) => {
-        void props.files.documents.save({ name, mediaType: 'text/csv', text }).catch((cause: unknown) => props.shell.notify(props.shell.s('shell.saveFileFailed', { message: String(cause) }), 'error'))
+        void handOver(() => props.files.documents.save({ name, mediaType: 'text/csv', text }), {
+          saved: () => props.shell.notify(props.shell.s('shell.drawingExported', { name }), 'success'),
+          failed: (cause) => props.shell.notify(props.shell.s('shell.saveFileFailed', { message: String(cause) }), 'error'),
+        })
       }}
       renderMarkdown={(text) => pictures.renderDocument(text)}
     />

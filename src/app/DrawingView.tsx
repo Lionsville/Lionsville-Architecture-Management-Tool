@@ -45,6 +45,7 @@ import { DrawingLinksPanel, ElementReader, linkFacts } from './DrawingPanels'
 import type { LinkFact, ReadElement } from './DrawingPanels'
 import { DRAWING_DARK_COLOUR, drawingSkin } from './drawingSkin'
 import type { DrawingLook } from './drawingProtocol'
+import { handOver } from './handOver'
 import { pictureFile } from './drawingExport'
 import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
@@ -152,16 +153,18 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
   }
   const saveAs = async (format: 'svg' | 'png') => {
     if (!address || !images || !scope || !documents) return
-    try {
-      const held = await images.bytesAt(scope, address)
-      if (!held) throw new Error('gone')
-      const file = await pictureFile(diagram.name, held.bytes, format, frame)
-      const answer = await documents.save(file)
-      if (answer !== 'cancelled') notify?.(s('shell.drawingExported', { name: file.name }), 'success')
-    } catch {
+    const failed = () => {
       props.diagnostics?.report({ level: 'error', where: 'drawingExport', message: 'drawing.exportFailed' })
       notify?.(s('drawing.exportFailed'), 'error')
     }
+    let name = ''
+    await handOver(async () => {
+      const held = await images.bytesAt(scope, address)
+      if (!held) throw new Error('gone')
+      const file = await pictureFile(diagram.name, held.bytes, format, frame)
+      name = file.name
+      return documents.save(file)
+    }, { saved: () => notify?.(s('shell.drawingExported', { name }), 'success'), failed })
   }
   const element = reading ? elements.find((one) => one.id === reading) : undefined
   return (

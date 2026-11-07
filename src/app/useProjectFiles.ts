@@ -31,6 +31,7 @@ import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
 import type { CarryChoice } from './workingFileFlows'
 import type { AdoptScopes, ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
+import { handOver } from './handOver'
 import { putBackSaid } from './history/useProjectHistory'
 
 /**
@@ -154,24 +155,15 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     beforeReplace, onPutBack, onNothingToDraw, onCopySaved, below, notify, s,
   } = deps
 
-  /**
-   * Hand a document over, and say what happened — after it happened.
-   *
-   * Both of these used to fire the gateway and toast success in the next
-   * statement, without waiting. A refused save (no permission, a full disk, a
-   * cancelled picker) then showed "saved" and the user had every reason to
-   * believe it. The promise decides now, and both branches say so.
-   */
-  const handOver = useCallback((doc: SavedDocument, success: string, warning?: string, onSaved?: () => void) => (
-    documents.save(doc).then(
-      (answer) => {
-        // A save dialog the person closed is no save, and says nothing.
-        if (answer === 'cancelled') return
+  /** Hand a document over, and say what happened: the one rule is `handOver`'s. */
+  const handOverFile = useCallback((doc: SavedDocument, success: string, warning?: string, onSaved?: () => void) => (
+    handOver(() => documents.save(doc), {
+      saved: () => {
         onSaved?.()
         notify(warning ?? success, warning ? 'warning' : 'success')
       },
-      (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
-    )
+      failed: (err) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
+    })
   ), [documents, notify, s])
 
   /**
@@ -198,11 +190,11 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    */
   const saveWorkingFile = useCallback(() => (
     sealedWorkingFile((choice) => carryOut([session.snapshot()], choice), askPassword).then(
-      (sealed) => (sealed ? handOver(sealed.doc, s('shell.savedWorkingFile', { name: sealed.doc.name }), savedWithout(sealed.carried.without, s), onCopySaved) : undefined),
+      (sealed) => (sealed ? handOverFile(sealed.doc, s('shell.savedWorkingFile', { name: sealed.doc.name }), savedWithout(sealed.carried.without, s), onCopySaved) : undefined),
     ).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
-  ), [session, carryOut, askPassword, handOver, onCopySaved, notify, s])
+  ), [session, carryOut, askPassword, handOverFile, onCopySaved, notify, s])
 
   /**
    * Open a chosen file into the project you are in.
@@ -327,8 +319,8 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   }, [session])
 
   const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }) => {
-    void handOver(doc, s('shell.savedPicture'))
-  }, [handOver, s])
+    void handOverFile(doc, s('shell.savedPicture'))
+  }, [handOverFile, s])
 
   const printPage = useCallback(async (doc: { name: string; widthMm: number; heightMm: number }) => {
     if (!documents.print) {
