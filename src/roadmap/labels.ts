@@ -41,3 +41,9 @@ export const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
   planOverdue: 'check.planOverdue',
   impliedInterface: 'check.impliedInterface',
 }
+
+/** The two sentences that count, where the count is one: *1 container interfaces* is not English, nor its twins. */
+export const CHECK_SENTENCE_ONE: Partial<Record<Finding['kind'], StringKey>> = {
+  retiresWithDependants: 'check.retiresWithDependantsOne',
+  impliedInterface: 'check.impliedInterfaceOne',
+}

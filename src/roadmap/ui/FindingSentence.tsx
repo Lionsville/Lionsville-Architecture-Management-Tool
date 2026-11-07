@@ -17,11 +17,12 @@ import { formatDay } from '../../i18n/dates'
 import { RELATION_LABEL } from '../../model'
 import type { Finding } from '../../model/checks'
 import type { Language, Translate } from '../../i18n'
-import { CHECK_SENTENCE } from '../labels'
+import { CHECK_SENTENCE, CHECK_SENTENCE_ONE } from '../labels'
 
 /** A finding's sentence, filled in: what a link here says, and an instance in the roadmap's list of findings. */
 export function findingWords(problem: Finding, t: Translate, language?: Language): string {
-  return t(CHECK_SENTENCE[problem.kind], {
+  const key = (problem.count === 1 ? CHECK_SENTENCE_ONE[problem.kind] : undefined) ?? CHECK_SENTENCE[problem.kind]
+  return t(key, {
     name: problem.name,
     // A day in a sentence written for people reads as a person would write it.
     detail: language && isDay(problem.detail) ? formatDay(problem.detail, language) : problem.detail ?? '',
