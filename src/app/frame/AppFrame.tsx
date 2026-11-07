@@ -256,7 +256,9 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     if (hasAgentsPage) rows.push({ id: 'place:agents', group: s('frame.places'), label: s('frame.agents'), run: () => go({ scope: ROOT_SCOPE, page: 'agents' }) })
     const mac = isMac()
     commandsTable(JSON.parse(canKey), mac ? 'darwin' : 'other').forEach((row: CommandRow) => {
-      rows.push({ id: row.id, group: s('frame.commands'), label: s(row.label), ...(row.keys ? { keys: keyCap(row.keys, mac) } : {}), run: () => send(row.command) })
+      // Light, Dark and System are a menu's radio under Theme; on a line of their own they need the word, and a person types it.
+      const label = row.command.type === 'theme' ? `${s('prefs.theme')}: ${s(row.label)}` : s(row.label)
+      rows.push({ id: row.id, group: s('frame.commands'), label, ...(row.keys ? { keys: keyCap(row.keys, mac) } : {}), run: () => send(row.command) })
     })
     return (asked: string) => (asked.trim() === '' ? rows : rows.filter((row) => matchesQuery(asked, [row.label])))
   }, [s, at, go, send, canKey, hasAgentsPage])
