@@ -319,16 +319,6 @@ export function useOrganisation({
   }, [s])
   const setNewBoardName = useCallback((name: string) => setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held)), [])
 
-  /** A scope made, entered, and said: the tree read again, and the index with it. */
-  const entered = useCallback(async (path: ScopePath, message: string) => {
-    const made = await readScope(scopes, path)
-    if (!made) return
-    onEnter(made)
-    refresh()
-    onTreeChanged?.()
-    notify(message, 'success')
-  }, [scopes, onEnter, refresh, onTreeChanged, notify])
-
   /**
    * Create a scope under another one.
    *

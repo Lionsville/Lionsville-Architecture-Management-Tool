@@ -65,7 +65,6 @@ import type { SettingsOf, SettingsRepository } from '../ports/SettingsRepository
 import { copyCountsOf, addCounts, differencesBetween, EMPTY_COUNTS } from './copyCounts'
 import type { CopyCounts } from './copyCounts'
 import { isScopeMoved } from './revision'
-import type { ScopeSnapshot } from './scope'
 import {
   blank, carriedOf, contentOf, drawingBytesOf, drawingPicturesOf, landAt, landed, nodesOf, picturesOf, snapshotOf,
 } from './scopeAccess'

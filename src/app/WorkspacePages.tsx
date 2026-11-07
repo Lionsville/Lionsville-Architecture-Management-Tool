@@ -19,7 +19,6 @@ import { scopeDisplayName } from '../projects/scopeLabel'
 import type { PlanPage as PlanPageShape } from '../roadmap/ui/PlanPage'
 import type { ReplaceDialog as ReplaceDialogShape } from '../roadmap/ui/ReplaceDialog'
 import type { RoadmapPage as RoadmapPageShape } from '../roadmap/ui/RoadmapPage'
-import { Crumbs } from './ShellToolbar'
 import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
@@ -236,7 +235,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
   const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow, changeAcross } = parts
   const { s, language, makeId } = props.shell
   const { groupName, ancestorDecisions, scopes } = props.tree
-  const { onOpenScope, crumbs, onGoHome, onShareLink } = props.navigation
+  const { onOpenScope, crumbs, onShareLink } = props.navigation
   const { plans } = pages
   const scope = props.project.path
   // Each scope above by its name in the tree, never its path — and the same

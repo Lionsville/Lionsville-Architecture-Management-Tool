@@ -12,7 +12,7 @@
  * controls are not on the bar for either.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';

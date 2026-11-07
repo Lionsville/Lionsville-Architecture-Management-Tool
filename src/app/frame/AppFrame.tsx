@@ -615,7 +615,7 @@ function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | 
   const visit = useVisitBand(parts)
   const source = parts.props.provider?.frame?.bands?.(parts.agent.openSomewhere) ?? NO_BANDS
   const sourceKey = source.map((band) => band.id).join()
-  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(visit ? [visit] : []), ...source, ...(facts?.bands ?? [])], [agent, visit, sourceKey, facts?.bands]) // eslint-disable-line react-hooks/exhaustive-deps -- a band's identity is its id: the source answers afresh on every draw
+  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(visit ? [visit] : []), ...source, ...(facts?.bands ?? [])], [agent, visit, sourceKey, facts?.bands])
   const { frame } = parts
   const walk = useFrameState(frame).finding
   if (walk) return <FindingBandStack walk={walk} frame={frame} parts={parts} others={bands} />

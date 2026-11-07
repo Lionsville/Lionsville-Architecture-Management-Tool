@@ -456,21 +456,20 @@ export function OrganisationScreen({
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
         onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome} ready={ready}
       />
-      <HomeDialogs organisation={organisation} at={at} tree={orderedTree} unitTypes={unitTypes} servedBy={servedBy} scopeName={scopeName} sourceSayings={sourceSayings} s={s} />
+      <HomeDialogs organisation={organisation} at={at} tree={orderedTree} unitTypes={unitTypes} servedBy={servedBy} sourceSayings={sourceSayings} s={s} />
     </Box>
     </HomeRecords>
   )
 }
 
 /** The questions a home asks, each up while the organisation's dialog says so. */
-function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, scopeName, sourceSayings, s }: {
+function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, sourceSayings, s }: {
   organisation: Organisation
   at: ScopePath
   /** The whole tree in the frame tree's order, for the *filed under* selects. */
   tree: ScopeSummary
   unitTypes: readonly { id: string; name: string }[]
   servedBy: ServedByAccess | undefined
-  scopeName: (path: ScopePath) => string
   sourceSayings: SourceSayings
   s: Translate
 }) {

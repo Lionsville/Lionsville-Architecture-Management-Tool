@@ -10,7 +10,6 @@ import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
-import { PANEL_LIMITS } from './panels';
 import type { DesignModel } from '../model/types';
 import type { EditorPreferences } from './preferences';
 

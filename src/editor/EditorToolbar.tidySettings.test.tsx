@@ -3,7 +3,6 @@
 
 // @vitest-environment jsdom
 import { useState } from 'react';
-import { pressTidy } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -76,8 +75,6 @@ function Harness(props: {
     </ThemeProvider>
   );
 }
-
-const openSettings = () => fireEvent.click(screen.getByLabelText('Tidy settings'));
 
 describe('EditorToolbar — Arrange', () => {
   const openArrange = () => fireEvent.click(screen.getByRole('button', { name: 'Arrange' }));

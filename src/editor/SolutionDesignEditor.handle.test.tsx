@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { pressRoute, pressTidy } from './testing/boardBar';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { testTheme } from './testing/theme';
 import { laidOut } from '../model/testFixtures';
