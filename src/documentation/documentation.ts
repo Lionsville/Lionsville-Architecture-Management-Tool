@@ -331,7 +331,10 @@ function laidOutKinds(kind: DesignDiagram['kind']): readonly ElementKind[] | und
  */
 export function documentedElements(model: DesignModel, diagram: DesignDiagram | undefined): DocumentedGroup[] {
   const kinds = diagram ? laidOutKinds(diagram.kind) : undefined;
-  const placed = diagram && !kinds ? new Set(placedNodes(diagram).map((p) => p.id)) : undefined;
+  // A drawing places nothing on a board; its neighbours are what its shapes point at.
+  const placed = diagram && !kinds
+    ? new Set(diagram.drawing ? diagram.drawing.links.map((link) => link.elementId) : placedNodes(diagram).map((p) => p.id))
+    : undefined;
   const byKind = new Map<ElementKind, DesignElement[]>();
   for (const element of model.elements) {
     if (!keptOn(element, diagram, kinds, placed)) continue;

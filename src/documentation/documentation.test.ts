@@ -118,6 +118,15 @@ describe('documentedElements', () => {
     expect(documentedElements(model, board)).toEqual([{ kind: 'application', elements: [element('crm', 'application')] }]);
   });
 
+  it('lists what a drawing points at, since a drawing places nothing on a board', () => {
+    const area = { x: 0, y: 0, width: 1, height: 1 };
+    const drawing = {
+      id: 'd', kind: 'drawing' as const, name: 'd', members: [], geometry: { nodes: [] },
+      drawing: { xml: '<x/>', links: [{ shapeId: '2', elementId: 'erp', area }, { shapeId: '3', elementId: 'gone', area }] },
+    };
+    expect(documentedElements(model, drawing)).toEqual([{ kind: 'application', elements: [element('erp', 'application')] }]);
+  });
+
   it('lists the trees a sheet draws, because a sheet places nothing', () => {
     const sheet = { id: 's', kind: 'sheet' as const, name: 's', members: [], geometry: { nodes: [] } };
     expect(documentedElements(model, sheet).map((group) => group.kind)).toEqual(['actor', 'function', 'step']);
