@@ -153,6 +153,14 @@ describe('rows from the rest of the tree', () => {
       .toEqual({ id: 'crm', name: 'CRM', kind: 'application', known: true, where: 'sales' })
   })
 
+  it('names a container another scope keeps beside its application, as the index tells it', () => {
+    const elsewhere: Relation[] = [row('x3', 'hostedOn', 'crm-api', 'cluster')]
+    const describe = (id: string) => (id === 'crm-api' ? { name: 'CRM API', kind: 'component' as const, parentId: 'crm', where: 'sales' }
+      : id === 'crm' ? { name: 'CRM', kind: 'application' as const, where: 'sales' } : undefined)
+    const cluster = platformReport({ elements, relations }, 'cluster', { elsewhere, describe })!
+    expect(cluster.hosted.find((e) => e.id === 'crm-api')?.application).toEqual({ id: 'crm', name: 'CRM' })
+  })
+
   it('keeps a dangling end as an end, said by its id and marked unknown', () => {
     const report = platformReport({ elements, relations: [row('d1', 'hostedOn', 'ghost', 'cluster')] }, 'cluster')!
     expect(report.hosted[0]).toEqual({ id: 'ghost', name: 'ghost', known: false })

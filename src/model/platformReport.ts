@@ -187,7 +187,9 @@ export function platformReport(
     // master's — which is what `describe` answers.
     const name = told?.name ?? held?.name ?? id
     const kind = held?.kind ?? told?.kind
-    const parentId = held?.kind === 'component' ? held.parentId : undefined
+    // A container kept in another scope is told by the index, parent and all:
+    // without it the report counted each container as an application of its own.
+    const parentId = kind === 'component' ? held?.parentId ?? told?.parentId : undefined
     const parent = parentId === undefined ? undefined : byId.get(parentId)
     const place = on === undefined || on === platformId ? undefined : byId.get(on)
     return {
