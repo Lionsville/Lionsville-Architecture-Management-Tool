@@ -1301,9 +1301,12 @@ today and may not be in the future; the impact starts at minor. On the right
 the description asks its three questions a field each — **what we saw**,
 **evidence** and **who or what it affected** — and the last is required too:
 an observation always says whom or what it touched. Recorded, the three are
-one markdown description under those headings, and an observation's
-description is edited as one text from then on. **Preview** shows it as it
-will read, and **Edit** goes back to the fields. Every field has an example
+one markdown description under those headings. **Preview** shows it as it
+will read, and **Edit** goes back to the fields. **Edit** on a recorded
+observation opens it in the whole window as the document it is: the title, each
+heading with its text under it, one toolbar over them all, and its facts beside
+it. There **Preview** shows that document as it will read, in the same place, and
+on a wide window **Side by side** shows both, as it opens on the widest. Every field has an example
 under it, and a field left empty says what is missing in its place, and the
 count beside the button. Every dialog on the page keeps what is written in
 it: a click beside it does not close it, Escape does not once something is

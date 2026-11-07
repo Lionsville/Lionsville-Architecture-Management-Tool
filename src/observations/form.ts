@@ -82,27 +82,29 @@ export function observationBody(sections: ObservationSections, t: Translate): st
 }
 
 /**
- * A body as the three answers, where that is what it holds: the template's three
- * headings in this language and nothing else, so saving them back loses nothing.
- * A record with other headings or none has no three parts, and answers `undefined`
- * so that it is written as one text; it is saved in the same text either way, and
- * nothing is ever converted.
+ * A body as the three answers, where that is what it holds: the template's headings
+ * in this language, in its order, and nothing else, so saving them back loses
+ * nothing. A heading left out is a part not answered yet, and a blank body has
+ * answered none. A record with other headings, or text with none, answers `undefined`
+ * so that it is written as one text; it is saved in the same text either way, opening
+ * rewrites nothing, and only an edit adds the headings left out.
  */
 export function observationSections(body: string, t: Translate): ObservationSections | undefined {
   const names = { [t('observation.tplSaw')]: 'saw', [t('observation.tplEvidence')]: 'evidence', [t('observation.tplAffected')]: 'affected' } as const
   const sections: ObservationSections = { saw: '', evidence: '', affected: '' }
-  const seen = new Set<string>()
+  const seen = new Set<keyof ObservationSections>()
+  const order: readonly (keyof ObservationSections)[] = ['saw', 'evidence', 'affected']
   let at: keyof ObservationSections | undefined
   for (const line of body.split('\n')) {
     const heading = /^#{1,6}\s+(.*?)\s*$/.exec(line)
     if (heading) {
       at = names[heading[1]]
-      if (!at || seen.has(at)) return undefined
+      if (!at || seen.has(at) || order.slice(order.indexOf(at) + 1).some((later) => seen.has(later))) return undefined
       seen.add(at)
     } else if (at) sections[at] += `${line}\n`
     else if (line.trim()) return undefined
   }
-  if (seen.size !== 3) return undefined
+  if (seen.size === 0 && body.trim()) return undefined
   return { saw: sections.saw.trim(), evidence: sections.evidence.trim(), affected: sections.affected.trim() }
 }
 

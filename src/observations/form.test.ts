@@ -115,9 +115,16 @@ describe('a body as its three parts', () => {
     expect(observationSections(observationTemplate(t), t)).toEqual({ saw: '', evidence: '', affected: '' })
   })
 
-  it('has no three parts where the text holds anything else: it is written as one, and never rewritten', () => {
+  it('reads a part left out as not answered yet, so a body with some of the headings is written in parts too', () => {
+    expect(observationSections('## What we saw\n\nA', t)).toEqual({ saw: 'A', evidence: '', affected: '' })
+    expect(observationSections('## What we saw\n\nA\n\n## Who or what it affected\n\nC', t)).toEqual({ saw: 'A', evidence: '', affected: 'C' })
+    expect(observationSections('', t)).toEqual({ saw: '', evidence: '', affected: '' })
+  })
+
+  it('has no parts where the text holds anything else: it is written as one, and never rewritten', () => {
     expect(observationSections('Plain text', t)).toBeUndefined()
-    expect(observationSections('## What we saw\n\nA', t)).toBeUndefined()
+    expect(observationSections('## Evidence\n\nB\n\n## What we saw\n\nA', t)).toBeUndefined()
+    expect(observationSections('## What we saw\n\nA\n\n## What we saw\n\nB', t)).toBeUndefined()
     expect(observationSections(`${observationTemplate(t)}\n## Notes\n\nB`, t)).toBeUndefined()
     expect(observationSections(`Intro\n\n${observationTemplate(t)}`, t)).toBeUndefined()
   })

@@ -1465,9 +1465,13 @@ Zukunft liegen; die Auswirkung beginnt mit gering. Rechts stellt die
 Beschreibung ihre drei Fragen, ein Feld je Frage — **was wir gesehen haben**,
 **Belege** und **wen oder was es betraf** —, und die letzte ist ebenfalls
 Pflicht: Eine Beobachtung sagt immer, wen oder was sie betraf. Festgehalten
-sind die drei ein Markdown-Text unter diesen Überschriften, und danach wird
-die Beschreibung einer Beobachtung als ein Text bearbeitet. **Vorschau** zeigt
+sind die drei ein Markdown-Text unter diesen Überschriften. **Vorschau** zeigt
 sie so, wie sie gelesen wird, und **Bearbeiten** geht zurück zu den Feldern.
+**Bearbeiten** auf einer festgehaltenen Beobachtung öffnet sie im ganzen Fenster
+als das Dokument, das sie ist: der Titel, jede Überschrift mit ihrem Text darunter,
+eine Werkzeugleiste über allem und die Fakten daneben. **Vorschau** zeigt dort
+dieses Dokument so, wie es gelesen wird, an derselben Stelle, und auf einem breiten
+Fenster zeigt **Nebeneinander** beides, wie es auf dem breitesten öffnet.
 Unter jedem Feld steht ein Beispiel, und ein leer gelassenes Feld sagt an
 dieser Stelle, was fehlt, und neben der Schaltfläche, wie viele. Jeder Dialog
 auf der Seite behält, was in ihm steht: Ein Klick daneben schließt ihn nicht,

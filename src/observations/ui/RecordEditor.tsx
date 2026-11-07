@@ -3,28 +3,42 @@
 
 /**
  * A record edited with nothing else on screen (the owner's comment on the designs,
- * 7 November 2026): the kit's full window, Write and Preview in its bar, and one
- * save that is one step for Undo. Cancel asks first where anything changed.
+ * 7 November 2026): the kit's full window, and one save that is one step for Undo.
+ * Cancel asks first where anything changed.
+ *
+ * It is written as the document it will be read as. The title and the parts of its
+ * text stand in one flow, each as tall as what it holds, under one bar of the one
+ * editor (`MarkdownFlow`), and the page has one scroll. *Preview* is that document
+ * as its reader draws it, through the same words and the same measures in the same
+ * column, so going to it moves nothing; where the window has the room it can stand
+ * beside the writing, and opens so on a wide one, as a document did before 4.0.
  *
  * The three parts of an observation's description are written apart, each with its
  * own hint, and saved in the same text as ever, so nothing needs converting; a
- * record with other headings or none gets one Description field. Everything a
+ * record with other headings, or text with none, is written as one text. Everything a
  * reader edited in its pane is here, with the same refusals: the four facts of an
  * observation are never blanked, a title never, and the day is never after today.
  */
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import type { Translate } from '../../i18n'
+import { useStrings } from '../../i18n/LanguageContext'
+import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
-import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
+import { wordCount } from '../../documentation/markdownEditing'
+import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
+import { FlowPlainPart, MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
+import { MarkdownFlow, MarkdownFlowBar } from '../../documentation/ui/MarkdownFlow'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { isBlankRef } from '../../model/person'
 import type { PersonRef } from '../../model/person'
-import { SelectField, TextField } from '../../widgets/kit/Field'
+import { SelectField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import type { FocusedWindowChrome } from '../../widgets/kit/FocusedWindow'
+import { PreviewFact } from '../../widgets/kit/Preview'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { observationBody, observationProblems, observationSections } from '../form'
 import type { ObservationSections } from '../form'
@@ -36,6 +50,7 @@ import { IMPACT_LABEL, SIZE_LABEL, TONE_WORD } from '../observationScope'
 import { experimentTemplate, formatExperimentNumber, formatSolutionNumber, SOLUTION_SIZES, solutionTemplate } from '../solution'
 import type { Experiment, Solution, SolutionSize } from '../solution'
 import { exampleFor, problemText } from './ObservationForm'
+import { observationFacts, renderedBody } from './Readers'
 
 export type RecordEditing =
   | { kind: 'observation'; record: Observation; onSave: (patch: ObservationPatch) => void }
@@ -55,7 +70,18 @@ export type RecordEditorProps = {
   s: Translate
 }
 
-type View = 'write' | 'preview'
+type View = 'write' | 'side' | 'preview'
+
+/** From where a document and its reading fit beside each other and the facts, and from where that is how it opens. */
+const ROOM_BESIDE = '(min-width: 1280px)'
+const OPENS_BESIDE = '(min-width: 1600px)'
+
+/** An experiment's fields that its reader draws as they stand, so they are plain words here too. */
+const PLAIN_PARTS = [
+  { key: 'hypothesis', label: 'solution.hypothesis' },
+  { key: 'measure', label: 'solution.measure' },
+  { key: 'result', label: 'solution.result' },
+] as const
 
 /** Every field of a record while it is written, as text. */
 type Draft = Record<string, string> & { title: string; body: string }
@@ -101,17 +127,21 @@ export function RecordEditor(props: RecordEditorProps) {
 }
 
 function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onAddImage, images, s }: RecordEditorProps & { editing: RecordEditing }) {
-  const [view, setView] = useState<View>('write')
+  // Side by side is what the desktop's documents open on where there is room. It writes one document and reads the other in the same scroll.
+  const roomBeside = useMediaQuery(ROOM_BESIDE, { noSsr: true })
+  const opensBeside = useMediaQuery(OPENS_BESIDE, { noSsr: true })
+  const [view, setView] = useState<View>(opensBeside ? 'side' : 'write')
+  const shownView: View = view === 'side' && !roomBeside ? 'write' : view
   const [draft, setDraft] = useState<Draft>(() => draftOf(editing))
   const [by, setBy] = useState<PersonRef | undefined>(() => (editing.kind === 'observation' || editing.kind === 'experiment' ? editing.record.by : undefined))
   // Three parts where that is what the text holds; one field otherwise, so a record is never rewritten by being opened.
   const [sections, setSections] = useState<ObservationSections | undefined>(() => (editing.kind === 'observation' ? observationSections(editing.record.body, s) : undefined))
-  const names = usePersonNames()
   const set = (field: string, value: string) => setDraft((held) => ({ ...held, [field]: value }))
   const body = sections ? observationBody(sections, s) : draft.body
   // Opened on the template's text, with nothing typed, is unchanged.
   const startBody = useMemo(() => (sections ? observationBody(observationSections(editing.record.body, s) as ObservationSections, s) : editing.record.body), [editing.record.body, s])
   const start = useMemo(() => draftOf(editing), [editing])
+  const words = sections ? Object.values(sections).reduce((sum, one) => sum + wordCount(one), 0) : wordCount(draft.body)
 
   const problems = editing.kind === 'observation'
     ? observationProblems({ title: draft.title, where: draft.where, by: by ?? '', date: draft.date }, today)
@@ -136,18 +166,18 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
   // Said at the field as soon as it is so, as well as by the save button, which a press then does nothing on.
   const shown = (key: 'title' | 'where' | 'by' | 'date') => problemText(key, problems[key], s)
 
-  const mdField = (label: string, value: string, onChange: (next: string) => void, more: { hint?: string; template?: { label: string; text: string }; rows?: number; autoFocus?: boolean } = {}) => (
+  const part = (label: string, value: string, onChange: (next: string) => void, more: { hint?: string; template?: { label: string; text: string }; whole?: boolean } = {}) => (
     <MarkdownEditor
-      label={label} value={value} onChange={onChange} minRows={more.rows ?? 4}
+      variant="flow" label={label} value={value} onChange={onChange} minRows={more.whole ? 8 : 2} labelHidden={more.whole === true}
       {...(more.hint ? { helper: more.hint } : {})} {...(more.template ? { template: more.template } : {})}
       {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
     />
   )
-  const description = (template?: string) => mdField(s('observation.formDescription'), draft.body, (next) => set('body', next), { rows: 12, ...(template ? { template: { label: s('md.fromTemplate'), text: template } } : {}) })
+  const description = (template?: string) => part(s('observation.formDescription'), draft.body, (next) => set('body', next), { whole: true, ...(template ? { template: { label: s('md.fromTemplate'), text: template } } : {}) })
 
   const titleField = (hint: string, missing: string) => (
-    <TextField
-      label={s('observation.titleField')} rows={2} required value={draft.title} onChange={(value) => set('title', value)} hint={hint}
+    <TitleField
+      label={s('observation.titleField')} required value={draft.title} onChange={(value) => set('title', value)} hint={hint}
       {...(titleMissing ? { error: missing } : {})} data-testid="editor-title" autoFocus
     />
   )
@@ -156,13 +186,13 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
     switch (editing.kind) {
       case 'observation': return (
         <>
-          <TextField
-            label={s('observation.titleField')} rows={2} required value={draft.title} onChange={(value) => set('title', value)}
+          <TitleField
+            label={s('observation.titleField')} required value={draft.title} onChange={(value) => set('title', value)}
             hint={s('observation.editTitleHint')} {...(shown('title') ? { error: shown('title') as string } : {})} data-testid="editor-title" autoFocus
           />
           {sections
             ? SECTIONS.map((one) => (
-              <div key={one.key}>{mdField(s(one.label), sections[one.key], (next) => setSections({ ...sections, [one.key]: next }), { hint: s(one.hint) })}</div>
+              <Fragment key={one.key}>{part(s(one.label), sections[one.key], (next) => setSections({ ...sections, [one.key]: next }), { hint: s(one.hint) })}</Fragment>
             ))
             : description()}
         </>
@@ -172,26 +202,103 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
       case 'experiment': return (
         <>
           {titleField(s('solution.experimentTitleExample'), s('solution.experimentTitleMissing'))}
-          <TextField label={s('solution.hypothesis')} rows={2} value={draft.hypothesis} onChange={(value) => set('hypothesis', value)} />
-          <TextField label={s('solution.measure')} rows={2} value={draft.measure} onChange={(value) => set('measure', value)} />
-          <TextField label={s('solution.result')} rows={2} value={draft.result} onChange={(value) => set('result', value)} />
+          {PLAIN_PARTS.map((one) => <FlowPlainPart key={one.key} label={s(one.label)} value={draft[one.key] ?? ''} onChange={(value) => set(one.key, value)} />)}
           {description(experimentTemplate(s))}
         </>
       )
     }
   })()
 
+  const aside = editing.kind === 'cause' ? undefined : (
+    <RecordFacts editing={editing} draft={draft} set={set} by={by} onBy={setBy} today={today} shown={shown} reading={shownView === 'preview'} s={s} />
+  )
+  return (
+    <FocusedWindow
+      open
+      title={s(TITLE[editing.kind])}
+      number={numberOf(editing)}
+      windowChrome={windowChrome}
+      middle={(
+        <Segmented
+          label={s('observation.editView')} value={shownView} onChange={setView}
+          options={[
+            { value: 'write', label: s('observation.editWrite') },
+            ...(roomBeside ? [{ value: 'side' as const, label: s('observation.editBeside') }] : []),
+            { value: 'preview', label: s('observation.editPreview') },
+          ]}
+        />
+      )}
+      {...(aside ? { aside } : {})}
+      changed={changed}
+      saveLabel={s('observation.editSave')}
+      onSave={save}
+      {...(refused ? { saveRefused: refused } : {})}
+      onCancel={onClose}
+    >
+      <div className="chain-editor" data-view={shownView}>
+        {/* Kept while it is not shown: each part's undo and caret live in its text box. */}
+        <div className="chain-editor__column" hidden={shownView === 'preview'}>
+          <MarkdownFlow>
+            <MarkdownFlowBar words={words} />
+            <div className="md-flow">{main}</div>
+          </MarkdownFlow>
+        </div>
+        {shownView !== 'write' && (
+          <ReadingColumn parts={editing.kind === 'experiment' ? PLAIN_PARTS.filter((one) => (draft[one.key] ?? '').trim()) : []} draft={draft} body={body} renderMarkdown={renderMarkdown} s={s} />
+        )}
+      </div>
+    </FocusedWindow>
+  )
+}
+
+/** The document as its reader will draw it. */
+function ReadingColumn({ parts, draft, body, renderMarkdown, s }: {
+  parts: readonly (typeof PLAIN_PARTS)[number][]
+  draft: Draft
+  body: string
+  renderMarkdown: RecordEditorProps['renderMarkdown']
+  s: Translate
+}) {
+  return (
+    <div className="chain-editor__column" data-testid="editor-preview">
+      <p className="chain-editor__caption">{s('observation.editAsRead')}</p>
+      <TitleRead>{draft.title}</TitleRead>
+      <div className="md-flow">
+        {parts.map((one) => (
+          <section key={one.key} className="md-editor" data-variant="flow">
+            <div className="md-editor__flowHead"><h3 className="md-editor__flowLabel">{s(one.label)}</h3></div>
+            <p className="chain-editor__plain">{draft[one.key]}</p>
+          </section>
+        ))}
+      </div>
+      <MarkdownDocument {...(parts.length ? { className: 'chain-body' } : {})}>{renderedBody(body, s, renderMarkdown)}</MarkdownDocument>
+    </div>
+  )
+}
+
+/** The column of facts beside the document: written, or, for an observation under Preview, read. */
+function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }: {
+  editing: Exclude<RecordEditing, { kind: 'cause' }>
+  draft: Draft
+  set: (field: string, value: string) => void
+  by: PersonRef | undefined
+  onBy: (next: PersonRef | undefined) => void
+  today: string
+  shown: (key: 'title' | 'where' | 'by' | 'date') => string | undefined
+  reading: boolean
+  s: Translate
+}) {
+  const names = usePersonNames()
   const personField = (label: string, testId: string, error?: string, hint?: string) => (
     <PersonRefField
-      variant="field" label={label} value={by ?? ''} names={names} onChange={(next) => setBy(next)} testId={testId} s={s}
+      variant="field" label={label} value={by ?? ''} names={names} onChange={onBy} testId={testId} s={s}
       {...(error ? { error: true, helperText: error } : hint ? { helperText: hint } : {})} {...(editing.kind === 'observation' ? { required: true } : {})}
     />
   )
 
   const sizes = [{ value: '', label: s('solution.unset') }, ...SOLUTION_SIZES.map((size: SolutionSize) => ({ value: size, label: s(SIZE_LABEL[size]) }))]
-  const aside = (() => {
-    switch (editing.kind) {
-      case 'observation': return (
+  switch (editing.kind) {
+      case 'observation': return reading ? <ObservationFactsRead record={readRecord(editing.record, draft, by)} s={s} /> : (
         <>
           <SelectField
             label={s('observation.toneField')} value={draft.tone}
@@ -229,37 +336,27 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
           <TextField label={s('solution.toField')} type="date" value={draft.to} onChange={(value) => set('to', value)} />
         </>
       )
-      case 'cause': return undefined
-    }
-  })()
+  }
 
+}
+
+/** The record as the draft has it, for the facts its reader will show. */
+function readRecord(record: Observation, draft: Draft, by: PersonRef | undefined): Observation {
+  return {
+    ...record, where: draft.where, date: draft.date, impact: draft.impact as ObservationImpact, tone: draft.tone as ObservationTone,
+    ...(by === undefined ? {} : { by }),
+  }
+}
+
+/** What the facts column says of the draft, read: the same words, in the same place, as beside the record's own text. */
+function ObservationFactsRead({ record, s }: { record: Observation; s: Translate }) {
+  const names = usePersonNames()
+  const { language } = useStrings()
   return (
-    <FocusedWindow
-      open
-      title={s(TITLE[editing.kind])}
-      number={numberOf(editing)}
-      windowChrome={windowChrome}
-      middle={(
-        <Segmented
-          label={s('observation.editView')} value={view} onChange={setView}
-          options={[{ value: 'write', label: s('observation.editWrite') }, { value: 'preview', label: s('observation.editPreview') }]}
-        />
-      )}
-      {...(aside && view === 'write' ? { aside } : {})}
-      changed={changed}
-      saveLabel={s('observation.editSave')}
-      onSave={save}
-      {...(refused ? { saveRefused: refused } : {})}
-      onCancel={onClose}
-    >
-      {view === 'write'
-        ? <div className="chain-editor">{main}</div>
-        : (
-          <div className="chain-editor" data-reading="" data-testid="editor-preview">
-            <h2 className="chain-editor__title">{draft.title}</h2>
-            <div className="chain-body" data-document>{renderMarkdown(body)}</div>
-          </div>
-        )}
-    </FocusedWindow>
+    <>
+      {observationFacts(record, { names, day: (date) => formatDay(date, language), s }).map((one) => (
+        <PreviewFact key={one.label} label={one.label}><span data-testid={one.testId}>{one.value}</span></PreviewFact>
+      ))}
+    </>
   )
 }

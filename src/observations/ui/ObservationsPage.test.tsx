@@ -367,6 +367,77 @@ describe('the chain', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
     expect(screen.getByTestId('editor-preview').textContent).toContain('Back')
   })
+  describe('written as the document it will be read as', () => {
+    const BODY = '## What we saw\n\nA line\n\n## Evidence\n\n## Who or what it affected\n\nC\n'
+    const openEditor = () => {
+      mount({ model: { ...model, observations: [observation({ id: 'o2', number: 2, title: 'Late runs', body: BODY, by: 'W.S.', where: 'Release' })], causes: [] }, below: [] })
+      openRow('o2')
+      fireEvent.click(screen.getByTestId('reader-edit'))
+    }
+    const wideFrom = (width: number) => vi.stubGlobal('matchMedia', (query: string) => {
+      const from = /min-width:\s*(\d+)px/.exec(query)
+      const upTo = /max-width:\s*(\d+)px/.exec(query)
+      return {
+        matches: from ? width >= Number(from[1]) : upTo ? width <= Number(upTo[1]) : false,
+        media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+      }
+    })
+    afterEach(() => { vi.unstubAllGlobals() })
+
+    it('holds the title and the parts in one flow under one bar, with no box of their own', () => {
+      openEditor()
+      expect(screen.getAllByTestId('markdown-part')).toHaveLength(3)
+      expect(screen.getAllByRole('toolbar')).toHaveLength(1)
+      expect((screen.getByTestId('editor-title') as HTMLTextAreaElement).closest('.kit-focused__main')).toBeTruthy()
+      for (const name of ['What we saw', 'Evidence', 'Who or what it affected']) expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy()
+    })
+
+    it('previews what its reader draws, with the facts read beside it where they stood, and keeps what was being written', () => {
+      openEditor()
+      const saw = screen.getByRole('textbox', { name: 'What we saw' })
+      fireEvent.change(saw, { target: { value: 'A longer line' } })
+      fireEvent.change(screen.getByTestId('editor-where'), { target: { value: 'The night run' } })
+      fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
+      const preview = screen.getByTestId('editor-preview')
+      expect(preview.textContent).toContain('A longer line')
+      // A heading left empty says what a reader will see under it.
+      expect(preview.textContent).toContain('Nothing yet')
+      expect(screen.getByText('The night run')).toBeTruthy()
+      expect(screen.queryByTestId('editor-where')).toBeNull()
+      expect((screen.getByRole('textbox', { name: 'What we saw', hidden: true }) as HTMLTextAreaElement).value).toBe('A longer line')
+      fireEvent.click(screen.getByRole('radio', { name: 'Write' }))
+      expect(screen.queryByTestId('editor-preview')).toBeNull()
+      expect(screen.getByTestId('editor-where')).toBeTruthy()
+    })
+
+    it('offers side by side only where it fits, and opens on it on a wide window', () => {
+      wideFrom(1100)
+      openEditor()
+      expect(screen.queryByRole('radio', { name: 'Side by side' })).toBeNull()
+      cleanup()
+      wideFrom(1440)
+      openEditor()
+      expect((screen.getByRole('radio', { name: 'Write' }) as HTMLInputElement).getAttribute('aria-checked')).toBe('true')
+      fireEvent.click(screen.getByRole('radio', { name: 'Side by side' }))
+      expect(screen.getByRole('textbox', { name: 'What we saw' })).toBeTruthy()
+      expect(screen.getByTestId('editor-preview')).toBeTruthy()
+      expect(screen.getByTestId('editor-where')).toBeTruthy()
+      cleanup()
+      wideFrom(2000)
+      openEditor()
+      expect(screen.getByRole('radio', { name: 'Side by side' }).getAttribute('aria-checked')).toBe('true')
+      expect(screen.getByTestId('editor-preview')).toBeTruthy()
+    })
+
+    it('reads a record whole on its page with no heading of its own over the text', () => {
+      mount({ model: { ...model, observations: [observation({ id: 'o2', number: 2, title: 'Late runs', body: BODY, by: 'W.S.', where: 'Release' })], causes: [] }, below: [] })
+      openRow('o2')
+      fireEvent.click(screen.getByRole('button', { name: 'Open full record' }))
+      expect(screen.queryByRole('heading', { name: 'Full record' })).toBeNull()
+      expect(screen.getByTestId('observation-explained-by')).toBeTruthy()
+      expect(screen.getByTestId('observation-history')).toBeTruthy()
+    })
+  })
 })
 
 describe('the ladder', () => {

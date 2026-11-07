@@ -1390,10 +1390,13 @@ woorden als bij het bewerken. Datum gezien begint bij vandaag en mag niet in de 
 liggen; de impact begint bij klein. Rechts stelt de beschrijving haar drie
 vragen, een veld per vraag — **wat we zagen**, **bewijs** en **wie of wat het
 raakte** — en de laatste is ook verplicht: een waarneming zegt altijd wie of
-wat ze raakte. Vastgelegd zijn de drie één markdowntekst onder die kopjes, en
-daarna bewerk je de beschrijving van een waarneming als één tekst.
+wat ze raakte. Vastgelegd zijn de drie één markdowntekst onder die kopjes.
 **Voorbeeld** toont haar zoals ze zal lezen, en **Bewerken** gaat terug naar
-de velden. Onder elk veld staat een voorbeeld, en een veld dat leeg blijft
+de velden. **Bewerken** op een vastgelegde waarneming opent haar in het hele
+venster als het document dat ze is: de titel, elk kopje met zijn tekst eronder,
+één werkbalk boven alles, en de feiten ernaast. **Voorbeeld** toont daar dat
+document zoals het gelezen wordt, op dezelfde plek, en op een breed venster toont
+**Naast elkaar** beide, zoals het op de breedste opent. Onder elk veld staat een voorbeeld, en een veld dat leeg blijft
 zegt op die plek wat er ontbreekt, en naast de knop hoeveel. Elke dialoog op
 de pagina houdt vast wat erin staat: een klik ernaast sluit hem niet, Escape
 niet meer zodra er iets geschreven is, en Enter in een veld van één regel doet
