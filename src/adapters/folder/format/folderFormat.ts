@@ -251,11 +251,22 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  * the tone, every other observation is neutral and nobody is said to have
  * recorded anything, and the pass that brings it up rewrites the headers and
  * nothing else.
+ *
+ * **16 is 15, with who recorded it held without a name** (ADR-0038, amended 7
+ * November 2026): an observation recorded by a register entry says
+ * `recordedByPerson:` and no `recordedBy:`, because the name is the register's to
+ * forget. A build that reads 15 reads no `recordedBy:` as nobody and drops the
+ * entry, the account and the agent on its way back, so a record would lose who
+ * recorded it after somebody else's save with nobody having said so; so the number
+ * turns, and a 3.8.1 build refuses the folder instead. Format 15 is already public,
+ * so what it means is not changed after the fact. A 15 is a 16 whose records still
+ * hold both, and the pass that brings it up rewrites the headers and nothing else:
+ * the name they kept stays in the files, and is not read where an entry answers.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 /**
  * The second half of a view's pair of files: where it ended up.
