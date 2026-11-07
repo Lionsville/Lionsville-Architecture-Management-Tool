@@ -25,9 +25,27 @@ type Drawn = { key: string; d: string; kind: string; strong: boolean; label?: { 
 const rowOf = (board: HTMLElement, key: NodeKey) => [...board.querySelectorAll<HTMLElement>('[data-kit-row]')]
   .find((row) => row.dataset.kitRow === `row:${key}` || row.dataset.kitRow === `head:${key}`)
 
+/**
+ * Where a line from an application to a platform crosses the services between
+ * them: under the column's last row. A straight curve would run behind the rows
+ * and show as two stubs that seem to end nowhere.
+ */
+function channelUnder(board: HTMLElement, origin: DOMRect): { left: number; right: number; y: number } | undefined {
+  const rows = [...board.querySelectorAll<HTMLElement>('[data-testid="landscape-band-services"] [data-kit-row]')].map((row) => row.getBoundingClientRect())
+  if (rows.length === 0) return undefined
+  return {
+    left: Math.min(...rows.map((row) => row.left)) - origin.left,
+    right: Math.max(...rows.map((row) => row.right)) - origin.left,
+    y: Math.max(...rows.map((row) => row.bottom)) - origin.top + 8,
+  }
+}
+
+const skipsServices = (edge: LandscapeEdge) => !edge.from.startsWith('platform:') && !edge.from.startsWith('service:') && edge.to.startsWith('platform:')
+
 /** A curve from the right edge of the left end to the left edge of the right end, in the gutters. */
 export function drawLines(board: HTMLElement, edges: readonly LandscapeEdge[], focus: NodeKey | undefined): Drawn[] {
   const origin = board.getBoundingClientRect()
+  const channel = channelUnder(board, origin)
   return edges.flatMap((edge) => {
     const from = rowOf(board, edge.from)?.getBoundingClientRect()
     const to = rowOf(board, edge.to)?.getBoundingClientRect()
@@ -37,9 +55,13 @@ export function drawLines(board: HTMLElement, edges: readonly LandscapeEdge[], f
     const x2 = to.left - origin.left
     const y2 = to.top + to.height / 2 - origin.top
     const bend = Math.max(24, (x2 - x1) / 2)
+    const under = channel && skipsServices(edge) && channel.left > x1 && channel.right < x2 ? channel : undefined
+    const d = under
+      ? `M${x1},${y1} C${(x1 + under.left) / 2},${y1} ${(x1 + under.left) / 2},${under.y} ${under.left},${under.y} L${under.right},${under.y} C${(under.right + x2) / 2},${under.y} ${(under.right + x2) / 2},${y2} ${x2},${y2}`
+      : `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`
     return [{
       key: `${edge.from}|${edge.to}|${edge.kind}|${edge.implied ? 'i' : ''}`,
-      d: `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`,
+      d,
       kind: lineKindOf(edge),
       strong: edge.from === focus || edge.to === focus,
       ...(edge.count > 1 ? { label: { x: (x1 + x2) / 2, y: (y1 + y2) / 2, text: String(edge.count) } } : {}),
