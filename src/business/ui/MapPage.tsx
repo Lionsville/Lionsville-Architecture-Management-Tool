@@ -202,7 +202,9 @@ function useCells(laidOut: LaidOutMap | undefined, props: MapPageProps, t: Trans
     const column = laidOut?.columns.find((one) => one.id === columnId)
     if (!row || !column || !row.supportedBy.includes(columnId)) return null
     if (row.leaf) return { show: <Mark kind="cov-apps" />, meaning: t('map.supportsTip', { application: column.name, function: row.element.name }) }
-    return { show: <span className="map-count">{row.counts?.[columnId] ?? 1}</span>, meaning: t('map.rolledUpTip', { application: column.name, function: row.element.name }) }
+    // The number shown is in the name, so what a voice hears holds what the eye reads (WCAG 2.5.3).
+    const count = row.counts?.[columnId] ?? 1
+    return { show: <span className="map-count">{count}</span>, meaning: t('map.rolledUpTip', { count, application: column.name, function: row.element.name }) }
   }, [rowById, laidOut, t])
   /** Space on a cell: one step with its Undo, written here, where this scope can take it away again. */
   const toggle = useCallback((rowId: string, columnId: string) => {

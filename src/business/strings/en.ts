@@ -213,7 +213,7 @@ export const EN = {
   'map.gapsOne': '1 gap',
   'map.gapsOther': '{count} gaps',
   'map.supportsTip': '{application} supports {function}',
-  'map.rolledUpTip': '{application} supports something under {function}',
+  'map.rolledUpTip': '{application} supports {count} under {function}',
   'map.peopleTip': 'Done by {names}',
   'map.unknownApplication': 'Nobody in the organisation defines this',
   'map.noFunctions': 'No capabilities to map yet.',

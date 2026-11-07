@@ -189,7 +189,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'map.gapsOne': '1 gat',
   'map.gapsOther': '{count} gaten',
   'map.supportsTip': '{application} ondersteunt {function}',
-  'map.rolledUpTip': '{application} ondersteunt iets onder {function}',
+  'map.rolledUpTip': '{application} ondersteunt {count} onder {function}',
   'map.peopleTip': 'Gedaan door {names}',
   'map.unknownApplication': 'Niemand in de organisatie definieert dit',
   'map.noFunctions': 'Nog geen capabilities om in kaart te brengen.',

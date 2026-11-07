@@ -189,7 +189,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'map.gapsOne': '1 Lücke',
   'map.gapsOther': '{count} Lücken',
   'map.supportsTip': '{application} unterstützt {function}',
-  'map.rolledUpTip': '{application} unterstützt etwas unter {function}',
+  'map.rolledUpTip': '{application} unterstützt {count} unter {function}',
   'map.peopleTip': 'Erledigt von {names}',
   'map.unknownApplication': 'Niemand in der Organisation definiert dies',
   'map.noFunctions': 'Noch keine Fähigkeiten, die sich abbilden ließen.',
