@@ -56,6 +56,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.task': 'Aufgabe',
   'doc.previous': 'Vorheriges Element',
   'doc.next': 'Nächstes Element',
+  'doc.firstInList': 'Das ist das erste in der Liste',
+  'doc.lastInList': 'Das ist das letzte in der Liste',
   'doc.contents': 'Auf dieser Seite',
   'doc.source': 'Dokumentationsquelle (Markdown)',
   'doc.insertTemplate': 'Mit der Vorlage beginnen',

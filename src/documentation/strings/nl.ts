@@ -56,6 +56,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.task': 'Taak',
   'doc.previous': 'Vorig element',
   'doc.next': 'Volgend element',
+  'doc.firstInList': 'Dit is de eerste in de lijst',
+  'doc.lastInList': 'Dit is de laatste in de lijst',
   'doc.contents': 'Op deze pagina',
   'doc.source': 'Documentatiebron (markdown)',
   'doc.insertTemplate': 'Begin met het sjabloon',

@@ -57,6 +57,8 @@ export const EN = {
   'doc.task': 'Task',
   'doc.previous': 'Previous element',
   'doc.next': 'Next element',
+  'doc.firstInList': 'This is the first in the list',
+  'doc.lastInList': 'This is the last in the list',
   'doc.contents': 'On this page',
   'doc.source': 'Documentation source (markdown)',
   'doc.insertTemplate': 'Start from the template',

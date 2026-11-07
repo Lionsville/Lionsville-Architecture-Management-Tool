@@ -354,8 +354,8 @@ export function DocumentationPage(props: DocumentationPageProps) {
           status={diagram ? t('doc.statusOn', { kind, view: diagram.name }) : kind}
           actions={(
             <>
-              <Button size="small" variant="quiet" aria-label={t('doc.previous')} reason={previous ? undefined : t('doc.previous')} onClick={() => previous && navigate(previous)}>‹ {t('doc.previousShort')}</Button>
-              <Button size="small" variant="quiet" aria-label={t('doc.next')} reason={next ? undefined : t('doc.next')} onClick={() => next && navigate(next)}>{t('doc.nextShort')} ›</Button>
+              <Button size="small" variant="quiet" aria-label={t('doc.previous')} reason={previous ? undefined : t('doc.firstInList')} onClick={() => previous && navigate(previous)}>‹ {t('doc.previousShort')}</Button>
+              <Button size="small" variant="quiet" aria-label={t('doc.next')} reason={next ? undefined : t('doc.lastInList')} onClick={() => next && navigate(next)}>{t('doc.nextShort')} ›</Button>
               {props.onOpenHistory && <Button size="small" variant="quiet" onClick={props.onOpenHistory}>{t('common.history')}</Button>}
               {props.menu && props.menu.length > 0 && <MoreMenu items={props.menu} size="small" />}
               <PageClose onClose={close} label={t('doc.close')} />
