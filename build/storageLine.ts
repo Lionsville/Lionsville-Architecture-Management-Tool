@@ -210,10 +210,12 @@ export const CONTENT_WORDS: Readonly<Record<string, string>> = {
 /**
  * The files whose strings are content rather than code: the marks, which are
  * the icons a landscape draws, named as their makers name them — a git host
- * is a thing a landscape holds; and the manual's address, a page on the web
- * whose path happens to say `docs/` and `.md`.
+ * is a thing a landscape holds; and the help's words, which tell a person
+ * where their work is kept — in a folder, in git, in this browser — as the
+ * manual did before them, and the ids of its sections, which are the names
+ * of the functions they describe (`file.openFolder`).
  */
-export const CONTENT_FILES: readonly string[] = ['src/model/marks/', 'src/platform/manual.ts']
+export const CONTENT_FILES: readonly string[] = ['src/model/marks/', 'src/help/text/', 'src/help/outline.ts']
 
 /** The listed words, and the folder format's patterns, a string's text says. */
 function storageInText(text: string, listed: readonly string[]): string[] {

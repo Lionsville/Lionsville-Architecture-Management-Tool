@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
-import { manualUrl } from '../platform/manual'
+import { helpAt } from './helpAt'
 import type { ThemeMode } from '../platform/theme'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE } from '../projects/scopePath'
@@ -80,9 +80,9 @@ export function useShellCommands(deps: {
     if (command.type === 'export') homeFiles.current?.exportWorkingFile()
     if (command.type === 'open') homeFiles.current?.open()
     if (command.type === 'openDocument') homeFiles.current?.openDocument(command.name, command.bytes)
-    // In the app's language, which is why it is answered here and not by the
-    // menu bar: main does not know which one is on.
-    if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
+    // In the app's language and theme, which is why it is answered here and not
+    // by the menu bar: the help reads both off its address.
+    if (command.type === 'manual') hostControls.openHelp(helpAt(prefs, command.section))
     // Here and not in the workspace, so the Go menu works from a home with
     // nothing open as well as over a scope (ADR-0033).
     if (command.type === 'back' || command.type === 'forward') goInHistory(command.type)

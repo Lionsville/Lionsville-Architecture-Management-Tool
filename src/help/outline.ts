@@ -37,7 +37,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
       { id: 'frame.redo', menu: ['menu.redo'], writes: true, seeAlso: ['frame.undo'] },
       { id: 'frame.status', controls: ['frame.status', 'frame.yourWork'], seeAlso: ['file.saveCopy', 'file.snapshot', 'frame.activity'] },
       { id: 'frame.activity', controls: ['shell.activity', 'frame.activity'], seeAlso: ['frame.undo', 'file.history', 'frame.status'] },
-      { id: 'frame.agent', controls: ['frame.agent'], seeAlso: ['frame.agentBand'] },
+      { id: 'frame.agent', controls: ['frame.agent'], menu: ['menu.connectAgent'], seeAlso: ['frame.agentBand'] },
       { id: 'frame.agentBand', seeAlso: ['frame.agent', 'frame.undo'] },
       { id: 'frame.textSize', controls: ['frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger', 'frame.textSizeReset', 'prefs.textSize'], menu: ['menu.textLarger', 'menu.textSmaller', 'menu.textDefault'] },
       { id: 'frame.help', controls: ['frame.help', 'shell.website'], menu: ['menu.userManual', 'menu.website', 'menu.getDesktopApp'], seeAlso: ['frame.palette'] },

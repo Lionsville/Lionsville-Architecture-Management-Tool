@@ -75,8 +75,12 @@ export type HostCommand =
   | { type: 'redo' }
   | { type: 'deleteSelection' }
   | { type: 'selectAll' }
-  /** Help: the manual, in the app's language, in the default browser. */
-  | { type: 'manual' }
+  /**
+   * Help: the help page beside the app, in the app's language, at a chapter's
+   * or a section's id where one is named (`help/address.ts`); in a window of
+   * its own on the desktop, a pop-up or a tab in a browser.
+   */
+  | { type: 'manual'; section?: string }
   /** Help: the shortcut overlay the `?` button already opens. */
   | { type: 'shortcuts' }
   /**

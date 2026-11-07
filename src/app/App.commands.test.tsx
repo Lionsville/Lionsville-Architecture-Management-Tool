@@ -197,12 +197,14 @@ describe('commands from the host', () => {
     await waitFor(() => expect(reported.at(-1)).toBe(false))
   })
 
-  it('opens the manual in the app\'s language, outside the app', () => {
+  it('opens the help in the app\'s language, at the section asked for, with nothing open', async () => {
     const view = show({ boot: { initialPreferences: { language: 'nl' } } })
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.queryByTestId('crumb-')).toBeNull())
     view.send({ type: 'manual' })
-    expect(view.hostControls.openExternal).toHaveBeenCalledWith(
-      'https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/blob/main/docs/manual.nl.md',
-    )
+    expect(view.hostControls.openHelp).toHaveBeenLastCalledWith('help/?lang=nl')
+    view.send({ type: 'manual', section: 'frame.back' })
+    expect(view.hostControls.openHelp).toHaveBeenLastCalledWith('help/?lang=nl#frame.back')
   })
 
   it('Undo from the host takes back the last step, and a focused field keeps its own', async () => {

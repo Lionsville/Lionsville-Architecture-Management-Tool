@@ -752,7 +752,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     }
     const under = (name: string) => menu.items.find((held) => held.label === name)?.submenu?.items.map((held) => held.label) ?? []
     const help = under('Help')
-    for (const want of ['User Manual', 'Keyboard Shortcuts…', 'Check for Updates…']) {
+    for (const want of ['Open the Help', 'Keyboard Shortcuts…', 'Check for Updates…']) {
       if (!help.includes(want)) throw new Error(`no "${want}" in Help: ${help.join(' · ') || labels.join(' · ')}`)
     }
     const edit = under('Edit')

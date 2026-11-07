@@ -15,7 +15,7 @@
 import { useEffect, useState } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
-import { manualUrl } from '../../platform/manual'
+import { helpAt } from '../helpAt'
 import { Button } from '../../widgets/kit/Button'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { ActivityLines } from '../ActivityMenu'
@@ -157,7 +157,7 @@ export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: Scre
     <Panel
       kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s, own).text || s('frame.yourWork')} dataGuide="frame.yourWork"
       facts={where !== undefined ? s(where as StringKey) : undefined} onClose={() => agent.setPanel(undefined)} help={s('frame.appliesToAll')}
-      helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openExternal(manualUrl(prefs.language)) }}
+      helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openHelp(helpAt(prefs, 'work~0')) }}
     >
       {/* What this host says of its own comes first: it is what a person opened this to read. */}
       {Own && <Own {...workProps(parts)} />}

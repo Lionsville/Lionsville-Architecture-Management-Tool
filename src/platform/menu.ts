@@ -146,8 +146,11 @@ export const EDIT_ITEMS: {
  * overlay the `?` button opens. Check for Updates… sits under these on the
  * desktop and is main's own, not a command (`appMenu.ts`).
  */
+/** The help, which the Help menu, the ? in row one and a browser's ⋯ all open. */
+export const HELP_MENU_ITEM: MenuItemSpec = item('menu.userManual', { type: 'manual' })
+
 export const HELP_MENU: readonly MenuEntry[] = [
-  item('menu.userManual', { type: 'manual' }),
+  HELP_MENU_ITEM,
   item('menu.shortcuts', { type: 'shortcuts' }),
 ]
 

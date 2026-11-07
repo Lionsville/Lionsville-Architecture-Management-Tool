@@ -23,7 +23,7 @@ import { useEffect, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import { FILE_MENU, PREFERENCES_ITEM, offered } from '../platform/menu'
+import { FILE_MENU, HELP_MENU_ITEM, PREFERENCES_ITEM, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import { IconButton } from '../widgets/kit/Button'
 import { Menu } from '../widgets/kit/Menu'
@@ -98,6 +98,9 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
     })
   }
   items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator) ?? '' })
+  // The help, last of ours: a host with no menu bar has no Help menu, and the
+  // ? in row one folds away first when the row runs out of room.
+  items.push({ label: s(HELP_MENU_ITEM.label), onSelect: choose(HELP_MENU_ITEM.command), 'data-testid': 'overflow-help' })
   // The providers' own lines, last and under a rule. A rule and not a heading:
   // a heading would be a word of ours about somewhere this shell has never heard
   // of, and the lines say what they are. A key nobody registered renders as itself.

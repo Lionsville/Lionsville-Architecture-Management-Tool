@@ -104,7 +104,7 @@ export const SECTIONS: SectionTexts = {
     ['Drücken Sie den Chip einer Inhaberin im Organigramm.', 'Drücken Sie ihren Namen im Panel, um sie in Personen zu öffnen.'],
     'Drücken Sie im Organigramm Lead: Tom Berger in Dock crew und öffnen Sie seine Seite, um zu sehen, an wen er berichtet.'],
   'people.agent': ['Was ein Agent mit Personen darf', 'Ein verbundener Agent liest das Register (people.list, mit möglichen Doppelungen), fügt eine Person hinzu (person.add, das eine wahrscheinliche Doppelung ablehnt, wenn es nicht trotzdem soll), markiert jemanden als ausgeschieden (person.leave), nimmt ein Ausscheiden zurück (person.takeBackLeaving) und öffnet die Seite einer Person (app.open mit page people und select). Kein Agent vergisst, entfernt oder führt jemanden zusammen, antwortet, dass zwei nicht dieselbe Person sind, oder ändert die Datenschutzeinstellungen. Er sieht Namen oder Pseudonyme, wie die Einstellungen sagen, nie eine Adresse.',
-    'Agent in der oberen Leiste verbindet einen; auf dem Desktop über den lokalen Agentenserver der App.',
+    'Agent in der oberen Leiste verbindet einen, auf dem Desktop.',
     ['Verbinden Sie einen Agenten.', 'Fragen Sie ihn etwa, wer nichts hält.'],
     'Bitten Sie den Agenten, Jonas Weber, jonas@example.org, hinzuzufügen und seine Seite zu öffnen.'],
 }

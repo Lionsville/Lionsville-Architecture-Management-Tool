@@ -141,6 +141,7 @@ export type ShellHarness = {
     reload: Mock<() => void>
     copyText: Mock<(text: string) => Promise<void>>
     openExternal: Mock<(url: string) => void>
+    openHelp: Mock<(address: string) => void>
     editInField: Mock<(action: 'undo' | 'redo') => boolean>
   }
 }
@@ -157,6 +158,7 @@ export function shellHarness(projects: readonly ScopeSnapshot[] = []): ShellHarn
       reload: vi.fn(() => {}),
       copyText: vi.fn((_text: string) => Promise.resolve()),
       openExternal: vi.fn((_url: string) => {}),
+      openHelp: vi.fn((_address: string) => {}),
       editInField: vi.fn((_action: 'undo' | 'redo') => false),
     },
   }

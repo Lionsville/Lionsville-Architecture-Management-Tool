@@ -11,7 +11,7 @@ import { createRoot } from 'react-dom/client'
 import { detectBrowserLanguage } from '../i18n/languages'
 import { tokenVariables } from '../widgets/kit/tokens'
 import type { Mode } from '../widgets/kit/tokens'
-import { readHelpAddress } from './address'
+import { readHelpAddress } from '../platform/helpAddress'
 import { HelpApp } from './ui/HelpApp'
 import '../widgets/kit/fonts/fonts.css'
 

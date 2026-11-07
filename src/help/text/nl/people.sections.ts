@@ -104,7 +104,7 @@ export const SECTIONS: SectionTexts = {
     ['Druk op de chip van een houder op het organigram.', 'Druk op de naam in het paneel om de persoon in Mensen te openen.'],
     'Druk op het organigram op Lead: Tom Berger in Dock crew en open zijn pagina om te zien aan wie hij rapporteert.'],
   'people.agent': ['Wat een agent met mensen mag', 'Een gekoppelde agent leest het register (people.list, met mogelijke dubbelen), voegt een persoon toe (person.add, dat een waarschijnlijke dubbele weigert tenzij het toch moet), markeert iemand als vertrokken (person.leave), neemt een vertrek terug (person.takeBackLeaving) en opent de pagina van een persoon (app.open met page people en select). Geen agent vergeet, verwijdert of voegt iemand samen, antwoordt dat twee niet dezelfde persoon zijn, of wijzigt de privacyinstellingen. Hij ziet namen of pseudoniemen zoals de instellingen zeggen, nooit een adres.',
-    'Agent in de bovenste balk koppelt er een; op de desktop via de lokale agentserver van de app.',
+    'Agent in de bovenste balk koppelt er een, op de desktop.',
     ['Koppel een agent.', 'Vraag hem bijvoorbeeld wie niets heeft.'],
     'Vraag de agent Jonas Weber, jonas@example.org, toe te voegen en zijn pagina te openen.'],
 }

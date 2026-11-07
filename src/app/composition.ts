@@ -621,7 +621,7 @@ export function composeShell(s?: Translate): Shell {
     // in a tab a download is what a file does.
     documents: desktopFiles() ? new DesktopDocumentGateway(desktopFiles()!) : new BrowserDocumentGateway(),
     diagnostics,
-    hostControls: browserHostControls(),
+    hostControls: browserHostControls({ desktop: desktopFiles() !== undefined }),
     // The one desktop seam that does not wait for a folder: it is about this
     // install, not about where the projects are.
     updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),

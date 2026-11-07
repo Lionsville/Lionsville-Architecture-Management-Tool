@@ -2101,7 +2101,7 @@ export const EN = {
   'example.keep': 'Keep this as my start',
   'example.leave': 'Leave the example',
   'work.today': 'Today, {time}',
-  'work.manual': 'Where your work is kept (manual)',
+  'work.manual': 'Where your work is kept, in the help',
   'work.couldNotSave': 'Could not save',
   'work.lastSaved': 'Last saved',
   'work.lastCopy': 'Last copy saved',

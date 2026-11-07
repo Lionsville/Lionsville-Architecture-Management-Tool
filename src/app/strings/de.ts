@@ -1874,7 +1874,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'example.keep': 'Das als meinen Anfang behalten',
   'example.leave': 'Beispiel verlassen',
   'work.today': 'Heute, {time}',
-  'work.manual': 'Wo Ihre Arbeit liegt (Handbuch)',
+  'work.manual': 'Wo Ihre Arbeit liegt, in der Hilfe',
   'work.couldNotSave': 'Nicht gespeichert',
   'work.lastSaved': 'Zuletzt gespeichert',
   'work.lastCopy': 'Letzte Kopie gespeichert',

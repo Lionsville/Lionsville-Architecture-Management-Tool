@@ -1873,7 +1873,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'example.keep': 'Dit als mijn begin houden',
   'example.leave': 'Voorbeeld verlaten',
   'work.today': 'Vandaag, {time}',
-  'work.manual': 'Waar je werk staat (handleiding)',
+  'work.manual': 'Waar je werk staat, in de help',
   'work.couldNotSave': 'Niet bewaard',
   'work.lastSaved': 'Laatst bewaard',
   'work.lastCopy': 'Laatste kopie bewaard',

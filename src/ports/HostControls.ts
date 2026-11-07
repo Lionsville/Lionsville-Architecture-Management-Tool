@@ -21,11 +21,19 @@ export interface HostControls {
   copyText(text: string): Promise<void>
 
   /**
-   * Open a page outside the app — the manual, in the default browser. A
-   * browser tab opens a new tab; the desktop hands the URL to the system,
-   * which is what its window-open handler does with every `https:` link.
+   * Open a page outside the app, in the default browser. A browser tab opens a
+   * new tab; the desktop hands the URL to the system, which is what its
+   * window-open handler does with every `https:` link.
    */
   openExternal(url: string): void
+
+  /**
+   * Open the help beside the app at an address `help/address.ts` wrote,
+   * relative to the app's own page. A browser opens it in a pop-up, or a tab
+   * where it refuses one; the desktop's main process answers the same open with
+   * the help's one window, so a second open goes to the window already there.
+   */
+  openHelp(address: string): void
 
   /**
    * The page's own undo or redo, in the text field that has focus — what

@@ -43,7 +43,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.editDelete': 'Löschen',
   'menu.editSelectAll': 'Alles auswählen',
   'menu.help': 'Hilfe',
-  'menu.userManual': 'Handbuch',
+  'menu.userManual': 'Hilfe öffnen',
   'menu.shortcuts': 'Tastenkürzel…',
   'menu.go': 'Gehe zu',
   'menu.back': 'Zurück',

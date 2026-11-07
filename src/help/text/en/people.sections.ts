@@ -104,7 +104,7 @@ export const SECTIONS: SectionTexts = {
     ['Press a holder\'s chip on the chart.', 'Press their name in the panel to open them in People.'],
     'On the chart, press Lead: Tom Berger in Dock crew and open his page to see who he reports to.'],
   'people.agent': ['What an agent may do with people', 'A connected agent reads the register (people.list, with possible duplicates), adds a person (person.add, which refuses a likely duplicate unless told to add anyway), marks one as left (person.leave), takes a leaving back (person.takeBackLeaving) and opens a person\'s page (app.open with page people and select). No agent forgets, removes or merges anyone, answers that two are not the same person, or changes the privacy settings. It sees names or pseudonyms as the settings say, never an address.',
-    'Agent in the top bar connects one; on the desktop through the app\'s local agent server.',
+    'Agent in the top bar connects one, on the desktop.',
     ['Connect an agent.', 'Ask it, for example, to list who holds nothing.'],
     'Ask the agent to add Jonas Weber, jonas@example.org, and to open his page.'],
 }
