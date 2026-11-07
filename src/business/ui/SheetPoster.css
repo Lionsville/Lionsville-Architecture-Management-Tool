@@ -1,0 +1,80 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/*
+ * The poster: fixed sizes in px, because its zoom is what makes it larger and a text
+ * size must not reflow a placed page. One transform over plain DOM, and the distances
+ * are this attribute's, so a zoom never renders a tile.
+ */
+.poster { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.poster__pane { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: var(--canvas-ground); touch-action: none; cursor: grab; }
+.poster__pane:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(-1 * var(--focus-ring-width)); }
+.poster__pane[data-panning] { cursor: grabbing; }
+.poster__strip { flex: none; min-height: 30px; display: flex; align-items: center; gap: var(--s-2); padding-inline: var(--s-2); border-top: 1px solid var(--line); background: var(--surface); }
+.poster__stage { position: absolute; inset-block-start: 0; inset-inline-start: 0; transform-origin: 0 0; color: var(--ink); font-family: var(--font-ui); font-size: var(--canvas-t-sm); line-height: 1; }
+/* A tile's size is the grid's and its fixed height, never its words: `contain` keeps a change of distance inside each. */
+/* Soft while it moves and sharp when it settles: a layer scaled is cheap, a page rastered per frame is not. */
+.poster__pane[data-moving] .poster__stage { will-change: transform; }
+
+.poster-block { position: absolute; display: flex; flex-direction: column; background: var(--zone-fill); border: 1px solid var(--zone-edge); box-sizing: border-box; content-visibility: auto; }
+.poster-block[data-accent] { box-shadow: inset 3px 0 0 var(--poster-rail); }
+.poster-title { height: 26px; flex: none; display: flex; align-items: center; gap: var(--s-2); padding-inline: 10px; background: var(--poster-title); color: var(--on-poster-title); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); white-space: nowrap; margin: 0; }
+.poster-title__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.poster-title__unit { max-width: 40%; overflow: hidden; text-overflow: ellipsis; font-size: var(--canvas-t-sm); font-weight: var(--fw-regular); }
+.poster-meter { height: 2px; flex: none; display: flex; background: var(--line); }
+.poster-body { flex: 1; min-height: 0; padding: var(--s-2); display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.poster-flow { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 6px; flex: 1 1 100%; margin: 0; padding: 0; list-style: none; min-width: 0; }
+.poster-flow li { display: contents; }
+.poster-grouping { display: flex; flex-direction: column; min-width: 0; padding: 0 5px 5px; border: 1px solid var(--zone-edge); box-sizing: border-box; background: color-mix(in oklch, var(--zone-fill), var(--ground) 40%); }
+.poster-grouping__head { height: 18px; flex: none; display: flex; align-items: center; margin: 0; overflow: hidden; color: var(--ink-2); font-size: var(--canvas-t-sm); font-weight: var(--fw-strong); white-space: nowrap; }
+.poster-grouping__name { overflow: hidden; text-overflow: ellipsis; }
+
+.poster-tile { position: relative; appearance: none; height: 46px; box-sizing: border-box; min-width: 0; margin: 0; padding: 1px 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-edge); border-radius: 0; background: var(--card-surface); color: var(--ink); font: inherit; text-align: center; cursor: pointer; contain: strict; }
+.poster-tile > * { flex: none; }
+.poster-tile:hover { border-color: var(--ink); }
+.poster-tile:focus-visible, .poster-step:focus-visible, .poster-person:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
+.poster-tile[aria-current="true"] { outline: 2px solid var(--selected-edge); outline-offset: -1px; background: var(--selected-soft); }
+.poster-tile__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: var(--t-canvas-name); line-height: 14px; hyphens: auto; text-wrap: balance; }
+.poster-tile__near { display: none; }
+.poster-tile__mark { position: absolute; inset-block-start: 2px; inset-inline-start: 2px; width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid var(--ink-3); border-radius: 50%; }
+.poster-tile[data-value="apps"] { background: var(--cov-apps-soft); }
+.poster-tile[data-value="apps"] .poster-tile__mark { background: var(--cov-apps); border-color: var(--cov-apps); }
+.poster-tile[data-value="moving"] { background: var(--cov-moving-soft); }
+.poster-tile[data-value="moving"] .poster-tile__mark { background: linear-gradient(90deg, var(--cov-moving) 50%, transparent 50%); border-color: var(--cov-moving); }
+.poster-tile[data-value="people"] { background: var(--cov-people-soft); }
+.poster-tile[data-value="people"] .poster-tile__mark { border-radius: 0; background: var(--cov-people); border-color: var(--cov-people); }
+
+.poster-column { padding: 4px 6px; gap: 3px; overflow: hidden; background: var(--surface); }
+.poster-column__group { height: 17px; flex: none; margin-block-start: 2px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--ink-2); font-size: var(--canvas-t-sm); font-weight: var(--fw-strong); white-space: nowrap; overflow: hidden; }
+.poster-person { appearance: none; min-height: 29px; flex: none; display: flex; align-items: center; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--canvas-t-sm); line-height: 13.5px; text-align: start; cursor: pointer; }
+
+.poster-band { background: var(--surface); }
+.poster-band__row { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.poster-band__phases { height: 16px; flex: none; display: flex; gap: 2px; margin: 2px 2px 0; }
+.poster-band__phase { min-width: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--poster-title); color: var(--on-poster-title); font-size: var(--canvas-t-sm); font-weight: var(--fw-strong); white-space: nowrap; }
+.poster-band__lane { flex: 1 1 0; min-height: 0; display: flex; gap: 2px; margin: 0 2px 2px; }
+.poster-band__cell { min-width: 0; display: flex; gap: 2px; }
+.poster-step { appearance: none; flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; margin: 0 -3px; padding: 0 5px 0 7px; border: 0; background: var(--surface-2); color: var(--ink); clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%, 7px 50%); font: inherit; font-size: var(--canvas-t-label); line-height: 11.5px; overflow-wrap: anywhere; text-align: center; cursor: pointer; }
+.poster-band[data-roomy] .poster-step { font-size: var(--canvas-t-sm); line-height: 13.5px; overflow-wrap: break-word; }
+.poster-step[data-outside] { background: none; outline: 1px dashed var(--zone-edge); outline-offset: -1px; }
+.poster-step__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 0; }
+
+[data-labels="numbers"] .poster-step__name { visibility: hidden; }
+
+/* Far: the picture of the whole. No height changes, or an agent's placing overlaps. */
+/* Hidden rather than gone: going far then lays nothing out, and a name is back at once. */
+[data-distance="far"] .poster-tile__name, [data-distance="far"] .poster-tile__mark { visibility: hidden; }
+[data-distance="far"] .poster-tile { border-color: var(--line-strong); }
+[data-distance="far"] .poster-grouping__name, [data-distance="far"] .poster-step__name, [data-distance="far"] .poster-person { visibility: hidden; }
+[data-distance="far"] .poster-title { font-size: min(22px, calc(11px / var(--canvas-zoom, 1))); }
+[data-distance="far"] .poster-title__unit { display: none; }
+[data-distance="far"] .poster-band__phase, [data-distance="far"] .poster-column__group { font-size: min(15px, calc(10px / var(--canvas-zoom, 1))); }
+
+/* Near: says more, in the same 46. No padding, or 24 + 10 + 10 does not fit. */
+[data-distance="near"] .poster-tile { justify-content: flex-start; align-items: flex-start; padding: 0 3px 0 11px; text-align: start; }
+[data-distance="near"] .poster-tile__name { -webkit-line-clamp: 2; font-size: var(--canvas-t-label); font-weight: var(--fw-strong); line-height: 12px; text-wrap: wrap; }
+[data-distance="near"] .poster-tile__near { display: block; max-width: 100%; overflow: hidden; color: var(--ink-2); font-size: var(--canvas-t-near); line-height: 10px; text-overflow: ellipsis; white-space: nowrap; }
+[data-distance="near"] .poster-tile__mark { inset-block-start: 4px; inset-inline-start: 3px; width: 5px; height: 5px; }
+
+/* On paper every block is drawn: nothing is off screen there. */
+.print-page .poster-block { content-visibility: visible; }

@@ -113,7 +113,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   plan: ['changes', 'interfaces', 'units', 'milestones', 'restsOn', 'document', 'boards', 'principles', 'history', 'comments'],
   technology: ['chain', 'matrix'],
   // A view has tabs too where it reads at two levels: the sheet's are its level (ADR-0019, amended).
-  sheet: ['names', 'overview'],
+  sheet: ['names', 'overview', 'poster'],
 }
 
 /**

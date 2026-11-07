@@ -196,6 +196,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'map.noApplications': 'Nog niets ondersteunt deze capabilities.',
   'sheet.reading': 'De lezing',
   'sheet.reading.overview': 'Overzicht',
+  'sheet.reading.poster': 'Poster',
   'sheet.reading.names': 'Namen',
   'sheet.reading.coverage': 'Dekking',
   'sheet.reading.maps': 'Dekkingskaarten in deze scope',

@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest'
 
 const FIXED: Record<string, number> = {
   'src/app/drawingSkin.ts': 2,
+  'src/business/ui/SheetPoster.css': 2,
   'src/editor/canvas/DomainGroupLayer.tsx': 1,
   'src/editor/edges/FloatingEdge.tsx': 1,
   'src/editor/nodes/ActorNode.tsx': 1,

@@ -55,6 +55,7 @@ import { locatedRing, locatedSelector, useLocated } from '../../widgets/useLocat
 import { usePlaceReading, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import { captureSheet } from '../../widgets/capturePage'
+import { SheetPoster } from './SheetPoster'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { lazyPart } from '../../widgets/lazyPart'
 import { ArrivingDialog } from '../../widgets/Arriving'
@@ -786,20 +787,26 @@ export function SheetPage(props: SheetPageProps) {
         style={exporting?.width !== undefined ? { width: exporting.width } : undefined}
         sx={exporting ? undefined : locatedRing(at.locatedId)}
       >
-        {laidOut?.journey && (
+        {at.tab !== 'poster' && laidOut?.journey && (
           <JourneyBand
             journey={laidOut.journey} open={journeyOpen || exporting !== undefined} onOpen={selection.setJourneyOpen}
             selectedId={selectedId} onSelect={selection.select} onNewLane={() => setLaneOpen(true)} author={author} t={t}
           />
         )}
-        <SheetKey at={at} props={props} onJump={jump} />
+        {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
         <div className="sheet-page__work">
-          <RailPart at={at} props={props} />
-          <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
+          {at.tab === 'poster' && laidOut && (
+            <SheetPoster
+              laidOut={laidOut} areaSpans={sheet?.areaSpans} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
+              nameOf={at.context.named} selectedId={selectedId} onSelect={selection.select} strip={<SheetKey at={at} props={props} onJump={jump} />} t={t}
+            />
+          )}
+          {at.tab !== 'poster' && <RailPart at={at} props={props} />}
+          {at.tab !== 'poster' && <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
             <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={finder.lit ? '' : undefined}>
               <SheetBody at={at} props={props} level={level} openArea={openArea} />
             </div>
-          </div>
+          </div>}
           {selected && !exporting && (
             <OverPanel
               selected={selected} sheet={sheet} laidOut={laidOut} width={detailsWidth} onWidth={setDetailsWidth} readOnly={readOnly}

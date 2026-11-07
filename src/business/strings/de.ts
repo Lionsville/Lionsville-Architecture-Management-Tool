@@ -196,6 +196,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'map.noApplications': 'Noch nichts unterstützt diese Fähigkeiten.',
   'sheet.reading': 'Die Lesart',
   'sheet.reading.overview': 'Überblick',
+  'sheet.reading.poster': 'Poster',
   'sheet.reading.names': 'Namen',
   'sheet.reading.coverage': 'Abdeckung',
   'sheet.reading.maps': 'Abdeckungskarten in diesem Bereich',

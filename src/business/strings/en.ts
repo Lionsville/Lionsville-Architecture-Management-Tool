@@ -220,6 +220,7 @@ export const EN = {
   'map.noApplications': 'Nothing supports these capabilities yet.',
   'sheet.reading': 'The reading',
   'sheet.reading.overview': 'Overview',
+  'sheet.reading.poster': 'Poster',
   'sheet.reading.names': 'Names',
   'sheet.reading.coverage': 'Coverage',
   'sheet.reading.maps': 'Coverage maps in this scope',
