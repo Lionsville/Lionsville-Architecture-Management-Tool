@@ -5,7 +5,10 @@
   (3.7.0); amended, 25 October 2026: a tone in three, who recorded it, and
   a record's changes (§9–§12; not yet built, 3.8.0); amended, 7 November
   2026: *Mine* also counts a name as typed and whoever logged it (§10,
-  *Amendment, 7 November 2026*, below)
+  *Amendment, 7 November 2026*, below); amended again, 7 November 2026: who
+  recorded it reads through the register, and an entry writes no name (§10,
+  *Amendment, 7 November 2026: who recorded it, as a name*, below), with the
+  format at 16 for it; as built the same day
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -432,6 +435,10 @@ to. With nobody said, *Mine* offers *This is me*. No new linking step.
 logged it, follows the register's merges, and says what it counts when it finds
 nothing.*
 
+*Amended again, 7 November 2026 (below): `recordedBy` is `{ name?, account?,
+person?, via? }`, the name written only where no entry answers, and every reader
+reads who it was through the register.*
+
 ### 11. A record's changes
 
 Every reader of a record that has a page — observation, cause, solution,
@@ -503,6 +510,54 @@ The register is read once per list and a row costs a lookup or two and a fold of
 its own text (`observations/recordedBy`, `mineOf`, `isMine`): the screens and
 `observations.list` ask the one rule, and a large register costs nothing per
 row.
+
+## Amendment, 7 November 2026: who recorded it, as a name (§10)
+
+§10 wrote the name beside the entry, and ADR-0036 says a name lives in one place
+that can forget it. As built by 3.8.0, the name stayed on the *Recorded by* column
+and in the reader after the entry was forgotten or removed, an agent given
+pseudonyms was told it, a copy made without names carried it, and *Points at them*
+and *What we hold* did not list the field, so a request for access missed it.
+
+**Every reader goes through one function** (`observations/recordedBy`,
+`recorderShown`), beside `whoRecords`. The entry is `person`, or what the source
+says the account is linked to now. With an entry the register answers
+(`people/shown`): the pseudonym once forgotten, *a former colleague* once removed,
+the withheld form under a pseudonym policy, the kept entry after a merge. With
+none, the source's current name for the account, and then the name kept. A name
+kept beside an entry is never read.
+
+**An agent** is told `{ person, name, via }` where an entry answers and
+`{ name, via }` where none does, as the answer leaves the handler, the whole model
+of a `project.export` included. Under a pseudonym policy with no entry to give a
+pseudonym, the name is left out and that is said: `{ nameWithheld: true, via }`,
+as `signedAsWithheld` says it of a signature. **An account never leaves in an
+answer.**
+
+**An entry writes no name.** `RecordedBy.name` is optional and `whoRecords` writes
+none where there is a `person`. A record already written keeps what it holds, in
+the state and in the history, and `isMine` means what it meant; ADR-0036 §10 says
+what that leaves unreachable.
+
+**The seam.** `SourcePeople.recorder(account)` says what is true of an account a
+record names, for a record that holds no entry: the entry it was linked to since,
+or the name it goes by since it was renamed or erased. Absent on a source with no
+accounts, and the agent's view has the same (`SessionView.recorder`,
+`PeopleView.recorder`). This is all core knows of an account.
+
+**A copy** (`recorderInCopy`) never carries the account, which means something
+only at the source that keeps it, and carries the entry where one answers. *Without
+names* keeps `person` and `via`, as the same copy keeps a signer's id and drops the
+name as signed, and drops the record when nothing is left. It reads the state; like
+the signature's name, what the history holds is not read by a copy, which carries no
+history. `personIdsIn` finds the entry, so a copy of part of the tree carries it,
+and the entry a merge kept; `pointersIn` lists it as a field of its own, *recorded
+by*.
+
+**The format turns to 16.** A 3.8 build reads a record with no `recordedBy:` line
+as nobody, and so drops the entry, the account and the agent on its way back: the
+case the number exists for (`folderFormat.ts`). A 15 is a 16 whose records still
+hold both, read as above.
 
 ## As built, 25 October 2026: a record's changes (§11)
 

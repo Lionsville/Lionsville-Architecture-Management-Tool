@@ -36,7 +36,10 @@
   the chart opens two levels deep whatever its size, the outline leads the
   chart's unfolding and is as wide as it is dragged, and a unit type's long
   words are cut on the chart (*Amended, 17 October 2026 — the chart made
-  easier to read*, below); as built and implemented, 17 October 2026
+  easier to read*, below); as built and implemented, 17 October 2026.
+  Amended, 7 November 2026: who recorded an observation reads through the
+  register, and what it cannot reach of that is said (§10); as built the same
+  day
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
@@ -366,7 +369,21 @@ a name back, because the register keeps no history of it.
 * a signature, by decision (§8);
 * on the desktop, git's own record of who made each commit;
 * a copy made before the person was forgotten: a working file handed over, a
-  backup.
+  backup;
+* *(amended, 7 November 2026)* **the names recorded by 3.8.0 and 3.8.1 in the
+  history.** Those two releases wrote who recorded an observation with the name
+  beside the entry (ADR-0038 §10), which this record's *the history never held
+  the name* did not allow for. The step and the snapshots keep it, because the
+  history is not rewritten; no screen, no answer to an agent and no copy reads a
+  name where an entry answers, so a forget reaches every reader of it. What is
+  not reached is somebody reading the history's own files or a copy from then. A
+  record made since holds the entry and no name;
+* *(amended, 7 November 2026)* **an account's name where no entry and no source
+  answers.** A record may name an account and hold the name it went by. Where a
+  source says what is true of the account now (`SourcePeople.recorder`), that is
+  read; where the source says nothing, or none is there to ask — a copy opened
+  elsewhere — the name kept is what there is. It is text that points at nobody,
+  like a name typed into a field: the register cannot forget what it never held.
 
 ### 11. *This is me*
 
