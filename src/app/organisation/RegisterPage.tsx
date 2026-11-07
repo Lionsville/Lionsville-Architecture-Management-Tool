@@ -25,6 +25,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Language, Translate } from '../../i18n'
+import { plural } from '../../i18n/strings'
 import type { ElementId } from '../../model'
 import type { PersonRef } from '../../model/person'
 import { CHECK_LIST_WORDS, CHECK_CATALOGUE } from '../../model/checkCatalogue'
@@ -150,7 +151,11 @@ function platformColumns(words: RegisterWords, found: ReadonlyMap<string, readon
 
 function usedBy(row: TechnologyRow, s: Translate): string {
   const { applications, scopes } = row.consumers
-  return s('register.usedBy', { applications, scopes })
+  // Counted words each, so one application in one scope does not read as plural.
+  return s('register.usedBy', {
+    applications: plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, applications),
+    scopes: plural(s, { one: 'register.scopesOne', other: 'register.scopesOther' }, scopes),
+  })
 }
 
 function filterFields(tab: RegisterTab, rows: readonly Shown[], words: RegisterWords, s: Translate): readonly FilterField[] {

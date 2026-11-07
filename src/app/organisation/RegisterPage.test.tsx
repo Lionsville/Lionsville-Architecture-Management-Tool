@@ -72,6 +72,11 @@ describe('the register', () => {
     expect(screen.getByRole('row', { name: /OpenShift/ }).textContent).toContain('Containers')
   })
 
+  it('counts who uses a service in words that agree with the number', () => {
+    page({ technology: [tech('Messaging', 'platformService', { consumers: { applications: 1, scopes: 1 } })], request: { tab: 'services', select: 'Messaging', nonce: 1 } })
+    expect(within(screen.getByRole('dialog')).getByText('1 application · 1 scope')).toBeTruthy()
+  })
+
   it('lands on a tab and a record a way in asked for', () => {
     page({ request: { tab: 'services', select: 'Messaging', nonce: 1 } })
     expect(screen.getByRole('tab', { name: /Services/, hidden: true }).getAttribute('aria-selected')).toBe('true')
