@@ -17,11 +17,13 @@ import type { OperatingModel } from '../edit'
 import type { MatrixOrder } from '../matrixView'
 
 function Row({ label, up, down, words, dispatch }: { label: string; up: Command | undefined; down: Command | undefined; words: readonly [string, string]; dispatch(command: Command): void }) {
+  // A greyed arrow says why it is off, not what it would have done.
+  const { t } = useStrings()
   return (
     <div className="op-arrange__row">
       <span>{label}</span>
-      <Button variant="quiet" size="small" aria-label={`${words[0]}: ${label}`} reason={up ? undefined : words[0]} onClick={() => up && dispatch(up)}>↑</Button>
-      <Button variant="quiet" size="small" aria-label={`${words[1]}: ${label}`} reason={down ? undefined : words[1]} onClick={() => down && dispatch(down)}>↓</Button>
+      <Button variant="quiet" size="small" aria-label={`${words[0]}: ${label}`} reason={up ? undefined : t('operating.orderFirst')} onClick={() => up && dispatch(up)}>↑</Button>
+      <Button variant="quiet" size="small" aria-label={`${words[1]}: ${label}`} reason={down ? undefined : t('operating.orderLast')} onClick={() => down && dispatch(down)}>↓</Button>
     </div>
   )
 }

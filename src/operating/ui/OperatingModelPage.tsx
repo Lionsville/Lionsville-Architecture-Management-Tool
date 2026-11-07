@@ -39,7 +39,7 @@ import { LIBRARIES } from '../libraries'
 import { ALL_OF_THE_MATRIX } from '../matrixView'
 import type { MatrixView } from '../matrixView'
 import type { OrganisationFacts, OutsideTheModel } from '../organisationFacts'
-import { readLook, writeLook } from '../raciView'
+import { raciParts, readLook, writeLook } from '../raciView'
 import type { RaciLook } from '../raciView'
 import { ArrangePanel } from './ArrangePanel'
 import { countsLine } from './countsLine'
@@ -238,7 +238,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           )}
           {tab === 'responsibilities' && arranging && (
             <ArrangePanel
-              width={asideWidth} model={model} order={matrixView.order} onOrder={(order) => setMatrixView({ ...matrixView, order })} part={look.part}
+              width={asideWidth} model={model} order={matrixView.order} onOrder={(order) => setMatrixView({ ...matrixView, order })} part={arrangedPart(model, look)}
               dispatch={dispatch} onClose={() => setArranging(false)} readOnly={readOnly}
             />
           )}
@@ -255,6 +255,12 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
       />
     </PageDialog>
   )
+}
+
+/** The part the grid shows, as the tab reads it: with none said and no unit or whole organisation, its first group. */
+function arrangedPart(model: OperatingModel, look: RaciLook): string | undefined {
+  if (look.whole || look.unit !== undefined || look.part !== undefined) return look.part
+  return raciParts(model).find((one) => one.responsibilities.length > 0)?.group
 }
 
 /** A slot somebody holds through the type alone waits for the host's list of them; any other goes at once. */
