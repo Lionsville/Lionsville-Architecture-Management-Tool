@@ -12,8 +12,12 @@
  * Give `id` where a `TabPanel` follows, so the two name each other. A section
  * with nothing does not show: leave it out, or say `hidden` where the list is a
  * table of its own.
+ *
+ * Tabs that do not fit their strip step down a size before they scroll, so a
+ * panel's three tabs stay in sight in German and Dutch, where the words run long:
+ * a strip that scrolls with no bar hides a tab nobody knows is there.
  */
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { rovedIndex } from './roving'
 import './Tabs.css'
@@ -46,6 +50,22 @@ export function Tabs<V extends string = string>({ label, items, value, onChange,
   const shown = items.filter((item) => !item.hidden)
   const refs = useRef(new Map<string, HTMLButtonElement>())
   const on = Math.max(0, shown.findIndex((item) => item.value === value))
+  const strip = useRef<HTMLDivElement>(null)
+  const words = shown.map((item) => `${item.label} ${item.count ?? ''}`).join('|')
+  useLayoutEffect(() => {
+    const element = strip.current
+    if (!element) return
+    const fit = () => {
+      element.removeAttribute('data-tight')
+      if (element.scrollWidth > element.clientWidth + 1) element.setAttribute('data-tight', '')
+    }
+    fit()
+    void document.fonts?.ready.then(fit)
+    if (typeof ResizeObserver === 'undefined') return
+    const watch = new ResizeObserver(fit)
+    watch.observe(element)
+    return () => watch.disconnect()
+  }, [words])
 
   const onKeyDown = (event: KeyboardEvent, index: number) => {
     const next = rovedIndex(event.key, index, shown.length)
@@ -58,7 +78,7 @@ export function Tabs<V extends string = string>({ label, items, value, onChange,
   }
 
   return (
-    <div className="kit-tabs" role="tablist" aria-label={label} data-guide={guide}>
+    <div ref={strip} className="kit-tabs" role="tablist" aria-label={label} data-guide={guide}>
       {shown.map((item, index) => (
         <button
           key={item.value}

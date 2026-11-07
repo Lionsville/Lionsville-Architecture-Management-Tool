@@ -67,6 +67,11 @@
 .kit-panel__status { margin-top: var(--s-1); color: var(--ink-2); font-size: var(--t-small); overflow-wrap: anywhere; }
 
 .kit-panel__tabs { flex: none; padding-inline: var(--s-3); }
+/* The tab is its word, underlined, as drawn: three tabs fit 320 px in German and Dutch too. */
+.kit-panel__tabs .kit-tabs,
+.kit-panel__tabs .kit-tabs[data-tight] { gap: var(--s-3); }
+.kit-panel__tabs .kit-tabs__tab,
+.kit-panel__tabs .kit-tabs[data-tight] .kit-tabs__tab { padding-inline: 0; }
 
 .kit-panel__body {
   flex: 1;

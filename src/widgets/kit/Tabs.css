@@ -23,4 +23,6 @@
 .kit-tabs__tab:hover { color: var(--ink); border-bottom-color: var(--line-strong); }
 .kit-tabs__tab[aria-selected='true'] { color: var(--ink); font-weight: var(--fw-medium); border-bottom-color: var(--accent); }
 .kit-tabs__tab:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.kit-tabs[data-tight] { gap: 0; }
+.kit-tabs[data-tight] .kit-tabs__tab { padding-inline: var(--s-2); font-size: var(--t-small); }
 .kit-tabs__count { color: var(--ink-3); font-variant-numeric: tabular-nums; }

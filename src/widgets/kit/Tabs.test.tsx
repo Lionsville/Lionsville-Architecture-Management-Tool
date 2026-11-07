@@ -97,4 +97,18 @@ describe('rovedIndex', () => {
     renderShell(<Tabs label="Stages" value="a" onChange={() => {}} items={[{ value: 'a', label: 'A', guide: 'x.a', testId: 'tab-a' }]} />)
     expect(screen.getByTestId('tab-a').getAttribute('data-guide')).toBe('x.a')
   })
+
+  it('steps down a size when its tabs do not fit the strip, and not when they do', () => {
+    const wide = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.hasAttribute('data-tight') ? 280 : 340
+    })
+    const room = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(296)
+    renderShell(<Tabs label="Sections" items={ITEMS} value="apps" onChange={() => {}} />)
+    expect(screen.getByRole('tablist').hasAttribute('data-tight')).toBe(true)
+    cleanup()
+    room.mockReturnValue(400)
+    renderShell(<Tabs label="Sections" items={ITEMS} value="apps" onChange={() => {}} />)
+    expect(screen.getByRole('tablist').hasAttribute('data-tight')).toBe(false)
+    wide.mockRestore(); room.mockRestore()
+  })
 })
