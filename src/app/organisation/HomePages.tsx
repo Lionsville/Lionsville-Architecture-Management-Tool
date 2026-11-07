@@ -14,7 +14,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps } from 'react'
 import type { Language, Translate } from '../../i18n'
-import { plural } from '../../i18n/strings'
 import type { ElementId } from '../../model'
 import type { PeoplePage as PeoplePageShape } from '../../people/ui/PeoplePage'
 import type { ScopeSummary } from '../../projects/scope'

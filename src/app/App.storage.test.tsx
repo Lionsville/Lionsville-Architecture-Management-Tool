@@ -195,7 +195,7 @@ describe('a source a provider answers for', () => {
     renderApp({ source: { ...elsewhere, readOnly: true }, boot: { initialProject: scope } })
     fireEvent.click(await screen.findByText('Roadmap'))
     // The page is up; what is missing is the one thing on it that writes.
-    expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
+    expect(await screen.findByRole('heading', { name: 'Roadmap' })).toBeDefined()
     expect(screen.queryByText('New plan')).toBeNull()
   })
 })
@@ -503,7 +503,7 @@ describe('the chrome a registered provider brought', () => {
       },
     })
     fireEvent.click(screen.getByTestId('provider-open'))
-    expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
+    expect(await screen.findByRole('heading', { name: 'Roadmap' })).toBeDefined()
     expect(screen.getByTestId('crumb-current').textContent).toBe('Landscape')
   })
 

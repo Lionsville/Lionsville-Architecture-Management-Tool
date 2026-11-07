@@ -463,7 +463,6 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   // above the palette that says why its words are not in this ink.
   'src/editor/canvas/ElementPalette.tsx': [2, 'chevron, comment'],
   // A retired element's bar on the roadmap, whose name and dates are words.
-  'src/roadmap/ui/RoadmapPage.tsx': [1, 'retired bar'],
   // The edge of a platform card, beside a name that says it is one.
   'src/technology/ui/TechnologyLandscapePage.tsx': [1, 'platform edge'],
   // A logo tile's border when it is not the one picked; the logo is the tile.
@@ -486,7 +485,6 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // "not this", where the words are there to be found, not read.
   'src/technology/ui/TechnologyLandscapePage.tsx': [6, 'out-of-focus dims, switched-off chip, glyph'],
   // Bars, bands, hatches and the today line: shapes whose words are in their tooltips.
-  'src/roadmap/ui/RoadmapPage.tsx': [6, 'bars, bands, markers'],
   // The observations and causes not on the selected path, and a dropped solution, struck through as well.
   // On the analysis picture, what is off the chain a hover traces.
   'src/observations/ui/AnalysisPicture.tsx': [1, 'off-trace dim'],
