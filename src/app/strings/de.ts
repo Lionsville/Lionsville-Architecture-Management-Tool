@@ -1664,4 +1664,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'topics.principlesNone': 'Es führt noch keine.',
   'topics.isScope': 'Ein Thema ist ein Bereich: sein Verlauf steht auf seiner Startseite.',
   'topics.removeRefusedShort': 'Es führt noch ein Prinzip, einen Baustein oder ein Unterthema: verschieben oder entfernen Sie diese zuerst.',
+  'topics.linkMore': 'Mehr zu {scope}',
 }

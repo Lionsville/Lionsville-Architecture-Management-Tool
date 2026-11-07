@@ -1894,4 +1894,5 @@ export const EN = {
   'topics.principlesNone': 'It keeps none yet.',
   'topics.isScope': 'A topic is a scope: its history is on its home.',
   'topics.removeRefusedShort': 'It still keeps a principle, a building block or a subtopic: move or remove those first.',
+  'topics.linkMore': 'More for {scope}',
 } as const

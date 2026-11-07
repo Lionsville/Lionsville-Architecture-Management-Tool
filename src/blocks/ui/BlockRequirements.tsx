@@ -2,39 +2,30 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A building block's *Requirements* (ADR-0043 §2): the grid of what each
- * usage context needs of each capability, and the two lists it is made of —
- * a capability added, said a must or taken off; a usage context added, which
- * writes its chapter in the block's document in the same step, or taken off.
- * Every change is one step in the scope that keeps the block.
+ * A building block's *Requirements* (ADR-0043 §2): one grid, and it is the only
+ * list of its capabilities, with *must* and *Remove* on the row, so each thing has
+ * one place. A usage context added writes its chapter in the block's document in
+ * the same step. Every change is one step in the scope that keeps the block.
  */
 import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { withChapters, withoutCapability } from '../../model/buildingBlock'
 import type { BlockCapability, UsageContext } from '../../model/types'
-import { FieldsDialog } from '../../widgets/CompactForms'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { RequirementsGrid } from './EvaluationGrid'
 
-const SMALL = { fontSize: 11, minWidth: 0, px: 0.75 } as const
-
-/** The two lists, a line each, with what may be done to each line. */
-function Lists({ row }: { row: BlockRow }) {
+export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter: (context: string) => void }) {
   const access = useBlocks()
   const { t } = useStrings()
+  const [adding, setAdding] = useState<'capability' | 'context' | undefined>(undefined)
   if (!access) return null
   const { block } = row
+  const may = access.mayWrite(row.scope)
   const capabilities = block.capabilities ?? []
   const contexts = block.contexts ?? []
   const setMust = (one: BlockCapability, must: boolean) => access.update(block.id, {
@@ -45,58 +36,42 @@ function Lists({ row }: { row: BlockRow }) {
       return must ? { ...rest, must: true as const } : rest
     }),
   })
-  const dropCapability = (id: string) => access.update(block.id, {
-    capabilities: capabilities.filter((one) => one.id !== id), contexts: withoutCapability(contexts, id),
-  })
+  const dropCapability = (id: string) => access.update(block.id, { capabilities: capabilities.filter((one) => one.id !== id), contexts: withoutCapability(contexts, id) })
   const dropContext = (id: string) => access.update(block.id, { contexts: contexts.filter((one) => one.id !== id) })
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { md: '1fr 1fr' }, gap: 3, mt: 3 }}>
-      <Box>
-        <Typography component="h2" sx={{ fontSize: 12, fontWeight: 600, mb: 0.5 }}>{t('blocks.capabilities')}</Typography>
-        {capabilities.map((one) => (
-          <Box key={one.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: 1, borderColor: 'divider', py: 0.25 }}>
-            <Typography sx={{ fontSize: 13, flex: 1 }}>{one.text}</Typography>
-            <FormControlLabel
-              control={<Checkbox size="small" checked={one.must === true} onChange={(event) => setMust(one, event.target.checked)} />}
-              label={<Typography sx={{ fontSize: 11 }}>{t('blocks.must')}</Typography>}
-            />
-            <Button size="small" color="error" sx={SMALL} onClick={() => dropCapability(one.id)} aria-label={t('blocks.removeNamed', { name: one.text })}>{t('blocks.remove')}</Button>
-          </Box>
-        ))}
-      </Box>
-      <Box>
-        <Typography component="h2" sx={{ fontSize: 12, fontWeight: 600, mb: 0.5 }}>{t('blocks.usageContexts')}</Typography>
-        {contexts.map((one) => (
-          <Box key={one.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: 1, borderColor: 'divider', py: 0.25 }}>
-            <Typography sx={{ fontSize: 13, flex: 1 }}>{one.name}</Typography>
-            <Button size="small" color="error" sx={SMALL} onClick={() => dropContext(one.id)} aria-label={t('blocks.removeNamed', { name: one.name })}>{t('blocks.remove')}</Button>
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  )
-}
-
-export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter: (context: string) => void }) {
-  const access = useBlocks()
-  const { t } = useStrings()
-  const [adding, setAdding] = useState<'capability' | 'context' | undefined>(undefined)
-  if (!access) return null
-  const may = access.mayWrite(row.scope)
+  const rowEnd = (one: BlockCapability) => (may ? (
+    <span className="guidance-record__line">
+      <label className="guidance-form__tick">
+        <input type="checkbox" checked={one.must === true} onChange={(event) => setMust(one, event.target.checked)} aria-label={t('blocks.mustOf', { name: one.text })} />
+        {t('blocks.must')}
+      </label>
+      <MoreMenu label={t('blocks.moreOf', { name: one.text })} items={[{ label: t('blocks.remove'), final: true, onSelect: () => dropCapability(one.id) }]} />
+    </span>
+  ) : (one.must ? t('blocks.must') : null))
   return (
     <>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2, maxWidth: 760 }}>{t('blocks.requirementsIntro')}</Typography>
-      {(row.block.capabilities ?? []).length === 0 && (row.block.contexts ?? []).length === 0
-        ? <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.requirementsEmpty')}</Typography>
-        : <RequirementsGrid block={row.block} onChapter={onChapter} {...(may ? { onChange: (next) => access.update(row.block.id, next) } : {})} />}
+      <p className="guidance-record__intro">{t('blocks.requirementsIntro')}</p>
+      {capabilities.length === 0 && contexts.length === 0
+        ? <p className="guidance-record__intro">{t('blocks.requirementsEmpty')}</p>
+        : <RequirementsGrid block={block} rowEnd={rowEnd} {...(may ? { onChange: (next) => access.update(block.id, next) } : {})} />}
+      {contexts.length > 0 && (
+        <div className="guidance-record__line">
+          <span className="guidance-read__quiet">{t('blocks.usageContexts')}</span>
+          {contexts.map((one) => (
+            <MenuButton
+              key={one.id} label={one.name} variant="quiet" size="small" data-guide={undefined}
+              items={[
+                { label: t('blocks.chapterOf', { name: one.name }), onSelect: () => onChapter(one.id) },
+                ...(may ? [{ label: t('blocks.remove'), final: true, onSelect: () => dropContext(one.id) }] : []),
+              ]}
+            />
+          ))}
+        </div>
+      )}
       {may && (
-        <>
-          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-            <Button size="small" onClick={() => setAdding('capability')} data-testid="block-add-capability">{t('blocks.addCapability')}</Button>
-            <Button size="small" onClick={() => setAdding('context')} data-testid="block-add-context">{t('blocks.addContext')}</Button>
-          </Box>
-          <Lists row={row} />
-        </>
+        <div className="guidance-record__line">
+          <Button variant="plain" onClick={() => setAdding('capability')} data-testid="block-add-capability">{t('blocks.addCapability')}</Button>
+          <Button variant="plain" onClick={() => setAdding('context')} data-testid="block-add-context">{t('blocks.addContext')}</Button>
+        </div>
       )}
       {adding === 'capability' && <CapabilityDialog row={row} onClose={() => setAdding(undefined)} />}
       {adding === 'context' && <ContextDialog row={row} onClose={() => setAdding(undefined)} />}
@@ -121,21 +96,22 @@ function CapabilityDialog({ row, onClose }: { row: BlockRow; onClose: () => void
     onClose()
   }
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('blocks.addCapabilityTitle')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <TextField autoFocus label={t('blocks.capabilityText')} value={text} onChange={(event) => setText(event.target.value)} helperText={t('blocks.capabilityHelp')} slotProps={{ htmlInput: { 'data-testid': 'capability-text' } }} />
-        <FormControlLabel control={<Checkbox checked={must} onChange={(event) => setMust(event.target.checked)} />} label={t('blocks.mustLabel')} />
-        <TextField select label={t('blocks.aspectField')} value={aspect} onChange={(event) => setAspect(event.target.value)} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          <MenuItem value="">{t('blocks.noAspect')}</MenuItem>
-          {aspects.map((one, index) => <MenuItem key={index} value={String(index)}>{one.label}</MenuItem>)}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!text.trim()} onClick={add} data-testid="capability-add">{t('blocks.add')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('blocks.addCapabilityTitle')} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={!text.trim()} onClick={add} data-testid="capability-add">{t('blocks.add')}</Button>
+        </>
+      )}
+    >
+      <TextField autoFocus label={t('blocks.capabilityText')} hint={t('blocks.capabilityHelp')} value={text} onChange={setText} data-testid="capability-text" />
+      <label className="guidance-form__tick"><input type="checkbox" checked={must} onChange={(event) => setMust(event.target.checked)} />{t('blocks.mustLabel')}</label>
+      <SelectField
+        label={t('blocks.aspectField')} value={aspect} onChange={setAspect}
+        options={[{ value: '', label: t('blocks.noAspect') }, ...aspects.map((one, index) => ({ value: String(index), label: one.label }))]}
+      />
+    </Dialog>
   )
 }
 
@@ -154,17 +130,18 @@ function ContextDialog({ row, onClose }: { row: BlockRow; onClose: () => void })
     onClose()
   }
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('blocks.addContextTitle')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.contextIntro')}</Typography>
-        <TextField autoFocus label={t('blocks.contextName')} value={name} onChange={(event) => setName(event.target.value)} helperText={t('blocks.contextNameHelp')} slotProps={{ htmlInput: { 'data-testid': 'context-name' } }} />
-        <TextField label={t('blocks.description')} value={description} onChange={(event) => setDescription(event.target.value)} multiline minRows={2} helperText={t('blocks.contextDescriptionHelp')} />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!name.trim()} onClick={add} data-testid="context-add">{t('blocks.add')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('blocks.addContextTitle')} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="context-add">{t('blocks.add')}</Button>
+        </>
+      )}
+    >
+      <p>{t('blocks.contextIntro')}</p>
+      <TextField autoFocus label={t('blocks.contextName')} hint={t('blocks.contextNameHelp')} value={name} onChange={setName} data-testid="context-name" />
+      <TextField rows={2} label={t('blocks.description')} hint={t('blocks.contextDescriptionHelp')} value={description} onChange={setDescription} />
+    </Dialog>
   )
 }

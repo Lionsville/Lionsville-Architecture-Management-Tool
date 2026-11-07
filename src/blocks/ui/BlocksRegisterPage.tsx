@@ -2,112 +2,128 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The register of building blocks (ADR-0043 §8): one row each — where it is
- * kept, its capabilities, its usage contexts, where it is evaluated with ✓
- * on the scopes that chose, and its solutions — over the whole organisation
- * or the blocks a home keeps or evaluates. A row opens the block's page; *New
- * building block* keeps one in a topic or a scope. A page over the home it
- * was opened from, reached from its card.
+ * Building blocks (ADR-0043 §8), under Guidance: one line each, grouped by where it
+ * is kept, over the whole organisation or the blocks a home keeps or evaluates. A
+ * row says what stands out, once. Selecting one opens it large, with its document
+ * and its numbers; *Open the building block* is its workbench. *New building block*
+ * keeps one in a topic or a scope. A page over the home it was opened from.
  */
-import { useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import IconButton from '@mui/material/IconButton'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
+import { useEffect, useMemo, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import { plural } from '../../i18n/strings'
+import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { matchesQuery } from '../../model/textSearch'
-import { barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import { PageClose } from '../../widgets/PageClose'
+import { GuidanceEmpty, GuidanceFrame } from '../../principles/ui/GuidanceFrame'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import { List } from '../../widgets/kit/List'
+import type { ListGroup } from '../../widgets/kit/List'
+import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { PageDialog } from '../../widgets/PageDialog'
+import { useBlockDocument } from './BlockAbout'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow, BlocksAccess } from './BlocksContext'
-import { scopeMenuItems } from '../../widgets/ScopeChoices'
-
-const CELL = { borderBottom: 1, borderColor: 'divider', px: 1.5, py: 0.75, fontSize: 13, textAlign: 'left', verticalAlign: 'top' } as const
+import { scopeOptions } from './scopeOptions'
 
 /** Where each block is evaluated, the scopes that chose marked ✓. */
 function evaluatedIn(access: BlocksAccess, block: string): string {
   return access.evaluationsOf(block).map((one) => `${access.scopeLabel(one.scope)}${one.evaluation.chosen ? ' ✓' : ''}`).join(', ')
 }
 
-function Row({ access, row }: { access: BlocksAccess; row: BlockRow }) {
+/** The word on a row: what stands out about this block, where anything does. */
+function noteOf(access: BlocksAccess, row: BlockRow, t: ReturnType<typeof useStrings>['t']): string | undefined {
+  const evaluations = access.evaluationsOf(row.block.id)
+  const chosen = evaluations.filter((one) => one.evaluation.chosen).length
+  if (chosen > 0) return plural(t, { one: 'blocks.noteChosenOne', other: 'blocks.noteChosen' }, chosen)
+  if (evaluations.length > 0) return plural(t, { one: 'blocks.noteEvaluateOne', other: 'blocks.noteEvaluate' }, evaluations.length)
+  const { capabilities, contexts, sbbs } = row.block
+  return (capabilities ?? []).length + (contexts ?? []).length + (sbbs ?? []).length === 0 ? t('blocks.noteNothing') : undefined
+}
+
+function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; row: BlockRow; ids: readonly string[]; onSelect: (id: string | null) => void }) {
   const { t } = useStrings()
   const { block, scope } = row
+  const document = useBlockDocument(block.id)
   return (
-    <tr data-testid={`block-row-${block.id}`}>
-      <Box component="td" sx={CELL}>
-        <Button size="small" onClick={() => access.openBlock(block.id)} sx={{ textTransform: 'none', fontWeight: 600, p: 0, minWidth: 0 }}>{block.name}</Button>
-      </Box>
-      <Box component="td" sx={CELL}>{access.scopeLabel(scope)}</Box>
-      <Box component="td" sx={CELL}>{(block.capabilities ?? []).length}</Box>
-      <Box component="td" sx={CELL}>{(block.contexts ?? []).map((one) => one.name).join(', ') || '—'}</Box>
-      <Box component="td" sx={{ ...CELL, color: 'text.secondary' }}>{evaluatedIn(access, block.id) || t('blocks.notEvaluated')}</Box>
-      <Box component="td" sx={CELL}>{(block.sbbs ?? []).map((one) => one.name).join(' · ') || '—'}</Box>
-    </tr>
+    <Preview
+      ids={ids} currentId={block.id} onSelect={onSelect} title={block.name} listWord={t('blocks.listWord')}
+      openFull={{ label: t('blocks.openBlock'), onPress: () => { onSelect(null); access.openBlock(block.id) } }}
+      facts={(
+        <>
+          <PreviewFact label={t('blocks.colKeptIn')}>{access.scopeLabel(scope)}</PreviewFact>
+          <PreviewFact label={t('blocks.capabilities')}>{(block.capabilities ?? []).length}</PreviewFact>
+          <PreviewFact label={t('blocks.usageContexts')}>{(block.contexts ?? []).map((one) => one.name).join(', ') || '—'}</PreviewFact>
+          <PreviewFact label={t('blocks.solutions')}>{(block.sbbs ?? []).map((one) => one.name).join(', ') || '—'}</PreviewFact>
+          <PreviewFact label={t('blocks.colEvaluatedIn')}>{evaluatedIn(access, block.id) || t('blocks.notEvaluated')}</PreviewFact>
+        </>
+      )}
+    >
+      {document.text === undefined ? null
+        : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}
+    </Preview>
   )
 }
 
-export function BlocksRegisterPage({ open, at, onClose, windowChrome }: {
+export function BlocksRegisterPage({ open, at, select, onClose, windowChrome }: {
   open: boolean
   /** The home it was opened over: the organisation lists every block, a scope those it keeps or evaluates. */
   at: string
+  /** A block to read large as the page opens. */
+  select?: string
   onClose: () => void
   windowChrome: WindowChrome
 }) {
   const access = useBlocks()
   const { t } = useStrings()
-  const bar = barChromeFor(windowChrome)
-  const [query, setQuery] = useState('')
+  const [find, setFind] = useState('')
   const [making, setMaking] = useState(false)
+  const [picked, setPicked] = useState<string | null>(select ?? null)
+  useEffect(() => { if (open && select) setPicked(select) }, [open, select])
   const version = access?.version ?? 0
-  const rows = useMemo(() => {
+  const every = useMemo(() => {
     if (!access) return []
-    const here = at === '' ? access.blocks() : (() => { const held = access.blocksAt(at); return [...held.kept, ...held.evaluated] })()
-    return here.filter((one) => matchesQuery(query, [one.block.name, one.block.description, ...(one.block.sbbs ?? []).map((sbb) => sbb.name)]))
+    if (at === '') return access.blocks()
+    const held = access.blocksAt(at)
+    return [...held.kept, ...held.evaluated]
     // The version says the tree was read again.
-  }, [access, version, at, query])
+  }, [access, version, at])
   if (!access) return null
+  const rows = every.filter((one) => matchesQuery(find, [one.block.name, one.block.description ?? '', ...(one.block.sbbs ?? []).map((sbb) => sbb.name)]))
+  const groups = new Map<string, ListGroup & { rows: ListGroup['rows'][number][] }>()
+  for (const row of rows) {
+    const group = groups.get(row.scope) ?? { id: row.scope || '-', label: t('blocks.keptInScope', { scope: access.scopeLabel(row.scope) }), rows: [] }
+    const note = noteOf(access, row, t)
+    group.rows.push({ id: row.block.id, text: row.block.name, ...(note ? { note } : {}) })
+    groups.set(row.scope, group)
+  }
+  const drawn = [...groups.values()]
+  const current = picked !== null ? access.block(picked) : undefined
+  const mayMake = access.placeChoices().some((one) => access.mayWrite(one.path))
+  const newOne = mayMake ? { label: t('blocks.new'), onPress: () => setMaking(true), dataGuide: 'blocks.new' } : undefined
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={t('blocks.registerTitle')}>
-      <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`, minHeight: 48,
-        borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-      }}>
-        <Tooltip title={t('common.close')}>
-          <IconButton size="small" aria-label={t('common.close')} onClick={onClose}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-          </IconButton>
-        </Tooltip>
-        <Typography component="h1" variant="body2" sx={{ fontWeight: 600 }}>{t('blocks.registerTitle')}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{at === '' ? t('blocks.registerAll') : t('blocks.registerScope', { scope: access.scopeLabel(at) })}</Typography>
-        <Box sx={{ flex: 1 }} />
-        <TextField size="small" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('blocks.search')} slotProps={{ htmlInput: { 'aria-label': t('blocks.search') } }} />
-        {access.placeChoices().some((one) => access.mayWrite(one.path)) && (
-          <Button size="small" variant="contained" onClick={() => setMaking(true)} data-testid="blocks-new" data-guide="blocks.new">{t('blocks.new')}</Button>
+      <GuidanceFrame tab="blocks">
+        {every.length === 0 ? <div className="guidance__body"><GuidanceEmpty tab="blocks" {...(newOne ? { action: newOne } : {})} /></div> : (
+          <>
+            <div className="guidance__bar">
+              <FilterWords
+                find={find} onFind={setFind} findLabel={t('blocks.search')} shown={{ count: rows.length, total: every.length }}
+                actions={mayMake && <Button variant="primary" onClick={() => setMaking(true)} data-testid="blocks-new" data-guide="blocks.new">{t('blocks.new')}</Button>}
+              />
+            </div>
+            <div className="guidance__list" data-testid="blocks-register">
+              <List
+                label={t('blocks.registerTitle')} groups={drawn} selectedId={current?.block.id ?? null} onOpen={setPicked}
+                empty={<p className="guidance__note" role="status">{t('blocks.searchEmpty', { query: find })}</p>}
+              />
+            </div>
+          </>
         )}
-        <PageClose onClose={onClose} />
-      </Box>
-      <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
-        {rows.length === 0 ? <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{query ? t('blocks.searchEmpty', { query }) : t('blocks.registerEmpty')}</Typography> : (
-          <Box component="table" sx={{ borderCollapse: 'collapse', width: '100%' }} data-testid="blocks-register">
-            <thead>
-              <tr>
-                {(['blocks.name', 'blocks.colKeptIn', 'blocks.capabilities', 'blocks.usageContexts', 'blocks.colEvaluatedIn', 'blocks.solutions'] as const).map((key) => (
-                  <Box component="th" key={key} sx={{ ...CELL, fontWeight: 600 }}>{t(key)}</Box>
-                ))}
-              </tr>
-            </thead>
-            <tbody>{rows.map((row) => <Row key={row.block.id} access={access} row={row} />)}</tbody>
-          </Box>
-        )}
-      </Box>
+      </GuidanceFrame>
+      {current && <BlockPreview access={access} row={current} ids={drawn.flatMap((group) => group.rows.map((one) => one.id))} onSelect={setPicked} />}
       {making && <NewBlockDialog access={access} at={at} onClose={() => setMaking(false)} />}
     </PageDialog>
   )
@@ -126,18 +142,17 @@ function NewBlockDialog({ access, at, onClose }: { access: BlocksAccess; at: str
     void access.create(place, name).then((id) => { onClose(); if (id) access.openBlock(id) })
   }
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('blocks.new')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <TextField autoFocus label={t('blocks.name')} value={name} onChange={(event) => setName(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'block-name' } }} />
-        <TextField select label={t('blocks.colKeptIn')} value={place} onChange={(event) => setPlace(event.target.value)} helperText={t('blocks.keptInHelp')} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          {scopeMenuItems(places, { topics: t('blocks.placeTopics'), scopes: t('blocks.placeScopes') })}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={busy || !name.trim() || places.length === 0} onClick={make} data-testid="block-create">{t('blocks.create')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('blocks.new')} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={busy || !name.trim() || places.length === 0} onClick={make} data-testid="block-create">{t('blocks.create')}</Button>
+        </>
+      )}
+    >
+      <TextField autoFocus label={t('blocks.name')} value={name} onChange={setName} data-testid="block-name" />
+      <SelectField label={t('blocks.colKeptIn')} hint={t('blocks.keptInHelp')} value={place} onChange={setPlace} options={scopeOptions(places, t)} />
+    </Dialog>
   )
 }

@@ -1663,4 +1663,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'topics.principlesNone': 'Het bewaart er nog geen.',
   'topics.isScope': 'Een onderwerp is een scope: de geschiedenis staat op zijn startpagina.',
   'topics.removeRefusedShort': 'Het bewaart nog een principe, bouwsteen of subonderwerp: verplaats of verwijder die eerst.',
+  'topics.linkMore': 'Meer voor {scope}',
 }

@@ -190,7 +190,7 @@ export function BlocksDoors({ pages, at, windowChrome, ready, back = () => windo
   if (openPage === 'blocks' && !ready) return arrivingPage({ windowChrome })
   return (
     <>
-      <BlocksRegisterPage open={openPage === 'blocks'} at={at} onClose={close} windowChrome={windowChrome} />
+      <BlocksRegisterPage open={openPage === 'blocks' && picked === undefined} at={at} onClose={close} windowChrome={windowChrome} />
       <BlockPage
         open={picked !== undefined} id={picked} {...(asked?.evaluation !== undefined ? { evaluation: asked.evaluation } : {})}
         // Back where it was opened from, as the POC's page over any screen closed onto it; from the register, to the register.

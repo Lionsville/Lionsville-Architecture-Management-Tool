@@ -295,7 +295,7 @@ describe('a list a screen draws more on', () => {
     expect(onRowDragStart.mock.calls[0]![0]).toBe('a')
   })
   it('indents a row that nests under the one before it, and says how deep', () => {
-    render(<List label="Topics" groups={[{ id: '', label: '', rows: [{ id: 'a', text: 'Security' }, { id: 'b', text: 'Identity', depth: 1 }] }]} />)
+    renderShell(<List label="Topics" groups={[{ id: '', label: '', rows: [{ id: 'a', text: 'Security' }, { id: 'b', text: 'Identity', depth: 1 }] }]} />)
     expect(screen.getByRole('row', { name: 'Identity' }).getAttribute('aria-level')).toBe('2')
     expect(screen.getByRole('row', { name: 'Security' }).getAttribute('aria-level')).toBeNull()
   })

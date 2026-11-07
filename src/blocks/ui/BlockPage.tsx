@@ -2,39 +2,34 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One building block's page (ADR-0043 §8):
+ * One building block as a workbench (ADR-0043 §8), under Guidance with the list
+ * folded away, because its grids need the width:
  *
- * - *About*: its document, a chapter per usage context, and the principles
- *   it cites;
- * - *Requirements*: its capabilities and its usage contexts, how much each
- *   context needs each capability — a context's head opens its chapter;
- * - *Solutions*: the catalogue of what could deliver it, where each is
- *   weighed and chosen;
+ * - *About*: its document, a chapter per usage context, and the principles it cites;
+ * - *Requirements*: its capabilities and usage contexts, how much each context needs
+ *   of each capability;
+ * - *Options*: the catalogue of what could deliver it, where each is weighed and chosen;
  * - *Where used*: each scope's evaluation, and *Evaluate for a scope…*.
  *
- * A page over the home it was opened from, reached from the register, a
- * topic or the block on a board; never the first view, so its script
- * arrives when it is first opened.
+ * A page over the home it was opened from, reached from the list, a topic or the
+ * block on a board; never the first view, so its script arrives when it is first
+ * opened. Each tab has an address.
  */
-import { useEffect, useState } from 'react'
-import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
+import { useEffect, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
-import { barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { PageClose } from '../../widgets/PageClose'
+import { GuidanceFrame } from '../../principles/ui/GuidanceFrame'
+import { Button } from '../../widgets/kit/Button'
+import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
+import { usePlaceTab } from '../../widgets/placeTab'
 import { BlockAbout } from './BlockAbout'
 import { BlockRequirements } from './BlockRequirements'
 import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
 import { useBlocks } from './BlocksContext'
 
-type TabKey = 'about' | 'requirements' | 'solutions' | 'used'
+type TabKey = 'about' | 'requirements' | 'options' | 'used'
 
 export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, windowChrome }: {
   open: boolean
@@ -48,53 +43,56 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
 }) {
   const access = useBlocks()
   const { t } = useStrings()
-  const [tab, setTab] = useState<TabKey>('requirements')
+  const [tab, setTab] = usePlaceTab('about')
   const [chapter, setChapter] = useState<string | undefined>(undefined)
   const [evaluating, setEvaluating] = useState<string | undefined>(openOn)
+  const shown = useRef(id)
   useEffect(() => {
     if (!open) return
     setEvaluating(openOn)
-    setTab(openOn !== undefined ? 'used' : 'requirements')
-  }, [open, openOn, id, nonce])
-  const bar = barChromeFor(windowChrome)
+    // Another block opens on About; a reload stays on the tab its address says.
+    if (openOn !== undefined) setTab('used')
+    else if (shown.current !== id) setTab('about')
+    shown.current = id
+  }, [open, openOn, id, nonce, setTab])
   const row = id ? access?.block(id) : undefined
   if (!access || !row) return null
   const { block, scope } = row
   const toChapter = (context: string) => { setChapter((block.contexts ?? []).find((one) => one.id === context)?.name); setTab('about') }
+  const now = (['about', 'requirements', 'options', 'used'] as const).find((one) => one === tab) ?? 'about'
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={block.name}>
-      <Box sx={{
-        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`, minHeight: 48,
-        borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-      }}>
-        <Tooltip title={t('common.close')}>
-          <IconButton size="small" aria-label={t('common.close')} onClick={onClose}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-          </IconButton>
-        </Tooltip>
-        <Typography component="h1" variant="body2" sx={{ fontWeight: 600 }}>{block.name}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('blocks.kind')} · {access.scopeLabel(scope)}</Typography>
-        <Box sx={{ flex: 1 }} />
-        <Tabs
-          value={tab} aria-label={block.name}
-          onChange={(_event, next: TabKey) => { setTab(next); if (next === 'used') setEvaluating(undefined) }}
-          sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, textTransform: 'none', fontSize: 13 } }}
-        >
-          <Tab value="about" label={t('blocks.about')} data-testid="block-tab-about" />
-          <Tab value="requirements" label={t('blocks.requirements')} data-testid="block-tab-requirements" />
-          <Tab value="solutions" label={t('blocks.solutions')} data-testid="block-tab-solutions" />
-          <Tab value="used" label={t('blocks.whereUsed')} data-testid="block-tab-used" />
-        </Tabs>
-        <PageClose onClose={onClose} />
-      </Box>
-      <Box sx={{ flex: 1, overflow: 'auto', px: 4, py: 3 }}>
-        <Box sx={{ maxWidth: 1180, mx: 'auto' }}>
-          {tab === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} />}
-          {tab === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
-          {tab === 'solutions' && <BlockSolutions row={row} />}
-          {tab === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}
-        </Box>
-      </Box>
+      <GuidanceFrame tab="blocks">
+        <div className="guidance-record" data-testid="block-page">
+          <div className="guidance-record__head">
+            <Button variant="quiet" onClick={onClose}>{t('blocks.backToList')}</Button>
+            <h1 className="guidance-record__title">{block.name}</h1>
+            <span className="guidance-read__quiet">{t('blocks.keptInScope', { scope: access.scopeLabel(scope) })}</span>
+          </div>
+          <div className="guidance-record__tabs">
+            <Tabs<TabKey>
+              label={block.name} value={now}
+              onChange={(next) => { setTab(next); if (next === 'used') setEvaluating(undefined) }}
+              items={[
+                { value: 'about', label: t('blocks.about') },
+                { value: 'requirements', label: t('blocks.requirements') },
+                { value: 'options', label: t('blocks.solutions') },
+                { value: 'used', label: t('blocks.whereUsed') },
+              ]}
+            />
+          </div>
+          {now === 'used' && evaluating !== undefined
+            ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
+            : (
+              <div className="guidance-record__body">
+                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} windowChrome={windowChrome} />}
+                {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
+                {now === 'options' && <BlockSolutions row={row} />}
+                {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}
+              </div>
+            )}
+        </div>
+      </GuidanceFrame>
     </PageDialog>
   )
 }

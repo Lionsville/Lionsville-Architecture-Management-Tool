@@ -78,6 +78,8 @@ export type BlocksAccess = {
   removeEvaluation(scope: string, evaluation: string): void
   /** *Propose a decision…* from a scope's evaluation, choosing `option`: the decision's id once it is there. */
   propose(scope: string, block: string, option: string): Promise<string | undefined>
+  /** The scope that keeps a block, open: where its principles are cited. */
+  openScope(scope: string): void
   /** A decision, opened on its scope's decisions page. */
   openDecision(scope: string, id: string): void
   /** A block's page, on a scope's evaluation where one is named. */

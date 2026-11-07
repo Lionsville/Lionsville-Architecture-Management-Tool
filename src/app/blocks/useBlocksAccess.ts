@@ -173,6 +173,7 @@ export function blocksAccess(deps: BlocksDeps, version: number): BlocksAccess {
       return landed ? made : undefined
     },
     openDecision: (scope, id) => deps.open(scope, { page: 'decisions', id }),
+    openScope: (scope) => deps.open(scope),
     openBlock: deps.openBlock,
     makeId: deps.makeId,
     today: () => deps.today,

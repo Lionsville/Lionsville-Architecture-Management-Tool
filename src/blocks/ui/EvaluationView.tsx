@@ -2,55 +2,42 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One scope's evaluation of a building block (ADR-0043 §4–§7): the usage
- * contexts that apply there, the solutions it weighs, the grid with the fit,
- * the solution chosen once a decision is accepted, and *Propose a
- * decision…* — a decision kept in that scope that chooses one option, with
- * each option's fit in its body. Every change is a step in that scope, under
- * its rights; the block's own fields are not changed from here.
+ * One scope's evaluation of a building block (ADR-0043 §4–§7): the usage contexts
+ * that apply there, the options it weighs, the grid with the fit, the option chosen
+ * once a decision is accepted, and *Propose a decision…* — a decision kept in that
+ * scope that chooses one option, with each option's fit in its body. Every change
+ * is a step in that scope, under its rights; the block's own fields are not changed
+ * from here. Removing it is rare and waits in More, away from the main act.
  */
 import { useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Link from '@mui/material/Link'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { percent, ranking } from '../../model/evaluation'
 import type { Evaluation } from '../../model/evaluation'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { FieldsDialog } from '../../widgets/CompactForms'
+import { Band } from '../../widgets/kit/Band'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField } from '../../widgets/kit/Field'
+import { MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { EvaluationGrid } from './EvaluationGrid'
 
-const LABEL = { fontSize: 12, fontWeight: 600, mb: 0.5 } as const
-
 const toggled = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((one) => one !== item) : [...list, item])
 
-/** The chips a person turns on and off: the contexts that apply here, or the solutions weighed. */
-function Choices({ items, on, onToggle, readOnly, testId }: {
-  items: readonly { id: string; name: string }[]; on: readonly string[]; onToggle: (id: string) => void; readOnly: boolean; testId: string
+/** The ticks a person turns on and off: the contexts that apply here, or the options weighed. */
+function Choices({ legend, items, on, onToggle, readOnly, testId }: {
+  legend: string; items: readonly { id: string; name: string }[]; on: readonly string[]; onToggle: (id: string) => void; readOnly: boolean; testId: string
 }) {
   return (
-    <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
-      {items.map((item) => {
-        const picked = on.includes(item.id)
-        return (
-          <Chip
-            key={item.id} label={item.name} color={picked ? 'primary' : 'default'} variant={picked ? 'filled' : 'outlined'}
-            {...(readOnly ? {} : { onClick: () => onToggle(item.id) })} aria-pressed={picked}
-            data-testid={`${testId}-${item.id}`}
-          />
-        )
-      })}
-    </Box>
+    <fieldset className="guidance-record__choices">
+      <legend>{legend}</legend>
+      {items.map((item) => (
+        <label key={item.id}>
+          <input type="checkbox" checked={on.includes(item.id)} disabled={readOnly} onChange={() => onToggle(item.id)} data-testid={`${testId}-${item.id}`} />
+          {item.name}
+        </label>
+      ))}
+    </fieldset>
   )
 }
 
@@ -65,46 +52,51 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
   const may = access.mayWrite(scope)
   const save = (next: Evaluation) => access.updateEvaluation(scope, next)
   const chosen = (block.sbbs ?? []).find((one) => one.id === evaluation.chosen)
+  const used = (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id))
   return (
-    <Box data-testid="evaluation-view">
-      <Link component="button" type="button" underline="hover" onClick={onBack} sx={{ fontSize: 12 }}>{t('blocks.backToWhereUsed')}</Link>
-      <Typography component="h2" variant="h6" sx={{ fontWeight: 600, mt: 0.5 }}>{t('blocks.evaluationTitle', { block: block.name, scope: access.scopeLabel(scope) })}</Typography>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5, mb: 2, maxWidth: 760 }}>{t('blocks.evaluationIntro')}</Typography>
+    <div className="guidance-record__body" data-testid="evaluation-view">
+      <div className="guidance-record__line">
+        <button type="button" className="guidance__link" onClick={onBack}>{t('blocks.backToWhereUsed')}</button>
+      </div>
+      <div className="guidance-record__line">
+        <h2 className="guidance-record__title">{t('blocks.evaluationTitle', { block: block.name, scope: access.scopeLabel(scope) })}</h2>
+        <span className="guidance-read__spring" />
+        {may && <Button variant="primary" disabled={evaluation.options.length === 0 || evaluation.contexts.length === 0} onClick={() => setProposing(true)} data-testid="block-propose">{t('blocks.propose')}</Button>}
+        {may && <MoreMenu items={[{ label: t('blocks.removeEvaluation'), final: true, onSelect: () => setRemoving(true) }]} />}
+      </div>
+      <p className="guidance-record__intro">{t('blocks.evaluationIntro')}</p>
       {chosen && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {t('blocks.chosenHere', { name: chosen.name })}
-          {evaluation.decidedBy && <> · <Link component="button" type="button" onClick={() => access.openDecision(scope, evaluation.decidedBy!)}>{t('blocks.openDecision')}</Link></>}
-        </Alert>
+        <Band
+          tone="info" title={t('blocks.chosenHere', { name: chosen.name })}
+          {...(evaluation.decidedBy ? { action: <Button variant="quiet" onClick={() => access.openDecision(scope, evaluation.decidedBy!)}>{t('blocks.openDecision')}</Button> } : {})}
+        />
       )}
-      <Typography sx={LABEL}>{t('blocks.contextsHere')}</Typography>
-      <Choices items={block.contexts ?? []} on={evaluation.contexts} readOnly={!may} testId="evaluation-context" onToggle={(id) => save({ ...evaluation, contexts: toggled(evaluation.contexts, id) })} />
-      <Box sx={{ display: 'flex', gap: 1, mt: -1.5, mb: 2 }}>
-        {(block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id)).map((one) => (
-          <Link key={one.id} component="button" type="button" underline="hover" onClick={() => onChapter(one.id)} sx={{ fontSize: 11 }}>{t('blocks.chapterOf', { name: one.name })}</Link>
-        ))}
-      </Box>
-      <Typography sx={LABEL}>{t('blocks.optionsHere')}</Typography>
+      <Choices legend={t('blocks.contextsHere')} items={block.contexts ?? []} on={evaluation.contexts} readOnly={!may} testId="evaluation-context" onToggle={(id) => save({ ...evaluation, contexts: toggled(evaluation.contexts, id) })} />
+      {used.length > 0 && (
+        <div className="guidance-record__line">
+          {used.map((one) => <button key={one.id} type="button" className="guidance__link" onClick={() => onChapter(one.id)}>{t('blocks.chapterOf', { name: one.name })}</button>)}
+        </div>
+      )}
       <Choices
-        items={(block.sbbs ?? []).filter((one) => one.status !== 'retired' || evaluation.options.includes(one.id))} on={evaluation.options}
+        legend={t('blocks.optionsHere')} items={(block.sbbs ?? []).filter((one) => one.status !== 'retired' || evaluation.options.includes(one.id))} on={evaluation.options}
         readOnly={!may} testId="evaluation-option"
         onToggle={(id) => save({ ...evaluation, options: toggled(evaluation.options, id), ...(evaluation.chosen === id ? { chosen: undefined, decidedBy: undefined } : {}) })}
       />
-      {evaluation.contexts.length === 0 && <Alert severity="info" sx={{ mb: 2 }}>{t('blocks.pickContextFirst')}</Alert>}
+      {evaluation.contexts.length === 0 && <Band tone="info" title={t('blocks.pickContextFirst')} />}
       <EvaluationGrid block={block} evaluation={evaluation} {...(may ? { onChange: save } : {})} />
-      {may && (
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button size="small" color="error" onClick={() => setRemoving(true)} data-testid="evaluation-remove">{t('blocks.removeEvaluation')}</Button>
-          <Box sx={{ flex: 1 }} />
-          <Button size="small" variant="contained" disabled={evaluation.options.length === 0 || evaluation.contexts.length === 0} onClick={() => setProposing(true)} data-testid="block-propose">{t('blocks.propose')}</Button>
-        </Box>
-      )}
       {proposing && <ProposeDialog row={row} scope={scope} evaluation={evaluation} onClose={() => setProposing(false)} />}
-      <ConfirmDialog
-        open={removing} title={t('blocks.removeEvaluationTitle', { scope: access.scopeLabel(scope) })} body={t('blocks.removeEvaluationBody')}
-        confirmLabel={t('blocks.remove')} cancelLabel={t('common.cancel')} onCancel={() => setRemoving(false)}
-        onConfirm={() => { setRemoving(false); access.removeEvaluation(scope, evaluation.id); onBack() }}
-      />
-    </Box>
+      <Dialog
+        open={removing} title={t('blocks.removeEvaluationTitle', { scope: access.scopeLabel(scope) })} onClose={() => setRemoving(false)}
+        actions={(
+          <>
+            <Button variant="plain" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
+            <Button variant="danger" onClick={() => { setRemoving(false); access.removeEvaluation(scope, evaluation.id); onBack() }}>{t('blocks.remove')}</Button>
+          </>
+        )}
+      >
+        <p>{t('blocks.removeEvaluationBody')}</p>
+      </Dialog>
+    </div>
   )
 }
 
@@ -123,24 +115,26 @@ function ProposeDialog({ row, scope, evaluation, onClose }: { row: BlockRow; sco
     void access.propose(scope, row.block.id, option).then((id) => { setBusy(false); setMade(id) })
   }
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('blocks.proposeTitle')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        {made ? <Alert severity="success">{t('blocks.proposed')}</Alert> : (
-          <>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.proposeIntro', { scope: access.scopeLabel(scope) })}</Typography>
-            <TextField select label={t('blocks.chooseSbb')} value={option} onChange={(event) => setOption(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'propose-option' } }}>
-              {ranked.map(({ sbb, fit }) => <MenuItem key={sbb.id} value={sbb.id}>{sbb.name} — {fitWords(fit)}</MenuItem>)}
-            </TextField>
-          </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{made ? t('common.close') : t('common.cancel')}</Button>
-        {made
-          ? <Button variant="contained" onClick={() => access.openDecision(scope, made)} data-testid="propose-open">{t('blocks.openDecision')}</Button>
-          : <Button variant="contained" disabled={busy || !option} onClick={propose} data-testid="propose-submit">{t('blocks.proposeSubmit')}</Button>}
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('blocks.proposeTitle')} onClose={onClose}
+      actions={(
+        <>
+          <Button variant="plain" onClick={onClose}>{made ? t('common.close') : t('common.cancel')}</Button>
+          {made
+            ? <Button variant="primary" onClick={() => access.openDecision(scope, made)} data-testid="propose-open">{t('blocks.openDecision')}</Button>
+            : <Button variant="primary" disabled={busy || !option} onClick={propose} data-testid="propose-submit">{t('blocks.proposeSubmit')}</Button>}
+        </>
+      )}
+    >
+      {made ? <p role="status">{t('blocks.proposed')}</p> : (
+        <>
+          <p>{t('blocks.proposeIntro', { scope: access.scopeLabel(scope) })}</p>
+          <SelectField
+            label={t('blocks.chooseSbb')} value={option} onChange={setOption} data-testid="propose-option"
+            options={ranked.map(({ sbb, fit }) => ({ value: sbb.id, label: `${sbb.name}: ${fitWords(fit)}` }))}
+          />
+        </>
+      )}
+    </Dialog>
   )
 }

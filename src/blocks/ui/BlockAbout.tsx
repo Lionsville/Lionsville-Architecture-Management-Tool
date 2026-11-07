@@ -2,21 +2,23 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A building block's *About* (ADR-0043 §8): its document — the element's
- * description, a chapter per usage context, read from the scope that keeps
- * the block — read or written, opened on a context's chapter where one was
- * asked for; and the principles it cites, read here and cited where the
- * block is open, as any element's are.
+ * A building block's *About* (ADR-0043 §8), which it opens on, since this is what
+ * tells a newcomer what the block is: its document — the element's description, a
+ * chapter per usage context, read from the scope that keeps the block, opened on a
+ * context's chapter where one was asked for, and written in a focused window — and
+ * the principles it cites, read here and cited where its scope is open, one press
+ * away.
  */
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { useEffect, useRef, useState } from 'react'
-import Box from '@mui/material/Box'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
+import { barChromeFor } from '../../platform/windowChrome'
+import type { WindowChrome } from '../../platform/windowChrome'
+import { Button } from '../../widgets/kit/Button'
+import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
+import { PanelSection } from '../../widgets/kit/Panel'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 
@@ -41,7 +43,7 @@ function useChapter(chapter: string | undefined, shown: boolean, onShown: () => 
  * index's, which carries no description — and read again whenever the tree
  * is, so a step landed is what it says; `undefined` until then.
  */
-function useDocument(block: string): { text: string | undefined; wrote: (text: string) => void } {
+export function useBlockDocument(block: string): { text: string | undefined; wrote: (text: string) => void } {
   const access = useBlocks()
   const [text, setText] = useState<string | undefined>(undefined)
   useEffect(() => {
@@ -54,59 +56,60 @@ function useDocument(block: string): { text: string | undefined; wrote: (text: s
   return { text, wrote: setText }
 }
 
-export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void }) {
+export function BlockAbout({ row, chapter, onChapterShown, windowChrome }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void; windowChrome: WindowChrome }) {
   const access = useBlocks()
   const { t } = useStrings()
   const { block, scope } = row
-  const document = useDocument(block.id)
-  const [mode, setMode] = useState<'read' | 'edit'>('read')
-  const [draft, setDraft] = useState('')
-  const read = useChapter(chapter, mode === 'read' && document.text !== undefined, onChapterShown)
+  const document = useBlockDocument(block.id)
+  const [draft, setDraft] = useState<string | undefined>(undefined)
+  const read = useChapter(chapter, draft === undefined && document.text !== undefined, onChapterShown)
   if (!access) return null
   const may = access.mayWrite(scope)
   const keep = () => {
-    if (draft === document.text) return
-    access.update(block.id, { description: draft })
-    // Shown at once, and the blur that comes before the press on *Read* keeps it once.
-    document.wrote(draft)
+    if (draft !== undefined && draft !== document.text) {
+      access.update(block.id, { description: draft })
+      // Shown at once: what is kept comes back when the tree is read again.
+      document.wrote(draft)
+    }
+    setDraft(undefined)
   }
   const cited = access.citationsOf(block.id)
+  const keeper = access.scopeLabel(scope)
   return (
-    <Box sx={{ maxWidth: 860 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography sx={{ fontSize: 13, color: 'text.secondary', flex: 1 }}>{t('blocks.documentIntro')}</Typography>
-        {may && (
-          <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_event, next: 'read' | 'edit' | null) => {
-            if (!next) return
-            if (next === 'read') keep()
-            else setDraft(document.text ?? '')
-            setMode(next)
-          }}>
-            <ToggleButton value="read">{t('blocks.read')}</ToggleButton>
-            {/* Not before the document is read: a draft started from nothing would be saved over it. */}
-            <ToggleButton value="edit" disabled={document.text === undefined} data-testid="block-document-edit">{t('blocks.edit')}</ToggleButton>
-          </ToggleButtonGroup>
-        )}
-      </Box>
-      {mode === 'edit' ? (
-        <Box sx={{ height: 480, display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          <MarkdownEditor variant="pane" value={draft} onChange={setDraft} onBlur={keep} label={t('blocks.document')} renderPreview={(text) => <Box sx={{ p: 2, fontSize: 15, overflow: 'auto' }}><MarkdownView markdown={text} /></Box>} />
-        </Box>
-      ) : (
-        <Box ref={read} sx={{ fontSize: 15, '& [data-lit]': { bgcolor: 'action.selected', transition: 'background-color 600ms' } }} data-testid="block-document">
-          {document.text === undefined ? null
-            : document.text.trim() ? <MarkdownView markdown={document.text} /> : <Typography color="text.secondary">{t('blocks.documentEmpty')}</Typography>}
-        </Box>
-      )}
-      <Typography component="h2" sx={{ mt: 4, mb: 1, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'text.secondary' }}>
-        {t('blocks.principles')}
-      </Typography>
-      {cited.length === 0
-        ? <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.citesNone')}</Typography>
-        : cited.map((one) => <Typography key={one.label} sx={{ fontSize: 14 }}>{one.label} <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>· {one.stance}</Box></Typography>)}
-      <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>{t('blocks.citeWhereOpen')}</Typography>
+    <div className="guidance-read">
+      <div className="guidance-record__line">
+        <p className="guidance-record__intro">{t('blocks.documentIntro')}</p>
+        <span className="guidance-read__spring" />
+        {/* Not before the document is read: a draft started from nothing would be saved over it. */}
+        {may && <Button variant="plain" disabled={document.text === undefined} onClick={() => setDraft(document.text ?? '')} data-testid="block-document-edit">{t('blocks.editText')}</Button>}
+      </div>
+      <div ref={read} className="guidance-record__doc" data-testid="block-document">
+        {document.text === undefined ? null
+          : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}
+      </div>
+      <PanelSection title={t('blocks.principles')}>
+        {cited.length === 0 && <p className="guidance-read__empty">{t('blocks.citesNone')}</p>}
+        {cited.map((one) => (
+          <div className="guidance-read__line" key={one.label}>
+            <span className="guidance-read__grow">{one.label}</span>
+            <span className="guidance-read__quiet">{one.stance}</span>
+          </div>
+        ))}
+        <div className="guidance-record__line">
+          <span className="guidance-read__quiet">{t('blocks.citeWhereOpen')}</span>
+          <button type="button" className="guidance__link" onClick={() => access.openScope(scope)}>{t('blocks.openIn', { scope: keeper })}</button>
+        </div>
+      </PanelSection>
       {/* Who added it and who changed it since (ADR-0038, amended §11): a block is an element of the scope that keeps it. */}
       <RecordChanges about={{ kind: 'element', id: block.id }} scope={scope} first="added" />
-    </Box>
+      <FocusedWindow
+        open={draft !== undefined} windowChrome={barChromeFor(windowChrome)} title={t('blocks.editingDocument', { name: block.name })}
+        changed={draft !== undefined && draft !== document.text} saveLabel={t('blocks.save')} onSave={keep} onCancel={() => setDraft(undefined)}
+      >
+        <div className="guidance-form__edit">
+          <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} renderPreview={(text) => <MarkdownView markdown={text} />} />
+        </div>
+      </FocusedWindow>
+    </div>
   )
 }

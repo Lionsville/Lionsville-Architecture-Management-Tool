@@ -2,32 +2,23 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A building block's *Where used* (ADR-0043 §4, §7): each scope's evaluation
- * of it, a line each, and *Evaluate for a scope…* — offering to copy the
- * ratings of a scope that evaluated it before, which are the new scope's own
- * from then on. An evaluation opened shows the contexts that apply there,
- * the solutions weighed, the grid and the fit, and *Propose a decision…*,
- * kept in that scope; accepting the decision there writes the choice.
+ * A building block's *Where used* (ADR-0043 §4, §7): each scope's evaluation of
+ * it, a row each, and *Evaluate for a scope…* — offering to copy the ratings of a
+ * scope that evaluated it before, which are the new scope's own from then on. A row
+ * opens that evaluation; accepting the decision it proposes writes the choice.
  */
 import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
-import { FieldsDialog } from '../../widgets/CompactForms'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField } from '../../widgets/kit/Field'
+import { List } from '../../widgets/kit/List'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { EvaluationView } from './EvaluationView'
-import { scopeMenuItems } from '../../widgets/ScopeChoices'
+import { scopeOptions } from './scopeOptions'
 
-const CELL = { borderBottom: 1, borderColor: 'divider', px: 1.5, py: 0.75, fontSize: 13, textAlign: 'left', verticalAlign: 'top' } as const
+const rowOf = (scope: string) => `at:${scope}`
 
 export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
   row: BlockRow
@@ -44,37 +35,31 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
   const { block } = row
   const evaluations = access.evaluationsOf(block.id)
   const sbbName = (id: string | undefined) => (block.sbbs ?? []).find((one) => one.id === id)?.name
+  const rows = evaluations.map(({ scope, evaluation }) => ({
+    id: rowOf(scope), text: access.scopeLabel(scope),
+    cells: {
+      contexts: (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id)).map((one) => one.name).join(', ') || '—',
+      options: evaluation.options.map(sbbName).filter(Boolean).join(', ') || '—',
+      chosen: sbbName(evaluation.chosen) ?? t('blocks.notChosen'),
+    },
+  }))
   return (
-    <Box sx={{ maxWidth: 900 }}>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>{t('blocks.whereUsedIntro')}</Typography>
-      {evaluations.length === 0 ? <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.noEvaluations')}</Typography> : (
-        <Box component="table" sx={{ borderCollapse: 'collapse', width: '100%' }} data-testid="block-evaluations">
-          <thead>
-            <tr>
-              {(['blocks.colScope', 'blocks.colContexts', 'blocks.colOptions', 'blocks.colChosen'] as const).map((key) => (
-                <Box component="th" key={key} sx={{ ...CELL, fontWeight: 600 }}>{t(key)}</Box>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {evaluations.map(({ scope, evaluation }) => (
-              <tr key={scope} data-testid={`evaluation-row-${scope}`}>
-                <Box component="td" sx={CELL}>
-                  <Button size="small" onClick={() => onEvaluate(scope)} sx={{ textTransform: 'none', fontWeight: 600, p: 0, minWidth: 0 }}>{access.scopeLabel(scope)}</Button>
-                </Box>
-                <Box component="td" sx={CELL}>{(block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id)).map((one) => one.name).join(', ') || '—'}</Box>
-                <Box component="td" sx={{ ...CELL, color: 'text.secondary' }}>{evaluation.options.map(sbbName).filter(Boolean).join(' · ') || '—'}</Box>
-                <Box component="td" sx={{ ...CELL, color: evaluation.chosen ? 'success.main' : 'text.secondary' }}>{sbbName(evaluation.chosen) ?? t('blocks.notChosen')}</Box>
-              </tr>
-            ))}
-          </tbody>
-        </Box>
+    <>
+      <p className="guidance-record__intro">{t('blocks.whereUsedIntro')}</p>
+      {evaluations.length === 0 ? <p className="guidance-record__intro">{t('blocks.noEvaluations')}</p> : (
+        <div data-testid="block-evaluations">
+          <List
+            label={t('blocks.whereUsed')} itemLabel={t('blocks.colScope')} groups={[{ id: '', label: '', rows }]}
+            onOpen={(id) => onEvaluate(evaluations.find((one) => rowOf(one.scope) === id)?.scope)}
+            columns={[{ id: 'contexts', label: t('blocks.colContexts') }, { id: 'options', label: t('blocks.colOptions') }, { id: 'chosen', label: t('blocks.colChosen') }]}
+          />
+        </div>
       )}
       {access.evaluateChoices(block.id).length > 0 && (
-        <Button size="small" variant="contained" onClick={() => setAdding(true)} sx={{ mt: 2 }} data-testid="block-evaluate">{t('blocks.evaluateFor')}</Button>
+        <div><Button variant="primary" onClick={() => setAdding(true)} data-testid="block-evaluate">{t('blocks.evaluateFor')}</Button></div>
       )}
       {adding && <EvaluateDialog row={row} onClose={(made) => { setAdding(false); if (made !== undefined) onEvaluate(made) }} />}
-    </Box>
+    </>
   )
 }
 
@@ -95,34 +80,29 @@ function EvaluateDialog({ row, onClose }: { row: BlockRow; onClose: (made?: stri
   }
   const toggle = (id: string, on: boolean) => setContexts((held) => (on ? [...held, id] : held.filter((one) => one !== id)))
   return (
-    <FieldsDialog open onClose={() => onClose()} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('blocks.evaluateFor')}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('blocks.evaluateIntro')}</Typography>
-        <TextField select label={t('blocks.colScope')} value={scope} onChange={(event) => setScope(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'evaluate-scope' }, inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-          {scopeMenuItems(choices, { topics: t('blocks.placeTopics'), scopes: t('blocks.placeScopes') })}
-        </TextField>
-        <Box>
-          <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.5 }}>{t('blocks.contextsHere')}</Typography>
-          {(row.block.contexts ?? []).map((context) => (
-            <FormControlLabel
-              key={context.id} sx={{ display: 'flex' }}
-              control={<Checkbox size="small" checked={contexts.includes(context.id)} onChange={(event) => toggle(context.id, event.target.checked)} />}
-              label={context.name}
-            />
-          ))}
-        </Box>
-        {before.length > 0 && (
-          <TextField select label={t('blocks.copyFrom')} value={copyFrom} onChange={(event) => setCopyFrom(event.target.value)} helperText={t('blocks.copyFromHelp')} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
-            <MenuItem value="">{t('blocks.copyNothing')}</MenuItem>
-            {before.map((one) => <MenuItem key={one.scope} value={one.scope}>{t('blocks.copyRatingsFrom', { scope: access.scopeLabel(one.scope) })}</MenuItem>)}
-          </TextField>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => onClose()}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={busy || choices.length === 0} onClick={start} data-testid="evaluate-start">{t('blocks.evaluateStart')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={t('blocks.evaluateFor')} onClose={() => onClose()}
+      actions={(
+        <>
+          <Button variant="plain" onClick={() => onClose()}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={busy || choices.length === 0} onClick={start} data-testid="evaluate-start">{t('blocks.evaluateStart')}</Button>
+        </>
+      )}
+    >
+      <p>{t('blocks.evaluateIntro')}</p>
+      <SelectField label={t('blocks.colScope')} value={scope} onChange={setScope} options={scopeOptions(choices, t)} data-testid="evaluate-scope" />
+      <fieldset className="guidance-record__choices">
+        <legend>{t('blocks.contextsHere')}</legend>
+        {(row.block.contexts ?? []).map((context) => (
+          <label key={context.id}><input type="checkbox" checked={contexts.includes(context.id)} onChange={(event) => toggle(context.id, event.target.checked)} />{context.name}</label>
+        ))}
+      </fieldset>
+      {before.length > 0 && (
+        <SelectField
+          label={t('blocks.copyFrom')} hint={t('blocks.copyFromHelp')} value={copyFrom} onChange={setCopyFrom}
+          options={[{ value: '', label: t('blocks.copyNothing') }, ...before.map((one) => ({ value: one.scope, label: t('blocks.copyRatingsFrom', { scope: access.scopeLabel(one.scope) }) }))]}
+        />
+      )}
+    </Dialog>
   )
 }
