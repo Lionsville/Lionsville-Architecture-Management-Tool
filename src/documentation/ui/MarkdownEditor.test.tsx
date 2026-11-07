@@ -174,10 +174,13 @@ describe('MarkdownEditor, how the text is shown', () => {
     expect(screen.queryByTestId('rendered')).toBeNull()
   })
 
-  it('has no side by side in a field, and only Write and Preview', () => {
+  it('has no side by side in a field, and one button that goes between Write and Preview', () => {
     setup({ renderPreview, variant: 'field' })
     expect(screen.queryByRole('button', { name: 'Side by side' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Write' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+    expect(screen.getByTestId('rendered')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Write' }))
+    expect(screen.getByRole('textbox', { name: 'Source' })).toBeTruthy()
   })
 
   it('has no switch where there is no way to preview', () => {
@@ -187,7 +190,7 @@ describe('MarkdownEditor, how the text is shown', () => {
 
   it('shows a field’s tools only while it is in use, in the label’s place', () => {
     setup({ variant: 'field' })
-    const root = screen.getByTestId('description-field')
+    const root = screen.getByTestId('markdown-field')
     expect(root.getAttribute('data-active')).toBe('false')
     fireEvent.focus(screen.getByRole('textbox', { name: 'Source' }))
     expect(root.getAttribute('data-active')).toBe('true')

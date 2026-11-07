@@ -146,7 +146,7 @@ function useRoom(variant: 'pane' | 'field'): { sideBySide: boolean; wordsOnBar: 
     return () => watch.disconnect()
   }, [root])
   const roomy = (need: number) => variant === 'pane' && !narrowWindow && (width === undefined || width === 0 || width >= need)
-  return { sideBySide: roomy(760), wordsOnBar: roomy(900), setRoot }
+  return { sideBySide: roomy(760), wordsOnBar: roomy(820), setRoot }
 }
 
 /** A field as tall as its text, between its rows. */
@@ -443,7 +443,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   }
 
   const canWrite = !disabled && view !== 'preview'
-  const switcher = renderPreview && !disabled && <ViewSwitch view={view} onView={setWanted} sideBySide={sideBySide} words={wordsOnBar} />
+  const switcher = renderPreview && !disabled && <ViewSwitch view={view} onView={setWanted} sideBySide={sideBySide} words={wordsOnBar} single={!pane} />
   const tools = canWrite && (
     <MarkdownToolbar
       toolbarRef={toolbarRef}
@@ -455,7 +455,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   return (
     <div
       ref={setRoot} className="md-editor" data-variant={variant} data-active={pane || active} data-error={props.error === true}
-      data-dropping={taking.dropping} data-testid={pane ? 'document-source' : 'description-field'}
+      data-dropping={taking.dropping} data-testid={pane ? 'document-source' : 'markdown-field'}
       onFocus={() => setActive(true)} onBlur={leaving}
     >
       {pane ? (

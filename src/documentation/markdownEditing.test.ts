@@ -109,13 +109,13 @@ describe('Enter', () => {
   })
 
   it('ends a list on an empty item', () => {
-    expect(shown(continueOnEnter(at('- a\n- |')))).toBe('- a\n‸')
+    expect(shown(continueOnEnter(at('- a\n- |')))).toBe('- a\n\n‸')
     expect(shown(continueOnEnter(at('1. |')))).toBe('‸')
   })
 
   it('starts a row of a table with as many cells, and ends the table on an empty row', () => {
     expect(shown(continueOnEnter(at('| a | b |\n|---|---|\n| 1 | 2 |¦')))).toBe('| a | b |\n|---|---|\n| 1 | 2 |\n| ‸ |  |')
-    expect(shown(continueOnEnter(at('| 1 |\n|  |¦')))).toBe('| 1 |\n‸')
+    expect(shown(continueOnEnter(at('| 1 |\n|  |¦')))).toBe('| 1 |\n\n‸')
     expect(continueOnEnter(at('| a¦ | b |'))).toBeUndefined()
   })
 

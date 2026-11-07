@@ -121,14 +121,25 @@ export function MarkdownToolbar({ onTool, onAttach, toolbarRef }: {
 export type MarkdownViewMode = 'write' | 'preview' | 'split'
 
 /** Write, Preview, and both side by side where the window has the room. */
-export function ViewSwitch({ view, onView, sideBySide, words }: {
+export function ViewSwitch({ view, onView, sideBySide, words, single }: {
   view: MarkdownViewMode
   onView(next: MarkdownViewMode): void
   sideBySide: boolean
   /** The words beside the glyphs, where the bar has the room. */
   words: boolean
+  /** One button that says where it goes, in a field: its row is shared with the tools, and a panel is narrow. */
+  single?: boolean
 }) {
   const { t } = useStrings()
+  if (single) {
+    const next = view === 'write' ? 'preview' : 'write'
+    const word = t(next === 'preview' ? 'md.preview' : 'md.write')
+    return (
+      <button type="button" className="md-editor__tool" aria-label={word} title={word} data-view-mode={next} onMouseDown={(event) => event.preventDefault()} onClick={() => onView(next)}>
+        {next === 'preview' ? <EyeIcon size={15} /> : <PencilIcon size={15} />}
+      </button>
+    )
+  }
   const modes: { mode: MarkdownViewMode; word: StringKey; mark: ReactNode }[] = [
     { mode: 'write', word: 'md.write', mark: <PencilIcon size={13} /> },
     { mode: 'preview', word: 'md.preview', mark: <EyeIcon size={13} /> },

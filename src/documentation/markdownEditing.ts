@@ -245,10 +245,14 @@ export function continueOnEnter(state: Selected): Edit | undefined {
     const caret = start + made.length
     return { text: text.slice(0, start) + made + text.slice(start), start: caret, end: caret }
   }
-  const emptyLine = (): Edit => ({ text: text.slice(0, from) + text.slice(to), start: from, end: from })
+  // A blank line stands between: text straight under a list or a table would still be part of it.
+  const ended = (): Edit => {
+    const gap = from > 0 ? '\n' : ''
+    return { text: text.slice(0, from) + gap + text.slice(to), start: from + gap.length, end: from + gap.length }
+  }
   if (isTableLine(line)) {
     const cells = tableCells(line)
-    if (cells.every((cell) => cell.trim() === '')) return emptyLine()
+    if (cells.every((cell) => cell.trim() === '')) return ended()
     if (start !== to) return undefined
     const row = `| ${cells.map(() => '').join(' | ')} |`
     return { text: `${text.slice(0, start)}\n${row}${text.slice(start)}`, start: start + 3, end: start + 3 }
@@ -256,7 +260,7 @@ export function continueOnEnter(state: Selected): Edit | undefined {
   const list = LIST_LINE.exec(line)
   if (!list) return undefined
   const [, indent, mark, rest] = list as unknown as [string, string, string, string]
-  if (rest.trim() === '') return start === to ? emptyLine() : undefined
+  if (rest.trim() === '') return start === to ? ended() : undefined
   if (start - from < indent.length + mark.length) return undefined
   return insert(`\n${indent}${nextMark(mark)}`)
 }

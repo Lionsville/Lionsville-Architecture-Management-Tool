@@ -429,9 +429,11 @@ src/documentation/  Descriptions as documents.
                     remember          caches with a bound and an eviction rule
                     images · businessCase   pictures a document holds, and the
                                       block that computes (ADR-0009)
+                    markdownEditing   what a writer's keys and buttons do to the text
+                    attachments       a link to a file a source keeps; the seam
                     bpmn              a process's notation, read into a drawing
                                       from its own coordinates; never laid out
-                    ui/               DocumentationPage, MarkdownField, blocks/
+                    ui/               DocumentationPage, MarkdownEditor (every place of writing), blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                   done about it (ADR-0026); local and global (ADR-0032).
