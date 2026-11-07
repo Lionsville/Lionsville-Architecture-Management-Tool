@@ -1205,8 +1205,10 @@ cons of each option, more information. **New decision** asks for the title and
 what it is about, starts the body from that template, and opens ready to write.
 **Edit text** is a full window: a box per section, with markdown inside and its
 help under it, and **Source** for the whole body at once, which is where a
-heading is changed. It also holds who proposed it, what it supersedes, and the
-**reviewers and signatures**, each with a verdict and the day it was given. **Done** saves
+heading is changed, and which fills the window. Beside the text stand what
+acceptance still needs, who proposed it, what it supersedes, and the
+**reviewers and signatures**, each with a verdict and the day it was given; on a
+narrow window they stand under it, and **Details** folds them away. **Done** saves
 it as one step, and **Cancel** asks first if anything changed. Sections nobody
 has written yet are left out when the record is read.
 

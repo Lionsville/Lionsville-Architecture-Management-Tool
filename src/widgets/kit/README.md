@@ -17,7 +17,7 @@ and behaves is said here, once.
 | `Menu.tsx` | **Menu** from a list of entries (final acts last, refused with a reason, one level of submenu), `MenuButton`, `MoreMenu` |
 | `Tooltip.tsx` | **Tooltip**: describes a control and does not rename it |
 | `Dialog.tsx` | **Dialog** in S, M, L; `DialogChoices`, `DialogFacts`, `DialogDanger` |
-| `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save |
+| `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save; the writing takes the width and height the column of facts leaves, each scrolls on its own, and the facts fold under it on a narrow window (`useInFocusedWindow` for a field that grows) |
 | `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
 | `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time, a date as a kind of edit, `help` said while edited (`onHelp`), `startOpen` for a row just asked for |
 | `Picker.tsx` | **Picker**, in a panel or a form, `PickerAt` where a canvas landed and `PickerMany` for several in a row; `matching` is its search |

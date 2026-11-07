@@ -9,10 +9,12 @@
  * `markdownEditing.test.ts`; here is whether the editor reaches them.
  */
 import { useState } from 'react'
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
+import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import type { DocumentAttachments } from '../attachments'
 import { AttachmentsProvider } from './Attachments'
 import { MarkdownEditor } from './MarkdownEditor'
@@ -308,5 +310,47 @@ describe('attachments, the seam', () => {
   it('never lets an attachment address become a picture', () => {
     renderShell(<MarkdownView markdown="![x](attachment:att-1)" />)
     expect(screen.getByTestId('image-missing').getAttribute('data-src')).toBeFalsy()
+  })
+})
+
+describe('how much of the window it takes', () => {
+  /** A text said to be as tall as this, jsdom laying nothing out. */
+  function tall<T>(height: number, run: () => T): T {
+    const was = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight')
+    Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', { configurable: true, get: () => height })
+    try { return run() } finally {
+      delete (HTMLTextAreaElement.prototype as { scrollHeight?: number }).scrollHeight
+      if (was) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', was)
+    }
+  }
+  const CHROME = { controlsInset: 0, draggable: false }
+  const field = <MarkdownEditor label="Words" value="A long text" onChange={() => {}} />
+
+  it('stops a field and scrolls it among other fields', () => {
+    tall(5000, () => renderShell(field))
+    expect((screen.getByRole('textbox', { name: 'Words' }) as HTMLElement).style.height).toBe(`${14 * 21 + 18}px`)
+  })
+
+  it('grows a field with its text in a full window, which is the one scroll', () => {
+    tall(5000, () => renderShell(
+      <FocusedWindow open title="Writing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>{field}</FocusedWindow>,
+    ))
+    expect((screen.getByRole('textbox', { name: 'Words' }) as HTMLElement).style.height).toBe('5000px')
+  })
+
+  it('still stops one that asks to stop', () => {
+    tall(5000, () => renderShell(
+      <FocusedWindow open title="Writing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>
+        <MarkdownEditor label="Words" value="A long text" onChange={() => {}} maxRows={4} />
+      </FocusedWindow>,
+    ))
+    expect((screen.getByRole('textbox', { name: 'Words' }) as HTMLElement).style.height).toBe(`${4 * 21 + 18}px`)
+  })
+
+  it('keeps a reading line for what is read and none for what is written', () => {
+    const sheet = readFileSync('src/documentation/ui/MarkdownEditor.css', 'utf8')
+    expect(sheet).toMatch(/\.md-editor__preview > \* \{[^}]*max-width: var\(--measure-reader\)/)
+    expect(sheet).not.toMatch(/\.md-editor__text \{[^}]*(max-width|padding-inline: max)/)
+    expect(sheet).not.toMatch(/86ch/)
   })
 })

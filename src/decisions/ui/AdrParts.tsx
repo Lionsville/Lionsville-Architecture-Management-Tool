@@ -14,7 +14,7 @@ import { VERDICT_LABEL } from '../adrScope'
 import type { PersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { Button, IconButton } from '../../widgets/kit/Button'
-import { Select, TextInput } from '../../widgets/kit/Field'
+import { Field, SelectField, TextField } from '../../widgets/kit/Field'
 import { CheckIcon, CloseIcon } from '../../widgets/icons'
 
 /**
@@ -155,7 +155,8 @@ export function SignersRead({ signers, names, s, day }: SignersProps) {
 }
 
 /**
- * The same table being written. A signer is picked from the register or typed,
+ * The same people being written, one under the other, because this stands in the
+ * column beside the text and a table has no room there. A signer is picked from the register or typed,
  * and the role is typed; the verdict is picked, and picking one stamps today —
  * a signature without a date is not one — and, for a person picked from the
  * register, keeps the name they signed with (ADR-0036 §8), which the page
@@ -179,46 +180,33 @@ export function SignersEdit({ signers, names, s, day, today, onChange }: Signers
     <>
       <p className="adr-note">{s('adr.signersHelp')}</p>
       {signers.length > 0 && (
-        <table className="adr-table">
-          <thead>
-            <tr>
-              <th scope="col">{s('adr.signerName')}</th><th scope="col">{s('adr.signerRole')}</th>
-              <th scope="col">{s('adr.signerVerdict')}</th><th scope="col">{s('adr.signedAt')}</th>
-              <th scope="col"><span className="kit-hidden">{s('adr.removeColumn')}</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {signers.map((signer, index) => (
-              <tr key={index}>
-                <td>
-                  {/* A signature whose signer is forgotten or gone keeps its name and links to nobody (ADR-0036 §8). */}
-                  {apart(signer)
-                    ? <span data-testid={`adr-signer-${index}`}>{signerText(signer, names)}</span>
-                    : (
-                      <PersonRefField
-                        value={signer.name} names={names} label={s('adr.signerName')} variant="standard" commit="blur"
-                        onChange={(name) => edit(index, { name: name ?? '' })} testId={`adr-signer-${index}`} s={s}
-                      />
-                    )}
-                </td>
-                <td><TextInput aria-label={s('adr.signerRole')} value={signer.role ?? ''} onChange={(event) => edit(index, { role: event.target.value || undefined })} /></td>
-                <td>
-                  <Select
-                    aria-label={s('adr.signerVerdict')} value={signer.verdict ?? 'pending'}
-                    options={(['pending', 'approved', 'rejected'] as const).map((verdict) => ({ value: verdict, label: s(VERDICT_LABEL[verdict]) }))}
-                    onChange={(event) => setVerdict(index, event.target.value as AdrVerdict | 'pending')}
-                  />
-                </td>
-                <td>{signer.signedAt ? day(signer.signedAt) : ''}</td>
-                <td>
-                  <IconButton label={s('adr.removeSigner', { name: signerText(signer, names) || '…' })} size="small" onClick={() => onChange(signers.filter((_, at) => at !== index))}>
-                    <CloseIcon size={12} />
-                  </IconButton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="adr-signers">
+          {signers.map((signer, index) => (
+            <li key={index}>
+              <div className="adr-signers__who">
+                {/* A signature whose signer is forgotten or gone keeps its name and links to nobody (ADR-0036 §8). */}
+                {apart(signer)
+                  ? <Field label={s('adr.signerName')}>{() => <span data-testid={`adr-signer-${index}`}>{signerText(signer, names)}</span>}</Field>
+                  : (
+                    <PersonRefField
+                      value={signer.name} names={names} label={s('adr.signerName')} variant="field" commit="blur"
+                      onChange={(name) => edit(index, { name: name ?? '' })} testId={`adr-signer-${index}`} s={s}
+                    />
+                  )}
+                <IconButton label={s('adr.removeSigner', { name: signerText(signer, names) || '…' })} size="small" onClick={() => onChange(signers.filter((_, at) => at !== index))}>
+                  <CloseIcon size={12} />
+                </IconButton>
+              </div>
+              <TextField label={s('adr.signerRole')} value={signer.role ?? ''} onChange={(role) => edit(index, { role: role || undefined })} />
+              <SelectField
+                label={s('adr.signerVerdict')} value={signer.verdict ?? 'pending'}
+                options={(['pending', 'approved', 'rejected'] as const).map((verdict) => ({ value: verdict, label: s(VERDICT_LABEL[verdict]) }))}
+                onChange={(verdict) => setVerdict(index, verdict as AdrVerdict | 'pending')}
+              />
+              {signer.signedAt && <p className="adr-note">{s('adr.signedAt')}: {day(signer.signedAt)}</p>}
+            </li>
+          ))}
+        </ul>
       )}
       <Button size="small" onClick={() => onChange([...signers, { name: '' }])}>{s('adr.addSigner')}</Button>
     </>

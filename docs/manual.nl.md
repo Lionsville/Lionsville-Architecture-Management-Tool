@@ -1288,9 +1288,10 @@ overwogen opties, de uitkomst en de gevolgen, de voor- en nadelen per optie, mee
 informatie. **Nieuw besluit** vraagt de titel en waar het over gaat, begint de tekst
 met dat sjabloon en opent klaar om te schrijven. **Tekst bewerken** is een volledig
 venster: een vak per sectie, met markdown erin en de hulp eronder, en **Bron** voor de
-hele tekst tegelijk, waar je een kop wijzigt. Het bevat ook wie het voorstelde, wat
-het vervangt en de **beoordelaars en handtekeningen**, elk met een oordeel en de dag
-waarop dat is gegeven. **Klaar** bewaart het als één stap, en **Annuleren** vraagt
+hele tekst tegelijk, waar je een kop wijzigt en die het venster vult. Naast de tekst
+staan wat aanvaarding nog nodig heeft, wie het voorstelde, wat het vervangt en de
+**beoordelaars en handtekeningen**, elk met een oordeel en de dag waarop dat is
+gegeven; in een smal venster staan ze eronder en vouwt **Details** ze weg. **Klaar** bewaart het als één stap, en **Annuleren** vraagt
 eerst als er iets is veranderd. Secties die nog niemand schreef, blijven weg als het
 besluit wordt gelezen.
 

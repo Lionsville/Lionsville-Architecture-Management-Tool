@@ -492,6 +492,30 @@ describe('a record, written', () => {
     expect(onProject).not.toHaveBeenCalled()
   })
 
+  it('keeps the reviewers, who proposed it and what it supersedes beside the text, by section and in the source', () => {
+    writing()
+    const beside = () => document.querySelector<HTMLElement>('.kit-focused__aside') as HTMLElement
+    const held = () => {
+      for (const id of ['adr-gate', 'adr-signers', 'adr-proposed-by', 'adr-supersedes']) expect(within(beside()).getByTestId(id)).toBeTruthy()
+      expect(document.querySelector('.adr-write [data-testid="adr-signers"]')).toBeNull()
+    }
+    held()
+    fireEvent.click(screen.getByRole('radio', { name: 'Source' }))
+    held()
+    expect(document.querySelector('.adr-write[data-mode="source"]')).not.toBeNull()
+  })
+
+  it('names the proposer on screen, and a reviewer\'s fields one by one', () => {
+    writing()
+    const proposer = within(screen.getByTestId('adr-proposed-by'))
+    expect(proposer.getByText('Proposed by').tagName).toBe('LABEL')
+    expect(proposer.getByLabelText('Proposed by').tagName).toBe('INPUT')
+    fireEvent.click(screen.getByRole('button', { name: 'Add a reviewer' }))
+    const signers = within(within(document.querySelector<HTMLElement>('.kit-focused__aside') as HTMLElement).getByTestId('adr-signers'))
+    for (const word of ['Name', 'Role', 'Verdict']) expect(signers.getByLabelText(word)).toBeTruthy()
+    expect(signers.queryByRole('table')).toBeNull()
+  })
+
   it('holds the title, who proposed it, what it supersedes, and the reviewers', () => {
     const { onProject } = writing()
     fireEvent.change(screen.getByLabelText(/^Title/), { target: { value: 'Events, decided' } })

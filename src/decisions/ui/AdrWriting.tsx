@@ -4,8 +4,11 @@
 /**
  * One decision, written, in a full window with nothing else on screen: a box per
  * section, each with the one markdown editor inside, and the whole source one
- * press away, because a heading is changed there. The list of what acceptance
- * still needs stays beside it and follows the text.
+ * press away, because a heading is changed there, and which then fills the window.
+ * The list of what acceptance still needs stays beside the text and follows it,
+ * with what is not text under it, the reviewers first because that list asks for
+ * them: at the foot of the text they would be a long scroll away or take the
+ * editor's height.
  *
  * One save, so one step for Undo and one line in Activity; Cancel asks if anything
  * changed. Every field that changes the record is here, so that reading has none.
@@ -112,6 +115,7 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
   const [supersedes, setSupersedes] = useState(adr.supersedes ?? [])
   const [mode, setMode] = useState<Mode>('sections')
   const root = useRef<HTMLDivElement>(null)
+  const facts = useRef<HTMLDivElement>(null)
   const preview = (text: string) => renderMarkdown(linkElementRefs(text, elements))
   const day = (value: string) => formatDay(value, language)
 
@@ -130,7 +134,7 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
   const goTo = (item: AdrGateItem) => {
     const index = sectionOfGate(sections, item)
     const found = index === undefined
-      ? root.current?.querySelector<HTMLElement>(item === 'approved' ? '[data-testid="adr-signers"]' : '[data-testid="adr-supersedes"]')
+      ? facts.current?.querySelector<HTMLElement>(item === 'approved' ? '[data-testid="adr-signers"]' : '[data-testid="adr-supersedes"]')
       : root.current?.querySelector<HTMLElement>(`#adr-write-${index}`)
     found?.scrollIntoView?.({ block: 'center' })
     found?.querySelector<HTMLElement>('textarea, input')?.focus()
@@ -165,32 +169,21 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
           options={[{ value: 'sections', label: s('adr.writeSections') }, { value: 'source', label: s('adr.writeSource') }]}
         />
       )}
-      aside={<AdrGateList adr={drafted} list={list} onGo={goTo} s={s} />}
-    >
-      <div className="adr-write" ref={root} data-guide="decision.writing">
-        <TextField label={s('adr.titleField')} value={title} onChange={setTitle} required />
-        {mode === 'sections'
-          ? <SectionBoxes body={body} onBody={setBody} s={s} preview={preview} editor={{ ...(onAddImage ? { onAddImage } : {}), ...(images ? { images } : {}) }} />
-          : (
-            <div className="adr-write__source">
-              <MarkdownEditor
-                variant="pane" label={s('adr.source')} value={body} onChange={setBody} autoFocus renderPreview={preview}
-                template={{ label: s('md.fromTemplate'), text: madrTemplate(s) }} attachable
-                {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
+      aside={(
+        <div className="adr-write__aside" ref={facts}>
+          <AdrGateList adr={drafted} list={list} onGo={goTo} s={s} />
+          <section className="adr-section" data-testid="adr-signers" data-guide="decision.signers">
+            <h2>{s('adr.signers')}</h2>
+            <SignersEdit signers={signers} names={names} s={s} day={day} today={today} onChange={setSigners} />
+          </section>
+          {adr.proposedAs !== undefined && names.apart(adr.proposedBy)
+            ? <Field label={s('adr.proposedBy')}>{() => <span data-testid="adr-proposed-by">{proposerText(adr, names)}</span>}</Field>
+            : (
+              <PersonRefField
+                value={proposedBy} names={names} label={s('adr.proposedBy')} variant="field" commit="blur"
+                onChange={(next) => setProposedBy(next)} testId="adr-proposed-by" s={s}
               />
-            </div>
-          )}
-        <div className="adr-write__facts">
-          <div>
-            {adr.proposedAs !== undefined && names.apart(adr.proposedBy)
-              ? <Field label={s('adr.proposedBy')}>{() => <span data-testid="adr-proposed-by">{proposerText(adr, names)}</span>}</Field>
-              : (
-                <PersonRefField
-                  value={proposedBy} names={names} label={s('adr.proposedBy')} variant="standard" commit="blur"
-                  onChange={(next) => setProposedBy(next)} testId="adr-proposed-by" s={s}
-                />
-              )}
-          </div>
+            )}
           {supersedable.length > 0 && (
             <fieldset className="adr-write__supersedes" data-testid="adr-supersedes">
               <legend>{s('adr.supersedesField')}</legend>
@@ -207,10 +200,21 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
             </fieldset>
           )}
         </div>
-        <section className="adr-section" data-testid="adr-signers" data-guide="decision.signers">
-          <h2>{s('adr.signers')}</h2>
-          <SignersEdit signers={signers} names={names} s={s} day={day} today={today} onChange={setSigners} />
-        </section>
+      )}
+    >
+      <div className="adr-write" ref={root} data-mode={mode} data-guide="decision.writing">
+        <TextField label={s('adr.titleField')} value={title} onChange={setTitle} required />
+        {mode === 'sections'
+          ? <SectionBoxes body={body} onBody={setBody} s={s} preview={preview} editor={{ ...(onAddImage ? { onAddImage } : {}), ...(images ? { images } : {}) }} />
+          : (
+            <div className="adr-write__source">
+              <MarkdownEditor
+                variant="pane" label={s('adr.source')} value={body} onChange={setBody} autoFocus renderPreview={preview}
+                template={{ label: s('md.fromTemplate'), text: madrTemplate(s) }} attachable
+                {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
+              />
+            </div>
+          )}
       </div>
     </FocusedWindow>
   )

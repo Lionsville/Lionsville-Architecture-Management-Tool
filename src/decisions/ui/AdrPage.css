@@ -37,9 +37,16 @@
 .adr-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); width: 100%; }
 .adr-foot__grow { flex: 1; }
 
-.adr-write { display: flex; flex-direction: column; gap: var(--s-3); max-width: var(--measure-reader); min-width: 0; margin-inline: auto; padding-block-end: var(--s-5); }
-.adr-write__source { display: flex; flex-direction: column; min-height: 60vh; }
-.adr-write__facts { display: flex; flex-direction: column; gap: var(--s-3); }
+/* By section it is as tall as what it holds and the column scrolls; the source fills the column and scrolls its text. */
+.adr-write { flex: 1 0 auto; display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.adr-write[data-mode='source'] { flex: 1 1 0; min-height: 320px; }
+.adr-write__source { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.adr-write__aside { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.adr-write__aside > .adr-section { margin-block-start: 0; }
+.adr-signers { align-self: stretch; display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.adr-signers > li { display: flex; flex-direction: column; gap: var(--s-2); padding-block-end: var(--s-3); border-bottom: 1px solid var(--line); }
+.adr-signers__who { display: flex; align-items: flex-start; gap: var(--s-1); }
+.adr-signers__who > :first-child { flex: 1; min-width: 0; }
 .adr-write__supersedes { margin: 0; padding: 0; border: 0; }
 .adr-write__supersedes legend { padding: 0; font-weight: var(--fw-strong); }
 .adr-write__supersedes label { display: flex; align-items: center; gap: var(--s-2); min-height: var(--row-h); }

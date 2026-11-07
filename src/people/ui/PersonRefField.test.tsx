@@ -177,3 +177,30 @@ describe('a field in a table row, committed when it is left', () => {
     expect(screen.queryByText('In the register:')).toBeNull()
   })
 })
+
+describe('a field among a kit form\'s fields', () => {
+  it('has its label above it on screen, its hint under it, and the register beside it', () => {
+    const said: (PersonRef | undefined)[] = []
+    renderShell(
+      <PersonRefField
+        value="" names={personNames(access([EVA]), s)} label="Proposed by" variant="field" commit="blur" helperText="Who wrote it"
+        testId="who" s={s} onChange={(next) => said.push(next)}
+      />,
+    )
+    expect(screen.getByText('Proposed by').tagName).toBe('LABEL')
+    const input = screen.getByLabelText('Proposed by')
+    expect(input.dataset.testid).toBe('who-text')
+    expect(screen.getByText('Who wrote it')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'From the register…' }).dataset.testid).toBe('who-pick')
+    fireEvent.change(input, { target: { value: 'A team' } })
+    expect(said).toEqual([])
+    fireEvent.blur(input)
+    expect(said).toEqual(['A team'])
+  })
+
+  it('says what is wrong in the hint\'s place', () => {
+    renderShell(<PersonRefField value="" names={personNames(access([]), s)} label="Observed by" variant="field" error helperText="Say who" s={s} onChange={() => {}} />)
+    expect(screen.getByLabelText('Observed by').getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByText('Say who')).toBeTruthy()
+  })
+})

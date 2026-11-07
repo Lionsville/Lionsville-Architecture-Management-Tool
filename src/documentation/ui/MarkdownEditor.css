@@ -5,7 +5,7 @@
    re-skins it; a state is a data attribute. */
 
 .md-editor { display: flex; flex-direction: column; min-width: 0; color: var(--ink); font-family: var(--font-ui); }
-.md-editor[data-variant='pane'] { flex: 1; min-height: 0; background: var(--surface); }
+.md-editor[data-variant='pane'] { flex: 1; min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
 
 /* --- the bar ---------------------------------------------------------------- */
 
@@ -48,19 +48,23 @@
 /* --- the body --------------------------------------------------------------- */
 
 .md-editor__body { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-.md-editor[data-variant='pane'] > .md-editor__body { flex: 1; min-height: 0; }
+.md-editor[data-variant='pane'] > .md-editor__body { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .md-editor__body[data-view='split'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .md-editor__source { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
 .md-editor[data-variant='pane'] .md-editor__body[data-view='split'] > .md-editor__source { border-right: 1px solid var(--line); }
 .md-editor__preview { min-width: 0; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .md-editor__preview > * { flex: 1; }
+/* What is read keeps a line a reader can follow, however wide the window; what is written does not. */
+.md-editor__preview > * { box-sizing: border-box; width: 100%; max-width: var(--measure-reader); }
+.md-editor[data-variant='pane'] .md-editor__preview { padding: var(--s-4); }
+.md-editor__body[data-view='preview'] > .md-editor__preview > * { margin-inline: auto; }
 .md-editor[data-variant='field'] .md-editor__preview {
   border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); font-size: var(--t-sm); background: var(--surface);
 }
 .md-editor__nothing { color: var(--ink-3); }
 
-/* A long line wraps where a reader can follow it, and an address with no place
-   to break breaks anyway rather than pushing the column wider. */
+/* A long line wraps at the edge of the text, which takes the whole column, and an
+   address with no place to break breaks anyway rather than pushing it wider. */
 .md-editor__text {
   flex: 1; min-height: 0; width: 100%; box-sizing: border-box; display: block; resize: none; margin: 0; border: 0; outline: none;
   background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--t-sm); line-height: 1.6; tab-size: 2;
@@ -68,7 +72,6 @@
 }
 .md-editor__text::placeholder { color: var(--ink-3); opacity: 1; }
 .md-editor[data-variant='pane'] .md-editor__text { padding: var(--s-4); }
-.md-editor[data-variant='pane'] .md-editor__body[data-view='write'] .md-editor__text { padding-inline: max(var(--s-4), calc((100% - 86ch) / 2)); }
 .md-editor[data-variant='field'] .md-editor__text {
   padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-3); background: var(--surface); overflow: auto;
 }

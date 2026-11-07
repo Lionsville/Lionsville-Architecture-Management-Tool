@@ -138,7 +138,7 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
 
   const mdField = (label: string, value: string, onChange: (next: string) => void, more: { hint?: string; template?: { label: string; text: string }; rows?: number; autoFocus?: boolean } = {}) => (
     <MarkdownEditor
-      label={label} value={value} onChange={onChange} minRows={more.rows ?? 4} maxRows={24}
+      label={label} value={value} onChange={onChange} minRows={more.rows ?? 4}
       {...(more.hint ? { helper: more.hint } : {})} {...(more.template ? { template: more.template } : {})}
       {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
     />
@@ -183,7 +183,7 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
 
   const personField = (label: string, testId: string, error?: string, hint?: string) => (
     <PersonRefField
-      label={label} value={by ?? ''} names={names} onChange={(next) => setBy(next)} testId={testId} s={s}
+      variant="field" label={label} value={by ?? ''} names={names} onChange={(next) => setBy(next)} testId={testId} s={s}
       {...(error ? { error: true, helperText: error } : hint ? { helperText: hint } : {})} {...(editing.kind === 'observation' ? { required: true } : {})}
     />
   )
@@ -255,7 +255,7 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
       {view === 'write'
         ? <div className="chain-editor">{main}</div>
         : (
-          <div className="chain-editor" data-testid="editor-preview">
+          <div className="chain-editor" data-reading="" data-testid="editor-preview">
             <h2 className="chain-editor__title">{draft.title}</h2>
             <div className="chain-body" data-document>{renderMarkdown(body)}</div>
           </div>

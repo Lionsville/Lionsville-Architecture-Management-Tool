@@ -47,6 +47,7 @@
 .chain-filter__row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 
 .chain-editor { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.chain-editor[data-reading] { box-sizing: border-box; width: 100%; max-width: var(--measure-reader); margin-inline: auto; }
 .chain-editor__title { margin: 0; font-size: var(--t-lg); }
 
 .chain-empty { margin: auto; max-width: 480px; padding: var(--s-5); }

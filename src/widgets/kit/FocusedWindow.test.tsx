@@ -3,11 +3,12 @@
 
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { FocusedWindow } from './FocusedWindow'
+import { FocusedWindow, useInFocusedWindow } from './FocusedWindow'
 import type { FocusedWindowProps } from './FocusedWindow'
 
 afterEach(cleanup)
@@ -109,6 +110,42 @@ describe('FocusedWindow', () => {
     expect(left).not.toHaveBeenCalled()
     view.rerender(<Editing onCancel={left} error="Not saved: the server did not answer." />)
     expect(screen.getByRole('alert').textContent).toBe('Not saved: the server did not answer.')
+  })
+
+  it('offers to fold the facts where there are any, and leaves them open until asked', () => {
+    const view = renderShell(<Editing aside={<p>Facts</p>} />)
+    const fold = screen.getByRole('button', { name: 'Details' })
+    const aside = document.querySelector<HTMLElement>('.kit-focused__aside')
+    expect(fold.getAttribute('aria-expanded')).toBe('true')
+    expect(aside?.dataset.folded).toBeUndefined()
+    fireEvent.click(fold)
+    expect(fold.getAttribute('aria-expanded')).toBe('false')
+    expect(aside?.dataset.folded).toBeDefined()
+    view.rerender(<Editing />)
+    expect(screen.queryByRole('button', { name: 'Details' })).toBeNull()
+  })
+
+  it('tells what stands in it, and nothing outside it, that it is in a full window', () => {
+    const Says = () => <span>{useInFocusedWindow() ? 'inside' : 'outside'}</span>
+    renderShell(
+      <>
+        <Says />
+        <FocusedWindow open title="Editing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}><Says /></FocusedWindow>
+      </>,
+    )
+    expect(screen.getByText('outside')).toBeTruthy()
+    expect(screen.getByText('inside')).toBeTruthy()
+  })
+
+  // jsdom draws nothing, so the sheet itself is what can be held to this: the owner's "wasting the entire screen".
+  it('caps the writing at no width, and scrolls by column rather than as a window', () => {
+    const sheet = readFileSync('src/widgets/kit/FocusedWindow.css', 'utf8')
+    const rule = (name: string) => sheet.match(new RegExp(`\\.kit-focused__${name} \\{([^}]*)\\}`))?.[1] ?? ''
+    expect(rule('main')).toMatch(/flex: 1;/)
+    expect(rule('main')).toMatch(/overflow-y: auto/)
+    expect(rule('main')).not.toMatch(/max-width|760px/)
+    expect(rule('aside')).toMatch(/overflow-y: auto/)
+    expect(rule('body')).not.toMatch(/overflow|justify-content/)
   })
 
   it('speaks the language that is on', () => {

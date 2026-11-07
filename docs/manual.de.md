@@ -1361,8 +1361,10 @@ Nachteile jeder Option, weitere Informationen. **Neue Entscheidung** fragt nach 
 Titel und wen sie betrifft, beginnt den Text mit dieser Vorlage und öffnet bereit zum
 Schreiben. **Text bearbeiten** ist ein ganzes Fenster: ein Feld je Abschnitt, mit
 Markdown darin und der Hilfe darunter, und **Quelltext** für den ganzen Text auf einmal,
-wo eine Überschrift geändert wird. Es enthält auch, wer sie vorgeschlagen hat, was sie
-ablöst, und die **Prüfer und Unterschriften**, jeweils mit Urteil und Tag. **Fertig**
+wo eine Überschrift geändert wird und der das Fenster füllt. Neben dem Text stehen, was
+die Annahme noch braucht, wer sie vorgeschlagen hat, was sie ablöst, und die **Prüfer und
+Unterschriften**, jeweils mit Urteil und Tag; in einem schmalen Fenster stehen sie darunter,
+und **Details** klappt sie weg. **Fertig**
 speichert als einen Schritt, und **Abbrechen** fragt zuerst, wenn sich etwas geändert
 hat. Abschnitte, die noch niemand geschrieben hat, fehlen beim Lesen.
 

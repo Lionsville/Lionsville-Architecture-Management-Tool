@@ -28,7 +28,7 @@
 .guidance-read__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); width: 100%; }
 .guidance-read__spring { flex: 1; }
 
-.guidance-form { display: grid; gap: var(--s-4); max-width: 760px; margin-inline: auto; width: 100%; }
+.guidance-form { display: grid; gap: var(--s-4); width: 100%; }
 .guidance-form__fold > summary { cursor: pointer; color: var(--ink-2); font-size: var(--t-sm); margin-bottom: var(--s-3); }
 .guidance-form__fold > div { display: grid; gap: var(--s-4); }
 .guidance-form__aspect { display: grid; grid-template-columns: max-content minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) max-content; gap: var(--s-2); align-items: center; padding: var(--s-1) 0; }

@@ -30,6 +30,8 @@ import { possibleDuplicates } from '../duplicates'
 import { entriesOf } from '../person'
 import { shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
+import { Button as KitButton } from '../../widgets/kit/Button'
+import { Field, TextInput } from '../../widgets/kit/Field'
 import { useSaying } from './access'
 import type { PersonNames } from './names'
 import { PersonPicker } from './PersonPicker'
@@ -41,8 +43,12 @@ export type PersonRefFieldProps = {
   label: string
   disabled?: boolean
   required?: boolean
-  /** `standard` in a table row; `outlined` as a form's field. */
-  variant?: 'outlined' | 'standard'
+  /**
+   * `standard` in a table row, whose column names it: it has no label of its own to
+   * see. `outlined` as a form's field. `field` as a kit form's: the label above,
+   * and the words under it, like every `TextField` around it.
+   */
+  variant?: 'outlined' | 'standard' | 'field'
   /** Text committed as it is typed, or when the field is left — a name is not worth a step per keystroke. */
   commit?: 'change' | 'blur'
   error?: boolean
@@ -115,11 +121,57 @@ export function PersonRefField(props: PersonRefFieldProps) {
     props.onBlur?.()
   }
   const inputId = props.inputTestId ?? (testId ? `${testId}-text` : undefined)
+  const toPicker = access && people && !disabled ? () => setPicking(true) : undefined
+  const offeredRow = !disabled && offered.length > 0 && (
+    <Box data-testid={testId ? `${testId}-offered` : undefined} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
+      <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.inRegister')}</Typography>
+      {offered.map(({ person }) => (
+        <Button
+          key={person.id} size="small" sx={{ textTransform: 'none', minWidth: 0 }} onClick={() => pick(person.id)}
+          // Pressing an entry leaves the field where it is: its text is not written first.
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          {shownText(shownEntry(person), s)}
+        </Button>
+      ))}
+    </Box>
+  )
+  if (variant === 'field') {
+    return (
+      <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
+        <Field label={label} {...(required ? { required } : {})} {...(props.error ? { error: props.helperText ?? '' } : props.helperText ? { hint: props.helperText } : {})}>
+          {(ties) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+              <Box sx={{ flex: '1 1 8em', minWidth: 0 }}>
+                <TextInput
+                  {...ties} value={draft} disabled={disabled} placeholder={props.placeholder} autoComplete="off"
+                  onChange={(event) => changed(event.target.value)} onBlur={left}
+                  onKeyDown={(event) => { if (event.key === 'Enter' && commit === 'blur') left() }}
+                  {...(inputId ? { 'data-testid': inputId } : {})}
+                />
+              </Box>
+              {toPicker && (
+                <KitButton
+                  size="small" variant="quiet" onClick={toPicker}
+                  // Going to the picker leaves what was typed unwritten: the picker starts from it.
+                  onMouseDown={(event) => event.preventDefault()}
+                  {...(testId ? { 'data-testid': `${testId}-pick` } : {})}
+                >
+                  {s('people.fromRegister')}
+                </KitButton>
+              )}
+            </Box>
+          )}
+        </Field>
+        {offeredRow}
+      </Box>
+    )
+  }
   return (
     <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: variant === 'standard' ? 'flex-end' : 'center' }}>
         <TextField
-          variant={variant} size="small" fullWidth label={variant === 'standard' ? undefined : label}
+          variant={variant === 'standard' ? 'standard' : 'outlined'} size="small" fullWidth label={variant === 'standard' ? undefined : label}
           value={draft} disabled={disabled} required={required} error={props.error} helperText={props.helperText}
           placeholder={props.placeholder}
           onChange={(event) => changed(event.target.value)}
@@ -127,8 +179,8 @@ export function PersonRefField(props: PersonRefFieldProps) {
           onKeyDown={(event) => { if (event.key === 'Enter' && commit === 'blur') left() }}
           slotProps={{ htmlInput: { 'aria-label': label, autoComplete: 'off', ...(inputId ? { 'data-testid': inputId } : {}) } }}
         />
-        {access && people && !disabled && (
-          <Button size="small" sx={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={() => setPicking(true)}
+        {toPicker && (
+          <Button size="small" sx={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={toPicker}
             // Going to the picker leaves what was typed unwritten: the picker starts from it.
             onMouseDown={(event) => event.preventDefault()}
             data-testid={testId ? `${testId}-pick` : undefined}>
@@ -136,20 +188,7 @@ export function PersonRefField(props: PersonRefFieldProps) {
           </Button>
         )}
       </Box>
-      {!disabled && offered.length > 0 && (
-        <Box data-testid={testId ? `${testId}-offered` : undefined} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
-          <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.inRegister')}</Typography>
-          {offered.map(({ person }) => (
-            <Button
-              key={person.id} size="small" sx={{ textTransform: 'none', minWidth: 0 }} onClick={() => pick(person.id)}
-              // Pressing an entry leaves the field where it is: its text is not written first.
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {shownText(shownEntry(person), s)}
-            </Button>
-          ))}
-        </Box>
-      )}
+      {offeredRow}
     </Box>
   )
 }

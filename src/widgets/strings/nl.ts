@@ -8,6 +8,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.toast.undo': 'Ongedaan maken',
   'kit.toast.putBack': 'Terugzetten',
   'kit.focused.cancel': 'Annuleren',
+  'kit.focused.aside': 'Details',
   'kit.focused.askTitle': 'Weggaan zonder op te slaan?',
   'kit.focused.askBody': 'Wat je hier hebt gewijzigd is niet opgeslagen en gaat verloren als je weggaat.',
   'kit.focused.keepEditing': 'Verder bewerken',

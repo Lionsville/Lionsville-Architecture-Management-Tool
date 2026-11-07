@@ -7,6 +7,7 @@ export const EN = {
   'kit.toast.undo': 'Undo',
   'kit.toast.putBack': 'Put back',
   'kit.focused.cancel': 'Cancel',
+  'kit.focused.aside': 'Details',
   'kit.focused.askTitle': 'Leave without saving?',
   'kit.focused.askBody': 'What you changed here has not been saved, and leaving drops it.',
   'kit.focused.keepEditing': 'Keep editing',

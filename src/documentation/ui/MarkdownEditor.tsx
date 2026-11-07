@@ -27,6 +27,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ImageEntry } from '../../model/imageName'
 import { useStrings } from '../../i18n/LanguageContext'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
+import { useInFocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { TrashIcon } from '../../widgets/icons'
 import { attachmentMarkdown } from '../attachments'
 import { businessCaseTemplate } from '../businessCase'
@@ -74,6 +75,7 @@ export type MarkdownEditorProps = {
   placeholder?: string
   autoFocus?: boolean
   minRows?: number
+  /** Where a field stops growing and scrolls itself. A full window has no such place: it scrolls as a whole. */
   maxRows?: number
   /** What the words look like read. Absent: no Preview, and only the text. */
   renderPreview?(text: string): ReactNode
@@ -133,7 +135,7 @@ function applyEdit(area: HTMLTextAreaElement, edit: Edit, onChange: (next: strin
 }
 
 /** Whether the window and the pane have the room for the text and its preview side by side. */
-function useRoom(variant: 'pane' | 'field'): { sideBySide: boolean; wordsOnBar: boolean; setRoot: (root: HTMLElement | null) => void } {
+function useRoom(variant: 'pane' | 'field'): { sideBySide: boolean; wordsOnBar: boolean; width: number | undefined; setRoot: (root: HTMLElement | null) => void } {
   const narrowWindow = useMediaQuery('(max-width: 1100px)')
   const [root, setRoot] = useState<HTMLElement | null>(null)
   const [width, setWidth] = useState<number | undefined>(undefined)
@@ -146,11 +148,11 @@ function useRoom(variant: 'pane' | 'field'): { sideBySide: boolean; wordsOnBar: 
     return () => watch.disconnect()
   }, [root])
   const roomy = (need: number) => variant === 'pane' && !narrowWindow && (width === undefined || width === 0 || width >= need)
-  return { sideBySide: roomy(760), wordsOnBar: roomy(820), setRoot }
+  return { sideBySide: roomy(760), wordsOnBar: roomy(820), width, setRoot }
 }
 
-/** A field as tall as its text, between its rows. */
-function useGrowing(area: RefObject<HTMLTextAreaElement | null>, value: string, on: boolean, minRows: number, maxRows: number) {
+/** A field as tall as its text, between its rows, and again when a wider or narrower window wraps it differently. */
+function useGrowing(area: RefObject<HTMLTextAreaElement | null>, value: string, width: number | undefined, on: boolean, minRows: number, maxRows: number) {
   useLayoutEffect(() => {
     const element = area.current
     if (!on || !element) return
@@ -158,7 +160,7 @@ function useGrowing(area: RefObject<HTMLTextAreaElement | null>, value: string, 
     element.style.height = 'auto'
     const wanted = element.scrollHeight + edges
     element.style.height = `${Math.min(Math.max(wanted, minRows * LINE + 18), maxRows * LINE + 18)}px`
-  }, [area, value, on, minRows, maxRows])
+  }, [area, value, width, on, minRows, maxRows])
 }
 
 /** Pictures and files coming in: pasted, dropped or picked. One at a time, so they land in the order they came. */
@@ -401,7 +403,9 @@ function useView({ pane, disabled, canPreview, sideBySide }: { pane: boolean; di
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
-  const { value, onChange, onAddImage, images, variant = 'field', disabled = false, renderPreview, template, attachable = true, minRows = 3, maxRows = 14 } = props
+  const { value, onChange, onAddImage, images, variant = 'field', disabled = false, renderPreview, template, attachable = true, minRows = 3 } = props
+  const inFocusedWindow = useInFocusedWindow()
+  const maxRows = props.maxRows ?? (inFocusedWindow ? Infinity : 14)
   const { t } = useStrings()
   const ownRef = useRef<HTMLTextAreaElement>(null)
   const areaRef = props.textareaRef ?? ownRef
@@ -410,7 +414,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const fieldId = useId()
   const pane = variant === 'pane'
-  const { sideBySide, wordsOnBar, setRoot } = useRoom(variant)
+  const { sideBySide, wordsOnBar, width, setRoot } = useRoom(variant)
   const { view, setWanted } = useView({ pane, disabled, canPreview: Boolean(renderPreview), sideBySide })
   const [active, setActive] = useState(false)
   const [showPictures, setShowPictures] = useState(false)
@@ -432,7 +436,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   const onPictures = useCallback(() => setShowPictures(true), [])
   const blocks = useSlashBlocks({ apply, template, value, hasPictures: Boolean(images), onPictures, pickFile })
   const completion = useReferenceCompletion(areaRef, apply, disabled ? NO_BLOCKS : blocks)
-  useGrowing(areaRef, value, !pane && view !== 'preview', minRows, maxRows)
+  useGrowing(areaRef, value, width, !pane && view !== 'preview', minRows, maxRows)
   const onKeyDown = useKeys({ completion, selection, apply, onSubmit: props.onSubmit, toolbarRef })
   const taking = useTaking({ files, selection, apply, canTake: Boolean(onAddImage) || canAttach })
 

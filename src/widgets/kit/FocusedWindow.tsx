@@ -5,8 +5,16 @@
  * A record edited with nothing else on screen: the dialog family's largest member,
  * for writing that wants the whole window. Cancel at the start of its bar, the
  * record's number and what is being done, whatever the screen puts in the middle
- * (*Write | Preview*), and Save at the end. The body scrolls under the bar, with
- * an optional column of facts beside it.
+ * (*Write | Preview*), and Save at the end.
+ *
+ * **It uses the window.** The writing takes all the width the column of facts
+ * leaves, and all the height under the bar, with small margins: a person who asked
+ * for the whole window is not handed a column in the middle of it. The writing and
+ * the facts scroll each on their own and the window never does, so that no scroll
+ * sits inside another: a pane that fills the height keeps its text's scroll, and a
+ * form scrolls as a form, its fields as tall as what they hold (`useInFocusedWindow`).
+ * On a narrow window the facts stand under the writing, with a press in the bar to
+ * fold them out of its way.
  *
  * **It covers the shell's toolbar**, so the bar takes over what that toolbar did
  * for the window: it keeps clear of the traffic lights and is the handle that
@@ -21,7 +29,7 @@
  * **What holds the save** is said by the save button (`saveRefused`) and at the
  * field, which is the screen's. Save is one step for Undo, also the screen's.
  */
-import { useId, useState } from 'react'
+import { createContext, useContext, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import MuiDialog from '@mui/material/Dialog'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -57,6 +65,13 @@ export type FocusedWindowProps = {
   'data-guide'?: string
 }
 
+const InFocusedWindow = createContext(false)
+
+/** Whether this stands in a full window: there a field grows with its text, for the window scrolls and has the room. */
+export function useInFocusedWindow(): boolean {
+  return useContext(InFocusedWindow)
+}
+
 export function FocusedWindow({
   open, title, number, windowChrome, middle, children, aside, changed, saveLabel, onSave, saveRefused, onCancel,
   working = false, error, 'data-guide': guide,
@@ -64,6 +79,7 @@ export function FocusedWindow({
   const { t } = useStrings()
   const titleId = useId()
   const [asking, setAsking] = useState(false)
+  const [asideFolded, setAsideFolded] = useState(false)
 
   const cancel = () => {
     if (working) return
@@ -93,15 +109,22 @@ export function FocusedWindow({
         {middle && <div className="kit-focused__middle">{middle}</div>}
         <div className="kit-focused__end">
           {error && <span className="kit-focused__error" role="alert">{error}</span>}
+          {aside && (
+            <span className="kit-focused__fold">
+              <Button variant="quiet" aria-expanded={!asideFolded} onClick={() => setAsideFolded((was) => !was)}>{t('kit.focused.aside')}</Button>
+            </span>
+          )}
           <Button variant="primary" onClick={onSave} reason={saveRefused} working={working} data-guide={guide && `${guide}-save`}>
             {saveLabel}
           </Button>
         </div>
       </div>
-      <div className="kit-focused__body" data-aside={aside ? true : undefined}>
-        <div className="kit-focused__main">{children}</div>
-        {aside && <div className="kit-focused__aside">{aside}</div>}
-      </div>
+      <InFocusedWindow.Provider value>
+        <div className="kit-focused__body">
+          <div className="kit-focused__main">{children}</div>
+          {aside && <div className="kit-focused__aside" data-folded={asideFolded || undefined}>{aside}</div>}
+        </div>
+      </InFocusedWindow.Provider>
       <Dialog
         open={asking}
         title={t('kit.focused.askTitle')}

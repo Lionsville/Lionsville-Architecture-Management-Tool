@@ -8,6 +8,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.toast.undo': 'Rückgängig',
   'kit.toast.putBack': 'Zurücksetzen',
   'kit.focused.cancel': 'Abbrechen',
+  'kit.focused.aside': 'Details',
   'kit.focused.askTitle': 'Ohne Speichern verlassen?',
   'kit.focused.askBody': 'Was Sie hier geändert haben, ist nicht gespeichert und geht beim Verlassen verloren.',
   'kit.focused.keepEditing': 'Weiter bearbeiten',
