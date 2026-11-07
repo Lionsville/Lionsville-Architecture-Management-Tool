@@ -427,7 +427,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.party': 'Hoort bij',
   'field.partyNone': 'Niet gezegd',
   'record.title': 'Stamgegevens',
-  'record.open': 'Dossier',
+  'record.open': 'Stamgegevens',
   'record.empty': 'Nog geen stamgegevens',
   'record.openTip': 'De pagina van dit element openen, waar eigenaar, leverancier en datums worden bijgehouden',
   'record.outsideOf': 'Extern \u00b7 {name}',

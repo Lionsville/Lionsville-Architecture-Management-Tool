@@ -1065,25 +1065,37 @@ Zeven soorten: applicatie, component, extern systeem, invoerkanaal,
 beheertool, actor, en de domeingroep die ze bijeenhoudt — en, sinds de
 fysieke weergave, een **platform**: een cluster, een broker, een bus, de
 tooling, waar applicaties op draaien en wat ze gebruiken. Selecteer er een en
-de **inspector** rechts toont zijn velden in drie tabbladen. De pagina van
-het element zet dezelfde velden neer, in dezelfde volgorde, onder dezelfde
-koppen (*Documentatie*): beide komen uit één lijst, dus ze kunnen niet uit
-elkaar groeien. Elk scherm dat de eigenschappen van een record toont of om
-een formulier vraagt — de inspector, de pagina, de lezers van observaties,
-besluiten en plannen, de details van het businessblad, de
-instellingendialogen en de dialogen die een record maken — draagt één
-uiterlijk: kleine velden, één ritme van labels en waarden, dezelfde
-sectiekoppen, en een gestippelde rand om een veld dat je alleen mag lezen.
+het **paneel** rechts toont het: zijn soort, een naam die afbreekt, één regel
+feiten en drie tabbladen. Met niets geselecteerd is er geen paneel en heeft het
+bord de breedte; druk op de naam van de weergave die open staat voor **Deze
+weergave**, wat ze is en bevat en hoe ze opruimt. Elk feit is een rij van label en
+waarde, en een druk maakt van de waarde een veld: Enter of verlaten bewaart,
+Escape zet terug, en de voet zegt waar het veld voor is. Een veld zonder inhoud
+blijft uit het paneel tot **+ Eigenaar, leverancier…** het toevoegt. De pagina van
+het element, zijn **stamgegevens**, toont dezelfde rijen met elk veld, een leeg
+veld als streepje: beide komen uit één lijst, dus ze kunnen niet uit elkaar
+groeien.
 
-- **Algemeen.** Naam, categorie en levenscyclus (gepland, live, uitfaserend,
-  uitgefaseerd; als badge, uitgefaseerde elementen dimmen) op één rij, de
-  omschrijving (zie *Documentatie*) en waar het staat. De schakelaar
-  *Beheerd* die tot 3.7.0 naast de levenscyclus stond is weg: niets las hem.
-  Van wie een systeem is, zegt **Buiten de organisatie** op zijn stamgegevens.
-- **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte.
-- **Gegevens.** De **operationele aspecten** van een applicatie: per kolom van
-  dit diagram beheerd, deels, geen of risico, met een notitie. De kolommen
-  stel je per diagram in bij de diagraminstellingen.
+- **Eigenschappen.** Levenscyclus (gepland, live, uitfaserend, uitgefaseerd; als
+  badge, uitgefaseerde elementen dimmen) en categorie, de eerste regels van de
+  omschrijving (zie *Documentatie*), waar het draait, de ingevulde stamgegevens, de
+  **operationele aspecten** van een applicatie, een rij per stuk met een notitie op
+  een druk, en wat erin zit. De kolommen stel je per diagram in bij de
+  diagraminstellingen.
+- **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte, en waar het in
+  deze weergave staat.
+- **Opmerkingen.** De draad, met het aantal op het tabblad.
+
+**⋯** naast de naam bevat **Verplaatsen…**, **Soort wijzigen** en **Weghalen /
+verwijderen…**.
+
+**Eigenaar.** De eigenaar van een applicatie is één veld: kies de eenheid die
+ervoor verantwoordelijk is, of typ een naam, die gemarkeerd wordt als geen eenheid.
+Het ene kiezen wist het andere.
+
+**Zekerheid.** Een element of een lijn kan zeggen dat het **bevestigd** of
+**aangenomen** is, als woord op de rij. Een aangenomen kaart wordt gestreept
+getekend. Niets zeggen is dat niemand het heeft gezegd.
 
 **Pictogrammen.** Ruim honderd ingebouwde tekens, doorzoekbaar op naam,
 categorie en trefwoord in beide talen, in twee maten: klein in de kop, groot
@@ -1091,9 +1103,7 @@ voorop de kaart voor een plaat die van een afstand gelezen wordt. **Upload a
 logo** in de kiezer voegt een eigen SVG of PNG toe (tot 200 kB). Geüploade
 logo's reizen mee in het werkbestand.
 
-**Meer tegelijk.** Selecteer meerdere elementen en de inspector biedt
-levenscyclus, kleur, pictogram en domeingroep voor allemaal, elk één stap in
-Ongedaan maken.
+**Meer dan één tegelijk.** Selecteer er meerdere en het paneel noemt ze en zegt wat elk veld bevat, *Live, alle 3* of *Gemengd*. Levenscyclus, kleur, pictogram en domeingroep voor elementen, en protocol, technologie, periode, richting, kleur en lijnstijl voor lijnen, één stap in Ongedaan maken per wijziging. Bij beide soorten staat boven elk deel wat het wijzigt. **Schikken** en **Weghalen** staan er ook.
 
 **Soort wijzigen.** Rechtsklik een element, **Soort wijzigen ▸**, en kies wat
 het had moeten zijn; koppelingen, omschrijving en plaats blijven. Twee gevallen
@@ -1196,22 +1206,25 @@ met de pijltjes, **passend maken** (Shift+1) en 100 % (Shift+2).
 ## Documentatie
 
 Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
-Een regel of twee typ je in het omschrijvingsveld van de inspector; voor meer
-opent **Als pagina openen ›** onder het veld dezelfde tekst op haar pagina,
-met de breedte van het venster en de secties van het sjabloon eromheen. De
-pagina opent ook met **Documentatie openen** in het elementmenu, Enter op het
-geselecteerde element, of een dubbelklik op alles wat geen applicatie is.
+De eerste regels staan in het paneel; een druk schrijft ze daar met dezelfde
+editor, en **De pagina openen** opent dezelfde tekst op de **stamgegevens** van het
+element. Dat doen ook de link naast de naam, **Documentatie openen** in het
+elementmenu, Enter op het geselecteerde element, en een dubbelklik op alles wat
+geen applicatie is.
 
-De pagina opent om te **lezen**: het document met een inhoudsopgave, links de
-andere elementen van het diagram om tussen te wisselen (een paginateken toont
-wie al documentatie heeft), rechts de velden van het element zelf — de
-velden van de inspector op het bord, in zijn volgorde en zijn uiterlijk, met
-het **record** voluit boven *Algemeen* en *Gegevens*, twee naast elkaar waar
-de kolom breed genoeg is. *Uiterlijk* blijft naast het bord, waar de kaart is.
-**Bewerken** zet de bron links en het resultaat ernaast, en maakt ook de velden
-rechts bewerkbaar. ⌘B en ⌘I omhullen de selectie; Escape gaat eerst uit
-Bewerken en dan uit de pagina. Wijzigingen worden bewaard na een korte pauze en
-bij het verlaten, één stap in Ongedaan maken per pauze.
+De pagina leest als één geheel: de tekst met haar inhoud, dan dezelfde rijen als
+in het paneel met elk veld getoond, in elke stand drukken om te bewerken, en waar
+het mee verbonden is: zijn plannen, elke lijn erin en eruit, de weergaven die het
+tekenen, wat erin zit, de principes die het volgt, zijn wijzigingen en zijn
+opmerkingen. Links staan de andere elementen van de weergave, met een filter (een
+teken toont wie al een pagina heeft). *Vormgeving* blijft naast het bord, waar de
+kaart is.
+
+**Tekst bewerken** opent een venster met niets dan de bron en het resultaat ernaast;
+**Velden** haalt de rijen erbij. ⌘B en ⌘I omhullen de selectie. De tekst wordt
+bewaard na een korte pauze, één stap in Ongedaan maken voor het geheel. **Klaar**
+beëindigt het schrijven, en **Annuleren**, of Escape, zet haar terug op wat ze was,
+en vraagt het eerst als er iets is veranderd.
 
 Een lege pagina kan **beginnen met het sjabloon**: een koptabel en de
 gebruikelijke secties. De regel **Korte omschrijving** in die tabel is wat het

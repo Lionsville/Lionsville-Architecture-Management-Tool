@@ -1129,28 +1129,38 @@ einen Zeiger.
 Sieben Arten: Anwendung, Komponente, externes System, Eingabekanal,
 Verwaltungswerkzeug, Akteur, und die Domänengruppe, die sie hält — und, seit
 der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
-die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie
-eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
-Die Seite des Elements legt dieselben Felder aus, in derselben Reihenfolge,
-unter denselben Überschriften (*Dokumentation*): beide entstehen aus einer
-Liste, sodass sie nicht auseinanderlaufen können. Jeder Bildschirm, der die
-Eigenschaften eines Datensatzes zeigt oder ein Formular verlangt — der
-Inspektor, die Seite, die Leser von Beobachtungen, Entscheidungen und Plänen,
-die Details des Geschäftsblatts, die Einstellungsdialoge und die Dialoge, die
-einen Datensatz anlegen — trägt ein Aussehen: kleine Felder, ein Rhythmus von
-Beschriftungen und Werten, dieselben Abschnittsüberschriften und ein
-gestrichelter Rand um ein Feld, das Sie nur lesen dürfen.
+die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie eines
+aus, und das **Panel** rechts zeigt es: seine Art, einen Namen, der umbricht, eine
+Zeile Fakten und drei Reiter. Ist nichts ausgewählt, gibt es kein Panel und das
+Board hat die Breite; drücken Sie auf den Namen der offenen Ansicht für **Diese
+Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
+aus Beschriftung und Wert, und ein Druck macht aus dem Wert ein Feld: Enter oder
+Verlassen behält ihn, Escape setzt ihn zurück, und der Fuß sagt, wofür das Feld
+ist. Ein Feld ohne Inhalt bleibt aus dem Panel, bis **+ Verantwortlicher,
+Anbieter…** es hinzufügt. Die Seite des Elements, seine **Stammdaten**, zeigt
+dieselben Zeilen mit jedem Feld, ein leeres als Strich: beide entstehen aus einer
+Liste, sodass sie nicht auseinanderlaufen können.
 
-- **Allgemein.** Name, Kategorie und Lebenszyklus (geplant, aktiv,
-  auslaufend, abgeschaltet; als Abzeichen dargestellt, abgeschaltete Elemente
-  werden abgeblendet) in einer Zeile, die Beschreibung (siehe
-  *Dokumentation*), und wo es sitzt. Der Schalter *Verwaltet*, der bis 3.7.0
-  neben dem Lebenszyklus stand, ist weg: nichts las ihn. Wem ein System
-  gehört, sagt **Außerhalb der Organisation** auf seinen Stammdaten.
-- **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße.
-- **Daten.** Die **betrieblichen Aspekte** einer Anwendung: für jede Spalte dieses
-  Diagramms verwaltet, teilweise, keiner oder gefährdet, mit einer Notiz. Die
-  Spalten werden je Diagramm in dessen Einstellungen festgelegt.
+- **Eigenschaften.** Lebenszyklus (geplant, aktiv, auslaufend, abgeschaltet; als
+  Abzeichen dargestellt, abgeschaltete Elemente werden abgeblendet) und Kategorie,
+  die ersten Zeilen der Beschreibung (siehe *Dokumentation*), wo es läuft, die
+  ausgefüllten Stammdaten, die **betrieblichen Aspekte** einer Anwendung, je eine
+  Zeile mit einer Notiz auf einen Druck, und was darin ist. Die Spalten werden je
+  Diagramm in dessen Einstellungen festgelegt.
+- **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße, und wo es in dieser
+  Ansicht sitzt.
+- **Kommentare.** Der Verlauf, mit der Anzahl auf dem Reiter.
+
+**⋯** neben dem Namen enthält **Verschieben…**, **Art ändern** und **Entfernen /
+löschen…**.
+
+**Verantwortlicher.** Der Verantwortliche einer Anwendung ist ein Feld: Wählen Sie
+die Einheit, die dafür einsteht, oder tippen Sie einen Namen, der als keine Einheit
+markiert wird. Das eine zu wählen löscht das andere.
+
+**Sicherheit.** Ein Element oder eine Linie kann sagen, dass es **bestätigt** oder
+**angenommen** ist, als Wort auf der Zeile. Eine angenommene Karte wird gestrichelt
+gezeichnet. Nichts zu sagen heißt, dass es niemand gesagt hat.
 
 **Symbole.** Rund hundert eingebaute Marken, durchsuchbar nach Name, Kategorie
 und Stichwort in beiden Sprachen, in zwei Größen: klein in der Kopfzeile, groß
@@ -1158,9 +1168,7 @@ als Auftakt der Karte für ein Diagramm, das aus der Entfernung gelesen wird.
 **Ein Logo hochladen** in der Auswahl fügt Ihr eigenes SVG oder PNG hinzu (bis
 200 kB). Hochgeladene Logos reisen in der Arbeitsdatei mit.
 
-**Mehrere auf einmal.** Wählen Sie mehrere Elemente aus, und der Inspektor
-bietet Lebenszyklus, Farbe, Symbol und Domänengruppe für alle, je ein
-Rückgängig-Schritt.
+**Mehrere zugleich.** Wählen Sie mehrere aus, und das Panel nennt sie und sagt, was jedes Feld enthält, *Aktiv, alle 3* oder *Gemischt*. Lebenszyklus, Farbe, Symbol und Domänengruppe für Elemente, und Protokoll, Technologie, Zeitraum, Richtung, Farbe und Linienstil für Linien, je ein Rückgängig-Schritt. Bei beiden Arten steht über jedem Teil, was er ändert. **Anordnen** und **Entfernen** sind auch da.
 
 **Art ändern.** Klicken Sie mit rechts auf ein Element, **Art ändern ▸**, und
 wählen Sie, was es hätte sein sollen; Verbindungen, Beschreibung und Platz
@@ -1268,24 +1276,26 @@ Verschieben mit den Pfeilen, **Einpassen** (Shift+1) und 100 % (Shift+2).
 
 ## Dokumentation
 
-Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite
-sein. Eine Zeile oder zwei tippen Sie im Beschreibungsfeld des Inspektors;
-für mehr öffnet **Als Seite öffnen ›** unter dem Feld denselben Text auf
-seiner Seite, mit der Breite des Fensters und den Abschnitten der Vorlage
-darum. Die Seite öffnet sich auch mit **Dokumentation öffnen** im Menü des
-Elements, Enter auf dem ausgewählten Element, oder einem Doppelklick auf
-alles, was keine Anwendung ist.
+Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite sein.
+Die ersten Zeilen stehen im Panel; ein Druck schreibt sie dort mit demselben Editor,
+und **Seite öffnen** öffnet denselben Text auf den **Stammdaten** des Elements. Das
+tun auch der Link neben dem Namen, **Dokumentation öffnen** im Menü des Elements,
+Enter auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
+Anwendung ist.
 
-Die Seite öffnet sich zum **Lesen**: das Dokument mit einem Inhaltsverzeichnis,
-die anderen Elemente des Diagramms links zum Wechseln (eine Seitenmarke zeigt,
-wer schon Dokumentation hat), und die eigenen Felder des Elements rechts —
-die Felder des Inspektors am Board, in seiner Reihenfolge und seinem Aussehen,
-mit dem **Datensatz** vollständig über *Allgemein* und *Daten*, zwei nebeneinander,
-wo die Spalte breit genug ist. *Aussehen* bleibt neben dem Board, wo die Karte ist.
-**Bearbeiten** setzt den Quelltext nach links und das Ergebnis daneben, und macht
-auch die Felder rechts bearbeitbar. ⌘B und ⌘I umschließen die Auswahl; Escape
-verlässt zuerst Bearbeiten, dann die Seite. Änderungen werden nach einer kurzen
-Pause und beim Verlassen gespeichert, ein Rückgängig-Schritt je Pause.
+Die Seite liest sich als ein Ganzes: der Text mit seinem Inhalt, dann dieselben
+Zeilen wie im Panel mit jedem Feld, in jedem Zustand per Druck zu bearbeiten, und
+womit es verbunden ist: seine Pläne, jede Linie hinein und heraus, die Ansichten,
+die es zeichnen, was darin ist, die Grundsätze, denen es folgt, seine Änderungen und
+seine Kommentare. Links stehen die anderen Elemente der Ansicht, mit einem Filter
+(eine Marke zeigt, wer schon eine Seite hat). *Darstellung* bleibt neben dem Board,
+wo die Karte ist.
+
+**Text bearbeiten** öffnet ein Fenster mit nichts als dem Quelltext und dem Ergebnis
+daneben; **Felder** holt die Zeilen dazu. ⌘B und ⌘I umschließen die Auswahl. Der Text
+wird nach einer kurzen Pause gespeichert, ein Rückgängig-Schritt für das Ganze.
+**Fertig** beendet das Schreiben, und **Abbrechen** oder Escape setzt ihn auf das
+zurück, was er war, und fragt zuerst, wenn sich etwas geändert hat.
 
 Eine leere Seite kann **mit der Vorlage beginnen**: eine Kopftabelle und die
 üblichen Abschnitte. Die Zeile **Kurzbeschreibung** dieser Tabelle ist das, was

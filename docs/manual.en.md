@@ -334,7 +334,7 @@ ever changed by the scope that holds it.
 ### Moving a record between scopes
 
 Where a thing is written down is a decision you can change afterwards. Select
-the card and press **Move…** in the inspector; the dialog offers whichever of
+the card and press **Move…** in the **⋯** of the panel; the dialog offers whichever of
 the four apply.
 
 - **Link** — give up this scope's record and stand in for one another scope
@@ -920,8 +920,8 @@ on its own. Removing a group leaves its elements where they are.
 **Container diagrams.** An application can have a container diagram
 underneath it: the application becomes the boundary of that diagram and its
 components sit inside. You make one on purpose — right-click the application
-and choose **Create container diagram**, or press the button of that name on
-the inspector's General tab — and it is a step in Activity like any other, so
+and choose **Create container diagram**, or press **Create** beside *Container view* in
+the panel — and it is a step in Activity like any other, so
 ⌘Z takes it back. A card that has one carries a small mark; double-click the
 card to open it. Double-clicking never creates one. A landscape tab lists its
 container diagrams under a chevron: right-click an entry there, or press the
@@ -965,34 +965,42 @@ group, moving a group and bending a line still need a pointer.
 Seven kinds: application, component, external system, input channel,
 management tool, actor, and the domain group that holds them — and, since
 the physical view, a **platform**: a cluster, a broker, a bus, the tooling,
-what the applications run on and what they use. Select one and the
-**inspector** on the right shows its fields in three tabs. The element's
-page lays out the same fields, in the same order, under the same headings
-(*Documentation*): the two are built from one list, so they cannot drift
-apart. Every screen that shows a record's properties or asks for a form —
-the inspector, the page, the readers of observations, decisions and plans,
-the business sheet's details, the settings dialogs and the dialogs that
-make a record — wears one look: small fields, one rhythm of labels and
-values, the same section headings, and a dashed outline round a field you
-may only read.
+what the applications run on and what they use. Select one and the **panel**
+on the right shows it: its kind, a name that wraps, one line of facts, and three
+tabs. With nothing selected there is no panel and the board has the width; press
+the name of the view that is up for **This view**, what it is and holds and its
+tidy. Every fact is a row of label and value, and a press turns the value into a
+field: Enter or leaving keeps it, Escape puts it back, and the foot says what the
+field is for. A field with nothing in it stays out of the panel until **+ Owner,
+vendor…** adds it. The element's page, its **record**, shows the same rows with
+every field, an empty one as a dash: the two are built from one list, so they
+cannot drift apart.
 
-- **General.** Name, category and lifecycle (planned, live, retiring,
-  retired; shown as a badge, retired elements dim) on one row, the
-  description (see *Documentation*), and where it sits. The *Managed* switch
-  that stood beside the lifecycle until 3.7.0 is gone: nothing read it. Whose
-  a system is, is **Outside the organisation** on its record.
-- **Appearance.** Accent colour, shape, icon, icon size.
-- **Data.** The **operational aspects** of an application: for each column of this
-  diagram, managed, partial, none or at risk, with a note. The columns are set
-  per diagram in its settings.
+- **Properties.** Lifecycle (planned, live, retiring, retired; shown as a badge,
+  retired elements dim) and category, the first lines of the description (see
+  *Documentation*), where it runs, its record's filled fields, the **operational
+  aspects** of an application, one row each with a note on a press, and what is
+  inside it. The columns of the aspects are set per diagram in its settings.
+- **Appearance.** Accent colour, shape, icon, icon size, and where it sits on this
+  view.
+- **Comments.** The thread, with its count on the tab.
+
+**⋯** beside the name holds **Move…**, **Change kind** and **Remove / delete…**.
+
+**Owner.** An application's owner is one field: pick the unit that answers for
+it, or type a name, which is flagged as not a unit. Pressing the other clears the
+first.
+
+**Certainty.** An element or a line can say it is **confirmed** or **assumed**,
+as a word on the row. An assumed card is drawn dashed. Saying nothing is nobody
+having said.
 
 **Icons.** Around a hundred built-in marks, searchable by name, category and
 keyword in both languages, in two sizes: small in the header, large leading the
 card for a diagram read from a distance. **Upload a logo** in the picker adds
 your own SVG or PNG (up to 200 kB). Uploaded logos travel in the working file.
 
-**More than one at a time.** Select several elements and the inspector offers
-lifecycle, colour, icon and domain group for all of them, one undo step each.
+**More than one at a time.** Select several and the panel lists them and says what each field holds, *Live, all 3* or *Mixed*. Lifecycle, colour, icon and domain group for elements, and protocol, technology, window, direction, colour and line style for lines, one undo step each. Selecting both kinds heads each part with what it changes. **Arrange** and **Remove** are there too.
 
 **Change kind.** Right-click an element, **Change kind ▸**, and pick what it
 should have been; connections, description and place stay. Two cases are
@@ -1087,23 +1095,25 @@ the selection menu, a **grid** with optional snapping, nudge with the arrows,
 
 ## Documentation
 
-Every element has a markdown description, and it can be a whole page. A line
-or two is typed in the inspector's description field; for more, **Open as a
-page ›** under the field opens the same text on its page, with the width of
-the window and the template's sections around it. The page also opens with
-**Open documentation** in the element's menu, Enter on the selected element,
-or a double-click on anything that is not an application.
+Every element has a markdown description, and it can be a whole page. Its first
+lines stand in the panel; a press writes them there with the same editor, and
+**Open the page** opens the same text on the element's **record**. So do
+**Record ›** beside its name, **Open documentation** in the element's menu, Enter
+on the selected element, and a double-click on anything that is not an
+application.
 
-The page opens to **read**: the document with a table of contents, the
-diagram's other elements down the left to move between (a page mark shows who
-has documentation already), and the element's own fields down the right — the
-board inspector's fields, in its order and its look, with the **record** laid
-out in full above *General* and *Data*, two to a row where the column is wide
-enough. *Appearance* stays beside the board, where the card is.
-**Edit** puts the source on the left and the result beside it, and makes the
-fields on the right editable too. ⌘B and ⌘I wrap the selection; Escape leaves
-Edit first, then the page. Changes are saved after a short pause and when you
-leave, one undo step per pause.
+The record reads as one page: the text with its contents, then the same rows as
+the panel with every field shown, press to edit in any state, and what it is
+connected to: its plans, every line in and out, the views that draw it, what is
+inside it, the principles it follows, its changes and its comments. Down the left
+are the view's other elements, with a filter (a mark shows who has a page
+already). *Appearance* stays beside the board, where the card is.
+
+**Edit text** opens a window with nothing but the source and the result beside it;
+**Fields** brings the rows back beside it. ⌘B and ⌘I wrap the selection. The text
+is saved after a short pause, one undo step for the whole of it. **Done** ends the
+writing, and **Cancel**, or Escape, takes it back to what it was, asking first if
+anything changed.
 
 An empty page can **start from the template**: a header table and the usual
 sections. The **Short description** row of that table is what the element
@@ -2200,11 +2210,11 @@ sheet, works as before.
 or its page, its name comes first, with **Move…** and **Create drawing** in
 the **⋯** beside it. Under the name are its unit type, with the scope it is
 filed in beneath it, and then the unit's own sections. Last comes
-**Element**, folded: the actor's own fields — its record, General with its
-lifecycle and description, Appearance and Data. It is folded again
+**Element**, folded: the actor's own fields, its lifecycle, description and
+record. It is folded again
 each time another unit is picked. On the page the same fields are laid out
-below the unit. An actor without a type keeps the element's inspector as it
-was, with **Unit** under its General tab.
+below the unit. An actor without a type keeps the element's panel, with **Unit** after its
+fields on Properties.
 
 A unit's sections, in that order:
 

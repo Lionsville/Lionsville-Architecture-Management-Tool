@@ -692,7 +692,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
           onCommit={(value) => update({ shapeVariant: value === '' ? undefined : value as NodeShapeVariant })}
         />
         <PropertyRow
-          label={iconLabel} data-testid="element-icon" value={(logo?.source === 'builtin' ? logo.entry.label : logo?.entry.name) ?? element.iconKey ?? ''} empty={t('common.none')}
+          label={iconLabel} data-testid="element-icon" value={logo?.entry.label ?? element.iconKey ?? ''} empty={t('common.none')}
           edit={(editor) => (
             <div className="inspector-icons" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}>
               <LogoGrid label={iconLabel} value={element.iconKey} onChange={(iconKey) => update({ iconKey })} onRequestUpload={onRequestLogoUpload} maxHeight={220} />

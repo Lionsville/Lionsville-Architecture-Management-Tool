@@ -427,7 +427,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.party': 'Geh\u00f6rt zu',
   'field.partyNone': 'Nicht angegeben',
   'record.title': 'Stammdaten',
-  'record.open': 'Datensatz',
+  'record.open': 'Stammdaten',
   'record.empty': 'Noch keine Stammdaten',
   'record.openTip': 'Die Seite dieses Elements öffnen, auf der Eigentümer, Anbieter und Daten geführt werden',
   'record.outsideOf': 'Extern \u00b7 {name}',
