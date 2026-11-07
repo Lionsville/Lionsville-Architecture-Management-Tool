@@ -707,6 +707,7 @@ function useShellParts(props: AppProps): ShellParts {
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
     home: nav.home, homeName: home.name,
   })
+  if (props.provider?.frame?.Agents) base.openAgentRef.current = () => shellAgent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents', tab: 'connect' })
   const provider = useProviderParts({
     provider: props.provider ?? NOTHING, source, diagnostics, openSomewhere: shellAgent.openSomewhere,
   })
@@ -814,12 +815,12 @@ function useShellBase(props: AppProps) {
     updateSettings: host.updateSettings, failedRef, notify: toasts.notify, s,
     initiallyOpen: boot.opensDialog === 'preferences', onOpenChange: noteMachineOpen,
   })
+  /** What *Connect an agent* does: a source with a page for agents answers it there, once the way there exists. */
+  const openAgentRef = useRef<() => void>(agentServer.openDialog)
+  openAgentRef.current = agentServer.openDialog
   const commands = useShellCommands({
     commands: host.commands, hostMenu: host.hostMenu, onWindowZoom: host.onWindowZoom, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
-    openPreferences: machine.setOpen,
-    // A source with a page for agents answers the menu there, from wherever the app is; every other keeps the dialog.
-    openAgent: props.provider?.frame?.Agents ? () => shellAgent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents', tab: 'connect' }) : agentServer.openDialog,
-    share: share.share, hostControls,
+    openPreferences: machine.setOpen, openAgent: () => openAgentRef.current(), share: share.share, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
   // The mouse's back and forward buttons, where the host asks for Back and Forward (ADR-0033).
@@ -857,6 +858,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable, frame, copies,
+    savedFilters, organisation, refreshTree, screenRef, selectedRef, openAgentRef, share, writable, frame, copies,
   }
 }
