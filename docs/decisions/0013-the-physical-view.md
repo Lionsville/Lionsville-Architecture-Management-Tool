@@ -192,6 +192,8 @@ end, kept and reported like any other.
 *Superseded by the preamble: a platform has a report, not a view kind, and the
 pictures are the deployment boxes and the landscape overlay.*
 
+*As built, 7 November 2026: the deployment boxes are off until asked for, as **Where it runs** on the bar, since mixing two levels on one diagram is what a reader has to ask for. The view still remembers the answer.*
+
 The fourth laid-out view, beside the sheet and the map: one platform, with
 what stands on it and what passes through it. Never drawn — every mark is
 derived from the rows that name the platform, so the page is computed on

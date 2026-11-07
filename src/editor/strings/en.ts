@@ -238,7 +238,6 @@ export const EN = {
   'toolbar.diagramSettingsOf': 'Settings of {name}',
   'toolbar.containerView': 'Container view',
   'toolbar.backTo': 'Back to {name}',
-  'toolbar.backToLandscape': 'Back to landscape',
   'toolbar.containerMenu': 'Rename, settings or delete this container diagram',
   'toolbar.containerMenuOf': 'Menu of the container diagram of {name}',
 
@@ -262,7 +261,6 @@ export const EN = {
   'canvas.minimap': 'Minimap',
   'node.actorFigure': 'Actor figure',
   'node.external': 'EXTERNAL',
-  'node.openContainer': 'Open container diagram',
   'bar.add': 'Add',
   'bar.keepOpen': 'Keep the kinds open',
   'bar.arrange': 'Arrange',
@@ -321,7 +319,6 @@ export const EN = {
   'node.dragToConnect': 'Drag to connect',
   'node.externalTip': 'An external system: outside this organisation, drawn for the interfaces it has with it.',
   'node.fromTip': 'Drawn here, defined in {name}.',
-  'node.hasContainer': 'Has a container diagram — double-click to open',
   'node.lifecycleAria': 'Lifecycle: {name}',
   'edge.labelPlaceholder': 'Interface description…',
   'edge.labelHint': 'double-click to label…',

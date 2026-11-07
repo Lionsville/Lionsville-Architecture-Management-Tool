@@ -228,7 +228,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.diagramSettingsOf': 'Einstellungen von {name}',
   'toolbar.containerView': 'Container-Ansicht',
   'toolbar.backTo': 'Zurück zu {name}',
-  'toolbar.backToLandscape': 'Zurück zur Landschaft',
   'toolbar.containerMenu': 'Dieses Container-Diagramm umbenennen, einstellen oder löschen',
   'toolbar.containerMenuOf': 'Menü des Container-Diagramms von {name}',
 
@@ -251,7 +250,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'canvas.minimap': 'Übersichtskarte',
   'node.actorFigure': 'Akteurfigur',
   'node.external': 'EXTERN',
-  'node.openContainer': 'Containerdiagramm öffnen',
   'bar.add': 'Hinzufügen',
   'bar.keepOpen': 'Arten geöffnet lassen',
   'bar.arrange': 'Anordnen',
@@ -310,7 +308,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'node.dragToConnect': 'Ziehen, um zu verbinden',
   'node.externalTip': 'Ein externes System: außerhalb dieser Organisation, gezeichnet wegen der Schnittstellen, die es mit ihr hat.',
   'node.fromTip': 'Hier gezeichnet, definiert in {name}.',
-  'node.hasContainer': 'Hat ein Container-Diagramm — Doppelklick zum Öffnen',
   'node.lifecycleAria': 'Lebenszyklus: {name}',
   'edge.labelPlaceholder': 'Beschreibung der Schnittstelle…',
   'edge.labelHint': 'Doppelklick zum Beschriften…',

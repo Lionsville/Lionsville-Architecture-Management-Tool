@@ -55,14 +55,6 @@ export function GlobeGlyph({ size = 13, strokeWidth = 2 }: GlyphProps) {
   );
 }
 
-export function DrillGlyph({ size = 12, strokeWidth = 2 }: GlyphProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M5 5h6M5 5v6M5 5l8 8M19 13v6h-6" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 /**
  * `DocGlyph` moved to `widgets/icons.tsx`: the documentation page draws it too,
  * and that page may not import the canvas. Re-exported so the nodes beside it

@@ -155,6 +155,7 @@ back goes to that board (`useCarriedDay`).
 * Bad, accepted: to correct a typo seen while looking, a person goes back first.
 * Bad, accepted: a lens is lost on reload unless kept, as a look is. One that used to
   stick by being chosen now has to be kept.
+* As built, 7 November 2026: going down to a container diagram takes the board's day and remembers the board, also sideways to a neighbour's diagram, and Back returns to that board on its day with its selection. What it came from is held for as long as the window is open; the day is in the address.
 * Neutral: the container view's deployment boxes still write when toggled. They are
   a setting of the view rather than a colouring of it, and have no *Keep* yet.
 

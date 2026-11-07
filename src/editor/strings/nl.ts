@@ -228,7 +228,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.diagramSettingsOf': 'Instellingen van {name}',
   'toolbar.containerView': 'Containeraanzicht',
   'toolbar.backTo': 'Terug naar {name}',
-  'toolbar.backToLandscape': 'Terug naar het landschap',
   'toolbar.containerMenu': 'Dit containeraanzicht hernoemen, instellen of verwijderen',
   'toolbar.containerMenuOf': 'Menu van het containeraanzicht van {name}',
 
@@ -251,7 +250,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'canvas.minimap': 'Overzichtskaartje',
   'node.actorFigure': 'Actorfiguur',
   'node.external': 'EXTERN',
-  'node.openContainer': 'Containerdiagram openen',
   'bar.add': 'Toevoegen',
   'bar.keepOpen': 'Soorten open houden',
   'bar.arrange': 'Ordenen',
@@ -310,7 +308,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'node.dragToConnect': 'Sleep om te koppelen',
   'node.externalTip': 'Een extern systeem: buiten deze organisatie, getekend om de koppelingen die het ermee heeft.',
   'node.fromTip': 'Hier getekend, gedefinieerd in {name}.',
-  'node.hasContainer': 'Heeft een containeraanzicht — dubbelklik om te openen',
   'node.lifecycleAria': 'Levenscyclus: {name}',
   'edge.labelPlaceholder': 'Omschrijving van het koppelvlak…',
   'edge.labelHint': 'dubbelklik voor een label…',

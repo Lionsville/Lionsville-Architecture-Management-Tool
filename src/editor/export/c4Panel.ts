@@ -18,7 +18,7 @@ import type { Language, Translate } from '../../i18n';
 export interface C4PanelInfo {
   /** The landscape this application belongs to, and its name: the breadcrumb. */
   scope: string;
-  /** `[Container] <application>` — the level, then the subject. */
+  /** `Container diagram for <application>`: the level, then the subject. */
   title: string;
   /** The application's own description, or the sentence a C4 diagram carries. */
   description: string;
