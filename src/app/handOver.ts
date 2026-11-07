@@ -13,7 +13,14 @@ export function handOver(
   save: () => Promise<void | 'cancelled'>,
   said: { saved(): void; failed(cause: unknown): void },
 ): Promise<void> {
-  return Promise.resolve().then(save).then(
+  let going: Promise<void | 'cancelled'>
+  // At once: a save dialog opened later than the press is one a browser may refuse.
+  try {
+    going = save()
+  } catch (cause) {
+    going = Promise.reject(cause as Error)
+  }
+  return going.then(
     (answer) => { if (answer !== 'cancelled') said.saved() },
     (cause: unknown) => { said.failed(cause) },
   )
