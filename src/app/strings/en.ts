@@ -1778,6 +1778,7 @@ export const EN = {
   'drawing.linksTroubleOne': '{links} · 1 needs a look',
   'drawing.oneLink': '1 link',
   'drawing.export': 'Export…',
+  'drawing.print': 'Print…',
   'drawing.exportFailed': 'The picture could not be turned into a file.',
   'drawing.edit': 'Edit drawing',
   'drawing.editInDesktop': 'Edit in the desktop app…',

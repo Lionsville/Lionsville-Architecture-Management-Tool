@@ -251,4 +251,11 @@ describe('reading a linked shape', () => {
     expect(screen.queryByTestId('drawing-edit')).toBeNull()
     expect(screen.getByRole('button', { name: 'Export…' })).toBeTruthy()
   })
+
+  it('offers Print beside SVG and PNG where the host prints, so a reader gets a copy on paper', async () => {
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} readOnly documents={files} print={vi.fn()} s={s} />)
+    await screen.findByTestId('drawing-picture')
+    fireEvent.click(screen.getByRole('button', { name: 'Export…' }))
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent?.trim())).toEqual(['SVG', 'PNG', 'Print…'])
+  })
 })

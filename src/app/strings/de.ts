@@ -1551,6 +1551,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'drawing.linksTroubleOne': '{links} · 1 zu prüfen',
   'drawing.oneLink': '1 Verknüpfung',
   'drawing.export': 'Exportieren…',
+  'drawing.print': 'Drucken…',
   'drawing.exportFailed': 'Aus dem Bild konnte keine Datei werden.',
   'drawing.edit': 'Zeichnung bearbeiten',
   'drawing.editInDesktop': 'In der Desktop-App bearbeiten…',

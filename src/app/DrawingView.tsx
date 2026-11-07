@@ -46,7 +46,7 @@ import type { LinkFact, ReadElement } from './DrawingPanels'
 import { DRAWING_DARK_COLOUR, drawingSkin } from './drawingSkin'
 import type { DrawingLook } from './drawingProtocol'
 import { handOver } from './handOver'
-import { pictureFile } from './drawingExport'
+import { pictureFile, printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
 
@@ -166,6 +166,18 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
       return documents.save(file)
     }, { saved: () => notify?.(s('shell.drawingExported', { name }), 'success'), failed })
   }
+  // On paper from the reading too, as the editor's own menu offers it: a reader has no editor to print from.
+  const printIt = async () => {
+    if (!address || !images || !scope || !props.print) return
+    try {
+      const held = await images.bytesAt(scope, address)
+      if (!held) throw new Error('gone')
+      await printPicture(diagram.name, held.bytes, props.print)
+    } catch (cause) {
+      props.diagnostics?.report({ level: 'error', where: 'drawingPrint', message: 'shell.drawingPrintFailed', ...(cause !== undefined ? { cause } : {}) })
+      notify?.(s('shell.drawingPrintFailed'), 'error')
+    }
+  }
   const element = reading ? elements.find((one) => one.id === reading) : undefined
   return (
     <div className="drawing-view" data-testid="drawing-view">
@@ -180,7 +192,10 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
         exportAs={pictured && documents ? (
           <ViewBarMenu
             label={s('drawing.export')} data-guide="drawing.export"
-            items={[{ label: 'SVG', onSelect: () => { void saveAs('svg') } }, { label: 'PNG', onSelect: () => { void saveAs('png') } }]}
+            items={[
+              { label: 'SVG', onSelect: () => { void saveAs('svg') } }, { label: 'PNG', onSelect: () => { void saveAs('png') } },
+              ...(props.print ? [{ label: s('drawing.print'), onSelect: () => { void printIt() } }] : []),
+            ]}
           />
         ) : undefined}
         more={<EditWay canEdit={canEdit} noEditor={noEditor} readOnly={readOnly} pictured={pictured} onEdit={onEdit} onGetDesktop={props.onGetDesktop} s={s} />}

@@ -1550,6 +1550,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'drawing.linksTroubleOne': '{links} · 1 om na te kijken',
   'drawing.oneLink': '1 koppeling',
   'drawing.export': 'Exporteren…',
+  'drawing.print': 'Afdrukken…',
   'drawing.exportFailed': 'Van de afbeelding kon geen bestand worden gemaakt.',
   'drawing.edit': 'Tekening bewerken',
   'drawing.editInDesktop': 'Bewerken in de desktop-app…',
