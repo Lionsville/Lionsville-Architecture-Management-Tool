@@ -77,7 +77,8 @@
 .poster-tile[data-value="people"] .poster-tile__mark { border-radius: 0; background: var(--cov-people); border-color: var(--cov-people); }
 /* One question at a time: the place never moves for it, and each value has words on the key and a tile's name. */
 [data-lens="who"] .poster-tile[data-value="nobody"] { background: var(--warn-soft); }
-[data-lens="who"] .poster-tile__mark, [data-lens="lifecycle"] .poster-tile__mark, [data-lens="retiring"] .poster-tile__mark, [data-lens="aspect"] .poster-tile__mark { display: none; }
+/* The corner mark is Covered by's: under another question its hollow ring would say *nothing yet* or *in no domain* on every tile. */
+[data-lens="who"] .poster-tile__mark, [data-lens="domains"] .poster-tile__mark, [data-lens="lifecycle"] .poster-tile__mark, [data-lens="retiring"] .poster-tile__mark, [data-lens="aspect"] .poster-tile__mark { display: none; }
 [data-lens="retiring"] .poster-tile[data-value="retiring"], [data-lens="lifecycle"] .poster-tile[data-value="retiring"] { background: var(--life-retiring-soft); }
 [data-lens="lifecycle"] .poster-tile[data-value="planned"] { border-style: dashed; background: var(--life-planned-soft); }
 [data-lens="lifecycle"] .poster-tile[data-value="retired"] { background: var(--life-gone-soft); color: var(--ink-3); text-decoration: line-through; }
@@ -110,8 +111,9 @@
 .poster-band__phases[data-laned] { margin-inline-start: 98px; }
 .poster-band__phase { appearance: none; min-width: 0; padding: 0; border: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--poster-title); color: var(--on-poster-title); font: inherit; font-size: var(--canvas-t-sm); font-weight: var(--fw-strong); white-space: nowrap; cursor: pointer; }
 .poster-band__lane { flex: 1 1 0; min-height: 0; display: flex; gap: 2px; margin: 0 2px 2px; }
-.poster-band__laneName { flex: none; width: 94px; display: flex; align-items: center; overflow: hidden; padding-inline-end: 4px; color: var(--ink-2); font-size: var(--canvas-t-label); line-height: 11.5px; }
-.poster-band__above { flex: 1; align-self: center; overflow: hidden; color: var(--ink-3); font-size: var(--canvas-t-label); text-align: center; white-space: nowrap; }
+/* A lane's name and *as above* are read at the opening's 90% too: no smaller than a step's roomy size. */
+.poster-band__laneName { flex: none; width: 94px; display: flex; align-items: center; overflow: hidden; padding-inline-end: 4px; color: var(--ink-2); font-size: var(--canvas-t-sm); line-height: 13.5px; }
+.poster-band__above { flex: 1; align-self: center; overflow: hidden; color: var(--ink-3); font-size: var(--canvas-t-sm); text-align: center; white-space: nowrap; }
 .poster-band__cell { position: relative; min-width: 0; display: flex; gap: 2px; }
 .poster-st { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 1px; }
 .poster-st__pic { height: 37px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--ink); }
@@ -171,7 +173,8 @@
 
 [data-posture="design"] .poster-block { content-visibility: visible; }
 .poster-tray .kit-segmented { display: flex; }
-.poster-tray .kit-segmented__option { flex: 1 1 auto; min-width: 0; padding-inline: var(--s-1); }
+/* Three words in 272 px: at the tray's own size they fit in German too, and a longer one ends in an ellipsis rather than being cut. */
+.poster-tray .kit-segmented__option { flex: 1 1 auto; min-width: 0; padding-inline: var(--s-1); overflow: hidden; font-size: var(--t-small); text-overflow: ellipsis; }
 
 /* The tray: what is dragged on from Design, with a press on a selection for those who do not drag. */
 .poster-tray { flex: none; width: 272px; box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-2); border-inline-end: 1px solid var(--line); background: var(--surface); font-size: var(--t-small); }
