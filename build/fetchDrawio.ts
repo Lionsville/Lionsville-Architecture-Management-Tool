@@ -30,6 +30,7 @@ import { dirname, join } from 'node:path'
 import { unzipSync } from 'fflate'
 import { drawioPin } from './dependencyPolicy.ts'
 import { DRAWING_ORIGIN_TOKEN } from '../electron/main/drawing.ts'
+import { DRAWIO_BRIDGE } from './drawioBridge.ts'
 
 /** Where a packaged app's extraResources read the pruned tree from. */
 export const DRAWIO_DIR = 'build/drawio'
@@ -113,7 +114,9 @@ export function preConfigRefusal(rewritten: string): string | undefined {
 
 /** The stamp a tree made from this pin carries. */
 export function stampFor(pin: Pin): string {
-  return `${JSON.stringify({ version: pin.version, sha256: pin.sha256, files: DRAWIO_FILES }, null, 2)}\n`
+  // The bridge is part of what the tree was made from: a new one makes the tree again.
+  const bridge = createHash('sha256').update(DRAWIO_BRIDGE).digest('hex')
+  return `${JSON.stringify({ version: pin.version, sha256: pin.sha256, bridge, files: DRAWIO_FILES }, null, 2)}\n`
 }
 
 /** Why the pruned tree is not the pin's, or nothing when it is. */
@@ -173,6 +176,8 @@ export function pruneInto(out: string, bytes: Uint8Array, pin: Pin): void {
   const refused = preConfigRefusal(rewritten)
   if (refused) throw new Error(refused)
   writeFileSync(pre, rewritten)
+  const post = join(out, 'js/PostConfig.js')
+  writeFileSync(post, `${readFileSync(post, 'utf8')}\n${DRAWIO_BRIDGE}`)
   writeFileSync(join(out, DRAWIO_STAMP), stampFor(pin))
 }
 

@@ -13,6 +13,7 @@ import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { DRAWING_ORIGIN_TOKEN } from '../electron/main/drawing'
 import { drawioPin } from './dependencyPolicy'
+import { DRAWIO_BRIDGE } from './drawioBridge'
 import {
   DRAWIO_DIR, DRAWIO_FILES, drawingPreConfig, drawioCacheFile, drawioWarUrl, fetchDrawio, preConfigRefusal, pruneInto,
   treeRefusal,
@@ -60,6 +61,7 @@ describe('fetchDrawio', () => {
     expect(treeRefusal(root, PIN)).toBeUndefined()
     expect(treeRefusal(root, { ...PIN, version: '0.0.2' })).toContain('another draw.io')
     expect(readFileSync(join(root, DRAWIO_DIR, 'js/PreConfig.js'), 'utf8')).toContain(DRAWING_ORIGIN_TOKEN)
+    expect(readFileSync(join(root, DRAWIO_DIR, 'js/PostConfig.js'), 'utf8')).toContain(DRAWIO_BRIDGE)
   })
 
   it('leaves a tree that is the pin alone, and fetches nothing for it', async () => {

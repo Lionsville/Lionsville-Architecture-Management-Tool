@@ -28,12 +28,15 @@ export type DrawingMode = 'light' | 'dark'
  * Embedded, the JSON protocol, configuration from us, no logo, no windows of
  * its own, the small interface, the app's language and the app's look
  * (`dark`). `keepmodified`: a save leaves the editor saying it has changes
- * until this side says the save landed ({@link savedStatus}), so its own Exit
- * still asks before it drops work a refused save did not keep. No `libs`:
- * the palette is the configuration, not a parameter.
+ * until this side says the save landed ({@link savedStatus}). No `libs`: the
+ * palette is the configuration, not a parameter.
+ *
+ * `noSaveBtn`, `saveAndExit=0` and `noExitBtn`: Save and Done are the app's, in
+ * its own bar, because a frame that does not arrive could otherwise offer no
+ * way back. ⌘S inside the frame still saves.
  */
 export function drawingFrameQuery(language: Language, mode: DrawingMode = 'light'): string {
-  return `embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&ui=min&lang=${language}&dark=${mode === 'dark' ? 1 : 0}`
+  return `embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&noSaveBtn=1&saveAndExit=0&noExitBtn=1&ui=min&lang=${language}&dark=${mode === 'dark' ? 1 : 0}`
 }
 
 /** The frame's address: the origin, and the query on its root. */
@@ -71,11 +74,44 @@ export function frameTarget(origin: string): string {
   }
 }
 
-/** One element, as far as a palette shape needs: what it is called, and which it is. */
-export type PaletteElement = { id: string; name: string }
+/** One element, as far as a palette shape needs: what it is called, which it is, and of what kind. */
+export type PaletteElement = { id: string; name: string; kind?: string }
+
+/** What the palette and the frame look like, beside what is in them: the app's words and tokens. */
+export type DrawingLook = {
+  /** A group's heading, for elements of a kind, with how many: *Applications (20)*. Absent: one group. */
+  groupTitle?: (kind: string, count: number) => string
+  /** The app's look, as CSS for the frame ({@link ./drawingSkin}). */
+  css?: string
+  /** Where the page and the canvas sit in the dark look. */
+  darkColor?: string
+}
+
+/** The kinds the palette opens with, in order. Later ones stay folded, since a large scope holds hundreds. */
+const OPEN_KINDS = ['application', 'function']
+const KIND_ORDER = [...OPEN_KINDS, 'actor', 'step']
+
+/** The elements as draw.io's groups: the kinds a person looks for first, each folded away where it is long. */
+function paletteGroups(elements: readonly PaletteElement[], paletteTitle: string, look: DrawingLook | undefined) {
+  const shape = (element: PaletteElement) => ({
+    title: element.name || element.id, w: SHAPE_WIDTH, h: SHAPE_HEIGHT, xml: elementShapeXml(element),
+  })
+  const titled = look?.groupTitle
+  if (!titled) return [{ title: { main: paletteTitle }, expand: true, data: elements.map(shape) }]
+  const kinds = [...new Set(elements.map((element) => element.kind ?? 'other'))]
+  const rank = (kind: string) => { const at = KIND_ORDER.indexOf(kind); return at < 0 ? KIND_ORDER.length : at }
+  return [...kinds].sort((a, b) => rank(a) - rank(b)).map((kind) => {
+    const held = elements.filter((element) => (element.kind ?? 'other') === kind)
+    return { title: { main: titled(kind, held.length) }, expand: OPEN_KINDS.includes(kind), data: held.map(shape) }
+  })
+}
 
 const SHAPE_WIDTH = 160
 const SHAPE_HEIGHT = 60
+
+/** A palette tile: two to a row, wide enough that a name under it can be read. */
+const THUMB_WIDTH = 88
+const THUMB_HEIGHT = 28
 
 /**
  * One element, as a shape draw.io can drop on the page.
@@ -108,16 +144,23 @@ const NOT_OFFERED = ['exportPdf', 'exportUrl', 'exportHtml', 'embed']
 /**
  * The configuration sent when the frame asks.
  *
- * Uncompressed XML, the elements and the C4 shapes, both on, both open. Each
- * element is uncompressed XML in the library's data.
+ * Uncompressed XML, and the elements and the C4 shapes, both on. Each element is
+ * uncompressed XML in the library's data, and its name is written on its tile,
+ * since a tile's own drawing of it is too small to read.
  */
-export function drawingConfig(elements: readonly PaletteElement[], paletteTitle: string): {
+export function drawingConfig(elements: readonly PaletteElement[], paletteTitle: string, look?: DrawingLook): {
   compressXml: false
   hideMenuItems: string[]
   defaultLibraries: string
   enabledLibraries: string[]
   expandLibraries: true
   libraries: unknown[]
+  sidebarTitles: true
+  sidebarTitleSize: number
+  thumbWidth: number
+  thumbHeight: number
+  customCss?: string
+  darkColor?: string
 } {
   return {
     // The XML a save hands back is kept as text a person can read and a diff
@@ -127,35 +170,21 @@ export function drawingConfig(elements: readonly PaletteElement[], paletteTitle:
     defaultLibraries: 'elements;c4',
     enabledLibraries: ['elements', 'c4'],
     expandLibraries: true,
-    libraries: [
-      {
-        entries: [
-          {
-            id: 'elements',
-            libs: [
-              {
-                title: { main: paletteTitle },
-                expand: true,
-                data: elements.map((element) => ({
-                  title: element.name || element.id,
-                  w: SHAPE_WIDTH,
-                  h: SHAPE_HEIGHT,
-                  xml: elementShapeXml(element),
-                })),
-              },
-            ],
-          },
-        ],
-      },
-    ],
+    sidebarTitles: true,
+    sidebarTitleSize: 11,
+    thumbWidth: THUMB_WIDTH,
+    thumbHeight: THUMB_HEIGHT,
+    ...(look?.css ? { customCss: look.css } : {}),
+    ...(look?.darkColor ? { darkColor: look.darkColor } : {}),
+    libraries: [{ entries: [{ id: 'elements', libs: paletteGroups(elements, paletteTitle, look) }] }],
   }
 }
 
-export function configureMessage(elements: readonly PaletteElement[], paletteTitle: string): {
+export function configureMessage(elements: readonly PaletteElement[], paletteTitle: string, look?: DrawingLook): {
   action: 'configure'
   config: ReturnType<typeof drawingConfig>
 } {
-  return { action: 'configure', config: drawingConfig(elements, paletteTitle) }
+  return { action: 'configure', config: drawingConfig(elements, paletteTitle, look) }
 }
 
 /**
@@ -164,9 +193,17 @@ export function configureMessage(elements: readonly PaletteElement[], paletteTit
  * `exportProtocol`: a file the person exports from the editor's menu is posted
  * here as an `export` event rather than downloaded from the frame, which may
  * not. The editor reads it from each `load` afresh, so every load says it.
+ *
+ * `autosave`: every change is posted as an `autosave` event, which saves nothing
+ * and is how this side knows the editor holds work no save has kept.
  */
-export function loadMessage(xml: string | undefined, mode: DrawingMode = 'light'): { action: 'load'; xml: string; dark: boolean; exportProtocol: 1 } {
-  return { action: 'load', xml: xml && xml.length > 0 ? xml : EMPTY_DRAWING_XML, dark: mode === 'dark', exportProtocol: 1 }
+export function loadMessage(xml: string | undefined, mode: DrawingMode = 'light'): { action: 'load'; xml: string; dark: boolean; exportProtocol: 1; autosave: 1 } {
+  return { action: 'load', xml: xml && xml.length > 0 ? xml : EMPTY_DRAWING_XML, dark: mode === 'dark', exportProtocol: 1, autosave: 1 }
+}
+
+/** Point a shape at an element, or at nothing: the bridge's word (`build/drawioBridge.ts`). */
+export function pointMessage(shape: string, element: PaletteElement | undefined): { action: 'lvPoint'; shape: string; element: string | null; name?: string } {
+  return { action: 'lvPoint', shape, element: element?.id ?? null, ...(element ? { name: element.name } : {}) }
 }
 
 /** The picture, as SVG with the XML inside it. */
@@ -206,6 +243,9 @@ export type FrameEvent = {
   message?: unknown
   exit?: unknown
   modified?: unknown
+  /** On the bridge's `lvSelection`: the one shape selected, what it points at. */
+  shape?: unknown
+  element?: unknown
 }
 
 /** A message the frame posted, or nothing when it is not one. */
@@ -222,6 +262,8 @@ export function frameEvent(data: unknown): FrameEvent | undefined {
     message: held.message,
     exit: held.exit,
     modified: held.modified,
+    shape: held.shape,
+    element: held.element,
   }
 }
 
@@ -294,9 +336,9 @@ export function exportedFile(event: FrameEvent, drawingName: string): SavedDocum
  */
 export function replyTo(
   event: { event?: string },
-  held: { elements: readonly PaletteElement[]; paletteTitle: string; xml: string | undefined; mode?: DrawingMode },
+  held: { elements: readonly PaletteElement[]; paletteTitle: string; xml: string | undefined; mode?: DrawingMode; look?: DrawingLook },
 ): { action: string; [key: string]: unknown } | undefined {
-  if (event.event === 'configure') return configureMessage(held.elements, held.paletteTitle)
+  if (event.event === 'configure') return configureMessage(held.elements, held.paletteTitle, held.look)
   if (event.event === 'init') return loadMessage(held.xml && withElementNames(held.xml, held.elements), held.mode)
   if (event.event === 'save') return exportMessage()
   return undefined
