@@ -48,8 +48,10 @@ refuses a 17 rather than drop it.
 
 ## As built: the screens
 
-The panel of an element and of a line says *Confirmed*, *Assumed* or *Nobody said*
-as a row pressed to edit (`editor/inspector/elementRows`). An assumed card on a board
+The panel of an element and of a line says *Confirmed* or *Assumed* as a row pressed
+to edit (`editor/inspector/elementRows`), and *Nobody said* once the row is asked for
+under *+ add*; until then it stays out of the panel, as every empty field does. The
+record shows the row always, a dash where nobody said. An assumed card on a board
 is drawn with a dashed edge (`editor/nodes/NodeShell`). The word stands on the
 technology landscape's rows and in a container diagram's Lines list. The register's
 rows do not say it.
