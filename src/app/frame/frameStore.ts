@@ -12,7 +12,7 @@
  * new status draws the rows and not the whole workspace again.
  */
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
-import type { ReactNode } from 'react'
+import type { TypeLink } from '../../projects/scopeType'
 import type { FramePanel, Page } from '../../agent/screen'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { ScopePath } from '../../projects/scopePath'
@@ -55,8 +55,8 @@ export type ScreenFacts = {
   readonly showShortcuts?: () => void
   /** The agent's newest run as a person may take it back: how many steps, and the press. */
   readonly agentRun?: () => { readonly steps: number; readonly undo?: () => void; readonly putBack?: () => void } | undefined
-  /** A row at the end of row one that only this screen may offer. */
-  readonly extra?: ReactNode
+  /** How a scope's type stands to the units that serve it, for the tree's rows to mark a disagreement. */
+  readonly typeLink?: (path: ScopePath) => TypeLink | undefined
 }
 
 export type FrameState = {

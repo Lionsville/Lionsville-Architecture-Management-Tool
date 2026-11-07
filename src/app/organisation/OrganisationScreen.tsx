@@ -428,7 +428,7 @@ export function OrganisationScreen({
       bgcolor: 'background.default', display: 'flex', flexDirection: 'column',
     }}>
       <HomeFacts
-        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()}
+        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink}
         {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
         {...(root && root.path === at ? { views: root.model.diagrams } : {})}
       />

@@ -197,6 +197,7 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
       onSettings={fromHome(organisation.editScope)} onDelete={fromHome(organisation.askDelete)}
       onNewScope={writable(at) ? () => { onDone?.(); if (nav.project) nav.goHome(at); organisation.addUnder(at) } : undefined}
       writable={writable} language={prefs.language} s={s}
+      {...(parts.frame.get().screen?.typeLink ? { typeLink: parts.frame.get().screen?.typeLink } : {})}
     />
   )
 }
