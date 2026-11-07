@@ -24,6 +24,7 @@ import type {
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
 import { withoutSignedNames } from '../../../model/adr'
+import { recorderInCopy } from '../../../observations/recordedBy'
 import { personIdsIn } from '../../../model/person'
 import type { DistinctPair } from '../../../people/distinct'
 import type { Person, PersonId } from '../../../people/person'
@@ -61,7 +62,10 @@ export async function carryOut(
     .map((scope) => pictured(from, scope, read.find((one) => one.path === scope.path))))
   const nameless = options.withoutNames ?? false
   // Without names means none: not even the names signatures kept (ADR-0036 §8), which the record holds and the copy does not.
-  const scopes = withHeld(read, held).map(saysWhatItLacks).map((scope) => (nameless ? withNoSignedNames(scope) : scope))
+  // Nor the name a recorder kept, and with names or without, a recorder's account stays where it means something (§10).
+  const scopes = withHeld(read, held).map(saysWhatItLacks)
+    .map((scope) => (nameless ? withNoSignedNames(scope) : scope))
+    .map((scope) => withRecordersForACopy(scope, nameless, options.recorder))
   const carried = scopes.length ? scopes : [bareScope(ROOT_SCOPE, (await from.scopes.tree()).root.name)]
   const register = await peopleCarried(from, carried, at === ROOT_SCOPE, nameless)
   return carryScopes(carried, register.people, register.removed, register.distinct)
@@ -71,6 +75,24 @@ export async function carryOut(
 function withNoSignedNames(scope: ScopeSnapshot): ScopeSnapshot {
   const decisions = scope.model.decisions
   return decisions?.length ? { ...scope, model: { ...scope.model, decisions: withoutSignedNames(decisions) } } : scope
+}
+
+/** A scope whose observations say who recorded them as a copy may: `recorderInCopy`, and what the history holds is not read here. */
+function withRecordersForACopy(scope: ScopeSnapshot, nameless: boolean, source: CarryOptions['recorder']): ScopeSnapshot {
+  const observations = scope.model.observations
+  if (!observations?.some((one) => one.recordedBy !== undefined)) return scope
+  return {
+    ...scope,
+    model: {
+      ...scope.model,
+      observations: observations.map((one) => {
+        if (one.recordedBy === undefined) return one
+        const { recordedBy, ...rest } = one
+        const kept = recorderInCopy(recordedBy, { nameless, source })
+        return kept ? { ...rest, recordedBy: kept } : rest
+      }),
+    },
+  }
 }
 
 /**

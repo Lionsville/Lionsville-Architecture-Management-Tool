@@ -17,6 +17,7 @@
  * unsealed and read only one that is not sealed — `isSealed` and
  * `unsealBytes` there open one first, and `sealBytes` closes one after.
  */
+import type { RecorderSource } from '../../model/observation'
 import { readWhole } from '../../projects/scopeAccess'
 import type { OpenRefusal } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
@@ -34,10 +35,13 @@ export type { Arrival, CarriedOut }
  * where the repositories keep one, and `withoutNames` carries it as
  * pseudonyms (ADR-0036 §8).
  */
-export function writeWorkingFile(repositories: CarriedFrom, options: { from?: ScopePath; withoutNames?: boolean } = {}): Promise<CarriedOut> {
+export function writeWorkingFile(
+  repositories: CarriedFrom, options: { from?: ScopePath; withoutNames?: boolean; recorder?: RecorderSource } = {},
+): Promise<CarriedOut> {
   return carryOut(repositories, {
     ...(options.from !== undefined ? { from: options.from } : {}),
     ...(options.withoutNames ? { withoutNames: true } : {}),
+    ...(options.recorder ? { recorder: options.recorder } : {}),
   })
 }
 

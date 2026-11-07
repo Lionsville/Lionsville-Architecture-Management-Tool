@@ -31,6 +31,7 @@
  * as not the same person go with the entries they name, without names too:
  * they hold ids and a day.
  */
+import type { RecorderSource } from '../model/observation'
 import type { DistinctPair } from '../people/distinct'
 import type { Person, PersonId } from '../people/person'
 import type { OpenRefusal, ScopeSnapshot } from '../projects/scope'
@@ -68,6 +69,11 @@ export type CarryOptions = {
    * as its pseudonym (ADR-0036 §8).
    */
   withoutNames?: boolean
+  /**
+   * What the source says of an account a recorder names (`SourcePeople.recorder`):
+   * a copy carries what is true now, and never the account (ADR-0036 §10).
+   */
+  recorder?: RecorderSource
 }
 
 /** Where the scopes are read from, and the register where the source keeps one. */

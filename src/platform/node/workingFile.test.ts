@@ -18,6 +18,7 @@ import type { Spoiled } from '../../ports/Repositories.contract'
 import { slug } from '../../model/keys'
 import { readWorkingFile, writeWorkingFile } from './workingFile'
 import { unzipSync } from 'fflate'
+import type { RecordedBy } from '../../model/observation'
 import type { Person } from '../../people/person'
 
 /** The repositories, with every picture put and every run applied written down, in order. */
@@ -242,6 +243,63 @@ describe('the people register in a working file (ADR-0036 §8)', () => {
     expect(text).toContain(pia.id)
     const named = Object.values(unzipSync((await writeWorkingFile(source)).bytes)).map((held) => new TextDecoder().decode(held)).join('\n')
     expect(named).toContain('signedAs: Pia Schulz')
+  })
+
+  describe('who recorded an observation (ADR-0036 §10, amended 7 November 2026)', () => {
+    const observation = (id: string, number: number, recordedBy: RecordedBy) => ({
+      id, number, title: `Observation ${number}`, date: '2026-10-01', impact: 'minor' as const, seen: 1, body: '',
+      history: [{ date: '2026-10-01', kind: 'recorded' as const }], recordedBy,
+    })
+    const held = async (rows: readonly RecordedBy[]) => {
+      const source = memoryRepositories()
+      const [top, landscape] = organisation()
+      await seed(source, [top, { ...landscape, model: { ...landscape.model, observations: rows.map((row, index) => observation(`ob-${index + 1}`, index + 1, row)) } }])
+      return { source, path: landscape.path }
+    }
+    const fileText = (bytes: Uint8Array) => Object.values(unzipSync(bytes)).map((one) => new TextDecoder().decode(one)).join('\n')
+
+    it('made without names holds neither the name nor the account, and keeps the entry and the agent', async () => {
+      const { source, path } = await held([
+        { name: 'Pia Schulz', account: 'sub-pia', person: 'pe-pia', via: 'An agent' },
+        { name: 'Kees Vos', account: 'sub-kees', via: 'An agent' },
+        { name: 'Joop Kok', account: 'sub-joop' },
+      ])
+      const { bytes } = await writeWorkingFile(source, { withoutNames: true })
+      const text = fileText(bytes)
+      expect(text).not.toMatch(/Pia|Schulz|Kees|Vos|Joop|Kok|sub-/)
+      const target = memoryRepositories()
+      await readWorkingFile(target, bytes)
+      const landed = (await readScope(target.scopes, path))!.model.observations!
+      expect(landed.map((one) => one.recordedBy)).toEqual([{ person: 'pe-pia', via: 'An agent' }, { via: 'An agent' }, undefined])
+    })
+
+    it('made with names leaves every account behind, and the name beside an entry', async () => {
+      const { source } = await held([
+        { name: 'Pia Schulz', account: 'sub-pia', person: 'pe-pia' },
+        { name: 'Kees Vos', account: 'sub-kees' },
+      ])
+      const text = fileText((await writeWorkingFile(source)).bytes)
+      expect(text).not.toContain('sub-')
+      expect(text).not.toContain('Pia Schulz')
+      expect(text).toContain('recordedBy: Kees Vos')
+      expect(text).toContain('recordedByPerson: pe-pia')
+    })
+
+    it('made of part of the tree carries the entry a recorder names, and the entry a merge kept', async () => {
+      const source = memoryRepositories()
+      const pia = added(await source.people.add({ name: 'Pia Schulz' }))
+      const kept = added(await source.people.add({ name: 'Kees Vos' }))
+      const other = added(await source.people.add({ name: 'Nobody Here' }))
+      const merged = await source.people.merge(pia.id, kept.id)
+      if ('refused' in merged) throw new Error(merged.refused)
+      const [top, landscape] = organisation()
+      await seed(source, [top, { ...landscape, model: { ...landscape.model, observations: [observation('ob-1', 1, { name: 'Pia Schulz', account: 'sub-pia', person: pia.id, via: 'An agent' })] } }])
+      const { bytes } = await writeWorkingFile(source, { from: landscape.path })
+      const opened = fileText(bytes)
+      expect(opened).toContain(pia.id)
+      expect(opened).toContain(kept.id)
+      expect(opened).not.toContain(other.id)
+    })
   })
 
   it('brought back where it came from, gives no name back to an entry forgotten meanwhile, and takes no name away', async () => {

@@ -76,3 +76,21 @@ describe('a reference as a field keeps it', () => {
     expect(personRefFromKey('{"person":broken')).toBe('{"person":broken')
   })
 })
+
+describe('who recorded a record, among the ids a value names', () => {
+  it('finds the entry beside a name, an account and an agent, and in a record that holds nothing else', () => {
+    expect([...personIdsIn({ observations: [
+      { recordedBy: { name: 'Eva', account: 'sub-1', person: 'pe-1', via: 'An agent' } },
+      { recordedBy: { account: 'sub-2', person: 'pe-2' } },
+      { recordedBy: { person: 'pe-3' } },
+    ] })].sort()).toEqual(['pe-1', 'pe-2', 'pe-3'])
+  })
+
+  it('takes nothing else for an id: a name, an account, an empty id, or a person field that is no reference elsewhere', () => {
+    expect(personIdsIn({ recordedBy: { name: 'pe-1', account: 'pe-2' } }).size).toBe(0)
+    expect(personIdsIn({ recordedBy: { person: '' } }).size).toBe(0)
+    expect(personIdsIn({ recordedBy: { person: 7 } }).size).toBe(0)
+    expect(personIdsIn({ recordedBy: 'pe-1' }).size).toBe(0)
+    expect(personIdsIn({ said: { person: 'pe-1', name: 'Eva' } }).size).toBe(0)
+  })
+})

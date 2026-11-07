@@ -131,13 +131,31 @@ export function personRefFromKey(key: string): PersonRef {
  * a person later is found without this learning its name — what lets a
  * working file made from part of the tree carry the entries that part names,
  * and a test say that no step holds anything but an id.
+ *
+ * One field is read by name: who recorded a record (`RecordedBy`), which is no
+ * reference but holds an entry's id beside a name, an account and an agent. Any
+ * other object with a `person` among other keys is not taken for one, and neither
+ * a name nor an account is ever taken for an id.
  */
 export function personIdsIn(value: unknown, into: Set<PersonId> = new Set()): Set<PersonId> {
   if (Array.isArray(value)) {
     for (const item of value) personIdsIn(item, into)
   } else if (typeof value === 'object' && value !== null) {
-    if (isPersonRef(value)) into.add((value as PickedPerson).person)
-    else for (const item of Object.values(value)) personIdsIn(item, into)
+    if (isPersonRef(value)) {
+      into.add((value as PickedPerson).person)
+    } else {
+      for (const [key, item] of Object.entries(value)) {
+        if (key !== 'recordedBy') personIdsIn(item, into)
+        else if (isRecorderWithEntry(item)) into.add(item.person)
+      }
+    }
   }
   return into
+}
+
+/** Whether a `recordedBy` value holds an entry's id. */
+function isRecorderWithEntry(value: unknown): value is { person: PersonId } {
+  if (typeof value !== 'object' || value === null) return false
+  const { person } = value as { person?: unknown }
+  return typeof person === 'string' && person.length > 0
 }

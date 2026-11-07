@@ -524,8 +524,12 @@ function useShellParts(props: AppProps): ShellParts {
    */
   const carryOut = useCallback(
     (held: readonly ScopeSnapshot[] = [], choice: CarryChoice = {}) =>
-      props.interchange.carryOut(repositories, { held, ...(choice.withoutNames ? { withoutNames: true } : {}) }),
-    [props.interchange, repositories],
+      props.interchange.carryOut(repositories, {
+        held,
+        ...(choice.withoutNames ? { withoutNames: true } : {}),
+        ...(props.provider?.people?.recorder ? { recorder: props.provider.people.recorder } : {}),
+      }),
+    [props.interchange, repositories, props.provider?.people?.recorder],
   )
   /**
    * The scopes an opened working file brought with it, written where they say
