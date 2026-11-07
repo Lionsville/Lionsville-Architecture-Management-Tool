@@ -107,9 +107,10 @@ function MarkdownBlock({ block }: { block: Block }) {
     case 'p': return <p><InlineRun inline={block.inline} /></p>
     case 'ul': return <ul>{block.items.map((item, at) => <li key={at}><InlineRun inline={item} /></li>)}</ul>
     case 'ol': return <ol>{block.items.map((item, at) => <li key={at}><InlineRun inline={item} /></li>)}</ol>
-    case 'code': return <pre><code>{block.text}</code></pre>
+    // Focusable, because a block wider than the column scrolls and the keyboard has to reach it.
+    case 'code': return <pre tabIndex={0}><code>{block.text}</code></pre>
     case 'table': return (
-      <div className="help-table">
+      <div className="help-table" tabIndex={0}>
         <table>
           <thead><tr>{block.head.map((cell, at) => <th key={at} scope="col"><InlineRun inline={cell} /></th>)}</tr></thead>
           <tbody>{block.rows.map((row, r) => <tr key={r}>{row.map((cell, at) => <td key={at}><InlineRun inline={cell} /></td>)}</tr>)}</tbody>

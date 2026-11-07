@@ -173,10 +173,12 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-table th { background: var(--surface-2) }
 
 @media (max-width: 860px) {
-  .help-body { grid-template-columns: 1fr }
+  .help-body { grid-template-columns: minmax(0, 1fr) }
   .help-nav { position: static; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line) }
   .help-main { padding: 16px }
-  .help-head { flex-wrap: wrap }
+  .help-head { flex-wrap: wrap; position: static; gap: 8px 16px; padding: 10px 16px }
+  .help-head__search { order: 3; flex-basis: 100%; max-width: none }
+  .help-chapter h2, .help-chapter, .help-section, h4 { scroll-margin-top: 12px }
 }
 
 @media print {
