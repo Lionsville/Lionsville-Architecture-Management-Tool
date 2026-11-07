@@ -1,120 +1,92 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+/**
+ * The panel for a selected domain group, the same shell as an element's. Groups are
+ * layout rects on a view rather than model rows, so there is little to say: its
+ * name, what is inside, how it tidies, and that it can go without what it holds.
+ */
 import { useState } from 'react';
-import { placedNodes } from '../model/placement';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 import type { TidyOptions } from '../layout/tidy';
-import type { DesignDiagram } from '../model/types';
-import { TidySettingsPanel } from './TidySettingsPanel';
+import { placedNodes } from '../model/placement';
+import type { DesignDiagram, DesignElement } from '../model/types';
+import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
+import { Button } from '../widgets/kit/Button';
+import { PropertyRow, PropertyRows } from '../widgets/kit/Field';
+import { MoreMenu } from '../widgets/kit/Menu';
+import { Panel } from '../widgets/kit/Panel';
+import { TidySettingsPanel } from './TidySettingsPanel';
 import type { EditorActions } from './useEditorState';
-import { SectionHeading } from '../widgets/CompactForms';
+import './inspector/inspector.css';
 
 export interface DomainGroupInspectorProps {
-  /** The selected group's name — domain groups are keyed by name, not by id. */
+  /** The selected group: what the placements' `group` says. It reads as its name, never as this. */
   name: string;
   diagram: DesignDiagram;
+  /** To say what is inside by name. Absent, it says how many. */
+  elements?: readonly Pick<DesignElement, 'id' | 'name'>[];
   readOnly: boolean;
   actions: EditorActions;
   /** Runs the per-group tidy; absent read-only or when the host supplies none. */
   onTidy?(name: string): void;
-  /**
-   * The per-group tidy settings — the SAME state the right-click menu's popover
-   * edits, so the two entry points can never disagree about how a group is
-   * tidied.
-   */
+  /** The same state the right-click menu's popover edits, so the two can never disagree about how a group is tidied. */
   tidyOptions: TidyOptions;
   onTidyOptionsChange?(options: TidyOptions): void;
 }
 
-/**
- * Property panel for a selected domain group. Groups are layout rects in
- * `layoutConfig`, not model rows, so this is deliberately small: rename, member
- * count, tidy, remove. It exists mainly so a group is as easy to inspect and
- * get rid of as a node — the right-click menu on a box is precise but hard to
- * find, and the name pill is a small target to aim a gesture at.
- */
 export function DomainGroupInspector(props: DomainGroupInspectorProps) {
   const { t } = useStrings();
-  const { name, diagram, readOnly, actions } = props;
-  // Local draft so typing doesn't rename on every keystroke (a rename rewrites
-  // every member's `domainGroup`); committed on blur/Enter like the canvas one.
-  const [draft, setDraft] = useState(name);
-  const [seenName, setSeenName] = useState(name);
-  if (seenName !== name) {
-    setSeenName(name);
-    setDraft(name);
-  }
-
-  const members = placedNodes(diagram).filter((p) => p.group === name).length;
-  const commitRename = () => {
-    if (draft.trim() === name) return;
-    actions.renameDomainGroup(name, draft);
-  };
-
+  const { name, diagram, readOnly, actions, elements } = props;
+  const [tab, setTab] = useState<'properties' | 'tidy'>('properties');
+  const members = placedNodes(diagram).filter((p) => p.group === name);
+  const count = members.length;
+  const inside = elements
+    ? members.map((member) => elements.find((one) => one.id === member.id)?.name ?? member.id).join(', ')
+    : '';
+  const canTidy = !readOnly && props.onTidy !== undefined;
+  const remove = () => actions.removeDomainGroup(name);
+  const zone = members[0]?.zone;
+  const shownName = diagram.groups?.find((group) => group.id === name)?.name ?? name;
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, pt: 1 }}>
-      <SectionHeading>{t('section.domainGroup')}</SectionHeading>
-      <TextField
-        label={t('field.name')}
-        fullWidth
-        value={draft}
-        disabled={readOnly}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commitRename}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') commitRename();
-          // Escape reverts the draft here rather than deselecting the group —
-          // the editor's Escape shortcut still fires from anywhere else.
-          if (event.key === 'Escape') {
-            event.stopPropagation();
-            setDraft(name);
-          }
-        }}
-      />
-      <Typography variant="body2" color="text.secondary">
-        {members === 1
-          ? t('group.membersOne', { count: members })
-          : t('group.membersOther', { count: members })}
-      </Typography>
-      {!readOnly && (
-        <>
-          {props.onTidy && (
-            <>
-              <Divider />
-              <SectionHeading>{t('section.tidyGroup')}</SectionHeading>
-              {/* The same controls the right-click menu opens, on the same
-                  state — direction, density and manual routes, then Apply.
-                  "Pin group placements" stays out: a per-group tidy already
-                  leaves the box where it is. */}
-              <TidySettingsPanel
-                width="100%"
-                options={props.tidyOptions}
-                onChange={(next) => props.onTidyOptionsChange?.(next)}
-                applyLabel={t('group.tidyApply', { name })}
-                onApply={() => props.onTidy?.(name)}
-              />
-            </>
-          )}
-          <Divider />
-          <Button
-            color="error"
-            variant="outlined"
-            size="small"
-            onClick={() => actions.removeDomainGroup(name)}
-          >
-            {t('group.remove')}
-          </Button>
-          <Typography variant="caption" color="text.secondary">
-            {t('group.removeNote')}
-          </Typography>
-        </>
-      )}
-    </Box>
+    <Panel
+      kind={t('section.domainGroup')}
+      name={shownName}
+      {...(readOnly ? {} : { onRename: (next: string) => actions.renameDomainGroup(name, next) })}
+      facts={count === 1 ? t('group.membersOne', { count }) : t('group.membersOther', { count })}
+      actions={!readOnly && <MoreMenu label={t('inspector.more')} size="small" items={[{ label: t('group.remove'), final: true, onSelect: remove }]} />}
+      {...(canTidy ? {
+        tabs: [{ value: 'properties', label: t('inspector.properties') }, { value: 'tidy', label: t('section.tidyGroup') }],
+        tab,
+        onTab: (next: string) => setTab(next as 'properties' | 'tidy'),
+      } : {})}
+    >
+      {tab === 'tidy' && canTidy
+        ? (
+          // The same controls the right-click menu opens, on the same state. "Pin group placements"
+          // stays out: a per-group tidy already leaves the box where it is.
+          <TidySettingsPanel
+            width="100%"
+            options={props.tidyOptions}
+            onChange={(next) => props.onTidyOptionsChange?.(next)}
+            applyLabel={t('group.tidyApply', { name: shownName })}
+            onApply={() => props.onTidy?.(name)}
+          />
+        )
+        : (
+          <>
+            <PropertyRows readOnly>
+              {zone && <PropertyRow label={t('inspector.zone')} data-testid="group-zone" value={zoneLabel(zone, t)} />}
+              {inside && <PropertyRow label={t('inspector.inside')} data-testid="group-inside" value={inside} />}
+            </PropertyRows>
+            {!readOnly && (
+              <div className="inspector-actions">
+                <Button size="small" variant="danger" onClick={remove}>{t('group.remove')}</Button>
+                <p className="inspector-note">{t('group.removeNote')}</p>
+              </div>
+            )}
+          </>
+        )}
+    </Panel>
   );
 }

@@ -59,6 +59,8 @@ import { PALETTE_DRAG_MIME, type DomainGroupSeed } from './ElementPalette';
 import type { ExistingAt } from '../props';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './paletteItems';
 import { CanvasMenuContext, type CanvasMenuApi } from './CanvasMenuContext';
+import { useTakeArrangeSeat } from '../inspector/arrangeSeat';
+import { groupIntoNewDomainGroup } from './menuActions/selection';
 import { ContextMenu } from './ContextMenu';
 import { menuItemsFor, type MenuContext, type MenuItem as MenuItemModel, type MenuTarget } from './menuItems';
 import { useStrings } from '../../i18n/LanguageContext';
@@ -1468,6 +1470,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     'node.a11yDescription.keyboardDisabled': t('canvas.a11yNode'),
     'edge.a11yDescription.default': t('canvas.a11yEdge'),
   }), [t]);
+
+  useTakeArrangeSeat(useMemo(() => ({
+    align: handleAlign,
+    distribute: handleDistribute,
+    group: () => groupIntoNewDomainGroup(menuHost, [...selectedElementIds]),
+  }), [handleAlign, handleDistribute, menuHost, selectedElementIds]));
 
   const handleMenuSelect = useCallback(
     (item: MenuItemModel) => {

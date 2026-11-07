@@ -12,7 +12,10 @@ import type { DesignDiagram, DesignElement, ElementId } from '../model/types';
 import type { DocumentationPage as DocumentationPageShape } from '../documentation/ui/DocumentationPage';
 import { lazyPart } from '../widgets/lazyPart';
 import { ArrivingPage } from '../widgets/Arriving';
-import { ElementInspector } from './ElementInspector';
+import { elementMenu } from './ElementInspector';
+import type { ElementInspectorProps } from './ElementInspectorProps';
+import { RecordSectionBody, recordSectionsOf } from './inspector/elementRows';
+import { useStrings } from '../i18n/LanguageContext';
 import type { SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { Documentation } from './useEditorRequests';
@@ -62,46 +65,31 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
   onRequestDelete(elementId: ElementId): void;
 }) {
   const { element, diagram } = docs;
+  const { t } = useStrings();
   // No view is no reason to refuse the page: a scope that draws nothing still
-  // keeps records with pages — a domain's units, an element nothing draws —
-  // and a link to one opens it (ADR-0033, amended 17 October 2026).
+  // keeps records with pages (a domain's units, an element nothing draws), and a
+  // link to one opens it (ADR-0033, amended 17 October 2026).
   if (!element) return null;
+  const inspector = recordInspector({ props, state, readOnly, docs, element, diagram: diagram ?? NO_VIEW, onRequestDelete });
   return (
     <DocumentationPage
       element={element}
       model={state.model}
-      scopeLabel={props.exportTitleBlock?.client}
       diagram={diagram}
       readOnly={readOnly}
+      nameLocked={inspector.owned?.fields.includes('name') === true}
       actions={state.actions}
       renderMarkdown={props.renderMarkdown}
       onAddImage={readOnly ? undefined : props.onAddImage}
       images={readOnly ? undefined : props.images}
-      renderInspector={(shown, { readOnly: inspectorReadOnly }) => (
-        <PageInspector
-          props={props}
-          state={state}
-          readOnly={readOnly}
-          inspectorReadOnly={inspectorReadOnly}
-          docs={docs}
-          element={shown}
-          diagram={diagram ?? NO_VIEW}
-          onRequestDelete={onRequestDelete}
-        />
-      )}
-      plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
-      onOpenDrawing={(id) => {
-        docs.close();
-        (props.diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)(id);
-      }}
-      fieldsWidth={{ value: docs.fieldsWidth, onChange: docs.setFieldsWidth }}
+      recordSections={(shown) => recordSectionsOf(shown, t).map((section) => ({
+        id: section.id,
+        heading: section.heading,
+        children: <RecordSectionBody props={inspector} section={section.id} unit={inspector.unitSection?.section} />,
+      }))}
+      menu={elementMenu({ ...inspector, onRequestDelete: () => { docs.close(); onRequestDelete(element.id); } }, t, { drawing: true, kinds: false })}
       onNavigate={docs.open}
       onClose={docs.close}
-      onRequestDelete={() => {
-        docs.close();
-        onRequestDelete(element.id);
-      }}
-      onRequestLogoUpload={props.logos?.onRequestUpload}
       onOpenHistory={props.history?.onDescription
         ? () => props.history?.onDescription?.(element.id)
         : undefined}
@@ -110,52 +98,47 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
   );
 }
 
-/** The inspector the page lays out stacked beside its document, with the description left to the page. */
-function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, element, diagram, onRequestDelete }: {
+/** What the record's rows are handed: what the panel beside the board is, and where each door goes from a page. */
+function recordInspector({ props, state, readOnly, docs, element, diagram, onRequestDelete }: {
   props: SolutionDesignEditorProps;
   state: EditorState;
   readOnly: boolean;
-  inspectorReadOnly: boolean;
   docs: Documentation;
   element: DesignElement;
   diagram: DesignDiagram;
   onRequestDelete(elementId: ElementId): void;
-}) {
+}): ElementInspectorProps {
   const { ownership, diagrams } = props;
-  return (
-    <ElementInspector
-      element={element}
-      model={state.model}
-      diagram={diagram}
-      readOnly={inspectorReadOnly}
-      actions={state.actions}
-      onRequestDelete={() => {
-        docs.leave();
-        onRequestDelete(element.id);
-      }}
-      renderMarkdown={props.renderMarkdown}
-      onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
-      onReplace={readOnly ? undefined : props.plans?.onReplace}
-      owned={ownership?.ownerOf(element.id)}
-      move={moveFor(ownership, element.id)}
-      offeredBeyond={ownership?.offeredBeyond?.(element.id)}
-      leverage={ownership?.leverageOf?.(element.id)}
-      technology={ownership?.technology}
-      parties={ownership?.parties}
-      unitSection={element.kind === 'actor' ? ownership?.unitSection?.(element, inspectorReadOnly) : undefined}
-      answeredBy={ownership?.answeredBy?.(element)}
-      onShowOnTechnology={diagrams.onOpenTechnologyFor
-        ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
-        : undefined}
-      onCreateContainer={readOnly ? undefined : diagrams.onCreateContainer}
-      onCreateDrawing={!readOnly && diagrams.onCreateDrawingFor
-        ? (id) => { docs.close(); diagrams.onCreateDrawingFor?.(id); }
-        : undefined}
-      onOpenDrawing={diagrams.onOpenDrawing
-        ? (id) => { docs.close(); diagrams.onOpenDrawing?.(id); }
-        : undefined}
-      layout="stacked"
-      hideDescription
-    />
-  );
+  return {
+    element,
+    model: state.model,
+    diagram,
+    readOnly,
+    actions: state.actions,
+    onRequestDelete: () => { docs.leave(); onRequestDelete(element.id); },
+    renderMarkdown: props.renderMarkdown,
+    onRequestLogoUpload: readOnly ? undefined : props.logos?.onRequestUpload,
+    onReplace: readOnly ? undefined : props.plans?.onReplace,
+    owned: ownership?.ownerOf(element.id),
+    move: moveFor(ownership, element.id),
+    offeredBeyond: ownership?.offeredBeyond?.(element.id),
+    leverage: ownership?.leverageOf?.(element.id),
+    technology: ownership?.technology,
+    parties: ownership?.parties,
+    unitSection: element.kind === 'actor' ? ownership?.unitSection?.(element, readOnly) : undefined,
+    answeredBy: ownership?.answeredBy?.(element),
+    onShowOnTechnology: diagrams.onOpenTechnologyFor
+      ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
+      : undefined,
+    onCreateContainer: readOnly ? undefined : diagrams.onCreateContainer,
+    onCreateDrawing: !readOnly && diagrams.onCreateDrawingFor
+      ? (id) => { docs.close(); diagrams.onCreateDrawingFor?.(id); }
+      : undefined,
+    onOpenDrawing: (diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)
+      ? (id) => { docs.close(); (diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)(id); }
+      : undefined,
+    plans: props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined,
+    onOpenView: (id) => { docs.close(); props.document.onActiveDiagramChange(id); },
+    onNavigate: docs.open,
+  };
 }

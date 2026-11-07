@@ -14,7 +14,6 @@ import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { axeFindings } from '../../app/testing/axe';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import TextField from '@mui/material/TextField';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
 import type { DocumentationActions } from './DocumentationPage';
 import type { DesignDiagram, DesignElement, DesignModel } from '../../model/types';
@@ -88,12 +87,8 @@ function setup(overrides: Partial<DocumentationPageProps> = {}) {
     renderMarkdown: fakeRenderer,
     onNavigate: vi.fn(),
     onClose: vi.fn(),
-    onRequestDelete: vi.fn(),
-    // A stand-in for the editor's inspector: the page owns whether the fields
-    // may be edited, not what they are.
-    renderInspector: (el, { readOnly }) => (
-      <input aria-label="Name" defaultValue={el.name} disabled={readOnly} />
-    ),
+    // A stand-in for the editor's rows: the page says where they go, not what they are.
+    recordSections: (el) => [{ id: 'facts', heading: 'Facts', children: <p>Facts of {el.name}</p> }],
     ...overrides,
   };
   const view = render(
@@ -123,55 +118,6 @@ describe('DocumentationPage — as axe reads it', () => {
   });
 });
 
-describe('DocumentationPage — the drawings anchored to the element', () => {
-  it('lists them, and choosing one opens it', () => {
-    const onOpenDrawing = vi.fn();
-    const main = element();
-    const held = model(main);
-    held.diagrams = [
-      ...held.diagrams,
-      { id: 'dr-1', kind: 'drawing', name: 'Context', elementId: 'e1', members: [] },
-      { id: 'dr-2', kind: 'drawing', name: 'Deploy', elementId: 'e1', members: [] },
-      { id: 'dr-other', kind: 'drawing', name: 'Other', elementId: 'e2', members: [] },
-    ];
-    setup({ element: main, model: held, onOpenDrawing });
-    const section = screen.getByTestId('doc-drawings');
-    expect(within(section).getByRole('button', { name: 'Context' })).toBeTruthy();
-    expect(within(section).getByRole('button', { name: 'Deploy' })).toBeTruthy();
-    expect(within(section).queryByRole('button', { name: 'Other' })).toBeNull();
-    fireEvent.click(within(section).getByRole('button', { name: 'Context' }));
-    expect(onOpenDrawing).toHaveBeenCalledWith('dr-1');
-  });
-
-  it('says nothing when the element has none', () => {
-    setup();
-    expect(screen.queryByTestId('doc-drawings')).toBeNull();
-  });
-});
-
-describe('DocumentationPage — the plans that name the element (ADR-0010)', () => {
-  const plan = (id: string, title: string, elementId: string) => ({
-    id, number: Number(id.slice(-1)), title, status: 'agreed' as const,
-    elements: [{ elementId, role: 'retires' as const }], decisions: [], milestones: [], body: '',
-  });
-
-  it('lists them above the fields and opens one through the host', () => {
-    const onOpen = vi.fn();
-    const main = element();
-    setup({ element: main, plans: { list: [plan('tr-1', 'Replace it', main.id), plan('tr-2', 'Elsewhere', 'other')], onOpen } });
-    const section = screen.getByTestId('doc-plans');
-    expect(section.textContent).toContain('TR-0001 Replace it');
-    expect(section.textContent).not.toContain('Elsewhere');
-    fireEvent.click(screen.getByRole('button', { name: 'TR-0001 Replace it' }));
-    expect(onOpen).toHaveBeenCalledWith('tr-1');
-  });
-
-  it('shows no section when nothing names the element', () => {
-    setup({ plans: { list: [], onOpen: vi.fn() } });
-    expect(screen.queryByTestId('doc-plans')).toBeNull();
-  });
-});
-
 describe('DocumentationPage', () => {
   it('offers the description\'s history only where the host has one to show (ADR-0008)', () => {
     setup();
@@ -188,13 +134,13 @@ describe('DocumentationPage', () => {
     expect(source()).toBeNull();
     expect(screen.getByTestId('source').textContent).toBe('Holds every order until [Billing](element:e2) takes it.');
     expect(screen.getByRole('heading', { name: 'Order Management' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Edit text' })).toBeTruthy();
   });
 
   it('takes a pasted picture in and writes the reference where the caret is', async () => {
     const onAddImage = vi.fn(async () => 'screenshot.png');
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     const area = source()!;
     area.setSelectionRange(area.value.length, area.value.length);
 
@@ -211,7 +157,7 @@ describe('DocumentationPage', () => {
     // document on top of it would be the second bad thing to happen.
     const onAddImage = vi.fn(async () => undefined);
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
@@ -225,7 +171,7 @@ describe('DocumentationPage', () => {
     // Copying from a rich document carries both; the words are what was meant.
     const onAddImage = vi.fn(async () => 'x.png');
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()], 'some words') });
@@ -237,7 +183,7 @@ describe('DocumentationPage', () => {
   it('takes a dropped picture the same way', async () => {
     const onAddImage = vi.fn(async () => 'plan.png');
     setup({ element: element({ description: '' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
 
     await act(async () => {
       fireEvent.drop(source()!, { dataTransfer: transfer([imageFile('Plan.png')]) });
@@ -248,7 +194,7 @@ describe('DocumentationPage', () => {
 
   it('offers no picture affordance to a host that cannot take one', async () => {
     setup({ element: element({ description: 'Before.' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
@@ -259,14 +205,13 @@ describe('DocumentationPage', () => {
 
   it('offers no Edit to a read-only reader', () => {
     setup({ readOnly: true });
-    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Read' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull();
   });
 
   it('commits a draft once it has been quiet, and again on the way back to Read', () => {
     vi.useFakeTimers();
     const { updateElement } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     const area = source();
     expect(area).not.toBeNull();
     fireEvent.change(area!, { target: { value: 'One.' } });
@@ -279,26 +224,24 @@ describe('DocumentationPage', () => {
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two.' }, 'field:e1:description');
 
     fireEvent.change(area!, { target: { value: 'One. Two. Three.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Read' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two. Three.' }, 'field:e1:description');
     expect(source()).toBeNull();
   });
 
   it('clears the description when the draft is emptied', () => {
     const { updateElement } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.change(source()!, { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Read' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: undefined }, 'field:e1:description');
   });
 
   it('fills an empty page from the template', () => {
     setup({ element: element({ description: undefined }) });
-    expect(screen.getByText('Nothing written yet.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByText('No page written yet.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Start from the template' }));
     expect(source()!.value.startsWith('| Short description | |')).toBe(true);
-    expect(screen.queryByRole('button', { name: 'Start from the template' })).toBeNull();
   });
 
   it('lists the diagram’s elements by kind and navigates from the list, a link, and next', () => {
@@ -327,7 +270,7 @@ describe('DocumentationPage', () => {
     // dialog now; what is per element resets when the element changes.
     const { props, rerender, updateElement } = setup();
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
 
     rerender(
@@ -345,95 +288,55 @@ describe('DocumentationPage', () => {
     expect(updateElement).toHaveBeenCalledWith('e1', { description: 'Rewritten.' }, expect.any(String));
   });
 
-  it('gives the inspector slot the element, editable whenever the page is', () => {
-    // What the fields ARE is the editor's business — this page takes them as a
-    // slot. They used to be greyed out until Edit was pressed; Edit is about
-    // the prose, and the record moved to this page to be set here without
-    // opening the markdown source. Read-only is the page's own flag.
+  it('reads every section the host hands in, after the text, and the rows stay in reach while writing', () => {
     setup();
-    const name = () => screen.getByLabelText('Name') as HTMLInputElement;
-    expect(name().disabled).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-    expect(name().disabled).toBe(false);
+    expect(screen.getByText('Facts of Order Management')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fields' }));
+    expect(screen.getAllByText('Facts of Order Management').length).toBeGreaterThan(1);
+  });
+
+  it('takes a new name from its title, and none read-only', () => {
+    const { updateElement } = setup();
+    fireEvent.click(screen.getByRole('button', { name: /Change the name/ }));
+    const field = screen.getByRole('textbox', { name: 'Change the name' });
+    fireEvent.change(field, { target: { value: 'Orders' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    expect(updateElement).toHaveBeenCalledWith('e1', { name: 'Orders' });
     cleanup();
     setup({ readOnly: true });
-    expect(name().disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull();
   });
 
-  it('lets the fields column be dragged wider, through the host that keeps the width', () => {
-    // The host keeps it so it outlives the page; without a host there is
-    // nothing to keep it and no seam either.
-    const onChange = vi.fn();
-    setup({ fieldsWidth: { value: 340, onChange } });
-    const seam = screen.getByRole('separator', { name: 'Resize the fields column' });
-    fireEvent.keyDown(seam, { key: 'ArrowLeft' });
-    expect(onChange).toHaveBeenCalledWith(348);
-    cleanup();
+  it('filters the other elements, and scrolls no one out of reach', () => {
     setup();
-    expect(screen.queryByRole('separator', { name: 'Resize the fields column' })).toBeNull();
+    const nav = within(screen.getByTestId('doc-nav'));
+    fireEvent.change(nav.getByRole('searchbox'), { target: { value: 'plan' } });
+    expect(nav.getByText('Planner')).toBeTruthy();
+    expect(nav.queryByText('Billing')).toBeNull();
+    fireEvent.change(nav.getByRole('searchbox'), { target: { value: 'zzz' } });
+    expect(nav.getByText('Nothing by that name.')).toBeTruthy();
   });
 
-  it('gives the fields column the panel\'s own treatment, so the page and the board inspector read alike (3.7.0)', () => {
-    // The board's inspector wears `CompactForms`; the page's column is that
-    // panel with room, not another form. A field handed to the slot comes
-    // out small without saying so, and the headings over the drawings and
-    // plans are the panel's section headings.
-    setup({
-      renderInspector: () => <TextField label="Vendor" />,
-      plans: { list: [{ id: 'tr1', number: 1, title: 'Replace it', status: 'draft', elements: [{ elementId: 'e1', role: 'retires' }], decisions: [], milestones: [] } as never], onOpen: vi.fn() },
-    });
-    expect(screen.getByLabelText('Vendor').closest('.MuiInputBase-root')?.classList.contains('MuiInputBase-sizeSmall')).toBe(true);
-    const heading = screen.getByText('Plans');
-    expect(getComputedStyle(heading).textTransform).toBe('uppercase');
-  });
-
-  it('renders nothing on the right when nobody fills the slot', () => {
-    setup({ renderInspector: undefined });
-    expect(screen.queryByLabelText('Name')).toBeNull();
-  });
-
-  it('steps back on Escape: out of Edit first, then out of the page', () => {
-    const { props } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-    const dialog = screen.getByRole('dialog');
-    fireEvent.keyDown(dialog, { key: 'Escape' });
-    expect(source()).toBeNull();
+  it('Cancel takes the text back to what it was, asking first, and Escape is Cancel', () => {
+    const { updateElement, props } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: /Leave and drop/ }));
+    expect(updateElement).not.toHaveBeenCalledWith('e1', { description: 'Rewritten.' }, expect.anything());
     expect(props.onClose).not.toHaveBeenCalled();
-    fireEvent.keyDown(dialog, { key: 'Escape' });
-    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('goes back to reading from ‹ and ×, which say so, and closes on the next press', () => {
+  it('closes from its ×', () => {
     const { props } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-    expect(screen.getByTestId('page-back').getAttribute('aria-label')).toBe('Back to reading');
-    fireEvent.click(screen.getByTestId('page-back'));
-    expect(source()).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-    fireEvent.click(screen.getByTestId('page-close'));
-    expect(source()).toBeNull();
-    expect(props.onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('page-close'));
     expect(props.onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('starts its top bar after the window controls, and drags the window with it', () => {
-    setup({ windowChrome: { controlsInset: 78, draggable: true } });
-    const bar = screen.getByRole('button', { name: 'Close documentation' }).parentElement!;
-    expect(getComputedStyle(bar).paddingLeft).toBe('90px');
-    // Read out of the style tags Emotion wrote: jsdom's CSSOM drops a
-    // property it does not know, and this is exactly such a property.
-    const css = Array.from(document.querySelectorAll('style')).map((tag) => tag.textContent).join('');
-    const own = Array.from(bar.classList).find((name) => css.includes(`.${name}{`));
-    const rules = (css.match(/[^{}]*\{[^{}]*\}/g) ?? []).filter((rule) => rule.includes(`.${own}`)).join('');
-    expect(rules).toContain('-webkit-app-region:drag');
-    expect(rules).toContain('button');
-    expect(rules).toContain('-webkit-app-region:no-drag');
   });
 
   it('commits a pending draft when the page goes away', () => {
     const { updateElement, unmount } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.change(source()!, { target: { value: 'Unsaved words.' } });
     unmount();
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Unsaved words.' }, 'field:e1:description');
@@ -459,7 +362,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
       images,
       ...overrides,
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     return { ...view, images };
   }
 
@@ -504,7 +407,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
 
   it('offers no list to a host that has none', () => {
     setup({ element: element({ description: 'x' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     expect(screen.queryByRole('button', { name: /^Pictures/ })).toBeNull();
   });
 });
@@ -512,7 +415,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
 describe('DocumentationPage — help with the markdown', () => {
   it('opens a table of what the page draws, with pictures when the host takes them', () => {
     setup({ element: element({ description: 'x' }), onAddImage: vi.fn(async () => 'x.png') });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.getByText('[[Order Management]]')).toBeTruthy();
@@ -522,7 +425,7 @@ describe('DocumentationPage — help with the markdown', () => {
 
   it('withdraws the picture row on a host that cannot take one in', () => {
     setup({ element: element({ description: 'x' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.queryByText('![caption](image:file.png)')).toBeNull();

@@ -53,79 +53,73 @@ function renderInspector(
 }
 
 describe('DomainGroupInspector', () => {
+  const tidy = () => fireEvent.click(screen.getByRole('tab', { name: 'Tidy group' }));
+
   it('counts the members of the group', () => {
     renderInspector();
     expect(screen.getByText('2 elements inside')).toBeDefined();
   });
 
-  it('removes the group — the obvious target the right-click menu never was', () => {
+  it('removes the group, the obvious target the right-click menu never was', () => {
     const { actions } = renderInspector();
-
-    fireEvent.click(screen.getByText('Remove group'));
-
+    fireEvent.click(screen.getByRole('button', { name: 'Remove group' }));
     expect(actions.removeDomainGroup).toHaveBeenCalledWith('Core');
   });
 
-  it('renames on blur, not on every keystroke (a rename rewrites every member)', () => {
+  it('renames when the typing ends, not on every keystroke (a rename rewrites every member)', () => {
     const { actions } = renderInspector();
-    const field = screen.getByLabelText('Name');
-
-    fireEvent.change(field, { target: { value: 'Platform' } });
+    fireEvent.click(screen.getByRole('button', { name: /Change the name/ }));
+    const field = screen.getByRole('textbox', { name: 'Change the name' });
+    fireEvent.change(field, { target: { value: 'Commerce' } });
     expect(actions.renameDomainGroup).not.toHaveBeenCalled();
-
     fireEvent.blur(field);
-    expect(actions.renameDomainGroup).toHaveBeenCalledWith('Core', 'Platform');
+    expect(actions.renameDomainGroup).toHaveBeenCalledWith('Core', 'Commerce');
   });
 
   it('does not fire a rename when the name came back unchanged', () => {
     const { actions } = renderInspector();
-
-    fireEvent.blur(screen.getByLabelText('Name'));
-
+    fireEvent.click(screen.getByRole('button', { name: /Change the name/ }));
+    fireEvent.blur(screen.getByRole('textbox', { name: 'Change the name' }));
     expect(actions.renameDomainGroup).not.toHaveBeenCalled();
   });
 
-  /**
-   * The panel offers the SAME tidy controls as the group's right-click menu —
-   * direction, density, manual routes and a named Apply — not just a bare
-   * "tidy it now" button. Same settings state behind both, so switching entry
-   * point never changes how the group gets laid out.
-   */
+  it('reads as the name the board prints, never as the id its placements hold', () => {
+    const named = laidOut({ id: 'd1', kind: 'layer7', name: 'L7', groups: [{ id: 'order-to-delivery', name: 'Order to delivery' }], placements: [] });
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <DomainGroupInspector name="order-to-delivery" diagram={named} readOnly actions={{} as EditorActions} tidyOptions={DEFAULT_TIDY_OPTIONS} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByRole('heading', { name: 'Order to delivery' })).toBeDefined();
+    expect(screen.queryByText('order-to-delivery')).toBeNull();
+  });
+
   it('offers the full tidy settings, and applies them to this group', () => {
     const onTidy = vi.fn();
     renderInspector({ onTidy });
-
-    expect(screen.getByText('Direction')).toBeDefined();
-    expect(screen.getByText('Density')).toBeDefined();
-    expect(screen.getByText('Pin anchor points')).toBeDefined();
-
-    fireEvent.click(screen.getByText('Tidy Core', { selector: 'button' }));
+    tidy();
+    fireEvent.click(screen.getByRole('button', { name: 'Tidy Core' }));
     expect(onTidy).toHaveBeenCalledWith('Core');
   });
 
   it('reports a settings change up, so both entry points stay in step', () => {
     const onTidyOptionsChange = vi.fn();
     renderInspector({ onTidy: vi.fn(), onTidyOptionsChange });
-
+    tidy();
     fireEvent.click(screen.getByText('Compact'));
-
-    expect(onTidyOptionsChange).toHaveBeenCalledWith({
-      ...DEFAULT_TIDY_OPTIONS,
-      density: 'compact',
-    });
+    expect(onTidyOptionsChange).toHaveBeenCalledWith({ ...DEFAULT_TIDY_OPTIONS, density: 'compact' });
   });
 
   it('leaves out pin-group-placements (a per-group tidy never moves the box)', () => {
     renderInspector({ onTidy: vi.fn() });
-
-    expect(screen.queryByText('Pin group placements')).toBeNull();
+    tidy();
+    expect(screen.queryByLabelText(/pin group/i)).toBeNull();
   });
 
   it('shows no edit actions read-only', () => {
     renderInspector({ readOnly: true, onTidy: vi.fn() });
-
-    expect(screen.queryByText('Remove group')).toBeNull();
-    expect(screen.queryByText('Direction')).toBeNull();
-    expect(screen.getByLabelText('Name').hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Remove group' })).toBeNull();
+    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull();
   });
 });

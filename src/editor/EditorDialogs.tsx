@@ -46,11 +46,14 @@ export function useEditorDialogs() {
   // change lands on the host.
   const [settingsDiagramId, setSettingsDiagramId] = useState<string | undefined>(undefined);
   const [renameDiagramTarget, setRenameDiagramTarget] = useState<{ id: string; name: string } | undefined>(undefined);
+  // *This view*, in the panel: pressing the name of the view that is up.
+  const [thisViewOpen, setThisViewOpen] = useState(false);
   const openHelp = useCallback(() => setHelpOpen(true), []);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   return {
     helpOpen, setHelpOpen, openHelp, searchOpen, setSearchOpen, openSearch,
     settingsDiagramId, setSettingsDiagramId, renameDiagramTarget, setRenameDiagramTarget,
+    thisViewOpen, setThisViewOpen,
   };
 }
 

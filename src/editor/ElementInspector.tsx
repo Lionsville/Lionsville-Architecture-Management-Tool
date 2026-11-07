@@ -1,26 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import { Fragment, type ReactNode } from 'react';
-import { useStrings } from '../i18n/LanguageContext';
-import { ElementRecord } from './ElementRecord';
-import type { ElementInspectorProps } from './ElementInspectorProps';
-import { PAGE_SECTIONS, SECTION_TITLE, TABBED_SECTIONS, inspectorField, usesChoices } from './elementInspectorFacts';
-import type { ElementSection, InspectorField } from './elementInspectorFacts';
-import { useRenameFocus, useTabPerElement, useUsesPicker } from './useInspectorState';
-import { ElementMore, InspectorHeader, InspectorTabs, MoveRecord, OwnedElsewhere, RecordSummaryLine } from './InspectorHeader';
-import { InspectorSection } from './InspectorSection';
-import { SectionHeading } from '../widgets/CompactForms';
-import { GeneralTab } from './InspectorGeneralTab';
-import { AppearanceTab } from './InspectorAppearanceTab';
-import { aspectCount, DataTab } from './InspectorDataTab';
-import { CitationsSection } from '../principles/ui/CitationsSection';
-import { BlockFacts } from '../blocks/ui/BlockFacts';
+/**
+ * The panel for one element: the one Panel, its identity fixed above and three
+ * tabs under it. The rows are said once (`inspector/elementRows`), for this panel
+ * and for the record page, which shows them all.
+ *
+ * **A unit comes first** (ADR-0036, as built 3.6.1). Where the host's unit section
+ * leads (`UnitSlot.leads`: an actor with a type) it opens Properties, and the
+ * element's own fields fold under *Element* below it. An actor without a type, and
+ * every other kind, keeps the element's order with the section after it.
+ */
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { commentCount } from '../comments/thread';
+import { useComments } from '../comments/ui/CommentsContext';
 import { CommentThread } from '../comments/ui/threadPart';
-import { RecordChanges } from '../comments/ui/RecordChanges';
+import { useStrings } from '../i18n/LanguageContext';
+import type { StringKey, Translate } from '../i18n/strings';
+import { changeableKinds } from '../model/kindChange';
+import { kindLabel } from '../model/kinds';
+import { paletteLabel } from './canvas/paletteItems';
+import { transitionsForElement } from '../model/transition';
+import type { ElementId } from '../model/types';
+import { MoreMenu } from '../widgets/kit/Menu';
+import type { MenuEntry } from '../widgets/kit/Menu';
+import { Panel, PanelLink } from '../widgets/kit/Panel';
+import type { ElementInspectorProps } from './ElementInspectorProps';
+import { InspectorSection } from './InspectorSection';
+import { PanelAppearance, PanelProperties } from './inspector/elementRows';
 
 export type { ElementInspectorProps };
 export { shapeOptionsFor } from './elementInspectorFacts';
@@ -28,188 +36,110 @@ export { shapeOptionsFor } from './elementInspectorFacts';
 /** The one table lives in the model; re-exported so this file's callers keep one import. */
 export { kindLabel } from '../model/kinds';
 
-/**
- * Element property form (U7a): a tabbed inspector — General / Appearance / Data.
- * The header (kind + Name) and the Delete action stay outside the tabs, always
- * visible. Tab selection is per-selection in-memory state and resets to General
- * when the selected element id changes.
- *
- * **Two layouts, one order of sections** (`ELEMENT_SECTIONS`). Beside the
- * canvas (`tabs`) the panel holds what a person sets while drawing — name,
- * category, phase, the short description, the placement — and the owner's
- * detail (vendor, owner, dates, successor, whose it is) is one line and a way
- * to the page. On the page (`stacked`) the record is laid out in full above
- * the rest (`ElementRecord.tsx` says why it moved), in two columns where the
- * column has room. The fields are the same fields, in the same order, worn
- * the same way (`CompactForms`), and reach the model the same way; only
- * where they are typed differs.
- *
- * **A unit comes first** (ADR-0036, as built 3.6.1). Where the host's unit
- * section leads (`UnitSlot.leads`: an actor with a type), it follows the name,
- * and the element's own fields fold under *Element* below it — beside the
- * canvas; the page lays them out, as it lays out the tabs. *Move…* and
- * *Create drawing* go into the *⋯* beside the name. An actor without a type,
- * and every other kind, keeps the element's order, the section under General.
- *
- * This is the composition; each section is its own component beside it, and
- * what they show is worked out in `elementInspectorFacts.ts`.
- */
-export function ElementInspector(props: ElementInspectorProps) {
-  const { element, readOnly, actions } = props;
-  const { t } = useStrings();
-  const field = inspectorField(element, props.model, readOnly, actions, props.owned?.fields);
-  const [activeTab, setActiveTab] = useTabPerElement(element.id);
-  const nameRef = useRenameFocus(props.renameRequest, element.id, readOnly);
-  // Held here rather than in the field, so the picker's ticks outlive a tab
-  // switch the way they always have.
-  const uses = usesChoices(element, props.model, props.technology, t);
-  const picker = useUsesPicker(element.id, uses.usesIds, uses.heldIds, props.technology, actions);
+type Tab = 'properties' | 'appearance' | 'comments';
 
-  const stacked = props.layout === 'stacked';
-  const unit = props.unitSection;
-  const leads = unit?.leads === true;
-  const fields = (
-    <ElementFields
-      // Led by the unit, Create drawing is in the ⋯ menu and not offered twice.
-      inspector={leads ? { ...props, onCreateDrawing: undefined } : props}
-      field={field}
-      tab={{ value: activeTab, onChange: setActiveTab }}
-      uses={uses}
-      picker={picker}
-      underGeneral={leads ? undefined : unit?.section}
-    />
-  );
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <InspectorHeader
-        field={field}
-        stacked={stacked}
-        nameRef={nameRef}
-        onOpenDocumentation={props.onOpenDocumentation}
-        more={leads ? <ElementMore inspector={props} /> : undefined}
-      />
-      {props.owned && <OwnedElsewhere owned={props.owned} />}
-      {/* A building block's page, and the choice an element is the solution of (ADR-0043 §8). */}
-      <BlockFacts element={element} />
-      {/* Beside the canvas, Move… sits at the end of the record's line (`RecordSummaryLine`); on the page it is a strip of its own. */}
-      {stacked && !leads && !readOnly && props.move && <MoveRecord move={props.move} />}
-      {leads ? (
-        <>
-          {unit.section}
-          <ElementFold key={element.id} stacked={stacked}>{fields}</ElementFold>
-        </>
-      ) : fields}
-
-      {/* The principles it follows, on the record's page (ADR-0041 §12). */}
-      {stacked && <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} />}
-      {stacked && <RecordChanges about={{ kind: 'element', id: element.id }} first="added" />}
-      <CommentThread about={{ kind: 'element', id: element.id }} />
-      {!readOnly && <DeleteAction inspector={props} />}
-    </Box>
-  );
-}
-
-/**
- * The element's own fields: its sections, in the one order both layouts keep
- * (`ELEMENT_SECTIONS`). Beside the canvas the record is its summary line and
- * the rest are tabs; on the page every section but the appearance is laid out
- * under its heading. What each section holds is said once, below, so the two
- * layouts cannot drift apart — and, where the host's unit section does not
- * lead, that section goes under General in both.
- */
-function ElementFields({ inspector, field, tab, uses, picker, underGeneral }: {
-  inspector: ElementInspectorProps;
-  field: InspectorField;
-  tab: { value: number; onChange(tab: number): void };
-  uses: ReturnType<typeof usesChoices>;
-  picker: ReturnType<typeof useUsesPicker>;
-  underGeneral: ReactNode;
-}) {
-  const { t } = useStrings();
-  const { element, readOnly } = field;
-  const stacked = inspector.layout === 'stacked';
-
-  const body = (section: ElementSection): ReactNode => {
-    switch (section) {
-      case 'record':
-        return stacked ? (
-          <ElementRecord
-            element={element}
-            model={inspector.model}
-            readOnly={readOnly}
-            actions={inspector.actions}
-            owned={field.owned}
-            parties={inspector.parties}
-            answeredBy={inspector.answeredBy}
-            onReplace={inspector.onReplace}
-          />
-        ) : (
-          <RecordSummaryLine
-            element={element} model={inspector.model} parties={inspector.parties} answeredBy={inspector.answeredBy}
-            move={inspector.unitSection?.leads === true || readOnly ? undefined : inspector.move}
-          />
-        );
-      case 'general':
-        return <><GeneralTab field={field} inspector={inspector} uses={uses} picker={picker} />{underGeneral}</>;
-      case 'appearance':
-        return <AppearanceTab field={field} onRequestLogoUpload={inspector.onRequestLogoUpload} />;
-      case 'data':
-        return <DataTab key={element.id} field={field} diagram={inspector.diagram} />;
-    }
-  };
-
-  if (stacked) {
-    return (
-      <>
-        {PAGE_SECTIONS.map((section) => (
-          <Fragment key={section}>
-            <SectionHeading sx={{ mt: 1.5 }}>{t(SECTION_TITLE[section])}</SectionHeading>
-            {body(section)}
-          </Fragment>
-        ))}
-      </>
-    );
+/** The tab, back to the first when the selection moves to another element. */
+function useTabPer(elementId: ElementId): [Tab, (tab: Tab) => void] {
+  const [tab, setTab] = useState<Tab>('properties');
+  const [seen, setSeen] = useState(elementId);
+  if (seen !== elementId) {
+    setSeen(elementId);
+    setTab('properties');
   }
+  return [tab, setTab];
+}
+
+/** One line in words: what state it is in and what hangs on it. Only what is so. */
+export function elementFacts(props: Pick<ElementInspectorProps, 'element' | 'model' | 'plans'>, t: Translate): string {
+  const { element, model, plans } = props;
+  const lines = model.relations.filter((row) => (row.type ?? 'flow') === 'flow' && (row.sourceId === element.id || row.targetId === element.id)).length;
+  const planCount = plans ? transitionsForElement(plans.list, element.id).length : 0;
+  return [
+    t(`lifecycle.${element.lifecycle}` as StringKey),
+    element.certainty ? t(`certainty.${element.certainty}` as StringKey) : undefined,
+    lines > 0 ? t(lines === 1 ? 'inspector.linesOne' : 'inspector.linesOther', { count: lines }) : undefined,
+    planCount > 0 ? t(planCount === 1 ? 'inspector.plansOne' : 'inspector.plansOther', { count: planCount }) : undefined,
+  ].filter(Boolean).join(' · ');
+}
+
+/** ⋯: what is done to the whole record. It stands in one place, panel and page alike, and the delete comes last. */
+export function elementMenu(props: ElementInspectorProps, t: Translate, opts: { drawing: boolean; kinds?: boolean } = { drawing: false }): MenuEntry[] {
+  const { element, diagram, model, readOnly, actions, move, onCreateDrawing } = props;
+  if (readOnly) return [];
+  const kinds = opts.kinds === false || diagram.id === '' ? [] : changeableKinds(model, diagram, element.id);
+  const isBoundary = diagram.kind === 'container' && diagram.applicationElementId === element.id;
+  return [
+    ...(move ? [{ label: move.label, detail: move.tip, onSelect: move.onMove }] : []),
+    ...(kinds.length > 0 ? [{ label: t('menu.changeKind'), items: kinds.map((kind) => ({ label: paletteLabel(kind, t), onSelect: () => actions.changeElementKind(element.id, kind) })) }] : []),
+    ...(opts.drawing && onCreateDrawing ? [{ label: t('menu.createDrawing'), onSelect: () => onCreateDrawing(element.id) }] : []),
+    { label: isBoundary ? t('element.deleteApplication') : t('element.removeDelete'), final: true, onSelect: props.onRequestDelete },
+  ];
+}
+
+export function ElementInspector(props: ElementInspectorProps) {
+  const { element, readOnly, actions, owned, renameRequest } = props;
+  const { t } = useStrings();
+  const [tab, setTab] = useTabPer(element.id);
+  const [help, setHelp] = useState<string>();
+  const leads = props.unitSection?.leads === true;
+  const nameOwned = owned?.fields.includes('name') === true;
+  const access = useComments();
+  const comments = commentCount(access?.comments ?? [], { kind: 'element', id: element.id });
+  const rename = renameRequest?.id === element.id ? renameRequest.nonce : undefined;
+  const menu = elementMenu(props, t, { drawing: leads });
+  const open = props.onOpenDocumentation;
+  const fold = leads
+    ? (fields: ReactNode) => (
+      <InspectorSection title={t('inspector.element')} note={t('inspector.elementHolds')} testId="element-fold">{fields}</InspectorSection>
+    )
+    : undefined;
   return (
-    <>
-      {body('record')}
-      <InspectorTabs
-        value={tab.value}
-        onChange={tab.onChange}
-        dataCount={element.kind === 'application' ? aspectCount(field, inspector.diagram) : undefined}
-      />
-      {body(TABBED_SECTIONS[tab.value] ?? 'general')}
-    </>
+    <Panel
+      kind={kindLabel(element.kind, t)}
+      name={element.name}
+      {...(readOnly || nameOwned ? {} : {
+        onRename: (name: string) => actions.updateElement(element.id, { name }),
+        renameRequest: rename,
+      })}
+      facts={elementFacts(props, t)}
+      status={owned && <Elsewhere owned={owned} t={t} />}
+      actions={(
+        <>
+          {open && <PanelLink data-testid="open-details" onPress={() => open(element.id)}>{t('record.open')} ›</PanelLink>}
+          {menu.length > 0 && <MoreMenu items={menu} label={t('inspector.more')} size="small" />}
+        </>
+      )}
+      tabs={[
+        { value: 'properties', label: t('inspector.properties') },
+        { value: 'appearance', label: t('tab.appearance') },
+        { value: 'comments', label: t('inspector.comments'), count: comments, hidden: access === undefined },
+      ]}
+      tab={tab}
+      onTab={(next) => setTab(next as Tab)}
+      help={help}
+    >
+      <div key={element.id}>
+        {tab === 'properties' && (
+          <PanelProperties
+            props={leads ? { ...props, onCreateDrawing: undefined } : props}
+            onHelp={setHelp} unit={props.unitSection?.section}
+            {...(fold ? { fold } : {})}
+          />
+        )}
+        {tab === 'appearance' && <PanelAppearance props={props} onHelp={setHelp} />}
+        {tab === 'comments' && <CommentThread about={{ kind: 'element', id: element.id }} />}
+      </div>
+    </Panel>
   );
 }
 
-/**
- * The element's own fields under a unit: folded beside the canvas, where the
- * unit is what a person came for, and folded again for each unit picked. The
- * page lays them out below the unit, as it lays out the tabs.
- */
-function ElementFold({ stacked, children }: { stacked: boolean; children: ReactNode }) {
-  const { t } = useStrings();
-  if (stacked) return <>{children}</>;
+/** Drawn here, defined there (ADR-0012 §3), said once, because every row that cannot be pressed cannot for this reason. */
+function Elsewhere({ owned, t }: { owned: NonNullable<ElementInspectorProps['owned']>; t: Translate }) {
   return (
-    <InspectorSection title={t('inspector.element')} note={t('inspector.elementHolds')} testId="element-fold">
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>{children}</Box>
-    </InspectorSection>
+    <span data-testid="owned-elsewhere">
+      {t('standIn.definedIn', { scope: owned.label })}
+      {owned.onOpen && <> <PanelLink onPress={owned.onOpen}>{t('standIn.open', { scope: owned.label })}</PanelLink></>}
+    </span>
   );
 }
 
-/** Delete, below everything: a container view's boundary application says it deletes the application. */
-function DeleteAction({ inspector }: { inspector: ElementInspectorProps }) {
-  const { t } = useStrings();
-  const { diagram, element } = inspector;
-  const isBoundaryApp = diagram.kind === 'container' && diagram.applicationElementId === element.id;
-  return (
-    <>
-      <Divider />
-      <Button color="error" variant="outlined" size="small" onClick={inspector.onRequestDelete}>
-        {isBoundaryApp ? t('element.deleteApplication') : t('element.removeDelete')}
-      </Button>
-    </>
-  );
-}

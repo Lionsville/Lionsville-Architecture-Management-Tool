@@ -97,363 +97,244 @@ function renderInspector(
   return { ...view, updateConnection, setRouteSource, onResetRoute, onSetRouteSides };
 }
 
-const tab = (name: 'General' | 'Appearance') => screen.getByRole('tab', { name });
-const openTab = (name: 'General' | 'Appearance') => fireEvent.click(tab(name));
-
-/** MUI non-native Select: open the combobox and click an option by its text. */
-function chooseOption(labelText: string, optionText: RegExp | string) {
-  fireEvent.mouseDown(screen.getByLabelText(labelText));
-  fireEvent.click(within(screen.getByRole('listbox')).getByText(optionText));
+const openAppearance = () => fireEvent.click(screen.getByRole('tab', { name: 'Appearance' }));
+const row = (testId: string) => screen.getByTestId(testId);
+const press = (testId: string) => fireEvent.click(within(row(testId)).getByRole('button'));
+const text = (testId: string) => row(testId).textContent ?? '';
+/** A row that opens as a short list: its select changed is its commit. */
+function choose(testId: string, label: string, value: string) {
+  press(testId);
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
-/** MUI non-native Select exposes disabled via aria-disabled on its combobox. */
-const selectDisabled = (labelText: string) =>
-  screen.getByLabelText(labelText).getAttribute('aria-disabled') === 'true';
+function typeIn(testId: string, label: string, value: string) {
+  press(testId);
+  const field = screen.getByLabelText(label);
+  fireEvent.change(field, { target: { value } });
+  fireEvent.keyDown(field, { key: 'Enter' });
+}
 
-describe('ConnectionInspector — tab structure (U7a)', () => {
-  it('General reaches Label, Protocol, Direction', () => {
-    renderInspector(connection());
-    expect(screen.getByLabelText('Label')).toBeDefined();
-    expect(screen.getByLabelText('Protocol')).toBeDefined();
-    expect(screen.getByLabelText('Direction')).toBeDefined();
+describe('ConnectionInspector: the same shell as an element', () => {
+  it('names the line by its ends, and reads as rows that turn into a field on a press', () => {
+    const { updateConnection } = renderInspector(connection({ label: 'orders' }));
+    expect(screen.getByRole('heading', { name: 'A → B' })).toBeDefined();
+    expect(text('connection-label')).toContain('orders');
+    expect(screen.queryByRole('textbox')).toBeNull();
+    typeIn('connection-protocol', 'Protocol', 'EDI');
+    expect(updateConnection).toHaveBeenCalledWith('c1', { protocol: 'EDI' });
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('Appearance reaches Colour, Line style, Routing and the arrowhead override', () => {
+  it('says Always of a line with no window, the state it is really in, and the window once it has one', () => {
     renderInspector(connection());
-    openTab('Appearance');
-    expect(screen.getByLabelText('Edge colour')).toBeDefined();
-    expect(screen.getByLabelText('Line style')).toBeDefined();
-    expect(screen.getByLabelText('Routing')).toBeDefined();
-    expect(screen.getByText('Arrowhead override')).toBeDefined();
-    expect(screen.getByLabelText('Source')).toBeDefined();
-    expect(screen.getByLabelText('Target')).toBeDefined();
-  });
-});
-
-describe('ConnectionInspector — Direction dedup (D2)', () => {
-  it('Direction drives isBidirectional (one-way → false, bidirectional → true)', () => {
-    const { updateConnection } = renderInspector(connection({ isBidirectional: false }));
-    chooseOption('Direction', /Bidirectional/);
-    expect(updateConnection).toHaveBeenCalledWith('c1', { isBidirectional: true });
-
+    expect(text('connection-valid')).toContain('Always');
     cleanup();
-    const two = renderInspector(connection({ isBidirectional: true }));
-    chooseOption('Direction', /One-way/);
-    expect(two.updateConnection).toHaveBeenCalledWith('c1', { isBidirectional: false });
+    renderInspector(connection({ validFrom: '2027-03-01' }));
+    expect(text('connection-valid')).toContain('no end');
   });
 
-  it('shows bidirectional from the one Direction control, with no switch competing with it', () => {
-    renderInspector(connection({ isBidirectional: true }));
-    expect(screen.getByLabelText('Direction').textContent).toContain('Bidirectional');
-    cleanup()
+  it('writes the window from the row, and clears it as absent', () => {
+    const { updateConnection } = renderInspector(connection({ validFrom: '2027-03-01' }));
+    press('connection-valid');
+    fireEvent.change(screen.getByLabelText('Line valid until'), { target: { value: '2028-01-01' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { validUntil: '2028-01-01' });
+    fireEvent.change(screen.getByLabelText('Line valid from'), { target: { value: '' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { validFrom: undefined });
+  });
+
+  it('keeps the delete in the ⋯, and none of it read-only', () => {
     renderInspector(connection());
-    expect(screen.queryByLabelText('Bidirectional')).toBeNull();
+    expect(screen.getByRole('button', { name: 'More' })).toBeDefined();
+    cleanup();
+    renderInspector(connection(), { readOnly: true });
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
   });
 
-  it('the arrowhead override still round-trips sourceArrowhead / targetArrowhead', () => {
+  it('marks a line assumed, as a word, and offers it behind + where nobody said', () => {
     const { updateConnection } = renderInspector(connection());
-    openTab('Appearance');
-    chooseOption('Source', 'None');
-    expect(updateConnection).toHaveBeenCalledWith('c1', { sourceArrowhead: 'none' });
-    chooseOption('Target', 'Arrow');
-    expect(updateConnection).toHaveBeenCalledWith('c1', { targetArrowhead: 'arrow' });
-  });
-
-});
-
-describe('ConnectionInspector — ColorField colour (D4)', () => {
-  it('writes a hex on change and clears to undefined', () => {
-    const { updateConnection } = renderInspector(connection({ color: '#00ff00' }));
-    openTab('Appearance');
-    fireEvent.change(screen.getByLabelText('Edge colour'), { target: { value: '#123456' } });
-    expect(updateConnection).toHaveBeenCalledWith('c1', { color: '#123456' });
-    fireEvent.click(screen.getByLabelText('Clear colour'));
-    expect(updateConnection).toHaveBeenCalledWith('c1', { color: undefined });
+    expect(screen.queryByTestId('row-certainty')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^\+ Certainty/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Certainty' }));
+    fireEvent.change(screen.getByLabelText('Certainty'), { target: { value: 'assumed' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { certainty: 'assumed' });
+    cleanup();
+    renderInspector(connection({ certainty: 'assumed' }));
+    expect(text('row-certainty')).toContain('Assumed');
   });
 });
 
-describe('ConnectionInspector — active tab + readOnly', () => {
-  it('resets to General when the selected connection id changes', () => {
-    const { rerender } = render(
-      <ThemeProvider theme={createTheme()}>
-        <ConnectionInspector connection={connection({ id: 'c1' })} model={model()} diagram={diagram()} readOnly={false} actions={makeActions().actions} />
-      </ThemeProvider>,
-    );
-    openTab('Appearance');
-    expect(tab('Appearance').getAttribute('aria-selected')).toBe('true');
+describe('ConnectionInspector: Direction is the one source of truth (D2)', () => {
+  it('drives isBidirectional', () => {
+    const { updateConnection } = renderInspector(connection());
+    choose('connection-direction', 'Direction', 'bidirectional');
+    expect(updateConnection).toHaveBeenCalledWith('c1', { isBidirectional: true });
+  });
 
-    rerender(
+  it('says so on the name and the row', () => {
+    renderInspector(connection({ isBidirectional: true }));
+    expect(screen.getByRole('heading', { name: 'A ↔ B' })).toBeDefined();
+    expect(text('connection-direction')).toContain('Bidirectional');
+  });
+
+  it('keeps the per-end override round-tripping, and says it follows the direction until then', () => {
+    const { updateConnection } = renderInspector(connection());
+    openAppearance();
+    expect(text('connection-arrowheads')).toContain('Follow the direction');
+    press('connection-arrowheads');
+    fireEvent.change(screen.getByLabelText('Source'), { target: { value: 'arrow' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { sourceArrowhead: 'arrow' });
+    fireEvent.change(screen.getByLabelText('Target'), { target: { value: '' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { targetArrowhead: undefined });
+  });
+});
+
+describe('ConnectionInspector: what it looks like', () => {
+  it('writes a hex and clears it, the NULL-inherit contract', () => {
+    const { updateConnection } = renderInspector(connection({ color: '#112233' }));
+    openAppearance();
+    press('connection-colour');
+    fireEvent.change(screen.getByLabelText('Edge colour'), { target: { value: '#445566' } });
+    expect(updateConnection).toHaveBeenCalledWith('c1', { color: '#445566' });
+  });
+
+  it('writes no explicit default: the default choice is undefined', () => {
+    const { updateConnection } = renderInspector(connection({ lineStyle: 'dashed' }));
+    openAppearance();
+    choose('connection-style', 'Line style', '');
+    expect(updateConnection).toHaveBeenCalledWith('c1', { lineStyle: undefined });
+  });
+
+  it('goes back to Properties when the selected line changes', () => {
+    const view = renderInspector(connection());
+    openAppearance();
+    view.rerender(
       <ThemeProvider theme={createTheme()}>
         <ConnectionInspector connection={connection({ id: 'c2' })} model={model()} diagram={diagram()} readOnly={false} actions={makeActions().actions} />
       </ThemeProvider>,
     );
-    expect(tab('General').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Properties' }).getAttribute('aria-selected')).toBe('true');
   });
 
-  it('disables controls in every tab under readOnly', () => {
-    renderInspector(connection({ color: '#00ff00', sourceArrowhead: 'arrow' }), { readOnly: true });
-    expect((screen.getByLabelText('Label') as HTMLInputElement).disabled).toBe(true);
-    expect(selectDisabled('Direction')).toBe(true);
-
-    openTab('Appearance');
-    expect((screen.getByLabelText('Edge colour') as HTMLInputElement).disabled).toBe(true);
-    expect(selectDisabled('Line style')).toBe(true);
-    expect(selectDisabled('Source')).toBe(true);
-    expect(selectDisabled('Target')).toBe(true);
+  it('presses nothing under readOnly, on either tab', () => {
+    renderInspector(connection({ label: 'x' }), { readOnly: true });
+    expect(within(row('connection-label')).queryByRole('button')).toBeNull();
+    openAppearance();
+    expect(within(row('connection-style')).queryByRole('button')).toBeNull();
+    expect(within(row('connection-colour')).queryByRole('button')).toBeNull();
   });
 });
 
-describe('ConnectionInspector — tab badges', () => {
-  it('dots General when a label/protocol is set and Appearance when styled', () => {
-    renderInspector(connection({ protocol: 'EDI', color: '#00ff00' }));
-    expect(within(tab('General')).queryByText('●')).not.toBeNull();
-    expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
-  });
+describe('ConnectionInspector: Route, said once, under Appearance', () => {
+  const route = (over: Partial<EdgeRoute> = {}): EdgeRoute => ({ source: 'auto', relationId: 'c1', waypoints: [], ...over } as EdgeRoute);
 
-  it('shows no dots on a bare connection', () => {
+  it('is on Appearance and not on Properties', () => {
     renderInspector(connection());
-    expect(within(tab('General')).queryByText('●')).toBeNull();
-    expect(within(tab('Appearance')).queryByText('●')).toBeNull();
+    expect(screen.queryByTestId('route-section')).toBeNull();
+    openAppearance();
+    expect(row('route-section')).toBeDefined();
   });
-});
-
-/**
- * The Route section (Phase 2a): who owns this line's route on the ACTIVE diagram
- * and the three things a person can do about it. It reads the diagram, never the
- * connection — a route is per diagram while the connection is design-wide.
- */
-describe('ConnectionInspector — Route section', () => {
-  const badge = () => screen.getByTestId('route-badge').textContent;
-  const bends = () => screen.getByTestId('route-bends').textContent;
-  const button = (name: string) => screen.queryByRole('button', { name });
 
   it('reads None with no stored route, and offers Pin and Reset', () => {
     const { setRouteSource, onResetRoute } = renderInspector(connection());
-    expect(badge()).toBe('None');
-    expect(bends()).toBe('0 bends');
-    expect(button('Pin')).not.toBeNull();
-    expect(button('Unpin')).toBeNull();
-
-    fireEvent.click(button('Pin')!);
+    openAppearance();
+    expect(screen.getByTestId('route-badge').textContent).toBe('None');
+    fireEvent.click(screen.getByRole('button', { name: 'Pin' }));
     expect(setRouteSource).toHaveBeenCalledWith('c1', 'manual');
-    fireEvent.click(button('Reset to automatic')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to automatic' }));
     expect(onResetRoute).toHaveBeenCalledWith('c1');
   });
 
-  it('reads Automatic for router output, with its bend count, and offers Pin', () => {
-    renderInspector(connection(), {
-      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }, { x: 2, y: 2 }], source: 'auto' }],
-    });
-    expect(badge()).toBe('Automatic');
-    expect(bends()).toBe('2 bends');
-    expect(button('Pin')).not.toBeNull();
-    expect(button('Unpin')).toBeNull();
+  it('reads Automatic for router output, with its bend count', () => {
+    renderInspector(connection(), { routes: [route({ waypoints: [{ x: 1, y: 1 }, { x: 2, y: 2 }], source: 'auto' } as never)] });
+    openAppearance();
+    expect(screen.getByTestId('route-badge').textContent).toBe('Automatic');
+    expect(screen.getByTestId('route-bends').textContent).toContain('2 bends');
   });
 
   it('reads Hand-drawn for a manual route and offers Unpin instead of Pin', () => {
-    const { setRouteSource } = renderInspector(connection(), {
-      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
-    });
-    expect(badge()).toBe('Hand-drawn');
-    expect(bends()).toBe('1 bend');
-    expect(button('Pin')).toBeNull();
-    fireEvent.click(button('Unpin')!);
+    const { setRouteSource } = renderInspector(connection(), { routes: [route({ waypoints: [{ x: 1, y: 1 }], source: 'manual' } as never)] });
+    openAppearance();
+    expect(screen.getByTestId('route-badge').textContent).toBe('Hand-drawn');
+    expect(screen.queryByRole('button', { name: 'Pin' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Unpin' }));
     expect(setRouteSource).toHaveBeenCalledWith('c1', 'auto');
   });
 
-  it('says so when the row is an explicit pin, and reads another connection’s route as None', () => {
-    renderInspector(connection(), {
-      routes: [
-        { relationId: 'c1', waypoints: [], source: 'manual', pinned: true },
-        { relationId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' },
-      ],
-    });
-    expect(badge()).toBe('Hand-drawn');
-    expect(bends()).toBe('0 bends · pinned');
-
-    cleanup();
-    renderInspector(connection(), {
-      routes: [{ relationId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
-    });
-    expect(badge()).toBe('None');
-  });
-
-  it('hides every route button in read-only mode, and Reset when the editor wired none', () => {
-    renderInspector(connection(), {
-      readOnly: true,
-      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'auto' }],
-    });
-    expect(badge()).toBe('Automatic'); // the facts still show
-    expect(button('Pin')).toBeNull();
-    expect(button('Unpin')).toBeNull();
-    expect(button('Reset to automatic')).toBeNull();
-
+  it('hides every route button read-only, and Reset when the editor wired none', () => {
+    renderInspector(connection(), { readOnly: true });
+    openAppearance();
+    expect(screen.queryByRole('button', { name: 'Pin' })).toBeNull();
     cleanup();
     renderInspector(connection(), { onResetRoute: null });
-    expect(button('Pin')).not.toBeNull();
-    expect(button('Reset to automatic')).toBeNull();
+    openAppearance();
+    expect(screen.queryByRole('button', { name: 'Reset to automatic' })).toBeNull();
+  });
+
+  it('fixes one end from its row, and Automatic frees it with an explicit undefined', () => {
+    const { onSetRouteSides } = renderInspector(connection(), { routes: [route({ sourceSide: 'top' } as never)] });
+    openAppearance();
+    expect(text('route-leaves')).toContain('Top');
+    choose('route-arrives', 'Arrives at', 'left');
+    expect(onSetRouteSides).toHaveBeenCalledWith('c1', { targetSide: 'left' });
+    choose('route-leaves', 'Leaves from', '');
+    expect(onSetRouteSides).toHaveBeenCalledWith('c1', { sourceSide: undefined });
+  });
+
+  it('still says the stored sides where they cannot be changed', () => {
+    renderInspector(connection(), { onSetRouteSides: null, routes: [route({ sourceSide: 'top' } as never)] });
+    openAppearance();
+    expect(text('route-leaves')).toContain('Top');
+    expect(within(row('route-leaves')).queryByRole('button')).toBeNull();
   });
 });
 
-/**
- * Attach sides (Phase 2d): two small selects in the Route section, one per end.
- * They go through the editor's callback — like Reset — because with live routing
- * off the editor runs the pass that routes the line out of its new side.
- */
-describe('ConnectionInspector — Leaves from / Arrives at', () => {
-  const leaves = () => screen.getByLabelText('Leaves from');
-  const arrives = () => screen.getByLabelText('Arrives at');
-
-  it('reads Automatic for both ends with no stored side; choosing Top fixes the source only', () => {
-    const { onSetRouteSides } = renderInspector(connection());
-    // Automatic is the empty option, so the closed select shows no side at all
-    // (MUI renders a zero-width space for it).
-    expect(leaves().textContent?.replace(/\u200b/gu, '')).toBe('');
-    expect(arrives().textContent?.replace(/\u200b/gu, '')).toBe('');
-    chooseOption('Leaves from', 'Top');
-    expect(onSetRouteSides).toHaveBeenCalledWith('c1', { sourceSide: 'top' });
-    expect(onSetRouteSides).toHaveBeenCalledTimes(1);
+describe('ConnectionInspector: part of which interface (ADR-0013)', () => {
+  const held = (id: string, kind: 'application' | 'component', parentId?: string) => ({
+    id, kind, name: id.toUpperCase(), lifecycle: 'live' as const, isManaged: false, aspects: {}, ...(parentId ? { parentId } : {}),
   });
-
-  it('shows the stored sides, and Automatic frees an end with an explicit undefined', () => {
-    const { onSetRouteSides } = renderInspector(connection(), {
-      routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right', targetSide: 'bottom' }],
-    });
-    expect(leaves().textContent).toContain('Right');
-    expect(arrives().textContent).toContain('Bottom');
-    chooseOption('Arrives at', 'Automatic');
-    expect(onSetRouteSides).toHaveBeenCalledWith('c1', { targetSide: undefined });
-    // The key is PRESENT: that is what tells "free this end" from "leave it alone".
-    expect('targetSide' in (onSetRouteSides?.mock.calls[0][1] ?? {})).toBe(true);
+  const landscape = (rows: Relation[]): DesignModel => ({
+    name: 'SD', diagrams: [],
+    elements: [held('a1', 'application'), held('b1', 'application'), held('a1c', 'component', 'a1'), held('b1c', 'component', 'b1')],
+    relations: rows,
   });
-
-  it('is hidden in read-only mode and when the editor wired no callback — but a stored side is still stated', () => {
-    renderInspector(connection(), { readOnly: true, routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right' }] });
-    expect(screen.queryByLabelText('Leaves from')).toBeNull();
-    expect(screen.queryByLabelText('Arrives at')).toBeNull();
-    // The line honours the side, so the viewer is told about it.
-    expect(screen.getByTestId('route-sides').textContent).toBe('Leaves from Right');
-
-    cleanup();
-    renderInspector(connection(), { onSetRouteSides: null });
-    expect(screen.queryByLabelText('Leaves from')).toBeNull();
-    expect(screen.queryByTestId('route-sides')).toBeNull(); // nothing stored, nothing to state
-    expect(screen.queryByRole('button', { name: 'Pin' })).not.toBeNull(); // the rest of the section stays
-  });
-
-  it('never states the sides while the selects are there to show them', () => {
-    renderInspector(connection(), {
-      routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top', targetSide: 'left' }],
-    });
-    expect(screen.queryByTestId('route-sides')).toBeNull();
-  });
-});
-
-/**
- * Which interface a container line is part of (ADR-0013, redone).
- *
- * Asked at the top of General, because it decides what the rest of the panel
- * means: a line that is part of an interface carries the protocol, and the
- * interface carries the label and the window. Never asked about an application
- * line — that IS the interface.
- */
-describe('ConnectionInspector — part of which interface (ADR-0013)', () => {
-  const deep = (relations: Relation[]): DesignModel => ({
-    name: 'SD',
-    diagrams: [],
-    elements: [
-      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },
-      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: false, aspects: {} },
-      { id: 'b1-api', kind: 'component', parentId: 'b1', name: 'B API', lifecycle: 'live', isManaged: false, aspects: {} },
-    ],
-    relations,
-  });
-
-  const landing = (over: Partial<Relation> = {}) =>
-    connection({ id: 'r1', sourceId: 'a1', targetId: 'b1-api', ...over });
+  const line = connection({ id: 'l1', sourceId: 'a1c', targetId: 'b1c' });
+  const iface = connection({ id: 'i1', sourceId: 'a1', targetId: 'b1', label: 'orders' });
 
   it('is not asked about an application line', () => {
-    renderInspector(connection(), { model: deep([]) });
-    expect(screen.queryByLabelText('Part of')).toBeNull();
+    renderInspector(connection(), { model: landscape([]) });
+    expect(screen.queryByTestId('connection-part-of')).toBeNull();
   });
 
   it('offers the interfaces running that way, and a new one of its own', () => {
-    const interfaces: Relation[] = [
-      connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }),
-      connection({ id: 'c17', sourceId: 'a1', targetId: 'b1' }),
-    ];
-    renderInspector(landing(), { model: deep([...interfaces, landing()]) });
-    fireEvent.mouseDown(screen.getByLabelText('Part of'));
-    const options = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent);
-    expect(options).toEqual(['“asks” from A', 'From A', 'New interface']);
+    const { updateConnection } = renderInspector(line, { model: landscape([iface, line]) });
+    press('connection-part-of');
+    fireEvent.click(screen.getByRole('option', { name: /orders/ }));
+    expect(updateConnection).toHaveBeenCalledWith('l1', { refines: 'i1' });
   });
 
-  it('offers only a new interface when none runs that way, and the way out by name on a landed line', () => {
-    renderInspector(landing(), { model: deep([landing()]) });
-    fireEvent.mouseDown(screen.getByLabelText('Part of'));
-    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent))
-      .toEqual(['New interface']);
-    cleanup()
-    const held = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
-    const { updateConnection } = renderInspector(landing(), { model: deep([held, landing()]) });
-    chooseOption('Part of', '“asks” from A');
-    expect(updateConnection).toHaveBeenCalledWith('r1', { refines: 'c16' });
-    cleanup()
-    const held2 = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
-    const landed = landing({ refines: 'c16' });
-    const { updateConnection: updateConnection2 } = renderInspector(landed, { model: deep([held2, landed]) });
-    chooseOption('Part of', 'Detach from “asks”');
-    expect(updateConnection2).toHaveBeenCalledWith('r1', { refines: undefined });
+  it('offers the way out by name on a line that landed', () => {
+    const landed = { ...line, refines: 'i1' };
+    const { updateConnection } = renderInspector(landed, { model: landscape([iface, landed]) });
+    press('connection-part-of');
+    fireEvent.click(screen.getByRole('option', { name: /Detach from/ }));
+    expect(updateConnection).toHaveBeenCalledWith('l1', { refines: undefined });
   });
 
   it('is read-only where the panel is', () => {
-    renderInspector(landing(), { model: deep([landing()]), readOnly: true });
-    expect(selectDisabled('Part of')).toBe(true);
+    renderInspector(line, { model: landscape([iface, line]), readOnly: true });
+    expect(within(row('connection-part-of')).queryByRole('button')).toBeNull();
+  });
+
+  it('says how many landed and which protocols, in place of a protocol somebody could contradict them with', () => {
+    const landedA = { ...line, id: 'l1', refines: 'i1', protocol: 'REST' };
+    const landedB = { ...line, id: 'l2', refines: 'i1', protocol: 'AMQP' };
+    renderInspector(iface, { model: landscape([iface, landedA, landedB]) });
+    expect(text('connection-detail')).toContain('REST, AMQP');
+    expect(screen.queryByTestId('connection-protocol')).toBeNull();
+  });
+
+  it('keeps the protocol on an interface nothing has landed on', () => {
+    renderInspector(iface, { model: landscape([iface]) });
+    expect(row('connection-protocol')).toBeDefined();
+    expect(screen.queryByTestId('connection-detail')).toBeNull();
   });
 });
-
-/**
- * What an interface with landings shows instead of a protocol (ADR-0013).
- *
- * The protocols are the landings\', because that is the level at which anybody
- * knows them, so the field a person could contradict them in is not drawn at
- * all — and the detail line is the way down to where they are.
- */
-describe('ConnectionInspector — an interface that has landed (ADR-0013)', () => {
-  const held = (relations: Relation[]): DesignModel => ({
-    name: 'SD',
-    diagrams: [],
-    elements: [
-      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },
-      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: false, aspects: {} },
-      { id: 'b1-api', kind: 'component', parentId: 'b1', name: 'B API', lifecycle: 'live', isManaged: false, aspects: {} },
-      { id: 'b1-events', kind: 'component', parentId: 'b1', name: 'B events', lifecycle: 'live', isManaged: false, aspects: {} },
-    ],
-    relations,
-  })
-
-  const landed = (): Relation[] => [
-    connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }),
-    connection({ id: 'r1', sourceId: 'a1', targetId: 'b1-api', refines: 'c16', protocol: 'REST' }),
-    connection({ id: 'r2', sourceId: 'a1', targetId: 'b1-events', refines: 'c16', protocol: 'AMQP' }),
-    connection({ id: 'r3', sourceId: 'a1', targetId: 'b1-api', refines: 'c16', protocol: 'REST' }),
-  ]
-
-  it('says how many landed and which protocols they carry, deduplicated and in order', () => {
-    renderInspector(connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }), { model: held(landed()) })
-    expect(screen.getByTestId('connection-detail').textContent)
-      .toContain('Detail: 3 interfaces on the container diagram · REST, AMQP')
-  })
-
-  it('does not draw a protocol field a person could contradict them in', () => {
-    renderInspector(connection({ id: 'c16', sourceId: 'a1', targetId: 'b1' }), { model: held(landed()) })
-    expect(screen.queryByLabelText('Protocol')).toBeNull()
-    expect(screen.queryByLabelText('Technology')).toBeNull()
-  })
-
-  it('keeps the protocol field on an interface nothing has landed on', () => {
-    const alone = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1' })
-    renderInspector(alone, { model: held([alone]) })
-    expect(screen.getByLabelText('Protocol')).toBeDefined()
-    expect(screen.queryByTestId('connection-detail')).toBeNull()
-  })
-})

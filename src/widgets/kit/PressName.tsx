@@ -16,7 +16,7 @@ export type PressNameProps = {
   readonly onRename?: ((name: string) => string | void) | undefined
   /** A new number opens the field, for a command that asks for the name from elsewhere. */
   readonly renameRequest?: number | undefined
-  readonly heading: 'h1' | 'h2'
+  readonly heading: 'h1' | 'h2' | 'span'
   /** The look is the place's: a panel's name and a record's title are not the same size. */
   readonly classes: { readonly heading: string; readonly press: string; readonly field: string; readonly refused: string }
 }

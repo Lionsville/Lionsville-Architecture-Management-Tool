@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import MenuItem from '@mui/material/MenuItem';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
+/**
+ * The panel for one line: the same shell and rows as an element's. Properties says
+ * what the line is, and Appearance how it is drawn, its Route said there once.
+ *
+ * Style rows follow the NULL-inherit contract (U4b): the default choice writes
+ * `undefined`, so the line keeps inheriting what the board draws by default and no
+ * explicit default ever lands in a file. A value reads as what is in force, with
+ * *(default)* where nobody chose it.
+ *
+ * A route is per view while the line is the model's, which is why this takes the
+ * diagram: which of them owns the route, how many bends, and which side each end
+ * leaves from are facts about this view.
+ */
 import { useState } from 'react';
 import type {
   AttachSide,
@@ -22,22 +26,22 @@ import type {
 } from '../model/types';
 import { routeFor, routeSource, type AttachSidesPatch } from '../model/routes';
 import { candidateInterfaces, isContainerLine, protocolsOf, refinementsOf } from '../model/refines';
-import { ColorField } from './ColorField';
+import { formatDay } from '../i18n/dates';
+import type { Language } from '../i18n/languages';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
-import { fieldEdit } from '../model/commands';
+import { Button } from '../widgets/kit/Button';
+import { PropertyRow, PropertyRows, Select, TextInput } from '../widgets/kit/Field';
+import type { RowEditor } from '../widgets/kit/Field';
+import { MoreMenu } from '../widgets/kit/Menu';
+import { Panel, PanelLink, PanelSection } from '../widgets/kit/Panel';
+import { ColorField } from './ColorField';
+import { certaintyRow } from './inspector/elementRows';
+import { DASH, RowSet, pickEdit } from './inspector/rowTools';
+import type { RowSpec } from './inspector/rowTools';
 import type { EditorActions } from './useEditorState';
-import { FieldLabel, SectionHeading } from '../widgets/CompactForms';
 
-/**
- * Style controls follow the NULL-inherit contract (U4b): the "default" choice
- * of each control writes `undefined`, which the save path stores as NULL so the
- * edge keeps inheriting the current runtime default (theme stroke / solid /
- * smooth / Direction-derived arrowheads). Line "Solid" and routing "Smooth" ARE
- * the defaults, so they map to the empty option rather than a stored token — no
- * explicit default ever lands in the DB.
- */
-const LINE_STYLE_OPTIONS: { value: EdgeLineStyle | ''; labelKey: StringKey }[] = [
+export const LINE_STYLE_OPTIONS: { value: EdgeLineStyle | ''; labelKey: StringKey }[] = [
   { value: '', labelKey: 'option.solidDefault' },
   { value: 'dashed', labelKey: 'option.dashed' },
   { value: 'dotted', labelKey: 'option.dotted' },
@@ -53,7 +57,7 @@ const ARROWHEAD_OPTIONS: { value: EdgeArrowhead | ''; labelKey: StringKey }[] = 
   { value: 'arrow', labelKey: 'option.arrow' },
   { value: 'none', labelKey: 'common.none' },
 ];
-/** Attach sides (Route section): the empty option is Automatic, stored as no side. */
+/** Attach sides: the empty option is Automatic, stored as no side. */
 const ATTACH_SIDE_OPTIONS: { value: AttachSide | ''; labelKey: StringKey }[] = [
   { value: '', labelKey: 'side.auto' },
   { value: 'top', labelKey: 'side.top' },
@@ -62,60 +66,39 @@ const ATTACH_SIDE_OPTIONS: { value: AttachSide | ''; labelKey: StringKey }[] = [
   { value: 'left', labelKey: 'side.left' },
 ];
 
-/**
- * The stored sides as text — "Leaves from Top · Arrives at Left" — for a viewer
- * who cannot change them (read-only, or an editor that wired no callback). The
- * line still honours a stored side, so hiding the selects must not hide the fact.
- */
-function describeSides(
-  route: { sourceSide?: AttachSide; targetSide?: AttachSide } | undefined,
-  t: Translate,
-): string {
-  if (!route) return '';
-  const label = (side: AttachSide) => {
-    const option = ATTACH_SIDE_OPTIONS.find((o) => o.value === side);
-    return option ? t(option.labelKey) : side;
-  };
-  return [
-    route.sourceSide ? t('route.leavesFromSide', { name: label(route.sourceSide) }) : '',
-    route.targetSide ? t('route.arrivesAtSide', { name: label(route.targetSide) }) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+const options = <V extends string>(list: readonly { value: V; labelKey: StringKey }[], t: Translate) =>
+  list.map((one) => ({ value: one.value as string, label: t(one.labelKey) }));
+const said = <V extends string>(list: readonly { value: V; labelKey: StringKey }[], value: string | undefined, t: Translate) => {
+  const one = list.find((option) => option.value === (value ?? ''));
+  return one ? t(one.labelKey) : value ?? '';
+};
+
+/** *Always*, the state an undated line is really in, or its window in words. */
+export function validWords(connection: Pick<DesignConnection, 'validFrom' | 'validUntil'>, language: Language, t: Translate): string {
+  const { validFrom, validUntil } = connection;
+  if (!validFrom && !validUntil) return t('inspector.always');
+  return `${validFrom ? formatDay(validFrom, language) : t('inspector.noStart')} – ${validUntil ? formatDay(validUntil, language) : t('inspector.noEnd')}`;
 }
 
-/** Tab label with an optional "set values" dot (mirrors the InspectorSection "●" badge). */
-function TabLabel({ text, dot }: { text: string; dot: boolean }) {
+/** The two days of a window, written as they are typed; nothing waits on the other. */
+export function ValidEditor({ editor, connection, onWrite, t }: {
+  editor: RowEditor;
+  connection: Pick<DesignConnection, 'validFrom' | 'validUntil'>;
+  onWrite(patch: Partial<Pick<DesignConnection, 'validFrom' | 'validUntil'>>): void;
+  t: Translate;
+}) {
   return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-      {text}
-      {dot && (
-        <Box component="span" aria-hidden sx={{ fontSize: 9, lineHeight: 1, color: 'primary.main' }}>
-          ●
-        </Box>
-      )}
-    </Box>
+    <div
+      className="inspector-aspect"
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
+      onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}
+    >
+      <TextInput autoFocus type="date" data-fit aria-label={t('field.validFrom')} value={connection.validFrom ?? ''} onChange={(event) => onWrite({ validFrom: event.target.value || undefined })} />
+      <TextInput type="date" data-fit aria-label={t('field.validUntil')} value={connection.validUntil ?? ''} onChange={(event) => onWrite({ validUntil: event.target.value || undefined })} />
+    </div>
   );
 }
 
-/**
- * Connection property form (U7a): a two-tab split — General / Appearance.
- * General carries Label, Protocol, and the single **Direction** control that is
- * the source of truth for `isBidirectional` (D2). Appearance carries the colour,
- * line style, routing, and the per-end arrowhead selects — the latter demoted to
- * a subordinate override: Direction drives the default arrowheads, and these
- * still round-trip the persisted `sourceArrowhead`/`targetArrowhead` for a per-
- * end tweak. Nothing persisted was dropped; the two arrowhead selects are simply
- * no longer a top-level peer that can contradict Direction. Tab selection resets
- * to General when the selected connection id changes.
- *
- * Below the tabs sits the **Route** section: who owns this line's route on the
- * active diagram (Automatic / Hand-drawn / None), how many bends it has, the
- * three things a person can do about it — Pin, Unpin, Reset to automatic — and
- * which side of its node each end attaches to ("Leaves from" / "Arrives at"). It
- * needs the `diagram`, because a route is per diagram while the connection is
- * design-wide.
- */
 export function ConnectionInspector({
   connection,
   model,
@@ -132,439 +115,198 @@ export function ConnectionInspector({
   diagram: DesignDiagram;
   readOnly: boolean;
   actions: EditorActions;
-  /**
-   * "Reset to automatic": the editor owns it because, with live routing off, it
-   * has to run the routing pass and amend it into the reset's undo step. Absent
-   * hides the button.
-   */
+  /** The editor owns it: with live routing off it has to run the pass and amend it into the reset's undo step. Absent hides the button. */
   onResetRoute?(connectionId: string): void;
-  /**
-   * "Leaves from" / "Arrives at": the editor owns it for the same reason as the
-   * reset — with live routing off it runs the pass that routes the line out of
-   * its new side. Absent hides the two selects.
-   */
+  /** The editor owns it for the same reason. Absent, the sides only read. */
   onSetRouteSides?(connectionId: string, sides: AttachSidesPatch): void;
-  /**
-   * Ask the editor to confirm before the line goes. Absent, the button deletes
-   * straight away as it always did — the same fallback the menu and the Delete
-   * key use, so a host embedding the inspector alone is not left with a dead
-   * button.
-   */
+  /** Ask the editor to confirm first. Absent, it deletes straight away, as the menu and the Delete key do. */
   onRequestDelete?(connectionId: string): void;
-  /**
-   * *Open* beside the detail line: go where this interface lands (ADR-0013),
-   * which is what a double-click on it does. Absent draws the line without a
-   * way there.
-   */
+  /** *Open* beside the detail: go where this interface lands (ADR-0013). */
   onOpenLanding?(connectionId: string): void;
 }) {
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   const name = (id: string) => model.elements.find((e) => e.id === id)?.name ?? '?';
-  const update = (patch: Partial<Omit<DesignConnection, 'id'>>) =>
-    actions.updateConnection(connection.id, patch);
-  /** A text field: live in the model, one undo step for the run (see `fieldEdit`). */
-  const typed = (field: string, patch: Partial<Omit<DesignConnection, 'id'>>) =>
-    actions.updateConnection(connection.id, patch, fieldEdit(connection.id, field));
-
-  // Which interface this line is part of, a level down (ADR-0013). Only a
-  // container line is ever asked: an application interface IS the interface,
-  // and the landscape draws it.
-  const held = (id: string) => model.elements.find((e) => e.id === id);
-  // Only a flow is drawn on a canvas (ADR-0012 §5), so the line this panel is
-  // about is one — which is why the type is supplied rather than read off a
-  // shape that does not carry it.
-  const isContainer = isContainerLine({ ...connection, type: 'flow' }, held);
-  const candidates = isContainer ? candidateInterfaces(model.relations, connection, held) : [];
-  const partOfOption = (row: (typeof candidates)[number]) => (
-    row.label
-      ? t('field.partOfOption', { label: row.label, name: name(row.sourceId) })
-      : t('field.partOfUnlabelled', { name: name(row.sourceId) })
-  );
-  const landedOn = connection.refines === undefined
-    ? undefined
-    : model.relations.find((c) => c.id === connection.refines);
-  // What landed on THIS one (ADR-0013). An interface with landings has no
-  // protocol of its own — the protocols are theirs, because that is the level
-  // at which anybody knows them — so the field is replaced by what they say.
-  const landings = refinementsOf(model.relations, connection.id);
-  const protocols = protocolsOf(model.relations, connection.id);
-  const route = routeFor(diagram, connection.id);
-  const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
-  const bendCount = route?.waypoints.length ?? 0;
-  const ROUTE_BADGE = {
-    none: t('route.none'),
-    auto: t('route.auto'),
-    manual: t('route.manual'),
-  } as const;
-  const ROUTE_NOTE = {
-    none: t('route.noteNone'),
-    auto: t('route.noteAuto'),
-    manual: t('route.noteManual'),
-  } as const;
-
-  const [activeTab, setActiveTab] = useState(0);
+  const update = (patch: Partial<Omit<DesignConnection, 'id'>>) => actions.updateConnection(connection.id, patch);
+  const [tab, setTab] = useState<'properties' | 'appearance'>('properties');
+  const [help, setHelp] = useState<string>();
   const [seenId, setSeenId] = useState(connection.id);
   if (seenId !== connection.id) {
     setSeenId(connection.id);
-    setActiveTab(0);
+    setTab('properties');
   }
 
-  const generalHasValues = Boolean(
-    connection.label || connection.protocol || connection.technology
-      || connection.refines || connection.validFrom || connection.validUntil,
-  );
-  const appearanceHasValues = Boolean(
-    connection.color ||
-      connection.lineStyle ||
-      connection.routing ||
-      connection.sourceArrowhead ||
-      connection.targetArrowhead,
-  );
+  const route = routeFor(diagram, connection.id);
+  const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
+  const bendCount = route?.waypoints.length ?? 0;
+  const bends = bendCount === 1 ? t('route.bendsOne') : t('route.bendsOther', { count: bendCount });
+  const badge = { none: t('route.none'), auto: t('route.auto'), manual: t('route.manual') }[routeStatus];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-      <Box>
-        <SectionHeading>{t('section.connection')}</SectionHeading>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {name(connection.sourceId)} {connection.isBidirectional ? '↔' : '→'}{' '}
-          {name(connection.targetId)}
-        </Typography>
-      </Box>
-
-      <Tabs
-        value={activeTab}
-        onChange={(_e, value: number) => setActiveTab(value)}
-        variant="fullWidth"
-        sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.5, px: 0.5, minWidth: 0, letterSpacing: 0, fontSize: 11.5 } }}
-      >
-        <Tab label={<TabLabel text={t('tab.general')} dot={generalHasValues} />} />
-        <Tab label={<TabLabel text={t('tab.appearance')} dot={appearanceHasValues} />} />
-      </Tabs>
-
-      {activeTab === 0 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-          {/* Where this line belongs, asked first because it decides what the
-              rest of the panel means: a line that is part of an interface
-              carries the protocol, and the interface carries the label and the
-              window (ADR-0013). The last option is the way out — a new
-              interface of its own, which is also how a landed line detaches. */}
-          {isContainer && (
-            <TextField
-              select
-              label={t('field.partOf')}
-              value={landedOn ? landedOn.id : ''}
-              fullWidth
-              disabled={readOnly}
-              helperText={t('field.partOfHelp')}
-              onChange={(e) => update({ refines: e.target.value || undefined })}
-            >
-              {candidates.map((row) => (
-                <MenuItem key={row.id} value={row.id}>{partOfOption(row)}</MenuItem>
-              ))}
-              <MenuItem value="">
-                {landedOn
-                  ? t('field.detachFrom', { label: landedOn.label ?? name(landedOn.sourceId) })
-                  : t('field.newInterface')}
-              </MenuItem>
-            </TextField>
-          )}
-          <TextField
-            label={t('field.label')}
-            value={connection.label ?? ''}
-            fullWidth
-            multiline
-            maxRows={5}
-            disabled={readOnly}
-            placeholder={t('field.labelPlaceholder')}
-            helperText={t('field.labelHelp')}
-            onChange={(e) => typed('label', { label: e.target.value || undefined })}
-          />
-          {landings.length > 0 ? (
-            <Box data-testid="connection-detail" sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                {t(landings.length === 1 ? 'field.detailOne' : 'field.detailOther', {
-                  count: String(landings.length),
-                  protocols: protocols.join(', '),
-                })}
-              </Typography>
-              {onOpenLanding && (
-                <Button
-                  size="small"
-                  sx={{ py: 0, minWidth: 0, fontSize: 12 }}
-                  onClick={() => onOpenLanding(connection.id)}
-                >
-                  {t('field.detailOpen')}
-                </Button>
-              )}
-            </Box>
-          ) : (
-            <>
-              <TextField
-                label={t('field.protocol')}
-                value={connection.protocol ?? ''}
-                fullWidth
-                disabled={readOnly}
-                placeholder={t('field.protocolPlaceholder')}
-                onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
+    <Panel
+      kind={t('section.connection')}
+      name={`${name(connection.sourceId)} ${connection.isBidirectional ? '↔' : '→'} ${name(connection.targetId)}`}
+      facts={[connection.certainty ? t(`certainty.${connection.certainty}` as StringKey) : undefined, badge, bendCount > 0 ? bends : undefined].filter(Boolean).join(' · ')}
+      actions={!readOnly && (
+        <MoreMenu
+          label={t('inspector.more')} size="small"
+          items={[{
+            label: t('route.deleteConnection'), final: true,
+            onSelect: () => (onRequestDelete ? onRequestDelete(connection.id) : actions.deleteConnection(connection.id)),
+          }]}
+        />
+      )}
+      tabs={[{ value: 'properties', label: t('inspector.properties') }, { value: 'appearance', label: t('tab.appearance') }]}
+      tab={tab}
+      onTab={(next) => setTab(next as 'properties' | 'appearance')}
+      help={help}
+    >
+      <div key={connection.id}>
+        {tab === 'properties' && (
+          <RowSet rows={propertyRows()} surface="panel" readOnly={readOnly} onHelp={setHelp} />
+        )}
+        {tab === 'appearance' && (
+          <>
+            <PropertyRows readOnly={readOnly} onHelp={setHelp}>
+              <PropertyRow
+                label={t('field.colour')} data-testid="connection-colour" value={connection.color ?? ''} empty={t('option.default')}
+                edit={() => <ColorField label={t('field.colour')} ariaLabel={t('field.edgeColour')} value={connection.color} readOnly={false} onChange={(value) => update({ color: value })} />}
               />
-              <TextField
-                label={t('field.technology')}
-                value={connection.technology ?? ''}
-                fullWidth
-                disabled={readOnly}
-                helperText={t('field.technologyHelp')}
-                onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
+              <PropertyRow
+                label={t('field.lineStyle')} data-testid="connection-style" value={said(LINE_STYLE_OPTIONS, connection.lineStyle, t)}
+                edit={{ options: options(LINE_STYLE_OPTIONS, t) }}
+                onCommit={(value) => update({ lineStyle: value === '' ? undefined : value as EdgeLineStyle })}
               />
-            </>
-          )}
-          {/* The days this line is there (ADR-0009). Empty on almost every
-              line: one with no window follows the elements it joins, and only
-              the temporary lines of a hybrid run need their own. */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField
-              type="date"
-              label={t('field.validFrom')}
-              value={connection.validFrom ?? ''}
-              sx={{ flex: 1 }}
-              disabled={readOnly}
-              slotProps={{ inputLabel: { shrink: true } }}
-              onChange={(e) => update({ validFrom: e.target.value || undefined })}
-            />
-            <TextField
-              type="date"
-              label={t('field.validUntil')}
-              value={connection.validUntil ?? ''}
-              sx={{ flex: 1 }}
-              disabled={readOnly}
-              slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-field': 'validUntil' } }}
-              onChange={(e) => update({ validUntil: e.target.value || undefined })}
-            />
-          </Box>
-          <TextField
-            select
-            label={t('field.direction')}
-            value={connection.isBidirectional ? 'bidirectional' : 'oneway'}
-            fullWidth
-            disabled={readOnly}
-            helperText={t('field.directionHelp')}
-            onChange={(e) => update({ isBidirectional: e.target.value === 'bidirectional' })}
-          >
-            <MenuItem value="oneway">{t('field.oneWay')}</MenuItem>
-            <MenuItem value="bidirectional">{t('field.bidirectional')}</MenuItem>
-          </TextField>
-        </Box>
-      )}
-
-      {activeTab === 1 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-          <ColorField
-            label={t('field.colour')}
-            ariaLabel={t('field.edgeColour')}
-            value={connection.color}
-            readOnly={readOnly}
-            onChange={(value) => update({ color: value })}
-          />
-
-          <TextField
-            select
-            label={t('field.lineStyle')}
-            value={connection.lineStyle ?? ''}
-            fullWidth
-            disabled={readOnly}
-            onChange={(e) =>
-              update({ lineStyle: e.target.value === '' ? undefined : (e.target.value as EdgeLineStyle) })
-            }
-          >
-            {LINE_STYLE_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value}>
-                {t(o.labelKey)}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            select
-            label={t('field.routing')}
-            value={connection.routing ?? ''}
-            fullWidth
-            disabled={readOnly}
-            helperText={t('field.routingHelp')}
-            onChange={(e) =>
-              update({ routing: e.target.value === '' ? undefined : (e.target.value as EdgeRouting) })
-            }
-          >
-            {ROUTING_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value}>
-                {t(o.labelKey)}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Subordinate arrowhead override (D2): Direction (General) is the
-              source of truth and sets the default arrowheads; these tweak a
-              single end without becoming a competing top-level control. Kept
-              compact so the two selects don't fight the 320px width. */}
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              p: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-            }}
-          >
-            <FieldLabel sx={{ fontWeight: 600 }}>{t('field.arrowheadOverride')}</FieldLabel>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                select
-                label={t('field.source')}
-                value={connection.sourceArrowhead ?? ''}
-                sx={{ flex: 1 }}
-                disabled={readOnly}
-                onChange={(e) =>
-                  update({
-                    sourceArrowhead:
-                      e.target.value === '' ? undefined : (e.target.value as EdgeArrowhead),
-                  })
-                }
-              >
-                {ARROWHEAD_OPTIONS.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label={t('field.target')}
-                value={connection.targetArrowhead ?? ''}
-                sx={{ flex: 1 }}
-                disabled={readOnly}
-                onChange={(e) =>
-                  update({
-                    targetArrowhead:
-                      e.target.value === '' ? undefined : (e.target.value as EdgeArrowhead),
-                  })
-                }
-              >
-                {ARROWHEAD_OPTIONS.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      <Divider />
-      <Box data-testid="route-section" sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <SectionHeading>{t('section.route')}</SectionHeading>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip
-            data-testid="route-badge"
-            label={ROUTE_BADGE[routeStatus]}
-            color={routeStatus === 'manual' ? 'primary' : 'default'}
-            variant={routeStatus === 'none' ? 'outlined' : 'filled'}
-          />
-          <Typography variant="caption" color="text.secondary" data-testid="route-bends">
-            {bendCount === 1 ? t('route.bendsOne') : t('route.bendsOther', { count: bendCount })}
-            {route?.pinned ? ` · ${t('route.pinned')}` : ''}
-          </Typography>
-        </Box>
-        <Typography variant="caption" color="text.secondary">
-          {ROUTE_NOTE[routeStatus]}
-        </Typography>
-        {!readOnly && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {routeStatus !== 'manual' && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => actions.setRouteSource(connection.id, 'manual')}
-              >
-                {t('route.pin')}
-              </Button>
-            )}
-            {routeStatus === 'manual' && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => actions.setRouteSource(connection.id, 'auto')}
-              >
-                {t('route.unpin')}
-              </Button>
-            )}
-            {onResetRoute && (
-              <Button size="small" variant="text" onClick={() => onResetRoute(connection.id)}>
-                {t('route.resetToAutomatic')}
-              </Button>
-            )}
-          </Box>
+              <PropertyRow
+                label={t('field.arrowheads')} data-testid="connection-arrowheads" help={t('field.directionHelp')}
+                value={connection.sourceArrowhead || connection.targetArrowhead
+                  ? `${said(ARROWHEAD_OPTIONS, connection.sourceArrowhead, t)} · ${said(ARROWHEAD_OPTIONS, connection.targetArrowhead, t)}`
+                  : t('field.arrowheadsFollow')}
+                edit={(editor) => (
+                  <div
+                    className="inspector-aspect"
+                    onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
+                    onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}
+                  >
+                    <Select
+                      autoFocus data-fit aria-label={t('field.source')} value={connection.sourceArrowhead ?? ''} options={options(ARROWHEAD_OPTIONS, t)}
+                      onChange={(event) => update({ sourceArrowhead: event.target.value === '' ? undefined : event.target.value as EdgeArrowhead })}
+                    />
+                    <Select
+                      data-fit aria-label={t('field.target')} value={connection.targetArrowhead ?? ''} options={options(ARROWHEAD_OPTIONS, t)}
+                      onChange={(event) => update({ targetArrowhead: event.target.value === '' ? undefined : event.target.value as EdgeArrowhead })}
+                    />
+                  </div>
+                )}
+              />
+            </PropertyRows>
+            <div data-testid="route-section">
+              <PanelSection title={t('section.route')}>
+                <p className="inspector-note">
+                  <span data-testid="route-badge">{badge}</span>{', '}
+                  <span data-testid="route-bends">{bends}{route?.pinned ? ` · ${t('route.pinned')}` : ''}</span>.{' '}
+                  {{ none: t('route.noteNone'), auto: t('route.noteAuto'), manual: t('route.noteManual') }[routeStatus]}
+                </p>
+                <PropertyRows readOnly={readOnly} onHelp={setHelp}>
+                  <PropertyRow
+                    label={t('field.routing')} data-testid="connection-routing" help={t('field.routingHelp')} value={said(ROUTING_OPTIONS, connection.routing, t)}
+                    edit={{ options: options(ROUTING_OPTIONS, t) }}
+                    onCommit={(value) => update({ routing: value === '' ? undefined : value as EdgeRouting })}
+                  />
+                  <PropertyRow
+                    label={t('field.leavesFrom')} data-testid="route-leaves" value={said(ATTACH_SIDE_OPTIONS, route?.sourceSide, t)} readOnly={!onSetRouteSides}
+                    edit={{ options: options(ATTACH_SIDE_OPTIONS, t) }}
+                    onCommit={(value) => onSetRouteSides?.(connection.id, { sourceSide: value === '' ? undefined : value as AttachSide })}
+                  />
+                  <PropertyRow
+                    label={t('field.arrivesAt')} data-testid="route-arrives" value={said(ATTACH_SIDE_OPTIONS, route?.targetSide, t)} readOnly={!onSetRouteSides}
+                    edit={{ options: options(ATTACH_SIDE_OPTIONS, t) }}
+                    onCommit={(value) => onSetRouteSides?.(connection.id, { targetSide: value === '' ? undefined : value as AttachSide })}
+                  />
+                </PropertyRows>
+                {!readOnly && (
+                  <div className="inspector-actions">
+                    {routeStatus !== 'manual'
+                      ? <Button size="small" onClick={() => actions.setRouteSource(connection.id, 'manual')}>{t('route.pin')}</Button>
+                      : <Button size="small" onClick={() => actions.setRouteSource(connection.id, 'auto')}>{t('route.unpin')}</Button>}
+                    {onResetRoute && <Button size="small" variant="quiet" onClick={() => onResetRoute(connection.id)}>{t('route.resetToAutomatic')}</Button>}
+                  </div>
+                )}
+              </PanelSection>
+            </div>
+          </>
         )}
-        {!readOnly && onSetRouteSides && (
-          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-            <TextField
-              select
-              label={t('field.leavesFrom')}
-              value={route?.sourceSide ?? ''}
-              sx={{ flex: 1 }}
-              onChange={(e) =>
-                onSetRouteSides(connection.id, {
-                  sourceSide: e.target.value === '' ? undefined : (e.target.value as AttachSide),
-                })
-              }
-            >
-              {ATTACH_SIDE_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {t(o.labelKey)}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label={t('field.arrivesAt')}
-              value={route?.targetSide ?? ''}
-              sx={{ flex: 1 }}
-              onChange={(e) =>
-                onSetRouteSides(connection.id, {
-                  targetSide: e.target.value === '' ? undefined : (e.target.value as AttachSide),
-                })
-              }
-            >
-              {ATTACH_SIDE_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {t(o.labelKey)}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-        )}
-        {(readOnly || !onSetRouteSides) && describeSides(route, t) && (
-          <Typography variant="caption" color="text.secondary" data-testid="route-sides">
-            {describeSides(route, t)}
-          </Typography>
-        )}
-      </Box>
-
-      {!readOnly && (
-        <>
-          <Divider />
-          <Button
-            color="error"
-            variant="outlined"
-            size="small"
-            onClick={() =>
-              onRequestDelete ? onRequestDelete(connection.id) : actions.deleteConnection(connection.id)
-            }
-          >
-            {t('route.deleteConnection')}
-          </Button>
-        </>
-      )}
-    </Box>
+      </div>
+    </Panel>
   );
+
+  function propertyRows(): RowSpec[] {
+    const always = (key: string, label: string, node: RowSpec['node']): RowSpec => ({ key, label, rule: 'always', filled: true, node });
+    const held = (id: string) => model.elements.find((e) => e.id === id);
+    // Only a flow is drawn on a canvas (ADR-0012 §5), so the line this panel is about is one.
+    const isContainer = isContainerLine({ ...connection, type: 'flow' }, held);
+    const candidates = isContainer ? candidateInterfaces(model.relations, connection, held) : [];
+    const landedOn = connection.refines === undefined ? undefined : model.relations.find((c) => c.id === connection.refines);
+    const partOf = (row: (typeof candidates)[number]) => (row.label
+      ? t('field.partOfOption', { label: row.label, name: name(row.sourceId) })
+      : t('field.partOfUnlabelled', { name: name(row.sourceId) }));
+    // What landed on this one (ADR-0013): an interface with landings has no protocol of its own.
+    const landings = refinementsOf(model.relations, connection.id);
+    const protocols = protocolsOf(model.relations, connection.id);
+    const textRow = (key: 'label' | 'protocol' | 'technology', label: string, help?: string, placeholder?: boolean, long?: boolean) => always(key, label, () => (
+      <PropertyRow
+        label={label} data-testid={`connection-${key}`} value={connection[key] ?? ''} empty={placeholder ? t('inspector.noLabel') : DASH}
+        {...(help ? { help } : {})} edit={long ? 'long' : 'text'}
+        onCommit={(value) => update({ [key]: value || undefined })}
+      />
+    ));
+    return [
+      always('from', t('field.source'), () => <PropertyRow label={t('inspector.from')} data-testid="connection-from" readOnly value={name(connection.sourceId)} />),
+      always('to', t('field.target'), () => <PropertyRow label={t('inspector.to')} data-testid="connection-to" readOnly value={name(connection.targetId)} />),
+      ...(isContainer ? [always('partOf', t('field.partOf'), () => (
+        <PropertyRow
+          label={t('field.partOf')} data-testid="connection-part-of" help={t('field.partOfHelp')}
+          value={landedOn ? (landedOn.label ?? name(landedOn.sourceId)) : ''} empty={t('field.newInterface')}
+          edit={pickEdit({
+            label: t('field.partOf'),
+            options: [
+              ...candidates.map((row) => ({ id: row.id, label: partOf(row) })),
+              { id: '', label: landedOn ? t('field.detachFrom', { label: landedOn.label ?? name(landedOn.sourceId) }) : t('field.newInterface') },
+            ],
+          })}
+          onCommit={(id) => update({ refines: id || undefined })}
+        />
+      ))] : []),
+      textRow('label', t('field.label'), t('field.labelHelp'), true, true),
+      ...(landings.length > 0
+        ? [always('detail', t('field.detail'), () => (
+          <PropertyRow
+            label={t('field.detail')} data-testid="connection-detail" readOnly
+            value={t(landings.length === 1 ? 'field.detailOne' : 'field.detailOther', { count: String(landings.length), protocols: protocols.join(', ') })}
+            {...(onOpenLanding ? { display: (
+              <>
+                {t(landings.length === 1 ? 'field.detailOne' : 'field.detailOther', { count: String(landings.length), protocols: protocols.join(', ') })}{' '}
+                <PanelLink onPress={() => onOpenLanding(connection.id)}>{t('field.detailOpen')}</PanelLink>
+              </>
+            ) } : {})}
+          />
+        ))]
+        : [textRow('protocol', t('field.protocol')), textRow('technology', t('field.technology'), t('field.technologyHelp'))]),
+      // The days this line is there (ADR-0009). One with no window follows the elements it joins.
+      always('valid', t('inspector.valid'), () => (
+        <PropertyRow
+          label={t('inspector.valid')} data-testid="connection-valid" value={validWords(connection, language, t)}
+          edit={(editor) => <ValidEditor editor={editor} connection={connection} onWrite={update} t={t} />}
+        />
+      )),
+      always('direction', t('field.direction'), () => (
+        <PropertyRow
+          label={t('field.direction')} data-testid="connection-direction" help={t('field.directionHelp')}
+          value={connection.isBidirectional ? t('field.bidirectional') : t('field.oneWay')}
+          edit={{ options: [{ value: 'oneway', label: t('field.oneWay') }, { value: 'bidirectional', label: t('field.bidirectional') }] }}
+          onCommit={(value) => update({ isBidirectional: value === 'bidirectional' })}
+        />
+      )),
+      certaintyRow(t, 'panel', connection.certainty, false, (certainty) => update({ certainty })),
+    ];
+  }
 }

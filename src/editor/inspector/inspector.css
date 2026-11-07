@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* What a row of the inspector says beside its value, in the panel and on the record. */
+.inspector-note { display: block; margin: 0; color: var(--ink-3); font-size: var(--t-sm); line-height: var(--lh-tight); }
+.inspector-links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.inspector-swatch { display: inline-block; width: 12px; height: 12px; margin-inline-end: var(--s-1); border: 1px solid var(--line); border-radius: var(--r-1); vertical-align: -1px; }
+.inspector-aspect { display: flex; flex-direction: column; gap: var(--s-1); }
+.inspector-icons { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-1); }
+
+.inspector-description { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-1); margin-block: var(--s-2); }
+.inspector-description > :first-child { align-self: stretch; }
+.inspector-description__text,
+.inspector-description__press { margin: 0; color: var(--ink); font: inherit; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--clamp-lines); overflow: hidden; }
+.inspector-description__press { width: 100%; padding: 0 var(--s-1); margin-inline-start: calc(var(--s-1) * -1); border: 0; border-radius: var(--r-1); background: none; text-align: start; cursor: text; }
+.inspector-description__press:hover { background: var(--surface-2); }
+.inspector-description__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.inspector-description__press[data-empty] { color: var(--ink-3); }
+
+.inspector-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.inspector-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-1); min-height: var(--row-prop); overflow-wrap: anywhere; }
+.inspector-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-block-start: var(--s-1); }

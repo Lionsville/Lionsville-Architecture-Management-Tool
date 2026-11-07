@@ -322,6 +322,8 @@ export interface EditorActions {
    * offsets placements, then selects the pasted set.
    */
   pasteClipboard(payload: ClipboardPayload, offset: Point): void;
+  /** One step over all of them, as `updateElements` is: a window, a protocol, a colour across a selection of lines. */
+  updateConnections(ids: readonly string[], patch: Partial<Omit<DesignConnection, 'id'>>): void;
   updateConnection(
     id: string,
     patch: Partial<Omit<DesignConnection, 'id'>>,
@@ -1117,6 +1119,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       updateConnection(id, patch, coalesce) {
         if (!currentModel().relations.some((c) => c.id === id)) return;
         dispatch({ type: 'relation.update', id, patch, ...(coalesce ? { coalesce } : {}) });
+      },
+
+      updateConnections(ids, patch) {
+        const held = new Set(currentModel().relations.map((c) => c.id));
+        const targets = ids.filter((id) => held.has(id));
+        if (targets.length === 0) return;
+        dispatch(transaction(targets.map((id) => ({ type: 'relation.update' as const, id, patch }))));
       },
 
       deleteConnection(id) {

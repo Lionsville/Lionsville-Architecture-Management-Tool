@@ -71,6 +71,8 @@ export interface EditorToolbarProps {
   cameFrom?: string;
   busy?: LayoutAction;
   onActiveDiagramChange(diagramId: string): void;
+  /** The view that is up was pressed: its own panel. Absent, nothing happens. */
+  onOpenThisView?(): void;
   onCreateLayer7Diagram(): void;
   /**
    * Open a laid-out view the canvas cannot draw (ADR-0012 §6). Its tab sits in
@@ -463,6 +465,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
               <Tab
                 key={diagram.id}
                 value={diagram.id} aria-label={diagram.name}
+                // Pressing the name of the view that is up asks about the view itself: *This view*.
+                onClick={diagram.id === props.activeDiagram.id && !host?.pageUp ? props.onOpenThisView : undefined}
                 {...tabMenuDoors(diagram.id, openTabMenu, hasTabMenu ? openTabMenuBelow : undefined)}
                 label={
                   <TabLabel

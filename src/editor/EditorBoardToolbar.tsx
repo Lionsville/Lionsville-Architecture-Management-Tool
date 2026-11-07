@@ -11,6 +11,8 @@ import { cancelElkLayout, canCancelElkLayout } from '../layout/elkLayout';
 import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
 import { FIT_ALL } from './canvas/fitAll';
 import type { SolutionDesignEditorProps } from './props';
+import { EMPTY_SELECTION } from './useEditorState';
+import type { EditorState } from './useEditorState';
 import type { BoardView } from './useBoardView';
 import type { EditorDialogState } from './EditorDialogs';
 import type { EditorParts } from './editorParts';
@@ -61,6 +63,7 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       showEdgeLabels={view.showEdgeLabels}
       onToggleEdgeLabels={() => view.setShowEdgeLabels((on) => !on)}
       onLanguageChange={props.language?.onChange}
+      onOpenThisView={!laidOut ? () => { dialogs.setThisViewOpen(true); state.setSelection(EMPTY_SELECTION); } : undefined}
     />
   );
 }

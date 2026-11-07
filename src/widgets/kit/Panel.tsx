@@ -78,14 +78,16 @@ export type PanelProps = {
 }
 
 /** Shared with a record's title, so a name is changed the same way wherever it stands. */
-export function PanelName({ name, onRename, renameRequest }: {
+export function PanelName({ name, onRename, renameRequest, unheaded = false }: {
   readonly name: string
+  /** Standing inside a heading of its own, such as a record's title. */
+  readonly unheaded?: boolean
   readonly onRename?: PanelProps['onRename']
   readonly renameRequest?: number
 }) {
   return (
     <PressName
-      name={name} onRename={onRename} renameRequest={renameRequest} heading="h2"
+      name={name} onRename={onRename} renameRequest={renameRequest} heading={unheaded ? 'span' : 'h2'}
       classes={{ heading: 'kit-panel__name', press: 'kit-panel__namePress', field: 'kit-panel__nameField', refused: 'kit-panel__refused' }}
     />
   )

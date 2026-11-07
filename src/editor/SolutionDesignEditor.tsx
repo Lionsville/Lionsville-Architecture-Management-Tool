@@ -30,6 +30,8 @@ import { EditorDocumentationPage } from './EditorDocumentationPage';
 import { BoardToolbar } from './EditorBoardToolbar';
 import { BoardCanvas, LaidOutView, PaletteDock } from './EditorPanels';
 import { InspectorDock } from './EditorInspectorDock';
+import { ArrangeSeatProvider } from './inspector/arrangeSeat';
+import type { ArrangeActs } from './inspector/arrangeSeat';
 import type { EditorParts } from './editorParts';
 
 /**
@@ -71,6 +73,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const { t } = useStrings();
   const { parts, activeDiagram, setWrapperNode } = useEditorParts(props);
   const [pageBar, setPageBar] = useState<HTMLElement | null>(null);
+  const arrangeSeat = useRef<ArrangeActs | null>(null);
   const { state, readOnly } = parts;
   const documentationPage = (
     <EditorDocumentationPage
@@ -104,6 +107,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const docks = docksOf(activeDiagram.kind);
   const shown = parts.board.shownDiagram ?? activeDiagram;
   return (
+    <ArrangeSeatProvider value={arrangeSeat}>
     <Box
       ref={setWrapperNode}
       sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}
@@ -121,6 +125,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       {documentationPage}
       <EditorLateDialogs props={props} state={state} dialogs={parts.dialogs} onFocus={parts.requests.requestFocus} />
     </Box>
+    </ArrangeSeatProvider>
   );
 }
 

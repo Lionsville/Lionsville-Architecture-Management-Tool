@@ -53,6 +53,7 @@ function stubActions(): EditorActions {
   setAsOf: vi.fn(),
     updateElement: vi.fn(),
     updateElements: vi.fn(),
+    updateConnections: vi.fn(),
     movePlacements: vi.fn(),
     setPlacements: vi.fn(),
     applyTidyResult: vi.fn(),

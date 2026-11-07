@@ -37,6 +37,7 @@ export function MarkdownField({
   onChange,
   renderMarkdown,
   onOpenDocumentation,
+  autoFocus,
 }: {
   value: string;
   disabled: boolean;
@@ -44,6 +45,8 @@ export function MarkdownField({
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
   /** Opens the documentation page — the same text, with room to read and write it. */
   onOpenDocumentation?(): void;
+  /** It opened on a press, so the caret goes straight into it. */
+  autoFocus?: boolean;
 }) {
   const { t } = useStrings();
   return (
@@ -55,6 +58,7 @@ export function MarkdownField({
         label={t('field.description')}
         placeholder={t('field.descriptionPlaceholder')}
         maxRows={10}
+        {...(autoFocus ? { autoFocus } : {})}
         {...(renderMarkdown ? { renderPreview: (text: string) => renderMarkdown(text) } : {})}
       />
       {onOpenDocumentation && (

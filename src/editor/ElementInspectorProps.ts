@@ -6,6 +6,7 @@ import type { AnsweredBy, EditorOwnership, PartyElsewhere, UnitSlot } from './pr
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { LeverageLine } from '../model/leverage';
+import type { Transition } from '../model/transition';
 import type { EditorActions } from './useEditorState';
 
 export interface ElementInspectorProps {
@@ -38,14 +39,6 @@ export interface ElementInspectorProps {
    * plans.
    */
   onReplace?(elementId: ElementId): void;
-  /** The page shows the description as the page; it must not show it twice. */
-  hideDescription?: boolean;
-  /**
-   * `tabs` (default) is the panel beside the canvas, where width is scarce.
-   * `stacked` lays the three tabs out one under the other, for the
-   * documentation page, where it is height that is plentiful.
-   */
-  layout?: 'tabs' | 'stacked';
   /**
    * Another scope answers for this record (ADR-0012 §10): a stand-in, drawn
    * here and defined there.
@@ -133,4 +126,10 @@ export interface ElementInspectorProps {
   unitSection?: UnitSlot;
   /** Who answers for the record beyond its own field (`EditorOwnership.answeredBy`). */
   answeredBy?: AnsweredBy;
+  /** The plans over the landscape, for those that touch it. Absent = no such row. */
+  plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
+  /** Open a view of this scope, such as its container view. Absent = the name reads and goes nowhere. */
+  onOpenView?(diagramId: string): void;
+  /** Go to another element's record, from a line in its list. Absent = the line only reads. */
+  onNavigate?(elementId: ElementId): void;
 }

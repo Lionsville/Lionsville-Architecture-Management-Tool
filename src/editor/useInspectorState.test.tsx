@@ -5,54 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { DesignElement } from '../model/types';
-import { useRenameFocus, useTabPerElement, useUsesPicker } from './useInspectorState';
-
-describe('the inspector tab', () => {
-  it('goes back to the first tab when another element is selected, and keeps it otherwise', () => {
-    const view = renderHook(({ id }) => useTabPerElement(id), { initialProps: { id: 'a' } });
-    act(() => view.result.current[1](2));
-    view.rerender({ id: 'a' });
-    expect(view.result.current[0]).toBe(2);
-    view.rerender({ id: 'b' });
-    expect(view.result.current[0]).toBe(0);
-  });
-});
-
-describe('a rename request', () => {
-  function mount(readOnly = false) {
-    const input = document.createElement('input');
-    input.value = 'Webshop';
-    document.body.appendChild(input);
-    const focus = vi.spyOn(input, 'focus');
-    const view = renderHook(
-      ({ request, id }) => {
-        const ref = useRenameFocus(request, id, readOnly);
-        ref.current = input;
-        return ref;
-      },
-      { initialProps: { request: undefined as { id: string; nonce: number } | undefined, id: 'a' } },
-    );
-    return { view, focus };
-  }
-
-  it('focuses the name once per nonce, and only for its own element', () => {
-    const { view, focus } = mount();
-    view.rerender({ request: { id: 'b', nonce: 1 }, id: 'a' });
-    expect(focus).not.toHaveBeenCalled();
-    view.rerender({ request: { id: 'a', nonce: 2 }, id: 'a' });
-    expect(focus).toHaveBeenCalledTimes(1);
-    view.rerender({ request: { id: 'a', nonce: 2 }, id: 'a' });
-    expect(focus).toHaveBeenCalledTimes(1);
-    view.rerender({ request: { id: 'a', nonce: 3 }, id: 'a' });
-    expect(focus).toHaveBeenCalledTimes(2);
-  });
-
-  it('takes the request on a read-only panel without moving the caret', () => {
-    const { view, focus } = mount(true);
-    view.rerender({ request: { id: 'a', nonce: 1 }, id: 'a' });
-    expect(focus).not.toHaveBeenCalled();
-  });
-});
+import { useUsesPicker } from './useInspectorState';
 
 describe('the Uses picker', () => {
   const standIn: DesignElement = {

@@ -29,7 +29,7 @@ export const SELECTION_ACTIONS = {
  * "Group into new domain group": a box around the landscape members of the
  * selection, membership assigned in the same commit, the new group selected.
  */
-function groupIntoNewDomainGroup(host: MenuActionHost, elementIds: ElementId[]): void {
+export function groupIntoNewDomainGroup(host: MenuActionHost, elementIds: ElementId[]): void {
   const { diagram, actions } = host;
   if (diagram.kind !== 'layer7') return;
   const placementsById = new Map(placedNodes(diagram).map((p) => [p.id, p]));

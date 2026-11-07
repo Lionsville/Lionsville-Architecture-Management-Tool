@@ -4,11 +4,13 @@
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { PANEL_LIMITS } from './panels';
 import { useStrings } from '../i18n/LanguageContext';
 import { CompactForms } from '../widgets/CompactForms';
+import { PanelDockProvider } from '../widgets/kit/Panel';
+import type { PanelDock } from '../widgets/kit/Panel';
 
 export const INSPECTOR_WIDTH = PANEL_LIMITS.inspector.default;
 /** Collapsed rail width (U7b, D5): wide enough for the expand chevron only. */
@@ -30,12 +32,11 @@ function Chevron({ direction }: { direction: 'left' | 'right' }) {
 }
 
 /**
- * Right-hand panel chrome; content is the element/connection inspector. It is a
- * `flexShrink: 0` sibling of the `flex: 1` canvas, so collapsing to the rail
- * (U7b, D5) lets the canvas reclaim the width with no manual resize. The chevron
- * toggle sits on the panel's inner-left edge so it stays reachable in both
- * states; collapse works regardless of `readOnly` (a bigger canvas helps viewing
- * too). State is owned by `EditorBody` — this component is presentational.
+ * The column a panel stands in: its width and the seam's, and folding it to a
+ * rail, both of which outlive the panel in it. The kit's Panel takes them from
+ * here (`PanelDock`) and draws its own identity and chevron. What a view hands in
+ * that is not a Panel yet gets the chrome around it from here, in the treatment
+ * every form in this column had.
  */
 export function InspectorPanel({
   children,
@@ -46,10 +47,39 @@ export function InspectorPanel({
   children: ReactNode;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
-  /** Expanded width in px (4B: dragged on the seam, clamped by `model/panels`). */
+  /** Expanded width in px (dragged on the seam, clamped by `model/panels`). */
   width?: number;
 }) {
   const { t } = useStrings();
+  const [panels, setPanels] = useState(0);
+  const dock = useMemo<PanelDock>(() => ({
+    width,
+    onCollapse: () => onToggleCollapsed?.(),
+    dataGuide: 'board.inspector',
+    claim: () => {
+      setPanels((held) => held + 1);
+      return () => setPanels((held) => held - 1);
+    },
+  }), [width, onToggleCollapsed]);
+  const fold = (
+    <Tooltip title={collapsed ? t('inspector.expand') : t('inspector.collapse')} placement="left">
+      <IconButton
+        size="small"
+        aria-label={collapsed ? t('inspector.expand') : t('inspector.collapse')}
+        aria-pressed={collapsed}
+        onClick={onToggleCollapsed}
+      >
+        <Chevron direction={collapsed ? 'left' : 'right'} />
+      </IconButton>
+    </Tooltip>
+  );
+  if (panels > 0 && !collapsed) {
+    return (
+      <PanelDockProvider value={dock}>
+        <Box sx={{ width, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>{children}</Box>
+      </PanelDockProvider>
+    );
+  }
   return (
     <Box
       component="aside"
@@ -66,57 +96,14 @@ export function InspectorPanel({
         overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          p: 0.5,
-          flexShrink: 0,
-        }}
-      >
-        <Tooltip
-          title={collapsed ? t('inspector.expand') : t('inspector.collapse')}
-          placement="left"
-        >
-          <IconButton
-            size="small"
-            aria-label={collapsed ? t('inspector.expand') : t('inspector.collapse')}
-            aria-pressed={collapsed}
-            onClick={onToggleCollapsed}
-          >
-            <Chevron direction={collapsed ? 'left' : 'right'} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-      {/* One treatment for every panel in this dock — the element's, the
-          line's, the group's, a page's own (`CompactForms`). */}
+      <Box sx={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start', p: 0.5, flexShrink: 0 }}>{fold}</Box>
       {!collapsed && (
         <Box sx={{ overflowY: 'auto', px: 1.5, pb: 1.5, flex: 1, minHeight: 0 }}>
-          <CompactForms>{children}</CompactForms>
+          <PanelDockProvider value={dock}>
+            <CompactForms>{children}</CompactForms>
+          </PanelDockProvider>
         </Box>
       )}
-    </Box>
-  );
-}
-
-/**
- * The empty state: what to do, and nothing else. The badge legend that used
- * to sit here — a hard-coded PLT and the four colours — vanished on the first
- * click and named no column; it is the toolbar's legend button now, drawn
- * from the board's own columns (`badgeLegend`).
- */
-export function InspectorEmptyState({ readOnly = false }: { readOnly?: boolean } = {}) {
-  const { t } = useStrings();
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-      <Typography variant="body2" color="text.secondary">
-        {t(readOnly ? 'inspector.emptyRead' : 'inspector.empty')}
-      </Typography>
-      {/* Said here so it can be read before the gesture is known, not only
-          once a second element is already selected. */}
-      <Typography variant="body2" color="text.secondary">
-        {t('inspector.emptyHint')}
-      </Typography>
     </Box>
   );
 }

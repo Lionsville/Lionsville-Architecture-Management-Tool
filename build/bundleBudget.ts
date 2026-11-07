@@ -67,6 +67,10 @@
  * **And for the technology landscape's words**, by 50 kB of the whole: its reader,
  * reports and empty state in three languages are first-download.
  *
+ * **And for the one panel and the record page**, 40 kB of the whole: their rows
+ * are shared, and the parts only a press opens went out of the first download
+ * into scripts of their own.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice
@@ -82,8 +86,8 @@ export type Budget = {
 }
 
 // The file ceiling 3.24 MB: the plan and roadmap words, a home's tree, rows and first-run pages, then Guidance's words and frame, are first-download; measured 3.221; then the observation chain's words, 10 kB.
-// 10.46 MB: the observation chain's 0.06 MB, the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_240_000, total: 10_460_000 }
+// 10.50 MB: the one panel and the record page's 0.04 MB, the observation chain's 0.06 MB, the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
+export const WEB_BUDGET: Budget = { file: 3_240_000, total: 10_500_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

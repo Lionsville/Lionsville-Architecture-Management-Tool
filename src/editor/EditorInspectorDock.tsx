@@ -7,6 +7,8 @@
  * page's own choice (`EditorPages.inspector`) — also while the one id
  * selected is one the model does not hold — or the empty state.
  */
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import type { DesignDiagram } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
 import { useStrings } from '../i18n/LanguageContext';
@@ -14,15 +16,28 @@ import { PanelResizer } from './PanelResizer';
 import { ConnectionInspector } from './ConnectionInspector';
 import { DomainGroupInspector } from './DomainGroupInspector';
 import { ElementInspector } from './ElementInspector';
-import { InspectorEmptyState, InspectorPanel } from './InspectorPanel';
+import { InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { moveFor } from './EditorDocumentationPage';
+import { ThisViewPanel } from './inspector/ThisViewPanel';
 import { selectionCount } from './useEditorState';
 import type { EditorParts } from './editorParts';
 
+/**
+ * With nothing selected there is no panel: the board has the width, and pressing
+ * the view's name opens *This view*. A folded panel stays a rail only while there
+ * is something to unfold it for.
+ */
 export function InspectorDock({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
   const { view } = parts;
   const { t } = useStrings();
+  // Asking about something else, or another view, is leaving this one.
+  const { state, dialogs: { setThisViewOpen } } = parts;
+  const selected = selectionCount(state.selection) > 0;
+  useEffect(() => { if (selected) setThisViewOpen(false); }, [selected, setThisViewOpen]);
+  useEffect(() => () => setThisViewOpen(false), [diagram.id, setThisViewOpen]);
+  const inspector = selectionInspector(parts, diagram);
+  if (inspector === undefined || inspector === null) return null;
   return (
     <>
       {!view.inspectorCollapsed && (
@@ -33,14 +48,19 @@ export function InspectorDock({ parts, diagram }: { parts: EditorParts; diagram:
         onToggleCollapsed={() => view.setInspectorCollapsed((on) => !on)}
         width={view.inspectorWidth}
       >
-        <SelectionInspector parts={parts} diagram={diagram} />
+        {inspector}
       </InspectorPanel>
     </>
   );
 }
 
+/** What the panel holds for what is selected, for a page that keeps the record itself. */
 export function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
-  const { state, readOnly, view, layout, deletes } = parts;
+  return selectionInspector(parts, diagram) ?? null;
+}
+
+function selectionInspector(parts: EditorParts, diagram: DesignDiagram): ReactNode {
+  const { state, readOnly, view, layout, deletes, dialogs } = parts;
   const writable = <T,>(handler: T) => (readOnly ? undefined : handler);
   if (state.selectedElement) return <SelectedElementInspector parts={parts} diagram={diagram} />;
   if (state.selectedConnection) {
@@ -63,6 +83,7 @@ export function SelectionInspector({ parts, diagram }: { parts: EditorParts; dia
       <DomainGroupInspector
         name={state.selectedDomainGroup}
         diagram={diagram}
+        elements={state.model.elements}
         readOnly={readOnly}
         actions={state.actions}
         onTidy={writable((name: string) => void layout.handleTidyGroup(name))}
@@ -80,15 +101,20 @@ export function SelectionInspector({ parts, diagram }: { parts: EditorParts; dia
     return (
       <MultiSelectionInspector
         selection={state.selection}
+        model={state.model}
         diagram={diagram}
         readOnly={readOnly}
         actions={state.actions}
         onRequestLogoUpload={writable(parts.props.logos?.onRequestUpload)}
+        onSelectionChange={state.setSelection}
+        onRequestDelete={writable(deletes.requestDeleteSelection)}
       />
     );
   }
   // A laid-out page's own choice, which is not an element — on the day the page is drawn on.
-  return parts.props.pages?.inspector?.(parts.board.shownDiagram ?? diagram) ?? <InspectorEmptyState readOnly={parts.readOnly} />;
+  const own = parts.props.pages?.inspector?.(parts.board.shownDiagram ?? diagram);
+  if (own !== undefined && own !== null) return own;
+  return dialogs.thisViewOpen ? <ThisViewPanel parts={parts} diagram={diagram} onClose={() => dialogs.setThisViewOpen(false)} /> : undefined;
 }
 
 function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
@@ -122,6 +148,8 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
       onCreateDrawing={readOnly ? undefined : props.diagrams.onCreateDrawingFor}
       onOpenDrawing={props.diagrams.onOpenDrawing}
+      plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
+      onOpenView={props.document.onActiveDiagramChange}
     />
   );
 }

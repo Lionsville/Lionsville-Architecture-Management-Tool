@@ -2,51 +2,44 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * An element's documentation as a page: read first, edit on request.
+ * An element's record: one page under one name, read first, with its text pressed
+ * open on request.
  *
- * The document IS the element's `description` — nothing new is stored, the
- * inspector's small field and this page edit one string. What the page adds is
- * room: a reading layout with a table of contents, a split view for writing,
- * the diagram's other elements down the left so a reader can move between
- * them, and the element's own fields down the right so a writer never has to
- * go back to the canvas to set an aspect or a vendor.
+ * The document IS the element's `description`: nothing new is stored, and the
+ * panel's small field and this page edit one string. What the page adds is room:
+ * every field the panel keeps out for being empty, and the other elements of the
+ * view down the left, filtered and with a long name on two lines.
  *
- * Writes go through the same `updateElement` the inspector uses, so autosave
- * and undo apply unchanged. The difference is WHEN: the inspector commits per
- * keystroke, which is right for a sentence and wrong for a page, because every
- * commit is an undo step. Here the text is a local draft, committed when it
- * has been quiet for a moment, when the mode switches back to read, and when
- * the page closes or moves to another element.
+ * Facts are rows, pressed where they stand, in any state: there is no Read and Edit
+ * for a person who came to set an owner. *Edit text* is about the prose and says so,
+ * and folds everything else away: a window with nothing but the source and the
+ * result, the fields a press away.
  *
- * A dialog rather than an overlay inside the editor on purpose: it portals out
- * of the editor's DOM, so the canvas's keyboard shortcuts — Delete, F2,
- * Cmd+D — cannot reach a reader who is only scrolling a page.
+ * Writes go through the same `updateElement` the panel uses, so autosave and undo
+ * apply unchanged. The difference is WHEN: the text is a local draft, committed
+ * when it has been quiet for a moment, when the writing ends, and when the page
+ * closes or moves to another element. Under one key, so a page's worth of writing
+ * is one undo step rather than one per pause.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import ListSubheader from '@mui/material/ListSubheader';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Tooltip from '@mui/material/Tooltip';
-import Link from '@mui/material/Link';
-import Typography from '@mui/material/Typography';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
-import { transitionLabel, transitionsForElement } from '../../model/transition';
-import type { Transition } from '../../model/transition';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
-import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose';
-import { SeamResizer } from '../../widgets/SeamResizer';
-import { WritingPane } from './MarkdownEditor';
+import { PageClose } from '../../widgets/PageClose';
+import { Button } from '../../widgets/kit/Button';
+import { TextInput } from '../../widgets/kit/Field';
+import { FocusedWindow } from '../../widgets/kit/FocusedWindow';
+import { List } from '../../widgets/kit/List';
+import type { ListGroup } from '../../widgets/kit/List';
+import { MoreMenu } from '../../widgets/kit/Menu';
+import type { MenuEntry } from '../../widgets/kit/Menu';
+import { PanelName } from '../../widgets/kit/Panel';
+import { RecordPage } from '../../widgets/kit/RecordPage';
+import type { RecordSection } from '../../widgets/kit/RecordPage';
+import { MarkdownEditor } from './MarkdownEditor';
 import type { DocumentImages } from './MarkdownEditor';
-import { DocumentSheet } from './DocumentSheet';
 import {
   documentTemplate,
   documentedElements,
@@ -56,37 +49,29 @@ import {
 } from '../documentation';
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../widgets/icons';
-import { drawingsAnchoredTo } from '../../model/drawing';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
-import { BackIcon } from '../../widgets/icons';
-import { FIELDS_COLUMN } from './fieldsColumn';
-import { CompactForms, SectionHeading } from '../../widgets/CompactForms';
+import './DocumentationPage.css';
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;
 
 export type DocumentationMode = 'read' | 'edit';
 
-/** What this page may do to an element, and the caret it puts a link into. */
+/** What this page may do to an element. */
 export interface DocumentationActions {
   /** `coalesce` makes a run of edits to one field a single undo step. */
   updateElement(id: ElementId, patch: Partial<DesignElement>, coalesce?: string): void;
-  setSelectionRange?(start: number, end: number): void;
 }
 
 export interface DocumentationPageProps {
   element: DesignElement;
   model: DesignModel;
-  /**
-   * The organisation this scope sits in, for the breadcrumb (ADR-0012 §1).
-   * Absent = this scope's own name, which is what a landscape with nothing
-   * above it is called.
-   */
-  scopeLabel?: string;
   /** The view the page was opened from, whose neighbours it lists; absent where the scope draws nothing (`documentedElements`). */
   diagram?: DesignDiagram;
   readOnly: boolean;
+  /** Another scope answers for the name, so it reads. */
+  nameLocked?: boolean;
   /**
    * The one thing this page changes. Not the editor's whole action set: a page
    * that can only write a description cannot accidentally move a node, and it
@@ -95,81 +80,84 @@ export interface DocumentationPageProps {
   actions: DocumentationActions;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
   /**
-   * The element's own fields, down the right-hand column.
-   *
-   * A slot, like `renderMarkdown` above it, and for the same reason: the
-   * inspector is the editor's, and a page that reads a description must not
-   * have to import the canvas to show the fields beside it.
-   *
-   * `readOnly` is the page's own, and it is NOT the Read/Edit toggle: that
-   * toggle is about the prose, and a person who came to this page to set an
-   * owner should not have to open the markdown source to do it. The fields
-   * were greyed out in Read once, and the record moved here from the panel
-   * precisely so it could be edited somewhere with room.
+   * The record's other sections, after the text: its properties and what it is
+   * connected to, in the order the host says. A slot, like `renderMarkdown`, since
+   * the rows are the editor's and a page that reads a description must not have to
+   * import the canvas to show them.
    */
-  renderInspector?(element: DesignElement, options: { readOnly: boolean }): ReactNode;
-  /** Move the page to another element (the left column, an element link, prev/next). */
+  recordSections?(element: DesignElement): readonly RecordSection[];
+  /** What is done to the whole record, the ⋯ at the end of the head. */
+  menu?: readonly MenuEntry[];
+  /** Move the page to another element (the list, an element link, previous and next). */
   onNavigate(elementId: ElementId): void;
   onClose(): void;
-  onRequestDelete(): void;
-  onRequestLogoUpload?(): void;
   /** The host keeps a history and can show this description's (ADR-0008). Absent: no button. */
   onOpenHistory?(): void;
   /**
    * Take a pasted or dropped picture into the project, answering with the file
-   * name to refer to — or `undefined` when the host refused it, in which case
+   * name to refer to, or `undefined` when the host refused it, in which case
    * nothing is written and the host has already said why (ADR-0009).
-   *
    * Absent = no way to add one, and neither affordance is offered.
    */
   onAddImage?(file: File): Promise<string | undefined>;
-  /**
-   * The pictures the project holds, so the writer can put one in again or
-   * take one out (ADR-0009). `usedBy` names every document that shows a
-   * file — the host knows the decisions and plans this page does not — and is
-   * what the delete confirmation says. Absent = no list.
-   */
+  /** The pictures the project holds (ADR-0009). Absent = no list. */
   images?: DocumentImages;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
-  /**
-   * The plans over the landscape (ADR-0010), so the page can list the ones
-   * that name this element above its fields. Absent = no such section.
-   */
-  plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
-  /**
-   * The drawings anchored to this element. Choosing one opens it. Absent: the
-   * names are still listed, and nothing opens.
-   */
-  onOpenDrawing?(diagramId: string): void;
-  /**
-   * How wide the fields column is, and where a drag on its seam goes.
-   *
-   * The host's rather than this page's, so the width outlives the page: a
-   * width that snapped back the next time the page opened would be a width
-   * nobody bothered to drag. Absent = the default, and no seam to drag.
-   */
-  fieldsWidth?: { value: number; onChange(next: number): void };
+}
+
+/** The view's other elements: filtered by what is typed, since a real list runs to two hundred. */
+function RecordRail({ groups, current, onOpen }: {
+  groups: ReturnType<typeof documentedElements>;
+  current: ElementId;
+  onOpen(id: ElementId): void;
+}) {
+  const { t } = useStrings();
+  const [find, setFind] = useState('');
+  const total = groups.reduce((sum, group) => sum + group.elements.length, 0);
+  const wanted = find.trim().toLocaleLowerCase();
+  const listed: ListGroup[] = groups.map((group) => ({
+    id: group.kind,
+    label: kindLabel(group.kind, t),
+    rows: group.elements
+      .filter((item) => wanted === '' || item.name.toLocaleLowerCase().includes(wanted))
+      .map((item) => ({
+        id: item.id, text: item.name,
+        ...(hasDocumentation(item.description) ? { mark: <DocGlyph /> } : {}),
+      })),
+  })).filter((group) => group.rows.length > 0);
+  return (
+    <nav className="doc-record__rail" data-testid="doc-nav" aria-label={t('doc.neighbours')}>
+      <div className="doc-record__find">
+        <TextInput type="search" aria-label={t('doc.filter', { count: total })} placeholder={t('doc.filter', { count: total })} value={find} onChange={(event) => setFind(event.target.value)} />
+      </div>
+      <List
+        label={t('doc.neighbours')} groups={listed} wrap density="compact" selectedId={current}
+        onOpen={(id) => { if (id !== current) onOpen(id); }}
+        empty={<p className="doc-record__none">{t('doc.noMatch')}</p>}
+      />
+    </nav>
+  );
 }
 
 export function DocumentationPage(props: DocumentationPageProps) {
-  const { element, model, scopeLabel, diagram, readOnly, actions, onNavigate, onClose } = props;
+  const { element, model, diagram, readOnly, actions, onNavigate, onClose } = props;
   const { t } = useStrings();
   const [mode, setMode] = useState<DocumentationMode>('read');
   const [draft, setDraft] = useState(element.description ?? '');
+  const [fieldsOut, setFieldsOut] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  // What Cancel goes back to, since the text reached the model while it was written.
+  const opened = useRef(element.description ?? '');
 
   // --- the draft and its commits ---------------------------------------------
 
   const latest = useRef({ draft, stored: element.description ?? '', id: element.id, actions });
 
-  // One page for every element, not a page per element: the dialog stays up
-  // from one to the next. Remounted per element, the dialog faded in again
-  // each time and the board showed through the fade. What a new element
-  // starts afresh — reading, its own stored text, the preview shown — is
-  // reset here instead, before anything of the new element is rendered.
-  // `latest` still holds the element being left, whose unsaved draft is
-  // kept aside for the effect below: a write does not belong in a render.
+  // One page for every element, not a page per element: the place stays up from
+  // one to the next. What a new element starts afresh is reset here, before
+  // anything of it is rendered. `latest` still holds the element being left, whose
+  // unsaved draft is kept aside for the effect below: a write does not belong in a render.
   const [shownId, setShownId] = useState(element.id);
   const leaving = useRef<typeof latest.current | undefined>(undefined);
   if (shownId !== element.id) {
@@ -184,9 +172,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const commit = useCallback(() => {
     const { draft: text, stored, id, actions: a } = latest.current;
     if (text === stored) return;
-    // Under the field's own key, so a page's worth of writing is one ⌘Z rather
-    // than one per pause — the pauses are how it reaches the model, not how the
-    // writer thinks about what they wrote.
     a.updateElement(id, { description: text || undefined }, fieldEdit(id, 'description'));
   }, []);
 
@@ -202,14 +187,12 @@ export function DocumentationPage(props: DocumentationPageProps) {
 
   // So does leaving an element for another, however the host got there: the
   // page's own ways commit before they ask, a search hit or the agent may not.
-  // And the new element's page starts at its top, as a page just opened does.
   useEffect(() => {
     const left = leaving.current;
     leaving.current = undefined;
     if (left && left.draft !== left.stored) {
       left.actions.updateElement(left.id, { description: left.draft || undefined }, fieldEdit(left.id, 'description'));
     }
-    contentRef.current?.parentElement?.scrollTo?.({ top: 0 });
   }, [element.id]);
 
   // An undo while reading changes the stored text under us; follow it. While
@@ -218,19 +201,25 @@ export function DocumentationPage(props: DocumentationPageProps) {
     if (mode === 'read') setDraft(element.description ?? '');
   }, [element.description, mode]);
 
-  const switchMode = (next: DocumentationMode | null) => {
-    if (!next || next === mode) return;
-    if (next === 'read') commit();
-    setMode(next);
+  const startWriting = (from?: string) => {
+    opened.current = element.description ?? '';
+    if (from !== undefined) setDraft(from);
+    setMode('edit');
   };
-
+  const doneWriting = () => {
+    commit();
+    setMode('read');
+  };
+  const cancelWriting = () => {
+    setDraft(opened.current);
+    latest.current = { ...latest.current, draft: opened.current };
+    commit();
+    setMode('read');
+  };
   const close = () => {
     commit();
     onClose();
   };
-
-  const exit = useBackToReading(mode === 'edit', () => switchMode('read'), close, t('doc.close'));
-
   const navigate = useCallback(
     (id: ElementId) => {
       commit();
@@ -244,294 +233,128 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const text = mode === 'edit' ? draft : (element.description ?? '');
   const source = useMemo(() => linkElementRefs(text, model.elements), [text, model.elements]);
   const headings = useMemo(() => outline(text).filter((h) => h.level <= 3), [text]);
-  const plansHere = useMemo(
-    () => (props.plans ? transitionsForElement(props.plans.list, element.id) : []),
-    [props.plans, element.id],
-  );
-  const drawingsHere = useMemo(
-    () => drawingsAnchoredTo(model.diagrams, element.id),
-    [model.diagrams, element.id],
-  );
-  const openDrawing = useCallback((id: string) => {
-    commit();
-    props.onOpenDrawing?.(id);
-  }, [commit, props.onOpenDrawing]);
   const groups = useMemo(() => documentedElements(model, diagram), [model, diagram]);
   const order = useMemo(() => groups.flatMap((g) => g.elements.map((e) => e.id)), [groups]);
   const position = order.indexOf(element.id);
   const previous = position > 0 ? order[position - 1] : undefined;
   const next = position >= 0 && position < order.length - 1 ? order[position + 1] : undefined;
 
-  const rendered = source.trim()
+  const rendered = source.trim() !== ''
     ? props.renderMarkdown
       ? props.renderMarkdown(source, { onElementLink: navigate })
-      : <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{source}</Box>
-    : (
-      <Box sx={{ color: 'text.secondary' }}>
-        <Typography>{t('common.empty')}</Typography>
-        {!readOnly && <Typography variant="body2">{t('doc.emptyHint')}</Typography>}
-      </Box>
-    );
+      : <pre className="doc-record__plain">{source}</pre>
+    : null;
 
   // The renderer is the host's, so headings carry no ids we could link to. A
   // heading is found by its text instead, which works for any renderer that
   // produces a heading at all.
   const scrollToHeading = (headingText: string) => {
-    const root = contentRef.current;
-    if (!root) return;
-    const candidates = root.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]');
+    const candidates = contentRef.current?.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]') ?? [];
     const target = Array.from(candidates).find((el) => el.textContent?.trim() === headingText);
     target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
-  const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
-  const bar = barChromeFor(chrome)
+  const bar = barChromeFor(chrome);
+  const template = { label: t('doc.insertTemplate'), text: documentTemplate(t) };
+  const kind = kindLabel(element.kind, t);
+  const rest = props.recordSections?.(element) ?? [];
 
-  return (
-    <PageDialog
-      open
-      topInset={chrome.topInset}
-      onClose={(_event, reason) => {
-        // Escape steps back before it steps out: out of Edit first, then closed.
-        if (reason === 'escapeKeyDown' && mode === 'edit') switchMode('read');
-        else close();
-      }}
-      aria-label={t('doc.title')}
-    >
-      {/* ---- top bar ---- */}
-      <Box
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5,
-          alignItems: 'center',
-          gap: 1,
-          px: 1.5,
-          // This bar covers the whole window, so it inherits the window's two
-          // jobs: start after the controls painted over its corner, and move
-          // the window when dragged — except where something is clickable.
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          minHeight: 48,
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-          flexShrink: 0,
-        }}
-      >
-        <PageBack onBack={exit.leave} label={exit.said}><BackIcon /></PageBack>
-        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {scopeLabel ?? model.name} &nbsp;/&nbsp; <ViewCrumb diagram={diagram} />
-          <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{element.name}</Box>
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Tooltip title={t('doc.previous')}>
-          <span>
-            <IconButton size="small" aria-label={t('doc.previous')} disabled={!previous} onClick={() => previous && navigate(previous)}>
-              <BackIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={t('doc.next')}>
-          <span>
-            <IconButton size="small" aria-label={t('doc.next')} disabled={!next} onClick={() => next && navigate(next)} sx={{ transform: 'scaleX(-1)' }}>
-              <BackIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        {props.onOpenHistory && (
-          <Button size="small" onClick={props.onOpenHistory} sx={{ ml: 1 }}>{t('common.history')}</Button>
-        )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: DocumentationMode | null) => switchMode(value)} sx={{ ml: 1 }}>
-          <ToggleButton value="read">{t('doc.read')}</ToggleButton>
-          {!readOnly && <ToggleButton value="edit">{t('doc.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
-        <PageClose onClose={exit.leave} label={exit.closeSaid} />
-      </Box>
-
-      {/* ---- three columns ---- */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: `220px minmax(0, 1fr) ${props.fieldsWidth ? 'auto' : ''} ${props.fieldsWidth?.value ?? FIELDS_COLUMN.default}px`, flex: 1, minHeight: 0 }}>
-        {/* left: the diagram's elements */}
-        <Box component="nav" data-testid="doc-nav" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
-          <List component="div" dense disablePadding>
-            {groups.map((group) => (
-              <Box key={group.kind}>
-                <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
-                  {kindLabel(group.kind, t)}
-                </ListSubheader>
-                {group.elements.map((item) => (
-                  <ListItemButton
-                    key={item.id}
-                    selected={item.id === element.id}
-                    onClick={() => item.id !== element.id && navigate(item.id)}
-                    sx={{ py: 0.5 }}
-                  >
-                    <ListItemText primary={item.name} slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } } }} />
-                    {hasDocumentation(item.description) && (
-                      <Box sx={{ color: 'text.secondary', display: 'flex', ml: 1 }} aria-hidden>
-                        <DocGlyph />
-                      </Box>
-                    )}
-                  </ListItemButton>
-                ))}
-              </Box>
-            ))}
-          </List>
-        </Box>
-
-        {/* centre: the document, or the source beside it */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', minHeight: 0 }}>
-          <WritingPane
-            writing={mode === 'edit'}
-            value={draft}
-            onChange={setDraft}
-            onBlur={commit}
-            label={t('doc.source')}
-            onAddImage={readOnly ? undefined : props.onAddImage}
-            images={props.images}
-            template={{ label: t('doc.insertTemplate'), text: documentTemplate(t) }}
-          >
-            <DocumentSheet ref={contentRef} testId="doc-content" dense={mode === 'edit'}>
-              {/* A block element, not the variant's own inline span: the
-                  sheet's centring rule (DocumentSheet) sizes a child by its
-                  own width, and an inline overline reports the width of its
-                  text rather than the sheet's measure, so it drifted off the
-                  title's left edge. */}
-              <Typography variant="overline" component="div" color="text.secondary">
-                {kindLabel(element.kind, t)}
-              </Typography>
-              <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                {element.name}
-              </Typography>
-              {subtitle && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {subtitle}
-                </Typography>
+  const textSection: RecordSection = {
+    id: 'text',
+    heading: t('doc.text'),
+    children: (
+      <div ref={contentRef} data-testid="doc-content" className="doc-record__text">
+        {rendered === null
+          ? (
+            <div className="doc-record__blank">
+              <p>{t('doc.noPage')}</p>
+              {!readOnly && (
+                <div className="doc-record__acts">
+                  <Button size="small" onClick={() => startWriting()}>{t('doc.writeText')}</Button>
+                  <Button size="small" variant="quiet" onClick={() => startWriting(template.text)}>{template.label}</Button>
+                </div>
+              )}
+            </div>
+          )
+          : (
+            <>
+              {!readOnly && (
+                <div className="doc-record__acts">
+                  <Button size="small" onClick={() => startWriting()}>{t('doc.editText')}</Button>
+                </div>
               )}
               {headings.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, py: 1.5, mt: 1.5, mb: 2, borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                    {t('doc.contents')}
-                  </Typography>
+                <nav className="doc-record__contents" aria-label={t('doc.contents')}>
+                  <span>{t('doc.contents')}</span>
                   {headings.map((h, index) => (
-                    <Typography
-                      key={`${h.id}-${index}`}
-                      component="button"
-                      type="button"
-                      variant="caption"
-                      onClick={() => scrollToHeading(h.text)}
-                      sx={{
-                        border: 0,
-                        p: 0,
-                        bgcolor: 'transparent',
-                        color: 'text.secondary',
-                        cursor: 'pointer',
-                        pl: h.level === 3 ? 1.5 : 0,
-                        '&:hover': { color: 'primary.main' },
-                      }}
-                    >
-                      {h.text}
-                    </Typography>
+                    <button key={`${h.id}-${index}`} type="button" data-sub={h.level === 3 || undefined} onClick={() => scrollToHeading(h.text)}>{h.text}</button>
                   ))}
-                </Box>
+                </nav>
               )}
-              <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }} data-document>{rendered}</Box>
-            </DocumentSheet>
-          </WritingPane>
-        </Box>
+              <div data-document>{rendered}</div>
+            </>
+          )}
+      </div>
+    ),
+  };
 
-        {/* the seam, then right: the plans that name it and the element's own fields */}
-        {props.fieldsWidth && (
-          <SeamResizer
-            orientation="vertical"
-            region="after"
-            value={props.fieldsWidth.value}
-            min={FIELDS_COLUMN.min}
-            max={FIELDS_COLUMN.max}
-            defaultValue={FIELDS_COLUMN.default}
-            onChange={props.fieldsWidth.onChange}
-            label={t('doc.resizeFields')}
-          />
+  return (
+    <PageDialog open topInset={chrome.topInset} onClose={close} aria-label={t('doc.title')}>
+      <div className="doc-record">
+        <RecordRail groups={groups} current={element.id} onOpen={navigate} />
+        <RecordPage
+          title={(
+            <PanelName
+              unheaded
+              name={element.name}
+              {...(readOnly || props.nameLocked ? {} : { onRename: (name: string) => actions.updateElement(element.id, { name }) })}
+            />
+          )}
+          status={diagram ? t('doc.statusOn', { kind, view: diagram.name }) : kind}
+          actions={(
+            <>
+              <Button size="small" variant="quiet" aria-label={t('doc.previous')} reason={previous ? undefined : t('doc.previous')} onClick={() => previous && navigate(previous)}>‹ {t('doc.previousShort')}</Button>
+              <Button size="small" variant="quiet" aria-label={t('doc.next')} reason={next ? undefined : t('doc.next')} onClick={() => next && navigate(next)}>{t('doc.nextShort')} ›</Button>
+              {props.onOpenHistory && <Button size="small" variant="quiet" onClick={props.onOpenHistory}>{t('common.history')}</Button>}
+              {props.menu && props.menu.length > 0 && <MoreMenu items={props.menu} size="small" />}
+              <PageClose onClose={close} label={t('doc.close')} />
+            </>
+          )}
+          sections={[textSection, ...rest]}
+          outlineFrom={4}
+          dataGuide="record.page"
+        />
+      </div>
+      {mode === 'edit' && (
+      <FocusedWindow
+        open
+        title={t('doc.editing', { name: element.name })}
+        windowChrome={bar}
+        changed={draft !== opened.current}
+        saveLabel={t('doc.done')}
+        onSave={doneWriting}
+        onCancel={cancelWriting}
+        middle={rest.length > 0 && (
+          <Button size="small" variant="quiet" aria-pressed={fieldsOut} onClick={() => setFieldsOut((was) => !was)}>{t('doc.fields')}</Button>
         )}
-        <FieldsColumn bordered={!props.fieldsWidth}>
-          <DrawingsHere drawings={drawingsHere} onOpen={props.onOpenDrawing ? openDrawing : undefined} />
-          {props.plans && <PlansHere plans={plansHere} onOpen={props.plans.onOpen} />}
-          {props.renderInspector?.(element, { readOnly })}
-        </FieldsColumn>
-      </Box>
-
+        aside={fieldsOut ? rest.filter((section) => section.id !== 'comments').map((section) => <div key={section.id}><h2 className="doc-record__asideHead">{section.heading}</h2>{section.children}</div>) : undefined}
+      >
+        <MarkdownEditor
+          variant="pane"
+          value={draft}
+          onChange={setDraft}
+          onBlur={commit}
+          label={t('doc.source')}
+          autoFocus
+          attachable
+          {...(readOnly || !props.onAddImage ? {} : { onAddImage: props.onAddImage })}
+          {...(props.images ? { images: props.images } : {})}
+          template={template}
+          renderPreview={() => (rendered ?? <p className="doc-record__none">{t('common.empty')}</p>)}
+        />
+      </FocusedWindow>
+      )}
     </PageDialog>
   );
-}
-
-/**
- * The column down the right: the same treatment as the panel beside a board
- * (`CompactForms`) — the page's column is that panel with room, not another
- * form — at the panel's own gutter.
- */
-function FieldsColumn({ bordered, children }: { bordered: boolean; children: ReactNode }) {
-  return (
-    <Box sx={{ borderLeft: bordered ? 1 : 0, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', px: 1.5, py: 1.5, minWidth: 0 }}>
-      <CompactForms>{children}</CompactForms>
-    </Box>
-  );
-}
-
-/**
- * The drawings anchored to this element, each a way to open it — a button,
- * so the keyboard reaches it as the pointer does. None: the section is absent.
- */
-function DrawingsHere({ drawings, onOpen }: {
-  drawings: readonly { id: string; name: string }[];
-  onOpen: ((id: string) => void) | undefined;
-}) {
-  const { t } = useStrings();
-  if (drawings.length === 0) return null;
-  return (
-    <Box data-testid="doc-drawings" sx={{ mb: 1.5 }}>
-      <SectionHeading sx={{ mb: 0.25 }}>{t('doc.drawings')}</SectionHeading>
-      {drawings.map((drawing) => onOpen ? (
-        <Link
-          key={drawing.id}
-          component="button" type="button" color="inherit" underline="hover"
-          sx={{ display: 'block', fontSize: 13, textAlign: 'left' }}
-          onClick={() => onOpen(drawing.id)}
-        >
-          {drawing.name}
-        </Link>
-      ) : (
-        <Typography key={drawing.id} sx={{ fontSize: 13 }}>{drawing.name}</Typography>
-      ))}
-    </Box>
-  );
-}
-
-/**
- * The plans that name this element, each a link to its page — a button, so
- * the keyboard reaches it as the pointer does.
- */
-function PlansHere({ plans, onOpen }: { plans: readonly Transition[]; onOpen: (id: string) => void }) {
-  const { t } = useStrings();
-  if (plans.length === 0) return null;
-  return (
-    <Box data-testid="doc-plans" sx={{ mb: 1.5 }}>
-      <SectionHeading sx={{ mb: 0.25 }}>{t('doc.plans')}</SectionHeading>
-      {plans.map((plan) => (
-        <Link
-          key={plan.id}
-          component="button" type="button" color="inherit" underline="hover"
-          sx={{ display: 'block', fontSize: 13, textAlign: 'left' }}
-          onClick={() => onOpen(plan.id)}
-        >
-          {transitionLabel(plan)} {plan.title}
-        </Link>
-      ))}
-    </Box>
-  );
-}
-
-/** The view's step of the breadcrumb, where the page was opened from one: a scope that draws nothing has none. */
-function ViewCrumb({ diagram }: { diagram: DesignDiagram | undefined }) {
-  if (!diagram) return null;
-  return <>{diagram.name} &nbsp;/&nbsp;</>;
 }
