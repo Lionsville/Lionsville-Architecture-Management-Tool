@@ -96,12 +96,24 @@ function open(over: {
   return { ...result, actions: acts }
 }
 
+/** The journey and the rail are one press away each: a first look is the areas. */
+function bands() {
+  fireEvent.click(screen.getByRole('button', { name: 'Journey' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
+}
+
+/** A capability's panel: its name is the panel's heading. */
+const panelName = () => within(screen.getByTestId('sheet-inspector')).getByRole('heading', { level: 2 }).textContent ?? ''
+
 describe('the sheet, as axe reads it', () => {
   it('finds nothing on the page, nor with the finder open on a word nothing matches', async () => {
     open()
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(screen.getByRole('button', { name: 'Find on the page' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Find' }))
     fireEvent.change(screen.getByLabelText('Find on the page', { selector: 'input' }), { target: { value: 'zzz' } })
+    expect(await axeFindings()).toEqual([])
+    bands()
+    fireEvent.click(screen.getByTestId('sheet-capability-picking'))
     expect(await axeFindings()).toEqual([])
   })
 
@@ -112,157 +124,212 @@ describe('the sheet, as axe reads it', () => {
 })
 
 describe('the stakeholder rail', () => {
-  it('names the parties, and marks the ones from outside', () => {
+  it('opens from the bar, names the parties, and says outside on the ones who are', () => {
     open()
+    expect(screen.queryByTestId('sheet-rail')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
     const rail = screen.getByTestId('sheet-rail')
     expect(within(rail).getByText('Warehouse team')).toBeTruthy()
-    expect(within(rail).getByText('Marketplace partner')).toBeTruthy()
-    expect(within(rail).getAllByText('Outside')).toHaveLength(1)
+    expect(within(rail).getByText(/Marketplace partner · outside/)).toBeTruthy()
   })
 
-  it('is not drawn at all when the sheet says the rail is off', () => {
+  it('is not offered when the sheet says the rail is off', () => {
     open({ sheet: { ...SHEET, showActors: false } })
-    expect(screen.queryByTestId('sheet-rail')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Stakeholders' })).toBeNull()
   })
 
-  it('goes with the details behind one eye, as the page’s own state', () => {
-    // Was a change to the sheet, and only the rail: "give me the whole width"
-    // is one wish, and it says nothing about what the sheet is of.
-    const { actions: acts } = open()
-    expect(screen.getByTestId('sheet-inspector')).toBeTruthy()
-    fireEvent.click(screen.getByLabelText('Hide the stakeholders and the details'))
-    expect(screen.queryByTestId('sheet-rail')).toBeNull()
-    expect(screen.queryByTestId('sheet-inspector')).toBeNull()
-    expect(acts.updateSheet).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByLabelText('Show the stakeholders and the details'))
+  it('is the page’s own state, and offered under readOnly, because it changes nothing', () => {
+    const { actions: acts } = open({ readOnly: true })
+    bands()
     expect(screen.getByTestId('sheet-rail')).toBeTruthy()
-    expect(screen.getByTestId('sheet-inspector')).toBeTruthy()
+    expect(acts.updateSheet).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
+    expect(screen.queryByTestId('sheet-rail')).toBeNull()
   })
 
-  it('still offers the eye under readOnly, because it changes nothing', () => {
-    open({ readOnly: true })
-    expect(screen.getByLabelText('Hide the stakeholders and the details')).toBeTruthy()
-    expect(screen.queryByLabelText('What this sheet draws')).toBeNull()
-  })
-
-  it('has a seam to drag, and so do the details', () => {
+  it('has a seam to drag, and so does the panel', () => {
     open()
+    bands()
+    fireEvent.click(screen.getByTestId('sheet-capability-picking'))
     const rail = screen.getByRole('separator', { name: 'Resize the stakeholder rail' })
     fireEvent.keyDown(rail, { key: 'ArrowRight' })
-    expect(rail.getAttribute('aria-valuenow')).toBe('186')
+    expect(rail.getAttribute('aria-valuenow')).toBe('208')
     const details = screen.getByRole('separator', { name: 'Resize the details' })
     fireEvent.keyDown(details, { key: 'ArrowLeft' })
-    expect(details.getAttribute('aria-valuenow')).toBe('308')
+    expect(details.getAttribute('aria-valuenow')).toBe('328')
   })
 })
 
 describe('finding something on the page', () => {
-  const glass = () => screen.getByRole('button', { name: 'Find on the page' })
+  const start = () => fireEvent.click(screen.getByRole('button', { name: 'Find' }))
   const field = () => screen.getByLabelText('Find on the page', { selector: 'input' })
 
-  it('opens under the glass, lists what the page draws, and narrows as you type', () => {
+  it('stays open, says how many, lights the hits and quiets the rest', () => {
     open()
-    fireEvent.click(glass())
-    const finder = screen.getByTestId('sheet-finder')
-    // The page's own order: the rail before the journey before the areas.
-    const before = within(finder).getAllByRole('option').map((row) => row.getAttribute('data-testid'))
-    expect(before.indexOf('sheet-find-warehouse-team')).toBeLessThan(before.indexOf('sheet-find-order'))
-    fireEvent.change(field(), { target: { value: 'rate' } })
-    expect(within(finder).getAllByRole('option').map((row) => row.getAttribute('data-testid')))
-      .toEqual(['sheet-find-standard-rate', 'sheet-find-negotiate'])
-    expect(within(finder).getAllByText('step · Quote')).toHaveLength(2)
+    start()
+    fireEvent.change(field(), { target: { value: 'pick' } })
+    expect(within(screen.getByTestId('sheet-finder')).getByRole('status').textContent).toBe('3 found')
+    expect(screen.getByTestId('sheet-canvas').hasAttribute('data-finding')).toBe(true)
+    expect(screen.getByTestId('sheet-capability-picking').closest('.sheet-row')?.hasAttribute('data-hit')).toBe(true)
+    expect(screen.getByTestId('sheet-capability-packing').closest('.sheet-row')?.hasAttribute('data-hit')).toBe(false)
     fireEvent.change(field(), { target: { value: 'nothing here' } })
-    expect(within(finder).getByText('Nothing on this page matches.')).toBeTruthy()
+    expect(within(screen.getByTestId('sheet-finder')).getByText('Nothing on this page matches.')).toBeTruthy()
   })
 
-  it('takes you to what you pick: selected, closed, and ringed', () => {
+  it('walks the hits with the arrows and Enter, selecting and ringing each, and opens the band one sits in', () => {
     open()
-    fireEvent.click(glass())
-    fireEvent.change(field(), { target: { value: 'late pay' } })
-    fireEvent.click(screen.getByTestId('sheet-find-dunning'))
-    // Closed — said by the glass, because the popover's leave transition keeps
-    // the list in the tree for a moment after.
-    expect(glass().getAttribute('aria-expanded')).toBe('false')
-    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Chase a late payment')).toBeTruthy()
-    // The ring is one rule on the page keyed by the id; the card carries the
-    // id it is keyed on. jsdom does not cascade an outline, so the rule is
-    // read from the sheet Emotion wrote rather than from the card.
-    expect(screen.getByTestId('sheet-capability-dunning').getAttribute('data-element-id')).toBe('dunning')
-    const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
-    expect(rules).toContain('[data-element-id="dunning"]')
-  })
-
-  it('takes Enter as the first hit, so a name you know is three letters and a key', () => {
-    open()
-    fireEvent.click(glass())
-    fireEvent.change(field(), { target: { value: 'nego' } })
+    start()
+    fireEvent.change(field(), { target: { value: 'rate' } })
     fireEvent.keyDown(field(), { key: 'Enter' })
-    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Negotiate the rate')).toBeTruthy()
+    expect(panelName()).toBe('Apply the standard rate')
+    expect(screen.getByTestId('sheet-step-standard-rate')).toBeTruthy()
+    fireEvent.keyDown(field(), { key: 'ArrowDown' })
+    expect(panelName()).toBe('Negotiate the rate')
+    expect(within(screen.getByTestId('sheet-finder')).getByRole('status').textContent).toBe('2 of 2')
+    const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
+    expect(rules).toContain('[data-element-id="negotiate"]')
+    fireEvent.keyDown(field(), { key: 'Escape' })
+    expect(screen.queryByTestId('sheet-finder')).toBeNull()
   })
 
   it('is offered under readOnly, because looking changes nothing', () => {
     open({ readOnly: true })
-    expect(glass()).toBeTruthy()
+    start()
+    expect(field()).toBeTruthy()
   })
 })
 
 describe('the grid', () => {
-  it('is laid out on an A2 by default — wider than a window, and as many columns as fit it', () => {
-    open()
-    // 2245 less the body's padding: seven columns of 300 with six gaps of 12.
-    expect(screen.getByTestId('sheet-canvas').getAttribute('data-width')).toBe('2213')
-    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('7')
+  it('reflows in the window: paper says nothing about the screen', () => {
+    open({ sheet: { ...SHEET, paper: 'A0', columns: 9 } })
+    expect(screen.getByTestId('sheet-canvas').hasAttribute('data-width')).toBe(false)
+    expect(screen.getByTestId('sheet-areas').className).toBe('sheet-areas')
   })
 
-  it('fits the window when the sheet says so, and takes the columns the sheet fixes', () => {
-    open({ sheet: { ...SHEET, paper: 'fit' } })
-    expect(screen.getByTestId('sheet-canvas').getAttribute('data-width')).toBe('fit')
-    // Nothing measured in a test: one column.
-    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('1')
-    cleanup()
-    open({ sheet: { ...SHEET, paper: 'fit', columns: 3 } })
-    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('3')
-  })
-
-  it('gives an area the columns the sheet says, clamped to the grid', () => {
-    open({ sheet: { ...SHEET, paper: 'fit', columns: 3, areaSpans: { fulfilment: 2, billing: 9 } } })
-    expect(screen.getByTestId('sheet-area-fulfilment').getAttribute('data-span')).toBe('2')
-    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('3')
-  })
-
-  it('widens an area nobody fixed until the page fits under the paper, and keeps one a person set', () => {
-    // Forty capabilities in one box: two thousand pixels down one column of
-    // an A2, whose short side is 1587. Nothing measured in a test, so the
-    // page assumes nothing above the areas.
-    const many = Array.from({ length: 40 }, (_, index) => capability(`cap-${index}`, `Capability ${index}`, 'invoicing'))
-    const held = model()
-    open({ model: { ...held, elements: [...held.elements, ...many] } })
-    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('2')
-    expect(screen.getByTestId('sheet-area-fulfilment').getAttribute('data-span')).toBe('1')
-    cleanup()
-    open({ model: { ...held, elements: [...held.elements, ...many] }, sheet: { ...SHEET, areaSpans: { billing: 1 } } })
-    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('1')
-    cleanup()
-    // The window has no short side: the sheet's own spans, and no more.
-    open({ model: { ...held, elements: [...held.elements, ...many] }, sheet: { ...SHEET, paper: 'fit', columns: 3 } })
-    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('1')
-  })
-
-  it('widens and narrows an area as a change to the sheet', () => {
-    const { actions: acts } = open({ sheet: { ...SHEET, columns: 3, areaSpans: { billing: 2 } } })
-    fireEvent.click(screen.getByLabelText('Make Fulfilment wider'))
+  it('moves an area’s width in print to its panel, as a change to the sheet', () => {
+    const { actions: acts } = open({ sheet: { ...SHEET, areaSpans: { billing: 2 } } })
+    fireEvent.click(within(screen.getByTestId('sheet-area-fulfilment')).getByRole('button', { name: 'Fulfilment' }))
+    fireEvent.change(screen.getByLabelText('Width in print, in columns'), { target: { value: '2' } })
     expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 2, fulfilment: 2 } })
-    fireEvent.click(screen.getByLabelText('Make Billing narrower'))
-    // Back to one column is written, so the fit on paper leaves it there.
-    expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 1 } })
   })
 
-  it('offers no width on a one-column grid, nor under readOnly', () => {
-    open({ sheet: { ...SHEET, paper: 'fit' } })
-    expect(screen.queryByLabelText('Make Fulfilment wider')).toBeNull()
+  it('offers no width under readOnly', () => {
+    open({ readOnly: true })
+    fireEvent.click(within(screen.getByTestId('sheet-area-fulfilment')).getByRole('button', { name: 'Fulfilment' }))
+    expect(screen.queryByLabelText('Width in print, in columns')).toBeNull()
+  })
+})
+
+describe('the rows', () => {
+  it('folds a parent with its caret, keeping its count, and the arrows do the same', () => {
+    open()
+    const group = screen.getByTestId('sheet-grouping-warehousing')
+    expect(group.closest('.sheet-row')?.textContent).toMatch(/\d+\/\d+/)
+    fireEvent.click(screen.getByRole('button', { name: 'Fold Warehousing' }))
+    expect(screen.queryByTestId('sheet-capability-picking')).toBeNull()
+    fireEvent.keyDown(group, { key: 'ArrowRight' })
+    expect(screen.getByTestId('sheet-capability-picking')).toBeTruthy()
+    fireEvent.keyDown(group, { key: 'ArrowLeft' })
+    expect(screen.queryByTestId('sheet-capability-picking')).toBeNull()
+  })
+
+  it('walks the rows with the arrows', () => {
+    open()
+    const group = screen.getByTestId('sheet-grouping-warehousing')
+    group.focus()
+    fireEvent.keyDown(group, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByTestId('sheet-capability-picking'))
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(group)
+  })
+
+  it('rings the row that is selected, and keeps a pick from reflowing anything', () => {
+    open()
+    fireEvent.click(screen.getByTestId('sheet-capability-picking'))
+    expect(screen.getByTestId('sheet-capability-picking').closest('.sheet-row')?.hasAttribute('data-selected')).toBe(true)
+    expect(screen.getByTestId('sheet-capability-picking').getAttribute('aria-current')).toBe('true')
+  })
+})
+
+describe('the readings', () => {
+  it('opens on Names, offers Overview, and a press on a tile comes back to that area', () => {
+    open()
+    fireEvent.click(screen.getByRole('radio', { name: 'Overview' }))
+    expect(screen.queryByTestId('sheet-areas')).toBeNull()
+    const tile = screen.getByTestId('sheet-tile-fulfilment')
+    expect(tile.textContent).toContain('Fulfilment')
+    fireEvent.click(tile)
+    expect(screen.getByTestId('sheet-areas')).toBeTruthy()
+  })
+
+  it('offers Coverage only where there is a way there', () => {
+    open()
+    expect(screen.queryByRole('radio', { name: 'Coverage' })).toBeNull()
+  })
+})
+
+describe('one Colour lens', () => {
+  const colour = () => screen.getByRole('button', { name: /^Colour/ })
+  const pick = (name: string) => { fireEvent.click(colour()); fireEvent.click(screen.getByRole('menuitemcheckbox', { name })) }
+
+  it('opens on Covered by, with the key counting what is drawn, and writes nothing', () => {
+    const { actions: acts } = open()
+    const key = screen.getByRole('group', { name: 'Key' })
+    expect(within(key).getByRole('button', { name: /Nothing yet/ })).toBeTruthy()
+    pick('Lifecycle')
+    expect(acts.updateSheet).not.toHaveBeenCalled()
+    expect(within(screen.getByRole('group', { name: 'Key' })).getByRole('button', { name: /Keep/ })).toBeTruthy()
+  })
+
+  it('keeps a lens with the view only when asked, and offers that to nobody who only reads', () => {
+    const { actions: acts } = open()
+    pick('Lifecycle')
+    fireEvent.click(within(screen.getByRole('group', { name: 'Key' })).getByRole('button', { name: /Keep/ }))
+    expect(acts.updateSheet).toHaveBeenCalledWith({ colourBy: 'lifecycle' })
     cleanup()
-    open({ readOnly: true, sheet: { ...SHEET, columns: 3 } })
-    expect(screen.queryByLabelText('Make Fulfilment wider')).toBeNull()
+    open({ readOnly: true })
+    pick('Lifecycle')
+    expect(within(screen.getByRole('group', { name: 'Key' })).queryByRole('button', { name: /Keep/ })).toBeNull()
+  })
+
+  it('goes quiet on the rest when a value on the key is pressed', () => {
+    open()
+    fireEvent.click(within(screen.getByRole('group', { name: 'Key' })).getByRole('button', { name: /Nothing yet/ }))
+    expect(screen.getByTestId('sheet-capability-picking').closest('.sheet-row')?.hasAttribute('data-dim')).toBe(true)
+    expect(screen.getByTestId('sheet-capability-dunning').closest('.sheet-row')?.hasAttribute('data-dim')).toBe(false)
+  })
+
+  it('takes a numeric scale as a question, drawn in steps with its number, leaving an unrated row blank', () => {
+    const held = model()
+    const rated = { ...held, elements: held.elements.map((one) => (one.id === 'picking' ? { ...one, ratings: { maturity: 5 } } : one)) }
+    renderShell(
+      <SheetPage open model={rated} sheet={SHEET} readOnly={false} actions={actions()} onClose={() => {}} scales={[{ key: 'maturity', label: 'Maturity', min: 1, max: 5 }]} />,
+    )
+    pick('Maturity')
+    const row = screen.getByTestId('sheet-capability-picking').closest('.sheet-row')
+    expect(row?.getAttribute('data-heat')).toBe('5')
+    expect(row?.textContent).toContain('5')
+    expect(screen.getByTestId('sheet-capability-dunning').closest('.sheet-row')?.hasAttribute('data-heat')).toBe(false)
+  })
+})
+
+describe('the day', () => {
+  const dated = (): DesignModel => {
+    const { elements, relations } = shippingScope()
+    return { name: 'Acme Logistics', diagrams: [SHEET], elements, relations: relations.map((row) => (row.targetId === 'invoice' && row.type === 'supports' ? { ...row, validUntil: '2027-01-01' } as Relation : row)) }
+  }
+
+  it('reads coverage on the day looked at, and puts away every write until one press back', () => {
+    open({ model: dated() })
+    expect(screen.getByTestId('sheet-coverage-invoice').textContent).toBe('1 app')
+    fireEvent.click(screen.getByRole('button', { name: 'Day' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Choose/ }))
+    fireEvent.change(screen.getByLabelText('The day to look at'), { target: { value: '2028-01-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Show this day' }))
+    expect(screen.getByText(/Looking at/)).toBeTruthy()
+    expect(screen.queryByLabelText('New area')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to today' }))
+    expect(screen.getByLabelText('New area')).toBeTruthy()
   })
 })
 
@@ -275,19 +342,29 @@ describe('the way out', () => {
     expect(onOpenDocumentation).toHaveBeenCalledWith('picking')
   })
 
-  it('offers a picture only where the host can take one', () => {
+  it('offers a picture only where the host can take one, under the ⋯', () => {
     open()
-    expect(screen.queryByLabelText('Save as a picture…')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
+    expect(screen.queryByRole('menuitem', { name: 'Save as a picture…' })).toBeNull()
     cleanup()
     open({ onSave: vi.fn() })
-    fireEvent.click(screen.getByLabelText('Save as a picture…'))
+    fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Save as a picture…' }))
     expect(screen.getByRole('dialog', { name: 'Save the business architecture as a picture' })).toBeTruthy()
   })
 })
 
 describe('the journey band', () => {
-  it('draws the phases across the top, in the journey’s order', () => {
+  it('is one line until asked, saying the phases and how much it holds', () => {
     open()
+    const band = screen.getByTestId('sheet-journey')
+    expect(within(band).getByText(/Order · .*Deliver/)).toBeTruthy()
+    expect(within(band).queryByTestId('sheet-phase-order')).toBeNull()
+  })
+
+  it('draws the phases across the top, in the journey’s order, once opened', () => {
+    open()
+    bands()
     const band = screen.getByTestId('sheet-journey')
     expect(within(band).getByTestId('sheet-phase-order').textContent).toBe('Order')
     expect(within(band).getByTestId('sheet-phase-deliver').textContent).toBe('Deliver')
@@ -295,28 +372,32 @@ describe('the journey band', () => {
 
   it('gives the common path the first row and names it, and marks what is done outside', () => {
     open()
+    bands()
     expect(within(screen.getByTestId('sheet-lane-common')).getByText('All customers')).toBeTruthy()
-    cleanup()
-    open()
     expect(screen.getByLabelText('Partner fulfils — done outside the organisation')).toBeTruthy()
   })
 
   it('draws a row per lane, named after the actor whose path it is', () => {
     open()
-    expect(within(screen.getByTestId('sheet-lane-key-account')).getByText('Key account')).toBeTruthy()
+    bands()
+    expect(within(screen.getByTestId('sheet-lane-key-account')).getByText(/Key account/)).toBeTruthy()
     expect(screen.getByTestId('sheet-step-negotiate')).toBeTruthy()
   })
 
-  it('draws a phase a lane passes through as a line, not as a gap', () => {
+  it('says as above where a lane passes through, not a gap', () => {
     open()
-    expect(screen.getByTestId('sheet-passthrough-key-account-pick')).toBeTruthy()
-    // Before the fork there is no line either — that row is not drawn there at all.
+    bands()
+    expect(screen.getByTestId('sheet-passthrough-key-account-pick').textContent).toBe('as above')
+    // Before the fork there is no line either: that row is not drawn there at all.
     expect(screen.queryByTestId('sheet-passthrough-key-account-order')).toBeNull()
   })
 
-  it('says so plainly when the sheet has no journey yet', () => {
+  it('offers a journey where the sheet has none yet, and only to who may make one', () => {
     open({ sheet: { ...SHEET, journeyId: undefined } })
-    expect(screen.getByText('No journey on this sheet yet.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'New journey' })).toBeTruthy()
+    cleanup()
+    open({ sheet: { ...SHEET, journeyId: undefined }, readOnly: true })
+    expect(screen.queryByRole('button', { name: 'New journey' })).toBeNull()
   })
 })
 
@@ -362,15 +443,16 @@ describe('the areas', () => {
     expect(screen.getByTestId('sheet-coverage-picking').textContent).toBe('2 apps')
   })
 
-  it('carries the domain an area is assigned to', () => {
+  it('marks an area handed to a domain no scope is, on its heading and in plain words', () => {
     const { elements, relations } = shippingScope()
-    open({
-      model: model({
-        elements: elements.map((e) => (e.id === 'billing' ? { ...e, scopes: ['finance'] } : e)),
-        relations,
-      }),
-    })
-    expect(within(screen.getByTestId('sheet-area-billing')).getByText('finance')).toBeTruthy()
+    renderShell(
+      <SheetPage
+        open sheet={SHEET} readOnly={false} actions={actions()} onClose={() => {}}
+        model={model({ elements: elements.map((e) => (e.id === 'billing' ? { ...e, scopes: ['finance'] } : e)), relations })}
+        domains={{ choices: () => [], name: (scope) => `The ${scope}`, known: () => false, takenUpBy: () => [] }}
+      />,
+    )
+    expect(within(screen.getByTestId('sheet-area-billing')).getByText('The finance no longer exists')).toBeTruthy()
   })
 })
 
@@ -378,8 +460,8 @@ describe('what is not yet mapped', () => {
   it('is a band of its own, with how many are waiting', () => {
     open({ sheet: { ...SHEET, areas: ['fulfilment'] } })
     const band = screen.getByTestId('sheet-unmapped')
-    expect(within(band).getByText('Not yet mapped to a domain')).toBeTruthy()
-    expect(within(band).getByText('1 waiting')).toBeTruthy()
+    expect(within(band).getByText(/Not yet mapped to a domain/)).toBeTruthy()
+    expect(within(band).getByText(/1 waiting/)).toBeTruthy()
     expect(within(band).getByTestId('sheet-unmapped-billing')).toBeTruthy()
   })
 
@@ -407,7 +489,7 @@ describe('taking a function up from a sheet above (ADR-0040 §5)', () => {
   it('offers From above… beside + area, grouped by the scope that defines each, and a pick takes one up', async () => {
     const offered = claims()
     open({ claims: offered })
-    fireEvent.click(screen.getByRole('button', { name: 'Take up an area or a capability of a sheet above' }))
+    fireEvent.click(screen.getByRole('button', { name: 'From above…' }))
     const list = screen.getByRole('listbox')
     expect(within(list).getAllByRole('group').map((one) => one.firstChild?.textContent)).toEqual(['Acme', 'Acme › Operations'])
     expect(await axeFindings()).toEqual([])
@@ -454,20 +536,17 @@ describe('the handle the agent reaches the page through', () => {
 })
 
 describe('choosing something', () => {
-  it('puts what you choose in the inspector, and says what it is for until you do', () => {
+  it('opens the panel on what you choose, and draws no panel until you do', () => {
     open()
+    expect(screen.queryByTestId('sheet-inspector')).toBeNull()
     fireEvent.click(screen.getByTestId('sheet-capability-picking'))
-    const inspector = screen.getByTestId('sheet-inspector')
-    expect(within(inspector).getByDisplayValue('Picking')).toBeTruthy()
-    cleanup()
-    open()
+    expect(panelName()).toBe('Picking')
+    fireEvent.click(within(screen.getByTestId('sheet-inspector')).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByTestId('sheet-inspector')).toBeNull()
+    bands()
     fireEvent.click(screen.getByTestId('sheet-step-negotiate'))
-    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Negotiate the rate')).toBeTruthy()
-    cleanup()
-    open()
-    expect(screen.getByText('Choose something on the sheet to see it here.')).toBeTruthy()
+    expect(panelName()).toBe('Negotiate the rate')
   })
-
 })
 
 /** A sheet of nothing: what a person sees on a project that has just begun. */
@@ -480,9 +559,9 @@ const empty = (): DesignModel => ({
 describe('making something', () => {
   it('offers a journey and an area on an empty sheet, and nothing else to read', () => {
     const { actions: acts } = open({ sheet: BARE, model: empty() })
-    fireEvent.click(screen.getByLabelText('New journey'))
+    fireEvent.click(screen.getByRole('button', { name: 'New journey' }))
     expect(acts.addJourney).toHaveBeenCalledWith({ journey: 'New journey', phase: 'Start' })
-    fireEvent.click(screen.getByLabelText('New area'))
+    fireEvent.click(screen.getByRole('button', { name: 'New area' }))
     expect(acts.addArea).toHaveBeenCalledWith('New area')
   })
 
@@ -494,18 +573,21 @@ describe('making something', () => {
 
   it('adds a phase, a step on the common path or a lane, a capability and an area', () => {
     const { actions: acts } = open()
+    bands()
     fireEvent.click(screen.getByLabelText('Add a phase to Ship a consignment'))
     expect(acts.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New phase', parentId: 'ship',
     })
     cleanup()
     const { actions: acts2 } = open()
+    bands()
     fireEvent.click(screen.getByLabelText('Add a step in Order, All customers'))
     expect(acts2.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New step', parentId: 'order',
     })
     cleanup()
     const { actions: acts3 } = open()
+    bands()
     fireEvent.click(screen.getByLabelText('Add a step in Quote, Key account'))
     expect(acts3.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New step', parentId: 'quote', lane: 'key-account',
@@ -522,12 +604,8 @@ describe('making something', () => {
     expect(acts5.addArea).toHaveBeenCalledWith('New area')
   })
 
-  it('adds a grouping and a capability to an area', () => {
+  it('adds a capability to an area, at its heading', () => {
     const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('Add a grouping to Fulfilment'))
-    expect(acts.addElement).toHaveBeenCalledWith({
-      kind: 'function', name: 'New grouping', parentId: 'fulfilment',
-    })
     fireEvent.click(screen.getByLabelText('Add a capability to Fulfilment'))
     expect(acts.addElement).toHaveBeenCalledWith({
       kind: 'function', name: 'New capability', parentId: 'fulfilment',
@@ -539,6 +617,7 @@ describe('making something', () => {
     // it, and only a group offers the add — after its members, not on each row.
     const grouped = { ...model(), elements: [...model().elements, actor('floor-staff', 'Floor staff', { parentId: 'warehouse-team' })] }
     const { actions: acts } = open({ model: grouped })
+    bands()
     expect(screen.getAllByLabelText(/^Add a stakeholder under/)).toHaveLength(1)
     fireEvent.click(screen.getByLabelText('Add a stakeholder under Warehouse team'))
     expect(acts.addElement).toHaveBeenCalledWith({
@@ -550,28 +629,32 @@ describe('making something', () => {
 
   it('draws the rail on an empty scope, so the first stakeholder can be made', () => {
     open({ sheet: BARE, model: empty() })
+    fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
     expect(within(screen.getByTestId('sheet-rail')).getByText('No stakeholders yet.')).toBeTruthy()
     expect(screen.getByLabelText('Add a stakeholder group')).toBeTruthy()
   })
 
-  it('selects what it just made and puts the cursor in its name', () => {
-    // The action answers with an id the model holds, which is what it does in
-    // the app: the command has landed by the time the page reads it back.
+  it('selects what it just made with the cursor in its name, where Enter adds the next and Tab files it under the one above', () => {
+    // The action answers with an id the model holds, as in the app: the command has landed when the page reads it back.
     const acts = actions()
-    acts.addElement = vi.fn(() => 'dunning')
-    renderShell(
-      <SheetPage
-        open model={model()} sheet={SHEET} readOnly={false} actions={acts} onClose={() => {}}
-      />,
-    )
+    acts.addElement = vi.fn(() => 'packing')
+    renderShell(<SheetPage open model={model()} sheet={SHEET} readOnly={false} actions={acts} onClose={() => {}} />)
     fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
-    const name = within(screen.getByTestId('sheet-inspector')).getByLabelText('Name')
-    expect((name as HTMLInputElement).value).toBe('Chase a late payment')
+    const name = screen.getByLabelText('Name') as HTMLInputElement
+    expect(name.value).toBe('Packing')
     expect(document.activeElement).toBe(name)
+    fireEvent.change(name, { target: { value: 'Packed' } })
+    fireEvent.keyDown(name, { key: 'Tab' })
+    expect(acts.updateElement).toHaveBeenCalledWith('packing', { name: 'Packed' })
+    expect(acts.updateElement).toHaveBeenCalledWith('packing', { parentId: 'picking' })
+    fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
+    fireEvent.keyDown(screen.getByLabelText('Name'), { key: 'Enter' })
+    expect(acts.addElement).toHaveBeenCalledTimes(3)
   })
 
   it('offers not one of them under readOnly', () => {
     open({ readOnly: true })
+    bands()
     for (const label of [
       'Add a phase to Ship a consignment',
       'Add a step in Order, All customers',
@@ -591,7 +674,8 @@ describe('making something', () => {
 describe('the dialogs the page opens', () => {
   it('asks for a lane, and makes one out of the answer', () => {
     const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('+ lane…'))
+    bands()
+    fireEvent.click(screen.getByRole('button', { name: '+ lane…' }))
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Whose path it is/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Marketplace partner' }))
     fireEvent.click(screen.getByRole('button', { name: 'Add the lane' }))
@@ -602,7 +686,8 @@ describe('the dialogs the page opens', () => {
 
   it('opens what the sheet draws, and changes one thing at a time', () => {
     const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('What this sheet draws'))
+    fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'What this sheet draws' }))
     fireEvent.click(screen.getByLabelText('Draw Billing'))
     expect(acts.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment'] })
   })
@@ -613,7 +698,7 @@ describe('a link to a card', () => {
   it('rings the card a select request names, and says it in the handle for a link to select again', () => {
     const onHandle = vi.fn()
     open({ select: { id: 'dunning', nonce: 1 }, onHandle })
-    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Chase a late payment')).toBeTruthy()
+    expect(panelName()).toBe('Chase a late payment')
     const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
     expect(rules).toContain('[data-element-id="dunning"]')
     expect((onHandle.mock.calls.at(-1)?.[0] as { selectedId?: string } | undefined)?.selectedId).toBe('dunning')
@@ -621,12 +706,11 @@ describe('a link to a card', () => {
 })
 
 /**
- * *Show who is responsible* (ADR-0036, amended 11 October 2026): off until
- * asked for, then a chip naming the unit on each area, grouping and
- * capability, the ones nobody answers for marked, and a unit outside the
- * domain drawn as the check says it.
+ * *Who answers* (ADR-0036, amended; the owner's decision 8): a question of the one
+ * Colour menu. Each row names who answers, those nobody answers for are marked, and
+ * a unit outside the domain is drawn as the check says it.
  */
-describe('who is responsible, shown on the sheet', () => {
+describe('who answers, as a lens', () => {
   const responsible: SheetResponsible = {
     choices: [{ id: 'robotics', label: 'Robotics', group: 'Team' }],
     name: (id) => (id === 'robotics' ? 'Robotics' : undefined),
@@ -636,29 +720,29 @@ describe('who is responsible, shown on the sheet', () => {
     { id: 'a9', type: 'assigned', sourceId: 'robotics', targetId: 'invoice' },
     { id: 'a8', type: 'assigned', sourceId: 'warehouse-team', targetId: 'fulfilment' },
   ]
+  const who = () => {
+    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Who answers' }))
+  }
 
-  it('is off by default, and there only where the host says who is', () => {
+  it('is a question only where the host says who is, with the rows silent until then', () => {
     open({ responsible })
-    expect((within(screen.getByTestId('sheet-show-responsible')).getByRole('switch') as HTMLInputElement).checked).toBe(false)
     expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Who answers' })).toBeTruthy()
     cleanup()
     open()
-    expect(screen.queryByTestId('sheet-show-responsible')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Who answers' })).toBeNull()
   })
 
-  it('names the unit on each area, grouping and capability, marks the ones nobody answers for, and the ones outside', async () => {
+  it('names who answers on each row, marks the ones nobody answers for, and the ones outside', async () => {
     open({ responsible, elsewhere: assigned })
-    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
+    who()
     expect(screen.getByTestId('sheet-responsible-packing').textContent).toBe('Warehouse team')
-    expect(screen.getByTestId('sheet-responsible-fulfilment').textContent).toBe('Warehouse team')
-    expect(screen.getByTestId('sheet-responsible-warehousing').textContent).toBe('nobody')
-    expect(screen.getByTestId('sheet-responsible-dunning').querySelector('[data-responsible="nobody"]')).not.toBeNull()
-    const outside = screen.getByTestId('sheet-responsible-invoice')
-    expect(outside.textContent).toBe('Robotics · outside this domain')
-    expect(outside.querySelector('[data-responsible="outside"]')).not.toBeNull()
+    expect(screen.getByTestId('sheet-responsible-dunning').textContent).toBe('nobody')
+    expect(screen.getByTestId('sheet-responsible-invoice').textContent).toBe('Robotics · outside this domain')
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
-    expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
   })
 })
 
@@ -693,14 +777,17 @@ describe('the unit on each function, a way to where it serves', () => {
     opened.length = 0
     const onHandle = vi.fn()
     open({ responsible, elsewhere: assigned, onHandle })
+    // On an area always; on a row only under Who answers (decision 8).
     expect(screen.getByTestId('sheet-unit-fulfilment').textContent).toBe('Warehouse team')
-    expect(screen.getByTestId('sheet-unit-packing').textContent).toBe('Warehouse team')
+    expect(screen.queryByTestId('sheet-unit-packing')).toBeNull()
     expect(screen.getByTestId('sheet-unit-fulfilment').getAttribute('aria-label')).toBe('Responsible: Warehouse team. Open where they serve')
     fireEvent.click(screen.getByTestId('sheet-unit-fulfilment'))
     expect(opened).toEqual(['home:warehouse'])
     // The area's header was not chosen by it.
     expect((onHandle.mock.calls.at(-1)?.[0] as { selectedId?: string } | undefined)?.selectedId).toBeUndefined()
     // A unit that serves nothing opens where it is kept, and is drawn as outside here.
+    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Who answers' }))
     fireEvent.click(screen.getByTestId('sheet-unit-invoice'))
     expect(opened).toEqual(['home:warehouse', 'unit:robotics'])
     expect(screen.getByTestId('sheet-unit-invoice').getAttribute('data-sheet-unit')).toBe('outside')
@@ -710,19 +797,14 @@ describe('the unit on each function, a way to where it serves', () => {
   it('says +N where several answer, every name in its title, and offers each place in a menu', () => {
     opened.length = 0
     open({ responsible, elsewhere: assigned })
+    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Who answers' }))
     const label = screen.getByTestId('sheet-unit-warehousing')
     expect(label.textContent).toBe('Data +1')
     expect(label.getAttribute('title')).toBe('Data, Robotics (outside this domain)')
     fireEvent.click(label)
-    expect(screen.getAllByRole('menuitem').map((one) => one.textContent)).toEqual(['ShippingData', 'BillingData', 'Roboticswhere it is kept'])
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent?.trim())).toEqual(['Shipping · Data', 'Billing · Data', 'Robotics · where it is kept'])
     fireEvent.click(screen.getByRole('menuitem', { name: /Billing/ }))
     expect(opened).toEqual(['home:billing'])
-  })
-
-  it('keeps the toggle for the actors that are not units, and nobody', () => {
-    open({ responsible, elsewhere: assigned })
-    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
-    expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
-    expect(screen.getByTestId('sheet-responsible-dunning').textContent).toBe('nobody')
   })
 })

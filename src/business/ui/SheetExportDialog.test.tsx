@@ -16,11 +16,10 @@ afterEach(() => cleanup())
 describe('SheetExportDialog', () => {
   it('offers the window and the five paper sizes, A1 first', () => {
     renderShell(<SheetExportDialog onExport={vi.fn(async () => {})} onClose={vi.fn()} />)
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Laid out for/ }))
-    const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'The window as it is' })).toBeTruthy()
-    expect(list.getByRole('option', { name: 'A0 · 4494 × 3179 px' })).toBeTruthy()
-    expect(list.getByRole('option', { name: 'A1 · 3179 × 2245 px' }).getAttribute('aria-selected')).toBe('true')
+    const field = screen.getByLabelText('Laid out for') as HTMLSelectElement
+    expect([...field.options].map((one) => one.text)).toContain('The window as it is')
+    expect([...field.options].map((one) => one.text)).toContain('A0 · 4494 × 3179 px')
+    expect(field.value).toBe('A1')
   })
 
   it('asks for the picture at the chosen layout, and closes once it is handed over', async () => {
@@ -28,12 +27,11 @@ describe('SheetExportDialog', () => {
     const onExport = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
     const onClose = vi.fn()
     renderShell(<SheetExportDialog onExport={onExport} onClose={onClose} />)
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Laid out for/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A0 · 4494 × 3179 px' }))
+    fireEvent.change(screen.getByLabelText('Laid out for'), { target: { value: 'A0' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onExport).toHaveBeenCalledWith('A0')
     // Drawing: said so, and nothing else to press meanwhile.
-    expect(screen.getByRole('button', { name: /Drawing/ }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: /Drawing/ }).getAttribute('aria-busy') ?? screen.getByRole('button', { name: /Drawing/ }).getAttribute('aria-disabled')).toBeTruthy()
     expect(onClose).not.toHaveBeenCalled()
     await act(async () => { finish(); await Promise.resolve() })
     expect(onClose).toHaveBeenCalled()
@@ -47,5 +45,17 @@ describe('SheetExportDialog', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save' })); await Promise.resolve() })
     expect(screen.getByRole('alert').textContent).toBe('The picture could not be drawn: no bitmap')
     expect(onClose).not.toHaveBeenCalled()
+  })
+})
+
+describe('where the picture’s own layout lives', () => {
+  it('keeps the sheet’s canvas and columns here, as changes to the sheet, for who may write them', () => {
+    const updateSheet = vi.fn()
+    const sheet = { id: 's', kind: 'sheet', name: 'S', members: [], geometry: { nodes: [] } } as const
+    renderShell(<SheetExportDialog onExport={vi.fn(async () => {})} onClose={vi.fn()} sheet={sheet} actions={{ updateSheet }} />)
+    fireEvent.change(screen.getByLabelText('Canvas'), { target: { value: 'fit' } })
+    expect(updateSheet).toHaveBeenCalledWith({ paper: 'fit' })
+    fireEvent.change(screen.getByLabelText('Columns'), { target: { value: '3' } })
+    expect(updateSheet).toHaveBeenCalledWith({ columns: 3 })
   })
 })

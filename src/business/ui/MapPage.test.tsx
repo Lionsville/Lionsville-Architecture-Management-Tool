@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MapPage } from './MapPage'
 import type { SheetActions } from './FunctionInspector'
+import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel } from '../../model'
@@ -55,117 +56,214 @@ function open(over: Partial<MapPageProps> = {}) {
   return { ...result, actions: acts }
 }
 
-describe('the grid', () => {
-  it('has a row per function in tree order, and a column per system the rows name', () => {
+/** Everything open: a map opens at two levels. */
+const allLevels = () => fireEvent.click(screen.getByRole('radio', { name: '3' }))
+const rowNames = () => screen.getAllByRole('rowheader').map((row) => row.textContent)
+const cell = (row: string, column: string) => screen.getByRole('gridcell', { name: new RegExp(`^${row}, ${column}`) })
+
+describe('the matrix', () => {
+  it('opens at two levels, and offers the rest, a row per function in tree order', () => {
     open()
-    const grid = screen.getByTestId('map-grid')
-    const rows = within(grid).getAllByTestId(/^map-row-/).map((row) => row.dataset.testid)
-    expect(rows).toEqual([
-      'map-row-fulfilment', 'map-row-warehousing', 'map-row-picking', 'map-row-packing',
-      'map-row-billing', 'map-row-invoicing', 'map-row-invoice', 'map-row-dunning',
-    ])
-    expect(within(grid).getAllByTestId(/^map-column-/).map((th) => th.textContent))
-      .toEqual(['Warehouse system', 'Handheld scanners', 'Finance system'])
+    expect(rowNames()).toEqual(['Fulfilment', 'Warehousing', 'Billing', 'Invoicing'])
+    allLevels()
+    expect(rowNames()).toEqual(['Fulfilment', 'Warehousing', 'Picking', 'Packing', 'Billing', 'Invoicing', 'Raise an invoice', 'Chase a late payment'])
+    expect(screen.getAllByRole('columnheader').map((th) => th.textContent)).toEqual(
+      expect.arrayContaining(['Warehouse system', 'Handheld scanners', 'Finance system']),
+    )
   })
 
-  it('marks the capability a system supports, and the section above it as rolled up', () => {
+  it('marks the capability a system supports, and says how many on a section above it', () => {
     open()
-    expect(screen.getByTestId('map-cell-picking-wms').dataset.mark).toBe('supports')
-    expect(screen.getByTestId('map-cell-warehousing-wms').dataset.mark).toBe('rolled-up')
-    expect(screen.getByTestId('map-cell-fulfilment-wms').dataset.mark).toBe('rolled-up')
-    expect(screen.getByTestId('map-cell-picking-erp').dataset.mark).toBeUndefined()
+    allLevels()
+    expect(cell('Picking', 'Warehouse system').getAttribute('aria-label')).toContain('Warehouse system supports Picking')
+    expect(cell('Warehousing', 'Warehouse system').textContent).toBe('1')
+    expect(cell('Picking', 'Finance system').getAttribute('aria-label')).toContain(': nothing')
   })
 
-  it('says the gap in words on a capability and as a count on the section', () => {
+  it('pins the answer beside the name, in words, with a count on a section', () => {
     open()
-    expect(screen.getByTestId('map-coverage-dunning').textContent).toBe('uncovered')
-    expect(screen.getByTestId('map-coverage-packing').textContent).toBe('people')
-    expect(screen.getByTestId('map-coverage-invoice').textContent).toBe('')
-    expect(screen.getByTestId('map-coverage-invoicing').textContent).toBe('1 gap')
-    expect(screen.getByTestId('map-coverage-fulfilment').textContent).toBe('')
+    allLevels()
+    const answer = (name: string) => screen.getByRole('rowheader', { name: new RegExp(`^${name}`) }).parentElement?.querySelector('.kit-matrix__answer')?.textContent
+    expect(answer('Chase a late payment')).toBe('nothing')
+    expect(answer('Packing')).toBe('by people')
+    expect(answer('Raise an invoice')).toBe('1 system')
+    expect(answer('Picking')).toBe('2 systems')
+    expect(answer('Invoicing')).toBe('1 of 2')
   })
 
-  it('marks the people column where somebody is assigned', () => {
+  it('says it in one sentence with the total, and keeps the legend on the page', () => {
     open()
-    expect(screen.getByTestId('map-people-packing').querySelector('span')).not.toBeNull()
-    expect(screen.getByTestId('map-people-picking').querySelector('span')).toBeNull()
+    expect(screen.getByTestId('map-summary').textContent).toBe('3 of 4 capabilities covered: 2 by a system, 1 by people. 1 have nothing.')
+    expect(screen.getByTestId('map-legend').textContent).toContain('supports')
   })
 
-  it('adds up the leaves in the top bar', () => {
-    open()
-    expect(screen.getByTestId('map-summary').textContent).toBe('2 covered · 1 by people · 1 uncovered')
-    // The filled and hollow marks, explained where they are drawn.
-    expect(screen.getByTestId('map-legend').textContent).toBe('● supports it · ○ supports something under it')
-  })
-
-  it('names the owners across the top when the systems are somebody else’s', () => {
-    open({
-      describe: (id) => (id === 'erp' ? { name: 'Finance system', where: 'Finance' } : undefined),
-    })
-    expect(screen.getByTestId('map-owner-0').textContent).toBe('This scope')
-    expect(screen.getByTestId('map-owner-1').textContent).toBe('Finance')
-  })
-
-  it('keeps both headings on top while it scrolls: the owners’ band, and the column names just under it (ADR-0044 §7)', () => {
-    open({
-      describe: (id) => (id === 'erp' ? { name: 'Finance system', where: 'Finance' } : undefined),
-    })
-    const band = getComputedStyle(screen.getByTestId('map-owner-1'))
-    expect([band.position, band.top]).toEqual(['sticky', '0px'])
-    const column = getComputedStyle(screen.getByTestId('map-column-erp'))
-    expect(column.position).toBe('sticky')
-    expect(column.top).toBe(band.height)
-    // Nothing for the rows to scroll through above the headings.
-    expect(Number.parseFloat(getComputedStyle(screen.getByTestId('map-body')).paddingTop || '0')).toBe(0)
-  })
-
-  it('sticks the column names to the very top where there is no band', () => {
-    open()
-    expect(getComputedStyle(screen.getByTestId('map-column-erp')).top).toBe('0px')
+  it('names the owners across the top when the systems are somebody else’s, and folds one from there', () => {
+    open({ describe: (id) => (id === 'erp' ? { name: 'Finance system', where: 'Finance' } : undefined) })
+    expect(screen.getByRole('columnheader', { name: 'Finance' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'This scope' })).toBeTruthy()
   })
 
   it('draws no owner band when every system is this scope’s own', () => {
     open()
-    expect(screen.queryByTestId('map-owner-0')).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'This scope' })).toBeNull()
   })
 
-  it('says so when there is nothing to map', () => {
-    open({ model: model({ elements: [], relations: [] }) })
+  it('finds nothing wrong for axe', async () => {
+    open()
+    expect(await axeFindings()).toEqual([])
+  })
+})
+
+describe('the states it can be in', () => {
+  it('says so when there is nothing to map, with the way there', () => {
+    const onSheet = vi.fn()
+    open({ model: model({ elements: [], relations: [] }), onSheet })
     expect(screen.getByText('No capabilities to map yet.')).toBeDefined()
     expect(screen.queryByTestId('map-grid')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Open the business sheet' }))
+    expect(onSheet).toHaveBeenCalled()
+  })
+
+  it('states a tree with no links once, and offers a start, rather than drawing a page of gaps', () => {
+    open({ model: model({ relations: [] }) })
+    expect(screen.queryByTestId('map-grid')).toBeNull()
+    expect(screen.getByText(/4 capabilities, and nothing linked/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Start linking' }))
+    expect(screen.getByTestId('sheet-inspector')).toBeTruthy()
+  })
+
+  it('offers no start where the map is only read', () => {
+    open({ model: model({ relations: [] }), readOnly: true })
+    expect(screen.queryByRole('button', { name: 'Start linking' })).toBeNull()
+  })
+})
+
+describe('the filters', () => {
+  it('lists the gaps and the overlaps as plain rows, with their counts on the bar', () => {
+    open()
+    fireEvent.click(screen.getByRole('radio', { name: 'Gaps 1' }))
+    expect(screen.queryByTestId('map-grid')).toBeNull()
+    expect(screen.getByRole('row', { name: /Chase a late payment/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Overlaps 1' }))
+    expect(screen.getByRole('row', { name: /Picking/ })).toBeTruthy()
+  })
+
+  it('finds a capability by name', () => {
+    open()
+    fireEvent.click(screen.getByRole('button', { name: 'Find' }))
+    fireEvent.change(screen.getByLabelText('Find on the page'), { target: { value: 'chase' } })
+    expect(screen.getByRole('row', { name: /Chase a late payment/ })).toBeTruthy()
+    expect(screen.queryByRole('row', { name: /Picking/ })).toBeNull()
   })
 })
 
 describe('what a person can do from it', () => {
-  it('opens a capability in the inspector', () => {
+  it('opens a capability in the panel, a press only selecting', () => {
+    const { actions: acts } = open()
+    allLevels()
+    fireEvent.click(screen.getByRole('rowheader', { name: 'Chase a late payment' }))
+    expect(within(screen.getByTestId('sheet-inspector')).getByRole('heading', { level: 2 }).textContent).toBe('Chase a late payment')
+    fireEvent.click(cell('Picking', 'Finance system'))
+    expect(acts.setCoverage).not.toHaveBeenCalled()
+  })
+
+  it('links with Space, one step with its Undo, and says where a row is kept that it cannot take off', () => {
+    const onUndo = vi.fn()
+    const { actions: acts } = open({ onUndo, elsewhere: [{ id: 'x1', type: 'supports', sourceId: 'ghost', targetId: 'dunning' }], describe: (id) => (id === 'ghost' ? { name: 'Ghost', where: 'Elsewhere' } : undefined) })
+    allLevels()
+    fireEvent.keyDown(cell('Picking', 'Finance system'), { key: ' ' })
+    // The walk starts at the top left, so it is focused first by the press.
+    fireEvent.click(cell('Picking', 'Finance system'))
+    fireEvent.keyDown(cell('Picking', 'Finance system'), { key: ' ' })
+    expect(acts.setCoverage).toHaveBeenCalledWith({ type: 'supports', sourceId: 'erp', functionId: 'picking', on: true })
+    fireEvent.click(screen.getByRole('button', { name: /Undo/ }))
+    expect(onUndo).toHaveBeenCalled()
+    fireEvent.click(cell('Chase a late payment', 'Ghost'))
+    fireEvent.keyDown(cell('Chase a late payment', 'Ghost'), { key: ' ' })
+    expect(screen.getByText(/kept in another scope/)).toBeTruthy()
+  })
+
+  it('takes every heading to a panel of what the system supports, kept here or not', () => {
+    const onOpenApplication = vi.fn()
+    open({ onOpenApplication })
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Finance system' }))
+    const panel = screen.getByTestId('map-column-panel')
+    expect(within(panel).getAllByText('Raise an invoice').length).toBeGreaterThan(0)
+    fireEvent.click(within(panel).getByRole('button', { name: 'Open Finance system' }))
+    expect(onOpenApplication).toHaveBeenCalledWith('erp')
+  })
+
+  it('writes nothing under readOnly, and still reads', () => {
+    const { actions: acts } = open({ readOnly: true })
+    allLevels()
+    fireEvent.click(cell('Picking', 'Finance system'))
+    fireEvent.keyDown(cell('Picking', 'Finance system'), { key: ' ' })
+    expect(acts.setCoverage).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('rowheader', { name: 'Chase a late payment' }))
+    expect(screen.queryByRole('button', { name: /Rename/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'More for this sheet' })).toBeNull()
+  })
+
+  it('makes a second map, renames this one and takes it away, since the tab it shares offers none of that', () => {
+    const onCreateMap = vi.fn()
+    const onRename = vi.fn()
+    const onDelete = vi.fn()
+    open({ onCreateMap, onRename, onDelete })
+    fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'New map in this scope' }))
+    expect(onCreateMap).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete this map' }))
+    expect(onDelete).toHaveBeenCalled()
+  })
+
+  it('changes between the maps a scope keeps, under the reading', () => {
+    const onOpenMap = vi.fn()
+    open({ maps: [{ id: 'mp-1', name: 'Enterprise map', here: true }, { id: 'mp-2', name: 'Second', here: false }], onOpenMap })
+    fireEvent.click(screen.getByRole('button', { name: 'Enterprise map' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Second' }))
+    expect(onOpenMap).toHaveBeenCalledWith('mp-2')
+  })
+
+  it('goes back to the sheet by the same switch', () => {
+    const onSheet = vi.fn()
+    open({ onSheet })
+    fireEvent.click(screen.getByRole('radio', { name: 'Names' }))
+    expect(onSheet).toHaveBeenCalled()
+  })
+
+  it('offers Export only where the host can take a picture', () => {
     open()
-    fireEvent.click(within(screen.getByTestId('map-row-dunning')).getByRole('button'))
-    const name = screen.getByLabelText('Name') as HTMLInputElement
-    expect(name.value).toBe('Chase a late payment')
+    expect(screen.queryByRole('button', { name: 'Export' })).toBeNull()
+    cleanup()
+    open({ onSave: vi.fn() })
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }))
+    expect(screen.getByRole('dialog', { name: 'Save Coverage as a picture' })).toBeTruthy()
   })
+})
 
-  it('opens a system the scope holds from its heading, and not one it does not', () => {
-    const { actions: acts } = open({
-      describe: (id) => (id === 'ghost' ? { name: 'Ghost', where: 'Elsewhere' } : undefined),
-      elsewhere: [{ id: 'x1', type: 'supports', sourceId: 'ghost', targetId: 'dunning' }],
-    })
-    fireEvent.click(within(screen.getByTestId('map-column-wms')).getByRole('button'))
-    expect(acts.onOpenElement).toHaveBeenCalledWith('wms')
-    expect(within(screen.getByTestId('map-column-ghost')).queryByRole('button')).toBeNull()
-  })
-
-  it('reads under readOnly', () => {
-    open({ readOnly: true })
-    fireEvent.click(within(screen.getByTestId('map-row-dunning')).getByRole('button'))
-    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true)
+describe('the day', () => {
+  it('counts the rows on the day looked at, and writes nothing while it lasts', () => {
+    const relations = shippingScope().relations.map((row) => (row.type === 'supports' && row.targetId === 'invoice' ? { ...row, validUntil: '2027-01-01' } : row))
+    open({ model: model({ relations }), today: '2026-11-07' })
+    expect(screen.getByTestId('map-summary').textContent).toContain('2 by a system')
+    fireEvent.click(screen.getByRole('button', { name: 'Day' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Choose/ }))
+    fireEvent.change(screen.getByLabelText('The day to look at'), { target: { value: '2028-01-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Show this day' }))
+    expect(screen.getByTestId('map-summary').textContent).toContain('1 by a system')
+    expect(screen.getByText(/Looking at/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to today' }))
+    expect(screen.getByTestId('map-summary').textContent).toContain('2 by a system')
   })
 })
 
 /** A row selected from outside: a place opened with something selected on it (ADR-0019, amended). */
 describe('a selection asked for', () => {
-  it('opens the inspector on a row the map draws, and on nothing it does not', () => {
+  it('opens the panel on a row the map draws, folded or not, and on nothing it does not', () => {
     open({ select: { id: 'dunning', nonce: 1 }, onOpenDocumentation: vi.fn() })
     expect(screen.getByTestId('sheet-open-page').getAttribute('aria-label')).toContain('Chase a late payment')
+    expect(rowNames()).toContain('Chase a late payment')
     cleanup()
     // A system is a column, not a row: nothing is selected for it.
     open({ select: { id: 'wms', nonce: 1 }, onOpenDocumentation: vi.fn() })
@@ -179,18 +277,18 @@ describe('a link to a row', () => {
     const scrolled = vi.fn()
     Element.prototype.scrollIntoView = scrolled
     open({ select: { id: 'dunning', nonce: 1 }, onOpenDocumentation: vi.fn() })
-    const name = within(screen.getByTestId('map-row-dunning')).getByRole('button')
-    expect(name.getAttribute('data-element-id')).toBe('dunning')
     await waitFor(() => expect(scrolled).toHaveBeenCalled())
-    expect(getComputedStyle(name).outline).toContain('solid')
+    const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
+    expect(rules).toContain('[data-kit-row="dunning"]')
     Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
   })
 
   it('says in its handle what is selected on it, for a link to select again', () => {
     const onHandle = vi.fn()
     open({ onHandle })
+    allLevels()
     expect(onHandle.mock.calls.at(-1)?.[0]?.selectedId).toBeUndefined()
-    fireEvent.click(within(screen.getByTestId('map-row-dunning')).getByRole('button'))
+    fireEvent.click(screen.getByRole('rowheader', { name: 'Chase a late payment' }))
     expect(onHandle.mock.calls.at(-1)?.[0]?.selectedId).toBe('dunning')
   })
 })

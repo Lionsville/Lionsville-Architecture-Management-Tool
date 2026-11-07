@@ -170,7 +170,7 @@ const MatrixRowView = memo(function MatrixRowView({
   return (
     <tr data-crossed={crossed || undefined} data-heading={row.heading || undefined} data-picked={selectedColumn !== null || undefined}>
       <th
-        scope="row" className="kit-matrix__rowHead" data-kit-cell={`${rowIndex}:-1`} tabIndex={focusColumn === -1 ? 0 : -1}
+        scope="row" className="kit-matrix__rowHead" data-kit-row={row.id} data-kit-cell={`${rowIndex}:-1`} tabIndex={focusColumn === -1 ? 0 : -1}
         aria-expanded={foldable ? !folded : undefined} style={{ '--kit-matrix-depth': depth } as CSSProperties}
         aria-label={foldable ? `${row.label}, ${foldWord}` : undefined}
       >

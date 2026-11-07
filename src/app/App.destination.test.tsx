@@ -354,7 +354,7 @@ describe('an element selected on the view opened', () => {
     await waitFor(() => expect(told().where.home?.path).toBe(''))
     fireEvent.click(screen.getByRole('button', { name: 'Billing on the sheet' }))
     await waitFor(() => expect(told().where.open?.view?.id).toBe('s1'))
-    await screen.findByTestId('sheet-inspector')
+    await screen.findByTestId('sheet-canvas')
     expect(screen.queryByTestId('sheet-open-page')).toBeNull()
   })
 })

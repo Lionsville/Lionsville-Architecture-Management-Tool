@@ -252,22 +252,21 @@ export function MapPage(props: MapPageProps) {
   )
   const selected = pick?.kind === 'row' ? model.elements.find((element) => element.id === pick.id) : undefined
   const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
-  const { locatedId, locate } = useLocated(page, (id) => setPick({ kind: 'row', id }))
-  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
-
-  // A row asked for from outside has nothing folded over it.
+  // What is open beyond the level, by hand or because a row was asked for that sat under it.
   const [unfolded, setUnfolded] = useState<ReadonlySet<ElementId>>(new Set())
-  useEffect(() => {
-    if (pick?.kind !== 'row' || !laidOut) return
+  const [revealed, setRevealed] = useState(0)
+  /** A row picked from outside the matrix has nothing folded over it, and the matrix starts again from that. */
+  const reveal = (id: ElementId) => {
     const chain = new Set(unfolded)
-    for (let at = model.elements.find((element) => element.id === pick.id)?.parentId; at !== undefined;) {
+    for (let at = model.elements.find((element) => element.id === id)?.parentId; at !== undefined;) {
       chain.add(at)
       at = model.elements.find((element) => element.id === at)?.parentId
     }
-    if (chain.size !== unfolded.size) setUnfolded(chain)
-    // Once per pick: a person folding a row again afterwards is not undone.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pick])
+    setUnfolded(chain)
+    setRevealed((count) => count + 1)
+  }
+  const { locatedId, locate } = useLocated(page, (id) => { setPick({ kind: 'row', id }); reveal(id) }, 'data-kit-row')
+  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
   const rowById = useMemo(() => new Map(laidOut?.rows.map((row) => [row.element.id, row]) ?? []), [laidOut])
 
   const cellOf = useCallback((rowId: string, columnId: string): MatrixCell | null => {
@@ -385,7 +384,7 @@ export function MapPage(props: MapPageProps) {
           <span data-testid="map-legend">{t('map.legend')}</span>
         </div>
       )}
-      <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId)}>
+      <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId, 'data-kit-row')}>
         <div className="sheet-page__work">
           <div className="map-page__grid" data-testid="map-body">
             {!laidOut || !hasRows
@@ -399,14 +398,14 @@ export function MapPage(props: MapPageProps) {
                 ? (
                   <PageState
                     state="empty" title={t('map.nobodyYet', { count: laidOut.counts.uncovered })} body={t('map.noApplications')}
-                    {...(!readOnly && firstLeaf !== undefined ? { action: { label: t('map.startLinking'), onPress: () => setPick({ kind: 'row', id: firstLeaf }) } } : {})}
+                    {...(!readOnly && firstLeaf !== undefined ? { action: { label: t('map.startLinking'), onPress: () => { setPick({ kind: 'row', id: firstLeaf }); reveal(firstLeaf) } } } : {})}
                   />
                 )
                 : inMatrix
                   ? (
                     <div data-testid="map-grid" data-guide="map.grid" style={{ display: 'contents' }}>
                       <Matrix
-                        key={`${level}:${exporting}`}
+                        key={`${level}:${exporting}:${revealed}`}
                         label={map?.name ?? t('map.page')} rowHeading={t('map.function')} rotateHeads
                         rows={laidOut.rows.map((row) => ({ id: row.element.id, label: row.element.name, ...(row.parentId !== undefined ? { parent: row.parentId } : {}) }))}
                         columns={laidOut.columns.map((column) => ({ id: column.id, label: column.known ? column.name : `${column.name} (${t('map.unknownApplication')})`, ...(column.where !== undefined ? { group: column.where } : laidOut.groups.length > 1 ? { group: OWN_GROUP } : {}) }))}
@@ -425,6 +424,12 @@ export function MapPage(props: MapPageProps) {
                           } },
                         ]}
                         defaultFoldedRows={foldedRows}
+                        onFoldRow={(row, folded) => {
+                          const next = new Set(unfolded)
+                          if (folded) next.delete(row)
+                          else next.add(row)
+                          setUnfolded(next)
+                        }}
                         {...(pick?.kind === 'row' ? { selected: { row: pick.id, column: '' } } : {})}
                         onSelect={({ row }) => setPick({ kind: 'row', id: row })}
                         onOpenRow={(id) => setPick({ kind: 'row', id })} openFoldable
@@ -440,7 +445,7 @@ export function MapPage(props: MapPageProps) {
                         label={filter === 'gaps' ? t('map.filterGaps', { count: counts.gaps }) : filter === 'overlaps' ? t('map.filterOverlaps', { count: counts.overlaps }) : t('map.function')}
                         groups={[{ id: 'rows', label: '', rows: matched.map((row) => ({ id: row.element.id, text: row.element.name, note: row.supportedBy.length > 0 ? row.supportedBy.map((id) => laidOut.columns.find((one) => one.id === id)?.name ?? id).join(', ') : t('map.nothing') })) }]}
                         selectedId={pick?.kind === 'row' ? pick.id : null}
-                        onOpen={(id) => setPick({ kind: 'row', id })}
+                        onOpen={(id) => { setPick({ kind: 'row', id }); reveal(id) }}
                         empty={<PageState compact state="empty" title={t('sheet.findNone')} />}
                       />
                     </div>

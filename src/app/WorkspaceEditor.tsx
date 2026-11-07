@@ -13,7 +13,8 @@ import type { PageView } from '../editor'
 import type { DesignDiagram } from '../model'
 import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
-import { MapPage, SheetPage } from '../business'
+import type { MapPage as MapPageShape } from '../business/ui/MapPage'
+import type { SheetPage as SheetPageShape } from '../business/ui/SheetPage'
 import type { DayGroup } from '../widgets/kit/DayControl'
 import { sheetResponsibleFor } from './units/sheetResponsible'
 import { sheetClaimsFor, sheetDomainsFor, takenUpHere } from './sheetMapping'
@@ -37,6 +38,14 @@ import type { StringKey } from '../i18n'
  */
 const DrawingView = lazyPart<ComponentProps<typeof DrawingViewShape>>(
   () => import('./DrawingView').then((held) => held.DrawingView),
+)
+
+/** The sheet and its Coverage are tabs as well: their rows, panel and matrix arrive with the first one opened. */
+const SheetPage = lazyPart<ComponentProps<typeof SheetPageShape>>(
+  () => import('../business/ui/SheetPage').then((held) => held.SheetPage),
+)
+const MapPage = lazyPart<ComponentProps<typeof MapPageShape>>(
+  () => import('../business/ui/MapPage').then((held) => held.MapPage),
 )
 
 /**

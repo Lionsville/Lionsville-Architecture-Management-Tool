@@ -271,9 +271,8 @@ describe('the enterprise map, across scopes', () => {
 
     fireEvent.click(await screen.findByTestId('open-map'))
     const grid = await screen.findByTestId('map-grid', {}, { timeout: 3000 })
-    await waitFor(() => expect(within(grid).getByTestId('map-column-wms').textContent).toBe('Warehouse system'))
-    expect(within(grid).getByTestId('map-owner-0').textContent).toBe('acme/retail')
-    expect(within(grid).getByTestId('map-cell-fulfilment-wms').dataset.mark).toBe('supports')
-    expect(within(grid).getByTestId('map-coverage-fulfilment').textContent).toBe('')
+    await waitFor(() => expect(within(grid).getByRole('columnheader', { name: 'Warehouse system' })).toBeTruthy())
+    expect(within(grid).getByRole('columnheader', { name: 'acme/retail' })).toBeTruthy()
+    expect(within(grid).getByRole('gridcell', { name: /^Fulfilment, Warehouse system/ }).getAttribute('aria-label')).toContain('Warehouse system supports Fulfilment')
   })
 })

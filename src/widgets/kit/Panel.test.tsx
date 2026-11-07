@@ -14,6 +14,11 @@ afterEach(() => cleanup())
 const TABS = [{ value: 'properties', label: 'Properties' }, { value: 'comments', label: 'Comments', count: 2 }]
 
 describe('the panel', () => {
+  it('starts typing the name when asked, for what was just made', () => {
+    renderShell(<Panel kind="Step" name="New step" onRename={vi.fn()} renameAsked={1}>rows</Panel>)
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Change the name' }))
+  })
+
   it('says the kind, the name and one line of facts, and is a landmark by the name', () => {
     renderShell(<Panel kind="Application" name="Billing" facts="Live · 6 lines">rows</Panel>)
     const panel = screen.getByRole('complementary', { name: 'Billing' })

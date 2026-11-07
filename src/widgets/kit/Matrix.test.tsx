@@ -7,7 +7,7 @@
  * walks by the arrows through the headings too, and the line says where you are.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { Matrix } from './Matrix'
@@ -219,5 +219,37 @@ describe('a matrix whose headings go somewhere', () => {
     expect(screen.getByRole('columnheader', { name: 'Two' })).toBeTruthy()
     expect(onOpenColumn).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('rowheader', { name: /Group/ }).closest('tr')?.hasAttribute('data-heading')).toBe(true)
+  })
+})
+
+describe('a crossing that says more than one thing per row', () => {
+  const rows = [{ id: 'a', label: 'Area' }, { id: 'b', label: 'Bit', parent: 'a' }]
+  const columns = [{ id: 'x', label: 'Ex', group: 'g' }, { id: 'y', label: 'Why', group: 'g' }]
+
+  it('pins several answers, in order', () => {
+    renderShell(<Matrix label="M" rows={rows} columns={columns} cellOf={() => null} answers={[{ label: 'One', of: () => '1' }, { label: 'Two', of: () => '2' }]} />)
+    expect(screen.getByRole('columnheader', { name: 'One' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'Two' })).toBeTruthy()
+    expect(screen.getByRole('rowheader', { name: /^Area/ }).parentElement?.querySelectorAll('.kit-matrix__answer').length).toBe(2)
+  })
+
+  it('names a group over its columns and folds it from there, and a column’s name goes to what it names', () => {
+    const onOpenColumn = vi.fn()
+    renderShell(<Matrix label="M" rows={rows} columns={columns} columnGroups={[{ id: 'g', label: 'Group' }]} groupBand cellOf={() => null} onOpenColumn={onOpenColumn} />)
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Ex' }))
+    expect(onOpenColumn).toHaveBeenCalledWith('x')
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Group' }))
+    expect(screen.queryByRole('columnheader', { name: 'Ex' })).toBeNull()
+  })
+
+  it('opens a row that folds on its name, and folds it on its caret, where its rows are records', () => {
+    const onOpenRow = vi.fn()
+    renderShell(<Matrix label="M" rows={rows} columns={columns} cellOf={() => null} onOpenRow={onOpenRow} openFoldable />)
+    const head = screen.getByRole('rowheader', { name: /^Area/ })
+    fireEvent.click(within(head).getByText('Area'))
+    expect(onOpenRow).toHaveBeenCalledWith('a')
+    expect(screen.getByRole('rowheader', { name: 'Bit' })).toBeTruthy()
+    fireEvent.click(head.querySelector('.kit-matrix__caret')!)
+    expect(screen.queryByRole('rowheader', { name: 'Bit' })).toBeNull()
   })
 })

@@ -62,9 +62,13 @@ const inMemory = (memory: SessionFolds, node: ReactElement) => (
   <SessionMemoryContext.Provider value={memory}>{node}</SessionMemoryContext.Provider>
 )
 
+/** The rail opens from the bar. */
+const openRail = () => fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
+
 describe('the units on the stakeholder rail', () => {
   it('draws the parties, then the units the sheet uses with why, and says how many more there are', async () => {
     renderShell(page())
+    openRail()
     const rail = screen.getByTestId('sheet-rail')
     expect(within(rail).getByText('Warehouse team')).toBeTruthy()
     const used = screen.getByTestId('sheet-rail-used')
@@ -79,6 +83,7 @@ describe('the units on the stakeholder rail', () => {
   it('draws every unit with All units, and the session keeps it for the view', async () => {
     const memory = new SessionFolds()
     const { unmount } = renderShell(inMemory(memory, page()))
+    openRail()
     fireEvent.click(within(screen.getByTestId('sheet-all-units')).getByRole('switch'))
     const other = screen.getByTestId('sheet-rail-other')
     expect(within(other).getByText('All other units')).toBeTruthy()
@@ -88,6 +93,7 @@ describe('the units on the stakeholder rail', () => {
     unmount()
 
     renderShell(inMemory(memory, page()))
+    openRail()
     expect(within(screen.getByTestId('sheet-rail-other')).getByText('Rates')).toBeTruthy()
     fireEvent.click(within(screen.getByTestId('sheet-all-units')).getByRole('switch'))
     expect(screen.queryByTestId('sheet-rail-other')).toBeNull()
@@ -95,6 +101,7 @@ describe('the units on the stakeholder rail', () => {
 
   it('offers no switch where every unit is drawn already', () => {
     renderShell(page({ model: model((all) => all.filter((one) => one.id !== 'dispatch' && one.id !== 'rates')) }))
+    openRail()
     expect(screen.queryByTestId('sheet-all-units')).toBeNull()
   })
 
@@ -104,6 +111,7 @@ describe('the units on the stakeholder rail', () => {
     const typed = model((all) => all.map((one) => (one.id === 'warehouse-team' ? { ...one, unitTypeId: 'team' } : one)))
     const { rerender, unmount } = renderShell(inMemory(memory, page({ notify })))
     rerender(inMemory(memory, page({ notify, model: typed })))
+    openRail()
     const button = screen.getByTestId('sheet-actor-warehouse-team')
     expect(button.getAttribute('data-rail-group')).toBe('parties')
     expect(notify).toHaveBeenCalledTimes(1)
@@ -111,6 +119,7 @@ describe('the units on the stakeholder rail', () => {
     unmount()
 
     renderShell(inMemory(memory, page({ notify, model: typed })))
+    openRail()
     expect(screen.getByTestId('sheet-actor-warehouse-team').getAttribute('data-rail-group')).toBe('parties')
     expect(notify).toHaveBeenCalledTimes(1)
   })
@@ -120,6 +129,7 @@ describe('the units on the stakeholder rail', () => {
     const typed = model((all) => all.map((one) => (one.id === 'warehouse-team' ? { ...one, unitTypeId: 'team' } : one)))
     const { rerender } = renderShell(page({ notify, readOnly: true }))
     rerender(page({ notify, readOnly: true, model: typed }))
+    openRail()
     // Responsible for Packing, so it is drawn among the units the sheet uses.
     expect(screen.getByTestId('sheet-actor-warehouse-team').getAttribute('data-rail-group')).toBe('used')
     expect(notify).not.toHaveBeenCalled()

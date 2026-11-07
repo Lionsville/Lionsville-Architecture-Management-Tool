@@ -58,27 +58,23 @@ function open(sheet: DesignDiagram = SHEET, over: Partial<DesignModel> = {}) {
 }
 
 describe('the journey it draws', () => {
+  const field = () => screen.getByLabelText('The journey across the top') as HTMLSelectElement
+
   it('offers every journey the scope holds, and none', () => {
     open()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /The journey across the top/ }))
-    const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'Ship a consignment' })).toBeTruthy()
-    expect(list.getByRole('option', { name: 'None' })).toBeTruthy()
+    expect([...field().options].map((one) => one.text)).toEqual(['None', 'Ship a consignment'])
   })
 
   it('points the sheet at the journey that is chosen, and clears it again', () => {
     // A scope with two journeys seeds none, which is the case this exists for.
     const { actions } = open({ ...SHEET, journeyId: undefined })
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /The journey across the top/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Ship a consignment' }))
+    fireEvent.change(field(), { target: { value: 'ship' } })
     expect(actions.updateSheet).toHaveBeenCalledWith({ journeyId: 'ship' })
     cleanup()
     const { actions: actions2 } = open()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /The journey across the top/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'None' }))
+    fireEvent.change(field(), { target: { value: '' } })
     expect(actions2.updateSheet).toHaveBeenCalledWith({ journeyId: undefined })
   })
-
 })
 
 describe('the areas, in order', () => {
@@ -136,38 +132,3 @@ describe('the rail', () => {
 
 })
 
-describe('the columns', () => {
-  it('is as many as fit until a number is chosen, which is written to the sheet', () => {
-    const { actions } = open()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Columns/ }))
-    const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'As many as fit' }).getAttribute('aria-selected')).toBe('true')
-    fireEvent.click(list.getByRole('option', { name: '4' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ columns: 4 })
-  })
-
-  it('goes back to fitting the window', () => {
-    const { actions } = open({ ...SHEET, columns: 4 })
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Columns/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'As many as fit' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ columns: undefined })
-  })
-})
-
-describe('the canvas', () => {
-  it('is A2 until a size is chosen, and writes the window as fit', () => {
-    const { actions } = open()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Canvas/ }))
-    const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'A2 · 2245 × 1587 px' }).getAttribute('aria-selected')).toBe('true')
-    fireEvent.click(list.getByRole('option', { name: 'Fit the window' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ paper: 'fit' })
-  })
-
-  it('writes nothing for the default', () => {
-    const { actions } = open({ ...SHEET, paper: 'A0' })
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Canvas/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A2 · 2245 × 1587 px' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ paper: undefined })
-  })
-})

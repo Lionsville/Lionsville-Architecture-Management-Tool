@@ -13,7 +13,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { SheetPage } from '../business'
+import { SheetPage } from '../business/ui/SheetPage'
 import { renderShell } from './testing/renderShell'
 import { laidOut } from '../model/testFixtures'
 import { translator } from '../i18n'
@@ -443,25 +443,26 @@ describe('from nothing to a covered capability', () => {
 
   /** Type over what the thing was made as — the cursor is already in the box. */
   const rename = (to: string) => {
-    const field = within(screen.getByTestId('sheet-inspector')).getByLabelText('Name')
-    expect(document.activeElement).toBe(field)
+    const field = document.activeElement as HTMLElement
+    expect(['INPUT', 'TEXTAREA']).toContain(field.tagName)
     fireEvent.change(field, { target: { value: to } })
+    fireEvent.blur(field)
   }
 
   it('makes one by clicking and typing, and ⌘Z walks it back', () => {
     const host = page()
 
-    fireEvent.click(screen.getByLabelText('New journey'))
+    fireEvent.click(screen.getByRole('button', { name: 'New journey' }))
     rename('Ship a consignment')
     expect(screen.getByTestId('sheet-phase-start').textContent).toBe('Start')
 
-    fireEvent.click(screen.getByLabelText('New area'))
+    fireEvent.click(screen.getByRole('button', { name: 'New area' }))
     rename('Fulfilment')
 
     fireEvent.click(screen.getByLabelText('Add a capability to Fulfilment'))
     rename('Picking')
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Application' }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse system' }))
 
     // One covered capability, drawn as a card in the area it was made in.
@@ -484,8 +485,8 @@ describe('from nothing to a covered capability', () => {
 
   it('leaves the journey and the area behind when it is walked all the way back', () => {
     const host = page()
-    fireEvent.click(screen.getByLabelText('New journey'))
-    fireEvent.click(screen.getByLabelText('New area'))
+    fireEvent.click(screen.getByRole('button', { name: 'New journey' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New area' }))
     expect(host.steps()).toBe(3)
 
     host.undo()

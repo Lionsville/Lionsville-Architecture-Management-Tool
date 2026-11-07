@@ -33,7 +33,7 @@ function open(
   readOnly = false,
   onRemoved = vi.fn(),
   ownerOf?: (id: string) => { label: string; fields: readonly string[]; onOpen?: () => void } | undefined,
-  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere' | 'responsible' | 'domains'> = {},
+  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere' | 'responsible' | 'domains' | 'scales' | 'describe'> = {},
 ) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
@@ -57,12 +57,13 @@ function open(
 }
 
 describe('the fields', () => {
-  it('renames as one step, so a run of keystrokes is one undo', () => {
+  it('renames as one step on the panel’s name, committed by Enter', () => {
     const { actions } = open('picking')
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Order picking' } })
-    expect(actions.updateElement).toHaveBeenCalledWith(
-      'picking', { name: 'Order picking' }, 'sheet.name:picking',
-    )
+    fireEvent.click(screen.getByRole('button', { name: /Change the name.*Picking/ }))
+    const field = screen.getByRole('textbox', { name: /Change the name/ })
+    fireEvent.change(field, { target: { value: 'Order picking' } })
+    fireEvent.keyDown(field, { key: 'Enter' })
+    expect(actions.updateElement).toHaveBeenCalledWith('picking', { name: 'Order picking' })
   })
 
   it('writes a lifecycle date onto the element, and takes it off again', () => {
@@ -157,36 +158,42 @@ describe('what the two kinds each add', () => {
     expect(screen.queryByTestId('sheet-inspector-coverage')).toBeNull()
   })
 
-  it('says of a capability that people do, that people do it', () => {
+  it('says of a capability that people do, that people do it, and who holds it in the same place as ever', () => {
     open('packing')
-    const coverage = screen.getByTestId('sheet-inspector-coverage')
-    expect(coverage.textContent).toContain('Warehouse team')
-    expect(coverage.textContent).toContain('People, without a system')
+    expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('People, without a system')
+    expect(screen.getByTestId('sheet-assigned-to').textContent).toContain('Warehouse team')
+  })
+
+  it('says of each application whether it is live or on its way out', () => {
+    open('picking', false, undefined, undefined, { describe: (id: string) => (id === 'wms' ? { name: 'Warehouse system', retiring: '2027-03-01' } : undefined) })
+    expect(screen.getByTestId('sheet-supporter-wms').textContent).toMatch(/retiring/)
+    expect(screen.getAllByTestId(/^sheet-supporter-/).find((row) => !row.dataset.testid?.endsWith('wms'))!.textContent).toContain('Live')
   })
 
 })
 
 describe('readOnly', () => {
-  it('leaves every field disabled and offers no move', () => {
+  it('offers no rename and no move, and leaves the folded fields disabled', () => {
     open('picking', true)
-    expect(screen.getByLabelText('Name').getAttribute('disabled')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull()
     expect(screen.getByRole('combobox', { name: /Sits under/ }).getAttribute('aria-disabled')).toBe('true')
   })
 })
 
-describe('what covers a capability, as something to tick', () => {
-  it('ticks a supporter in and out, an application or an actor, held or not', () => {
+describe('what covers a capability', () => {
+  const add = () => fireEvent.click(screen.getByRole('button', { name: '+ Application' }))
+
+  it('adds a supporter and an actor by a pick, and takes off what is kept here', () => {
     const { actions } = open('dunning')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    add()
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Finance system' }))
     expect(actions.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
     })
     cleanup()
     const { actions: actions2 } = open('picking')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse system' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Take Warehouse system off' }))
     expect(actions2.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
     })
@@ -204,50 +211,26 @@ describe('what covers a capability, as something to tick', () => {
     expect(screen.getByRole('button', { name: 'Open Warehouse system, as the landscape calls it' })).toBeTruthy()
     cleanup()
     open('negotiate')
-    expect(screen.queryByRole('combobox', { name: /Supported by/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: '+ Application' })).toBeNull()
   })
 
-  it('shows what is already ticked, as chips', () => {
-    open('picking')
-    const field = screen.getByRole('combobox', { name: /Supported by/ }).closest('.MuiAutocomplete-root')
-    expect(field?.textContent).toContain('Handheld scanners')
-    expect(field?.textContent).toContain('Warehouse system')
-  })
-
-  it('offers every application in the organisation, with where it is defined', () => {
-    // An organisation's sheet holds no applications of its own: what
-    // supports its capabilities is a landscape's, handed in as the register.
+  it('offers every application in the organisation, with where it is defined, less what covers it already', () => {
     const { actions } = open('dunning', false, undefined, undefined, {
       applications: [
         { id: 'erp', name: 'Finance system' },
         { id: 'crm', name: 'Customer system', where: 'acme/sales' },
       ],
     })
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    add()
     const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'Customer system' }).textContent).toContain('acme/sales')
-    fireEvent.click(list.getByRole('option', { name: 'Customer system' }))
+    expect(list.getByRole('option', { name: /Customer system/ }).textContent).toContain('acme/sales')
+    fireEvent.click(list.getByRole('option', { name: /Customer system/ }))
     expect(actions.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'crm', functionId: 'dunning', on: true,
     })
   })
 
-  it('is found by typing, because a register runs to hundreds', () => {
-    open('dunning', false, undefined, undefined, {
-      applications: [
-        { id: 'erp', name: 'Finance system' },
-        { id: 'crm', name: 'Customer system', where: 'acme/sales' },
-      ],
-    })
-    const box = screen.getByRole('combobox', { name: /Supported by/ })
-    fireEvent.focus(box)
-    fireEvent.change(box, { target: { value: 'cust' } })
-    const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'Customer system' })).toBeTruthy()
-    expect(list.queryByRole('option', { name: 'Finance system' })).toBeNull()
-  })
-
-  it('counts a landscape’s rows in the line, and offers to take away only its own', () => {
+  it('counts a landscape’s rows, once, and offers to take away only its own', () => {
     const { actions } = open('dunning', false, undefined, undefined, {
       applications: [{ id: 'crm', name: 'Customer system', where: 'acme/sales' }],
       elsewhere: [
@@ -257,14 +240,34 @@ describe('what covers a capability, as something to tick', () => {
     })
     expect(screen.getByRole('button', { name: 'Open Customer system' })).toBeTruthy()
     expect(screen.queryByText('Nothing and nobody yet')).toBeNull()
-    // This scope's own saved rows are in the tree's list too: once, not twice.
     expect(screen.getAllByRole('button', { name: /^Open / })).toHaveLength(1)
-    // Not a chip: the row is the landscape's, and unpicking it here would find nothing to delete.
-    const field = screen.getByRole('combobox', { name: /Supported by/ }).closest('.MuiAutocomplete-root')
-    expect(field?.textContent).not.toContain('Customer system')
+    // The row is the landscape's, and taking it off here would find nothing to delete.
+    expect(screen.queryByRole('button', { name: 'Take Customer system off' })).toBeNull()
     expect(actions.setCoverage).not.toHaveBeenCalled()
   })
+})
 
+describe('a function’s ratings', () => {
+  const scales = [{ key: 'maturity', label: 'Maturity', min: 1, max: 5 }]
+
+  it('offers each scale of the organisation’s, writes one step, and takes a rating off again', () => {
+    const { actions } = open('picking', false, undefined, undefined, { scales })
+    fireEvent.change(screen.getByLabelText('Maturity'), { target: { value: '3' } })
+    expect(actions.updateElement).toHaveBeenCalledWith('picking', { ratings: { maturity: 3 } })
+    cleanup()
+    const rated = open({ ...held('picking'), ratings: { maturity: 3 } }, false, undefined, undefined, { scales })
+    fireEvent.change(screen.getByLabelText('Maturity'), { target: { value: '' } })
+    expect(rated.actions.updateElement).toHaveBeenCalledWith('picking', { ratings: undefined })
+  })
+
+  it('reads under readOnly, and is absent with no scale', () => {
+    open({ ...held('picking'), ratings: { maturity: 3 } }, true, undefined, undefined, { scales })
+    expect(screen.getByTestId('sheet-rating-maturity').textContent).toContain('3')
+    expect(screen.queryByLabelText('Maturity')).toBeNull()
+    cleanup()
+    open('picking')
+    expect(screen.queryByTestId('sheet-rating-maturity')).toBeNull()
+  })
 })
 
 describe('the way to the page', () => {
@@ -309,8 +312,8 @@ describe('deleting', () => {
     // delete this" belongs next to the thing that will not delete.
     const { actions } = open('warehousing')
     const button = screen.getByRole('button', { name: 'Delete Warehousing' })
-    expect(button.getAttribute('disabled')).not.toBeNull()
-    expect(screen.getByText('2 things are inside it')).toBeTruthy()
+    expect(button.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText(/2 things are inside it/)).toBeTruthy()
     fireEvent.click(button)
     expect(actions.removeElement).not.toHaveBeenCalled()
   })
@@ -402,7 +405,7 @@ describe('a capability another scope answers for', () => {
 
   it('locks the cached name and the owner\'s dates, and leaves the account of it', () => {
     open('picking', false, vi.fn(), () => owned)
-    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
     expect((screen.getByLabelText('Picking: Live from') as HTMLInputElement).disabled).toBe(true)
     expect((screen.getByLabelText('Description') as HTMLTextAreaElement).disabled).toBe(false)
   })
@@ -410,7 +413,7 @@ describe('a capability another scope answers for', () => {
   it('says nothing about a record this scope defines', () => {
     open('picking')
     expect(screen.queryByTestId('owned-elsewhere')).toBeNull()
-    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false)
+    expect(screen.getByRole('button', { name: /Change the name/ })).toBeTruthy()
   })
 })
 
@@ -449,10 +452,10 @@ describe('who is responsible for a capability', () => {
       elsewhere: [{ id: 'far', type: 'assigned', sourceId: 'robotics', targetId: 'packing' }],
     })
     const chips = screen.getAllByTestId('sheet-assigned')
-    expect(chips.map((one) => one.textContent)).toEqual(['Warehouse team', 'Robotics · outside this domain'])
+    expect(chips.map((one) => one.textContent?.trim())).toEqual(['Warehouse team', 'Roboticsoutside this domain'])
     expect(chips[1].getAttribute('data-outside')).toBe('true')
-    expect(within(chips[1]).queryByTestId('CancelIcon')).toBeNull()
-    fireEvent.click(within(chips[0]).getByTestId('CancelIcon'))
+    expect(within(chips[1]).queryByRole('button', { name: /Take/ })).toBeNull()
+    fireEvent.click(within(chips[0]).getByRole('button', { name: /Take/ }))
     expect(actions.setCoverage).toHaveBeenCalledWith({ type: 'assigned', sourceId: 'warehouse-team', functionId: 'packing', on: false })
   })
 
@@ -476,9 +479,9 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
   it('chips each domain it is handed to, takes one off, and hands it to another by a pick', async () => {
     const { actions } = open(handed(['retail', 'wholesale']), false, undefined, undefined, { domains: domains(['retail/shops']) })
     const chips = screen.getAllByTestId('sheet-domain')
-    expect(chips.map((one) => one.textContent)).toEqual(['Retail', 'Wholesale · not started'])
+    expect(chips.map((one) => one.textContent)).toEqual(['Retail', 'Wholesalenot started'])
     expect(chips[1].getAttribute('data-not-started')).toBe('true')
-    fireEvent.click(within(chips[0]).getByTestId('CancelIcon'))
+    fireEvent.click(within(chips[0]).getByRole('button', { name: /Take/ }))
     expect(actions.updateElement).toHaveBeenCalledWith('fulfilment', { scopes: ['wholesale'] })
     fireEvent.click(screen.getByRole('button', { name: '+ Domain' }))
     expect(await axeFindings()).toEqual([])
@@ -508,7 +511,7 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
 
   it('says so of a domain the tree does not hold', () => {
     open(handed(['gone']), false, undefined, undefined, { domains: { ...domains(), known: (scope: string) => scope !== 'gone' } })
-    expect(screen.getByTestId('sheet-domain').textContent).toBe('gone · no such scope')
+    expect(screen.getByTestId('sheet-domain').textContent).toBe('goneno such scope')
   })
 
   it('says nobody either way on a function nothing is said of', () => {
@@ -520,7 +523,7 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
   it('offers no editor where the sheet is only read, nor on a stand-in, whose domains are the definition’s', () => {
     open(handed(['retail']), true, undefined, undefined, { domains: domains() })
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
-    expect(within(screen.getByTestId('sheet-domain')).queryByTestId('CancelIcon')).toBeNull()
+    expect(within(screen.getByTestId('sheet-domain')).queryByRole('button', { name: /Take/ })).toBeNull()
     cleanup()
     open({ ...held('fulfilment'), ref: '' }, false, undefined, () => ({ label: 'Acme', fields: ['scopes', 'name'] }), { domains: domains(['retail']) })
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()

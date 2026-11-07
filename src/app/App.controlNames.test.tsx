@@ -372,12 +372,13 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
   [['the business architecture, a capability chosen', [
     'sheet.canvas', 'sheet.unmapped', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy',
-    'sheet.assignedTo', 'sheet.showResponsible', 'sheet.allUnits', 'sheet.domains',
+    'sheet.assignedTo', 'sheet.showResponsible', 'sheet.allUnits', 'sheet.domains', 'sheet.reading', 'sheet.day', 'sheet.key',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-business'))
     await screen.findByTestId('sheet-canvas')
     await waitFor(() => expect(document.querySelector('[data-testid^="sheet-capability-"]')).not.toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
     fireEvent.click(document.querySelector<HTMLElement>('[data-testid^="sheet-capability-"]')!)
   }]],
   // A landscape's own sheet, which may take up what the organisation's sheet holds (ADR-0040 §5).
@@ -386,7 +387,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: sheeted.find((one) => one.path === landscape.path)! } })
     await screen.findByTestId('sheet-canvas')
   }]],
-  [['the enterprise map', ['map.grid', 'map.summary', 'page.seam'], async () => {
+  [['the enterprise map', ['map.grid', 'map.summary', 'page.seam', 'map.reading', 'map.filter', 'map.levels', 'map.day', 'map.matrix'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-map'))
   }]],

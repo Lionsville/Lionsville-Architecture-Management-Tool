@@ -420,3 +420,23 @@ describe('a view with readings', () => {
     expect(isPageTab('technology', 'nope')).toBe(false)
   })
 })
+
+describe('how a sheet or a map is being read, in the address', () => {
+  it('carries the level, the colour and the day there and back', () => {
+    const place = { scope: 'acme', page: 'sheet' as const, id: 's1', tab: 'overview', colour: 'who', day: '2027-03-01' }
+    const hash = writePlace(place)
+    expect(hash).toBe('#/acme/-/sheet/s1?tab=overview&colour=who&day=2027-03-01')
+    expect(readPlace(hash)).toEqual(place)
+  })
+
+  it('refuses a day that is no day, and reads no colour on a page that has no such reading', () => {
+    expect(readPlace('#/acme/-/map/m1?day=soon')).toBeUndefined()
+    expect(readPlace('#/acme/-/board/b1?colour=who')).toEqual({ scope: 'acme', page: 'board', id: 'b1' })
+  })
+
+  it('names them on the screen’s place, and a change of them is the same page: a replace', () => {
+    const screen = { open: { path: 'acme', name: 'Acme', view: { id: 's1', name: 'S', kind: 'sheet', tab: 'overview', colour: 'who' } } }
+    expect(placeOf(screen)).toEqual({ scope: 'acme', page: 'sheet', id: 's1', tab: 'overview', colour: 'who' })
+    expect(stepBetween({ scope: 'acme', page: 'sheet', id: 's1' }, { scope: 'acme', page: 'sheet', id: 's1', colour: 'who' })).toBe('replace')
+  })
+})

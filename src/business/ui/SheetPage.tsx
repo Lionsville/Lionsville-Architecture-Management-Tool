@@ -250,16 +250,18 @@ function usePageSelection(model: DesignModel, remember: string | undefined) {
     }
     if (next.size !== folded.size) setFolded(next)
   }, [model.elements, folded, setFolded])
-  const select = useCallback((id: ElementId | undefined) => {
-    setSelectedId(id)
-    if (id !== undefined) reveal(id)
-  }, [reveal])
+  const select = useCallback((id: ElementId | undefined) => { setSelectedId(id) }, [])
   const made = useCallback((id: ElementId | undefined) => {
     if (id === undefined) return
     setSelectedId(id)
     setNaming((was) => ({ id, fresh: true, nonce: (was?.nonce ?? 0) + 1 }))
-    reveal(id)
-  }, [reveal])
+  }, [])
+  // Once per pick, and once what was just made has reached the model: folding it away again afterwards is not undone.
+  const pickedKnown = selectedId !== undefined && model.elements.some((held) => held.id === selectedId)
+  useEffect(() => {
+    if (selectedId !== undefined && pickedKnown) reveal(selectedId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, pickedKnown])
   const name = useCallback((id: ElementId) => {
     setNaming((was) => ({ id, fresh: false, nonce: (was?.nonce ?? 0) + 1 }))
   }, [])
@@ -390,8 +392,8 @@ export function SheetPage(props: SheetPageProps) {
     setNaming(undefined)
     if (!element) return
     if (name !== element.name) actions.updateElement(id, { name })
-    if (then === 'next' && fresh && element.kind === 'function') {
-      made(actions.addElement({ kind: 'function', name: t('sheet.nameCapability'), ...(element.parentId !== undefined ? { parentId: element.parentId } : {}) }))
+    if (then === 'next' && fresh && element.kind === 'function' && element.parentId !== undefined) {
+      made(actions.addElement({ kind: 'function', name: t('sheet.nameCapability'), parentId: element.parentId }))
     }
     if (then === 'under' && fresh) {
       const rows = element.parentId !== undefined ? rowsFor(areaRows, id) : []

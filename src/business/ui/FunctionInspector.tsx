@@ -346,7 +346,9 @@ export function FunctionInspector(props: FunctionInspectorProps) {
 
   return (
     <div className="sheet-panel__testid" data-testid="sheet-inspector">
+      {/* One per record: a name half typed is about the one it was typed on, and must not land on the next. */}
       <Panel
+        key={element.id}
         kind={t(kindWord(element, model))}
         name={element.name}
         dataGuide="sheet.inspector"
@@ -704,7 +706,7 @@ function CoveredBy({ element, model, readOnly, actions, applications, elsewhere,
         ))}
         {!readOnly && (
           <PickToAdd
-            options={offered.map((one) => ({ id: one.id, label: one.name, ...(one.where !== undefined ? { group: one.where } : {}) }))}
+            options={offered.map((one) => ({ id: one.id, label: one.name, ...(one.where !== undefined ? { note: one.where } : {}) }))}
             label={t('sheet.addApplication')} field={t('sheet.supportedBy')} nothing={t('sheet.coverageNobody')}
             guide="sheet.supportedBy" testId="sheet-support" disabled={offered.length === 0}
             onPick={(sourceId) => actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on: true })}

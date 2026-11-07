@@ -208,7 +208,7 @@ export const EN = {
   'map.summary': '{covered} covered · {manual} by people · {uncovered} uncovered',
   'map.legend': '● supports it · ○ supports something under it',
   'map.uncovered': 'uncovered',
-  'map.byPeople': 'people',
+  'map.byPeople': 'by people',
   'map.gapsOne': '1 gap',
   'map.gapsOther': '{count} gaps',
   'map.supportsTip': '{application} supports {function}',

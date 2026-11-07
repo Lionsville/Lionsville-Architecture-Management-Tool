@@ -184,7 +184,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'map.summary': '{covered} abgedeckt · {manual} durch Menschen · {uncovered} ungedeckt',
   'map.legend': '● unterstützt es · ○ unterstützt etwas darunter',
   'map.uncovered': 'ungedeckt',
-  'map.byPeople': 'Menschen',
+  'map.byPeople': 'durch Menschen',
   'map.gapsOne': '1 Lücke',
   'map.gapsOther': '{count} Lücken',
   'map.supportsTip': '{application} unterstützt {function}',

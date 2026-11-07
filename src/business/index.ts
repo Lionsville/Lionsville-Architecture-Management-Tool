@@ -41,13 +41,11 @@ export type {
   SheetActor, SheetArea, SheetCapability, SheetCell, SheetGrouping, SheetJourney, SheetLane,
   SheetStep, LaidOutSheet,
 } from './sheet'
-export { SheetPage } from './ui/SheetPage'
+// The pages themselves are named by file: they are parts of their own, fetched with the first sheet opened.
 export type { SheetHandle, SheetPageProps } from './ui/SheetPage'
-export { MapPage } from './ui/MapPage'
 export type { MapPageProps } from './ui/MapPage'
 export { captureSheet, sheetPixelRatio } from '../widgets/capturePage'
 export type { SheetShot } from '../widgets/capturePage'
-export { FunctionInspector, INSPECTOR_WIDTH } from './ui/FunctionInspector'
 export type {
   CoverageChange, FunctionInspectorProps, NewElement, NewLane, SheetActions, Supporter,
 } from './ui/FunctionInspector'

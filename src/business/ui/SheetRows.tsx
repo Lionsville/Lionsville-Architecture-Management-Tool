@@ -76,16 +76,24 @@ export function CoverageMeter({ answered, label }: { answered: Answered; label: 
   )
 }
 
+/** What a row's mark says in words, with how many: *2 apps*, *people*, *nothing yet*. */
+function coverageSaid(value: LensValue, t: Translate): string {
+  if (value.value === 'none') return t('sheet.nothingYet')
+  if (value.value === 'people') return t('sheet.people')
+  const apps = plural(t, { one: 'sheet.appsOne', other: 'sheet.appsOther' }, Number(value.said ?? 0))
+  return value.value === 'moving' ? `${apps} · ${valueWord('coveredBy', 'moving', t)}` : apps
+}
+
 /** A row's own end: a number, a name, a unit. Nothing is written twice on a row that says it by its mark. */
 function RowEnd({ element, value, context }: { element: DesignElement; value: LensValue | undefined; context: RowContext }) {
   const { lens, t, who } = context
   if (!value || !lens) return null
-  if (lens === 'who' && value.value === 'held') {
+  if (lens === 'who') {
     const others = who?.of(element.id) ?? []
     return (
-      <span className="sheet-row__end">
-        <UnitLabel who={who} functionId={element.id} t={t} />
-        {others.length > 0 && ` ${others.map((one) => one.name).join(', ')}`}
+      <span className="sheet-row__end" data-testid={`sheet-responsible-${element.id}`}>
+        {value.value === 'nobody' ? t('sheet.responsibleNobody') : <UnitLabel who={who} functionId={element.id} t={t} />}
+        {others.length > 0 && others.map((one) => (one.outside ? `${one.name} · ${t('sheet.assignedOutside')}` : one.name)).join(', ')}
       </span>
     )
   }
@@ -171,7 +179,7 @@ function Row({ row, count, context }: { row: SheetRow; count?: string; context: 
             <span>
               {element.name}
               {context.lens === 'coveredBy' && value && (
-                <span className="kit-hidden" data-testid={`sheet-coverage-${element.id}`}>{valueWord('coveredBy', value.value, t)}</span>
+                <span className="kit-hidden" data-testid={`sheet-coverage-${element.id}`}>{coverageSaid(value, t)}</span>
               )}
             </span>
           </button>

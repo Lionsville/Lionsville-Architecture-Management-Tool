@@ -414,7 +414,7 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(screen.getByTestId('open-map').getAttribute('role')).toBe('row'))
     fireEvent.click(screen.getByTestId('open-map'))
     // The root draws nothing; the map is what it was opened for.
-    expect(await screen.findByTestId('map-grid', {}, { timeout: 3000 })).toBeDefined()
+    expect(await screen.findByTestId('map-body', {}, { timeout: 3000 })).toBeDefined()
   })
 
   it('counts the initiatives of the domains on the roadmap card, off the index', async () => {
