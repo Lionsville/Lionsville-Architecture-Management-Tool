@@ -239,6 +239,8 @@ const KEY_GLYPH: Record<string, string> = {
   Escape: 'Esc',
   Delete: 'Del',
   Arrow: '↑ ↓ ← →',
+  ArrowDown: '↓',
+  ArrowUp: '↑',
   ContextMenu: 'Menu',
   '=': '+',
   '-': '−',

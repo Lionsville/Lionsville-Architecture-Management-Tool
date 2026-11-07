@@ -110,6 +110,11 @@ describe('formatShortcut', () => {
     expect(formatShortcut('context-menu-key', 'other')).toBe('Menu');
     expect(formatShortcut('no-such-shortcut', 'mac')).toBeUndefined();
   });
+
+  it('draws the level keys as arrows, as the nudge row does', () => {
+    expect(formatShortcut('level-in', 'mac')).toBe('⌘ ↓');
+    expect(formatShortcut('level-out', 'other')).toBe('Ctrl+↑');
+  });
 });
 
 describe('CANVAS_SHORTCUTS invariants', () => {
