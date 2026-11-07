@@ -51,10 +51,15 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   useReportPreferences(settings, initial, preferences?.onChange);
   // Preferences changed from their own page, while this is mounted under it: the
   // canvas follows. What it reported itself comes back equal, and changes nothing.
+  // By what they say and not by identity: a host that hands a new object each
+  // render would otherwise take back every change made here.
   const outside = preferences?.initial;
+  const lastOutside = useRef(initial);
   useEffect(() => {
     if (outside === undefined) return;
     const next = mergePreferences(outside);
+    if (preferencesEqual(lastOutside.current, next)) return;
+    lastOutside.current = next;
     setSnapToGrid(next.snapToGrid);
     setShowGrid(next.showGrid);
     setShowLifecycle(next.showLifecycle);
