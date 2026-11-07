@@ -73,7 +73,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
   const keeps = useMemo(() => (pick ? [...added, pick.column] : added), [added, pick])
   const grid = useMemo(() => raciGrid(model, lookNow, view, unitRoles, keeps), [model, part, look.row, look.whole, look.needs, view, unitRoles, keeps])
   const needing = useMemo(() => rowsNeeding(model), [model])
-  const needingHere = unitRoles ? needing.filter((row) => model.roles.some((role) => unitRoles.includes(role.id) && role.duties.some((duty) => duty.responsibility === row.id))).length : undefined
+  const needingHere = needingIn(unitRoles, needing, model)
   const pickNode = (id: string) => {
     if (id === OTHERS) { onLook({ whole: true }); return }
     if (id === ALL) { onLook({ ...(look.unit ? { unit: look.unit } : {}) }); return }
@@ -134,6 +134,9 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
     </>
   )
 }
+
+const needingIn = (unitRoles: readonly string[] | undefined, needing: readonly { id: string }[], model: OperatingModel) =>
+  (unitRoles ? needing.filter((row) => model.roles.some((role) => unitRoles.includes(role.id) && role.duties.some((duty) => duty.responsibility === row.id))).length : undefined)
 
 const noRowsWord = (unit: UnitFact | undefined, view: MatrixView) =>
   (unit && view.roles.length === 0 && view.groups.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')
