@@ -14,13 +14,10 @@
  * folder decides for itself.
  */
 import { useCallback, useEffect, useState } from 'react'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import type { SourcePreferencesPanelProps } from '../../ports/ProviderParts'
+import { SettingsSection, SettingSwitch } from '../../widgets/kit/SettingsPage'
 import type { FolderOwn, SyncSettings } from './folderOwn'
 
 export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<FolderOwn>) {
@@ -50,32 +47,11 @@ export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<F
   }, [own, notify, s])
 
   if (!held) return null
+  // A section of the page like the app's own, so the provider's part reads as one with it.
   return (
-    <Stack spacing={1}>
-      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
-        {s('prefs.thisMachine')}
-      </Typography>
-      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('prefs.thisMachineNote')}</Typography>
-      <FormControlLabel
-        control={(
-          <Checkbox
-            size="small"
-            checked={held.pullOnOpen}
-            onChange={(e) => change({ pullOnOpen: e.target.checked })}
-          />
-        )}
-        label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('prefs.pullOnOpen')}</Typography>}
-      />
-      <FormControlLabel
-        control={(
-          <Checkbox
-            size="small"
-            checked={held.pushAfterSnapshot}
-            onChange={(e) => change({ pushAfterSnapshot: e.target.checked })}
-          />
-        )}
-        label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('prefs.pushAfterSnapshot')}</Typography>}
-      />
-    </Stack>
+    <SettingsSection title={s('prefs.thisMachine')} note={s('prefs.thisMachineNote')}>
+      <SettingSwitch label={s('prefs.pullOnOpen')} checked={held.pullOnOpen} onChange={(pullOnOpen) => change({ pullOnOpen })} />
+      <SettingSwitch label={s('prefs.pushAfterSnapshot')} checked={held.pushAfterSnapshot} onChange={(pushAfterSnapshot) => change({ pushAfterSnapshot })} />
+    </SettingsSection>
   )
 }
