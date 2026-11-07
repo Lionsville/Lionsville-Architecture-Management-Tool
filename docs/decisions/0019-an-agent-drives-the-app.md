@@ -5,8 +5,8 @@
   a view), as built the same day; amended 11 October 2026 (`app.open` takes
   a solution or an experiment; `select` may ride in a link), accepted and
   built; amended 7 November 2026 (a whole session taken back as one step,
-  *Amended, 7 November 2026*, below), the model built the same day (4.0.0, not
-  yet released)
+  *Amended, 7 November 2026*, below), the model built the same day and the
+  screens with it; implemented, 7 November 2026 (4.0.0, not yet released)
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
@@ -326,3 +326,11 @@ is taken out of it: `putBackRun` makes the run's inverses a `restore` with
 refuses like any other if somebody got there first. Its run reads the author and the
 client the steps arrived under (`AgentSessionOf.remote`).
 
+## As built, 7 November 2026: the screens
+
+When a session ends, by itself or on Stop, the band that named the agent says what
+it did and, while its steps are still the newest, offers to take them all back
+(`app/frame/AppFrame`, the run worked out in `app/WorkspaceBar`): *Undo* through `ModelSession.undoRun` where the stack is this
+person's, *Put back* as one new step through `putBackRun` where the source publishes
+steps. A build with a server lists sessions on a page of its own as well; that page is
+the build's.

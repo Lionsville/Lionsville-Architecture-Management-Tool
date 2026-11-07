@@ -1,8 +1,8 @@
 # ADR-0046 — A numeric scale on an aspect, and a function rated on it
 
 * Status: accepted, 7 November 2026; as built, 7 November 2026: the model, the
-  folder format and the agent's tools (4.0.0, not yet released). The heat map on
-  the sheet is the sheet's to draw.
+  folder format and the agent's tools, then the screens (*As built: the screens*,
+  below); implemented, 7 November 2026 (4.0.0, not yet released)
 * Date: 2026-11-07
 * Deciders: Wouter Simons
 
@@ -68,3 +68,14 @@ and a 16 reader refuses a 17 rather than drop it on its way back.
 * Bad, accepted: an off-scale value is invisible until the scale changes back. The
   alternative, clipping or deleting it, would make narrowing a scale destructive.
 * Neutral: an element's `aspects` and its badges are unchanged.
+
+## As built: the screens
+
+A function's panel lists one line per scale with its value, written there where the
+function is this scope's own (`business/ui/FunctionInspector`, *Ratings*). A scale is a
+question under the sheet's *Colour* (`business/lens.ts`): a rated row is filled in one
+hue in five steps by `heatOf`, and always says its number, so a value never rests on
+colour alone; an unrated row says so.
+
+A scale is set and removed by the agent's tools, at the organisation, as this record
+decided; no screen sets one.

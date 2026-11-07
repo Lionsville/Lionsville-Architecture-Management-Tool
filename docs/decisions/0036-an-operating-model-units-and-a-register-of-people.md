@@ -2,7 +2,8 @@
 
 * Status: amended, 7 November 2026: an application's owner as one field, a leaving
   taken back, and people found by search (*Amended, 7 November 2026*, below), as built
-  the same day (4.0.0, not yet released). Accepted, 11 October 2026; as built, 11 October 2026, in eight
+  the same day, on the People page (*Take back leaving…*) and in ⌘K too;
+  implemented, 7 November 2026 (4.0.0, not yet released). Accepted, 11 October 2026; as built, 11 October 2026, in eight
   parts — the register of people, the operating model, units and
   assignments, change over time, names as references, the two views and the
   `interacts` row, the calls a review left open, and a managing role's right
@@ -61,7 +62,7 @@ the open item a `scope.describe` tool is closed by `scope.update`, on every
 host; a unit's and a function's `scopes` are checked against the tree, and
 `""` is dropped for a function as for a unit.*
 
-*Extended by ADR-0048 (§3), 7 November 2026; not yet built: the unit is named always
+*Extended by ADR-0048 (§3), 7 November 2026, and built with it: the unit is named always
 on an area, and on a tile under its lens or where a poster's `labels` place it. A typed
 team is an actor without a unit type, and one `assigned` row, as ever.*
 

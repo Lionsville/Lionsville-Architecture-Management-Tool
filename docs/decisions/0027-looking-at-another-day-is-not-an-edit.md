@@ -2,7 +2,8 @@
 
 * Status: accepted; amended, 7 November 2026: a look is read-only, and a lens is
   the reader's until it is kept (*Amended*, below), as built the same day in the
-  editor (4.0.0, not yet released)
+  editor and on the screens; implemented, 7 November 2026 (4.0.0, not yet
+  released)
 * Date: 2026-09-26
 * Deciders: Wouter Simons
 * Supersedes: ADR-0009 (time on the facts), its *A diagram carries `asOf` and

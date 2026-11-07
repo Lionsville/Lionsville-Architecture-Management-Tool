@@ -10,7 +10,8 @@
   *Amendment, 7 November 2026: who recorded it, as a name*, below), with the
   format at 16 for it; as built the same day; amended, 7 November 2026: *Noted*
   (*Amendment, 7 November 2026: Noted*, below), as built the same day with the
-  format at 17 (4.0.0, not yet released)
+  format at 17, and on the chain's screens (`observations/ui/NotedDialog`);
+  implemented, 7 November 2026 (4.0.0, not yet released)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,

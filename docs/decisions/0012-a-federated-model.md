@@ -6,7 +6,8 @@
 * Superseded-by: ADR-0016, in part, 2026-09-16 — §6: a sheet is opened as a
   page over the canvas
 * Superseded-by: ADR-0048, in part, 2026-11-07 — §6: a sheet is computed unless it
-  has a geometry, and *nothing drags* no longer holds for one; not yet built
+  has a geometry, and *nothing drags* no longer holds for one; built, 7 November
+  2026
 * Superseded-by: ADR-0018, in part, 2026-09-19 — §11 and its Decision Drivers
   and Consequences — "the interchange format is a contract with other tools
   and does not change"
@@ -600,7 +601,7 @@ The four view kinds:
 | `sheet` | a journey, areas, actors | laid out | the business architecture, one page — the example that started this |
 | `map` | functions × applications (`supports`) | laid out | the enterprise map: which capability is supported by what, across domains, with the gaps |
 
-*Superseded in part by ADR-0048, 7 November 2026; not yet built: a sheet is computed
+*Superseded in part by ADR-0048, 7 November 2026, and built: a sheet is computed
 unless it has a geometry, whose node ids are functions and steps and not members. It
 still has no members, and a map no coordinates at all.*
 

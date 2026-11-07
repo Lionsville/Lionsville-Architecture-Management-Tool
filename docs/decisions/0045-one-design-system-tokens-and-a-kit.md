@@ -1,8 +1,9 @@
 # ADR-0045 — One design system: tokens as the source, a kit the screens are composed from
 
 * Status: accepted, 7 November 2026; as built, 7 November 2026, tokens, fonts,
-  the accent seam and the language at the root; the screens moving onto the kit
-  not yet built
+  the accent seam and the language at the root; the screens moved onto the kit
+  the same day (*As built: the screens on the kit*, below); implemented,
+  7 November 2026 (4.0.0, not yet released)
 * Date: 2026-11-07
 * Deciders: Wouter Simons
 * Extends: ADR-0022 (source providers), ADR-0044 (one way every page behaves)
@@ -162,3 +163,16 @@ size reaches the same sizes. A canvas stays in px, since its zoom is what makes 
 larger and its reading distances depend on it. `build/literalFontSizes.test.ts`
 keeps a size from being written anywhere else.
 
+## As built: the screens on the kit
+
+Every screen composes the kit now: the frame and its two rows, the homes and the
+tree, the board and the container diagram with one View bar, Colour menu, Day control
+and dock, the sheet and its poster, the technology landscape, the chart and the
+Conway map, observations, decisions, the roadmap and a plan, the register and Checks,
+people and the operating model, Guidance, the drawing's edges, settings and
+preferences, and the first run. `kit/README.md` lists each part and what it is for.
+
+What did not move: MUI still draws beneath the kit, as §1 said, and a dialog a build
+composed from this one draws for itself is that build's. `build/literalColours.test.ts`
+keeps the files that still hold a literal colour to the count each holds, and
+`build/literalFontSizes.test.ts` keeps a size from being written outside the scale.

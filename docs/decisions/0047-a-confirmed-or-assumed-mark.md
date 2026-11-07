@@ -1,8 +1,8 @@
 # ADR-0047 — A confirmed or assumed mark on elements and lines
 
 * Status: accepted, 7 November 2026; as built, 7 November 2026: the model, the
-  folder format and the agent's tools (4.0.0, not yet released). The word on a row
-  and the dashed card are the screens' to draw.
+  folder format and the agent's tools, then the screens (*As built: the screens*,
+  below); implemented, 7 November 2026 (4.0.0, not yet released)
 * Date: 2026-11-07
 * Deciders: Wouter Simons
 
@@ -45,3 +45,11 @@ refuses a 17 rather than drop it.
 * Good: *assumed* can be drawn, as a word on the row and a dashed card, and counted.
 * Bad, accepted: names that already carry `(assumed)` keep it until somebody moves
   it; nothing guesses at what a name meant.
+
+## As built: the screens
+
+The panel of an element and of a line says *Confirmed*, *Assumed* or *Nobody said*
+as a row pressed to edit (`editor/inspector/elementRows`). An assumed card on a board
+is drawn with a dashed edge (`editor/nodes/NodeShell`). The word stands on the
+technology landscape's rows and in a container diagram's Lines list. The register's
+rows do not say it.
