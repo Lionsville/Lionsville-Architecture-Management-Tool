@@ -66,6 +66,7 @@ function show(initial: ScopeSnapshot) {
 
 /** Fill in the dialog and save it. */
 function applySettings(fields: { name?: string; author?: string }) {
+  fireEvent.click(screen.getByTestId('scope-switcher-open'))
   fireEvent.click(screen.getByText('Settings…'))
   if (fields.name !== undefined) {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: fields.name } })
@@ -90,6 +91,7 @@ function leaveTheWindow() {
 
 /** File the open scope under Globex, through the dialog. */
 async function moveUnderGlobex() {
+  fireEvent.click(screen.getByTestId('scope-switcher-open'))
   fireEvent.click(screen.getByText('Settings…'))
   fireEvent.mouseDown(screen.getByLabelText('Group'))
   fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
@@ -179,7 +181,8 @@ describe('project settings on an open project', () => {
 describe('project settings on a scope that is only read', () => {
   it('does not open, and says why', async () => {
     const store = show({ ...project(), unreadable: ['model.json'] })
-    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.click(screen.getByTestId('scope-switcher-open'))
+  fireEvent.click(screen.getByText('Settings…'))
     await screen.findByText(/open to be read and not changed/)
     expect(screen.queryByLabelText('Name')).toBeNull()
     expect((await saved(store))?.model.name).toBe('Landscape')

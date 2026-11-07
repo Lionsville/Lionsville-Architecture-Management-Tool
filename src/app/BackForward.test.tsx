@@ -16,8 +16,7 @@ import type { HostCommand } from '../platform/hostCommands'
 import { NO_WINDOW_CHROME, windowChromeFor } from '../platform/windowChrome'
 import type { ScopeSnapshot } from '../projects/scope'
 import { laidOut } from '../model/testFixtures'
-import { dialogIsOpen } from './BackForward'
-import { ShellToolbar } from './ShellToolbar'
+import { BackForward, dialogIsOpen } from './BackForward'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp, renderShell } from './testing/renderShell'
 
@@ -69,26 +68,19 @@ const props = {
   s: translator('en'),
 }
 
+const s_ = translator('en')
+
 describe('the bar', () => {
-  it('draws Back and Forward only where the host’s chrome asks for them', () => {
-    const { unmount } = renderShell(<ShellToolbar {...props} windowChrome={NO_WINDOW_CHROME} />)
-    expect(screen.queryByTestId('back-forward')).toBeNull()
-    unmount()
-    renderShell(<ShellToolbar {...props} windowChrome={DESKTOP} />)
+  it('draws Back and Forward on every host', () => {
+    renderShell(<BackForward s={s_} />)
     expect(screen.getByRole('button', { name: 'Back' })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Forward' })).toBeDefined()
-  })
-
-  it('draws them first on the bar, before the crumbs', () => {
-    renderShell(<ShellToolbar {...props} windowChrome={windowChromeFor({ desktop: true, platform: 'darwin' })} />)
-    const bar = screen.getByTestId('shell-toolbar')
-    expect(bar.firstElementChild?.getAttribute('data-testid')).toBe('back-forward')
   })
 
   it('greys them out at either end of the history, as the Navigation API says, and follows it', () => {
     const navigation = new FakeNavigation()
     ;(window as { navigation?: unknown }).navigation = navigation
-    renderShell(<ShellToolbar {...props} windowChrome={DESKTOP} />)
+    renderShell(<BackForward s={s_} />)
     const backButton = () => screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement
     const forwardButton = () => screen.getByRole('button', { name: 'Forward' }) as HTMLButtonElement
     expect(backButton().disabled).toBe(true)
@@ -102,7 +94,7 @@ describe('the bar', () => {
   })
 
   it('leaves both pressable where there is no Navigation API, and presses the window’s own', () => {
-    renderShell(<ShellToolbar {...props} windowChrome={DESKTOP} />)
+    renderShell(<BackForward s={s_} />)
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(back).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: 'Forward' }))
@@ -110,7 +102,7 @@ describe('the bar', () => {
   })
 
   it('says its two names in the language that is on', () => {
-    renderShell(<ShellToolbar {...props} s={translator('de')} windowChrome={DESKTOP} />, { language: 'de' })
+    renderShell(<BackForward s={translator('de')} />, { language: 'de' })
     expect(screen.getByRole('button', { name: 'Zurück' })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Vorwärts' })).toBeDefined()
   })
@@ -184,7 +176,8 @@ describe('the other ways in', () => {
   it('takes nothing while a dialog is open', async () => {
     const view = onTheDesktop(landscape)
     await screen.findByTestId('back-forward')
-    fireEvent.click(screen.getByRole('button', { name: 'Scope settings' }))
+    fireEvent.click(screen.getByTestId('scope-switcher-open'))
+    fireEvent.click(screen.getByText('Settings…'))
     await screen.findByRole('dialog')
     expect(dialogIsOpen()).toBe(true)
     view.send({ type: 'back' })

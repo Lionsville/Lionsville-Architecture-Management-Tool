@@ -7,12 +7,12 @@
  * and over the work from the trail's chevron, with the width left to the work.
  * The same find, the same rows and the same foot either way.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Language, Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
 import { flattenScopes, sortScopes } from '../../projects/scope'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
-import { ROOT_SCOPE } from '../../projects/scopePath'
+import { ancestorScopes, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { matchesQuery } from '../../model/textSearch'
 import { MoreMenu } from '../../widgets/kit/Menu'
@@ -42,6 +42,12 @@ export type ScopeTreePanelProps = {
 
 export function ScopeTreePanel({ tree, at, page, order, onOrderChange, folds, onHome, go, onSettings, onDelete, onNewScope, writable, typeLink, language, s }: ScopeTreePanelProps) {
   const [find, setFind] = useState('')
+  // The path to where you are, and what is filed under it, stands open, whichever way you arrived.
+  const { collapsed, toggleCollapsed } = folds
+  useEffect(() => {
+    for (const above of ancestorScopes(at)) if (collapsed.has(above)) toggleCollapsed(above)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on arrival only: a person may fold what they like after it
+  }, [at])
   const ordered = useMemo(() => sortTree(tree, order), [tree, order])
   const matching = useMemo(() => {
     const asked = find.trim()

@@ -117,7 +117,8 @@ export function ConnectAgentDialog({
       <DialogTitle sx={{ fontSize: 15 }}>{s('agent.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          <Typography sx={{ fontSize: 13 }}>{s('agent.what')}</Typography>
+          {/* About this machine's server: a source with an agent of its own says its own paragraph below, and this one would be false there. */}
+          {!(status === undefined && sourcePanel) && <Typography sx={{ fontSize: 13 }}>{s('agent.what')}</Typography>}
 
           {status === undefined ? (sourcePanel ? (
             /* In its place, not beside it: the sentence says to go and open this

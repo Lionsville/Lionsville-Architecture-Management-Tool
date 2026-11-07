@@ -21,6 +21,7 @@ import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
+import { pressRowMenu } from '../testing/rowMenu'
 
 afterEach(() => cleanup())
 // A home's *Open* mounts the canvas, which asks jsdom for the pieces it has
@@ -71,10 +72,11 @@ describe('the tree', () => {
   it('sums a subtree on a scope that has one, and a leaf on one that has not', async () => {
     show()
     const retail = await screen.findByTestId('scope-retail')
-    expect(retail.textContent).toContain('1 scope under it')
-    expect(retail.textContent).toContain('1 scope with boards')
-    expect(retail.textContent).toContain('1 diagram')
-    expect(screen.getByTestId('scope-finance').textContent).toContain('1 diagram')
+    // One number on the row; the words on hover and on the scope's home.
+    expect(retail.getAttribute('title')).toContain('1 scope under it')
+    expect(retail.getAttribute('title')).toContain('1 scope with boards')
+    expect(within(retail).getByTestId('scope-holds').textContent).toBe('1')
+    expect(screen.getByTestId('scope-finance').getAttribute('title')).toContain('1 diagram')
   })
 
   /**
@@ -95,9 +97,11 @@ describe('the tree', () => {
   it('shows all of the tree and folds it again', async () => {
     show([...TREE(), scope('retail/warehouse/dock', 'Dock')])
     await screen.findByTestId('scope-retail')
-    fireEvent.click(screen.getByRole('button', { name: 'Show all' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show all' }))
     expect(screen.getByTestId('scope-retail/warehouse/dock').dataset.depth).toBe('2')
-    fireEvent.click(screen.getByRole('button', { name: 'Fold all' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Fold all' }))
     expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
   })
 
@@ -118,8 +122,8 @@ describe('the tree', () => {
     fireEvent.click(screen.getByTestId('open-retail/warehouse'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Warehouse')
     expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
-    // The workspace's own bar, which only exists once a scope is open.
-    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+    // Nothing open, so nothing waits: the word says so on a home too.
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
     // A board is opened from the home's list of boards, by its name.
     fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
@@ -133,42 +137,35 @@ describe('the tree', () => {
     show()
     const finance = await screen.findByTestId('scope-finance')
     expect(within(finance).queryByRole('button', { name: 'Open Finance' })).toBeNull()
-    fireEvent.click(within(finance).getByText('1 diagram', { exact: false }))
+    fireEvent.click(within(finance).getByTestId('scope-holds'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Finance')
   })
 
   it('keeps a row’s settings to itself: pressing them does not open the scope', async () => {
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
+    await pressRowMenu('Retail', 'Settings for Retail')
     expect(await screen.findByRole('dialog')).toBeDefined()
     expect(screen.getByTestId('organisation-name').textContent).toBe('Acme Logistics')
   })
 
-  /** A landscape keeps its own views: its empty tree says what a scope under it is for. */
-  it('says what a scope under a landscape is for, where nothing is filed under one', async () => {
-    show()
-    fireEvent.click(await screen.findByTestId('open-finance'))
-    await screen.findByTestId('boards')
-    expect(screen.getByTestId('tree-empty').textContent)
-      .toBe('A landscape keeps its own views. Add a scope below it only to split it up.')
-  })
-
   it('offers every scope its own settings, the root included', async () => {
     show()
-    expect(await screen.findByRole('button', { name: 'Settings for Retail' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Settings for Acme Logistics' })).toBeDefined()
+    expect(await screen.findByRole('button', { name: 'More for Retail' })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'More for Acme Logistics' }))
+    expect(await screen.findByRole('menuitem', { name: 'Settings for Acme Logistics' })).toBeDefined()
   })
 
   /** The root is the folder you opened; there is nowhere to remove it from. */
   it('does not offer to delete the root', async () => {
     show()
-    expect(await screen.findByRole('button', { name: 'Delete Retail' })).toBeDefined()
-    expect(screen.queryByRole('button', { name: 'Delete Acme Logistics' })).toBeNull()
+    fireEvent.click(await screen.findByRole('button', { name: 'More for Acme Logistics' }))
+    await screen.findByRole('menuitem', { name: 'Settings for Acme Logistics' })
+    expect(screen.queryByRole('menuitem', { name: 'Delete Acme Logistics' })).toBeNull()
   })
 
   it('removes a scope and everything filed under it, once confirmed', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete Retail' }))
+    await pressRowMenu('Retail', 'Delete Retail')
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByTestId('scope-retail')).toBeNull())
     expect(await store.read('retail/warehouse')).toBeUndefined()
@@ -231,7 +228,7 @@ describe('the tree', () => {
     // And it is entered on its home, empty until a board is made: there is no
     // board to open it on, and the canvas would say so as an error.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
-    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
     expect(screen.queryByText(/Diagram not found|no view here to show/)).toBeNull()
   })
 
@@ -250,7 +247,7 @@ describe('the tree', () => {
 
   it('renames a scope without moving it', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
+    await pressRowMenu('Retail', 'Settings for Retail')
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Retail & wholesale' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () => expect((await store.read('retail'))?.model.name).toBe('Retail & wholesale'))
@@ -266,7 +263,7 @@ describe('the tree', () => {
     const { store } = show()
     const before = [(await store.read('retail'))?.id, (await store.read('retail/warehouse'))?.id]
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
+    await pressRowMenu('Retail', 'Settings for Retail')
     fireEvent.mouseDown(await screen.findByLabelText('Filed under'))
     fireEvent.click(screen.getByRole('option', { name: 'Finance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -385,10 +382,10 @@ describe('a domain’s home', () => {
     expect(screen.getByTestId('organisation-name').textContent).toBe('Retail')
     expect(screen.getByTestId('crumb-').textContent).toBe('Acme Logistics')
     expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
-    // Its child is the first column now, and its neighbour is not on it.
-    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('0')
-    expect(screen.queryByTestId('scope-finance')).toBeNull()
-    expect(screen.queryByTestId('scope-retail')).toBeNull()
+    // One tree on every home: this scope marked, and what is under it open.
+    expect(screen.getByTestId('scope-retail').getAttribute('aria-current')).toBe('page')
+    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('1')
+    expect(screen.getByTestId('scope-finance')).toBeDefined()
     // The folder is the root's fact, not the domain's.
     expect(screen.queryByTestId('working-source')).toBeNull()
   })

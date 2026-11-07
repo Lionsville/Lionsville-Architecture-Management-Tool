@@ -352,11 +352,17 @@ describe('the overflow on the web', () => {
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
 
     const can = { history: true, connect: true, scope: true }
-    const expected = [...offered(FILE_MENU, 'web', can), ...offered(HELP_MENU, 'web', can)]
+    const expected = offered(FILE_MENU, 'web', can)
       .flatMap((entry) => (entry.kind === 'item' ? [s(entry.label)] : []))
     for (const label of expected) expect(screen.getByText(label), label).toBeDefined()
     for (const item of THEME_ITEMS) expect(screen.getByText(s(item.label))).toBeDefined()
     expect(screen.getByText(s(PREFERENCES_ITEM.label))).toBeDefined()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    // Help has its own place in row one.
+    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    for (const entry of offered(HELP_MENU, 'web', can)) {
+      if (entry.kind === 'item') expect(await screen.findByText(s(entry.label))).toBeDefined()
+    }
   })
 
   it('sends the same command the menu bar would', async () => {
@@ -379,23 +385,14 @@ describe('the overflow on the web', () => {
    * The web build's way to the desktop app (ADR-0030): a link to the page it is
    * downloaded from, beside a new tab rather than instead of this one.
    */
-  it('offers the desktop app, as a link to where it is downloaded', async () => {
-    show()
-    await openOverflow()
-    const link = screen.getByTestId('overflow-desktop-app')
-    expect(link.textContent).toBe(s(DESKTOP_APP_LINK.label))
-    expect(link.getAttribute('href')).toBe('https://architecture.lionsville.nl/download')
-    expect(link.getAttribute('target')).toBe('_blank')
-  })
-
-  it('offers the product’s site under Help, in a tab of its own (ADR-0044 §6)', async () => {
-    show()
-    await openOverflow()
-    const link = screen.getByTestId('overflow-website')
-    expect(link.textContent).toBe('Website')
-    expect(link.getAttribute('href')).toBe('https://architecture.lionsville.nl')
-    expect(link.getAttribute('target')).toBe('_blank')
-    expect(link.getAttribute('rel')).toBe('noreferrer')
+  it('offers the desktop app and the product’s site under Help, each opened outside this window', async () => {
+    const view = show()
+    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByText(s(DESKTOP_APP_LINK.label)))
+    await waitFor(() => expect(view.hostControls.openExternal).toHaveBeenCalledWith('https://architecture.lionsville.nl/download'))
+    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByText('Website'))
+    await waitFor(() => expect(view.hostControls.openExternal).toHaveBeenCalledWith('https://architecture.lionsville.nl'))
   })
 
   it('is absent on a host that has a menu bar of its own', () => {

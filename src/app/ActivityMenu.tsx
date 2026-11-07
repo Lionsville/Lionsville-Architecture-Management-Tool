@@ -193,7 +193,7 @@ export function ActivityLines({ open = true, entries, recent, language, s }: Omi
           </span>
           <small>
             {(entry.origin !== undefined || entry.you || entry.unattended) && (
-              <span data-testid="activity-origin">{originWords(entry, s)} · </span>
+              <><span data-testid="activity-origin">{originWords(entry, s)}</span>{' · '}</>
             )}
             {/* The day as well as the time: a log a source keeps reaches back
                 past today, and "09:12" alone would not say which morning. */}

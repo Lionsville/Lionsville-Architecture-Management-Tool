@@ -19,8 +19,9 @@ import { CONTROL_NAMES, controlSelector } from '../platform/controlNames'
 import type { ControlName } from '../platform/controlNames'
 import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLES, exampleScopes } from './testing/examples'
-import { ShellToolbar } from './ShellToolbar'
+import { AlsoHere } from './frame/AppFrame'
 import { renderApp, renderShell } from './testing/renderShell'
+import { placePage, placePageNow } from './testing/placePage'
 
 configure({ asyncUtilTimeout: 5_000 })
 beforeAll(() => installReactFlowMocks())
@@ -147,9 +148,9 @@ async function selectCard(id: string) {
 /** Open a page from the bar of the landscape that is open, by what its button says. */
 async function page(label: string) {
   await onBoard()
-  const bar = screen.getByTestId('shell-toolbar')
+  const bar = screen.getByTestId('frame-places')
   fireEvent.click(within(bar).getAllByRole('button').find((one) => one.textContent === label)!)
-  return screen.findByRole('dialog')
+  return placePage()
 }
 
 /** An element's own page, where its record is laid out whole: Enter on the card that is selected. */
@@ -190,17 +191,27 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('checks-instances')
   }]],
   // The topics catalogue (ADR-0042), opened from the organisation's card.
-  [['the topics catalogue, from the organisation’s card', ['topics.new', 'page.close', 'page.seam'], async () => {
+  [['the topics catalogue, from the organisation’s card', ['topics.new', 'page.seam'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-topic-catalogue'))
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
   }]],
   // The overflow menu's Help, and Connect an agent from it, in a browser tab: where the desktop app is had (ADR-0044 §6).
-  [['the overflow menu', ['shell.website'], async () => {
+  [['the frame, on any screen', ['frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher'], async () => {
     show(false)
+    await screen.findByTestId('frame-places')
+  }], ['Your work', ['frame.yourWork'], async () => {
+    fireEvent.click(await screen.findByTestId('saved-indicator'))
+  }], ['Activity', ['frame.activity'], async () => {
+    fireEvent.click(await screen.findByTestId('frame-activity'))
+  }]],
+  [['Help', ['shell.website'], async () => {
+    show(false)
+    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+  }], ['Connect an agent, from it', ['agent.download'], async () => {
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     fireEvent.click(await screen.findByTestId('overflow-button'))
     await screen.findByTestId('overflow-menu')
-  }], ['Connect an agent, from it', ['agent.download'], async () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Connect an agent…' }))
     await screen.findByTestId('agent-desktop-only')
   }]],
@@ -316,7 +327,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
   }],
   ['a solution being tested, read', ['solution.planExperiment', 'solution.move'], async () => {
-    const list = await within(screen.getByRole('dialog')).findByTestId('solution-list')
+    const list = await within(placePageNow()!).findByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
   }],
   ['a proven solution, read', ['solution.decide'], async () => {
@@ -330,7 +341,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await within(dialog).findByTestId('observation-tab-analysis'))
   }],
   ['a cause, read', ['cause.root'], async () => {
-    const picture = await within(screen.getByRole('dialog')).findByTestId('analysis-picture')
+    const picture = await within(placePageNow()!).findByTestId('analysis-picture')
     fireEvent.click((await within(picture).findAllByTestId('analysis-cause'))[0])
   }],
   ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
@@ -353,7 +364,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
     fireEvent.click(dialog.querySelector<HTMLElement>(controlSelector('observation.merge'))!)
-    await screen.findByRole('dialog', { name: 'Merge observations' })
+    await screen.findByRole('region', { name: 'Merge observations' })
   }]],
   // The move screen, over the observations page, on the record read (ADR-0038 §5).
   [['the move screen, opened on an observation', [
@@ -362,7 +373,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
     fireEvent.click(dialog.querySelector<HTMLElement>(controlSelector('observation.move'))!)
-    await screen.findByRole('dialog', { name: 'Move an observation to another scope' })
+    await screen.findByRole('region', { name: 'Move an observation to another scope' })
   }]],
   [['the decisions, one from above read', [
     'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
@@ -376,7 +387,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // A record from above is read, not moved; the landscape's own accepted one
   // offers the move the state machine allows.
   ['one of its own decisions, read', ['decision.move'], async () => {
-    const dialog = screen.getByRole('dialog')
+    const dialog = placePageNow()!
     fireEvent.click(within(dialog).getByTestId('adr-scope-landscape'))
     fireEvent.click((await within(dialog).findAllByText('One place where a price is decided'))[0])
   }]],
@@ -384,7 +395,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await page('Roadmap')
   }],
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision'], async () => {
-    fireEvent.click((await within(screen.getByRole('dialog')).findAllByTestId('plan-band'))[0])
+    fireEvent.click((await within(placePageNow()!).findAllByTestId('plan-band'))[0])
   }]],
   // The operating model, from the organisation's card, empty: a library
   // brought in from its dialog, so the matrix has a column to press.
@@ -527,16 +538,9 @@ describe('the stable control names', { timeout: 20_000 }, () => {
   )
 
   // Who else is here is said only while somebody is, which only a channel's
-  // presence makes true: the bar is drawn with a name, as the channel would.
-  it('are on the bar while somebody else is here', () => {
-    renderShell(
-      <ShellToolbar
-        designName="Landscape" crumbs={[]} scopePath="landscape" savedAt={null} alsoHere={['Ada']}
-        language="en" onGoHome={() => {}} onOpenSettings={() => {}} onOpenDocumentation={() => {}}
-        onOpenDecisions={() => {}} onOpenObservations={() => {}} onOpenRoadmap={() => {}}
-        onOpenSearch={() => {}} activity={() => []} s={(key) => key}
-      />,
-    )
+  // presence makes true: the row is drawn with a name, as the channel would.
+  it('are on the row while somebody else is here', () => {
+    renderShell(<AlsoHere names={['Ada']} s={(key) => key} />)
     expect(document.querySelector(controlSelector('shell.alsoHere'))?.textContent).toContain('shell.alsoHere')
   })
 })

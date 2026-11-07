@@ -61,7 +61,6 @@ import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
 import { AppFrame } from './frame/AppFrame'
 import { frameStore, FrameStoreContext } from './frame/frameStore'
-import { PlaceHostContext } from '../widgets/kit/placeHost'
 import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
@@ -477,12 +476,12 @@ export function App(props: AppProps) {
                 <AppFrame parts={parts}>
                   <ErrorBoundary where="app" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
                     <AppScreen parts={parts} />
+                    {!parts.nav.project && <HomeHistoryDialogs parts={parts} />}
                   </ErrorBoundary>
                 </AppFrame>
               </FrameStoreContext.Provider>
             )}
         </ErrorBoundary>
-        {!parts.nav.project && <PlaceHostContext.Provider value={undefined}><HomeHistoryDialogs parts={parts} /></PlaceHostContext.Provider>}
         <AppNotices parts={parts} />
         <AppDialogs parts={parts} />
         <ToastBar

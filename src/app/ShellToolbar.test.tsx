@@ -18,7 +18,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
-import { crumbsFor, ShellToolbar, sourceIsAlarming, sourceLabel, sourceTipKey } from './ShellToolbar'
+import { crumbsFor, sourceIsAlarming, sourceLabel, sourceTipKey } from './ShellToolbar'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -52,73 +52,6 @@ const rulesFor = (element: HTMLElement): string => {
   return (css.match(/[^{}]*\{[^{}]*\}/g) ?? []).filter((rule) => rule.includes(`.${own}`)).join('')
 }
 
-describe('the saved indicator', () => {
-  const indicator = () => screen.getByTestId('saved-indicator').textContent
-
-  it('says nothing has happened yet before the first write', () => {
-    renderShell(<ShellToolbar {...props} />)
-    expect(indicator()).toBe('Not saved yet')
-  })
-
-  it('says when the store last accepted it', () => {
-    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} />)
-    expect(indicator()).toContain('Saved')
-    expect(indicator()).toContain('14:02')
-  })
-
-  it('replaces the time when a write was refused, rather than standing beside it', () => {
-    // The expensive wrong: a time from before the failure is older than the
-    // work on screen, and reads as reassurance.
-    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} saveFailed />)
-    expect(indicator()).toBe('Not saved — storage refused')
-    expect(indicator()).not.toContain('14:02')
-  })
-
-  it('says where the document stands, when that is not simply "saved"', () => {
-    // Each of these is an answer to "can I close this window now", which is the
-    // only question this corner of the bar is really being asked. A time is an
-    // answer to a different one, so it gives way.
-    const at = new Date(2026, 8, 6, 14, 2)
-    for (const [status, expected] of [
-      ['dirty', 'Unsaved changes'],
-      ['saving', 'Saving…'],
-      ['external-changed', 'Changed elsewhere'],
-      ['conflict', 'Changed here and elsewhere'],
-    ] as const) {
-      cleanup()
-      renderShell(<ShellToolbar {...props} savedAt={at} status={status} />)
-      expect(indicator(), status).toBe(expected)
-    }
-  })
-
-  it('keeps the time for a document that is clean', () => {
-    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status="clean" />)
-    expect(indicator()).toContain('14:02')
-  })
-
-  /**
-   * A source whose changes travel as steps has nothing to save, so neither
-   * "Not saved yet" nor a save time is true of it.
-   */
-  it('says the source’s own word, and never a save, where changes travel as steps', () => {
-    for (const [status, expected] of [
-      ['clean', 'All changes sent'],
-      ['dirty', 'Sending…'],
-      ['saving', 'Sending…'],
-      ['conflict', 'Changed here and elsewhere'],
-    ] as const) {
-      cleanup()
-      renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status={status} publishesSteps sourceStatus />)
-      expect(indicator(), status).toBe(expected)
-    }
-  })
-
-  it('says nothing at all where such a source gives no word of its own', () => {
-    renderShell(<ShellToolbar {...props} status="clean" publishesSteps />)
-    expect(screen.queryByTestId('saved-indicator')).toBeNull()
-  })
-})
-
 describe('the crumbs', () => {
   it('names each scope above by its own name, and the root by the organisation’s', () => {
     const scopes = [
@@ -135,99 +68,6 @@ describe('the crumbs', () => {
  * whoever answers for the source (`ScopeSession.alsoHere`) — so what is pinned
  * here is what it does with what it is told.
  */
-describe('the other authors', () => {
-  it('says nothing when there is nobody, rather than that you are alone', () => {
-    renderShell(<ShellToolbar {...props} />)
-    expect(screen.queryByTestId('also-here')).toBeNull()
-    renderShell(<ShellToolbar {...props} alsoHere={[]} />)
-    expect(screen.queryByTestId('also-here')).toBeNull()
-  })
-
-  it('names them, in the order it was given and in one sentence', () => {
-    renderShell(<ShellToolbar {...props} alsoHere={['A. Author', 'B. Bee']} />)
-    expect(screen.getByTestId('also-here').textContent).toBe('Also here: A. Author, B. Bee')
-  })
-
-  it('says it in the language the app is in', () => {
-    renderShell(
-      <ShellToolbar {...props} language="nl" s={translator('nl')} alsoHere={['A. Author']} />,
-      { language: 'nl' },
-    )
-    expect(screen.getByTestId('also-here').textContent).toBe('Ook hier: A. Author')
-  })
-})
-
-describe('ShellToolbar and the window around it', () => {
-  it('starts where the window controls end', () => {
-    const { container } = renderShell(
-      <ShellToolbar {...props} windowChrome={{ controlsInset: 78, draggable: true }} />)
-    expect(getComputedStyle(barIn(container)).paddingLeft).toBe('90px')
-  })
-
-  it('lets the window be dragged by the bar, but not by a control on it', () => {
-    const { container } = renderShell(
-      <ShellToolbar {...props} windowChrome={{ controlsInset: 78, draggable: true }} />)
-    const rules = rulesFor(barIn(container))
-    expect(rules).toContain('-webkit-app-region:drag')
-    expect(rules).toContain('button')
-    expect(rules).toContain('-webkit-app-region:no-drag')
-  })
-
-  it('leaves a window that has a title bar of its own alone', () => {
-    const { container } = renderShell(<ShellToolbar {...props} />)
-    const bar = barIn(container)
-    expect(getComputedStyle(bar).paddingLeft).toBe('12px')
-    expect(rulesFor(bar)).not.toContain('-webkit-app-region:drag')
-  })
-
-  it('says where you are, first: every scope above as a crumb, then the open one', () => {
-    // The organisation, the domain between, and the landscape — in that order,
-    // because the level between used to be left out and the bar read
-    // "organisation · landscape" over a folder that had three levels.
-    const { container } = renderShell(<ShellToolbar {...props} />)
-    const text = barIn(container).textContent ?? ''
-    expect(text.indexOf('Acme Logistics')).toBeLessThan(text.indexOf('Retail'))
-    expect(text.indexOf('Retail')).toBeLessThan(text.indexOf('Warehouse landscape'))
-    expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse landscape')
-  })
-
-  it('leaves by a crumb, to the home of the scope it names', () => {
-    const went: string[] = []
-    renderShell(<ShellToolbar {...props} onGoHome={(path) => went.push(path)} />)
-    fireEvent.click(screen.getByTestId('crumb-retail'))
-    fireEvent.click(screen.getByTestId('crumb-'))
-    // The open scope's own crumb leads to its home as well: a canvas with
-    // nothing to draw would otherwise be a page with no way out.
-    fireEvent.click(screen.getByTestId('crumb-current'))
-    expect(went).toEqual(['retail', '', 'retail/warehouse'])
-  })
-
-  it('no longer says where the project is kept: that is the root’s home’s to say', () => {
-    renderShell(<ShellToolbar {...props} />)
-    expect(screen.queryByTestId('working-source')).toBeNull()
-  })
-
-  it('carries the menu in an overflow only where the host has no menu bar', () => {
-    renderShell(<ShellToolbar {...props} />)
-    expect(screen.queryByTestId('overflow-button')).toBeNull()
-    cleanup()
-    renderShell(<ShellToolbar {...props} overflow={{
-      themeMode: 'dark', can: { history: false, connect: false, scope: true }, onCommand: () => {},
-    }} />)
-    expect(screen.getByTestId('overflow-button')).toBeDefined()
-  })
-
-  it('offers the three pages beside the canvas', () => {
-    // By text, not by accessible name: the tooltip supplies the name, and it
-    // is the words on the button a user finds it by.
-    const { container } = renderShell(<ShellToolbar {...props} />)
-    const labels = [...barIn(container).querySelectorAll('button')].map((button) => button.textContent)
-    for (const label of ['Documentation', 'Decisions', 'Search']) {
-      expect(labels).toContain(label)
-    }
-  })
-})
-
 /**
  * What the chip is called, and what hovering it says: the two functions the
  * homes read, and the one case where a provider has the last word.

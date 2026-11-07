@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
+import type { Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
 import { HOME_PAGES } from '../../agent/screen'
 import { matchesQuery } from '../../model/textSearch'
@@ -53,6 +54,10 @@ const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(n
 export function AppFrame({ parts, children }: { parts: ShellParts; children: ReactNode }) {
   const { frame } = parts
   const state = useFrameState(frame)
+  // The source says its answer moved: the word is asked again, connection and all.
+  const [, askAgain] = useState(0)
+  const onWork = parts.props.provider?.onWork
+  useEffect(() => onWork?.(() => askAgain((count) => count + 1)), [onWork])
   const facts = state.screen
   const { services: { s }, agent, windowChrome } = parts
   const go = agent.openSomewhere
@@ -178,7 +183,7 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
   const leave = (then: () => void) => () => { onDone?.(); then() }
   // Settings and removal are asked by the organisation's dialogs on a home; from
   // a scope that is open, the home's dialogs are one move away, and that is the move.
-  const onHome = (path: ScopePath) => leave(() => nav.goHome(path))()
+  const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: 'home' }))()
   const fromHome = (then: (scope: ScopeSummary) => void) => (scope: ScopeSummary) => {
     onDone?.()
     if (nav.project) nav.goHome(at)
@@ -196,13 +201,13 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
 }
 
 function Trail({ parts, facts, at, name }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; name: string }) {
-  const { organisation: { tree }, services: { s }, nav } = parts
+  const { organisation: { tree }, services: { s } } = parts
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const crumbs = useMemo(() => crumbsFor(at, flattenScopes(tree), s), [at, tree, s])
   const page = parts.agent.screen?.page?.page
   return (
     <>
-      <Crumbs crumbs={crumbs} current={name} currentPath={at} onGoHome={nav.goHome} s={s} />
+      <Crumbs crumbs={crumbs} current={name} currentPath={at} onGoHome={(path) => parts.agent.openSomewhere({ scope: path, page: 'home' })} s={s} />
       <IconButton
         label={s('frame.switchScope')} size="small" data-testid="scope-switcher-open" data-guide="frame.switcher"
         aria-haspopup="dialog" aria-expanded={anchor !== null} onClick={(event) => setAnchor(event.currentTarget)}
@@ -224,6 +229,11 @@ function Trail({ parts, facts, at, name }: { parts: ShellParts; facts: ScreenFac
       </Popover>
     </>
   )
+}
+
+/** Who else has this scope open, names only; said only while somebody has. */
+export function AlsoHere({ names, s }: { names: readonly string[]; s: Translate }) {
+  return <span className="kit-frame__also" data-testid="also-here" data-guide="shell.alsoHere">{s('shell.alsoHere', { names: names.join(', ') })}</span>
 }
 
 function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at: ScopePath }) {
@@ -271,9 +281,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
           {word.text}
         </button>
       )}
-      {(facts?.alsoHere?.length ?? 0) > 0 && (
-        <span className="kit-frame__also" data-testid="also-here" data-guide="shell.alsoHere">{s('shell.alsoHere', { names: facts!.alsoHere!.join(', ') })}</span>
-      )}
+      {(facts?.alsoHere?.length ?? 0) > 0 && <AlsoHere names={facts!.alsoHere!} s={s} />}
       <Tooltip title={s(facts?.activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
         <Button variant="quiet" size="small" aria-expanded={state.panel === 'activity'} onClick={() => togglePanel('activity')} data-guide="shell.activity" data-testid="frame-activity">
           {s('shell.activity')}
@@ -321,11 +329,11 @@ function TreeGlyph() {
 }
 
 function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; pageUp: boolean }) {
-  const { services: { s }, nav, agent } = parts
+  const { services: { s }, agent } = parts
   const homeHere = !parts.nav.project && !pageUp
   return (
     <>
-      <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => { agent.openSomewhere({ scope: at, page: 'home' }); if (!parts.nav.project && pageUp) nav.goHome(at) }}>
+      <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => agent.openSomewhere({ scope: at, page: 'home' })}>
         {s('frame.home')}
       </button>
       {facts?.kind === 'home' && (facts.views ?? []).map((view) => (

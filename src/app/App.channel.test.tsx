@@ -250,13 +250,13 @@ async function twoWorkspaces() {
 
 /** What the other workspace's Activity list says about who made what. */
 async function activityOf(render: { container: HTMLElement }): Promise<string[]> {
-  fireEvent.click(within(render.container).getByText('Activity'))
-  // The menu is a portal, so it is not under the container — and only one is
-  // ever open, which is what makes reading it here unambiguous.
-  const menu = await screen.findByRole('menu')
+  const press = within(render.container).getByTestId('frame-activity')
+  fireEvent.click(press)
+  // A panel in the frame, so it is under the container.
+  const list = await within(render.container).findByRole('list', { name: 'Activity' }, { timeout: 2000 })
   // Newest first, which is the order the list is read in.
-  const said = within(menu).queryAllByTestId('activity-origin').map((node) => node.textContent ?? '')
-  fireEvent.keyDown(menu, { key: 'Escape' })
+  const said = within(list).queryAllByTestId('activity-origin').map((node) => node.textContent ?? '')
+  fireEvent.click(press)
   return said
 }
 

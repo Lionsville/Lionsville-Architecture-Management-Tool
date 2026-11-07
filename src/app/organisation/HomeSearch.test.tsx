@@ -41,7 +41,7 @@ const show = () => renderApp({ repositories: heldRepositories(TREE()), today: ()
 describe('search on a home', () => {
   it('finds an element in a scope folded away under the tree, and opens it there', async () => {
     show()
-    fireEvent.click(await screen.findByTestId('home-search'))
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
     fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'billing' } })
     const hit = await screen.findByRole('option', { name: /Billing engine/ })
     expect(hit.textContent).toContain('Warehouse')
@@ -53,7 +53,6 @@ describe('search on a home', () => {
 
   it('opens on ⌘K, as in the workspace', async () => {
     show()
-    await screen.findByTestId('home-search')
     fireEvent.keyDown(window, { key: 'k', metaKey: true })
     expect(await screen.findByRole('combobox')).toBeDefined()
   })

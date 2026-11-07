@@ -23,7 +23,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp, renderShell } from './testing/renderShell'
 import { translator } from '../i18n'
 import type { Language } from '../i18n'
-import { ActivityMenu, mergeActivity } from './ActivityMenu'
+import { ActivityLines, mergeActivity } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
 import type { SourceActivityLine } from '../platform/sourceProvider'
 
@@ -119,9 +119,7 @@ describe('who took the step', () => {
 
   const list = (entries: ActivityEntry[], language: Language = 'en') =>
     renderShell(
-      <ActivityMenu
-        anchorEl={document.body}
-        onClose={() => {}}
+      <ActivityLines
         entries={entries}
         language={language}
         s={translator(language)}
@@ -260,9 +258,7 @@ describe('the list over a source that keeps a log', () => {
 
   const list = (recent: () => Promise<readonly SourceActivityLine[] | undefined>, entries: ActivityEntry[] = []) =>
     renderShell(
-      <ActivityMenu
-        anchorEl={document.body}
-        onClose={() => {}}
+      <ActivityLines
         entries={entries}
         recent={recent}
         language="en"

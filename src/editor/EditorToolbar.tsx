@@ -455,7 +455,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
                     diagram={diagram}
                     model={props.model}
                     onActiveDiagramChange={props.onActiveDiagramChange}
-                    onOpenDiagramSettings={props.readOnly ? undefined : props.onOpenDiagramSettings}
+                    // In the frame a view's settings are in its tab's menu, and the ring is gone.
+                    onOpenDiagramSettings={props.readOnly || framed ? undefined : props.onOpenDiagramSettings}
                     onContainerMenu={hasTabMenu ? openTabMenu : undefined}
                   />
                 }

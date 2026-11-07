@@ -106,7 +106,7 @@ async function organisationOnScreen() {
 }
 
 /** Is a page up: anything with a page's × on it. */
-const pageUp = () => screen.queryByTestId('page-close') !== null
+const pageUp = () => document.querySelector('[data-place-page]') !== null
 
 describe('a crumb (ADR-0044 §3)', () => {
   it('closes a page up over a home, the same home’s crumb included', async () => {

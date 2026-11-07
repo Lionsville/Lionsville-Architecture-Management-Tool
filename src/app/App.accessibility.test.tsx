@@ -21,6 +21,7 @@ import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { EXAMPLES, exampleScopes } from './testing/examples'
 import { renderApp } from './testing/renderShell'
 import { axeFindings } from './testing/axe'
+import { placePage } from './testing/placePage'
 
 // The whole app over the whole example, under coverage beside every other
 // file: a board takes longer than a component to measure and draw.
@@ -70,13 +71,13 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
     ['open-register', () => screen.findByTestId('register-table')],
     ['open-technology', () => screen.findByTestId('technology-register-table')],
     ['open-people', () => screen.findByTestId('people-policy')],
-    ['open-checks', () => screen.findByRole('dialog')],
-    ['open-operating', () => screen.findByRole('dialog')],
+    ['open-checks', () => placePage()],
+    ['open-operating', () => placePage()],
     ['open-business', () => screen.findByRole('tab', { name: /Business architecture/, selected: true })],
     ['open-map', () => screen.findByRole('tab', { name: /Enterprise map/, selected: true })],
-    ['open-decisions', () => screen.findByRole('dialog')],
-    ['open-observations', () => screen.findByRole('dialog')],
-    ['open-roadmap', () => screen.findByRole('dialog')],
+    ['open-decisions', () => placePage()],
+    ['open-observations', () => placePage()],
+    ['open-roadmap', () => placePage()],
   ])('finds nothing on the page %s opens', async (card, drawn) => {
     show(false)
     fireEvent.click(await screen.findByTestId(card))
@@ -114,7 +115,7 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
 
   it('finds nothing in the overflow menu', async () => {
     show(true)
-    fireEvent.click(await screen.findByRole('button', { name: /More/ }))
+    fireEvent.click(await screen.findByTestId('overflow-button'))
     await screen.findByRole('menu')
     expect(await axeFindings()).toEqual([])
   })

@@ -119,8 +119,8 @@ describe('with no scope open', () => {
     ])
   })
 
-  it('keeps the manual and drops the shortcut overlay, which is the canvas’s', () => {
-    expect(labels(offered(HELP_MENU, 'web', nothing))).toEqual(['menu.userManual'])
+  it('keeps the manual and the sheet of keys, which is on every screen', () => {
+    expect(labels(offered(HELP_MENU, 'web', nothing))).toEqual(['menu.userManual', 'menu.shortcuts'])
     expect(labels(offered(HELP_MENU, 'web', { ...nothing, scope: true }))).toEqual(['menu.userManual', 'menu.shortcuts'])
   })
 

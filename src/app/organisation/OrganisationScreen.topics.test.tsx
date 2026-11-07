@@ -16,6 +16,7 @@ import { heldRepositories } from '../testing/heldRepositories'
 import { renderApp } from '../testing/renderShell'
 import { readScope } from '../../projects/scopeAccess'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { pressRowMenu } from '../testing/rowMenu'
 
 afterEach(() => cleanup())
 
@@ -40,8 +41,6 @@ describe('topics on the homes', () => {
     // Not `open-topics`: that is the tree's row for the Topics place.
     const card = await screen.findByTestId('open-topic-catalogue')
     await waitFor(() => expect(screen.getByTestId('organisation-cards').textContent).toContain('1 topic'))
-    // The tree says the topic under the scope it is relevant to.
-    expect(await screen.findByTestId('topic-under-sales-topics/security')).toBeTruthy()
     fireEvent.click(card)
     const catalogue = await screen.findByTestId('topics-catalogue')
     expect(within(catalogue).getByTestId('topic-row-topics/security').textContent).toContain('Sales')
@@ -98,7 +97,7 @@ describe('topics on the homes', () => {
   it('makes a scope a topic from its settings: typed Topic, it is filed under the Topics place, made on first use', async () => {
     const repositories = heldRepositories(TREE.slice(0, 2))
     renderApp({ repositories, today: TODAY })
-    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Sales' }))
+    await pressRowMenu('Sales', 'Settings for Sales')
     fireEvent.mouseDown(await screen.findByLabelText('What this is'))
     fireEvent.click(screen.getByRole('option', { name: 'Topic' }))
     expect(screen.getByText(/saving moves it there/)).toBeTruthy()

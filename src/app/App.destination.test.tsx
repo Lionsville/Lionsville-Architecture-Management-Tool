@@ -24,6 +24,7 @@ import { answering, heldRepositories } from './testing/heldRepositories'
 import type { HeldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
+import { placePage } from './testing/placePage'
 
 afterEach(() => cleanup())
 beforeAll(() => installReactFlowMocks())
@@ -221,7 +222,7 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'To the solutions' }))
     await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'solutions' }))
     expect(movers(from)).not.toContain('person')
-    fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('observation-tab-analysis'))
+    fireEvent.click(within(await placePage()).getByTestId('observation-tab-analysis'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'analysis' }))
     expect(told().movedBy).toBe('person')
   })
@@ -234,7 +235,7 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'To the observations' }))
     await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'register' }))
     expect(movers(from)).not.toContain('person')
-    fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('observation-row-o1'))
+    fireEvent.click(within(await placePage()).getByTestId('observation-row-o1'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', id: 'o1' }))
     expect(told().movedBy).toBe('person')
   })
@@ -327,7 +328,7 @@ describe('the observations page, on a tab', () => {
     fireEvent.click(screen.getByRole('button', { name: 'To the solutions' }))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'solutions' }))
     expect(told().movedBy).toBe('provider')
-    const page = await screen.findByRole('dialog')
+    const page = await placePage()
     expect(within(page).getByTestId('observation-tab-solutions').getAttribute('aria-pressed')).toBe('true')
     // The person changes the tab: the screen says so, and it is theirs.
     fireEvent.click(within(page).getByTestId('observation-tab-analysis'))
@@ -376,6 +377,6 @@ describe('what is opened is what is seen', { timeout: 20_000 }, () => {
     await waitFor(() => expect(told().where.page).toEqual({ page: 'roadmap' }))
     await waitFor(() => expect(screen.queryByTestId('doc-nav')).toBeNull())
     // The one page up is the roadmap.
-    expect(await screen.findAllByRole('dialog')).toHaveLength(1)
+    expect(document.querySelectorAll('[data-place-page]')).toHaveLength(1)
   })
 })

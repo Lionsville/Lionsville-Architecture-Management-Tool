@@ -18,7 +18,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
-import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuItemSpec } from '../platform/menu'
 import { translator } from '../i18n'
 import { EXAMPLES, exampleScopes } from './testing/examples'
@@ -45,7 +45,7 @@ function show() {
 }
 
 async function overflow(): Promise<HTMLElement> {
-  const button = await screen.findByRole('button', { name: /More/ })
+  const button = await screen.findByTestId('overflow-button')
   // A native button: Enter and Space press it, which is what a click is here.
   expect(button.tagName).toBe('BUTTON')
   button.focus()
@@ -58,7 +58,7 @@ describe('the shell without a mouse', { timeout: 20_000 }, () => {
     show()
     const menu = await overflow()
     const can = { history: false, connect: false, scope: true }
-    const items = [...offered(FILE_MENU, 'web', can), ...offered(HELP_MENU, 'web', can)]
+    const items = offered(FILE_MENU, 'web', can)
       .filter((entry): entry is MenuItemSpec => entry.kind === 'item')
     const labels = [...items.map((item) => s(item.label)), s(PREFERENCES_ITEM.label), ...THEME_ITEMS.map((one) => s(one.label))]
     const named = [...menu.querySelectorAll('[role^="menuitem"]')].map((item) => item.textContent)
@@ -74,7 +74,7 @@ describe('the shell without a mouse', { timeout: 20_000 }, () => {
 
   it('opens a dialog from the keyboard, keeps the focus in it, and hands it back on Escape', async () => {
     show()
-    const button = await screen.findByRole('button', { name: /More/ })
+    const button = await screen.findByTestId('overflow-button')
     const menu = await overflow()
     fireEvent.keyDown(within(menu).getByRole('menuitem', { name: s(PREFERENCES_ITEM.label) }), { key: 'Enter' })
     const dialog = await screen.findByRole('dialog')

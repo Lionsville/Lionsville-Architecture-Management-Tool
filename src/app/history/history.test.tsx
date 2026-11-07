@@ -280,17 +280,15 @@ describe('reading one back', () => {
     expect(await screen.findByText('No snapshots yet.')).toBeDefined()
   })
 
-  it('gives the window something to be dragged by, as every full page must', async () => {
+  it('leaves the window to row one: a page keeps clear of nothing and drags nothing', async () => {
     renderApp({
       repositories: kept().repositories,
       boot: { initialProject: project() },
       host: { windowChrome: { draggable: true, controlsInset: 78 } },
     })
     await openIt()
-    const bar = await screen.findByTestId('history-topbar')
-    expect(getComputedStyle(bar).paddingLeft).toBe('90px')
-    const css = [...document.querySelectorAll('style')].map((tag) => tag.textContent).join('')
-    expect(css).toContain('-webkit-app-region:drag')
+    await screen.findByTestId('history-topbar')
+    expect(screen.getByTestId('shell-toolbar').getAttribute('style')).toContain('86px')
   })
 })
 
@@ -482,8 +480,8 @@ describe('going back, as going forward (ADR-0008)', () => {
     // The page has closed, so the person sees what came back.
     expect(screen.queryByTestId('history-list')).toBeNull()
 
-    act(() => { fireEvent.click(screen.getByText('Activity')) })
-    expect(screen.getAllByRole('menuitem')[0].textContent).toContain(`Restored the diagram Old name as of ${asOf}`)
+    act(() => { fireEvent.click(screen.getByTestId('frame-activity')) })
+    expect(screen.getByRole('list', { name: 'Activity' }).firstElementChild?.textContent).toContain(`Restored the diagram Old name as of ${asOf}`)
     act(() => { fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' }) })
 
     // Offered, not taken: the snapshot is the toast's button, and its draft
@@ -525,8 +523,8 @@ describe('going back, as going forward (ADR-0008)', () => {
     expect(await screen.findByText(/Every element, connection, diagram and decision/)).toBeDefined()
 
     expect(restoreAndLetThePageGo().textContent).toContain(`Restored the whole scope as of ${asOf}.`)
-    act(() => { fireEvent.click(screen.getByText('Activity')) })
-    expect(screen.getAllByRole('menuitem')[0].textContent).toContain('Restored the whole scope')
+    act(() => { fireEvent.click(screen.getByTestId('frame-activity')) })
+    expect(screen.getByRole('list', { name: 'Activity' }).firstElementChild?.textContent).toContain('Restored the whole scope')
   })
 })
 

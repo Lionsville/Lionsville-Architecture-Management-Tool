@@ -56,7 +56,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
     && (active?.kind === 'layer7' || active?.kind === 'container')
   const looking = active !== undefined && isLookingAway(active, parts.viewing.days)
   const bands = useMemo<readonly StackedBand[]>(() => (looking && active ? [{
-    id: 'looking', tone: 'looking', dataGuide: 'frame.looking',
+    id: 'looking', tone: 'looking',
     title: s('frame.lookingAt', { day: shownAsOf(active, parts.viewing.days) ?? '' }),
     detail: s('frame.lookingDetail'),
     action: <KitButton size="small" onClick={() => parts.viewing.forget(active.id)} data-testid="looking-back">{s('frame.lookingBack')}</KitButton>,

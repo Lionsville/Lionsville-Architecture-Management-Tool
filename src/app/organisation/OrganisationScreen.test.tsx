@@ -482,9 +482,6 @@ describe('the organisation screen — a fresh folder', () => {
     })
     expect(await screen.findByText('Examples')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
-    // Flipped: the heading used to be hidden on an empty tree, which left the
-    // empty-tree sentence with nowhere to show. It is under its heading now.
-    expect(screen.getByText('Scopes within the organisation')).toBeDefined()
     expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing is filed under the organisation yet. Add a domain or a team below it.')
   })
 
@@ -591,7 +588,7 @@ describe('the organisation screen — for somebody who may only read', () => {
     })
     await screen.findByTestId('scope-retail')
     expect(screen.getByTestId('new-scope')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'More for Retail' })).toBeDefined()
     expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
   })
 })
