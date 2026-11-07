@@ -34,6 +34,14 @@ and behaves is said here, once.
 | `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
 | `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
+| `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |
+| `useCanvasZoom.ts` | one zoom behaviour for every canvas: ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1, a board's = − and ⇧ 2 |
+| `ViewBar.tsx` | the View bar and its two kinds of word; the order is here and not in the screens |
+| `ColourMenu.tsx`, `KeyStrip.tsx` | the one Colour menu, and the key strip made from what is drawn |
+| `DayControl.tsx` | the one Day control |
+| `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas |
+| `Card.tsx`, `Zone.tsx`, `Line.tsx` | Card; Zone and boundary; Line and label. Each holds its size on screen through `--canvas-zoom` |
+| `TimeAxis.tsx`, `timeScale.ts` | the ruler, its rows, bars and milestones; the sums, with the window as plain data |
 
 What a control always says is in `widgets/strings/`, under `kit.*`.
 
@@ -85,9 +93,26 @@ it, under this name, so that the second screen finds it.
 - `readOnly` hides what writes: the screen decides, and the kit draws what it is
   given.
 
+<<<<<<< HEAD
 A list is composed the same way every time: `readListView` from the address,
 `listed` for the rows, `FilterWords` and `List` over them, `Preview` over those
 with `ids` in the order drawn, and `writeListView` on every change.
+=======
+## How a canvas uses it
+
+- **Zoom.** `useCanvasZoom(target)` gives the callback ref for the canvas's element,
+  and `steppedZoomTarget` makes the target from a zoom, a way to set it and a fit.
+  A canvas that zooms on the wheel by itself says `wheel: false`, and one with a
+  keymap `plainKeys: false`. On the desktop the menu bar owns ⌘ + − 0
+  (`setHostOwnsZoomKeys`), because a menu accelerator fires even when the page
+  handled the key; its items reach the canvas in use through `zoomCanvasInUse`,
+  and the window's own zoom when there is none.
+- **Distance.** The element round the drawing spreads `canvasZoomProps(zoom)`. That
+  is all the Card, Zone, Line and label need: they hold their size on screen through
+  `--canvas-zoom`, and `data-distance` says what each shows, in CSS, so a zoom
+  renders nothing. Far is below 70%, near above 120%. What goes at which distance is
+  in `Card.css` and `Line.css`.
+>>>>>>> 09711afd (The kit's canvas parts: View bar, Colour menu and key strip, Day control, Canvas dock, Card, Zone and boundary, Line and label, Time axis. Eight toolbars, four legends and three day controls said the same things differently, and the roadmap's slider ran on another scale than its rows. The ruler now carries the dates, the day and the scale, the window is plain data so a person's last one can be kept, and what a canvas draws holds its size on screen through one custom property. Built on the kit's Button, Menu, Segmented and Tooltip, which land beside it)
 
 ## How a kit component is styled
 

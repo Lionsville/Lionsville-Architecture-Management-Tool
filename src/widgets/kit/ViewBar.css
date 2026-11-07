@@ -1,0 +1,21 @@
+.kit-viewbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: var(--viewbar-h);
+  padding-inline: var(--s-2);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.kit-viewbar__start,
+.kit-viewbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+}
+.kit-viewbar__end { flex: none; }
+.kit-viewbar__item { display: inline-flex; }
+.kit-viewbar__item[data-on] .kit-button { color: var(--accent); font-weight: var(--fw-strong); }

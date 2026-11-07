@@ -1,0 +1,21 @@
+.kit-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: var(--s-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.kit-dock[data-corner] { position: absolute; left: var(--s-3); bottom: var(--s-3); z-index: 5; }
+.kit-dock__value {
+  min-width: 42px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.kit-dock__rule { align-self: stretch; width: 1px; margin-inline: var(--s-1); background: var(--line); }
+.kit-dock .kit-button[data-limit] { color: var(--ink-3); }

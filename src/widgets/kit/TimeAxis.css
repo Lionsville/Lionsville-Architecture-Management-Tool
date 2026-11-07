@@ -1,0 +1,205 @@
+.kit-time {
+  --kit-time-names: var(--panel-w-tree);
+  position: relative;
+  overscroll-behavior-x: contain;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--t-md);
+}
+.kit-time__head {
+  display: grid;
+  grid-template-columns: var(--kit-time-names) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  border-bottom: 1px solid var(--line-strong);
+}
+.kit-time__corner {
+  grid-row: 1 / 3;
+  padding: var(--s-1) var(--s-3);
+  border-right: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+}
+.kit-time__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-bottom: 1px solid var(--line);
+}
+.kit-time__grow { flex: 1; }
+
+.kit-time__ruler { position: relative; min-width: 0; height: 44px; overflow: hidden; }
+.kit-time__ruler:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.kit-time__marks { position: relative; height: 20px; font-size: var(--t-sm); line-height: 20px; }
+.kit-time__todaymark,
+.kit-time__daymark { position: absolute; top: 0; padding-inline: var(--s-1); white-space: nowrap; font-weight: var(--fw-strong); }
+.kit-time__todaymark { color: var(--axis-today); }
+.kit-time__daymark { color: var(--axis-day); }
+.kit-time__todaymark[data-flip],
+.kit-time__daymark[data-flip] { transform: translateX(-100%); }
+.kit-time__pinned {
+  position: absolute;
+  top: 1px;
+  padding: 0 var(--s-1);
+  height: 18px;
+  border: 1px solid var(--axis-day);
+  border-radius: var(--r-2);
+  background: var(--looking-soft);
+  color: var(--axis-day);
+  font: inherit;
+  font-weight: var(--fw-strong);
+  line-height: 16px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kit-time__pinned[data-side='after'] { right: 2px; }
+.kit-time__pinned[data-side='before'] { left: 2px; }
+.kit-time__pinned:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.kit-time__cells { position: relative; height: 24px; }
+.kit-time__cell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  line-height: 24px;
+  text-align: center;
+  white-space: nowrap;
+}
+.kit-time__cell[data-major] { top: -8px; line-height: 40px; border-left-color: var(--line-strong); }
+
+.kit-time__handle {
+  position: absolute;
+  bottom: 6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 1px solid var(--axis-day);
+  background: var(--surface);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.kit-time__handle[data-looking] { background: var(--axis-day); }
+.kit-time__handle:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+.kit-time__rows { position: relative; }
+.kit-time__lines { position: absolute; top: 0; bottom: 0; left: var(--kit-time-names); right: 0; overflow: hidden; pointer-events: none; }
+.kit-time__line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--axis-today); }
+.kit-time__line[data-line='day'] { background: var(--axis-day); }
+/* A day out of view is said at the edge it went past, as the mark above it is. */
+.kit-time__line[data-pinned='after'] { right: 0; }
+.kit-time__line[data-pinned='before'] { left: 1px; }
+
+.kit-time__group {
+  display: grid;
+  grid-template-columns: var(--kit-time-names) minmax(0, 1fr);
+  min-height: var(--row-h);
+  background: var(--surface-2);
+}
+.kit-time__groupname { padding: var(--s-1) var(--s-3); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-time__groupcount { font-weight: var(--fw-regular); }
+.kit-time__groupfold { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.kit-time__groupfold:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.kit-time__groupcaret { display: inline-block; margin-left: var(--s-1); transform: rotate(90deg); }
+.kit-time__groupcaret[data-folded] { transform: none; }
+
+.kit-time__row { display: grid; grid-template-columns: var(--kit-time-names) minmax(0, 1fr); min-height: var(--row-h); }
+.kit-time__name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: 2px var(--s-3);
+  border-right: 1px solid var(--line-strong);
+}
+.kit-time__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-time__aside { flex: none; color: var(--ink-3); font-size: var(--t-sm); }
+.kit-time__lane { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; min-width: 0; padding-block: 2px; overflow: hidden; }
+
+.kit-time__bar {
+  grid-row: 1;
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  min-width: 2px;
+  height: 20px;
+  padding-inline: var(--s-1);
+  border: 1px solid var(--kit-bar-edge);
+  border-radius: var(--r-2);
+  background: var(--kit-bar-fill);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  text-align: left;
+}
+button.kit-time__bar { cursor: pointer; }
+button.kit-time__bar:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.kit-time__barname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-time__runs { flex: none; font-weight: var(--fw-strong); line-height: 1; color: var(--kit-bar-edge); }
+.kit-time__bar[data-tone='draft'] { --kit-bar-edge: var(--line-strong); --kit-bar-fill: transparent; border-style: dashed; }
+.kit-time__bar[data-tone='agreed'] { --kit-bar-edge: var(--accent); --kit-bar-fill: var(--surface); }
+.kit-time__bar[data-tone='running'] { --kit-bar-edge: var(--accent); --kit-bar-fill: var(--accent-soft); }
+.kit-time__bar[data-tone='done'] { --kit-bar-edge: var(--line); --kit-bar-fill: var(--surface-2); color: var(--ink-3); }
+.kit-time__bar[data-tone='planned'] { --kit-bar-edge: var(--life-planned); --kit-bar-fill: var(--life-planned-soft); }
+.kit-time__bar[data-tone='live'] { --kit-bar-edge: var(--life-live); --kit-bar-fill: var(--life-live-soft); }
+.kit-time__bar[data-tone='retiring'] { --kit-bar-edge: var(--life-retiring); --kit-bar-fill: var(--life-retiring-soft); }
+.kit-time__bar[data-tone='gone'] { --kit-bar-edge: var(--life-gone); --kit-bar-fill: var(--life-gone-soft); }
+
+.kit-time__milestones { grid-row: 2; grid-column: 1; position: relative; height: 16px; }
+.kit-time__milestone {
+  position: absolute;
+  top: 0;
+  display: block;
+  width: 14px;
+  height: 16px;
+  margin-left: -7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+}
+.kit-time__milestone::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+button.kit-time__milestone { cursor: pointer; }
+button.kit-time__milestone:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+/* A count stands beside its diamond: inside one it would be below what can be read. */
+.kit-time__count { position: absolute; left: 14px; top: 0; font-size: var(--t-xs); line-height: 16px; font-variant-numeric: tabular-nums; }
+
+.MuiPaper-root.kit-time__range {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+.kit-time__rangefield { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-time__rangefield input {
+  height: var(--ctl-h);
+  padding-inline: var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+}
+.kit-time__rangefield input[aria-invalid] { border-color: var(--bad); }
+.kit-time__refused { margin: 0; color: var(--bad); font-size: var(--t-sm); }

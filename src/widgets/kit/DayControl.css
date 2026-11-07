@@ -1,0 +1,23 @@
+.kit-day { display: inline-flex; align-items: center; gap: var(--s-2); }
+.kit-day__outside { color: var(--ink-3); font-size: var(--t-xs); }
+.MuiPaper-root.kit-day__chooser {
+  padding: var(--s-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+.kit-day__chooser form { display: grid; gap: var(--s-2); justify-items: start; }
+.kit-day__label { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-day__field {
+  height: var(--ctl-h);
+  padding-inline: var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  color-scheme: inherit;
+}
+.kit-day__field:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
