@@ -494,10 +494,9 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
 const DIMMED: Record<string, [uses: number, what: string]> = {
   // Bars, bands, hatches and the today line: shapes whose words are in their tooltips.
   // The observations and causes not on the selected path, and a dropped solution, struck through as well.
-  // On the analysis picture, what is off the chain a hover traces.
-  'src/observations/ui/AnalysisPicture.tsx': [1, 'off-trace dim'],
   'src/observations/ui/ChainMarks.tsx': [2, 'off-path dim'],
-  'src/observations/ui/SolutionPicture.tsx': [3, 'off-path dim, dropped solution'],
+  // The two maps' off-trace dim is the kit's one dimming now (`DIMMED` in tokens); a trail and a dropped solution stay their own.
+  'src/observations/ui/SolutionPicture.tsx': [2, 'a trail, a dropped solution'],
   // A merged or archived observation, a merged cause and a solution no longer live: a design call, like the retired card.
   // The column editor while its switch is off: a control that is off (1.4.3).
   // The two headings among the type choices: options that cannot be picked, read at full ink rather than dimmed as a disabled choice is.
