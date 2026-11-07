@@ -81,7 +81,7 @@ describe('a link to an element’s page', () => {
   it('goes home when the page is closed in a scope that draws nothing, rather than onto an empty canvas', async () => {
     await openLink('#/freight/-/document/freight-division')
     await onThePageOf('Freight Division')
-    fireEvent.click(screen.getByRole('button', { name: 'Close documentation' }))
+    fireEvent.keyDown(window, { key: 'Escape' })
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Freight'))
     expect(screen.queryByText(NO_VIEW)).toBeNull()
   })

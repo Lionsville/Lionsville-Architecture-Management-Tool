@@ -257,7 +257,7 @@ function unknownCheck(asked: Destination): AgentAnswer | undefined {
 /** A page of a home is opened as itself, with nothing more than what a picking page picks. */
 function asItsHome(target: Resolved): Resolved {
   if (target.page === undefined || !HOME_PAGES.includes(target.page) || PICKING_PAGES.has(target.page)) return target
-  return { page: target.page }
+  return { page: target.page, ...(target.tab !== undefined ? { tab: target.tab } : {}) }
 }
 
 /**

@@ -265,9 +265,8 @@ export function useShellAgent(deps: {
     // somebody else makes, as one to where the app already is leaves none.
     openFor(sent, () => { if (move !== undefined && providerMove.current === move) providerMove.current = undefined })
   }, [openFor, project, home, screenNow])
-  const agentStopped = useCallback((client: string | undefined) => {
-    notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
-  }, [notify, s])
+  // Said by the frame's band, which stays until it is dismissed, rather than by a toast that goes.
+  const agentStopped = useCallback(() => {}, [])
   const agentOpen = useCallback((to: Destination & { scope: string }) => {
     agentOpened.current = true
     // An agent's move after a provider's is the agent's, wherever it goes.

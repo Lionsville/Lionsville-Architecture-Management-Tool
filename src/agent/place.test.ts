@@ -301,3 +301,32 @@ describe('an element selected, in a link', () => {
     expect(placeInState({ [PLACE_STATE_KEY]: withSelect })).toEqual(plain)
   })
 })
+
+describe('the frame in a place (4.0.0)', () => {
+  it('reads a panel over a home by its short address, and writes it back', () => {
+    expect(readPlace('#/-/work')).toEqual({ scope: '', page: 'work' })
+    expect(writePlace({ scope: '', page: 'work' })).toBe('#/-/work')
+    expect(readPlace('#/acme/-/activity')).toEqual({ scope: 'acme', page: 'activity' })
+    expect(readPlace('#/-/preferences')).toEqual({ scope: '', page: 'preferences' })
+    expect(readPlace('#/acme/-/settings')).toEqual({ scope: 'acme', page: 'settings' })
+  })
+
+  it('carries a panel beside a view, and it is another place, so Back shuts it', () => {
+    const place = { scope: 'acme', page: 'board', id: 'l7', panel: 'work' } as const
+    expect(readPlace(writePlace(place))).toEqual(place)
+    expect(stepBetween({ scope: 'acme', page: 'board', id: 'l7' }, place)).toBe('push')
+    expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'l7', name: 'L7', kind: 'layer7' } }, panel: 'work' })).toEqual(place)
+    expect(placeOf({ home: { path: '', name: 'Org' }, panel: 'activity' })).toEqual({ scope: '', page: 'activity' })
+  })
+
+  it('takes a tab on any page that has that tab, and no other', () => {
+    expect(readPlace('#/-/people?tab=privacy')).toEqual({ scope: '', page: 'people', tab: 'privacy' })
+    expect(readPlace('#/-/register?tab=services')).toEqual({ scope: '', page: 'register', tab: 'services' })
+    expect(readPlace('#/-/people?tab=analysis')).toBeUndefined()
+    expect(readPlace('#/-/board/x?tab=privacy')).toBeUndefined()
+  })
+
+  it('replaces the entry for another tab: choosing, not going somewhere', () => {
+    expect(stepBetween({ scope: '', page: 'people', tab: 'review' }, { scope: '', page: 'people', tab: 'privacy' })).toBe('replace')
+  })
+})

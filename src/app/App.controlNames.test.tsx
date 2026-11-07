@@ -331,7 +331,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
   }],
   ['a proven solution, read', ['solution.decide'], async () => {
-    const list = within(screen.getByRole('dialog')).getByTestId('solution-list')
+    const list = within(placePageNow()!).getByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!)
   }]],
   // The page's other two tabs and its form, a journey of their own: as one
@@ -345,17 +345,17 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click((await within(picture).findAllByTestId('analysis-cause'))[0])
   }],
   ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
-    fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-solutions'))
+    fireEvent.click(await within(placePageNow()!).findByTestId('observation-tab-solutions'))
   }],
   // A cause starts from what it explains: the form's New cause, not the bar's.
   ['a new observation being written', [
     'observations.newCause', 'observationForm.causes', 'observationForm.existingCause', 'observationForm.record',
     'observationForm.description', 'observationForm.tone',
   ], async () => {
-    const page = screen.getByRole('dialog')
+    const page = placePageNow()!
     fireEvent.click(within(page).getByTestId('observation-tab-register'))
     fireEvent.click(within(page).getByRole('button', { name: 'New observation' }))
-    await screen.findByRole('dialog', { name: 'New observation' })
+    await screen.findByRole('region', { name: 'New observation' }).catch(() => screen.findByRole('dialog', { name: 'New observation' }))
   }]],
   // The merge screen, over the observations page, on the record read.
   [['the merge screen, opened on an observation', [

@@ -49,7 +49,7 @@ describe('a plan made on a roadmap opened for the first time', { timeout: 20_000
     fireEvent.keyDown(name, { key: 'Enter' })
 
     // No waiting: the plan's page is drawn by the press itself, and has the focus the dialog gave back.
-    const page = screen.getByTestId('plan-topbar').closest<HTMLElement>('[role="dialog"]')!
+    const page = screen.getByTestId('plan-topbar').closest<HTMLElement>('[data-place-page]')!
     expect(page.contains(document.activeElement)).toBe(true)
     expect(document.activeElement).not.toBe(newPlan)
     await waitFor(() => expect(screen.queryByRole('textbox', { name: 'What is the plan called?' })).toBeNull())

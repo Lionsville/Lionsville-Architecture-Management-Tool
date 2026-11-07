@@ -33,6 +33,7 @@ and behaves is said here, once.
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
 | `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
 | `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
+| `Frame.tsx`, `placeHost.ts` | **Frame**: two rows, the band, the tree, the main column and the panel, knowing no scope; where a page and a view's tabs are drawn. The rows' contents are `app/frame/` |
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 | `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |
 | `useCanvasZoom.ts` | one zoom behaviour for every canvas: ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1, a board's = − and ⇧ 2 |
@@ -82,6 +83,63 @@ own.
 Only what the table above lists is built. Each is added when a screen first needs
 it, under this name, so that the second screen finds it.
 
+## How a screen plugs into the frame
+
+The frame (`app/frame/AppFrame.tsx`) stands above every screen and does not move:
+row one says where you are and whether your work is safe, row two lists every
+place in this scope. Nothing below it draws a bar of its own.
+
+**A page is a `PageDialog`.** Keep `open` and `onClose`. In the frame it is a place
+in the main column (`role="region"`, `[data-place-page]`), under the rows and over
+the view, and with no frame above it, as in the page's own test, it is the dialog
+it was. Do not pass `windowChrome` duties: row one keeps clear of the window's
+controls and is what it is dragged by. `PageClose` and `PageBack` draw nothing in
+the frame, except *back to reading* while a page is being written, since a page is
+left by Esc, *Home*, a view's tab or Back. Do not add a ×.
+
+**A page gets an address** in three lines, and that is what makes it reachable by
+a person, a link and an agent alike:
+
+1. `agent/screen.ts`: its name in `PAGES` (and `HOME_PAGES` where it is the
+   organisation's), and its tabs in `PAGE_TABS`.
+2. `app/frame/places.ts`: a line in `SCOPE_PLACES`, `ORGANISATION_PLACES` or
+   `MORE_PLACES`. Row two, the foot of the tree, More and ⌘K all read that table.
+3. Say it on the screen: `useWorkspacePages`'s `page()` for a scope's page,
+   `useHomePages` for a home's. `app.open` and Back then arrive through `openFor`.
+
+**Tabs.** `const [tab, setTab] = usePlaceTab('first')` from `widgets/placeTab.ts`
+instead of a `useState`, with the tab named in `PAGE_TABS`. The address says
+`?tab=`, an agent's `app.open` takes it, and a reload stays on it.
+
+**To go somewhere** is one call: `parts.agent.openSomewhere({ scope, page, id, tab })`,
+the way `app.open` goes (`navigation.onOpenScope` from inside a workspace). Never
+close a page and open another by hand; opening one closes the others.
+
+**What only a screen knows** it tells the frame with `useFrameFacts` from
+`app/frame/frameStore.ts`: its undo and redo, its save state, the way into its
+search and settings, its bands. A workspace and a home do this already, and a page
+under them does not need to. A band that belongs to one screen goes in `bands`;
+`BandStack` never shows two, and the agent's comes first.
+
+**A view** is drawn in the editor's `pages` slot as before. Its tabs move into row
+two by themselves (`usePlaceHost().views`). What is left in its own bar is the
+View bar: never undo, never the save word, never search.
+
+**A panel** beside the work is the one `Panel` and is either a screen's own, in its
+column, or one of the frame's: `FRAME_PANELS`, `#/…?panel=work`, opened with
+`parts.agent.setPanel`. A source says its own part of *Your work* with
+`AppProvider.yourWork`, and whether it is connected with `connected()`, then
+`onWork` when that moves: the status word is asked again and cannot say *sent*
+while it is offline.
+
+**A command** goes in `platform/menu.ts`, which is the desktop's menu bar, the ⋯,
+the ? menu, ⌘K and the sheet of keys (`app/frame/commandsTable.ts`). It must have a
+handler with nothing open (`useShellCommands`): an item that does nothing from the
+organisation's home is a defect.
+
+In a test of a whole app: `placePage()` from `app/testing/placePage.ts` is what
+`findByRole('dialog')` was for a page.
+
 ## How a screen composes it
 
 - Imports from the kit by file. A kit component takes data and callbacks, and
@@ -93,11 +151,10 @@ it, under this name, so that the second screen finds it.
 - `readOnly` hides what writes: the screen decides, and the kit draws what it is
   given.
 
-<<<<<<< HEAD
 A list is composed the same way every time: `readListView` from the address,
 `listed` for the rows, `FilterWords` and `List` over them, `Preview` over those
 with `ids` in the order drawn, and `writeListView` on every change.
-=======
+
 ## How a canvas uses it
 
 - **Zoom.** `useCanvasZoom(target)` gives the callback ref for the canvas's element,
@@ -112,7 +169,6 @@ with `ids` in the order drawn, and `writeListView` on every change.
   `--canvas-zoom`, and `data-distance` says what each shows, in CSS, so a zoom
   renders nothing. Far is below 70%, near above 120%. What goes at which distance is
   in `Card.css` and `Line.css`.
->>>>>>> 09711afd (The kit's canvas parts: View bar, Colour menu and key strip, Day control, Canvas dock, Card, Zone and boundary, Line and label, Time axis. Eight toolbars, four legends and three day controls said the same things differently, and the roadmap's slider ran on another scale than its rows. The ruler now carries the dates, the day and the scale, the window is plain data so a person's last one can be kept, and what a canvas draws holds its size on screen through one custom property. Built on the kit's Button, Menu, Segmented and Tooltip, which land beside it)
 
 ## How a kit component is styled
 

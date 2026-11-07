@@ -295,12 +295,9 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
           {agentServer.bar.status.kind === 'connected' ? agentServer.bar.status.client.name : s('frame.agent')}
         </Button>
       </Tooltip>
+      <BarEnd button={frameBarButton(parts, facts?.kind === 'workspace' ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
       <HelpMenu parts={parts} />
-      <BarEnd
-        button={frameBarButton(parts, facts?.kind === 'workspace' ? 'workspace' : 'organisation')}
-        chip={chip && <SourceChipView {...chip} s={s} />}
-        overflow={frameOverflow(parts, facts?.kind === 'workspace')} s={s}
-      />
+      <BarEnd overflow={frameOverflow(parts, facts?.kind === 'workspace')} s={s} />
     </>
   )
 }

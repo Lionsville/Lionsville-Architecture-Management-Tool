@@ -24,15 +24,15 @@ function Words() {
 describe('renderShell', () => {
   it('paints an sx surface in the colours of the theme it provides', () => {
     renderShell(<Box data-testid="surface" sx={{ bgcolor: 'background.paper' }}>x</Box>)
-    // The shell's own dark paper (`app/theme.ts`), not MUI's #121212: the
+    // The kit's dark surface (`widgets/kit/tokens.ts`), not MUI's #121212: the
     // harness must run on the palette production runs on. Were Emotion loaded
     // twice the default light theme would win, and so would white.
-    expect(getComputedStyle(screen.getByTestId('surface')).backgroundColor).toBe('rgb(30, 33, 38)')
+    expect(getComputedStyle(screen.getByTestId('surface')).backgroundColor).toBe('rgb(20, 30, 41)')
   })
 
   it('renders in light when asked, so both themes stay exercised', () => {
     renderShell(<Box data-testid="surface" sx={{ bgcolor: 'background.paper' }}>x</Box>, { mode: 'light' })
-    expect(getComputedStyle(screen.getByTestId('surface')).backgroundColor).toBe('rgb(255, 255, 255)')
+    expect(getComputedStyle(screen.getByTestId('surface')).backgroundColor).toBe('rgb(254, 253, 251)')
   })
 
   it('puts a language in context, which a bare render does not', () => {

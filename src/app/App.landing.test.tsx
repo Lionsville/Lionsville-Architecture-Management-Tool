@@ -36,7 +36,7 @@ describe('the first paint', () => {
     // Until the listing is read a home it does not hold reads as the root's.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Retail'))
     expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
-    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
   })
 
   it('is the organisation’s home where nothing was named', async () => {

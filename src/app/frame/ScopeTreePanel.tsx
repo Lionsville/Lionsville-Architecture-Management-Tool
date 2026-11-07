@@ -45,7 +45,7 @@ export function ScopeTreePanel({ tree, at, page, order, onOrderChange, folds, on
   // The path to where you are, and what is filed under it, stands open, whichever way you arrived.
   const { collapsed, toggleCollapsed } = folds
   useEffect(() => {
-    for (const above of ancestorScopes(at)) if (collapsed.has(above)) toggleCollapsed(above)
+    for (const above of [at, ...ancestorScopes(at)]) if (collapsed.has(above)) toggleCollapsed(above)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- on arrival only: a person may fold what they like after it
   }, [at])
   const ordered = useMemo(() => sortTree(tree, order), [tree, order])

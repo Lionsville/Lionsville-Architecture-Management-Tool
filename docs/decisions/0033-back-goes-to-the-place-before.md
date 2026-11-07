@@ -498,3 +498,20 @@ destination are one vocabulary. No query left in the address by the app
 itself: a source's own parameters before the `#` are the source's to keep
 or drop.
 
+## Amended for 4.0.0: pages are places
+
+A page no longer opens over the board as a dialog. There is one frame with two
+rows on every screen, and a page is a place in its main column (`PageDialog`
+inside the frame). Back and Forward are drawn in row one on both hosts, driving
+the same history, and they are the way out of a page beside Esc, *Home* and a
+view's tab; the page's own ‹ and × are gone, and with them the control name
+`page.close`.
+
+The grammar gains two things. `?tab=` is said by any page with tabs
+(`PAGE_TABS`), not by the observations page alone. `?panel=work` or
+`?panel=activity` says a panel of the frame is open beside the place, which is
+a place of its own, so Back shuts it; over a bare home it is written short, as
+`#/-/work`. `settings` and `preferences` are pages an address and `app.open`
+reach too; they open their dialog over whatever is up, and the place stays what
+is under them. A move to one of the four moves nothing else unless it names
+another scope, which then lands on that scope's home.
