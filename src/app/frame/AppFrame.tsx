@@ -16,13 +16,14 @@ import type { ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
-import { HOME_PAGES } from '../../agent/screen'
+import { HOME_PAGES, viewPage } from '../../agent/screen'
+import type { DesignDiagram } from '../../model/types'
 import { matchesQuery } from '../../model/textSearch'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { AgentIcon, CaretIcon, HelpIcon, RedoIcon, SearchIcon, UndoIcon } from '../../widgets/icons'
+import { AgentIcon, CaretIcon, RedoIcon, SearchIcon, UndoIcon } from '../../widgets/icons'
 import { BandStack } from '../../widgets/kit/Band'
 import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
@@ -237,68 +238,110 @@ export function AlsoHere({ names, s }: { names: readonly string[]; s: Translate 
 }
 
 function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at: ScopePath }) {
-  const { frame, services: { s, prefs }, agentServer, organisation: { tree } } = parts
+  const { services: { s }, organisation: { tree } } = parts
   const facts = state.screen
   const name = facts?.name ?? (at === ROOT_SCOPE ? (tree.name.trim() || s('common.organisation')) : (flattenScopes(tree).find((one) => one.path === at)?.name ?? at))
-  const connected = parts.props.provider?.connected?.()
-  const word = statusWord({
-    status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
-    sourceStatus: facts?.sourceStatus, connected,
-  }, prefs.language, s)
-  const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
-  const mac = isMac()
   const chip = frameChip(parts)
+  const scopeOpen = facts?.kind === 'workspace'
   return (
     <>
       <BackForward s={s} />
-      <IconButton
-        label={s('frame.treeToggle')} size="small" aria-pressed={state.pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
-        onClick={() => { frame.set({ pinned: !state.pinned }); prefs.writePreference({ treePinned: !state.pinned }) }}
-      >
-        <TreeGlyph />
-      </IconButton>
+      <TreeToggle parts={parts} pinned={state.pinned} />
       <Trail parts={parts} facts={facts} at={at} name={name} />
       <div className="kit-frame__grow" />
-      <Tooltip title={s('frame.findTip')}>
-        <button type="button" className="kit-frame__find" data-testid="frame-find" data-guide="frame.find" onClick={() => facts?.openSearch?.()}>
-          <SearchIcon size={14} />
-          <span>{s('frame.find')}</span>
-          <span className="kit-frame__kbd">{mac ? '⌘K' : 'Ctrl K'}</span>
-        </button>
-      </Tooltip>
+      <FindField openSearch={facts?.openSearch} s={s} />
       <div className="kit-frame__grow" />
-      <Tooltip title={facts?.undo?.name ?? s('toolbar.undoTip')}>
-        <span><IconButton label={s('toolbar.undo')} size="small" disabled={!facts?.undo?.can} onClick={() => facts?.undo?.run()}><UndoIcon size={16} /></IconButton></span>
+      <UndoRedo facts={facts} s={s} />
+      <SafeWords parts={parts} state={state} />
+      <AgentButton parts={parts} />
+      <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
+      <HelpMenu parts={parts} />
+      <BarEnd overflow={frameOverflow(parts, scopeOpen)} s={s} />
+    </>
+  )
+}
+
+function TreeToggle({ parts, pinned }: { parts: ShellParts; pinned: boolean }) {
+  const { frame, services: { s, prefs } } = parts
+  return (
+    <IconButton
+      label={s('frame.treeToggle')} size="small" aria-pressed={pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
+      onClick={() => { frame.set({ pinned: !pinned }); prefs.writePreference({ treePinned: !pinned }) }}
+    >
+      <TreeGlyph />
+    </IconButton>
+  )
+}
+
+function FindField({ openSearch, s }: { openSearch: (() => void) | undefined; s: Translate }) {
+  return (
+    <Tooltip title={s('frame.findTip')}>
+      <button type="button" className="kit-frame__find" aria-label={s('frame.find')} data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}>
+        <SearchIcon size={14} />
+        <span>{s('frame.find')}</span>
+        <span className="kit-frame__kbd">{isMac() ? '⌘K' : 'Ctrl K'}</span>
+      </button>
+    </Tooltip>
+  )
+}
+
+/** Undo and redo, on every place: ⌘Z covers a decision accepted on a page, so they cannot live in a board's bar. */
+function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }) {
+  const { undo, redo } = facts ?? {}
+  return (
+    <>
+      <Tooltip title={undo?.name ?? s('toolbar.undoTip')}>
+        <span><IconButton label={s('toolbar.undo')} size="small" disabled={!undo?.can} onClick={() => undo?.run()}><UndoIcon size={16} /></IconButton></span>
       </Tooltip>
-      <Tooltip title={facts?.redo?.name ?? s('toolbar.redoTip')}>
-        <span><IconButton label={s('toolbar.redo')} size="small" disabled={!facts?.redo?.can} onClick={() => facts?.redo?.run()}><RedoIcon size={16} /></IconButton></span>
+      <Tooltip title={redo?.name ?? s('toolbar.redoTip')}>
+        <span><IconButton label={s('toolbar.redo')} size="small" disabled={!redo?.can} onClick={() => redo?.run()}><RedoIcon size={16} /></IconButton></span>
       </Tooltip>
+    </>
+  )
+}
+
+/** Whether work is safe, who else is here, and what was lately done: the word and the two panels behind it. */
+function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
+  const { services: { s, prefs } } = parts
+  const facts = state.screen
+  const word = statusWord({
+    status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
+    sourceStatus: facts?.sourceStatus, connected: parts.props.provider?.connected?.(),
+  }, prefs.language, s)
+  const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
+  const here = facts?.alsoHere ?? []
+  return (
+    <>
       {word.text !== '' && (
         <button
           type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined}
-          aria-expanded={state.panel === 'work'} onClick={() => togglePanel('work')}
+          aria-expanded={state.panel === 'work'} title={word.text} onClick={() => togglePanel('work')}
         >
           {word.text}
         </button>
       )}
-      {(facts?.alsoHere?.length ?? 0) > 0 && <AlsoHere names={facts!.alsoHere!} s={s} />}
+      {here.length > 0 && <AlsoHere names={here} s={s} />}
       <Tooltip title={s(facts?.activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
         <Button variant="quiet" size="small" aria-expanded={state.panel === 'activity'} onClick={() => togglePanel('activity')} data-guide="shell.activity" data-testid="frame-activity">
           {s('shell.activity')}
         </Button>
       </Tooltip>
-      <Tooltip title={agentTip(agentServer.bar.status, s)}>
-        <Button
-          variant="quiet" size="small" onClick={agentServer.bar.onOpen} data-testid="agent-glyph" data-guide="frame.agent" data-state={agentServer.bar.status.kind}
-          icon={<AgentIcon size={14} filled={agentServer.bar.status.kind === 'connected'} />}
-        >
-          {agentServer.bar.status.kind === 'connected' ? agentServer.bar.status.client.name : s('frame.agent')}
-        </Button>
-      </Tooltip>
-      <BarEnd button={frameBarButton(parts, facts?.kind === 'workspace' ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
-      <HelpMenu parts={parts} />
-      <BarEnd overflow={frameOverflow(parts, facts?.kind === 'workspace')} s={s} />
     </>
+  )
+}
+
+function AgentButton({ parts }: { parts: ShellParts }) {
+  const { services: { s }, agentServer: { bar } } = parts
+  const connected = bar.status.kind === 'connected'
+  return (
+    <Tooltip title={agentTip(bar.status, s)}>
+      <Button
+        variant="quiet" size="small" onClick={bar.onOpen} data-testid="agent-glyph" data-guide="frame.agent" data-state={bar.status.kind}
+        icon={<AgentIcon size={14} filled={connected} />}
+      >
+        {bar.status.kind === 'connected' ? bar.status.client.name : s('frame.agent')}
+      </Button>
+    </Tooltip>
   )
 }
 
@@ -334,7 +377,7 @@ function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: S
         {s('frame.home')}
       </button>
       {facts?.kind === 'home' && (facts.views ?? []).map((view) => (
-        <button key={view.id} type="button" className="kit-frame__tab" data-testid={`frame-view-${view.id}`} onClick={() => agent.openSomewhere({ scope: at, page: 'board', id: view.id })}>
+        <button key={view.id} type="button" className="kit-frame__tab" data-testid={`frame-view-${view.id}`} onClick={() => agent.openSomewhere({ scope: at, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id })}>
           {view.name}
         </button>
       ))}
@@ -392,7 +435,7 @@ function useAgentBand(parts: ShellParts, facts: ScreenFacts | undefined): Stacke
     if (session) setEnded(undefined)
     else if (was.current) setEnded({ name: name(was.current.client), stopped: stopped !== undefined })
     was.current = session
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a session's start and end, nothing else
+    // A session's start and end, and nothing else.
   }, [session, stopped])
   const run = facts?.agentRun?.()
   if (session) {

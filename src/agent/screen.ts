@@ -223,10 +223,23 @@ function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'obser
   return to.tab === undefined || ('tab' in up && up.tab === to.tab)
 }
 
+/** On the tab asked for, where one was. */
+function onTab(screen: Screen, tab: string | undefined): boolean {
+  return tab === undefined || (screen.page !== undefined && 'tab' in screen.page && screen.page.tab === tab)
+}
+
 /** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
 function onHome(screen: Screen, page: Page, scope: string): boolean {
   if (!screen.home || screen.home.path !== scope || screen.open) return false
   return page === 'home' ? screen.page === undefined : screen.page?.page === page
+}
+
+/**
+ * The frame's own places. Its panels are said on the screen; a dialog asked for
+ * is not, and a scope's own or the window's is up once the scope is right.
+ */
+function arrivedInFrame(screen: Screen, page: Page, scope: string): boolean {
+  return scopeOf(screen) === scope && (!isFramePanel(page) || screen.panel === page)
 }
 
 /**
@@ -237,13 +250,10 @@ function onHome(screen: Screen, page: Page, scope: string): boolean {
  */
 export function arrived(screen: Screen, to: Destination, scope: string): boolean {
   const page = to.page
-  // The frame's panels are said on the screen; a dialog asked for is not, and a
-  // scope's own or the window's is up once the scope is right.
-  if (isFramePanel(page)) return screen.panel === page && scopeOf(screen) === scope
-  if (page === 'settings' || page === 'preferences') return scopeOf(screen) === scope
+  if (page !== undefined && FRAME_PAGES.includes(page)) return arrivedInFrame(screen, page, scope)
   // No page: the scope open on whatever its tab shows, with nothing over it.
   if (page === undefined) return screen.open?.path === scope && screen.page === undefined
-  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope) && (to.tab === undefined || (screen.page !== undefined && 'tab' in screen.page && screen.page.tab === to.tab))
+  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope) && onTab(screen, to.tab)
   if (!screen.open || screen.open.path !== scope) return false
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {

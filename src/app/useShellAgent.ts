@@ -17,7 +17,7 @@ import type { Place } from '../agent/place'
 import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
-import type { Destination, FramePanel, MovedBy, Screen } from '../agent/screen'
+import type { Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
 import type { FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -141,14 +141,8 @@ export function useShellAgent(deps: {
   const openPreferences = useRef(deps.openPreferences)
   openPreferences.current = deps.openPreferences
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
-    // The frame's own places move nothing but what they say: over the scope you
-    // are in, and over the home of the scope named where that is another.
     if (to.page !== undefined && FRAME_PAGES.includes(to.page)) {
-      const here = project?.path ?? home
-      if (to.scope !== here) homeAt(to.scope, 'home')
-      if (isFramePanel(to.page)) frame?.set({ panel: to.page })
-      else if (to.page === 'settings') frame?.set({ asks: 'settings' })
-      else openPreferences.current?.()
+      openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, openPreferences.current)
       return
     }
     frame?.set({ panel: to.panel, tab: to.tab, tabOf: to.tab === undefined ? undefined : to.page })
@@ -286,28 +280,7 @@ export function useShellAgent(deps: {
     agentDriving.current = false
     agentOpened.current = false
   }, [driving])
-  // What an address asked of the frame itself, once, as the app comes up.
-  const askedOfFrame = useRef(deps.initialFramePage)
-  useEffect(() => {
-    const page = askedOfFrame.current
-    if (page === undefined) return
-    askedOfFrame.current = undefined
-    openFor({ scope: project?.path ?? home, page })
-  }, [openFor, project, home])
-  // The frame's panel moved: a place of its own, so Back shuts it and a reload keeps it.
-  useEffect(() => {
-    if (!frame) return undefined
-    let { panel, tab } = frame.get()
-    return frame.subscribe(() => {
-      const now = frame.get()
-      if (now.panel === panel && now.tab === tab) return
-      ({ panel, tab } = now)
-      lookAgainRef.current()
-    })
-  }, [frame])
-  const setPanel = useCallback((panel: FramePanel | undefined) => {
-    frame?.set({ panel })
-  }, [frame])
+  const setPanel = useFrameMoves(frame, deps.initialFramePage, openFor, project?.path ?? home, lookAgainRef)
   const registerAgent = agentShell.register
   const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
     agentSessionRef.current = view
@@ -387,6 +360,46 @@ function movesTheApp(screen: Screen, to: Destination & { scope: string }, open: 
   if (to.page !== 'element' || to.id === undefined) return false
   const boards = boardsDrawing(open.current(), to.id)
   return boards.length === 1 && boards[0].id !== open.activeDiagramId()
+}
+
+/**
+ * The frame's own places move nothing but what they say: over the scope you
+ * are in, and over the home of the scope named where that is another.
+ */
+function openInFrame(page: Page, leave: (() => void) | undefined, frame: FrameStore | undefined, preferences: (() => void) | undefined): void {
+  leave?.()
+  if (isFramePanel(page)) frame?.set({ panel: page })
+  else if (page === 'settings') frame?.set({ asks: 'settings' })
+  else preferences?.()
+}
+
+/**
+ * What an address asked of the frame itself, once as the app comes up; a panel
+ * or a tab that moved, which is a place of its own, so Back shuts it and a
+ * reload keeps it; and the press that opens or shuts a panel.
+ */
+function useFrameMoves(
+  frame: FrameStore | undefined, initial: 'work' | 'activity' | 'settings' | 'preferences' | undefined,
+  openFor: (to: Destination & { scope: string }) => void, here: ScopePath, lookAgain: { current: () => void },
+) {
+  const asked = useRef(initial)
+  useEffect(() => {
+    const page = asked.current
+    if (page === undefined) return
+    asked.current = undefined
+    openFor({ scope: here, page })
+  }, [openFor, here])
+  useEffect(() => {
+    if (!frame) return undefined
+    let { panel, tab } = frame.get()
+    return frame.subscribe(() => {
+      const now = frame.get()
+      if (now.panel === panel && now.tab === tab) return
+      ({ panel, tab } = now)
+      lookAgain.current()
+    })
+  }, [frame, lookAgain])
+  return useCallback((panel: FramePanel | undefined) => { frame?.set({ panel }) }, [frame])
 }
 
 /** The screen with what the frame holds laid over it: its panel, and a tab the page keeps there. */
