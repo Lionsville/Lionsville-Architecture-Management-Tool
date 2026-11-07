@@ -161,8 +161,6 @@ export type IndexEntry = {
    * holds.
    */
   owner?: PersonRef
-  /** The category its master's record says, for grouping and colouring a list that reads another scope's records. */
-  category?: string
   /**
    * What a platform is, as its master says (ADR-0014). A stand-in carries
    * nothing the owner answers for, so a landscape drawing the cluster reads

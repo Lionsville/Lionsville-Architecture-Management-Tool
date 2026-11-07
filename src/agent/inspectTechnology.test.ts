@@ -47,7 +47,7 @@ describe('the report', () => {
       ['containers', 0, true, 1], ['data', 0, false, 0], ['postgres', 1, false, 1],
     ])
     expect(report.platforms.some.map((one) => [one.id, one.depth, one.outside, one.applications])).toEqual([
-      ['landing-zone', 0, true, 0], ['openshift', 1, false, 1],
+      ['landing-zone', 0, true, 1], ['openshift', 1, false, 1],
     ])
     expect(report.edges.some.map((one) => `${one.kind} ${one.from} ${one.to}`)).toEqual([
       'uses application:wms service:containers',
