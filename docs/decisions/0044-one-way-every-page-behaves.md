@@ -1,6 +1,8 @@
 # ADR-0044 — One way every page behaves: under the bar, closed the same way, columns that widen, cards that open
 
-* Status: accepted, 25 October 2026; implemented, 25 October 2026 (3.8.0)
+* Status: accepted, 25 October 2026; implemented, 25 October 2026 (3.8.0);
+  amended for 4.0.0 by ADR-0033 (*pages are places*): a page is left by Back,
+  Esc, *Home* or a view's tab, and its own × and the name `page.close` are gone
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0005 (a top bar that says where you are), ADR-0033 (back goes
