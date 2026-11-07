@@ -32,7 +32,6 @@ import type { Repositories } from '../ports/Repositories'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { CrashTrail } from './ErrorBoundary'
 import type { InitialPage } from './App'
-import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { Crumb } from './ShellToolbar'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
@@ -259,18 +258,6 @@ export type WorkspaceNavigation = {
   initialPage?: InitialPage
 }
 
-/** The settings dialog's two calls into the shell. */
-export type WorkspaceSettings = {
-  /** Called when the dialog opens, so the caller can refresh the tree it offers. */
-  onOpen: () => void
-  /**
-   * What is left of the settings once the session has made the name and the
-   * defaults its own steps: where the scope is filed. A move changes the
-   * address, and this workspace is entered again there.
-   */
-  onApply: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<void>
-}
-
 /** The window around the workspace: its menu, its bar, and what it is told. */
 export type WorkspaceHost = {
   /**
@@ -302,6 +289,8 @@ export type WorkspaceHost = {
 /** The working file (ADR-0023, ADR-0025): the channel, and the three questions it asks. */
 export type WorkspaceFiles = {
   documents: ProjectFileChannel
+  /** A copy reached the person: what *Last copy saved* says. */
+  onCopySaved?: () => void
   /** What writes and reads a working file (`ports/Interchange.ts`). */
   interchange: Pick<Interchange, 'accepts' | 'open' | 'check'>
   /** The shell's one password dialog, behind a promise (ADR-0023). */
@@ -378,7 +367,6 @@ export type ProjectWorkspaceProps = {
   source: WorkspaceSource
   tree: WorkspaceTree
   navigation: WorkspaceNavigation
-  settings: WorkspaceSettings
   host: WorkspaceHost
   files: WorkspaceFiles
   snapshots: WorkspaceSnapshots

@@ -162,7 +162,9 @@ describe('DiagramSettingsDialog — what it saves', () => {
     const { onSave: onSave2 } = open({
       aspectConfig: [{ key: 'dr', label: 'Continuity' }, { key: 'cost', label: 'Cost' }],
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Move Cost up' }));
+    // The drag's keyboard path is in the row's menu.
+    fireEvent.click(screen.getAllByRole('button', { name: 'More' }).at(-1)!);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Move Cost up' }));
     save();
     expect(onSave2.mock.calls[0][1].aspectConfig?.map((c) => c.key)).toEqual(['cost', 'dr']);
     cleanup()

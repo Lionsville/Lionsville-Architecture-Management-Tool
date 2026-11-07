@@ -15,16 +15,11 @@
  * what per-element statuses are filed under, so a rename never moves one; the
  * caller re-keys the fresh ones on save via {@link settleFreshAspectKeys}.
  */
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { useState } from 'react';
+import { Button } from '../widgets/kit/Button';
+import { TextInput } from '../widgets/kit/Field';
+import { MenuButton, MoreMenu } from '../widgets/kit/Menu';
+import './AspectColumnsEditor.css';
 import {
   ASPECT_CODE_MAX,
   ASPECT_SUPERSET,
@@ -48,7 +43,8 @@ export function AspectColumnsEditor({
   columns, fresh, onChange, dimmed = false,
 }: AspectColumnsEditorProps) {
   const { t } = useStrings();
-  const [addMenu, setAddMenu] = useState<HTMLElement | null>(null);
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
 
   const setColumns = (next: AspectConfigEntry[]) => onChange(next, fresh);
   const editColumn = (index: number, patch: Partial<AspectConfigEntry>) =>
@@ -57,7 +53,8 @@ export function AspectColumnsEditor({
     const to = index + by;
     if (to < 0 || to >= columns.length) return;
     const next = [...columns];
-    [next[index], next[to]] = [next[to], next[index]];
+    const [taken] = next.splice(index, 1);
+    next.splice(to, 0, taken);
     setColumns(next);
   };
 
@@ -66,120 +63,72 @@ export function AspectColumnsEditor({
   );
 
   const addStandard = (entry: AspectConfigEntry) => {
-    setAddMenu(null);
     setColumns([...columns, { ...entry }]);
   };
   const addCustom = () => {
-    setAddMenu(null);
     const label = t('diagramSettings.newColumn');
     const key = aspectKeyForLabel(label, columns.map((c) => c.key));
     onChange([...columns, { key, label }], [...fresh, key]);
   };
 
   return (
-    <Box>
-      <Stack spacing={1} sx={{ mt: 1.25, opacity: dimmed ? 0.55 : 1 }}>
-        {columns.length === 0 && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {t('diagramSettings.noColumns')}
-          </Typography>
-        )}
-        {columns.map((column, index) => (
-          <Stack key={column.key} direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-            <TextField
-              label={index === 0 ? t('diagramSettings.columnLabel') : undefined}
-              // Only the first row shows its label; every row is named, so a
-              // screen reader on the fifth still says which field it is in.
-              slotProps={{ htmlInput: { 'aria-label': t('diagramSettings.columnLabel') } }}
-              value={column.label}
-              sx={{ flex: 1 }}
-              onChange={(e) => editColumn(index, { label: e.target.value })}
-            />
-            <TextField
-              label={index === 0 ? t('diagramSettings.columnCode') : undefined}
-              // What the badge would say if this field stayed empty — which for
-              // a standard column is its curated code (`dr` reads DR), not
-              // something derived from the label. A placeholder that disagreed
-              // with the card would be worse than none.
-              placeholder={
-                aspectShortCode({ ...column, code: undefined })
-                || t('diagramSettings.codePlaceholder')
-              }
-              value={column.code ?? ''}
-              sx={{ width: 96 }}
-              slotProps={{
-                htmlInput: { maxLength: ASPECT_CODE_MAX, 'aria-label': t('diagramSettings.columnCode') },
-                // Kept shrunk so the derived code shows as the placeholder on
-                // the first row too. Otherwise the labelled row alone looks
-                // blank while every row under it shows what its badge will say.
-                inputLabel: { shrink: true },
-              }}
-              onChange={(e) => editColumn(index, { code: e.target.value })}
-            />
-            <Tooltip title={t('diagramSettings.moveUp', { name: column.label })}>
-              <span>
-                <IconButton
-                  size="small"
-                  disabled={index === 0}
-                  aria-label={t('diagramSettings.moveUp', { name: column.label })}
-                  onClick={() => move(index, -1)}
-                >
-                  ↑
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('diagramSettings.moveDown', { name: column.label })}>
-              <span>
-                <IconButton
-                  size="small"
-                  disabled={index === columns.length - 1}
-                  aria-label={t('diagramSettings.moveDown', { name: column.label })}
-                  onClick={() => move(index, 1)}
-                >
-                  ↓
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('diagramSettings.remove', { name: column.label })}>
-              <IconButton
-                size="small"
-                aria-label={t('diagramSettings.remove', { name: column.label })}
-                onClick={() => setColumns(columns.filter((_, i) => i !== index))}
-              >
-                ✕
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ))}
-      </Stack>
-
-      <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-        <Button size="small" onClick={(e) => setAddMenu(e.currentTarget)}>
-          {t('diagramSettings.addStandard')}
-        </Button>
-        <Button size="small" onClick={addCustom}>
-          {t('diagramSettings.addCustom')}
-        </Button>
-        <Box sx={{ flex: 1 }} />
-        <Button
-          size="small"
-          color="inherit"
-          onClick={() => setColumns([...DEFAULT_ASPECT_CONFIG])}
+    <div className="aspect-table" data-dimmed={dimmed || undefined}>
+      {columns.length === 0 && <p className="aspect-table__none">{t('diagramSettings.noColumns')}</p>}
+      {columns.length > 0 && (
+        <div className="aspect-table__row aspect-table__row--head" aria-hidden>
+          <span />
+          <span>{t('diagramSettings.columnLabel')}</span>
+          <span>{t('diagramSettings.columnCode')}</span>
+          <span />
+        </div>
+      )}
+      {columns.map((column, index) => (
+        <div
+          key={column.key} className="aspect-table__row" data-drop={dropAt === index || undefined}
+          onDragOver={(event) => { if (dragged !== null) { event.preventDefault(); setDropAt(index); } }}
+          onDrop={(event) => { event.preventDefault(); if (dragged !== null) move(dragged, index - dragged); setDragged(null); setDropAt(null); }}
         >
-          {t('diagramSettings.reset')}
-        </Button>
-      </Stack>
-      <Menu anchorEl={addMenu} open={addMenu !== null} onClose={() => setAddMenu(null)}>
-        {unusedStandard.length === 0 && (
-          <MenuItem disabled>{t('diagramSettings.allStandardUsed')}</MenuItem>
-        )}
-        {unusedStandard.map((entry) => (
-          <MenuItem key={entry.key} onClick={() => addStandard(entry)}>
-            {entry.label}
-          </MenuItem>
-        ))}
-      </Menu>
-    </Box>
+          <span
+            className="aspect-table__grip" draggable aria-hidden
+            onDragStart={() => setDragged(index)} onDragEnd={() => { setDragged(null); setDropAt(null); }}
+          >
+            ⋮⋮
+          </span>
+          <TextInput aria-label={t('diagramSettings.columnLabel')} value={column.label} onChange={(e) => editColumn(index, { label: e.target.value })} />
+          <TextInput
+            aria-label={t('diagramSettings.columnCode')} maxLength={ASPECT_CODE_MAX} value={column.code ?? ''}
+            // What the badge would say if this stayed empty: for a standard
+            // column its curated code (`dr` reads DR), not one from the label.
+            placeholder={aspectShortCode({ ...column, code: undefined }) || t('diagramSettings.codePlaceholder')}
+            onChange={(e) => editColumn(index, { code: e.target.value })}
+          />
+          <span className="aspect-table__acts">
+            <Button size="small" variant="quiet" aria-label={t('diagramSettings.remove', { name: column.label })} onClick={() => setColumns(columns.filter((_, i) => i !== index))}>
+              {t('diagramSettings.removeWord')}
+            </Button>
+            {/* The drag's keyboard path. */}
+            <MoreMenu
+              size="small"
+              items={[
+                ...(index > 0 ? [{ label: t('diagramSettings.moveUp', { name: column.label }), onSelect: () => move(index, -1) }] : []),
+                ...(index < columns.length - 1 ? [{ label: t('diagramSettings.moveDown', { name: column.label }), onSelect: () => move(index, 1) }] : []),
+              ]}
+            />
+          </span>
+        </div>
+      ))}
+      <div className="aspect-table__add">
+        <MenuButton
+          label={t('diagramSettings.addStandard')} size="small" variant="plain"
+          items={unusedStandard.length === 0
+            ? [{ label: t('diagramSettings.allStandardUsed'), refused: t('diagramSettings.allStandardUsed'), onSelect: () => undefined }]
+            : unusedStandard.map((entry) => ({ label: entry.label, onSelect: () => addStandard(entry) }))}
+        />
+        <Button size="small" onClick={addCustom}>{t('diagramSettings.addCustom')}</Button>
+        <span className="aspect-table__grow" />
+        <Button size="small" variant="quiet" onClick={() => setColumns([...DEFAULT_ASPECT_CONFIG])}>{t('diagramSettings.reset')}</Button>
+      </div>
+    </div>
   );
 }
 

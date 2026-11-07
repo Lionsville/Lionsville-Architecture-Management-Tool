@@ -26,7 +26,9 @@ import type { StringKey } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import { isSyncRefusal, refusedIn } from '../../platform/sync'
 import type { SyncRefusal, SyncRefused, SyncSide } from '../../platform/sync'
-import type { SourceChromeProps } from '../../ports/ProviderParts'
+import { Button as KitButton } from '../../widgets/kit/Button'
+import { PanelSection } from '../../widgets/kit/Panel'
+import type { SourceChromeProps, SourceYourWorkProps } from '../../ports/ProviderParts'
 import { FolderAdoptionQuestion } from './FolderAdoption'
 import type { FolderOwn } from './folderOwn'
 
@@ -60,6 +62,67 @@ export function FolderChrome({ own, notify, reread, flush, preferences }: Source
   )
 }
 
+/**
+ * Take theirs or keep ours, from the strip or from *Your work*: the two outcomes
+ * differ (theirs keeps ours on a branch, ours is recorded as a merge), and both
+ * places say so in the same words because they run this.
+ */
+function useSyncResolve(
+  own: FolderOwn, notify: SourceChromeProps<FolderOwn>['notify'], reread: SourceChromeProps<FolderOwn>['reread'],
+  flush: SourceChromeProps<FolderOwn>['flush'], settled: () => void,
+) {
+  const { t: s } = useStrings()
+  return useCallback((side: SyncSide) => {
+    const sync = own.sync
+    if (!sync) return
+    // What the open scope holds unwritten is written first: taken into the
+    // merge on *mine*, and not written over their version on *theirs*.
+    void flush().then(() => sync.resolve(side)).then((outcome) => {
+      if (outcome !== 'done') {
+        notify(s('sync.resolveRefused', { reason: reasonFor(outcome, s) }), 'warning')
+        return
+      }
+      settled()
+      if (side === 'theirs') {
+        notify(s('sync.tookTheirs'), 'info')
+        reread()
+        return
+      }
+      notify(s('sync.keptOurs'), 'info')
+      // The merge commit is made to be pushed, and it is an entry in every
+      // sense: whether it goes now is the same setting that decides for any
+      // other entry.
+      void own.pushIfWanted().catch((cause: unknown) => own.report('sync.push', cause))
+    }, (cause: unknown) => {
+      own.report('sync.resolve', cause)
+      notify(s('sync.resolveRefused', { reason: reasonOf(cause) }), 'error')
+    })
+  }, [own, notify, reread, flush, settled, s])
+
+}
+
+/** What the folder says in *Your work*: its remote, and the same two answers the strip offers while the two have parted. */
+export function FolderYourWork({ own, notify, reread, flush }: SourceYourWorkProps<FolderOwn>) {
+  const { t: s } = useStrings()
+  const [parted, setParted] = useState(own?.pulled === 'diverged')
+  useEffect(() => own?.onPushed((outcome) => { if (outcome === 'rejected') setParted(true) }), [own])
+  const settled = useCallback(() => setParted(false), [])
+  const resolve = useSyncResolve(own as FolderOwn, notify as never, reread as never, flush as never, settled)
+  if (!own?.sync) return null
+  return (
+    <PanelSection title={s('sync.remote')}>
+      <p data-testid="work-remote">{s(parted ? 'sync.diverged' : 'sync.pulled')}</p>
+      {parted && (
+        <>
+          <p>{s('sync.outcomes')}</p>
+          <KitButton size="small" onClick={() => resolve('theirs')} data-testid="work-take-theirs-remote">{s('sync.takeTheirs')}</KitButton>
+          <KitButton size="small" onClick={() => resolve('ours')} data-testid="work-keep-ours-remote">{s('sync.keepOurs')}</KitButton>
+        </>
+      )}
+    </PanelSection>
+  )
+}
+
 function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<FolderOwn>, 'notify' | 'reread' | 'flush'> & { own: FolderOwn }) {
   const { t: s } = useStrings()
   const [diverged, setDiverged] = useState(own.pulled === 'diverged')
@@ -81,32 +144,7 @@ function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<Folder
     notify(s('sync.pushRefused', { reason: reasonFor(outcome, s) }), 'warning')
   }), [own, notify, s])
 
-  const resolve = useCallback((side: SyncSide) => {
-    const sync = own.sync
-    if (!sync) return
-    // What the open scope holds unwritten is written first: taken into the
-    // merge on *mine*, and not written over their version on *theirs*.
-    void flush().then(() => sync.resolve(side)).then((outcome) => {
-      if (outcome !== 'done') {
-        notify(s('sync.resolveRefused', { reason: reasonFor(outcome, s) }), 'warning')
-        return
-      }
-      setDiverged(false)
-      if (side === 'theirs') {
-        notify(s('sync.tookTheirs'), 'info')
-        reread()
-        return
-      }
-      notify(s('sync.keptOurs'), 'info')
-      // The merge commit is made to be pushed, and it is an entry in every
-      // sense: whether it goes now is the same setting that decides for any
-      // other entry.
-      void own.pushIfWanted().catch((cause: unknown) => own.report('sync.push', cause))
-    }, (cause: unknown) => {
-      own.report('sync.resolve', cause)
-      notify(s('sync.resolveRefused', { reason: reasonOf(cause) }), 'error')
-    })
-  }, [own, notify, reread, flush, s])
+  const resolve = useSyncResolve(own, notify, reread, flush, () => setDiverged(false))
 
   if (!diverged) return null
   return (

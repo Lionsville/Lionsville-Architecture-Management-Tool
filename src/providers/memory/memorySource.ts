@@ -27,6 +27,7 @@ export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown, { readonly s?: 
   labelKey: 'shell.sourceMemory',
   describeKey: 'shell.sourceTipMemory',
   whereKey: 'memory.where',
+  riskKey: 'memory.risk',
   // What removing takes is what the chip's neighbours always said of it.
   removeKey: 'picker.deleteBodyBrowser',
   open: (_opening, { s }) => ({

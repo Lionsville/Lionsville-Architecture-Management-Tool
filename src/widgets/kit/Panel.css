@@ -121,3 +121,7 @@
 .kit-panel__namePress:focus-visible,
 .kit-panel__body:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .kit-panel__body:focus-visible { outline-offset: calc(0px - var(--focus-ring-width)); }
+
+.kit-work__fact { display: flex; justify-content: space-between; gap: var(--s-3); min-height: var(--row-prop); }
+.kit-work__fact-label { color: var(--ink-3); }
+.kit-work__acts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }

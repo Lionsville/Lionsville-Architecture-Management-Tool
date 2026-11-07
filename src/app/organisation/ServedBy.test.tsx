@@ -193,8 +193,8 @@ describe('who serves a scope, on its home', () => {
     renderApp({ repositories: await held(), today: TODAY })
     await shippingHome()
     fireEvent.click(screen.getByTestId('scope-settings'))
-    const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getAllByTestId('served-by-row').map((one) => one.textContent)[0]).toBe('Domain · ShippingNoor Haddad')
+    const dialog = await screen.findByTestId('scope-settings-page')
+    expect((await within(dialog).findAllByTestId('served-by-row')) && within(dialog).getAllByTestId('served-by-row').map((one) => one.textContent)[0]).toBe('Domain · ShippingNoor Haddad')
     expect(within(dialog).getByTestId('served-by-add')).toBeTruthy()
   })
 })
@@ -222,14 +222,14 @@ describe('the links between a unit and the scopes it serves', { timeout: 20_000 
     await waitFor(() => expect(screen.getAllByTestId('served-by-row')).toHaveLength(3))
   })
 
-  it('opens a unit from the scope\'s settings too, leaving the dialog', async () => {
+  it('opens a unit from the scope\'s settings too, leaving the page', async () => {
     renderApp({ repositories: heldRepositories(charted()), today: TODAY })
     await shippingHome()
     fireEvent.click(screen.getByTestId('scope-settings'))
-    const dialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Parcel & Freight' }))
+    const dialog = await screen.findByTestId('scope-settings-page')
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Parcel & Freight' }))
     await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByTestId('scope-settings-page')).toBeNull()
   })
 })
 

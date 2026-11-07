@@ -20,6 +20,7 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { LanguageProvider } from '../i18n'
+import type { Translate } from '../i18n'
 import '../widgets/kit/fonts/fonts.css'
 import type { Command, ElementId } from '../model'
 import type { ObservationTab, Page, Screen } from '../agent/screen'
@@ -27,20 +28,20 @@ import { isViewPageName } from './pageLanding'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
-import { flattenScopes, namesUnder } from '../projects/scope'
-import type { ScopeKind, ScopeSnapshot } from '../projects/scope'
+import { flattenScopes } from '../projects/scope'
+import type { ScopeKind, ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { AspectConfigEntry } from '../model/types'
 import type { TypeChoice } from '../projects/scopeType'
 import type { CarryChoice } from './workingFileFlows'
 import {
-  modelsOf, moveScope, readWhole, refusedError, stepOf, summaryOf,
+  modelsOf, readWhole, refusedError, stepOf,
 } from '../projects/scopeAccess'
 import type { RecordLink } from '../projects/links'
 import { SCOPE_MOVED } from '../projects/revision'
-import type { Repositories } from '../ports/Repositories'
-import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import { sourceIsReadOnly } from '../platform/workingSource'
+import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
+import type { WorkingSource } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
 import { usePeopleRegister } from './organisation/usePeopleRegister'
 import { PersonNamesProvider, personNames } from '../people/ui/names'
@@ -54,13 +55,14 @@ import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
 import { useOrganisation } from './organisation/useOrganisation'
 import { useAgentScopes } from './agentScopes'
-import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
+import type { ShellPreferences } from './useShellPreferences'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
-import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
+import { AppDialogs, AppNotices, AppScreen, FramePages, HomeHistoryDialogs } from './AppPanels'
 import { AppFrame } from './frame/AppFrame'
+import { firstRunUp, FirstRunScreen } from './organisation/FirstRunScreen'
 import { frameStore, FrameStoreContext } from './frame/frameStore'
 import { readFinding } from '../agent/place'
 import { ListDensityContext } from '../widgets/kit/listDensity'
@@ -455,6 +457,10 @@ export type ScopeSettingsPatch = {
    * all (`ScopeRepository.move`).
    */
   parent?: ScopePath
+  /** Who an exported picture names where it has none of its own. */
+  defaultAuthor?: string
+  /** The aspects a new landscape starts with. */
+  defaultAspectConfig?: AspectConfigEntry[]
 }
 
 export type { AppBoot, AppHost, AppProps, AppProvider } from './appProps'
@@ -484,6 +490,7 @@ export function App(props: AppProps) {
   const density = useMemo(() => [listDensity, (next: ListDensity) => { setListDensity(next); prefs.writePreference({ listDensity: next }) }] as const, [listDensity, prefs])
   const seams = useSeamWidths(prefs)
   const keeps = useViewerKeeps(prefs)
+  const firstRun = firstRunUp(parts)
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
@@ -514,12 +521,13 @@ export function App(props: AppProps) {
           {/* The first run has no scope and no rows to speak of; everything else is a place in the frame. */}
           {props.provider?.sourceNeeded
             ? <AppScreen parts={parts} />
-            : (
+            : firstRun === 'up' ? <FirstRunScreen parts={parts} /> : firstRun === 'waiting' ? null : (
               <FrameStoreContext.Provider value={parts.frame}>
                 <AppFrame parts={parts}>
                   <ErrorBoundary where="app" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
                     <AppScreen parts={parts} />
                     {!parts.nav.project && <HomeHistoryDialogs parts={parts} />}
+                    <FramePages parts={parts} />
                   </ErrorBoundary>
                 </AppFrame>
               </FrameStoreContext.Provider>
@@ -636,7 +644,7 @@ function useShellParts(props: AppProps): ShellParts {
    * the two file flows is asking: the workspace's, with a scope open, or the
    * home's below, with nothing open.
    */
-  const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
+  const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s)), openInto: useOpenIntoPrompt(s) }
   /** What is folded shut on each view's trees, for as long as the window is open (`sessionFolds.ts`). */
   const [folds] = useState(() => new SessionFolds())
   const home = useHomeParts({
@@ -650,11 +658,10 @@ function useShellParts(props: AppProps): ShellParts {
       await adoptScopes(opened)
       treeChanged()
     },
-    ...prompts, chooseDestination: props.provider?.destination,
+    ...prompts, chooseDestination: props.provider?.destination, onCopySaved: base.copies.note,
     doors: { history: commands.homeHistory, files: commands.homeFiles }, notify: toasts.notify, s,
   })
   const findings = useTreeFindings({ index: tree.index, tree: organisation.tree, home: nav.home, scopes: repositories.scopes })
-  const applyProjectSettings = useProjectSettings({ base, repositories })
 
   const ancestry = useScopeAncestry({ project, scopes: repositories.scopes, tree: organisation.tree, failedRef, s })
   // Leaving ends assignments in the open scope through its session, which the agent's registration knows of.
@@ -689,6 +696,7 @@ function useShellParts(props: AppProps): ShellParts {
     watchScreen: true,
     frame: base.frame,
     openPreferences: () => base.machine.setOpen(true),
+    closePreferences: () => base.machine.setOpen(false),
     ...(props.boot.initialFramePage ? { initialFramePage: props.boot.initialFramePage } : {}),
     ...(props.boot.initialPageLook ? { initialPageLook: props.boot.initialPageLook } : {}),
   })
@@ -708,48 +716,32 @@ function useShellParts(props: AppProps): ShellParts {
     frame: base.frame, writable,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people, folds,
-    writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
+    copies: base.copies,
+    writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged },
   }
 }
 
+/** What a copy of the whole organisation holds, as the dialog asking for its password says it. */
+function copyAbout(tree: ScopeSummary, s: Translate) {
+  const every = flattenScopes(tree)
+  const views = every.reduce((sum, scope) => sum + scope.diagrams, 0)
+  return { name: tree.name.trim() || s('common.organisation'), holds: s('seal.holds', { scopes: every.length, views }) }
+}
+
 /**
- * The open scope's own settings (`ProjectSettingsDialog`): the name and the
- * defaults are the session's to change, as the commands they are, and the
- * workspace has made them by the time this is asked; what is left here is
- * where it is filed. A move takes the scope and everything under it to the
- * new address, identities and all, and the workspace is entered again there.
+ * When a copy of this place's work last reached the person, for *Your work*: on
+ * this computer, per place, and said because a browser's storage is the one place
+ * work can vanish silently.
  */
-function useProjectSettings({ base, repositories }: { base: ReturnType<typeof useShellBase>; repositories: Repositories }) {
-  const { services, nav, tree } = base
-  const { toasts, s, failed, reportKept } = services
-  const { enter } = nav
-  return useCallback(async (settings: ProjectSettings, current: ScopeSnapshot): Promise<void> => {
-    const from = parentScope(current.path) ?? ROOT_SCOPE
-    if (settings.group === from) {
-      toasts.notify(s('settings.renamed', { name: settings.name }), 'success')
-      return
-    }
-    try {
-      const listing = summaryOf(await repositories.scopes.tree())
-      // A name free under the old parent can be taken under the new one.
-      const parent = flattenScopes(listing).find((scope) => scope.path === settings.group)
-      const taken = namesUnder(parent)
-      const to = taken.includes(scopePathLabel(current.path))
-        ? scopePathFor(settings.group, settings.name, taken)
-        : scopePathFor(settings.group, scopePathLabel(current.path))
-      const moved = await moveScope(repositories.scopes, repositories.index, current.path, to)
-      if (!moved) return
-      enter(moved)
-      tree.refresh()
-      toasts.notify(s('settings.moved', { name: settings.name }), 'success')
-    } catch (cause) {
-      // A refusal is the repository's answer, said in its words; anything
-      // else is the place work is kept not answering, which the notice says.
-      if (cause instanceof ShellError) { failed('applyProjectSettings.move', cause, cause.key); return }
-      failed('applyProjectSettings.move', cause)
-      reportKept(false)
-    }
-  }, [repositories, enter, tree, toasts, failed, reportKept, s])
+function useCopiesSaved(prefs: ShellPreferences, source: WorkingSource) {
+  const key = sourceKey(source)
+  const [last, setLast] = useState<string | undefined>(() => (prefs.readPreferences().copiesSaved as Record<string, string> | undefined)?.[key])
+  const note = useCallback(() => {
+    const now = new Date().toISOString()
+    setLast(now)
+    prefs.writePreference({ copiesSaved: { ...(prefs.readPreferences().copiesSaved as Record<string, string> | undefined), [key]: now } })
+  }, [prefs, key])
+  return { last, note }
 }
 
 /** The services, where the shell is, the tree, the host's doors and the organisation screen. */
@@ -817,9 +809,10 @@ function useShellBase(props: AppProps) {
     address: props.provider?.shareAddress, screen: screenNow, selected: selectedNow, copyText, diagnostics,
     notify: toasts.notify, s,
   })
+  const noteMachineOpen = useCallback((preferences: boolean) => { frame.set({ preferences: preferences || undefined }) }, [frame])
   const machine = useMachineSettings({
     updateSettings: host.updateSettings, failedRef, notify: toasts.notify, s,
-    initiallyOpen: boot.opensDialog === 'preferences',
+    initiallyOpen: boot.opensDialog === 'preferences', onOpenChange: noteMachineOpen,
   })
   const commands = useShellCommands({
     commands: host.commands, hostMenu: host.hostMenu, onWindowZoom: host.onWindowZoom, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
@@ -834,6 +827,7 @@ function useShellBase(props: AppProps) {
   })
   const order = useProjectOrder(prefs)
   const savedFilters = useSavedFilters(prefs)
+  const copies = useCopiesSaved(prefs, source)
 
   /**
    * The organisation screen's wiring (`useOrganisation`).
@@ -860,6 +854,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable, frame,
+    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable, frame, copies,
   }
 }

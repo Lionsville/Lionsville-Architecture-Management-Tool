@@ -75,12 +75,12 @@ export function savedWithout(without: readonly string[], s: Translate): string |
  * where the language is.
  */
 export async function unsealedBytes(
-  bytes: Uint8Array, askPassword: AskPassword, wrong: string,
+  bytes: Uint8Array, askPassword: AskPassword, wrong: string, file?: string,
 ): Promise<Uint8Array | undefined> {
   if (!isSealed(bytes)) return bytes
   let error: string | undefined
   for (;;) {
-    const answer = await askPassword('enter', error)
+    const answer = await askPassword('enter', error, file)
     if (answer === undefined) return undefined
     const plain = await unsealBytes(bytes, answer.password)
     if (plain) return plain
@@ -117,6 +117,23 @@ export type ReadScope = (path: ScopePath) => Promise<ScopeSnapshot | undefined>
 
 export type ChooseDestination = () => Promise<WorkingFileDestination | undefined>
 
+/** Where a file should go: what it holds, and what would happen here. */
+export type DestinationQuestion = {
+  file: string
+  here: string
+  canGoElsewhere: boolean
+  puttingBack?: boolean
+  /** What the file calls itself and what it holds, in words. */
+  holdsName?: string
+  holds?: string
+  /** How many scopes are filed under what is here. */
+  below?: number
+  /** A snapshot is taken first, so *here* can be restored from History. */
+  keepsHistory?: boolean
+  /** Saving a copy of what is here first can be offered. */
+  canSaveCopyFirst?: boolean
+}
+
 /** The two questions, as the shell's dialogs answer them. */
 export type LandingPrompts = {
   /**
@@ -124,7 +141,7 @@ export type LandingPrompts = {
    * it is putting it back from the file, keeping what could not be read
    * (`ScopeState.unreadable`).
    */
-  askDestination(ask: { file: string; here: string; canGoElsewhere: boolean; puttingBack?: boolean }): Promise<'here' | 'elsewhere' | undefined>
+  askDestination(ask: DestinationQuestion): Promise<'here' | 'elsewhere' | 'copyFirst' | undefined>
   confirmReplace(name: string): Promise<boolean>
 }
 
@@ -180,6 +197,14 @@ export async function landWorkingFile(args: {
   beforeReplace?: () => Promise<boolean>
   /** What is here could not be read whole, and landing the file here puts it back, as the question says. */
   puttingBack?: boolean
+  /** Nothing has been made here yet, so there is nothing to ask: the file just opens. */
+  untouched?: boolean
+  /** How many scopes are filed under what is here. */
+  below?: number
+  /** Whether *here* can be restored from a history afterwards; the safeguard alone where not said. */
+  keepsHistory?: () => Promise<boolean>
+  /** Save a copy of what is here first, where the question offers it; answers once that is done or cancelled. */
+  saveCopyFirst?: () => Promise<void>
   notify: Notify
   s: Translate
 }): Promise<void> {
@@ -187,12 +212,18 @@ export async function landWorkingFile(args: {
   const opened = await interchange.open(bytes, into.path)
   if ('refused' in opened) { notify(s(opened.refused), 'error'); return }
   const said = (landed: OpenedWorkingFile, from?: ReadScope) => sayLanding(name, landed, from, interchange, notify, s)
-  const choice = await prompts.askDestination({
-    file: name,
-    here: into.model.name.trim() || s('openInto.unnamedHere'),
-    canGoElsewhere: chooseDestination !== undefined,
-    ...(args.puttingBack ? { puttingBack: true } : {}),
-  })
+  if (args.untouched) {
+    if ((await inPart(() => here(opened), read)) === false) return
+    await said(opened, read)
+    return
+  }
+  const question = await destinationQuestion(args, opened)
+  let choice = await prompts.askDestination(question)
+  // Saving what is here first comes back to the question, with the same words.
+  while (choice === 'copyFirst') {
+    await args.saveCopyFirst?.()
+    choice = await prompts.askDestination(question)
+  }
   if (choice === undefined) return
   if (choice === 'here' || !chooseDestination) {
     if (beforeReplace && !(await beforeReplace())) return
@@ -211,6 +242,30 @@ export async function landWorkingFile(args: {
     : undefined
   await inPart(() => destination.place([rooted.top, ...rooted.rest], people), destination.read)
   if (destination.read) await said(rooted, destination.read)
+}
+
+/** The question, for this place only: what the file holds and what would happen here. */
+async function destinationQuestion(args: Parameters<typeof landWorkingFile>[0], opened: OpenedWorkingFile): Promise<DestinationQuestion> {
+  const { name, into, chooseDestination, beforeReplace, s } = args
+  const keeps = args.keepsHistory ? await args.keepsHistory() : beforeReplace !== undefined
+  return {
+    file: name,
+    here: into.model.name.trim() || s('openInto.unnamedHere'),
+    canGoElsewhere: chooseDestination !== undefined,
+    holdsName: opened.top.model.name.trim() || name,
+    holds: holdsInWords(opened, s),
+    below: args.below ?? 0,
+    ...(keeps ? { keepsHistory: true } : {}),
+    ...(args.saveCopyFirst ? { canSaveCopyFirst: true } : {}),
+    ...(args.puttingBack ? { puttingBack: true } : {}),
+  }
+}
+
+/** What an opened file holds, as the question says it. */
+export function holdsInWords(opened: OpenedWorkingFile, s: Translate): string {
+  const all = [opened.top, ...opened.rest]
+  const views = all.reduce((sum, scope) => sum + scope.model.diagrams.length, 0)
+  return s('openInto.holds', { scopes: all.length, views })
 }
 
 /**

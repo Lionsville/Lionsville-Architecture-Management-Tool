@@ -48,7 +48,7 @@ describe('ExportDialog — as axe reads it', () => {
 describe('ExportDialog', () => {
   it('hands every choice back whole, so the caller never merges', () => {
     const { onChange } = open();
-    fireEvent.click(screen.getByRole('button', { name: 'Dark' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));
     expect(onChange).toHaveBeenLastCalledWith({ ...options, theme: 'dark' });
     fireEvent.click(screen.getByLabelText('Line labels'));
     expect(onChange).toHaveBeenLastCalledWith({ ...options, showLabels: true });

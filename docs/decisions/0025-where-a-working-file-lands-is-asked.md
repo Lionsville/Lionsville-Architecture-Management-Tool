@@ -106,3 +106,7 @@ snapshot, because it writes over nothing that was open.
 The evening this decision was written for had a history, and a snapshot from
 the day before; with this amendment the snapshot would have been from the
 minute before.
+
+## Amended 7 November 2026: asked for this place only
+
+On screen a working file is *a saved copy* and `.lvarch` stays. The question says what the file holds and what would happen here, as the app knows which case it is in: with another place to go, two rows naming each outcome; with a history kept, the one outcome and its snapshot; with neither, a danger block, the way to save a copy first, and a button named *Replace and lose what is here*. An organisation nothing has been made in is not asked: the file just opens.

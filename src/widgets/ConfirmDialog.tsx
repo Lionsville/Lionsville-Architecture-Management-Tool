@@ -18,12 +18,8 @@
  * be true — goes under the body as `children`.
  */
 import type { ReactNode } from 'react'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
+import { Button } from './kit/Button'
+import { Dialog } from './kit/Dialog'
 
 export type ConfirmDialogProps = {
   open: boolean
@@ -44,21 +40,19 @@ export function ConfirmDialog({
   open, title, body, confirmLabel, cancelLabel, confirmDisabled = false, tone = 'danger', onCancel, onConfirm, children,
 }: ConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 14 }}>{body}</DialogContentText>
-        {children}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{cancelLabel}</Button>
-        <Button
-          color={tone === 'danger' ? 'error' : 'primary'} variant="contained" disabled={confirmDisabled} onClick={onConfirm}
-          sx={{ textTransform: 'none' }}
-        >
-          {confirmLabel}
-        </Button>
-      </DialogActions>
+    <Dialog
+      open={open}
+      title={title}
+      onClose={onCancel}
+      actions={(
+        <>
+          <Button onClick={onCancel}>{cancelLabel}</Button>
+          <Button variant={tone === 'danger' ? 'danger' : 'primary'} disabled={confirmDisabled} onClick={onConfirm}>{confirmLabel}</Button>
+        </>
+      )}
+    >
+      <p>{body}</p>
+      {children}
     </Dialog>
   )
 }

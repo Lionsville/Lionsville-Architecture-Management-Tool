@@ -51,11 +51,11 @@ describe('PasswordDialog', () => {
   it('asks once when opening, carries the last verdict under the field, and confirms on Enter', () => {
     const onConfirm = vi.fn()
     renderShell(<PasswordDialog
-      open mode="enter" error="That is not the password this file was sealed under, or the file is damaged."
+      open mode="enter" error="That password does not open this file."
       onCancel={() => {}} onConfirm={onConfirm} s={s}
     />)
     expect(screen.queryByTestId('password-repeat')).toBeNull()
-    expect(screen.getByText(/not the password/)).toBeDefined()
+    expect(screen.getByText(/does not open this file/)).toBeDefined()
     fireEvent.change(screen.getByTestId('password'), { target: { value: 'correct horse' } })
     fireEvent.keyDown(screen.getByTestId('password'), { key: 'Enter' })
     expect(onConfirm).toHaveBeenCalledWith({ password: 'correct horse', withoutNames: false })

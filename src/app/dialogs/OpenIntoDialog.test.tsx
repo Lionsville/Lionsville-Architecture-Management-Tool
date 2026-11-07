@@ -31,12 +31,23 @@ describe('OpenIntoDialog', () => {
       open file="theirs.lvarch" here="Acme Logistics" canGoElsewhere
       onCancel={() => {}} onHere={onHere} onElsewhere={onElsewhere} s={s}
     />)
-    expect(screen.getByText('Where should “theirs.lvarch” go?')).toBeDefined()
-    expect(screen.getByText(/writes over “Acme Logistics” and every scope filed under it/)).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Where should “theirs.lvarch” go?' })).toBeDefined()
+    expect(screen.getByText(/Writes over Acme Logistics\. No history is kept here yet/)).toBeDefined()
     fireEvent.click(screen.getByTestId('open-into-elsewhere'))
     expect(onElsewhere).toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('open-into-choose-here'))
     fireEvent.click(screen.getByTestId('open-into-here'))
     expect(onHere).toHaveBeenCalled()
+  })
+
+  it('says a snapshot is taken where a history is kept, and names what is in the file', () => {
+    renderShell(<OpenIntoDialog
+      open file="x.lvarch" here="Acme" canGoElsewhere={false} keepsHistory holdsName="Northline" holds="5 scopes, 9 views"
+      onCancel={() => {}} onHere={() => {}} onElsewhere={() => {}} s={s}
+    />)
+    expect(screen.getByText(/A snapshot is taken first/)).toBeDefined()
+    expect(screen.getByText('In the file: Northline')).toBeDefined()
+    expect(screen.getByTestId('open-into-here').textContent).toBe('Replace “Acme” here')
   })
 
   it('offers only "here" where no folder can be chosen, and still warns', () => {
@@ -45,6 +56,7 @@ describe('OpenIntoDialog', () => {
       onCancel={() => {}} onHere={() => {}} onElsewhere={() => {}} s={s}
     />)
     expect(screen.queryByTestId('open-into-elsewhere')).toBeNull()
-    expect(screen.getByText(/writes over “Acme”/)).toBeDefined()
+    expect(screen.getByText('Acme will be gone.')).toBeDefined()
+    expect(screen.getByTestId('open-into-here').textContent).toBe('Replace and lose what is here')
   })
 })

@@ -18,17 +18,22 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import { PasswordDialog } from './dialogs/PasswordDialog'
-import type { PasswordAnswer, PasswordMode } from './dialogs/PasswordDialog'
+import type { PasswordAbout, PasswordAnswer, PasswordMode } from './dialogs/PasswordDialog'
 
 export type { PasswordAnswer }
 
-export type AskPassword = (mode: PasswordMode, error?: string) => Promise<PasswordAnswer | undefined>
+/** `file`: the file being opened, by name, which the dialog says. */
+export type AskPassword = (mode: PasswordMode, error?: string, file?: string) => Promise<PasswordAnswer | undefined>
 
-type Asking = { mode: PasswordMode; error?: string }
+type Asking = { mode: PasswordMode; error?: string; file?: string }
 
-export function usePasswordPrompt(s: Translate): { askPassword: AskPassword; dialog: React.ReactElement } {
+export function usePasswordPrompt(s: Translate, copying?: () => PasswordAbout): { askPassword: AskPassword; dialog: React.ReactElement } {
   const [asking, setAsking] = useState<Asking | undefined>(undefined)
   const resolveRef = useRef<((answer: PasswordAnswer | undefined) => void) | undefined>(undefined)
+
+  // Asked as the dialog opens, for what the organisation holds now.
+  const copyingRef = useRef(copying)
+  copyingRef.current = copying
 
   const settle = useCallback((answer: PasswordAnswer | undefined) => {
     const resolve = resolveRef.current
@@ -37,11 +42,11 @@ export function usePasswordPrompt(s: Translate): { askPassword: AskPassword; dia
     resolve?.(answer)
   }, [])
 
-  const askPassword = useCallback<AskPassword>((mode, error) => {
+  const askPassword = useCallback<AskPassword>((mode, error, file) => {
     resolveRef.current?.(undefined)
     return new Promise((resolve) => {
       resolveRef.current = resolve
-      setAsking({ mode, ...(error ? { error } : {}) })
+      setAsking({ mode, ...(error ? { error } : {}), ...(file ? { file } : {}) })
     })
   }, [])
 
@@ -50,6 +55,7 @@ export function usePasswordPrompt(s: Translate): { askPassword: AskPassword; dia
       open={asking !== undefined}
       mode={asking?.mode ?? 'enter'}
       error={asking?.error}
+      about={asking?.mode === 'set' ? copyingRef.current?.() : asking?.file ? { file: asking.file } : undefined}
       onCancel={() => settle(undefined)}
       onConfirm={settle}
       s={s}

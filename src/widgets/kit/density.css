@@ -1,0 +1,5 @@
+/* The one switch for how much a screen holds (a person's preference): every row measure follows from it. */
+:root[data-density='compact'] {
+  --row-h: var(--row-h-dense);
+  --row-prop: 22px;
+}

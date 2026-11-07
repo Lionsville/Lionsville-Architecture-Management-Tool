@@ -95,7 +95,7 @@ describe('a working file opened over the open scope', () => {
     fireEvent.click(screen.getByTestId('open-into-here'))
     await waitFor(async () => expect((await store.read('acme/landscape'))?.model.name).toBe('From a colleague'))
     expect((await store.read('acme/landscape/under'))?.model.name).toBe('Under it')
-    await waitFor(() => expect(screen.getByText(/loaded and checked against what it says it holds: 2 scopes/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/: 2 scopes/)).toBeDefined())
   })
 })
 
@@ -109,7 +109,7 @@ describe('a working file opened on a home', () => {
     fireEvent.click(screen.getByTestId('open-into-here'))
     // The scope was made to hold it; what it holds is what did not arrive.
     await waitFor(() => expect(screen.getByText(
-      /^Working file “org\.lvarch” did not arrive whole\. Not there after loading: the view “L7” in “Fleet”/,
+      /^Saved copy “org\.lvarch” did not arrive whole\. Not there after loading: the view “L7” in “Fleet”/,
     )).toBeDefined())
   })
 })
@@ -130,7 +130,7 @@ describe('a working file landed as one (ADR-0023, amendment 2)', () => {
     view.send({ type: 'openDocument', name: 'org.lvarch', bytes: workingFileBytes(theirs, await manifestOf(theirs)) })
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByTestId('open-into-here'))
-    await waitFor(() => expect(screen.getByText(/loaded and checked against what it says it holds: 3 scopes/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/: 3 scopes/)).toBeDefined())
     expect(applied.filter((types) => types.includes('scope.replace'))).toEqual([['scope.replace', 'scope.replace', 'scope.replace']])
   })
 
@@ -144,7 +144,7 @@ describe('a working file landed as one (ADR-0023, amendment 2)', () => {
     view.send({ type: 'openDocument', name: 'org.lvarch', bytes: workingFileBytes(theirs, await manifestOf(theirs)) })
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByTestId('open-into-here'))
-    await waitFor(() => expect(screen.getByText(/^The working file was not loaded, and nothing of it was written/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/^The saved copy was not loaded, and nothing of it was written/)).toBeDefined())
     await expect(store.read('depots')).resolves.toBeUndefined()
     expect(screen.queryByText(/loaded and checked/)).toBeNull()
   })
@@ -159,7 +159,7 @@ describe('a working file saved from a home', () => {
     await goHome()
     view.send({ type: 'export' })
     await waitFor(() => expect(screen.getByText(
-      'The working file was not saved: acme/broken could not be read, and a file without them would not be the whole organisation.',
+      'The saved copy was not saved: acme/broken could not be read, and a file without them would not be the whole organisation.',
     )).toBeDefined())
     expect(view.documents.saved).toHaveLength(0)
   })

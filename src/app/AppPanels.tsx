@@ -14,9 +14,9 @@ import { LanguageProvider } from '../i18n'
 import type { StringKey } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import type { ConnectAgentDialog as ConnectAgentDialogShape } from './dialogs/ConnectAgentDialog'
-import type { PreferencesDialog as PreferencesDialogShape } from './dialogs/PreferencesDialog'
+import type { PreferencesPage as PreferencesPageShape } from './frame/PreferencesPage'
 import { lazyPart } from '../widgets/lazyPart'
-import { arrivingDialog } from '../widgets/Arriving'
+import { arrivingDialog, arrivingPage } from '../widgets/Arriving'
 import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
@@ -53,7 +53,7 @@ export function AppScreen({ parts }: { parts: ShellParts }) {
        first. Not the picker: there is nowhere for a scope to be until this is
        answered, and offering a list of scopes kept inside the app is offering
        the thing ADR-0003 removed. */
-    return <FirstRun waysIn={parts.provider.offered ?? []} s={parts.services.s} windowChrome={parts.windowChrome} />
+    return <FirstRun waysIn={parts.provider.offered ?? []} language={parts.services.prefs.language} onLanguageChange={parts.services.prefs.chooseLanguage} s={parts.services.s} windowChrome={parts.windowChrome} />
   }
   if (nav.project) return <OpenWorkspace parts={parts} project={nav.project} />
   return <Home parts={parts} />
@@ -61,12 +61,11 @@ export function AppScreen({ parts }: { parts: ShellParts }) {
 
 /** The menu on a host that has none of its own (ADR-0005): the same on both screens. */
 function overflowFor(parts: ShellParts, can: { history: boolean; scope: boolean }) {
-  const { services: { prefs }, commands: { bus } } = parts
+  const { commands: { bus } } = parts
   if (parts.hostMenu) return undefined
   return {
     ...parts.provider.overflowSource,
-    themeMode: prefs.themeMode,
-    can: { connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)), ...can },
+    can: { connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)), picture: parts.frame.get().screen?.boardUp === true, ...can },
     onCommand: bus.send,
   }
 }
@@ -170,7 +169,6 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         onOpenUnitResponsibilities: (unitId: string) => parts.agent.openSomewhere({ scope: '', page: 'operating', tab: 'responsibilities', look: `unit=${encodeURIComponent(unitId)}` }),
         onOpenBlock: parts.agent.openBlock,
       }}
-      settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}
       host={{
         commands: parts.commands.bus.on,
         hostMenu: parts.hostMenu,
@@ -185,6 +183,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         askPassword: prompts.password.askPassword,
         landing: prompts.openInto.prompts,
         chooseDestination: props.provider?.destination,
+        onCopySaved: parts.copies.note,
       }}
       snapshots={{ history: props.repositories.history, note: historyNote(parts), kept: props.provider?.historyKept }}
       agent={{ onSession: parts.agent.registerAgentSession }}
@@ -281,6 +280,8 @@ function Home({ parts }: { parts: ShellParts }) {
         <OrganisationScreen
           organisation={parts.organisation}
           examples={props.examples}
+          {...(props.onVisitExample ? { onVisitExample: props.onVisitExample } : {})}
+          onShareScope={(scope) => parts.share.shareTo({ scope, page: 'home' })}
           order={parts.order.order}
           onOrderChange={parts.order.chooseOrder}
           source={parts.source}
@@ -345,6 +346,7 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
         onCancel={history.closeDialog}
         onTake={history.take}
         note={historyNote(parts)}
+        of={home.scopeLabel(parts.nav.home)}
         s={s}
       />
       <HistoryPage
@@ -448,7 +450,7 @@ export function frameChip(parts: ShellParts): ToolbarChip | undefined {
  * source that is open, and to nobody else; the way about; and the app's ways
  * of saying something and of keeping a preference.
  */
-function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
+export function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
   const { services: { prefs, toasts }, agent, provider } = parts
   const opened = kind === provider.openProvider
   return {
@@ -506,26 +508,52 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
 }
 
 /**
- * The dialogs that outlive a scope: the two file prompts, the preferences,
- * *Connect an agent* and *Share with a link*.
- */
-/**
  * The preferences and the agent's connection are asked for from a menu and
  * outlive a scope, never part of the first view: each arrives the first time
  * it is opened, in a script of its own (`widgets/lazyPart`).
  */
-const PreferencesDialog = lazyPart<ComponentProps<typeof PreferencesDialogShape>>(
-  () => import('./dialogs/PreferencesDialog').then((held) => held.PreferencesDialog), { until: (props) => props.open, fallback: arrivingDialog },
+const PreferencesPage = lazyPart<ComponentProps<typeof PreferencesPageShape>>(
+  () => import('./frame/PreferencesPage').then((held) => held.PreferencesPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const ConnectAgentDialog = lazyPart<ComponentProps<typeof ConnectAgentDialogShape>>(
   () => import('./dialogs/ConnectAgentDialog').then((held) => held.ConnectAgentDialog), { until: (props) => props.open, fallback: arrivingDialog },
 )
 
-export function AppDialogs({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, machine, agentServer, provider, prompts } = parts
+/** The pages that are this person's rather than a scope's: drawn in the frame's main column, whichever screen is up. */
+export function FramePages({ parts }: { parts: ShellParts }) {
+  const { props, services: { prefs, s }, machine, provider } = parts
   const { updates } = machine
-  const AgentPanel = provider.AgentPanel
   const PreferencesPanel = provider.PreferencesPanel
+  return (
+    <PreferencesPage
+      open={machine.open}
+      onClose={() => machine.setOpen(false)}
+      language={prefs.language}
+      onLanguageChange={prefs.chooseLanguage}
+      themeMode={prefs.themeMode}
+      onThemeChange={prefs.chooseTheme}
+      order={parts.order.order}
+      onOrderChange={parts.order.chooseOrder}
+      density={prefs.density}
+      onDensityChange={prefs.chooseDensity}
+      editor={prefs.preferences}
+      onEditorChange={prefs.savePreferences}
+      {...(parts.host.updateSettings && updates ? { updates: { checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: machine.changeUpdates } } : {})}
+      {...(PreferencesPanel ? {
+        sourcePanel: (
+          <ErrorBoundary where="sourcePreferencesPanel" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
+            <PreferencesPanel own={provider.own} notify={parts.services.toasts.notify} />
+          </ErrorBoundary>
+        ),
+      } : {})}
+      s={s}
+    />
+  )
+}
+
+export function AppDialogs({ parts }: { parts: ShellParts }) {
+  const { props, services: { s }, agentServer, provider, prompts } = parts
+  const AgentPanel = provider.AgentPanel
   return (
     <>
       {prompts.password.dialog}
@@ -533,30 +561,6 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
       {/* Invisible; the home's Open… clicks it. Beside the dialog rather than on
           the screen, because the home does not own the working file either. */}
       {parts.nav.project ? null : parts.home.picker.input}
-      <PreferencesDialog
-        open={machine.open}
-        onClose={() => machine.setOpen(false)}
-        language={prefs.language}
-        onLanguageChange={prefs.chooseLanguage}
-        themeMode={prefs.themeMode}
-        onThemeChange={prefs.chooseTheme}
-        order={parts.order.order}
-        onOrderChange={parts.order.chooseOrder}
-        updates={parts.host.updateSettings && updates && {
-          checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: machine.changeUpdates,
-        }}
-        sourcePanel={PreferencesPanel && (
-          <ErrorBoundary
-            where="sourcePreferencesPanel"
-            diagnostics={props.diagnostics}
-            controls={props.hostControls}
-            s={s}
-          >
-            <PreferencesPanel own={provider.own} notify={parts.services.toasts.notify} />
-          </ErrorBoundary>
-        )}
-        s={s}
-      />
       <ConnectAgentDialog
         open={agentServer.dialogOpen}
         onClose={agentServer.closeDialog}
@@ -581,7 +585,7 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
         )}
         s={s}
       />
-      <ShareLinkDialog answer={parts.share.answer} onCopy={parts.share.copy} onClose={parts.share.close} s={s} />
+      <ShareLinkDialog answer={parts.share.answer} onCopy={parts.share.copy} onClose={parts.share.close} onSaveCopy={() => parts.commands.bus.send({ type: 'export' })} {...(props.provider?.sayings?.labelKey ? { place: sourceLabel(parts.source, s, undefined, props.provider.sayings.labelKey) } : {})} s={s} />
     </>
   )
 }

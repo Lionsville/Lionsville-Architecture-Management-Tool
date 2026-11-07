@@ -9,8 +9,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps } from 'react'
 import type { Destination } from '../agent/screen'
-import type { ProjectPatch } from '../model/commands'
-import type { HostModel } from '../model/hostModel'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { usePersonNames } from '../people/ui/names'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
@@ -23,29 +21,23 @@ import { HistoryPage } from './history/lazyHistoryPage'
 import { useSaveUnread } from './history/saveUnread'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { SnapshotDialog } from './history/SnapshotDialog'
+import type { WorkspaceHost, WorkspaceShell } from './workspaceProps'
 import type { AddFromLibraryDialog as AddFromLibraryDialogShape } from './dialogs/AddFromLibraryDialog'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
 import { MoveRecordDialog } from './dialogs/MoveRecordDialog'
 import { ShellDialogs } from './dialogs/ShellDialogs'
-import { messageFor } from './messageFor'
-import type { ProjectSettingsDialog as ProjectSettingsDialogShape } from './ProjectSettingsDialog'
 import { lazyPart } from '../widgets/lazyPart'
-import { ArrivingDialog, arrivingDialog } from '../widgets/Arriving'
-import type { ProjectSettings } from './ProjectSettingsDialog'
+import { ArrivingDialog, } from '../widgets/Arriving'
 import type { InitialPage } from './App'
 import { initialPageFor } from './bootLanding'
 import type { ModelSession } from './useModelSession'
 import type { WorkspaceParts } from './workspaceParts'
-import type { WorkspaceHost, WorkspaceSettings, WorkspaceShell } from './workspaceProps'
 
 /**
  * The scope's settings and what to do with an element dropped from the
  * library are asked for, never part of the first view: each arrives the
  * first time it is up, in a script of its own (`widgets/lazyPart`).
  */
-const ProjectSettingsDialog = lazyPart<ComponentProps<typeof ProjectSettingsDialogShape>>(
-  () => import('./ProjectSettingsDialog').then((held) => held.ProjectSettingsDialog), { until: (props) => props.open, fallback: arrivingDialog },
-)
 const AddFromLibraryDialog = lazyPart<ComponentProps<typeof AddFromLibraryDialogShape>>(
   () => import('./dialogs/AddFromLibraryDialog').then((held) => held.AddFromLibraryDialog), { until: (props) => props.choice !== undefined, fallback: (props) => (props.choice === undefined ? null : <ArrivingDialog />) },
 )
@@ -58,7 +50,6 @@ export type WorkspaceDialogState = ReturnType<typeof useWorkspaceDialogs>
  */
 export function useWorkspaceDialogs(deps: {
   session: ModelSession
-  settings: WorkspaceSettings
   diagnostics: WorkspaceHost['diagnostics']
   notify: WorkspaceShell['notify']
   s: WorkspaceShell['s']
@@ -75,16 +66,7 @@ export function useWorkspaceDialogs(deps: {
   /** Write what the session holds now, and answer once it has landed (`DocumentSessionHook.flush`). */
   save: () => Promise<void>
 }) {
-  const { session, diagnostics, notify, s, scope, show, onOpenScope, onOpenPeople, save, pointComment } = deps
-  const { onOpen: onOpenSettings, onApply: onApplySettings } = deps.settings
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  // The settings rename the scope and can move it — so on a scope that is
-  // only read they are refused at the door, not after.
-  const openSettings = useCallback(() => {
-    if (!session.mayChange()) return
-    onOpenSettings()
-    setSettingsOpen(true)
-  }, [session, onOpenSettings])
+  const { scope, show, onOpenScope, onOpenPeople, pointComment } = deps
   const [searchOpen, setSearchOpen] = useState(false)
 
   /**
@@ -121,28 +103,7 @@ export function useWorkspaceDialogs(deps: {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  /**
-   * The name and the defaults are the session's own to change: one step, on
-   * the stack and in the Activity list like any other. Where the scope is
-   * filed is the caller's, handed the project once what the session holds is
-   * written, because a move enters the scope again at its new address, from
-   * what is kept there.
-   */
-  const applySettings = useCallback((settings: ProjectSettings) => {
-    if (!session.mayChange()) return
-    const patch = settingsPatch(session.current(), settings)
-    if (patch) session.dispatch({ type: 'project.settings', patch })
-    void save().then(() => onApplySettings(settings, session.snapshot())).catch(
-      // The caller reports what it could; this is the case where the promise
-      // itself broke, which nothing above would otherwise hear about.
-      (cause: unknown) => {
-        diagnostics.report({ level: 'error', where: 'applySettings', message: 'rejected', cause })
-        notify(messageFor(cause, s), 'error')
-      },
-    )
-  }, [session, save, onApplySettings, diagnostics, notify, s])
-
-  return { settingsOpen, setSettingsOpen, openSettings, searchOpen, setSearchOpen, chooseHit, applySettings }
+  return { searchOpen, setSearchOpen, chooseHit }
 }
 
 /** The folder's snapshot and history (ADR-0008), and the board dialogs the shell draws. */
@@ -166,6 +127,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         onCancel={snapshots.closeDialog}
         onTake={snapshots.take}
         note={props.snapshots.note}
+        of={session.model.name}
         s={s}
       />
       <HistoryPage
@@ -256,14 +218,6 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
         s={s}
       />
       <GestureDialogs parts={parts} />
-      <ProjectSettingsDialog
-        open={dialogs.settingsOpen}
-        project={props.project}
-        scopes={props.tree.scopes}
-        onCancel={() => dialogs.setSettingsOpen(false)}
-        onSave={(settings) => { dialogs.setSettingsOpen(false); dialogs.applySettings(settings) }}
-        s={s}
-      />
     </>
   )
 }
@@ -308,13 +262,3 @@ function GestureDialogs({ parts }: { parts: WorkspaceParts }) {
   )
 }
 
-/** What the dialog changes of the model itself, as a patch; nothing where it changes nothing. */
-function settingsPatch(model: HostModel, settings: ProjectSettings): ProjectPatch | undefined {
-  const patch: ProjectPatch = {}
-  if (settings.name !== model.name) patch.name = settings.name
-  if (settings.defaultAuthor !== model.defaultAuthor) patch.defaultAuthor = settings.defaultAuthor
-  if (JSON.stringify(settings.defaultAspectConfig) !== JSON.stringify(model.defaultAspectConfig)) {
-    patch.defaultAspectConfig = settings.defaultAspectConfig
-  }
-  return Object.keys(patch).length > 0 ? patch : undefined
-}

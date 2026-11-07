@@ -676,15 +676,19 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   }
 
   /**
-   * Copy the example into whatever root is on screen, and wait for its
-   * landscape's canvas. By its test id rather than by its words: the cards say
-   * "Open" too, and the words exist in three languages.
+   * Visit the example, keep it as this root's start, and wait for its
+   * landscape's canvas. By test id rather than by words: the words exist in
+   * three languages.
    */
   const copyExample = () => page(`
     (async () => {
-      const button = document.querySelector('[data-testid="copy-example"]')
+      const button = document.querySelector('[data-testid="open-example"]')
       if (!button) throw new Error('no example button; screen text was: ' + document.body.innerText.slice(0, 200))
       button.click()
+      await ${waitFor("document.querySelector('[data-testid=\"example-keep\"]') && 'in the example'", 'the example to open')}
+      document.querySelector('[data-testid="example-keep"]').click()
+      await ${waitFor("!document.querySelector('[data-testid=\"example-keep\"]') && document.querySelector('[data-testid=\"organisation-name\"]') && 'kept'", 'the example to be kept')}
+      location.hash = ${JSON.stringify(`#/${EXAMPLE.landscape}/-/board/landscape`)}
       return await ${waitFor("document.querySelector('.react-flow') && 'canvas mounted'", 'the canvas to mount')}
     })()`)
 
@@ -842,7 +846,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     // under it and the example on offer as the way to have something.
     const shown = JSON.parse(await page(`JSON.stringify({
       name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
-      example: Boolean(document.querySelector('[data-testid="copy-example"]')),
+      example: Boolean(document.querySelector('[data-testid="open-example"]')),
       rows: document.querySelectorAll('[data-testid^="scope-"]').length,
     })`)) as { name: string; example: boolean; rows: number }
     if (shown.name !== first.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)

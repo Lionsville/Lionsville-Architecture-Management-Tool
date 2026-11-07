@@ -99,6 +99,8 @@ export type ProjectHistoryState = {
   restore: () => void
   /** Record the scope before a replace; `false` only where that was wanted and failed. */
   safeguard: () => Promise<boolean>
+  /** Whether a replace would keep what is here: a history is kept already. */
+  keepsNow: () => Promise<boolean>
   label: (name: string) => void
 }
 
@@ -374,7 +376,7 @@ export function useProjectHistory(deps: {
     choose,
     setSubject,
     restore,
-    label,
-    safeguard,
+    label, safeguard,
+    keepsNow: useCallback(async () => (history === undefined ? false : !kept || kept()), [history, kept]),
   }
 }

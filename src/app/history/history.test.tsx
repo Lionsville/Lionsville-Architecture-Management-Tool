@@ -128,7 +128,7 @@ const openSaveMenu = async () => {
   // The menu itself, not one of its items: with no scope open the items about
   // one are not offered (ADR-0005, amended), and this opens it on the
   // organisation screen too.
-  await screen.findByTestId('overflow-menu')
+  await screen.findByRole('menu')
 }
 
 describe('what the menu offers', () => {
@@ -136,7 +136,7 @@ describe('what the menu offers', () => {
   it('offers both wherever work is kept', async () => {
     show()
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
     expect(screen.getByText('History…')).toBeDefined()
   })
 
@@ -144,7 +144,7 @@ describe('what the menu offers', () => {
     renderApp({ repositories: kept().repositories })
     await screen.findByTestId('shell-toolbar')
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
     expect(screen.getByText('History…')).toBeDefined()
   })
 })
@@ -190,8 +190,8 @@ describe('taking a snapshot', () => {
   const takeOne = async (entries: FakeEntry[] = [], made?: 'entries' | 'nothing') => {
     const view = show(entries, made)
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
-    fireEvent.click(screen.getByText('Snapshot…'))
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
+    fireEvent.click(screen.getByText('Take a snapshot…'))
     await waitFor(() => expect(screen.getByLabelText('What changed')).toBeDefined())
     return view
   }
@@ -199,7 +199,7 @@ describe('taking a snapshot', () => {
 
   it('asks first, and says what starting a history means', async () => {
     await takeOne()
-    expect(await screen.findByText('Start keeping history')).toBeDefined()
+    expect(await screen.findByText(/Take a snapshot of/)).toBeDefined()
   })
 
   it('says where the history is kept, in the source\'s own sentence', async () => {
@@ -209,22 +209,22 @@ describe('taking a snapshot', () => {
       provider: { historyNoteKey: 'browser.historyNote' },
     })
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
-    fireEvent.click(screen.getByText('Snapshot…'))
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
+    fireEvent.click(screen.getByText('Take a snapshot…'))
     expect(await screen.findByText(/The first snapshot starts one\. Every snapshot you take is recorded in this browser/)).toBeDefined()
   })
 
   it('does not explain itself again once the scope has a history', async () => {
     await takeOne([earlier])
-    await waitFor(() => expect(screen.queryByText('Start keeping history')).toBeNull())
+    await waitFor(() => expect(screen.queryByText(/Nothing here keeps a history yet/)).toBeNull())
   })
 
   it('drafts the message from what was actually done', async () => {
     show([earlier])
     act(() => { screen.getByTestId('edit-the-diagram').click() })
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
-    fireEvent.click(screen.getByText('Snapshot…'))
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
+    fireEvent.click(screen.getByText('Take a snapshot…'))
 
     const field = await screen.findByLabelText('What changed')
     expect((field as HTMLTextAreaElement).value).toContain('Changed the settings of Edited')
@@ -236,8 +236,8 @@ describe('taking a snapshot', () => {
     const view = show([earlier])
     act(() => { screen.getByTestId('edit-the-diagram').click() })
     await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
-    fireEvent.click(screen.getByText('Snapshot…'))
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
+    fireEvent.click(screen.getByText('Take a snapshot…'))
     await screen.findByLabelText('What changed')
     fireEvent.click(screen.getByText('Take snapshot'))
 

@@ -35,7 +35,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import type { TypeChoice } from '../../projects/scopeType'
 import { slug } from '../../model/keys'
 import { ScopeField } from './ScopeField'
-import { TypeField } from './ScopeSettingsDialog'
+import { TypeField } from './TypeField'
 
 export type NewScopeDialogProps = {
   open: boolean

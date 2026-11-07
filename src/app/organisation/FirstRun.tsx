@@ -16,15 +16,14 @@
  * Not a dialog over the picker. There is nothing behind it to look at, and a
  * dialog would imply there is something to dismiss it back to.
  */
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
-import type { Translate } from '../../i18n'
+import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
+import type { SourceWayIn } from '../../platform/sourceProvider'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import type { StringKey } from '../../i18n'
-import type { SourceWayIn } from '../../platform/sourceProvider'
+import { Button } from '../../widgets/kit/Button'
+import { Select } from '../../widgets/kit/Field'
+import { FirstRunPage, FirstRunWay } from '../../widgets/kit/FirstRunPage'
 
 export type FirstRunProps = {
   /**
@@ -34,75 +33,53 @@ export type FirstRunProps = {
    * on the organisation screen.
    */
   waysIn: readonly SourceWayIn[]
+  /** The language, on the first screen, because nothing else can be read until it is right. */
+  language?: Language
+  onLanguageChange?: (next: Language) => void
   s: Translate
   windowChrome?: WindowChrome
 }
 
-export function FirstRun({ waysIn, s, windowChrome = NO_WINDOW_CHROME }: FirstRunProps) {
+export function FirstRun({ waysIn, language, onLanguageChange, s, windowChrome = NO_WINDOW_CHROME }: FirstRunProps) {
   const asked = waysIn.find((way) => way.required)
   const others = waysIn.filter((way) => way !== asked)
   const recent = asked?.recent ?? []
   const said = (key: StringKey | (string & {})) => s(key as StringKey)
   return (
-    <Box
+    <FirstRunPage
+      brand={s('first.brand')}
+      title={s('source.firstTitle')}
+      draggable={windowChrome.draggable}
       data-testid="first-run"
-      sx={{
-        height: '100vh', width: '100vw', overflowY: 'auto',
-        bgcolor: 'background.default', px: 3, py: 5,
-      }}
+      {...(asked?.introKey ? { intro: said(asked.introKey) } : {})}
+      {...(language && onLanguageChange ? {
+        tools: (
+          <Select
+            aria-label={s('prefs.language')} value={language} onChange={(event) => onLanguageChange(event.target.value as Language)}
+            options={LANGUAGES.map((held) => ({ value: held, label: s(LANGUAGE_NAME[held]) }))} data-guide="first.language"
+          />
+        ),
+      } : {})}
+      foot={<p>{s('first.emptyFine')}</p>}
     >
-      {windowChrome.draggable && (
-        // The window has no title bar of its own; this padding is what it is
-        // dragged by. The same strip the picker lends it.
-        <Box
-          data-testid="window-drag-strip"
-          sx={{
-            position: 'fixed', top: 0, left: 0, right: 0, height: 32,
-            WebkitAppRegion: 'drag',
-          }}
-        />
-      )}
-      <Box sx={{ maxWidth: 560, mx: 'auto', mt: 8 }}>
-        <Typography sx={{ fontSize: 24, fontWeight: 700 }}>{s('source.firstTitle')}</Typography>
-        {asked?.introKey && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1 }}>{said(asked.introKey)}</Typography>
+      <FirstRunWay title={s('first.whereWorkLives')}>
+        {asked && (
+          <Button variant="primary" data-testid={`connect-source-${asked.kind}`} onClick={asked.onConnect}>
+            {said(asked.firstLabelKey ?? asked.labelKey)}
+          </Button>
         )}
-
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 3 }}>
-          {asked && (
-            <Button variant="contained" data-testid={`connect-source-${asked.kind}`} onClick={asked.onConnect}>
-              {said(asked.firstLabelKey ?? asked.labelKey)}
-            </Button>
-          )}
-          {others.map((way) => (
-            <Button
-              key={way.kind}
-              variant="outlined"
-              data-testid={`connect-source-${way.kind}`}
-              onClick={way.onConnect}
-            >
-              {/* The provider's key, from its own table or from this one's
-                  (`i18n/registerStrings`); the shell only renders it. */}
-              {said(way.labelKey)}
-            </Button>
+        {/* A provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it. */}
+        {others.map((way) => (
+          <Button key={way.kind} data-testid={`connect-source-${way.kind}`} onClick={way.onConnect}>{said(way.labelKey)}</Button>
+        ))}
+      </FirstRunWay>
+      {recent.length > 0 && asked?.onReopen && (
+        <FirstRunWay title={s('source.recent')}>
+          {recent.map((held) => (
+            <Button key={held.key} size="small" variant="quiet" onClick={() => asked.onReopen?.(held.key)}>{held.label}</Button>
           ))}
-        </Stack>
-
-        {recent.length > 0 && asked?.onReopen && (
-          <Box sx={{ mt: 4 }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 1 }}>
-              {s('source.recent')}
-            </Typography>
-            <Stack sx={{ alignItems: 'flex-start' }}>
-              {recent.map((held) => (
-                <Button key={held.key} size="small" onClick={() => asked.onReopen?.(held.key)}>
-                  {held.label}
-                </Button>
-              ))}
-            </Stack>
-          </Box>
-        )}
-      </Box>
-    </Box>
+        </FirstRunWay>
+      )}
+    </FirstRunPage>
   )
 }

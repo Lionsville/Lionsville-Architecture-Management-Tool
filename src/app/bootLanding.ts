@@ -30,7 +30,7 @@ export type BootLanding = {
   /** The page over the scope that is open, where a place in the address named one (ADR-0033). */
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
-  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings'
   /** What the address said of that page: its tab, what its list shows, and the record picked on it. */
   initialList?: { readonly tab?: string; readonly list?: string; readonly pick?: string }
   /** The person on the People page the address names. */
@@ -38,7 +38,7 @@ export type BootLanding = {
   /** A finding the address says a band is carrying. */
   initialFinding?: string
   /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
-  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  initialFramePage?: 'work' | 'activity' | 'preferences'
   /** The look the address named, taken up by the workspace once it is there. */
   initialLook?: { view?: string; day: string }
   /** What the address keeps of the view it lands on, beyond which view: its reading, its grouping, a pair. */
@@ -51,7 +51,7 @@ export type BootLanding = {
   notice?: BootNotice
 }
 
-export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone'
+export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'example.kept'
 
 /**
  * The scope the boot read, turned into where the app starts.
@@ -156,7 +156,7 @@ export function placeToRead(place: Place): ScopePath | undefined {
  */
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
-  if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'settings' | 'preferences' }
+  if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'preferences' }
   if (page !== undefined && HOME_PAGES.includes(page)) {
     return { ...homeOf(scope), ...(page === 'home' ? {} : homePageLanding(place)) }
   }

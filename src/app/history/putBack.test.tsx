@@ -46,7 +46,7 @@ describe('a scope that could not be read whole', () => {
     renderApp({ repositories, boot: { initialProject: project } })
 
     const notice = await screen.findByTestId('unreadable-notice')
-    expect(within(notice).getByTestId('unreadable-bring-in').textContent).toBe('Bring in a working file…')
+    expect(within(notice).getByTestId('unreadable-bring-in').textContent).toBe('Bring in a saved file…')
     fireEvent.click(within(notice).getByTestId('unreadable-put-back'))
     fireEvent.click(within(await screen.findByTestId('history-list')).getByText('Crews in'))
     const putBack = await screen.findByTestId('history-restore')
@@ -81,7 +81,7 @@ describe('a scope that could not be read whole', () => {
     const [kept] = (await repositories.history.entries({ scopes: [acme] })).entries
 
     fireEvent.click(await screen.findByTestId('overflow-button'))
-    await screen.findByTestId('overflow-menu')
+    await screen.findByRole('menu')
     fireEvent.click(await screen.findByText('History…'))
     fireEvent.click(within(await screen.findByTestId('history-list')).getByText(kept.subject!))
     fireEvent.click(await screen.findByRole('button', { name: 'More' }))
@@ -116,7 +116,7 @@ describe('a scope that could not be read whole', () => {
     const project = await readScope(repositories.scopes, 'acme')
     renderApp({ repositories, boot: { initialProject: project } })
     const said = (await screen.findByTestId('unreadable-notice')).textContent ?? ''
-    expect(said).toContain('Put it back from the history, or bring in a working file.')
+    expect(said).toContain('Put it back from the history, or bring in a saved file.')
     expect(said).not.toContain('Mend')
     cleanup()
     renderApp({ repositories, boot: { initialProject: project }, provider: { sayings: { unreadableKey: 'folder.unreadableScope' } } })

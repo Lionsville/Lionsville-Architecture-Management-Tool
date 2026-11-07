@@ -29,12 +29,15 @@ export function useMachineSettings(deps: {
   failedRef: RefObject<Failed>
   notify: Notify
   s: Translate
-  /** The dialog open from the first paint: an address asked for it. */
+  /** Open from the first paint: an address asked for it. */
   initiallyOpen?: boolean
+  /** Whether they are up, for whatever says where the app is. */
+  onOpenChange?: (open: boolean) => void
 }): MachineSettings {
-  const { updateSettings, failedRef, notify, s, initiallyOpen = false } = deps
+  const { updateSettings, failedRef, notify, s, initiallyOpen = false, onOpenChange } = deps
   // Open at the first paint where the address asked for it (`bootLanding`).
   const [open, setOpen] = useState(initiallyOpen)
+  useEffect(() => { onOpenChange?.(open) }, [open, onOpenChange])
   /**
    * Read when the dialog opens, not at boot: the update settings are a round
    * trip to main, and not needed until somebody is looking.

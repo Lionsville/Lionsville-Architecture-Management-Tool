@@ -15,7 +15,7 @@ import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { CarryChoice } from './workingFileFlows'
 import type { ScopeIndex } from '../projects/scopeIndex'
-import { ROOT_SCOPE } from '../projects/scopePath'
+import { isWithinScope, ROOT_SCOPE } from '../projects/scopePath'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import type { ScopePath } from '../projects/scopePath'
 import type { CarriedOut, Interchange } from '../ports/Interchange'
@@ -65,6 +65,8 @@ export function useHomeParts(deps: {
   password: ReturnType<typeof usePasswordPrompt>
   openInto: ReturnType<typeof useOpenIntoPrompt>
   chooseDestination: ChooseDestination | undefined
+  /** A copy reached the person. */
+  onCopySaved?: () => void
   doors: { history: RefObject<HomeHistoryDoors | undefined>; files: RefObject<HomeFileDoors | undefined> }
   notify: Notify
   s: Translate
@@ -112,7 +114,7 @@ export function useHomeParts(deps: {
     (path: ScopePath) => scopeDisplayName(path, everyScope, organisation.tree.name.trim() || s('common.organisation')),
     [everyScope, organisation.tree.name, s],
   )
-  const { files, picker } = useHomeFileDoors({ ...deps, homeDocument, beforeReplace: history.safeguard })
+  const { files, picker } = useHomeFileDoors({ ...deps, homeDocument, beforeReplace: history.safeguard, keepsHistory: history.keepsNow })
 
   /**
    * A home the listing no longer has — the scope was removed, from its own
@@ -138,6 +140,7 @@ export function useHomeParts(deps: {
 function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
   homeDocument: () => ScopeSnapshot
   beforeReplace: () => Promise<boolean>
+  keepsHistory: () => Promise<boolean>
 }) {
   const { password, openInto, notify, s } = deps
   const files = useHomeFiles({
@@ -148,9 +151,17 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     adopt: deps.adopt,
     readScope: deps.readScope,
     askPassword: password.askPassword,
+    // Nothing made here yet, so a file just opens: an untouched first run has nothing to lose.
+    untouched: () => {
+      const { tree } = deps.organisation
+      return deps.home === ROOT_SCOPE && tree.name.trim() === '' && tree.children.length === 0 && tree.diagrams === 0 && !tree.unreadable?.length
+    },
+    below: () => flattenScopes(deps.organisation.tree).filter((scope) => scope.path !== deps.home && isWithinScope(scope.path, deps.home)).length,
+    ...(deps.onCopySaved ? { onCopySaved: deps.onCopySaved } : {}),
     landing: openInto.prompts,
     chooseDestination: deps.chooseDestination,
     beforeReplace: deps.beforeReplace,
+    keepsHistory: deps.keepsHistory,
     notify,
     s,
   })
@@ -160,7 +171,7 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     testId: 'home-document-input',
   })
   deps.doors.files.current = deps.scopeOpen ? undefined : {
-    exportWorkingFile: files.exportWorkingFile,
+    exportWorkingFile: () => { void files.exportWorkingFile() },
     open: picker.open,
     openDocument: files.openDocument,
   }

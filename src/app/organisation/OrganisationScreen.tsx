@@ -28,7 +28,7 @@
  * it has, to read.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { plural } from '../../i18n/strings'
 import type { Language, StringKey, Translate } from '../../i18n'
@@ -38,7 +38,7 @@ import type { ElementId } from '../../model'
 import type { PlatformTree } from '../../model/hosting'
 import type { KeptCheckMark } from '../../model/checkMarks'
 import type { Finding } from '../../projects/checks'
-import { isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
+import { isWithinScope, parentScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
@@ -59,7 +59,6 @@ import { useFrameFacts } from '../frame/frameStore'
 import type { ScreenFacts } from '../frame/frameStore'
 import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from '../frame/places'
 import type { RecentPlace } from '../frame/recentPlaces'
-import { SourceChipView } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
@@ -79,7 +78,10 @@ import { useHomeChecks } from './useHomeChecks'
 import type { TreeRead } from './useHomeChecks'
 import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
-import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
+import { SCOPE_KIND_COUNT, scopeTypeLabel } from './scopeKinds'
+import type { ScopeSettingsPage as ScopeSettingsPageShape, SettingsUndo } from './ScopeSettingsPage'
+import { lazyPart } from '../../widgets/lazyPart'
+import { arrivingPage } from '../../widgets/Arriving'
 import { HomeSearch } from './HomeSearch'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
@@ -89,9 +91,18 @@ import { newViewChoices } from './newViewChoices'
 import { homeMeta, ScopeHome } from './ScopeHome'
 import { FirstChoices, NamedNothingYet } from './HomeFirstRun'
 
+/** A scope's settings arrive the first time they are asked for. */
+const ScopeSettingsPage = lazyPart<ComponentProps<typeof ScopeSettingsPageShape>>(
+  () => import('./ScopeSettingsPage').then((held) => held.ScopeSettingsPage), { until: (props) => props.open, fallback: arrivingPage },
+)
+
 export type OrganisationScreenProps = {
   organisation: Organisation
   examples: readonly ExampleOffer[]
+  /** The example as a place to visit; absent where this build cannot, and the offer is not made. */
+  onVisitExample?: (offer: ExampleOffer) => void
+  /** Make a link to this scope, and say it. */
+  onShareScope?: (scope: ScopePath) => void
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
   /**
@@ -251,7 +262,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
+  organisation, examples, onVisitExample, onShareScope, order, sourceDescription, sourceSayings = {},
   waysIn,
   onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
@@ -262,6 +273,8 @@ export function OrganisationScreen({
   const mayWrite = writable(at)
   /** Which of this screen's pages is up over its home, one at a time, and what it was asked to pick (`useHomePages`). */
   const homePages = useHomePages(pageRequest, onPageChange)
+  /** What the settings page can take back, which the frame's undo offers while it is up. */
+  const [settingsUndo, setSettingsUndo] = useState<SettingsUndo | undefined>(undefined)
   const searchDoor = useRef<() => void>(() => undefined)
   const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, controlsInset: 0, draggable: false, topInset: 0 }), [windowChrome])
 
@@ -344,9 +357,7 @@ export function OrganisationScreen({
                 actions={(
                   <HomeActions
                     bare={bare} writable={mayWrite} settingsAllowed={writable(home.path)} newView={newView}
-                    onNewScope={() => organisation.addUnder(at)} onSettings={() => organisation.editScope(home)}
-                    source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined} sourceDescription={sourceDescription}
-                    sourceLabelKey={sourceSayings.labelKey} atTheEnd={sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined}
+                    onNewScope={() => organisation.addUnder(at)} onSettings={() => homePages.open('settings')}
                     waysIn={atRoot ? waysIn : undefined} s={s}
                   />
                 )}
@@ -379,7 +390,8 @@ export function OrganisationScreen({
       <HomeFacts
         kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink} bare={firstRun}
         bands={unread.length > 0 ? [unreadBand(unread, organisation.refresh, s)] : []}
-        {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
+        {...(writable(home.path) ? { onNewView: () => organisation.addBoard(at) } : {})}
+        {...(settingsUndo ? { undo: { can: true, run: settingsUndo.run, name: settingsUndo.name } } : {})}
         {...(root && root.path === at ? { views: root.model.diagrams } : {})}
       />
       <HomeSearch
@@ -390,9 +402,8 @@ export function OrganisationScreen({
         {firstRun
           ? (
             <FirstChoices
-              examples={examples} waysIn={waysIn ?? []} onName={organisation.nameOrganisation} onCopy={organisation.copyExample}
+              examples={examples} waysIn={waysIn ?? []} onName={organisation.nameOrganisation} onVisit={onVisitExample}
               onOpenFile={onOpenFile} where={whereSaid(sourceSayings, sourceDescription, s)}
-              chip={source && <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceSayings.labelKey} s={s} />}
               places={[...SCOPE_PLACES, ...ORGANISATION_PLACES, ...MORE_PLACES]} goPlace={goPlace} s={s}
             />
           )
@@ -418,16 +429,25 @@ export function OrganisationScreen({
                   />
                 )}
               {/* For a place with nothing filed in it. Once the organisation holds a view or a scope, an offer to copy one in beside the real work is a way to file an example under it by accident. */}
-              {atRoot && mayWrite && organisation.listed && ready && holdsNothing(tree) && (
+              {atRoot && mayWrite && onVisitExample && organisation.listed && ready && holdsNothing(tree) && (
                 <LinkLine
                   label={s('org.firstExample')}
-                  links={examples.map((one) => ({ label: one.label, title: one.description, onPress: () => organisation.copyExample(one), 'data-testid': 'copy-example' }))}
+                  links={examples.map((one) => ({ label: one.label, title: one.description, onPress: () => onVisitExample?.(one), 'data-testid': 'open-example' }))}
                 />
               )}
             </div>
           )}
       </Box>
 
+      <ScopeSettingsPage
+        open={homePages.openPage === 'settings'} onClose={homePages.close} target={home} document={root} tree={orderedTree}
+        readOnly={!writable(home.path)} unitTypes={unitTypes} s={s} onUndoChange={setSettingsUndo}
+        onApply={organisation.applySettings}
+        {...(aboveClient(home, everyScope) ? { aboveClient: aboveClient(home, everyScope) } : {})}
+        {...(onShareScope ? { onCopyLink: () => onShareScope(home.path) } : {})}
+        {...(atRoot ? {} : { onDelete: () => organisation.askDelete(home) })}
+        servedBy={<ServedBy scope={home.path} servedBy={servedBy} scopeName={scopeName} compact s={s} />}
+      />
       <HomePages
         pages={homePages} at={at} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName} everyScope={everyScope} treeRead={treeRead} today={today} language={language} topics={topics}
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
@@ -478,14 +498,6 @@ function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, scopeName, s
         onCreate={organisation.createBoard}
         s={s}
       />
-      <ScopeSettingsDialog
-        target={dialog.kind === 'settings' ? dialog.target : undefined}
-        moving={dialog.kind === 'settings' && dialog.moving === true}
-        tree={tree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
-        unitTypes={unitTypes} onCancel={organisation.closeDialog}
-        onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
-        s={s}
-      />
       <ConfirmDialog
         open={dialog.kind === 'delete'}
         title={s('picker.deleteTitle', { name: dialog.kind === 'delete' ? dialog.target.name : '' })}
@@ -512,6 +524,17 @@ function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, scopeName, s
 /** Whether a place of the frame is one this screen draws over its home, rather than a scope's own page. */
 function isHomePage(page: Page): page is OrgPage {
   return ['register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks'].includes(page)
+}
+
+/** What an exported picture names where this scope says nothing: the nearest client or name above it. */
+function aboveClient(home: ScopeSummary, every: readonly ScopeSummary[]): string | undefined {
+  let at = parentScope(home.path)
+  while (at !== undefined) {
+    const held = every.find((scope) => scope.path === at)
+    if (held?.client?.trim() || held?.name.trim()) return held.client?.trim() || held.name.trim()
+    at = parentScope(at)
+  }
+  return undefined
 }
 
 /** Every scope may be written: what a screen is told by every source that ships. */
@@ -544,16 +567,6 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
       {open && <TextField autoFocus label={s('org.boardName')} value={name} onChange={onNameChange} />}
     </Dialog>
   )
-}
-
-/**
- * Whether this home's bar names where work is kept: the organisation's always,
- * and every other home's where the provider gave a word, a panel or a face of
- * its own for the chip — a way into something has to be where the person is. The
- * three that ship give neither, so theirs stays on the organisation's home.
- */
-function chipHere(atRoot: boolean, chip: SourceChip | undefined, ...more: unknown[]): boolean {
-  return atRoot || chip !== undefined || more.some((one) => one !== undefined)
 }
 
 /**
@@ -611,7 +624,7 @@ function HomeFacts(facts: ScreenFacts) {
  * up here; each is simply not there for somebody who may only read.
  */
 function HomeActions({
-  writable, settingsAllowed, newView, onNewScope, onSettings, bare, source, sourceDescription, sourceLabelKey, atTheEnd, waysIn = [], s,
+  writable, settingsAllowed, newView, onNewScope, onSettings, bare, waysIn = [], s,
 }: {
   writable: boolean
   settingsAllowed: boolean
@@ -619,17 +632,12 @@ function HomeActions({
   onNewScope: () => void
   onSettings: () => void
   bare: boolean
-  source?: WorkingSource | undefined
-  sourceDescription?: StringKey | (string & {}) | undefined
-  sourceLabelKey?: StringKey | (string & {}) | undefined
-  atTheEnd: boolean
   waysIn?: readonly SourceWayIn[] | undefined
   s: Translate
 }) {
   const steps = writable && !bare
   return (
     <>
-      {source && !atTheEnd && <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} s={s} />}
       {waysIn.map((way) => (
         // The provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it.
         <Button key={way.kind} variant="quiet" size="small" data-testid={`connect-source-${way.kind}`} onClick={way.onConnect}>{s(way.labelKey as StringKey)}</Button>

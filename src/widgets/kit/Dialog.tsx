@@ -90,6 +90,7 @@ export type DialogChoice<V extends string = string> = {
   effect?: string
   /** No way back: the effect is said in the danger ink. */
   danger?: boolean
+  'data-testid'?: string
 }
 
 /** One outcome per row, each named and said. */
@@ -106,7 +107,7 @@ export function DialogChoices<V extends string = string>({ label, value, options
       <legend className="kit-dialog__legend">{label}</legend>
       {options.map((option) => (
         <label key={option.value} className="kit-dialog__choice">
-          <input type="radio" name={name} checked={option.value === value} onChange={() => onChange(option.value)} />
+          <input type="radio" name={name} checked={option.value === value} onChange={() => onChange(option.value)} data-testid={option['data-testid']} />
           <span>
             <span className="kit-dialog__choice-label">{option.label}</span>
             {' '}

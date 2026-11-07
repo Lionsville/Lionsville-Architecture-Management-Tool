@@ -136,7 +136,7 @@ describe('commands from the host', () => {
     })
 
     await enter('incorrect horse')
-    await waitFor(() => expect(screen.getByText(/not the password/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/does not open this file/)).toBeDefined())
     await enter('correct horse')
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByTestId('open-into-here'))
@@ -244,7 +244,7 @@ describe('commands from the host', () => {
     })
 
     // The warning names what replacing writes over (ADR-0025).
-    await waitFor(() => expect(screen.getByText(/writes over “Landscape”/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/Writes over Landscape/)).toBeDefined())
     expect(screen.queryByText('From a colleague')).toBeNull()
     fireEvent.click(screen.getByTestId('open-into-here'))
     await waitFor(() => expect(screen.getByText('From a colleague')).toBeDefined())
@@ -283,7 +283,7 @@ describe('commands from the host', () => {
 
     // Not empty: a second yes before anything is written there.
     await waitFor(() => expect(screen.getByText(/already holds “Elsewhere”/)).toBeDefined())
-    fireEvent.click(screen.getByText('Replace'))
+    fireEvent.click(screen.getByText('Write over Elsewhere'))
     await waitFor(() => expect(placed).toEqual([['', 'retail']]))
     // And nothing here was touched.
     expect((await view.projects.read('acme/landscape'))?.model.name).toBe('Landscape')
@@ -342,20 +342,21 @@ describe('the overflow on the web', () => {
 
   const openOverflow = async () => {
     fireEvent.click(screen.getByTestId('overflow-button'))
-    await waitFor(() => expect(screen.getByText('Save a copy of the working file…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Save a copy…')).toBeDefined())
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
     show({ provider: { waysIn: [{ kind: 'elsewhere', labelKey: 'menu.connect', onConnect: () => {}, hostMenu: true }] } })
     await openOverflow()
     // Wait for the history to have answered, so its two items are offered.
-    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Take a snapshot…')).toBeDefined())
 
     const can = { history: true, connect: true, scope: true }
     const expected = offered(FILE_MENU, 'web', can)
       .flatMap((entry) => (entry.kind === 'item' ? [s(entry.label)] : []))
     for (const label of expected) expect(screen.getByText(label), label).toBeDefined()
-    for (const item of THEME_ITEMS) expect(screen.getByText(s(item.label))).toBeDefined()
+    // The theme is the preferences' now, with the language beside it.
+    for (const item of THEME_ITEMS) expect(screen.queryByText(s(item.label))).toBeNull()
     expect(screen.getByText(s(PREFERENCES_ITEM.label))).toBeDefined()
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     // Help has its own place in row one.
@@ -368,7 +369,7 @@ describe('the overflow on the web', () => {
   it('sends the same command the menu bar would', async () => {
     const view = show()
     await openOverflow()
-    fireEvent.click(screen.getByText('Save a copy of the working file…'))
+    fireEvent.click(screen.getByText('Save a copy…'))
 
     await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
@@ -378,7 +379,7 @@ describe('the overflow on the web', () => {
   it('offers no folder where none can be chosen', async () => {
     show()
     await openOverflow()
-    expect(screen.queryByText('Open folder…')).toBeNull()
+    expect(screen.queryByText('Open a folder…')).toBeNull()
   })
 
   /**

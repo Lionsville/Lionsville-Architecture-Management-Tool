@@ -22,6 +22,7 @@ import { agentRun, putBackRun } from '../agent/agentRun'
 import type { StackedBand } from '../widgets/kit/Band'
 import { Button as KitButton } from '../widgets/kit/Button'
 import { FrameStoreContext, useFrameFacts } from './frame/frameStore'
+import type { WorkTrouble } from './frame/frameStore'
 import type { DesignDiagram } from '../model/types'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -35,6 +36,35 @@ export function usePageChrome(windowChrome: WindowChrome | undefined) {
     [windowChrome],
   )
   return { pageChrome, windowChrome: windowChrome ?? NO_WINDOW_CHROME }
+}
+
+/** What is wrong with the work here, for *Your work*: the same two strips say it, with the same acts. */
+function workTrouble(parts: WorkspaceParts): WorkTrouble | undefined {
+  const { props, document: { document }, files, snapshots, pickers, unreadable } = parts
+  const { s } = props.shell
+  const status = document.state.status
+  if (status === 'external-changed' || status === 'conflict') {
+    return {
+      title: s('shell.changedElsewhere'),
+      body: s(status === 'conflict' ? 'shell.conflictThere' : 'shell.changedThere'),
+      acts: [
+        { label: s('shell.takeTheirs'), run: document.takeTheirs, testId: 'work-take-theirs' },
+        { label: s('shell.keepMine'), run: document.keepMine, testId: 'work-keep-mine' },
+        { label: s('shell.saveACopy'), run: () => { void files.saveWorkingFile() }, testId: 'work-copy-first' },
+      ],
+    }
+  }
+  if (unreadable.length > 0) {
+    return {
+      title: s('work.unreadableTitle'),
+      body: s('work.unreadableBody', { files: unreadable.join(', ') }),
+      acts: props.project.later ? [] : [
+        ...(props.snapshots.history ? [{ label: s('shell.putBackFromHistory'), run: () => snapshots.openPage(), testId: 'work-put-back' }] : []),
+        { label: s('shell.bringInWorkingFile'), run: pickers.document.open, testId: 'work-bring-in' },
+      ],
+    }
+  }
+  return undefined
 }
 
 /**
@@ -86,7 +116,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   const publishes = props.source.publishesSteps
   useFrameFacts({
     kind: 'workspace', path: props.project.path, name: session.model.name,
-    openSearch: () => dialogs.setSearchOpen(true), openSettings: dialogs.openSettings,
+    openSearch: () => dialogs.setSearchOpen(true),
     // A look writes nothing, so nothing takes back from under it; the band says so.
     ...(session.readOnly || looking ? {} : {
       undo: { can: session.canUndo, run: session.undo },
@@ -100,6 +130,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
     ...(recentActivity ? { recentActivity } : {}),
     activityKept: keptLog !== undefined,
     bands, boardUp,
+    ...(workTrouble(parts) ? { workTrouble: workTrouble(parts) } : {}),
     showShortcuts: parts.renderer.editorHandle.current ? () => parts.renderer.editorHandle.current?.showShortcuts() : undefined,
     agentRun: () => {
       const run = agentRun(session.history())
@@ -115,7 +146,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
         status={document.state.status}
         onTakeTheirs={document.takeTheirs}
         onKeepMine={document.keepMine}
-        onSaveCopy={parts.files.saveWorkingFile}
+        onSaveCopy={() => { void parts.files.saveWorkingFile() }}
         s={s}
       />
     </>

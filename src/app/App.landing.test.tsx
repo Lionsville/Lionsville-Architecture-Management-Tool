@@ -36,7 +36,7 @@ describe('the first paint', () => {
     // Until the listing is read a home it does not hold reads as the root's.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Retail'))
     expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('In this browser')
   })
 
   it('is the organisation’s home where nothing was named', async () => {
@@ -46,12 +46,12 @@ describe('the first paint', () => {
 
   it('has the preferences open over it where the address asked for them', async () => {
     renderApp({ repositories: heldRepositories(TREE()), boot: { initialProject: undefined, opensDialog: 'preferences' } })
-    await waitFor(() => expect(screen.getByTestId('preferences-dialog')).toBeDefined())
+    await waitFor(() => expect(screen.getByTestId('preferences-page')).toBeDefined())
   })
 
   it('has no dialog open over it where the address asked for none', async () => {
     renderApp({ repositories: heldRepositories(TREE()) })
     await screen.findByTestId('organisation-name')
-    expect(screen.queryByTestId('preferences-dialog')).toBeNull()
+    expect(screen.queryByTestId('preferences-page')).toBeNull()
   })
 })

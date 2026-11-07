@@ -121,7 +121,6 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
   })
 
   it.each<[string, HostCommand]>([
-    ['preferences', { type: 'preferences' }],
     ['connect an agent', { type: 'connectAgent' }],
     ['the shortcuts', { type: 'shortcuts' }],
   ])('finds nothing in the %s dialog', async (_name, command) => {

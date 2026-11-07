@@ -48,7 +48,8 @@ export type ProjectFileChannel = {
 }
 
 export type ProjectFiles = {
-  saveWorkingFile: () => void
+  /** Answers once the copy is saved or the person has cancelled. */
+  saveWorkingFile: () => Promise<void>
   /** A picture of a page — the sheet at a paper size — through the same gateway, so the desktop gets a save dialog. */
   savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => void
   openFile: (file: File) => void
@@ -120,6 +121,8 @@ export type ProjectFilesDeps = {
   chooseDestination?: ChooseDestination
   /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
   beforeReplace?: () => Promise<boolean>
+  /** Whether a history is kept here, so that replacing can be undone. */
+  keepsHistory?: () => Promise<boolean>
   /**
    * The open scope could not be read whole (`ScopeState.unreadable`), and
    * this opens it again. It takes no change, but a working file landed here
@@ -134,6 +137,10 @@ export type ProjectFilesDeps = {
    * no home to go to, and the scope then stays open as it landed.
    */
   onNothingToDraw?: (path: ScopePath) => void
+  /** A copy reached the person: what *Last copy saved* says. */
+  onCopySaved?: () => void
+  /** How many scopes are filed under the one that is open. */
+  below?: () => number
   notify: Notify
   s: Translate
 }
@@ -141,7 +148,7 @@ export type ProjectFilesDeps = {
 export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
     session, putPicture, documents, carryOut, interchange, adoptWorkingSet, readScope, askPassword, landing, chooseDestination,
-    beforeReplace, onPutBack, onNothingToDraw, notify, s,
+    beforeReplace, onPutBack, onNothingToDraw, onCopySaved, below, notify, s,
   } = deps
 
   /**
@@ -152,12 +159,17 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    * cancelled picker) then showed "saved" and the user had every reason to
    * believe it. The promise decides now, and both branches say so.
    */
-  const handOver = useCallback((doc: SavedDocument, success: string, warning?: string) => {
+  const handOver = useCallback((doc: SavedDocument, success: string, warning?: string, onSaved?: () => void) => (
     documents.save(doc).then(
-      () => notify(warning ?? success, warning ? 'warning' : 'success'),
+      (answer) => {
+        // A save dialog the person closed is no save, and says nothing.
+        if (answer === 'cancelled') return
+        onSaved?.()
+        notify(warning ?? success, warning ? 'warning' : 'success')
+      },
       (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
     )
-  }, [documents, notify, s])
+  ), [documents, notify, s])
 
   /**
    * The working file: the working folder, zipped (ADR-0003, ADR-0018).
@@ -181,15 +193,13 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    * Sealed under a password the person is asked for first (ADR-0023); a
    * cancelled dialog is no file and no toast.
    */
-  const saveWorkingFile = useCallback(() => {
-    void sealedWorkingFile((choice) => carryOut([session.snapshot()], choice), askPassword).then(
-      (sealed) => {
-        if (sealed) handOver(sealed.doc, s('shell.savedWorkingFile'), savedWithout(sealed.carried.without, s))
-      },
+  const saveWorkingFile = useCallback(() => (
+    sealedWorkingFile((choice) => carryOut([session.snapshot()], choice), askPassword).then(
+      (sealed) => (sealed ? handOver(sealed.doc, s('shell.savedWorkingFile', { name: sealed.doc.name }), savedWithout(sealed.carried.without, s), onCopySaved) : undefined),
     ).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, carryOut, askPassword, handOver, notify, s])
+  ), [session, carryOut, askPassword, handOver, onCopySaved, notify, s])
 
   /**
    * Open a chosen file into the project you are in.
@@ -246,20 +256,23 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     // written before there was a seal opens as it did. Then where it goes
     // (ADR-0025): bytes and not text throughout, because what a file IS is a
     // question about its content, and a renamed file is still what it is.
-    void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
+    void unsealedBytes(held, askPassword, s('seal.wrong'), name).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: session.snapshot(), interchange, prompts: landing, chooseDestination,
         here: landHere,
+        saveCopyFirst: saveWorkingFile,
+        ...(below ? { below: below() } : {}),
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
+        ...(deps.keepsHistory ? { keepsHistory: deps.keepsHistory } : {}),
         ...(onPutBack && adoptWorkingSet ? { puttingBack: true } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, interchange, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, onPutBack, adoptWorkingSet, notify, s])
+  }, [session, interchange, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, onPutBack, adoptWorkingSet, saveWorkingFile, below, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(
@@ -311,7 +324,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   }, [session])
 
   const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => {
-    handOver(doc, s('shell.savedPicture'))
+    void handOver(doc, s('shell.savedPicture'))
   }, [handOver, s])
 
   return { saveWorkingFile, savePicture, openFile, openDocument, addLogo, addImage, removeImage }

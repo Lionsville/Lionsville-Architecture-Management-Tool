@@ -121,7 +121,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} pageBar={pageBar} onDock={setDockShown} />}
         {docks.inspector && dockShown && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
-      <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
+      <EditorDialogs titleFrom={props.exportTitleBlock?.client} onSettingsChange={parts.readOnly ? undefined : props.diagrams.onSettingsChange} state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
         unitDeletion={props.ownership?.unitDeletion} />
       <InsideChoice offers={parts.clicks.offers} onClose={parts.clicks.dismissOffers} />
       {documentationPage}
@@ -194,7 +194,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     busy: layout.busy !== undefined || layout.reading,
     ...(layout.shown && layout.shown !== activeDiagram ? { drawn: layout.shown } : {}),
     tidy: useCallback((meta?: CommandMeta) => layout.handleTidy(undefined, true, meta), [layout.handleTidy]),
-    routeEdges: layout.handleRouteEdges, capture: capture.captureBoard, deletes, showShortcuts: dialogs.openHelp,
+    routeEdges: layout.handleRouteEdges, capture: capture.captureBoard, deletes, showShortcuts: dialogs.openHelp, exportPicture: exports.openExport,
   });
   const setWrapperNode = useKeyboard(parts, activeDiagram, wrapperRef);
   return { parts, activeDiagram, setWrapperNode };

@@ -325,6 +325,8 @@ export interface EditorHandle {
   deleteSelection(): void;
   selectAll(): void;
   showShortcuts(): void;
+  /** The picture's dialog, as the toolbar's button opens it. */
+  exportPicture(): void;
 }
 
 /** Why the editor would not do what the handle asked. */

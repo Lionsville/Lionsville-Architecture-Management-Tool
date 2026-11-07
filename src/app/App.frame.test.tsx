@@ -145,12 +145,12 @@ describe('an agent reaches every place', () => {
   it('opens the preferences and a scope’s settings, with nothing open', async () => {
     const { ask } = await home()
     await ask('app.open', { scope: '', page: 'preferences' })
-    await screen.findByRole('dialog', { name: /Preferences/ })
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await screen.findByTestId('preferences-page')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('preferences-page')).toBeNull())
     await ask('app.open', { scope: 'retail', page: 'settings' })
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Retail'))
-    expect(await screen.findByRole('dialog')).toBeDefined()
+    expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
   })
 
   it('names a tab of any page that has one, and is told the page’s own where it does not', async () => {

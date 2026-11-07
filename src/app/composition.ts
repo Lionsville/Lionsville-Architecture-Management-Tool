@@ -55,8 +55,9 @@ import type { WorkingSource } from '../platform/workingSource'
 import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
 import { BrowserChrome } from '../providers/browserStorage/BrowserChrome'
 import { chooseFolderDestination, FOLDER_SOURCE } from '../providers/folder/folderSource'
-import { FolderChrome } from '../providers/folder/FolderChrome'
+import { FolderChrome, FolderYourWork } from '../providers/folder/FolderChrome'
 import { FolderPreferences } from '../providers/folder/FolderPreferences'
+import { EXAMPLE_SOURCE } from '../providers/example/exampleSource'
 import { MEMORY_SOURCE } from '../providers/memory/memorySource'
 import { MemoryNotice } from '../providers/memory/MemoryNotice'
 import type { HookInvoke } from '../platform/desktopHook'
@@ -70,7 +71,7 @@ import type {
   SourcePreferencesPanel,
 } from './App'
 import type {
-  BarButtonProps, ProblemAction, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination,
+  BarButtonProps, ProblemAction, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceYourWorkProps, SourceDestination,
   SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
@@ -187,6 +188,8 @@ export type SourceBase = {
 export type RegisteredSourceProvider<Opening = never, Own = unknown> =
   SourceProvider<ProviderParts<Own>, Opening, SourceBase> & {
     readonly chrome?: ComponentType<SourceChromeProps<Own>>
+  /** Its part of *Your work*: drawn under the panel's own sections while its source is open. */
+  readonly yourWork?: ComponentType<SourceYourWorkProps<Own>>
     /**
      * What this provider wants in the app's own menu, asked for afresh
      * ({@link SourceMenu}).
@@ -316,6 +319,7 @@ export function sourceDescription(
  */
 export function sourceSayings(source: WorkingSource): {
   labelKey?: StringKey | (string & {}); whereKey?: StringKey | (string & {}); removeKey?: StringKey | (string & {})
+  riskKey?: StringKey | (string & {})
   unreadableKey?: StringKey | (string & {})
 } {
   const provider = sourceProvider(source.provider)
@@ -323,6 +327,7 @@ export function sourceSayings(source: WorkingSource): {
     ...(provider?.labelKey ? { labelKey: provider.labelKey } : {}),
     ...(provider?.whereKey ? { whereKey: provider.whereKey } : {}),
     ...(provider?.removeKey ? { removeKey: provider.removeKey } : {}),
+    ...(provider?.riskKey ? { riskKey: provider.riskKey } : {}),
     ...(provider?.unreadableKey ? { unreadableKey: provider.unreadableKey } : {}),
   }
 }
@@ -423,6 +428,11 @@ export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefi
  * What the open source's provider puts inside *Preferences*, or nothing. The
  * open source's alone, for the reason {@link sourceAgentPanel} is.
  */
+export function sourceYourWork(source: WorkingSource): RegisteredSourceProvider<never, never>['yourWork'] {
+  return sourceProvider(sourceProviderKind(source))?.yourWork as never
+}
+
+/** What the open source's provider draws under the app's own sections of the preferences. */
 export function sourcePreferencesPanel(source: WorkingSource): SourcePreferencesPanel | undefined {
   return sourceProvider(sourceProviderKind(source))?.preferencesPanel
 }
@@ -739,10 +749,11 @@ export const EXAMPLE_OFFERS: readonly ExampleOffer[] = EXAMPLE_CATALOGUE.flatMap
  */
 registerLogoPack(RAIL_PACK)
 registerSourceProvider({
-  ...FOLDER_SOURCE, chrome: FolderChrome, preferencesPanel: FolderPreferences, destination: chooseFolderDestination,
+  ...FOLDER_SOURCE, chrome: FolderChrome, yourWork: FolderYourWork, preferencesPanel: FolderPreferences, destination: chooseFolderDestination,
 })
 registerSourceProvider({ ...BROWSER_STORAGE_SOURCE, chrome: BrowserChrome })
 registerSourceProvider({ ...MEMORY_SOURCE, chrome: MemoryNotice })
+registerSourceProvider(EXAMPLE_SOURCE)
 
 /**
  * A tab left open over a deploy asks for a script that is gone, the first time

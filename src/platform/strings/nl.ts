@@ -12,14 +12,14 @@ import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
   'menu.file': 'Bestand',
-  'menu.connect': 'Map openen…',
+  'menu.connect': 'Een map openen…',
   'menu.openRecent': 'Recente map openen',
   'menu.noRecent': 'Geen recente mappen',
-  'menu.open': 'Openen…',
+  'menu.open': 'Een bestand openen…',
   'menu.save': 'Bewaren',
-  'menu.exportWorkingFile': 'Kopie van het werkbestand bewaren…',
+  'menu.exportWorkingFile': 'Kopie bewaren…',
   'menu.shareLink': 'Delen met een link…',
-  'menu.snapshot': 'Momentopname…',
+  'menu.snapshot': 'Een snapshot maken…',
   'menu.history': 'Geschiedenis…',
   'menu.connectAgent': 'Agent koppelen…',
   'menu.preferences': 'Voorkeuren…',
@@ -53,4 +53,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'window.closeAnyway': 'Toch sluiten',
   'window.keepOpen': 'Venster open laten',
   'menu.website': 'Website',
+  'menu.exportPicture': 'Afbeelding exporteren…',
+  'menu.notNow': 'Nu niet beschikbaar',
+  'menu.saveNothingOpen': 'Er staat niets open. Werk bewaart zichzelf; open een scope om nu te bewaren.',
 }

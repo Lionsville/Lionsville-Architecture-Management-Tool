@@ -45,6 +45,19 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
     paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   };
   useReportPreferences(settings, initial, preferences?.onChange);
+  // Preferences changed from their own page, while this is mounted under it: the
+  // canvas follows. What it reported itself comes back equal, and changes nothing.
+  const outside = preferences?.initial;
+  useEffect(() => {
+    if (outside === undefined) return;
+    const next = mergePreferences(outside);
+    setSnapToGrid(next.snapToGrid);
+    setShowGrid(next.showGrid);
+    setShowLifecycle(next.showLifecycle);
+    setShowMinimap(next.showMinimap);
+    setShowEdgeLabels(next.showEdgeLabels);
+    setTidyOptions(next.tidyOptions);
+  }, [outside]);
 
   return {
     ...settings,

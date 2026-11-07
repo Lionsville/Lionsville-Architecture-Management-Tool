@@ -24,6 +24,12 @@ export type StatusFacts = {
   readonly sourceStatus?: boolean | undefined
   /** The source's own answer; absent where it has no connection to lose. */
   readonly connected?: boolean | undefined
+  /** Where the work is, in the source's word: said after the state, so one word answers both questions. */
+  readonly place?: string | undefined
+  /** Nothing here outlives this tab, so that is what the word says while nothing is wrong. */
+  readonly transient?: boolean | undefined
+  /** ...which is nothing to worry about in the example, where nothing being kept is the point. */
+  readonly visiting?: boolean | undefined
 }
 
 const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
@@ -33,19 +39,21 @@ const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
 export type StatusWord = { readonly text: string; readonly alarm: boolean }
 
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
-  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected } = facts
+  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient } = facts
   if (saveFailed) return { text: s('shell.saveRefused'), alarm: true }
   if (status === 'conflict' || status === 'external-changed') return { text: s(WORDS[status]!), alarm: true }
   if (connected === false) {
     const waiting = status === 'dirty' || status === 'saving'
     return { text: s(waiting ? 'frame.offlineWaiting' : 'frame.offline'), alarm: waiting }
   }
-  if (status === undefined) return { text: s('frame.nothingWaiting'), alarm: false }
+  const at = (word: string) => (place ? `${word} · ${place}` : word)
+  if (transient && place && status !== 'dirty' && status !== 'saving') return { text: place, alarm: !facts.visiting }
+  if (status === undefined) return { text: place ?? s('frame.nothingWaiting'), alarm: false }
   if (publishesSteps) {
     if (!sourceStatus) return { text: '', alarm: false }
     return { text: s(status === 'dirty' || status === 'saving' ? 'shell.stepsSending' : 'shell.stepsSent'), alarm: false }
   }
   const word = WORDS[status]
   if (word) return { text: s(word), alarm: false }
-  return { text: savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved'), alarm: false }
+  return { text: at(savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')), alarm: false }
 }

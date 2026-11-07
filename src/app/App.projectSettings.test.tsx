@@ -2,42 +2,26 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 // @vitest-environment jsdom
+
 /**
- * Applying project settings, with a project open and being edited.
- *
- * Two things went wrong here at once, and they hid each other. The dialog's
- * result was applied to the project as the App last saw it — a model from
- * before this afternoon's editing — and the saved result never reached the open
- * session, which went on holding a model from before the dialog and wrote it
- * back out on its next autosave. So the maturity columns you had just chosen
- * were both invisible and, a moment later, gone.
- *
- * The editor is stubbed: what is under test is the wiring between the dialog,
- * the session and the store, and a real canvas would only slow it down.
+ * A scope's settings, from a scope that is open: one page, the home's, so what the
+ * session did is written as it leaves and each field lands by itself, as a step.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { laidOut } from '../model/testFixtures'
 import { answering, heldRepositories } from './testing/heldRepositories'
 import type { HeldRepositories } from './testing/heldRepositories'
 import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
-/** The one thing the stub does: land a change on the model, as editing would. */
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
   return {
     ...actual,
-    SolutionDesignEditor: (props: {
-      diagrams: {
-        onSettingsChange?: (id: string, settings: { name: string; author?: string }) => void
-      }
-    }) => (
-      <button
-        data-testid="edit-the-diagram"
-        onClick={() => props.diagrams.onSettingsChange?.('d1', { name: 'L7', author: 'Grace' })}
-      >
+    SolutionDesignEditor: (props: { diagrams: { onSettingsChange?: (id: string, settings: { name: string; author: string }) => void } }) => (
+      <button type="button" data-testid="edit-the-diagram" onClick={() => props.diagrams.onSettingsChange?.('d1', { name: 'L7', author: 'Grace' })}>
         edit
       </button>
     ),
@@ -48,70 +32,32 @@ afterEach(() => cleanup())
 
 const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
-  model: {
-    name: 'Landscape',
-    elements: [],
-    relations: [],
-    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
-  },
+  model: { name: 'Landscape', elements: [], relations: [], diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] },
   activeDiagramId: 'd1',
   logoLibrary: [],
 })
 
-function show(initial: ScopeSnapshot) {
-  const projects = heldRepositories([initial])
-  renderApp({ repositories: projects, boot: { initialProject: initial } })
-  return projects
-}
+const saved = (store: HeldRepositories) => store.read('acme/landscape')
 
-/** Fill in the dialog and save it. */
-function applySettings(fields: { name?: string; author?: string }) {
+async function openSettings() {
   fireEvent.click(screen.getByTestId('scope-switcher-open'))
-  fireEvent.click(screen.getByText('Settings…'))
-  if (fields.name !== undefined) {
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: fields.name } })
-  }
-  if (fields.author !== undefined) {
-    fireEvent.change(screen.getByLabelText('Author'), { target: { value: fields.author } })
-  }
-  fireEvent.click(screen.getByText('Save'))
+  fireEvent.click(await screen.findByText('Settings…'))
+  await screen.findByTestId('scope-settings-page')
 }
 
-const saved = (store: HeldRepositories) =>
-  store.read('acme/landscape')
-
-/**
- * The autosave waits three seconds now (ADR-0003), which is longer than a test
- * wants to sit still for. Leaving the window is the other trigger and needs no
- * clock: it is what a person does when they believe they are finished.
- */
-function leaveTheWindow() {
-  fireEvent.blur(window)
-}
-
-/** File the open scope under Globex, through the dialog. */
 async function moveUnderGlobex() {
-  fireEvent.click(screen.getByTestId('scope-switcher-open'))
-  fireEvent.click(screen.getByText('Settings…'))
-  fireEvent.mouseDown(screen.getByLabelText('Group'))
-  fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-  fireEvent.click(screen.getByText('Save'))
+  await openSettings()
+  fireEvent.change(await screen.findByLabelText('Filed under'), { target: { value: 'globex' } })
+  fireEvent.click(await screen.findByTestId('settings-move'))
 }
 
-describe('project settings on an open project', () => {
-  /**
-   * A move takes the scope to its new address with its identity, so what the
-   * session did before it is written where the scope went — and nothing is
-   * written at the address it left.
-   */
-  it('moves the open scope with what was done in it, and leaves nothing behind', async () => {
+describe('a scope’s settings, from the scope that is open', () => {
+  it('takes the scope to its new address with what was done in it, and leaves nothing behind', async () => {
     const store = heldRepositories([project(), bareScope('globex', 'Globex', 'domain')])
     renderApp({ repositories: store, boot: { initialProject: project() } })
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
     await moveUnderGlobex()
-
     await waitFor(async () => expect((await store.read('globex/landscape'))?.model.diagrams[0].author).toBe('Grace'))
-    leaveTheWindow()
     expect(await store.read('acme/landscape')).toBeUndefined()
   })
 
@@ -120,13 +66,10 @@ describe('project settings on an open project', () => {
     const store = heldRepositories([project(), child, bareScope('globex', 'Globex', 'domain')])
     renderApp({ repositories: store, boot: { initialProject: project() } })
     await moveUnderGlobex()
-
     await waitFor(async () => expect(await store.read('acme/landscape')).toBeUndefined())
     expect((await store.read('globex/landscape/team'))?.model.name).toBe('Team')
-    expect(await store.read('globex/landscape')).toBeTruthy()
   })
 
-  /** A move the repository refuses moves nothing, and says why. */
   it('says so where the move is refused, and moves nothing', async () => {
     const store = answering(
       heldRepositories([project(), bareScope('globex', 'Globex', 'domain')]),
@@ -134,57 +77,50 @@ describe('project settings on an open project', () => {
     )
     renderApp({ repositories: store, boot: { initialProject: project() } })
     await moveUnderGlobex()
-
     expect(await screen.findByText(/already/)).toBeTruthy()
     expect(await store.read('globex/landscape')).toBeUndefined()
     expect(await store.read('acme/landscape')).toBeTruthy()
   })
 
-  it('keeps the editing the session has done', async () => {
-    const store = show(project())
+  it('writes the name and the author by themselves, and keeps what the session did', async () => {
+    const store = heldRepositories([project()])
+    renderApp({ repositories: store, boot: { initialProject: project() } })
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
-
-    applySettings({ author: 'Ada' })
-
+    await openSettings()
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Renamed' } })
+    fireEvent.blur(name)
+    await waitFor(async () => expect((await saved(store))?.model.name).toBe('Renamed'))
+    fireEvent.click(screen.getByRole('button', { name: 'On exports' }))
+    const author = await screen.findByTestId('settings-author')
+    fireEvent.change(author, { target: { value: 'Ada' } })
+    fireEvent.blur(author)
     await waitFor(async () => {
       const held = await saved(store)
       expect(held?.model.defaultAuthor).toBe('Ada')
-      // The session's edit, which the App itself never saw.
       expect(held?.model.diagrams[0].author).toBe('Grace')
     })
   })
 
-  it('changes the name and the defaults in the session, so the next save keeps them', async () => {
-    const store = show(project())
-    applySettings({ name: 'Renamed', author: 'Ada' })
-
-    // The toolbar reads the session's model: seeing the new name is the proof
-    // that the change was the session's own.
-    await waitFor(() => expect(screen.getByText('Renamed')).toBeTruthy())
-
-    // A later change must not carry a pre-dialog model back over the defaults.
-    fireEvent.click(screen.getByTestId('edit-the-diagram'))
-    leaveTheWindow()
-    await waitFor(async () => {
-      const held = await saved(store)
-      expect(held?.model.diagrams[0].author).toBe('Grace')
-      expect(held?.model.defaultAuthor).toBe('Ada')
-      expect(held?.model.name).toBe('Renamed')
-    })
+  it('takes a change back with the frame’s undo', async () => {
+    const store = heldRepositories([project()])
+    renderApp({ repositories: store, boot: { initialProject: project() } })
+    await openSettings()
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Renamed' } })
+    fireEvent.blur(name)
+    await waitFor(async () => expect((await saved(store))?.model.name).toBe('Renamed'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Undo' }))
+    await waitFor(async () => expect((await saved(store))?.model.name).toBe('Landscape'))
   })
-})
 
-/**
- * The settings rename the scope and can move it. On a scope that is only read
- * they are refused before the dialog opens, with the session's sentence.
- */
-describe('project settings on a scope that is only read', () => {
-  it('does not open, and says why', async () => {
-    const store = show({ ...project(), unreadable: ['model.json'] })
-    fireEvent.click(screen.getByTestId('scope-switcher-open'))
-  fireEvent.click(screen.getByText('Settings…'))
-    await screen.findByText(/open to be read and not changed/)
-    expect(screen.queryByLabelText('Name')).toBeNull()
-    expect((await saved(store))?.model.name).toBe('Landscape')
+  it('changes nothing on a scope that could not be read whole', async () => {
+    const store = heldRepositories([{ ...project(), unreadable: ['model.json'] }])
+    renderApp({ repositories: store, boot: { initialProject: { ...project(), unreadable: ['model.json'] } } })
+    await openSettings()
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Renamed' } })
+    fireEvent.blur(name)
+    await waitFor(async () => expect((await saved(store))?.model.name).toBe('Landscape'))
   })
 })

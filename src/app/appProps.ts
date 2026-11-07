@@ -49,6 +49,8 @@ import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, S
 export type SourceSayings = {
   readonly labelKey?: StringKey | (string & {})
   readonly whereKey?: StringKey | (string & {})
+  /** What can lose the work here, for *Your work* and the first run. */
+  readonly riskKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
   readonly unreadableKey?: StringKey | (string & {})
 }
@@ -69,7 +71,7 @@ export type AppBoot = {
    * `bootLanding`'s `placeLanding`). Absent: the view, and the bare home.
    */
   initialPage?: InitialPage
-  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings'
   /** What the address said of that page: its tab, what its list shows, the record picked on it. */
   initialList?: { readonly tab?: string; readonly list?: string; readonly pick?: string }
   /** The person on the People page the address names. */
@@ -77,7 +79,7 @@ export type AppBoot = {
   /** A finding the address says a band is carrying. */
   initialFinding?: string
   /** One of the frame's own places the address named (`FRAME_PAGES`). */
-  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  initialFramePage?: 'work' | 'activity' | 'preferences'
   /** The look the address named: a view on a day. */
   initialLook?: { view?: string; day: string }
   /** What the address keeps of the view it lands on (`useViewFacets`). */
@@ -409,6 +411,12 @@ export type AppProps = {
    */
   agent?: AgentGateway
   examples: readonly ExampleOffer[]
+  /** Open an example as a place to visit, where this build can (`main.tsx`). */
+  onVisitExample?: (offer: ExampleOffer) => void
+  /** This window is visiting an example: what it is called, and the two ways out. */
+  visiting?: { readonly name: string; readonly onKeep: () => void; readonly onLeave: () => void }
+  /** A new organisation is met by the first-run page and its first steps, rather than the home's cards. */
+  offersFirstRun?: boolean
   /** Fresh ids. Injected because a clock inside a component cannot be tested. */
   makeId: MakeId
   /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */

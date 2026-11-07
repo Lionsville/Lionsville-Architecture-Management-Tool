@@ -25,6 +25,13 @@ import type { ActivityEntry, ActivityMenuProps } from '../ActivityMenu'
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */
 export type FrameView = { readonly id: string; readonly name: string; readonly kind: string }
 
+/** Something wrong with the work on this screen, in the panel, with what the strip over it offers too. */
+export type WorkTrouble = {
+  readonly title: string
+  readonly body: string
+  readonly acts: readonly { readonly label: string; readonly run: () => void; readonly testId?: string }[]
+}
+
 /** One side of the undo stack: whether it can, and what it would take back. */
 export type FrameStep = { readonly can: boolean; readonly run: () => void; readonly name?: string }
 
@@ -34,7 +41,6 @@ export type ScreenFacts = {
   readonly path: ScopePath
   readonly name: string
   readonly openSearch?: () => void
-  readonly openSettings?: () => void
   /** A home's views, and how to file another. A workspace's tabs come from the editor. */
   readonly views?: readonly FrameView[]
   readonly onNewView?: () => void
@@ -52,6 +58,8 @@ export type ScreenFacts = {
   readonly activity?: () => readonly ActivityEntry[]
   readonly recentActivity?: ActivityMenuProps['recent']
   readonly activityKept?: boolean
+  /** What *Your work* says of this screen beyond where it is kept: something wrong, and the ways out of it. */
+  readonly workTrouble?: WorkTrouble
   /** A band this screen is in: looking at another day. */
   readonly bands?: readonly StackedBand[]
   /** Is a board on screen, whose canvas has a keymap of its own? And its sheet of keys. */
@@ -96,6 +104,8 @@ export type FrameState = {
   readonly readingOf?: string
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
+  /** The preferences are up over this screen: a place of their own, so an address and an agent can say so. */
+  readonly preferences?: boolean
   /** ⌘\: the tree docked on every screen, by this person's choice. */
   readonly pinned: boolean
 }

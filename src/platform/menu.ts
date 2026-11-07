@@ -36,8 +36,7 @@ export type MenuHost = 'desktop' | 'web'
 /**
  * The case a menu bar says its items in.
  *
- * The table says every item in sentence case — *Save a copy of the working
- * file…* — which is how the web's overflow and every button beside it read.
+ * The table says every item in sentence case — *Save a copy…* — which is how the web's overflow and every button beside it read.
  * A macOS menu bar says *Save a Copy of the Working File…*, so the desktop
  * renders the English table through this: every word capitalised but the
  * short ones in between, as the platform's own menus have them. Only the
@@ -55,7 +54,7 @@ export function titleCase(label: string): string {
  * What an item needs the shell to have before it is worth offering: a history
  * to keep, a way in the host names to take, a scope open to act on.
  */
-export type MenuNeed = 'history' | 'connect' | 'scope'
+export type MenuNeed = 'history' | 'connect' | 'scope' | 'picture'
 
 export type MenuItemSpec = {
   readonly kind: 'item'
@@ -86,6 +85,9 @@ function item(
   return { kind: 'item', label, command, accelerator, on: BOTH, needs }
 }
 
+/** The picture of a board, in the web's ⋯ beside the toolbar's button, while a board is up. */
+export const PICTURE_ITEM: MenuItemSpec = { kind: 'item', label: 'menu.exportPicture', command: { type: 'exportPicture' }, on: ['web'], needs: ['picture'] }
+
 export const FILE_MENU: readonly MenuEntry[] = [
   item('menu.connect', { type: 'connect' }, 'CmdOrCtrl+Shift+O', ['connect']),
   { kind: 'recent' },
@@ -98,6 +100,7 @@ export const FILE_MENU: readonly MenuEntry[] = [
   item('menu.open', { type: 'open' }, 'CmdOrCtrl+O'),
   item('menu.save', { type: 'save' }, 'CmdOrCtrl+S', ['scope']),
   item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E'),
+  PICTURE_ITEM,
   // Needing nothing, on both hosts and from every screen: where the source
   // has no address a link may carry, the dialog says so rather than the item
   // going missing, as *Connect an Agent…* does in a tab (ADR-0033, amended).
@@ -247,6 +250,8 @@ export type MenuCapabilities = {
   readonly connect: boolean
   /** Is a scope open, for the items that act on one? */
   readonly scope: boolean
+  /** Is a board up, whose picture can be taken? */
+  readonly picture?: boolean
 }
 
 /**

@@ -515,3 +515,7 @@ a place of its own, so Back shuts it; over a bare home it is written short, as
 reach too; they open their dialog over whatever is up, and the place stays what
 is under them. A move to one of the four moves nothing else unless it names
 another scope, which then lands on that scope's home.
+
+## Amended 7 November 2026: settings and preferences are places
+
+A scope's settings are a page of its home, `#/<scope>/-/settings`, with its section in `?tab=`; asked for from an open scope the home is the move. The preferences are `#/-/preferences`, a place over whatever is up, which any other move leaves. Neither opens a dialog any more. *Your work* and *Activity* stay panels.

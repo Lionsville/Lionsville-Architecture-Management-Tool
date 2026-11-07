@@ -355,3 +355,7 @@ desktop as well as in a browser.
 * The shell's `adoptScopes` passes that answer on rather than saying nothing
   was written, and `landWorkingFile` reads a landing written in part back,
   after *Replace here* and after *A new folder…* alike.
+
+## Amended 7 November 2026: the words on screen
+
+On screen, *a saved copy* and *password* replace *working file* and *seal*; the format, the extension and the identifiers keep theirs. *Without names* is a choice with its effect said, *People in the copy*. *Your work* says when a copy of this place's work last reached the person, kept per place in this person's preferences.

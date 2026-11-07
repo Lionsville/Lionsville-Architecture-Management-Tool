@@ -12,7 +12,7 @@
 import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
-  'shell.workingFileNoDiagrams': 'Dit werkbestand heeft geen aanzichten.',
+  'shell.workingFileNoDiagrams': 'Deze bewaarde kopie heeft geen aanzichten.',
   'entry.andMore': ' en nog {count}',
 
   'check.conflict': '{name} is zowel hier als in {scope} gedefinieerd — houd één definitie en maak van de andere een plaatsvervanger met Koppelen…',
@@ -151,7 +151,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar bijgehouden.',
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',
-  'shell.unknownFile': 'Dit bestand is geen werkbestand.',
+  'shell.unknownFile': 'Dit bestand is geen bewaarde kopie.',
   'shell.scopeGone': 'Dat onderdeel is er niet meer: iemand heeft het verwijderd. Er is niets weggeschreven.',
   'shell.imageBytesGone': 'Deze afbeelding is niet toegevoegd: ze wordt hier niet meer bewaard. Voeg de afbeelding opnieuw toe vanaf waar je haar hebt.',
   'shell.scopeTaken': 'Op dat adres staat al een ander onderdeel, dus er is niets weggeschreven. Kies een andere naam of plek.',

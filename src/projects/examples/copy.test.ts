@@ -13,11 +13,11 @@ import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { MemoryStore } from '../../adapters/memory/MemoryStore'
 import { spoilKept } from '../../adapters/repositories/testing/spoil'
-import type { ScopeSummary } from '../scope'
+import type { ScopeSnapshot, ScopeSummary } from '../scope'
 import { placeWhole, readScope } from '../scopeAccess'
 import { emptyContent } from '../scopeState'
 import { EXAMPLE_CATALOGUE } from './catalogue'
-import { copyExampleInto, exampleCopyOver, placeCopy } from './copy'
+import { copyExampleInto, exampleCopyOver, keepVisit, placeCopy } from './copy'
 import type { ExampleProject } from './copy'
 
 const EXAMPLES: readonly ExampleProject[] = EXAMPLE_CATALOGUE.map((entry) => ({
@@ -141,5 +141,31 @@ describe('a copy over the tree as it is kept', () => {
     const copy = await exampleCopyOver(repositories.scopes, example)
     await expect(placeCopy(repositories, copy.map((scope) => ({ ...scope, path: scope.path.replace(/^acme-logistics-2/, 'acme-logistics') }))))
       .rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+  })
+})
+
+describe('a visit kept', () => {
+  const scope = (path: string, name: string): ScopeSnapshot => ({ path, model: { name, elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] })
+  const visit = async () => {
+    const from = memoryRepositories()
+    await placeCopy(from, [scope('', 'Acme Logistics'), scope('landscape', 'Application landscape')])
+    return from
+  }
+  const named = { key: 'acme', label: 'Acme Logistics', description: 'An example.', path: 'acme-logistics' }
+
+  it('becomes the organisation where nothing was there', async () => {
+    const to = memoryRepositories()
+    await keepVisit((await visit()).scopes, to, named)
+    expect((await readScope(to.scopes, ''))?.model.name).toBe('Acme Logistics')
+    expect((await readScope(to.scopes, 'landscape'))?.model.name).toBe('Application landscape')
+  })
+
+  it('is filed under a scope of its own over work that appeared meanwhile, and leaves it', async () => {
+    const to = memoryRepositories()
+    await placeCopy(to, [scope('', 'Northline')])
+    await keepVisit((await visit()).scopes, to, named)
+    expect((await readScope(to.scopes, ''))?.model.name).toBe('Northline')
+    expect((await readScope(to.scopes, 'acme-logistics'))?.model.name).toBe('Acme Logistics')
+    expect((await readScope(to.scopes, 'acme-logistics/landscape'))?.model.name).toBe('Application landscape')
   })
 })

@@ -17,22 +17,15 @@
  * chosen options while this is open and hands over the preview and the size;
  * this decides nothing but what the person chose.
  */
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import { FieldsDialog } from '../../widgets/CompactForms';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Typography from '@mui/material/Typography';
+import { useEffect, useState } from 'react';
 import { useStrings } from '../../i18n/LanguageContext';
+import { Button } from '../../widgets/kit/Button';
+import { Dialog } from '../../widgets/kit/Dialog';
+import { TextField } from '../../widgets/kit/Field';
+import { Segmented } from '../../widgets/kit/Segmented';
+import { SettingSwitch } from '../../widgets/kit/SettingsPage';
 import { LARGE_EXPORT_MEGAPIXELS } from './exportPng';
+import './ExportDialog.css';
 
 /** What a person chooses about a picture. */
 export interface ExportOptions {
@@ -47,6 +40,8 @@ export interface ExportOptions {
 
 export interface ExportDialogProps {
   open: boolean;
+  /** The view the picture is of. */
+  name?: string;
   options: ExportOptions;
   onChange(next: ExportOptions): void;
   /** An object URL of the preview, or nothing while the first one is drawn. */
@@ -58,134 +53,80 @@ export interface ExportDialogProps {
   exporting: boolean;
   onExport(): void;
   onClose(): void;
+  /**
+   * What the title block will say, editable here beside its preview: each value is
+   * the diagram's own, written to its settings as it is left, with what an empty
+   * field falls back on said under it. Absent where the view may not be changed.
+   */
+  titleFields?: ExportTitleFields;
+}
+
+export interface ExportTitleFields {
+  client: string;
+  /** What the picture names where the client is empty. */
+  clientFrom: string;
+  author: string;
+  date: string;
+  onChange(patch: { client?: string; author?: string; documentDate?: string }): void;
+}
+
+/** One value of the title block: it lands as the person leaves the field. */
+function TitleField({ label, hint, held, disabled, onCommit }: { label: string; hint: string; held: string; disabled: boolean; onCommit(next: string): void }) {
+  const [typed, setTyped] = useState(held);
+  useEffect(() => setTyped(held), [held]);
+  return (
+    <TextField
+      label={label} hint={hint} value={typed} disabled={disabled} onChange={setTyped}
+      onBlur={() => { if (typed.trim() !== held.trim()) onCommit(typed.trim()); }}
+    />
+  );
 }
 
 export function ExportDialog(props: ExportDialogProps) {
   const { t } = useStrings();
-  const { options, onChange } = props;
+  const { options, onChange, titleFields, exporting } = props;
   const large = props.size.megapixels > LARGE_EXPORT_MEGAPIXELS;
 
   return (
-    <FieldsDialog open={props.open} onClose={props.exporting ? undefined : props.onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{t('export.dialogTitle')}</DialogTitle>
-      <DialogContent>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-          <Stack spacing={2} sx={{ minWidth: 220 }}>
-            <Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary', mb: 0.5 }}>
-                {t('export.theme')}
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                value={options.theme}
-                disabled={props.exporting}
-                aria-label={t('export.theme')}
-                onChange={(_event, theme: ExportOptions['theme'] | null) => {
-                  if (theme) onChange({ ...options, theme });
-                }}
-              >
-                <ToggleButton value="light">{t('export.themeLight')}</ToggleButton>
-                <ToggleButton value="dark">{t('export.themeDark')}</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-            <Box>
-              <FormControlLabel
-                control={(
-                  <Switch
-                    checked={options.showLabels}
-                    disabled={props.exporting}
-                    onChange={(event) => onChange({ ...options, showLabels: event.target.checked })}
-                  />
-                )}
-                label={t('export.labels')}
-              />
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
-                {t('export.labelsHelp')}
-              </Typography>
-            </Box>
-            <Box>
-              <FormControlLabel
-                control={(
-                  <Switch
-                    checked={options.titleBlock}
-                    disabled={props.exporting}
-                    onChange={(event) => onChange({ ...options, titleBlock: event.target.checked })}
-                  />
-                )}
-                label={t('export.titleBlock')}
-              />
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
-                {t('export.titleBlockHelp')}
-              </Typography>
-            </Box>
-            <Box>
-              <FormControlLabel
-                control={(
-                  <Switch
-                    checked={options.legend && options.titleBlock}
-                    // The key lives on the strip: without one there is nowhere to draw it.
-                    disabled={props.exporting || !options.titleBlock}
-                    onChange={(event) => onChange({ ...options, legend: event.target.checked })}
-                  />
-                )}
-                label={t('export.legend')}
-              />
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
-                {t('export.legendHelp')}
-              </Typography>
-            </Box>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-              {t('export.size', props.size)}
-            </Typography>
-            {large && <Alert severity="warning" sx={{ fontSize: 12 }}>{t('export.largeBody')}</Alert>}
-          </Stack>
-
-          {/* The preview sits on the export's own background, so a light
-              picture previewed in a dark window is seen as it will be seen. */}
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 240,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              bgcolor: options.theme === 'dark' ? '#121212' : '#ffffff',
-              overflow: 'hidden',
-            }}
-          >
-            {props.preview ? (
-              <Box
-                component="img"
-                src={props.preview}
-                alt={t('export.preview')}
-                sx={{ maxWidth: '100%', maxHeight: 420, objectFit: 'contain', display: 'block' }}
-              />
-            ) : (
-              <Typography sx={{ fontSize: 12, color: 'text.secondary' }} role="status">
-                {t('export.previewBusy')}
-              </Typography>
-            )}
-            {props.previewBusy && props.preview && (
-              <CircularProgress size={20} aria-label={t('export.previewBusy')} sx={{ position: 'absolute', top: 8, right: 8 }} />
-            )}
-          </Box>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose} disabled={props.exporting}>{t('common.cancel')}</Button>
-        <Button
-          variant="contained"
-          onClick={props.onExport}
-          disabled={props.exporting}
-          startIcon={props.exporting ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
-        >
-          {large ? t('export.largeConfirm') : t('export.confirm')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open={props.open} size="l" title={props.name ? t('export.dialogTitleOf', { name: props.name }) : t('export.dialogTitle')} onClose={props.onClose} working={exporting}
+      actions={(
+        <>
+          <Button onClick={props.onClose} disabled={exporting}>{t('common.cancel')}</Button>
+          <Button variant="primary" onClick={props.onExport} working={exporting}>{large ? t('export.largeConfirm') : t('export.confirm')}</Button>
+        </>
+      )}
+    >
+      <div className="export-dialog">
+        <div className="export-dialog__options">
+          <Segmented
+            label={t('export.theme')} value={options.theme}
+            onChange={(theme) => { if (!exporting) onChange({ ...options, theme }); }}
+            options={[{ value: 'light', label: t('export.themeLight') }, { value: 'dark', label: t('export.themeDark') }]}
+          />
+          <SettingSwitch label={t('export.labels')} hint={t('export.labelsHelp')} checked={options.showLabels} disabled={exporting} onChange={(showLabels) => onChange({ ...options, showLabels })} />
+          <SettingSwitch label={t('export.titleBlock')} hint={t('export.titleBlockHelp')} checked={options.titleBlock} disabled={exporting} onChange={(titleBlock) => onChange({ ...options, titleBlock })} />
+          {options.titleBlock && titleFields && (
+            <div className="export-dialog__title-fields">
+              <TitleField label={t('diagramSettings.client')} hint={t('diagramSettings.clientHelp', { name: titleFields.clientFrom })} held={titleFields.client} disabled={exporting} onCommit={(client) => titleFields.onChange({ client })} />
+              <TitleField label={t('diagramSettings.author')} hint={t('export.authorHelp')} held={titleFields.author} disabled={exporting} onCommit={(author) => titleFields.onChange({ author })} />
+              <TitleField label={t('diagramSettings.date')} hint={t('diagramSettings.dateHelp')} held={titleFields.date} disabled={exporting} onCommit={(documentDate) => titleFields.onChange({ documentDate })} />
+            </div>
+          )}
+          {/* The key lives on the strip: without one there is nowhere to draw it. */}
+          <SettingSwitch label={t('export.legend')} hint={t('export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
+          <p className="export-dialog__size">{t('export.size', props.size)}</p>
+          {large && <p className="export-dialog__large" role="status">{t('export.largeBody')}</p>}
+        </div>
+        {/* The preview sits on the export's own background, so a light picture
+            previewed in a dark window is seen as it will be seen. */}
+        <div className="export-dialog__preview">
+          {props.preview
+            ? <img src={props.preview} alt={t('export.preview')} />
+            : <p role="status">{t('export.previewBusy')}</p>}
+          {props.previewBusy && props.preview && <span className="export-dialog__busy" role="status">{t('export.previewBusy')}</span>}
+        </div>
+      </div>
+    </Dialog>
   );
 }

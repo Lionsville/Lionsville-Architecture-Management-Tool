@@ -12,14 +12,14 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
   'menu.file': 'Datei',
-  'menu.connect': 'Ordner öffnen…',
+  'menu.connect': 'Einen Ordner öffnen…',
   'menu.openRecent': 'Zuletzt verwendeten Ordner öffnen',
   'menu.noRecent': 'Keine zuletzt verwendeten Ordner',
-  'menu.open': 'Öffnen…',
+  'menu.open': 'Eine Datei öffnen…',
   'menu.save': 'Speichern',
-  'menu.exportWorkingFile': 'Kopie der Arbeitsdatei speichern…',
+  'menu.exportWorkingFile': 'Kopie speichern…',
   'menu.shareLink': 'Per Link teilen…',
-  'menu.snapshot': 'Snapshot erstellen…',
+  'menu.snapshot': 'Einen Snapshot erstellen…',
   'menu.history': 'Verlauf…',
   'menu.connectAgent': 'Agent verbinden…',
   'menu.preferences': 'Voreinstellungen…',
@@ -53,4 +53,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'window.closeAnyway': 'Trotzdem schließen',
   'window.keepOpen': 'Fenster geöffnet lassen',
   'menu.website': 'Website',
+  'menu.exportPicture': 'Bild exportieren…',
+  'menu.notNow': 'Derzeit nicht verfügbar',
+  'menu.saveNothingOpen': 'Nichts ist geöffnet. Arbeit speichert sich selbst; öffnen Sie einen Bereich, um jetzt zu speichern.',
 }

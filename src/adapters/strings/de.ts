@@ -15,7 +15,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dieser Bereich hat keine verwendbare Adresse ({path}) und kann daher nicht gespeichert werden.',
   'shell.folderUnavailable': 'Dieser Ordner ist nicht verfügbar. Wählen Sie ihn erneut aus, oder verbinden Sie das Laufwerk wieder, auf dem er liegt.',
   'shell.laterNotReplaced': 'Dieser Bereich wurde nicht geändert: eine spätere Version der App hat ihn geschrieben, und diese kann nicht alles davon lesen. Aktualisieren Sie die App, und öffnen Sie den Bereich erneut.',
-  'shell.unreadableNotSaved': 'Dieser Bereich wurde nicht gespeichert: ein Teil davon konnte nicht gelesen werden, und eine Änderung hätte verloren, was er enthält. Holen Sie ihn aus dem Verlauf zurück, oder bringen Sie eine Arbeitsdatei ein.',
+  'shell.unreadableNotSaved': 'Dieser Bereich wurde nicht gespeichert: ein Teil davon konnte nicht gelesen werden, und eine Änderung hätte verloren, was er enthält. Holen Sie ihn aus dem Verlauf zurück, oder bringen Sie eine gespeicherte Kopie ein.',
   'shell.scopeMoved': 'Jemand hat diesen Bereich geändert, während dies lief, deshalb wurde nichts geschrieben. Öffnen Sie ihn erneut und nehmen Sie die Änderung noch einmal vor.',
   'shell.scopeReadOnly': 'Es wurde nichts geschrieben: Sie dürfen diesen Bereich lesen, aber nicht ändern. Bitten Sie jemanden, der ihn ändern darf.',
   'shell.historyMidway': 'Es wurde nichts festgehalten: der Verlauf dieses Ordners steckt mitten in einem Zusammenführen, einem Rebase oder einer anderen eigenen Änderung. Schließen Sie diese zuerst ab oder brechen Sie sie ab, und halten Sie dann erneut fest.',
@@ -24,7 +24,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.gitTooOld': 'Der Verlauf braucht git 2.26 oder neuer auf diesem Rechner. Aktualisieren Sie git und versuchen Sie es erneut.',
   'shell.gitRefused': 'git wurde in diesem Ordner nicht ausgeführt: {reason}',
   'shell.historyFailed': 'Der Verlauf dieses Ordners konnte nicht gelesen oder geschrieben werden. Die Diagnose nennt den Grund.',
-  'shell.storageFull': 'Dieser Browser hat keinen Platz mehr für diese App, deshalb wurde nichts gespeichert. Speichern Sie eine Arbeitsdatei und geben Sie dann in den Einstellungen des Browsers Platz für diese Seite frei.',
+  'shell.storageFull': 'Dieser Browser hat keinen Platz mehr für diese App, deshalb wurde nichts gespeichert. Speichern Sie eine Kopie und geben Sie dann in den Einstellungen des Browsers Platz für diese Seite frei.',
   'shell.storageReload': 'Diese Seite kann in diesem Browser nicht mehr speichern: Die App wurde in einem anderen Tab aktualisiert, oder der Browser hat die gespeicherte Arbeit verloren. Laden Sie die Seite neu, um weiterzuarbeiten.',
   'shell.storageBlocked': 'In einem anderen Tab ist noch eine ältere Version dieser App geöffnet. Schließen Sie ihn oder laden Sie ihn neu, dann geht es hier weiter.',
 }

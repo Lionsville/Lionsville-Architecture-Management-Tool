@@ -34,7 +34,7 @@ export const EN = {
    * that part. Putting it back whole is the step it takes, and the sentence
    * names the two ways to one.
    */
-  'shell.unreadableNotSaved': 'This scope was not saved: part of it could not be read, and a change would have lost what it holds. Put it back from the history, or bring in a working file.',
+  'shell.unreadableNotSaved': 'This scope was not saved: part of it could not be read, and a change would have lost what it holds. Put it back from the history, or bring in a saved file.',
   /**
    * A whole write of a scope that somebody else wrote since it was read
    * (`projects/revision.ts`). Nothing was written, which is the point: the
@@ -79,7 +79,7 @@ export const EN = {
    * this page writes nothing more until it is loaded again. Blocked: this page
    * waits for another tab that holds an older version open.
    */
-  'shell.storageFull': 'This browser has no room left for this app, so nothing was saved. Save a working file, then free some space for this site in the browser’s settings.',
+  'shell.storageFull': 'This browser has no room left for this app, so nothing was saved. Save a copy, then free some space for this site in the browser’s settings.',
   'shell.storageReload': 'This page can no longer save in this browser: the app was updated in another tab, or the browser let go of its saved work. Reload the page to carry on.',
   'shell.storageBlocked': 'Another tab still has an older version of this app open. Close or reload it, and this one carries on.',
 } as const

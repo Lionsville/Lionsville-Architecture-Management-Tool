@@ -39,7 +39,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings'
 
 /**
  * What the shell asks of the organisation screen: one of its pages, or the
@@ -100,8 +100,10 @@ export function useShellAgent(deps: {
   frame?: FrameStore
   /** The window's preferences, an address and an agent asking for them. */
   openPreferences?: () => void
+  /** Moving anywhere else leaves the preferences. */
+  closePreferences?: () => void
   /** One of the frame's own places the address named, opened once as the app comes up. */
-  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  initialFramePage?: 'work' | 'activity' | 'preferences'
   /** The tab and the look of the page the address arrived on: what the frame holds for it. */
   initialPageLook?: { page: Page; tab?: string; look?: string }
 }) {
@@ -151,11 +153,12 @@ export function useShellAgent(deps: {
    * moving the app — nothing there to open, a scope that could not be read,
    * or a fallback onto the home that was already up with nothing over it.
    */
-  const openPreferences = useRef(deps.openPreferences)
-  openPreferences.current = deps.openPreferences
+  const preferences = useRef(deps)
+  preferences.current = deps
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
+    if (to.page !== 'preferences' && frame?.get().preferences) preferences.current.closePreferences?.()
     if (to.page !== undefined && FRAME_PAGES.includes(to.page)) {
-      openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, openPreferences.current)
+      openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences)
       return
     }
     const listPage = holdInFrame(frame, to)
@@ -391,7 +394,6 @@ function useOrgPage() {
 function openInFrame(page: Page, leave: (() => void) | undefined, frame: FrameStore | undefined, preferences: (() => void) | undefined): void {
   leave?.()
   if (isFramePanel(page)) frame?.set({ panel: page })
-  else if (page === 'settings') frame?.set({ asks: 'settings' })
   else preferences?.()
 }
 
@@ -401,7 +403,7 @@ function openInFrame(page: Page, leave: (() => void) | undefined, frame: FrameSt
  * reload keeps it; and the press that opens or shuts a panel.
  */
 function useFrameMoves(
-  frame: FrameStore | undefined, initial: 'work' | 'activity' | 'settings' | 'preferences' | undefined,
+  frame: FrameStore | undefined, initial: 'work' | 'activity' | 'preferences' | undefined,
   openFor: (to: Destination & { scope: string }) => void, here: ScopePath, lookAgain: { current: () => void },
   arrivedOn?: { page: Page; tab?: string; look?: string },
 ) {
@@ -419,11 +421,11 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day } = frame.get()
+    let { panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day, preferences } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab && now.look === look && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets && now.colour === colour && now.day === day) return
-      ({ panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day } = now)
+      if (now.panel === panel && now.tab === tab && now.look === look && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets && now.colour === colour && now.day === day && now.preferences === preferences) return
+      ({ panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day, preferences } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
@@ -482,6 +484,7 @@ function holdInFrame(frame: FrameStore | undefined, to: Destination): Destinatio
 function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const held = frame?.get()
   if (!held) return screen
+  if (held.preferences) return { ...screen, page: { page: 'preferences' } as Screen['page'] }
   const page = screen.page
   // A view may have readings as a page has tabs, and they go in its address the same way.
   const view = screen.open?.view

@@ -47,7 +47,7 @@ import { FrameCommandsContext, useFrameState } from './frameStore'
 import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
-import { ActivityPanel, YourWorkPanel } from './FramePanels'
+import { ActivityPanel, statusOf, YourWorkPanel } from './FramePanels'
 import { ScopeTreePanel } from './ScopeTreePanel'
 import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
 import { sourceKey } from '../../platform/workingSource'
@@ -56,7 +56,6 @@ import { newViewChoices } from '../organisation/newViewChoices'
 import { registerSummary } from '../organisation/register'
 import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
-import { statusWord } from './statusWord'
 import { DESKTOP_APP_LINK, WEBSITE_LINK, HELP_MENU, offered } from '../../platform/menu'
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -111,12 +110,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       : {},
     choose: (next: PlaceReading) => { frame.set({ colour: next.colour, day: next.day, readingOf: viewId }); lookAgain() },
   }), [state.colour, state.day, state.readingOf, viewId, frame, lookAgain])
-  // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
-  useEffect(() => {
-    if (state.asks !== 'settings' || facts?.openSettings === undefined) return
-    frame.set({ asks: undefined })
-    facts.openSettings()
-  }, [state.asks, facts, frame])
   const tree = (onHomeBare || state.pinned) && !facts?.bare && <TreeFor parts={parts} at={at} page={page} />
   return (
     <FrameCommandsContext.Provider value={lines}>
@@ -242,8 +235,8 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
   const { organisation, order, services: { s, prefs }, agent, nav } = parts
   const { writable } = parts
   const leave = (then: () => void) => () => { onDone?.(); then() }
-  // Settings and removal are asked by the organisation's dialogs on a home; from
-  // a scope that is open, the home's dialogs are one move away, and that is the move.
+  // Removal is asked by the organisation's dialog on a home; from a scope that
+  // is open, that home is one move away, and that is the move.
   const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: 'home' }))()
   const fromHome = (then: (scope: ScopeSummary) => void) => (scope: ScopeSummary) => {
     onDone?.()
@@ -258,7 +251,9 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
       tree={organisation.tree} at={at} page={page} order={order.order} onOrderChange={order.chooseOrder} folds={organisation}
       holdings={holdings} today={parts.todayDay}
       onHome={onHome} go={(to) => { onDone?.(); agent.openSomewhere(to) }}
-      onSettings={fromHome(organisation.editScope)} onDelete={fromHome(organisation.askDelete)} onMove={fromHome(organisation.moveScope)}
+      onSettings={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings' }) }} onDelete={fromHome(organisation.askDelete)}
+      // Filed under is one of a scope's settings, so moving a scope is asked for there.
+      onMove={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings' }) }}
       onNewScopeUnder={(path) => atHome(() => organisation.addUnder(path))}
       newViewItems={(path) => newViewChoices(s, () => atHome(() => organisation.addBoard(path)), (kind) => { onDone?.(); organisation.open(path, { page: 'make', kind }) })}
       placeFact={(place) => placeFact(place, parts)}
@@ -284,7 +279,7 @@ function placeFact(place: Page, parts: ShellParts): { count: string; words: stri
   }
 }
 
-function Trail({ parts, facts, at, name }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; name: string }) {
+function Trail({ parts, at, name }: { parts: ShellParts; at: ScopePath; name: string }) {
   const { organisation: { tree }, services: { s } } = parts
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const crumbs = useMemo(() => crumbsFor(at, flattenScopes(tree), s), [at, tree, s])
@@ -304,8 +299,8 @@ function Trail({ parts, facts, at, name }: { parts: ShellParts; facts: ScreenFac
       >
         {anchor && (
           <div className="kit-switcher" data-testid="scope-switcher">
-            {facts?.openSettings && (
-              <Button variant="quiet" size="small" onClick={() => { setAnchor(null); facts.openSettings?.() }}>{s('settings.open')}</Button>
+            {parts.writable(at) && (
+              <Button variant="quiet" size="small" onClick={() => { setAnchor(null); parts.agent.openSomewhere({ scope: at, page: 'settings' }) }}>{s('settings.open')}</Button>
             )}
             <TreeFor parts={parts} at={at} page={page} onDone={() => setAnchor(null)} />
           </div>
@@ -330,7 +325,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
     <>
       <BackForward s={s} />
       <TreeToggle parts={parts} pinned={state.pinned} />
-      <Trail parts={parts} facts={facts} at={at} name={name} />
+      <Trail parts={parts} at={at} name={name} />
       <div className="kit-frame__grow" />
       <FindField openSearch={facts?.openSearch} s={s} />
       <div className="kit-frame__grow" />
@@ -387,10 +382,7 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
   const { services: { s, prefs } } = parts
   const facts = state.screen
-  const word = statusWord({
-    status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
-    sourceStatus: facts?.sourceStatus, connected: parts.props.provider?.connected?.(),
-  }, prefs.language, s)
+  const word = statusOf(parts, facts, prefs.language, s)
   const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
   const here = facts?.alsoHere ?? []
   return (
@@ -501,11 +493,28 @@ const FindingBandStack = lazyPart<ComponentProps<typeof FindingBandShape>>(() =>
 
 function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
   const agent = useAgentBand(parts, facts)
-  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(facts?.bands ?? [])], [agent, facts?.bands])
+  const visit = useVisitBand(parts)
+  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(visit ? [visit] : []), ...(facts?.bands ?? [])], [agent, visit, facts?.bands])
   const { frame } = parts
   const walk = useFrameState(frame).finding
   if (walk) return <FindingBandStack walk={walk} frame={frame} parts={parts} others={bands} />
   return <BandStack bands={bands} />
+}
+
+/** On every screen of the example: nothing here is kept, and the two ways out. */
+function useVisitBand(parts: ShellParts): StackedBand | undefined {
+  const { services: { s } } = parts
+  const visiting = parts.props.visiting
+  return useMemo(() => (visiting ? {
+    id: 'example', tone: 'looking',
+    title: <span data-testid="example-band">{s('example.band')}</span>,
+    action: (
+      <>
+        <Button size="small" variant="primary" onClick={visiting.onKeep} data-testid="example-keep" data-guide="example.keep">{s('example.keep')}</Button>
+        <Button size="small" variant="quiet" onClick={visiting.onLeave} data-testid="example-leave" data-guide="example.leave">{s('example.leave')}</Button>
+      </>
+    ),
+  } : undefined), [visiting, s])
 }
 
 /**

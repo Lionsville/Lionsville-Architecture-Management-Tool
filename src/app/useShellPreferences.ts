@@ -10,7 +10,7 @@
  * this shell does not recognise — so an older shell does not prune a newer one's
  * settings.
  */
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { Theme } from '@mui/material/styles'
 import { shellTheme } from './theme'
@@ -34,6 +34,13 @@ export type PreferencesWriter = {
   write(preferences: Record<string, unknown>): Promise<void>
 }
 
+/** How much a screen holds: the one switch every row measure follows (`widgets/kit/density.css`). */
+export type Density = 'comfortable' | 'compact'
+
+function readDensity(stored: unknown): Density {
+  return stored && typeof stored === 'object' && (stored as { density?: unknown }).density === 'compact' ? 'compact' : 'comfortable'
+}
+
 export type ShellPreferences = {
   /**
    * The editor's settings. In state rather than a one-off `useMemo`: the editor
@@ -48,6 +55,8 @@ export type ShellPreferences = {
   theme: Theme
   savePreferences: (next: EditorPreferences) => void
   chooseLanguage: (next: Language) => void
+  density: Density
+  chooseDensity: (next: Density) => void
   /**
    * One of the three, said outright. The toolbar used to cycle them from a
    * glyph; the View menu, the overflow and the preferences dialog all name
@@ -86,6 +95,12 @@ export function useShellPreferences(deps: {
     () => readLanguage(initial) ?? detectBrowserLanguage(browserLanguages ?? 'en'))
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode(initial) ?? 'system')
 
+  const [density, setDensity] = useState<Density>(() => readDensity(initial))
+  // On the root and not on a component: every screen's rows read it, the portals' too.
+  useEffect(() => {
+    const root = globalThis.document?.documentElement
+    if (root) root.dataset.density = density
+  }, [density])
   const blob = useRef<Record<string, unknown>>(
     initial && typeof initial === 'object' ? { ...(initial as Record<string, unknown>) } : {})
   const writePrefs = useCallback((patch: Record<string, unknown>) => {
@@ -103,6 +118,11 @@ export function useShellPreferences(deps: {
   const chooseLanguage = useCallback((next: Language) => {
     setLanguage(next)
     writePrefs({ language: next })
+  }, [writePrefs])
+
+  const chooseDensity = useCallback((next: Density) => {
+    setDensity(next)
+    writePrefs({ density: next })
   }, [writePrefs])
 
   // Not the updater form of `setThemeMode`: React is allowed to call such an
@@ -124,8 +144,8 @@ export function useShellPreferences(deps: {
   const theme = useMemo(() => shellTheme(mode, language, accent ? { accent } : {}), [mode, language, accent])
 
   return {
-    preferences, language, themeMode, theme,
-    savePreferences, chooseLanguage, chooseTheme, writePreference: writePrefs,
+    preferences, language, themeMode, theme, density,
+    savePreferences, chooseLanguage, chooseDensity, chooseTheme, writePreference: writePrefs,
     readPreferences: useCallback(() => blob.current, []),
   }
 }

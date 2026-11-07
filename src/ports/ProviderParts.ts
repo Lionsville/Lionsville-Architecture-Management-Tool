@@ -431,4 +431,8 @@ export type SourceYourWorkProps<Own = unknown> = {
   own?: Own
   session?: ScopeSession
   open: SourceOpen
+  /** The ways of saying something, reading again and writing what is held, as a chrome is handed them. */
+  notify?: SourceChromeProps<Own>['notify']
+  reread?: SourceChromeProps<Own>['reread']
+  flush?: SourceChromeProps<Own>['flush']
 }

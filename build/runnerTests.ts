@@ -47,7 +47,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/App.driving.test.tsx', // 16 s
   'src/app/App.failures.test.tsx', // 4 s
   'src/app/App.firstRun.test.tsx', // 3 s
-  'src/app/App.folderExample.test.tsx', // 3 s
   'src/app/App.history.test.tsx', // 29 s
   'src/app/App.index.test.tsx', // 5 s
   'src/app/App.keyboard.test.tsx', // 15 s
@@ -86,7 +85,7 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/organisation/OrganisationScreen.test.tsx', // 41 s
   'src/app/organisation/OrganisationScreen.topics.test.tsx', // 14 s
   'src/app/organisation/OrganisationScreen.tree.test.tsx', // 41 s
-  'src/app/organisation/ScopeSettingsDialog.test.tsx', // 8 s
+ // 8 s
   'src/app/organisation/ServedBy.test.tsx', // 20 s
   'src/app/organisation/Topics.test.tsx', // 7 s
   'src/app/personReaders.test.tsx', // 6 s

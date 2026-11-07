@@ -27,18 +27,15 @@ describe('ScopeField', () => {
     renderShell(
       <ScopeField tree={tree} value="acme" onChange={onChange} label="Filed under" excluding="acme/rail" s={s} />,
     )
-    expect(screen.getByLabelText('Filed under').textContent?.trim()).toBe('acme')
-    fireEvent.mouseDown(screen.getByLabelText('Filed under'))
+    expect((screen.getByLabelText('Filed under') as HTMLSelectElement).value).toBe('acme')
     const options = screen.getAllByRole('option')
     expect(options.map((one) => one.textContent?.trim())).toEqual(['Organisation', 'acme', 'Globex'])
-    expect(options[1].getAttribute('aria-selected')).toBe('true')
-    fireEvent.click(screen.getByRole('option', { name: 'Globex' }))
+    fireEvent.change(screen.getByLabelText('Filed under'), { target: { value: 'globex' } })
     expect(onChange).toHaveBeenCalledWith('globex')
   })
 
   it('adds nothing when the address is listed', () => {
     renderShell(<ScopeField tree={tree} value="globex" onChange={vi.fn()} label="Filed under" s={s} />)
-    fireEvent.mouseDown(screen.getByLabelText('Filed under'))
     expect(screen.getAllByRole('option').map((one) => one.textContent?.trim()))
       .toEqual(['Organisation', 'Rail', 'Globex'])
   })

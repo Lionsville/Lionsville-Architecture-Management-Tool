@@ -22,7 +22,6 @@ import type { AgentServerStatus } from '../platform/agentServer'
 import type { HostCommand } from '../platform/hostCommands'
 import type { MenuCapabilities } from '../platform/menu'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import type { ThemeMode } from '../platform/theme'
 import { AgentIcon } from '../widgets/icons'
 import { OverflowMenu } from './OverflowMenu'
 
@@ -47,7 +46,6 @@ export function agentTip(status: AgentServerStatus, s: Translate): string {
 
 /** The web's overflow. Absent on the desktop, which has a menu bar. */
 export type ToolbarOverflow = {
-  themeMode: ThemeMode
   can: MenuCapabilities
   onCommand: (command: HostCommand) => void
   /**
@@ -80,7 +78,6 @@ export function BarEnd({ agent, button, chip, overflow, s }: {
       {chip}
       {overflow && (
         <OverflowMenu
-          themeMode={overflow.themeMode}
           can={overflow.can}
           onCommand={overflow.onCommand}
           sourceEntries={overflow.sourceEntries}

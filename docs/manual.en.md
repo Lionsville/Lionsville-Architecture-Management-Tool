@@ -18,7 +18,7 @@ moved to Applications — it says so and opens the download page instead.
 **Check for Updates…** in the Help menu asks on request.
 
 **The menus** on the desktop are in English for now. **File** holds the
-folder, the working file, snapshots and history; its items about the open
+folder, the saved copy, snapshots and history; its items about the open
 scope — Save — is greyed out while nothing is open; Open… and Save a Copy of
 the Working File… are about the whole organisation and work from every
 screen. **Edit** holds Undo, Redo, Delete and Select All, which act on
@@ -155,21 +155,17 @@ fold lasts while the app is open. A row says how much is kept there and below, i
   a scope that is not there*.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,
-  its records from this browser. A working file you saved elsewhere is not
+  its records from this browser. A saved copy you saved elsewhere is not
   touched. The organisation itself cannot be deleted: it is the root
   everything else is filed under.
 
-The chip at the right of the bar says where your work is kept: the folder your
-projects are files in, **In this browser**, or **Not kept anywhere**.
-**Work from another folder…** beside it points the app at a different folder,
-and a browser that has no folder offers **Open folder…** instead.
+The word in row one says whether your work is safe and where it is, on every
+screen: *Saved 10:23 · In this browser*, or the folder, or **Not kept anywhere**.
+Press it for **Your work**: the place in a sentence, what could lose it, when a
+copy was last saved, and every act that moves work, **Work from another folder…**
+among them. A browser that has no folder offers **Open a folder…** instead.
 
-**Examples**, last. Copying one into an organisation that is empty and unnamed
-makes the example *the* organisation. An organisation that is already something
-files it under a new scope of its own. That covers anything with a name, a
-scope under it, a board or records, and every folder, which goes by its own
-name. Either way the copy is yours from that moment, and nothing you do runs
-against the example itself.
+**The example.** An organisation nobody has started opens on a first page: name yours, look around the example, or carry on with a file or a folder you have. **Open the example** is a place you visit: a band on every screen says you are in it, you can try anything, nothing there is kept, and your own work is untouched. **Keep this as my start** makes what you see your organisation (filed under a scope of its own if yours has meanwhile become something); **Leave the example** goes back with nothing changed.
 
 Renaming a scope relabels it and nothing else — where it is filed is its
 address, and renaming is not moving. Moving one changes the address of the
@@ -410,7 +406,7 @@ so when a name goes from the register, it goes from every screen at once.
   no longer offered, and correcting either no longer warns of the other;
   adding somebody new still checks against both. The answer is kept in the
   register, outside the history like the rest of it — the two ids and the
-  day — and travels with the register in a working file, one made without
+  day — and travels with the register in a saved copy, one made without
   names too. **N answered as not the same person**, under the list, shows
   the answers, each with **Take back**, after which the pair is a possible
   duplicate again. Forgetting or removing either person drops the answer;
@@ -502,7 +498,7 @@ On the desktop the register is the file `.lionsville-architecture/people.json`
 in your folder. **It is never in the folder's history**: no snapshot takes it,
 and a `git add` typed in a terminal leaves it out too, because a name in a
 commit is a name nothing can forget. A copy of the folder taken through git
-therefore carries ids and no names; the working file carries the register.
+therefore carries ids and no names; the saved copy carries the register.
 The answers *not the same person* are in the same file. A version of the app
 from before them reads the people and leaves the answers out, and when it
 next changes the register it writes the file without them: the pairs are
@@ -564,7 +560,7 @@ which in the line under its name:
 - **this browser**: a tab with no folder;
 - **nowhere**: a tab where the browser's storage will not open.
 
-The working file (see *Saving, exporting, sharing*) carries your whole
+The saved copy (see *Saving, exporting, sharing*) carries your whole
 organisation from any one of them to any other.
 
 ### A folder
@@ -654,8 +650,8 @@ desktop is the one that is made to choose.
 
 ### This browser
 
-A tab with no folder keeps your work in this browser, for this site. The chip
-on the organisation's home says **In this browser**, and your work stays there
+A tab with no folder keeps your work in this browser, for this site. The word
+in row one says **In this browser**, and your work stays there
 across restarts until you or the browser clear the site's data. After the
 first save, the app asks the browser to keep it through a clear-out; some
 browsers, Firefox among them, put that question to you. Browser storage is
@@ -674,15 +670,15 @@ here goes into the history first) or **Keep what is here**.
 **A private window** keeps your work only as long as the browser does. Most
 browsers open their storage there too, so the chip says **In this browser**,
 and everything goes when the window closes. The app cannot tell that the
-window is private: save a working file to keep your work.
+window is private: save a saved copy to keep your work.
 
 **Where the browser's storage will not open**, the app works from memory and
 nothing you change is kept. A strip on every screen says so. The chip on the
 organisation's home says **Not kept anywhere**, in the warning colour. The line
-under the name says *Everything here is kept nowhere yet — save a working file
+under the name says *Everything here is kept nowhere yet — save a saved copy
 to keep it.*, and the first snapshot says *Snapshots are kept for as long as
 this tab is open, and go with it.* Work an older version kept in this browser
-is shown. Save a working file before you close the tab.
+is shown. Save a saved copy before you close the tab.
 
 If the browser's storage has not answered within a few seconds, the page is
 drawn anyway. A strip says so, and your work appears when the storage answers.
@@ -697,7 +693,7 @@ too. A strip above the canvas asks which version stands:
 - **Keep mine** replays your changes onto their version, so their edits to
   things you did not touch survive. Only where that is refused does it write
   the whole scope as it is on your screen over theirs.
-- **Save a copy of the working file…**, with unsaved changes here, puts yours in a working file
+- **Save a copy…**, with unsaved changes here, puts yours in a saved copy
   first and leaves the decision for later.
 
 Nothing is overwritten without asking.
@@ -707,14 +703,14 @@ Nothing is overwritten without asking.
 If part of a scope cannot be read, because a file of it is damaged or was
 changed by hand, the scope opens to be looked at and not changed, and a notice
 names what could not be read. Where you may write where the scope is kept, it
-offers **Bring in a working file…**, and **Put back from the history…** where a
+offers **Bring in a saved copy…**, and **Put back from the history…** where a
 history is kept; in a folder it also says you can mend the file and open the
 scope again.
 - **Put back from the history…** opens the History page, where **Put back the
   whole scope…** makes all of it what it was at the snapshot you chose. What
   could not be read is kept first, as an entry of the history or set aside
   beside the scope, and where it cannot be kept, nothing is put back.
-- **Bring in a working file…**, or opening one onto the scope, puts it back
+- **Bring in a saved copy…**, or opening one onto the scope, puts it back
   from the file the same way, and the question before it says so.
 
 An entry that kept what could not be read offers **Save what could not be
@@ -789,10 +785,10 @@ One open scope: a bar at the top, the editor below it.
 | In the bar | What it does |
 |---|---|
 | **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
-| **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **⋯** | In a browser, the menu: **Open folder…** where the browser offers one, **Open…**, **Save**, **Save a copy of the working file…**, **Share with a link…**, **Snapshot…**, **History…**, **Connect an agent…**, the theme, **Preferences…**, and under Help **User manual**, **Keyboard shortcuts…** and **Get the desktop app**. On the desktop the same items, but the last, are in the menu bar — in Title Case, as a menu bar has them — with **Preferences…** as **Settings…** in the app menu on macOS |
+| **Settings…** | One page per scope, at its address (`#/<scope>/-/settings`): General (name, where it is filed, what it is, *Served by*, description), Links, On exports (client and author) and New landscapes (the operational aspects one starts with). Each change lands by itself and undo takes it back; moving asks first, and leaves its content untouched |
+| **⋯** | In a browser, the menu: **Open a file…**, **Open a folder…** where the browser offers one, **Save**, **Save a copy…**, **Export picture…** with a board up, **Share with a link…**, **Take a snapshot…**, **History…**, **Connect an agent…** and **Preferences…**. Help is its own menu beside it. On the desktop the same items are in the menu bar, with the theme under View |
 | **Activity** | What has changed in this scope since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it, read from the history, so they include moves from before you opened it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
-| **Saved · hh:mm** | Where the scope stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
+| **Saved hh:mm · place** | Where the scope stands and where it is kept: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
 Everything is saved automatically as you work: three seconds after you stop, on
 leaving the window, and on closing it. Closing with unsaved work saves it
@@ -802,7 +798,7 @@ storage is
 about four fifths full. That is the only warning you get, because a browser
 stops saving without asking. If a save is refused, the bar says **Not saved —
 storage refused** and the editor keeps working. Where the browser's storage will
-not open, a strip says so from the start. In either case, save a working file,
+not open, a strip says so from the start. In either case, save a saved copy,
 because
 otherwise the work is gone when the tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
@@ -998,7 +994,7 @@ having said.
 **Icons.** Around a hundred built-in marks, searchable by name, category and
 keyword in both languages, in two sizes: small in the header, large leading the
 card for a diagram read from a distance. **Upload a logo** in the picker adds
-your own SVG or PNG (up to 200 kB). Uploaded logos travel in the working file.
+your own SVG or PNG (up to 200 kB). Uploaded logos travel in the saved copy.
 
 **More than one at a time.** Select several and the panel lists them and says what each field holds, *Live, all 3* or *Mixed*. Lifecycle, colour, icon and domain group for elements, and protocol, technology, window, direction, colour and line style for lines, one undo step each. Selecting both kinds heads each part with what it changes. **Arrange** and **Remove** are there too.
 
@@ -2912,18 +2908,16 @@ Right-click a diagram tab, **Diagram settings…**.
 
 Two ways out, for two purposes.
 
-- **The working file** (`.lvarch`, **File › Save a Copy of the Working
-  File…**) is everything and is what you hand to someone who will edit
-  further. It is your **whole organisation** in one file, **sealed under a
-  password**: you are asked for one when you save the copy — twice, because
+- **The saved copy** (`.lvarch`, **File › Save a Copy…**) is everything and is what you hand to someone who will edit
+  further. It is your **whole organisation** in one file, **under a password**: you are asked for one when you save the copy — twice, because
   a lost password cannot be recovered — and whoever opens the file is asked
   for it again. Nothing about what is inside can be read without it. It holds
   every scope, whichever screen you are on when you export — the
   organisation's home, a scope's home or an open board: a landscape on its
   own refers to applications defined a level up, and a file with only the
   landscape in it would open on someone else's machine full of names pointing
-  at nothing. The file is named after your organisation. Working files from
-  earlier versions still open, sealed or not, and one holding a single scope
+  at nothing. The file is named after your organisation. Saved copies from
+  earlier versions still open, with a password or not, and one holding a single scope
   still opens as that scope. It is also how work moves **between places**: a
   file saved from the desktop's folder opens in this browser, or the other way
   round, the same byte for byte, pictures and all. **Opening one asks where it
@@ -3020,6 +3014,8 @@ refers to a view, an element, a principle, an evaluation, a decision or an
 observation in the same words *Insert ▾* writes.
 
 ## Preferences
+
+A page at `#/-/preferences`: yours, on this computer. Each applies at once and does not travel with your work: language, theme, density (how much a list or a tree holds), the scope list's order, what the canvas remembers (grid, snapping, minimap, badges, line labels, how Tidy lays out), and on the desktop the updates and this folder's remote.
 
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the
 minimap, the tidy settings, the language and the theme are remembered per

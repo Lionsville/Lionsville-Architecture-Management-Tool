@@ -2,16 +2,17 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The `⋯` at the end of the toolbar: the menu bar, for a host that has none.
+ * The `⋯` in row one: the menu bar, for a host that has none.
  *
  * Present on the web and absent on the desktop (ADR-0005). It renders the
- * same list the desktop's File and View menus render — `platform/menu.ts` —
- * and sends the same commands through the same stream, so nothing that moved
- * out of the toolbar and into a menu is lost on the web. On the web this is
- * load-bearing, and `App.commands.test.tsx` walks every item to say so.
+ * same list the desktop's File menu renders — `platform/menu.ts` — and sends
+ * the same commands through the same stream, so nothing that moved out of the
+ * toolbar and into a menu is lost on the web. On the web this is load-bearing,
+ * and `App.commands.test.tsx` walks every item to say so. The theme has moved to
+ * the preferences, with the language beside it; the desktop's View menu keeps it.
  *
- * It decides nothing beyond what `offered` decides: an item that cannot work
- * here is not shown, rather than shown disabled.
+ * It decides nothing beyond what `offered` decides — but for *Save*, which stays
+ * in the list with the reason it cannot run, because a person looks for it.
  *
  * A source provider's own lines are the one thing in here that is not this
  * tree's (`platform/sourceProvider.ts`'s `SourceMenuEntry`): they come last, in
@@ -19,23 +20,17 @@
  * held — what a provider offers moves with whether anybody is signed in to it.
  */
 import { useEffect, useState } from 'react'
-import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import ListSubheader from '@mui/material/ListSubheader'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
-import Tooltip from '@mui/material/Tooltip'
 import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { FILE_MENU, PREFERENCES_ITEM, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
-import type { ThemeMode } from '../platform/theme'
+import { IconButton } from '../widgets/kit/Button'
+import { Menu } from '../widgets/kit/Menu'
+import type { MenuEntry } from '../widgets/kit/Menu'
+import { MoreIcon } from '../widgets/icons'
 
 export type OverflowMenuProps = {
-  themeMode: ThemeMode
   can: MenuCapabilities
   onCommand: (command: HostCommand) => void
   /**
@@ -51,12 +46,18 @@ export type OverflowMenuProps = {
   s: Translate
 }
 
-export function OverflowMenu({
-  themeMode, can, onCommand, sourceEntries, onSourceWork, s,
-}: OverflowMenuProps) {
+/** ⌘ on a Mac, Ctrl elsewhere, for a key cap: what `menu.ts` says in Electron's words. */
+function keyCap(accelerator: string | undefined): string | undefined {
+  if (!accelerator) return undefined
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+  return mac
+    ? accelerator.replace('CmdOrCtrl+', '⌘').replace('Shift+', '⇧').replace(/⌘⇧|⇧⌘/, '⇧⌘')
+    : accelerator.replace('CmdOrCtrl', 'Ctrl')
+}
+
+export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, s }: OverflowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
-  const entries = offered(FILE_MENU, 'web', can)
 
   /**
    * The providers' lines, read while the menu is open and not before.
@@ -74,74 +75,47 @@ export function OverflowMenu({
     return onSourceWork?.(() => setLines(sourceEntries()))
   }, [anchor, sourceEntries, onSourceWork])
 
+  const items: MenuEntry[] = []
+  // A file, then a place: the two ways to what you have, side by side. The menu bar's order is the File menu's.
+  const listed = offered(FILE_MENU, 'web', { ...can, scope: true })
+  const elsewhere = listed.find((entry) => entry.kind === 'item' && entry.label === 'menu.connect')
+  const rest = listed.filter((entry, at) => entry !== elsewhere && !(elsewhere && at === 1 && entry.kind === 'separator'))
+  const after = rest.findIndex((entry) => entry.kind === 'item' && entry.label === 'menu.open')
+  const ordered = elsewhere ? [...rest.slice(0, after + 1), elsewhere, ...rest.slice(after + 1)] : rest
+  for (const entry of ordered) {
+    if (entry.kind === 'separator') { items.push({ line: true }); continue }
+    if (entry.kind !== 'item') continue
+    const needsScope = entry.needs?.includes('scope') && !can.scope
+    const shortcut = keyCap(entry.accelerator)
+    items.push({
+      label: s(entry.label),
+      onSelect: choose(entry.command),
+      ...(shortcut ? { shortcut } : {}),
+      ...(needsScope ? { refused: s('menu.saveNothingOpen') } : {}),
+    })
+  }
+  items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator) ?? '' })
+  // The providers' own lines, last and under a rule. A rule and not a heading:
+  // a heading would be a word of ours about somewhere this shell has never heard
+  // of, and the lines say what they are. A key nobody registered renders as itself.
+  if (lines.length > 0) items.push({ line: true })
+  for (const line of lines) {
+    if (line.divider) items.push({ line: true })
+    items.push({
+      label: s(line.labelKey as StringKey),
+      'data-testid': `source-entry-${line.key}`,
+      ...(line.disabled ? { refused: s('menu.notNow') } : {}),
+      ...(line.href ? { href: line.href } : {}),
+      onSelect: () => { setAnchor(null); line.onSelect() },
+    })
+  }
+
   return (
     <>
-      <Tooltip title={s('menu.more')}>
-        <IconButton
-          size="small"
-          aria-label={s('menu.more')}
-          data-testid="overflow-button"
-          onClick={(e) => setAnchor(e.currentTarget)}
-          sx={{ color: 'text.secondary', fontSize: 16, width: 30, height: 30 }}
-        >
-          ⋯
-        </IconButton>
-      </Tooltip>
-      <Menu
-        open={anchor !== null}
-        anchorEl={anchor}
-        onClose={() => setAnchor(null)}
-        slotProps={{ list: { dense: true, 'aria-label': s('menu.more') } }}
-        data-testid="overflow-menu"
-      >
-        {entries.map((entry, at) => (
-          entry.kind === 'item'
-            ? (
-              <MenuItem key={entry.label} onClick={choose(entry.command)}>
-                <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-              </MenuItem>
-            )
-            : <Divider key={`separator-${at}`} />
-        ))}
-        <Divider />
-        <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.theme')}</ListSubheader>
-        {THEME_ITEMS.map(({ mode, label }) => (
-          <MenuItem
-            key={mode}
-            role="menuitemradio"
-            aria-checked={mode === themeMode}
-            onClick={choose({ type: 'theme', mode })}
-          >
-            <ListItemIcon sx={{ minWidth: 24, fontSize: 12 }}>{mode === themeMode ? '✓' : ''}</ListItemIcon>
-            <ListItemText primary={s(label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-          </MenuItem>
-        ))}
-        <Divider />
-        <MenuItem onClick={choose(PREFERENCES_ITEM.command)}>
-          <ListItemText primary={s(PREFERENCES_ITEM.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-        </MenuItem>
-        {/* The providers' own lines, last and under a rule. A rule and not a
-            heading: a heading would be a word of ours about somewhere this shell
-            has never heard of, and the lines say what they are. The label is the
-            provider's key, from the table it registered, and a key nobody
-            registered renders as itself — which is a blemish and never a blank.
-            `href` makes the line a link as well, because a provider's own page
-            is somewhere a person may want to open beside this window rather
-            than instead of it; the press still reaches `onSelect`. */}
-        {lines.length > 0 && <Divider />}
-        {lines.map((line) => [
-          line.divider ? <Divider key={`${line.key}-divider`} /> : null,
-          <MenuItem
-            key={line.key}
-            data-testid={`source-entry-${line.key}`}
-            disabled={line.disabled}
-            {...(line.href ? { component: 'a' as const, href: line.href, target: '_blank', rel: 'noreferrer' } : {})}
-            onClick={() => { setAnchor(null); line.onSelect() }}
-          >
-            <ListItemText primary={s(line.labelKey as StringKey)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-          </MenuItem>,
-        ])}
-      </Menu>
+      <IconButton label={s('menu.more')} size="small" data-testid="overflow-button" aria-haspopup="menu" onClick={(event) => setAnchor(event.currentTarget)}>
+        <MoreIcon size={16} />
+      </IconButton>
+      <Menu open={anchor !== null} anchorEl={anchor} label={s('menu.more')} items={items} onClose={() => setAnchor(null)} />
     </>
   )
 }

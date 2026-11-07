@@ -54,8 +54,7 @@ function pressEnter(field: HTMLElement): void {
   }
 }
 
-const menuOpen = () => screen.queryByTestId('overflow-menu') !== null
-  && screen.getByTestId('overflow-menu').querySelector('[role="menu"]') !== null
+const menuOpen = () => document.querySelector('[role="menu"]') !== null
 
 describe('the ⋯ menu, after a sealed working file is opened from it', () => {
   it('stays shut when the password is confirmed with Enter and the file replaces the scope', async () => {
@@ -69,7 +68,7 @@ describe('the ⋯ menu, after a sealed working file is opened from it', () => {
     // A pointer's press focuses the button it presses; fireEvent's does not.
     more.focus()
     fireEvent.click(more)
-    fireEvent.click(await screen.findByText('Open…'))
+    fireEvent.click(await screen.findByText('Open a file…'))
     await waitFor(() => expect(menuOpen()).toBe(false))
     await waitFor(() => expect(document.activeElement).toBe(more))
 

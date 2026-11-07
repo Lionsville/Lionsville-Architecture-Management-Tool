@@ -65,9 +65,9 @@ describe('the vocabulary', () => {
     // renders it through `titleCase`, and these are the labels it has always
     // carried there.
     const bar: Record<string, string> = {
-      'menu.connect': 'Open Folder…', 'menu.openRecent': 'Open Recent Folder', 'menu.noRecent': 'No Recent Folders',
-      'menu.open': 'Open…', 'menu.save': 'Save', 'menu.exportWorkingFile': 'Save a Copy of the Working File…',
-      'menu.shareLink': 'Share with a Link…', 'menu.snapshot': 'Snapshot…', 'menu.history': 'History…',
+      'menu.connect': 'Open a Folder…', 'menu.openRecent': 'Open Recent Folder', 'menu.noRecent': 'No Recent Folders',
+      'menu.open': 'Open a File…', 'menu.save': 'Save', 'menu.exportWorkingFile': 'Save a Copy…',
+      'menu.shareLink': 'Share with a Link…', 'menu.snapshot': 'Take a Snapshot…', 'menu.history': 'History…',
       'menu.connectAgent': 'Connect an Agent…', 'menu.preferences': 'Preferences…', 'menu.settings': 'Settings…',
       'menu.checkForUpdates': 'Check for Updates…', 'menu.undo': 'Undo', 'menu.redo': 'Redo', 'menu.editDelete': 'Delete',
       'menu.editSelectAll': 'Select All', 'menu.userManual': 'User Manual', 'menu.shortcuts': 'Keyboard Shortcuts…',
@@ -77,7 +77,7 @@ describe('the vocabulary', () => {
       const said = EN[key as keyof typeof EN]
       expect(titleCase(said), key).toBe(title)
     }
-    expect(EN['menu.exportWorkingFile']).toBe('Save a copy of the working file…')
+    expect(EN['menu.exportWorkingFile']).toBe('Save a copy…')
     expect(titleCase('a word first')).toBe('A Word First')
   })
 

@@ -122,7 +122,7 @@ describe('the tree', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Warehouse')
     expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
     // Nothing open, so nothing waits: the word says so on a home too.
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('In this browser')
     // A board is opened from the home's list of boards, by its name.
     fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
@@ -143,8 +143,8 @@ describe('the tree', () => {
   it('keeps a row’s settings to itself: pressing them does not open the scope', async () => {
     show()
     await pressRowMenu('Retail', 'Settings…')
-    expect(await screen.findByRole('dialog')).toBeDefined()
-    expect(screen.getByTestId('organisation-name').textContent).toBe('Acme Logistics')
+    expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
+    expect(screen.getByTestId('organisation-name').textContent).toBe('Retail')
   })
 
   it('offers every scope its own settings, the root included', async () => {
@@ -226,7 +226,7 @@ describe('the tree', () => {
     // And it is entered on its home, empty until a board is made: there is no
     // board to open it on, and the canvas would say so as an error.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Nothing waiting')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('In this browser')
     expect(screen.queryByText(/Diagram not found|no view here to show/)).toBeNull()
   })
 
@@ -249,8 +249,7 @@ describe('the tree', () => {
     fireEvent.click(screen.getAllByTestId('new-scope')[0] as HTMLElement)
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('checkbox', { name: 'Start it with a landscape view' }))
-    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /What this is/ }))
-    fireEvent.click(await screen.findByRole('option', { name: 'Team' }))
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText(/What this is/), { target: { value: 'kind:team' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect((await store.read('returns'))?.kind).toBe('team'))
     expect((await store.read('returns'))?.model.diagrams).toHaveLength(1)
@@ -258,11 +257,11 @@ describe('the tree', () => {
     expect((await screen.findByTestId('boards')).textContent).toContain('New landscape')
   })
 
-  it('opens Settings at Filed under from Move to', async () => {
+  it('opens the settings page, where Filed under is, from Move to', async () => {
     show()
     await pressRowMenu('Retail', 'Move to…')
-    expect(await screen.findByRole('dialog')).toBeDefined()
-    expect(document.activeElement?.closest('.MuiFormControl-root')?.textContent).toContain('Filed under')
+    expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
+    expect(await screen.findByLabelText('Filed under')).toBeDefined()
   })
 
   it('narrows to scopes with work, keeping the path down, and finds flat with the path', async () => {
@@ -297,8 +296,9 @@ describe('the tree', () => {
   it('renames a scope without moving it', async () => {
     const { store } = show()
     await pressRowMenu('Retail', 'Settings…')
-    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Retail & wholesale' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Retail & wholesale' } })
+    fireEvent.blur(name)
     await waitFor(async () => expect((await store.read('retail'))?.model.name).toBe('Retail & wholesale'))
     // The address is how everything under it is filed; a rename is a label.
     expect(await store.read('retail/warehouse')).toBeDefined()
@@ -313,9 +313,8 @@ describe('the tree', () => {
     const before = [(await store.read('retail'))?.id, (await store.read('retail/warehouse'))?.id]
 
     await pressRowMenu('Retail', 'Settings…')
-    fireEvent.mouseDown(await screen.findByLabelText('Filed under'))
-    fireEvent.click(screen.getByRole('option', { name: 'Finance' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.change(await screen.findByLabelText('Filed under'), { target: { value: 'finance' } })
+    fireEvent.click(await screen.findByTestId('settings-move'))
 
     await waitFor(async () => expect(await store.read('finance/retail')).toBeDefined())
     expect([(await store.read('finance/retail'))?.id, (await store.read('finance/retail/warehouse'))?.id]).toEqual(before)

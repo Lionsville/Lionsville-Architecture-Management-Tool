@@ -35,14 +35,8 @@
  * held unwritten is written first, so the copy never writes over an edit.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import CircularProgress from '@mui/material/CircularProgress'
-import Typography from '@mui/material/Typography'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
 import { useStrings } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import { copyScopes, holdsWork } from '../../projects/copyScopes'
@@ -126,36 +120,37 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
   const close = useCallback(() => setStage({ at: 'closed' }), [])
 
   return (
-    <Dialog open={stage.at !== 'closed'} maxWidth="sm" fullWidth aria-busy={stage.at === 'copying'}>
-      <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>{s('folder.adoptTitle')}</DialogTitle>
-      <DialogContent data-testid="adopt-folder">
-        {stage.at === 'asking' && <Typography sx={{ fontSize: 13 }}>{s('folder.adoptBody', { name: adoption.name })}</Typography>}
+    <Dialog
+      open={stage.at !== 'closed'} size="m" title={s('folder.adoptTitle')} onClose={close} working={stage.at !== 'said' && stage.at !== 'closed'}
+      actions={(
+        <>
+          {stage.at === 'asking' && (
+            <>
+              <Button size="small" onClick={skip} data-testid="adopt-skip">{s('folder.adoptSkip')}</Button>
+              <Button size="small" variant="primary" onClick={copy} data-testid="adopt-copy">{s('folder.adoptCopy')}</Button>
+            </>
+          )}
+          {stage.at === 'said' && stage.again && (
+            <Button size="small" onClick={copy} data-testid="adopt-again">{s('folder.adoptAgain')}</Button>
+          )}
+          {stage.at === 'said' && (
+            <Button size="small" variant="primary" onClick={close} data-testid="adopt-close">{s('folder.adoptClose')}</Button>
+          )}
+        </>
+      )}
+    >
+      <div data-testid="adopt-folder">
+        {stage.at === 'asking' && <p>{s('folder.adoptBody', { name: adoption.name })}</p>}
         {stage.at === 'copying' && (
           <>
-            <Typography sx={{ fontSize: 13, mb: 1.5 }} role="status">{s('folder.adoptCopying', { name: adoption.name })}</Typography>
-            <CircularProgress size={20} data-testid="adopt-busy" />
+            <p role="status">{s('folder.adoptCopying', { name: adoption.name })}</p>
+            <span className="kit-button__working" data-testid="adopt-busy" aria-hidden />
           </>
         )}
         {stage.at === 'said' && (
-          <Alert severity={stage.severity} role={stage.severity === 'error' ? 'alert' : 'status'} data-testid="adopt-outcome" sx={{ fontSize: 13 }}>
-            {stage.text}
-          </Alert>
+          <p role={stage.severity === 'error' ? 'alert' : 'status'} data-testid="adopt-outcome">{stage.text}</p>
         )}
-      </DialogContent>
-      <DialogActions>
-        {stage.at === 'asking' && (
-          <>
-            <Button size="small" onClick={skip} data-testid="adopt-skip">{s('folder.adoptSkip')}</Button>
-            <Button size="small" variant="contained" onClick={copy} data-testid="adopt-copy">{s('folder.adoptCopy')}</Button>
-          </>
-        )}
-        {stage.at === 'said' && stage.again && (
-          <Button size="small" onClick={copy} data-testid="adopt-again">{s('folder.adoptAgain')}</Button>
-        )}
-        {stage.at === 'said' && (
-          <Button size="small" variant="contained" onClick={close} data-testid="adopt-close">{s('folder.adoptClose')}</Button>
-        )}
-      </DialogActions>
+      </div>
     </Dialog>
   )
 }

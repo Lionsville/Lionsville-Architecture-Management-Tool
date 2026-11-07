@@ -49,7 +49,7 @@ describe('the snapshot before a replace', () => {
     expect(save).toHaveBeenCalled()
     expect(history.recorded).toEqual([{
       scopes: [(await scopes.read('acme'))?.id, (await scopes.read('acme/rail'))?.id],
-      subject: 'Before a working file replaced this',
+      subject: 'Before a saved copy replaced this',
     }])
     expect(notify).toHaveBeenCalledWith(s('history.takenBeforeReplace'), 'info')
   })

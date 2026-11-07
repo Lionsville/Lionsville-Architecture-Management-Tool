@@ -530,3 +530,7 @@ choose:
   for the cases `resolve` cannot handle? Which client, and how the app would
   know, is the part nobody has an answer to. *As built:* no; the notice names
   the refusal and leaves the folder as it was.
+
+## Amended 7 November 2026: a page, with what was remembered silently
+
+The preferences are a page. They show and reset what the canvas remembers, and add the density, one switch every row measure follows. The theme is no longer in the web's ⋯; the desktop's View menu keeps it.

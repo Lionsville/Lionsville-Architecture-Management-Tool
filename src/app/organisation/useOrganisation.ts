@@ -33,20 +33,16 @@ import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
 import { removeContainerDiagram, toDiagram } from '../../model'
 import type { Command, DesignDiagram, ElementId } from '../../model'
-import { isBoardKind } from '../../model/placement'
 import { ShellError } from '../../platform/errors'
 import {
   parentScope, ROOT_SCOPE, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { blank, changeScope, ensureScope, readScope, summaryOf } from '../../projects/scopeAccess'
+import { changeScope, ensureScope, readScope, summaryOf } from '../../projects/scopeAccess'
 import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
 import { useScopeFolds } from './useScopeFolds'
-import { exampleOf } from '../../projects/examples/catalogue'
-import type { ExampleOffer } from '../../projects/examples/catalogue'
-import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
 import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 import { typeChosen } from '../../projects/scopeType'
@@ -62,7 +58,6 @@ export type OrganisationDialog =
   | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean; type: string; servedBy?: ElementId }
   /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
   | { kind: 'newBoard'; path: ScopePath; name: string }
-  | { kind: 'settings'; target: ScopeSummary; moving?: boolean }
   | { kind: 'delete'; target: ScopeSummary }
   /** One board of a scope, from the table on its home. */
   | { kind: 'deleteBoard'; path: ScopePath; board: { id: string; name: string } }
@@ -135,6 +130,8 @@ export type Organisation = {
    * does not hold yet is a home nobody has looked for, not one that is gone.
    */
   listed: boolean
+  /** The listing would not read: what is shown is no answer about what is there. */
+  listFailed: boolean
   /**
    * Whether the listing is the one read since the last `refresh`. A home made
    * a moment ago is not in the listing read before it was made, and is not
@@ -149,9 +146,6 @@ export type Organisation = {
   openAll: () => void
   foldAll: () => void
   addUnder: (parent: ScopePath) => void
-  editScope: (target: ScopeSummary) => void
-  /** The same settings, opened at *Filed under*. */
-  moveScope: (target: ScopeSummary) => void
   askDelete: (target: ScopeSummary) => void
   closeDialog: () => void
   setNewScopeName: (name: string) => void
@@ -184,7 +178,6 @@ export type Organisation = {
   applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
-  copyExample: (example: ExampleOffer) => void
   /** Give the root a name, from the field a fresh folder shows instead of a heading. */
   nameOrganisation: (name: string) => void
 }
@@ -210,9 +203,10 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   at: ScopePath
   revision: number
   onFailure: UseOrganisationInput['onFailure']
-}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean; listedNow: boolean } {
+}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean; listFailed: boolean; listedNow: boolean } {
   const [tree, setTree] = useState<ScopeSummary>(NOT_LISTED)
   const [listed, setListed] = useState(false)
+  const [listFailed, setListFailed] = useState(false)
   /** The revision the listing on screen was read at. */
   const [listedAt, setListedAt] = useState(-1)
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
@@ -241,11 +235,12 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   useEffect(() => {
     let live = true
     void scopes.tree().then(
-      (held) => { if (live) { setTree(summaryOf(held)); setListed(true); setListedAt(revision) } },
+      (held) => { if (live) { setTree(summaryOf(held)); setListFailed(false); setListed(true); setListedAt(revision) } },
       (cause: unknown) => {
         if (!live) return
         // Not read, as before any read: an agent's check of a path takes it as given (`TreeView.listed`).
         setTree(NOT_LISTED)
+        setListFailed(true)
         setListed(true)
         setListedAt(revision)
         failedRef.current('organisation.list', cause, 'picker.listFailed')
@@ -274,7 +269,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     return () => { live = false }
   }, [scopes, active, at, revision])
 
-  return { tree, root, ready, listed, listedNow: listed && listedAt === revision }
+  return { tree, root, ready, listed, listFailed, listedNow: listed && listedAt === revision }
 }
 
 /**
@@ -306,14 +301,12 @@ export function useOrganisation({
   const [revision, setRevision] = useState(0)
 
   const refresh = useCallback(() => setRevision((held) => held + 1), [])
-  const { tree, root, ready, listed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
+  const { tree, root, ready, listed, listFailed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
 
 
   const folds = useScopeFolds(tree)
 
   const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
-  const editScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target }), [])
-  const moveScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target, moving: true }), [])
   const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
   const askDelete = useCallback((target: ScopeSummary) => setDialog({ kind: 'delete', target }), [])
   const closeDialog = useCallback(() => setDialog({ kind: 'none' }), [])
@@ -477,19 +470,21 @@ export function useOrganisation({
       const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
       try {
         await writeSettings(scopes, path, name, patch)
-        if (moving) await moveFiled(scopes, repositories.index, path, to, s('topics.title'))
+        if (moving) {
+          await moveFiled(scopes, repositories.index, path, to, s('topics.title'))
+        }
       } catch (cause) {
         // A refusal is the repository's answer, said in its words.
         onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')
         return
       }
       refresh()
+      // A field that landed says nothing: it is on screen, and undo takes it back.
+      if (!moving && (was === undefined || was === name)) return
       notify(
         moving
           ? s('settings.moved', { name })
-          : was !== undefined && was !== name
-            ? s('group.renamed', { name })
-            : s('group.saved', { name }),
+          : s('group.renamed', { name }),
         'success',
       )
     })().catch((cause: unknown) => {
@@ -561,47 +556,6 @@ export function useOrganisation({
   }, [scopes, tree, writable, onEnter, refresh, onTreeChanged, onFailure])
 
   /**
-   * An example is a starting point, not a document you keep opening. Where the
-   * copy lands is `exampleCopyOver`'s answer; what is here is the writing of
-   * it, parents first, and landing the person in the scope that has the work in
-   * it rather than in the name above it.
-   */
-  const copyExample = useCallback((offer: ExampleOffer) => {
-    void (async () => {
-      const example = await exampleOf(offer)
-      const copy = await exampleCopyOver(scopes, example)
-      // A shipped example this build cannot read is a bug the example tests
-      // exist to prevent, so it reaches here as nothing rather than as a crash.
-      if (copy.length === 0) {
-        onFailure('organisation.copyExample', new Error('the example did not read'))
-        return
-      }
-      // The scope with the work in it: of the scopes that draw a board, the
-      // one holding the most applications — not the last in path order, which
-      // since ADR-0013 is the platform scope beside the landscape, and since
-      // ADR-0014 draws a board of its own with the services and platforms on
-      // it. A tie goes to the first, which is the one nearest the root.
-      const drawing = copy.filter((scope) => scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind)))
-      const applications = (scope: typeof copy[number]) =>
-        scope.model.elements.filter((element) => element.kind === 'application' && element.ref === undefined).length
-      const landing = drawing.reduce<typeof copy[number] | undefined>(
-        (best, scope) => (best === undefined || applications(scope) > applications(best) ? scope : best),
-        undefined,
-      ) ?? copy[copy.length - 1]
-      // Copied before: entered, not copied again. The organisation is always
-      // there, and one nothing was ever put in is where a copy lands.
-      const existing = await readScope(scopes, landing.path)
-      if (existing && !blank(existing)) { onEnter(existing); return }
-      // Each scope a content that arrives whole, all of them landed together.
-      await placeCopy(repositories, copy)
-      await entered(landing.path, s('shell.exampleCopied', { name: example.label }))
-    })().catch((cause: unknown) => {
-      onFailure('organisation.copyExample', cause)
-      onKeptResult(false)
-    })
-  }, [scopes, repositories, onEnter, entered, onFailure, onKeptResult, s])
-
-  /**
    * The root's name, from the field a fresh folder shows instead of a heading.
    *
    * The same write as the settings dialog's, with one field in it: a person who
@@ -614,17 +568,17 @@ export function useOrganisation({
   }, [applySettings])
 
   return useMemo(() => ({
-    tree, listed, listedNow, at, root, ready, refresh, dialog, ...folds,
-    addUnder, editScope, moveScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, ...folds,
+    addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
-    applySettings, confirmDelete, open, copyExample, nameOrganisation,
+    applySettings, confirmDelete, open, nameOrganisation,
   }), [
-    tree, listed, listedNow, at, root, ready, refresh, dialog, folds,
-    addUnder, editScope, moveScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, folds,
+    addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
-    applySettings, confirmDelete, open, copyExample, nameOrganisation,
+    applySettings, confirmDelete, open, nameOrganisation,
   ])
 }
 

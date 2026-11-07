@@ -36,7 +36,6 @@ const TODAY = () => '2026-09-12'
 
 // The test that copies the shipped example gets this instead of the 5s
 // default; see the comment on it.
-const COPY_THE_EXAMPLE_BUDGET = 20_000
 
 const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] })
 
@@ -473,6 +472,7 @@ describe('the organisation screen — a fresh folder', () => {
     renderApp({
       repositories: heldRepositories([]),
       today: TODAY,
+      onVisitExample: () => undefined,
       examples: [{
         key: 'acme', path: 'acme-logistics', label: 'Acme Logistics', description: 'an example',
         scopes: exampleScopes({
@@ -484,7 +484,7 @@ describe('the organisation screen — a fresh folder', () => {
         }, 'acme-logistics'),
       }],
     })
-    expect(await screen.findByRole('button', { name: 'Copy the example' })).toBeDefined()
+    expect(await screen.findByTestId('open-example')).toBeDefined()
     expect(screen.getByRole('region', { name: 'Start your own' })).toBeDefined()
   })
 
@@ -607,43 +607,3 @@ describe('the organisation screen — a scope with no document of its own', () =
   })
 })
 
-/**
- * The shipped example, copied the way a person copies it.
- *
- * Over the real catalogue entry rather than a fixture: this is the first screen
- * anybody sees, and what it says about the example is the app's first
- * impression of itself.
- */
-describe('the organisation screen — the shipped example', () => {
-  // Copying the shipped example is the heaviest thing this file does: every
-  // scope of it is written and the editor for the landing scope is mounted.
-  // Under a second here; six on a starved CI runner (the v2.2.0 release run
-  // took 239s for a suite that takes 40s locally). The budget matches the
-  // work, as libavoidRouter.test.ts does, rather than the runner's mood. It is
-  // done once: what the folder offers afterwards is read off the same copy.
-  it('becomes the organisation, with its landscape as a row beneath, and offers no examples any more', async () => {
-    const scopes = heldRepositories([])
-    renderApp({ repositories: scopes, today: TODAY, examples: EXAMPLES })
-
-    fireEvent.click(await screen.findByTestId('copy-example'))
-    // Copying lands the person in the scope that has the work in it.
-    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    // The organisation's crumb is the way back to its home.
-    fireEvent.click(screen.getByTestId('crumb-'))
-
-    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
-    expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
-    // The line counts what each scope beneath says it is, in the badges'
-    // words — never "landscape" alone, which is what a board is called.
-    await waitFor(() => expect(screen.getByTestId('organisation-meta').getAttribute('title'))
-      .toContain('1 domain · 1 landscape scope · 1 topic'))
-    // The sheet is the ORGANISATION's now that a cross-scope id resolves
-    // (ADR-0012 §1): the journey, the rail and the areas are what this level
-    // holds, and the applications are the row beneath it.
-    const cards = screen.getByTestId('organisation-cards').textContent ?? ''
-    expect(cards).toContain('Business architecture')
-    expect(cards).toContain('1 journey')
-    // The folder holds architecture of its own now: no examples on offer.
-    expect(screen.queryByTestId('copy-example')).toBeNull()
-  }, COPY_THE_EXAMPLE_BUDGET)
-})

@@ -11,7 +11,6 @@ import type { AppHost, AppProps } from './appProps'
 import type { IndexHook } from './useIndex'
 import type { Organisation } from './organisation/useOrganisation'
 import type { PeopleAccess } from './organisation/usePeopleRegister'
-import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { AgentServer } from './useAgentServer'
 import type { HomeParts } from './useHomeParts'
 import type { MachineSettings } from './useMachineSettings'
@@ -64,6 +63,8 @@ export interface ShellParts {
   /** The observation filters this person saved, offered in every scope (ADR-0032 §8). */
   savedFilters: SavedFilters
   /** The one password dialog and the one *where does it land* dialog, lent to both file flows (ADR-0023, ADR-0025). */
+  /** When a copy of this place's work last reached the person. */
+  copies: { last: string | undefined; note: () => void }
   prompts: { password: ReturnType<typeof usePasswordPrompt>; openInto: ReturnType<typeof useOpenIntoPrompt> }
   /** What the open workspace is handed to write through: the shell's side of each write it asks for. */
   writes: {
@@ -72,7 +73,6 @@ export interface ShellParts {
     adoptScopes: AdoptScopes
     readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void
-    applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<void>
   }
   /** Today, read once per render rather than per card. */
   todayDay: string

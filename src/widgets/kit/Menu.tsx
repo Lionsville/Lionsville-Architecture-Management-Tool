@@ -40,6 +40,8 @@ type Act = {
   hint?: string
   'data-guide'?: string
   'data-testid'?: string
+  /** Somewhere outside this window: the row is a link as well as a press. */
+  href?: string
 }
 
 export type MenuAct = Act & {
@@ -114,6 +116,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         data-guide={entry['data-guide']}
         data-testid={entry['data-testid']}
         title={entry.hint}
+        {...(entry.href ? { component: 'a' as const, href: entry.href, target: '_blank', rel: 'noreferrer' } : {})}
         disableRipple
         role={checkable ? 'menuitemcheckbox' : 'menuitem'}
         aria-checked={checkable ? act.checked : undefined}

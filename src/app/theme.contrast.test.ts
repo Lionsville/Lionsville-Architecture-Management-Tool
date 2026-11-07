@@ -485,9 +485,7 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   'src/observations/ui/SolutionPicture.tsx': [3, 'off-path dim, dropped solution'],
   // A merged or archived observation, a merged cause and a solution no longer live: a design call, like the retired card.
   // The column editor while its switch is off: a control that is off (1.4.3).
-  'src/editor/AspectColumnsEditor.tsx': [1, 'switched off'],
   // The two headings among the type choices: options that cannot be picked, read at full ink rather than dimmed as a disabled choice is.
-  'src/app/organisation/ScopeSettingsDialog.tsx': [1, 'headings among the choices, undimmed'],
   // A chart unit's *+*, hidden until its name row is pointed at or focused, and the comment and fade that say so: an icon, no words.
   'src/app/units/AddUnit.tsx': [4, 'hidden + until hover or focus'],
   // The drop-zone highlight fading in: a tint, no words.

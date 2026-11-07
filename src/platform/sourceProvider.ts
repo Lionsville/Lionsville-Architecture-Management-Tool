@@ -428,6 +428,8 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * this browser kept of it. Absent, the app says what removing takes in
    * words of its own, which name no place.
    */
+  /** What can lose the work here, for *Your work* and the first run; absent where nothing need be said. */
+  readonly riskKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
   /**
    * What the notice over a scope that could not be read whole says here, with

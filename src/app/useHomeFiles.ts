@@ -29,7 +29,8 @@ import type { CarryChoice } from './workingFileFlows'
 import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 
 export type HomeFiles = {
-  exportWorkingFile: () => void
+  /** Answers once the copy is saved or the person has cancelled. */
+  exportWorkingFile: () => Promise<void>
   openFile: (file: File) => void
   openDocument: (name: string, bytes: Uint8Array) => void
 }
@@ -56,36 +57,48 @@ export function useHomeFiles(deps: {
   chooseDestination?: ChooseDestination
   /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
   beforeReplace?: () => Promise<boolean>
+  /** Whether a history is kept here, so that replacing can be undone. */
+  keepsHistory?: () => Promise<boolean>
+  /** Nothing has been made here yet, and how many scopes are filed under this home. */
+  untouched?: () => boolean
+  below?: () => number
+  /** A copy reached the person: what *Last copy saved* says. */
+  onCopySaved?: () => void
   notify: Notify
   s: Translate
 }): HomeFiles {
-  const { documents, carryOut, interchange, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s } = deps
+  const { documents, carryOut, interchange, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, untouched, below, onCopySaved, notify, s } = deps
 
-  const exportWorkingFile = useCallback(() => {
-    void sealedWorkingFile((choice) => carryOut([], choice), askPassword).then(async (sealed) => {
+  const exportWorkingFile = useCallback(() => (
+    sealedWorkingFile((choice) => carryOut([], choice), askPassword).then(async (sealed) => {
       if (!sealed) return
-      await documents.save(sealed.doc)
+      if (await documents.save(sealed.doc) === 'cancelled') return
+      onCopySaved?.()
       const without = savedWithout(sealed.carried.without, s)
-      notify(without ?? s('shell.savedWorkingFile'), without ? 'warning' : 'success')
+      notify(without ?? s('shell.savedWorkingFile', { name: sealed.doc.name }), without ? 'warning' : 'success')
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
-  }, [carryOut, askPassword, documents, notify, s])
+  ), [carryOut, askPassword, documents, onCopySaved, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
-    void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
+    void unsealedBytes(held, askPassword, s('seal.wrong'), name).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: into(), interchange, prompts: landing, chooseDestination,
         here: adopt,
+        saveCopyFirst: exportWorkingFile,
+        ...(untouched?.() ? { untouched: true } : {}),
+        ...(below ? { below: below() } : {}),
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
+        ...(deps.keepsHistory ? { keepsHistory: deps.keepsHistory } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [askPassword, interchange, landing, chooseDestination, beforeReplace, into, adopt, readScope, notify, s])
+  }, [askPassword, interchange, landing, chooseDestination, beforeReplace, into, adopt, readScope, exportWorkingFile, untouched, below, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

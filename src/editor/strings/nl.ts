@@ -214,6 +214,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.size': '{width} × {height} pixels, ongeveer {megapixels} megapixels.',
   'export.largeBody':
     'Dat is een grote afbeelding. Tekenen kan even duren en het venster reageert intussen niet.',
+  'export.authorHelp': 'Leeg: niemand wordt genoemd',
+  'export.dialogTitleOf': '{name} exporteren als afbeelding',
   'export.confirm': 'Exporteren',
   'export.largeConfirm': 'Toch exporteren',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
@@ -641,6 +643,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'diagramSettings.addCustom': 'Zelf toevoegen',
   'diagramSettings.newColumn': 'Nieuwe kolom',
   'diagramSettings.reset': 'Terug naar de standaard vijf',
+  'diagramSettings.removeWord': 'Verwijderen',
   'diagramSettings.remove': '{name} verwijderen',
   'diagramSettings.moveUp': '{name} omhoog',
   'diagramSettings.moveDown': '{name} omlaag',

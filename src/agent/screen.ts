@@ -70,20 +70,21 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
 
 /**
  * The places the frame itself keeps rather than a screen under it (ADR-0033,
- * amended): *Your work* and *Activity* are panels beside whatever is up, and a
- * scope's settings and the preferences are asked for over it. They have an
- * address and an agent reaches them, and moving to one moves nothing else.
+ * amended): *Your work* and *Activity* are panels beside whatever is up, and the
+ * preferences are this person's, asked for over it. They have an address and an
+ * agent reaches them, and moving to one moves nothing else. A scope's settings are
+ * a page of its home.
  */
 export const FRAME_PANELS = ['work', 'activity'] as const
 export type FramePanel = (typeof FRAME_PANELS)[number]
-export const FRAME_PAGES: readonly Page[] = [...FRAME_PANELS, 'settings', 'preferences']
+export const FRAME_PAGES: readonly Page[] = [...FRAME_PANELS, 'preferences']
 
 export function isFramePanel(value: unknown): value is FramePanel {
   return (FRAME_PANELS as readonly unknown[]).includes(value)
 }
 
 /** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', ...FRAME_PAGES]
+export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', 'settings', ...FRAME_PAGES]
 
 /**
  * Which pages have tabs, and the tabs each has: what `?tab=` may say
@@ -102,6 +103,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   blocks: ['about', 'requirements', 'options', 'used'],
   decisions: ['all', 'here', 'above'],
   roadmap: ['plans', 'findings'],
+  settings: ['general', 'links', 'exports', 'landscapes'],
   /** A Conway map's two readings. */
   conway: ['grid', 'lines'],
   plan: ['changes', 'interfaces', 'units', 'milestones', 'restsOn', 'document', 'boards', 'principles', 'history', 'comments'],
@@ -208,6 +210,8 @@ export type ScreenPage =
   | { readonly page: 'topics' }
   /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
   | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string }
+  | { readonly page: 'settings'; readonly tab?: string }
+  | { readonly page: 'preferences' }
 
 /** The active view of an open scope, named so a reader does not have to look it up. */
 export type ScreenView = {

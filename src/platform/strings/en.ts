@@ -19,14 +19,14 @@
  */
 export const EN = {
   'menu.file': 'File',
-  'menu.connect': 'Open folder…',
+  'menu.connect': 'Open a folder…',
   'menu.openRecent': 'Open recent folder',
   'menu.noRecent': 'No recent folders',
-  'menu.open': 'Open…',
+  'menu.open': 'Open a file…',
   'menu.save': 'Save',
-  'menu.exportWorkingFile': 'Save a copy of the working file…',
+  'menu.exportWorkingFile': 'Save a copy…',
   'menu.shareLink': 'Share with a link…',
-  'menu.snapshot': 'Snapshot…',
+  'menu.snapshot': 'Take a snapshot…',
   'menu.history': 'History…',
   'menu.connectAgent': 'Connect an agent…',
   /** Where the platform puts it decides which of the two words it gets. */
@@ -66,4 +66,7 @@ export const EN = {
   'window.closeAnyway': 'Close anyway',
   'window.keepOpen': 'Keep the window open',
   'menu.website': 'Website',
+  'menu.exportPicture': 'Export picture…',
+  'menu.notNow': 'Not available now',
+  'menu.saveNothingOpen': 'Nothing is open. Work saves itself as you go; open a scope to save it now.',
 } as const

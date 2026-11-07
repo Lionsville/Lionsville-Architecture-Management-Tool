@@ -166,7 +166,7 @@ describe('the working file, from node', () => {
 
   it('refuses bytes that are no working file, and writes nothing', async () => {
     const target = memoryRepositories()
-    expect(await readWorkingFile(target, new TextEncoder().encode('not a working file'))).toEqual({ refused: 'shell.unknownFile' })
+    expect(await readWorkingFile(target, new TextEncoder().encode('not a saved copy'))).toEqual({ refused: 'shell.unknownFile' })
     expect((await target.scopes.tree()).root.children).toEqual([])
   })
 

@@ -18,7 +18,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
-import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { FILE_MENU, PREFERENCES_ITEM, offered } from '../platform/menu'
 import type { MenuItemSpec } from '../platform/menu'
 import { translator } from '../i18n'
 import { EXAMPLES, exampleScopes } from './testing/examples'
@@ -60,7 +60,7 @@ describe('the shell without a mouse', { timeout: 20_000 }, () => {
     const can = { history: false, connect: false, scope: true }
     const items = offered(FILE_MENU, 'web', can)
       .filter((entry): entry is MenuItemSpec => entry.kind === 'item')
-    const labels = [...items.map((item) => s(item.label)), s(PREFERENCES_ITEM.label), ...THEME_ITEMS.map((one) => s(one.label))]
+    const labels = [...items.map((item) => s(item.label)), s(PREFERENCES_ITEM.label)]
     const named = [...menu.querySelectorAll('[role^="menuitem"]')].map((item) => item.textContent)
     for (const label of labels) expect(named.some((text) => text?.includes(label))).toBe(true)
 
@@ -76,7 +76,7 @@ describe('the shell without a mouse', { timeout: 20_000 }, () => {
     show()
     const button = await screen.findByTestId('overflow-button')
     const menu = await overflow()
-    fireEvent.keyDown(within(menu).getByRole('menuitem', { name: s(PREFERENCES_ITEM.label) }), { key: 'Enter' })
+    fireEvent.keyDown(within(menu).getByRole('menuitem', { name: s('menu.shareLink') }), { key: 'Enter' })
     const dialog = await screen.findByRole('dialog')
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 

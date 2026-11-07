@@ -171,7 +171,7 @@ describe('a search hit, chosen', () => {
         focusElement: vi.fn(), maps, landscapes, onGoHome: vi.fn(),
       })
       const dialogs = useWorkspaceDialogs({
-        session, settings: { onOpen: vi.fn(), onApply: vi.fn() }, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
+        session, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
         scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation, vi.fn()), onOpenScope, onOpenPeople,
         save: () => Promise.resolve(), pointComment: vi.fn(),
       })

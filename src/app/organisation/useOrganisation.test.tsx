@@ -20,51 +20,13 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import type { InitialPage } from '../App'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import type { ScopeRepository } from '../../ports/ScopeRepository'
-import type { ExampleProject } from '../../projects/examples/copy'
 import { useOrganisation } from './useOrganisation'
 import type { Organisation } from './useOrganisation'
-import { exampleScopes } from '../../adapters/folder/format/exampleFolder'
 
 afterEach(() => cleanup())
 
 const s = translator('en')
 
-const EXAMPLE: ExampleProject = {
-  key: 'acme',
-  path: 'acme-logistics',
-  label: 'Acme Logistics',
-  description: 'an example',
-  scopes: exampleScopes({
-    'scope.json': {
-      type: 'lionsville-architecture', version: 5, name: 'Acme Logistics',
-      kind: 'organisation', activeDiagramId: '', diagrams: [],
-    },
-    'model.json': { elements: [], relations: [] },
-    'application-landscape/scope.json': {
-      type: 'lionsville-architecture', version: 5, name: 'Application landscape',
-      kind: 'landscape', activeDiagramId: 'l7', diagrams: ['l7'],
-    },
-    'application-landscape/model.json': {
-      elements: [{ id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: true, aspects: {} }],
-      relations: [],
-    },
-    'application-landscape/diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
-    'application-landscape/diagrams/l7.geometry.json': { nodes: [] },
-    // A domain beside the landscape, last in path order, with a board of its
-    // own and no applications on it (ADR-0013, ADR-0014): where a copy must
-    // NOT land.
-    'platforms/scope.json': {
-      type: 'lionsville-architecture', version: 5, name: 'Shared platforms',
-      kind: 'domain', activeDiagramId: 'p7', diagrams: ['p7'],
-    },
-    'platforms/model.json': {
-      elements: [{ id: 'openshift', kind: 'platform', name: 'OpenShift', lifecycle: 'live', isManaged: true, aspects: {} }],
-      relations: [],
-    },
-    'platforms/diagrams/p7.json': { id: 'p7', kind: 'layer7', name: 'Platforms', members: [{ id: 'openshift', zone: 'management' }] },
-    'platforms/diagrams/p7.geometry.json': { nodes: [] },
-  }, 'acme-logistics'),
-}
 
 type Harness = {
   held: () => Organisation
@@ -403,55 +365,6 @@ describe('useOrganisation', () => {
     await settle()
     expect(entered).not.toHaveBeenCalled()
     expect(failures).toEqual(['organisation.open.gone'])
-  })
-
-  describe('copying an example', () => {
-    it('makes it the organisation when the root is unnamed and empty', async () => {
-      const { held, store } = mount()
-      await settle()
-      await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
-      await settle()
-      expect((await store.read(''))?.model.name).toBe('Acme Logistics')
-      expect((await store.read('application-landscape'))?.model.name).toBe('Application landscape')
-      expect(await store.read('acme-logistics')).toBeUndefined()
-    })
-
-    it('files it under a child when the root is already something', async () => {
-      const { held, store } = mount([{
-        path: '', model: { name: 'Globex', elements: [], relations: [], diagrams: [] },
-        activeDiagramId: '', logoLibrary: [],
-      }])
-      await settle()
-      await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
-      await settle()
-      expect((await store.read(''))?.model.name).toBe('Globex')
-      expect((await store.read('acme-logistics'))?.model.name).toBe('Acme Logistics')
-      expect((await store.read('acme-logistics/application-landscape'))).toBeDefined()
-    })
-
-    it('lands in the board-drawing scope with the applications, not in the platform scope beside it (ADR-0013, ADR-0014)', async () => {
-      const { held, store, entered } = mount()
-      await settle()
-      await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
-      await settle()
-      expect((await store.read('platforms'))?.model.name).toBe('Shared platforms')
-      expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: 'application-landscape' }))
-    })
-  })
-
-  /**
-   * The shell reads the index again on this: a browser tab has no watcher to
-   * say the tree changed, and an index that never heard of the landscape just
-   * copied in answers "nobody" for every application on the map.
-   */
-  it('says the tree changed once the example is written', async () => {
-    const { held, treeChanged } = mount([])
-    await settle()
-    expect(treeChanged).not.toHaveBeenCalled()
-    await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
-    await settle()
-    await settle()
-    expect(treeChanged).toHaveBeenCalled()
   })
 
   /**

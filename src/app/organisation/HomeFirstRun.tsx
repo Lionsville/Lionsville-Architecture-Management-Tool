@@ -7,7 +7,6 @@
  * whether to stay, and a dashboard of twelve empty cards does not help them.
  */
 import { useState } from 'react'
-import type { ReactNode } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import type { Page } from '../../agent/screen'
 import type { SourceWayIn } from '../../platform/sourceProvider'
@@ -19,23 +18,22 @@ import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { LinkLine } from '../../widgets/kit/Section'
 
-export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, where, chip, places, goPlace, s }: {
+export function FirstChoices({ examples, waysIn, onName, onVisit, onOpenFile, where, places, goPlace, s }: {
   examples: readonly ExampleOffer[]
   waysIn: readonly SourceWayIn[]
   onName: (name: string) => void
-  onCopy: (example: ExampleOffer) => void
+  /** A place to look around, where nothing is kept. Absent where this host has none to visit. */
+  onVisit?: ((example: ExampleOffer) => void) | undefined
   onOpenFile?: (() => void) | undefined
   /** Where work is kept, in the source's own sentence. */
   where: string
-  /** What the place is called, where it is kept; it has a word of its own in row one only for a source that drew one. */
-  chip?: ReactNode
   places: readonly { readonly page: Page; readonly label: StringKey }[]
   goPlace: (page: Page) => void
   s: Translate
 }) {
   const [name, setName] = useState('')
   const start = () => { if (name.trim()) onName(name) }
-  const example = examples[0]
+  const example = onVisit ? examples[0] : undefined
   const hasWork = waysIn.length > 0 || onOpenFile !== undefined
   return (
     <FirstRunPage
@@ -66,7 +64,7 @@ export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, whe
         },
         ...(example ? [{
           id: 'example', title: s('org.firstExample'), body: example.description,
-          children: examples.map((one) => <Button key={one.key} data-testid="copy-example" onClick={() => onCopy(one)}>{examples.length === 1 ? s('org.firstCopyOne') : s('org.firstCopy', { name: one.label })}</Button>),
+          children: examples.map((one) => <Button key={one.key} data-testid="open-example" onClick={() => onVisit?.(one)}>{examples.length === 1 ? s('org.firstCopyOne') : s('org.firstCopy', { name: one.label })}</Button>),
         }] : []),
         ...(hasWork ? [{
           id: 'work', title: s('org.firstWork'), body: s('org.firstWorkBody'),
@@ -83,7 +81,6 @@ export function FirstChoices({ examples, waysIn, onName, onCopy, onOpenFile, whe
       ]}
       foot={(
         <>
-          {chip}{' '}
           {where && <span data-testid="organisation-subtitle">{where} </span>}
           <LinkLine label={s('org.firstAnyTime')} links={places.map((place) => ({ label: s(place.label), onPress: () => goPlace(place.page) }))} />
         </>

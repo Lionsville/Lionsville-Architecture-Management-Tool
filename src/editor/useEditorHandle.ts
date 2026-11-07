@@ -29,6 +29,7 @@ export interface HandleArgs {
   capture(options: { bounds: Rect; pixelRatio: number; padding: number }): Promise<Blob>;
   deletes: DeleteRequests;
   showShortcuts(): void;
+  exportPicture(): void;
 }
 
 /**
@@ -38,7 +39,7 @@ export interface HandleArgs {
  * way the button's second press is.
  */
 export function useEditorHandle(args: HandleArgs) {
-  const { onHandle, state, diagram, drawn, readOnly, busy, tidy, routeEdges, capture, showShortcuts } = args;
+  const { onHandle, state, diagram, drawn, readOnly, busy, tidy, routeEdges, capture, showShortcuts, exportPicture } = args;
   const { setDeleteTarget, requestDeleteConnection, requestDeleteSelection } = args.deletes;
   useEffect(() => {
     if (!onHandle) return;
@@ -61,10 +62,11 @@ export function useEditorHandle(args: HandleArgs) {
       },
       selectAll: () => { if (diagram) state.setSelection(selectAllContent(state.model, diagram)); },
       showShortcuts,
+      exportPicture,
     };
     onHandle(handle);
     return () => onHandle(undefined);
-  }, [onHandle, diagram, drawn, busy, tidy, routeEdges, capture, readOnly, state, setDeleteTarget, requestDeleteConnection, requestDeleteSelection, showShortcuts]);
+  }, [onHandle, diagram, drawn, busy, tidy, routeEdges, capture, readOnly, state, setDeleteTarget, requestDeleteConnection, requestDeleteSelection, showShortcuts, exportPicture]);
 }
 
 /** One place a double-click can open, when the element has more than one. */

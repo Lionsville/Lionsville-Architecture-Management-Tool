@@ -128,7 +128,7 @@ describe('where the database would not open at all', () => {
     const { fell } = show()
     act(() => fell(true))
     expect(screen.getByTestId('storage-notice').textContent)
-      .toBe('Your work is shown from this browser’s older storage; changes here are not kept. Save a working file to keep them.')
+      .toBe('Your work is shown from this browser’s older storage; changes here are not kept. Save a copy to keep them.')
   })
 })
 

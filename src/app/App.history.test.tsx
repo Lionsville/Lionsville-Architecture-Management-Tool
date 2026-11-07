@@ -200,16 +200,17 @@ describe('Back and Forward', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/-/decisions/adr-2'))
   })
 
-  it('moves the page beneath a dialog, and the dialog goes with the page it was opened on', async () => {
+  it('goes back from a scope’s settings to where they were asked for', async () => {
     const { ask, where } = await organisationOnScreen()
     await ask('app.open', { scope: 'acme/retail' })
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
     fireEvent.click(screen.getByTestId('scope-switcher-open'))
     fireEvent.click(screen.getByText('Settings…'))
-    expect(await screen.findByRole('dialog')).toBeDefined()
+    expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
+    await waitFor(async () => expect(((await where()) as { page?: { page?: string } }).page?.page).toBe('settings'))
     window.history.back()
-    await waitFor(async () => expect((await where()).home?.path).toBe(''))
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
+    await waitFor(() => expect(screen.queryByTestId('scope-settings-page')).toBeNull())
   })
 
   it('goes back from a page over the home to the home itself, with the page closed', async () => {

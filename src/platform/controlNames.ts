@@ -26,6 +26,10 @@ export const CONTROL_NAME_ATTRIBUTE = 'data-guide'
 export const CONTROL_NAMES = [
   // The bar over an open scope, and the parts it shares with a home's.
   'shell.crumbs', 'shell.activity', 'shell.alsoHere',
+  // The first run, and the example as a place.
+  'first.language', 'first.name', 'first.example', 'example.keep', 'example.leave',
+  // Whose settings: this person's, and a scope's.
+  'prefs.page', 'prefs.density', 'settings.page',
   // The frame: its two rows, whatever screen is up.
   'frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher', 'frame.yourWork', 'frame.activity',
   // Every page (ADR-0044): a column's seam, on each page that has one;

@@ -138,14 +138,14 @@ const settle = () => act(() => Promise.resolve().then(() => {}))
 describe('saving a document out', () => {
   it('says "saved" only once the gateway accepted it', async () => {
     const { files, notify } = mount({ save: () => Promise.resolve() })
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     expect(notify).not.toHaveBeenCalled() // not before the promise settles
-    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('Working file saved'), 'success'))
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('Saved '), 'success'))
   })
 
   it('says it did not, when it did not', async () => {
     const { files, notify } = mount({ save: () => Promise.reject(new Error('disk full')) })
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(notify).toHaveBeenCalledWith('The file could not be saved: disk full', 'error'))
     expect(notify).not.toHaveBeenCalledWith(expect.anything(), 'success')
   })
@@ -155,7 +155,7 @@ describe('saving a document out', () => {
     // say there was none.
     const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
     const { files, notify } = mount({ save }, undefined, undefined, () => Promise.resolve(undefined))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
     expect(save).not.toHaveBeenCalled()
     expect(notify).not.toHaveBeenCalled()
@@ -173,7 +173,7 @@ describe('saving a document out', () => {
   it('names the file after the project, not after a constant', async () => {
     const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
     const { files } = mount({ save })
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect(save.mock.calls[0][0].name).toBe('landscape.lvarch')
   })
@@ -184,7 +184,7 @@ describe('saving a document out', () => {
     // outside it is bytes that are nothing else, and not a zip.
     const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
     const { files } = mount({ save })
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     const doc = save.mock.calls[0][0]
     expect(doc.mediaType).toBe('application/octet-stream')
@@ -200,7 +200,7 @@ describe('exporting the whole working set', () => {
   it('writes every scope the store holds, not only the one that is open', async () => {
     const save = saveSpy()
     const { files } = mount({ save }, () => Promise.resolve([organisation(), snapshot()]))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     const written = await inside(save.mock.calls[0][0])
     expect(Object.keys(written)).toContain('scope.json')
@@ -210,7 +210,7 @@ describe('exporting the whole working set', () => {
   it('names the file after the organisation, so the root does not export as `.lvarch`', async () => {
     const save = saveSpy()
     const { files } = mount({ save }, () => Promise.resolve([organisation(), snapshot()]))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect(save.mock.calls[0][0].name).toBe('acme-logistics.lvarch')
   })
@@ -222,7 +222,7 @@ describe('exporting the whole working set', () => {
     const stale: ScopeSnapshot = { ...snapshot(), model: { ...model(), name: 'Stale' } }
     const save = saveSpy()
     const { files } = mount({ save }, () => Promise.resolve([organisation(), stale]))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     const written = await inside(save.mock.calls[0][0])
     const header = JSON.parse(new TextDecoder().decode(written['acme/landscape/scope.json']))
@@ -232,7 +232,7 @@ describe('exporting the whole working set', () => {
   it('falls back to the open scope alone where there is no store to ask', async () => {
     const save = saveSpy()
     const { files } = mount({ save })
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect(Object.keys(await inside(save.mock.calls[0][0]))).toContain('scope.json')
     expect(save.mock.calls[0][0].name).toBe('landscape.lvarch')
@@ -242,15 +242,15 @@ describe('exporting the whole working set', () => {
     const save = saveSpy()
     const lacking: ScopeSnapshot = { ...organisation(), unread: ['diagrams/big.json'] }
     const { files, notify } = mount({ save }, () => Promise.resolve([lacking, snapshot()]))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(notify).toHaveBeenCalledWith(
-      'Working file saved, sealed under your password, without 1 files that would not read: diagrams/big.json. '
+      'Copy saved under your password, without 1 files that would not read: diagrams/big.json. '
         + 'The file says so, and opening it will say so again.', 'warning'))
   })
 
   it('says so, once, when the store cannot be read', async () => {
     const { files, notify } = mount({}, () => Promise.reject(new Error('folder gone')))
-    act(() => files().saveWorkingFile())
+    act(() => { void files().saveWorkingFile() })
     await waitFor(() => expect(notify).toHaveBeenCalledWith('The file could not be saved: folder gone', 'error'))
   })
 })
@@ -284,7 +284,7 @@ describe('opening a file', () => {
     const { files, notify, session } = mount({ readBytes: () => Promise.resolve(bytes(workingFile())) })
     act(() => files().openFile(file()))
     await waitFor(() => expect(session.adopt).toHaveBeenCalledWith(expect.anything(), false))
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('Working file'), 'success')
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('Saved copy'), 'success')
   })
 
   it('refuses a file that is not a document of any kind', async () => {
@@ -294,7 +294,7 @@ describe('opening a file', () => {
     // somebody might choose. Deliberately flipped with ADR-0003.
     const { files, notify, session } = mount({ readBytes: () => Promise.resolve(bytes('{ not json')) })
     act(() => files().openFile(file()))
-    await waitFor(() => expect(notify.mock.calls[0][0]).toContain('not a working file'))
+    await waitFor(() => expect(notify.mock.calls[0][0]).toContain('not a saved copy'))
     expect(notify.mock.calls[0][1]).toBe('error')
     expect(session.adopt).not.toHaveBeenCalled()
   })
@@ -306,7 +306,7 @@ describe('opening a file', () => {
     // Today it is reported as "not a working file", which is honest but not
     // helpful: a newer file is a recognisable case and deserves its own
     // sentence. Pinned here so the day that changes is a deliberate one.
-    await waitFor(() => expect(notify).toHaveBeenCalledWith('This file is not a working file.', 'error'))
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('This file is not a saved copy.', 'error'))
   })
 
   it('opens a sealed file once the password is right, asking again after a wrong one', async () => {
@@ -324,8 +324,8 @@ describe('opening a file', () => {
     act(() => files().openFile(file('sealed.lvarch')))
     await waitFor(() => expect(session.adopt).toHaveBeenCalledWith(expect.anything(), false))
     // The first ask carries no verdict; the second carries the first's.
-    expect(asked).toEqual([undefined, expect.stringContaining('not the password')])
-    expect(notify).toHaveBeenCalledWith('Working file “sealed.lvarch” loaded.', 'success')
+    expect(asked).toEqual([undefined, expect.stringContaining('does not open this file')])
+    expect(notify).toHaveBeenCalledWith('Saved copy “sealed.lvarch” loaded.', 'success')
   })
 
   it('opens nothing, and says nothing, when the password dialog is cancelled', async () => {
@@ -366,7 +366,7 @@ describe('opening a working set', () => {
     expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape', 'acme/landscape/acme'])
     await waitFor(() => expect(session.adopt).toHaveBeenCalled())
     expect(notify).toHaveBeenCalledWith(
-      'Working file “acme.lvarch” loaded, with 1 scopes filed under it.', 'success')
+      'Saved copy “acme.lvarch” loaded, with 1 scopes filed under it.', 'success')
   })
 
   it('refuses it where there is nowhere to write the rest, rather than opening half of it', async () => {
@@ -377,7 +377,7 @@ describe('opening a working set', () => {
     act(() => files().openFile(file('acme.lvarch')))
     await waitFor(() => expect(session.adopt).not.toHaveBeenCalled())
     expect(notify).toHaveBeenCalledWith(
-      'This file holds a whole working set, which can only be opened into a working folder.', 'error')
+      'This file holds a whole organisation, which can only be opened into a folder.', 'error')
   })
 
   it('says so, and adopts nothing, when a scope could not be written', async () => {
@@ -400,7 +400,7 @@ describe('opening a working set', () => {
     act(() => files().openFile(file('one.lvarch')))
     await waitFor(() => expect(session.adopt).toHaveBeenCalled())
     expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape'])
-    expect(notify).toHaveBeenCalledWith('Working file “one.lvarch” loaded.', 'success')
+    expect(notify).toHaveBeenCalledWith('Saved copy “one.lvarch” loaded.', 'success')
   })
 })
 

@@ -223,6 +223,8 @@ export const EN = {
   'export.largeBody':
     'That is a large image. Drawing it can take a while, and the window will not respond '
     + 'until it is done.',
+  'export.authorHelp': 'Empty: nobody is named',
+  'export.dialogTitleOf': 'Export {name} as a picture',
   'export.confirm': 'Export',
   'export.largeConfirm': 'Export anyway',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
@@ -659,6 +661,7 @@ export const EN = {
   'diagramSettings.addCustom': 'Add your own',
   'diagramSettings.newColumn': 'New column',
   'diagramSettings.reset': 'Reset to the standard five',
+  'diagramSettings.removeWord': 'Remove',
   'diagramSettings.remove': 'Remove {name}',
   'diagramSettings.moveUp': 'Move {name} up',
   'diagramSettings.moveDown': 'Move {name} down',

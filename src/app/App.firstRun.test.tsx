@@ -81,7 +81,7 @@ describe('where work has nowhere to be kept yet', () => {
       },
     })
 
-    fireEvent.click(screen.getByText('Open folder…'))
+    fireEvent.click(screen.getByText('Choose a folder…'))
     expect(connect).toHaveBeenCalled()
     fireEvent.click(screen.getByText('Somewhere else'))
     expect(other).toHaveBeenCalled()
@@ -97,7 +97,7 @@ describe('once work has somewhere to be', () => {
     })
 
     expect(screen.queryByTestId('first-run')).toBeNull()
-    expect(screen.getByTestId('working-source').textContent).toContain('Architecture')
+    expect(screen.getByTestId('saved-indicator').textContent).toContain('Architecture')
   })
 })
 
@@ -114,7 +114,7 @@ describe('a browser tab', () => {
     renderApp({ repositories: heldRepositories([project()]), provider: { waysIn: [wayIn({ required: false })] } })
 
     expect(screen.queryByTestId('first-run')).toBeNull()
-    expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
+    expect(screen.getByTestId('saved-indicator').textContent).toContain('In this browser')
     expect(screen.getByRole('button', { name: 'Open folder…' })).toBeDefined()
   })
 

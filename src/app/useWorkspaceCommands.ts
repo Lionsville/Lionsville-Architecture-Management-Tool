@@ -47,7 +47,8 @@ export function useWorkspaceCommands(deps: {
       // A save answers its own failure — the bar's status and the refusal's
       // notice — so the menu's press has nothing left to wait for.
       case 'save': void forceSave(); break
-      case 'export': files.saveWorkingFile(); break
+      case 'export': void files.saveWorkingFile(); break
+      case 'exportPicture': editorHandle.current?.exportPicture(); break
       case 'open': documentPicker.open(); break
       case 'openDocument': files.openDocument(command.name, command.bytes); break
       case 'snapshot': snapshots.openDialog(); break

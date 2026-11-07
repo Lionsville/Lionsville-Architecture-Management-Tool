@@ -49,7 +49,7 @@ describe('landWorkingFile', () => {
     const asked = prompts('here')
     const notify = vi.fn()
     await landWorkingFile({ name: 'x', bytes: new TextEncoder().encode('nope'), into, prompts: asked, here: vi.fn(), notify, s })
-    expect(notify).toHaveBeenCalledWith('This file is not a working file.', 'error')
+    expect(notify).toHaveBeenCalledWith('This file is not a saved copy.', 'error')
     expect(asked.askDestination).not.toHaveBeenCalled()
   })
 
@@ -57,7 +57,7 @@ describe('landWorkingFile', () => {
     const asked = prompts(undefined)
     const here = vi.fn()
     await landWorkingFile({ name: 'theirs.lvarch', bytes: set(), into, prompts: asked, chooseDestination: () => Promise.resolve(undefined), here, notify: vi.fn(), s })
-    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'theirs.lvarch', here: 'Mine', canGoElsewhere: true })
+    expect(asked.askDestination).toHaveBeenCalledWith(expect.objectContaining({ file: 'theirs.lvarch', here: 'Mine', canGoElsewhere: true }))
     expect(here).not.toHaveBeenCalled()
   })
 
@@ -126,7 +126,7 @@ describe('landWorkingFile', () => {
   it('says "the working folder" for a home that has no name yet', async () => {
     const asked = prompts(undefined)
     await landWorkingFile({ name: 'x', bytes: set(), into: scope('   ', ''), prompts: asked, here: vi.fn(), notify: vi.fn(), s })
-    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'x', here: 'the working folder', canGoElsewhere: false })
+    expect(asked.askDestination).toHaveBeenCalledWith(expect.objectContaining({ file: 'x', here: 'the working folder', canGoElsewhere: false }))
   })
 
   it('"here" asks for a snapshot first, and replaces only once it answers yes', async () => {
@@ -191,7 +191,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     })
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0]).toEqual([
-      'Working file “org.lvarch” loaded and checked against what it says it holds: 3 scopes, 3 views and 12 files, every one arrived.',
+      'Opened org.lvarch: 3 scopes, 3 views, all there.',
       'success',
     ])
   })
@@ -204,7 +204,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
       here: (opened) => lossy.write([opened.top, ...opened.rest]), read: lossy.read, notify, s,
     })
     expect(notify).toHaveBeenCalledWith(
-      'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (depots/fleet).', 'error')
+      'Saved copy “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (depots/fleet).', 'error')
   })
 
   it('holds a file with no manifest to what it contains, and says it has none', async () => {
@@ -227,7 +227,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
       here: vi.fn(), notify, s,
     })
     expect(notify).toHaveBeenCalledWith(
-      'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Depots” (depots).', 'error')
+      'Saved copy “org.lvarch” did not arrive whole. Not there after loading: the scope “Depots” (depots).', 'error')
   })
 
   it('reads a new folder written in part back too, and names what did not arrive (amendment 3)', async () => {
@@ -243,7 +243,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
       here: vi.fn(), notify, s,
     })
     expect(notify).toHaveBeenCalledTimes(1)
-    expect(notify.mock.calls[0][0]).toMatch(/^Working file “org\.lvarch” did not arrive whole\. Not there after loading: the scope “Depots” \(depots\); the scope “Fleet”/)
+    expect(notify.mock.calls[0][0]).toMatch(/^Saved copy “org\.lvarch” did not arrive whole\. Not there after loading: the scope “Depots” \(depots\); the scope “Fleet”/)
   })
 
   it('throws a landing in part on where there is nothing to read it back through', async () => {

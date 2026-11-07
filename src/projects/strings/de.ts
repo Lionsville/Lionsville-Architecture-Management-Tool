@@ -12,7 +12,7 @@
 import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
-  'shell.workingFileNoDiagrams': 'Diese Arbeitsdatei enthält keine Ansichten.',
+  'shell.workingFileNoDiagrams': 'Diese gespeicherte Kopie enthält keine Ansichten.',
   'entry.andMore': ' und {count} weitere',
 
   'check.conflict': '{name} ist sowohl hier als auch in {scope} definiert — behalten Sie eine Definition und machen Sie die andere mit Verknüpfen… zu einem Platzhalter',
@@ -151,7 +151,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort geführt.',
   'standIn.open': '{scope} öffnen',
   'standIn.from': 'aus {scope}',
-  'shell.unknownFile': 'Diese Datei ist keine Arbeitsdatei.',
+  'shell.unknownFile': 'Diese Datei ist keine gespeicherte Kopie.',
   'shell.scopeGone': 'Dieser Bereich ist nicht mehr da: Jemand hat ihn entfernt. Es wurde nichts geschrieben.',
   'shell.imageBytesGone': 'Dieses Bild wurde nicht hinzugefügt: Es wird hier nicht mehr aufbewahrt. Fügen Sie das Bild erneut hinzu, von dort, wo Sie es haben.',
   'shell.scopeTaken': 'An dieser Adresse steht schon ein anderer Bereich, deshalb wurde nichts geschrieben. Wählen Sie einen anderen Namen oder Ort.',

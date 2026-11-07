@@ -1349,10 +1349,11 @@ The tree lists **alphabetically by default**, with recency as a toggle
 (`sortScopes`, persisted as `projectOrder`); a scope with children folds shut,
 per session rather than as a preference. Examples ship in the folder's format
 (`src/adapters/folder/format/examples/`), are named by the domain's catalogue
-(`src/projects/examples/`), and are **copied** into scopes of your own — into
-an unnamed, empty root the example *becomes* the organisation; into a root
-that is already something, or holds records, or could not be read whole, it is
-filed under a child of its own (`copyExampleInto`).
+(`src/projects/examples/`), and are **a place you visit**: the `example` provider
+opens one in memory at `?example=<key>`, and nothing there is kept until *Keep this
+as my start* (`keepVisit`) — into an unnamed, empty root it *becomes* the
+organisation; into a root that is already something, or holds records, or could
+not be read whole, it is filed under a child of its own (`copyExampleInto`).
 
 ## Adding a place to keep work (the worked example)
 

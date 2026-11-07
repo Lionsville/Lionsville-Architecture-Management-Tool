@@ -27,7 +27,6 @@ import type { Adr } from '../decisions/adr'
 import { SupersedeDialog } from '../decisions/ui/AdrDialogs'
 import { ReplaceDialog } from '../roadmap/ui/ReplaceDialog'
 import type { DesignElement, DesignModel } from '../model'
-import { ScopeSettingsDialog } from './organisation/ScopeSettingsDialog'
 
 afterEach(() => cleanup())
 
@@ -95,10 +94,6 @@ const CASES: QuestionDialogCase[] = [
   {
     name: 'replacing an application',
     open: (id) => <ReplaceDialog subject={application(id)} model={landscape(id)} onCancel={nothing} onConfirm={nothing} />,
-  },
-  {
-    name: 'a scope’s settings',
-    open: (id) => <ScopeSettingsDialog target={{ path: id, name: 'Sales', diagrams: 0, children: [] }} onSave={nothing} onCancel={nothing} s={s} />,
   },
 ]
 

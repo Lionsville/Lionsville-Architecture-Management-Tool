@@ -65,21 +65,21 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
 
 const opened = async (view: ReturnType<typeof show>) => {
   view.send({ type: 'preferences' })
-  await waitFor(() => expect(screen.getByTestId('preferences-dialog')).toBeDefined())
+  await waitFor(() => expect(screen.getByTestId('preferences-page')).toBeDefined())
 }
 
 describe('opening it', () => {
   it('answers the preferences command, from the menu bar or the overflow', async () => {
     const view = show()
-    expect(screen.queryByTestId('preferences-dialog')).toBeNull()
+    expect(screen.queryByTestId('preferences-page')).toBeNull()
     await opened(view)
   })
 
   it('is reachable from the overflow on the web', async () => {
     show()
     fireEvent.click(screen.getByTestId('overflow-button'))
-    fireEvent.click(await screen.findByText('Preferences…'))
-    await waitFor(() => expect(screen.getByTestId('preferences-dialog')).toBeDefined())
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Preferences…/ }))
+    await waitFor(() => expect(screen.getByTestId('preferences-page')).toBeDefined())
   })
 })
 
@@ -87,7 +87,7 @@ describe('the application scope', () => {
   it('changes the language of the whole shell, and remembers it', async () => {
     const view = show()
     await opened(view)
-    fireEvent.click(screen.getByText('Nederlands'))
+    fireEvent.click(screen.getByRole('radio', { name: 'Nederlands' }))
     await waitFor(() => expect(screen.getByText('Voorkeuren')).toBeDefined())
     expect(await view.preferences.read()).toMatchObject({ language: 'nl' })
   })
@@ -95,7 +95,7 @@ describe('the application scope', () => {
   it('changes the theme, the same way the View menu does', async () => {
     const view = show()
     await opened(view)
-    fireEvent.click(screen.getByText('Dark'))
+    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }))
     await waitFor(async () => {
       expect(await view.preferences.read()).toMatchObject({ themeMode: 'dark' })
     })
@@ -106,14 +106,14 @@ describe('the update check', () => {
   it('is absent on a host with no store for it', async () => {
     const view = show()
     await opened(view)
-    expect(screen.queryByText('UPDATES')).toBeNull()
+    expect(screen.queryByText('Updates')).toBeNull()
   })
 
   it('is read from the host and written back to it', async () => {
     const updates = fakeUpdates({ checkAutomatically: true, channel: 'stable' })
     const view = show({ host: { updateSettings: updates.store } })
     await opened(view)
-    const box = await screen.findByLabelText('Check for updates automatically') as HTMLInputElement
+    const box = await screen.findByRole('switch', { name: /Check for updates automatically/ }) as HTMLInputElement
     expect(box.checked).toBe(true)
     fireEvent.click(box)
     await waitFor(() => expect(updates.writes).toEqual([{ checkAutomatically: false }]))
@@ -125,7 +125,7 @@ describe('the update check', () => {
     const updates = fakeUpdates()
     const view = show({ host: { updateSettings: updates.store } })
     await opened(view)
-    fireEvent.click(await screen.findByText('Beta'))
+    fireEvent.click(await screen.findByRole('radio', { name: 'Beta' }))
     await waitFor(() => expect(updates.writes).toEqual([{ channel: 'beta' }]))
   })
 })
@@ -142,13 +142,13 @@ describe('what the open source\'s provider puts here', () => {
     expect(screen.getByTestId('source-preferences').textContent).toBe('about this folder')
   })
 
-  it('falls over on its own, with the dialog still standing', async () => {
+  it('falls over on its own, with the page still standing', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       const view = show({ provider: { preferencesPanel: () => { throw new Error('the panel fell over') } } })
       await opened(view)
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
-      expect(screen.getByTestId('preferences-dialog')).toBeDefined()
+      expect(screen.getByTestId('preferences-page')).toBeDefined()
     } finally {
       spy.mockRestore()
     }

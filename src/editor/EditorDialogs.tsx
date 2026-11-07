@@ -24,6 +24,7 @@ import { ArrivingDialog, arrivingDialog } from '../widgets/Arriving';
 import type { EditorOwnership, SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { DeleteRequests } from './useDeleteRequests';
+import type { DiagramSettings } from '../model/types';
 import type { ExportDialogState } from './useExport';
 
 /**
@@ -60,11 +61,14 @@ export function useEditorDialogs() {
 export type EditorDialogState = ReturnType<typeof useEditorDialogs>;
 
 /** What comes before the documentation page: the two delete questions, the shortcuts and the export. */
-export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles, unitDeletion }: {
+export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles, unitDeletion, titleFrom, onSettingsChange }: {
   state: EditorState;
   diagram: DesignDiagram;
   deletes: DeleteRequests;
   exports: ExportDialogState;
+  /** What a picture names where this view says nothing, and how a view's title block is written. */
+  titleFrom?: string;
+  onSettingsChange?: (id: string, settings: DiagramSettings) => void;
   dialogs: EditorDialogState;
   roles?: EditorOwnership['roles'];
   unitDeletion?: EditorOwnership['unitDeletion'];
@@ -77,6 +81,7 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
       {exportOptions && exportSize && (
         <ExportDialog
           open
+          name={diagram.name}
           options={exportOptions}
           onChange={exports.setExportOptions}
           preview={exports.exportPreview}
@@ -85,6 +90,19 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
           exporting={exports.exporting}
           onExport={exports.confirmExport}
           onClose={exports.closeExport}
+          {...(onSettingsChange ? {
+            titleFields: {
+              client: diagram.client ?? '', clientFrom: titleFrom ?? state.model.name, author: diagram.author ?? '', date: diagram.documentDate ?? '',
+              onChange: (patch: { client?: string; author?: string; documentDate?: string }) => {
+                onSettingsChange(diagram.id, {
+                  name: diagram.name, author: diagram.author, client: diagram.client, documentDate: diagram.documentDate, showTitleBlock: diagram.showTitleBlock,
+                  ...Object.fromEntries(Object.entries(patch).map(([key, value]) => [key, value || undefined])),
+                });
+                // Draw the preview again over what the strip now says.
+                exports.setExportOptions(exportOptions && { ...exportOptions });
+              },
+            },
+          } : {})}
         />
       )}
     </>

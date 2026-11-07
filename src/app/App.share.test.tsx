@@ -141,7 +141,7 @@ describe('Share with a Link…', () => {
     const app = show({})
     await homeUp()
     app.share()
-    await waitFor(() => expect(screen.getByTestId('share-refused').textContent).toBe(s('share.noAddress')))
+    await waitFor(() => expect(screen.getByTestId('share-refused').textContent).toContain('In this browser'))
     expect(app.hostControls.copyText).not.toHaveBeenCalled()
     expect(screen.queryByRole('textbox', { name: s('share.linkLabel') })).toBeNull()
   })

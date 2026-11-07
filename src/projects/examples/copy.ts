@@ -15,7 +15,7 @@ import type { ImageRepository } from '../../ports/ImageRepository'
 import type { ScopeRepository } from '../../ports/ScopeRepository'
 import { namesUnder } from '../scope'
 import type { ScopeSnapshot, ScopeSummary } from '../scope'
-import { blank, contentOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
+import { blank, contentOf, nodesOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
 import type { ScopeReader } from '../scopeAccess'
 import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../scopePath'
 import type { ScopePath } from '../scopePath'
@@ -31,6 +31,8 @@ export type ExampleProject = {
   description: string
   /** The scopes it holds, parents first, at their own paths under `path`. */
   scopes: readonly ScopeSnapshot[]
+  /** What it is filed under where `path` says nothing: a visit, whose scopes stand at the root. */
+  fileAs?: ScopePath
 }
 
 /**
@@ -68,10 +70,11 @@ export function copyExampleInto(
   const fresh = !rootHoldsWork && root.name.trim() === '' && root.children.length === 0 && root.diagrams === 0
   const base = fresh
     ? ROOT_SCOPE
-    : scopePathFor(ROOT_SCOPE, scopePathLabel(example.path), namesUnder(root))
+    : scopePathFor(ROOT_SCOPE, scopePathLabel(example.fileAs ?? example.path), namesUnder(root))
   const readdress = (path: ScopePath): ScopePath => {
     if (path === example.path) return base
-    const below = path.slice(example.path.length + 1)
+    // An example at the root is every path as it stands: what a visit keeps.
+    const below = example.path === ROOT_SCOPE ? path : path.slice(example.path.length + 1)
     return base === ROOT_SCOPE ? below : `${base}/${below}`
   }
   return example.scopes.map((scope) => ({
@@ -123,6 +126,22 @@ export async function placeCopy(
   await placeTogether(repositories, copy.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
   })))
+}
+
+/**
+ * A visit kept: every scope the visit holds, as it stands with whatever was tried
+ * there, placed where the example would land. Over work that appeared meanwhile it
+ * is filed under a scope of its own, as a copy is, never over it.
+ */
+export async function keepVisit(
+  from: ScopeReader,
+  to: { scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>; images: Pick<ImageRepository, 'put'> },
+  named: { key: string; label: string; description: string; path: ScopePath },
+): Promise<void> {
+  const paths = nodesOf((await from.tree()).root).map((node) => node.address)
+  const read = await Promise.all(paths.map((path) => readScope(from, path)))
+  const scopes = read.filter((one): one is ScopeSnapshot => one !== undefined)
+  await placeCopy(to, await exampleCopyOver(to.scopes, { ...named, path: ROOT_SCOPE, fileAs: named.path, scopes }))
 }
 
 /** One cause's links to a scope below, re-addressed. Untouched where it has none. */

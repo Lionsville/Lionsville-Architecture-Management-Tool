@@ -247,7 +247,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }], ['Connect an agent, from it', ['agent.download'], async () => {
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     fireEvent.click(await screen.findByTestId('overflow-button'))
-    await screen.findByTestId('overflow-menu')
+    await screen.findByRole('menu')
     fireEvent.click(screen.getByRole('menuitem', { name: 'Connect an agent…' }))
     await screen.findByTestId('agent-desktop-only')
   }]],
@@ -665,6 +665,25 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   ['its finding, opened', ['findings.back', 'findings.action'], async () => {
     fireEvent.click(document.querySelector<HTMLElement>('[data-guide="findings.instance"]')!)
+  }]],
+  [['the first-run page', ['first.language', 'first.name', 'first.example'], async () => {
+    renderApp({
+      repositories: heldRepositories([]), offersFirstRun: true, onVisitExample: () => undefined,
+      examples: [{ key: 'one', path: '', label: 'One', description: 'An example.', scopes: [] }],
+    })
+    await screen.findByTestId('first-run-page')
+  }]],
+  [['the example, visited', ['example.keep', 'example.leave'], async () => {
+    renderApp({ repositories: heldRepositories(example), visiting: { name: 'One', onKeep: () => undefined, onLeave: () => undefined } })
+    await screen.findByTestId('example-band')
+  }]],
+  [['the preferences', ['prefs.page', 'prefs.density'], async () => {
+    renderApp({ repositories: heldRepositories(example), boot: { initialProject: undefined, initialFramePage: 'preferences' } })
+    await screen.findByTestId('preferences-page')
+  }]],
+  [['a scope’s settings', ['settings.page'], async () => {
+    renderApp({ repositories: heldRepositories(example), boot: { initialProject: undefined, initialHomePage: 'settings' } })
+    await screen.findByTestId('scope-settings-page')
   }]],
   [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',

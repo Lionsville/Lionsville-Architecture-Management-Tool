@@ -38,8 +38,11 @@ export function MarkdownField({
   renderMarkdown,
   onOpenDocumentation,
   autoFocus,
+  placeholder,
 }: {
   value: string;
+  /** What an empty field asks for, where it is not an element's description. */
+  placeholder?: string;
   disabled: boolean;
   onChange(value: string): void;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
@@ -56,7 +59,7 @@ export function MarkdownField({
         onChange={onChange}
         disabled={disabled}
         label={t('field.description')}
-        placeholder={t('field.descriptionPlaceholder')}
+        placeholder={placeholder ?? t('field.descriptionPlaceholder')}
         maxRows={10}
         {...(autoFocus ? { autoFocus } : {})}
         {...(renderMarkdown ? { renderPreview: (text: string) => renderMarkdown(text) } : {})}

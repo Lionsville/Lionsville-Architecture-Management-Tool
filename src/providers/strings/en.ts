@@ -22,6 +22,8 @@ export const EN = {
   'sync.diverged':
     'This folder and its remote have both moved on. Nothing is merged: choose which version stands. '
     + 'Ours is kept on a branch either way.',
+  'sync.remote': 'Remote',
+  'sync.outcomes': 'Take theirs keeps ours on a branch. Keep ours is recorded as a merge.',
   'sync.takeTheirs': 'Take theirs',
   'sync.keepOurs': 'Keep ours',
   'sync.pulled': 'Up to date with the remote.',
@@ -52,7 +54,7 @@ export const EN = {
 
   // --- the way into a folder -------------------------------------------------
   'folder.body': 'Pick a folder and this app keeps your work in it as files you can read, back up, sync and commit. Nothing is kept inside the app itself.',
-  'folder.choose': 'Open folder…',
+  'folder.choose': 'Choose a folder…',
   /**
    * The folder pick asks before it copies. Both answers are safe and the body
    * says so: the app keeps its own copy until somebody moves it on purpose.
@@ -68,19 +70,19 @@ export const EN = {
   'shell.sourceBrowser': 'In this browser',
   'shell.sourceMemory': 'Not kept anywhere',
   'shell.sourceTipFolder': 'Your work is kept in this folder as files. Snapshots go into its history.',
-  'shell.sourceTipBrowser': 'Your work is kept in this browser\'s storage. Save a working file to keep it anywhere else.',
-  'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
-  'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
-  'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
+  'shell.sourceTipBrowser': 'Your work is kept in this browser\'s storage. Save a copy to keep it anywhere else.',
+  'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a copy before you close this tab.',
+  'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A copy you saved elsewhere is not touched.',
+  'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A copy you saved elsewhere is not touched.',
   /** The organisation's subtitle, first sentence: where everything here is kept. */
   'folder.where': 'Everything here is kept as files in the folder above.',
   /**
    * The notice over a scope a file of which did not read, in a folder: the
    * file is there to be mended by hand, beside the two ways every source has.
    */
-  'folder.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: a change would lose what it holds. Mend the file and open the scope again, put it back from the history, or bring in a working file.',
+  'folder.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: a change would lose what it holds. Mend the file and open the scope again, put it back from the history, or bring in a saved file.',
   'browser.where': 'Everything here is kept in this browser.',
-  'memory.where': 'Everything here is kept nowhere yet \u2014 save a working file to keep it.',
+  'memory.where': 'Everything here is kept nowhere yet \u2014 save a copy to keep it.',
   'shell.storageNearlyFull':
     'This browser is about {percent}% full for this app. Save your work to a folder or a '
     + 'file before it runs out — a browser stops saving without asking.',
@@ -115,7 +117,7 @@ export const EN = {
   'browser.beforeBringingAgain': 'Before bringing this over again from this browser\u2019s earlier storage',
   /** The work shown from the older storage, where this browser\u2019s database will not open. */
   'browser.stillAnswering': 'This browser\u2019s storage has not answered yet. Your work appears here as soon as it does.',
-  'browser.shownFromOlder': 'Your work is shown from this browser\u2019s older storage; changes here are not kept. Save a working file to keep them.',
+  'browser.shownFromOlder': 'Your work is shown from this browser\u2019s older storage; changes here are not kept. Save a copy to keep them.',
   /** A button of the earlier-work strip, named for the scope it answers about. */
   'browser.earlierBringAt': 'Bring the older copy of \u201c{path}\u201d over',
   'browser.earlierLeaveAt': 'Keep \u201c{path}\u201d as it is here',
@@ -129,4 +131,11 @@ export const EN = {
   'folder.adoptNoneMeanwhile': 'Nothing was copied into \u201c{name}\u201d: left as they were, because they changed meanwhile: {paths}.',
   'folder.adoptAgain': 'Try again',
   'folder.adoptClose': 'Close',
+  'browser.risk': 'It is saved as you work. Clearing this browser\'s data removes it, so keep a copy somewhere safe.',
+  'memory.risk': 'This browser refused its storage. Everything goes when this tab closes.',
+  'folder.risk': 'Written three seconds after you stop. A folder can be backed up, synced and committed.',
+  'example.label': 'Example · not kept',
+  'example.where': 'This is the example: nothing here is kept.',
+  'example.risk': 'Everything tried here goes when you leave, unless you keep it as your start.',
+  'example.remove': 'This deletes {name} from the example, for this visit only.',
 } as const

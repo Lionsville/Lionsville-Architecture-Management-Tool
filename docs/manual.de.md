@@ -21,7 +21,7 @@ verschoben zu sein — sagt sie das und öffnet stattdessen die Download-Seite.
 **Check for Updates…** im Hilfe-Menü fragt auf Wunsch nach.
 
 **Die Menüs** auf dem Desktop sind vorerst englisch. **File** hält den Ordner,
-die Arbeitsdatei, Schnappschüsse und den Verlauf; seine Einträge zum
+die gespeicherte Kopie, Schnappschüsse und den Verlauf; seine Einträge zum
 geöffneten Bereich — Save — ist ausgegraut, solange nichts geöffnet ist;
 Open… und Save a Copy of the Working File… betreffen die ganze Organisation
 und funktionieren von jedem Bildschirm aus. **Edit** hält Undo, Redo, Delete und
@@ -198,7 +198,7 @@ Unternehmenskarte oder eine Technologielandschaft.
 - **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und
   die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
   einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo
-  gespeicherte Arbeitsdatei bleibt unberührt. Die Organisation selbst kann nicht
+  gespeicherte gespeicherte Kopie bleibt unberührt. Die Organisation selbst kann nicht
   gelöscht werden: unter ihr ist alles andere abgelegt.
 
 Das Etikett rechts in der Leiste sagt, wo Ihre Arbeit aufbewahrt wird: der
@@ -207,13 +207,7 @@ Ordner, in dem Ihre Projekte als Dateien liegen, **In diesem Browser**, oder
 richtet die App auf einen anderen Ordner aus, und ein Browser ohne Ordner
 bietet stattdessen **Ordner öffnen…**.
 
-**Beispiele**, zuletzt. Eines in eine Organisation zu kopieren, die leer und
-unbenannt ist, macht das Beispiel zu *der* Organisation. Eine Organisation, die
-schon etwas ist, legt es unter einem eigenen neuen Bereich ab. Das gilt für
-alles mit einem Namen, einem Bereich darunter, einer Tafel oder Einträgen, und
-für jeden Ordner, der wie der Ordner selbst heißt. So oder so gehört die Kopie
-von diesem Moment an Ihnen, und nichts, was Sie tun, wirkt auf das Beispiel
-selbst.
+**Das Beispiel.** Eine Organisation, die noch niemand begonnen hat, öffnet sich auf einer ersten Seite: Geben Sie Ihrer einen Namen, sehen Sie sich das Beispiel an, oder machen Sie mit einer vorhandenen Datei oder einem Ordner weiter. **Beispiel öffnen** ist ein Ort, den Sie besuchen: Ein Band auf jedem Bildschirm sagt, dass Sie darin sind, Sie können alles ausprobieren, nichts wird gespeichert, und Ihre eigene Arbeit bleibt unberührt. **Das als meinen Anfang behalten** macht das Gesehene zu Ihrer Organisation (unter einem eigenen Bereich, falls Ihre inzwischen etwas geworden ist); **Beispiel verlassen** geht zurück, ohne dass sich etwas geändert hat.
 
 Einen Bereich umzubenennen gibt ihm ein neues Label und sonst nichts — wo er
 abgelegt ist, ist seine Adresse, und Umbenennen ist kein Verschieben. Einen zu
@@ -493,7 +487,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   nicht mehr vor der anderen gewarnt; wer jemanden neu hinzufügt, wird weiter
   gegen beide geprüft. Die Antwort steht im Register, außerhalb des Verlaufs
   wie der Rest davon — die zwei IDs und der Tag — und reist mit dem Register in
-  einer Arbeitsdatei, auch in einer ohne Namen. **N als nicht dieselbe Person
+  einer gespeicherten Kopie, auch in einer ohne Namen. **N als nicht dieselbe Person
   beantwortet**, unter der Liste, zeigt die Antworten, jede mit
   **Zurücknehmen**, wonach das Paar wieder eine mögliche Doppelung ist. Wird
   eine der beiden vergessen oder entfernt, entfällt die Antwort; wird eine mit
@@ -598,7 +592,7 @@ Auf dem Desktop ist das Register die Datei
 Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal
 eingegebenes `git add` lässt sie ebenfalls aus, denn ein Name in einem Commit
 ist ein Name, den nichts vergessen kann. Eine Kopie des Ordners über git
-enthält deshalb IDs und keine Namen; die Arbeitsdatei nimmt das Register mit.
+enthält deshalb IDs und keine Namen; die gespeicherte Kopie nimmt das Register mit.
 Die Antworten *nicht dieselbe Person* stehen in derselben Datei. Eine Version
 der App von davor liest die Personen und lässt die Antworten aus, und sobald
 sie das Register das nächste Mal ändert, schreibt sie die Datei ohne sie: Die
@@ -670,7 +664,7 @@ dem Zuhause der Organisation sagt, an welchem:
 - **in diesem Browser**: ein Tab ohne Ordner;
 - **nirgends**: ein Tab, in dem sich der Speicher des Browsers nicht öffnet.
 
-Die Arbeitsdatei (siehe *Speichern, Exportieren, Weitergeben*) bringt Ihre
+Die gespeicherte Kopie (siehe *Speichern, Exportieren, Weitergeben*) bringt Ihre
 ganze Organisation von jedem dieser Orte an jeden anderen.
 
 ### Ein Ordner
@@ -796,18 +790,18 @@ hier ist, geht zuerst in den Verlauf) oder **Behalten, was hier ist**.
 Die meisten Browser öffnen ihren Speicher auch dort, also sagt das Etikett **In
 diesem Browser**, und alles verschwindet, wenn das Fenster schließt. Die App
 kann nicht erkennen, dass das Fenster privat ist: speichern Sie eine
-Arbeitsdatei, um Ihre Arbeit zu behalten.
+gespeicherte Kopie, um Ihre Arbeit zu behalten.
 
 **Wo sich der Speicher des Browsers nicht öffnet**, arbeitet die App aus dem
 Arbeitsspeicher, und nichts, was Sie ändern, wird aufbewahrt. Ein Streifen auf
 jedem Bildschirm sagt das. Das Etikett auf dem Zuhause der Organisation sagt
 **Nirgends gespeichert**, in der Warnfarbe. Die Zeile unter dem Namen sagt
-*Alles hier wird noch nirgends aufbewahrt — speichern Sie eine Arbeitsdatei, um
+*Alles hier wird noch nirgends aufbewahrt — speichern Sie eine gespeicherte Kopie, um
 es zu behalten.*, und die erste Momentaufnahme sagt *Momentaufnahmen bleiben
 erhalten, solange dieser Tab offen ist, und verschwinden, wenn er geschlossen
 wird.* Arbeit, die eine
 ältere Version in diesem Browser aufbewahrt hat, wird angezeigt. Speichern Sie
-eine Arbeitsdatei, bevor Sie den Tab schließen.
+eine gespeicherte Kopie, bevor Sie den Tab schließen.
 
 Hat der Speicher des Browsers nach ein paar Sekunden noch nicht geantwortet,
 wird die Seite trotzdem gezeichnet. Ein Streifen sagt das, und Ihre Arbeit
@@ -825,8 +819,8 @@ Streifen über der Zeichenfläche fragt, welche Version gilt:
   deren Änderungen an dem, was Sie nicht berührt haben, bleiben. Nur wo das
   abgelehnt wird, schreibt es den ganzen Bereich, wie er auf Ihrem Bildschirm
   ist, über deren Version.
-- **Kopie der Arbeitsdatei speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
-  in eine Arbeitsdatei und lässt die Entscheidung für später.
+- **Kopie speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
+  in eine gespeicherte Kopie und lässt die Entscheidung für später.
 
 Nichts wird ohne Nachfrage überschrieben.
 
@@ -835,7 +829,7 @@ Nichts wird ohne Nachfrage überschrieben.
 Ist ein Teil eines Bereichs nicht lesbar, weil eine Datei davon beschädigt ist
 oder von Hand geändert wurde, öffnet sich der Bereich zum Ansehen und nicht zum
 Ändern, und eine Meldung nennt, was nicht lesbar war. Wo Sie dort schreiben
-dürfen, wo der Bereich aufbewahrt wird, bietet sie **Eine Arbeitsdatei
+dürfen, wo der Bereich aufbewahrt wird, bietet sie **Eine gespeicherte Kopie
 einbringen…** an, und **Aus dem Verlauf zurückholen…**, wo ein Verlauf geführt
 wird; in einem Ordner sagt sie auch, dass Sie die Datei reparieren und den
 Bereich erneut öffnen können.
@@ -844,7 +838,7 @@ Bereich erneut öffnen können.
   gewählten Momentaufnahme war. Was nicht lesbar war, wird zuerst aufbewahrt,
   als Eintrag im Verlauf oder neben dem Bereich beiseitegelegt, und wo das
   nicht geht, wird nichts zurückgeholt.
-- **Eine Arbeitsdatei einbringen…**, oder eine auf den Bereich zu öffnen, holt
+- **Eine gespeicherte Kopie einbringen…**, oder eine auf den Bereich zu öffnen, holt
   ihn auf dieselbe Weise aus der Datei zurück, und die Frage davor sagt das.
 
 Ein Eintrag im Verlauf, der aufbewahrt hat, was nicht lesbar war, bietet
@@ -916,7 +910,7 @@ Namen werden abgelehnt, überall in einem Ordner und innerhalb eines Bereichs in
 einem Browser; wählen Sie ein anderes Wort.
 
 **Momentaufnahmen, die die App selbst macht**, wo ein Verlauf geführt wird:
-bevor eine Arbeitsdatei ersetzt, was hier ist, bevor ein Bereich aus dem Verlauf
+bevor eine gespeicherte Kopie ersetzt, was hier ist, bevor ein Bereich aus dem Verlauf
 zurückgeholt wird, und, auf dem Desktop, bevor ein Ordner von seinem Remote
 geholt wird und bevor ein Ordner aus einer älteren Version umgewandelt wird.
 Jede ist nach dem benannt, dem sie voranging, sodass das, was da war,
@@ -930,7 +924,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 |---|---|
 | **Die Brotkrumen** | Die Organisation, jeder Bereich dazwischen, und der offene fett; jeder ist ein Weg zum Zuhause dieses Bereichs, und der Name der Organisation ist der Weg zurück zum ersten Bildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
-| **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Per Link teilen…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste, mit **Preferences…** als **Settings…** im App-Menü unter macOS |
+| **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie speichern…**, **Per Link teilen…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste, mit **Preferences…** als **Settings…** im App-Menü unter macOS |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen, und die Verschiebungen, *Von X nach Y verschoben*, und wer sie vorgenommen hat, aus dem Verlauf gelesen, also auch die von vor dem Öffnen. Sie bleibt beim Bereich, wohin er auch geht. Nur lesend: ⌘Z ist der Weg zurück |
 | **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
@@ -944,7 +938,7 @@ Warnung, die Sie bekommen, weil ein Browser ohne Nachfrage aufhört zu speichern
 Wird ein Speichern verweigert, sagt die Leiste **Nicht gespeichert — Speicher
 verweigert**, und der Editor arbeitet weiter. Wo sich der Speicher des Browsers
 nicht öffnet, sagt ein Streifen es von Anfang an. Speichern Sie in beiden Fällen
-eine Arbeitsdatei, denn sonst ist die Arbeit weg, wenn der Tab geschlossen
+eine gespeicherte Kopie, denn sonst ist die Arbeit weg, wenn der Tab geschlossen
 wird.
 Jede Meldung (gespeichert, geladen, fehlgeschlagen) erscheint in dieser unteren
 Leiste.
@@ -1166,7 +1160,7 @@ gezeichnet. Nichts zu sagen heißt, dass es niemand gesagt hat.
 und Stichwort in beiden Sprachen, in zwei Größen: klein in der Kopfzeile, groß
 als Auftakt der Karte für ein Diagramm, das aus der Entfernung gelesen wird.
 **Ein Logo hochladen** in der Auswahl fügt Ihr eigenes SVG oder PNG hinzu (bis
-200 kB). Hochgeladene Logos reisen in der Arbeitsdatei mit.
+200 kB). Hochgeladene Logos reisen in der gespeicherten Kopie mit.
 
 **Mehrere zugleich.** Wählen Sie mehrere aus, und das Panel nennt sie und sagt, was jedes Feld enthält, *Aktiv, alle 3* oder *Gemischt*. Lebenszyklus, Farbe, Symbol und Domänengruppe für Elemente, und Protokoll, Technologie, Zeitraum, Richtung, Farbe und Linienstil für Linien, je ein Rückgängig-Schritt. Bei beiden Arten steht über jedem Teil, was er ändert. **Anordnen** und **Entfernen** sind auch da.
 
@@ -3285,9 +3279,9 @@ Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
 
 Zwei Wege hinaus, für zwei Zwecke.
 
-- **Die Arbeitsdatei** (`.lvarch`) ist alles und ist das, was Sie jemandem
+- **Die gespeicherte Kopie** (`.lvarch`) ist alles und ist das, was Sie jemandem
   geben, der weiterbearbeiten wird. Sie ist Ihre **ganze Organisation** in
-  einer Datei, **mit einem Passwort versiegelt**: Sie werden beim Speichern
+  einer Datei, **mit einem Passwort**: Sie werden beim Speichern
   der Kopie danach gefragt — zweimal, denn ein verlorenes Passwort lässt sich
   nicht wiederherstellen — und wer die Datei öffnet, wird erneut gefragt.
   Ohne das Passwort ist nichts vom Inhalt lesbar. Sie enthält jeden Bereich,
@@ -3296,8 +3290,8 @@ Zwei Wege hinaus, für zwei Zwecke.
   Landschaft für sich verweist auf Anwendungen, die eine Ebene höher definiert
   sind, und eine Datei mit nur dieser Landschaft darin ginge auf dem Rechner
   eines anderen voller Namen auf, die ins Leere zeigen. Die Datei heißt nach
-  Ihrer Organisation. Arbeitsdateien aus früheren Versionen lassen sich
-  weiterhin öffnen, versiegelt oder nicht, und eine Datei mit einem einzigen
+  Ihrer Organisation. gespeicherte Kopien aus früheren Versionen lassen sich
+  weiterhin öffnen, mit oder ohne Passwort, und eine Datei mit einem einzigen
   Bereich öffnet weiterhin als dieser Bereich. Sie ist auch der Weg, auf dem
   Arbeit **zwischen Orten** wandert: eine aus dem Ordner des Desktops
   gespeicherte Datei öffnet sich in diesem Browser, oder umgekehrt, Byte für

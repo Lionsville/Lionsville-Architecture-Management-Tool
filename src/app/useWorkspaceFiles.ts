@@ -41,6 +41,9 @@ export function useWorkspaceFiles(deps: {
   onPutBack?: () => void
   /** A scope's home: where a working file whose top draws nothing is shown once it has landed here. */
   onGoHome?: ProjectFilesDeps['onNothingToDraw']
+  /** Whether a history is kept here, and how many scopes are filed under this one. */
+  keepsHistory?: () => Promise<boolean>
+  below?: () => number
   notify: Notify
   s: Translate
 }): WorkspaceFileParts {
@@ -62,6 +65,9 @@ export function useWorkspaceFiles(deps: {
     putPicture,
     documents,
     beforeReplace,
+    ...(deps.keepsHistory ? { keepsHistory: deps.keepsHistory } : {}),
+    ...(deps.seams.onCopySaved ? { onCopySaved: deps.seams.onCopySaved } : {}),
+    ...(deps.below ? { below: deps.below } : {}),
     carryOut,
     interchange,
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),

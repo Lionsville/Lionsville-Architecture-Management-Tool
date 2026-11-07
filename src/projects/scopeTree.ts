@@ -20,6 +20,7 @@
  * way — are values, because the screen says them differently from a store
  * that refused.
  */
+import type { AspectConfigEntry } from '../model/types'
 import { toDiagram } from '../model'
 import type { ElementId } from '../model'
 import { scopesWith } from '../model/serving'
@@ -181,13 +182,25 @@ export type ScopeSettings = {
   kind?: ScopeKind
   /** The one picker's value (`TypeChoice`): a unit type, a built-in kind, or nothing. */
   type?: string
+  /** Who an exported picture names where it has no author of its own; absent leaves it, empty clears it. */
+  defaultAuthor?: string
+  /** The aspects a new landscape starts with; absent leaves them. */
+  defaultAspectConfig?: AspectConfigEntry[]
 }
 
 /** What the settings dialog says about a scope, as the two steps that say it. */
 export function settingsCommands(name: string, settings: ScopeSettings): ScopeCommand[] {
   const links = normaliseLinks(settings.links ? [...settings.links] : undefined)
   return [
-    { type: 'project.settings', patch: { name, description: settings.description?.trim() || undefined } },
+    {
+      type: 'project.settings',
+      patch: {
+        name,
+        description: settings.description?.trim() || undefined,
+        ...(settings.defaultAuthor !== undefined ? { defaultAuthor: settings.defaultAuthor.trim() || undefined } : {}),
+        ...(settings.defaultAspectConfig ? { defaultAspectConfig: settings.defaultAspectConfig } : {}),
+      },
+    },
     {
       type: 'scope.describe',
       patch: {

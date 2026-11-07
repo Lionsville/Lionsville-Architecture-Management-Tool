@@ -43,6 +43,8 @@ export type HostCommand =
    */
   | { type: 'openDocument'; name: string; bytes: Uint8Array }
   /** Record the folder as it stands, under a message the app drafts. */
+  /** The picture of the view on screen. */
+  | { type: 'exportPicture' }
   | { type: 'snapshot' }
   /** Show what changed since a snapshot. */
   | { type: 'history' }

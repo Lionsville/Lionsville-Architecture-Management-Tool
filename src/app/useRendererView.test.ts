@@ -31,6 +31,7 @@ function handleWith(over: Partial<EditorHandle>): EditorHandle {
     deleteSelection: () => {},
     selectAll: () => {},
     showShortcuts: () => {},
+    exportPicture: () => {},
     ...over,
   }
 }

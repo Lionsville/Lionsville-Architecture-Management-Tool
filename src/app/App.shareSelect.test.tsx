@@ -30,7 +30,7 @@ vi.mock('../editor', async (importOriginal) => {
       onHandle?.({
         activeDiagramId: 'board', busy: false, ...(selection.id ? { selectedElementId: selection.id } : {}),
         tidy: async () => {}, routeEdges: async () => {}, capture: async () => new Blob(),
-        deleteSelection: () => {}, selectAll: () => {}, showShortcuts: () => {},
+        deleteSelection: () => {}, selectAll: () => {}, showShortcuts: () => {}, exportPicture: () => {},
       })
       return () => onHandle?.(undefined)
     }, [onHandle])

@@ -14,14 +14,10 @@
  * reason for it.
  */
 import { useEffect, useState } from 'react'
-import Button from '@mui/material/Button'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
 import type { Translate } from '../../i18n'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField } from '../../widgets/kit/Field'
 
 export type SnapshotDialogProps = {
   open: boolean
@@ -37,47 +33,31 @@ export type SnapshotDialogProps = {
    * this tab is open* are facts they should know first.
    */
   note?: string
+  /** What the snapshot is of, for the title: the scope that is open, or the home's. */
+  of?: string
   s: Translate
 }
 
-export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, s }: SnapshotDialogProps) {
+export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, of, s }: SnapshotDialogProps) {
   const [message, setMessage] = useState(draft)
 
   // The draft is worked out when the dialog opens, not when it was declared.
   useEffect(() => { if (open) setMessage(draft) }, [open, draft])
 
+  const ready = message.trim().length > 0
+  const title = of ? s('history.snapshotOf', { name: of }) : s(keeping ? 'history.snapshot' : 'history.start')
   return (
-    <FieldsDialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontSize: 16 }}>
-        {s(keeping ? 'history.snapshot' : 'history.start')}
-      </DialogTitle>
-      <DialogContent>
-        {!keeping && (
-          <DialogContentText sx={{ fontSize: 13, mb: 2 }}>
-            {note ? `${s('history.startBody')} ${note}` : s('history.startBody')}
-          </DialogContentText>
-        )}
-        <TextField
-          autoFocus
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={10}
-          label={s('history.message')}
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button
-          variant="contained"
-          disabled={message.trim().length === 0}
-          onClick={() => onTake(message.trim())}
-        >
-          {s('history.take')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open={open} size="m" title={title} onClose={onCancel} onSubmit={() => { if (ready) onTake(message.trim()) }}
+      actions={(
+        <>
+          <Button onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={!ready} data-testid="snapshot-take">{s('history.take')}</Button>
+        </>
+      )}
+    >
+      <p>{keeping ? s('history.snapshotWhy') : note ? `${s('history.startBody')} ${note}` : s('history.startBody')}</p>
+      <TextField autoFocus rows={2} label={s('history.message')} hint={s('history.messageHint')} value={message} onChange={setMessage} />
+    </Dialog>
   )
 }

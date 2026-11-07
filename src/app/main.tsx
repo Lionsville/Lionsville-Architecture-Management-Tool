@@ -52,7 +52,7 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceProblemAction, sourceRecentActivity,
+  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceYourWork, sourceProblemAction, sourceRecentActivity,
   sourceSayings, withDesktopDrawing,
 } from './composition'
 import type { RegisteredConnect } from './composition'
@@ -69,6 +69,8 @@ import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
 import type { ChooseDestination } from './workingFileFlows'
+import { keepVisit } from '../projects/examples/copy'
+import type { ExampleOffer } from '../projects/examples/catalogue'
 
 /**
  * The edge router runs on WebAssembly, and not on this thread.
@@ -324,6 +326,73 @@ function waysIn(): readonly SourceWayIn[] {
  * than the open source's: the press that opens a source happens on a screen
  * where that provider is not the source yet.
  */
+/**
+ * The example as a place: the source is swapped for the memory the example opened
+ * into, as a change of source always is, and the address says so, so a reload and
+ * an agent arrive at the same place. Leaving is the shell it was entered from,
+ * untouched, because nothing was written to it.
+ */
+let enteredFrom: { readonly shell: typeof shell; readonly sourced: boolean } | undefined
+let visiting: { readonly offer: ExampleOffer } | undefined
+
+function addressVisiting(key: string | undefined): void {
+  const search = new URLSearchParams(window.location.search)
+  if (key === undefined) search.delete('example')
+  else search.set('example', key)
+  const query = search.toString()
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
+}
+
+async function enterExample(offer: ExampleOffer): Promise<boolean> {
+  const from = { shell, sourced }
+  if (!await workFrom('example', { offer })) return false
+  enteredFrom = from
+  visiting = { offer }
+  return true
+}
+
+function visitExample(offer: ExampleOffer): void {
+  void enterExample(offer).then((entered) => {
+    if (!entered) return
+    addressVisiting(offer.key)
+    renderApp(stored, undefined)
+  }).catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not opened', cause })
+    renderApp(stored, undefined, { cause })
+  })
+}
+
+function leaveExample(notice?: 'example.kept'): void {
+  if (!enteredFrom) return
+  shell = enteredFrom.shell
+  sourced = enteredFrom.sourced
+  enteredFrom = undefined
+  visiting = undefined
+  addressVisiting(undefined)
+  window.location.hash = '#/-/home'
+  renderApp(stored, notice ? { initialProject: undefined, notice } : undefined)
+}
+
+function keepExample(): void {
+  if (!enteredFrom || !visiting) return
+  const { offer } = visiting
+  void keepVisit(shell.repositories.scopes, enteredFrom.shell.repositories, { key: offer.key, label: offer.label, description: offer.description, path: offer.path })
+    .then(() => leaveExample('example.kept'))
+    .catch((cause: unknown) => {
+      shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not kept', cause })
+      renderApp(stored, undefined, { cause })
+    })
+}
+
+function visitingPart() {
+  return visiting ? { visiting: { name: visiting.offer.label, onKeep: keepExample, onLeave: () => leaveExample() } } : {}
+}
+
+function yourWorkPart() {
+  const yourWork = sourceYourWork(shell.source)
+  return yourWork ? { yourWork: yourWork as never } : {}
+}
+
 const chromes = registeredChrome()
 const menus = registeredMenus()
 
@@ -530,6 +599,7 @@ function renderApp(
           chrome: chromes,
           waysIn: waysIn(),
           preferencesPanel: sourcePreferencesPanel(shell.source),
+          ...yourWorkPart(),
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,
@@ -560,6 +630,9 @@ function renderApp(
         }}
         agent={shell.agent}
         examples={EXAMPLE_OFFERS}
+        onVisitExample={visitExample}
+        offersFirstRun
+        {...visitingPart()}
         makeId={makeId}
       />
     </StrictMode>,
@@ -584,7 +657,11 @@ void settled()
     // worked from: it is what was asked for just now, and the preference is
     // what was asked for last time. Before the scope is read, because it
     // decides which source reads it.
+    // An address that says it is in the example is there, over whichever source
+    // would otherwise have opened: that source is what it leaves back to.
     if (!await sourceFromLocation()) await resumed()
+    const askedExample = EXAMPLE_OFFERS.find((offer) => offer.key === new URLSearchParams(window.location.search).get('example'))
+    if (askedExample) await enterExample(askedExample)
     await readRecents()
     // Where a way in is needed first, there is nothing to reopen: the only
     // place a scope could be is where the boot composed, which is exactly what

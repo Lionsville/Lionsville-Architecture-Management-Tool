@@ -65,6 +65,7 @@ import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 import { flattenScopes } from '../projects/scope'
+import { isWithinScope } from '../projects/scopePath'
 import { onlyPeopleIn } from '../model/managing'
 import type { Command } from '../model/commands'
 import type { Model } from '../model/normalised'
@@ -290,6 +291,8 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     session, putPicture: writer.put, seams: props.files, carryOut: tree.carryOut, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged,
     ...(recovering && navigation.onReload ? { onPutBack: navigation.onReload } : {}),
     onGoHome: navigation.onGoHome,
+    keepsHistory: async () => (props.snapshots.history === undefined ? false : !props.snapshots.kept || props.snapshots.kept()),
+    below: () => flattenScopes(tree.scopes).filter((scope) => scope.path !== project.path && isWithinScope(scope.path, project.path)).length,
     notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })
@@ -514,7 +517,7 @@ function useScreenParts(
     [pages, showElement.show, requests.openDocumentation, requests.leaveDocumentation],
   )
   const dialogs = useWorkspaceDialogs({
-    session, settings: props.settings, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,
+    session, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,
     scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
     ...(navigation.onOpenPeople ? { onOpenPeople: navigation.onOpenPeople } : {}), pointComment: requests.pointComment,
   })

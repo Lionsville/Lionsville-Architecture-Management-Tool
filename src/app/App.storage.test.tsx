@@ -78,15 +78,14 @@ describe('what the root’s home says you are working from', () => {
 
   it('calls it what its provider calls a source of its kind, with its name in it', () => {
     renderApp({ source: folder, provider: folderSays })
-    expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Folder · Architecture')
   })
 
-  it('says what it costs you when you hover the chip, in its provider\'s sentence', async () => {
-    renderApp({ source: folder, provider: folderSays })
-    await screen.findByTestId('organisation-first')
-    fireEvent.mouseOver(screen.getByTestId('working-source'))
-    expect((await screen.findByRole('tooltip')).textContent)
-      .toBe('Your work is kept in this folder as files. Snapshots go into its history.')
+  it('says where it is kept and what it costs you on the word\'s panel, in its provider\'s sentences', async () => {
+    renderApp({ source: folder, provider: { ...folderSays, sayings: { ...folderSays.sayings, riskKey: 'folder.risk' } } })
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    expect(await screen.findByTestId('work-risk')).toBeDefined()
+    expect(screen.getAllByText('Everything here is kept as files in the folder above.').length).toBeGreaterThan(0)
   })
 
   it('says where everything is kept on the first page, in its provider\'s sentence', async () => {
@@ -96,7 +95,7 @@ describe('what the root’s home says you are working from', () => {
 
   it('draws the source that keeps nothing in the warning colour', () => {
     renderApp({ source: { provider: 'memory', name: '', key: '', transient: true }, provider: { sayings: { labelKey: 'shell.sourceMemory' } } })
-    expect(screen.getByTestId('working-source').textContent).toBe('Not kept anywhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Not kept anywhere')
   })
 
   it('keeps it off the bar over an open scope, where the crumbs are', () => {
@@ -129,7 +128,7 @@ describe('a source a provider answers for', () => {
 
   it('is called on the home what its provider called it, with no word of ours in front', () => {
     renderApp({ source: elsewhere })
-    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
     // Not the nothing-is-kept strip: that is memory's, and this keeps things.
     expect(screen.queryByTestId('storage-notice')).toBeNull()
   })
@@ -154,7 +153,7 @@ describe('a source a provider answers for', () => {
       provider: { status: () => held, onWork: asked.onSourceWork },
     })
     const bar = await screen.findByTestId('saved-indicator')
-    expect(bar.textContent).toBe('Not saved yet')
+    expect(bar.textContent).toBe('Not saved yet · Elsewhere')
 
     held = 'dirty'
     asked.tell()
@@ -170,10 +169,8 @@ describe('a source a provider answers for', () => {
   it('describes where work is kept in the provider\'s own sentence', async () => {
     registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
     renderApp({ source: elsewhere, provider: { description: 'elsewhere.kept' } })
-    await screen.findByTestId('organisation-first')
-    fireEvent.mouseOver(screen.getByTestId('working-source'))
-    expect((await screen.findByRole('tooltip')).textContent)
-      .toBe('Your work is kept elsewhere, and elsewhere says when.')
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    expect(await screen.findByText('Your work is kept elsewhere, and elsewhere says when.')).toBeDefined()
   })
 
   /**
@@ -183,12 +180,10 @@ describe('a source a provider answers for', () => {
    */
   it('says nothing about where work is kept where the provider gave no sentence', async () => {
     renderApp({ source: elsewhere })
-    await screen.findByTestId('organisation-first')
-    fireEvent.mouseOver(screen.getByTestId('working-source'))
-    await act(() => Promise.resolve())
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    // The chip itself is still there, saying what the provider called it.
-    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    await screen.findByTestId('work-copy')
+    expect(screen.queryByTestId('work-risk')).toBeNull()
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
   })
 
   it('hides what writes when it says it only reads', async () => {
@@ -244,7 +239,7 @@ describe('the chrome a registered provider brought', () => {
     renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] } })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     // Beside the app's own screen rather than instead of it.
-    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
   })
 
   it('is handed the session of the scope that is open, and told when it closes', async () => {
@@ -340,7 +335,7 @@ describe('the chrome a registered provider brought', () => {
       provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] },
     })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
-    expect(screen.getByTestId('working-source').textContent).toBe('Architecture')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Architecture')
   })
 
   /**
@@ -444,7 +439,7 @@ describe('the chrome a registered provider brought', () => {
         },
       })
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
-      expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+      expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
     } finally {
       spy.mockRestore()
     }
@@ -478,7 +473,7 @@ describe('the chrome a registered provider brought', () => {
       },
     })
     // Nothing is open: the home is up, and the strip is the way off it.
-    expect(screen.getByTestId('working-source')).toBeDefined()
+    expect(screen.getByTestId('saved-indicator')).toBeDefined()
     fireEvent.click(screen.getByTestId('provider-open'))
     await waitFor(() => {
       expect(screen.getByTestId('crumb-current').textContent).toBe('Landscape')
@@ -580,7 +575,7 @@ describe('a way in a registered provider brought', () => {
       provider: { waysIn: [{ ...chooser, required: true }, ...waysIn], sourceNeeded: false },
     })
     expect(screen.queryByTestId('first-run')).toBeNull()
-    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
   })
 
   /** Nothing registered, nothing drawn: every build in this repository. */
@@ -688,14 +683,13 @@ describe('a refusal where the source keeps work', () => {
   }
 
   /**
-   * A store that will not read, and the act that reports it through the notice:
-   * copying the example into this scope has to read before it writes, and a read
-   * that refuses is a store refusing.
+   * A store that will not write, and the act that reports it through the notice:
+   * a new scope under a named organisation.
    */
   function refuse(over: Partial<Parameters<typeof renderApp>[0]> = {}) {
     return renderApp({
       source: elsewhere,
-      repositories: answering(heldRepositories(), { apply: () => Promise.reject(new Error('signed out')) }),
+      repositories: answering(heldRepositories([{ path: '', model: { name: 'Northline', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }]), { apply: () => Promise.reject(new Error('signed out')), create: () => Promise.reject(new Error('signed out')) }),
       examples: [{
         key: 'acme',
         path: 'acme/landscape',
@@ -715,7 +709,12 @@ describe('a refusal where the source keeps work', () => {
     })
   }
 
-  const copy = async () => fireEvent.click((await screen.findAllByTestId('copy-example'))[0]!)
+  /** Something that writes, on a store that refuses: a new scope. */
+  const copy = async () => {
+    fireEvent.click(await screen.findByTestId('new-scope'))
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Sales' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+  }
 
   it('says the provider\u2019s sentence instead of ours', async () => {
     refuse({ provider: { keepFailure: () => 'Elsewhere is not taking changes: sign in again.' } })
@@ -734,7 +733,7 @@ describe('a refusal where the source keeps work', () => {
     await copy()
     // The failure still reached the trail, which is where a failure always goes.
     await waitFor(() => expect(diagnostics.recent()
-      .some((entry) => entry.where === 'organisation.copyExample')).toBe(true))
+      .some((entry) => entry.where === 'organisation.create')).toBe(true))
     expect(screen.queryByText(/could not save the design/)).toBeNull()
   })
 
@@ -895,10 +894,10 @@ describe('the lines a registered provider puts in the menu', () => {
     })
     open()
     const lines = provided()
-    expect(lines.map((line) => line.textContent)).toEqual(['Your account…', 'Open elsewhere'])
+    expect(lines.map((line) => line.textContent?.trim())).toEqual(['Your account…', 'Open elsewhere'])
     // After everything of ours: the last of our own items comes before the first
     // of theirs, wherever in the list it happens to be.
-    const items = [...document.querySelectorAll('[data-testid="overflow-menu"] li')]
+    const items = [...document.querySelectorAll('[role="menu"] li')]
     expect(items.indexOf(lines[0])).toBeGreaterThan(items.indexOf(items.find((item) => item.textContent === 'Preferences…')!))
 
     fireEvent.click(lines[1])
@@ -966,11 +965,11 @@ describe('the lines a registered provider puts in the menu', () => {
       },
     })
     open()
-    expect(screen.getByTestId('source-entry-who').textContent).toBe('Sign in…')
+    expect(screen.getByTestId('source-entry-who').textContent?.trim()).toBe('Sign in…')
 
     signedIn = true
     act(() => tell?.())
-    expect(screen.getByTestId('source-entry-who').textContent).toBe('Anna Berg')
+    expect(screen.getByTestId('source-entry-who').textContent?.trim()).toBe('Anna Berg')
   })
 
   /**
@@ -1017,7 +1016,7 @@ describe('the lines a registered provider puts in the menu', () => {
       },
     })
     open()
-    expect(provided().map((line) => line.textContent)).toEqual(['Your account…'])
+    expect(provided().map((line) => line.textContent?.trim())).toEqual(['Your account…'])
     expect(diagnostics.recent().some((entry) => entry.where === 'sourceMenu')).toBe(true)
   })
 })
@@ -1080,9 +1079,9 @@ describe('the chip a registered provider names', () => {
   /** And stays what it was where no provider gave a chip at all. */
   it('is the name it was opened under, and a fact and not a control, with no chip', () => {
     renderApp({ source: elsewhere })
-    const chip = screen.getByTestId('working-source')
-    expect(chip.textContent).toBe('Elsewhere')
-    expect(chip.tagName).not.toBe('BUTTON')
+    // With no chip of the provider's, the word on row one says the place.
+    expect(screen.queryByTestId('working-source')).toBeNull()
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
   })
 
   const board = laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })

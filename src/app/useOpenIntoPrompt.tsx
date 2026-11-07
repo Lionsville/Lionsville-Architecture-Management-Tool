@@ -14,11 +14,22 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { OpenIntoDialog } from './dialogs/OpenIntoDialog'
-import type { LandingPrompts } from './workingFileFlows'
+import type { DestinationQuestion, LandingPrompts } from './workingFileFlows'
 
 type Asking =
-  | { kind: 'destination'; file: string; here: string; canGoElsewhere: boolean; puttingBack?: boolean }
+  | ({ kind: 'destination' } & DestinationQuestion)
   | { kind: 'replace'; name: string }
+
+/** What the question says of where a file goes, while it is that question that is up. */
+function destinationWords(asking: Asking | undefined, copyFirst: () => void) {
+  if (asking?.kind !== 'destination') return { file: '', here: '', canGoElsewhere: false }
+  const { file, here, canGoElsewhere, puttingBack, keepsHistory, below, holdsName, holds, canSaveCopyFirst } = asking
+  return {
+    file, here, canGoElsewhere, puttingBack: puttingBack === true, keepsHistory: keepsHistory === true, below: below ?? 0,
+    ...(holdsName !== undefined ? { holdsName, holds: holds ?? '' } : {}),
+    ...(canSaveCopyFirst ? { onSaveCopyFirst: copyFirst } : {}),
+  }
+}
 
 export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dialogs: React.ReactElement } {
   const [asking, setAsking] = useState<Asking | undefined>(undefined)
@@ -40,8 +51,7 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
   }, [])
 
   const prompts = useMemo<LandingPrompts>(() => ({
-    askDestination: ({ file, here, canGoElsewhere, puttingBack }) =>
-      ask<'here' | 'elsewhere' | undefined>({ kind: 'destination', file, here, canGoElsewhere, ...(puttingBack ? { puttingBack } : {}) }),
+    askDestination: (question) => ask<'here' | 'elsewhere' | 'copyFirst' | undefined>({ kind: 'destination', ...question }),
     confirmReplace: (name) => ask<boolean | undefined>({ kind: 'replace', name }).then(Boolean),
   }), [ask])
 
@@ -49,10 +59,7 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
     <>
       <OpenIntoDialog
         open={asking?.kind === 'destination'}
-        file={asking?.kind === 'destination' ? asking.file : ''}
-        here={asking?.kind === 'destination' ? asking.here : ''}
-        canGoElsewhere={asking?.kind === 'destination' ? asking.canGoElsewhere : false}
-        puttingBack={asking?.kind === 'destination' && asking.puttingBack === true}
+        {...destinationWords(asking, () => settle('copyFirst'))}
         onCancel={() => settle(undefined)}
         onHere={() => settle('here')}
         onElsewhere={() => settle('elsewhere')}
@@ -62,7 +69,7 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
         open={asking?.kind === 'replace'}
         title={s('openInto.occupiedTitle')}
         body={s('openInto.occupiedBody', { name: asking?.kind === 'replace' ? asking.name : '' })}
-        confirmLabel={s('openInto.occupiedConfirm')}
+        confirmLabel={s('openInto.occupiedConfirm', { name: asking?.kind === 'replace' ? asking.name : '' })}
         cancelLabel={s('common.cancel')}
         onCancel={() => settle(false)}
         onConfirm={() => settle(true)}

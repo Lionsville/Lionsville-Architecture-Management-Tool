@@ -214,6 +214,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'export.size': '{width} × {height} Pixel, etwa {megapixels} Megapixel.',
   'export.largeBody':
     'Das ist ein großes Bild. Das Zeichnen kann eine Weile dauern, und das Fenster reagiert so lange nicht.',
+  'export.authorHelp': 'Leer: niemand wird genannt',
+  'export.dialogTitleOf': '{name} als Bild exportieren',
   'export.confirm': 'Exportieren',
   'export.largeConfirm': 'Trotzdem exportieren',
   'toolbar.lifecycleBadges': 'Lebenszyklus-Abzeichen ein- oder ausblenden',
@@ -641,6 +643,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'diagramSettings.addCustom': 'Eigene hinzufügen',
   'diagramSettings.newColumn': 'Neue Spalte',
   'diagramSettings.reset': 'Zurück zu den fünf Standardspalten',
+  'diagramSettings.removeWord': 'Entfernen',
   'diagramSettings.remove': '{name} entfernen',
   'diagramSettings.moveUp': '{name} nach oben',
   'diagramSettings.moveDown': '{name} nach unten',
