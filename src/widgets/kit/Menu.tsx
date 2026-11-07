@@ -45,7 +45,12 @@ export type MenuAct = Act & {
   shortcut?: string
   /** A choice that is on or off, for a menu of settings. */
   checked?: boolean
+  /** What holds a refused choice, line by line, drawn under it. Each is a way to the thing to clear. */
+  holds?: readonly MenuHold[]
 }
+
+/** A line under a refused choice: what holds it, going to where it is cleared. */
+export type MenuHold = { label: string; ok?: boolean; hint?: string; onSelect?: () => void }
 
 export type MenuEntry =
   | MenuAct
@@ -157,10 +162,20 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
             }
           : {})}
       >
-        {ordered.map((entry, index) => {
-          if (isLine(entry)) return <li key={index} className="kit-menu__line" role="separator" />
-          if (isHeading(entry)) return <li key={index} className="kit-menu__heading" role="presentation">{entry.heading}</li>
-          return rowOf(entry, index)
+        {ordered.flatMap((entry, index) => {
+          if (isLine(entry)) return [<li key={index} className="kit-menu__line" role="separator" />]
+          if (isHeading(entry)) return [<li key={index} className="kit-menu__heading" role="presentation">{entry.heading}</li>]
+          const holds = isSubmenu(entry) ? undefined : entry.holds
+          return [rowOf(entry, index), ...(holds ?? []).map((hold, at) => (
+            <MenuItem
+              key={`${index}-${at}`} className="kit-menu__item kit-menu__hold" disableRipple data-ok={hold.ok || undefined}
+              aria-disabled={hold.onSelect ? undefined : true} title={hold.hint}
+              onClick={() => { if (!hold.onSelect) return; onClose(); hold.onSelect() }}
+            >
+              <span className="kit-menu__holdmark" aria-hidden="true">{hold.ok ? '✓' : '▲'}</span>
+              <span className="kit-menu__label">{hold.label}</span>
+            </MenuItem>
+          ))]
         })}
       </MuiMenu>
       {opened && isSubmenu(opened) && sub && (

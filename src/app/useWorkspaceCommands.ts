@@ -143,7 +143,7 @@ function showInitialPage(page: InitialPage, by: {
   switch (page.page) {
     case 'decisions': pages.openDecisions(page.id); break
     case 'observations': pages.openObservations(page.id, page.tab); break
-    case 'roadmap': pages.openRoadmap(); break
+    case 'roadmap': pages.openRoadmap(); pages.plans.selectOnRoadmap(page.select); break
     case 'board': case 'sheet': case 'map': case 'technology': case 'drawing': case 'chart': case 'conway':
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)

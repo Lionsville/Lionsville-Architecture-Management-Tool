@@ -61,7 +61,7 @@ const project = (m: HostModel = model()): ScopeSnapshot => ({
 
 /** The real session underneath, so what is pinned is the stack and the model. */
 function mount(initial = project()) {
-  const navigate = { toElement: vi.fn(), toDecision: vi.fn() }
+  const navigate = { toElement: vi.fn(), toDecision: vi.fn(), toBoard: vi.fn() }
   const viewing = { show: vi.fn() }
   let plans!: Plans
   let session!: ModelSession

@@ -44,14 +44,14 @@ describe('a plan made on a roadmap opened for the first time', { timeout: 20_000
 
     const newPlan = document.querySelector<HTMLElement>(controlSelector('roadmap.newPlan'))!
     fireEvent.click(newPlan)
-    const name = screen.getByRole('textbox', { name: 'What is the plan called?' })
+    const name = screen.getByRole('textbox', { name: 'Name' })
     fireEvent.change(name, { target: { value: 'Bring dock booking into the yard system' } })
-    fireEvent.keyDown(name, { key: 'Enter' })
+    fireEvent.submit(name.closest('form')!)
 
     // No waiting: the plan's page is drawn by the press itself, and has the focus the dialog gave back.
-    const page = screen.getByTestId('plan-topbar').closest<HTMLElement>('[data-place-page]')!
+    const page = document.querySelector<HTMLElement>('[data-guide="plan.page"]')!.closest<HTMLElement>('[data-place-page]')!
     expect(page.contains(document.activeElement)).toBe(true)
     expect(document.activeElement).not.toBe(newPlan)
-    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'What is the plan called?' })).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'What is the plan called?' })).toBeNull())
   })
 })

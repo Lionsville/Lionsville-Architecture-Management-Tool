@@ -217,7 +217,7 @@ export function showOn(
       // It fell through to closing every page, so `app.open` on the
       // observations of the scope already open landed on the canvas.
       case 'observations': openObservations(to.id, to.tab as ObservationTab | undefined); break
-      case 'roadmap': openRoadmap(); break
+      case 'roadmap': openRoadmap(); pages.plans.selectOnRoadmap(to.select); break
       case 'operating': pages.openOperating(to.id); break
       case 'principles': pages.openPrinciples(to.id); break
       case 'plan': openRoadmap(); if (to.id !== undefined) openPlan(to.id); break

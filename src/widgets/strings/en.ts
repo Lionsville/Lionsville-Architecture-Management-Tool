@@ -128,4 +128,5 @@ export const EN = {
   'kit.axis.runsAfter': '{name}, runs on past this window',
   'kit.axis.runsBoth': '{name}, runs on past both edges',
   'kit.axis.together': '{count} milestones',
+  'kit.axis.namesWidth': 'The width of the names',
 } as const

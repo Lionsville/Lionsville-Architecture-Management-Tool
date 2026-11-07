@@ -353,7 +353,7 @@ describe('with nothing open', () => {
 
   it('refuses a selection on a page that is not a view, and one the scope does not know', async () => {
     const { view, opened } = shell()
-    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'roadmap', select: 'wms' }), undefined, view)))
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'decisions', select: 'wms' }), undefined, view)))
       .toBe('agent.badArguments')
     expect(refusal(await handle(call('app.open', { scope: 'acme/retail', select: 'wms' }), undefined, view)))
       .toBe('agent.badArguments')

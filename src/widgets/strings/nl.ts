@@ -129,4 +129,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.axis.runsAfter': '{name}, loopt door na dit venster',
   'kit.axis.runsBoth': '{name}, loopt door voorbij beide randen',
   'kit.axis.together': '{count} mijlpalen',
+  'kit.axis.namesWidth': 'De breedte van de namen',
 }

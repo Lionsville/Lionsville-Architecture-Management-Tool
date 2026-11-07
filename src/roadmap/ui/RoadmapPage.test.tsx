@@ -7,13 +7,14 @@
  *
  * The arithmetic is pinned in `timeline.test.ts` and `checks.test.ts`; what is
  * pinned here is what the page promises: only dated things get a row, the
- * scrubber moves the board behind it, a band opens its plan, a window cuts the
- * axis to a period, and a landscape with no dates says so instead of drawing
- * an empty frame.
+ * handle on the ruler moves the board behind it, a row opens a reader beside the
+ * axis, the window is remembered per person, and a landscape with no dates says
+ * what belongs here instead of drawing an empty frame.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
+import { ViewerKeepProvider } from '../../widgets/useViewerKeep'
 import { RoadmapPage } from './RoadmapPage'
 import type { RoadmapActions, RoadmapPageProps } from './RoadmapPage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -81,203 +82,188 @@ function setup(over: Partial<RoadmapPageProps> & { mode?: 'light' | 'dark' } = {
   return { ...view, actions }
 }
 
-/**
- * The page is a fullscreen `Dialog`, which portals to `document.body` rather
- * than into the render container — so the DOM queries look at the document.
- */
-const find = (selector: string) => document.body.querySelector(selector)
 
-/** jsdom answers a hex colour in `rgb()`. */
-const rgb = (hex: string) => {
-  const n = parseInt(hex.slice(1), 16)
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`
-}
-
-describe('the roadmap, as axe reads it', () => {
-  it('finds nothing on the board, nor in the dialog a new plan is named in', async () => {
-    setup()
-    expect(await axeFindings()).toEqual([])
-    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
-    expect(screen.getByRole('textbox', { name: 'What is the plan called?' })).toBeDefined()
-    expect(await axeFindings()).toEqual([])
-  })
-})
-
-describe('the axis', () => {
-  it('gives a row to what has a date and to nothing else', () => {
-    setup()
-    expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
-    expect(find('[data-testid="track-wms-new"]')).not.toBeNull()
-    // Billing has no dates: it is on the canvas, not on the roadmap.
-    expect(find('[data-testid="track-billing"]')).toBeNull()
-  })
-
-  it('draws a span per phase the element passes through', () => {
-    setup()
-    const track = find('[data-testid="track-wms-old"]')!
-    expect([...track.querySelectorAll('[data-phase]')].map((el) => el.getAttribute('data-phase')))
-      .toEqual(['live', 'retiring', 'retired'])
-  })
-
-  it('colours a phase from the palette, so both themes answer', () => {
-    for (const mode of ['light', 'dark'] as const) {
-      cleanup()
-      const { theme } = setup({ mode })
-      const painted = (phase: string) =>
-        getComputedStyle(find(`[data-phase="${phase}"]`)!).backgroundColor
-      expect(painted('live')).toBe(rgb(theme.palette.success.main))
-      expect(painted('retiring')).toBe(rgb(theme.palette.warning.main))
-    }
-  })
-
-  it('draws a plan as a band with its milestones on it', () => {
-    setup()
-    expect(within(find('[data-testid="plan-tr-1"]') as HTMLElement).getAllByTestId('milestone'))
-      .toHaveLength(1)
-  })
-
-  it('hatches the shadow run on a replacement, read off the elements\' own dates', () => {
-    setup()
-    // The new one is live from 2027-04-01 and the old one gone on 2028-01-31.
-    expect(within(find('[data-testid="plan-tr-1"]') as HTMLElement).getByTestId('shadow-run')).toBeTruthy()
-  })
-
-  /**
-   * ADR-0012 §5: a window belongs to the row, not to the type. "The WMS
-   * supports fulfilment from March" is a stretch that is true for a while,
-   * and it wears the hatch a shadow run wears for the same reason.
-   */
-  it('hatches a relation that carries a window, whatever the relation means', () => {
-    setup({
-      model: model({
-        relations: [
-          { id: 'r1', type: 'supports', sourceId: 'wms-new', targetId: 'billing', validFrom: '2027-04-01' },
-          { id: 'r2', type: 'flow', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false },
-        ],
-      }),
-    })
-    // The section starts shut, with its count on the heading: a plan that
-    // ports every interface dates every line, and the page is a wall otherwise.
-    expect(document.querySelector('[data-testid="relation-r1"]')).toBeNull()
-    const heading = screen.getByRole('button', { name: '1 relations', expanded: false })
-    fireEvent.click(heading)
-    expect(heading.getAttribute('aria-expanded')).toBe('true')
-    // The undated flow says nothing about time and gets no row.
-    expect(document.querySelector('[data-testid="relation-r2"]')).toBeNull()
-    const row = find('[data-testid="relation-r1"]') as HTMLElement
-    const span = within(row).getByTestId('relation-window')
-    expect(span.getAttribute('data-relation-type')).toBe('supports')
-    expect(getComputedStyle(span).backgroundImage).toContain('repeating-linear-gradient')
-    // Named by its two ends, and by what the row means.
-    expect(screen.getByText('Warehouse Management (new) → Billing')).toBeTruthy()
-    expect(screen.getByText('Supports')).toBeTruthy()
-  })
-
-  /**
-   * Every row's name is a button: the keyboard reaches what a pointer on the
-   * row's box used to be the only way to — an element, a dated line (at the
-   * element it starts from, whose inspector holds its dates), and a plan.
-   */
-  it('names each row with a button that opens it: an element, a line at the element it starts from, a plan', () => {
-    const { actions } = setup({
-      model: model({ relations: [{ id: 'r1', type: 'supports', sourceId: 'wms-new', targetId: 'billing', validFrom: '2027-04-01' }] }),
-    })
-    fireEvent.click(within(screen.getByTestId('row-wms-old')).getByRole('button', { name: 'Warehouse Management' }))
-    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-old')
-    fireEvent.click(screen.getByRole('button', { name: '1 relations' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Warehouse Management (new) → Billing' }))
-    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-new')
-    fireEvent.click(screen.getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
-    expect(actions.onOpenPlan).toHaveBeenLastCalledWith('tr-1')
-  })
-
-  it('draws the initiatives from below under their scope, and opens one where it lives', () => {
-    const onOpenInitiative = vi.fn()
-    setup({
-      fromBelow: [{
-        scope: 'acme/retail', label: 'acme/retail',
-        plan: { ...PLAN, id: 'tr-r', number: 2, title: 'One warehouse system', from: '2029-01-01', to: '2029-12-31', initiative: true },
-      }],
-      onOpenInitiative,
-    })
-    const row = screen.getByTestId('initiative-acme/retail-tr-r')
-    expect(row.textContent).toContain('One warehouse system')
-    expect(row.textContent).toContain('acme/retail')
-    // The axis took the plan in: a band well past this scope's own dates is
-    // still a band and not a sliver at the edge.
-    expect(within(row).getByTestId('plan-band')).toBeTruthy()
-    fireEvent.click(within(row).getByText('acme/retail'))
-    expect(onOpenInitiative).toHaveBeenCalledWith('acme/retail', 'tr-r')
-  })
-
-  it('plots the applications an initiative below changes, under a switch, and opens them where they can be shown', () => {
-    const onOpenInitiative = vi.fn()
-    const { actions } = setup({
-      fromBelow: [{
-        scope: 'acme/retail', label: 'Retail',
-        plan: { ...PLAN, id: 'tr-r', number: 2, title: 'One warehouse system', from: '2029-01-01', to: '2029-12-31', initiative: true },
-        elements: [
-          element('wms-retail', 'Retail WMS', { lifecycleDates: { retired: '2029-06-30' } }),
-          // A stand-in this scope draws as well: same id, opened here.
-          element('billing', 'Billing', { lifecycleDates: { retiring: '2029-03-01' } }),
-        ],
-      }],
-      onOpenInitiative,
-    })
-    expect(screen.getByTestId('track-wms-retail').getAttribute('data-from-scope')).toBe('acme/retail')
-    const brought = screen.getByTestId('row-wms-retail')
-    expect(within(brought).getByText('Retail')).toBeTruthy()
-    fireEvent.click(within(brought).getByText('Retail WMS'))
-    expect(onOpenInitiative).toHaveBeenCalledWith('acme/retail', 'tr-r')
-    fireEvent.click(within(screen.getByTestId('row-billing')).getByText('Billing'))
-    expect(actions.onOpenElement).toHaveBeenCalledWith('billing')
-
-    fireEvent.click(screen.getByLabelText('Show what the initiatives below change'))
-    expect(screen.queryByTestId('track-wms-retail')).toBeNull()
-    expect(screen.getByTestId('track-wms-old')).toBeTruthy()
-  })
-
-  it('offers no switch when the initiatives below name nothing', () => {
-    setup({ fromBelow: [{ scope: 'acme/retail', label: 'Retail', plan: { ...PLAN, initiative: true } }] })
-    expect(screen.queryByLabelText('Show what the initiatives below change')).toBeNull()
-  })
-
-  it('is not empty when only the scopes below have dated plans', () => {
-    setup({
-      model: model({ elements: [], transitions: [] }),
-      fromBelow: [{ scope: 'acme/retail', label: 'Retail', plan: { ...PLAN, initiative: true } }],
-    })
-    expect(screen.queryByText('Nothing here has a date yet.')).toBeNull()
-    expect(screen.getByText('Initiatives from the scopes below')).toBeTruthy()
-  })
-
-  it('says so plainly when nothing has a date yet', () => {
-    setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
-    expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()
-  })
-
-  it('still draws where the dates disagree on an empty page, saying that they agree', () => {
-    setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
-    const box = document.querySelector<HTMLElement>('[data-guide="roadmap.findings"]')
-    expect(box).not.toBeNull()
-    expect(within(box!).getByText('Where the dates disagree')).toBeTruthy()
-    expect(within(box!).getByText('The dates agree with each other.')).toBeTruthy()
-  })
-})
-
-/**
- * The findings are the one list since 3.6.1 (`widgets/FindingsList`): grouped
- * by check and folded, an instance opening its explanation. A test that reads
- * a sentence unfolds the list first, and one that follows a finding presses
- * the action in its explanation, where it pressed the sentence or a button
- * beside it.
- */
 const findingsBox = () => document.querySelector<HTMLElement>('[data-guide="roadmap.findings"]')!
 
 /** One finding opened on its explanation, by its row's test id. */
 function opened(row: string): HTMLElement {
   return openFinding(findingsBox(), row)
 }
+
+describe('the roadmap, as axe reads it', () => {
+  it('finds nothing on the axis, in the reader, nor in the dialog a new plan is named in', async () => {
+    setup()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: /TR-0001 Replace the warehouse system/ }))
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
+    expect(await axeFindings()).toEqual([])
+  })
+})
+
+describe('the axis', () => {
+  it('gives a row to what has a date and to nothing else, plans first', () => {
+    setup()
+    expect(screen.getByTestId('row-wms-old')).toBeTruthy()
+    expect(screen.queryByTestId('row-billing')).toBeNull()
+    const rows = [screen.getByTestId('plan-tr-1'), screen.getByTestId('row-wms-old')]
+    expect(rows[0].compareDocumentPosition(rows[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('says each phase and each status on the bar, so colour is not the only signal', () => {
+    setup({ today: '2027-06-01', model: model({ transitions: [{ ...PLAN, status: 'draft' }] }) })
+    expect(within(screen.getByTestId('row-wms-old')).getByText('Retiring')).toBeTruthy()
+    expect(within(screen.getByTestId('plan-tr-1')).getByText('Draft')).toBeTruthy()
+  })
+
+  it('opens on three months back and nine ahead, and comes back where this person left it', () => {
+    setup()
+    expect(screen.getByRole('button', { name: 'Jun 2026 to May 2027' })).toBeTruthy()
+    cleanup()
+    const kept: Record<string, unknown> = { 'roadmap.axis': { start: '2029-01-01', days: 365 } }
+    renderShell(
+      <ViewerKeepProvider value={{ read: (key) => kept[key], keep: (key, value) => { kept[key] = value } }}>
+        <RoadmapPage open model={model()} today={TODAY} readOnly={false} onClose={vi.fn()} actions={{} as RoadmapActions} />
+      </ViewerKeepProvider>,
+    )
+    expect(screen.getByRole('button', { name: 'Jan 2029 to Dec 2029' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Years' }))
+    expect((kept['roadmap.axis'] as { days: number }).days).toBe(1826)
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
+  })
+
+  it('takes no kept window it cannot read', () => {
+    renderShell(
+      <ViewerKeepProvider value={{ read: () => 'nonsense', keep: () => undefined }}>
+        <RoadmapPage open model={model()} today={TODAY} readOnly={false} onClose={vi.fn()} actions={{} as RoadmapActions} />
+      </ViewerKeepProvider>,
+    )
+    expect(screen.getByRole('button', { name: 'Jun 2026 to May 2027' })).toBeTruthy()
+  })
+
+  it('names a shadow run on the band, read off the elements\' own dates', () => {
+    const elements = [
+      element('wms-old', 'Old', { lifecycleDates: { retired: '2027-06-30' } }),
+      element('wms-new', 'New', { lifecycleDates: { live: '2027-01-01' } }),
+    ]
+    setup({ today: '2027-02-01', model: model({ elements }) })
+    expect(within(screen.getByTestId('plan-tr-1')).getByRole('img', { name: /Shadow run/ })).toBeTruthy()
+  })
+
+  it('folds the dated connections, by the plan that moves them into old lines and new lines, and those in no plan', () => {
+    const relations = [
+      { type: 'flow', id: 'old', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, validUntil: '2027-06-01' },
+      { type: 'flow', id: 'new', sourceId: 'billing', targetId: 'wms-new', isBidirectional: false, validFrom: '2027-06-02' },
+      { type: 'supports', id: 'free', sourceId: 'billing', targetId: 'wms-new', isBidirectional: false, validFrom: '2027-01-01', label: 'A window of its own' },
+    ] as DesignModel['relations']
+    setup({ today: '2027-05-01', model: model({ relations }) })
+    expect(screen.queryByTestId('relation-free')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Connections with dates 3, folded/ }))
+    fireEvent.click(screen.getByRole('button', { name: /TR-0001 moves 2/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Old lines that end 1/ }))
+    expect(screen.getByTestId('relation-old')).toBeTruthy()
+    expect(screen.queryByTestId('relation-new')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /New lines that start 1/ }))
+    expect(screen.getByTestId('relation-new')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /In no plan 1/ }))
+    expect(screen.getByTestId('relation-free')).toBeTruthy()
+  })
+
+  it('finds a row once there are many, opening what it found', () => {
+    const elements = Array.from({ length: 9 }, (_none, at) => element(`app-${at}`, `App ${at}`, { lifecycleDates: { live: '2027-01-01' } }))
+    setup({ model: model({ elements, transitions: [] }) })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a row' }), { target: { value: 'app 3' } })
+    expect(screen.getByTestId('row-app-3')).toBeTruthy()
+    expect(screen.queryByTestId('row-app-4')).toBeNull()
+  })
+
+  it('can hide what is done and abandoned', () => {
+    setup({ model: model({ transitions: [PLAN, { ...PLAN, id: 'tr-2', number: 2, title: 'Over', status: 'done' }] }) })
+    expect(screen.getByTestId('plan-tr-2')).toBeTruthy()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hide done and abandoned' }))
+    expect(screen.queryByTestId('plan-tr-2')).toBeNull()
+    expect(screen.getByTestId('plan-tr-1')).toBeTruthy()
+  })
+
+  it('marks a row with a finding, and the reader says the finding', () => {
+    const relations = [{ type: 'flow', id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }] as DesignModel['relations']
+    setup({ model: model({ relations }) })
+    const row = screen.getByTestId('row-wms-old')
+    expect(within(row).getByLabelText('The dates of this row disagree')).toBeTruthy()
+    fireEvent.click(within(row).getByRole('button', { name: 'Warehouse Management' }))
+    expect(within(screen.getByRole('complementary')).getByText(/retires on/)).toBeTruthy()
+  })
+})
+
+describe('the reader', () => {
+  it('opens beside the axis on a first press, and the plan or the board on the second', () => {
+    const { actions } = setup()
+    fireEvent.click(screen.getByRole('button', { name: /TR-0001 Replace the warehouse system/ }))
+    const reader = screen.getByRole('complementary')
+    expect(within(reader).getByText('Cutover begins')).toBeTruthy()
+    expect(screen.getByTestId('row-wms-old').getAttribute('data-picked')).toBe('related')
+    expect(actions.onOpenPlan).not.toHaveBeenCalled()
+    fireEvent.click(within(reader).getByRole('button', { name: 'Open plan' }))
+    expect(actions.onOpenPlan).toHaveBeenCalledWith('tr-1')
+    fireEvent.click(within(screen.getByTestId('row-wms-new')).getByRole('button', { name: /Warehouse Management \(new\)/ }))
+    fireEvent.click(within(screen.getByRole('complementary')).getByRole('button', { name: 'Open on the board' }))
+    expect(actions.onOpenElement).toHaveBeenCalledWith('wms-new')
+  })
+
+  it('opens on the row an address asks for', () => {
+    setup({ select: 'tr-1' })
+    expect(within(screen.getByRole('complementary')).getByRole('button', { name: 'Open plan' })).toBeTruthy()
+  })
+
+  it('shows the board on a milestone\'s day', () => {
+    const { actions } = setup()
+    fireEvent.click(screen.getByRole('button', { name: /TR-0001 Replace the warehouse system/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show board on…' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Cutover begins/ }))
+    expect(actions.setAsOf).toHaveBeenCalledWith('2027-04-01')
+  })
+
+  it('draws the initiatives from below in words, opens one in the scope that keeps it, and plots what they change under a switch', () => {
+    const onOpenInitiative = vi.fn()
+    const held = element('crm', 'Customer Hub', { lifecycleDates: { live: '2027-02-01' } })
+    const below = [{ scope: 'sales', label: 'Sales', plan: { ...PLAN, id: 'p-below', number: 7, title: 'New customer hub', elements: [] }, elements: [held] }]
+    setup({ fromBelow: below, onOpenInitiative })
+    const row = screen.getByTestId('initiative-sales-p-below')
+    expect(within(row).getByText('in Sales')).toBeTruthy()
+    expect(screen.getByTestId('row-crm')).toBeTruthy()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show what the initiatives below change' }))
+    expect(screen.queryByTestId('row-crm')).toBeNull()
+    fireEvent.click(within(row).getByRole('button', { name: /TR-0007 New customer hub/ }))
+    fireEvent.click(within(screen.getByRole('complementary')).getByRole('button', { name: 'Open in Sales' }))
+    expect(onOpenInitiative).toHaveBeenCalledWith('sales', 'p-below')
+  })
+})
+
+describe('with nothing dated', () => {
+  it('says what belongs here and offers a start, and no result with nothing behind it', () => {
+    const { actions } = setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
+    expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()
+    expect(screen.queryByText('The dates agree with each other.')).toBeNull()
+    const start = screen.getAllByRole('button', { name: 'New plan' })
+    fireEvent.click(start[start.length - 1])
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'A plan' } })
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'What is the plan called?' })).getByRole('button', { name: 'New plan' }))
+    expect(actions.addTransition).toHaveBeenCalledWith('A plan')
+  })
+
+  it('is not empty when only the scopes below have dated plans', () => {
+    setup({ model: model({ elements: [], transitions: [] }), fromBelow: [{ scope: 'sales', label: 'Sales', plan: PLAN }] })
+    expect(screen.queryByText('Nothing here has a date yet.')).toBeNull()
+    expect(screen.getByTestId('initiative-sales-tr-1')).toBeTruthy()
+  })
+
+  it('still draws a finding with nothing dated', () => {
+    const elements = [element('a', 'A'), element('b', 'B'), element('a-c', 'Ledger', { kind: 'component', parentId: 'a' })]
+    const relations = [{ type: 'flow', id: 'x1', sourceId: 'a-c', targetId: 'b', isBidirectional: false }] as DesignModel['relations']
+    setup({ model: model({ elements, relations, transitions: [] }) })
+    expect(screen.getByTestId('findings-group')).toBeTruthy()
+  })
+})
 
 describe('the checks', () => {
   it('reports what the dates disagree about, says so when they agree, and always says what it cannot tell', () => {
@@ -289,7 +275,7 @@ describe('the checks', () => {
     expect(within(findingsBox()).getAllByTestId('findings-group').map((row) => row.textContent))
       .toEqual([expect.stringContaining('Retires while others still depend on it(1)')])
     unfoldFindings(findingsBox())
-    expect(screen.getByText(/Warehouse Management retires on 2028-01-31 with 1 connections still live/))
+    expect(screen.getByText(/Warehouse Management retires on 31 Jan 2028 with 1 connections still live/))
       .toBeTruthy()
     cleanup()
     setup()
@@ -373,78 +359,43 @@ describe('the checks', () => {
 })
 
 describe('a plan', () => {
-  it('is opened from its band, and written with a title for the caller to open', () => {
-    const { actions } = setup()
-    fireEvent.click(screen.getByText(/Replace the warehouse system/))
-    expect(actions.onOpenPlan).toHaveBeenCalledWith('tr-1')
-    cleanup()
-    const { actions: actions2 } = setup()
-    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Move billing' } })
-    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
-    expect(actions2.addTransition).toHaveBeenCalledWith('Move billing')
-  })
-
-  it('takes the Enter that names it for its own: closing hands the focus back to New plan, which the key must not press again', () => {
+  it('is written from its name by Enter or the button, and says what comes next', () => {
     const { actions } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
-    const name = screen.getByRole('textbox', { name: 'What is the plan called?' })
-    fireEvent.change(name, { target: { value: 'Move billing' } })
-    // false: the key's default — the press a browser makes of whatever holds the focus next — is cancelled.
-    expect(fireEvent.keyDown(name, { key: 'Enter' })).toBe(false)
+    const dialog = screen.getByRole('dialog', { name: 'What is the plan called?' })
+    expect(within(dialog).getByText(/starts as a draft/)).toBeTruthy()
+    const name = within(dialog).getByRole('textbox', { name: 'Name' })
+    fireEvent.change(name, { target: { value: 'Next plan' } })
+    fireEvent.submit(name.closest('form')!)
+    expect(actions.addTransition).toHaveBeenCalledWith('Next plan')
     expect(actions.addTransition).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('the window', () => {
-  it('opens on three calendar years either side of today', () => {
-    setup()
-    expect((screen.getByLabelText('Show from') as HTMLInputElement).value).toBe('2023-01-01')
-    expect((screen.getByLabelText('Show to') as HTMLInputElement).value).toBe('2029-12-31')
-    // And the axis is that window.
-    expect(screen.getByLabelText('Showing').getAttribute('aria-valuemax')).toBe(String(7 * 365 + 1))
-  })
-
-  it('cuts the axis to the period chosen, once both ends are set', () => {
-    setup()
-    fireEvent.change(screen.getByLabelText('Show from'), { target: { value: '2029-01-01' } })
-    // Both ends still make a window, so the old system — gone by 2028 — drops
-    // out already; but an emptied end is half a question and shows the whole axis.
-    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '' } })
-    expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
-    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '2029-12-31' } })
-    // Both applications have settled by 2029 — the old one gone, the new one
-    // live with nothing left to change — and the plan ended in 2028.
-    expect(find('[data-testid="track-wms-old"]')).toBeNull()
-    expect(find('[data-testid="track-wms-new"]')).not.toBeNull()
-    expect(find('[data-testid="plan-tr-1"]')).toBeNull()
-    expect(screen.getAllByText('2029-01-01').length).toBeGreaterThan(0)
-  })
-
-  it('goes back to the whole axis in one click', () => {
-    setup()
-    fireEvent.change(screen.getByLabelText('Show from'), { target: { value: '2029-01-01' } })
-    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '2029-12-31' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Whole axis' }))
-    expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
-  })
-})
-
-describe('the scrubber', () => {
-  it('puts the board behind the page on a day', () => {
+describe('the handle on the ruler', () => {
+  it('puts the board behind the page on a day, on the ruler\'s own scale, and writes nothing', () => {
     const { actions } = setup()
-    const slider = screen.getByLabelText('Showing') as HTMLInputElement
-    fireEvent.change(slider, { target: { value: '200' } })
-    expect(actions.setAsOf).toHaveBeenCalledTimes(1)
-    // A real day, not a day count: the command carries what the diagram stores.
-    expect(actions.setAsOf).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
+    const handle = screen.getByRole('slider', { name: 'The day the board shows' })
+    expect(handle.getAttribute('aria-valuetext')).toBe('8 Sept 2026')
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(actions.setAsOf).toHaveBeenCalledWith('2026-09-09')
+  })
+
+  it('says the day the board shows, and goes when no board is behind the page', () => {
+    setup({ asOf: '2027-01-01' })
+    expect(screen.getByText(/Board shows 1 Jan 2027/)).toBeTruthy()
+    cleanup()
+    setup({ boardBehind: false })
+    expect(screen.queryByRole('slider')).toBeNull()
   })
 })
 
 describe('read-only', () => {
-  it('offers no way to write a plan, move one or scrub', () => {
+  it('offers no way to write a plan, and still reads and looks', () => {
     setup({ readOnly: true })
     expect(screen.queryByRole('button', { name: 'New plan' })).toBeNull()
-    expect((screen.getByLabelText('Showing') as HTMLInputElement).disabled).toBe(true)
+    expect(screen.getByRole('slider', { name: 'The day the board shows' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /TR-0001 Replace the warehouse system/ }))
+    expect(within(screen.getByRole('complementary')).getByRole('button', { name: 'Open plan' })).toBeTruthy()
   })
 })

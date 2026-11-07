@@ -34,6 +34,11 @@
   line-height: var(--lh-tight);
   overflow-wrap: anywhere;
 }
+.kit-record__titlePress { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; overflow-wrap: anywhere; cursor: text; }
+.kit-record__titlePress:hover { box-shadow: 0 1px 0 var(--line-strong); }
+.kit-record__titlePress:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.kit-record__titleField { flex: 1 1 240px; min-width: 0; padding: var(--s-1); border: 1px solid var(--field-focus); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--t-xl); font-weight: var(--fw-strong); resize: none; }
+.kit-record__refused { flex-basis: 100%; color: var(--bad); font-size: var(--t-sm); }
 .kit-record__actions { display: inline-flex; gap: var(--s-1); margin-inline-start: auto; }
 .kit-record__status { margin-top: var(--s-1); color: var(--ink-2); overflow-wrap: anywhere; }
 
@@ -46,7 +51,15 @@
 }
 .kit-record__page[data-outlined] { grid-template-columns: 200px minmax(0, 1fr); }
 .kit-record__outline { position: sticky; top: var(--s-4); align-self: start; display: flex; flex-direction: column; }
+.kit-record__outlineGroup + .kit-record__outlineGroup { margin-top: var(--s-3); }
+.kit-record__outlineHead { padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-record__outlineCount { flex: none; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.kit-record__outlineItem[data-within] { padding-inline-start: var(--s-4); }
 .kit-record__outlineItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  width: 100%;
   padding: var(--s-1) var(--s-2);
   border: 0;
   border-inline-start: 2px solid var(--line);
@@ -60,7 +73,9 @@
 }
 .kit-record__outlineItem[aria-current] { border-inline-start-color: var(--accent); color: var(--ink); font-weight: var(--fw-strong); }
 .kit-record__section + .kit-record__section { margin-top: var(--s-5); }
-.kit-record__section h2 { margin: 0 0 var(--s-2); font-size: var(--t-lg); font-weight: var(--fw-strong); outline: none; }
+.kit-record__sectionHead { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-bottom: var(--s-2); }
+.kit-record__sectionAside { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-record__section h2 { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); outline: none; }
 .kit-record__sections { min-width: 0; }
 
 .kit-record__back:focus-visible,

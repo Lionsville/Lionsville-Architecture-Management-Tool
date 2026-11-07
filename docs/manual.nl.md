@@ -1722,24 +1722,54 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.
 **Roadmap** in de bovenbalk opent het landschap op een tijdas. Alleen wat een
 datum heeft krijgt een regel, dus een landschap van vierduizend applicaties met
 negen datums is een roadmap van een paar regels — de rest staat op het canvas,
-waar het thuishoort. Elke regel is een reeks gekleurde stukken: gepland, live,
-uitfaserend, weg. Een streep door elke regel markeert vandaag, en een tweede de
-dag die het bord achter de pagina toont. Relaties met een eigen venster staan onder de applicaties,
-dichtgevouwen met een aantal op de kop, omdat een plan dat elke interface
-verplaatst elke lijn een datum geeft.
+waar het thuishoort. Plannen staan bovenaan, dan applicaties, elke regel een reeks
+stukken met de fase erop: gepland, live, uitfaserend, uitgefaseerd. Verbindingen met
+een eigen periode volgen, dichtgevouwen met een aantal op de kop, per plan dat ze
+verplaatst in oude lijnen die eindigen en nieuwe lijnen die beginnen, omdat een plan
+dat elke interface verplaatst elke lijn een datum geeft. Initiatieven uit de scopes
+hieronder staan onderaan.
 
-De schuifbalk bovenaan verplaatst dat bord. Sleep hem en het canvas erachter
-volgt, zodat de tekening en de as het niet oneens kunnen zijn over welke dag
-wordt besproken. Net als de datumknop kijkt hij alleen: **Opslaan** op de balk van
-het bord bewaart een dag.
+De **liniaal** draagt de datums. Hij opent de eerste keer op drie maanden terug en
+negen vooruit, en daarna waar je hem achterliet. **Weken**, **Maanden**, **Kwartalen**
+en **Jaren** zetten de schaal, **Vandaag** komt terug en **Passend** toont alles met een
+datum; ⌘ of Ctrl met het wiel zoomt, Shift met het wiel of vegen schuift, en de twee
+datums van de periode indrukken vraagt om een eerste en een laatste dag. Een
+punthaak aan het eind van een balk zegt dat hij voorbij de periode doorloopt.
+
+Vandaag staat op de liniaal, met een streep door elke regel. De **greep** op de
+liniaal is de dag die het bord achter de pagina toont: sleep hem en het canvas volgt,
+zodat de tekening en de as het niet oneens kunnen zijn. Buiten beeld blijft de dag
+aan de rand staan waar hij voorbij ging, en indrukken haalt hem terug. Net als de
+dagknop kijkt de greep alleen: **Opslaan** op de balk van het bord bewaart een dag.
+
+Druk op een regel en rechts opent een lezer, met de as nog in beeld en wat erbij hoort
+gemarkeerd: **Plan openen**, **Bord tonen op…** of **Op het bord openen** is de tweede
+druk. Een regel waarvan de datums botsen draagt een teken, en de lezer zegt waarom.
+Vanaf een handvol regels verkort **Zoek een regel** ze; **Afgerond en afgebroken
+verbergen** laat weg wat voorbij is.
 
 ### Plannen
 
 Een **plan** is hoe een verandering van het landschap wordt vastgelegd: een titel,
 een status, het venster waarin het loopt, wie het bezit, de applicaties die het
 invoert, uitfaseert of wijzigt, de besluiten waarop het steunt, de mijlpalen, en
-een tekst in markdown. Plannen verschijnen als banden onder de applicaties op de
-as, met een teken per mijlpaal. Kies er een en hij opent rechts.
+een tekst in markdown. Plannen verschijnen als banden op de as, met hun status op de
+band, gestippeld voor een concept, en een teken per mijlpaal; mijlpalen te dicht op
+elkaar vallen samen en zeggen hoeveel. De pagina van een plan is één document met één
+scroll: de kop, een strook met mijlpalen die in beeld blijft, wat het wijzigt op één
+regel per stuk, dan de tekst, dan de borden die het wijzigt, de principes die het
+aanhaalt, de wijzigingen en de opmerkingen. Een overzicht links gaat naar elk daarvan.
+Een feit leest als woorden en een druk maakt van die ene regel een formulier. **Tekst
+bewerken** is alleen de tekst, in een eigen venster met voorbeeld, opgeslagen als één
+stap. **Interfaces** en **Eenheden** wachten tot je erom vraagt; **De rest een dag
+geven…** verplaatst elke lijn zonder dag op één dag, en een regel opent om het hele
+label te lezen en een eigen dag te zetten. Een mijlpaal buiten de periode mag, en
+zegt dat.
+
+**Borden** noemt de borden die houden wat het plan noemt. Daarvandaan openen kijkt
+alleen: de band op het bord noemt het plan en de mijlpaal, stapt tussen de mijlpalen
+en gaat terug naar het plan. Het statusmenu zegt wat een stap tegenhoudt, elke regel
+naar wat het oplost.
 
 Een plan loopt **concept → akkoord → loopt → gereed**, en kan vanuit elk daarvan
 worden gestaakt. Anders dan bij een besluit kan elke stap terug, en een afgerond

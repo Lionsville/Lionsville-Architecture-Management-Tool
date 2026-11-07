@@ -19,11 +19,12 @@
  * what a look means.
  */
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { KeyboardEvent, PointerEvent, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
 import { LOCALE } from '../../i18n/strings'
+import { SeamResizer } from '../SeamResizer'
 import { Button } from './Button'
 import { Segmented } from './Segmented'
 import { Tooltip } from './Tooltip'
@@ -57,10 +58,16 @@ export type TimeAxisProps = {
   head?: ReactNode
   /** The rows: `TimeAxisGroup` and `TimeAxisRow`. */
   children?: ReactNode
+  /** How wide the names are, with a seam that ends at the rows and crosses nothing under them. */
+  names?: { width: number; onWidth: (width: number) => void }
   'data-guide'?: string
 }
 
-export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = [], head, children, 'data-guide': guide }: TimeAxisProps) {
+const NAMES_DEFAULT = 260
+const NAMES_LEAST = 160
+const NAMES_MOST = 520
+
+export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = [], head, children, names, 'data-guide': guide }: TimeAxisProps) {
   const { t, language } = useStrings()
   const locale = LOCALE[language]
   const ruler = useRef<HTMLDivElement>(null)
@@ -149,6 +156,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
         ref={rootRef}
         className="kit-time"
         data-guide={guide}
+        style={names ? ({ '--kit-time-names': `${names.width}px` } as CSSProperties) : undefined}
       >
         <div className="kit-time__head">
           <div className="kit-time__corner">{head}</div>
@@ -180,6 +188,14 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
         </div>
         <div className="kit-time__rows">
           {children}
+          {names && (
+            <span className="kit-time__seam">
+              <SeamResizer
+                orientation="vertical" region="before" value={names.width} min={NAMES_LEAST} max={NAMES_MOST} defaultValue={NAMES_DEFAULT}
+                onChange={names.onWidth} label={t('kit.axis.namesWidth')}
+              />
+            </span>
+          )}
           <div className="kit-time__lines" aria-hidden>
             {todayInView && <span className="kit-time__line" data-line="today" style={{ left: `${todayAt * 100}%` }} />}
             {day && daySide === 'inside' && <span className="kit-time__line" data-line="day" style={{ left: `${fractionOf(view, day) * 100}%` }} />}
@@ -316,26 +332,60 @@ function DayHandle({ view, today, day, ruler, onDayChange }: {
   )
 }
 
-/** A heading over rows. Says how many, and folds when it is given how. */
-export function TimeAxisGroup({ label, count, folded, onToggle }: { label: string; count?: ReactNode; folded?: boolean; onToggle?: () => void }) {
-  const words = <>{label}{count !== undefined && <span className="kit-time__groupcount"> {count}</span>}</>
+/** A heading over rows. Says how many, folds when it is given how, and may carry one switch about what it lists. */
+export function TimeAxisGroup({ label, count, folded, onToggle, level = 0, switched, aside }: {
+  label: string
+  count?: ReactNode
+  folded?: boolean
+  onToggle?: () => void
+  /** Under another heading: 1 or 2. */
+  level?: number
+  switched?: { label: string; on: boolean; onChange: (on: boolean) => void }
+  /** A word at the end of the names: *from 2 Nov 2026*. */
+  aside?: ReactNode
+}) {
+  const words = <>{label}{count !== undefined && <>{' '}<span className="kit-time__groupcount">{count}</span></>}</>
   return (
-    <div className="kit-time__group">
+    <div className="kit-time__group" data-level={level || undefined}>
       <div className="kit-time__groupname">
         {onToggle
           ? <button type="button" className="kit-time__groupfold" aria-expanded={!folded} onClick={onToggle}>{words}<span className="kit-time__groupcaret" data-folded={folded || undefined} aria-hidden>▸</span></button>
           : words}
+        {aside && <span className="kit-time__aside">{aside}</span>}
       </div>
+      {switched && (
+        <label className="kit-time__groupswitch">
+          <input type="checkbox" checked={switched.on} onChange={(event) => switched.onChange(event.target.checked)} />
+          {switched.label}
+        </label>
+      )}
     </div>
   )
 }
 
-/** One thing with dates: its name, a word beside it, and its lane of bars and milestones. */
-export function TimeAxisRow({ label, aside, children }: { label: ReactNode; aside?: ReactNode; children?: ReactNode }) {
+/**
+ * One thing with dates: its name, a word beside it, and its lane of bars and
+ * milestones. A name given `onOpen` is a button the keyboard reaches, in the ink
+ * of the text around it, so a column of names still reads as one.
+ */
+export function TimeAxisRow({ label, aside, children, onOpen, picked, level = 0, title, 'data-testid': testId }: {
+  label: ReactNode
+  aside?: ReactNode
+  children?: ReactNode
+  onOpen?: () => void
+  /** The row the reader beside the axis is about, or one that belongs to it. */
+  picked?: 'self' | 'related'
+  level?: number
+  /** The whole name, where the row cuts it. */
+  title?: string
+  'data-testid'?: string
+}) {
   return (
-    <div className="kit-time__row">
+    <div className="kit-time__row" data-picked={picked} data-level={level || undefined} data-testid={testId}>
       <div className="kit-time__name">
-        <span className="kit-time__label">{label}</span>
+        {onOpen
+          ? <button type="button" className="kit-time__label kit-time__labelpress" title={title} aria-current={picked === 'self' || undefined} onClick={onOpen}>{label}</button>
+          : <span className="kit-time__label" title={title}>{label}</span>}
         {aside && <span className="kit-time__aside">{aside}</span>}
       </div>
       <div className="kit-time__lane">{children}</div>
@@ -344,14 +394,16 @@ export function TimeAxisRow({ label, aside, children }: { label: ReactNode; asid
 }
 
 /** The outline by status, or the fill by lifecycle. Each also says its name, so colour is not the only signal. */
-export type TimeBarTone = 'draft' | 'agreed' | 'running' | 'done' | 'planned' | 'live' | 'retiring' | 'gone'
+export type TimeBarTone = 'draft' | 'agreed' | 'running' | 'done' | 'planned' | 'live' | 'retiring' | 'gone' | 'shadow'
 
-export function TimeBar({ from, to, name, tone, onOpen, 'data-guide': guide }: {
+export function TimeBar({ from, to, name, tone, onOpen, says, 'data-guide': guide }: {
   from?: string
   to?: string
   name: string
   tone: TimeBarTone
   onOpen?: () => void
+  /** What a pointer resting on it reads, where the name is one word of more. */
+  says?: string
   'data-guide'?: string
 }) {
   const { t } = useStrings()
@@ -369,7 +421,7 @@ export function TimeBar({ from, to, name, tone, onOpen, 'data-guide': guide }: {
       {bar.runsAfter && <span className="kit-time__runs" data-end aria-hidden>›</span>}
     </>
   )
-  const shared = { className: 'kit-time__bar', 'data-tone': tone, 'data-guide': guide, title: said, style }
+  const shared = { className: 'kit-time__bar', 'data-tone': tone, 'data-guide': guide, title: says ?? said, style }
   return onOpen
     ? <button type="button" {...shared} aria-label={said} onClick={onOpen}>{inside}</button>
     : <div {...shared} role="img" aria-label={said}>{inside}</div>

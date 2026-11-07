@@ -94,13 +94,19 @@
 .kit-time__line[data-pinned='after'] { right: 0; }
 .kit-time__line[data-pinned='before'] { left: 1px; }
 
+.kit-time__seam { position: absolute; top: 0; bottom: 0; left: var(--kit-time-names); display: flex; z-index: 1; margin-left: -1px; }
+
 .kit-time__group {
   display: grid;
   grid-template-columns: var(--kit-time-names) minmax(0, 1fr);
   min-height: var(--row-h);
   background: var(--surface-2);
 }
-.kit-time__groupname { padding: var(--s-1) var(--s-3); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-time__groupname { display: flex; justify-content: space-between; gap: var(--s-2); padding: var(--s-1) var(--s-3); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-time__group[data-level='1'] .kit-time__groupname { padding-inline-start: var(--s-5); font-weight: var(--fw-regular); }
+.kit-time__group[data-level='2'] .kit-time__groupname { padding-inline-start: var(--s-6); font-weight: var(--fw-regular); }
+.kit-time__groupswitch { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-3); color: var(--ink-2); font-size: var(--t-sm); cursor: pointer; }
+.kit-time__groupswitch input { margin: 0; accent-color: var(--accent); }
 .kit-time__groupcount { font-weight: var(--fw-regular); }
 .kit-time__groupfold { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .kit-time__groupfold:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
@@ -108,6 +114,11 @@
 .kit-time__groupcaret[data-folded] { transform: none; }
 
 .kit-time__row { display: grid; grid-template-columns: var(--kit-time-names) minmax(0, 1fr); min-height: var(--row-h); }
+.kit-time__row[data-picked='self'] { background: var(--accent-soft); }
+.kit-time__row[data-picked='self'] .kit-time__label { font-weight: var(--fw-strong); }
+.kit-time__row[data-picked='related'] { background: var(--surface-2); }
+.kit-time__row[data-level='1'] .kit-time__name { padding-inline-start: var(--s-5); }
+.kit-time__row[data-level='2'] .kit-time__name { padding-inline-start: var(--s-6); }
 .kit-time__name {
   display: flex;
   align-items: center;
@@ -118,6 +129,9 @@
   border-right: 1px solid var(--line-strong);
 }
 .kit-time__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-time__labelpress { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.kit-time__labelpress:hover { text-decoration: underline; }
+.kit-time__labelpress:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-time__aside { flex: none; color: var(--ink-3); font-size: var(--t-sm); }
 .kit-time__lane { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; min-width: 0; padding-block: 2px; overflow: hidden; }
 
@@ -151,6 +165,16 @@ button.kit-time__bar:focus-visible { outline: var(--focus-ring-width) solid var(
 .kit-time__bar[data-tone='live'] { --kit-bar-edge: var(--life-live); --kit-bar-fill: var(--life-live-soft); }
 .kit-time__bar[data-tone='retiring'] { --kit-bar-edge: var(--life-retiring); --kit-bar-fill: var(--life-retiring-soft); }
 .kit-time__bar[data-tone='gone'] { --kit-bar-edge: var(--life-gone); --kit-bar-fill: var(--life-gone-soft); }
+
+.kit-time__bar[data-tone='shadow'] {
+  --kit-bar-edge: var(--accent);
+  --kit-bar-fill: repeating-linear-gradient(135deg, var(--accent-soft) 0 3px, transparent 3px 7px);
+  height: 8px;
+  margin-top: 12px;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0;
+}
 
 .kit-time__milestones { grid-row: 2; grid-column: 1; position: relative; height: 16px; }
 .kit-time__milestone {

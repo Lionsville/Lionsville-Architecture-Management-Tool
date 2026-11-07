@@ -216,7 +216,8 @@ export function mergedMilestones<T extends { day: string }>(view: AxisView, widt
   for (const item of inside) {
     const left = (fractionOf(view, item.day) + 0.5 / view.days)
     const last = clusters[clusters.length - 1]
-    if (last && (left - last.left) * width < MERGE_WITHIN_PIXELS) last.items.push(item)
+    // Not measured yet, nothing can be said to overlap.
+    if (last && width > 0 && (left - last.left) * width < MERGE_WITHIN_PIXELS) last.items.push(item)
     else clusters.push({ left, day: item.day, items: [item] })
   }
   return clusters

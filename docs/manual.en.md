@@ -1581,23 +1581,51 @@ field now, so the roadmap's checks can name a person.
 **Roadmap** in the top bar opens the landscape on a time axis. Only what has a
 date gets a row, so a landscape of four thousand applications with nine dates in
 it is a roadmap of a few lines — the rest is on the canvas, where it belongs.
-Each row is a run of coloured stretches: planned, live, retiring, gone. A line
-down every row marks today, and a second one marks the day the board behind the
-page is showing. Relations with a window of their own are listed under the
-applications, folded shut with a count on the heading, because a plan that
-moves every interface dates every line.
+Plans come first, then applications, each row a run of stretches with its phase
+named on it: planned, live, retiring, retired. Connections with a window of their
+own come after those, folded shut with a count on the heading, by the plan that
+moves them into old lines that end and new lines that start, because a plan that
+moves every interface dates every line. Initiatives from the scopes below come last.
 
-The slider along the top moves that board. Drag it and the canvas behind follows,
-so the picture and the axis cannot disagree about which day is under discussion.
-Like the day control, it only looks, and the band says so: **Make this the view’s day** there keeps a day.
+The **ruler** carries the dates. It opens the first time on three months back and
+nine ahead, and after that where you left it. **Weeks**, **Months**, **Quarters**
+and **Years** set the scale, **Today** comes back and **Fit** shows everything with
+a date; ⌘ or Ctrl and the wheel zooms, Shift and the wheel or a swipe scrolls, and
+pressing the window's two dates asks for a first and a last day. A chevron at a
+bar's end says it runs on past the window.
+
+Today is labelled on the ruler, with its line down every row. The **handle** on the
+ruler is the day the board behind the page shows: drag it and the canvas follows,
+so the picture and the axis cannot disagree. Out of view the day stays pinned to the
+edge it went past, and pressing it brings it back. Like the Day control, the
+handle only looks, and the band says so: **Make this the view’s day** there keeps a day.
+
+Press a row and a reader opens on the right with the axis still in view and what
+belongs to the row picked out: **Open plan**, **Show board on…** or **Open on the
+board** is the second press. A row whose dates disagree carries a mark, and the
+reader says why. From a handful of rows on, **Find a row** narrows them; **Hide done
+and abandoned** leaves out what is over.
 
 ### Plans
 
 A **plan** is how a change to the landscape gets written down: a title, a status,
 the window it runs over, who owns it, the applications it introduces, retires or
 changes, the decisions it rests on, its milestones, and a body in markdown. Plans
-appear as bands under the applications on the axis, with a mark per milestone.
-Pick one and it opens on the right.
+appear as bands on the axis, with their status on the band, dashed for a draft, and
+a mark per milestone; milestones too close to tell apart merge and say how many.
+A plan's page is one document with one scroll: its head, a strip of its milestones
+that stays in view, what it changes one line each, then its text, then the boards it
+changes, the principles it cites, its changes and its comments. An outline on the left
+goes to any of them. A fact reads as words and a press makes that one row a form.
+**Edit text** is the text alone, in a window of its own with its preview, saved as one
+step. **Interfaces** and **Units** wait to be asked for; **Give the rest a day…**
+moves every line with no day on one day, and a row opens to read its whole label and
+set its own day. A milestone outside the window is allowed, and says so.
+
+**Boards** lists the boards that hold what the plan names. Opening one from there
+only looks: the band on the board names the plan and the milestone, steps between
+its milestones, and goes back to the plan. The status menu says what holds a move,
+each line going to what clears it.
 
 A plan runs **draft → agreed → running → done**, and can be abandoned from any of
 those. Unlike a decision record, every step can be taken back and a finished plan
@@ -1607,7 +1635,8 @@ the plan said last month is in the folder's history.
 **Move by…** shifts a plan by a number of days — its window, every milestone, the
 day of every unit it moves, and the lifecycle dates on the applications it
 introduces and retires — in a single step, because a plan slipping is one thing
-that happened. A plan that reorganises units says what that does to the people
+that happened. It says what will move before it does; days already set on interfaces
+stay on theirs. A plan that reorganises units says what that does to the people
 in them (see *Change over time*).
 
 Each plan is one markdown file in `transitions/` in the scope's folder, numbered
@@ -1615,11 +1644,11 @@ Each plan is one markdown file in `transitions/` in the scope's folder, numbered
 
 **Initiatives.** A plan lives in the scope that writes it, and a domain's
 roadmap is the domain's. When a plan is the organisation's business as well —
-a migration the whole company follows — switch on **Initiative** on its page.
-It then appears on the roadmap of every scope above, under *Initiatives from
-the scopes below*, with the scope it belongs to on a chip; it is read there
-and edited where it lives, and the chip opens it there. The organisation
-screen's roadmap card counts them. The switch is not offered at the
+a migration the whole company follows — choose **Follow on the roadmaps above**
+under ⋯ on its page. It then appears on the roadmap of every scope above, under
+*Initiatives from the scopes below*, saying which scope it belongs to; it is read
+there and edited where it lives, and its reader opens it there. The organisation
+screen's roadmap card counts them. The choice is not offered at the
 organisation itself, which has no roadmap above it.
 
 ### The business case

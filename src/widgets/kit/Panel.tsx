@@ -16,10 +16,10 @@
  * A name is pressed to edit only where `onRename` is handed in, so a reader sees
  * the same layout without the affordance.
  */
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
+import { PressName } from './PressName'
 import { Tabs } from './Tabs'
 import type { TabItem } from './Tabs'
 import './Panel.css'
@@ -58,62 +58,11 @@ export type PanelProps = {
 }
 
 function PanelName({ name, onRename }: { readonly name: string; readonly onRename?: PanelProps['onRename'] }) {
-  const { t } = useStrings()
-  const [typed, setTyped] = useState<string | null>(null)
-  const [refused, setRefused] = useState<string | null>(null)
-  const field = useRef<HTMLTextAreaElement>(null)
-  const pressed = useRef<HTMLButtonElement>(null)
-  const editing = typed !== null
-  const wasEditing = useRef(false)
-
-  useEffect(() => {
-    if (editing && !wasEditing.current) field.current?.select()
-    if (!editing && wasEditing.current) pressed.current?.focus()
-    wasEditing.current = editing
-  }, [editing])
-
-  // Another selection is another name, and whatever was being typed was not about it.
-  useEffect(() => {
-    setTyped(null)
-    setRefused(null)
-  }, [name])
-
-  if (!onRename) return <h2 className="kit-panel__name">{name}</h2>
-  const commit = () => {
-    if (typed === null) return
-    const answer = typed.trim() && typed !== name ? onRename(typed.trim()) : undefined
-    if (typeof answer === 'string') {
-      setRefused(answer)
-      return
-    }
-    setRefused(null)
-    setTyped(null)
-  }
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      commit()
-    } else if (event.key === 'Escape') {
-      event.stopPropagation()
-      setRefused(null)
-      setTyped(null)
-    }
-  }
-  if (!editing) {
-    return (
-      <h2 className="kit-panel__name">
-        <button type="button" ref={pressed} className="kit-panel__namePress" aria-label={`${t('kit.panel.rename')}: ${name}`} onClick={() => setTyped(name)}>{name}</button>
-      </h2>
-    )
-  }
   return (
-    <>
-      <textarea
-        ref={field} className="kit-panel__nameField" aria-label={t('kit.panel.rename')} rows={Math.max(1, Math.ceil(typed.length / 28))}
-        aria-invalid={refused !== null} value={typed} onChange={(event) => setTyped(event.target.value)} onKeyDown={onKeyDown} onBlur={commit}
-      />
-      {refused && <div className="kit-panel__refused" role="alert">{refused}</div>}
-    </>
+    <PressName
+      name={name} onRename={onRename} heading="h2"
+      classes={{ heading: 'kit-panel__name', press: 'kit-panel__namePress', field: 'kit-panel__nameField', refused: 'kit-panel__refused' }}
+    />
   )
 }
 

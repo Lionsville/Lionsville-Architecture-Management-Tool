@@ -44,6 +44,8 @@ and behaves is said here, once.
 | `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas |
 | `Card.tsx`, `Zone.tsx`, `Line.tsx` | Card; Zone and boundary; Line and label. Each holds its size on screen through `--canvas-zoom` |
 | `TimeAxis.tsx`, `timeScale.ts` | the ruler, its rows, bars and milestones; the sums, with the window as plain data |
+| `TimeStrip.tsx` | one record's own time, under its head: its milestones named and dated, today marked |
+| `PressName.tsx` | a record's name: a heading that a press makes a field, where it may be written |
 
 What a control always says is in `widgets/strings/`, under `kit.*`.
 

@@ -44,6 +44,8 @@ export function useWorkspacePages(deps: {
   onGoHome: (path: ScopePath) => void
   /** The element whose documentation page is up over the board, where one is (`useWorkspaceRequests`). */
   documentationShown?: string | undefined
+  /** The tab menu's *Duplicate as of…*, which a plan offers with its day. */
+  duplicateBoard?: ((diagramId: string, day: string) => void) | undefined
 }) {
   const { session, scope, makeId, s, viewing, focusElement, maps, landscapes, onGoHome, documentationShown } = deps
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
@@ -57,7 +59,9 @@ export function useWorkspacePages(deps: {
   const { showDecision } = records
   const plans = usePlans({
     session, makeId, s, viewing,
-    navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
+    navigate: useMemo(() => ({
+      toElement: focusElement, toDecision: showDecision, toBoard: session.setActiveDiagramId, ...(deps.duplicateBoard ? { duplicateBoard: deps.duplicateBoard } : {}),
+    }), [focusElement, showDecision, session.setActiveDiagramId, deps.duplicateBoard]),
   })
   const drawings = useDrawing({ session, makeId, s })
   const unitViews = useUnitViews({ session, makeId, s })

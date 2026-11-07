@@ -487,6 +487,7 @@ function useScreenParts(
   const pages = useWorkspacePages({
     session, scope: project.path, makeId, s, viewing, focusElement: requests.focusElement,
     maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome, documentationShown: requests.documentationShown,
+    duplicateBoard: base.diagrams.onDuplicateDiagram,
   })
   useWorkspaceAgentView({
     session, scope: project.path, indexRef: base.indexRef, rowsElsewhereRef: tree.readings.rowsElsewhereRef,

@@ -35,7 +35,7 @@ import type { RoadmapActions } from './RoadmapPage'
 /** The scope the dates were checked in, as the marks handed in are all its own. */
 const HERE = ''
 
-export function RoadmapFindings({ problems, marks, relations, readOnly, actions, remember }: {
+export function RoadmapFindings({ problems, marks, relations, readOnly, actions, remember, saysNone = true }: {
   problems: readonly Finding[]
   /** The open scope's marks as intended: a finding marked is not among the ones to look at. */
   marks?: readonly CheckMark[] | undefined
@@ -44,17 +44,19 @@ export function RoadmapFindings({ problems, marks, relations, readOnly, actions,
   actions: RoadmapActions
   /** Where the session keeps the list's folds: the open scope's roadmap. */
   remember?: string | undefined
+  /** *The dates agree* is an answer only where there are dates: with none it says nothing. */
+  saysNone?: boolean
 }) {
-  const { t } = useStrings()
+  const { t, language } = useStrings()
   const split = useMemo(() => splitMarked(problems, (marks ?? []).map((mark) => ({ scope: HERE, mark })), { scope: HERE }), [problems, marks])
   const groups = useMemo(() => groupByCheck(split.shown, (problem) => DATE_CHECK[problem.kind]), [split])
   const { markIntended, takeBackMark } = actions
   // Mark as intended… under a review's or a note's explanation, where the page may write.
   const more = (problem: Finding) => (!readOnly && markIntended && isMarkable(DATE_CHECK[problem.kind])
-    ? <MarkAsIntended words={CHECK_MARK_WORDS} sentence={findingWords(problem, t)} onMark={(reason) => markIntended(problem, reason)} />
+    ? <MarkAsIntended words={CHECK_MARK_WORDS} sentence={findingWords(problem, t, language)} onMark={(reason) => markIntended(problem, reason)} />
     : null)
   const accepted = split.marked.map(({ finding, mark }) => ({
-    key: checkMarkId(mark), sentence: findingWords(finding, t), reason: mark.reason, on: mark.on,
+    key: checkMarkId(mark), sentence: findingWords(finding, t, language), reason: mark.reason, on: mark.on,
     onTakeBack: !readOnly && takeBackMark ? () => takeBackMark(checkMarkId(mark)) : undefined,
   }))
   const doing = useMemo((): FindingActions<Finding, CheckAction> => {
@@ -73,13 +75,14 @@ export function RoadmapFindings({ problems, marks, relations, readOnly, actions,
       acceptInterface: (problem) => (problem.kind === 'impliedInterface' && !readOnly ? () => actions.acceptInterface(problem.id) : undefined),
     }
   }, [relations, readOnly, actions])
+  if (!saysNone && problems.length === 0) return null
   return (
-    <Box sx={{ mt: 3, maxWidth: 760 }} data-guide="roadmap.findings">
+    <Box sx={{ mt: 3, mx: 2, mb: 2, maxWidth: 760 }} data-guide="roadmap.findings">
       <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
         {t('check.title')}
       </Typography>
       <FindingsList
-        groups={groups} words={CHECK_LIST_WORDS} sentence={(problem) => findingWords(problem, t)} keyOf={(problem) => `${problem.kind}-${problem.id}`}
+        groups={groups} words={CHECK_LIST_WORDS} sentence={(problem) => findingWords(problem, t, language)} keyOf={(problem) => `${problem.kind}-${problem.id}`}
         actions={doing} attributesOf={(problem) => ({ 'data-testid': `finding-${problem.kind}-${problem.id}` })} more={more}
         accepted={<AcceptedFindings items={accepted} words={CHECK_MARK_WORDS} remember={remember} />}
         empty={<Typography variant="body2" color="text.secondary">{t('check.none')}</Typography>}

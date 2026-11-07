@@ -4,82 +4,48 @@
 /**
  * The landscape on a time axis, and the plans over it (ADR-0009).
  *
- * The axis, the plans as bands over it, and the findings under both. A plan
- * is opened from its band and read on a page of its own (`PlanPage`,
- * ADR-0010); this page only draws it. A window a person chooses cuts the axis
- * to a period and keeps only what is there or changes inside it — a view
- * state, not a model one, because which years you are looking at is not a
- * fact about the landscape.
+ * One ruler carries the dates, the scale and the day the board shows, so a slider
+ * and the rows can no longer disagree (`widgets/kit/TimeAxis`). It opens on three
+ * months back and nine ahead the first time, and after that where this person left
+ * it: which years somebody is looking at is theirs, and no fact about the landscape.
  *
- * The scrubber is the join between this page and the canvas behind it: dragging
- * it moves the day the open board is being looked at, so the board and the axis
- * cannot disagree about which day is being discussed. It is the same look the
- * board's date control makes — one mechanism still, as ADR-0009 wanted — and,
- * like that one, a view state and never a write (ADR-0027).
+ * Dragging the handle moves the day the open board is looked at: the same look the
+ * board's Day control makes, and like that one a view state and never a write
+ * (ADR-0027). A press on a row opens a reader beside the axis; opening the plan or
+ * the board is the second press.
  *
- * A fullscreen dialog, and it takes `windowChrome` for the same reason
- * `DocumentationPage` and `AdrPage` do — Electron computes drag regions from
- * geometry, so the shell toolbar's drag strip stays live underneath and would
- * swallow every click on a control placed there.
+ * A page in the frame's main column (ADR-0033).
  */
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import Link from '@mui/material/Link'
-import IconButton from '@mui/material/IconButton'
-import Slider from '@mui/material/Slider'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import { useTheme } from '@mui/material/styles'
-import type { Theme } from '@mui/material/styles'
-import Chip from '@mui/material/Chip'
-import Switch from '@mui/material/Switch'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
-import type { DesignElement, DesignModel, ElementId, Lifecycle, Transition } from '../../model'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { isDay, transitionDays } from '../../model'
+import type { DesignElement, DesignModel, ElementId, Transition } from '../../model'
 import { useStrings } from '../../i18n'
-import type { StringKey } from '../../i18n'
-import { BackIcon, CaretIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { PageClose } from '../../widgets/PageClose'
-import { SeamResizer } from '../../widgets/SeamResizer'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField, TextInput } from '../../widgets/kit/Field'
+import { PageState } from '../../widgets/kit/PageState'
+import { TimeAxis } from '../../widgets/kit/TimeAxis'
+import { dayNumber, openingView } from '../../widgets/kit/timeScale'
+import type { AxisView } from '../../widgets/kit/timeScale'
 import { useSeamWidth } from '../../widgets/useSeamWidth'
+import { usePlaceTab } from '../../widgets/placeTab'
+import { useViewerKeep } from '../../widgets/useViewerKeep'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
+import { CHECK_CATALOGUE, DATE_CHECK } from '../../model/checkCatalogue'
 import type { CheckMark } from '../../model/checkMarks'
 import type { PlatformTree } from '../../model/hosting'
+import { findingTarget } from '../findingTarget'
+import { connectionGroups } from '../planReading'
+import { roadmapOf } from '../timeline'
 import { RoadmapFindings } from './RoadmapFindings'
-import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
-import type { RelationTrack } from '../timeline'
-
-/**
- * The colour each phase is drawn in: the same semantic mapping the canvas's
- * tokens make (planned → info, live → success, retiring → warning, retired →
- * disabled), taken from the palette so both themes answer. Said here rather
- * than imported, because this module may not know how the canvas draws.
- */
-function phaseColours(theme: Theme): Record<Lifecycle, string> {
-  return {
-    planned: theme.palette.info.main,
-    live: theme.palette.success.main,
-    retiring: theme.palette.warning.main,
-    retired: theme.palette.text.disabled,
-  }
-}
-
-/**
- * Where the axis opens: three calendar years either side of this one, whole
- * years, so what is being planned is in view and what was retired a decade ago
- * is not — and "Whole axis" is one click for when it should be.
- */
-export function defaultWindow(today: string): { from: string; to: string } {
-  const year = Number(today.slice(0, 4))
-  return { from: `${year - 3}-01-01`, to: `${year + 3}-12-31` }
-}
+import { ConnectionReader, ElementReader, InitiativeReader, PlanReader } from './RoadmapReader'
+import { ApplicationRows, ConnectionRows, InitiativeRows, PlanRows, initiativeId } from './RoadmapRows'
+import type { RowsContext } from './RoadmapRows'
+import './Roadmap.css'
 
 export type RoadmapActions = {
   /** Write a plan. The caller mints the id and the number, and opens it. */
@@ -90,6 +56,8 @@ export type RoadmapActions = {
   setAsOf(day: string | undefined): void
   /** Show an element on the canvas. */
   onOpenElement(id: ElementId): void
+  /** A plan in the scope that keeps it; absent, a reader offers no way there. */
+  onOpenElsewhere?(scope: string, planId: string): void
   /**
    * *Accept* an interface the container lines imply (ADR-0013): write the
    * application line and land every one of them on it, as one step. Named by
@@ -134,281 +102,168 @@ export type RoadmapPageProps = {
   today: string
   /** The platform tree where this scope holds stand-ins (ADR-0014 §2.7), for the retiring-platform finding. */
   platformTree?: PlatformTree
-  /** The day the open board is showing, so the scrubber starts where it is. */
+  /** The day the open board is showing. Absent with no look on, and the handle is on today. */
   asOf?: string
+  /** Whether a board is open behind the page for the handle to move. */
+  boardBehind?: boolean
   readOnly: boolean
   actions: RoadmapActions
   /** Where the session keeps what its list of findings has unfolded: the open scope's roadmap. */
   remember?: string
   /** The scope's findings marked as intended (`model/checkMarks`), which its list of findings leaves out. */
   marks?: readonly CheckMark[]
+  /** The row the reader opens on, said by the address. */
+  select?: string
   onClose(): void
   windowChrome?: WindowChrome
 }
 
+/** Only a view that could be one: what preferences hand back may be from anywhere. */
+function asView(held: unknown): AxisView | undefined {
+  const view = held as Partial<AxisView> | null | undefined
+  return view && typeof view.start === 'string' && isDay(view.start) && typeof view.days === 'number' && view.days > 0
+    ? { start: view.start, days: view.days } : undefined
+}
+
+/** From this many rows, the corner above the names is better spent on Find than on how the ruler works. */
+const FIND_FROM_ROWS = 8
+
 export function RoadmapPage(props: RoadmapPageProps) {
   const { model, today, readOnly, actions } = props
   const { t } = useStrings()
-  const theme = useTheme()
-  const phaseColour = phaseColours(theme)
   const [newTitle, setNewTitle] = useState<string | null>(null)
-  const names = useNamesSeam()
-  // The period a person chose to look at. Both ends or neither: one end alone
-  // is half a question, and the natural axis answers it until the other is set.
-  const [window_, setWindow] = useState<{ from: string; to: string }>(() => defaultWindow(today))
+  const [names, setNames] = useSeamWidth('roadmap.labels', 260)
+  const [view, setView] = useViewerKeep<AxisView>('roadmap.axis', asView, () => openingView(today))
+  const [tab] = usePlaceTab('plans')
+  const findingsAt = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (tab === 'findings') findingsAt.current?.scrollIntoView?.({ block: 'start' })
+  }, [tab])
 
   const below = props.fromBelow ?? []
-  // Whether the applications an initiative below changes are plotted among
-  // this scope's own. A view state, like the window: on by default because
-  // the band alone says when and not what, and off for a reader who wants
-  // this scope's own landscape only.
+  // On by default: the band alone says when and not what. Off for a reader who wants this scope's own landscape only.
   const [showBelow, setShowBelow] = useState(true)
-  // Whether the dated relations are listed. Shut by default: a plan that moves
-  // every interface off an application dates every one of its lines, and the
-  // page is then a wall of hatched rows under four applications. The heading
-  // still says how many there are, so a shut section is not a hidden one.
-  const [showRelations, setShowRelations] = useState(false)
-  const belowHasElements = below.some(({ elements }) => (elements?.length ?? 0) > 0)
-  // The axis takes the initiatives in: a plan below that runs past this
-  // scope's own dates would otherwise be a band cut off at the edge.
-  const whole = useMemo(() => roadmapOf(model, today, below.map(({ scope, plan, elements }) => ({
+  const [hideEnded, setHideEnded] = useState(false)
+  const [find, setFind] = useState('')
+  const [pickedId, setPickedId] = useState<string | undefined>(props.select)
+  useEffect(() => { if (props.select !== undefined) setPickedId(props.select) }, [props.select])
+
+  const roadmap = useMemo(() => roadmapOf(model, today, below.map(({ scope, plan, elements }) => ({
     scope, plan, elements: showBelow ? (elements ?? []) : [],
   }))), [model, today, below, showBelow])
-  const labelOf = (scope: string) => below.find((one) => one.scope === scope)?.label ?? scope
-  // An element brought by an initiative opens here if this scope holds it
-  // (a stand-in has the same id, §2), and otherwise on the plan that named
-  // it, in the scope that holds it — the nearest page that can show it.
-  const openBrought = (track: { element: DesignElement; below?: { scope: string; planId: string } }) => {
-    if (!track.below || model.elements.some((one) => one.id === track.element.id)) {
-      actions.onOpenElement(track.element.id)
-    } else {
-      props.onOpenInitiative?.(track.below.scope, track.below.planId)
-    }
-  }
-  const cut = isDay(window_.from) && isDay(window_.to) && window_.from < window_.to
-  const roadmap = useMemo(
-    () => (cut ? within(whole, window_.from, window_.to) : whole),
-    [whole, cut, window_.from, window_.to],
-  )
   const platformTree = props.platformTree
   const problems = useMemo(
     () => findings({ model, today, ...(platformTree ? { platformTree } : {}) }),
     [model, today, platformTree],
   )
+  const labelOf = useCallback((scope: string) => below.find((one) => one.scope === scope)?.label ?? scope, [below])
 
-  const span = daysBetween(roadmap.from, roadmap.to)
-  const at = (day: string) => `${fractionOf(roadmap.from, roadmap.to, day) * 100}%`
-  const scrubDay = props.asOf && isDay(props.asOf) ? props.asOf : today
-  const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
-  const bar = barChromeFor(chrome)
-  // Nothing dated and nothing to report. A landscape being drawn bottom-up has
-  // no dates at all and can still have a finding worth reading (ADR-0013), and
-  // a page that has something to tell you is not empty.
-  const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
-    && below.length === 0 && problems.length === 0
+  const dated = roadmap.tracks.length > 0 || roadmap.relations.length > 0 || roadmap.transitions.length > 0 || below.length > 0
+  const empty = !dated && problems.length === 0
+  const everyDay = useMemo(() => [
+    ...roadmap.tracks.flatMap((track) => Object.values(track.element.lifecycleDates ?? {})),
+    ...roadmap.relations.flatMap(({ relation }) => [relation.validFrom, relation.validUntil]),
+    ...roadmap.transitions.flatMap(transitionDays),
+    ...below.flatMap(({ plan }) => transitionDays(plan)),
+  ].filter(isDay), [roadmap, below])
 
-  /** Where the dates disagree, under the axis — and under the empty state too, where it says that they agree. */
-  const findingsBox = <RoadmapFindings problems={problems} marks={props.marks} relations={model.relations} readOnly={readOnly} actions={actions} remember={props.remember} />
+  const marked = useMemo(() => {
+    const rows = new Map<string, 'fix' | 'review'>()
+    for (const problem of problems) {
+      const target = findingTarget(problem, model.relations)
+      if (!target) continue
+      const weight = CHECK_CATALOGUE[DATE_CHECK[problem.kind]].weight === 'fix' ? 'fix' : 'review'
+      if (rows.get(target.id) !== 'fix') rows.set(target.id, weight)
+    }
+    return rows
+  }, [problems, model.relations])
+  const aboutOf = (id: string) => problems.filter((problem) => findingTarget(problem, model.relations)?.id === id)
+
+  const plan = roadmap.transitions.find((one) => one.id === pickedId)
+  const track = roadmap.tracks.find((one) => one.element.id === pickedId)
+  const relation = roadmap.relations.find((one) => one.relation.id === pickedId)
+  const initiative = below.find((one) => initiativeId(one.scope, one.plan.id) === pickedId)
+  const related = useMemo(() => {
+    if (!plan) return new Set<string>()
+    const lines = connectionGroups(model, [plan], roadmap.relations).byPlan[0]
+    return new Set<string>([
+      ...plan.elements.map((one) => one.elementId),
+      ...(lines ? [...lines.ending, ...lines.starting].map((one) => one.relation.id) : []),
+    ])
+  }, [plan, model, roadmap.relations])
+  const context: RowsContext = {
+    model, picked: pickedId, related, marked, finding: find.trim().toLowerCase(),
+    pick: (id) => setPickedId((was) => (was === id ? undefined : id)),
+  }
+  const close = () => setPickedId(undefined)
+  const withElsewhere: RoadmapActions = props.onOpenInitiative ? { ...actions, onOpenElsewhere: props.onOpenInitiative } : actions
+  const rowCount = roadmap.tracks.length + roadmap.transitions.length + below.length
+  const asOf = isDay(props.asOf) && dayNumber(props.asOf) !== dayNumber(today) ? props.asOf : undefined
 
   return (
-    <PageDialog
-      open={props.open}
-      topInset={chrome.topInset}
-      onClose={props.onClose}
-      aria-label={t('roadmap.title')}
-    >
-      <Box
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
-        }}
-      >
-        <Tooltip title={t('roadmap.close')}>
-          <IconButton size="small" aria-label={t('roadmap.close')} onClick={props.onClose}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('roadmap.title')}</Typography>
-        <Box sx={{ flex: 1 }} />
-        {!readOnly && (
-          <Button size="small" variant="outlined" onClick={() => setNewTitle('')} data-guide="roadmap.newPlan">
-            {t('roadmap.newPlan')}
-          </Button>
-        )}
-        <PageClose onClose={props.onClose} />
-      </Box>
-
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-        {/* the axis */}
-        <Box sx={{ overflow: 'auto', p: 2, minWidth: 0, flex: 1, '--roadmap-labels': `${names.width}px` }}>
-          <Box sx={{ position: 'relative' }}>
-          {!empty && names.seam}
-          {empty ? (
-            <>
-              <Box sx={{ color: 'text.secondary' }}>
-                <Typography>{t('roadmap.empty')}</Typography>
-                <Typography variant="body2">{t('roadmap.emptyHint')}</Typography>
-              </Box>
-              {/* Said on an empty page too: that nothing disagrees is an
-                  answer, and the box is where a person is sent to read it. */}
-              {findingsBox}
-            </>
-          ) : (
-            <>
-              <WindowBar
-                window_={window_} onWindow={setWindow} from={roadmap.from} to={roadmap.to} scrubDay={scrubDay} span={span}
-                today={today} cut={cut} readOnly={readOnly} onAsOf={actions.setAsOf}
+    <PageDialog open={props.open} {...(props.windowChrome?.topInset !== undefined ? { topInset: props.windowChrome.topInset } : {})} onClose={props.onClose} aria-label={t('roadmap.title')}>
+      <div className="roadmap-page">
+        <header className="roadmap-head">
+          <h1 className="roadmap-title">{t('roadmap.title')}</h1>
+          {!readOnly && <Button variant="primary" onClick={() => setNewTitle('')} data-guide="roadmap.newPlan">{t('roadmap.newPlan')}</Button>}
+          <PageClose onClose={props.onClose} />
+        </header>
+        <div className="roadmap-body">
+          <div className="roadmap-main" tabIndex={0} role="region" aria-label={t('roadmap.title')}>
+            {empty ? (
+              <PageState
+                state="empty" title={t('roadmap.empty')}
+                body={<><p>{t('roadmap.emptyBody')}</p><p className="roadmap-quiet">{t('roadmap.emptyBelow')}</p></>}
+                {...(readOnly ? {} : { action: { label: t('roadmap.newPlan'), onPress: () => setNewTitle('') } })}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                {t('roadmap.scrubHelp')}
-              </Typography>
-
-              <Box ref={names.rowsStart} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
-                  {t('roadmap.applications')}
-                </Typography>
-                {belowHasElements && (
-                  <FormControlLabel
-                    sx={{ ml: 0 }}
-                    control={(
-                      <Switch
-                        size="small"
-                        checked={showBelow}
-                        onChange={(e) => setShowBelow(e.target.checked)}
-                        slotProps={{ input: { 'aria-label': t('roadmap.showBelowChanges') } }}
-                      />
-                    )}
-                    label={<Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('roadmap.showBelowChanges')}</Typography>}
-                  />
+            ) : (
+              <>
+                {dated && (
+                  <TimeAxis
+                    view={view} onViewChange={setView} today={today} day={asOf} dates={everyDay}
+                    {...(props.boardBehind === false ? {} : { onDayChange: actions.setAsOf })}
+                    names={{ width: names, onWidth: setNames }}
+                    data-guide="roadmap.axis"
+                    head={rowCount >= FIND_FROM_ROWS
+                      ? <TextInput type="search" value={find} placeholder={t('roadmap.find')} aria-label={t('roadmap.find')} onChange={(event) => setFind(event.target.value)} />
+                      : <span>{t('roadmap.help')}</span>}
+                  >
+                    <PlanRows plans={roadmap.transitions} hideEnded={hideEnded} onHideEnded={setHideEnded} context={context} />
+                    <ApplicationRows tracks={roadmap.tracks} total={model.elements.filter((one) => one.kind === 'application').length} belowLabel={labelOf} context={context} />
+                    <ConnectionRows roadmap={roadmap} plans={roadmap.transitions} context={context} />
+                    <InitiativeRows below={below} showBelow={showBelow} onShowBelow={setShowBelow} context={context} />
+                  </TimeAxis>
                 )}
-              </Box>
-              {roadmap.tracks.map((track) => (
-                <Box
-                  key={track.element.id}
-                  data-testid={`row-${track.element.id}`}
-                  sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <RowName onOpen={() => openBrought(track)}>{track.element.name}</RowName>
-                    {track.below && (
-                      <Tooltip title={t('roadmap.openInitiative', { scope: labelOf(track.below.scope) })}>
-                        <Chip size="small" label={labelOf(track.below.scope)} onClick={() => openBrought(track)} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
-                      </Tooltip>
-                    )}
-                  </Box>
-                  <Box
-                    data-testid={`track-${track.element.id}`}
-                    data-from-scope={track.below?.scope}
-                    sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}
-                  >
-                    {track.spans.map((span_, index) => (
-                      <Tooltip key={index} title={`${t(`lifecycle.${span_.phase}` as StringKey)} · ${span_.from}`}>
-                        <Box role="img"
-                          data-phase={span_.phase}
-                          sx={{
-                            position: 'absolute', top: 0, bottom: 0,
-                            left: at(span_.from),
-                            right: span_.to ? `calc(100% - ${at(span_.to)})` : 0,
-                            bgcolor: phaseColour[span_.phase],
-                            opacity: span_.phase === 'retired' ? 0.35 : 0.85,
-                            borderRadius: 1,
-                          }}
-                        />
-                      </Tooltip>
-                    ))}
-                    <Marker left={at(today)} colour={theme.palette.text.primary} label={t('roadmap.today')} />
-                    {props.asOf && isDay(props.asOf) && (
-                      <Marker left={at(props.asOf)} colour={theme.palette.primary.main} label={props.asOf} />
-                    )}
-                  </Box>
-                </Box>
-              ))}
-
-              {roadmap.relations.length > 0 && (
-                <>
-                  <Box
-                    component="button"
-                    type="button"
-                    aria-expanded={showRelations}
-                    onClick={() => setShowRelations((on) => !on)}
-                    sx={{
-                      display: 'flex', alignItems: 'center', gap: 0.5, mt: 2, mb: 0.5, p: 0,
-                      border: 0, background: 'none', cursor: 'pointer', color: 'text.secondary', font: 'inherit',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', transform: showRelations ? 'none' : 'rotate(-90deg)', transition: 'transform 120ms' }}>
-                      <CaretIcon />
-                    </Box>
-                    <Typography sx={{ fontSize: 11, fontWeight: 700 }}>
-                      {t('roadmap.relationsCount', { count: roadmap.relations.length })}
-                    </Typography>
-                  </Box>
-                  {showRelations && roadmap.relations.map((track) => (
-                    <RelationRow
-                      key={track.relation.id} track={track} from={roadmap.from} to={roadmap.to} today={today} at={at}
-                      colour={theme.palette.primary.main} ink={theme.palette.text.primary}
-                      onOpen={() => actions.onOpenElement(track.relation.sourceId)}
-                    />
-                  ))}
-                </>
-              )}
-
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
-                {t('roadmap.plans')}
-              </Typography>
-              {roadmap.transitions.length === 0 && (
-                <Typography variant="body2" color="text.secondary">{t('roadmap.noPlans')}</Typography>
-              )}
-              {roadmap.transitions.map((plan) => (
-                <PlanRow
-                  key={plan.id} plan={plan} model={model} from={roadmap.from} to={roadmap.to} today={today} at={at}
-                  colour={theme.palette.primary.main} ink={theme.palette.text.primary}
-                  onOpen={() => actions.onOpenPlan(plan.id)}
-                />
-              ))}
-
-              {below.length > 0 && (
-                <>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
-                    {t('roadmap.fromBelow')}
-                  </Typography>
-                  {below.map((held) => (
-                    <InitiativeRow
-                      key={`${held.scope}/${held.plan.id}`}
-                      initiative={held}
-                      at={at}
-                      from={roadmap.from}
-                      to={roadmap.to}
-                      today={today}
-                      onOpen={props.onOpenInitiative}
-                      t={t}
-                      colour={theme.palette.text.primary}
-                    />
-                  ))}
-                </>
-              )}
-
-              {findingsBox}
-            </>
+                <div ref={findingsAt}>
+                  <RoadmapFindings
+                    problems={problems} marks={props.marks} relations={model.relations} readOnly={readOnly} actions={actions}
+                    remember={props.remember} saysNone={dated}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {plan && <PlanReader plan={plan} model={model} about={aboutOf(plan.id)} actions={actions} onClose={close} />}
+          {track && (
+            <ElementReader
+              element={track.element} about={aboutOf(track.element.id)} actions={withElsewhere} onClose={close} onPick={setPickedId}
+              plans={roadmap.transitions.filter((one) => one.elements.some((row) => row.elementId === track.element.id))}
+              below={track.below && !model.elements.some((one) => one.id === track.element.id) ? { ...track.below, label: labelOf(track.below.scope) } : undefined}
+            />
           )}
-        </Box>
-
-        </Box>
-        </Box>
-
+          {relation && <ConnectionReader track={relation} about={aboutOf(relation.relation.id)} actions={actions} onClose={close} />}
+          {initiative && <InitiativeReader initiative={initiative} canOpen={props.onOpenInitiative !== undefined} actions={withElsewhere} onClose={close} />}
+        </div>
+      </div>
       <NamePlanDialog title={newTitle} onTitle={setNewTitle} onMake={(title) => actions.addTransition(title)} />
     </PageDialog>
   )
 }
 
 /**
- * *What is the plan called?*: the plan made from its name, by the button or
- * by Enter. The Enter is the field's own: closing gives the focus back to
- * *New plan*, and a key let go on would press that again — the dialog back,
- * behind the plan's page it had just opened.
+ * *What is the plan called?*: the plan made from its name, by the button or by
+ * Enter, and the dialog says what comes next. The Enter is the form's own: closing
+ * gives the focus back to *New plan*, and a key let go on would press that again.
  */
 function NamePlanDialog({ title, onTitle, onMake }: {
   title: string | null; onTitle: (title: string | null) => void; onMake: (title: string) => void
@@ -419,308 +274,16 @@ function NamePlanDialog({ title, onTitle, onMake }: {
     onTitle(null)
   }
   return (
-    <FieldsDialog open={title !== null} onClose={() => onTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
-      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography id="lv-new-plan-title" sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
-        <TextField
-          autoFocus slotProps={{ htmlInput: { 'aria-labelledby': 'lv-new-plan-title' } }}
-          value={title ?? ''}
-          onChange={(e) => onTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter' || !title?.trim()) return
-            e.preventDefault()
-            make()
-          }}
-        />
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+    <Dialog
+      open={title !== null} title={t('roadmap.newPlanTitle')} onClose={() => onTitle(null)} onSubmit={make}
+      actions={(
+        <>
           <Button onClick={() => onTitle(null)}>{t('common.cancel')}</Button>
-          <Button variant="contained" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
-        </Box>
-      </Box>
-    </FieldsDialog>
-  )
-}
-
-/** Today, and the day the board shows, as lines down a track. */
-function Marker({ left, colour, label }: { left: string; colour: string; label: string }) {
-  return (
-    <Tooltip title={label}>
-      <Box role="img" sx={{ position: 'absolute', top: -2, bottom: -2, left, width: '2px', ml: '-1px', bgcolor: colour, opacity: 0.7 }} />
-    </Tooltip>
-  )
-}
-
-/**
- * A row's name, as a link to what the row is: reached by the keyboard, where
- * the box around the name used to answer a pointer only. Drawn in the ink of
- * the text around it, underlined on hover, so a column of names still reads
- * as a column of names. Plain text where there is nowhere to go.
- */
-function RowName({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) {
-  const sx = { display: 'block', maxWidth: '100%', fontSize: 12, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const
-  return onOpen
-    ? <Link component="button" type="button" color="inherit" underline="hover" onClick={onOpen} sx={sx}>{children}</Link>
-    : <Typography sx={sx}>{children}</Typography>
-}
-
-/**
- * The rows' names are one column, given more room by one seam down its edge
- * (ADR-0044 §4): from where the rows begin, under the window's fields, to the
- * end of the rows. The rows read the width as `--roadmap-labels`.
- */
-function useNamesSeam() {
-  const { t } = useStrings()
-  const [width, setWidth] = useSeamWidth('roadmap.labels', 180)
-  const [top, setTop] = useState(0)
-  const rowsStart = useCallback((node: HTMLDivElement | null) => { if (node) setTop(node.offsetTop) }, [])
-  const seam = (
-    <Box sx={{ position: 'absolute', top, bottom: 0, left: width + 1, display: 'flex', zIndex: 1 }}>
-      <SeamResizer orientation="vertical" region="before" value={width} min={120} max={480} defaultValue={180} onChange={setWidth} label={t('common.resizeColumn')} />
-    </Box>
-  )
-  return { width, rowsStart, seam }
-}
-
-/**
- * The period looked at: its two ends are the axis's two ends, so the fields
- * that set them sit where the ends are, either side of the scrubber, with
- * room for their labels.
- */
-function WindowBar({ window_, onWindow, from, to, scrubDay, span, today, cut, readOnly, onAsOf }: {
-  window_: { from: string; to: string }
-  onWindow: (next: { from: string; to: string } | ((was: { from: string; to: string }) => { from: string; to: string })) => void
-  from: string
-  to: string
-  scrubDay: string
-  span: number
-  today: string
-  cut: boolean
-  readOnly: boolean
-  onAsOf: (day: string | undefined) => void
-}) {
-  const { t } = useStrings()
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, pt: 1 }}>
-      <TextField
-        type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
-        sx={{ width: 160 }}
-        onChange={(e) => onWindow((w) => ({ ...w, from: e.target.value }))}
-      />
-      <Box sx={{ flex: 1 }}>
-        <Slider
-          size="small"
-          aria-label={t('roadmap.showing')}
-          value={Math.max(0, daysBetween(from, scrubDay))}
-          min={0}
-          max={Math.max(1, span)}
-          disabled={readOnly}
-          valueLabelDisplay="auto"
-          valueLabelFormat={(days: number) => addDays(from, days)}
-          onChange={(_event, value) => {
-            const day = addDays(from, Array.isArray(value) ? value[0] : value)
-            onAsOf(day === today ? undefined : day)
-          }}
-        />
-      </Box>
-      <TextField
-        type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
-        sx={{ width: 160 }}
-        onChange={(e) => onWindow((w) => ({ ...w, to: e.target.value }))}
-      />
-      {cut ? (
-        <Button size="small" onClick={() => onWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
-      ) : (
-        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>{from} – {to}</Typography>
+          <Button variant="primary" type="submit" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
+        </>
       )}
-    </Box>
-  )
-}
-
-/**
- * A line with a window of its own, as a hatched band: its name opens the
- * element it starts from, whose inspector holds the line's dates — the
- * board cannot yet be asked to select a line.
- */
-function RelationRow({ track, from, to, today, at, colour, ink, onOpen }: {
-  track: RelationTrack
-  from: string
-  to: string
-  today: string
-  at(day: string): string
-  colour: string
-  ink: string
-  onOpen(): void
-}) {
-  const { t } = useStrings()
-  const { relation, sourceName, targetName } = track
-  // An end left open is drawn to the edge of the axis, which is what "and
-  // onwards" looks like on a page with two edges.
-  const opens = isDay(relation.validFrom) ? relation.validFrom! : from
-  const closes = isDay(relation.validUntil) ? relation.validUntil! : to
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-      <Box sx={{ minWidth: 0 }}>
-        <RowName onOpen={onOpen}>{relation.label || `${sourceName} → ${targetName}`}</RowName>
-        <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-          {t(RELATION_LABEL[relation.type])}
-        </Typography>
-      </Box>
-      <Box data-testid={`relation-${relation.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
-        <Tooltip title={`${sourceName} → ${targetName} · ${opens} – ${isDay(relation.validUntil) ? relation.validUntil : '…'}`}>
-          <Box role="img"
-            data-testid="relation-window"
-            data-relation-type={relation.type}
-            sx={{
-              position: 'absolute', top: 3, bottom: 3,
-              left: at(opens), right: `calc(100% - ${at(closes)})`,
-              borderRadius: 1,
-              // The same hatch a shadow run wears: a stretch that is true for
-              // a while and then is not.
-              backgroundImage: `repeating-linear-gradient(135deg, ${colour} 0 3px, transparent 3px 7px)`,
-              opacity: 0.6,
-            }}
-          />
-        </Tooltip>
-        <Marker left={at(today)} colour={ink} label={t('roadmap.today')} />
-      </Box>
-    </Box>
-  )
-}
-
-/** One of this scope's plans: its name, how far its interfaces have moved, and its band with the shadow run and milestones. */
-function PlanRow({ plan, model, from, to, today, at, colour, ink, onOpen }: {
-  plan: Transition
-  model: DesignModel
-  from: string
-  to: string
-  today: string
-  at(day: string): string
-  colour: string
-  ink: string
-  onOpen(): void
-}) {
-  const { t } = useStrings()
-  const progress = portProgress(model, plan)
-  const shadow = shadowRunOf(model, plan)
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-      <Box sx={{ minWidth: 0 }}>
-        <RowName onOpen={onOpen}>{transitionLabel(plan)} {plan.title}</RowName>
-        {progress.total > 0 && (
-          <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-            {t('roadmap.planPorted', { done: String(progress.done), total: String(progress.total) })}
-          </Typography>
-        )}
-      </Box>
-      {/* The band answers a pointer as well; the name above is its way in by the keyboard. */}
-      <Box
-        data-testid={`plan-${plan.id}`}
-        onClick={onOpen}
-        sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: 'pointer' }}
-      >
-        {isDay(plan.from) && (
-          <Box
-            data-testid="plan-band"
-            sx={{
-              position: 'absolute', top: 3, bottom: 3,
-              left: at(plan.from),
-              right: isDay(plan.to) ? `calc(100% - ${at(plan.to)})` : 0,
-              bgcolor: 'primary.main', opacity: 0.5, borderRadius: 1,
-            }}
-          />
-        )}
-        {shadow && (
-          <Tooltip title={`${t('roadmap.shadowRun')} · ${shadow.from} – ${shadow.to}`}>
-            <Box role="img"
-              data-testid="shadow-run"
-              sx={{
-                position: 'absolute', top: 3, bottom: 3,
-                left: at(shadow.from), right: `calc(100% - ${at(shadow.to)})`,
-                borderRadius: 1,
-                backgroundImage: `repeating-linear-gradient(135deg, ${colour} 0 3px, transparent 3px 7px)`,
-                opacity: 0.6,
-              }}
-            />
-          </Tooltip>
-        )}
-        {plan.milestones.filter((m) => isDay(m.date) && m.date >= from && m.date <= to).map((milestone, index) => (
-          <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
-            <Box role="img"
-              data-testid="milestone"
-              sx={{
-                position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
-                ml: '-4px', bgcolor: 'primary.dark', transform: 'rotate(45deg)',
-              }}
-            />
-          </Tooltip>
-        ))}
-        <Marker left={at(today)} colour={ink} label={t('roadmap.today')} />
-      </Box>
-    </Box>
-  )
-}
-
-/**
- * A plan from a scope below, as a band under its scope's name (ADR-0012 §7).
- *
- * Simpler than the rows above it on purpose: what it introduces and retires
- * and the interfaces it ports are that scope's elements, which this model
- * does not hold, so the band says when and the chip says where — and opening
- * it goes there.
- */
-function InitiativeRow({ initiative, at, from, to, today, onOpen, t, colour }: {
-  initiative: Initiative
-  at(day: string): string
-  from: string
-  to: string
-  today: string
-  onOpen?(scope: string, planId: string): void
-  t: (key: StringKey, values?: Record<string, string | number>) => string
-  colour: string
-}) {
-  const { plan, scope, label } = initiative
-  const open = onOpen ? () => onOpen(scope, plan.id) : undefined
-  return (
-    <Box
-      data-testid={`initiative-${scope}-${plan.id}`}
-      sx={{ display: 'grid', gridTemplateColumns: 'var(--roadmap-labels, 180px) minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
     >
-      <Box sx={{ minWidth: 0 }}>
-        <RowName onOpen={open}>{transitionLabel(plan)} {plan.title}</RowName>
-        <Tooltip title={open ? t('roadmap.openInitiative', { scope: label }) : label}>
-          <Chip size="small" label={label} {...(open ? { onClick: open } : {})} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
-        </Tooltip>
-      </Box>
-      <Box
-        onClick={open}
-        sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: open ? 'pointer' : 'default' }}
-      >
-        {isDay(plan.from) && (
-          <Box
-            data-testid="plan-band"
-            sx={{
-              position: 'absolute', top: 3, bottom: 3,
-              left: at(plan.from),
-              right: isDay(plan.to) ? `calc(100% - ${at(plan.to)})` : 0,
-              bgcolor: 'secondary.main', opacity: 0.5, borderRadius: 1,
-            }}
-          />
-        )}
-        {plan.milestones.filter((m) => isDay(m.date) && m.date >= from && m.date <= to).map((milestone, index) => (
-          <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
-            <Box role="img"
-              data-testid="milestone"
-              sx={{
-                position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
-                ml: '-4px', bgcolor: 'secondary.dark', transform: 'rotate(45deg)',
-              }}
-            />
-          </Tooltip>
-        ))}
-        <Marker left={at(today)} colour={colour} label={t('roadmap.today')} />
-      </Box>
-    </Box>
+      <TextField label={t('roadmap.newPlanName')} hint={t('roadmap.newPlanHelp')} value={title ?? ''} onChange={onTitle} autoFocus />
+    </Dialog>
   )
 }

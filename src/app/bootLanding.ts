@@ -245,7 +245,7 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
   switch (to.page) {
     case 'decisions': return { page: 'decisions', ...id }
     case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab as ObservationTab } : {}) }
-    case 'roadmap': return { page: 'roadmap' }
+    case 'roadmap': return { page: 'roadmap', ...(to.select !== undefined ? { select: to.select } : {}) }
     case 'operating': return { page: 'operating', ...id }
     case 'principles': return { page: 'principles', ...id }
     case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }

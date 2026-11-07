@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.kit-strip {
+  position: relative;
+  flex: none;
+  height: 84px;
+  overflow: hidden;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+.kit-strip__ruler { position: absolute; inset: 0; }
+.kit-strip__cell { position: absolute; top: 0; bottom: 0; padding-inline-start: var(--s-1); border-left: 1px solid var(--line); color: var(--ink-3); line-height: 18px; white-space: nowrap; overflow: hidden; }
+.kit-strip__cell[data-major] { border-left-color: var(--line-strong); }
+.kit-strip__today { position: absolute; top: 0; bottom: 0; padding-inline-start: var(--s-1); border-left: 2px solid var(--axis-today); margin-left: -1px; color: var(--axis-today); font-weight: var(--fw-strong); line-height: 18px; pointer-events: none; }
+.kit-strip__band { position: absolute; top: 22px; height: 10px; border: 1px solid var(--accent); border-radius: var(--r-1); background: var(--accent-soft); box-sizing: border-box; }
+.kit-strip__item { position: absolute; top: 19px; width: 0; height: 60px; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
+button.kit-strip__item { cursor: pointer; }
+button.kit-strip__item:focus-visible .kit-strip__diamond { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 2px; }
+.kit-strip__diamond { position: absolute; top: 3px; left: -5px; width: 9px; height: 9px; background: var(--accent); transform: rotate(45deg); }
+.kit-strip__item[data-picked] .kit-strip__diamond { top: 1px; left: -7px; width: 13px; height: 13px; }
+.kit-strip__word { position: absolute; left: 0; padding-inline: var(--s-1); color: var(--ink); line-height: 18px; white-space: nowrap; }
+.kit-strip__item[data-line='one'] .kit-strip__word { top: 19px; }
+.kit-strip__item[data-line='two'] .kit-strip__word { top: 39px; }
+.kit-strip__word[data-flip] { left: auto; right: 0; }
+.kit-strip__item[data-picked] .kit-strip__word { font-weight: var(--fw-strong); }

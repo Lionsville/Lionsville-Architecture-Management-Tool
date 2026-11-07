@@ -43,6 +43,10 @@ export type PlanNavigation = {
   toElement: (id: ElementId) => void
   /** Open a decision record. */
   toDecision: (adrId: string) => void
+  /** Bring a board to the front. */
+  toBoard: (diagramId: string) => void
+  /** The tab menu's *Duplicate as of…*: a new board saved on this day. */
+  duplicateBoard?: (diagramId: string, day: string) => void
 }
 
 export type Plans = {
@@ -63,6 +67,15 @@ export type Plans = {
   confirmReplace: (answer: ReplaceAnswer) => void
   /** Every page and dialog of this hook, closed. */
   closeAll: () => void
+  /** The row the roadmap's reader opens on, asked for by an address or an agent. */
+  roadmapSelect: string | undefined
+  selectOnRoadmap: (id: string | undefined) => void
+  /** The plan a board was opened from, which the board's band names and goes back to. */
+  carried: Transition | undefined
+  /** Step the board it was opened on to another of the plan's days, or let go of the plan. */
+  carryTo: (diagramId: string, day: string) => void
+  letGo: () => void
+  backToPlan: () => void
   roadmapActions: RoadmapActions
   planActions: PlanActions
 }
@@ -80,6 +93,8 @@ export function usePlans(deps: {
   const [roadmapOpen, setRoadmapOpen] = useState(false)
   const [planId, setPlanId] = useState<string | undefined>(undefined)
   const [replacingId, setReplacingId] = useState<ElementId | undefined>(undefined)
+  const [roadmapSelect, selectOnRoadmap] = useState<string | undefined>(undefined)
+  const [carriedId, setCarriedId] = useState<string | undefined>(undefined)
 
   const closeAll = useCallback(() => {
     setRoadmapOpen(false)
@@ -207,7 +222,18 @@ export function usePlans(deps: {
     },
     onOpenElement(id) { leaveFor(() => navigate.toElement(id)) },
     onOpenDecision(adrId) { leaveFor(() => navigate.toDecision(adrId)) },
-  }), [session, navigate, leaveFor])
+    /** A board opened from a plan carries it: it only looks (ADR-0027), and its band goes back. */
+    onOpenBoard(id, boardId, day) {
+      leaveFor(() => {
+        navigate.toBoard(boardId)
+        if (day !== undefined) look(boardId, day)
+        setCarriedId(id)
+      })
+    },
+    ...(navigate.duplicateBoard ? {
+      onDuplicateBoard(boardId, day) { leaveFor(() => navigate.duplicateBoard?.(boardId, day)) },
+    } : {}),
+  }), [session, navigate, leaveFor, look])
 
   /**
    * Replace… answered (ADR-0010): the new element, the dates, the successor,
@@ -257,6 +283,16 @@ export function usePlans(deps: {
     cancelReplace: useCallback(() => setReplacingId(undefined), []),
     confirmReplace,
     closeAll,
+    roadmapSelect,
+    selectOnRoadmap,
+    carried: carriedId ? session.model.transitions?.find((one) => one.id === carriedId) : undefined,
+    carryTo: useCallback((diagramId: string, day: string) => look(diagramId, day), [look]),
+    letGo: useCallback(() => setCarriedId(undefined), []),
+    backToPlan: useCallback(() => {
+      setRoadmapOpen(true)
+      setPlanId(carriedId)
+      setCarriedId(undefined)
+    }, [carriedId]),
     roadmapActions,
     planActions,
   }

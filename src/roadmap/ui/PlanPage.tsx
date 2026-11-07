@@ -2,64 +2,57 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One plan, as a page (ADR-0010).
+ * One plan, as one document with one scroll (ADR-0010, amended): a head that stays,
+ * a strip of its milestones under it, its moves as one line each, then its text,
+ * then what is around it. Three nested scrollers made a 10,000-character plan with
+ * twenty interfaces unreadable, and a form beside a document read as a form.
  *
- * The sibling of the decision page, and laid out the same way a person reads a
- * plan: the facts down the left — status, window, owner, what it introduces
- * and retires with the dates on those, the milestones, the decisions it rests
- * on — and the document on the right, with its source beside it while it is
- * being written. The business case is a fence in that document and renders
- * where it is typed.
+ * Reading changes nothing here, so there is no mode. A fact reads as words and a
+ * press makes that one row a form; *Edit text* is the prose alone, in a focused
+ * window with its preview. A reader sees no + and nothing to press.
  *
- * The page writes nothing itself. Every change is an action the caller turns
- * into a command, so a plan edited here is one undo step and one Activity line
- * like a plan edited anywhere else. The dates on an element the plan
- * introduces or retires are the element's own (ADR-0009); this page is where
- * they are set together, and it says so by writing them through a separate
+ * The page writes nothing itself. Every change is an action the caller turns into
+ * a command, so a plan edited here is one undo step and one Activity line like a
+ * plan edited anywhere else. The dates on an element the plan introduces or retires
+ * are the element's own (ADR-0009); they are set here and written through a separate
  * action rather than into the plan.
- *
- * A fullscreen dialog, and it takes `windowChrome` for the reason the others
- * do: the shell toolbar's drag strip stays live underneath it.
  */
 import { useMemo, useState, type ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Link from '@mui/material/Link'
-import Switch from '@mui/material/Switch'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import { elementsWithRole, portsOf, transitionLabel } from '../../model'
-import type { DesignModel, ElementId, LifecycleDates, Port, Transition } from '../../model'
+import { isDay, portProgress, transitionLabel } from '../../model'
+import type { DesignModel, ElementId, LifecycleDates, Transition } from '../../model'
 import type { Adr } from '../../model/adr'
-import { formatAdrNumber } from '../../decisions'
-import { linkElementRefs } from '../../documentation/documentation'
+import { linkElementRefs, outline } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation'
-import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
-import { WritingPane } from '../../documentation/ui/MarkdownEditor'
-import { planBodyTemplate } from '../planTemplate'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
+import { planBodyTemplate } from '../planTemplate'
 import { useStrings } from '../../i18n'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
-import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose'
-import { SeamResizer } from '../../widgets/SeamResizer'
-import { AddElement, StatusField, WindowFields, namedSelect } from './PlanFacts'
-import { CompactForms, Fields, SectionHeading } from '../../widgets/CompactForms'
-import { DecisionRow, ElementRow } from './PlanRows'
+import { usePlaceTab } from '../../widgets/placeTab'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog, DialogDanger } from '../../widgets/kit/Dialog'
+import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
+import { PageState } from '../../widgets/kit/PageState'
+import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
+import { RecordPage } from '../../widgets/kit/RecordPage'
+import type { RecordSection } from '../../widgets/kit/RecordPage'
+import { TimeStrip } from '../../widgets/kit/TimeStrip'
 import type { DescribeElsewhere } from '../planGateHints'
-import { usePersonNames } from '../../people/ui/names'
-import { PersonRefField } from '../../people/ui/PersonRefField'
+import { boardsOfPlan, dayToShow } from '../planReading'
+import { DeleteActions, PlanStatusLine } from './PlanFacts'
+import type { GateWay } from './PlanFacts'
+import { PlanInterfaces } from './PlanInterfaces'
+import { PlanMoveDialog } from './PlanMoveDialog'
+import { ChangesRows, MilestoneRows, RestsOnRows } from './PlanMoves'
+import { formatDay } from '../../i18n/dates'
+import './Roadmap.css'
 
 export type PlanActions = {
   updateTransition(id: string, patch: Partial<Transition>): void
@@ -68,7 +61,7 @@ export type PlanActions = {
   shiftTransition(id: string, days: number): void
   /** The dates on an element the plan names; they are the element's own. */
   updateElementDates(id: ElementId, dates: LifecycleDates | undefined): void
-  /** Move one interface — the line with this id — onto an introduced element on a day. */
+  /** Move one interface, the line with this id, onto an introduced element on a day. */
   port(planId: string, connectionId: string, toId: ElementId, on: string): void
   /** Every interface not yet planned, onto one element on one day, as one step. */
   portAll(planId: string, toId: ElementId, on: string): void
@@ -78,6 +71,10 @@ export type PlanActions = {
   onOpenElement(id: ElementId): void
   /** Open a decision record the plan rests on. */
   onOpenDecision?(id: string): void
+  /** Open a board on a day, carrying the plan: it only looks and saves nothing. */
+  onOpenBoard?(planId: string, boardId: string, day: string | undefined): void
+  /** The tab menu's *Duplicate as of…*, from here with the plan's day. */
+  onDuplicateBoard?(boardId: string, day: string): void
 }
 
 export type PlanPageProps = {
@@ -119,540 +116,269 @@ export type PlanPageProps = {
   describe?: DescribeElsewhere
   /**
    * What the plan does to the organisation (ADR-0036 §6), drawn by the host,
-   * which knows the units and the people: the units it moves, among the
-   * facts; the organisation before and after and the people to move, above
-   * the interfaces. Absent in a shell with no organisation.
+   * which knows the units and the people: the units it moves; the organisation
+   * before and after and the people to move. Absent in a shell with no organisation.
    */
   organisation?: { facts?: ReactNode; main?: ReactNode }
 }
 
 export function PlanPage(props: PlanPageProps) {
-  const { plan, model, readOnly, actions } = props
+  const { plan, open, onClose } = props
   const { t } = useStrings()
-  const chrome = props.windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
-  const [mode, setMode] = useState<'read' | 'edit'>('read')
-  const [deleting, setDeleting] = useState(false)
-  // The document alone, the facts and the interfaces out of the way. On by
-  // default while writing, because writing wants the room; a click brings the
-  // facts back without leaving edit.
-  const [fullPage, setFullPage] = useState(false)
-  const [interfacesHeight, setInterfacesHeight] = useState(INTERFACES_DEFAULT_HEIGHT)
-  const editing = mode === 'edit' && !readOnly
-  const switchMode = (next: 'read' | 'edit') => {
-    setMode(next)
-    setFullPage(next === 'edit')
-  }
-  const leaving = useBackToReading(editing, () => switchMode('read'), props.onClose, t('plan.close'))
-
   return (
     <PageDialog
-      open={props.open}
-      topInset={chrome.topInset}
-      onClose={leaving.leave}
-      aria-label={t('plan.page')}
+      open={open} {...(props.windowChrome?.topInset !== undefined ? { topInset: props.windowChrome.topInset } : {})}
+      onClose={onClose} aria-label={t('plan.page')}
     >
-      <Box
-        data-testid="plan-topbar"
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
-        }}
-      >
-        <PageBack onBack={leaving.leave} label={leaving.said}><BackIcon /></PageBack>
-        {plan && (
-          <Typography sx={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            <Box component="span" sx={{ color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace', mr: 1 }}>
-              {transitionLabel(plan)}
-            </Box>
-            <Box component="span" sx={{ fontWeight: 700 }}>{plan.title}</Box>
-          </Typography>
-        )}
-        <Box sx={{ flex: 1 }} />
-        {plan && <Button size="small" onClick={() => setFullPage((on) => !on)}>{fullPage ? t('plan.showFacts') : t('plan.fullPage')}</Button>}
-        {plan && props.onCopyLink && <Button size="small" onClick={props.onCopyLink} data-testid="plan-copy-link">{t('common.copyLink')}</Button>}
-        {!readOnly && plan && (
-          <>
-            <ToggleButtonGroup
-              exclusive
-              value={mode}
-              onChange={(_event, next: 'read' | 'edit' | null) => { if (next) switchMode(next) }}
-            >
-              <ToggleButton value="read" sx={{ px: 1.5, py: 0.25, fontSize: 12 }}>{t('plan.read')}</ToggleButton>
-              <ToggleButton value="edit" sx={{ px: 1.5, py: 0.25, fontSize: 12 }}>{t('plan.edit')}</ToggleButton>
-            </ToggleButtonGroup>
-            <Button size="small" color="error" onClick={() => setDeleting(true)}>{t('roadmap.delete')}</Button>
-          </>
-        )}
-        <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
-      </Box>
-
-      {plan && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: fullPage ? 'minmax(0, 1fr)' : '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-          {!fullPage && (
-            <Facts
-              plan={plan} model={model} decisions={props.decisions ?? []} decidedAbove={props.ancestorDecisions ?? []}
-              today={props.today} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true}
-              describe={props.describe} organisation={props.organisation?.facts}
-            />
-          )}
-          {/* The table scrolls inside a height of its own, dragged from the
-              seam under it, so a plan with forty interfaces still leaves the
-              document room — and none of it while the document is full page. */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {!fullPage && (
-              <>
-                {props.organisation?.main}
-                <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} height={interfacesHeight} />
-                <SeamResizer
-                  orientation="horizontal"
-                  region="before"
-                  value={interfacesHeight}
-                  min={INTERFACES_MIN_HEIGHT}
-                  defaultValue={INTERFACES_DEFAULT_HEIGHT}
-                  onChange={setInterfacesHeight}
-                  label={t('plan.resizeInterfaces')}
-                />
-              </>
-            )}
-            <Body
-              plan={plan}
-              model={model}
-              editing={editing}
-              onOpenElement={actions.onOpenElement}
-              renderMarkdown={props.renderMarkdown}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              onChange={(body) => actions.updateTransition(plan.id, { body })}
-            />
-          </Box>
-        </Box>
-      )}
-
-      <ConfirmDialog
-        open={deleting}
-        title={plan ? t('roadmap.deleteConfirm', { name: plan.title }) : ''}
-        body={t('roadmap.deleteBody')}
-        confirmLabel={t('roadmap.delete')}
-        cancelLabel={t('common.cancel')}
-        onCancel={() => setDeleting(false)}
-        onConfirm={() => {
-          if (plan) actions.removeTransition(plan.id)
-          setDeleting(false)
-          props.onClose()
-        }}
-      />
+      {plan
+        ? <PlanRecord {...props} plan={plan} />
+        : open && <PageState state="empty" title={t('plan.gone')} action={{ label: t('plan.close'), onPress: onClose }} />}
     </PageDialog>
   )
 }
 
-/** A section heading in the facts column: the one every panel's sections wear. */
-function Heading({ children }: { children: ReactNode }) {
-  return <SectionHeading sx={{ mt: 1 }}>{children}</SectionHeading>
-}
-
-/** Who answers for the plan: a person picked from the register, or text; read through the register (ADR-0036 §8). */
-function PlanOwner({ plan, readOnly, set }: { plan: Transition; readOnly: boolean; set: (patch: Partial<Transition>) => void }) {
-  const { t } = useStrings()
-  const names = usePersonNames()
-  return (
-    <PersonRefField
-      value={plan.owner} names={names} label={t('roadmap.owner')} disabled={readOnly}
-      onChange={(owner) => set({ owner })} testId="plan-owner" inputTestId="plan-owner-text" s={t}
-    />
-  )
-}
-
-function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle, describe, organisation }: {
-  plan: Transition
-  model: DesignModel
-  decisions: readonly Adr[]
-  decidedAbove: readonly Adr[]
-  today: string
-  readOnly: boolean
-  actions: PlanActions
-  initiativeToggle: boolean
-  describe?: DescribeElsewhere
-  /** The units the plan moves (ADR-0036 §6), the host's. */
-  organisation?: ReactNode
-}) {
-  const { t } = useStrings()
+function PlanRecord(props: PlanPageProps & { plan: Transition }) {
+  const { plan, model, readOnly, actions, today } = props
+  const { t, language } = useStrings()
   const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
-  const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const [addingDecision, setAddingDecision] = useState('')
-  const restsOn = new Set(plan.decisions)
-  const decisionCandidates = decisions.filter((adr) => !restsOn.has(adr.id))
+  const [section, setSection] = usePlaceTab('changes')
+  const [headRow, setHeadRow] = useState<string>()
+  const [milestone, setMilestone] = useState<string>()
+  const [adding, setAdding] = useState<'element' | 'milestone' | 'decision'>()
+  const [writing, setWriting] = useState(false)
+  const [moving, setMoving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  // The long ones wait to be asked for, so the document is near the top; the address and the outline ask.
+  const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(new Set())
+  const isOpen = (id: string) => unfolded.has(id) || section === id
+  const goTo = (id: string) => {
+    setUnfolded((was) => new Set(was).add(id))
+    setSection(id)
+  }
+  const goToWay = (way: GateWay) => { if (way === 'window' || way === 'owner') setHeadRow(way); else goTo(way) }
 
-  const setElements = (elements: Transition['elements']) => set({ elements })
-  const setMilestones = (milestones: Transition['milestones']) => set({ milestones })
+  const progress = portProgress(model, plan)
+  const decisions = props.decisions ?? []
+  const decidedAbove = props.ancestorDecisions ?? []
+  const pickedDay = milestone !== undefined ? plan.milestones[Number(milestone)]?.date : undefined
+  const unitCount = plan.moves?.length ?? 0
+  const openBoard = props.actions.onOpenBoard
+  const boards = useMemo(() => boardsOfPlan(model, plan, today), [model, plan, today])
+  const showDay = dayToShow(plan, today, pickedDay)
+  const lookOn = openBoard && boards[0] ? (day: string) => openBoard(plan.id, boards[0].diagram.id, day) : undefined
 
-  return (
-    <Box sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
-      {/* The facts wear the panel's treatment (`CompactForms`): a plan's column is the inspector of a plan. */}
-      <CompactForms>
-      <Fields gap={1.5}>
-      <TextField
-        label={t('common.name')} value={plan.title} disabled={readOnly}
-        onChange={(e) => set({ title: e.target.value })}
-      />
-      <StatusField
-        plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly}
-        describe={describe} set={set}
-      />
-      <WindowFields plan={plan} readOnly={readOnly} set={set} />
-      <PlanOwner plan={plan} readOnly={readOnly} set={set} />
-      {initiativeToggle && (
-        <Tooltip title={t('roadmap.initiativeHelp')} placement="right">
-          <FormControlLabel
-            sx={{ ml: 0 }}
-            control={(
-              <Switch
-                checked={plan.initiative === true}
-                disabled={readOnly}
-                onChange={(e) => set({ initiative: e.target.checked ? true : undefined })}
-                slotProps={{ input: { 'aria-label': t('roadmap.initiative') } }}
+  const more: MenuEntry[] = [
+    ...(props.initiativeToggle === true && !readOnly ? [{
+      label: t(plan.initiative ? 'plan.initiativeTurnOff' : 'plan.initiativeTurnOn'), checked: plan.initiative === true,
+      onSelect: () => set({ initiative: plan.initiative ? undefined : true }),
+    }] : []),
+    ...(!readOnly ? [{ label: t('roadmap.delete'), final: true, onSelect: () => setDeleting(true) }] : []),
+  ]
+  const moreFor = (word: 'element' | 'milestone' | 'decision', label: string, guide: string) => (!readOnly
+    ? <Button size="small" variant="quiet" data-guide={guide} onClick={() => setAdding(word)}>+ {label}</Button>
+    : undefined)
+  const body = useMemo(() => outline(plan.body).filter((entry) => entry.level <= 2), [plan.body])
+  const sections: RecordSection[] = [
+    {
+      id: 'changes', heading: t('roadmap.touches'), group: t('plan.groupMoves'), count: plan.elements.length,
+      aside: moreFor('element', t('plan.addElement'), 'plan.addElement'),
+      children: (
+        <>
+          <ChangesRows
+            plan={plan} model={model} readOnly={readOnly} describe={props.describe} set={set}
+            onOpen={actions.onOpenElement} onDates={actions.updateElementDates}
+            adding={adding === 'element'} onAdding={(on) => setAdding(on ? 'element' : undefined)}
+          />
+          <PropertyRows readOnly>
+            {!isOpen('interfaces') && progress.total > 0 && (
+              <PropertyRow
+                label={t('plan.interfaces')} value={t('plan.interfacesRow', { done: progress.done, total: progress.total })}
+                aside={<button type="button" className="roadmap-link" onClick={() => goTo('interfaces')}>{t(readOnly ? 'plan.openBoard' : 'plan.setDays')} ▸</button>}
               />
             )}
-            label={<Typography sx={{ fontSize: 13 }}>{t('roadmap.initiative')}</Typography>}
-          />
-        </Tooltip>
-      )}
-
-      {/* ---- what it changes, with the dates on what it introduces and retires ---- */}
-      <Heading>{t('roadmap.touches')}</Heading>
-      {plan.elements.length === 0 && (
-        <Typography variant="body2" color="text.secondary">{t('plan.noElements')}</Typography>
-      )}
-      {plan.elements.map((one, index) => (
-        <ElementRow
-          key={one.elementId}
-          row={one}
-          element={byId.get(one.elementId)}
-          readOnly={readOnly}
-          describe={describe}
-          onRole={(role) => setElements(plan.elements.map((row, at) => (at === index ? { ...row, role } : row)))}
-          onRemove={() => setElements(plan.elements.filter((_row, at) => at !== index))}
-          onOpen={() => actions.onOpenElement(one.elementId)}
-          onDates={(dates) => actions.updateElementDates(one.elementId, dates)}
-        />
-      ))}
-      {!readOnly && (
-        <AddElement plan={plan} model={model} onAdd={(row) => setElements([...plan.elements, row])} />
-      )}
-      {organisation}
-
-      {/* ---- milestones ---- */}
-      <Heading>{t('roadmap.milestones')}</Heading>
-      {plan.milestones.length === 0 && (
-        <Typography variant="body2" color="text.secondary">{t('plan.noMilestones')}</Typography>
-      )}
-      {plan.milestones.map((milestone, index) => (
-        <Box key={index} data-testid="plan-milestone" data-guide="plan.milestone" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField
-            type="date" value={milestone.date} disabled={readOnly} sx={{ width: 150 }}
-            slotProps={{ htmlInput: { 'aria-label': t('plan.milestoneDate') } }}
-            onChange={(e) => setMilestones(plan.milestones.map((row, at) => (at === index ? { ...row, date: e.target.value } : row)))}
-          />
-          <TextField
-            value={milestone.name} disabled={readOnly} sx={{ flex: 1 }}
-            slotProps={{ htmlInput: { 'aria-label': t('plan.milestoneName') } }}
-            onChange={(e) => setMilestones(plan.milestones.map((row, at) => (at === index ? { ...row, name: e.target.value } : row)))}
-          />
-          {!readOnly && (
-            <Button size="small" onClick={() => setMilestones(plan.milestones.filter((_row, at) => at !== index))}>
-              {t('plan.remove')}
-            </Button>
-          )}
-        </Box>
-      ))}
-      {!readOnly && (
-        <Button
-          size="small" sx={{ alignSelf: 'flex-start' }}
-          onClick={() => setMilestones([...plan.milestones, { date: plan.to ?? plan.from ?? '', name: '' }])}
-        >
-          + {t('plan.milestoneName')}
-        </Button>
-      )}
-
-      {/* ---- the decisions it rests on ---- */}
-      <Heading>{t('roadmap.restsOn')}</Heading>
-      {plan.decisions.length === 0 && (
-        <Typography variant="body2" color="text.secondary">{t('plan.noDecisions')}</Typography>
-      )}
-      {plan.decisions.map((id) => (
-        <DecisionRow
-          key={id}
-          id={id}
-          adr={decisions.find((one) => one.id === id) ?? decidedAbove.find((one) => one.id === id)}
-          readOnly={readOnly}
-          onOpen={actions.onOpenDecision ? () => actions.onOpenDecision?.(id) : undefined}
-          onRemove={() => set({ decisions: plan.decisions.filter((one) => one !== id) })}
-        />
-      ))}
-      {!readOnly && decisionCandidates.length > 0 && (
-        <Box data-testid="plan-add-decision" data-guide="plan.addDecision" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField
-            select label={t('plan.decision')} value={addingDecision} sx={{ flex: 1 }}
-            slotProps={{ htmlInput: { 'aria-label': t('plan.decision') } }}
-            onChange={(e) => setAddingDecision(e.target.value)}
-          >
-            {decisionCandidates.map((adr) => (
-              <MenuItem key={adr.id} value={adr.id}>{formatAdrNumber(adr.number)} {adr.title}</MenuItem>
-            ))}
-          </TextField>
-          <Button
-            size="small" disabled={!addingDecision}
-            onClick={() => { set({ decisions: [...plan.decisions, addingDecision] }); setAddingDecision('') }}
-          >
-            {t('plan.add')}
-          </Button>
-        </Box>
-      )}
-
-      {/* ---- moving the whole thing ---- */}
-      {!readOnly && <Shift onShift={(days) => actions.shiftTransition(plan.id, days)} />}
-      </Fields>
-      </CompactForms>
-    </Box>
-  )
-}
-
-/** Move the plan and every date it owns by a number of days, as one step. */
-function Shift({ onShift }: { onShift(days: number): void }) {
-  const { t } = useStrings()
-  const [shiftBy, setShiftBy] = useState('')
-  const days = Number(shiftBy)
-  return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-      <TextField
-        type="number" label={t('roadmap.shiftDays')} value={shiftBy}
-        onChange={(e) => setShiftBy(e.target.value)}
-        helperText={t('roadmap.shiftHelp')}
-      />
-      <Button
-        size="small"
-        disabled={!Number.isFinite(days) || days === 0}
-        onClick={() => { onShift(days); setShiftBy('') }}
-      >
-        {t('roadmap.shift')}
-      </Button>
-    </Box>
-  )
-}
-
-const INTERFACES_DEFAULT_HEIGHT = 320
-const INTERFACES_MIN_HEIGHT = 80
-
-/**
- * The port table: one row per line on an element the plan moves from, with
- * where it goes and when. Derived from the lines themselves (`model/porting`),
- * so a port written anywhere — here, by the agent, by hand in the inspector —
- * shows here, and the table doubles as the status of the migration without a
- * status field anywhere.
- */
-function Interfaces({ plan, model, today, readOnly, actions, height }: {
-  plan: Transition
-  model: DesignModel
-  today: string
-  readOnly: boolean
-  actions: PlanActions
-  /** How tall the list may be, in px; the seam under it moves this. */
-  height: number
-}) {
-  const { t } = useStrings()
-  const ports = portsOf(model, plan)
-  const targets = elementsWithRole(plan, 'introduces')
-  const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const name = (id: ElementId) => byId.get(id)?.name ?? id
-  // Where a port goes when there is only one place it can: preselected, so a
-  // one-for-one replacement asks for a day and nothing else.
-  const only = targets.length === 1 ? targets[0] : undefined
-  const [allTo, setAllTo] = useState<string>(only ?? '')
-  const [allOn, setAllOn] = useState<string>(plan.to ?? '')
-  const [choice, setChoice] = useState<Record<string, string>>({})
-  const targetFor = (port: Port) => port.to?.[endOf(port)] ?? choice[port.from.id] ?? only ?? ''
-  const remaining = ports.filter((port) => port.on === undefined)
-
-  if (ports.length === 0) {
-    return (
-      <Box sx={{ px: 3, pt: 1.5, pb: 1, flexShrink: 0 }}>
-        <Heading>{t('plan.interfaces')}</Heading>
-        <Typography variant="body2" color="text.secondary">{t('plan.noInterfaces')}</Typography>
-      </Box>
-    )
-  }
-
-  const arrow = (port: Port) => (port.from.isBidirectional ? '↔' : port.from.sourceId === port.fromElementId ? '→' : '←')
-  // What a row is called, for the fields in it: the counterpart and the label,
-  // because two lines to the same counterpart are two rows.
-  const rowName = (port: Port) => (port.from.label ? `${name(port.counterpartId)} · ${port.from.label}` : name(port.counterpartId))
-  const status = (port: Port) => (
-    port.on === undefined ? t('plan.notPlanned') : port.on <= today ? t('plan.ported') : t('plan.planned')
-  )
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: height, flexShrink: 0 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', px: 3, pt: 1.5, pb: 0.5 }}>
-        <Heading>{t('plan.interfaces')}</Heading>
-        <Typography variant="caption" color="text.secondary">
-          {t('roadmap.planPorted', { done: String(ports.length - remaining.length), total: String(ports.length) })}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        {!readOnly && remaining.length > 0 && (
-          <>
-            {targets.length > 1 && (
-              <TextField
-                select value={allTo} sx={{ width: 180 }} label={t('plan.movesTo')}
-                slotProps={{ htmlInput: { 'aria-label': t('plan.movesTo') } }}
-                onChange={(e) => setAllTo(e.target.value)}
-              >
-                {targets.map((id) => <MenuItem key={id} value={id}>{name(id)}</MenuItem>)}
-              </TextField>
+            {!isOpen('units') && props.organisation?.facts !== undefined && (
+              <PropertyRow
+                label={t('plan.units')} value={unitCount === 0 ? t('plan.unitsNone') : t('plan.unitsSome', { count: unitCount })}
+                aside={<button type="button" className="roadmap-link" onClick={() => goTo('units')}>{t(readOnly ? 'plan.openBoard' : 'plan.moveAUnit')} ▸</button>}
+              />
             )}
-            <TextField
-              type="date" value={allOn} sx={{ width: 160 }} label={t('plan.on')}
-              slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${t('plan.portAll')}: ${t('plan.on')}` } }}
-              onChange={(e) => setAllOn(e.target.value)}
-            />
-            <Button
-              size="small" variant="outlined" disabled={!allTo || !allOn}
-              onClick={() => actions.portAll(plan.id, allTo, allOn)}
-            >
-              {t('plan.portAll')}
-            </Button>
+          </PropertyRows>
+        </>
+      ),
+    },
+    {
+      id: 'interfaces', heading: t('plan.interfaces'), group: t('plan.groupMoves'), count: t('roadmap.countOf', { count: progress.done, total: progress.total }), folded: !isOpen('interfaces'),
+      children: <PlanInterfaces plan={plan} model={model} today={today} readOnly={readOnly} actions={actions} />,
+    },
+    ...(props.organisation?.facts !== undefined ? [{
+      id: 'units', heading: t('plan.units'), group: t('plan.groupMoves'), count: unitCount, folded: !isOpen('units'),
+      children: <>{props.organisation.facts}{props.organisation.main}</>,
+    }] : []),
+    {
+      id: 'milestones', heading: t('roadmap.milestones'), group: t('plan.groupMoves'), count: plan.milestones.length,
+      aside: !readOnly && plan.milestones.length === 0
+        ? moreFor('milestone', t('plan.milestoneName'), 'plan.milestone')
+        : !readOnly && <Button size="small" variant="quiet" onClick={() => setAdding('milestone')}>+ {t('plan.milestoneName')}</Button>,
+      children: (
+        <MilestoneRows
+          plan={plan} readOnly={readOnly} set={set} picked={milestone} onPicked={setMilestone}
+          adding={adding === 'milestone'} onAdding={(on) => setAdding(on ? 'milestone' : undefined)}
+          {...(lookOn ? { onLook: lookOn } : {})}
+        />
+      ),
+    },
+    {
+      id: 'restsOn', heading: t('roadmap.restsOn'), group: t('plan.groupMoves'), count: plan.decisions.length,
+      aside: decisions.some((adr) => !plan.decisions.includes(adr.id)) ? moreFor('decision', t('plan.decision'), 'plan.addDecision') : undefined,
+      children: (
+        <RestsOnRows
+          plan={plan} decisions={decisions} decidedAbove={decidedAbove} readOnly={readOnly} set={set} onOpen={actions.onOpenDecision}
+          adding={adding === 'decision'} onAdding={(on) => setAdding(on ? 'decision' : undefined)}
+        />
+      ),
+    },
+    {
+      id: 'document', heading: t('plan.document'), group: t('plan.document'),
+      aside: !readOnly ? <Button size="small" onClick={() => setWriting(true)} data-guide="plan.editText">{t('plan.editText')}</Button> : undefined,
+      within: body.map((entry) => ({
+        id: entry.id, label: entry.text,
+        onPress: () => {
+          const found = [...document.querySelectorAll<HTMLElement>('[data-document] [role="heading"]')].find((one) => one.textContent?.trim() === entry.text)
+          found?.scrollIntoView?.({ block: 'start' })
+        },
+      })),
+      children: <PlanBody plan={plan} model={model} onOpenElement={actions.onOpenElement} renderMarkdown={props.renderMarkdown} />,
+    },
+    {
+      id: 'boards', heading: t('plan.boards'), group: t('plan.groupAround'), count: boards.length,
+      children: boards.length === 0 ? <p className="plan-sentence">{t('plan.noBoards')}</p> : (
+        <>
+          <PropertyRows readOnly>
+            {boards.map(({ diagram, draws, total }) => (
+              <PropertyRow
+                key={diagram.id} label={draws === total ? t('plan.boardDrawsAll', { count: total }) : t('plan.boardDraws', { count: draws, total })} value={diagram.name}
+                aside={openBoard && (
+                  <span className="plan-boardrow">
+                    {isDay(diagram.asOf) && t('plan.boardFixed')}
+                    <Button size="small" onClick={() => openBoard(plan.id, diagram.id, isDay(diagram.asOf) ? undefined : showDay)}>
+                      {!isDay(diagram.asOf) && showDay ? t('plan.openOn', { day: formatDay(showDay, language) }) : t('plan.openBoard')}
+                    </Button>
+                    {!readOnly && actions.onDuplicateBoard && isDay(plan.to) && (
+                      <Button size="small" variant="quiet" onClick={() => actions.onDuplicateBoard?.(diagram.id, plan.to!)}>
+                        {t('plan.duplicateAsOf', { day: formatDay(plan.to, language) })}
+                      </Button>
+                    )}
+                  </span>
+                )}
+              />
+            ))}
+          </PropertyRows>
+          <p className="plan-note">{t('plan.boardsHelp')}</p>
+        </>
+      ),
+    },
+    {
+      id: 'principles', heading: t('plan.principles'), group: t('plan.groupAround'),
+      children: <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />,
+    },
+    {
+      id: 'history', heading: t('plan.changesLog'), group: t('plan.groupAround'),
+      children: <RecordChanges about={{ kind: 'transition', id: plan.id }} first="proposed" />,
+    },
+    {
+      id: 'comments', heading: t('plan.comments'), group: t('plan.groupAround'),
+      children: <CommentThread about={{ kind: 'transition', id: plan.id }} />,
+    },
+  ]
+  return (
+    <>
+      <RecordPage
+        dataGuide="plan.page"
+        back={{ label: t('plan.back'), onPress: props.onClose }}
+        code={transitionLabel(plan)}
+        title={plan.title}
+        {...(readOnly ? {} : { onRename: (title: string) => set({ title }) })}
+        status={(
+          <PlanStatusLine
+            plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly}
+            describe={props.describe} set={set} goTo={goToWay} editing={headRow} onEditing={setHeadRow} initiative={props.initiativeToggle === true}
+          />
+        )}
+        actions={(
+          <>
+            {!readOnly && <Button size="small" onClick={() => setMoving(true)} data-guide="plan.move">{t('roadmap.shift')}</Button>}
+            {props.onCopyLink && <Button size="small" onClick={props.onCopyLink} data-testid="plan-copy-link">{t('common.copyLink')}</Button>}
+            {more.length > 0 && <MoreMenu items={more} label={t('plan.page')} />}
           </>
         )}
-      </Box>
-      <Box sx={{ overflow: 'auto', minHeight: 0, px: 3, pb: 1 }}>
-      <Box
-        component="table"
-        sx={{
-          width: '100%', borderCollapse: 'collapse', fontSize: 12, lineHeight: 1.3,
-          '& td, & th': { py: 0.25, pr: 1.5, textAlign: 'left', verticalAlign: 'middle' },
-          '& th': { fontSize: 11, color: 'text.secondary', fontWeight: 700, position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1 },
-          '& tr + tr td': { borderTop: 1, borderColor: 'divider' },
-          '& input': { fontSize: 12, py: 0.25 },
-          '& .MuiSelect-select': { fontSize: 12, py: 0.25 },
-        }}
+        band={(
+          <TimeStrip
+            label={t('plan.strip')} today={today} data-guide="plan.strip"
+            {...(isDay(plan.from) ? { from: plan.from } : {})} {...(isDay(plan.to) ? { to: plan.to } : {})}
+            items={plan.milestones.map((one, at) => ({ id: String(at), day: one.date, label: one.name })).filter((one) => isDay(one.day))}
+            {...(milestone !== undefined ? { pickedId: milestone } : {})}
+            onPick={(id) => { goTo('milestones'); setMilestone(id) }}
+          />
+        )}
+        {...(section !== 'changes' ? { section } : {})}
+        onSection={goTo}
+        sections={sections}
+      />
+      {writing && <WritePlan plan={plan} model={model} chrome={props.windowChrome ?? NO_WINDOW_CHROME} {...writeProps(props)} onDone={() => setWriting(false)} onSave={(text) => set({ body: text })} />}
+      {moving && <PlanMoveDialog plan={plan} model={model} onClose={() => setMoving(false)} onMove={(days) => { actions.shiftTransition(plan.id, days); setMoving(false) }} />}
+      <Dialog
+        open={deleting} title={t('roadmap.deleteConfirm', { name: plan.title })} onClose={() => setDeleting(false)}
+        actions={<DeleteActions onCancel={() => setDeleting(false)} onDelete={() => { actions.removeTransition(plan.id); setDeleting(false); props.onClose() }} />}
       >
-        <thead>
-          <tr>
-            <th>{t('plan.counterpart')}</th>
-            <th />
-            <th>{t('plan.protocol')}</th>
-            <th>{t('plan.movesTo')}</th>
-            <th>{t('plan.on')}</th>
-            <th>{t('roadmap.status')}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {ports.map((port) => (
-            <tr key={port.from.id} data-testid={`port-${port.from.id}`}>
-              <td>
-                <ElementLink onOpen={() => actions.onOpenElement(port.counterpartId)}>{rowName(port)}</ElementLink>
-              </td>
-              <td>{arrow(port)}</td>
-              <td>{port.from.protocol ?? ''}</td>
-              <td>
-                {targets.length > 1 ? (
-                  <TextField
-                    select variant="standard" value={targetFor(port)} disabled={readOnly}
-                    slotProps={namedSelect(`${rowName(port)}: ${t('plan.movesTo')}`)}
-                    onChange={(e) => {
-                      setChoice((c) => ({ ...c, [port.from.id]: e.target.value }))
-                      if (port.on) actions.port(plan.id, port.from.id, e.target.value, port.on)
-                    }}
-                  >
-                    {targets.map((id) => <MenuItem key={id} value={id}>{name(id)}</MenuItem>)}
-                  </TextField>
-                ) : targets[0] !== undefined && (
-                  <ElementLink onOpen={() => actions.onOpenElement(targets[0])}>{name(targets[0])}</ElementLink>
-                )}
-              </td>
-              <td>
-                <TextField
-                  type="date" variant="standard" value={port.on ?? ''} disabled={readOnly || !targetFor(port)}
-                  slotProps={{ htmlInput: { 'aria-label': `${rowName(port)}: ${t('plan.on')}` } }}
-                  onChange={(e) => {
-                    if (e.target.value) actions.port(plan.id, port.from.id, targetFor(port), e.target.value)
-                    else if (port.to) actions.unport(plan.id, port.from.id)
-                  }}
-                />
-              </td>
-              <td>{status(port)}</td>
-              <td>
-                {/* Only a dated twin was written as a port. An undated line that
-                    happens to match is somebody's drawing, and not ours to delete. */}
-                {!readOnly && port.to && port.on && (
-                  <Button size="small" sx={{ whiteSpace: 'nowrap', py: 0, minWidth: 0 }} onClick={() => actions.unport(plan.id, port.from.id)}>
-                    {t('plan.unport')}
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Box>
-      </Box>
-    </Box>
+        <DialogDanger title={t('roadmap.deleteBody')} />
+      </Dialog>
+    </>
   )
 }
 
-/** A name in the port table, as a link to the element on the board. */
-function ElementLink({ onOpen, children }: { onOpen(): void; children: ReactNode }) {
-  return (
-    <Link component="button" type="button" color="inherit" underline="hover" onClick={onOpen} sx={{ fontSize: 'inherit', textAlign: 'left' }}>
-      {children}
-    </Link>
-  )
+const writeProps = ({ renderMarkdown, onAddImage, images }: PlanPageProps) => ({
+  ...(renderMarkdown ? { renderMarkdown } : {}), ...(onAddImage ? { onAddImage } : {}), ...(images ? { images } : {}),
+})
+
+type RenderMarkdown = PlanPageProps['renderMarkdown']
+
+/** The document as it reads. `[[Name]]` becomes a link to the element; a plan that names what it changes should say so. */
+function PlanText({ text, model, onOpenElement, renderMarkdown }: { text: string; model: DesignModel; onOpenElement(id: ElementId): void; renderMarkdown: RenderMarkdown }) {
+  const { t } = useStrings()
+  const source = useMemo(() => linkElementRefs(text, model.elements), [text, model.elements])
+  if (!source.trim()) return <p className="plan-sentence">{t('plan.bodyEmpty')}</p>
+  return <>{renderMarkdown ? renderMarkdown(source, { onElementLink: onOpenElement }) : <pre style={{ whiteSpace: 'pre-wrap' }}>{source}</pre>}</>
 }
 
-/** Which end of the twin is the introduced element: the same end the original leaves from. */
-function endOf(port: Port): 'sourceId' | 'targetId' {
-  return port.from.sourceId === port.fromElementId ? 'sourceId' : 'targetId'
+function PlanBody({ plan, model, onOpenElement, renderMarkdown }: { plan: Transition; model: DesignModel; onOpenElement(id: ElementId): void; renderMarkdown: RenderMarkdown }) {
+  return <div className="plan-document" data-document=""><PlanText text={plan.body} model={model} onOpenElement={onOpenElement} renderMarkdown={renderMarkdown} /></div>
 }
 
-/** The document, and its source beside it while it is being written. */
-function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChange, onOpenElement }: {
+/** *Edit text*: the body in the one editor, with nothing else on screen. Saved as one step; Cancel asks if anything changed. */
+function WritePlan({ plan, model, chrome, renderMarkdown, onAddImage, images, onSave, onDone }: {
   plan: Transition
   model: DesignModel
-  editing: boolean
-  onOpenElement(id: ElementId): void
-  renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
+  chrome: WindowChrome
+  renderMarkdown?: RenderMarkdown
   onAddImage?(file: File): Promise<string | undefined>
   images?: DocumentImages
-  onChange(body: string): void
+  onSave: (text: string) => void
+  onDone: () => void
 }) {
   const { t } = useStrings()
-  // `[[Name]]` becomes a link to the element, as it does on the other two
-  // pages that read markdown; a plan that names what it changes should say so.
-  const source = useMemo(() => linkElementRefs(plan.body, model.elements), [plan.body, model.elements])
-  const rendered = source.trim()
-    ? (renderMarkdown ? renderMarkdown(source, { onElementLink: onOpenElement }) : <pre style={{ whiteSpace: 'pre-wrap' }}>{source}</pre>)
-    : <Typography color="text.secondary">{t('plan.bodyEmpty')}</Typography>
-
+  const [draft, setDraft] = useState(plan.body)
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
-      <WritingPane
-        writing={editing}
-        value={plan.body}
-        onChange={onChange}
-        label={t('plan.source')}
-        onAddImage={onAddImage}
-        images={images}
+    <FocusedWindow
+      open title={t('plan.editing')} number={transitionLabel(plan)} windowChrome={chrome} data-guide="plan.writing"
+      changed={draft !== plan.body} saveLabel={t('plan.saveText')} onCancel={onDone}
+      onSave={() => { if (draft !== plan.body) onSave(draft); onDone() }}
+    >
+      <MarkdownEditor
+        variant="pane" autoFocus value={draft} onChange={setDraft} label={t('plan.source')} attachable
+        {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
         template={{ label: t('md.fromTemplate'), text: planBodyTemplate(t) }}
-      >
-        <DocumentSheet dense={editing}>
-          <Box sx={{ fontSize: 14 }} data-document>{rendered}</Box>
-          <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />
-          <RecordChanges about={{ kind: 'transition', id: plan.id }} first="proposed" />
-          <CommentThread about={{ kind: 'transition', id: plan.id }} />
-        </DocumentSheet>
-      </WritingPane>
-    </Box>
+        renderPreview={(text) => <div className="plan-document" data-document=""><PlanText text={text} model={model} onOpenElement={() => undefined} renderMarkdown={renderMarkdown} /></div>}
+      />
+    </FocusedWindow>
   )
 }

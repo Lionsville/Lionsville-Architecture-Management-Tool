@@ -317,8 +317,10 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         today={todayDay}
         platformTree={ownership.platformTree}
         asOf={open ? shownAsOf(open, viewing.days) : undefined}
+        boardBehind={open !== undefined}
         readOnly={readOnly}
         actions={plans.roadmapActions}
+        {...(plans.roadmapSelect !== undefined ? { select: plans.roadmapSelect } : {})}
         remember={`roadmap\u0000${props.project.path}`}
         {...(session.model.checkMarks ? { marks: session.model.checkMarks } : {})}
         onClose={() => { plans.closeRoadmap(); pages.leaveIfNothingToDraw() }}

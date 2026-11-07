@@ -10,6 +10,8 @@ import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import type { StringKey } from '../i18n'
+import { isDay, transitionLabel } from '../model'
+import type { Transition } from '../model'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
 import { scopeActivity } from './activityMoves'
@@ -39,6 +41,25 @@ export function usePageChrome(windowChrome: WindowChrome | undefined) {
  * What this scope tells the frame, and the strips under the rows. The rows
  * themselves are the frame's: what a screen owes them is these facts.
  */
+/** What a board's band says about the plan it was opened from: its number, the milestone on this day, and the next and previous. */
+function carriedPlan(plan: Transition, day: string, go: (day: string) => void) {
+  const days = plan.milestones.filter((one) => isDay(one.date)).sort((a, b) => a.date.localeCompare(b.date))
+  const at = days.findIndex((one) => one.date === day)
+  const here = days[at]
+  const before = [...days].reverse().find((one) => one.date < day)
+  const after = days.find((one) => one.date > day)
+  return {
+    detail: `${transitionLabel(plan)} ${plan.title}${here ? `: ${here.name}` : ''}`,
+    ...(days.length > 0 ? {
+      position: {
+        at: (at >= 0 ? at : days.filter((one) => one.date < day).length) + 1, total: days.length,
+        ...(before ? { onPrevious: () => go(before.date) } : {}),
+        ...(after ? { onNext: () => go(after.date) } : {}),
+      },
+    } : {}),
+  }
+}
+
 export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   const { props, session, document: { document, savedAt, saveFailed }, alsoHere, pages, requests, dialogs } = parts
   const { s } = props.shell
@@ -106,30 +127,36 @@ const NO_BANDS: readonly StackedBand[] = []
  * step of making the day its own, which is one edit and one line in Activity.
  */
 function useLookBand(parts: WorkspaceParts, active: DesignDiagram | undefined, looking: boolean): readonly StackedBand[] {
-  const { props, session, viewing } = parts
+  const { props, session, viewing, pages } = parts
   const { s, language } = props.shell
+  const { carried, carryTo, letGo, backToPlan } = pages.plans
   return useMemo<readonly StackedBand[]>(() => {
     if (!looking || !active) return NO_BANDS
     const day = shownAsOf(active, viewing.days)
     const say = (value: string | undefined) => (value ? formatDay(value, language) : s('frame.lookingDayToday'))
+    const back = () => { viewing.forget(active.id); letGo() }
     const keep = () => {
       session.dispatch({ type: 'diagram.update', id: active.id, patch: { asOf: day } })
-      viewing.forget(active.id)
+      back()
     }
+    // A board opened from a plan carries it: the plan's own days to step between, and the way back.
+    const carrying = carried ? carriedPlan(carried, day ?? '', (next) => carryTo(active.id, next)) : undefined
     return [{
       id: 'looking', tone: 'looking', dataGuide: 'board.look',
       title: s('frame.lookingAt', { day: say(day) }),
-      detail: s('frame.lookingDetail'),
+      detail: carrying ? carrying.detail : s('frame.lookingDetail'),
+      ...(carrying?.position ? { position: carrying.position } : {}),
       action: (
         <>
-          <KitButton size="small" variant="primary" onClick={() => viewing.forget(active.id)} data-testid="looking-back">
+          {carried && <KitButton size="small" onClick={() => { back(); backToPlan() }} data-testid="looking-plan">{s('plan.backToPlan')}</KitButton>}
+          <KitButton size="small" variant="primary" onClick={back} data-testid="looking-back">
             {active.asOf ? s('frame.lookingBack', { day: say(active.asOf) }) : s('frame.lookingToday')}
           </KitButton>
           {!session.readOnly && <KitButton size="small" onClick={keep} data-testid="looking-keep">{s('frame.lookingKeep')}</KitButton>}
         </>
       ),
     }]
-  }, [looking, active, viewing, session, s, language])
+  }, [looking, active, viewing, session, s, language, carried, carryTo, letGo, backToPlan])
 }
 
 /** The look said to the frame, so the address carries it; and one the address or an agent asked for, taken up. */

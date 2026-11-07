@@ -69,8 +69,9 @@ import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
-import { useSeamWidths } from './useShellServices'
+import { useSeamWidths, useViewerKeeps } from './useShellServices'
 import { SeamWidthsProvider } from '../widgets/useSeamWidth'
+import { ViewerKeepProvider } from '../widgets/useViewerKeep'
 import { useProviderParts } from './useProviderParts'
 import { AttachmentsProvider } from '../documentation/ui/Attachments'
 import { useScopeAncestry } from './useScopeAncestry'
@@ -379,7 +380,7 @@ export type InitialPage =
    * is given, and on one of its tabs when a tab is (ADR-0019, amended).
    */
   | { page: 'observations'; id?: string; tab?: ObservationTab }
-  | { page: 'roadmap' }
+  | { page: 'roadmap'; select?: string }
   /**
    * The operating model (ADR-0036): kept at the organisation and opened there,
    * on one unit type, role or responsibility when an id is given.
@@ -474,6 +475,7 @@ export function App(props: AppProps) {
   const [listDensity, setListDensity] = useState<ListDensity>(() => densityOf(prefs.readPreferences().listDensity))
   const density = useMemo(() => [listDensity, (next: ListDensity) => { setListDensity(next); prefs.writePreference({ listDensity: next }) }] as const, [listDensity, prefs])
   const seams = useSeamWidths(prefs)
+  const keeps = useViewerKeeps(prefs)
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
@@ -493,6 +495,7 @@ export function App(props: AppProps) {
       <SessionMemoryContext.Provider value={parts.folds}>
       <SeamWidthsProvider value={seams}>
       <ListDensityContext.Provider value={density}>
+      <ViewerKeepProvider value={keeps}>
       {/* Files a document may point at, where the open source keeps them. */}
       <AttachmentsProvider value={props.provider?.attachments}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
@@ -524,6 +527,7 @@ export function App(props: AppProps) {
         />
       </Box>
       </AttachmentsProvider>
+      </ViewerKeepProvider>
       </ListDensityContext.Provider>
       </SeamWidthsProvider>
       </SessionMemoryContext.Provider>

@@ -129,4 +129,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.axis.runsAfter': '{name}, läuft über dieses Fenster hinaus',
   'kit.axis.runsBoth': '{name}, läuft über beide Ränder hinaus',
   'kit.axis.together': '{count} Meilensteine',
+  'kit.axis.namesWidth': 'Die Breite der Namen',
 }

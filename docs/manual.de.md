@@ -1809,19 +1809,34 @@ Prüfungen des Fahrplans eine Person nennen können.
 ## Der Fahrplan
 
 **Fahrplan** in der oberen Leiste öffnet die Landschaft auf einer Zeitachse. Nur
-was ein Datum hat, bekommt eine Zeile, sodass eine Landschaft mit viertausend
-Anwendungen und neun Daten darin ein Fahrplan aus wenigen Zeilen ist — der Rest
-ist auf der Zeichenfläche, wo er hingehört. Jede Zeile ist eine Folge farbiger
-Abschnitte: geplant, aktiv, auslaufend, weg. Eine Linie durch jede Zeile
-markiert heute, und eine zweite markiert den Tag, den das Board hinter der Seite
-zeigt. Relationen mit einem eigenen Fenster stehen unter den Anwendungen,
-eingeklappt mit einer Zahl in der Überschrift, weil ein Plan, der jede
-Schnittstelle verlegt, jede Linie datiert.
+was ein Datum hat, bekommt eine Zeile, also ist eine Landschaft aus viertausend
+Anwendungen mit neun Daten ein Fahrplan von wenigen Zeilen — der Rest steht auf der
+Fläche, wo er hingehört. Pläne stehen zuerst, dann Anwendungen, jede Zeile eine Folge
+von Abschnitten mit der Phase darauf: geplant, live, auslaufend, abgelöst. Verbindungen
+mit einem eigenen Zeitraum folgen, eingeklappt mit einer Zahl an der Überschrift, nach
+dem Plan, der sie bewegt, in alte Linien, die enden, und neue Linien, die beginnen,
+weil ein Plan, der jede Schnittstelle bewegt, jede Linie datiert. Initiativen aus den
+Bereichen darunter stehen zuletzt.
 
-Der Schieberegler oben bewegt dieses Board. Ziehen Sie ihn, und die
-Zeichenfläche dahinter folgt, sodass das Bild und die Achse nicht uneins darüber
-sein können, über welchen Tag gesprochen wird. Wie die Datumsschaltfläche
-schaut er nur: **Speichern** in der Leiste des Boards behält einen Tag.
+Das **Lineal** trägt die Daten. Es öffnet beim ersten Mal drei Monate zurück und neun
+voraus, danach dort, wo Sie es verlassen haben. **Wochen**, **Monate**, **Quartale** und
+**Jahre** setzen den Maßstab, **Heute** kommt zurück und **Einpassen** zeigt alles mit
+einem Datum; ⌘ oder Strg mit dem Rad zoomt, Umschalt mit dem Rad oder ein Wischen
+verschiebt, und ein Druck auf die zwei Daten des Zeitraums fragt nach einem ersten und
+einem letzten Tag. Ein Winkel am Ende eines Balkens sagt, dass er über den Zeitraum
+hinausläuft.
+
+Heute steht auf dem Lineal, mit einem Strich durch jede Zeile. Der **Griff** auf dem
+Lineal ist der Tag, den die Tafel hinter der Seite zeigt: Ziehen Sie ihn, und die Fläche
+folgt, sodass Bild und Achse sich nicht widersprechen können. Außer Sicht bleibt der Tag
+am Rand stehen, an dem er vorbeiging, und ein Druck holt ihn zurück. Wie die
+Tagessteuerung schaut der Griff nur: **Speichern** in der Leiste der Tafel behält einen Tag.
+
+Drücken Sie eine Zeile, und rechts öffnet sich ein Leser, mit der Achse noch im Blick und
+dem, was dazugehört, hervorgehoben: **Plan öffnen**, **Tafel zeigen am…** oder **Auf der
+Tafel öffnen** ist der zweite Druck. Eine Zeile, deren Daten sich widersprechen, trägt ein
+Zeichen, und der Leser sagt warum. Ab einer Handvoll Zeilen verkürzt **Zeile suchen** sie;
+**Erledigte und abgebrochene ausblenden** lässt weg, was vorbei ist.
 
 ### Pläne
 

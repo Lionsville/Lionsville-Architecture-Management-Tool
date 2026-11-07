@@ -376,7 +376,9 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     if (target.page === undefined || !SELECTS.includes(target.page)) {
       return refused('agent.badArguments', `"select" is for page ${SELECTS.join(', ')}`)
     }
-    if (!model?.elements.some((element) => element.id === asked.select)) {
+    // The roadmap's reader opens on a plan or a dated line as well as on an application.
+    const onRoadmap = target.page === 'roadmap' && (model?.transitions?.some((plan) => plan.id === asked.select) || model?.relations.some((line) => line.id === asked.select))
+    if (!onRoadmap && !model?.elements.some((element) => element.id === asked.select)) {
       return refused('agent.unknownId', `element ${asked.select} in ${where}`)
     }
   }
@@ -396,7 +398,7 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
  * an application on an organisation chart or a Conway map. A drawing does
  * not select.
  */
-const SELECTS: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'chart', 'conway']
+const SELECTS: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'chart', 'conway', 'roadmap']
 
 /** Which page's tab a view is (`screen.ts`'s `viewPage`). */
 function pageOf(diagram: DesignDiagram): Page {

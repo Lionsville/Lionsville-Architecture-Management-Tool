@@ -7,6 +7,7 @@
  * one way to say that something failed.
  */
 import type { SeamWidths } from '../widgets/useSeamWidth'
+import type { ViewerKeep } from '../widgets/useViewerKeep'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { translator } from '../i18n'
@@ -176,6 +177,20 @@ export function useSeamWidths(prefs: ShellPreferences): SeamWidths {
       keep: (seam, width) => {
         held[seam] = Math.round(width)
         prefs.writePreference({ seams: { ...held } })
+      },
+    }
+  }, [prefs])
+}
+
+/** Where a person left a view (a roadmap's scale and position): a preference, remembered with the rest, under `kept`. */
+export function useViewerKeeps(prefs: ShellPreferences): ViewerKeep {
+  return useMemo(() => {
+    const held = { ...((prefs.preferences as Record<string, unknown> | undefined)?.kept as Record<string, unknown> | undefined) }
+    return {
+      read: (key) => held[key],
+      keep: (key, value) => {
+        held[key] = value
+        prefs.writePreference({ kept: { ...held } })
       },
     }
   }, [prefs])

@@ -137,14 +137,21 @@ export type PropertyRowsProps = {
   readOnly?: boolean
   /** What is left out for being empty: *+ Vendor, technology, dates…*, and what each adds. */
   add?: { label: string; items: readonly MenuEntry[]; 'data-guide'?: string }
+  /** Which row is a field, for a screen that opens one from somewhere else: a row names itself with `rowId`. */
+  editing?: string | undefined
+  onEditing?: (rowId: string | undefined) => void
+  /** Side by side with no labels on show, for the facts in a record's head. Each row still has its name. */
+  line?: boolean
 }
 
 /** The rows of a record. It is what keeps editing to one row at a time. */
-export function PropertyRows({ children, readOnly = false, add }: PropertyRowsProps) {
-  const [editing, setEditing] = useState<string>()
+export function PropertyRows({ children, readOnly = false, add, editing: held, onEditing, line }: PropertyRowsProps) {
+  const [own, setOwn] = useState<string>()
+  const editing = onEditing ? held : own
+  const setEditing = onEditing ?? setOwn
   return (
     <RowsContext.Provider value={{ editing, setEditing, readOnly }}>
-      <div className="kit-props">
+      <div className="kit-props" data-line={line || undefined}>
         <dl className="kit-props__list">{children}</dl>
         {add && !readOnly && (
           <div className="kit-props__add">
@@ -194,6 +201,10 @@ export type PropertyRowProps = {
   /** Why this value will not do; the row stays open and says so. */
   check?: (value: string) => string | undefined
   readOnly?: boolean
+  /** A word at the end of the row: *live from 2 Nov 2026*. Colour is not the only thing it may carry. */
+  aside?: ReactNode
+  /** The row's name to `PropertyRows`' `editing`. */
+  rowId?: string
   'data-guide'?: string
 }
 
@@ -205,10 +216,11 @@ function notOwnWords(t: Translate, value: string, inherited: PropertyRowProps['i
     : t('kit.property.fromAbove', { value })
 }
 
-export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, 'data-guide': guide, ...reading }: PropertyRowProps) {
+export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, 'data-guide': guide, ...reading }: PropertyRowProps) {
   const rows = useContext(RowsContext)
   if (!rows) throw new Error('A PropertyRow belongs in PropertyRows.')
-  const id = useId()
+  const ownId = useId()
+  const id = rowId ?? ownId
   const pressable = useRef<HTMLButtonElement>(null)
   const returning = useRef(false)
 
@@ -239,6 +251,7 @@ export function PropertyRow({ label, edit, error, check, onCommit, readOnly = fa
               onPress={edit !== undefined && writable ? () => rows.setEditing(id) : undefined}
             />
           )}
+        {aside && !editing && <span className="kit-prop__aside">{aside}</span>}
       </dd>
     </div>
   )

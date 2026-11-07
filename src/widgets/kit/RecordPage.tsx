@@ -14,30 +14,51 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon } from '../icons'
+import { PressName } from './PressName'
 import './RecordPage.css'
 
 export type RecordSection = {
   readonly id: string
   readonly heading: string
   readonly children: ReactNode
+  /** The outline's heading this falls under: *Moves*, *Around it*. */
+  readonly group?: string
+  /** A quiet number or word beside its line in the outline: *0 of 11*. */
+  readonly count?: ReactNode
+  /** At the end of the heading: *+ Milestone*, *Edit text*. */
+  readonly aside?: ReactNode
+  /** In the outline and not yet on the page: pressing its line is what asks for it (`onSection`). */
+  readonly folded?: boolean
+  /** Lines under this one in the outline: a document's own headings. */
+  readonly within?: readonly RecordOutlineLine[]
 }
+
+export type RecordOutlineLine = { readonly id: string; readonly label: string; readonly onPress: () => void }
 
 export type RecordPageProps = {
   /** Named: *‹ Decisions*, never only an arrow, because a person may have come by a link. */
   readonly back?: { readonly label: string; readonly onPress: () => void }
   readonly code?: string
   readonly title: ReactNode
+  /** Press the title to rename it. It must be plain words then. */
+  readonly onRename?: (name: string) => string | void
   /** One sentence: *Accepted 10 Feb 2026. Locked: to change it, write a decision that replaces it.* */
   readonly status?: ReactNode
   /** The ⋯ and whatever else belongs at the end of the head. */
   readonly actions?: ReactNode
   /** A band for this record: *Kept in …*. */
   readonly band?: ReactNode
+  /** The section to be at, said by the address: the page goes there when this changes. */
+  readonly section?: string
+  /** A line of the outline was pressed. */
+  readonly onSection?: (id: string) => void
   readonly sections: readonly RecordSection[]
   /** How many sections it takes to need an outline. */
   readonly outlineFrom?: number
   readonly dataGuide?: string
 }
+
+const NAME_CLASSES = { heading: 'kit-record__title', press: 'kit-record__titlePress', field: 'kit-record__titleField', refused: 'kit-record__refused' }
 
 const sectionDom = (id: string) => `kit-record-${id}`
 
@@ -59,19 +80,39 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
   return [current, setCurrent] as const
 }
 
-export function RecordPage({ back, code, title, status, actions, band, sections, outlineFrom = 4, dataGuide }: RecordPageProps) {
+export function RecordPage({ back, code, title, onRename, status, actions, band, section, onSection, sections, outlineFrom = 4, dataGuide }: RecordPageProps) {
   const { t } = useStrings()
   const scroller = useRef<HTMLDivElement>(null)
   const outlined = sections.length >= outlineFrom
-  const ids = sections.map((section) => section.id)
+  const ids = sections.filter((one) => !one.folded).map((one) => one.id)
   const stableIds = useStable(ids)
   const [current, setCurrent] = useCurrentSection(scroller, stableIds)
-  const goTo = (id: string) => {
-    setCurrent(id)
+  const scrollTo = (id: string) => {
     const heading = document.getElementById(sectionDom(id))?.querySelector<HTMLElement>('h2')
     heading?.scrollIntoView?.({ block: 'start' })
     heading?.focus()
   }
+  // After the render that unfolded it: a folded section has nothing to go to.
+  const [goingTo, setGoingTo] = useState<{ id: string } | undefined>(undefined)
+  useEffect(() => {
+    if (!section) return
+    setCurrent(section)
+    setGoingTo({ id: section })
+  }, [section, setCurrent])
+  useEffect(() => {
+    if (goingTo) scrollTo(goingTo.id)
+  }, [goingTo])
+  const goTo = (id: string) => {
+    setCurrent(id)
+    onSection?.(id)
+    setGoingTo({ id })
+  }
+  const groups = sections.reduce<{ name: string | undefined; lines: RecordSection[] }[]>((all, one) => {
+    const last = all[all.length - 1]
+    if (last && last.name === one.group) last.lines.push(one)
+    else all.push({ name: one.group, lines: [one] })
+    return all
+  }, [])
   return (
     <div className="kit-record" data-guide={dataGuide}>
       <header className="kit-record__head">
@@ -82,7 +123,9 @@ export function RecordPage({ back, code, title, status, actions, band, sections,
             </button>
           )}
           {code && <span className="kit-record__code">{code}</span>}
-          <h1 className="kit-record__title">{title}</h1>
+          {onRename && typeof title === 'string'
+            ? <PressName name={title} onRename={onRename} heading="h1" classes={NAME_CLASSES} />
+            : <h1 className="kit-record__title">{title}</h1>}
           {actions && <span className="kit-record__actions">{actions}</span>}
         </div>
         {status && <div className="kit-record__status">{status}</div>}
@@ -92,21 +135,35 @@ export function RecordPage({ back, code, title, status, actions, band, sections,
         <div className="kit-record__page" data-outlined={outlined || undefined}>
           {outlined && (
             <nav className="kit-record__outline" aria-label={t('kit.record.outline')}>
-              {sections.map((section) => (
-                <button
-                  type="button" key={section.id} className="kit-record__outlineItem"
-                  aria-current={current === section.id ? 'location' : undefined} onClick={() => goTo(section.id)}
-                >
-                  {section.heading}
-                </button>
+              {groups.map((group, at) => (
+                <div key={group.name ?? at} className="kit-record__outlineGroup">
+                  {group.name && <div className="kit-record__outlineHead">{group.name}</div>}
+                  {group.lines.flatMap((one) => [
+                    <button
+                      type="button" key={one.id} className="kit-record__outlineItem"
+                      aria-current={current === one.id ? 'location' : undefined} onClick={() => goTo(one.id)}
+                    >
+                      <span>{one.heading}</span>
+                      {one.count !== undefined && <span className="kit-record__outlineCount">{one.count}</span>}
+                    </button>,
+                    ...(one.within ?? []).map((line) => (
+                      <button type="button" key={`${one.id}/${line.id}`} className="kit-record__outlineItem" data-within="" onClick={line.onPress}>
+                        <span>{line.label}</span>
+                      </button>
+                    )),
+                  ])}
+                </div>
               ))}
             </nav>
           )}
           <div className="kit-record__sections">
-            {sections.map((section) => (
-              <section key={section.id} id={sectionDom(section.id)} className="kit-record__section" aria-labelledby={`${sectionDom(section.id)}-h`}>
-                <h2 id={`${sectionDom(section.id)}-h`} tabIndex={-1}>{section.heading}</h2>
-                {section.children}
+            {sections.filter((one) => !one.folded).map((one) => (
+              <section key={one.id} id={sectionDom(one.id)} className="kit-record__section" aria-labelledby={`${sectionDom(one.id)}-h`}>
+                <div className="kit-record__sectionHead">
+                  <h2 id={`${sectionDom(one.id)}-h`} tabIndex={-1}>{one.heading}</h2>
+                  {one.aside && <span className="kit-record__sectionAside">{one.aside}</span>}
+                </div>
+                {one.children}
               </section>
             ))}
           </div>

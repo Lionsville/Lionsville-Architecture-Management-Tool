@@ -38,3 +38,11 @@
 .kit-menu__reason { display: block; margin-top: 2px; color: var(--ink-3); font-size: var(--t-sm); }
 .kit-menu__line { height: 1px; margin: var(--s-1); background: var(--line); list-style: none; }
 .kit-menu__heading { padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-sm); list-style: none; }
+
+/* A refused choice's reasons: indented under it, each a way to what clears it. */
+.kit-menu__hold.MuiMenuItem-root { display: flex; align-items: baseline; gap: var(--s-1); min-height: 0; padding-block: 2px; padding-inline-start: var(--s-5); white-space: normal; max-width: 360px; font-size: var(--t-sm); color: var(--ink-2); }
+.kit-menu__hold .kit-menu__label { text-decoration: underline; text-underline-offset: 2px; }
+.kit-menu__hold[aria-disabled='true'] .kit-menu__label,
+.kit-menu__hold[data-ok] .kit-menu__label { text-decoration: none; }
+.kit-menu__holdmark { flex: none; color: var(--warn); }
+.kit-menu__hold[data-ok] .kit-menu__holdmark { color: var(--ok); }
