@@ -103,6 +103,20 @@ describe('a zone', () => {
   it('holds its name’s size on screen', () => {
     expect(css('./Zone.css')).toContain('font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1))')
   })
+
+  it('is told from the ground by an edge held on screen and a name in the first ink', () => {
+    const drawn = css('./Zone.css')
+    expect(drawn).toContain('solid var(--zone-edge)')
+    expect(drawn).toContain('border-width: round(up, calc(1px / var(--canvas-zoom, 1)), 1px)')
+    expect(drawn).toContain('@media (max-resolution: 1.99dppx)')
+    expect(drawn).toContain('.kit-zone__name { color: var(--ink)')
+  })
+
+  it('takes its name as something to press, still named by it', () => {
+    render(<Zone name="Billing" nameAs={<button type="button">Billing</button>} />)
+    expect(screen.getByRole('region', { name: 'Billing' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Billing' })).toBeTruthy()
+  })
 })
 
 describe('a line', () => {

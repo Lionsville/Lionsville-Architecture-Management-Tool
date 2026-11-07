@@ -15,6 +15,8 @@ import './Zone.css'
 
 export type ZoneProps = Omit<ComponentPropsWithRef<'section'>, 'children'> & {
   name: string
+  /** The name as something to press: drawn in the name's place, the name still being what it says. */
+  nameAs?: ReactNode
   kind?: 'zone' | 'boundary'
   /** A word after the name, such as a kind in brackets or a count. */
   aside?: ReactNode
@@ -24,7 +26,7 @@ export type ZoneProps = Omit<ComponentPropsWithRef<'section'>, 'children'> & {
   children?: ReactNode
 }
 
-export function Zone({ name, kind = 'zone', aside, dimmed, fold, className, children, ...rest }: ZoneProps) {
+export function Zone({ name, nameAs, kind = 'zone', aside, dimmed, fold, className, children, ...rest }: ZoneProps) {
   const { t } = useStrings()
   const nameId = useId()
   return (
@@ -46,7 +48,7 @@ export function Zone({ name, kind = 'zone', aside, dimmed, fold, className, chil
             onClick={fold.onToggle}
           ><CaretIcon size={10} /></button>
         )}
-        <span className="kit-zone__name" id={nameId}>{name}</span>
+        <span className="kit-zone__name" id={nameId}>{nameAs ?? name}</span>
         {aside && <span className="kit-zone__aside">{aside}</span>}
       </header>
       {!fold?.folded && children}

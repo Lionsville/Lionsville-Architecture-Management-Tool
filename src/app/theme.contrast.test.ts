@@ -287,7 +287,7 @@ const TOKEN_NON_TEXT: Record<string, string[]> = {
   'line-focus': ['canvas-ground', 'zone-fill', 'card-surface'],
   'line-signal': ['canvas-ground', 'zone-fill', 'card-surface'],
   'exception': ['canvas-ground', 'zone-fill', 'card-surface'],
-  'zone-edge': ['canvas-ground'],
+  'zone-edge': ['canvas-ground', 'zone-fill'],
   'card-edge': ['zone-fill', 'canvas-ground'],
   'progress-fill': ['surface'],
   'axis-today': ['surface'],

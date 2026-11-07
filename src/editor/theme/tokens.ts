@@ -180,13 +180,13 @@ function buildTokens(theme: Theme): NodeTokens {
         management: colours['zone-fill'],
         landscape: 'transparent',
       },
-      // A band's name is words at 11px: the second ink, not a fainter one.
-      label: colours['ink-2'],
+      // A band's name says where a card is: the first ink, as a card's own name.
+      label: colours['ink'],
     },
     domainGroup: {
       border: colours['zone-edge'],
-      fill: 'transparent',
-      label: colours['ink-2'],
+      fill: colours['zone-fill'],
+      label: colours['ink'],
     },
     card: {
       bg: colours['card-surface'],

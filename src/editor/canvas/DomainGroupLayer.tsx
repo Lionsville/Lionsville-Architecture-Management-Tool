@@ -10,12 +10,13 @@ import type { DiagramGroup, DomainGroupRect, Geometry, Point, Rect } from '../..
 import { useCanvasMenu } from './CanvasMenuContext';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
+import { Zone } from '../../widgets/kit/Zone';
 
 const MIN_GROUP_SIZE = 120;
 
 /**
- * A group is told by its edge and its name, on the board's neutral ground, and a
- * colour somebody chose stays as the thin rail at its left. Anything but a plain hex
+ * A group is the kit's Zone: a step of the ground, an edge and a name, each read
+ * at any zoom, and a colour somebody chose stays as the thin rail at its left. Anything but a plain hex
  * draws no rail: a decoration is never worth taking the canvas down for.
  */
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -178,32 +179,12 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
           const label = held?.name ?? group.id;
           const colors = groupColors(theme, held?.color);
           const isSelected = props.selected.includes(group.id);
-          // Selected reads like a selected node: the dashes go solid and a soft
-          // ring lifts the box off the band behind it. The group's own colour
-          // still owns the border and the wash — selection is a state on top of
-          // the decoration, not a replacement for it.
-          const border = `${isSelected ? 2 : 1}px solid ${colors.border}`;
           return (
-            <div
+            <Zone
               key={group.id}
-              data-testid="lv-domain-group"
-              data-group={group.id}
-              style={{
-                position: 'absolute',
-                left: rect.x,
-                top: rect.y,
-                width: rect.width,
-                height: rect.height,
-                border,
-                boxShadow: isSelected ? `0 0 0 4px ${theme.palette.action.selected}` : undefined,
-                backgroundColor: colors.fill,
-                borderRadius: 'var(--r-2)',
-                ...(colors.rail ? { borderLeft: `calc(3px / var(--canvas-zoom, 1)) solid ${colors.rail}` } : {}),
-                pointerEvents: 'none',
-                zIndex: -1,
-              }}
-            >
-              {renaming?.groupId === group.id ? (
+              className="lv-group"
+              name={label}
+              nameAs={renaming?.groupId === group.id ? (
                 <input
                   autoFocus
                   className="nodrag nopan"
@@ -251,13 +232,6 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                     menu.open({ kind: 'group', groupId: group.id }, event);
                   }}
                   style={{
-                    position: 'absolute',
-                    top: 'calc(var(--s-1) / var(--canvas-zoom, 1))',
-                    left: 'calc(var(--s-2) / var(--canvas-zoom, 1))',
-                    fontSize: 'calc(var(--t-canvas-name) / var(--canvas-zoom, 1))',
-                    fontWeight: 600,
-                    lineHeight: 'var(--lh-tight)',
-                    color: colors.label,
                     userSelect: 'none',
                     whiteSpace: 'nowrap',
                     cursor: props.readOnly ? 'default' : 'grab',
@@ -267,6 +241,22 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                   {label}
                 </span>
               )}
+              data-testid="lv-domain-group"
+              data-group={group.id}
+              data-selected={isSelected || undefined}
+              style={{
+                position: 'absolute',
+                left: rect.x,
+                top: rect.y,
+                width: rect.width,
+                height: rect.height,
+                // Selected reads like a selected node: a soft ring lifts the box off the band behind it.
+                boxShadow: isSelected ? `0 0 0 4px ${theme.palette.action.selected}` : undefined,
+                ...(colors.rail ? { borderLeft: `calc(3px / var(--canvas-zoom, 1)) solid ${colors.rail}` } : {}),
+                pointerEvents: 'none',
+                zIndex: -1,
+              }}
+            >
               {!props.readOnly && (
                 <div
                   className="nodrag nopan" role="separator"
@@ -286,7 +276,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                   }}
                 />
               )}
-            </div>
+            </Zone>
           );
         })}
       </ViewportPortal>

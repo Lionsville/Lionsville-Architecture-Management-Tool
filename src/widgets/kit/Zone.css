@@ -2,7 +2,10 @@
   position: relative;
   box-sizing: border-box;
   height: 100%;
-  border: calc(1px / var(--canvas-zoom, 1)) solid var(--line);
+  border: calc(1px / var(--canvas-zoom, 1)) solid var(--zone-edge);
+  /* A browser floors a border to whole pixels before the board's scale, so at 60% it would paint 0.6 of a pixel
+     and the edge's colour would come out at half its contrast. Rounded up, it holds at least its width on screen. */
+  border-width: round(up, calc(1px / var(--canvas-zoom, 1)), 1px);
   border-radius: var(--r-2);
   background: var(--zone-fill);
   color: var(--ink-2);
@@ -11,6 +14,11 @@
   border: calc(1.5px / var(--canvas-zoom, 1)) dashed var(--zone-edge);
   border-radius: var(--r-3);
   background: transparent;
+}
+/* Where it lands is fractional, so between two pixels on a display of few of them: two on screen fill one whole. */
+@media (max-resolution: 1.99dppx) {
+  .kit-zone,
+  .kit-zone[data-kind='boundary'] { border-width: round(up, calc(2px / var(--canvas-zoom, 1)), 1px); }
 }
 .kit-zone[data-dimmed] { border-color: var(--line); color: var(--ink-dim); }
 .kit-zone[data-folded] { height: auto; }
@@ -22,8 +30,8 @@
   font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1));
   line-height: var(--lh-tight);
 }
-.kit-zone__name { font-weight: var(--fw-strong); overflow-wrap: anywhere; }
-.kit-zone[data-kind='boundary'] .kit-zone__name { color: var(--ink); }
+.kit-zone__name { color: var(--ink); font-weight: var(--fw-strong); overflow-wrap: anywhere; }
+.kit-zone[data-dimmed] .kit-zone__name { color: inherit; }
 .kit-zone__aside { color: var(--ink-3); font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); }
 .kit-zone__fold {
   display: inline-flex;

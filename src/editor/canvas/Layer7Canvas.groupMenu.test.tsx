@@ -348,6 +348,13 @@ describe('Layer7Canvas — group colour', () => {
     expect(screen.getByTestId('lv-domain-group').style.borderLeft).not.toContain('#2f6fdb');
   });
 
+  it('draws a group as the kit\'s zone, so its fill, edge and name are the zone\'s', () => {
+    renderCanvas();
+    const group = screen.getByTestId('lv-domain-group');
+    expect(group.classList.contains('kit-zone')).toBe(true);
+    expect(group.querySelector('.kit-zone__name [role="button"]')?.textContent).toBeTruthy();
+  });
+
   /** A decoration is never worth taking the canvas down for. */
   it('degrades a colour it cannot parse instead of throwing', () => {
     expect(() => renderCanvas({ groupColor: 'not-a-colour' })).not.toThrow();

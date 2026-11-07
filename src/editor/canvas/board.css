@@ -9,6 +9,9 @@
 .lv-board .react-flow__renderer,
 .lv-board .react-flow { background: var(--canvas-ground); }
 
+/* A group holds its edge on screen as a zone does, and a selected one's is the heavier. */
+.lv-group[data-selected] { border-width: round(up, calc(3px / var(--canvas-zoom, 1)), 1px); }
+
 /* Say it once for a tile: fills its stored box and never spills out of it. */
 .lv-tile { width: 100%; height: 100%; overflow: hidden; }
 .lv-tile--outside { border-style: dashed; }
