@@ -4,18 +4,20 @@
 /** A whole agent session as one thing to take back (ADR-0019, amended). */
 import { describe, expect, it } from 'vitest'
 import type { Command } from '../model/commands'
-import type { HistoryStep } from '../ports/ScopeSession'
 import { agentRun, putBackRun, runInverses } from './agentRun'
 
 const inverse = (id: string): Command => ({ type: 'element.delete', id })
 
-function step(id: string, at: number, over: Partial<HistoryStep> = {}): HistoryStep {
-  return {
-    stepId: id, folds: [], commands: [], inverses: [inverse(id)], at, summary: { key: 'activity.nothing' }, ...over,
-  }
+type Step = {
+  stepId: string; at: number; inverses: Command[]
+  origin?: string; by?: string; via?: string; barrier?: string
 }
-const agent = (id: string, at: number, over: Partial<HistoryStep> = {}) => step(id, at, { origin: 'agent', ...over })
-const ids = (run: { steps: readonly HistoryStep[] }) => run.steps.map((one) => one.stepId)
+
+function step(id: string, at: number, over: Partial<Step> = {}): Step {
+  return { stepId: id, inverses: [inverse(id)], at, ...over }
+}
+const agent = (id: string, at: number, over: Partial<Step> = {}) => step(id, at, { origin: 'agent', ...over })
+const ids = (run: { steps: readonly Step[] }) => run.steps.map((one) => one.stepId)
 
 describe('the run', () => {
   it('is the session\'s steps at the top of the history, newest first', () => {

@@ -7,7 +7,7 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
-import { agentRun } from '../projects/agentRun'
+import { agentRun } from '../agent/agentRun'
 import { treeRecords } from '../projects/treeRecords'
 import type { HistoryRepository } from '../ports/HistoryRepository'
 import type { ChangesOf } from '../agent/changes'

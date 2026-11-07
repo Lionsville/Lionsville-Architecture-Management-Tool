@@ -305,7 +305,7 @@ treats a sheet, a map and a landscape as views beside a board.
 ⌘Z goes one step at a time and an agent may land dozens, while the place a person
 decides whether they wanted the work is its end.
 
-**While its steps are the newest** (`projects/agentRun.ts`). The run is the unbroken
+**While its steps are the newest** (`agent/agentRun.ts`). The run is the unbroken
 stretch of the session's steps at the top of the history, from the session's start
 (`Driving.latest`, which outlives the banner). Anybody's step on top of it, a
 person's or a colleague's, means there is no run: taking an agent's work out from

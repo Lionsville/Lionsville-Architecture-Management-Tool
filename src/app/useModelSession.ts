@@ -28,8 +28,8 @@
  * with a change that was made here and who is told about a refusal are all the
  * business of whoever composes the session.
  */
-import { runInverses } from '../projects/agentRun'
-import type { AgentRun } from '../projects/agentRun'
+import { runInverses } from '../agent/agentRun'
+import type { AgentRun } from '../agent/agentRun'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type {
@@ -167,7 +167,7 @@ export type ModelSession = {
   steps: SessionSteps
   undo: () => void
   /** A run of steps at the top of the stack, undone as one step. Answers whether it landed. */
-  undoRun: (run: AgentRun) => boolean
+  undoRun: (run: AgentRun<HistoryStep>) => boolean
   redo: () => void
   /**
    * Is there a step of OURS to take back? Another author's step on the stack
@@ -605,12 +605,12 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
   }, [notify, s, announce, keep, problem])
 
   /**
-   * A run of steps at the top of the stack, undone as one (`projects/agentRun.ts`):
+   * A run of steps at the top of the stack, undone as one (`agent/agentRun.ts`):
    * one change, one line for a listener, one ⌘⇧Z to bring it all back. Whoever
    * asks has read the run off `history()`; one that is no longer the top of the
    * stack is stale, and nothing moves.
    */
-  const undoRun = useCallback((run: AgentRun): boolean => {
+  const undoRun = useCallback((run: AgentRun<HistoryStep>): boolean => {
     if (!mayChange() || run.steps.length === 0) return false
     const stack = past.current
     const from = stack.length - run.steps.length

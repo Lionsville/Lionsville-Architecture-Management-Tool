@@ -12,7 +12,7 @@
  * look like nothing: a container diagram vanishing without a word, and an
  * editor that will not lay out a document it has "already seen".
  */
-import { agentRun } from '../projects/agentRun'
+import { agentRun } from '../agent/agentRun'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { placedNodes } from '../model/placement';
 import { placeOn } from '../model/commands';

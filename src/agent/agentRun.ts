@@ -19,7 +19,6 @@
  * the writer refuses like any other if somebody got there first.
  */
 import type { Command } from '../model/commands'
-import type { HistoryStep } from '../ports/ScopeSession'
 
 /** Whose session: its start, and on a server the author and the client its steps arrive under. */
 export type AgentSessionOf = {
@@ -29,14 +28,27 @@ export type AgentSessionOf = {
   readonly remote?: { readonly by?: string; readonly via: string }
 }
 
-/** As much of a step as telling whose it is takes. */
-type RunStep = Pick<HistoryStep, 'at' | 'origin' | 'by' | 'via' | 'barrier'>
+/**
+ * As much of a step as telling whose it is takes, said here because the agent
+ * may not know the session's seam: the session's own step and the agent's view
+ * of one both fit it.
+ */
+type RunStep = {
+  readonly at: number
+  readonly origin?: string
+  readonly by?: string
+  readonly via?: string
+  readonly barrier?: string
+}
 
-export type AgentRun<S extends RunStep = HistoryStep> = {
+/** A step that can be taken back. */
+type UndoableStep = RunStep & { readonly inverses: readonly Command[] }
+
+export type AgentRun<S extends RunStep = UndoableStep> = {
   /** The steps, newest first: the order their inverses apply in. */
   readonly steps: readonly S[]
   /** The run stops short of the session's start: a two-scope gesture, this key saying why. */
-  readonly barrier?: HistoryStep['barrier']
+  readonly barrier?: NonNullable<S['barrier']>
 }
 
 function isOfSession(step: RunStep, of: AgentSessionOf): boolean {
@@ -51,14 +63,14 @@ export function agentRun<S extends RunStep>(history: readonly S[], of: AgentSess
   for (let at = history.length - 1; at >= 0; at -= 1) {
     const step = history[at]
     if (!isOfSession(step, of)) break
-    if (step.barrier !== undefined) return { steps, barrier: step.barrier }
+    if (step.barrier !== undefined) return { steps, barrier: step.barrier as NonNullable<S['barrier']> }
     steps.push(step)
   }
   return { steps }
 }
 
 /** What undoes a run, in the order it must apply: the newest step's inverses first. */
-export function runInverses(run: AgentRun): Command[] {
+export function runInverses(run: AgentRun<UndoableStep>): Command[] {
   return run.steps.flatMap((step) => step.inverses)
 }
 
@@ -66,6 +78,6 @@ export function runInverses(run: AgentRun): Command[] {
  * *Put back*: the run's inverses as one new step, named for the Activity list.
  * `name` says whose work it put back, and `on` the day, as a restore's are.
  */
-export function putBackRun(run: AgentRun, name: string, on: string): Command {
+export function putBackRun(run: AgentRun<UndoableStep>, name: string, on: string): Command {
   return { type: 'restore', restored: { what: 'agentSession', name, asOf: on }, commands: runInverses(run) }
 }

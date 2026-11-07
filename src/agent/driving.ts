@@ -64,7 +64,7 @@ export class Driving {
 
   /**
    * The session running, or the one that ended last: what a finished line
-   * offers to take back as one step (`projects/agentRun.ts`), after the banner
+   * offers to take back as one step (`agent/agentRun.ts`), after the banner
    * has gone.
    */
   latest(): DrivingSession | undefined {

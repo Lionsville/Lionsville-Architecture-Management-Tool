@@ -16,8 +16,8 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
-import { agentRun } from '../projects/agentRun'
-import type { AgentSessionOf } from '../projects/agentRun'
+import { agentRun } from './agentRun'
+import type { AgentSessionOf } from './agentRun'
 import { listReferences } from './references'
 import { listBlocks, listPrinciples, listTopics } from './records'
 import { listChanges } from './changes'
@@ -177,7 +177,7 @@ export type SessionView = {
   undo(): void
   /**
    * A driving session's steps at the top of the stack, undone as one step
-   * (`projects/agentRun.ts`). Answers whether it landed. Absent where nothing
+   * (`agent/agentRun.ts`). Answers whether it landed. Absent where nothing
    * here keeps a stack to take a run off.
    */
   undoRun?(of: AgentSessionOf): boolean
@@ -812,7 +812,7 @@ function newestOurs(history: readonly HistoryEntry[]): HistoryEntry | undefined 
 }
 
 /**
- * A whole driving session as one step (`projects/agentRun.ts`): the one running,
+ * A whole driving session as one step (`agent/agentRun.ts`): the one running,
  * or the one that ended last. A step of anybody else's on top refuses it.
  */
 function undoSession(session: SessionView, shell: ShellView | undefined): AgentAnswer {
