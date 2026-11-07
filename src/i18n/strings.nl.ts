@@ -28,6 +28,7 @@ import { NL as comments } from '../comments/strings/nl'
 import { NL as principles } from '../principles/strings/nl'
 import { NL as blocks } from '../blocks/strings/nl'
 import { NL as widgets } from '../widgets/strings/nl'
+import { NL as help } from '../help/strings/nl'
 
 export const NL = {
   ...adapters,
@@ -51,4 +52,5 @@ export const NL = {
   ...principles,
   ...blocks,
   ...widgets,
+  ...help,
 } as const

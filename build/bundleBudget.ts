@@ -77,6 +77,7 @@
  * (`oneElk.ts`).
  */
 import type { Plugin } from 'vite'
+import { HELP_ASSETS } from './helpPage'
 
 export type Budget = {
   /** Bytes, for any one file the bundle emits. */
@@ -110,6 +111,28 @@ export const WEB_BUDGET: Budget = { file: 5_100_000, total: 11_000_000 }
  */
 export const DESKTOP_BUDGET: Budget = { file: 9_520_000, total: 19_600_000 }
 
+/**
+ * **The help, apart** (4.0.0): a page of its own beside the app, fetched when
+ * somebody opens it, one language at a time. Its words in three languages are
+ * most of it, and counting them in the app's whole would have spent the room
+ * the app grows into on a page the app never loads. The ceilings are the
+ * measured size and a little room, as above.
+ */
+export const HELP_BUDGET: Budget = { file: 700_000, total: 2_200_000 }
+
+/** The help's own files: its page and what `build/helpPage.ts` put under its folder. */
+export function isHelpOutput(output: Output): boolean {
+  return output.name === 'help/index.html' || output.name.startsWith(HELP_ASSETS)
+}
+
+function overHelpBudget(help: readonly Output[]): string[] {
+  const said = help.filter((output) => output.bytes > HELP_BUDGET.file)
+    .map((output) => `${output.name} is ${kB(output.bytes)}, over the ${kB(HELP_BUDGET.file)} a file of the help may be.`)
+  const total = help.reduce((sum, output) => sum + output.bytes, 0)
+  if (total > HELP_BUDGET.total) said.push(`The help is ${kB(total)}, over its ${kB(HELP_BUDGET.total)}.`)
+  return said
+}
+
 /** What only ELK's engine says, and neither its API nor anything else here. */
 export const ELK_ENGINE_MARK = 'RecursiveGraphLayoutEngine'
 
@@ -117,7 +140,9 @@ export type Output = { name: string; bytes: number; text: string }
 
 /** What is wrong with a bundle, one sentence per thing; nothing, when it is within its budget. */
 export function overBudget(outputs: readonly Output[], budget: Budget = WEB_BUDGET): string[] {
-  const said: string[] = []
+  const help = outputs.filter(isHelpOutput)
+  const said: string[] = overHelpBudget(help)
+  outputs = outputs.filter((output) => !isHelpOutput(output))
   for (const output of outputs) {
     if (output.bytes > budget.file) {
       said.push(`${output.name} is ${kB(output.bytes)}, over the ${kB(budget.file)} a file may be.`)
@@ -131,10 +156,12 @@ export function overBudget(outputs: readonly Output[], budget: Budget = WEB_BUDG
 }
 
 /** One line for the build's log: the whole, the largest, and the budget. */
-export function summary(outputs: readonly Output[], budget: Budget = WEB_BUDGET): string {
+export function summary(all: readonly Output[], budget: Budget = WEB_BUDGET): string {
+  const outputs = all.filter((output) => !isHelpOutput(output))
+  const help = all.filter(isHelpOutput).reduce((sum, output) => sum + output.bytes, 0)
   const total = outputs.reduce((sum, output) => sum + output.bytes, 0)
   const largest = outputs.reduce<Output | undefined>((held, output) => (!held || output.bytes > held.bytes ? output : held), undefined)
-  return `bundle: ${kB(total)} in ${outputs.length} files (budget ${kB(budget.total)}); largest ${largest?.name ?? '-'} ${kB(largest?.bytes ?? 0)} (budget ${kB(budget.file)})`
+  return `bundle: ${kB(total)} in ${outputs.length} files (budget ${kB(budget.total)}); largest ${largest?.name ?? '-'} ${kB(largest?.bytes ?? 0)} (budget ${kB(budget.file)})${help > 0 ? `; the help ${kB(help)} apart (budget ${kB(HELP_BUDGET.total)})` : ''}`
 }
 
 function kB(bytes: number): string {

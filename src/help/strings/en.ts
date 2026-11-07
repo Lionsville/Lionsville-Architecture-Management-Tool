@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/** What the help page itself says around the text: its search, its contents and the labels of a section. */
+export const EN = {
+  'help.title': 'Help',
+  'help.product': 'Lionsville Architect',
+  'help.skip': 'Skip to the help',
+  'help.contents': 'Contents',
+  'help.search': 'Search the help',
+  'help.searchHint': 'Type a word: a control, a page, a task',
+  'help.clear': 'Clear the search',
+  'help.results': '{count} places say “{query}”',
+  'help.resultsOne': 'One place says “{query}”',
+  'help.noResults': 'Nothing in the help says “{query}”. Try fewer words, or another word for the same thing.',
+  'help.language': 'Language',
+  'help.loading': 'Opening the help…',
+  'help.failed': 'The help could not be opened. Reload the page to try again.',
+  'help.where': 'Where to find it',
+  'help.steps': 'How',
+  'help.keys': 'Keys',
+  'help.example': 'For example',
+  'help.seeAlso': 'See also',
+  'help.onDesktop': 'Desktop app only',
+  'help.onWeb': 'In a browser only',
+  'help.onHosted': 'Where the place your work is kept offers it',
+  'help.writes': 'Not offered where you may only read',
+  'help.worked': 'Worked example',
+  'help.background': 'How it works',
+  'help.picture': 'A picture of the screen',
+  'help.toTop': 'Back to the top',
+  'help.inChapter': 'in {chapter}',
+} as const

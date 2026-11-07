@@ -60,7 +60,7 @@ import { relative } from 'node:path'
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'principles', 'blocks', 'decisions', 'observations',
   'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
-  'app',
+  'help', 'app',
 ]
 
 const MAY_IMPORT = {
@@ -97,6 +97,9 @@ const MAY_IMPORT = {
   ports: ['model', 'platform', 'projects', 'agent', 'people'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations', 'people'],
   providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters', 'people'],
+  // The help is a page of its own (`help/index.html`), loaded beside the app and
+  // never inside it: it draws with the kit and the words, and knows no screen.
+  help: ['i18n', 'platform', 'widgets'],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node'),
@@ -127,6 +130,7 @@ const WHY = {
   ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
   adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know — and, of the analysis, what older data meant (`observations/rootsFromSolutions`, ADR-0032 §9), which every place work is kept reads the same way.',
   providers: 'A provider is a place work is kept, whole: its implementation, its way in and its chrome (ADR-0022, ADR-0031 §4). It may draw, in the language that is on, and name how it keeps work; only the composition root registers one, and it knows no screen of the app\'s.',
+  help: 'The help is its own page beside the app: the kit, the words and the platform\'s facts are all it may know, so it opens with nothing open and adds nothing to the app\'s first download.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
 

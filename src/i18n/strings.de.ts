@@ -28,6 +28,7 @@ import { DE as comments } from '../comments/strings/de'
 import { DE as principles } from '../principles/strings/de'
 import { DE as blocks } from '../blocks/strings/de'
 import { DE as widgets } from '../widgets/strings/de'
+import { DE as help } from '../help/strings/de'
 
 export const DE = {
   ...adapters,
@@ -51,4 +52,5 @@ export const DE = {
   ...principles,
   ...blocks,
   ...widgets,
+  ...help,
 } as const

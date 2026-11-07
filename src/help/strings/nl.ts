@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+import type { EN } from './en'
+
+export const NL: Record<keyof typeof EN, string> = {
+  'help.title': 'Help',
+  'help.product': 'Lionsville Architect',
+  'help.skip': 'Naar de help',
+  'help.contents': 'Inhoud',
+  'help.search': 'Zoeken in de help',
+  'help.searchHint': 'Typ een woord: een knop, een pagina, een taak',
+  'help.clear': 'Zoekopdracht wissen',
+  'help.results': '{count} plekken noemen “{query}”',
+  'help.resultsOne': 'Eén plek noemt “{query}”',
+  'help.noResults': 'Niets in de help noemt “{query}”. Probeer minder woorden, of een ander woord voor hetzelfde.',
+  'help.language': 'Taal',
+  'help.loading': 'De help wordt geopend…',
+  'help.failed': 'De help kon niet worden geopend. Laad de pagina opnieuw om het nog eens te proberen.',
+  'help.where': 'Waar je het vindt',
+  'help.steps': 'Hoe',
+  'help.keys': 'Toetsen',
+  'help.example': 'Bijvoorbeeld',
+  'help.seeAlso': 'Zie ook',
+  'help.onDesktop': 'Alleen in de desktop-app',
+  'help.onWeb': 'Alleen in een browser',
+  'help.onHosted': 'Waar de plek waar je werk staat het aanbiedt',
+  'help.writes': 'Niet aangeboden waar je alleen mag lezen',
+  'help.worked': 'Uitgewerkt voorbeeld',
+  'help.background': 'Hoe het werkt',
+  'help.picture': 'Een afbeelding van het scherm',
+  'help.toTop': 'Terug naar boven',
+  'help.inChapter': 'in {chapter}',
+}

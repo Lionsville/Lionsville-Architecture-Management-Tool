@@ -15,6 +15,7 @@ import { libavoidWasm } from './build/libavoidWasm'
 import { oneElk } from './build/oneElk'
 import { bundleBudget, DESKTOP_BUDGET } from './build/bundleBudget'
 import { bundleChecks } from './build/bundleChecks'
+import { helpPage } from './build/helpPage'
 
 const root = __dirname
 
@@ -85,7 +86,7 @@ export default defineConfig({
     build: {
       chunkSizeWarningLimit: DESKTOP_BUDGET.file / 1000,
       outDir: 'out/renderer',
-      rollupOptions: { input: resolve(root, 'index.html') },
+      rollupOptions: helpPage(root),
     },
   },
 })

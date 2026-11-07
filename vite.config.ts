@@ -4,6 +4,7 @@ import { libavoidWasm } from './build/libavoidWasm'
 import { oneElk } from './build/oneElk'
 import { bundleBudget, WEB_BUDGET } from './build/bundleBudget'
 import { bundleChecks } from './build/bundleChecks'
+import { helpPage } from './build/helpPage'
 
 export default defineConfig({
   // The wasm publish used to be a bare copyFileSync at config load with an
@@ -19,7 +20,12 @@ export default defineConfig({
   ],
   // Vite's own warning fires for every chunk over 500 kB, which this app has
   // always had, so nobody read it; the budget above is the one that fails.
-  build: { chunkSizeWarningLimit: WEB_BUDGET.file / 1000 },
+  // Two pages: the app, and the help beside it (`help/index.html`), which loads
+  // none of the app and opens with nothing open.
+  build: {
+    chunkSizeWarningLimit: WEB_BUDGET.file / 1000,
+    rollupOptions: helpPage(__dirname),
+  },
   // The router worker is an ES module, and not for looks: it imports libavoid-js
   // only when it needs it, and Vite's default (iife) cannot build that split —
   // "UMD and IIFE output formats are not supported for code-splitting builds".

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/icon.svg" />
+    <title>Help · Lionsville Architect</title>
+    <style>
+      html, body { margin: 0; min-height: 100% }
+      /* The ground before the script paints the tokens, in whichever mode the system is in. */
+      body { background: #f6f3ef; color: #171f28; font-family: system-ui, sans-serif }
+      @media (prefers-color-scheme: dark) { body { background: #0c151d; color: #e8eef2 } }
+    </style>
+  </head>
+  <body>
+    <!-- The help, beside the app: one document, with nothing open and nothing signed in. -->
+    <div id="help"></div>
+    <script type="module" src="/src/help/main.tsx"></script>
+  </body>
+</html>
