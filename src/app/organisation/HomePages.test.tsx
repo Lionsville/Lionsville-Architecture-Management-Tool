@@ -21,7 +21,7 @@ import type { BlocksAccess } from '../../blocks/ui/BlocksContext'
 const GATEWAY_ONLY = new Proxy({
   version: 1,
   block: (id: string) => (id === 'blk-gw' ? { scope: '', block: { id: 'blk-gw', kind: 'buildingBlock', name: 'Gateway', lifecycle: 'live', isManaged: false, aspects: {} } } : undefined),
-  scopeLabel: () => 'Acme', mayWrite: () => false,
+  scopeLabel: () => 'Acme', mayWrite: () => false, document: async () => '',
 } as Record<string, unknown>, { get: (held, key: string) => (key in held ? held[key] : () => []) }) as unknown as BlocksAccess
 
 // The pages' scripts are here already, so what is drawn is the doors' doing and not a script on its way.
@@ -51,15 +51,13 @@ describe('a block’s page on a home', () => {
   it('closes back to where it was opened from another screen, and onto the register from the register', () => {
     const back = vi.fn()
     const open = vi.fn()
-    // The block's page is the last up, over the register.
-    const blockClose = () => screen.getAllByTestId('page-close').at(-1)!
+    const blockClose = () => screen.getByRole('button', { name: /All building blocks/ })
     const drawn = (request: HomePagesState['asked']) => renderShell(
       <BlocksProvider value={GATEWAY_ONLY}>
         <BlocksDoors pages={{ ...asked, asked: request, open }} at="" windowChrome={NO_WINDOW_CHROME} ready back={back} />
       </BlocksProvider>,
     )
     drawn({ ...asked.asked!, returns: true })
-    expect(screen.getAllByTestId('page-close')).toHaveLength(2)
     fireEvent.click(blockClose())
     expect(back).toHaveBeenCalledTimes(1)
     expect(open).not.toHaveBeenCalled()

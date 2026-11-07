@@ -62,7 +62,7 @@ function accessOver(over: Partial<BlocksAccess> = {}): BlocksAccess {
     placeChoices: () => [{ path: 'topics/integration', name: 'Integration', depth: 0, topic: true }, { path: '', name: 'Acme', depth: 0 }],
     evaluateChoices: () => [{ path: 'stock', name: 'Stock', depth: 1 }],
     document: vi.fn(async () => GATEWAY.description), create: vi.fn(async () => 'blk-new'), update: vi.fn(), evaluate: vi.fn(async () => true), updateEvaluation: vi.fn(), removeEvaluation: vi.fn(),
-    propose: vi.fn(async () => 'adr-9'), openDecision: vi.fn(), openBlock: vi.fn(),
+    propose: vi.fn(async () => 'adr-9'), openDecision: vi.fn(), openScope: vi.fn(), openBlock: vi.fn(),
     makeId: (prefix) => `${prefix}-new`, today: () => '2026-11-02',
     ...over,
   }
@@ -73,14 +73,20 @@ const page = (access: BlocksAccess, extra: { evaluation?: string } = {}) => rend
 )
 
 describe('the register of building blocks', () => {
-  it('lists each block with where it is kept, its contexts, where it is evaluated with ✓, and its solutions', async () => {
+  it('lists each block under where it is kept, reads it large on selecting it, and opens its workbench from there', async () => {
     const access = accessOver()
     renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
-    const row = screen.getByTestId('block-row-blk-gw')
-    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['Message gateway', 'Integration', '2', 'Many partners, Filings', 'Sales ✓', 'Broker A · Managed bus'])
-    fireEvent.click(within(row).getByRole('button', { name: 'Message gateway' }))
-    expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
+    expect(screen.getByRole('row', { name: /Kept in Integration/ })).toBeTruthy()
+    const row = screen.getByRole('row', { name: /Message gateway/ })
+    expect(row.textContent).toContain('Chosen in 1 scope')
     expect(await axeFindings()).toEqual([])
+    fireEvent.click(row)
+    const reader = screen.getByRole('dialog')
+    expect(reader.textContent).toContain('Many partners, Filings')
+    expect(reader.textContent).toContain('Sales ✓')
+    expect(reader.textContent).toContain('Broker A, Managed bus')
+    fireEvent.click(within(reader).getByRole('button', { name: s('blocks.openBlock') }))
+    expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
   })
 
   it('keeps a new block in a topic first, and opens it', async () => {
@@ -96,34 +102,50 @@ describe('the register of building blocks', () => {
   it('says nothing matched a search, and offers no new block to a person who may write nowhere', () => {
     renderShell(<BlocksProvider value={accessOver({ mayWrite: () => false })}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
     expect(screen.queryByTestId('blocks-new')).toBeNull()
-    fireEvent.change(screen.getByRole('textbox', { name: s('blocks.search') }), { target: { value: 'nothing like it' } })
+    fireEvent.change(screen.getByRole('searchbox', { name: s('blocks.search') }), { target: { value: 'nothing like it' } })
     expect(screen.getByText(s('blocks.searchEmpty', { query: 'nothing like it' }))).toBeTruthy()
   })
 })
 
 describe('a building block\'s page', () => {
-  it('draws the requirements as balls, and a press moves one a quarter, as a change of the block\'s contexts', async () => {
+  /** The Requirements tab's cell, the matrix's way: selected by a press, written by a key. */
+  const onRequirements = () => fireEvent.click(screen.getByRole('tab', { name: s('blocks.requirements') }))
+  const cellOf = (text: RegExp) => within(screen.getByRole('row', { name: text })).getAllByRole('gridcell').filter((cell) => cell.tabIndex >= -1 && cell.querySelector('svg'))
+
+  it('opens on About', () => {
+    page(accessOver())
+    expect(screen.getByRole('tab', { name: s('blocks.about') }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('block-document')).toBeTruthy()
+  })
+
+  it('draws the requirements as balls with a legend: a press selects and writes nothing, Space moves one a quarter', async () => {
     const access = accessOver()
     page(access)
-    const ball = screen.getByRole('spinbutton', { name: 'How much Many partners needs Routes by content: 4/4' })
-    fireEvent.click(ball)
+    onRequirements()
+    expect(screen.getByText(s('blocks.level3'))).toBeTruthy()
+    const cell = cellOf(/Routes by content/)[0]!
+    fireEvent.click(cell)
+    expect(access.update).not.toHaveBeenCalled()
+    fireEvent.keyDown(cell, { key: ' ' })
     expect(access.update).toHaveBeenCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]] })
     expect(await axeFindings()).toEqual([])
   })
 
-  it('builds a second press on the first, before the tree has been read again', () => {
+  it('builds a second key on the first, before the tree has been read again', () => {
     const access = accessOver()
     page(access)
-    const ball = () => screen.getByRole('spinbutton', { name: /^How much Many partners needs Keeps an audit trail/ })
-    fireEvent.click(ball())
-    fireEvent.click(ball())
-    expect(ball().getAttribute('aria-valuenow')).toBe('4')
+    onRequirements()
+    const cell = cellOf(/Keeps an audit trail/)[0]!
+    cell.focus()
+    fireEvent.keyDown(cell, { key: ' ' })
+    fireEvent.keyDown(cell, { key: ' ' })
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-route': 4, 'cap-audit': 4 } }, GATEWAY.contexts![1]] })
   })
 
   it('adds a usage context with its chapter in the document, in one change', () => {
     const access = accessOver()
     page(access)
+    onRequirements()
     fireEvent.click(screen.getByTestId('block-add-context'))
     fireEvent.change(screen.getByTestId('context-name'), { target: { value: 'Regulators' } })
     fireEvent.click(screen.getByTestId('context-add'))
@@ -135,14 +157,16 @@ describe('a building block\'s page', () => {
     })
   })
 
-  it('adds a capability that answers to a principle\'s aspect, and takes one off its contexts\' needs too', () => {
+  it('adds a capability that answers to a principle\'s aspect, and takes one off its contexts\' needs too', async () => {
     const access = accessOver()
     page(access)
+    onRequirements()
     fireEvent.click(screen.getByTestId('block-add-capability'))
     fireEvent.change(screen.getByTestId('capability-text'), { target: { value: 'Signs every message' } })
     fireEvent.click(screen.getByTestId('capability-add'))
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { capabilities: [...GATEWAY.capabilities!, { id: 'cap-new', text: 'Signs every message' }] })
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Routes by content' }))
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.moreOf', { name: 'Routes by content' }) }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.remove') }))
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', {
       capabilities: [GATEWAY.capabilities![1]],
       contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]],
@@ -152,50 +176,60 @@ describe('a building block\'s page', () => {
   it('reads its document, opens a context\'s chapter from its head, and lists the principles it cites', async () => {
     const access = accessOver()
     page(access)
-    fireEvent.click(screen.getByTestId('context-head-cx-partners'))
+    onRequirements()
+    fireEvent.click(screen.getByRole('button', { name: 'Many partners' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.chapterOf', { name: 'Many partners' }) }))
     expect(await within(screen.getByTestId('block-document')).findByRole('heading', { name: 'Many partners' })).toBeTruthy()
     expect(access.document).toHaveBeenCalledWith('blk-gw')
     expect(screen.getByText('PR-0001 Least privilege')).toBeTruthy()
   })
 
-  it('writes its document from what was read, and reads what was written on going back', async () => {
+  it('writes its document in a focused window from what was read, and reads what was written', async () => {
     const access = accessOver()
     page(access)
-    fireEvent.click(screen.getByTestId('block-tab-about'))
     const edit = screen.getByTestId('block-document-edit')
     await waitFor(() => expect(edit).toHaveProperty('disabled', false))
     fireEvent.click(edit)
     const source = screen.getByRole('textbox', { name: s('blocks.document') })
     expect(source).toHaveProperty('value', GATEWAY.description)
     fireEvent.change(source, { target: { value: 'Written again.' } })
-    fireEvent.blur(source)
-    fireEvent.click(screen.getByRole('button', { name: s('blocks.read') }))
-    expect(screen.getByTestId('block-document').textContent).toBe('Written again.')
-    // The blur kept it; the press on *Read* had nothing more to keep.
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.save') }))
+    await waitFor(() => expect(screen.getByTestId('block-document').textContent).toBe('Written again.'))
     expect(access.update).toHaveBeenCalledTimes(1)
     expect(access.update).toHaveBeenCalledWith('blk-gw', { description: 'Written again.' })
   })
 
+  it('offers the way to the scope where its principles are cited', () => {
+    const access = accessOver()
+    page(access)
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.openIn', { scope: 'Integration' }) }))
+    expect(access.openScope).toHaveBeenCalledWith('topics/integration')
+  })
+
   it('offers no editing of its document before it has been read', () => {
     page(accessOver({ document: () => new Promise(() => {}) }))
-    fireEvent.click(screen.getByTestId('block-tab-about'))
     expect(screen.getByTestId('block-document-edit')).toHaveProperty('disabled', true)
   })
 
-  it('lists its solutions with where each is weighed and chosen, and the elements that are it', () => {
+  const onOptions = () => fireEvent.click(screen.getByRole('tab', { name: s('blocks.solutions') }))
+
+  it('lists its options with where each is weighed and chosen, and the elements that are it', () => {
     page(accessOver({ mayWrite: () => false }))
-    fireEvent.click(screen.getByTestId('block-tab-solutions'))
-    expect([...screen.getByTestId('sbb-sb-a').querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['Broker A', '—', 'product', 'Candidate', 'Sales', '', 'Broker'])
-    expect(screen.getByTestId('sbb-sb-b').textContent).toContain('Sales')
+    onOptions()
+    const cells = within(screen.getByRole('row', { name: /Broker A/ })).getAllByRole('gridcell').map((cell) => cell.textContent)
+    expect(cells).toEqual(['Broker A', '—', 'product', 'Candidate', 'Sales', '—', 'Broker'])
+    expect(screen.getByRole('row', { name: /Managed bus/ }).textContent).toContain('Sales')
   })
 
-  it('links a solution to the landscape element that is it, in its row', () => {
+  it('links an option to the landscape element that is it, from its row', async () => {
     const access = accessOver()
     page(access)
-    fireEvent.click(screen.getByTestId('block-tab-solutions'))
-    const field = screen.getByRole('combobox', { name: 'What Managed bus is in the landscape' })
+    onOptions()
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.elementsOf', { name: 'Managed bus' }) }))
+    const field = await screen.findByRole('combobox', { name: s('blocks.isElement') })
     fireEvent.keyDown(field, { key: 'ArrowDown' })
-    fireEvent.click(screen.getByRole('option', { name: 'Broker' }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Broker' }))
+    fireEvent.click(screen.getByTestId('sbb-elements-save'))
     expect(access.update).toHaveBeenCalledWith('blk-gw', { sbbs: [GATEWAY.sbbs![0], { ...GATEWAY.sbbs![1], elements: ['app-broker'] }] })
   })
 
@@ -205,7 +239,7 @@ describe('a building block\'s page', () => {
     const view = screen.getByTestId('evaluation-view')
     expect(within(view).getByRole('heading', { name: 'Message gateway in Sales' })).toBeTruthy()
     // Route 2 of 4 and audit 2 of 2: 4 of 6. Broker A covers audit at 2, a must needed at 2 — not fully.
-    expect(within(screen.getByTestId('fit-row')).getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['Fit here', '', 'fails a must', '67 %✓'])
+    expect(within(screen.getByRole('row', { name: /Fit here/ })).getAllByRole('gridcell').map((cell) => cell.textContent).filter(Boolean)).toEqual(expect.arrayContaining(['fails a must', '67 % ✓']))
     expect(within(view).getByText(/Chosen here: Managed bus/)).toBeTruthy()
     fireEvent.click(within(view).getByRole('button', { name: 'Open the decision' }))
     expect(access.openDecision).toHaveBeenCalledWith('sales', 'adr-2')
@@ -219,7 +253,9 @@ describe('a building block\'s page', () => {
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, contexts: ['cx-partners', 'cx-filings'] })
     fireEvent.click(screen.getByTestId('evaluation-option-sb-b'))
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, options: ['sb-a'], chosen: undefined, decidedBy: undefined })
-    fireEvent.click(screen.getByRole('spinbutton', { name: 'How far Broker A covers Keeps an audit trail: 2/4' }))
+    const cell = within(screen.getByRole('row', { name: /Keeps an audit trail/ })).getAllByRole('gridcell').find((one) => one.textContent?.includes(s('blocks.note')))!
+    cell.focus()
+    fireEvent.keyDown(cell, { key: ' ' })
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, coverage: { ...SALES.coverage, 'sb-a': { ...SALES.coverage['sb-a'], 'cap-audit': { level: 3, how: 'Logs only' } } } })
   })
 
@@ -238,12 +274,11 @@ describe('a building block\'s page', () => {
   it('evaluates it for another scope, starting from a scope\'s ratings', async () => {
     const access = accessOver()
     page(access)
-    fireEvent.click(screen.getByTestId('block-tab-used'))
-    expect(screen.getByTestId('evaluation-row-sales').textContent).toContain('Managed bus')
+    fireEvent.click(screen.getByRole('tab', { name: s('blocks.whereUsed') }))
+    expect(screen.getByRole('row', { name: /Sales/ }).textContent).toContain('Managed bus')
     fireEvent.click(screen.getByTestId('block-evaluate'))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Filings' }))
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: s('blocks.copyFrom') }))
-    fireEvent.click(screen.getByRole('option', { name: 'Copy the ratings from Sales' }))
+    fireEvent.change(screen.getByRole('combobox', { name: s('blocks.copyFrom') }), { target: { value: 'sales' } })
     fireEvent.click(screen.getByTestId('evaluate-start'))
     await waitFor(() => expect(access.evaluate).toHaveBeenCalledWith('blk-gw', 'stock', ['cx-filings'], 'sales'))
   })
@@ -251,11 +286,10 @@ describe('a building block\'s page', () => {
   it('offers no change at all to a person who may only read it', () => {
     page(accessOver({ mayWrite: () => false }), { evaluation: 'sales' })
     expect(screen.queryByTestId('block-propose')).toBeNull()
-    expect(screen.queryByRole('spinbutton')).toBeNull()
-    expect(screen.getByTestId('evaluation-context-cx-filings').getAttribute('role')).not.toBe('button')
-    fireEvent.click(screen.getByTestId('block-tab-requirements'))
+    expect(screen.getByTestId('evaluation-context-cx-filings')).toHaveProperty('disabled', true)
+    onRequirements()
     expect(screen.queryByTestId('block-add-capability')).toBeNull()
-    fireEvent.click(screen.getByTestId('block-tab-about'))
+    fireEvent.click(screen.getByRole('tab', { name: s('blocks.about') }))
     expect(screen.queryByTestId('block-document-edit')).toBeNull()
   })
 })

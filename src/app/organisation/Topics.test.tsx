@@ -59,13 +59,13 @@ function accessOver(over: Partial<TopicsDeps> = {}) {
 }
 
 describe('the catalogue', () => {
-  it('lists every topic nested, says where each is relevant, and shows the first picked', async () => {
+  it('lists every topic nested, says how many scopes it reaches, and opens one only when it is selected', async () => {
     const { access } = accessOver()
     renderShell(<TopicsProvider value={access}><TopicsPage open onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
-    const rows = within(screen.getByTestId('topics-catalogue')).getAllByRole('row').slice(1).map((row) => row.textContent)
-    expect(rows).toEqual(['Data———', 'SecuritySales——', 'Identityas Security——'])
-    const detail = screen.getByTestId('topic-detail')
-    expect(within(detail).getByRole('heading', { name: 'Data' })).toBeTruthy()
+    const rows = within(screen.getByTestId('topics-catalogue')).getAllByRole('row').map((row) => row.textContent)
+    expect(rows).toEqual([`Data${s('topics.notLinked')}`, 'Security1 scope', 'Identity1 scope'])
+    expect(screen.getByRole('row', { name: /Identity/ }).getAttribute('aria-level')).toBe('2')
+    expect(screen.queryByTestId('topic-detail')).toBeNull()
     expect(await axeFindings()).toEqual([])
   })
 
@@ -73,7 +73,7 @@ describe('the catalogue', () => {
     const { access } = accessOver()
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
     const detail = screen.getByTestId('topic-detail')
-    expect(within(detail).getByRole('heading', { name: 'Security' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Security' })).toBeTruthy()
     expect(within(screen.getByTestId('topic-link-sales')).getByText(/since/)).toBeTruthy()
     expect(within(detail).getByText('Ended links (1)')).toBeTruthy()
     expect(within(detail).getByText('Identity')).toBeTruthy()
@@ -82,23 +82,32 @@ describe('the catalogue', () => {
   it('links a scope from this end, from the day said', () => {
     const { access } = accessOver()
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/data" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
-    const field = screen.getByRole('combobox', { name: s('topics.addScope') })
-    fireEvent.focus(field)
-    fireEvent.keyDown(field, { key: 'ArrowDown' })
+    fireEvent.click(screen.getByTestId('topic-add-scope'))
     fireEvent.click(screen.getByRole('option', { name: 'Stock' }))
     fireEvent.click(screen.getByTestId('topic-link-add'))
     expect(access.relate).toHaveBeenCalledWith('topics/data', 'stock', DAY)
   })
 
-  it('refuses to remove a topic that keeps a subtopic, and asks before removing one that keeps nothing', async () => {
+  it('offers a link\'s three changes in one More, each saying what it keeps', async () => {
     const { access } = accessOver()
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
-    fireEvent.click(screen.getByTestId('topic-remove'))
-    expect(screen.getByText(s('topics.removeRefused'))).toBeTruthy()
-    expect(access.remove).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByTestId('topic-row-topics/data'))
-    fireEvent.click(screen.getByTestId('topic-remove'))
-    fireEvent.click(screen.getByRole('button', { name: s('topics.remove') }))
+    fireEvent.click(within(screen.getByTestId('topic-link-sales')).getByRole('button'))
+    expect(await screen.findByRole('menuitem', { name: s('topics.end') })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: s('topics.editDays') })).toBeTruthy()
+    fireEvent.click(screen.getByRole('menuitem', { name: s('topics.removeLink') }))
+    expect(access.removeLink).toHaveBeenCalled()
+  })
+
+  it('says why a topic that keeps a subtopic cannot go before the press, and asks before removing one that keeps nothing', async () => {
+    const { access } = accessOver()
+    renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect((await screen.findByRole('menuitem', { name: new RegExp(s('topics.remove')) })).textContent).toContain(s('topics.removeRefusedShort'))
+    cleanup()
+    renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/data" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('topics.remove') }))
+    fireEvent.click(await screen.findByRole('button', { name: s('topics.remove') }))
     await waitFor(() => expect(access.remove).toHaveBeenCalledWith('topics/data'))
   })
 
@@ -107,8 +116,8 @@ describe('the catalogue', () => {
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
     expect(screen.queryByTestId('topics-new')).toBeNull()
     expect(screen.queryByTestId('topic-edit')).toBeNull()
-    expect(screen.queryByTestId('topic-remove')).toBeNull()
-    expect(screen.queryByTestId('topic-link-add')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+    expect(screen.queryByTestId('topic-add-scope')).toBeNull()
     expect(within(screen.getByTestId('topic-link-sales')).queryByRole('button')).toBeNull()
   })
 
