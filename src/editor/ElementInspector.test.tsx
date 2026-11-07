@@ -245,7 +245,8 @@ describe('ElementInspector: rows, not boxes', () => {
     renderInspector(element({ description: 'Sells things.' }), { onOpenDocumentation: vi.fn() });
     expect(says('element-description')).toContain('Sells things.');
     expect(screen.getByTestId('open-documentation')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: en['inspector.writeDescription'] }));
+    // Named by the words it shows, which a voice user says to press it.
+    fireEvent.click(screen.getByRole('button', { name: `${en['inspector.writeDescription']}: Sells things.` }));
     expect(screen.getByRole('button', { name: en['inspector.done'] })).toBeDefined();
   });
 

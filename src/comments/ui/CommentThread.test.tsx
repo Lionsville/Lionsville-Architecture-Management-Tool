@@ -53,7 +53,8 @@ function scope(comments: Comment[] = []): Model {
 }
 
 /** The workspace, as far as a thread sees it: a model, the writer over it, and the register. */
-function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom, onOpenScope, pointed }: {
+function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom, onOpenScope, pointed, headed }: {
+  headed?: boolean
   start: Model; me: PersonId | undefined; mayComment?: boolean; mayModerate?: boolean; onMe?: (id: PersonId | undefined) => void; keptIn?: string
   /** Where given, a record a comment came with is named by its id in capitals and opens through this. */
   onOpenFrom?: (id: string) => void
@@ -77,7 +78,7 @@ function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptI
         makeId: () => `cm-new-${++next}`, now: () => AT, ...(pointed ? { pointed } : {}),
       }}>
         <CommentThread
-          about={web} {...(keptIn ? { scope: keptIn, scopeLabel: 'Elsewhere' } : {})} {...(onOpenScope ? { onOpenScope } : {})}
+          about={web} {...(headed === false ? { headed } : {})} {...(keptIn ? { scope: keptIn, scopeLabel: 'Elsewhere' } : {})} {...(onOpenScope ? { onOpenScope } : {})}
           {...(onOpenFrom ? { nameOf: (from) => from.id.toUpperCase(), openFrom: (from) => () => onOpenFrom(from.id) } : {})}
         />
       </CommentsProvider>
@@ -104,6 +105,13 @@ describe('a thread', () => {
     expect(held()).toEqual([{ id: 'cm-new-1', about: web, by: { person: 'pe-eva' }, at: AT, body: 'Who owns this?' }])
     expect(screen.getByTestId('comment-count').textContent).toBe('Comments (1)')
     expect(screen.getByTestId('comment-cm-new-1').textContent).toContain('Eva Lind · you')
+  })
+
+  it('leaves its heading and landmark to a screen that already names it', () => {
+    renderShell(<Harness start={scope([first])} me="pe-eva" headed={false} />)
+    expect(screen.queryByTestId('comment-count')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Comments' })).toBeNull()
+    expect(screen.getByTestId('comment-cm-1').textContent).toContain('Who runs')
   })
 
   it('asks once who is writing where nobody is said, keeps the answer as This is me, and then writes', () => {

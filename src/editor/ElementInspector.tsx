@@ -130,7 +130,7 @@ export function ElementInspector(props: ElementInspectorProps) {
           />
         )}
         {tab === 'appearance' && <PanelAppearance props={props} onHelp={setHelp} />}
-        {tab === 'comments' && <CommentThread about={{ kind: 'element', id: element.id }} />}
+        {tab === 'comments' && <CommentThread about={{ kind: 'element', id: element.id }} headed={false} />}
       </div>
     </Panel>
   );

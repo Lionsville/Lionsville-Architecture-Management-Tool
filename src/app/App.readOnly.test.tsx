@@ -203,6 +203,7 @@ describe('a scope only read, where its source lets a reader comment (ADR-0037 §
     fireEvent.click(await screen.findByTestId('person-picker-new'))
     fireEvent.change(await screen.findByTestId('people-add-name'), { target: { value: 'Ada Reader' } })
     fireEvent.click(screen.getByTestId('people-add-save'))
-    expect((await screen.findByTestId('comment-count')).textContent).toBe('Comments (1)')
+    // The tab names the thread and carries its count; the thread under it has no heading of its own.
+    expect((await screen.findByRole('tab', { name: /Comments/ })).textContent).toBe('Comments 1')
   })
 })

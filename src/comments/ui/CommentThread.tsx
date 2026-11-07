@@ -62,18 +62,20 @@ export type CommentThreadProps = {
   nameOf?: (from: CommentFrom) => string
   /** How to open the record a comment came with, where it can be: the name is then a link. */
   openFrom?: (from: CommentFrom) => (() => void) | undefined
+  /** False where the screen around it already names it, as a tab or a section headed *Comments* does: no second heading, no second landmark, no rule. */
+  headed?: boolean
 }
 
 /** What is being written: a new comment, a reply to one, or an edit of one. */
 type Writing = { kind: 'new' } | { kind: 'reply'; to: string } | { kind: 'edit'; id: string }
 
-export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, openFrom }: CommentThreadProps) {
+export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, openFrom, headed = true }: CommentThreadProps) {
   const access = useComments()
   const { t } = useStrings()
   if (!access) return null
   if (scope !== undefined && scope !== access.scope) {
     return (
-      <ThreadFrame count={undefined}>
+      <ThreadFrame count={undefined} headed={headed}>
         <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
           {t('comments.elsewhere')}
           {onOpenScope && (
@@ -88,11 +90,12 @@ export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, o
       </ThreadFrame>
     )
   }
-  return <OpenThread access={access} about={about} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
+  return <OpenThread access={access} about={about} headed={headed} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
 }
 
-function ThreadFrame({ count, children }: { count: number | undefined; children: ReactNode }) {
+function ThreadFrame({ count, headed, children }: { count: number | undefined; headed: boolean; children: ReactNode }) {
   const { t } = useStrings()
+  if (!headed) return <Box data-testid="comment-thread" sx={{ display: 'grid', gap: 1 }}>{children}</Box>
   return (
     <Box component="section" data-testid="comment-thread" aria-label={t('comments.title')} sx={{ display: 'grid', gap: 1, mt: 2, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
       <Typography variant="subtitle2" component="h3" data-testid="comment-count">
@@ -109,8 +112,8 @@ function useMe(names: PersonNames): PersonId | undefined {
   return useMemo(() => meIn(register?.me, registerOf(register?.people ?? []))?.id, [register?.me, register?.people])
 }
 
-function OpenThread({ access, about, nameOf, openFrom }: {
-  access: CommentsAccess; about: RecordKey; nameOf?: (from: CommentFrom) => string; openFrom?: (from: CommentFrom) => (() => void) | undefined
+function OpenThread({ access, about, headed, nameOf, openFrom }: {
+  access: CommentsAccess; about: RecordKey; headed: boolean; nameOf?: (from: CommentFrom) => string; openFrom?: (from: CommentFrom) => (() => void) | undefined
 }) {
   const { t } = useStrings()
   const names = usePersonNames()
@@ -148,7 +151,7 @@ function OpenThread({ access, about, nameOf, openFrom }: {
   }
 
   return (
-    <ThreadFrame count={count}>
+    <ThreadFrame count={count} headed={headed}>
       {entries.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.empty')}</Typography>}
       {entries.map(({ comment, replies }) => (
         <Box key={comment.id} sx={{ display: 'grid', gap: 0.75 }}>

@@ -590,7 +590,7 @@ function DescriptionBlock({ ctx }: { ctx: Ctx }) {
       {locked
         ? shown && <p className="inspector-description__text">{shown}</p>
         : (
-          <button type="button" className="inspector-description__press" data-empty={shown ? undefined : true} onClick={() => setWriting(true)} aria-label={t('inspector.writeDescription')}>
+          <button type="button" className="inspector-description__press" data-empty={shown ? undefined : true} onClick={() => setWriting(true)} aria-label={shown ? `${t('inspector.writeDescription')}: ${shown}` : undefined}>
             {shown || t('inspector.addDescription')}
           </button>
         )}
@@ -789,7 +789,7 @@ export function RecordSectionBody({ props, section, unit }: { props: ElementInsp
         </div>
       );
     case 'comments':
-      return <CommentThread about={{ kind: 'element', id: element.id }} />;
+      return <CommentThread about={{ kind: 'element', id: element.id }} headed={false} />;
   }
 }
 
