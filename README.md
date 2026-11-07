@@ -158,7 +158,8 @@ own, and a cause above may explain a cause below (`docs/decisions/0021`,
 
 **⌘K** searches everything the organisation holds at once — elements and the
 prose written about them, views, relations, decision records, plans and their
-milestones, observations, causes, solutions and experiments — in the scope you
+milestones, observations, causes, solutions and experiments, and the people in
+the organisation's register (one forgotten by pseudonym only) — in the scope you
 are in, the scopes above it and the rest of the tree. Each hit says what it is
 and which scope holds it, and opens where it lives: the box on the canvas, that
 element's page, the record on its page, in its own scope
