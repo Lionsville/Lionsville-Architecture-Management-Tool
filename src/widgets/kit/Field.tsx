@@ -217,6 +217,8 @@ export type PropertyRowProps = {
   aside?: ReactNode
   /** The row's name to `PropertyRows`' `editing`. */
   rowId?: string
+  /** The name a finding asks for this row by: what is pressed carries it as `data-field`, so arriving gives it the focus. */
+  field?: string
   'data-guide'?: string
   'data-testid'?: string
 }
@@ -229,7 +231,7 @@ function notOwnWords(t: Translate, value: string, inherited: PropertyRowProps['i
     : t('kit.property.fromAbove', { value })
 }
 
-export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, help, startOpen = false, 'data-guide': guide, 'data-testid': testId, ...reading }: PropertyRowProps) {
+export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, field, help, startOpen = false, 'data-guide': guide, 'data-testid': testId, ...reading }: PropertyRowProps) {
   const rows = useContext(RowsContext)
   if (!rows) throw new Error('A PropertyRow belongs in PropertyRows.')
   const ownId = useId()
@@ -271,7 +273,7 @@ export function PropertyRow({ label, edit, error, check, onCommit, readOnly = fa
           )
           : (
             <RowReading
-              {...reading} label={label} writable={writable} error={error} pressable={pressable}
+              {...reading} label={label} field={field} writable={writable} error={error} pressable={pressable}
               onPress={edit !== undefined && writable ? () => rows.setEditing(id) : undefined}
             />
           )}
@@ -286,8 +288,9 @@ type Reading = Pick<PropertyRowProps, 'value' | 'display' | 'empty' | 'action' |
 const isNotOwn = ({ mixed, inherited }: Reading) => mixed !== undefined || (inherited !== undefined && inherited !== false)
 
 /** A row at rest: text, or text to press, and what goes with it. */
-function RowReading({ label, value = '', display, empty, action, inherited, mixed, error, writable, pressable, onPress }: Reading & {
+function RowReading({ label, value = '', display, empty, action, inherited, mixed, error, field, writable, pressable, onPress }: Reading & {
   label: string
+  field: string | undefined
   error: string | undefined
   writable: boolean
   pressable: RefObject<HTMLButtonElement | null>
@@ -306,7 +309,7 @@ function RowReading({ label, value = '', display, empty, action, inherited, mixe
       {onPress
         ? (
           <button
-            ref={pressable} type="button" className="kit-prop__press" data-quiet={quiet || undefined}
+            ref={pressable} type="button" className="kit-prop__press" data-quiet={quiet || undefined} data-field={field}
             aria-label={readAs ? t('kit.property.edit', { label, value: readAs }) : t('kit.property.editEmpty', { label })}
             onClick={onPress}
           >

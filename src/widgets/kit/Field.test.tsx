@@ -305,6 +305,11 @@ describe('a row told from outside', () => {
 })
 
 describe('a row, for a panel', () => {
+  it('can be found by the name a finding asks for it by', () => {
+    renderShell(<PropertyRows><PropertyRow label="Until" value="" edit="date" field="validUntil" /></PropertyRows>)
+    expect(screen.getByRole('button').getAttribute('data-field')).toBe('validUntil')
+  })
+
   it('says its help while it is edited, and takes it back', () => {
     const onHelp = vi.fn()
     renderShell(<PropertyRows onHelp={onHelp}><PropertyRow label="Vendor" value="Acme" edit="text" help="Who sells it" /></PropertyRows>)

@@ -327,7 +327,7 @@ function connectionRows({ connection, model, name, update, onOpenLanding, langua
       // The days this line is there (ADR-0009). One with no window follows the elements it joins.
       always('valid', t('inspector.valid'), () => (
         <PropertyRow
-          label={t('inspector.valid')} data-testid="connection-valid" value={validWords(connection, language, t)}
+          label={t('inspector.valid')} data-testid="connection-valid" field="validUntil" value={validWords(connection, language, t)}
           edit={(editor) => <ValidEditor editor={editor} connection={connection} onWrite={update} t={t} />}
         />
       )),

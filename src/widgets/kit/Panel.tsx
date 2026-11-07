@@ -16,7 +16,7 @@
  * A name is pressed to edit only where `onRename` is handed in, so a reader sees
  * the same layout without the affordance.
  */
-import { createContext, useContext, useLayoutEffect, useState } from 'react'
+import { createContext, useContext, useLayoutEffect } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon, CloseIcon, ForwardIcon } from '../icons'

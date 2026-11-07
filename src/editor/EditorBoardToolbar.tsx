@@ -12,7 +12,6 @@ import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
 import { FIT_ALL } from './canvas/fitAll';
 import type { SolutionDesignEditorProps } from './props';
 import { EMPTY_SELECTION } from './useEditorState';
-import type { EditorState } from './useEditorState';
 import type { BoardView } from './useBoardView';
 import type { EditorDialogState } from './EditorDialogs';
 import type { EditorParts } from './editorParts';

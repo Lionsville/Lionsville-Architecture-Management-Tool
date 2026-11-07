@@ -124,7 +124,7 @@ function technologyRows(ctx: Ctx): RowSpec[] {
     const note = sharedNote(element.shared, props.offeredBeyond, t);
     rows.push(always('shared', label, () => (
       <PropertyRow
-        label={label} data-testid="service-shared" help={t('field.sharedHelp')} value={word} readOnly={owned('shared')}
+        label={label} data-testid="service-shared" field="shared" help={t('field.sharedHelp')} value={word} readOnly={owned('shared')}
         display={<>{word}{note && <span className="inspector-note" data-testid="service-shared-derived">{note}</span>}</>}
         edit={{ options: [{ value: 'yes', label: t('inspector.yes') }, { value: 'no', label: t('inspector.no') }] }}
         onCommit={(value) => update({ shared: value === 'yes' ? true : undefined })}
