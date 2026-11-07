@@ -74,7 +74,7 @@ describe('the Colour menu', () => {
     render(<ColourMenu questions={QUESTIONS} value="life" onChange={onChange} />)
     fireEvent.click(screen.getByRole('button'))
     const items = screen.getAllByRole('menuitemcheckbox')
-    expect(items.map((item) => item.textContent)).toEqual(['None', 'lifecycle', 'domain'])
+    expect(items.map((item) => item.textContent?.trim())).toEqual(['None', 'lifecycle', 'domain'])
     expect(items[1].getAttribute('aria-checked')).toBe('true')
     fireEvent.click(items[2])
     expect(onChange).toHaveBeenLastCalledWith('domain')
