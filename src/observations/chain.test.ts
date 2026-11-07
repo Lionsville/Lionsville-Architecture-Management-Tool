@@ -138,3 +138,37 @@ describe('how much of a map is drawn', () => {
     expect([...kept.drawn].sort()).toEqual(['c9', 'l9'])
   })
 })
+
+describe('this scope comes first', () => {
+  const heavyBelow = (count: number) => scope({
+    scope: 'a/b',
+    observations: Array.from({ length: count }, (_, index) => observation(`h${index + 1}`, { impact: 'critical', seen: 9 })),
+    causes: Array.from({ length: count }, (_, index) => cause(`hc${index + 1}`, [`h${index + 1}`])),
+  })
+  const light = scope({ scope: 'a', observations: [observation('o1')], causes: [cause('c1', ['o1'])] })
+
+  it('keeps this scope’s chain in the window, however heavy the chains below', () => {
+    const scopes = [light, heavyBelow(10)]
+    const records = chainsOf(scopes, 'a')
+    expect(records.chains[0].id).toBe('o1')
+    const window = mapWindow(records, 'a', { limit: CHAINS_FIRST, opened: new Set() }, pictureLinks(scopes, 'a'))
+    expect(window.drawn.has('o1')).toBe(true)
+    expect(window.shownChains).toBe(CHAINS_FIRST)
+  })
+
+  it('counts a chain as this scope’s where it holds one record of it, and lists this scope’s first in a chain and on the pile', () => {
+    const below = scope({
+      scope: 'a/b',
+      observations: [observation('b1', { impact: 'critical' }), observation('loose-below', { impact: 'critical' })],
+      causes: [cause('bc', ['b1'])],
+    })
+    const here = scope({
+      scope: 'a',
+      observations: [observation('o1'), observation('alone')],
+      causes: [{ ...cause('c1', ['o1']), explains: [{ id: 'o1', strength: 'normal' as const }, { id: 'b1', scope: 'a/b', strength: 'normal' as const }] }],
+    })
+    const records = chainsOf([here, below], 'a')
+    expect(records.chains[0].observations).toEqual(['o1', 'a/b#b1'])
+    expect(records.loose).toEqual(['alone', 'a/b#loose-below'])
+  })
+})

@@ -24,7 +24,7 @@
  * done with it (`PictureMenu`); a line offers its menu only where the link is
  * this scope's to change.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useStrings } from '../../i18n'
 import { stepZoom } from '../../widgets/kit/zoom'
 import { toneOf } from '../observation'
@@ -93,6 +93,9 @@ const LANE_KEY: Record<PictureLane, 'observation.laneObservations' | 'observatio
   solutions: 'observation.laneSolutions',
 }
 
+/** How far short of `opensAt` a map stops, so the lanes do not start against the window's edge. */
+const OPENS_CLEAR = 24
+
 /** A record's own id, as the lists and the page's menus name it. */
 export function recordId(node: PictureNode): string {
   if (node.kind === 'more') return node.key
@@ -125,7 +128,7 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
   const large = size !== 'small'
 
   return (
-    <PictureFrame content={picture} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={props.showOverview ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
+    <PictureFrame content={picture} opensAt={picture.boundaries.length > 0 && picture.nodes.some((node) => node.scope === here) ? picture.hereX : undefined} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={props.showOverview ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
       {picture.nodes.length === 0 ? (
         <PageState compact state="empty" title={filtered ? s('observation.filterNothing') : s('observation.graphEmpty')} />
       ) : (
@@ -193,8 +196,15 @@ function Overview({ frame, content, nodes, slot, zoom, s }: {
  * so it takes the keyboard's arrows as well. A map that does not fit says where the
  * window stands.
  */
-export function PictureFrame({ content, view, label, children, dockExtra, overview, s }: {
+export function PictureFrame({ content, opensAt, view, label, children, dockExtra, overview, s }: {
   content: { width: number; height: number }
+  /**
+   * Where the map opens along its width, where its start is not what it is read for.
+   * The scopes below stand to the left of this scope's lanes, so at 100% they would
+   * push this scope's own records out of the window. Past the end the browser stops
+   * at the end, which leaves the nearest scope below in view beside them.
+   */
+  opensAt?: number | undefined
   view: PictureView
   label: string
   children: ReactNode
@@ -221,6 +231,10 @@ export function PictureFrame({ content, view, label, children, dockExtra, overvi
     observer?.observe(element)
     return () => observer?.disconnect()
   }, [])
+
+  useLayoutEffect(() => {
+    if (frame.current && opensAt !== undefined) frame.current.scrollLeft = Math.max(0, opensAt * latest.current.zoom - OPENS_CLEAR)
+  }, [opensAt])
 
   const zoomTo = useCallback((zoom: number, at?: { x: number; y: number }) => {
     const element = frame.current

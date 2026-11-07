@@ -15,6 +15,11 @@
  * **A map opens readable.** Scaled to fit, a large scope drew every card too small
  * to read. So it opens on the chains that weigh most, with long lists folded and
  * the records with no chain in one pile, and the rest is offered.
+ *
+ * **What is here comes first.** A scope is read for its own work: a chain that
+ * holds a record of this scope stands before one that holds only the scopes
+ * below's, however heavy, so what a window keeps back is never this scope's while
+ * anything below is drawn.
  */
 import { isNoted, liveObservations, isRootCause, toneOf } from './observation'
 import type { Cause, Observation, ObservationImpact, ScopeAnalysis } from './observation'
@@ -113,6 +118,8 @@ export function standingOf(facts: { explained: boolean; solved: boolean; built: 
 /** How many chains a map opens on, and how many more a press brings. */
 export const CHAINS_FIRST = 6
 export const CHAINS_MORE = 10
+/** *Show all*, as the number it is kept by: a seam keeps a positive number and reads anything else as nothing kept. */
+export const CHAINS_ALL = 1_000_000
 /** The observations of a chain drawn before the rest fold into *and 11 more*. */
 export const FOLD_FROM = 4
 
@@ -128,9 +135,9 @@ export type Chain = {
 }
 
 export type MapRecords = {
-  /** Every chain, heaviest first. */
+  /** Every chain, those holding a record of this scope first, heaviest first within each. */
   readonly chains: readonly Chain[]
-  /** The observations no line reaches, in pick-up order: most of the data, and one pile on the map. */
+  /** The observations no line reaches, this scope's first, in pick-up order: most of the data, and one pile on the map. */
   readonly loose: readonly string[]
 }
 
@@ -174,7 +181,8 @@ export function chainsOf(scopes: readonly ScopeAnalysis[], here: string): MapRec
     const root = find(key)
     groups.set(root, [...(groups.get(root) ?? []), key])
   }
-  const heaviestFirst = (a: string, b: string) => byPickUp(observations.get(a) as Observation, observations.get(b) as Observation)
+  const isHere = (key: string) => scopeOfKey(key, here) === here
+  const heaviestFirst = (a: string, b: string) => Number(isHere(b)) - Number(isHere(a)) || byPickUp(observations.get(a) as Observation, observations.get(b) as Observation)
   const chains = [...groups.values()].map((keys): Chain => {
     const seen = keys.filter((key) => observations.has(key)).sort(heaviestFirst)
     return {
@@ -182,7 +190,7 @@ export function chainsOf(scopes: readonly ScopeAnalysis[], here: string): MapRec
       weight: Math.max(0, ...seen.map((key) => WEIGHT[(observations.get(key) as Observation).impact])),
       seen: seen.reduce((sum, key) => sum + (observations.get(key) as Observation).seen, 0),
     }
-  }).sort((a, b) => b.weight - a.weight || b.seen - a.seen || (a.id < b.id ? -1 : 1))
+  }).sort((a, b) => Number(b.keys.some(isHere)) - Number(a.keys.some(isHere)) || b.weight - a.weight || b.seen - a.seen || (a.id < b.id ? -1 : 1))
   const loose = [...observations.keys()].filter((key) => !joined.has(key)).sort(heaviestFirst)
   return { chains, loose }
 }
