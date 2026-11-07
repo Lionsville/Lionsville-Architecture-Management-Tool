@@ -9,8 +9,15 @@
  *
  * The form alone, since a field that names a person shows it in place
  * (`PersonPicker`); the People page shows it in a question of its own.
+ *
+ * **Not a `<form>`.** It is drawn inside forms of its own — the vacancy's popover
+ * and the assignment's question — and a form in a form is submitted by the
+ * browser, not by React: the page was loaded afresh, and a visit to the example
+ * with it. Enter in a field adds, and goes no further, so the form around it is
+ * not answered by the same key.
  */
 import { useMemo, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import type { StringKey } from '../../i18n/table'
 import type { PersonId } from '../../model/person'
 import { Button } from '../../widgets/kit/Button'
@@ -63,11 +70,14 @@ export function AddPerson({ register, saying, onAdded, onUse, onCancel, initialN
       return s('people.addDone')
     })
   }
+  const onEnter = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (name.trim()) add()
+  }
   return (
-    <form
-      className="people-stack" data-testid="people-add-form"
-      onSubmit={(event) => { event.preventDefault(); if (name.trim()) add() }}
-    >
+    <div role="group" aria-label={s('people.add')} className="people-stack" data-testid="people-add-form" onKeyDown={onEnter}>
       <TextField label={s('people.name')} value={name} onChange={setName} autoFocus data-testid="people-add-name" />
       <TextField label={s('people.email')} value={email} onChange={setEmail} data-testid="people-add-email" />
       <SelectField
@@ -92,12 +102,12 @@ export function AddPerson({ register, saying, onAdded, onUse, onCancel, initialN
         </div>
       ) : name.trim().length > 2 && <p className="people-note">{s('people.noOneLike')}</p>}
       <div className="people-actions">
-        <Button variant="primary" type="submit" disabled={!name.trim()} data-testid="people-add-save">
+        <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="people-add-save">
           {s(similar.length > 0 ? 'people.addAnyway' : 'people.addSave')}
         </Button>
         <Button onClick={onCancel}>{s('people.cancel')}</Button>
       </div>
       <p className="people-note">{s('people.notAStep')}</p>
-    </form>
+    </div>
   )
 }

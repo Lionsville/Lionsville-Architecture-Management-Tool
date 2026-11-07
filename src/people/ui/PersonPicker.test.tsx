@@ -123,6 +123,19 @@ describe('the person picker', () => {
     await waitFor(() => expect(onPicked).toHaveBeenLastCalledWith('pe-new'))
   })
 
+  it('adds inside a form of its own without answering that form, by a press or by Enter', async () => {
+    // The vacancy's popover and the assignment's question are forms: a form in a form was submitted by the browser, and the page loaded afresh.
+    const outer = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
+    const onPicked = vi.fn()
+    renderShell(<form onSubmit={outer}><Harness onPicked={onPicked} /></form>)
+    fireEvent.click(screen.getByTestId('person-picker-new'))
+    expect(screen.getByTestId('people-add-form').closest('form')?.querySelector('form')).toBeNull()
+    fireEvent.change(screen.getByTestId('people-add-name'), { target: { value: 'Noor Visser' } })
+    fireEvent.keyDown(screen.getByTestId('people-add-name'), { key: 'Enter' })
+    await waitFor(() => expect(onPicked).toHaveBeenLastCalledWith('pe-new'))
+    expect(outer).not.toHaveBeenCalled()
+  })
+
   it('adds nobody where the register is only read', () => {
     renderShell(<Harness readOnly onPicked={() => {}} />)
     expect(screen.queryByTestId('person-picker-new')).toBeNull()
