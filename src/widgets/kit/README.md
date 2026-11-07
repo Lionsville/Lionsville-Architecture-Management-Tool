@@ -49,6 +49,7 @@ and behaves is said here, once.
 | `DayControl.tsx` | the one Day control |
 | `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas |
 | `Card.tsx`, `Zone.tsx`, `Line.tsx` | Card; Zone and boundary; Line and label. Each holds its size on screen through `--canvas-zoom` |
+| `GuideDock.tsx`, `guidePlace.ts` | **Guide dock**: one card in one place, why, what to do, *Tell me more*, Back, Skip, Pause, Next; `GuideRing`, one ring on one target, with no scrim |
 | `TimeAxis.tsx`, `timeScale.ts` | the ruler, its rows, bars and milestones; the sums, with the window as plain data |
 | `TimeStrip.tsx` | one record's own time, under its head: its milestones named and dated, today marked |
 | `PressName.tsx` | a record's name: a heading that a press makes a field, where it may be written |
