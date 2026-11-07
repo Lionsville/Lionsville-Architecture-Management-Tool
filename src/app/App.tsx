@@ -774,6 +774,9 @@ function useShellBase(props: AppProps) {
       pinned: prefs.readPreferences().treePinned === true,
       ...(first?.tab !== undefined && first.page !== undefined ? { tab: first.tab, tabOf: first.page } : {}),
       ...readingOf(boot.initialPage),
+      // The colour said by an address is a sheet's or a map's reader's: a reload stays on it.
+      ...(first?.colour !== undefined && first.id !== undefined ? { colour: first.colour, readingOf: first.id } : {}),
+      ...(first?.day !== undefined && first.id !== undefined && (first.page === 'sheet' || first.page === 'map') ? { day: first.day, readingOf: first.id } : {}),
       ...frameFromAddress(props.boot),
       ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}),
       ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),

@@ -2053,9 +2053,59 @@ Een applicatie openen vanuit de invulling van een capability brengt u naar een
 bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de
 eigen pagina van de applicatie als geen enkel bord hem tekent.
 
+### De poster
+
+**Poster**, eerste op de schakelaar, tekent het blad als één pagina van vaste grootte: de
+journey, de stakeholders en elk gebied als blok, elke capability als tegel. Het is de eerste
+lezing waar het blad een gebied heeft en het venster minstens 900 pixels breed is. Hij opent op
+het grootste van Passend en 90%, zodat een naam leesbaar is, vanaf linksboven waar de rest
+schuiven is; daarna opent hij waar je gebleven was. **Passend** in het dock toont het geheel.
+Onder 70% verdwijnen de namen en is elke capability een vierkant onder de kleur die aanstaat,
+wat Overzicht vroeger was; boven 120% zegt elke tegel ook wat haar dekt en wie ervoor staat.
+De toetsen zijn die van de andere canvassen: ⌘ of Ctrl met + − 0, het wiel, knijpen, ⇧ 1. Een
+adres dat nog `tab=overview` zegt, komt hier uit.
+
+Kleur en Dag zijn die van het blad, en er beweegt niets voor: een functie die er op die dag
+nog niet is, is gestippeld, een die weg is doorgestreept. Tab gaat per blok, de pijltjes van
+tegel naar tegel over blokken heen terwijl de pagina meeloopt, Enter opent het paneel en Esc
+komt terug op de tegel. **⌘F** zoekt, en licht op wat het vindt.
+
+**Lezen** en **Ontwerpen** zijn twee houdingen. Bij Lezen schuift een sleep, en beweegt er niets
+op de pagina. Bij **Ontwerpen** (`tab=design`) kun je:
+
+- een blok aan de titel slepen of aan de hoek trekken; het klikt op een raster van 8 en op de
+  randen van de buren, Alt laat los. De eerste beweging schrijft elk blok, zodat de pagina de
+  eerste indeling niet meer volgt. Spatie pakt een blok op voor het toetsenbord, pijltjes
+  verplaatsen, ⇧ verandert de grootte, Alt stapt per eenheid, spatie zet neer en Esc zet terug;
+- een tegel binnen zijn blok naar een cel slepen, en de andere stromen eromheen; of op een ander
+  gebied of andere groepering, wat haar in het model verplaatst, op elke view, zoals *Verplaatsen
+  naar…* in het paneel. Wat een andere scope bewaart, wordt geweigerd in de woorden van het paneel;
+- een team, applicatie of subscope uit de lade op een tegel, groepering of gebied slepen. Ze
+  schrijven wat het paneel schrijft. Een team toont ook als label op deze poster; het label
+  weghalen laat de toewijzing staan. Een getypte naam is een actor gemarkeerd als geen eenheid.
+  Een applicatie hoort op een tegel, niet op een blok. Selecteer meerdere met ⇧ of een getekend
+  vak met ⇧, en één keer neerzetten of indrukken in de lade neemt ze allemaal in één stap. **L**
+  en **A** op een tegel openen daar dezelfde lijsten;
+- een **notitie** of **afbeelding** toevoegen, die alleen bij deze view horen, meedrukken en door
+  Zoeken gevonden worden. Dubbelklik op een notitie om te schrijven;
+- een stap of stakeholder een **pictogram** of logo geven, vanuit het paneel of de ◇ erop.
+
+**Eerste indeling** gooit de plaatsen weg als één keer ongedaan maken, **Tegels terugzetten** laat
+elke tegel stromen, **Indelen voor dit papier** plaatst alles in de vorm van papier. Overlappen
+mag en staat in de strook; een gebied dat aan een geplaatste pagina wordt toegevoegd, krijgt de
+eerste vrije plek, of wacht onder de pagina en wordt daar geteld. Er kan niets geplaatst worden
+terwijl je naar een andere dag kijkt. De tegelgrootte en de rijen van de journey staan bij **Wat
+dit blad tekent**: een journey die te smal is voor hele woorden krijgt twee rijen tot jij één zegt.
+
+**Opslaan of afdrukken…** onder ⋯ zet hem op één pagina, A4 tot A0, met een titel, een voet en de
+legenda, in een drukuiterlijk dat het thema negeert. Het zegt hoe groot een naam wordt en hoeveel
+namen deze pagina afkapt, met een manier om ze te selecteren. Een PDF op de desktop wordt direct
+opgeslagen; in een browser is het de afdrukdialoog van de browser, waar je **Opslaan als PDF**
+kiest. PNG kan op beide.
+
 ### Dekking
 
-**Dekking**, op de schakelaar naast **Overzicht** en **Namen**, is dezelfde laag
+**Dekking**, op de schakelaar naast **Poster** en **Namen**, is dezelfde laag
 andersom gelezen, in het tabblad van het blad zelf: elke functie aan de zijkant, een
 kolom per applicatie die de regels noemen, en een teken waar de een de ander
 ondersteunt. De eerste druk maakt de kaart als de scope er geen heeft en je mag

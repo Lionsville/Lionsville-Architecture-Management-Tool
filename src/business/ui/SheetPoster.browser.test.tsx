@@ -20,7 +20,7 @@ import { tokenVariables } from '../../widgets/kit/tokens'
 import type { DesignElement } from '../../model'
 import { DEFAULT_LENS, lensValue } from '../lens'
 import { coverageOf } from '../coverage'
-import { contentHeight, minWidth, POSTER_COLUMN_ID } from '../posterLayout'
+import { contentHeight, contentHeightAt, minWidth, POSTER_COLUMN_ID } from '../posterLayout'
 import type { PosterAreaSize } from '../posterLayout'
 import { posterFirstLayout } from '../posterPlaces'
 import { sheetPage } from '../sheet'
@@ -87,6 +87,7 @@ function shapes(): DesignElement[] {
 function measured(host: HTMLElement, id: string): number {
   const block = host.querySelector<HTMLElement>(`[data-block="${id}"]`)!
   block.style.height = 'auto'
+  block.style.minHeight = '0'
   // Off screen a block is held at its intrinsic size, which is the sum itself: ask for its content.
   block.style.contentVisibility = 'visible'
   return block.getBoundingClientRect().height
@@ -94,6 +95,24 @@ function measured(host: HTMLElement, id: string): number {
 
 describe('a block in a real browser', () => {
   const sheetOf = (elements: DesignElement[]) => sheetPage({ elements, relations: [] }, { areas: elements.filter((one) => !one.parentId).map((one) => one.id), showActors: false })
+
+  it('comes to contentHeightAt when pulled to another width, for every shape', () => {
+    const elements = shapes()
+    const laidOut = sheetOf(elements)
+    const host = draw(laidOut, elements)
+    host.querySelector<HTMLElement>('[data-testid="poster-stage"]')!.style.transform = 'none'
+    const wrong: string[] = []
+    for (const area of laidOut.areas) {
+      for (const width of [300, 520, 900]) {
+        const block = host.querySelector<HTMLElement>(`[data-block="${area.element.id}"]`)!
+        block.style.width = `${width}px`
+        const height = measured(host, area.element.id)
+        const worked = contentHeightAt(sizeOf(area), width)
+        if (Math.abs(height - worked) > 0.5) wrong.push(`${area.element.id} at ${width}: drawn ${height}, worked out ${worked}`)
+      }
+    }
+    expect(wrong).toEqual([])
+  })
 
   it('comes to contentHeight at its narrowest, for every shape', () => {
     const elements = shapes()

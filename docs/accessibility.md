@@ -253,3 +253,14 @@ paragraph spacing 2em, letter spacing 0.12em, word spacing 0.16em.
 - **Not assessed.** Content on hover (1.4.13) beyond MUI's tooltips and the
   picture's card above, and the desktop's native menu bar, whose keyboard
   access is the operating system's.
+
+## The poster of a sheet
+
+The poster (ADR-0048) is reached by the keyboard: each block is one stop for Tab, in reading
+order worked out from the places, and the arrows go from tile to tile across blocks with the
+page following. Enter opens the panel and Esc comes back to the tile. In Design, Space lifts a
+block, the arrows move it, ⇧ resizes and Esc puts it back, each said aloud; every tray gesture
+has L, A or a press on what is picked (WCAG 2.5.7). Its text is canvas type in px, so the text
+size setting leaves it alone, and the page zoom and the canvas zoom still work: a name's whole
+words are in the panel when a tile's clamp cuts them. Below 70% a tile has no visible name, on
+purpose, and keeps it for a screen reader. Not done: a long press to lift on touch; a tagged PDF.

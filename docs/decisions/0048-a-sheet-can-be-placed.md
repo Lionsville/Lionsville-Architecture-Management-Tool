@@ -1,7 +1,6 @@
 # ADR-0048 — A sheet can be placed, and read as a poster
 
-* Status: accepted, 7 November 2026; not yet built; as built, 7 November 2026, the
-  model, the format and the agent's tools (4.0.0, not yet released)
+* Status: accepted, 7 November 2026; implemented, 7 November 2026 (4.0.0, not yet released)
 * Date: 2026-11-07
 * Deciders: Wouter Simons
 * Supersedes: ADR-0012 §6, in part (a sheet is computed unless it has a geometry;
@@ -150,3 +149,48 @@ On the way to the screens, and not released: §1's records and commands (`node.s
 browser, §3's and §4's fields, §7's tools other than a picture at a paper or a
 distance, §8. The first layout is drawn read-only, by address. §5's reading is in part,
 and §6 is not built.
+
+## As built, 7 November 2026: the screens
+
+**Reading.** `SheetPoster` over `posterPlaces`, the camera in `posterCamera`: nothing but
+the dock's number renders on a zoom or a pan, and what is lit, quieted or picked is one
+attribute per tile. Overview is gone from the switch and an address that says it lands on
+the poster; a sheet with an area on a window at least 900 pixels wide opens on it, otherwise
+on Names, and with no `matchMedia` to ask, on Names. The person's last place is kept per view
+through `useViewerKeep`. `tab=design` is Design in the address. A sheet draws no board bar now
+(`EditorToolbar.barDisplay`), since all it held was the frame's.
+
+**Designing.** `PosterDesign` writes straight to the block while a gesture lasts and one
+command when it lands. Placed blocks use `min-height` over `posterPlaces`' arithmetic at their
+width (`contentHeightAt`), so one that grew overlaps rather than being cut. A tile dropped in
+another block goes through `updateElement` with its `parentId`, the panel's own action, which
+now takes the next order and leaves the cell behind in one step for every caller; a refusal is
+the panel's words, `standIn.definedIn` for a stand-in and `sheet.parentCycle` for a loop, and the
+panel's parent field is called *Move to…* on a function and is disabled for a stand-in.
+Free items are built, not deferred. `paperLayout` is *Lay out for this paper*: a page never narrower
+than the wide one, wider until it is at paper's shape or flatter, then its rows pulled taller.
+
+**Mapping.** `PosterTray`: a team writes the panel's `assigned` row and the view's `labels` in one
+step, an application the `supports` row, a subscope the function's `scopes`. With tiles picked
+a press applies; L and A open the list at a tile.
+
+**Paper.** `PosterExportDialog` over `widgets/printPage`, in a print look with a title, a foot and
+the key. A PDF is the host's: `DocumentGateway.print` on the desktop, Electron's `printToPDF`
+through `files:printToPdf`, and the browser's print dialog elsewhere; a PNG is `captureSheet` of the
+same copy. The agent's `diagram.render` of a poster that is up is that copy too, without its dress,
+at A2; §7's *at a paper or a distance* is not an argument of it. Source Sans is embedded as Type 3 outlines,
+because the bundled font is variable: selectable, vector and sharp, with no named font in the file.
+
+**Not built.** A long press to lift on touch; a capability of the menu that places by words
+(*right of*, *below*, *align with*), for which the agent's `placeNextTo` and `align` and the
+keyboard's lift stand; the name of a coverage application on a tile as a way to it, which the panel
+keeps; a tagged PDF. The band's `bandRows` default holds for a step under 98 units: at 13 units a name
+is 11.7 px at 90%, and at two rows a journey of more than about 34 steps still comes to the smaller size,
+which is the most two rows can do.
+
+**Measured**, 7 November 2026, on one fast machine, headless, in script, style and layout, at 139 and 500
+tiles: a zoom step 1.1 / 1.1 ms at the median and 7.7 / 10.1 ms at most, crossing a distance; no tile
+touched; first draw 36 / 37 ms; a pan at 60 frames with none over 20 ms; a block's move in a drag 0.5 / 0.2 ms
+at the median and 1.4 / 0.9 ms at most, its landing 25 / 26 ms. CPU ÷ 6 on the main thread: a crossing
+33 / 48 ms at most, one or two missed frames once per crossing; within a distance 15 / 23 ms at most; a drag's move
+5 / 8 ms at most, its landing 105 / 163 ms; first draw 147 / 198 ms.

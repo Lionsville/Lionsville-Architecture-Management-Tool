@@ -126,7 +126,7 @@ export function contentHeightAt(area: PosterAreaSize, width: number, size: Poste
     const weight = row.reduce((sum, part) => sum + part.cols, 0)
     const spare = Math.max(0, inner - used)
     total += (total > 0 ? POSTER_TILE.gap : 0) + Math.max(...row.map((part) => {
-      const wide = part.basis + (spare * part.cols) / weight
+      const wide = Math.min(inner, part.basis + (spare * part.cols) / weight)
       if (!part.framed) return tilesHeight(part.tiles, flowColumns(wide, size), size)
       return tilesHeight(part.tiles, flowColumns(wide - GROUPING_FRAME - 5, size), size) + GROUPING_HEAD + GROUPING_FRAME
     }))

@@ -1907,9 +1907,58 @@ Opening an application from a capability's coverage takes you to a board that
 actually draws it, switching boards if the one you are on does not — and to the
 application's own page when no board draws it at all.
 
+### The poster
+
+**Poster**, first on the switch, draws the sheet as one page of fixed size: the journey,
+the stakeholders and every area as a block, every capability as a tile. It is the first
+reading where the sheet has an area and the window is at least 900 pixels wide. It opens at
+the larger of Fit and 90%, so a name can be read, from the top left where the rest is a pan;
+after that it opens where you left it. **Fit** in the dock shows the whole. Below 70% the
+names go and each capability is a square under the Colour that is up, which is what
+Overview used to be; above 120% each tile also says what covers it and who answers. The keys
+are the other canvases': ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1. An address that
+still says `tab=overview` lands here.
+
+Colour and Day are the sheet's, and nothing moves for them: a function not there yet on the
+day is dashed, one gone is struck through. Tab goes block by block, the arrows go from
+tile to tile across blocks with the page following, Enter opens the panel and Esc comes back
+to the tile. **⌘F** finds, and lights what it finds.
+
+**Read** and **Design** are two postures. In Read a drag pans, and nothing on the page
+moves. In **Design** (`tab=design`) you may:
+
+- drag a block by its title or pull its corner; it snaps to a grid of 8 and to its
+  neighbours' edges, Alt lets go. The first move writes every block, so the page stops
+  following the first layout. Space lifts a block for the keyboard, the arrows move it, ⇧
+  resizes, Alt steps a unit, Space drops and Esc puts it back;
+- drag a tile within its block to a cell, and the others flow round it; or onto another
+  area or grouping, which moves it in the model, on every view, as *Move to…* in the panel
+  does. What another scope keeps is refused, in the panel's words;
+- drag a team, an application or a subscope from the tray onto a tile, a grouping or an
+  area. They write what the panel writes. A team also shows as a label on this poster;
+  taking the label off leaves the assignment. A name you type is an actor flagged as not a
+  unit. An application goes on a tile, not on a block. Select several with ⇧ or a drawn box
+  with ⇧, and one drop or a press in the tray takes all of them as one step. **L** and **A** on
+  a tile open the same lists there;
+- add a **note** or a **picture**, which belong to this view only, print with the poster
+  and are found by Find. Double press a note to write it;
+- give a step or a stakeholder an **icon** or a logo from the panel or the ◇ on it.
+
+**First layout** throws the places away as one undo, **Reset tiles** lets every tile flow,
+**Lay out for this paper** places everything at paper's shape. Overlaps are allowed and said
+in the strip; an area added to a placed page takes the first free place, or waits under the
+page, and is counted there. Nothing can be placed while looking at another day. The tile
+size and the journey's rows are in **What this sheet draws**: a journey too narrow for
+whole words takes two rows until you say one.
+
+**Save or print…** under ⋯ puts it on one page, A4 to A0, with a title, a foot and the key,
+in a print look that ignores the theme. It says how large a name comes out and how many this
+page cuts, with a way to select them. A PDF on the desktop is saved directly; in a browser it
+is the browser's print dialog, where you choose **Save as PDF**. PNG is on both.
+
 ### Coverage
 
-**Coverage**, on the switch beside **Overview** and **Names**, is the same layer
+**Coverage**, on the switch beside **Poster** and **Names**, is the same layer
 read the other way, in the sheet's own tab: every function down the side, a column
 per application the rows name, and a mark where one supports the other. The first
 press makes the map where the scope has none and you may write; **+** in the

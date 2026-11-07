@@ -2167,9 +2167,63 @@ Board, das sie tatsächlich zeichnet, und wechselt das Board, wenn das, auf dem
 Sie sind, es nicht tut — und zur eigenen Seite der Anwendung, wenn gar kein
 Board sie zeichnet.
 
+### Das Poster
+
+**Poster**, zuerst auf dem Schalter, zeichnet das Blatt als eine Seite fester Größe: die Journey,
+die Stakeholder und jeden Bereich als Block, jede Fähigkeit als Kachel. Es ist die erste Lesart,
+wo das Blatt einen Bereich hat und das Fenster mindestens 900 Pixel breit ist. Es öffnet beim
+Größeren von Einpassen und 90 %, damit ein Name lesbar ist, von oben links, wo der Rest Schieben
+ist; danach öffnet es, wo Sie es verlassen haben. **Einpassen** im Dock zeigt das Ganze. Unter 70 %
+verschwinden die Namen und jede Fähigkeit ist ein Quadrat unter der eingestellten Farbe, was früher
+der Überblick war; über 120 % sagt jede Kachel auch, was sie abdeckt und wer sie verantwortet. Die
+Tasten sind die der anderen Leinwände: ⌘ oder Strg mit + − 0, das Rad, Zusammenziehen, ⇧ 1. Eine
+Adresse, die noch `tab=overview` sagt, landet hier.
+
+Farbe und Tag sind die des Blatts, und nichts bewegt sich dafür: eine Funktion, die es an dem Tag
+noch nicht gibt, ist gestrichelt, eine, die weg ist, durchgestrichen. Tab geht blockweise, die
+Pfeile von Kachel zu Kachel über Blöcke hinweg, die Seite folgt, Enter öffnet das Panel und Esc
+kehrt zur Kachel zurück. **⌘F** sucht und hebt hervor, was es findet.
+
+**Lesen** und **Gestalten** sind zwei Haltungen. Beim Lesen schiebt ein Ziehen, und nichts auf der
+Seite bewegt sich. Beim **Gestalten** (`tab=design`) können Sie:
+
+- einen Block am Titel ziehen oder an der Ecke aufziehen; er rastet auf einem Raster von 8 und an
+  den Kanten der Nachbarn ein, Alt lässt los. Die erste Bewegung schreibt jeden Block, sodass die
+  Seite der ersten Anordnung nicht mehr folgt. Die Leertaste nimmt einen Block für die Tastatur auf,
+  die Pfeile verschieben, ⇧ ändert die Größe, Alt geht einheitenweise, die Leertaste setzt ab und
+  Esc stellt zurück;
+- eine Kachel innerhalb ihres Blocks in eine Zelle ziehen, und die anderen fließen darum herum;
+  oder auf einen anderen Bereich oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
+  Ansicht, wie *Verschieben nach…* im Panel. Was ein anderer Bereich aufbewahrt, wird mit den Worten
+  des Panels abgelehnt;
+- ein Team, eine Anwendung oder einen Unterbereich aus der Ablage auf eine Kachel, Gruppierung oder
+  einen Bereich ziehen. Sie schreiben, was das Panel schreibt. Ein Team zeigt sich auch als
+  Beschriftung auf diesem Poster; sie zu entfernen lässt die Zuweisung bestehen. Ein eingegebener
+  Name ist ein Akteur, als keine Einheit markiert. Eine Anwendung gehört auf eine Kachel, nicht auf
+  einen Block. Wählen Sie mehrere mit ⇧ oder einem gezogenen Rahmen mit ⇧, und einmal Absetzen oder
+  Drücken in der Ablage nimmt alle in einem Schritt. **L** und **A** auf einer Kachel öffnen dort
+  dieselben Listen;
+- eine **Notiz** oder ein **Bild** hinzufügen, die nur zu dieser Ansicht gehören, mitgedruckt und
+  von der Suche gefunden werden. Doppelklicken Sie auf eine Notiz, um zu schreiben;
+- einem Schritt oder Stakeholder ein **Symbol** oder Logo geben, aus dem Panel oder über das ◇ darauf.
+
+**Erste Anordnung** verwirft die Plätze als ein Rückgängig, **Kacheln zurücksetzen** lässt jede
+Kachel fließen, **Für dieses Papier anordnen** platziert alles in Papierform. Überlappungen sind
+erlaubt und stehen im Streifen; ein Bereich, der zu einer platzierten Seite hinzukommt, erhält den
+ersten freien Platz oder wartet unter der Seite und wird dort gezählt. Beim Blick auf einen anderen
+Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Journey stehen unter **Was
+dieses Blatt zeigt**: eine Journey, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
+Sie eine sagen.
+
+**Speichern oder drucken…** unter ⋯ bringt es auf eine Seite, A4 bis A0, mit Titel, Fußzeile und
+Legende, in einem Druckbild, das das Design ignoriert. Es sagt, wie groß ein Name wird und wie viele
+diese Seite abschneidet, mit einem Weg, sie auszuwählen. Ein PDF auf dem Desktop wird direkt
+gespeichert; im Browser ist es dessen Druckdialog, in dem Sie **Als PDF speichern** wählen. PNG geht
+auf beiden.
+
 ### Abdeckung
 
-**Abdeckung**, auf dem Schalter neben **Überblick** und **Namen**, ist dieselbe Schicht
+**Abdeckung**, auf dem Schalter neben **Poster** und **Namen**, ist dieselbe Schicht
 andersherum gelesen, im Reiter des Blatts selbst: jede Funktion an der Seite, eine
 Spalte je Anwendung, die die Zeilen nennen, und ein Zeichen, wo eine die andere
 unterstützt. Der erste Druck legt die Karte an, wenn der Bereich keine hat und Sie
