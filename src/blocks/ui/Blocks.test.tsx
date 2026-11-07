@@ -136,7 +136,7 @@ describe('a building block\'s page', () => {
     page(access)
     onRequirements()
     const cell = cellOf(/Keeps an audit trail/)[0]!
-    cell.focus()
+    fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })
     fireEvent.keyDown(cell, { key: ' ' })
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-route': 4, 'cap-audit': 4 } }, GATEWAY.contexts![1]] })
@@ -254,7 +254,7 @@ describe('a building block\'s page', () => {
     fireEvent.click(screen.getByTestId('evaluation-option-sb-b'))
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, options: ['sb-a'], chosen: undefined, decidedBy: undefined })
     const cell = within(screen.getByRole('row', { name: /Keeps an audit trail/ })).getAllByRole('gridcell').find((one) => one.textContent?.includes(s('blocks.note')))!
-    cell.focus()
+    fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, coverage: { ...SALES.coverage, 'sb-a': { ...SALES.coverage['sb-a'], 'cap-audit': { level: 3, how: 'Logs only' } } } })
   })

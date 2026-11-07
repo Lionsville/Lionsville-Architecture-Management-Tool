@@ -227,7 +227,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(found.getAllByRole('row').find((row) => row.getAttribute('data-guide') === 'checks.instance')!)
   }]],
   // The topics catalogue (ADR-0042), opened from the organisation's card.
-  [['the topics catalogue, from the organisation’s card', ['topics.new', 'page.seam'], async () => {
+  [['the topics catalogue, from the organisation’s card', ['topics.new'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-topic-catalogue'))
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
@@ -255,7 +255,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the building blocks, from the organisation’s card', ['blocks.new'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-block-register'))
-    await screen.findByText('Every building block in the organisation', {}, { timeout: 5000 })
+    await screen.findByTestId('blocks-register', {}, { timeout: 5000 })
   }]],
   // The organisation's principles (ADR-0041), opened from its card.
   [['the principles page, from the organisation’s card', ['principles.new'], async () => {
@@ -386,7 +386,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: sheeted.find((one) => one.path === landscape.path)! } })
     await screen.findByTestId('sheet-canvas')
   }]],
-  [['the enterprise map', ['map.grid', 'map.summary'], async () => {
+  [['the enterprise map', ['map.grid', 'map.summary', 'page.seam'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-map'))
   }]],
