@@ -371,7 +371,9 @@ describe('the trees a sheet is laid out from (ADR-0012 §4, §6)', () => {
     expect(dated.diagrams['l7'].asOf).toBe('2027-01-01')
     expect(commandFor('diagram.update', { id: 'l7', asOf: 'soon' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
     expect(commandFor('diagram.update', { id: 'l7', journeyId: 'ship' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
-    expect(commandFor('diagram.update', { id: 'sh-1', asOf: '2027-01-01' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    // A sheet is looked at on a day as a board is.
+    expect(commandFor('diagram.update', { id: 'sh-1', asOf: '2027-01-01' }, view(model))).toMatchObject({ command: { patch: { asOf: '2027-01-01' } } })
+    expect(commandFor('diagram.update', { id: 'sh-1', asOf: 'soon' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
   })
 
   it('element.add on a sheet makes the record and draws nothing, even for an application', () => {

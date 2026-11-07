@@ -244,7 +244,7 @@ describe('a view in a document', () => {
     expect(billing.style.top).toBe('20%')
     expect(billing.style.width).toBe('40%')
     expect(billing.style.height).toBe('40%')
-    expect(billing.style.background).toBe('transparent')
+    expect(billing.className).toContain('drawing-area')
     expect((areas[1] as HTMLElement).getAttribute('data-element')).toBe('ledger')
     fireEvent.click(billing)
     expect(openElement).toHaveBeenCalledWith('billing')

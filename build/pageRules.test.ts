@@ -4,10 +4,12 @@
 /**
  * One way every page behaves (ADR-0044), read off the source: a rule a page
  * gets from the widgets it is made of only holds while every page is made of
- * them, and a page written next is the one that forgets. So every page —
- * every file that draws a `PageDialog` — opens under the host's bar and has
- * its × (§1, §2), and every page with a column beside another lets it be
- * dragged wider and keeps the width (§4).
+ * them, and a page written next is the one that forgets. So every page with
+ * a column beside another lets it be dragged wider and keeps the width (§4).
+ * Where a page opens and how it is left are no longer the page's to say: in
+ * the frame it is a place in the main column, left by Esc, by Home or a view's
+ * tab and by Back (`PageDialog`, `PageClose`), and `topInset` and a × only
+ * count for a page drawn with no frame above it, which is a test of that page.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -31,14 +33,9 @@ const PAGES = sources(src).map((file) => file.slice(src.length + 1))
   .filter((file) => !['widgets/PageDialog.tsx', 'widgets/Arriving.tsx'].includes(file))
   .filter((file) => read(file).includes('<PageDialog'))
 
-/** Where a page's bar is drawn by a part of its own, in another file. */
-const BAR_IN = {} as Record<string, string>
-
-/** The pages with a column beside another (§4), and how many seams each has. */
+/** The pages with a column beside another of their own (§4), and how many seams each has; a reader in the frame's panel has the frame's seam. */
 const SEAMS: Record<string, number> = {
   'operating/ui/OperatingModelPage.tsx': 1,
-  'principles/ui/PrinciplesPage.tsx': 1,
-  'app/organisation/TopicsPage.tsx': 1,
   'observations/ui/ObservationsPage.tsx': 1,
   'documentation/ui/DocumentationPage.tsx': 1,
 }
@@ -51,14 +48,6 @@ describe('every page (ADR-0044)', () => {
     expect(PAGES).toContain('app/history/HistoryPage.tsx')
     expect(PAGES).toContain('blocks/ui/BlockPage.tsx')
     expect(PAGES.length).toBeGreaterThanOrEqual(17)
-  })
-
-  it('opens under the host’s bar', () => {
-    expect(PAGES.filter((file) => !/<PageDialog[^>]*topInset=/s.test(read(file)))).toEqual([])
-  })
-
-  it('has its × at the end of its bar', () => {
-    expect(PAGES.filter((file) => !read(BAR_IN[file] ?? file).includes('<PageClose'))).toEqual([])
   })
 
   it('lets every column beside another be dragged wider, and keeps its width', () => {

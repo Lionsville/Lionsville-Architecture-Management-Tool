@@ -151,8 +151,9 @@ describe.each(ways)('on %s', (_name, way) => {
       activeDiagramId: 's1',
     }
     renderApp({ boot: { initialProject: withSheet }, ...(source ? { source } : {}), ...(provider ? { provider } : {}) })
-    await screen.findByLabelText('Save as a picture…')
-    expect(screen.queryByLabelText('What this sheet draws')).toBeNull()
+    fireEvent.click(await screen.findByRole('button', { name: 'More for this sheet' }))
+    await screen.findByRole('menuitem', { name: 'Save as a picture…' })
+    expect(screen.queryByRole('menuitem', { name: 'What this sheet draws' })).toBeNull()
   })
 
   it('offers no new decision', async () => {

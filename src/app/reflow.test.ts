@@ -44,7 +44,8 @@ describe('a bar across the window, out of width', () => {
         if (!/flexWrap: 'wrap'|\.\.\.WRAPS/.test(around)) unwrapped.push(at)
       })
     }
-    expect(bars.length).toBeGreaterThanOrEqual(11)
+    // The frame's two rows wrap in the kit; these are the bars still written by their own pages.
+    expect(bars.length).toBeGreaterThanOrEqual(2)
     expect(unwrapped).toEqual([])
   })
 

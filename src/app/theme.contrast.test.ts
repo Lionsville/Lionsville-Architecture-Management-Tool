@@ -454,11 +454,8 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   // The breadcrumb's separator glyph, hidden from the tree: a divider, not a word.
   'src/app/ShellToolbar.tsx': [1, 'separator'],
   // A sheet's *+* that has nothing to add to: the − at one column, the + at the most.
-  'src/business/ui/SheetPage.tsx': [1, 'add button that is off'],
   // A chart unit's *+* where no unit type may sit in it: an icon, its tooltip and label the words.
-  'src/app/units/AddUnit.tsx': [1, 'add button that is off'],
   // The same separator between a container diagram and its application.
-  'src/editor/EditorToolbar.tsx': [1, 'separator'],
   // The chevron on a palette row, whose name says what it is, and the comment
   // above the palette that says why its words are not in this ink.
   // A logo tile's border when it is not the one picked; the logo is the tile.
@@ -486,7 +483,6 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // The column editor while its switch is off: a control that is off (1.4.3).
   // The two headings among the type choices: options that cannot be picked, read at full ink rather than dimmed as a disabled choice is.
   // A chart unit's *+*, hidden until its name row is pointed at or focused, and the comment and fade that say so: an icon, no words.
-  'src/app/units/AddUnit.tsx': [4, 'hidden + until hover or focus'],
   // The drop-zone highlight fading in: a tint, no words.
   'src/editor/canvas/ZoneLayer.tsx': [2, 'drop highlight and its transition'],
   // A handle: a dot, no words.

@@ -65,7 +65,7 @@ describe('findings', () => {
   })
 
   it('are listed by check on the Checks page, from every place that works them out over the tree', () => {
-    expect(naming(/<CheckDetail\b/)).toEqual(['app/organisation/ChecksPage.tsx'])
+    expect(naming(/<CheckReader\b/)).toEqual(['app/organisation/ChecksPage.tsx'])
     expect(naming(/\btreeInstances\(/)).toEqual(['app/organisation/treeChecks.ts', 'app/organisation/useHomeChecks.ts'])
   })
 })

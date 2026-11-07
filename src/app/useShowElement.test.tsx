@@ -91,7 +91,7 @@ describe('useShowElement', () => {
     expect(host.activeId()).toBe('d1')
     expect(leave).toHaveBeenCalled()
     expect(host.notify).not.toHaveBeenCalled()
-    expect(host.focus).toHaveBeenCalledWith('wms')
+    expect(host.focus).toHaveBeenCalledWith('wms', undefined)
   })
 
   it('switches to the one board that draws it, and says which', () => {
@@ -99,7 +99,7 @@ describe('useShowElement', () => {
     act(() => host.shown().show('erp'))
     expect(host.activeId()).toBe('d2')
     expect(host.notify).toHaveBeenCalledWith('Showing Landscape in 2027, which draws it', 'info')
-    expect(host.focus).toHaveBeenCalledWith('erp')
+    expect(host.focus).toHaveBeenCalledWith('erp', undefined)
   })
 
   it('asks which board when more than one draws it and none is up, and lands where the person says', () => {
@@ -115,7 +115,7 @@ describe('useShowElement', () => {
     act(() => host.shown().choose('d2'))
     expect(host.activeId()).toBe('d2')
     expect(leave).toHaveBeenCalled()
-    expect(host.focus).toHaveBeenCalledWith('wms')
+    expect(host.focus).toHaveBeenCalledWith('wms', undefined)
     expect(choice(host)).toBeUndefined()
   })
 

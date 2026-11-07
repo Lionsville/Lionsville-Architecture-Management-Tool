@@ -194,7 +194,7 @@ describe('the Solutions tab', () => {
     expect(screen.getByRole('dialog', { name: /Reopen/ }).textContent).toContain('SO-0001 is proven on this experiment; reopening it withdraws that proof.')
     // Reopening takes nothing away, so it is not drawn as a danger; and it is in sentence case.
     const reopen = within(screen.getByRole('dialog', { name: /Reopen/ })).getByRole('button', { name: 'Reopen' })
-    expect(reopen.className.split(' ')).toContain('MuiButton-colorPrimary')
+    expect(reopen.getAttribute('data-variant')).toBe('primary')
     expect(getComputedStyle(reopen).textTransform).toBe('none')
     fireEvent.click(reopen)
     expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'running', result: 'Halved' })
