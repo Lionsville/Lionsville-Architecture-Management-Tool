@@ -337,6 +337,13 @@ describe('a person\'s own line and a role held outside the slots (ADR-0039, amen
     expect(personLinesOn(ended, '2027-01-01')).toEqual([])
   })
 
+  it('never names a holder of a managing role as their own manager', () => {
+    const head = assignments.find((one) => one.unitId === 'retail' && one.roleId === 'ro-head')!
+    const found = people(managersOfHolder(organisation, head, TODAY))
+    expect(found).not.toContain('pe-head:nesting')
+    expect(found).toContain('pe-ceo:nesting')
+  })
+
   it('says who manages that holder: the line\'s target by override, then in turn; the role there as the model says it', () => {
     expect(people(managersOfHolder(own, lead, TODAY))).toEqual(['pe-ceo:override'])
     expect(people(managersOf(own, 'retail', TODAY, 'ro-lead'))).toEqual(['pe-hot:line', 'pe-ceo:nesting'])

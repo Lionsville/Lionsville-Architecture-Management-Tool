@@ -809,7 +809,8 @@ function managersFrom(on: Organisation, day: string, from: { unitId: ElementId; 
   const listed = new Set<string>()
   const met = new Set<string>()
   const push = (assignment: Assignment, via: ManagedVia) => {
-    if (listed.has(assignment.id)) return
+    // A holder of a managing role is found by nesting in their own unit, and is not their own manager.
+    if (listed.has(assignment.id) || assignment.id === from.assignmentId) return
     listed.add(assignment.id)
     found.push({ person: personOf(assignment), unitId: assignment.unitId, roleId: assignment.roleId, assignment, via })
   }

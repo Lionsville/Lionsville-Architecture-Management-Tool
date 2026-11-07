@@ -176,7 +176,8 @@ describe('assignments.list', () => {
     const out = parsed(await ask('assignments.list', { scope: 'customer' }, undefined, { tree: tree() } as unknown as ShellView))
     expect((out.assignments as Record<string, unknown>[])[0]).toEqual({
       id: 'as-1', scope: 'customer', unitId: 'webshop', unit: 'Webshop', roleId: 'ro-po', role: 'Product owner', personId: 'pe-femke', share: 100, runs: true,
-      managedBy: [{ personId: 'pe-femke', roleId: 'ro-po', role: 'Product owner', unitId: 'webshop', unit: 'Webshop', via: 'nesting' }],
+      // The product owner manages the unit, and nobody above it: she is not her own manager.
+      managedBy: [],
     })
     expect(refusal(await ask('assignments.list', { nonsense: true }, undefined, shell()))?.[0]).toBe('agent.badArguments')
   })
