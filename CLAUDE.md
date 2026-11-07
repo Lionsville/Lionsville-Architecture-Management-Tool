@@ -1162,15 +1162,12 @@ src/app/          The shell around the editor.
                                       its bar, find and panels (`ChartBar`,
                                       `ChartFind`, `MovePanel`,
                                       `ExceptionsPanel`), and what a
-                                      badge and a folded unit say, and a
-                                      unit type's name with its long words
-                                      cut (`chartWords`), drawn with the
-                                      whole name on hover and to assistive
-                                      technology (`TypeLabel`, 3.7.3); its
-                                      summary in the
-                                      inspector while nothing is picked —
-                                      the counts, the findings, how to read
-                                      it (`ChartSummary`), read off the page's
+                                      badge and a folded unit say
+                                      (`chartWords`); its summary, opened
+                                      from the line under the chart into
+                                      the panel beside it — the counts,
+                                      the findings, how to read it
+                                      (`ChartSummary`), read off the page's
                                       own reading (`chartReading`); the
                                       chart's folds, for the session and keyed
                                       by the view, two levels on a first
