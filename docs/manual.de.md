@@ -3108,6 +3108,15 @@ Kategorie seiner Prüfung, wie `checks.list` sie nennt. Eine
 Zusammenarbeit hält er mit `relation.add` fest, Typ `interacts` und ein
 `mode`.
 
+## Leitlinien: Prinzipien, Themen und Bausteine
+
+Prinzipien, Themen und Bausteine beantworten eine Frage, was diese Arbeit leiten
+soll, und stehen unter einem Eintrag, **Leitlinien**, mit je einem Reiter. Jeder
+Reiter hat eine eigene Adresse und eine Zeile, die sagt, wofür er da ist; *Was
+brauche ich?* sagt, wann man was nimmt. Jeder ist eine Liste mit einer Zeile je
+Eintrag: eine Zeile wählen öffnet den Eintrag groß, und die Pfeile gehen die Liste
+durch.
+
 ## Prinzipien
 
 Ein Prinzip leitet die Entwürfe und Entscheidungen in einem Bereich: *Least
@@ -3115,7 +3124,12 @@ Privilege*, *Kaufen vor Bauen*. Jeder Bereich kann eigene Prinzipien haben,
 und ein Prinzip gilt in dem Bereich, der es hält, in jedem Bereich darunter
 und überall, wo ein Thema relevant ist, das es hält (siehe *Themen*). Die
 Karte **Prinzipien** auf einer Startseite sagt, wie viele dem Bereich selbst
-gehören und wie viele dort gelten, und öffnet die Seite.
+gehören und wie viele dort gelten, und öffnet die Seite. Eine Zeile sagt nur, was
+auffällt: kein Wort ist ein angenommenes, flexibles Prinzip; **Filter** grenzt die
+Liste nach Status, Regime und Gruppe ein. Ein Prinzip von anderswo sagt, wo es
+gehalten wird: dort wird es geändert und besprochen. **Mehr** bei einem Prinzip
+enthält Zurückziehen, Zusammenführen und Entfernen und sagt, warum Entfernen
+abgelehnt wird.
 
 **Neues Prinzip** fragt nach einem Titel und einer Aussage, einem Regime —
 *fest*, immer einzuhalten, oder *flexibel*, abzuwägen — und dem Status: ein
@@ -3123,7 +3137,7 @@ gehören und wie viele dort gelten, und öffnet die Seite.
 *angenommen*; oder *zurückgezogen*. Ein Prinzip hat eine Nummer in seinem
 Bereich, `PR-0007`, und seine **Aspekte** sind darunter nummeriert,
 `PR-0007.2`: die Teile, denen ein Eintrag einzeln folgen oder von denen er
-abweichen kann. Gruppen ordnen die Liste; **Gruppen verwalten** benennt sie
+abweichen kann. Gruppen ordnen die Liste; **Gruppen** benennt sie
 und legt ihre Reihenfolge fest. Wer die Aussage oder die Aspekte eines
 angenommenen Prinzips ändert, **schärft** es: Sie werden um eine Notiz
 gebeten, die mit dem Tag unter dem Prinzip steht. Zwei Prinzipien, die
@@ -3145,8 +3159,10 @@ Ein Thema zieht sich durch die Organisation — *Sicherheit*, *Integration*,
 *Daten* — und ist für manche Bereiche relevant und für andere nicht. Themen
 sind eigene Bereiche unter dem Ort **Themen** der Organisation, der mit dem
 ersten Thema entsteht; ein Thema kann Unterthemen haben. Die Karte **Themen**
-auf der Startseite der Organisation öffnet den Katalog: jedes Thema, wo es
-relevant ist und wie viele Bausteine und Prinzipien es hält.
+auf der Startseite der Organisation öffnet den Katalog: jedes Thema, verschachtelt,
+mit der Zahl der Bereiche, die es erreicht; gewählt, wo es relevant ist und welche
+Bausteine und Prinzipien es hält. **Mehr** bei einer Verknüpfung enthält Beenden,
+die Tage ändern und Entfernen.
 
 Ein Thema wird **ab einem Tag** mit einem Bereich verknüpft, und die
 Verknüpfung kann an einem Tag enden: **+ Bereich…** beim Thema oder
@@ -3176,17 +3192,19 @@ unter das bei *Abgelegt unter* gewählte Thema — mit allem darunter.
 
 Ein Baustein ist das, was viele Lösungen wiederverwenden: ein *Message
 Gateway*, ein *Identitätsdienst*. Er wird in einem Thema oder einem Bereich
-gehalten, und die Karte **Bausteine** öffnet das Register aller Bausteine.
-Die Seite eines Bausteins hat vier Reiter:
+gehalten, und die Karte **Bausteine** öffnet die Liste aller Bausteine. Einen wählen
+liest ihn groß; **Baustein öffnen** ist seine Seite, mit weggefalteter Liste, auf
+vier Reitern:
 
 - **Über** — sein Dokument, mit einem Kapitel je Nutzungskontext, und die
   Prinzipien, denen er folgt.
 - **Anforderungen** — seine **Fähigkeiten**, je ein Satz und ein *Muss*, wo
   eine Lösung sie vollständig abdecken muss, und seine **Nutzungskontexte**,
   die Situationen, in denen er genutzt wird, in Worten, die je sagen, wie viel
-  sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit
-  einem Klick gesetzt.
-- **Lösungen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
+  sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit einer
+  Legende. Ein Klick wählt eine Zelle und schreibt nichts; die Leertaste geht ein
+  Viertel weiter, und 0 bis 4 setzt ihn.
+- **Optionen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
   ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
   Landschaft, die sie sind.
 - **Wo verwendet** — die **Bewertung** jedes Bereichs. **Bewerten für…**

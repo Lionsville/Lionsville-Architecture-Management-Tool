@@ -2949,6 +2949,14 @@ overschrijdingen en de bevindingen, elk met de sleutel, het gewicht en de
 categorie van haar controle, zoals `checks.list` ze geeft. Een samenwerking legt hij
 vast met `relation.add`, type `interacts` en een `mode`.
 
+## Richtlijnen: principes, onderwerpen en bouwstenen
+
+Principes, onderwerpen en bouwstenen beantwoorden één vraag, wat dit werk moet
+sturen, en staan onder één ingang, **Richtlijnen**, met elk een tabblad. Elk
+tabblad heeft een eigen adres en één regel die zegt waar het voor is; *Welke heb
+ik nodig?* zegt wanneer je welke gebruikt. Elk is een lijst met één regel per
+item: een regel kiezen opent het item groot, en de pijltjes lopen door de lijst.
+
 ## Principes
 
 Een principe stuurt de ontwerpen en besluiten in een scope: *least
@@ -2956,7 +2964,11 @@ privilege*, *kopen voor bouwen*. Elke scope kan eigen principes hebben, en
 een principe geldt in de scope die het bewaart, in elke scope daaronder, en
 overal waar een onderwerp dat het bewaart relevant is (zie *Onderwerpen*). De
 kaart **Principes** op een home zegt hoeveel er van de scope zelf zijn en
-hoeveel er gelden, en opent de pagina.
+hoeveel er gelden, en opent de pagina. Een regel zegt alleen wat opvalt: geen
+woord is een aanvaard, flexibel principe; **Filter** beperkt de lijst op status,
+regime en groep. Een principe van elders zegt waar het bewaard wordt: daar wordt
+het gewijzigd en besproken. **Meer** bij een principe bevat Intrekken, Samenvoegen
+en Verwijderen, en zegt waarom Verwijderen geweigerd wordt.
 
 **Nieuw principe** vraagt een titel en een uitspraak, een regime — *vast*,
 altijd aan te houden, of *flexibel*, af te wegen — en de status: een
@@ -2964,7 +2976,7 @@ altijd aan te houden, of *flexibel*, af te wegen — en de status: een
 *aanvaard*; of *ingetrokken*. Een principe heeft een nummer in zijn scope,
 `PR-0007`, en zijn **aspecten** zijn daaronder genummerd, `PR-0007.2`: de
 delen die een record één voor één kan volgen of waarvan het kan afwijken.
-Groepen ordenen de lijst; **Groepen beheren** geeft ze een naam en een
+Groepen ordenen de lijst; **Groepen** geeft ze een naam en een
 volgorde. Wie de uitspraak of de aspecten van een aanvaard principe wijzigt,
 **scherpt** het aan: je wordt om een notitie gevraagd, die met de dag onder
 het principe blijft staan. Twee principes die hetzelfde zeggen worden
@@ -2987,8 +2999,9 @@ Een onderwerp loopt door de organisatie heen — *beveiliging*, *integratie*,
 zijn eigen scopes onder de plek **Onderwerpen** van de organisatie, die
 ontstaat bij het eerste onderwerp; een onderwerp kan subonderwerpen hebben.
 De kaart **Onderwerpen** op de home van de organisatie opent de catalogus:
-elk onderwerp, waar het relevant is, en hoeveel bouwstenen en principes het
-bewaart.
+elk onderwerp, genest, met hoeveel scopes het bereikt; gekozen, waar het relevant
+is en de bouwstenen en principes die het bewaart. **Meer** bij een koppeling bevat
+beëindigen, de dagen wijzigen en verwijderen.
 
 Een onderwerp wordt **vanaf een dag** aan een scope gekoppeld, en de
 koppeling kan op een dag eindigen: **+ Scope…** bij het onderwerp, of
@@ -3017,8 +3030,9 @@ of onder het onderwerp dat bij *Ondergebracht bij* gekozen is — met alles eron
 
 Een bouwsteen is wat veel oplossingen hergebruiken: een *message gateway*,
 een *identiteitsdienst*. Hij wordt bewaard in een onderwerp of een scope, en
-de kaart **Bouwstenen** opent het register van alle bouwstenen. De pagina van
-een bouwsteen heeft vier tabbladen:
+de kaart **Bouwstenen** opent de lijst van alle bouwstenen. Eén kiezen leest hem
+groot; **Bouwsteen openen** is zijn pagina, met de lijst weggevouwen, op vier
+tabbladen:
 
 - **Over** — zijn document, met een hoofdstuk per gebruikscontext, en de
   principes die hij volgt.
@@ -3026,8 +3040,9 @@ een bouwsteen heeft vier tabbladen:
   oplossing die volledig moet afdekken, en zijn **gebruikscontexten**, de
   situaties waarin hij gebruikt wordt, in woorden, die elk zeggen hoeveel ze
   van elke capability nodig hebben: een Harvey ball van leeg tot vol, met een
-  klik in te stellen.
-- **Oplossingen** — de catalogus: producten, diensten en wat zelf gebouwd
+  legenda. Een klik kiest een cel en schrijft niets; spatie gaat een kwart verder,
+  en 0 tot 4 zet hem.
+- **Opties** — de catalogus: producten, diensten en wat zelf gebouwd
   wordt dat hem kan leveren, elk met leverancier en status, en de elementen
   in het landschap die het zijn.
 - **Waar gebruikt** — de **beoordeling** van elke scope. **Beoordelen

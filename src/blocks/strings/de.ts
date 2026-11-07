@@ -147,7 +147,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.editingDocument': '{name} bearbeiten',
   'blocks.openIn': 'In {scope} öffnen',
   'blocks.backToList': '‹ Alle Bausteine',
-  'blocks.keptInScope': 'Geführt in {scope}',
+  'blocks.keptInScope': 'Gehalten in {scope}',
   'blocks.listWord': 'Bausteine',
   'blocks.openBlock': 'Baustein öffnen',
   'blocks.noteChosenOne': 'In 1 Bereich gewählt',
