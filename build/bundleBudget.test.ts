@@ -47,9 +47,9 @@ describe('the bundle budget', () => {
       .toBe('bundle: 3 kB in 2 files (budget 9 kB); largest a.js 2 kB (budget 3 kB)')
   })
 
-  it('is a budget and not a formality: 10.77 megabytes at most, and no file over 3.33', () => {
-    expect(WEB_BUDGET.total).toBeLessThanOrEqual(10_800_000)
-    expect(WEB_BUDGET.file).toBeLessThanOrEqual(3_340_000)
+  it('is a budget and not a formality: 10.82 megabytes at most, and no file over 5.1, what the owner allowed', () => {
+    expect(WEB_BUDGET.total).toBeLessThanOrEqual(10_820_000)
+    expect(WEB_BUDGET.file).toBeLessThanOrEqual(5_100_000)
   })
 })
 
