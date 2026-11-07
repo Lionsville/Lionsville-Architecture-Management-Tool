@@ -1,7 +1,7 @@
 /* The organisation chart: a tree on a canvas, an outline beside it, a panel where one is up. Colours are tokens only. */
 .chart-page { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--canvas-ground); color: var(--ink); }
 .chart-page__main { flex: 1 1 auto; min-height: 0; display: flex; }
-.chart-page__work { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.chart-page__work { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; container: chart-work / inline-size; }
 .chart-page__panel { flex: none; display: flex; min-height: 0; }
 @media (max-width: 899px) { .chart-page__main { flex-direction: column; } }
 
@@ -20,6 +20,8 @@
 .chart-legend .kit-key__value { min-height: 18px; font-size: var(--t-small); gap: var(--s-2); }
 .chart-legend__sample { display: block; flex: none; overflow: visible; }
 @media (max-width: 899px) { .chart-legend { display: none; } }
+/* Beside a panel the chart is narrow, and the legend would lie on the zoom: it stands over the zoom instead. */
+@container chart-work (max-width: 620px) { .chart-legend { bottom: calc(2 * var(--target-min) + 2 * var(--s-3) + var(--s-2)); } }
 
 /* The tree. A branch is a box and what hangs from it. */
 .org-tree { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--s-4); }

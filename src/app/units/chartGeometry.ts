@@ -97,3 +97,25 @@ export function middleOf(points: readonly Point[]): Point {
   }
   return points[0] ?? { x: 0, y: 0 }
 }
+
+/** How tall a tag on a line is, and how near two may sit along a line before they are read as one. */
+const TAG_STEP = 18
+const TAG_NEAR_X = 120
+
+/**
+ * Where each line's tag sits once no two lie on each other: lines that share a
+ * stretch of gap put their middles in one place, and the second tag hid the first
+ * and the name under both. A tag that lands on one already placed steps over the one it
+ * landed on, until it is clear.
+ */
+export function spreadTags(at: readonly Point[]): Point[] {
+  const placed: Point[] = []
+  for (const point of at) {
+    let y = point.y
+    for (let under = clash(placed, point.x, y); under; under = clash(placed, point.x, y)) y = under.y - TAG_STEP
+    placed.push({ x: point.x, y })
+  }
+  return placed
+}
+
+const clash = (placed: readonly Point[], x: number, y: number) => placed.find((one) => Math.abs(one.x - x) < TAG_NEAR_X && Math.abs(one.y - y) < TAG_STEP)

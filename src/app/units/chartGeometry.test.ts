@@ -3,7 +3,7 @@
 
 /** The chart's lines run at right angles along the gaps of the tree, from what was measured. */
 import { describe, expect, it } from 'vitest'
-import { connectorsOf, middleOf, pathOf, routeBetween } from './chartGeometry'
+import { connectorsOf, middleOf, pathOf, routeBetween, spreadTags } from './chartGeometry'
 
 const box = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom })
 
@@ -56,5 +56,13 @@ describe('a reporting line', () => {
 
   it('has a middle for its tag', () => {
     expect(middleOf([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }])).toEqual({ x: 10, y: 0 })
+  })
+})
+
+describe('the tags on the lines', () => {
+  it('step apart where two lines share a stretch, and stay put where they do not', () => {
+    expect(spreadTags([{ x: 100, y: 50 }, { x: 104, y: 52 }, { x: 98, y: 50 }, { x: 400, y: 50 }])).toEqual([
+      { x: 100, y: 50 }, { x: 104, y: 32 }, { x: 98, y: 14 }, { x: 400, y: 50 },
+    ])
   })
 })

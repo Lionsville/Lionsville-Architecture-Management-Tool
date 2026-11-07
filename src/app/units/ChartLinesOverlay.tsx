@@ -23,7 +23,7 @@ import type { Translate } from '../../i18n'
 import type { ChartShape } from '../../model/orgChart'
 import { KeyStrip } from '../../widgets/kit/KeyStrip'
 import { arrowAt, Line, LineLabel } from '../../widgets/kit/Line'
-import { connectorsOf, middleOf, pathOf, routeBetween } from './chartGeometry'
+import { connectorsOf, middleOf, pathOf, routeBetween, spreadTags } from './chartGeometry'
 import type { LineEnd, Point, Rect } from './chartGeometry'
 import type { ChartLine, ChartLineEnd } from './chartLines'
 
@@ -172,10 +172,12 @@ export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
   stage: Stage; lines: readonly ChartLine[]; zoom: number; redraw: unknown; unitName: (id: string) => string; t: Translate
 }) {
   const drawn = useMeasured(stage, lines, zoom, redraw)
-  const tags = drawn.flatMap((one) => {
+  const tagged = drawn.flatMap((one) => {
     const tag = tagOf(one.line, one.folded, unitName, t)
     return tag ? [{ key: one.key, tag, at: middleOf(one.points) }] : []
   })
+  const spread = spreadTags(tagged.map((one) => one.at))
+  const tags = tagged.map((one, index) => ({ ...one, at: spread[index] ?? one.at }))
   if (lines.length === 0) return null
   return (
     <>
