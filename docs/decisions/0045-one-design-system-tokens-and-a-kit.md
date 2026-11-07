@@ -147,3 +147,14 @@ stays, for a component tested alone.
   about 50 kB.
 * MUI remains a dependency. Leaving it is a later decision that the kit makes
   possible and this record does not take.
+
+## As built: the type scale and the text size
+
+The first scale carried six sizes in px, and screens added ten more of their own.
+It is five now, in rem: small, body, large, title and page, at 13, 15, 17, 20 and 26
+px at a browser's default, and what holds text is in rem with them. A person sets a
+step in the top row, 90 to 150 percent, on the document's root; a browser's own text
+size reaches the same sizes. A canvas stays in px, since its zoom is what makes it
+larger and its reading distances depend on it. `build/literalFontSizes.test.ts`
+keeps a size from being written anywhere else.
+
