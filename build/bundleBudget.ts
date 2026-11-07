@@ -49,6 +49,10 @@
  * 8.413 MB, which was 13 kB over the 8.4 MB before. A ceiling is still a
  * number somebody changes on purpose, in a commit that says why.
  *
+ * **Both raised for 4.0.0**, by 80 kB each: one frame stands over every screen,
+ * so its rows, its tree and ⌘K are in the first download. The whole measured
+ * 10.046 MB and the largest file 3.059 MB when this was said.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice
@@ -63,7 +67,6 @@ export type Budget = {
   total: number
 }
 
-// 4.0.0: the frame stands over every screen, so its rows, its tree and ⌘K are first-download; 60 kB, said here.
 export const WEB_BUDGET: Budget = { file: 3_080_000, total: 10_080_000 }
 
 /**
