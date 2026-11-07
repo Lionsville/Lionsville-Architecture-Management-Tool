@@ -124,7 +124,7 @@ function GroupPop({ groups, group, onGroup, name }: {
   const label = groups.find((one) => one.id === group)?.label ?? t('kit.filter.groupNone')
   return (
     <Pop label={t('kit.filter.group')} face={<>{t('kit.filter.groupOn', { group: label })} <CaretIcon /></>}>
-      <fieldset className="kit-filter__field" data-guide={field.guide}>
+      <fieldset className="kit-filter__field">
         <legend>{t('kit.filter.group')}</legend>
         {[{ id: '', label: t('kit.filter.groupNone') }, ...groups].map((one) => (
           <label className="kit-filter__option" key={one.id}>
@@ -190,7 +190,7 @@ function FieldPart({ field, values, onValues }: {
   const wanted = typed.trim().toLowerCase()
   const options = field.options.filter((option) => !wanted || option.label.toLowerCase().includes(wanted))
   return (
-    <fieldset className="kit-filter__field">
+    <fieldset className="kit-filter__field" data-guide={field.guide}>
       <legend>{field.label}</legend>
       {field.narrow && (
         <input

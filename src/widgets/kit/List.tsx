@@ -141,7 +141,6 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       className="kit-list__row"
       data-kit-row={rowKey(row.id)}
       data-key={row.id}
-      data-testid={row.testId}
       data-group={groupId}
       data-selected={selected || undefined}
       data-unread={row.unread || undefined}

@@ -477,7 +477,7 @@ export const GROWN = {
   'src/observations/ui/ObservationsPage.tsx': { complexity: 80, lines: 472 },
   'src/observations/ui/RecordEditor.tsx': { lines: 152 },
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 222 },
-  'src/observations/ui/SolutionReaders.tsx': { complexity: 44, lines: 251 },
+  'src/observations/ui/SolutionReaders.tsx': { complexity: 44, lines: 218 },
   'src/observations/ui/WhyLadder.tsx': { complexity: 39 },
   'src/observations/ui/useAnalysisForms.tsx': { lines: 173 },
   'src/projects/documentSession.ts': { complexity: 34 },
