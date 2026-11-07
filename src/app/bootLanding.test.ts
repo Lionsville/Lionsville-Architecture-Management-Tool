@@ -161,6 +161,20 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(undefined, { scope: 'acme/gone' })).toEqual({})
   })
 
+  it('opens the operating model on the unit type, role or responsibility its address names', () => {
+    const organisation = held(scope('', []), {
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [] }],
+      roles: [{ id: 'ro-lead', name: 'Lead', duties: [] }],
+      responsibilities: [{ id: 'rs-plan', name: 'Plan the day' }],
+    })
+    for (const id of ['ut-team', 'ro-lead', 'rs-plan']) {
+      const landed = placeLanding(organisation, { scope: '', page: 'operating', id })
+      expect(landed.initialPage).toEqual({ page: 'operating', id })
+      expect(landed.notice).toBeUndefined()
+    }
+    expect(placeLanding(organisation, { scope: '', page: 'operating', id: 'gone' })).toMatchObject({ initialPage: { page: 'operating' }, notice: 'shell.placeGone' })
+  })
+
   /** A view's page with no id: the one of its kind there is, and the home where there is none (ADR-0019, amended). */
   it('opens a view\u2019s page with no id on the one of its kind there is, and makes none', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board' }).initialProject?.activeDiagramId).toBe('one')
