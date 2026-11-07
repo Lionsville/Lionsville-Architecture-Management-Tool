@@ -104,7 +104,7 @@ than through them, and re-route when you move something. When automatic is not
 what you want, take over: drag a segment, add or remove bend points, **pin** a
 route so nothing moves it again, choose which **side** of an element each end
 attaches to, and drag the label off its default position. All of that survives a
-re-layout, a reload, and a round trip through the working file.
+re-layout, a reload, and a round trip through a saved copy.
 
 ### Layout you can hand off or keep
 
@@ -283,7 +283,7 @@ In one of three places, and the app always says which:
 
 A private window usually does open the browser's storage, and then keeps your
 work only as long as the browser does: the app cannot tell the window is
-private, so save a working file there to keep your work.
+private, so save a copy there to keep your work.
 
 ```
 <your folder>/scope.json · model.json           the organisation
@@ -299,7 +299,7 @@ it first and asks only if that did not work; in a browser tab it always asks.
 If the work changes underneath you (a colleague, a sync client, another tab),
 the app says so. It never overwrites the other version without asking.
 
-**Every place keeps a history.** **Snapshot…** records the work under a
+**Every place keeps a history.** **Take a snapshot…** records the work under a
 message drafted from what you actually did. **History…** shows what has
 changed since any snapshot, as architecture rather than as lines, restores a
 diagram, a page or the whole scope, and labels a version. A folder keeps its
