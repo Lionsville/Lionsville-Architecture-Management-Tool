@@ -552,7 +552,7 @@ function useMapDay(props: MapPageProps) {
     const { day: _was, ...rest } = reading
     changeReading(day !== undefined ? { ...rest, day } : rest)
   }
-  return { lookDay, looking, readOnly: props.readOnly || looking, chooseDay }
+  return { lookDay, look: looking ? lookDay : undefined, readOnly: props.readOnly || looking, chooseDay }
 }
 
 /** How many rows each filter keeps, and which rows a list shows instead of the matrix. */
@@ -598,7 +598,7 @@ export function MapPage(props: MapPageProps) {
   const [drawsOpen, setDrawsOpen] = useState(false)
   const [toast, setToast] = useState<ToastWords | null>(null)
   const sheetLevel = usePlaceTabFor('sheet')
-  const { lookDay, looking, readOnly, chooseDay } = useMapDay(props)
+  const { lookDay, look, readOnly, chooseDay } = useMapDay(props)
   const { exporting, exportPng } = useMapPicture(props, page, pick?.id)
   const laidOut = useLaidOutMap(props, lookDay, allColumns)
   const folds = useUnfolded(model)
@@ -624,7 +624,7 @@ export function MapPage(props: MapPageProps) {
           onReading: (to) => { if (to !== 'coverage') { sheetLevel(to); props.onSheet?.() } },
         }}
       />
-      {looking && lookDay !== undefined && <MapLook day={lookDay} props={props} onBack={() => chooseDay(undefined)} t={t} />}
+      {look !== undefined && <MapLook day={look} props={props} onBack={() => chooseDay(undefined)} t={t} />}
       {finding && <MapFind query={query} count={matched?.length ?? 0} onQuery={setQuery} onClose={closeFind} t={t} />}
       {laidOut && hasRows && <MapLine laidOut={laidOut} t={t} />}
       <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId, 'data-kit-row')}>
