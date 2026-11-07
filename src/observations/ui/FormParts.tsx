@@ -17,7 +17,7 @@
  * strength, and taken off again with the button at its end. Nothing in it
  * exists until the form is recorded.
  */
-import { useId, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -39,7 +39,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
-import { MarkdownHelp } from '../../documentation/ui/MarkdownHelp'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { CloseIcon, LinkIcon } from '../../widgets/icons'
 import { CAUSE_STRENGTHS } from '../observation'
 import type { CauseStrength } from '../observation'
@@ -127,45 +127,14 @@ export function DescriptionField({ label, optional = false, value, onChange, exa
   s: Translate
   minRows?: number
 }) {
-  const [preview, setPreview] = useState(false)
-  const id = useId()
   return (
-    <Box sx={{ display: 'grid', gap: 0.5, minWidth: 0 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-          <Typography component="label" htmlFor={preview ? undefined : id} variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
-          {optional && <Typography variant="caption" color="text.secondary">{s('observation.formOptional')}</Typography>}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <MarkdownHelp />
-          <ToggleButtonGroup
-            exclusive size="small" value={preview ? 'preview' : 'edit'}
-            onChange={(_event, next: 'edit' | 'preview' | null) => { if (next) setPreview(next === 'preview') }}
-            aria-label={s('observation.formDescriptionMode')}
-            data-guide="observationForm.description"
-          >
-            <ToggleButton value="edit" sx={{ py: 0.25, px: 1.25, textTransform: 'none' }}>{s('observation.formEdit')}</ToggleButton>
-            <ToggleButton value="preview" sx={{ py: 0.25, px: 1.25, textTransform: 'none' }}>{s('observation.formPreview')}</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-      </Box>
-      {preview ? (
-        <Box data-testid="form-preview" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, px: 1.5, py: 1, minHeight: minRows * 21, bgcolor: 'background.default', fontSize: 14, overflow: 'auto' }}>
-          {value.trim() ? renderMarkdown(value) : <Typography color="text.secondary">{s('observation.formNothingWritten')}</Typography>}
-        </Box>
-      ) : (
-        <TextField
-          id={id}
-          multiline
-          fullWidth
-          minRows={minRows}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          slotProps={{ htmlInput: { 'data-testid': 'form-description', spellCheck: true } }}
-          sx={{ '& textarea': { fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13 } }}
-        />
-      )}
-      <Typography variant="caption" color="text.secondary">{example}</Typography>
+    <Box data-guide="observationForm.description" sx={{ minWidth: 0 }}>
+      <MarkdownEditor
+        label={label} value={value} onChange={onChange} minRows={minRows} maxRows={Math.max(minRows, 24)}
+        helper={example} testId="form-description" previewTestId="form-preview"
+        renderPreview={(text) => renderMarkdown(text)}
+        {...(optional ? { note: s('observation.formOptional') } : {})}
+      />
     </Box>
   )
 }
@@ -200,7 +169,6 @@ export function SectionsField({ label, sections, body, renderMarkdown, s }: {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
         <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <MarkdownHelp />
           <ToggleButtonGroup
             exclusive size="small" value={preview ? 'preview' : 'edit'}
             onChange={(_event, next: 'edit' | 'preview' | null) => { if (next) setPreview(next === 'preview') }}
@@ -217,20 +185,16 @@ export function SectionsField({ label, sections, body, renderMarkdown, s }: {
           {renderMarkdown(body)}
         </Box>
       ) : sections.map((one) => (
-        <TextField
+        <MarkdownEditor
           key={one.key}
-          multiline
-          fullWidth
-          size="small"
           minRows={3}
           required={one.required}
           label={one.label}
           value={one.value}
           error={one.problem !== undefined}
-          helperText={one.problem ?? one.example}
-          onChange={(event) => one.onChange(event.target.value)}
-          slotProps={{ htmlInput: { 'data-testid': `form-${one.key}`, spellCheck: true } }}
-          sx={{ '& textarea': { fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13 } }}
+          helper={one.problem ?? one.example}
+          onChange={one.onChange}
+          testId={`form-${one.key}`}
         />
       ))}
     </Box>

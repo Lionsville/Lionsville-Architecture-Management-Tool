@@ -38,7 +38,7 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
-import type { ProblemAction, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
+import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
 /** A provider's sentences about its source, as keys of its own table. */
 export type SourceSayings = {
@@ -284,6 +284,8 @@ export type AppProvider = {
   people?: SourcePeople
   /** Who may comment, and remove others' comments, where the source says more than `readOnlyAt` (`ProviderParts.comments`). */
   comments?: SourceComments
+  /** The files a document may point at, where the open source keeps them (`ProviderParts.attachments`). */
+  attachments?: SourceAttachments
   /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, says removing a scope takes with it, and says of a

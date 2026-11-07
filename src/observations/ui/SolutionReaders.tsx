@@ -38,10 +38,10 @@ import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
-import { DocumentSource } from '../../documentation/ui/DocumentSource'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import { WritingPane } from '../../documentation/ui/MarkdownEditor'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import {
-  SOLUTION_SIZES, experimentMovesFrom, formatExperimentNumber, formatSolutionNumber, mayAddress,
+  SOLUTION_SIZES, experimentMovesFrom, experimentTemplate, solutionTemplate, formatExperimentNumber, formatSolutionNumber, mayAddress,
   mayPlanExperiment, previousState,
 } from '../solution'
 import type {
@@ -177,8 +177,6 @@ export function SolutionReader(props: SolutionReaderProps) {
   const canEdit = !readOnly && !dropped
   const stored = useMemo(() => ({ title: solution.title, body: solution.body }), [solution])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
-  const [previewShown, setPreviewShown] = useState(true)
-  const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : solution.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatSolutionNumber(solution.number)
@@ -223,24 +221,24 @@ export function SolutionReader(props: SolutionReaderProps) {
         <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
-              <TitleField label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit} example={s('solution.newTitleHelp')} missing={s('solution.formTitleMissing')} />
-            </Box>
-            <DocumentSource
-              value={draft.body}
-              onChange={(body) => setDraft((d) => ({ ...d, body }))}
-              onBlur={commit}
-              label={s('solution.source')}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-            />
-          </Box>
-        )}
-        {showPreview && (
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <WritingPane
+          writing={mode === 'edit'}
+          value={draft.body}
+          onChange={(body) => setDraft((d) => ({ ...d, body }))}
+          onBlur={commit}
+          label={s('solution.source')}
+          onAddImage={props.onAddImage}
+          images={props.images}
+          template={{ label: s('md.fromTemplate'), text: solutionTemplate(s) }}
+          above={(
+            <>
+              <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+                <TitleField label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit} example={s('solution.newTitleHelp')} missing={s('solution.formTitleMissing')} />
+              </Box>
+            </>
+          )}
+        >
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{label}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
@@ -429,7 +427,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               ))}
             </Box>
             <SolutionFooter id={solution.id} subject={`${solution.title}\n${solution.body}`} nameOf={props.nameOf} onOpen={props.onOpen} /></DocumentSheet>
-        )}
+</WritingPane>
       </Box>
     </ReaderRoot>
   )
@@ -557,8 +555,6 @@ export function ExperimentReader(props: ExperimentReaderProps) {
   // Who runs it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
   const names = usePersonNames()
   const bar = experimentBar(props, mode, switchMode)
-  const [previewShown, setPreviewShown] = useState(true)
-  const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : experiment.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   type Field = 'hypothesis' | 'measure' | 'where' | 'from' | 'to' | 'result'
@@ -592,39 +588,39 @@ export function ExperimentReader(props: ExperimentReaderProps) {
         )}
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
-              <Box sx={{ gridColumn: '1 / -1' }}>
-                <TitleField
-                  label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
-                  example={s('solution.experimentTitleExample')} missing={s('solution.experimentTitleMissing')}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <WritingPane
+          writing={mode === 'edit'}
+          value={draft.body}
+          onChange={(body) => setDraft((d) => ({ ...d, body }))}
+          onBlur={commit}
+          label={s('solution.experimentSource')}
+          onAddImage={props.onAddImage}
+          images={props.images}
+          template={{ label: s('md.fromTemplate'), text: experimentTemplate(s) }}
+          above={(
+            <>
+              <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
+                <Box sx={{ gridColumn: '1 / -1' }}>
+                  <TitleField
+                    label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
+                    example={s('solution.experimentTitleExample')} missing={s('solution.experimentTitleMissing')}
+                  />
+                </Box>
+                {field('hypothesis', s('solution.hypothesis'), { wide: true })}
+                {field('measure', s('solution.measure'), { wide: true })}
+                {field('where', s('solution.whereField'))}
+                <PersonRefField
+                  label={s('solution.byField')} value={draft.by} names={names} onBlur={commit}
+                  onChange={(by) => setDraft((d) => ({ ...d, by: by ?? '' }))} testId="experiment-by-field" s={s}
                 />
+                {field('from', s('solution.fromField'), { type: 'date' })}
+                {field('to', s('solution.toField'), { type: 'date' })}
+                {field('result', s('solution.result'), { wide: true })}
               </Box>
-              {field('hypothesis', s('solution.hypothesis'), { wide: true })}
-              {field('measure', s('solution.measure'), { wide: true })}
-              {field('where', s('solution.whereField'))}
-              <PersonRefField
-                label={s('solution.byField')} value={draft.by} names={names} onBlur={commit}
-                onChange={(by) => setDraft((d) => ({ ...d, by: by ?? '' }))} testId="experiment-by-field" s={s}
-              />
-              {field('from', s('solution.fromField'), { type: 'date' })}
-              {field('to', s('solution.toField'), { type: 'date' })}
-              {field('result', s('solution.result'), { wide: true })}
-            </Box>
-            <DocumentSource
-              value={draft.body}
-              onChange={(body) => setDraft((d) => ({ ...d, body }))}
-              onBlur={commit}
-              label={s('solution.experimentSource')}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-            />
-          </Box>
-        )}
-        {showPreview && (
+            </>
+          )}
+        >
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{formatExperimentNumber(experiment.number)}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
@@ -648,7 +644,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
             <RecordChanges about={{ kind: 'experiment', id: experiment.id }} first="proposed" />
             <CommentThread about={{ kind: 'experiment', id: experiment.id }} />
           </DocumentSheet>
-        )}
+        </WritingPane>
       </Box>
     </ReaderRoot>
   )

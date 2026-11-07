@@ -15,7 +15,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
 import type { DesignDiagram } from '../../model/types'
 import type { Referable } from '../references'
-import { DocumentSource } from './DocumentSource'
+import { MarkdownEditor } from './MarkdownEditor'
 import { MarkdownView } from './MarkdownView'
 import { ReferencesProvider } from './References'
 import type { ReferencesAccess } from './References'
@@ -49,7 +49,7 @@ describe('a ref fence', () => {
 describe('referring while writing', () => {
   function Editor({ onChange }: { onChange: (next: string) => void }) {
     const [value, setValue] = useState('')
-    return <ReferencesProvider value={access()}><DocumentSource value={value} onChange={(next) => { setValue(next); onChange(next) }} label="Source" /></ReferencesProvider>
+    return <ReferencesProvider value={access()}><MarkdownEditor variant="pane" value={value} onChange={(next) => { setValue(next); onChange(next) }} label="Source" /></ReferencesProvider>
   }
 
   it('opens a list at [[, narrowed by the words typed, and puts the choice in with Enter', async () => {

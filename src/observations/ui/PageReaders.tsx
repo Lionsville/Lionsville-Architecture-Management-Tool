@@ -16,7 +16,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import type { Adr } from '../../model/adr'
 import type { Transition } from '../../model/transition'
 import {

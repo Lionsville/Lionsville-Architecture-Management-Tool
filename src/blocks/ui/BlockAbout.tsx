@@ -15,7 +15,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
-import { DocumentSource } from '../../documentation/ui/DocumentSource'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
@@ -90,7 +90,7 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
       </Box>
       {mode === 'edit' ? (
         <Box sx={{ height: 480, display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          <DocumentSource value={draft} onChange={setDraft} onBlur={keep} label={t('blocks.document')} />
+          <MarkdownEditor variant="pane" value={draft} onChange={setDraft} onBlur={keep} label={t('blocks.document')} renderPreview={(text) => <Box sx={{ p: 2, fontSize: 15, overflow: 'auto' }}><MarkdownView markdown={text} /></Box>} />
         </Box>
       ) : (
         <Box ref={read} sx={{ fontSize: 15, '& [data-lit]': { bgcolor: 'action.selected', transition: 'background-color 600ms' } }} data-testid="block-document">

@@ -1,0 +1,118 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* The one place a person writes markdown. Every value is a token, so a theme
+   re-skins it; a state is a data attribute. */
+
+.md-editor { display: flex; flex-direction: column; min-width: 0; color: var(--ink); font-family: var(--font-ui); }
+.md-editor[data-variant='pane'] { flex: 1; min-height: 0; background: var(--surface); }
+
+/* --- the bar ---------------------------------------------------------------- */
+
+.md-editor__bar { display: flex; align-items: center; gap: var(--s-1); min-height: 30px; min-width: 0; }
+.md-editor[data-variant='pane'] > .md-editor__bar { flex-wrap: wrap; padding: var(--s-1) var(--s-3); border-bottom: 1px solid var(--line); }
+.md-editor__end { display: flex; align-items: center; gap: var(--s-1); margin-left: auto; flex: none; }
+
+/* In a field the label and the tools share one row, one in place of the other,
+   so that a press in the text never moves the text out from under the pointer. */
+.md-editor__heading { display: grid; flex: 1; min-width: 0; align-items: center; }
+.md-editor__heading > * { grid-area: 1 / 1; min-width: 0; }
+.md-editor__label { font-size: var(--t-sm); font-weight: var(--fw-strong); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-editor__label small { font-size: var(--t-xs); font-weight: var(--fw-regular); color: var(--ink-3); margin-left: var(--s-2); }
+.md-editor[data-variant='field'][data-active='true'] .md-editor__label { visibility: hidden; }
+.md-editor[data-variant='field'][data-active='false'] .md-editor__tools { visibility: hidden; }
+
+.md-editor__tools { display: flex; align-items: center; gap: 1px; min-width: 0; }
+.md-editor__rule { width: 1px; height: 16px; background: var(--line); margin: 0 3px; flex: none; }
+.md-editor__tool {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 26px; height: 26px; padding: 0; border: 0; border-radius: var(--r-2);
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-sm); cursor: pointer;
+}
+.md-editor__tool:hover { background: var(--surface-2); color: var(--ink); }
+.md-editor__tool:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.md-editor__tool[aria-pressed='true'], .md-editor__tool[aria-expanded='true'] { background: var(--accent-soft); color: var(--accent); }
+.md-editor__tool b { font-weight: 700; }
+.md-editor__tool i { font-family: Georgia, serif; font-style: italic; }
+
+.md-editor__switch { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
+.md-editor__switch button {
+  display: inline-flex; align-items: center; gap: var(--s-1); height: 24px; padding: 0 var(--s-2); border: 0;
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-xs); cursor: pointer; white-space: nowrap;
+}
+.md-editor__switch button + button { border-left: 1px solid var(--line); }
+.md-editor__switch button:hover { background: var(--surface-2); }
+.md-editor__switch button:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.md-editor__switch button[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent); font-weight: var(--fw-medium); }
+
+/* --- the body --------------------------------------------------------------- */
+
+.md-editor__body { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.md-editor[data-variant='pane'] > .md-editor__body { flex: 1; min-height: 0; }
+.md-editor__body[data-view='split'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.md-editor__source { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+.md-editor[data-variant='pane'] .md-editor__body[data-view='split'] > .md-editor__source { border-right: 1px solid var(--line); }
+.md-editor__preview { min-width: 0; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.md-editor__preview > * { flex: 1; }
+.md-editor[data-variant='field'] .md-editor__preview {
+  border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); font-size: var(--t-sm); background: var(--surface);
+}
+.md-editor__nothing { color: var(--ink-3); }
+
+/* A long line wraps where a reader can follow it, and an address with no place
+   to break breaks anyway rather than pushing the column wider. */
+.md-editor__text {
+  flex: 1; min-height: 0; width: 100%; box-sizing: border-box; display: block; resize: none; margin: 0; border: 0; outline: none;
+  background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--t-sm); line-height: 1.6; tab-size: 2;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.md-editor__text::placeholder { color: var(--ink-3); opacity: 1; }
+.md-editor[data-variant='pane'] .md-editor__text { padding: var(--s-4); }
+.md-editor[data-variant='pane'] .md-editor__body[data-view='write'] .md-editor__text { padding-inline: max(var(--s-4), calc((100% - 86ch) / 2)); }
+.md-editor[data-variant='field'] .md-editor__text {
+  padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-3); background: var(--surface); overflow: auto;
+}
+.md-editor[data-variant='field'] .md-editor__text:focus { border-color: var(--focus-ring); box-shadow: 0 0 0 1px var(--focus-ring); }
+.md-editor[data-error='true'] .md-editor__text { border-color: var(--bad); }
+.md-editor__text:disabled { color: var(--ink-3); }
+.md-editor[data-dropping='true'] .md-editor__text { outline: var(--line-width-emphasis) dashed var(--accent); outline-offset: -3px; background: var(--accent-soft); }
+
+/* --- the foot --------------------------------------------------------------- */
+
+.md-editor__foot { display: flex; align-items: center; gap: var(--s-3); min-height: 22px; font-size: var(--t-xs); color: var(--ink-3); min-width: 0; }
+.md-editor[data-variant='pane'] .md-editor__foot { padding: 2px var(--s-4); border-top: 1px solid var(--line); }
+.md-editor[data-variant='field'][data-active='false'] .md-editor__foot { visibility: hidden; }
+.md-editor__hint { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-editor__hint kbd, .md-editor__guide code { font-family: var(--font-mono); font-size: var(--t-xs); }
+.md-editor__more { padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; flex: none; }
+.md-editor__more:hover { text-decoration: underline; }
+.md-editor__more:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.md-editor__count { flex: none; font-variant-numeric: tabular-nums; }
+.md-editor__said { padding: 2px 0; font-size: var(--t-xs); color: var(--ink-2); }
+.md-editor__said[data-refused='true'] { color: var(--bad); }
+.md-editor[data-variant='pane'] .md-editor__said { padding-inline: var(--s-4); }
+.md-editor__helper { font-size: var(--t-xs); color: var(--ink-3); }
+.md-editor[data-error='true'] .md-editor__helper { color: var(--bad); }
+
+/* --- the help under the text ------------------------------------------------- */
+
+.md-editor__guide { max-height: 240px; overflow: auto; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-xs); }
+.md-editor[data-variant='pane'] .md-editor__guide { padding-inline: var(--s-4); }
+.md-editor__guide table { width: 100%; border-collapse: collapse; }
+.md-editor__guide td { vertical-align: top; padding: 3px var(--s-3) 3px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+.md-editor__guide tr:first-child td { border-top: 0; }
+.md-editor__guide td:first-child { white-space: pre; font-family: var(--font-mono); color: var(--ink); }
+.md-editor__guide p { margin: var(--s-2) 0 0; color: var(--ink-3); }
+
+/* --- the pictures the scope holds --------------------------------------------- */
+
+.md-editor__pictures { max-height: 220px; overflow: auto; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); }
+.md-editor__picture { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) 0; }
+.md-editor__picture-name { flex: 1; min-width: 0; font-size: var(--t-xs); font-family: var(--font-mono); }
+.md-editor__picture-name > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-editor__picture-name small { font-family: var(--font-ui); color: var(--ink-3); }
+
+/* --- an attachment in a document ---------------------------------------------- */
+
+.md-attachment { display: inline-flex; align-items: baseline; gap: 3px; overflow-wrap: anywhere; }
+.md-attachment__mark { align-self: center; display: inline-flex; flex: none; }

@@ -8,7 +8,8 @@
  * after it. ↑ and ↓
  * move, Enter or Tab puts the reference in, Escape closes. An element goes
  * in as `[[Name]]`, a view as a picture, and the rest as a `ref` fence on
- * lines of its own. The Insert menu offers the same catalogue by kind.
+ * lines of its own. The Insert menu offers the same catalogue by kind. `/` at
+ * the start of a line opens the same list with the blocks above it.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { KeyboardEvent, RefObject } from 'react'
@@ -31,6 +32,9 @@ import { useStrings } from '../../i18n/LanguageContext'
 import type { StringKey } from '../../i18n'
 import { completionAt, findReferables, insertReferable, REFERABLE_KINDS } from '../references'
 import type { Referable, ReferableKind } from '../references'
+import { slashAt } from '../markdownEditing'
+import type { Edit, Selected } from '../markdownEditing'
+import { matchesQuery } from '../../model/textSearch'
 import { useReferences } from './References'
 
 export const KIND_WORD: Record<ReferableKind, StringKey> = {
@@ -52,7 +56,7 @@ const MENU_WORD: Record<ReferableKind, StringKey> = {
 }
 
 /** Where the caret is in a textarea, in the page's pixels: a mirror of the text up to it, measured. */
-function caretRect(area: HTMLTextAreaElement, index: number): DOMRect {
+export function caretRect(area: HTMLTextAreaElement, index: number): DOMRect {
   const style = window.getComputedStyle(area)
   const mirror = document.createElement('div')
   for (const name of ['font', 'letterSpacing', 'lineHeight', 'padding', 'border', 'boxSizing', 'whiteSpace', 'wordWrap', 'tabSize', 'width'] as const) {
@@ -85,53 +89,92 @@ export type Completion = {
   popper: React.ReactNode
 }
 
-export function useReferenceCompletion(areaRef: RefObject<HTMLTextAreaElement | null>, onChange: (next: string) => void): Completion {
+/** What `/` offers beside the references: a block of markdown, a picture, a file, a section of the template. */
+export type SlashBlock = {
+  key: string
+  label: string
+  /** Do it, with what the `/` and the word after it occupy selected: they go with it. */
+  run(typed: Selected): void
+}
+
+/** One row of the list, whichever way it opened. */
+type Row = { id: string; word: string; label: string; detail?: string; put(start: number, end: number): void }
+
+export function useReferenceCompletion(
+  areaRef: RefObject<HTMLTextAreaElement | null>,
+  apply: (edit: Edit) => void,
+  blocks: readonly SlashBlock[] = [],
+): Completion {
   const access = useReferences()
   const { t } = useStrings()
-  const [open, setOpen] = useState<{ start: number; query: string; anchor: DOMRect } | undefined>(undefined)
+  const [open, setOpen] = useState<{ start: number; query: string; slash: boolean; anchor: DOMRect } | undefined>(undefined)
   const [active, setActive] = useState(0)
   const isOpen = open !== undefined
   const all = useMemo(() => (isOpen && access ? access.referables() : []), [isOpen, access])
-  const found = useMemo(() => (open ? findReferables(all, open.query, 8) : []), [all, open])
+
+  const putReferable = useCallback((referable: Referable, start: number, end: number) => {
+    const area = areaRef.current
+    if (!area) return
+    const next = insertReferable(area.value, start, end, referable)
+    apply({ text: next.text, start: next.caret, end: next.caret })
+  }, [areaRef, apply])
+
+  const rows = useMemo<Row[]>(() => {
+    if (!open) return []
+    const references = findReferables(all, open.query, 8).map((one): Row => ({
+      id: `${one.kind}/${one.key}`, word: t(KIND_WORD[one.kind]), label: one.label, detail: one.detail,
+      put: (start, end) => putReferable(one, start, end),
+    }))
+    if (!open.slash) return references
+    const found = blocks.filter((one) => matchesQuery(open.query, [one.label, one.key])).map((one): Row => ({
+      id: `block/${one.key}`, word: t('md.slashBlock'), label: one.label,
+      put: (start, end) => {
+        const text = areaRef.current?.value
+        if (text !== undefined) one.run({ text, start, end })
+      },
+    }))
+    return [...found, ...references]
+  }, [open, all, blocks, t, putReferable, areaRef])
   useEffect(() => { setActive(0) }, [open?.query])
 
   const onInput = useCallback(() => {
     const area = areaRef.current
-    if (!area || !access) return
+    if (!area) return
     const caret = area.selectionStart
-    const at = area.selectionStart === area.selectionEnd ? completionAt(area.value, caret) : undefined
-    setOpen(at ? { start: at.start, query: at.query, anchor: caretRect(area, at.start) } : undefined)
-  }, [areaRef, access])
+    if (area.selectionStart !== area.selectionEnd) { setOpen(undefined); return }
+    const slash = blocks.length > 0 ? slashAt(area.value, caret) : undefined
+    if (slash) { setOpen({ start: slash.start, query: slash.query, slash: true, anchor: caretRect(area, slash.start) }); return }
+    const at = access ? completionAt(area.value, caret) : undefined
+    setOpen(at ? { start: at.start, query: at.query, slash: false, anchor: caretRect(area, at.start) } : undefined)
+  }, [areaRef, access, blocks])
 
-  const choose = useCallback((referable: Referable) => {
+  const choose = useCallback((row: Row) => {
     const area = areaRef.current
     if (!area || !open) return
-    const next = insertReferable(area.value, open.start, area.selectionStart, referable)
-    onChange(next.text)
+    row.put(open.start, area.selectionStart)
     setOpen(undefined)
-    requestAnimationFrame(() => { area.focus(); area.setSelectionRange(next.caret, next.caret) })
-  }, [areaRef, open, onChange])
+  }, [areaRef, open])
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): boolean => {
-    if (!open || found.length === 0) return false
-    if (event.key === 'ArrowDown') { event.preventDefault(); setActive((at) => (at + 1) % found.length); return true }
-    if (event.key === 'ArrowUp') { event.preventDefault(); setActive((at) => (at - 1 + found.length) % found.length); return true }
-    if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); choose(found[active]!); return true }
+    if (!open || rows.length === 0) return false
+    if (event.key === 'ArrowDown') { event.preventDefault(); setActive((at) => (at + 1) % rows.length); return true }
+    if (event.key === 'ArrowUp') { event.preventDefault(); setActive((at) => (at - 1 + rows.length) % rows.length); return true }
+    if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); choose(rows[active]!); return true }
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(undefined); return true }
     return false
   }
 
   const anchorEl = useMemo(() => (open ? { getBoundingClientRect: () => open.anchor } : null), [open])
   const popper = (
-    <Popper open={Boolean(open) && found.length > 0} anchorEl={anchorEl} placement="bottom-start" sx={{ zIndex: 1500 }}>
-      <Paper elevation={6} sx={{ width: 380, maxHeight: 320, overflow: 'auto', py: 0.5 }} data-testid="reference-completion" role="listbox" aria-label={t('doc.refCompletion')}>
-        {found.map((one, index) => (
+    <Popper open={Boolean(open) && rows.length > 0} anchorEl={anchorEl} placement="bottom-start" sx={{ zIndex: 1500 }}>
+      <Paper elevation={6} sx={{ width: 380, maxWidth: 'calc(100vw - 32px)', maxHeight: 320, overflow: 'auto', py: 0.5 }} data-testid="reference-completion" role="listbox" aria-label={t(open?.slash ? 'md.slashList' : 'doc.refCompletion')}>
+        {rows.map((one, index) => (
           <ListItemButton
-            key={`${one.kind}/${one.key}`} selected={index === active} role="option" aria-selected={index === active}
+            key={one.id} selected={index === active} role="option" aria-selected={index === active}
             onMouseDown={(event) => { event.preventDefault(); choose(one) }}
             sx={{ py: 0.25, px: 1.5, gap: 1, alignItems: 'baseline' }}
           >
-            <Typography sx={{ fontSize: 10, color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{t(KIND_WORD[one.kind])}</Typography>
+            <Typography sx={{ fontSize: 10, color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography noWrap sx={{ fontSize: 13 }}>{one.label}</Typography>
               {one.detail && <Typography noWrap sx={{ fontSize: 11, color: 'text.secondary' }}>{one.detail}</Typography>}
@@ -145,11 +188,8 @@ export function useReferenceCompletion(areaRef: RefObject<HTMLTextAreaElement | 
   )
   const insert = useCallback((referable: Referable) => {
     const area = areaRef.current
-    if (!area) return
-    const next = insertReferable(area.value, area.selectionStart, area.selectionEnd, referable)
-    onChange(next.text)
-    requestAnimationFrame(() => { area.focus(); area.setSelectionRange(next.caret, next.caret) })
-  }, [areaRef, onChange])
+    if (area) putReferable(referable, area.selectionStart, area.selectionEnd)
+  }, [areaRef, putReferable])
   return { onKeyDown, onInput, insert, popper }
 }
 
@@ -157,10 +197,14 @@ export function useReferenceCompletion(areaRef: RefObject<HTMLTextAreaElement | 
  * *Insert ▾* (ADR-0043 §9): a picture and a business case, as before, and
  * each kind of thing a document may refer to, picked by name.
  */
-export function InsertMenu({ onPicture, onBusinessCase, onInsert }: {
+export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more = [] }: {
   onPicture?: () => void
+  /** Offered only where the source keeps attachments. */
+  onAttach?: () => void
   onBusinessCase: () => void
   onInsert: (referable: Referable) => void
+  /** What this record has of its own to put in: its template, and the sections of it the text lacks. */
+  more?: readonly { key: string; label: string; onPick(): void }[]
 }) {
   const access = useReferences()
   const { t } = useStrings()
@@ -173,7 +217,9 @@ export function InsertMenu({ onPicture, onBusinessCase, onInsert }: {
       <Button size="small" onClick={(event) => setAnchor(event.currentTarget)} aria-haspopup="menu" data-testid="doc-insert">{t('doc.insert')}</Button>
       <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
         {onPicture && <MenuItem onClick={() => { setAnchor(null); onPicture() }}>{t('doc.insertPictureMenu')}</MenuItem>}
+        {onAttach && <MenuItem data-testid="doc-insert-attachment" onClick={() => { setAnchor(null); onAttach() }}>{t('md.attachMenu')}</MenuItem>}
         <MenuItem onClick={() => { setAnchor(null); onBusinessCase() }}>{t('doc.insertBusinessCase')}</MenuItem>
+        {more.map((one) => <MenuItem key={one.key} onClick={() => { setAnchor(null); one.onPick() }}>{one.label}</MenuItem>)}
         {kinds.length > 0 && <Divider />}
         {kinds.map((kind) => (
           <MenuItem key={kind} onClick={() => { setAnchor(null); setPicking(kind) }} data-testid={`doc-insert-${kind}`}>{t(MENU_WORD[kind])}</MenuItem>

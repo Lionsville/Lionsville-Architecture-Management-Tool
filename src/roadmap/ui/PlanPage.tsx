@@ -43,8 +43,9 @@ import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
-import { DocumentSource } from '../../documentation/ui/DocumentSource'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import { WritingPane } from '../../documentation/ui/MarkdownEditor'
+import { planBodyTemplate } from '../planTemplate'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { useStrings } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -627,9 +628,6 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
   onChange(body: string): void
 }) {
   const { t } = useStrings()
-  // The rendered document beside the source, which a wide table wants out of the way.
-  const [previewShown, setPreviewShown] = useState(true)
-  const showPreview = !editing || previewShown
   // `[[Name]]` becomes a link to the element, as it does on the other two
   // pages that read markdown; a plan that names what it changes should say so.
   const source = useMemo(() => linkElementRefs(plan.body, model.elements), [plan.body, model.elements])
@@ -638,27 +636,23 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
     : <Typography color="text.secondary">{t('plan.bodyEmpty')}</Typography>
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: editing && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
-      {editing && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider' }}>
-          <DocumentSource
-            value={plan.body}
-            onChange={onChange}
-            label={t('plan.source')}
-            onAddImage={onAddImage}
-            images={images}
-            preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-          />
-        </Box>
-      )}
-      {showPreview && (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
+      <WritingPane
+        writing={editing}
+        value={plan.body}
+        onChange={onChange}
+        label={t('plan.source')}
+        onAddImage={onAddImage}
+        images={images}
+        template={{ label: t('md.fromTemplate'), text: planBodyTemplate(t) }}
+      >
         <DocumentSheet dense={editing}>
           <Box sx={{ fontSize: 14 }} data-document>{rendered}</Box>
           <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />
           <RecordChanges about={{ kind: 'transition', id: plan.id }} first="proposed" />
           <CommentThread about={{ kind: 'transition', id: plan.id }} />
         </DocumentSheet>
-      )}
+      </WritingPane>
     </Box>
   )
 }

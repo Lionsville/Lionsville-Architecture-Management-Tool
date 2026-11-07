@@ -29,7 +29,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
-import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -39,6 +38,7 @@ import { isRemoved } from '../../model/comment'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { RecordKey } from '../../model/recordKey'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { meIn } from '../../people/me'
 import { registerOf } from '../../people/shown'
@@ -216,10 +216,9 @@ function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, cle
   }
   return (
     <Box sx={{ display: 'grid', gap: 0.75 }}>
-      <TextField
-        size="small" multiline minRows={2} label={label} value={body} onChange={(event) => setBody(event.target.value)}
-        onKeyDown={(event) => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) send() }}
-        slotProps={{ htmlInput: { 'data-testid': testId } }}
+      <MarkdownEditor
+        label={label} value={body} onChange={setBody} minRows={2} attachable={false} testId={testId} onSubmit={send}
+        renderPreview={(text) => renderMarkdown(text)}
       />
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Button size="small" variant="contained" disabled={body.trim() === ''} onClick={send} data-testid={`${testId}-send`}>{submit}</Button>

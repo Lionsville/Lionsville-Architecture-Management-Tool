@@ -44,8 +44,8 @@ import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
 import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose';
 import { SeamResizer } from '../../widgets/SeamResizer';
-import { DocumentSource } from './DocumentSource';
-import type { DocumentImages } from './DocumentSource';
+import { WritingPane } from './MarkdownEditor';
+import type { DocumentImages } from './MarkdownEditor';
 import { DocumentSheet } from './DocumentSheet';
 import {
   documentTemplate,
@@ -157,10 +157,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const { t } = useStrings();
   const [mode, setMode] = useState<DocumentationMode>('read');
   const [draft, setDraft] = useState(element.description ?? '');
-  // The rendered page beside the source, which a wide table wants out of the way.
-  const [previewShown, setPreviewShown] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // --- the draft and its commits ---------------------------------------------
 
@@ -180,7 +177,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
     setShownId(element.id);
     setMode('read');
     setDraft(element.description ?? '');
-    setPreviewShown(true);
   }
 
   latest.current = { draft, stored: element.description ?? '', id: element.id, actions };
@@ -288,13 +284,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
     target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
-  const insertTemplate = () => {
-    setDraft(documentTemplate(t));
-    textareaRef.current?.focus();
-  };
-
-  const showPreview = mode === 'read' || previewShown;
-
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
   const bar = barChromeFor(chrome)
@@ -391,26 +380,17 @@ export function DocumentationPage(props: DocumentationPageProps) {
         </Box>
 
         {/* centre: the document, or the source beside it */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0 }}>
-          {mode === 'edit' && (
-            <DocumentSource
-              value={draft}
-              onChange={setDraft}
-              onBlur={commit}
-              label={t('doc.source')}
-              onAddImage={readOnly ? undefined : props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-              textareaRef={textareaRef}
-              extra={!draft.trim() && (
-                <Button size="small" variant="outlined" onClick={insertTemplate}>
-                  {t('doc.insertTemplate')}
-                </Button>
-              )}
-            />
-          )}
-
-          {showPreview && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', minHeight: 0 }}>
+          <WritingPane
+            writing={mode === 'edit'}
+            value={draft}
+            onChange={setDraft}
+            onBlur={commit}
+            label={t('doc.source')}
+            onAddImage={readOnly ? undefined : props.onAddImage}
+            images={props.images}
+            template={{ label: t('doc.insertTemplate'), text: documentTemplate(t) }}
+          >
             <DocumentSheet ref={contentRef} testId="doc-content" dense={mode === 'edit'}>
               {/* A block element, not the variant's own inline span: the
                   sheet's centring rule (DocumentSheet) sizes a child by its
@@ -457,7 +437,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
               )}
               <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }} data-document>{rendered}</Box>
             </DocumentSheet>
-          )}
+          </WritingPane>
         </Box>
 
         {/* the seam, then right: the plans that name it and the element's own fields */}

@@ -39,9 +39,9 @@ import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
-import { DocumentSource } from '../../documentation/ui/DocumentSource'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
-import { formatAdrNumber, isAdrLocked } from '../adr'
+import { WritingPane } from '../../documentation/ui/MarkdownEditor'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
+import { formatAdrNumber, isAdrLocked, madrTemplate } from '../adr'
 import type { Adr, AdrPatch, AdrSigner, AdrStatus, AdrVerdict } from '../adr'
 import type { Solution } from '../../model/observation'
 import type { Transition } from '../../model/transition'
@@ -119,9 +119,7 @@ export function AdrReader(props: AdrReaderProps) {
   const canEdit = !readOnly && !locked
   const [mode, setMode] = useState<Mode>('read')
   const [draft, setDraft] = useState({ title: adr.title, body: adr.body })
-  // The rendered record beside the source, which a wide table wants out of the way.
-  const [previewShown, setPreviewShown] = useState(true)
-  const showPreview = mode === 'read' || previewShown
+
   const contentRef = useRef<HTMLDivElement>(null)
 
   // --- the draft and its commits --------------------------------------------
@@ -181,9 +179,17 @@ export function AdrReader(props: AdrReaderProps) {
       <ReaderNotices adr={adr} list={list} readOnly={readOnly} names={names} s={s} />
 
       {/* ---- the body, or the source beside it ---- */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <WritingPane
+          writing={mode === 'edit'}
+          value={draft.body}
+          onChange={(body) => setDraft((d) => ({ ...d, body }))}
+          onBlur={commit}
+          label={s('adr.source')}
+          onAddImage={props.onAddImage}
+          images={props.images}
+          template={{ label: s('md.fromTemplate'), text: madrTemplate(s) }}
+          above={(
             <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
               <TextField
                 fullWidth
@@ -193,19 +199,8 @@ export function AdrReader(props: AdrReaderProps) {
                 onBlur={commit}
               />
             </Box>
-            <DocumentSource
-              value={draft.body}
-              onChange={(body) => setDraft((d) => ({ ...d, body }))}
-              onBlur={commit}
-              label={s('adr.source')}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-            />
-          </Box>
-        )}
-
-        {showPreview && (
+          )}
+        >
           <DocumentSheet ref={contentRef} dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{formatAdrNumber(adr.number)}</Typography>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
@@ -230,7 +225,7 @@ export function AdrReader(props: AdrReaderProps) {
             <RecordChanges about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} first="proposed" />
             <CommentThread about={{ kind: 'decision', id: adr.id }} {...(props.keptIn !== undefined ? { scope: props.keptIn } : {})} />
           </DocumentSheet>
-        )}
+        </WritingPane>
       </Box>
       </CompactForms>
     </Box>

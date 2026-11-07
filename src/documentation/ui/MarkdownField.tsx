@@ -1,23 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { useState, type ReactNode } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import { EyeIcon, FullscreenIcon, PencilIcon } from '../../widgets/icons';
-import { FieldLabel } from '../../widgets/CompactForms';
-import { useStrings } from '../../i18n/LanguageContext';
-import type { MarkdownRenderOptions } from '../documentation';
-import { MarkdownHelp } from './MarkdownHelp';
-
 /**
- * Markdown description editor with a preview toggle. Rendering is host-
- * pluggable (`renderMarkdown` prop on the editor); without a renderer the
- * preview falls back to a plain <pre> so the package needs no markdown
- * dependency of its own.
+ * An element's description among its other fields: the editor, in its small
+ * size, and the way to the page that has more room.
  *
  * Editing in place stays, for a line or two; the way to write more is the
  * button under the field, *Open as a page*, which opens the element's
@@ -26,6 +12,25 @@ import { MarkdownHelp } from './MarkdownHelp';
  * than the icon it was until 3.7.0: the icon was read as "make this box
  * bigger" when it was found at all.
  */
+import type { ComponentProps, ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import { FullscreenIcon } from '../../widgets/icons';
+import { useStrings } from '../../i18n/LanguageContext';
+import type { MarkdownRenderOptions } from '../documentation';
+import { lazyPart } from '../../widgets/lazyPart';
+import type { MarkdownEditor as MarkdownEditorShape } from './MarkdownEditor';
+
+/**
+ * The editor in a script of its own, as the renderer is (`renderMarkdown`): this
+ * field stands in the inspector, which is in the first download, and the first
+ * download has no room for a toolbar, a list of blocks and a dialog.
+ */
+const MarkdownEditor = lazyPart<ComponentProps<typeof MarkdownEditorShape>>(
+  () => import('./MarkdownEditor').then((held) => held.MarkdownEditor),
+);
+
 export function MarkdownField({
   value,
   disabled,
@@ -41,53 +46,17 @@ export function MarkdownField({
   onOpenDocumentation?(): void;
 }) {
   const { t } = useStrings();
-  const [preview, setPreview] = useState(false);
-
   return (
-    <Box data-testid="description-field">
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
-        <FieldLabel sx={{ fontWeight: 600 }}>{t('field.descriptionMarkdown')}</FieldLabel>
-        <Box sx={{ display: 'flex' }}>
-        <MarkdownHelp />
-        <Tooltip title={preview ? t('field.edit') : t('field.preview')}>
-          <IconButton
-            size="small"
-            aria-label={preview ? t('field.editDescription') : t('field.previewDescription')}
-            onClick={() => setPreview((p) => !p)}
-          >
-            {preview ? <PencilIcon /> : <EyeIcon />}
-          </IconButton>
-        </Tooltip>
-        </Box>
-      </Box>
-      {preview ? (
-        <Box
-          sx={{
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 2,
-            px: 1.25,
-            py: 0.75,
-            minHeight: 96,
-            fontSize: 13,
-            '& pre': { m: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13 },
-          }}
-        >
-          {renderMarkdown ? renderMarkdown(value) : <pre>{value || '—'}</pre>}
-        </Box>
-      ) : (
-        <TextField
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          multiline
-          minRows={3}
-          maxRows={10}
-          fullWidth
-          placeholder={t('field.descriptionPlaceholder')}
-          slotProps={{ htmlInput: { 'aria-label': t('field.description') } }}
-        />
-      )}
+    <Box>
+      <MarkdownEditor
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        label={t('field.description')}
+        placeholder={t('field.descriptionPlaceholder')}
+        maxRows={10}
+        {...(renderMarkdown ? { renderPreview: (text: string) => renderMarkdown(text) } : {})}
+      />
       {onOpenDocumentation && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.25 }}>
           <Tooltip title={t('field.openDocumentationTip')}>

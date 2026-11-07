@@ -38,13 +38,14 @@ import { formatDay } from '../../i18n/dates'
 import { fillEmptySections } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
-import { DocumentSource } from '../../documentation/ui/DocumentSource'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import { WritingPane } from '../../documentation/ui/MarkdownEditor'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
 import { CompactForms, Term, Value } from '../../widgets/CompactForms'
 
 export { Term, Value }
 import {
+  causeTemplate, observationTemplate,
   causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS, toneOf,
 } from '../observation'
 import type {
@@ -365,8 +366,6 @@ export function ObservationReader(props: ObservationReaderProps) {
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
   // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
   const names = usePersonNames()
-  const [previewShown, setPreviewShown] = useState(true)
-  const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : observation.body
   // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
   const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
@@ -408,22 +407,22 @@ export function ObservationReader(props: ObservationReaderProps) {
         </Typography>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} names={names} s={s} />
-            <DocumentSource
-              value={draft.body}
-              onChange={(body) => setDraft((d) => ({ ...d, body }))}
-              onBlur={commit}
-              label={s('observation.source')}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-            />
-          </Box>
-        )}
-        {showPreview && (
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <WritingPane
+          writing={mode === 'edit'}
+          value={draft.body}
+          onChange={(body) => setDraft((d) => ({ ...d, body }))}
+          onBlur={commit}
+          label={s('observation.source')}
+          onAddImage={props.onAddImage}
+          images={props.images}
+          template={{ label: s('md.fromTemplate'), text: observationTemplate(s) }}
+          above={(
+            <>
+              <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} names={names} s={s} />
+            </>
+          )}
+        >
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{label}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
@@ -442,7 +441,7 @@ export function ObservationReader(props: ObservationReaderProps) {
             <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />
             <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
           </DocumentSheet>
-        )}
+        </WritingPane>
       </Box>
     </ReaderRoot>
   )
@@ -771,27 +770,27 @@ export function CauseReader(props: CauseReaderProps) {
         />
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
-              <TitleField
-                label={s('observation.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
-                example={s('observation.causeTitleExample')} missing={s('observation.causeTitleMissing')}
-              />
-            </Box>
-            <DocumentSource
-              value={draft.body}
-              onChange={(body) => setDraft((d) => ({ ...d, body }))}
-              onBlur={commit}
-              label={s('observation.causeSource')}
-              onAddImage={props.onAddImage}
-              images={props.images}
-              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
-            />
-          </Box>
-        )}
-        {showPreview && (
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <WritingPane
+          writing={mode === 'edit'}
+          value={draft.body}
+          onChange={(body) => setDraft((d) => ({ ...d, body }))}
+          onBlur={commit}
+          label={s('observation.causeSource')}
+          onAddImage={props.onAddImage}
+          images={props.images}
+          template={{ label: s('md.fromTemplate'), text: causeTemplate(s) }}
+          above={(
+            <>
+              <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+                <TitleField
+                  label={s('observation.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
+                  example={s('observation.causeTitleExample')} missing={s('observation.causeTitleMissing')}
+                />
+              </Box>
+            </>
+          )}
+        >
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{label}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
@@ -802,7 +801,7 @@ export function CauseReader(props: CauseReaderProps) {
             <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
             <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
           </DocumentSheet>
-        )}
+        </WritingPane>
       </Box>
     </ReaderRoot>
   )

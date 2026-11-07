@@ -66,6 +66,7 @@ import { useMachineSettings } from './useMachineSettings'
 import { useSeamWidths } from './useShellServices'
 import { SeamWidthsProvider } from '../widgets/useSeamWidth'
 import { useProviderParts } from './useProviderParts'
+import { AttachmentsProvider } from '../documentation/ui/Attachments'
 import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
@@ -458,6 +459,8 @@ export function App(props: AppProps) {
       {/* What each list of findings has unfolded, and its notes shown, for as long as the window is open. */}
       <SessionMemoryContext.Provider value={parts.folds}>
       <SeamWidthsProvider value={seams}>
+      {/* Files a document may point at, where the open source keeps them. */}
+      <AttachmentsProvider value={props.provider?.attachments}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -475,6 +478,7 @@ export function App(props: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </AttachmentsProvider>
       </SeamWidthsProvider>
       </SessionMemoryContext.Provider>
       </PersonNamesProvider>

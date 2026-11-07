@@ -55,7 +55,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSeamWidthsOf } from '../../widgets/useSeamWidth'
 import { useLocatedIn } from '../../widgets/useLocated'
-import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {

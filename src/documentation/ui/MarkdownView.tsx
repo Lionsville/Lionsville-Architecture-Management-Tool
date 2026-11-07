@@ -19,6 +19,8 @@
  *
  * A picture may name a view of this scope, `![caption](view:<id>)`, the way
  * `image:` names a picture in the library. A drawing is shown as its picture.
+ * A link may name a file the source keeps, `[name](attachment:<id>)`; where it
+ * keeps none, that is the file's name and nothing to follow.
  *
  * Sizes are in `em`, on purpose. The same component sits in a 13px inspector
  * preview and on a full page at reading size, and it should scale with the
@@ -42,9 +44,11 @@ import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components, ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStrings } from '../../i18n/LanguageContext'
+import { ATTACHMENT_SCHEME, attachmentOfHref } from '../attachments'
 import { imageNameOfSource } from '../images'
 import { IMAGE_REFERENCE } from '../../model/imageName'
 import { VIEW_REFERENCE, viewOfSource } from '../viewRef'
+import { AttachmentLink } from './AttachmentLink'
 import { ViewEmbed } from './ViewEmbed'
 import { blockFor } from './fenceBlocks'
 import type { BlockContext } from './fenceBlocks'
@@ -84,6 +88,7 @@ function isDrawnFence(children: ReactNode): boolean {
  */
 function urlTransform(url: string, key: string): string {
   if (url.startsWith(ELEMENT_LINK_SCHEME)) return url
+  if (key === 'href' && url.startsWith(ATTACHMENT_SCHEME)) return url
   if (key === 'src' && (url.startsWith(IMAGE_REFERENCE) || url.startsWith(VIEW_REFERENCE))) return url
   return defaultUrlTransform(url)
 }
@@ -214,6 +219,8 @@ function components(
           </Link>
         )
       }
+      const attachment = attachmentOfHref(href)
+      if (attachment) return <AttachmentLink id={attachment}>{children}</AttachmentLink>
       return (
         <Link href={href} target="_blank" rel="noopener noreferrer">
           {children}
@@ -339,6 +346,8 @@ export const MarkdownView = memo(function MarkdownView(
       sx={{
         fontSize: 'inherit',
         wordBreak: 'break-word',
+        // An address has no place to break: it breaks anyway rather than widening the column.
+        overflowWrap: 'anywhere',
         // `:not(…)` rather than `*`: it carries the attribute's specificity,
         // which is what beats Typography's own `margin: 0` on a paragraph.
         '& > :not([data-wide])': { maxWidth: MEASURE, mx: 'auto' },

@@ -127,6 +127,12 @@ export type ProviderParts<Own = unknown> = {
    */
   comments?: SourceComments
   /**
+   * Files a document may point at, where this source keeps them. Absent for all
+   * three core sources: then the editor offers neither a button nor a drop, and
+   * a link to one reads as the file's name.
+   */
+  attachments?: SourceAttachments
+  /**
    * The accent this source's environment wears, a `#rgb` or `#rrggbb`, so a
    * person can tell one place from another at a glance. Only a hue and a rough
    * strength are taken from it: the shades are derived and measured, and one
@@ -137,6 +143,16 @@ export type ProviderParts<Own = unknown> = {
   accent?: string
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
+}
+
+/** The files a source keeps for its documents (`documentation/attachments.ts`, whose words these are). */
+export type SourceAttachments = {
+  /** The largest file taken, in bytes. Absent: the source alone decides. */
+  maxBytes?: number
+  /** Keep a file for the scope with this identity: the id to refer to, or `undefined` where the source refused and has said why. */
+  add(file: File, scope: string): Promise<string | undefined>
+  /** Where the file with this id is opened from. */
+  href(id: string): string
 }
 
 /**

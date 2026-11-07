@@ -26,6 +26,8 @@ import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { useStrings } from '../../i18n/LanguageContext'
 import { FieldsDialog } from '../../widgets/CompactForms'
+import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
+import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { formatPrincipleNumber, PRINCIPLE_REGIMES, PRINCIPLE_STATUSES } from '../../model/principle'
 import type { Principle, PrincipleRegime, PrincipleStatus } from '../../model/principle'
 import { draftOf, draftReady, draftSharpens, withNewAspect } from '../draft'
@@ -35,6 +37,9 @@ import { usePrinciples } from './PrinciplesContext'
 import { REGIME_WORD, STATUS_WORD } from './words'
 
 let made = 0
+
+/** A principle's words read as the reader will read them. */
+const preview = (text: string) => renderMarkdown(text)
 
 export function PrincipleEditor({ open, scope, principle, onClose }: {
   open: boolean
@@ -97,7 +102,7 @@ function DraftFields({ draft, change, scope, number, t }: {
   return (
     <>
       <TextField autoFocus label={t('principles.titleField')} value={draft.title} onChange={(event) => change({ title: event.target.value })} required data-testid="principle-title" />
-      <TextField label={t('principles.statementField')} value={draft.statement} onChange={(event) => change({ statement: event.target.value })} multiline minRows={2} required helperText={t('principles.statementHelp')} data-testid="principle-statement" />
+      <Box data-testid="principle-statement"><MarkdownEditor label={t('principles.statementField')} value={draft.statement} onChange={(statement) => change({ statement })} minRows={2} required helper={t('principles.statementHelp')} renderPreview={preview} /></Box>
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{t('principles.regimeField')}</Typography>
@@ -120,8 +125,8 @@ function DraftFields({ draft, change, scope, number, t }: {
         onChange={setAspect}
         onRemove={(id) => change({ aspects: draft.aspects.filter((one) => one.id !== id) })}
       />
-      <TextField label={t('principles.rationale')} value={draft.rationale} onChange={(event) => change({ rationale: event.target.value })} multiline minRows={2} />
-      <TextField label={t('principles.implications')} value={draft.implications} onChange={(event) => change({ implications: event.target.value })} multiline minRows={2} />
+      <MarkdownEditor label={t('principles.rationale')} value={draft.rationale} onChange={(rationale) => change({ rationale })} minRows={2} renderPreview={preview} />
+      <MarkdownEditor label={t('principles.implications')} value={draft.implications} onChange={(implications) => change({ implications })} minRows={2} renderPreview={preview} />
       <TextField label={t('principles.keywords')} value={draft.keywords} onChange={(event) => change({ keywords: event.target.value })} helperText={t('principles.keywordsHelp')} />
     </>
   )
