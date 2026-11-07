@@ -252,6 +252,18 @@ describe('the status word', () => {
   })
 })
 
+describe('the menu’s keys on the web', () => {
+  it('runs what the ⋯ shows a key for, with nothing open', async () => {
+    await home()
+    fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+    expect(await screen.findByTestId('preferences-page')).toBeDefined()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('preferences-page')).toBeNull())
+    fireEvent.keyDown(window, { key: 'E', ctrlKey: true, shiftKey: true })
+    expect(await screen.findByText(/^Save a copy of/)).toBeDefined()
+  })
+})
+
 describe('⌘K', () => {
   it('finds places and commands beside the records, from a home, and runs them', async () => {
     await home()

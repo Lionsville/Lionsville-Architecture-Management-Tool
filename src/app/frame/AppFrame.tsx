@@ -63,7 +63,8 @@ import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
 import { TONE_MARK } from './statusWord'
 import { NewViewDialog } from '../NewViewDialog'
-import { DESKTOP_APP_LINK, WEBSITE_LINK, HELP_MENU, offered } from '../../platform/menu'
+import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
+import type { KeyPress, MenuItemSpec } from '../../platform/menu'
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
@@ -208,6 +209,18 @@ function useShortcutsSheet(parts: ShellParts, facts: ScreenFacts | undefined) {
   return [open, setOpen] as const
 }
 
+/**
+ * The ⋯ menu's keys, on a host with no menu bar to hear them: the menu shows ⌘O,
+ * ⇧⌘O, ⇧⌘E and ⌘, on the web as well. An item the menu would refuse is not run,
+ * and Save is left to a board's own keymap while one is up, so it saves once.
+ */
+export function menuKeyCommand(press: KeyPress, can: ReturnType<typeof canOf>, boardUp: boolean, mac: boolean): MenuItemSpec['command'] | undefined {
+  const items = [...offered(FILE_MENU, 'web', can).flatMap((entry) => (entry.kind === 'item' ? [entry] : [])), PREFERENCES_ITEM]
+  const hit = items.find((entry) => entry.accelerator !== undefined && acceleratorMatches(entry.accelerator, press, mac))
+  if (!hit || (hit.command.type === 'save' && boardUp)) return undefined
+  return hit.command
+}
+
 /** ⌘\ pins the tree, `?` opens the sheet where no canvas has its own, and Esc shuts a panel first. */
 function useFrameKeys(parts: ShellParts, state: FrameState) {
   const { frame } = parts
@@ -226,6 +239,10 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         return
       }
       if (event.key === '?' && !typing && !boardUp && !document.querySelector('[role="dialog"]')) { send({ type: 'shortcuts' }); return }
+      if (!parts.hostMenu && (event.metaKey || event.ctrlKey) && !document.querySelector('[role="dialog"]')) {
+        const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, /Mac|iPhone|iPad/.test(navigator.platform))
+        if (command) { event.preventDefault(); send(command); return }
+      }
       if (event.key === 'Escape' && hasPanel && !document.querySelector('[role="dialog"], [role="menu"]')) {
         event.preventDefault()
         parts.agent.setPanel(undefined)
@@ -233,7 +250,7 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [frame, send, hasPanel, boardUp, parts.agent, parts.services.prefs])
+  }, [frame, send, hasPanel, boardUp, parts])
 }
 
 function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere']) {

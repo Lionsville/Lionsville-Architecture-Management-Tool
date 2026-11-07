@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  acceleratorMatches,
   EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, commandsIn, goMenu, offered, preferencesPlacement,
   swipeCommand, titleCase, ZOOM_ALIASES, ZOOM_ITEMS } from './menu'
 import { EN } from './strings/en'
@@ -189,5 +190,24 @@ describe('the zoom items', () => {
     expect(ZOOM_ITEMS.map((spec) => spec.command)).toEqual([
       { type: 'zoom', how: 'home' }, { type: 'zoom', how: 'in' }, { type: 'zoom', how: 'out' },
     ])
+  })
+})
+
+describe('an accelerator heard where there is no menu bar', () => {
+  const press = (key: string, over: Partial<{ metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }> = {}) =>
+    ({ key, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...over })
+
+  it('is ⌘ on a Mac and Ctrl elsewhere, and never the other', () => {
+    expect(acceleratorMatches('CmdOrCtrl+O', press('o', { metaKey: true }), true)).toBe(true)
+    expect(acceleratorMatches('CmdOrCtrl+O', press('o', { ctrlKey: true }), true)).toBe(false)
+    expect(acceleratorMatches('CmdOrCtrl+O', press('o', { ctrlKey: true }), false)).toBe(true)
+    expect(acceleratorMatches('CmdOrCtrl+O', press('o'), false)).toBe(false)
+  })
+
+  it('tells ⌘O from ⇧⌘O, and reads the comma and the shifted letter', () => {
+    expect(acceleratorMatches('CmdOrCtrl+O', press('O', { metaKey: true, shiftKey: true }), true)).toBe(false)
+    expect(acceleratorMatches('CmdOrCtrl+Shift+O', press('O', { metaKey: true, shiftKey: true }), true)).toBe(true)
+    expect(acceleratorMatches('CmdOrCtrl+,', press(',', { metaKey: true }), true)).toBe(true)
+    expect(acceleratorMatches('CmdOrCtrl+Plus', press('+', { metaKey: true }), true)).toBe(true)
   })
 })

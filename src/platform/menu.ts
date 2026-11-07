@@ -202,6 +202,28 @@ export const WEBSITE_LINK: { readonly label: StringKey; readonly href: string } 
   href: 'https://architecture.lionsville.nl',
 }
 
+/** A key as a keyboard event says it: as much of one as matching it to an accelerator needs. */
+export type KeyPress = { readonly key: string; readonly metaKey: boolean; readonly ctrlKey: boolean; readonly shiftKey: boolean; readonly altKey: boolean }
+
+/**
+ * Whether a key pressed is an item's accelerator, for a host with no menu bar to
+ * hear it: the web's ⋯ shows the key caps, and a key cap that does nothing is a
+ * promise broken. `CmdOrCtrl` is ⌘ on a Mac and Ctrl elsewhere, and the other
+ * modifiers must match exactly, so ⌘O is not ⇧⌘O.
+ */
+export function acceleratorMatches(accelerator: string, press: KeyPress, mac: boolean): boolean {
+  const parts = accelerator.split('+')
+  const last = parts.pop()
+  if (!last) return false
+  const wanted = new Set(parts)
+  const command = wanted.has('CmdOrCtrl') || wanted.has(mac ? 'Cmd' : 'Ctrl')
+  if ((mac ? press.metaKey : press.ctrlKey) !== command) return false
+  if ((mac ? press.ctrlKey : press.metaKey) !== false) return false
+  if (press.shiftKey !== wanted.has('Shift') || press.altKey !== wanted.has('Alt')) return false
+  const key = last === 'Plus' ? '+' : last
+  return press.key.toLowerCase() === key.toLowerCase()
+}
+
 /**
  * Preferences. On macOS it is **Settings… ⌘,** in the app menu; elsewhere
  * **Preferences…** above Quit in the File menu. Same command either way.
