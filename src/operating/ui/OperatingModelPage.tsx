@@ -201,11 +201,11 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           <Tabs
             label={t('operating.title')} value={tab} onChange={(next) => chooseTab(next)}
             items={[
-              { value: 'structure', label: t('operating.tabStructure'), 'data-guide': 'operating.tabUnits' },
-              { value: 'roles', label: t('operating.tabRoles'), 'data-guide': 'operating.tabRoles' },
-              { value: 'responsibilities', label: t('operating.tabRaci'), 'data-guide': 'operating.tabRaci' },
-              { value: 'exceptions', label: t('operating.tabExceptions'), 'data-guide': 'operating.tabExceptions', ...(exceptions.length ? { count: exceptions.length } : {}) },
-              { value: 'libraries', label: t('operating.tabLibraries'), 'data-guide': 'operating.tabLibraries' },
+              { value: 'structure', label: t('operating.tabStructure'), guide: 'operating.tabUnits' },
+              { value: 'roles', label: t('operating.tabRoles'), guide: 'operating.tabRoles' },
+              { value: 'responsibilities', label: t('operating.tabRaci'), guide: 'operating.tabRaci' },
+              { value: 'exceptions', label: t('operating.tabExceptions'), guide: 'operating.tabExceptions', ...(exceptions.length ? { count: exceptions.length } : {}) },
+              { value: 'libraries', label: t('operating.tabLibraries'), guide: 'operating.tabLibraries' },
             ]}
           />
           <span className="op-bar__counts" data-testid="operating-counts">
