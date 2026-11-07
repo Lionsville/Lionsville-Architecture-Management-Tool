@@ -405,11 +405,6 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
     return refused('agent.stale', `the project is at revision ${session.revision()}, not ${args.ifRevision}`)
   }
 
-  if (request.tool === 'diagram.tidy') {
-    // First layout on a sheet is arithmetic, and a step like any other (ADR-0048).
-    const diagram = diagramOf(view.model, args, view.activeDiagramId)
-    if (diagram?.kind === 'sheet') return await landCommand(request.tool, tidySheet(args, diagram, writeView(session)), view.model, session)
-  }
   if (request.tool === 'diagram.tidy' || request.tool === 'diagram.route') {
     return seeing(request.tool, args, session)
   }
@@ -1052,6 +1047,9 @@ async function seeing(
   args: Record<string, unknown>,
   session: SessionView,
 ): Promise<AgentAnswer> {
+  // First layout on a sheet is arithmetic, and a step like any other (ADR-0048).
+  const sheet = tool === 'diagram.tidy' ? diagramOf(session.indexed(), args, session.activeDiagramId()) : undefined
+  if (sheet?.kind === 'sheet') return await landCommand(tool, tidySheet(args, sheet, writeView(session)), session.indexed(), session)
   const renderer = session.renderer
   if (!renderer) return refused('agent.noScreen', 'no canvas')
   const model = session.indexed()

@@ -54,7 +54,7 @@ export function printPage(page: HTMLElement, size: { width: number; height: numb
   const margin = printMarginMm(paper)
   const host = document.createElement('div')
   host.className = 'print-page'
-  host.style.cssText = `position:absolute;left:0;top:0;width:${paper.widthMm - 2 * margin}mm;height:${paper.heightMm - 2 * margin}mm;overflow:hidden;contain:strict;background:#fff`
+  host.style.cssText = `position:absolute;left:0;top:0;width:${paper.widthMm - 2 * margin}mm;height:${paper.heightMm - 2 * margin}mm;overflow:hidden;contain:strict;background:white`
   for (const [name, value] of Object.entries(tokenVariables('light'))) host.style.setProperty(name, value)
   const copy = page.cloneNode(true) as HTMLElement
   copy.style.transform = `scale(${scale})`
@@ -66,7 +66,7 @@ export function printPage(page: HTMLElement, size: { width: number; height: numb
   host.append(copy)
   const style = document.createElement('style')
   style.textContent = `@page { size: ${paper.widthMm}mm ${paper.heightMm}mm; margin: ${margin}mm; }
-@media print { html, body { background: #fff; height: auto; overflow: visible; } body > :not(.print-page) { display: none !important; } .print-page { position: static !important; } }
+@media print { html, body { background: white; height: auto; overflow: visible; } body > :not(.print-page) { display: none !important; } .print-page { position: static !important; } }
 @media screen { .print-page { visibility: hidden; pointer-events: none; } }`
   document.head.append(style)
   document.body.append(host)
