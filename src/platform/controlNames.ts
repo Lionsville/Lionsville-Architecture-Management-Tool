@@ -48,7 +48,7 @@ export const CONTROL_NAMES = [
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
   // Keeping a colouring with the view (ADR-0027, amended), in the Colour by menu once a reader has chosen their own.
-  'board.keepLens',
+  'board.keepLens', 'board.day', 'board.look',
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // The register, and the technology register drawn by the same page.
@@ -95,7 +95,8 @@ export const CONTROL_NAMES = [
   // The decisions page, and one record. A record in the list and a move of
   // one record's status are each named on every one of them, as a row is.
   'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove',
-  'decision.status', 'decision.move', 'decision.signers',
+  'decision.status', 'decision.move', 'decision.signers', 'decision.record', 'decision.next', 'decision.more', 'decision.writing',
+  'decisions.filter',
   // The roadmap, and one plan.
   'roadmap.newPlan', 'roadmap.findings', 'plan.addElement', 'plan.milestone', 'plan.addDecision',
   // The technology landscape.

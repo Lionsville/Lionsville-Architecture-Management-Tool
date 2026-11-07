@@ -190,10 +190,14 @@ describe('pictures, through the app', { timeout: 20_000 }, () => {
     expect(onScreen('crews.png').getAttribute('src')).toBeNull()
 
     // Away to another record and back: the page kept the bytes, and shows them without asking.
-    const other = within(screen.getByTestId('adr-list')).getByText(ANOTHER.title)
-    fireEvent.click(other)
+    const record = () => document.querySelector<HTMLElement>('[data-guide="decision.record"]')!
+    const shown = record().querySelector('h2')?.textContent
+    const away = [...record().querySelectorAll<HTMLButtonElement>('.kit-preview__icon')].find((one) => !one.disabled && one.getAttribute('aria-label') !== 'Close')!
+    const back = away.getAttribute('aria-label') === 'Next' ? 'ArrowUp' : 'ArrowDown'
+    fireEvent.click(away)
     await waitFor(() => expect(document.querySelector('img[data-picture="route.png"]')).toBeNull())
-    fireEvent.click(within(screen.getByTestId('adr-list')).getByText(DECISION.title))
+    fireEvent.keyDown(record(), { key: back })
+    await waitFor(() => expect(record().querySelector('h2')?.textContent).toBe(shown))
     await waitFor(() => expect(onScreen('route.png').getAttribute('src')).toBeTruthy())
     await settled()
     expect(asked).toEqual(['route.png'])

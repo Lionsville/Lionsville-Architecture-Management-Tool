@@ -254,8 +254,7 @@ describe('the organisation screen — its own pages', () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const again = await screen.findByTestId('organisation-cards')
     fireEvent.click(await within(again).findByRole('button', { name: 'Latest: ADR-0002' }))
-    const reader = await screen.findByTestId('adr-reader')
-    expect(reader.textContent).toContain('Federate the model')
+    await waitFor(() => expect(document.querySelector('[data-guide="decision.record"]')?.textContent).toContain('Federate the model'))
   })
 
   /**
@@ -363,7 +362,7 @@ describe('the organisation screen — its own pages', () => {
     fireEvent.click(await screen.findByTestId('open-decisions'))
     // The root draws nothing at all; the decisions page is what it was opened
     // for, and is what appears.
-    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+    expect(await screen.findByRole('heading', { name: 'Decisions' })).toBeDefined()
   })
 
   it('offers to make a sheet where the scope has none, and to open the one it has', async () => {
@@ -605,7 +604,7 @@ describe('the organisation screen — a scope with no document of its own', () =
     const scopes = heldRepositories([scope('retail', 'Retail')])
     renderApp({ repositories: scopes, today: TODAY })
     fireEvent.click(await screen.findByTestId('open-decisions'))
-    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+    expect(await screen.findByText(/^No decisions in /)).toBeDefined()
     expect(await scopes.read('')).toBeDefined()
     expect(screen.queryByText('That scope could not be opened.')).toBeNull()
   })
@@ -615,7 +614,7 @@ describe('the organisation screen — a scope with no document of its own', () =
     const before = (await scopes.read(''))?.revision
     renderApp({ repositories: scopes, today: TODAY, provider: { readOnlyAt: () => true } })
     fireEvent.click(await screen.findByTestId('open-decisions'))
-    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+    expect(await screen.findByText(/^No decisions in /)).toBeDefined()
     expect((await scopes.read(''))?.revision).toBe(before)
     expect(screen.queryByText('That scope could not be opened.')).toBeNull()
   })

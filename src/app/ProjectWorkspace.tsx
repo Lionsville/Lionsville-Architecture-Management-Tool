@@ -479,7 +479,7 @@ function useScreenParts(
     commands: host.commands, forceSave, files, documentPicker: pickers.document, snapshots, session,
     hostControls: host.controls, editorHandle: renderer.editorHandle,
   })
-  const { pageChrome } = usePageChrome(host.windowChrome)
+  const { pageChrome, windowChrome } = usePageChrome(host.windowChrome)
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
@@ -513,5 +513,5 @@ function useScreenParts(
     ...(navigation.onOpenPeople ? { onOpenPeople: navigation.onOpenPeople } : {}), pointComment: requests.pointComment,
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
-  return { snapshots, pageChrome, todayDay, today, pages, show, dialogs, analysis }
+  return { snapshots, pageChrome, windowChrome, todayDay, today, pages, show, dialogs, analysis }
 }

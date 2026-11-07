@@ -69,39 +69,36 @@ describe('a decision from the scope above', () => {
   it('shows it in a From section, read-only, beside this scope’s own list', async () => {
     open()
     fireEvent.click(await screen.findByText('Decisions'))
-    const tree = await screen.findByTestId('adr-tree')
-    await waitFor(() => expect(within(tree).getByText('From Acme Logistics')).toBeDefined())
+    const list = await screen.findByTestId('adr-list')
+    const fold = await within(list).findByText(/From Acme Logistics/)
 
     // This scope's own list is what the page opens on.
-    expect(within(screen.getByTestId('adr-list')).getByText('One warehouse system')).toBeDefined()
+    expect(within(list).getByText('One warehouse system')).toBeDefined()
 
-    fireEvent.click(within(tree).getByTestId('adr-scope-from:'))
-    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('Fulfilment is one capability'))
+    fireEvent.click(fold)
+    fireEvent.click(within(list).getByText('Fulfilment is one capability'))
     expect(await screen.findByTestId('adr-from-ancestor')).toBeDefined()
-    const reader = screen.getByTestId('adr-reader')
-    expect(within(reader).queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull()
   })
 
   /** A record is edited where it lives, so the way out is the scope itself. */
   it('offers to open the scope that holds it', async () => {
     open()
     fireEvent.click(await screen.findByText('Decisions'))
-    const tree = await screen.findByTestId('adr-tree')
-    await waitFor(() => expect(within(tree).getByText('From Acme Logistics')).toBeDefined())
-    fireEvent.click(within(tree).getByTestId('adr-scope-from:'))
-    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('Fulfilment is one capability'))
+    const list = await screen.findByTestId('adr-list')
+    fireEvent.click(await within(list).findByText(/From Acme Logistics/))
+    fireEvent.click(within(list).getByText('Fulfilment is one capability'))
     fireEvent.click(await screen.findByRole('button', { name: 'Open Acme Logistics' }))
 
     // The shell reads that scope and makes it the one that is open, on the
     // same record — this scope's own there, with nothing above it. The scope above draws nothing, so it is the decisions page
     // that is asked for: opened on no page it would land on its home.
     await waitFor(() => {
-      // The workspace's bar and the page's own both say where it is.
       expect(new Set(screen.getAllByTestId('crumb-current').map((crumb) => crumb.textContent))).toEqual(new Set(['Acme Logistics']))
-      expect(within(screen.getByTestId('adr-reader')).getByText('Fulfilment is one capability')).toBeDefined()
+      expect(document.querySelector('[data-guide="decision.record"] h2')?.textContent).toBe('Fulfilment is one capability')
       // The records above are read for the scope opened after it opens, so
       // for a render the page can still hold the ones the last scope had.
-      expect(within(screen.getByTestId('adr-tree')).queryByText('From Acme Logistics')).toBeNull()
+      expect(within(screen.getByTestId('adr-list')).queryByText(/From Acme Logistics/)).toBeNull()
       expect(screen.queryByTestId('adr-from-ancestor')).toBeNull()
     })
   })

@@ -40,7 +40,7 @@ function dialog(): HTMLElement {
 
 /** Every field of the open dialog, as the person would read it back. */
 export function dialogFields(): string[] {
-  return [...dialog().querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')]
+  return [...dialog().querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select')]
     .filter((field) => !(field instanceof HTMLTextAreaElement && field.readOnly))
     .map((field) => (field instanceof HTMLInputElement && (field.type === 'checkbox' || field.type === 'radio')
       ? String(field.checked)
@@ -63,7 +63,11 @@ export function answerEverything(): void {
   fields.forEach((field, index) => {
     fireEvent.change(field, { target: { value: field.type === 'date' ? `2020-01-0${index + 1}` : `typed ${index}` } })
   })
-  for (const combobox of within(dialog()).queryAllByRole('combobox')) chooseLast(combobox)
+  for (const combobox of within(dialog()).queryAllByRole('combobox')) {
+    // A native select has its options to hand; a list that opens is pressed for them.
+    if (combobox instanceof HTMLSelectElement) fireEvent.change(combobox, { target: { value: combobox.options[combobox.options.length - 1]!.value } })
+    else chooseLast(combobox)
+  }
 }
 
 /**

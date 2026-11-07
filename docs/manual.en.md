@@ -1161,41 +1161,52 @@ since. Something that is no longer there says so.
 
 ## Decisions
 
-**Decisions** in the top bar opens the architecture decision records: a tree
-down the left, the records of the selected node in the middle, and the record
-you are reading on the right.
+**Decisions** in the top bar opens the architecture decision records: one list,
+under three words. **Still open** is what is proposed or under review, **In
+force** what was accepted, and **Ended** what was rejected or superseded. A row
+is the number and the title; selecting one opens it large over the list, and
+Esc goes back to the row.
 
-This scope's records are **one list**. A record either belongs to the scope as
-a whole, or it is about one thing in it — an application, a capability, a
-journey step — and the tree has a node for each thing that has records, with
-every application listed whether or not it has any yet. Something that has left
-the model keeps its records under *Removed applications*.
+This scope's records are **one list**. A record either belongs to the scope as a
+whole, or it is about one thing in it — an application, a capability, a journey
+step. **Filter** narrows the list by what a record is about: this scope as a
+whole, the applications with decisions, every other application, and under
+*Removed applications* what has left the model and keeps its records.
 
-Under that come the scopes **above** this one, as a section each: *From Acme
-Logistics*, *From Retail*. Their records are read here and **changed where they
-live** — the reader shows them without an Edit button and offers to open that
-scope instead. Numbering is per scope, so ADR-0001 of the domain and ADR-0001 of
-the landscape are two records and always were.
+At the foot of the list come the scopes **above** this one, a fold each: *From
+Acme Logistics*, *From Retail*. Their records are read here and **changed where
+they live**: the record offers no way to write it, and offers to open that scope
+instead. Numbering is per scope, so ADR-0001 of the domain and ADR-0001 of the
+landscape are two records and always were.
 
 A record follows the MADR format: context and problem statement, decision
 drivers, the options considered, the outcome and its consequences, the pros and
 cons of each option, more information. **New decision** asks for the title and
-starts the body from that template. Title, status, date and decision-makers are
-fields above the body; the **reviewers and signatures** table at the end lists
-who the decision was put to, each with a verdict and the day it was given.
+what it is about, starts the body from that template, and opens ready to write.
+**Edit text** is a full window: a box per section, with markdown inside and its
+help under it, and **Source** for the whole body at once, which is where a
+heading is changed. It also holds who proposed it, what it supersedes, and the
+**reviewers and signatures**, each with a verdict and the day it was given. **Done** saves
+it as one step, and **Cancel** asks first if anything changed. Sections nobody
+has written yet are left out when the record is read.
 
-The status is a workflow, not a label. A record starts **proposed**, moves to
-**under review**, and is then **accepted** or **rejected**. Those two are the
-end of the road: from there the record can no longer be edited or deleted,
-because a decision that can be rewritten afterwards is not a record of one. An
-accepted record can later be **superseded**, which asks for the record that
-replaces it and shows the link both ways. Review can be sent back to proposed.
+The status is a workflow, not a label, and the record shows where it stands on a
+line at the top, with one sentence under the title. A record starts **proposed**
+and is sent for review; **under review** it is accepted or rejected. Those two
+are the end of the road: from there the record can no longer be edited or
+deleted, because a decision that can be rewritten afterwards is not a record of
+one. An accepted record can later be **marked as superseded**, under ⋯, which
+asks for the record that replaces it and shows the link both ways. Review can be
+sent back to proposed, and a proposal withdrawn, both under ⋯ too.
 
-The search field above the list searches every record in the tree at once —
-title, body and reviewers, this scope's and the ones above. Bodies are markdown,
-with the same `[[Name]]` links as documentation; **Formatting help** beside the
-source shows the syntax, mermaid diagrams included. Changes are saved with this
-scope.
+**What acceptance needs** is beside the record from the first draft, with what
+each line looks for written out. An open line goes to the place that answers it,
+and the button says how many are still open.
+
+The search field above the list searches every record at once — title, body and
+reviewers, this scope's and the ones above. Bodies are markdown, with the same
+`[[Name]]` links as documentation, and mermaid diagrams. Changes are saved with
+this scope.
 
 ## Observations
 
@@ -1538,19 +1549,23 @@ it joins are there. The lines that do need one are the temporary ones — a sync
 a routing façade, a double write — which is exactly the hybrid phase of a
 replacement.
 
-**Showing** on the diagram bar says which day the board is drawing. It reads
-*Today* until you name a day, and then reads that day and highlights itself, so
-a board showing 2028 does not look like a board showing now. Every card draws
-the phase it is in on that day, and a line with a window appears only inside it.
-Picking a day only changes what your window shows: nothing is saved, nobody else
-sees it, and a dashed outline round the button says so. While you look at a day
-that is not the board's own, the board is read-only: the palette and the fields
-are put away, and **Back to…** brings them back. A board saved on its day stays
-editable on it, and who holds a role can still be changed on the day you are
-looking at. To make the board open on
-that day for everybody, choose **Save** under the date — that one is an edit, one
-entry in Activity, and ⌘Z takes it back. **Show today** and then **Save** puts a
-dated board back on the calendar.
+**Day** on the view's bar says which day the board is drawing. It says nothing
+special on today, and offers the days worth looking at — what a plan has on a day,
+when something goes live or goes away, where a board is saved — and any other
+through *Choose a day…*. A day is drawn from today's model using its dates: every
+card draws the phase it is in on that day, and a line with a window appears only
+inside it. To see what was really saved on a day, open **History…**.
+
+Looking at another day is a state of the whole window: a band names the day, an edge
+runs round the canvas, and the board is read-only — the palette and the fields are put
+away and undo is off. It is only on your screen, nobody else sees it, and the address
+carries it (`?day=2027-06-01`), so a link opens the same look. **Back to today**, or
+**Back to** the board's own day, is one press. **Make this the view's day** in the
+band is the deliberate step: one edit, one entry in Activity, and ⌘Z takes it back. It
+works for today as well, which puts a dated board back on the calendar. A board
+saved on its day says that day on its tab and stays editable on it, and who holds a role
+can still be changed on the day you are looking at. A container diagram opened from a
+board takes that board's day along, and its way back goes to that board.
 
 That is how a future diagram is made. Right-click a tab and choose **Duplicate
 as of…**, pick a day, and you have a second board of the same landscape as it
@@ -1574,7 +1589,7 @@ moves every interface dates every line.
 
 The slider along the top moves that board. Drag it and the canvas behind follows,
 so the picture and the axis cannot disagree about which day is under discussion.
-Like the date control, it only looks: **Save** on the board's bar keeps a day.
+Like the day control, it only looks, and the band says so: **Make this the view’s day** there keeps a day.
 
 ### Plans
 
@@ -2272,7 +2287,7 @@ A unit's sections, in that order:
   people. The organisation's home lists the same findings for every scope.
 
 The sections read the day the board beside them is looked at. On a board that
-shows another day — its own saved day, or a day picked under **Showing** or
+shows another day — its own saved day, or a day picked under **Day** or
 on the roadmap's slider — the inspector says *As on* that day, and its
 holders, who manages it and its checks are that day's, a plan's moves of that
 day included. Something assigned or ended from there starts on that day where

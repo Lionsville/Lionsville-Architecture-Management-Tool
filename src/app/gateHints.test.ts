@@ -12,7 +12,7 @@
  * or copied over in English; this reads each one out of each table.
  */
 import { describe, expect, it } from 'vitest'
-import { GATE_HINT as ADR_GATE_HINT } from '../decisions/ui/AdrReaderParts'
+import { GATE_HINT as ADR_GATE_HINT } from '../decisions/ui/AdrParts'
 import { GATE_HINT as SOLUTION_GATE_HINT } from '../observations/observationScope'
 import { PLAN_GATE_HINT } from '../roadmap/planGateHints'
 import { LANGUAGES, STRINGS } from '../i18n/strings'

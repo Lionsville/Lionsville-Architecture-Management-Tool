@@ -256,18 +256,16 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     expect(movers(from)).not.toContain('person')
   })
 
-  it('is the provider’s through the decision the page picks', async () => {
+  it('is the provider’s onto the page, and a row the person presses is the person’s', async () => {
     const scopes = withRecords()
     show([{ label: 'To the decisions', to: { page: 'decisions' }, options: { by: 'provider' } }], scopes, scopes[2])
     await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
     const from = handed.length
     fireEvent.click(screen.getByRole('button', { name: 'To the decisions' }))
-    await waitFor(() => expect(told().where.page).toMatchObject({ page: 'decisions', id: expect.any(String) }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'decisions' }))
     expect(movers(from)).not.toContain('person')
-    const picked = told().where.page
-    const other = picked?.page === 'decisions' && picked.id === 'l1' ? 'Decided l2' : 'Decided l1'
-    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText(other))
-    await waitFor(() => expect(told().where.page).not.toEqual(picked))
+    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('Decided l1'))
+    await waitFor(() => expect(told().where.page).toMatchObject({ page: 'decisions', id: expect.any(String) }))
     expect(told().movedBy).toBe('person')
   })
 })

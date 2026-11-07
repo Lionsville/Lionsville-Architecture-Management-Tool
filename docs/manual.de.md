@@ -1333,46 +1333,53 @@ dann, wann sie sich seither geändert hat. Was es nicht mehr gibt, sagt das.
 
 ## Entscheidungen
 
-**Entscheidungen** in der oberen Leiste öffnet die Architekturentscheidungen
-(Architecture Decision Records): ein Baum links, die Einträge des ausgewählten
-Knotens in der Mitte, und der Eintrag, den Sie lesen, rechts.
+**Entscheidungen** in der oberen Leiste öffnet die Architekturentscheidungen: eine
+Liste unter drei Wörtern. **Noch offen** ist, was vorgeschlagen oder in Prüfung ist,
+**In Kraft** was angenommen wurde, und **Beendet** was abgelehnt oder abgelöst wurde.
+Eine Zeile ist die Nummer und der Titel; wählst du eine, öffnet sie sich groß über der
+Liste, und Esc geht zurück zur Zeile.
 
-Die Einträge dieses Bereichs sind **eine Liste**. Ein Eintrag gehört entweder
-zum Bereich als Ganzem, oder er handelt von einem Ding darin — einer Anwendung,
-einer Fähigkeit, einem Schritt einer Kundenreise — und der Baum hat einen Knoten
-für jedes Ding, das Einträge hat, wobei jede Anwendung aufgeführt wird, ob sie
-schon welche hat oder nicht. Etwas, das das Modell verlassen hat, behält seine
-Einträge unter *Entfernte Anwendungen*.
+Die Entscheidungen dieses Bereichs sind **eine Liste**. Eine Entscheidung gehört zum
+Bereich als Ganzem oder betrifft eine Sache darin: eine Anwendung, eine Fähigkeit,
+einen Schritt einer Journey. **Filter** grenzt die Liste danach ein, was sie betrifft:
+diesen Bereich als Ganzes, die Anwendungen mit Entscheidungen, jede andere Anwendung,
+und unter *Entfernte Anwendungen*, was das Modell verlassen hat und seine Entscheidungen
+behält.
 
-Darunter kommen die Bereiche **über** diesem, je als ein Abschnitt: *Von Acme
-Logistics*, *Von Retail*. Ihre Einträge werden hier gelesen und **dort
-geändert, wo sie liegen** — der Leser zeigt sie ohne Bearbeiten-Schaltfläche und
-bietet stattdessen an, diesen Bereich zu öffnen. Die Nummerierung ist je
-Bereich, sodass ADR-0001 der Domäne und ADR-0001 der Landschaft zwei Einträge
-sind und es immer waren.
+Am Fuß der Liste stehen die Bereiche **über** diesem, jeder eingeklappt: *Von Acme
+Logistics*, *Von Retail*. Ihre Entscheidungen werden hier gelesen und **dort geändert,
+wo sie liegen**: Die Entscheidung bietet keinen Weg zum Schreiben und bietet an, diesen
+Bereich zu öffnen. Nummern gelten je Bereich, also sind ADR-0001 der Domäne und
+ADR-0001 der Landschaft zwei Entscheidungen.
 
-Ein Eintrag folgt dem MADR-Format: Kontext und Problemstellung,
-Entscheidungsfaktoren, die betrachteten Optionen, das Ergebnis und seine
-Konsequenzen, die Vor- und Nachteile jeder Option, weitere Informationen. **Neue
-Entscheidung** fragt nach dem Titel und beginnt den Text mit dieser Vorlage.
-Titel, Status, Datum und Entscheidungsträger sind Felder über dem Text; die
-Tabelle **Prüfer und Unterschriften** am Ende listet auf, wem die Entscheidung
-vorgelegt wurde, jeweils mit einem Urteil und dem Tag, an dem es gefällt wurde.
+Eine Entscheidung folgt dem MADR-Format: Kontext und Problemstellung,
+Entscheidungstreiber, die erwogenen Optionen, das Ergebnis und seine Folgen, Vor- und
+Nachteile jeder Option, weitere Informationen. **Neue Entscheidung** fragt nach dem
+Titel und wen sie betrifft, beginnt den Text mit dieser Vorlage und öffnet bereit zum
+Schreiben. **Text bearbeiten** ist ein ganzes Fenster: ein Feld je Abschnitt, mit
+Markdown darin und der Hilfe darunter, und **Quelltext** für den ganzen Text auf einmal,
+wo eine Überschrift geändert wird. Es enthält auch, wer sie vorgeschlagen hat, was sie
+ablöst, und die **Prüfer und Unterschriften**, jeweils mit Urteil und Tag. **Fertig**
+speichert als einen Schritt, und **Abbrechen** fragt zuerst, wenn sich etwas geändert
+hat. Abschnitte, die noch niemand geschrieben hat, fehlen beim Lesen.
 
-Der Status ist ein Arbeitsablauf, kein Label. Ein Eintrag beginnt als
-**Vorgeschlagen**, geht **In Prüfung** und wird dann **Angenommen** oder
-**Abgelehnt**. Diese beiden sind das Ende des Weges: von dort an kann der
-Eintrag nicht mehr bearbeitet oder gelöscht werden, denn eine Entscheidung, die
-sich nachträglich umschreiben lässt, ist kein Protokoll einer Entscheidung. Ein
-angenommener Eintrag kann später **Abgelöst** werden, was nach dem Eintrag
-fragt, der ihn ersetzt, und den Verweis in beide Richtungen zeigt. Eine Prüfung
-kann auf Vorgeschlagen zurückgesetzt werden.
+Der Status ist ein Ablauf und kein Etikett, und die Entscheidung zeigt oben, wo sie
+steht, mit einem Satz unter dem Titel. Eine Entscheidung beginnt **vorgeschlagen** und
+wird zur Prüfung gesendet; **in Prüfung** wird sie angenommen oder abgelehnt. Dort endet
+der Weg: Danach kann sie nicht mehr bearbeitet oder gelöscht werden, denn eine
+Entscheidung, die sich nachträglich umschreiben lässt, ist kein Protokoll davon. Eine
+angenommene Entscheidung kann später unter ⋯ **als abgelöst markiert** werden, was nach
+der ablösenden fragt und die Verbindung in beide Richtungen zeigt. Eine Prüfung kann
+zurück zu Vorgeschlagen, und ein Vorschlag zurückgezogen werden, beides ebenfalls unter ⋯.
 
-Das Suchfeld über der Liste durchsucht jeden Eintrag im Baum auf einmal — Titel,
-Text und Prüfer, die dieses Bereichs und die der darüberliegenden. Texte sind
-Markdown, mit denselben `[[Name]]`-Links wie die Dokumentation; **Hilfe zur
-Formatierung** neben dem Quelltext zeigt die Syntax, Mermaid-Diagramme
-eingeschlossen. Änderungen werden mit diesem Bereich gespeichert.
+**Was die Annahme verlangt** steht vom ersten Entwurf an neben der Entscheidung, mit
+ausgeschrieben, wonach jede Zeile sucht. Eine offene Zeile führt zu der Stelle, die sie
+beantwortet, und die Schaltfläche sagt, wie viele noch offen sind.
+
+Das Suchfeld über der Liste durchsucht alle Entscheidungen auf einmal: Titel, Text und
+Prüfer, dieses Bereichs und der darüber. Der Text ist Markdown, mit denselben
+`[[Name]]`-Verweisen wie die Dokumentation, und Mermaid-Diagrammen. Änderungen werden mit
+diesem Bereich gespeichert.
 
 ## Beobachtungen
 
@@ -1769,21 +1776,24 @@ beide Dinge, die sie verbindet, da sind. Die Linien, die eines brauchen, sind
 die vorübergehenden — ein Sync, eine Routing-Fassade, ein doppeltes Schreiben —
 was genau die Hybridphase einer Ablösung ist.
 
-**Zeigt** in der Diagrammleiste sagt, welchen Tag das Board zeichnet. Es liest
-sich *Heute*, bis Sie einen Tag nennen, und dann liest es sich als dieser Tag
-und hebt sich hervor, sodass ein Board, das 2028 zeigt, nicht wie ein Board
-aussieht, das jetzt zeigt. Jede Karte zeichnet die Phase, in der sie an diesem
-Tag ist, und eine Linie mit Zeitfenster erscheint nur innerhalb davon. Einen Tag
-zu wählen ändert nur, was Ihr Fenster zeigt: Es wird nichts gespeichert, niemand
-sonst sieht es, und ein gestrichelter Rahmen um die Schaltfläche sagt das. Solange
-Sie einen Tag ansehen, der nicht der eigene des Boards ist, ist das Board
-schreibgeschützt: Palette und Felder sind weg, und **Zurück zu…** bringt sie zurück.
-Ein auf seinem Tag gespeichertes Board bleibt an diesem Tag bearbeitbar, und wer
-eine Rolle innehat, lässt sich weiter an dem angesehenen Tag ändern. Soll
-das Board für alle an diesem Tag öffnen, wählen Sie **Speichern** unter dem
-Datum — das ist eine Bearbeitung, ein Eintrag in Aktivität, und ⌘Z nimmt sie
-zurück. **Heute zeigen** und dann **Speichern** stellt ein datiertes Board
-wieder auf den Kalender.
+**Tag** in der Leiste der Ansicht sagt, welchen Tag das Board zeichnet. Heute sagt es nichts
+Besonderes, und es bietet die Tage an, die sich lohnen: was ein Plan an einem Tag hat, wann
+etwas live geht oder verschwindet, auf welchen Tag ein Board gespeichert ist, und jeden
+anderen über *Tag wählen…*. Ein Tag wird aus dem heutigen Modell mit seinen Daten
+gezeichnet: Jede Karte zeigt die Phase an diesem Tag, und eine Linie mit einem Fenster
+erscheint nur darin. Was an einem Tag wirklich gespeichert war, zeigt **Verlauf…**.
+
+Einen anderen Tag anzusehen ist ein Zustand des ganzen Fensters: Ein Band nennt den Tag, ein
+Rand läuft um die Leinwand, und das Board ist schreibgeschützt: Palette und Felder sind
+weggeräumt und Rückgängig ist aus. Es ist nur auf deinem Bildschirm, niemand sonst sieht es,
+und die Adresse trägt es (`?day=2027-06-01`), also öffnet ein Link dieselbe Ansicht.
+**Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Druck. **Zum Tag
+der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
+Aktivität, und ⌘Z nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
+in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem Tab
+und bleibt darauf bearbeitbar, und wer eine Rolle innehat, lässt sich am angesehenen Tag noch
+ändern. Ein von einem Board geöffnetes Containerdiagramm nimmt dessen Tag mit, und sein Weg
+zurück führt zu diesem Board.
 
 So entsteht ein zukünftiges Diagramm. Klicken Sie mit rechts auf einen Reiter,
 wählen Sie **Duplizieren zum Stand…**, wählen Sie einen Tag, und Sie haben ein
@@ -2615,7 +2625,7 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
 
 Die Abschnitte lesen den Tag, an dem das Board daneben betrachtet wird. Auf
 einem Board, das einen anderen Tag zeigt — seinen gespeicherten Tag oder einen
-unter **Zeigt** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt
+unter **Tag** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt
 der Inspektor *Wie am* diesem Tag, und wer die Rollen innehat, wer sie führt
 und die Prüfungen sind die dieses Tages, die Verschiebungen der Pläne an
 diesem Tag eingeschlossen. Was Sie von dort zuordnen oder beenden, beginnt an

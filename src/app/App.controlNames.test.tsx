@@ -61,6 +61,9 @@ const landscape = example.find((scope) => scope.model.diagrams.some((diagram) =>
 landscape.model = {
   ...landscape.model,
   elements: landscape.model.elements.map((one) => (one.id === 'payments' ? { ...one, partyId: undefined } : one)),
+  decisions: [...(landscape.model.decisions ?? []), {
+    id: 'adr-open', number: 90, title: 'A proposal of its own', status: 'proposed', date: '2026-01-01', body: 'Why.', signers: [],
+  } as never],
   solutions: (landscape.model.solutions ?? []).map((one) => (
     one.id === 'so-portal-dispatch' ? { ...one, state: 'proven', droppedFrom: undefined, dropNote: undefined } : one
   )),
@@ -320,6 +323,14 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const menu = await screen.findByRole('menu', { name: 'Element menu' })
     fireEvent.click(within(menu).getByRole('menuitem', { name: /Start connection to/ }))
   }]],
+  [['a landscape on its board, looked at on another day', ['board.day', 'board.look'], async () => {
+    await onBoard()
+    fireEvent.click(document.querySelector<HTMLElement>('[data-guide="board.day"]')!)
+    fireEvent.click(await screen.findByText('Choose a day…'))
+    fireEvent.change(document.querySelector('input[type="date"]')!, { target: { value: '2031-01-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Show this day' }))
+    await screen.findByText(/Only on your screen/)
+  }]],
   [['a landscape on its board, coloured by a reader’s own choice', ['board.keepLens'], async () => {
     await onBoard()
     fireEvent.click(await screen.findByLabelText('Colour by'))
@@ -408,20 +419,23 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByRole('region', { name: 'Move an observation to another scope' })
   }]],
   [['the decisions, one from above read', [
-    'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
+    'decisions.list', 'decisions.row', 'decisions.new', 'decisions.filter', 'decisions.fromAbove', 'decision.status', 'decision.signers', 'decision.record', 'decision.more',
   ], async () => {
     const dialog = await page('Decisions')
-    await within(dialog).findByTestId('adr-list')
-    const scopes = within(dialog).getAllByTestId(/^adr-scope-/)
-    fireEvent.click(scopes.find((one) => one.textContent?.includes('Acme Logistics'))!)
-    fireEvent.click((await within(dialog).findAllByText('One register for the organisation'))[0])
+    const list = await within(dialog).findByTestId('adr-list')
+    fireEvent.click(await within(list).findByText(/From Acme Logistics/))
+    fireEvent.click((await within(list).findAllByText('One register for the organisation'))[0])
   }],
   // A record from above is read, not moved; the landscape's own accepted one
   // offers the move the state machine allows.
-  ['one of its own decisions, read', ['decision.move'], async () => {
+  ['one of its own decisions, read', ['decision.move', 'decision.next'], async () => {
+    fireEvent.click(document.querySelector<HTMLElement>('[data-guide="decision.record"] [aria-label="Close"]')!)
+    await waitFor(() => expect(document.querySelector('[data-guide="decision.record"]')).toBeNull())
     const dialog = placePageNow()!
-    fireEvent.click(within(dialog).getByTestId('adr-scope-landscape'))
-    fireEvent.click((await within(dialog).findAllByText('One place where a price is decided'))[0])
+    fireEvent.click((await within(dialog).findAllByText('A proposal of its own'))[0])
+  }],
+  ['and written', ['decision.writing'], async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
   }]],
   [['the roadmap', ['roadmap.newPlan', 'roadmap.findings'], async () => {
     await page('Roadmap')

@@ -191,9 +191,10 @@ describe('with the organisation screen up', () => {
     const { ask } = await organisationOnScreen()
     await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     await ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' })
-    const title = () => within(screen.getByTestId('adr-reader')).getByRole('heading', { level: 1 }).textContent
+    const title = () => document.querySelector('[data-guide="decision.record"] h2')?.textContent
     await waitFor(() => expect(title()).toBe('One warehouse'))
-    fireEvent.click(within(screen.getByTestId('adr-list')).getByText('Two depots'))
+    const record = document.querySelector<HTMLElement>('[data-guide="decision.record"]')!
+    fireEvent.keyDown(record, { key: title() === 'One warehouse' ? 'ArrowUp' : 'ArrowDown' })
     expect(title()).toBe('Two depots')
     expect(parsed(await ask('app.current')).page).toEqual({ page: 'decisions', id: 'adr-2' })
     const back = parsed(await ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' }))

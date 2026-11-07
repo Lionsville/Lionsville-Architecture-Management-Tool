@@ -2,62 +2,57 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Every architecture decision in one place: the tree of where they live down
- * the left, the records of the chosen place in the middle, the one you are
- * reading on the right — a reading pane, the way a mail client is laid out.
+ * Every architecture decision here, read by whether it is in force: one list
+ * under *Still open*, *In force* and *Ended*, a row the number and the title and
+ * nothing else, so a status is said once. What a record is about is a filter and
+ * no longer the shape of the page; every application is still in it, and those
+ * that have left the model, since a record about them is history.
+ *
+ * Selecting a row opens it large over the list (`AdrRecord`), and writing it is a
+ * full window (`AdrWriting`). A new record opens ready to write.
  *
  * **One list** (ADR-0012 §7). This scope's records are one array on its model,
  * told apart by `subjectId` — absent means the record is about the scope
  * itself, and any element it knows may be the subject of one — and they go
  * back whole (`onProjectDecisionsChange`) so the caller commits one model
- * change. What used to be a second list, the group's, is now a section per
- * ancestor: read up the tree, read-only here, with a way to open the scope
- * that holds them. **A record is edited where it lives**, which is the same
- * rule `mayEdit` applies to an element.
+ * change. The scopes above have a fold each at the foot of the list: read up
+ * the tree, read-only here, with a way to open the scope that holds them. **A
+ * record is edited where it lives**, which is the same rule `mayEdit` applies
+ * to an element.
  *
  * The page never writes anywhere itself.
- *
- * A fullscreen dialog for the same two reasons as the documentation page: it
- * portals out of the editor's DOM so the canvas's shortcuts cannot reach a
- * reader, and it covers the whole window, so its top bar takes over the
- * window's two jobs — keep clear of the traffic lights, and be the surface the
- * window is dragged by.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
-import { formatDay } from '../../i18n/dates'
-import { matchesQuery } from '../../model'
 import type { Language, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import {
-  adrsFor, formatAdrNumber, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
+  formatAdrNumber, isAdrLocked, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
 } from '../adr'
-import type { Adr, AdrPatch, AdrStatus } from '../adr'
+import type { Adr, AdrGateItem, AdrPatch, AdrStatus } from '../adr'
+import { ABOUT_THE_SCOPE, aboutOf, aboutOptions, STANDING_LABEL, STANDINGS, standingOf } from '../adrList'
+import type { AboutGroup } from '../adrList'
 import type { HostModel } from '../../model/hostModel'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
-import { SeamResizer } from '../../widgets/SeamResizer'
-import { useSeamWidth } from '../../widgets/useSeamWidth'
-import { useLocatedIn } from '../../widgets/useLocated'
+import { Button } from '../../widgets/kit/Button'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import type { FilterField } from '../../widgets/kit/FilterWords'
+import { List } from '../../widgets/kit/List'
+import type { ListGroup, ListRow } from '../../widgets/kit/List'
+import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
+import type { ListView } from '../../widgets/kit/listView'
+import { PageState } from '../../widgets/kit/PageState'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import type { MakeId } from '../../model/keys'
-import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
-import { AdrRecordList, AdrTopBar, AdrTree, FromAboveBanner, MoveDialogs } from './AdrPageParts'
-import { AdrReader } from './AdrReader'
-import { signerText } from './AdrReaderParts'
+import { DeleteDialog, MoveDialogs, NewAdrDialog, SupersedeDialog } from './AdrDialogs'
+import { signerText } from './AdrParts'
+import { AdrRecord } from './AdrRecord'
+import { AdrWriting } from './AdrWriting'
 import { usePersonNames } from '../../people/ui/names'
-import type { PersonNames } from '../../people/ui/names'
-import {
-  fromScope, projectScopeOf, scopeFromPath, scopeSubjectId,
-} from '../adrScope'
-import type { AncestorRecords, ScopeKey } from '../adrScope'
-
-/** What a row of the list carries its record's id in, for the ring to find it by. */
-const RECORD_ATTRIBUTE = 'data-record-id'
+import type { AncestorRecords } from '../adrScope'
+import './AdrPage.css'
 
 export type AdrPageProps = {
   open: boolean
@@ -108,18 +103,8 @@ export type AdrPageProps = {
    * closes and the caller opens the observations page on it.
    */
   onOpenSolution?: (solutionId: string) => void
-  /**
-   * Where this scope sits, drawn by the caller — the shell's crumbs, which
-   * know the tree and how to go home. Absent, the bar names the organisation
-   * and the scope, leaving out whichever has no name.
-   */
-  crumbs?: ReactNode
+  /** The window's own chrome: writing covers the rows, so its bar takes over what they do for the window. */
   windowChrome?: WindowChrome
-}
-
-/** Whether a record matches the page's search: its title, body and number, and who signed, as the page says them. */
-function recordMatches(adr: Adr, query: string, names: PersonNames): boolean {
-  return matchesQuery(query, [adr.title, adr.body, formatAdrNumber(adr.number), ...adr.signers.map((one) => signerText(one, names))])
 }
 
 /**
@@ -139,13 +124,12 @@ function movedFirst(list: readonly Adr[], id: string): Adr[] {
 /**
  * Where an opening lands, and what the host is told it shows.
  *
- * Each opening starts on the landscape's newest record (`start`) — unless
- * it asked for one, which it goes to (`onto`) once per request. The records
- * change with every save, and going back to that one on each would take a
- * person off the record they moved to, closing its editor mid-sentence. A
- * request is the record and its number (`nonce`): the same record asked for
- * again, after the person has moved off it, is a new number and lands. It
- * waits for the record to be there, so a list that arrives late still lands.
+ * An opening starts on the list (`start`) — unless it asked for a record, which
+ * it goes to (`onto`) once per request. The records change with every save, and
+ * going back to that one on each would take a person off the record they moved
+ * to. A request is the record and its number (`nonce`): the same record asked for
+ * again, after the person has moved off it, is a new number and lands. It waits
+ * for the record to be there, so a list that arrives late still lands.
  *
  * The record on show goes to `onShown` whenever it changes, with the number
  * of the request it landed on — what the agent is told the page is on,
@@ -155,7 +139,7 @@ function useOpening(deps: {
   open: boolean
   request: { id: string | undefined; nonce: number | undefined }
   records: readonly Adr[]
-  selectedId: string | undefined
+  selectedId: string | null
   start: () => void
   onto: (target: Adr) => void
   onShown: ((id: string | undefined, nonce: number | undefined) => void) | undefined
@@ -180,320 +164,343 @@ function useOpening(deps: {
     latest.current.onto(target)
     setLanded(nonce)
   }, [open, id, nonce, records])
-  const shown = records.some((a) => a.id === selectedId) ? selectedId : undefined
+  const shown = records.some((a) => a.id === selectedId) ? selectedId ?? undefined : undefined
   useEffect(() => {
     if (open) latest.current.onShown?.(shown, landed)
   }, [open, shown, landed])
 }
 
-/** Where a record of a scope above is kept: its thread is read there (ADR-0037). */
-function keptIn(above: { path: string } | undefined): { keptIn?: string } {
-  return above ? { keptIn: above.path } : {}
+/** A row in the list: the record, and the scope above that keeps it, where one does. */
+type Listed = { adr: Adr; above?: AncestorRecords }
+
+const ABOUT_GROUP: Record<Exclude<AboutGroup, 'scope'>, Parameters<Translate>[0]> = {
+  withRecords: 'adr.aboutWithRecords',
+  none: 'adr.aboutNone',
+  removed: 'adr.scopeRemoved',
 }
 
-export function AdrPage(props: AdrPageProps) {
-  const {
-    open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
-    initialAdrId, initialNonce, readOnly = false, s, today, makeId,
-  } = props
-  // Who proposed and who signed, by the register's names, and the name a signature keeps (ADR-0036 §8).
+/** What the list shows of the view it is on: the groups in order, what a preview walks, the folds, and the About filter. */
+function useAdrList(view: ListView, props: Pick<AdrPageProps, 'model' | 'groupName' | 'ancestors' | 's' | 'language'>) {
+  const { model, groupName, ancestors = [], s, language } = props
   const names = usePersonNames()
-  const chrome = props.windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
   const projectDecisions = useMemo(() => model.decisions ?? [], [model.decisions])
+  /**
+   * What a record here can be ABOUT (ADR-0012 §7): every application, because
+   * that is where one is usually filed — plus anything else that already has a
+   * record, because a decision about a capability or a journey step is now an
+   * ordinary thing to write.
+   */
+  const subjects = useMemo(() => {
+    const withRecords = new Set(projectDecisions.map((adr) => adr.subjectId).filter(Boolean))
+    return model.elements
+      .filter((e) => e.kind === 'application' || withRecords.has(e.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [model.elements, projectDecisions])
 
-  const [scope, setScope] = useState<ScopeKey>('landscape')
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
-  const [query, setQuery] = useState('')
-  const [treeWidth, setTreeWidth] = useSeamWidth('decisions.tree', 240)
-  const [listWidth, setListWidth] = useSeamWidth('decisions.list', 320)
-  const [creating, setCreating] = useState(false)
+  const aboutFilter: FilterField = useMemo(() => ({
+    id: 'about', label: s('adr.aboutField'), narrow: subjects.length > 8,
+    options: aboutOptions(projectDecisions, subjects).map((one) => {
+      const label = one.group === 'scope' ? s('adr.aboutScope') : one.name ?? one.value
+      return {
+        value: one.value, label, word: s('adr.aboutWord', { about: label }),
+        ...(one.count > 0 ? { count: one.count } : {}),
+        ...(one.group !== 'scope' ? { group: s(ABOUT_GROUP[one.group]) } : {}),
+      }
+    }),
+  }), [projectDecisions, subjects, s])
+
+  const how = useMemo(() => ({
+    words: ({ adr }: Listed) => [adr.title, adr.body, formatAdrNumber(adr.number), ...adr.signers.map((one) => signerText(one, names))],
+    filterBy: { about: ({ adr, above }: Listed) => (above ? [] : [aboutOf(adr)]) },
+    language,
+  }), [names, language])
+
+  const finding = view.find.trim() !== ''
+  const narrowed = finding || Object.keys(view.filters).length > 0
+  const groups = useMemo<readonly ListGroup[]>(() => {
+    const rowOf = ({ adr, above }: Listed): ListRow => ({
+      id: adr.id, code: formatAdrNumber(adr.number), text: adr.title,
+      // A find spans the folds, so a hit says where it was kept.
+      ...(above && finding ? { note: above.name } : {}),
+    })
+    const kept = (items: readonly Listed[]) => listed(items, view, how).flatMap((group) => group.rows)
+    const own = kept(sortAdrs(projectDecisions).map((adr) => ({ adr })))
+    return [
+      ...STANDINGS.map((standing) => ({
+        id: standing, label: s(STANDING_LABEL[standing]),
+        rows: own.filter(({ adr }) => standingOf(adr.status) === standing).map(rowOf),
+      })).filter((group) => !narrowed || group.rows.length > 0),
+      ...ancestors.map((above) => ({
+        id: `from:${above.path}`, label: s('adr.scopeFrom', { scope: above.name || above.path || groupName || s('adr.scopeGroup') }),
+        rows: kept(sortAdrs(above.decisions).map((adr) => ({ adr, above }))).map(rowOf),
+      })).filter((group) => group.rows.length > 0),
+    ]
+  }, [ancestors, finding, groupName, how, narrowed, projectDecisions, s, view])
+  const ids = useMemo(() => groups.flatMap((group) => group.rows.map((row) => row.id)), [groups])
+  const folds = useMemo(() => (finding ? [] : ancestors.map((above) => `from:${above.path}`)), [ancestors, finding])
+  return { subjects, aboutFilter, groups, ids, folds, finding }
+}
+
+/** The moves and the changes, each said to the page's dialogs or written whole. A record is edited where it lives (ADR-0012 §7). */
+function useAdrChanges(deps: {
+  projectDecisions: readonly Adr[]
+  aboveOf: (adr: Adr) => AncestorRecords | undefined
+  listOf: (adr: Adr) => readonly Adr[]
+  write: (next: Adr[]) => void
+  today: () => string
+  nameOf: Parameters<typeof updateAdr>[3]
+}) {
+  const { aboveOf, listOf, write, today, nameOf } = deps
   const [superseding, setSuperseding] = useState<Adr | undefined>(undefined)
   const [deleting, setDeleting] = useState<Adr | undefined>(undefined)
   // The two moves that lock a record for good ask once more: acceptance
   // confirms, rejection and withdrawal ask why.
   const [accepting, setAccepting] = useState<Adr | undefined>(undefined)
   const [rejecting, setRejecting] = useState<Adr | undefined>(undefined)
-
-  // --- where things are ---------------------------------------------------------
-
-  /**
-   * What a record here can be ABOUT (ADR-0012 §7): every application, because
-   * that is where one is usually filed and the tree is the place to make one —
-   * plus anything else that already has a record, because a decision about a
-   * capability or a journey step is now an ordinary thing to write.
-   */
-  const subjects = useMemo(() => {
-    const withRecords = new Set(projectDecisions
-      .map((adr) => adr.subjectId)
-      .filter((id): id is string => Boolean(id)))
-    return model.elements
-      .filter((e) => e.kind === 'application' || withRecords.has(e.id))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [model.elements, projectDecisions])
-  const subjectIds = useMemo(() => new Set(subjects.map((one) => one.id)), [subjects])
-  // Records about something that has since left the model. They are history
-  // and stay findable; hiding them would be losing them quietly.
-  const orphanIds = useMemo(
-    () => [...new Set(projectDecisions.map((a) => a.subjectId).filter((id): id is string => Boolean(id) && !subjectIds.has(id!)))],
-    [projectDecisions, subjectIds],
-  )
-
-  /** An ancestor's list by path, or nothing where the key is not one. */
-  const ancestorAt = useCallback(
-    (key: ScopeKey): AncestorRecords | undefined => {
-      const path = scopeFromPath(key)
-      return path === undefined ? undefined : ancestors.find((one) => one.path === path)
+  const commit = (adr: Adr, next: Adr[]) => { if (!aboveOf(adr)) write(next) }
+  return {
+    superseding, setSuperseding, deleting, setDeleting, accepting, rejecting,
+    cancelMove: () => { setAccepting(undefined); setRejecting(undefined) },
+    // A verdict given to a person picked from the register writes the name they signed with (ADR-0036 §8).
+    update: (adr: Adr, patch: AdrPatch) => commit(adr, updateAdr(listOf(adr), adr.id, patch, nameOf)),
+    move: (adr: Adr, next: AdrStatus) => {
+      if (next === 'superseded') setSuperseding(adr)
+      else if (next === 'accepted') setAccepting(adr)
+      else if (next === 'rejected') setRejecting(adr)
+      else commit(adr, setAdrStatus(listOf(adr), adr.id, next, today()))
     },
-    [ancestors],
-  )
-  const owningList = useCallback(
-    (key: ScopeKey): readonly Adr[] => ancestorAt(key)?.decisions ?? projectDecisions,
-    [ancestorAt, projectDecisions],
-  )
-  const scopedList = useCallback(
-    (key: ScopeKey): Adr[] => {
-      const held = ancestorAt(key)
-      return held ? [...held.decisions] : adrsFor(projectDecisions, scopeSubjectId(key))
+    accept: (adr: Adr) => {
+      commit(adr, movedFirst(setAdrStatus(listOf(adr), adr.id, 'accepted', today()), adr.id))
+      setAccepting(undefined)
     },
-    [ancestorAt, projectDecisions],
-  )
-  const scopeOfRecord = useCallback(
-    (adr: Adr): ScopeKey => {
-      const from = ancestors.find((one) => one.decisions.some((held) => held.id === adr.id))
-      return from ? fromScope(from.path) : projectScopeOf(adr)
+    reject: (adr: Adr, reason: string) => {
+      commit(adr, setAdrStatus(listOf(adr), adr.id, 'rejected', today(), { reason }))
+      setRejecting(undefined)
     },
-    [ancestors],
-  )
-  /**
-   * A record is edited where it lives (ADR-0012 §7), so an ancestor's is
-   * read-only here and there is nothing to commit for it — the page offers to
-   * open that scope instead.
-   */
-  const commitList = useCallback((key: ScopeKey, next: Adr[]) => {
-    if (scopeFromPath(key) !== undefined) return
-    onProjectDecisionsChange(next)
-  }, [onProjectDecisionsChange])
-
-  const day = (value: string) => formatDay(value, props.language)
-  const scopeLabel = (key: ScopeKey): string => {
-    const from = ancestorAt(key)
-    if (from) return from.name || from.path || groupName || s('adr.scopeGroup')
-    if (key === 'landscape') return model.name || s('adr.scopeLandscape')
-    const id = scopeSubjectId(key)!
-    return subjects.find((one) => one.id === id)?.name ?? id
+    supersede: (adr: Adr, successorId: string) => {
+      commit(adr, setAdrStatus(listOf(adr), adr.id, 'superseded', today(), { supersededBy: successorId }))
+      setSuperseding(undefined)
+    },
+    remove: (adr: Adr) => {
+      commit(adr, removeAdr(listOf(adr), adr.id))
+      setDeleting(undefined)
+    },
   }
-  /** An ancestor's records are not this scope's to change. */
-  const lockedAt = (key: ScopeKey): boolean => readOnly || scopeFromPath(key) !== undefined
+}
 
-  // --- selection -------------------------------------------------------------------
+/** Where a record leads, as far as the host can go. An ancestor's has no history here: its files are in another scope's folder. */
+function whereItLeads(page: AdrPageProps, selected: Adr | undefined, above: AncestorRecords | undefined) {
+  const { model, onClose } = page
+  const leaving = <T,>(go: ((value: T) => void) | undefined) => (go ? (value: T) => { onClose(); go(value) } : undefined)
+  const toElement = leaving(page.onOpenElement)
+  const toPlan = above ? undefined : leaving(page.onOpenPlan)
+  const toSolution = above ? undefined : leaving(page.onOpenSolution)
+  return {
+    ...(page.onOpenHistory && selected && !above ? { onHistory: () => page.onOpenHistory?.(selected.id) } : {}),
+    ...(page.onCopyLink && selected ? { onCopyLink: () => page.onCopyLink?.(selected.id) } : {}),
+    ...(toElement ? { onElementLink: toElement } : {}),
+    ...(toPlan ? { plans: { list: model.transitions ?? [], onOpen: toPlan } } : {}),
+    // Derived, as the plans are: the solution names its record, and the record reads the name back (ADR-0026).
+    ...(toSolution ? { solutions: { list: model.solutions ?? [], onOpen: toSolution } } : {}),
+  }
+}
+
+/** The record up, with what the host offers on it. */
+function OpenRecord({ selected, above, ids, listOf, subjects, changes, onWrite, onSelect, page }: {
+  selected: Adr | undefined
+  above: AncestorRecords | undefined
+  ids: readonly string[]
+  listOf: (adr: Adr) => readonly Adr[]
+  subjects: readonly { id: string; name: string }[]
+  changes: ReturnType<typeof useAdrChanges>
+  onWrite: (id: string, at?: AdrGateItem) => void
+  onSelect: (id: string | null) => void
+  page: AdrPageProps
+}) {
+  const { s, model, onClose, onOpenScope, groupName } = page
+  const subject = selected?.subjectId
+  return (
+    <AdrRecord
+      adr={selected}
+      ids={ids}
+      list={selected ? listOf(selected) : []}
+      locked={(page.readOnly ?? false) || above !== undefined}
+      {...(above ? {
+        above: {
+          name: above.name || above.path || groupName || s('adr.scopeGroup'), path: above.path,
+          ...(onOpenScope && selected ? { onOpen: () => { onClose(); onOpenScope(above.path, selected.id) } } : {}),
+        },
+      } : {})}
+      {...(subject ? { about: subjects.find((one) => one.id === subject)?.name ?? subject } : {})}
+      s={s}
+      language={page.language}
+      elements={above ? [] : model.elements}
+      renderMarkdown={page.renderMarkdown}
+      onSelect={onSelect}
+      onWrite={(at) => { if (selected) onWrite(selected.id, at) }}
+      onStatus={(next) => { if (selected) changes.move(selected, next) }}
+      onDelete={() => changes.setDeleting(selected)}
+      {...whereItLeads(page, selected, above)}
+    />
+  )
+}
+
+export function AdrPage(props: AdrPageProps) {
+  const {
+    open, onClose, model, ancestors = [], onProjectDecisionsChange,
+    initialAdrId, initialNonce, readOnly = false, s, today, makeId,
+  } = props
+  const names = usePersonNames()
+  const projectDecisions = useMemo(() => model.decisions ?? [], [model.decisions])
+  const [view, setView] = useState<ListView>(FRESH_VIEW)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [writing, setWriting] = useState<{ id: string; at?: AdrGateItem } | undefined>(undefined)
+  const [creating, setCreating] = useState(false)
+  const { subjects, aboutFilter, groups, ids, folds, finding } = useAdrList(view, props)
 
   const allRecords = useMemo(
     () => [...ancestors.flatMap((one) => one.decisions), ...projectDecisions],
     [ancestors, projectDecisions],
   )
+  const aboveOf = useCallback(
+    (adr: Adr) => ancestors.find((one) => one.decisions.some((held) => held.id === adr.id)),
+    [ancestors],
+  )
+  /** The list a record sits in, where links and the gate read it. */
+  const listOf = useCallback((adr: Adr) => aboveOf(adr)?.decisions ?? projectDecisions, [aboveOf, projectDecisions])
   const selected = selectedId ? allRecords.find((a) => a.id === selectedId) : undefined
-  // A record a link or a request asked for is brought on screen and ringed (ADR-0033, amended).
-  const { ref: columns, ring, locate } = useLocatedIn(setSelectedId, RECORD_ATTRIBUTE)
+  const changes = useAdrChanges({ projectDecisions, aboveOf, listOf, write: onProjectDecisionsChange, today, nameOf: names.nameOf })
 
-  // Each opening starts on the landscape's newest record, or stands in the
-  // scope of the one it asked for with it selected.
   useOpening({
     open, request: { id: initialAdrId, nonce: initialNonce }, records: allRecords, selectedId, onShown: props.onShown,
-    start: () => {
-      setScope('landscape')
-      setQuery('')
-      setSelectedId(sortAdrs(scopedList('landscape'))[0]?.id)
-    },
-    onto: (target) => { setScope(scopeOfRecord(target)); setQuery(''); locate(target.id) },
+    start: () => { setView(FRESH_VIEW); setSelectedId(null) },
+    onto: (target) => { setView(FRESH_VIEW); setSelectedId(target.id) },
   })
 
-  const trimmed = query.trim()
-  const shown: { adr: Adr; scope: ScopeKey }[] = useMemo(() => {
-    if (trimmed) {
-      return allRecords
-        .filter((adr) => recordMatches(adr, trimmed, names)).map((adr) => ({ adr, scope: scopeOfRecord(adr) }))
-    }
-    return sortAdrs(scopedList(scope)).map((adr) => ({ adr, scope }))
-  }, [trimmed, allRecords, scopeOfRecord, scopedList, scope, names])
-
-  const chooseScope = (key: ScopeKey) => {
-    setScope(key)
-    setQuery('')
-    // Land on the newest record of the place you just walked into.
-    setSelectedId(sortAdrs(scopedList(key))[0]?.id)
-  }
-  const chooseRecord = (adr: Adr, where: ScopeKey) => {
-    setScope(where)
-    setSelectedId(adr.id)
-  }
-
-  // --- changes ----------------------------------------------------------------------
-
-  const create = (title: string) => {
-    const list = owningList(scope)
+  const create = (title: string, about: string) => {
     const fresh = newAdr({
-      id: makeId('adr'), number: nextAdrNumber(list), title, date: today(), t: s,
-      subjectId: scopeSubjectId(scope),
+      id: makeId('adr'), number: nextAdrNumber(projectDecisions), title, date: today(), t: s,
+      ...(about !== ABOUT_THE_SCOPE ? { subjectId: about } : {}),
     })
-    commitList(scope, [...list, fresh])
+    onProjectDecisionsChange([...projectDecisions, fresh])
     setCreating(false)
-    setQuery('')
+    setView(FRESH_VIEW)
     setSelectedId(fresh.id)
+    // Ready to write: the first thing a person does with a new record.
+    setWriting({ id: fresh.id })
   }
 
-  const update = (adr: Adr, patch: AdrPatch) => {
-    const key = scopeOfRecord(adr)
-    // A verdict given to a person picked from the register writes the name they signed with (ADR-0036 §8).
-    commitList(key, updateAdr(owningList(key), adr.id, patch, names.nameOf))
-  }
-
-  const move = (adr: Adr, next: AdrStatus) => {
-    if (next === 'superseded') { setSuperseding(adr); return }
-    if (next === 'accepted') { setAccepting(adr); return }
-    if (next === 'rejected') { setRejecting(adr); return }
-    const key = scopeOfRecord(adr)
-    commitList(key, setAdrStatus(owningList(key), adr.id, next, today()))
-  }
-
-  const accept = (adr: Adr) => {
-    const key = scopeOfRecord(adr)
-    commitList(key, movedFirst(setAdrStatus(owningList(key), adr.id, 'accepted', today()), adr.id))
-    setAccepting(undefined)
-  }
-
-  const reject = (adr: Adr, reason: string) => {
-    const key = scopeOfRecord(adr)
-    commitList(key, setAdrStatus(owningList(key), adr.id, 'rejected', today(), { reason }))
-    setRejecting(undefined)
-  }
-
-  const supersede = (adr: Adr, successorId: string) => {
-    const key = scopeOfRecord(adr)
-    commitList(key, setAdrStatus(owningList(key), adr.id, 'superseded', today(), { supersededBy: successorId }))
-    setSuperseding(undefined)
-  }
-
-  const remove = (adr: Adr) => {
-    const key = scopeOfRecord(adr)
-    commitList(key, removeAdr(owningList(key), adr.id))
-    setDeleting(undefined)
-    if (selectedId === adr.id) setSelectedId(undefined)
-  }
-
-  const followElement = props.onOpenElement
-    ? (elementId: string) => { onClose(); props.onOpenElement?.(elementId) }
-    : undefined
-
-  // --- the tree --------------------------------------------------------------------
-
-  const count = (key: ScopeKey) => scopedList(key).length
-  const fromAbove = selected ? ancestorAt(scopeOfRecord(selected)) : undefined
+  const written = writing ? projectDecisions.find((adr) => adr.id === writing.id) : undefined
+  // A record locked while it is written, by somebody else: there is nothing left to type into.
+  const stillWriting = written !== undefined && !readOnly && !isAdrLocked(written)
+  const onlyAbout = view.filters.about?.length === 1 ? view.filters.about[0] : undefined
+  const { superseding, deleting } = changes
 
   return (
-    <PageDialog open={open} topInset={chrome.topInset} onClose={onClose} aria-label={s('adr.title')}>
+    <PageDialog open={open} topInset={0} onClose={onClose} aria-label={s('adr.title')}>
       <LanguageProvider language={props.language}>
-        <AdrTopBar
-          bar={bar} crumbs={props.crumbs} names={[groupName, model.name]} readOnly={readOnly} s={s}
-          onClose={onClose} onNew={() => setCreating(true)}
+        {allRecords.length === 0
+          ? (
+            <PageState
+              state="empty"
+              title={s('adr.emptyTitle', { scope: model.name || s('adr.scopeThis') })}
+              body={s('adr.emptyBody')}
+              {...(readOnly ? {} : { action: { label: s('adr.new'), onPress: () => setCreating(true), dataGuide: 'decisions.new' } })}
+            />
+          )
+          : (
+            <div className="adr-page">
+              <div className="adr-page__inner">
+                <header className="adr-page__head">
+                  <h1>{s('adr.title')}</h1>
+                  {!readOnly && <Button variant="primary" onClick={() => setCreating(true)} data-guide="decisions.new">{s('adr.new')}</Button>}
+                </header>
+                <FilterWords
+                  find={view.find}
+                  onFind={(find) => setView((was) => ({ ...was, find }))}
+                  findLabel={s('adr.searchPlaceholder')}
+                  fields={[aboutFilter]}
+                  filters={view.filters}
+                  onFilters={(filters) => setView((was) => ({ ...was, filters }))}
+                  dataGuide="decisions.filter"
+                />
+                <div data-testid="adr-list">
+                  <List
+                    key={folds.join()}
+                    label={s('adr.title')}
+                    groups={groups}
+                    selectedId={selectedId}
+                    onOpen={setSelectedId}
+                    defaultFolded={folds}
+                    empty={<p className="adr-note">{finding ? s('adr.searchEmpty', { query: view.find.trim() }) : s('adr.listEmpty')}</p>}
+                    dataGuide="decisions.list"
+                    rowGuide="decisions.row"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+        <OpenRecord
+          selected={selected}
+          above={selected ? aboveOf(selected) : undefined}
+          ids={ids}
+          listOf={listOf}
+          subjects={subjects}
+          changes={changes}
+          onWrite={(id, at) => setWriting({ id, ...(at ? { at } : {}) })}
+          onSelect={setSelectedId}
+          page={props}
         />
 
-        {/* ---- three columns ---- */}
-        <Box ref={columns} sx={{ display: 'grid', gridTemplateColumns: `${treeWidth}px auto ${listWidth}px auto minmax(0, 1fr)`, flex: 1, minHeight: 0, ...ring }}>
-          <AdrTree
-            modelName={model.name} subjects={subjects} orphanIds={orphanIds} ancestors={ancestors}
-            selected={trimmed ? undefined : scope} count={count} onChoose={chooseScope} s={s}
+        {stillWriting && (
+          <AdrWriting
+            key={written.id}
+            adr={written}
+            list={projectDecisions}
+            {...(writing?.at ? { at: writing.at } : {})}
+            s={s}
+            language={props.language}
+            today={today}
+            elements={model.elements}
+            renderMarkdown={props.renderMarkdown}
+            {...(props.onAddImage ? { onAddImage: props.onAddImage } : {})}
+            {...(props.images ? { images: props.images } : {})}
+            windowChrome={props.windowChrome ?? NO_WINDOW_CHROME}
+            onSave={(patch) => { changes.update(written, patch); setWriting(undefined) }}
+            onCancel={() => setWriting(undefined)}
           />
-          <SeamResizer orientation="vertical" region="before" value={treeWidth} min={160} max={480} defaultValue={240} onChange={setTreeWidth} label={s('common.resizeColumn')} />
+        )}
 
-          <AdrRecordList
-            query={query} onQuery={setQuery} shown={shown} selectedId={selectedId}
-            describe={(adr, where) => [trimmed ? scopeLabel(where) : undefined, day(adr.date)].filter(Boolean).join(' · ')}
-            empty={trimmed ? s('adr.searchEmpty', { query: trimmed }) : s('adr.listEmpty')}
-            onChoose={chooseRecord} s={s}
-          />
-          <SeamResizer orientation="vertical" region="before" value={listWidth} min={220} max={640} defaultValue={320} onChange={setListWidth} label={s('common.resizeColumn')} />
-
-          {/* the record */}
-          <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            {/* Read here, edited where it lives (ADR-0012 §7) — the same
-                sentence a stand-in's inspector says about a field another
-                scope answers for, and the same way out. */}
-            {selected && fromAbove && (
-              <FromAboveBanner
-                scopeName={scopeLabel(scopeOfRecord(selected))} s={s}
-                onOpen={onOpenScope ? () => { onClose(); onOpenScope(fromAbove.path, selected.id) } : undefined}
-              />
-            )}
-            {selected ? (
-              <AdrReader
-                key={selected.id}
-                adr={selected} {...keptIn(fromAbove)}
-                list={owningList(scopeOfRecord(selected))}
-                readOnly={lockedAt(scopeOfRecord(selected))}
-                s={s}
-                language={props.language}
-                today={today}
-                elements={fromAbove ? [] : model.elements}
-                renderMarkdown={props.renderMarkdown}
-                onAddImage={lockedAt(scopeOfRecord(selected)) ? undefined : props.onAddImage}
-                images={props.images} onCopyLink={props.onCopyLink}
-                onUpdate={(patch) => update(selected, patch)}
-                onStatus={(next) => move(selected, next)}
-                onDelete={() => setDeleting(selected)}
-                // An ancestor's records are files in another scope's folder,
-                // which this scope's history does not cover; only this scope's
-                // own have one to show from here.
-                onHistory={props.onOpenHistory && !fromAbove
-                  ? () => props.onOpenHistory?.(selected.id)
-                  : undefined}
-                onSelect={(id) => {
-                  const target = allRecords.find((a) => a.id === id)
-                  if (target) chooseRecord(target, scopeOfRecord(target))
-                }}
-                onElementLink={followElement}
-                plans={props.onOpenPlan && !fromAbove
-                  ? { list: model.transitions ?? [], onOpen: (id) => { onClose(); props.onOpenPlan?.(id) } }
-                  : undefined}
-                // Derived, as the plans are: the solution names its record,
-                // and the record reads the name back (ADR-0026).
-                solutions={props.onOpenSolution && !fromAbove
-                  ? { list: model.solutions ?? [], onOpen: (id) => { onClose(); props.onOpenSolution?.(id) } }
-                  : undefined}
-              />
-            ) : (
-              <Box sx={{ p: 5, color: 'text.secondary' }}>
-                <Typography>{s('adr.noneSelected')}</Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-
-        <NewAdrDialog open={creating} onCancel={() => setCreating(false)} onCreate={create} s={s} />
+        <NewAdrDialog
+          open={creating}
+          subjects={[{ value: ABOUT_THE_SCOPE, label: s('adr.aboutScope') }, ...subjects.map((one) => ({ value: one.id, label: one.name }))]}
+          {...(onlyAbout ? { about: onlyAbout } : {})}
+          onCancel={() => setCreating(false)}
+          onCreate={create}
+          s={s}
+        />
         <SupersedeDialog
           target={superseding}
-          candidates={superseding
-            ? owningList(scopeOfRecord(superseding)).filter((a) => a.id !== superseding.id && a.status === 'accepted')
-            : []}
-          onCancel={() => setSuperseding(undefined)}
-          onConfirm={(id) => superseding && supersede(superseding, id)}
+          candidates={superseding ? listOf(superseding).filter((a) => a.id !== superseding.id && a.status === 'accepted') : []}
+          onCancel={() => changes.setSuperseding(undefined)}
+          onConfirm={(id) => { if (superseding) changes.supersede(superseding, id) }}
           s={s}
         />
         <MoveDialogs
-          accepting={accepting} rejecting={rejecting} listOf={(adr) => owningList(scopeOfRecord(adr))} s={s}
-          onAccept={accept} onReject={reject}
-          onCancel={() => { setAccepting(undefined); setRejecting(undefined) }}
+          accepting={changes.accepting} rejecting={changes.rejecting} listOf={listOf} s={s}
+          onAccept={changes.accept} onReject={changes.reject}
+          onCancel={changes.cancelMove}
         />
-        <ConfirmDialog
-          open={Boolean(deleting)}
-          // The number and the title: a person confirming a delete should not
-          // have to remember which record ADR-0007 was.
-          title={deleting ? s('adr.deleteTitle', { name: `${formatAdrNumber(deleting.number)} ${deleting.title}` }) : ''}
-          body={s('adr.deleteBody')}
-          confirmLabel={s('adr.delete')}
-          cancelLabel={s('common.cancel')}
-          onCancel={() => setDeleting(undefined)}
-          onConfirm={() => deleting && remove(deleting)}
+        <DeleteDialog
+          target={deleting}
+          onCancel={() => changes.setDeleting(undefined)}
+          onConfirm={() => {
+            if (!deleting) return
+            changes.remove(deleting)
+            if (selectedId === deleting.id) setSelectedId(null)
+          }}
+          s={s}
         />
       </LanguageProvider>
     </PageDialog>

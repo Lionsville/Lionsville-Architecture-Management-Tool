@@ -69,7 +69,8 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 3_100_000, total: 10_160_000 }
+// 10.26 MB: the decisions page's own 0.10 MB (its reader and writing window on the kit) on top of what the areas before it took.
+export const WEB_BUDGET: Budget = { file: 3_100_000, total: 10_260_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

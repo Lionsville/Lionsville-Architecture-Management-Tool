@@ -97,4 +97,6 @@ export interface WorkspaceParts {
   today: () => string
   /** The window's chrome with the bar's measured height as the pages' top inset. */
   pageChrome: WindowChrome
+  /** The window's own chrome, for what covers the rows and takes over their duties to it. */
+  windowChrome: WindowChrome
 }

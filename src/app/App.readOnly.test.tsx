@@ -158,7 +158,7 @@ describe.each(ways)('on %s', (_name, way) => {
   it('offers no new decision', async () => {
     await open()
     fireEvent.click(await screen.findByText('Decisions'))
-    await screen.findByTestId('adr-tree')
+    await waitFor(() => expect(document.querySelector('[data-place-page], [role="dialog"]')).not.toBeNull())
     expect(screen.queryByText(/New decision/)).toBeNull()
   })
 

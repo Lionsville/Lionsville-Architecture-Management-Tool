@@ -140,6 +140,15 @@ offered to whoever may write while the lens differs from what the view keeps, is
 one write, as `diagram.update` with `colourBy`. A lens back on what the view keeps
 stops being the reader's. The agent's `diagram.update` still sets it directly.
 
+As built on the screens, the same day: the band names the day and says who sees it,
+with **Back to today** or back to the view's own day and **Make this the view's day**,
+which is the one write and has moved there from the control. Undo is off during a look,
+and the band says so. An edge runs round the canvas (`data-look-edge`). The look is in
+the address as `?day=` (`Destination.day`, a date or `today`), so a link and `app.open`
+reach it; changing it replaces the entry, so Back does not walk through the days looked
+at. A container diagram opened from a board takes that board's day along, and its way
+back goes to that board (`useCarriedDay`).
+
 ### Consequences of the amendment
 
 * Good: *read-only* now means it, and the band a screen draws for a look is true.

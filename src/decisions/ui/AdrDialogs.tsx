@@ -2,60 +2,55 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The questions the decisions page asks in a dialog: what a new record is
- * called, which record replaces one being superseded, and why one is
- * rejected or withdrawn.
+ * The questions the decisions page asks in a dialog: what a new record is called
+ * and what it is about, which record replaces one being superseded, why one is
+ * rejected or withdrawn, whether to accept one, and whether to delete one.
  *
- * Each says what it wants and lets the page perform it — the page owns the
- * lists, the numbering and the date.
+ * Each says what it wants and lets the page perform it: the page owns the lists,
+ * the numbering and the date. The title says the act, the body the effect, the
+ * button the outcome.
  */
 import { useEffect, useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
-import Button from '@mui/material/Button'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import type { SelectOption } from '../../widgets/kit/Field'
 import type { Translate } from '../../i18n'
-import { formatAdrNumber } from '../adr'
+import { adrFieldItems, formatAdrNumber } from '../adr'
 import type { Adr } from '../adr'
+import { ABOUT_THE_SCOPE } from '../adrList'
 
 export type NewAdrDialogProps = {
   open: boolean
+  /** What a record may be about, this scope first. */
+  subjects: readonly SelectOption[]
+  /** Where it lands unless somebody says otherwise: the filter that is on. */
+  about?: string
   onCancel: () => void
-  onCreate: (title: string) => void
+  onCreate: (title: string, about: string) => void
   s: Translate
 }
 
-export function NewAdrDialog({ open, onCancel, onCreate, s }: NewAdrDialogProps) {
+export function NewAdrDialog({ open, subjects, about = ABOUT_THE_SCOPE, onCancel, onCreate, s }: NewAdrDialogProps) {
   const [title, setTitle] = useState('')
-  useEffect(() => { if (open) setTitle('') }, [open])
+  const [chosen, setChosen] = useState(about)
+  useEffect(() => { if (open) { setTitle(''); setChosen(about) } }, [open, about])
   const ready = title.trim().length > 0
-  const submit = () => { if (ready) onCreate(title.trim()) }
-
   return (
-    <FieldsDialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('adr.new')}</DialogTitle>
-      <DialogContent>
-        <TextField
-          autoFocus
-          fullWidth
-          label={s('adr.newTitleField')}
-          helperText={s('adr.newTitleHelp')}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
-          sx={{ mt: 1 }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={submit}>{s('adr.create')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open={open} size="m" title={s('adr.new')} onClose={onCancel}
+      onSubmit={() => { if (ready) onCreate(title.trim(), chosen) }}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={!ready}>{s('adr.create')}</Button>
+        </>
+      )}
+    >
+      <TextField autoFocus label={s('adr.newTitleField')} hint={s('adr.newTitleHelp')} value={title} onChange={setTitle} />
+      <SelectField label={s('adr.aboutField')} hint={s('adr.aboutHelp')} value={chosen} options={subjects} onChange={setChosen} />
+    </Dialog>
   )
 }
 
@@ -82,37 +77,26 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
   // the picker does not show.
   useFreshFor(target, (one) => one.id, () => setSuccessor(''))
   const chosen = candidates.some((adr) => adr.id === successor) ? successor : candidates[0]?.id ?? ''
-
   return (
-    <FieldsDialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('adr.supersedeTitle')}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 14, mb: 2 }}>{s('adr.supersedeBody')}</DialogContentText>
-        {candidates.length === 0 ? (
-          <DialogContentText sx={{ fontSize: 13 }}>{s('adr.noSuccessor')}</DialogContentText>
-        ) : (
-          <TextField
-            select
-            fullWidth
-            label={s('adr.successor')}
-            value={chosen}
-            onChange={(event) => setSuccessor(event.target.value)}
-          >
-            {candidates.map((adr) => (
-              <MenuItem key={adr.id} value={adr.id}>
-                {formatAdrNumber(adr.number)} · {adr.title}
-              </MenuItem>
-            ))}
-          </TextField>
+    <Dialog
+      open={Boolean(target)} size="m" title={s('adr.supersedeTitle')} onClose={onCancel}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="primary" disabled={!chosen} onClick={() => onConfirm(chosen)}>{s('adr.supersedeConfirm')}</Button>
+        </>
+      )}
+    >
+      <p>{s('adr.supersedeBody')}</p>
+      {candidates.length === 0
+        ? <p>{s('adr.noSuccessor')}</p>
+        : (
+          <SelectField
+            label={s('adr.successor')} value={chosen} onChange={setSuccessor}
+            options={candidates.map((adr) => ({ value: adr.id, label: `${formatAdrNumber(adr.number)} · ${adr.title}` }))}
+          />
         )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!chosen} onClick={() => onConfirm(chosen)}>
-          {s('adr.statusSuperseded')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    </Dialog>
   )
 }
 
@@ -137,29 +121,80 @@ export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, 
   useFreshFor(target, (one) => one.id, () => setReason(''))
   const ready = !required || reason.trim().length > 0
   const name = target ? `${formatAdrNumber(target.number)} ${target.title}` : ''
-
   return (
-    <FieldsDialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s(withdraw ? 'adr.withdrawTitle' : 'adr.rejectTitle', { name })}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 14, mb: 2 }}>{s(withdraw ? 'adr.withdrawBody' : 'adr.rejectBody')}</DialogContentText>
-        <TextField
-          autoFocus
-          fullWidth
-          multiline
-          minRows={2}
-          required={required}
-          label={s('adr.reasonField')}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" color="error" disabled={!ready} onClick={() => onConfirm(reason.trim())}>
-          {s(withdraw ? 'adr.withdraw' : 'adr.reject')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open={Boolean(target)} size="m" title={s(withdraw ? 'adr.withdrawTitle' : 'adr.rejectTitle', { name })} onClose={onCancel}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="danger" disabled={!ready} onClick={() => onConfirm(reason.trim())}>{s(withdraw ? 'adr.withdraw' : 'adr.reject')}</Button>
+        </>
+      )}
+    >
+      <p>{s(withdraw ? 'adr.withdrawBody' : 'adr.rejectBody')}</p>
+      <TextField autoFocus rows={3} required={required} label={s('adr.reasonField')} value={reason} onChange={setReason} />
+    </Dialog>
+  )
+}
+
+/**
+ * Acceptance confirms, naming what it supersedes on the way; rejection and
+ * withdrawal ask why (ADR-0008, amended 28 September 2026). A reason is
+ * required unless a reviewer's rejection already gives one.
+ */
+export function MoveDialogs({ accepting, rejecting, listOf, onAccept, onReject, onCancel, s }: {
+  accepting?: Adr
+  rejecting?: Adr
+  /** The list a record sits in, where what it supersedes is found. */
+  listOf: (adr: Adr) => readonly Adr[]
+  onAccept: (adr: Adr) => void
+  onReject: (adr: Adr, reason: string) => void
+  onCancel: () => void
+  s: Translate
+}) {
+  const replaced = (adr: Adr) => (adr.supersedes ?? [])
+    .map((id) => listOf(adr).find((one) => one.id === id))
+    .filter((one): one is Adr => one !== undefined && one.status === 'accepted')
+    .map((one) => formatAdrNumber(one.number))
+  const replacing = accepting ? replaced(accepting) : []
+  return (
+    <>
+      <Dialog
+        open={Boolean(accepting)} title={accepting ? s('adr.acceptTitle', { name: formatAdrNumber(accepting.number) }) : ''} onClose={onCancel}
+        actions={(
+          <>
+            <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+            <Button variant="primary" onClick={() => { if (accepting) onAccept(accepting) }}>{s('adr.accept')}</Button>
+          </>
+        )}
+      >
+        <p>{s('adr.acceptBody')}{replacing.length > 0 && ` ${s('adr.acceptSupersedes', { names: replacing.join(', ') })}`}</p>
+      </Dialog>
+      <ReasonDialog
+        target={rejecting}
+        withdraw={rejecting?.status === 'proposed'}
+        required={rejecting ? !adrFieldItems(rejecting, 'rejected', listOf(rejecting)).every((one) => one.ok) : true}
+        onCancel={onCancel}
+        onConfirm={(reason) => { if (rejecting) onReject(rejecting, reason) }}
+        s={s}
+      />
+    </>
+  )
+}
+
+/** The number and the title: a person confirming a delete should not have to remember which record ADR-0007 was. */
+export function DeleteDialog({ target, onCancel, onConfirm, s }: { target?: Adr; onCancel: () => void; onConfirm: () => void; s: Translate }) {
+  return (
+    <Dialog
+      open={Boolean(target)} title={target ? s('adr.deleteTitle', { name: `${formatAdrNumber(target.number)} ${target.title}` }) : ''} onClose={onCancel}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="danger" onClick={onConfirm}>{s('adr.delete')}</Button>
+        </>
+      )}
+    >
+      <p>{s('adr.deleteBody')}</p>
+    </Dialog>
   )
 }

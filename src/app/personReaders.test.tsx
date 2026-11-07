@@ -177,11 +177,13 @@ describe('who proposed and who signed a decision', () => {
   it('shows a forgotten signer\'s and proposer\'s kept names alone where the record is still written, never their pseudonyms', async () => {
     const open: Partial<Adr> = { status: 'reviewing', signers: [decision.signers[0]] }
     const view = renderShell(page(BEFORE, open))
-    expect((await screen.findByTestId('adr-signer-0-picked')).textContent).toBe('Kim Bakker')
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
+    const writing = () => within(screen.getAllByTestId('adr-signers').at(-1)!)
+    expect((await writing().findByTestId('adr-signer-0-picked')).textContent).toBe('Kim Bakker')
     view.rerender(page(AFTER, open))
     expect(screen.queryByTestId('adr-signer-0-picked')).toBeNull()
-    expect(screen.getByTestId('adr-signer-0').textContent).toBe('Kim Bakker')
-    expect(screen.getByTestId('adr-proposed-by').textContent).toBe('Eva Lind')
+    expect(writing().getByTestId('adr-signer-0').textContent).toBe('Kim Bakker')
+    expect(screen.getAllByTestId('adr-proposed-by').at(-1)?.textContent).toBe('Eva Lind')
     const shown = document.body.textContent ?? ''
     expect(shown).not.toContain('GHJK')
     expect(shown).not.toContain('BCDF')
@@ -194,9 +196,10 @@ describe('who proposed and who signed a decision', () => {
         model={{ name: 'Orders', elements: [], relations: [], diagrams: [], decisions: [{ ...decision, status: 'reviewing', proposedAs: undefined, signers: [{ name: { person: 'pe-kim' } }] }] }}
         makeId={(prefix) => `${prefix}-1`} today={() => '2026-10-11'} renderMarkdown={(md) => <MarkdownView markdown={md} />} initialAdrId="ad-1" />
     )))
-    const table = await screen.findByTestId('adr-signers')
-    fireEvent.mouseDown(within(table).getByRole('combobox', { name: 'Verdict' }))
-    fireEvent.click(screen.getByRole('option', { name: 'Approved' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
+    const table = screen.getAllByTestId('adr-signers').at(-1)!
+    fireEvent.change(within(table).getByRole('combobox', { name: 'Verdict' }), { target: { value: 'approved' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     const [next] = changed.mock.calls.at(-1)! as [Adr[]]
     expect(next[0].signers[0]).toMatchObject({ name: { person: 'pe-kim' }, verdict: 'approved', signedAs: 'Kim Bakker' })
     expect(next[0].proposedAs).toBe('Eva Lind')

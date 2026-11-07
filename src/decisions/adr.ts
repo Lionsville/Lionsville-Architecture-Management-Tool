@@ -221,6 +221,15 @@ function sectionFor(sections: readonly Section[], names: readonly string[]): Sec
   )))
 }
 
+/** Which line of the gate a heading's section answers, by the gate's own rule: what a page that links a line to its section asks. */
+export function adrGateSection(heading: string): AdrGateItem | undefined {
+  const sections = [{ heading: plain(heading), lines: [] }]
+  if (sectionFor(sections, HEADINGS.context)) return 'context'
+  if (sectionFor(sections, HEADINGS.options)) return 'options'
+  if (sectionFor(sections, HEADINGS.outcome)) return 'outcome'
+  return sectionFor(sections, HEADINGS.consequences) ? 'consequence' : undefined
+}
+
 const BULLET = /^\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?(.*)$/
 
 function bulletsOf(section: Section | undefined): string[] {

@@ -228,15 +228,6 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         model={session.model}
         groupName={groupName}
         ancestors={ancestors}
-        crumbs={(
-          <Crumbs
-            crumbs={crumbs}
-            current={session.model.name}
-            currentPath={props.project.path}
-            onGoHome={(path) => { pages.closeDecisions(); onGoHome(path) }}
-            s={s}
-          />
-        )}
         {...(onOpenScope
           // On the record, as the observations page opens on its own: the scope
           // above may draw nothing, and a scope with no views opened on no page
@@ -260,7 +251,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         onOpenPlan={plans.openPlan}
         {...(onShareLink ? { onCopyLink: (id: string) => onShareLink({ scope, page: 'decisions', id }) } : {})}
         onOpenSolution={(solutionId) => { pages.closeDecisions(); pages.openObservations(solutionId) }}
-        windowChrome={pageChrome}
+        windowChrome={parts.windowChrome}
       />
       <ObservationsPage
         open={pages.obsPage.open}

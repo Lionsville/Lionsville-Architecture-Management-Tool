@@ -1258,44 +1258,52 @@ meer is, zegt dat.
 
 ## Besluiten
 
-**Besluiten** in de bovenbalk opent de architectuurbesluiten (ADR's): een boom
-links, de besluiten van het gekozen knooppunt in het midden, en het besluit dat
-u leest rechts.
+**Besluiten** in de bovenste balk opent de architectuurbesluiten: één lijst, onder
+drie woorden. **Nog open** is wat is voorgesteld of in beoordeling is, **Van
+kracht** wat is aanvaard, en **Beëindigd** wat is afgewezen of vervangen. Een rij is
+het nummer en de titel; kies er een en die opent groot boven de lijst, en Esc gaat
+terug naar de rij.
 
-De besluiten van dit onderdeel zijn **één lijst**. Een besluit hoort óf bij het
-onderdeel als geheel, óf het gaat over één ding erin — een applicatie, een
-capability, een stap in een klantreis — en de boom heeft een knooppunt voor elk
-ding met besluiten, met elke applicatie erbij, of ze er nu al heeft of niet. Iets
-dat uit het model is verdwenen houdt zijn besluiten onder *Verwijderde
-applicaties*.
+De besluiten van dit bereik zijn **één lijst**. Een besluit hoort bij het bereik als
+geheel, of gaat over één ding erin: een applicatie, een capability, een stap in een
+klantreis. **Filter** versmalt de lijst op waar een besluit over gaat: dit bereik als
+geheel, de applicaties met besluiten, elke andere applicatie, en onder *Verwijderde
+applicaties* wat uit het model is verdwenen en zijn besluiten houdt.
 
-Daaronder komen de onderdelen **erboven**, elk als een eigen kopje: *Van Acme
-Logistics*, *Van Retail*. Hun besluiten worden hier gelezen en **gewijzigd waar
-ze thuishoren** — de lezer toont ze zonder knop om te bewerken en biedt aan dat
-onderdeel te openen. De nummering is per onderdeel, dus ADR-0001 van het domein
-en ADR-0001 van het landschap zijn twee besluiten, en dat waren ze altijd al.
+Onderaan de lijst staan de bereiken **boven** dit bereik, elk ingevouwen: *Van Acme
+Logistics*, *Van Retail*. Hun besluiten worden hier gelezen en **gewijzigd waar ze
+wonen**: het besluit biedt geen manier om het te schrijven, en biedt aan dat bereik te
+openen. Nummers gelden per bereik, dus ADR-0001 van het domein en ADR-0001 van het
+landschap zijn twee besluiten.
 
-Een besluit volgt het MADR-formaat: context en probleemstelling,
-beslisfactoren, de overwogen opties, de uitkomst en haar gevolgen, de voor- en
-nadelen van elke optie, meer informatie. **Nieuw besluit** vraagt de titel en
-begint de tekst vanuit dat sjabloon. Titel, status, datum en besluitnemers zijn
-velden boven de tekst; de tabel **beoordelaars en ondertekening** onderaan
-noemt aan wie het besluit is voorgelegd, elk met een oordeel en de dag waarop
-het gegeven is.
+Een besluit volgt het MADR-formaat: context en probleemstelling, beslisfactoren, de
+overwogen opties, de uitkomst en de gevolgen, de voor- en nadelen per optie, meer
+informatie. **Nieuw besluit** vraagt de titel en waar het over gaat, begint de tekst
+met dat sjabloon en opent klaar om te schrijven. **Tekst bewerken** is een volledig
+venster: een vak per sectie, met markdown erin en de hulp eronder, en **Bron** voor de
+hele tekst tegelijk, waar je een kop wijzigt. Het bevat ook wie het voorstelde, wat
+het vervangt en de **beoordelaars en handtekeningen**, elk met een oordeel en de dag
+waarop dat is gegeven. **Klaar** bewaart het als één stap, en **Annuleren** vraagt
+eerst als er iets is veranderd. Secties die nog niemand schreef, blijven weg als het
+besluit wordt gelezen.
 
-De status is een werkstroom, geen etiket. Een besluit begint als
-**voorgesteld**, gaat naar **in beoordeling** en wordt dan **aanvaard** of
-**afgewezen**. Die twee zijn het eindpunt: daarna kan het besluit niet meer
-worden bewerkt of verwijderd, want een besluit dat achteraf herschreven kan
-worden is geen vastlegging. Een aanvaard besluit kan later **vervangen**
-worden; dat vraagt welk besluit het vervangt en toont de verwijzing in beide
-richtingen. Een beoordeling kan terug naar voorgesteld.
+De status is een werkwijze en geen label, en het besluit laat bovenaan zien waar het
+staat, met één zin onder de titel. Een besluit begint **voorgesteld** en wordt ter
+beoordeling gestuurd; **in beoordeling** wordt het aanvaard of afgewezen. Daar houdt
+het op: daarna kan het besluit niet meer worden bewerkt of verwijderd, want een besluit
+dat achteraf kan worden herschreven is er geen verslag van. Een aanvaard besluit kan
+later onder ⋯ **als vervangen worden gemarkeerd**, wat vraagt welk besluit het vervangt
+en de koppeling beide kanten op toont. Een beoordeling kan terug naar voorgesteld en
+een voorstel kan worden ingetrokken, ook allebei onder ⋯.
 
-Het zoekveld boven de lijst doorzoekt alle besluiten in de boom tegelijk —
-titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
-`[[Naam]]`-verwijzingen als documentatie; **Hulp bij opmaak** naast de bron
-toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met dit
-onderdeel bewaard.
+**Wat aanvaarding vraagt** staat vanaf het eerste ontwerp naast het besluit, met
+uitgeschreven waar elke regel naar kijkt. Een open regel gaat naar de plek die hem
+beantwoordt, en de knop zegt hoeveel er nog open staan.
+
+Het zoekveld boven de lijst doorzoekt alle besluiten tegelijk: titel, tekst en
+beoordelaars, van dit bereik en die erboven. De tekst is markdown, met dezelfde
+`[[Naam]]`-koppelingen als de documentatie, en mermaid-diagrammen. Wijzigingen worden
+met dit bereik bewaard.
 
 ## Waarnemingen
 
@@ -1680,19 +1688,24 @@ beide uiteinden bestaan. De lijnen die er wél een nodig hebben zijn de tijdelij
 — een sync, een routeringsfaçade, een dubbele schrijfactie — en dat is precies de
 hybride fase van een vervanging.
 
-**Toont** op de diagrambalk zegt welke dag het bord tekent. Er staat *Vandaag*
-tot u een dag kiest; daarna staat die dag er, opgelicht, zodat een bord met 2028
-er niet uitziet als een bord van nu. Elke kaart tekent de fase waarin zij op die
-dag verkeert, en een lijn met een venster verschijnt alleen daarbinnen. Een dag
-kiezen verandert alleen wat uw venster toont: er wordt niets opgeslagen, niemand
-anders ziet het, en een gestippelde rand om de knop zegt dat. Zolang u naar een
-dag kijkt die niet die van het bord zelf is, is het bord alleen-lezen: het palet en
-de velden zijn weg, en **Terug naar…** brengt ze terug. Een bord dat op zijn dag is
-opgeslagen blijft op die dag bewerkbaar, en wie een rol heeft kan nog op de bekeken
-dag worden gewijzigd. Wilt u dat het bord
-voor iedereen op die dag opent, kies dan **Opslaan** onder de datum — dat is wel
-een bewerking, één regel in Activiteit, en ⌘Z draait hem terug. **Toon vandaag**
-en dan **Opslaan** zet een gedateerd bord weer op de kalender.
+**Dag** op de balk van de weergave zegt welke dag het bord tekent. Op vandaag zegt het
+niets bijzonders, en het biedt de dagen die de moeite waard zijn: wat een plan op een dag
+heeft, wanneer iets live gaat of verdwijnt, op welke dag een bord is bewaard, en elke andere
+via *Kies een dag…*. Een dag wordt getekend uit het model van vandaag met zijn datums: elke
+kaart tekent de fase waarin hij op die dag is, en een lijn met een venster verschijnt
+alleen daarbinnen. Open **Geschiedenis…** om te zien wat er op een dag echt is bewaard.
+
+Naar een andere dag kijken is een toestand van het hele venster: een band noemt de dag, er
+loopt een rand om het canvas, en het bord is alleen-lezen: het palet en de velden zijn
+weggeborgen en ongedaan maken staat uit. Het is alleen op jouw scherm, niemand anders ziet
+het, en het adres draagt het (`?day=2027-06-01`), dus een koppeling opent dezelfde blik.
+**Terug naar vandaag**, of **Terug naar** de eigen dag van het bord, is één druk. **Maak dit
+de dag van de weergave** in de band is de bewuste stap: één bewerking, één regel in
+Activiteit, en ⌘Z neemt hem terug. Het werkt ook voor vandaag, wat een gedateerd bord terug
+op de kalender zet. Een bord dat op zijn dag is bewaard, zegt die dag op zijn tabblad en
+blijft daarop bewerkbaar, en wie een rol heeft, kan nog worden gewijzigd op de dag waar je
+naar kijkt. Een containerdiagram dat vanaf een bord wordt geopend, neemt de dag van dat
+bord mee, en de weg terug gaat naar dat bord.
 
 Zo maakt u een toekomstig diagram. Klik met rechts op een tab, kies **Dupliceren
 per datum…**, kies een dag, en u heeft een tweede bord van hetzelfde landschap
@@ -2475,7 +2488,7 @@ De onderdelen van een eenheid, in die volgorde:
 
 De onderdelen lezen de dag waarop het bord ernaast wordt bekeken. Op een bord
 dat een andere dag toont — zijn eigen opgeslagen dag, of een dag gekozen onder
-**Toont** of met de schuifregelaar van de roadmap — zegt de inspector *Zoals
+**Dag** of met de schuifregelaar van de roadmap — zegt de inspector *Zoals
 op* die dag, en wie de rollen vervult, wie haar aanstuurt en de controles zijn
 die van die dag, de verplaatsingen van plannen op die dag inbegrepen. Wat je
 van daaruit toewijst of beëindigt, begint op die dag als die nog moet komen.
