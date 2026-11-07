@@ -209,6 +209,10 @@ export const EN = {
   'shell.drawingElements': 'Elements',
   /** An export that was not a picture, or bytes that could not be kept. */
   'shell.drawingSaveFailed': 'The drawing could not be saved.',
+  /** A file exported from the editor, once it is where the person said. */
+  'shell.drawingExported': '{name} saved.',
+  /** What the frame sent was not a file this side knows how to save. */
+  'shell.drawingExportFailed': 'The editor sent no file that could be saved.',
   /** A shape on the picture that points at an element: what the area is called. */
   'shell.drawingOpenElement': 'Open {name}',
   'shell.add': 'Add',

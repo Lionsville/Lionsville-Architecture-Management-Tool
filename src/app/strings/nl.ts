@@ -116,6 +116,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.drawingEditorUnavailable': 'De editor is niet beschikbaar',
   'shell.drawingElements': 'Elementen',
   'shell.drawingSaveFailed': 'De tekening kon niet worden bewaard.',
+  'shell.drawingExported': '{name} bewaard.',
+  'shell.drawingExportFailed': 'De editor stuurde geen bestand dat bewaard kon worden.',
   'shell.drawingOpenElement': '{name} openen',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',

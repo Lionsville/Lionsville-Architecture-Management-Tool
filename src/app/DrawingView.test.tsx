@@ -14,6 +14,8 @@ import { drawingPage } from './WorkspaceEditor'
 afterEach(() => cleanup())
 
 const s = translator('en')
+const files = { save: () => Promise.resolve() }
+const trail = { report: () => {} }
 
 const drawing = (picture?: string): DesignDiagram => ({
   id: 'ctx', kind: 'drawing', name: 'Context', members: [],
@@ -51,7 +53,7 @@ describe('DrawingView', () => {
     renderShell(
       <DrawingView
         diagram={drawing('sha256:aa')} scope="acme" images={images} readOnly
-        origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+        origin={() => 'drawing://local'} dispatch={vi.fn()} documents={files} diagnostics={trail} notify={vi.fn()} s={s}
       />,
     )
     expect(await screen.findByTestId('drawing-picture')).toBeTruthy()
@@ -76,7 +78,7 @@ describe('saving a drawing', () => {
     renderShell(
       <DrawingView
         diagram={drawing()} scope="acme" images={images}
-        origin={() => 'drawing://local'} dispatch={dispatch} notify={vi.fn()} s={s}
+        origin={() => 'drawing://local'} dispatch={dispatch} documents={files} diagnostics={trail} notify={vi.fn()} s={s}
       />,
     )
     fireEvent.click(screen.getByTestId('drawing-edit'))
@@ -85,7 +87,7 @@ describe('saving a drawing', () => {
     win.postMessage = (() => {}) as Window['postMessage']
     const hear = (data: unknown) => window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(data), source: win, origin: 'drawing://local' }))
     hear({ event: 'save', xml: '<mxGraphModel><root/></mxGraphModel>' })
-    hear({ event: 'export', format: 'svg', data: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg"/>')}` })
+    hear({ event: 'export', format: 'svg', message: { action: 'export', format: 'xmlsvg' }, data: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg"/>')}` })
     await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1))
     expect(images.connection.kept).toHaveLength(1)
   })
@@ -96,7 +98,7 @@ describe('the app\'s look, as its theme resolves it', () => {
   const view = () => (
     <DrawingView
       diagram={drawing('sha256:aa')} scope="acme" images={images}
-      origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+      origin={() => 'drawing://local'} dispatch={vi.fn()} documents={files} diagnostics={trail} notify={vi.fn()} s={s}
     />
   )
 
@@ -119,13 +121,18 @@ describe('one drawing per mount', () => {
         project: { id: 'acme', path: 'acme' },
         source: { repositories: { images: undefined } },
         shell: { drawingOrigin: () => 'drawing://local', language: 'en', notify: vi.fn(), s },
+        files: { documents: files },
+        host: { diagnostics: trail },
       },
       session: { model: { elements: [] }, dispatch: vi.fn() },
       show: vi.fn(),
     } as unknown as Parameters<typeof drawingPage>[0]
-    const one = drawingPage(parts, { ...drawing(), id: 'one' }, { readOnly: false }) as ReactElement
+    const one = drawingPage(parts, { ...drawing(), id: 'one' }, { readOnly: false }) as ReactElement<{ documents?: unknown; diagnostics?: unknown }>
     const other = drawingPage(parts, { ...drawing(), id: 'other' }, { readOnly: true }) as ReactElement<{ readOnly?: boolean }>
     expect(one.key).toBe('one')
+    // The editor's exports reach the device through the workspace's own channel.
+    expect(one.props.documents).toBe(files)
+    expect(one.props.diagnostics).toBe(trail)
     expect(other.key).toBe('other')
     expect(other.props.readOnly).toBe(true)
   })
@@ -135,7 +142,7 @@ describe('one drawing per mount', () => {
     const page = (id: string) => (
       <DrawingView
         key={id} diagram={{ ...drawing(), id }} scope="acme" images={images}
-        origin={() => 'drawing://local'} dispatch={vi.fn()} notify={vi.fn()} s={s}
+        origin={() => 'drawing://local'} dispatch={vi.fn()} documents={files} diagnostics={trail} notify={vi.fn()} s={s}
       />
     )
     const shown = renderShell(page('one'))

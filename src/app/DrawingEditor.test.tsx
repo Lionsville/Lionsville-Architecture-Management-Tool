@@ -16,8 +16,8 @@ import { renderShell } from './testing/renderShell'
 import { DrawingEditor } from './DrawingEditor'
 import type { DrawingKeeper } from './DrawingEditor'
 import {
-  drawingConfig, drawingFrameQuery, drawingFrameSrc, elementShapeXml, frameTarget, savedDrawing, savedXml, svgBytes,
-  withElementNames,
+  drawingConfig, drawingFrameQuery, drawingFrameSrc, DRAWING_FRAME_SANDBOX, elementShapeXml, exportedFile, exportRoute, frameEvent, frameTarget, loadMessage,
+  savedDrawing, savedXml, svgBytes, withElementNames,
 } from './drawingProtocol'
 
 afterEach(() => cleanup())
@@ -29,6 +29,12 @@ const XML = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
   + '<mxGeometry x="1" y="2" width="3" height="4" as="geometry"/></mxCell></UserObject></root></mxGraphModel>'
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg"/>'
 const ORIGIN = 'drawing://local'
+
+/** What draw.io's answer to this side's `xmlsvg` looks like: `svg`, with the request echoed. */
+const SAVE_ANSWER = { event: 'export', format: 'svg', message: { action: 'export', format: 'xmlsvg' } }
+/** A PNG's eight signature bytes, then a little, as the menu's export sends it. */
+const PNG = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2)
+const PNG_URI = `data:image/png;base64,${btoa(String.fromCharCode(...PNG))}`
 
 function dataUri(svg: string): string {
   return `data:image/svg+xml;base64,${btoa(svg)}`
@@ -93,6 +99,68 @@ describe('the frame query and the palette', () => {
     expect(data[0].xml).toBe(shape)
   })
 
+  it('keeps its sandbox, and its query, and takes what a sandbox cannot do off the menu', () => {
+    expect(DRAWING_FRAME_SANDBOX).toBe('allow-scripts allow-same-origin')
+    expect(drawingFrameQuery('en')).toContain('suppressNewWindows=1')
+    expect(drawingConfig([], 'Elements').hideMenuItems).toEqual(['exportPdf', 'exportUrl', 'exportHtml', 'embed'])
+  })
+
+  it('asks for a file to be posted here on every load, whatever it loads', () => {
+    expect(loadMessage(XML).exportProtocol).toBe(1)
+    expect(loadMessage(undefined, 'dark').exportProtocol).toBe(1)
+  })
+
+  it('tells an export by the request it answers: format says nothing, an answer to xmlsvg comes back as svg', () => {
+    expect(exportRoute(SAVE_ANSWER)).toBe('save')
+    expect(exportRoute({ event: 'export', format: 'xml', message: { action: 'export', format: 'xml' } })).toBe('reload')
+    for (const format of ['png', 'jpg', 'webp', 'gif', 'svg', 'xml', 'json']) {
+      expect(exportRoute({ event: 'export', format, filename: `.${format}`, data: 'x' })).toBe('file')
+    }
+    expect(exportRoute({ event: 'export', format: 'png', message: null })).toBe('file')
+    const heard = frameEvent(JSON.stringify({ event: 'export', format: 'png', filename: '.drawio.png', message: { format: 'xmlsvg' } }))
+    expect(heard?.filename).toBe('.drawio.png')
+    expect(heard?.message).toEqual({ format: 'xmlsvg' })
+  })
+
+  it('makes a file of each format the menu offers: the drawing\'s name, slugged, the right bytes or text', () => {
+    const png = exportedFile({ format: 'png', filename: '.drawio.png', data: PNG_URI }, 'Order flow — été')
+    expect(png).toMatchObject({ name: 'order-flow-ete.drawio.png', mediaType: 'image/png' })
+    expect(png?.bytes).toEqual(PNG)
+    const named = (format: string, filename: string, data: string) => {
+      const file = exportedFile({ format, filename, data }, 'Order flow')
+      return file && [file.name, file.mediaType, file.text ?? file.bytes?.length]
+    }
+    expect(named('jpg', '.jpg', 'data:image/jpeg;base64,/9j/')).toEqual(['order-flow.jpg', 'image/jpeg', 3])
+    expect(named('webp', '.webp', 'data:image/webp;base64,UklG')).toEqual(['order-flow.webp', 'image/webp', 3])
+    expect(named('gif', '.gif', 'data:image/gif;base64,R0lG')).toEqual(['order-flow.gif', 'image/gif', 3])
+    expect(named('svg', '.drawio.svg', SVG)).toEqual(['order-flow.drawio.svg', 'image/svg+xml', SVG])
+    expect(named('xml', '.drawio.xml', '<?xml?>')).toEqual(['order-flow.drawio.xml', 'text/xml', '<?xml?>'])
+    expect(named('json', '.json', '{}')).toEqual(['order-flow.json', 'application/json', '{}'])
+  })
+
+  it('says .drawio only of a file that holds the drawing, and takes nothing else from what the frame calls it', () => {
+    expect(exportedFile({ format: 'png', filename: '.png', data: PNG_URI }, 'A')?.name).toBe('a.png')
+    expect(exportedFile({ format: 'svg', filename: '.svg', data: SVG }, 'A')?.name).toBe('a.svg')
+    expect(exportedFile({ format: 'png', data: PNG_URI }, 'A')?.name).toBe('a.drawio.png')
+    expect(exportedFile({ format: 'png', filename: '../../evil.exe', data: PNG_URI }, 'A')?.name).toBe('a.png')
+  })
+
+  it('names a drawing whose name has no letter it can keep, and keeps one called element', () => {
+    expect(exportedFile({ format: 'png', filename: '.drawio.png', data: PNG_URI }, '図面')?.name).toBe('drawing.drawio.png')
+    expect(exportedFile({ format: 'png', filename: '.drawio.png', data: PNG_URI }, 'Element')?.name).toBe('element.drawio.png')
+  })
+
+  it('makes no file of a format it does not know, of nothing, or of what cannot be read', () => {
+    expect(exportedFile({ format: 'pdf', data: 'data:application/pdf;base64,JVBE' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'html', data: '<html/>' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'constructor', data: 'x' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'png' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'png', data: 'data:image/png;base64,' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'png', data: 'data:image/png;base64,%%%' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'png', data: 'not a data uri' }, 'A')).toBeUndefined()
+    expect(exportedFile({ format: 'svg', data: '' }, 'A')).toBeUndefined()
+  })
+
   it('keeps the XML the save named, and never a compressed one', () => {
     const compressed = '<mxfile><diagram id="p">tZZNc5sw</diagram></mxfile>'
     expect(savedXml(compressed, XML)).toBe(XML)
@@ -129,6 +197,8 @@ describe('the frame query and the palette', () => {
   })
 })
 
+type Props = Parameters<typeof DrawingEditor>[0]
+
 describe('DrawingEditor', () => {
   function editor(held: DrawingKeeper, more: Partial<Parameters<typeof DrawingEditor>[0]> = {}): ReactElement {
     return (
@@ -140,6 +210,9 @@ describe('DrawingEditor', () => {
         elements={[{ id: 'billing', name: 'Billing' }]}
         paletteTitle="Elements"
         keeper={held}
+        name="Order flow"
+        documents={{ save: () => Promise.resolve() }}
+        diagnostics={{ report: () => {} }}
         notify={() => {}}
         s={s}
         {...more}
@@ -198,7 +271,7 @@ describe('DrawingEditor', () => {
     hear(frame.win, { event: 'save', xml: XML })
     expect(frame.actions().at(-1)).toEqual({ action: 'export', format: 'xmlsvg' })
     // draw.io's export carries its own copy compressed; the save's is the one kept.
-    hear(frame.win, { event: 'export', format: 'svg', xml: '<mxfile><diagram id="p">tZZNc5sw</diagram></mxfile>', data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, xml: '<mxfile><diagram id="p">tZZNc5sw</diagram></mxfile>', data: dataUri(SVG) })
     await waitFor(() => expect(updates).toHaveLength(1))
     expect(new TextDecoder().decode(puts[0])).toBe(SVG)
     expect(updates[0]).toEqual(savedDrawing(XML, ADDRESS))
@@ -211,7 +284,7 @@ describe('DrawingEditor', () => {
     const { keeper: held } = keeper(async () => ({ ok: true }))
     const frame = open(held, { onClose })
     hear(frame.win, { event: 'save', xml: XML, exit: true })
-    hear(frame.win, { event: 'export', format: 'svg', data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
     hear(frame.win, { event: 'exit', modified: false })
     expect(onClose).toHaveBeenCalledTimes(2)
@@ -223,7 +296,7 @@ describe('DrawingEditor', () => {
     const { keeper: held } = keeper(async () => { answered = true; return { refused: 'command.gone' } })
     const frame = open(held, { onClose })
     hear(frame.win, { event: 'save', xml: XML, exit: true })
-    hear(frame.win, { event: 'export', format: 'svg', data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
     await waitFor(() => expect(answered).toBe(true))
     expect(onClose).not.toHaveBeenCalled()
     expect(frame.actions().some((one) => one.action === 'status')).toBe(false)
@@ -246,8 +319,8 @@ describe('DrawingEditor', () => {
     const older = XML.replace('label="Billing"', 'label="Older"')
     hear(frame.win, { event: 'save', xml: older })
     hear(frame.win, { event: 'save', xml: XML })
-    hear(frame.win, { event: 'export', format: 'svg', data: dataUri(SVG) })
-    hear(frame.win, { event: 'export', format: 'svg', data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
     await waitFor(() => expect(updates).toHaveLength(1))
     release?.()
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -271,7 +344,7 @@ describe('DrawingEditor', () => {
     const frame = open(held, { xml: XML })
     const mine = XML.replace('label="Billing"', 'label="Mine"')
     hear(frame.win, { event: 'save', xml: mine })
-    hear(frame.win, { event: 'export', format: 'svg', data: dataUri(SVG) })
+    hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
     await waitFor(() => expect(frame.actions().some((one) => one.action === 'status')).toBe(true))
     // The save landed as a step; the channel refused it and the model is theirs.
     current = mine
@@ -288,10 +361,111 @@ describe('DrawingEditor', () => {
     frame.rerender({ mode: 'dark' })
     expect(frame.actions().at(-1)).toEqual({ action: 'export', format: 'xml' })
     const edited = XML.replace('label="Billing"', 'label="Edited"')
-    hear(frame.win, { event: 'export', format: 'xml', xml: edited })
+    hear(frame.win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: edited })
     expect(frame.actions().slice(-2)).toEqual([
-      { action: 'load', xml: edited, dark: true },
+      { action: 'load', xml: edited, dark: true, exportProtocol: 1 },
       { action: 'status', modified: true },
     ])
+  })
+
+  describe('a file the person exports from the editor\'s menu', () => {
+    const PRESSED = { event: 'export', format: 'png', filename: '.drawio.png', data: PNG_URI, xml: '<mxfile/>' }
+
+    function exporting(save: Props['documents']['save']) {
+      const notify = vi.fn()
+      const report = vi.fn()
+      const updates: unknown[] = []
+      const { keeper: held, puts } = keeper(async (drawing) => { updates.push(drawing); return { ok: true } })
+      const frame = open(held, { documents: { save }, diagnostics: { report }, notify })
+      return { frame, notify, report, updates, puts }
+    }
+
+    it('reaches the device through the gateway, and is said only once that has finished', async () => {
+      let finish: (() => void) | undefined
+      const save = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
+      const { frame, notify, report, updates, puts } = exporting(save)
+      hear(frame.win, PRESSED)
+      await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+      expect(save).toHaveBeenCalledWith({ name: 'order-flow.drawio.png', mediaType: 'image/png', bytes: PNG })
+      expect(notify).not.toHaveBeenCalled()
+      finish?.()
+      await waitFor(() => expect(notify).toHaveBeenCalledWith('order-flow.drawio.png saved.', 'success'))
+      expect(report).not.toHaveBeenCalled()
+      // It is not a save of the drawing.
+      expect(updates).toEqual([])
+      expect(puts).toEqual([])
+      expect(frame.actions().some((one) => one.action === 'status')).toBe(false)
+    })
+
+    it('says nothing when the person closed the dialog', async () => {
+      const save = vi.fn(() => Promise.resolve('cancelled' as const))
+      const { frame, notify, report } = exporting(save)
+      hear(frame.win, PRESSED)
+      await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      expect(notify).not.toHaveBeenCalled()
+      expect(report).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['rejects', () => Promise.reject(new Error('disk full'))],
+      ['throws', () => { throw new Error('disk full') }],
+    ])('writes the failure on the trail first and says it, when the gateway %s', async (_how, save) => {
+      const { frame, notify, report } = exporting(save)
+      hear(frame.win, PRESSED)
+      await waitFor(() => expect(notify).toHaveBeenCalledWith('The file could not be saved: disk full', 'error'))
+      expect(report).toHaveBeenCalledWith(expect.objectContaining({ level: 'error', where: 'drawingExport', cause: expect.any(Error) }))
+      expect(report.mock.invocationCallOrder[0]).toBeLessThan(notify.mock.invocationCallOrder[0])
+    })
+
+    it('says a press came to nothing when the frame sent no file, and never a saved', async () => {
+      const save = vi.fn(() => Promise.resolve())
+      const { frame, notify, report } = exporting(save)
+      hear(frame.win, { event: 'export', format: 'pdf', filename: '.pdf', data: 'data:application/pdf;base64,JVBE' })
+      expect(save).not.toHaveBeenCalled()
+      expect(report).toHaveBeenCalledWith(expect.objectContaining({ level: 'error', where: 'drawingExport' }))
+      expect(notify).toHaveBeenCalledWith('The editor sent no file that could be saved.', 'error')
+      // No model content on the trail: the drawing's name is not in it.
+      expect(JSON.stringify(report.mock.calls)).not.toContain('order-flow')
+    })
+
+    it('saves a person\'s XML rather than reloading it, even while a reload is waiting', async () => {
+      const save = vi.fn(() => Promise.resolve())
+      const notify = vi.fn()
+      const { keeper: held } = keeper(async () => ({ ok: true }), () => XML)
+      const frame = open(held, { documents: { save }, notify, xml: XML })
+      frame.rerender({ mode: 'dark', documents: { save }, notify })
+      const asked = frame.actions().length
+      hear(frame.win, { event: 'export', format: 'xml', filename: '.drawio.xml', data: '<mxfile/>', xml: '<mxfile/>' })
+      await waitFor(() => expect(save).toHaveBeenCalledWith({ name: 'order-flow.drawio.xml', mediaType: 'text/xml', text: '<mxfile/>' }))
+      expect(frame.actions()).toHaveLength(asked)
+      // The answer it was waiting for still reloads.
+      hear(frame.win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: XML })
+      expect(frame.actions().at(-1)).toMatchObject({ action: 'load', xml: XML, dark: true, exportProtocol: 1 })
+    })
+
+    it('saves a person\'s SVG to the device, and does not take the export a save is waiting for', async () => {
+      const save = vi.fn(() => Promise.resolve())
+      const { frame, updates, puts } = exporting(save)
+      hear(frame.win, { event: 'save', xml: XML })
+      hear(frame.win, { event: 'export', format: 'svg', filename: '.drawio.svg', data: SVG, xml: '<mxfile/>' })
+      await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+      expect(updates).toEqual([])
+      hear(frame.win, { ...SAVE_ANSWER, data: dataUri(SVG) })
+      await waitFor(() => expect(updates).toEqual([savedDrawing(XML, ADDRESS)]))
+      expect(puts).toHaveLength(1)
+      expect(save).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores a second answer to a reload it has already done', () => {
+      const save = vi.fn(() => Promise.resolve())
+      const { frame, notify, report } = exporting(save)
+      const asked = frame.actions().length
+      hear(frame.win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: XML })
+      expect(save).not.toHaveBeenCalled()
+      expect(notify).not.toHaveBeenCalled()
+      expect(report).not.toHaveBeenCalled()
+      expect(frame.actions()).toHaveLength(asked)
+    })
   })
 })

@@ -359,6 +359,8 @@ export function drawingPage(
       language={parts.props.shell.language}
       readOnly={view.readOnly}
       dispatch={parts.session.dispatch}
+      documents={parts.props.files.documents}
+      diagnostics={parts.props.host.diagnostics}
       notify={parts.props.shell.notify}
       // A box that points at a unit opens it on the scope's chart, where there is one (ADR-0036 §7).
       onOpen={(to) => parts.show({ ...to, ...unitLanding(parts.session.model, to), scope: parts.props.project.path })}

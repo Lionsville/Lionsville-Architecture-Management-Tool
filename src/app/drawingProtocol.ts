@@ -11,7 +11,9 @@
  */
 import type { Language } from '../i18n/languages'
 import { isCompressedDrawing, labelText, linksFromXml } from '../model/drawing'
+import { slug } from '../model/keys'
 import type { DrawingContent } from '../model'
+import type { SavedDocument } from '../ports/DocumentGateway'
 
 /** An empty drawing: a model with the root and the default layer, and nothing on it. */
 export const EMPTY_DRAWING_XML =
@@ -43,8 +45,10 @@ export function drawingFrameSrc(origin: string, language: Language, mode: Drawin
 /**
  * What the frame may do: run its scripts on its own origin, and nothing else
  * a page in a frame can be let do — no popups, no downloads, no navigating
- * the app, no forms. The real editor loads, saves and exports with these two
- * alone (the smoke run).
+ * the app, no forms. The real editor loads and saves with these two alone, and
+ * cannot hand anybody a file with them: a file a person exports comes over the
+ * protocol ({@link loadMessage}'s `exportProtocol`) and this side saves it
+ * ({@link exportedFile}) (ADR-0034, amended; the smoke run).
  */
 export const DRAWING_FRAME_SANDBOX = 'allow-scripts allow-same-origin'
 
@@ -92,6 +96,16 @@ export function elementShapeXml(element: PaletteElement): string {
 }
 
 /**
+ * What the editor's menus do not offer, because a press would come to nothing:
+ * a PDF is the print preview, a window the sandbox does not let it open; a URL
+ * is an address on the drawing origin, which nobody outside the editor can
+ * open; HTML is a page that loads a viewer from that same origin, which does
+ * not ship one, so it opens blank; and *Embed* is more of those two, and links
+ * out of a frame that may open none.
+ */
+const NOT_OFFERED = ['exportPdf', 'exportUrl', 'exportHtml', 'embed']
+
+/**
  * The configuration sent when the frame asks.
  *
  * Uncompressed XML, the elements and the C4 shapes, both on, both open. Each
@@ -99,6 +113,7 @@ export function elementShapeXml(element: PaletteElement): string {
  */
 export function drawingConfig(elements: readonly PaletteElement[], paletteTitle: string): {
   compressXml: false
+  hideMenuItems: string[]
   defaultLibraries: string
   enabledLibraries: string[]
   expandLibraries: true
@@ -108,6 +123,7 @@ export function drawingConfig(elements: readonly PaletteElement[], paletteTitle:
     // The XML a save hands back is kept as text a person can read and a diff
     // can show (ADR-0034 §2), and its cells are what the links are read from.
     compressXml: false,
+    hideMenuItems: [...NOT_OFFERED],
     defaultLibraries: 'elements;c4',
     enabledLibraries: ['elements', 'c4'],
     expandLibraries: true,
@@ -142,9 +158,15 @@ export function configureMessage(elements: readonly PaletteElement[], paletteTit
   return { action: 'configure', config: drawingConfig(elements, paletteTitle) }
 }
 
-/** Load the drawing, or an empty model when it has not been drawn, in the app's look. */
-export function loadMessage(xml: string | undefined, mode: DrawingMode = 'light'): { action: 'load'; xml: string; dark: boolean } {
-  return { action: 'load', xml: xml && xml.length > 0 ? xml : EMPTY_DRAWING_XML, dark: mode === 'dark' }
+/**
+ * Load the drawing, or an empty model when it has not been drawn, in the app's look.
+ *
+ * `exportProtocol`: a file the person exports from the editor's menu is posted
+ * here as an `export` event rather than downloaded from the frame, which may
+ * not. The editor reads it from each `load` afresh, so every load says it.
+ */
+export function loadMessage(xml: string | undefined, mode: DrawingMode = 'light'): { action: 'load'; xml: string; dark: boolean; exportProtocol: 1 } {
+  return { action: 'load', xml: xml && xml.length > 0 ? xml : EMPTY_DRAWING_XML, dark: mode === 'dark', exportProtocol: 1 }
 }
 
 /** The picture, as SVG with the XML inside it. */
@@ -173,7 +195,18 @@ export function mergeMessage(xml: string): { action: 'merge'; xml: string } {
 }
 
 /** What the frame said, as far as this side reads it. */
-export type FrameEvent = { event?: string; xml?: unknown; data?: unknown; format?: unknown; exit?: unknown; modified?: unknown }
+export type FrameEvent = {
+  event?: string
+  xml?: unknown
+  data?: unknown
+  format?: unknown
+  /** On an export: what the editor would call the file, where the person asked for one in its menu. */
+  filename?: unknown
+  /** On an export: the request it answers, where this side asked for it. */
+  message?: unknown
+  exit?: unknown
+  modified?: unknown
+}
 
 /** A message the frame posted, or nothing when it is not one. */
 export function frameEvent(data: unknown): FrameEvent | undefined {
@@ -185,9 +218,72 @@ export function frameEvent(data: unknown): FrameEvent | undefined {
     xml: held.xml,
     data: held.data,
     format: held.format,
+    filename: held.filename,
+    message: held.message,
     exit: held.exit,
     modified: held.modified,
   }
+}
+
+/**
+ * Whose an export is.
+ *
+ * `format` does not say: the answer to this side's `xmlsvg` comes back as
+ * `svg`, the same word as an SVG the person exports, and a person's XML is
+ * `xml` as the answer to {@link currentXmlMessage} is. What says is the request
+ * draw.io echoes in `message` on an answer, and only on an answer: anything
+ * without one came from its menu, and is a file for the person.
+ */
+export function exportRoute(event: FrameEvent): 'save' | 'reload' | 'file' {
+  const asked = (event.message as { format?: unknown } | null | undefined)?.format
+  if (asked === 'xmlsvg') return 'save'
+  if (asked === 'xml') return 'reload'
+  return 'file'
+}
+
+/**
+ * What each format the menu offers is, on disk: the extension, the media type,
+ * whether it arrives as text, and whether a name says `.drawio` where the event
+ * named no file — `.drawio` is draw.io's word for a file that holds a copy of
+ * the drawing, and its own default for these.
+ */
+const EXPORT_FORMATS: Readonly<Record<string, { mediaType: string; text?: true; holdsDrawing?: true }>> = {
+  png: { mediaType: 'image/png', holdsDrawing: true },
+  jpg: { mediaType: 'image/jpeg' },
+  webp: { mediaType: 'image/webp' },
+  gif: { mediaType: 'image/gif' },
+  svg: { mediaType: 'image/svg+xml', text: true, holdsDrawing: true },
+  xml: { mediaType: 'text/xml', text: true, holdsDrawing: true },
+  json: { mediaType: 'application/json', text: true },
+}
+
+/**
+ * The name a file is offered under: the drawing's name, slugged, and the
+ * extension its format has. Only `.drawio` is taken from what the editor would
+ * have called it, so that a picture exported without a copy of the drawing does
+ * not say it holds one; the frame is not asked what kind of file it made.
+ */
+function exportedName(drawingName: string, format: string, filename: unknown, holdsDrawing: boolean): string {
+  const word = slug(drawingName)
+  // `slug` answers `element` for a name with no letter it can keep, which here would be somebody else's word.
+  const name = word === 'element' && !/element/i.test(drawingName) ? 'drawing' : word
+  const holds = typeof filename === 'string' ? filename.endsWith(`.drawio.${format}`) : holdsDrawing
+  return `${name}${holds ? '.drawio' : ''}.${format}`
+}
+
+/**
+ * The file a person exported, ready to hand over, or nothing when what the
+ * frame sent is not one: a format this side does not know, or no contents. An
+ * image comes as a base64 data URI, anything else as its text.
+ */
+export function exportedFile(event: FrameEvent, drawingName: string): SavedDocument | undefined {
+  const { format, data, filename } = event
+  if (typeof format !== 'string' || typeof data !== 'string' || !Object.hasOwn(EXPORT_FORMATS, format)) return undefined
+  const known = EXPORT_FORMATS[format]
+  const held = { name: exportedName(drawingName, format, filename, known.holdsDrawing === true), mediaType: known.mediaType }
+  if (known.text && !data.startsWith('data:')) return data.length > 0 ? { ...held, text: data } : undefined
+  const bytes = rawBytes(data)
+  return bytes && bytes.length > 0 ? { ...held, bytes } : undefined
 }
 
 /**

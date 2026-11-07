@@ -24,6 +24,8 @@ import { useTheme } from '@mui/material/styles'
 import type { Destination } from '../agent/screen'
 import { imageName } from '../model/imageName'
 import type { DesignDiagram, DrawingContent } from '../model'
+import type { Diagnostics } from '../ports/Diagnostics'
+import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { Language, Translate } from '../i18n'
 import { DrawingPicture } from '../documentation/ui/DrawingPicture'
@@ -35,7 +37,7 @@ import type { PaletteElement } from './drawingProtocol'
 
 type Dispatch = (command: { type: 'diagram.update'; id: string; patch: { drawing: DrawingContent } }) => unknown
 
-export function DrawingView({ diagram, scope, images, elements, origin, language, readOnly, dispatch, notify, onOpen, s }: {
+export function DrawingView({ diagram, scope, images, elements, origin, language, readOnly, dispatch, documents, diagnostics, notify, onOpen, s }: {
   diagram: DesignDiagram
   /** The scope the picture's bytes are kept for. Absent: there is nowhere to ask. */
   scope: string | undefined
@@ -48,6 +50,9 @@ export function DrawingView({ diagram, scope, images, elements, origin, language
   /** The view may not be changed: no Edit, and nothing put. */
   readOnly?: boolean
   dispatch?: Dispatch
+  /** Where a file exported from the editor goes, and where its failure is written. */
+  documents?: Pick<DocumentGateway, 'save'>
+  diagnostics?: Pick<Diagnostics, 'report'>
   notify?: Notify
   /**
    * Open what an area points at. The destination is the one `app.open` takes;
@@ -65,7 +70,7 @@ export function DrawingView({ diagram, scope, images, elements, origin, language
       data-testid="drawing-view"
       sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}
     >
-      {editing && editor && keeper && notify ? (
+      {editing && editor && keeper && documents && diagnostics && notify ? (
         <DrawingEditor
           origin={editor}
           language={language ?? 'en'}
@@ -74,6 +79,9 @@ export function DrawingView({ diagram, scope, images, elements, origin, language
           elements={elements ?? []}
           paletteTitle={s('shell.drawingElements')}
           keeper={keeper}
+          name={diagram.name}
+          documents={documents}
+          diagnostics={diagnostics}
           notify={notify}
           onClose={() => setEditing(false)}
           s={s}

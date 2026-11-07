@@ -29,15 +29,23 @@
  * theme changes while it is open, the drawing as it is in the editor is asked
  * for first and loaded again in the new look, and the editor is told it still
  * holds changes when it does.
+ *
+ * **A file the person exports.** The frame may not download, so what its menu
+ * exports is posted here and saved through the same gateway as every other
+ * file. It is told from this side's own exports by {@link exportRoute}, and it
+ * touches neither the drawing nor a save waiting for its export.
  */
 import { useEffect, useRef } from 'react'
 import Box from '@mui/material/Box'
 import type { StringKey, Translate } from '../i18n'
 import type { Language } from '../i18n/languages'
 import type { DrawingContent } from '../model'
+import { reasonOf } from '../platform/errors'
+import type { Diagnostics } from '../ports/Diagnostics'
+import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { Notify } from './useToasts'
 import {
-  currentXmlMessage, DRAWING_FRAME_SANDBOX, drawingFrameSrc, frameEvent, frameTarget, loadMessage, mergeMessage,
+  currentXmlMessage, DRAWING_FRAME_SANDBOX, drawingFrameSrc, exportedFile, exportRoute, frameEvent, frameTarget, loadMessage, mergeMessage,
   newerDrawing, replyTo, savedDrawing, savedStatus, savedXml, svgBytes, unsavedStatus,
   type DrawingMode, type FrameEvent, type PaletteElement,
 } from './drawingProtocol'
@@ -66,6 +74,11 @@ type Props = {
   elements: readonly PaletteElement[]
   paletteTitle: string
   keeper: DrawingKeeper
+  /** The drawing's name: what a file exported from the editor is called. */
+  name: string
+  /** Where a file exported from the editor goes. */
+  documents: Pick<DocumentGateway, 'save'>
+  diagnostics: Pick<Diagnostics, 'report'>
   notify: Notify
   /** The person left the editor: its Exit, or a save and exit that landed. */
   onClose?: () => void
@@ -157,11 +170,16 @@ function answer(heard: FrameEvent, held: Held, props: Props, post: (message: { a
     return
   }
   if (heard.event === 'save' && typeof heard.xml === 'string') held.saves.push({ xml: heard.xml, exit: heard.exit === true })
-  if (heard.event === 'export' && heard.format === 'xml') {
+  const route = heard.event === 'export' ? exportRoute(heard) : undefined
+  if (route === 'reload') {
     reload(heard, held, props, post)
     return
   }
-  if (heard.event === 'export') {
+  if (route === 'file') {
+    handOver(heard, props)
+    return
+  }
+  if (route === 'save') {
     const save = held.saves.shift()
     held.exports += 1
     void commitExport(heard, save, held, held.exports, props, post).catch(() => {
@@ -174,6 +192,30 @@ function answer(heard: FrameEvent, held: Held, props: Props, post: (message: { a
     if (reply.action === 'load') held.written = props.xml
     post(reply)
   }
+}
+
+/**
+ * A file the person exported, handed to them: said once it is saved, said as a
+ * failure when it could not be, and not said at all when they closed the dialog.
+ */
+function handOver(heard: FrameEvent, props: Props): void {
+  const { documents, diagnostics, notify, s } = props
+  const file = exportedFile(heard, props.name)
+  if (!file) {
+    diagnostics.report({ level: 'error', where: 'drawingExport', message: 'shell.drawingExportFailed' })
+    notify(s('shell.drawingExportFailed'), 'error')
+    return
+  }
+  // Inside the chain: a gateway that throws rather than rejects is a failure like any other.
+  Promise.resolve().then(() => documents.save(file)).then(
+    (answer) => {
+      if (answer !== 'cancelled') notify(s('shell.drawingExported', { name: file.name }), 'success')
+    },
+    (cause: unknown) => {
+      diagnostics.report({ level: 'error', where: 'drawingExport', message: 'shell.saveFileFailed', cause })
+      notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error')
+    },
+  )
 }
 
 /** The drawing as it is in the editor, loaded again in the look asked for; still unsaved where it was. */

@@ -117,6 +117,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.drawingEditorUnavailable': 'Der Editor ist nicht verfügbar',
   'shell.drawingElements': 'Elemente',
   'shell.drawingSaveFailed': 'Die Zeichnung konnte nicht gespeichert werden.',
+  'shell.drawingExported': '{name} gespeichert.',
+  'shell.drawingExportFailed': 'Der Editor hat keine Datei gesendet, die gespeichert werden konnte.',
   'shell.drawingOpenElement': '{name} öffnen',
   'shell.add': 'Hinzufügen',
   'shell.imagesMissing': 'PNG exportiert, aber diese Logos fehlen: {labels}.',
