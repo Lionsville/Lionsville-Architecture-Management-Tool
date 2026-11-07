@@ -3,7 +3,7 @@
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
   the principle, its groups and its page (§1–§6, §8, §12, §14); citing,
   suggestions and the checks (§7, §9, §10); the agent's first tools (§13, in
-  part; the rest scheduled after 3.8.0)
+  part); the rest of §13, 7 November 2026
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0012 §7 (a scope's records are read up the tree, *From
