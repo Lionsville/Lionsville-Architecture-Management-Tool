@@ -42,7 +42,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.adoptBody': 'Ihre Arbeit liegt zurzeit in der App selbst. „{name}“ kann eine Kopie davon bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
   'folder.adoptCopy': 'Meine Arbeit hineinkopieren',
   'folder.adoptSkip': 'Ordner so öffnen, wie er ist',
-  'picker.chooseFolder': 'Ordner öffnen…',
+  'picker.chooseFolder': 'Einen Ordner öffnen…',
   'picker.changeFolder': 'Aus einem anderen Ordner arbeiten…',
   'shell.folderNotOpened': 'Der Ordner konnte nicht geöffnet werden: {message}',
   'shell.sourceFolder': 'Ordner · {name}',

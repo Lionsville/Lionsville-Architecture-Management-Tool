@@ -115,7 +115,7 @@ describe('a browser tab', () => {
 
     expect(screen.queryByTestId('first-run')).toBeNull()
     expect(screen.getByTestId('saved-indicator').textContent).toContain('In this browser')
-    expect(screen.getByRole('button', { name: 'Open folder…' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Open a folder…' })).toBeDefined()
   })
 
   it('says so, in the way in\'s own sentence, when one was taken and did not open', async () => {

@@ -42,7 +42,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'folder.adoptBody': 'Je werk wordt nu in de app zelf bewaard. “{name}” kan er een kopie van krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — de app houdt zijn eigen kopie tot je die zelf verplaatst.',
   'folder.adoptCopy': 'Mijn werk erin kopiëren',
   'folder.adoptSkip': 'De map openen zoals hij is',
-  'picker.chooseFolder': 'Map openen…',
+  'picker.chooseFolder': 'Een map openen…',
   'picker.changeFolder': 'Vanuit een andere map werken…',
   'shell.folderNotOpened': 'De map kon niet worden geopend: {message}',
   'shell.sourceFolder': 'Map · {name}',
