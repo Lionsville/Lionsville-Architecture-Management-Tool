@@ -242,7 +242,10 @@ export function BoardBar({ props, framed, pageBar, day, add, show }: {
       } : {})}
       {...(onCanvas && props.onColourByChange ? { colour: <ColourBar props={props} /> } : {})}
       day={day}
-      find={<ViewBarButton onClick={props.onOpenSearch} data-testid="board-find">{t('bar.find')}</ViewBarButton>}
+      {...(props.activeDiagram.kind === 'conway' ? {} : {
+        // A Conway map places no element of its own, so the board's find answered *no element matches* for every name on it.
+        find: <ViewBarButton onClick={props.onOpenSearch} data-testid="board-find">{t('bar.find')}</ViewBarButton>,
+      })}
       {...(onCanvas ? {
         exportAs: (
           <ViewBarButton onClick={props.onExport} working={props.exportBusy === true} data-testid="board-export">

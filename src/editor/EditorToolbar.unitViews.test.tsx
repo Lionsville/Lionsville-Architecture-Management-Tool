@@ -83,6 +83,14 @@ describe('the organisation chart and the Conway map in the strip', () => {
     expect(screen.queryByRole('button', { name: 'Day' })).toBeNull();
   });
 
+  it('offers no board find over a Conway map, which places no element to find', () => {
+    renderToolbar({ activeDiagram: conway, laidOut: true, dated: isDated('conway'), onOpenConway: vi.fn() });
+    expect(screen.queryByTestId('board-find')).toBeNull();
+    cleanup();
+    renderToolbar({ activeDiagram: chart, laidOut: true, dated: isDated('chart'), onOpenChart: vi.fn() });
+    expect(screen.getByTestId('board-find')).toBeTruthy();
+  });
+
   it('says which kinds are drawn on a day', () => {
     expect(['layer7', 'container', 'chart', 'conway'].every((kind) => isDated(kind as DesignDiagram['kind']))).toBe(true);
     expect(['sheet', 'map', 'technology', 'drawing'].some((kind) => isDated(kind as DesignDiagram['kind']))).toBe(false);
