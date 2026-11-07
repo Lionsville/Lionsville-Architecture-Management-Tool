@@ -96,7 +96,11 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     recordOf: state.recordOf,
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
     look: state.tabOf === tabPage ? state.look : undefined,
-    chooseLook: (look: string | undefined) => { frame.set({ look, tabOf: tabPage, ...(state.tabOf === tabPage ? {} : { tab: undefined }) }); lookAgain() },
+    chooseLook: (look: string | undefined, of?: string) => {
+      const whose = (of as Page | undefined) ?? tabPage
+      frame.set({ look, tabOf: whose, ...(state.tabOf === whose ? {} : { tab: undefined }) })
+      lookAgain()
+    },
     chooseFor: (of: string, tab: string) => { frame.set({ tab, tabOf: of as Page }) },
     go: (to: PlaceTo) => go(to as Destination),
   }), [state.tab, state.tabOf, state.look, state.record, state.recordOf, tabPage, frame, lookAgain, go])

@@ -308,8 +308,7 @@ describe('the organisation screen — its own pages', () => {
     renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
     const detail = await checkOnPage('fix', 'check.unitTypeNowhere')
     fireEvent.click(within(pressFound(detail, 'attention--ut-guild')).getByRole('button', { name: /Open/ }))
-    const inspector = await screen.findByTestId('operating-inspector')
-    expect(within(inspector).getByDisplayValue('Guild')).toBeTruthy()
+    expect(within(await screen.findByRole('complementary', { name: 'Guild' })).getByTestId('operating-inspector')).toBeTruthy()
     expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
   })
 

@@ -127,9 +127,9 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const { model, dispatch, makeId, initialId, initialNonce, facts } = props
   const { t, language } = useStrings()
   const readOnly = props.readOnly || !props.atOrganisation
-  const [tabNow, setTab] = usePlaceTab('structure')
+  const [tabNow, setTab] = usePlaceTab('structure', 'operating')
   const tab = tabNow as OperatingTab
-  const [lookWords, setLookWords] = usePlaceLook()
+  const [lookWords, setLookWords] = usePlaceLook('operating')
   const look = useMemo(() => readLook(lookWords), [lookWords])
   const setLook = (next: RaciLook) => setLookWords(writeLook(next))
   const selected = look.select
@@ -163,8 +163,9 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
     const asked = itemOf(latest.current, initialId)
     // A reload whose address says what was picked since keeps that.
     if (!asked || look.select !== undefined) return
-    setTab(tabOf(asked.kind))
+    // The look first: said from another page, it leaves that page's tab behind, and this tab is the one to keep.
     setLookWords(writeLook({ select: asked.item.id }))
+    setTab(tabOf(asked.kind))
   }, [initialId, initialNonce])
 
   const picked = useMemo(() => itemOf(model, selected), [model, selected])

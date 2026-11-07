@@ -26,7 +26,8 @@ export type PlaceTabs = {
   /** Go to another place, the way `app.open` goes. */
   readonly go?: (to: PlaceTo) => void
   readonly look?: string | undefined
-  readonly chooseLook?: (look: string | undefined) => void
+  /** `of` as for `choose`: a page arriving asks before the frame has looked again. */
+  readonly chooseLook?: (look: string | undefined, of?: string) => void
   /** The tab another place opens on: for a way to a view at one of its levels. */
   readonly chooseFor?: (page: string, tab: string) => void
 }
@@ -152,13 +153,13 @@ export function useViewFacets(viewId: string): readonly [ViewFacets, (patch: Vie
  * the tab is and for the same reasons (`?look=`): a filter by part or by unit is
  * something a link and an agent reach too.
  */
-export function usePlaceLook(): readonly [string | undefined, (look: string | undefined) => void] {
+export function usePlaceLook(of?: string): readonly [string | undefined, (look: string | undefined) => void] {
   const held = useContext(PlaceTabContext)
   const [own, setOwn] = useState<string | undefined>(undefined)
   const choose = useCallback((look: string | undefined) => {
     setOwn(look)
-    held?.chooseLook?.(look)
-  }, [held])
+    held?.chooseLook?.(look, of)
+  }, [held, of])
   return [held ? held.look : own, choose]
 }
 
