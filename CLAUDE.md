@@ -650,6 +650,21 @@ src/search/       One search over every kind of record, across the tree; ⌘K, �
                     search            sources nearest first, eight per kind, and
                                       where a hit opens
                     searchIndex       ⌘F's haystack, and where an element is drawn
+src/help/         The help (the manual, in the app): its own page and entry
+                  (`help/index.html`, `main.tsx`, `boot.tsx`), loaded apart
+                  from the app's bundle and counted apart (`HELP_BUDGET`).
+                    outline           every chapter and section, by id: the
+                                      controls, menu labels and hosts each
+                                      answers for — a commands-table label or
+                                      a control with no section fails a test
+                    text/<lang>/      the words, one chunk per language
+                    registry          a host's own chapters added
+                                      (`registerHelpChapters`), never one of
+                                      core's ids
+                    search · markdown   the one search, and the little markdown
+                                      a section's words may carry
+                    ui/               the document, its nav, and the small
+                                      screens drawn with the kit's parts
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                   module that exists for a client that is not a person.
                     tools             the vocabulary: names, schemas, refusals — a
@@ -776,6 +791,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     diagnostics       what a failure entry is, and how a trail reads
                     logFile           what the desktop log is called, and when it rolls
                     windowChrome      how much of the top bar is the window's
+                    helpAddress       the help's address: a section, a language,
+                                      a theme, and the public URL
                     hostCommands · menu   what a menu or an OS may ask for, and
                                       the File and View items said once as data
                     theme · workingSource · updateSettings · sync   facts two
@@ -1267,6 +1284,8 @@ electron/         The desktop main process and preload.
                                       the caller of `platform/node/git`, which
                                       had no Electron in it and is not here
                     appMenu.ts        the File menu; every item sends a command
+                    helpWindow.ts     the help's one window: sandboxed, no node,
+                                      no preload, links out to the system's browser
                     preload/index.ts  the doorway: the typed channels, and the one
                                       generic door for a hook's own (`invokeHook`)
                     mcp.ts · mcpServer.ts   the agent server: the kept port and
