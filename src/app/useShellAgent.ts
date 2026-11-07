@@ -419,11 +419,11 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab, look, list, pick, finding, lookOf, lookDay, facets } = frame.get()
+    let { panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab && now.look === look && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets) return
-      ({ panel, tab, look, list, pick, finding, lookOf, lookDay, facets } = now)
+      if (now.panel === panel && now.tab === tab && now.look === look && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets && now.colour === colour && now.day === day) return
+      ({ panel, tab, look, list, pick, finding, lookOf, lookDay, facets, colour, day } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
@@ -464,12 +464,15 @@ function holdInFrame(frame: FrameStore | undefined, to: Destination): Destinatio
   const record = to.page === 'people' ? to.id ?? to.select : undefined
   const carried = to.finding !== undefined ? readFinding(to.finding) : undefined
   if (carried) frame?.set({ finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } })
+  const readsDay = to.day !== undefined && to.day !== 'today' && (to.page === 'sheet' || to.page === 'map')
   frame?.set({
     panel: to.panel, tab, look: to.look, tabOf: tab === undefined && to.look === undefined ? undefined : listPage,
     record, recordOf: record === undefined ? undefined : 'people',
     facets: facetsOf(to),
     list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
-    ...(to.day !== undefined ? { asksLook: { ...(to.id !== undefined ? { view: to.id } : {}), day: to.day } } : {}),
+    // A sheet and a map read a dated day themselves (`usePlaceReading`); anything else is the window's look.
+    colour: to.colour, day: readsDay ? to.day : undefined, readingOf: to.colour !== undefined || readsDay ? to.id : undefined,
+    ...(to.day !== undefined && !readsDay ? { asksLook: { ...(to.id !== undefined ? { view: to.id } : {}), day: to.day } } : {}),
   })
   return listPage
 }
@@ -491,7 +494,7 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const looked = open?.view && held.lookOf === open.view.id && held.lookDay !== undefined
     ? { ...open, view: { ...open.view, day: held.lookDay } }
     : open
-  const opened = looked && (page ? looked : viewInFrame(looked, held))
+  const opened = looked && (page ? looked : readingIn(viewInFrame(looked, held), held))
   return {
     ...screen,
     ...(opened ? { open: reading !== undefined && opened.view ? { ...opened, view: { ...opened.view, tab: reading } } : opened } : {}),
@@ -502,6 +505,13 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
     ...(listed && held.list ? { list: held.list } : {}),
     ...(held.finding ? { finding: writeFinding({ check: held.finding.check, home: held.finding.home, id: held.finding.id }) } : {}),
   }
+}
+
+/** How the view on screen is being read, as the frame holds it, on the screen and so in the address. */
+function readingIn(open: NonNullable<Screen['open']>, held: FrameState): NonNullable<Screen['open']> {
+  const view = open.view
+  if (!view || held.readingOf !== view.id) return open
+  return { ...open, view: { ...view, ...(held.colour !== undefined ? { colour: held.colour } : {}), ...(held.day !== undefined ? { day: held.day } : {}) } }
 }
 
 /** Where the app is, as the agent is told it: the scope that is open and its view and page, or the home. */

@@ -10,11 +10,14 @@
  * is drawn as an outline, which is how *Other* looks.
  */
 import { useStrings } from '../../i18n/LanguageContext'
+import { Mark } from './Mark'
+import type { MarkKind } from './Mark'
 import { tokenVar } from './tokens'
 import type { ColourToken } from './tokens'
 import './KeyStrip.css'
 
-export type KeyValue = { id: string; label: string; count: number; swatch?: ColourToken; colour?: string }
+/** A mark where the rows draw one, so the key looks like what it explains. */
+export type KeyValue = { id: string; label: string; count: number; swatch?: ColourToken; colour?: string; mark?: MarkKind }
 
 /** Past six a key stops being read, so the smallest go together as *Other*. */
 const KEY_AT_MOST = 6
@@ -48,7 +51,7 @@ export function KeyStrip({ values, pressed, onPress, onKeep, note, 'data-guide':
     <div className="kit-key" role="group" aria-label={t('kit.key.label')} data-guide={guide}>
       <div className="kit-key__values">
         {shown.map((value) => {
-          const swatch = <span
+          const swatch = value.mark ? <Mark kind={value.mark} /> : <span
             className="kit-key__swatch"
             style={value.swatch || value.colour ? { background: value.colour ?? tokenVar(value.swatch!) } : undefined}
             data-outline={value.swatch || value.colour ? undefined : true}

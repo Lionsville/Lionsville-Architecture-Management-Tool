@@ -85,7 +85,7 @@ tr[data-crossed] > .kit-matrix__rowHead { background: var(--crosshair); font-wei
 
 .kit-matrix__answer {
   position: sticky;
-  left: var(--kit-matrix-head);
+  left: calc(var(--kit-matrix-head) + var(--kit-matrix-answer-at, 0) * var(--kit-matrix-answer));
   z-index: 1;
   width: var(--kit-matrix-answer);
   min-width: var(--kit-matrix-answer);
@@ -138,3 +138,26 @@ tr[data-crossed] > .kit-matrix__rowHead { background: var(--crosshair); font-wei
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
+
+/* The band over the columns, and the headings stuck under it. */
+.kit-matrix { --kit-matrix-band: 0px; }
+.kit-matrix[data-band] { --kit-matrix-band: 24px; }
+.kit-matrix__band .kit-matrix__corner { height: var(--kit-matrix-band); padding-block: 0; border-bottom: 0; }
+.kit-matrix__groupHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: var(--kit-matrix-band);
+  padding: 0 var(--s-1);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-weight: var(--fw-regular);
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kit-matrix tr:not(.kit-matrix__band) > .kit-matrix__corner,
+.kit-matrix thead .kit-matrix__colHead,
+.kit-matrix thead .kit-matrix__answerHead { top: var(--kit-matrix-band); }
+.kit-matrix tr[data-picked] > td,
+.kit-matrix tr[data-picked] > th { background: var(--accent-soft); }

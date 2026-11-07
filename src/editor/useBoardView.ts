@@ -32,7 +32,8 @@ export function shownColourBy(
   held: Readonly<Record<string, ColourBy | 'none'>>,
 ): ColourBy | undefined {
   const chosen = diagram === undefined ? undefined : held[diagram.id];
-  return chosen === 'none' ? undefined : chosen ?? diagram?.colourBy;
+  // A board's own words only: a sheet keeps questions of its own in this field (`business/lens`).
+  return chosen === 'none' ? undefined : chosen ?? (diagram?.colourBy as ColourBy | undefined);
 }
 
 export function useBoardView(args: {

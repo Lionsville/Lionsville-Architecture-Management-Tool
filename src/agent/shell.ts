@@ -173,7 +173,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 
 // --- app.open --------------------------------------------------------------------
 
-type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; day?: string }
+type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; colour?: string; day?: string }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
@@ -371,6 +371,9 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
   if (asked.day !== undefined && !(isLookDay(asked.day) && target.page !== undefined && VIEW_PAGES.includes(target.page))) {
     return refused('agent.badArguments', '"day" is for a view, as yyyy-mm-dd or today')
   }
+  if (asked.colour !== undefined && target.page !== 'sheet' && target.page !== 'map') {
+    return refused('agent.badArguments', '"colour" is for page sheet, map')
+  }
   if (asked.select !== undefined) {
     // A drawing opens as a view and does not select an element on a board.
     if (target.page === undefined || !SELECTS.includes(target.page)) {
@@ -390,6 +393,7 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.day !== undefined ? { day: asked.day } : {}),
     ...(target.page === 'conway' && asked.group !== undefined ? { group: asked.group } : {}),
     ...(target.page === 'conway' && asked.pair !== undefined ? { pair: asked.pair } : {}),
+    ...(asked.colour !== undefined ? { colour: asked.colour } : {}),
   }
 }
 

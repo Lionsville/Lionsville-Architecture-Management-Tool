@@ -31,8 +31,8 @@ import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
-import { PlaceFacetsContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
-import type { PlaceTo, ViewFacets } from '../../widgets/placeTab'
+import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
+import type { PlaceReading, PlaceTo, ViewFacets } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
@@ -91,6 +91,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
     look: state.tabOf === tabPage ? state.look : undefined,
     chooseLook: (look: string | undefined) => { frame.set({ look, tabOf: tabPage, ...(state.tabOf === tabPage ? {} : { tab: undefined }) }); lookAgain() },
+    chooseFor: (of: string, tab: string) => { frame.set({ tab, tabOf: of as Page }) },
     go: (to: PlaceTo) => go(to as Destination),
   }), [state.tab, state.tabOf, state.look, state.record, state.recordOf, tabPage, frame, lookAgain, go])
   const lists = useMemo(() => ({
@@ -102,6 +103,14 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     of: (viewId: string) => (state.facets?.of === viewId ? state.facets : undefined),
     choose: (viewId: string, chosen: ViewFacets) => { frame.set({ facets: { ...chosen, of: viewId } }); lookAgain() },
   }), [state.facets, frame, lookAgain])
+  // How a view is being read, in the frame so it is in the address; only while the view itself is up.
+  const viewId = screen.page === undefined ? openView?.id : undefined
+  const reading = useMemo(() => ({
+    reading: state.readingOf !== undefined && state.readingOf === viewId
+      ? { ...(state.colour !== undefined ? { colour: state.colour } : {}), ...(state.day !== undefined ? { day: state.day } : {}) }
+      : {},
+    choose: (next: PlaceReading) => { frame.set({ colour: next.colour, day: next.day, readingOf: viewId }); lookAgain() },
+  }), [state.colour, state.day, state.readingOf, viewId, frame, lookAgain])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return
@@ -114,6 +123,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       <PlaceTabContext.Provider value={tabs}>
         <PlaceListContext.Provider value={lists}>
         <PlaceFacetsContext.Provider value={facets}>
+      <PlaceReadingContext.Provider value={reading}>
         <Frame
           pageUp={pageUp}
           controlsInset={windowChrome.controlsInset}
@@ -128,6 +138,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {children}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
+      </PlaceReadingContext.Provider>
         </PlaceFacetsContext.Provider>
         </PlaceListContext.Provider>
       </PlaceTabContext.Provider>

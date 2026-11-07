@@ -106,6 +106,8 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   conway: ['grid', 'lines'],
   plan: ['changes', 'interfaces', 'units', 'milestones', 'restsOn', 'document', 'boards', 'principles', 'history', 'comments'],
   technology: ['chain', 'matrix'],
+  // A view has tabs too where it reads at two levels: the sheet's are its level (ADR-0019, amended).
+  sheet: ['names', 'overview'],
 }
 
 /** Whether a page has this tab; a page with none has no tab at all. */
@@ -160,6 +162,8 @@ export type Destination = {
   readonly group?: string
   /** On a Conway map: the pair chosen, its two units' ids with a comma between, an end nobody owns empty. */
   readonly pair?: string
+  /** What a sheet is coloured by, the reader's until kept: one of its questions, `none` for none. */
+  readonly colour?: string
 }
 
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
@@ -201,6 +205,8 @@ export type ScreenView = {
   /** What it is grouped by and which pair is chosen, on a Conway map. */
   readonly group?: string
   readonly pair?: string
+  /** What a sheet or a map is coloured by, as a destination says it. */
+  readonly colour?: string
 }
 
 export type Screen = {

@@ -14,6 +14,7 @@ import type { DesignDiagram } from '../model'
 import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
+import type { DayGroup } from '../widgets/kit/DayControl'
 import { sheetResponsibleFor } from './units/sheetResponsible'
 import { sheetClaimsFor, sheetDomainsFor, takenUpHere } from './sheetMapping'
 import type { SheetWaysOut } from './units/sheetResponsible'
@@ -253,8 +254,40 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       // The rail's *All units* and the units kept on it, for the session and per view (ADR-0036, amended 12 October 2026).
       remember={foldKey(parts.props.project.path, diagram.id, 'rail')}
       notify={parts.props.shell.notify}
+      {...businessReading(parts)}
+      {...(coverageWay(parts, view) ? { onCoverage: coverageWay(parts, view) } : {})}
     />
   )
+}
+
+/** What the sheet and its Coverage both read: the organisation's scales, the plans' days, today and what a row names. */
+function businessReading(parts: WorkspaceParts) {
+  const { session, readings, todayDay } = parts
+  const scales = parts.props.tree.index.operatingModel().aspectScales
+  return {
+    describe: readings.describeForMap,
+    today: todayDay,
+    days: planDays(session.model),
+    ...(scales ? { scales } : {}),
+  }
+}
+
+/** The days worth looking at: where each plan with a day ends. */
+function planDays(model: { transitions?: readonly { title: string; to?: string }[] }): readonly DayGroup[] {
+  const days = (model.transitions ?? []).flatMap((plan) => (plan.to !== undefined ? [{ day: plan.to, label: plan.title }] : []))
+  return days.length > 0 ? [{ days }] : []
+}
+
+/**
+ * The way from the sheet to its Coverage: this scope's map, or one made on first
+ * use where the person may. A reader in a scope with no map has nowhere to go, and
+ * the switch then does not offer it.
+ */
+function coverageWay(parts: WorkspaceParts, view: PageView): (() => void) | undefined {
+  const { session, pages } = parts
+  const first = session.model.diagrams.find((diagram) => diagram.kind === 'map')
+  if (first) return () => pages.openView(first.id)
+  return view.readOnly ? undefined : pages.createMap
 }
 
 /** *Domains* and *From above…* on the open scope's sheet, over the index, as one step in its session. */
@@ -298,7 +331,11 @@ function sheetWaysOut(parts: WorkspaceParts): SheetWaysOut {
 }
 
 function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
-  const { session, sheets, ownership, readings, requests, renderer, todayDay } = parts
+  const { session, sheets, ownership, readings, requests, renderer, todayDay, pages, diagrams, files } = parts
+  const { project, navigation } = parts.props
+  const sheet = session.model.diagrams.find((held) => held.kind === 'sheet')
+  const domains = sheetMapping(parts, diagram).domains
+  const maps = session.model.diagrams.filter((held) => held.kind === 'map')
   return (
     <MapPage
       open inline
@@ -310,11 +347,32 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
       onHandle={renderer.onSheetHandle}
       ownerOf={ownership.ownerOf}
       elsewhere={readings.rowsElsewhere}
-      describe={readings.describeForMap}
-      today={todayDay}
       applications={readings.applicationsInTree}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
-      select={parts.pages.selectRequestFor(diagram.id)}
+      select={pages.selectRequestFor(diagram.id)}
+      onSave={files.savePicture}
+      responsible={sheetResponsibleFor({
+        index: parts.props.tree.index, scope: project.path, model: session.model, day: todayDay,
+        scopeName: readings.scopeLabel, s: parts.props.shell.s,
+        ...(ownership.unitDeletion ? { unitDeletion: ownership.unitDeletion } : {}),
+        open: sheetWaysOut(parts),
+      })}
+      domains={domains}
+      {...businessReading(parts)}
+      maps={maps.map((held) => ({ id: held.id, name: held.name, here: held.id === diagram.id }))}
+      onOpenMap={pages.openView}
+      {...(sheet ? { onSheet: () => pages.openView(sheet.id) } : !view.readOnly ? { onSheet: sheets.create } : {})}
+      {...(!view.readOnly ? {
+        onCreateMap: pages.createMap,
+        onRename: (name: string) => diagrams.onRenameDiagram(diagram.id, name),
+        onDelete: () => diagrams.requestDeleteDiagram(diagram.id),
+      } : {})}
+      onOpenApplication={(id) => {
+        const keptIn = parts.props.tree.index.lookup(id)?.master
+        if (keptIn !== undefined && keptIn !== project.path) navigation.onOpenScope?.(keptIn, { page: 'element', id })
+        else sheets.actions.onOpenElement(id)
+      }}
+      onUndo={session.undo}
     />
   )
 }

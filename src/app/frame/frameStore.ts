@@ -90,6 +90,10 @@ export type FrameState = {
   readonly facets?: ViewFacets & { readonly of: string }
   /** What that page looks at within its tab (`usePlaceLook`): carried by the address, as its tab is. */
   readonly look?: string
+  /** How the view that is up is being read (`usePlaceReading`), and which view that is of. */
+  readonly colour?: string
+  readonly day?: string
+  readonly readingOf?: string
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
   /** ⌘\: the tree docked on every screen, by this person's choice. */

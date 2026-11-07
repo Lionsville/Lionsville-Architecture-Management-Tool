@@ -3527,6 +3527,7 @@ const SPECS = [
         day: { type: 'string', description: 'A day to look at a view on, yyyy-mm-dd, or today for a view saved on another: the person\'s window only, read-only while it lasts, and nothing is written.' },
         group: { type: 'string', description: 'On a Conway map: the id of the unit type to group it by.' },
         pair: { type: 'string', description: 'On a Conway map: the pair to choose, its two unit ids with a comma between, the side nobody owns left empty.' },
+        colour: { type: 'string', description: 'What a sheet is coloured by: coveredBy, who, domains, lifecycle, retiring, aspect:<key>, or none. The reader\'s own, written nowhere.' },
       },
       additionalProperties: false,
     },

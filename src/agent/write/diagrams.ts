@@ -170,7 +170,7 @@ const ONLY: readonly [field: string, allowed: (kind: Kind) => boolean, what: str
   ['paper', (kind) => kind === 'sheet', 'a sheet'],
   ['areas', (kind) => kind === 'sheet' || kind === 'map', 'a sheet or a map'],
   // The day a view draws the model as of: a board's, and the organisation chart's and the Conway map's (ADR-0036 §7).
-  ['asOf', (kind) => kind === 'layer7' || kind === 'container' || kind === 'chart' || kind === 'conway', 'a board, an organisation chart or a Conway map'],
+  ['asOf', (kind) => kind === 'layer7' || kind === 'container' || kind === 'chart' || kind === 'conway' || kind === 'sheet' || kind === 'map', 'a board, a business sheet, its Coverage, an organisation chart or a Conway map'],
   ['xml', (kind) => kind === 'drawing', 'a drawing'],
   ['showDeployment', (kind) => kind === 'container', 'a container diagram'],
   ['colourBy', (kind) => kind === 'layer7', 'a landscape'],

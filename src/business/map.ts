@@ -70,6 +70,8 @@ export type MapDescription = {
    * covering anything on the map from that day.
    */
   retired?: string
+  /** The day it starts leaving, said the same way: its supports are *moving* until it is gone. */
+  retiring?: string
 }
 
 export type MapDescribe = (id: ElementId) => MapDescription | undefined
@@ -88,6 +90,14 @@ export type MapRow = {
   coverage: Coverage
   /** Uncovered leaves under it, itself included when it is one. */
   gaps: number
+  /** The row it folds under. */
+  parentId?: ElementId
+  /** The leaves under it, itself when it is one: what a verdict like *3 of 4* counts. */
+  leafCount: number
+  /** On a section: how many leaves under it each application supports, what a closed row's cell says. */
+  counts?: Readonly<Record<ElementId, number>>
+  /** What {@link assignedTo}'s ids are called. */
+  assignedNames: string[]
 }
 
 export type MapColumn = {
@@ -124,6 +134,12 @@ export type MapOptions = {
    * `asOf` counts every row regardless of its window.
    */
   today?: string
+  /**
+   * Every application there is, for *Columns: all*: those that support nothing
+   * are then columns too, after the ones the rows name. Absent is the rows' own,
+   * the map's default, since a page that is mostly empty answers nothing.
+   */
+  allApplications?: readonly { id: ElementId; name: string; where?: string }[]
 }
 
 /**
@@ -133,7 +149,7 @@ export type MapOptions = {
  * nothing on April's map, whatever its row says. An end another scope
  * defines is dated by what `describe` says for it. With no day, every row.
  */
-function liveRows(
+export function liveRows(
   model: Pick<DesignModel, 'elements' | 'relations'>,
   day: string | undefined,
   { elsewhere = [], describe }: MapOptions,
@@ -185,7 +201,8 @@ export function mapPage(
     const row: MapRow = {
       element, depth, leaf: true,
       supportedBy: [...own.supportedBy], assignedTo: [...own.assignedTo],
-      coverage: own.coverage, gaps: 0,
+      coverage: own.coverage, gaps: 0, leafCount: 1, assignedNames: [],
+      ...(element.parentId !== undefined && byId.get(element.parentId)?.kind === 'function' && seen.has(element.parentId) ? { parentId: element.parentId } : {}),
     }
     rows.push(row)
     const below = childrenOf(element.id).filter((child) => !seen.has(child.id))
@@ -194,8 +211,14 @@ export function mapPage(
       return row
     }
     row.leaf = false
+    row.leafCount = 0
+    const counts: Record<ElementId, number> = {}
+    row.counts = counts
     for (const child of below) {
       const under = walk(child, depth + 1)
+      row.leafCount += under.leafCount
+      if (under.leaf) for (const id of under.supportedBy) counts[id] = (counts[id] ?? 0) + 1
+      else for (const [id, count] of Object.entries(under.counts ?? {})) counts[id] = (counts[id] ?? 0) + count
       for (const id of under.supportedBy) if (!row.supportedBy.includes(id)) row.supportedBy.push(id)
       for (const id of under.assignedTo) if (!row.assignedTo.includes(id)) row.assignedTo.push(id)
       row.gaps += under.gaps
@@ -210,7 +233,14 @@ export function mapPage(
     if (root && root.kind === 'function' && !seen.has(root.id)) walk(root, 0)
   }
 
+  for (const row of rows) {
+    row.assignedNames = row.assignedTo.map((id) => options.describe?.(id)?.name ?? byId.get(id)?.name ?? id)
+  }
   const columns = columnsOf(rows, byId, options.describe)
+  for (const application of options.allApplications ?? []) {
+    if (columns.some((column) => column.id === application.id)) continue
+    columns.push({ id: application.id, name: application.name, ...(application.where !== undefined ? { where: application.where } : {}), known: true })
+  }
   const groups: MapColumnGroup[] = []
   for (const column of columns) {
     const group = groups.find((held) => held.where === column.where)

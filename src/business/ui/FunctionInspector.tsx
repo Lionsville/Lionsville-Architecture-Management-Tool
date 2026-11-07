@@ -2,55 +2,52 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One thing on the sheet, as fields: the inspector docked to the page.
+ * One thing on the sheet, read first: the one panel, over the page, with what
+ * real sheets use at the top. *Covered by* and *Who holds it* lead, because every
+ * function says *live* and almost none has a description; *Lifecycle* and *Place*
+ * are folded lines that show their value, so three date fields no longer push the
+ * links below the fold.
  *
- * A function or a step, and the difference between them is two rows — a
- * function says what covers it, a step says whose path it is on. Everything
- * else they share, because in the model they are the same shape: a name, a
- * parent, a place among their neighbours, a lifecycle with dates, and a
- * description (ADR-0012 §3).
+ * A function or a step, and the difference between them is two rows: a function
+ * says what covers it, a step says whose path it is on. Everything else they
+ * share, because in the model they are the same shape (ADR-0012 §3).
  *
- * **The page writes nothing itself.** Every keystroke is an action the caller
- * turns into a `Command`, so a capability renamed here is one undo step and
- * one Activity line, exactly as a node renamed on the canvas is. A run of
- * keystrokes into one field coalesces on a key rather than being held back in
- * a draft: the card on the sheet is drawn from the model, so holding the text
- * back would mean watching the name you are typing not appear.
+ * **The page writes nothing itself.** Every change is an action the caller turns
+ * into a `Command`, so a capability renamed here is one undo step and one Activity
+ * line, exactly as a node renamed on the canvas is.
  *
  * **Re-parenting is refused, not repaired.** A parent that would make a loop
  * is offered as a disabled option with the reason beside it
  * (`business/tree.wouldCycle`), because a cycle is not a state a person can
  * see and mend on a page that is drawn from the tree the cycle broke.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
 import { DATED_PHASES, LIFECYCLE_ORDER, datesInOrder } from '../../model'
 import type { Command, DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
+import type { AspectScale } from '../../model/aspectScale'
+import { ratingOn, withRating } from '../../model/aspectScale'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
+import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
-import { CompactForms, SectionHeading } from '../../widgets/CompactForms'
+import { CompactForms } from '../../widgets/CompactForms'
 import { plural } from '../../i18n/strings'
-import type { StringKey, Translate } from '../../i18n'
+import type { StringKey } from '../../i18n'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { CaretIcon } from '../../widgets/icons'
+import { CaretIcon, CloseIcon } from '../../widgets/icons'
 import { OrderedDateFields } from '../../widgets/OrderedDateFields'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import type { PickOption } from '../../widgets/PickToAdd'
+import { Button, IconButton } from '../../widgets/kit/Button'
+import { Select } from '../../widgets/kit/Field'
+import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { mayRemove } from '../authoring'
 import { coverageFor, coverageOf } from '../coverage'
+import { MAX_SPAN, withSpan } from '../grid'
+import type { MapDescribe } from '../map'
 import { childrenOf, wouldCycle } from '../tree'
 
 /**
@@ -114,7 +111,7 @@ export type SheetActions = {
   /** Move one among its neighbours, up or down. One step, however many rows it renumbers. */
   moveElement(id: ElementId, by: -1 | 1): void
   /** The sheet's own fields: the rail, the journey, which areas, in which order and how wide. */
-  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper'>>): void
+  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper' | 'asOf' | 'colourBy'>>): void
   /** Show an application where it is drawn — where the coverage links go. */
   onOpenElement(id: ElementId): void
 
@@ -265,6 +262,18 @@ export type FunctionInspectorProps = {
   domains?: SheetDomains
   /** Something was deleted from here, so nothing is chosen any more. */
   onRemoved?(): void
+  /** The panel closed: nothing is chosen. */
+  onClose?(): void
+  /** What is inside picked instead, from a delete that was refused for it. */
+  onSelect?(id: ElementId): void
+  /** The organisation's numeric scales (ADR-0046): a function's ratings. */
+  scales?: readonly AspectScale[]
+  /** What an application kept elsewhere is called and its dates, for *Covered by*. */
+  describe?: MapDescribe
+  /** The day read. */
+  today?: string
+  /** How wide an area is in a picture: the sheet's, since the window reflows. */
+  columnsInPrint?: { span: number; drawn: boolean; spans: Record<ElementId, number> | undefined; onSpan(spans: Record<ElementId, number> | undefined): void }
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
   /**
    * Another scope answers for the record that is chosen (ADR-0012 §10): it is
@@ -283,188 +292,220 @@ export type FunctionInspectorProps = {
 }
 
 /** The panel's default, and the least and most a seam may make it. */
-export const INSPECTOR_WIDTH = { default: 300, min: 240, max: 640 } as const
+export const INSPECTOR_WIDTH = { default: 320, min: 240, max: 640 } as const
+
+/** What the record is called on the panel: a function by where it stands in its tree. */
+function kindWord(element: DesignElement, model: DesignModel): StringKey {
+  switch (element.kind) {
+    case 'actor': return 'sheet.bandActor'
+    case 'step': return element.parentId === undefined ? 'sheet.bandJourney' : model.elements.find((held) => held.id === element.parentId)?.parentId === undefined ? 'sheet.bandPhase' : 'sheet.bandStep'
+    default:
+      if (element.parentId === undefined) return 'sheet.bandArea'
+      return model.elements.some((held) => held.parentId === element.id) ? 'sheet.bandGrouping' : 'sheet.bandCapability'
+  }
+}
+
+/** The way down to it, from the top of its tree. */
+function pathOf(element: DesignElement, model: DesignModel): string {
+  const names: string[] = []
+  const seen = new Set<string>([element.id])
+  for (let at = element.parentId; at !== undefined && !seen.has(at);) {
+    seen.add(at)
+    const parent = model.elements.find((held) => held.id === at)
+    if (!parent) break
+    names.unshift(parent.name)
+    at = parent.parentId
+  }
+  return names.join(' › ')
+}
+
+/** A line that shows its value, with its fields when asked. */
+function FoldLine({ label, value, children, testId }: { label: string; value: string; children: ReactNode; testId?: string }) {
+  return (
+    <details className="sheet-fold" data-testid={testId}>
+      <summary><span>{label}</span><span>{value}</span></summary>
+      <div className="sheet-fold__body">{children}</div>
+    </details>
+  )
+}
 
 export function FunctionInspector(props: FunctionInspectorProps) {
   const { element, model, readOnly, actions } = props
-  const width = props.width ?? INSPECTOR_WIDTH.default
-  const { t } = useStrings()
-  const owner = element ? props.ownerOf?.(element.id) : undefined
+  const { t, language } = useStrings()
+  if (!element) return null
+  const owner = props.ownerOf?.(element.id)
   /** Is this field the owning scope's? See the canvas inspector's twin of this. */
   const owned = (field: string) => owner?.fields.includes(field) ?? false
-  const name = useRef<HTMLInputElement | null>(null)
-  const nameFocus = props.nameFocus
-  useEffect(() => {
-    if (!nameFocus) return
-    // Selected, not just focused: what is in the box is a placeholder, and the
-    // next keystroke should replace it rather than run on after it.
-    name.current?.focus()
-    name.current?.select()
-  }, [nameFocus])
+  const siblings = childrenOf(model.elements.filter((held) => held.kind === element.kind), element.parentId)
+  const at = siblings.findIndex((held) => held.id === element.id)
+  const parent = model.elements.find((held) => held.id === element.parentId)
+  const place = at >= 0 && parent ? t('sheet.placeOf', { at: at + 1, count: siblings.length, name: parent.name }) : t('sheet.parentRoot')
+  const lifeWord = t(`lifecycle.${element.lifecycle}` as StringKey)
+  const dated = DATED_PHASES.find((phase) => phase === element.lifecycle && element.lifecycleDates?.[phase] !== undefined)
+  const path = pathOf(element, model)
 
   return (
-    <Box
-      data-testid="sheet-inspector" data-guide="sheet.inspector"
-      sx={{
-        width, flex: `0 0 ${width}px`, overflow: 'auto',
-        borderLeft: props.width === undefined ? 1 : 0, borderColor: 'divider',
-        bgcolor: 'background.paper', p: 2,
-      }}
-    >
-      {/* The same treatment as the board's inspector (`CompactForms`). */}
-      <CompactForms>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
-        <SectionHeading>{t('sheet.details')}</SectionHeading>
-        {/* The way to the page, beside the heading rather than among the
-            fields — the same place the canvas's inspector keeps it. A
-            capability's documentation is a page like an application's, with
-            room, a history and the plans that name it; the field below is
-            for a line, not for the account of it. */}
-        {element && props.onOpenDocumentation && (
-          <Button
-            size="small"
-            data-testid="sheet-open-page"
-            aria-label={t('sheet.openPage', { name: element.name })}
-            sx={{ fontSize: 11, minWidth: 0, px: 0.5, py: 0, whiteSpace: 'nowrap', textTransform: 'none' }}
+    <div className="sheet-panel__testid" data-testid="sheet-inspector">
+      <Panel
+        kind={t(kindWord(element, model))}
+        name={element.name}
+        dataGuide="sheet.inspector"
+        {...(props.width !== undefined ? { width: props.width } : {})}
+        {...(!readOnly && !owned('name') ? { onRename: (name: string) => { actions.updateElement(element.id, { name }) } } : {})}
+        {...(props.nameFocus !== undefined ? { renameRequest: props.nameFocus } : {})}
+        {...(path !== '' ? { facts: path } : {})}
+        {...(owner ? {
+          status: (
+            <span data-testid="owned-elsewhere">
+              {t('standIn.definedIn', { scope: owner.label })}{' '}
+              {owner.onOpen && <button type="button" className="sheet-page__link" onClick={owner.onOpen}>{t('standIn.open', { scope: owner.label })}</button>}
+            </span>
+          ),
+        } : {})}
+        actions={props.onOpenDocumentation && (
+          <button
+            type="button" className="sheet-page__link" data-testid="sheet-open-page" aria-label={t('sheet.openPage', { name: element.name })}
             onClick={() => props.onOpenDocumentation?.(element.id)}
-          >
-            {t('sheet.details')} ›
-          </Button>
+          >{t('sheet.pageLink')}</button>
         )}
-      </Box>
-
-      {!element ? (
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {t('sheet.nothingSelected')}
-        </Typography>
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Drawn here, defined there (ADR-0012 §3). Above the fields, since
-              everything below it that is greyed out is greyed out for this. */}
-          {owner && (
-            <Box data-testid="owned-elsewhere" sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1, py: 0.75 }}>
-              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                {t('standIn.definedIn', { scope: owner.label })}
-              </Typography>
-              {owner.onOpen && (
-                <Button size="small" sx={{ mt: 0.5 }} onClick={owner.onOpen}>
-                  {t('standIn.open', { scope: owner.label })}
-                </Button>
-              )}
-            </Box>
-          )}
-
-          <TextField
-            fullWidth
-            label={t('common.name')}
-            value={element.name}
-            disabled={readOnly || owned('name')}
-            inputRef={name}
-            onChange={(e) => actions.updateElement(
-              element.id, { name: e.target.value }, `sheet.name:${element.id}`,
-            )}
-          />
-
-          <ParentField element={element} model={model} readOnly={readOnly} actions={actions} />
-
-          {element.kind === 'step' && (
-            <LaneField element={element} model={model} readOnly={readOnly} actions={actions} />
-          )}
-
-          {element.kind === 'actor' && (
-            <FormControlLabel
-              sx={{ mt: -1 }}
-              control={(
-                <Checkbox
-                  checked={element.outside === true}
-                  disabled={readOnly || owned('outside')}
-                  slotProps={{ input: { 'aria-label': t('sheet.outsideOrganisation') } }}
-                  onChange={(e) => actions.updateElement(
-                    element.id, { outside: e.target.checked ? true : undefined },
-                  )}
-                />
-              )}
-              label={(
-                <Typography sx={{ fontSize: 11.5 }}>{t('sheet.outsideOrganisation')}</Typography>
-              )}
+        {...(props.onClose ? { onClose: props.onClose } : {})}
+      >
+        <CompactForms>
+          {element.kind === 'function' && (
+            <CoveredBy
+              element={element} model={model} readOnly={readOnly} actions={actions} applications={props.applications}
+              elsewhere={props.elsewhere} responsible={props.responsible} describe={props.describe}
             />
           )}
-
-          <TextField
-            select fullWidth
-            label={t('sheet.lifecycle')}
-            value={element.lifecycle}
-            disabled={readOnly || owned('lifecycle')}
-            onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
-          >
-            {LIFECYCLE_ORDER.map((phase) => (
-              <MenuItem key={phase} value={phase}>{t(`lifecycle.${phase}` as StringKey)}</MenuItem>
-            ))}
-          </TextField>
-
-          {/* A row shared three date inputs on `flex: 1`, which in the
-              inspector's own narrow column left each clipped to a couple of
-              digits. Stacked, each keeps the width the inspector actually
-              has; `minWidth: 0` stops a fixed-width native date control from
-              forcing the column itself wider than the panel. */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {element.kind === 'function' && (
+            <PanelSection title={t('sheet.whoHolds')}>
+              <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
+              <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
+              {props.domains && <div className="sheet-held__say">{t('sheet.handingSay')}</div>}
+            </PanelSection>
+          )}
+          {element.kind === 'function' && <Ratings element={element} readOnly={readOnly || owned('ratings')} actions={actions} scales={props.scales ?? []} />}
+          {element.kind === 'step' && (
+            <PanelSection>
+              <LaneField element={element} model={model} readOnly={readOnly} actions={actions} />
+            </PanelSection>
+          )}
+          {element.kind === 'actor' && (
+            <PanelSection>
+              <label className="sheet-held">
+                <input
+                  type="checkbox" checked={element.outside === true} disabled={readOnly || owned('outside')} aria-label={t('sheet.outsideOrganisation')}
+                  onChange={(e) => actions.updateElement(element.id, { outside: e.target.checked ? true : undefined })}
+                />
+                {t('sheet.outsideOrganisation')}
+              </label>
+            </PanelSection>
+          )}
+          <PanelSection>
+            <MarkdownField
+              value={element.description ?? ''}
+              disabled={readOnly}
+              onChange={(value) => actions.updateElement(element.id, { description: value }, `sheet.description:${element.id}`)}
+              renderMarkdown={props.renderMarkdown}
+            />
+          </PanelSection>
+          <FoldLine label={t('sheet.lifecycle')} value={dated ? `${lifeWord} · ${formatDay(element.lifecycleDates![dated]!, language)}` : lifeWord} testId="sheet-fold-lifecycle">
+            <TextField
+              select fullWidth label={t('sheet.lifecycle')} value={element.lifecycle} disabled={readOnly || owned('lifecycle')}
+              onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
+            >
+              {LIFECYCLE_ORDER.map((phase) => <MenuItem key={phase} value={phase}>{t(`lifecycle.${phase}` as StringKey)}</MenuItem>)}
+            </TextField>
             <OrderedDateFields
-              keys={DATED_PHASES}
-              values={element.lifecycleDates}
+              keys={DATED_PHASES} values={element.lifecycleDates}
               label={(phase) => t(`sheet.date.${phase}` as StringKey)}
               ariaLabel={(phase) => `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}`}
-              size="small" fullWidth sx={{ minWidth: 0 }}
-              disabled={readOnly || owned('lifecycleDates')}
-              accepts={datesInOrder}
-              refusal={t('command.datesOutOfOrder')}
+              size="small" fullWidth sx={{ minWidth: 0 }} disabled={readOnly || owned('lifecycleDates')}
+              accepts={datesInOrder} refusal={t('command.datesOutOfOrder')}
               onChange={(lifecycleDates) => actions.updateElement(element.id, { lifecycleDates })}
             />
-          </Box>
-
-          {element.kind === 'function' && (
-            <Coverage
-              element={element} model={model} readOnly={readOnly} actions={actions}
-              applications={props.applications} elsewhere={props.elsewhere} responsible={props.responsible}
-            />
-          )}
-          <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
-
-          <MarkdownField
-            value={element.description ?? ''}
-            disabled={readOnly}
-            onChange={(value) => actions.updateElement(
-              element.id, { description: value }, `sheet.description:${element.id}`,
+          </FoldLine>
+          <FoldLine label={t('sheet.place')} value={place} testId="sheet-fold-place">
+            <ParentField element={element} model={model} readOnly={readOnly} actions={actions} />
+            {props.columnsInPrint?.drawn && !readOnly && (
+              <label className="kit-field">
+                <span>{t('sheet.widthInPrint')}</span>
+                <Select
+                  aria-label={t('sheet.widthInPrint')} value={String(props.columnsInPrint.span)}
+                  options={Array.from({ length: MAX_SPAN }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))}
+                  onChange={(event) => props.columnsInPrint?.onSpan(withSpan(props.columnsInPrint.spans, element.id, Number(event.target.value)))}
+                />
+              </label>
             )}
-            renderMarkdown={props.renderMarkdown}
-          />
-
+          </FoldLine>
           {!readOnly && (
-            <Remove element={element} model={model} actions={actions} onRemoved={props.onRemoved}
-              rolesEnded={props.responsible?.rolesEnded?.(element.id)} unit={props.responsible?.unitDeletion?.(element.id)} />
+            <div className="sheet-panel__foot">
+              <Remove
+                element={element} model={model} actions={actions} onRemoved={props.onRemoved} onSelect={props.onSelect}
+                rolesEnded={props.responsible?.rolesEnded?.(element.id)} unit={props.responsible?.unitDeletion?.(element.id)}
+              />
+            </div>
           )}
-        </Box>
-      )}
-      </CompactForms>
-    </Box>
+        </CompactForms>
+      </Panel>
+    </div>
+  )
+}
+
+/**
+ * A function's numeric ratings (ADR-0046): one line per scale of the
+ * organisation's, written where the function is defined, each change one step.
+ */
+function Ratings({ element, readOnly, actions, scales }: {
+  element: DesignElement
+  readOnly: boolean
+  actions: SheetActions
+  scales: readonly AspectScale[]
+}) {
+  const { t } = useStrings()
+  if (scales.length === 0) return null
+  return (
+    <PanelSection title={t('sheet.ratings')}>
+      {scales.map((scale) => {
+        const value = ratingOn(element, scale)
+        const steps = Array.from({ length: scale.max - scale.min + 1 }, (_, index) => String(scale.min + index))
+        return (
+          <div className="sheet-held" key={scale.key} data-testid={`sheet-rating-${scale.key}`}>
+            <span className="sheet-held__label">{scale.label}</span>
+            {readOnly
+              ? <span className="sheet-held__name">{value ?? t('sheet.lens.unrated')}</span>
+              : (
+                <Select
+                  aria-label={scale.label} value={value === undefined ? '' : String(value)}
+                  options={[{ value: '', label: t('sheet.lens.unrated') }, ...steps.map((step) => ({ value: step, label: step }))]}
+                  onChange={(event) => actions.updateElement(element.id, {
+                    ratings: withRating(element.ratings, scale.key, event.target.value === '' ? undefined : Number(event.target.value)),
+                  })}
+                />
+              )}
+          </div>
+        )
+      })}
+    </PanelSection>
   )
 }
 
 /**
  * Taking one thing away.
  *
- * Refused while something is inside it, and refused *visibly*: the button
- * stays where it is, disabled, with the count beside it, because the answer
- * to "why can I not delete this" belongs next to the thing that will not
- * delete. Nothing cascades — an area is not a request to delete the twenty
- * capabilities in it (`business/authoring.mayRemove`) — but a unit's
- * assignments, which go with it: then the delete asks first, naming who
- * stops being what (ADR-0036, amended 12 October 2026).
+ * Refused while something is inside it, and refused *visibly*: the button stays
+ * where it is with the count beside it and a way to what is inside, because the
+ * answer to "why can I not delete this" belongs next to the thing that will not
+ * delete. Nothing cascades (`business/authoring.mayRemove`), but a unit's
+ * assignments go with it: then the delete asks first, naming who stops being what
+ * (ADR-0036, amended 12 October 2026).
  */
-function Remove({ element, model, actions, onRemoved, rolesEnded, unit }: {
+function Remove({ element, model, actions, onRemoved, onSelect, rolesEnded, unit }: {
   element: DesignElement
   model: DesignModel
   actions: SheetActions
   onRemoved?(): void
+  onSelect?(id: ElementId): void
   rolesEnded?: ReactNode
   unit?: ReturnType<NonNullable<SheetResponsible['unitDeletion']>>
 }) {
@@ -479,25 +520,21 @@ function Remove({ element, model, actions, onRemoved, rolesEnded, unit }: {
     onRemoved?.()
   }
   const asks = unit !== undefined || rolesEnded !== undefined
+  const inside = model.elements.find((held) => held.parentId === element.id)
 
   return (
-    <Box>
-      <Tooltip title={removal.ok ? '' : t(removal.reason)}>
-        <span>
-          <Button
-            size="small" color="error" variant="outlined" fullWidth
-            disabled={!removal.ok}
-            aria-label={t('sheet.deleteThis', { name: element.name })}
-            onClick={() => {
-              if (!asks) { remove(); return }
-              setChoice(unit?.initial ?? '')
-              setAsking(true)
-            }}
-          >
-            {t('common.delete')}
-          </Button>
-        </span>
-      </Tooltip>
+    <>
+      <Button
+        variant="danger" size="small" aria-label={t('sheet.deleteThis', { name: element.name })}
+        {...(!removal.ok ? { reason: t(removal.reason), reasonAt: 'beside' as const } : {})}
+        onClick={() => {
+          if (!asks) { remove(); return }
+          setChoice(unit?.initial ?? '')
+          setAsking(true)
+        }}
+      >
+        {t('common.delete')}
+      </Button>
       {asks && (
         <ConfirmDialog
           open={asking} title={t('sheet.deleteUnitTitle', { name: element.name })} body={t('sheet.deleteUnitBody')}
@@ -508,11 +545,12 @@ function Remove({ element, model, actions, onRemoved, rolesEnded, unit }: {
         </ConfirmDialog>
       )}
       {!removal.ok && (
-        <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>
-          {plural(t, { one: 'sheet.insideOne', other: 'sheet.insideOther' }, removal.count)}
-        </Typography>
+        <span className="sheet-held__say">
+          {plural(t, { one: 'sheet.insideOne', other: 'sheet.insideOther' }, removal.count)}{' '}
+          {inside && onSelect && <button type="button" className="sheet-page__link" onClick={() => onSelect(inside.id)}>{t('sheet.insideGo')}</button>}
+        </span>
       )}
-    </Box>
+    </>
   )
 }
 
@@ -541,7 +579,7 @@ function ParentField({ element, model, readOnly, actions }: {
   const at = siblings.findIndex((held) => held.id === element.id)
 
   return (
-    <Box>
+    <>
       <TextField
         select fullWidth
         label={t('sheet.parent')}
@@ -558,43 +596,22 @@ function ParentField({ element, model, readOnly, actions }: {
             <MenuItem key={candidate.id} value={candidate.id} disabled={loops}>
               {candidate.name}
               {loops && (
-                <Typography component="span" sx={{ fontSize: 10, color: 'text.secondary', ml: 1 }}>
-                  {t('sheet.parentCycle')}
-                </Typography>
+                <span> · {t('sheet.parentCycle')}</span>
               )}
             </MenuItem>
           )
         })}
       </TextField>
       {!readOnly && siblings.length > 1 && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-          <Typography sx={{ fontSize: 10, color: 'text.secondary', flex: 1 }}>
-            {t('sheet.order')}
-          </Typography>
-          <Tooltip title={t('sheet.moveUp')}>
-            <span>
-              <IconButton
-                size="small" aria-label={t('sheet.moveUp')} disabled={at <= 0}
-                sx={{ transform: 'rotate(180deg)' }}
-                onClick={() => actions.moveElement(element.id, -1)}
-              >
-                <CaretIcon size={14} />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title={t('sheet.moveDown')}>
-            <span>
-              <IconButton
-                size="small" aria-label={t('sheet.moveDown')} disabled={at === -1 || at >= siblings.length - 1}
-                onClick={() => actions.moveElement(element.id, 1)}
-              >
-                <CaretIcon size={14} />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
+        <div className="sheet-held">
+          <span className="sheet-held__name">{t('sheet.order')}</span>
+          <span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
+            <IconButton size="small" label={t('sheet.moveUp')} disabled={at <= 0} onClick={() => actions.moveElement(element.id, -1)}><CaretIcon size={14} /></IconButton>
+          </span>
+          <IconButton size="small" label={t('sheet.moveDown')} disabled={at === -1 || at >= siblings.length - 1} onClick={() => actions.moveElement(element.id, 1)}><CaretIcon size={14} /></IconButton>
+        </div>
       )}
-    </Box>
+    </>
   )
 }
 
@@ -625,20 +642,31 @@ function LaneField({ element, model, readOnly, actions }: {
   )
 }
 
+/** What a capability's rows come to, this scope's and the tree's, each row counted once. */
+function rowsOf(element: DesignElement, model: DesignModel, elsewhere: readonly Relation[] | undefined) {
+  // `coverageOf` rather than a concatenation: the rows elsewhere are the whole
+  // tree's, this scope's own saved rows among them, and it counts a row once.
+  const own = coverageFor(model.relations, element.id)
+  return { own, coverage: elsewhere?.length ? (coverageOf(model.relations, elsewhere).get(element.id) ?? own) : own }
+}
+
+/** Whoever can say what an id is called. */
+function namer(model: DesignModel, applications: readonly Supporter[] | undefined, responsible: SheetResponsible | undefined, describe: MapDescribe | undefined) {
+  return (id: ElementId) => applications?.find((held) => held.id === id)?.name
+    ?? describe?.(id)?.name
+    ?? model.elements.find((held) => held.id === id)?.name
+    ?? responsible?.name(id)
+    ?? id
+}
+
 /**
- * What covers this capability — read-only, because it is derived.
- *
- * The systems are links: a coverage question almost always ends in "and what
- * is that one, then". People with no system beside them is a complete answer
- * and is not drawn as a gap (ADR-0012 §9).
- *
- * The applications on offer are the whole organisation's, when the host hands
- * them in: an organisation's sheet has no applications of its own, and the
- * first person to try mapping a capability from it found "Supported by…"
- * offering nothing. A row naming an id this scope does not hold is ordinary
- * (§5), and the name beside it comes from the same list.
+ * *Covered by*: each application, whether it is live or on its way out, and its
+ * name the way to it. A row kept here is taken off here; one kept in another scope
+ * is read here, since this scope can only take away what it wrote. The applications
+ * on offer are the whole organisation's: a landscape's are what support an
+ * organisation's capabilities, and a list that long is found, not browsed.
  */
-function Coverage({ element, model, readOnly, actions, applications, elsewhere, responsible }: {
+function CoveredBy({ element, model, readOnly, actions, applications, elsewhere, responsible, describe }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
@@ -646,137 +674,110 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere, 
   applications: readonly Supporter[] | undefined
   elsewhere: readonly Relation[] | undefined
   responsible: SheetResponsible | undefined
+  describe: MapDescribe | undefined
 }) {
-  const { t } = useStrings()
-  // `coverageOf` rather than a concatenation: the rows elsewhere are the
-  // whole tree's, this scope's own saved rows among them, and it counts a
-  // row this scope holds once. Concatenating listed every saved app twice.
-  const own = coverageFor(model.relations, element.id)
-  const coverage = elsewhere?.length ? (coverageOf(model.relations, elsewhere).get(element.id) ?? own) : own
-  const supporters: readonly Supporter[] = applications
-    ?? model.elements.filter((held) => held.kind === 'application')
-  const named = (id: ElementId) => supporters.find((held) => held.id === id)?.name
-    ?? model.elements.find((held) => held.id === id)?.name
-    ?? responsible?.name(id)
-    ?? id
-
+  const { t, language } = useStrings()
+  const { own, coverage } = rowsOf(element, model, elsewhere)
+  const supporters: readonly Supporter[] = applications ?? model.elements.filter((held) => held.kind === 'application')
+  const named = namer(model, applications, responsible, describe)
+  const offered = [...supporters].filter((one) => !coverage.supportedBy.includes(one.id)).sort((a, b) => a.name.localeCompare(b.name))
+  const state = (id: ElementId) => {
+    const held = model.elements.find((one) => one.id === id)
+    const said = describe?.(id)
+    const leaving = held?.lifecycleDates?.retiring ?? said?.retiring ?? said?.retired
+    if (leaving !== undefined) return t('sheet.retiringOn', { day: formatDay(leaving, language) })
+    return held?.lifecycle === 'retiring' ? t('lifecycle.retiring') : t('lifecycle.live')
+  }
   return (
-    <Box data-testid="sheet-inspector-coverage" data-guide="sheet.coverage">
-      <Typography sx={{
-        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: 'text.secondary', mb: 0.5,
-      }}>
-        {t('sheet.coverage')}
-      </Typography>
-      {coverage.coverage === 'uncovered' && (
-        <Typography sx={{ fontSize: 11.5, color: 'warning.main' }}>{t('sheet.coverageNobody')}</Typography>
-      )}
-      {coverage.supportedBy.map((id) => (
-        <Box key={id}>
-          <Link
-            component="button"
-            type="button"
-            underline="hover"
-            sx={{ fontSize: 11.5 }}
-            aria-label={t('sheet.open', { name: named(id) })}
-            onClick={() => actions.onOpenElement(id)}
-          >
-            {named(id)}
-          </Link>
-        </Box>
-      ))}
-      {coverage.assignedTo.length > 0 && (
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {coverage.assignedTo.map(named).join(', ')}
-          {coverage.coverage === 'manual' && ` — ${t('sheet.coveragePeople')}`}
-        </Typography>
-      )}
-
-      {!readOnly && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
-          <Picker
-            label={t('sheet.supportedBy')}
-            named="sheet.supportedBy"
-            options={supporters}
-            picked={own.supportedBy}
-            onPick={(sourceId, on) =>
-              actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on })}
-            t={t}
+    <div data-testid="sheet-inspector-coverage" data-guide="sheet.coverage">
+      <PanelSection title={t('sheet.coverage')}>
+        {coverage.coverage === 'uncovered' && <div className="sheet-held__say">{t('sheet.coverageNobody')}</div>}
+        {coverage.coverage === 'manual' && <div className="sheet-held__say">{t('sheet.coveragePeople')}</div>}
+        {coverage.supportedBy.map((id) => (
+          <div className="sheet-held" key={id} data-testid={`sheet-supporter-${id}`}>
+            <button type="button" className="sheet-page__link sheet-held__name" aria-label={t('sheet.open', { name: named(id) })} onClick={() => actions.onOpenElement(id)}>{named(id)}</button>
+            <span className="sheet-held__note">{state(id)}</span>
+            {!readOnly && own.supportedBy.includes(id) && (
+              <IconButton size="small" label={t('sheet.takeOff', { name: named(id) })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: id, functionId: element.id, on: false })}><CloseIcon /></IconButton>
+            )}
+          </div>
+        ))}
+        {!readOnly && (
+          <PickToAdd
+            options={offered.map((one) => ({ id: one.id, label: one.name, ...(one.where !== undefined ? { group: one.where } : {}) }))}
+            label={t('sheet.addApplication')} field={t('sheet.supportedBy')} nothing={t('sheet.coverageNobody')}
+            guide="sheet.supportedBy" testId="sheet-support" disabled={offered.length === 0}
+            onPick={(sourceId) => actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on: true })}
           />
-        </Box>
-      )}
-      <AssignedTo
-        element={element} model={model} readOnly={readOnly} actions={actions} responsible={responsible}
-        assigned={coverage.assignedTo} own={own.assignedTo} named={named}
-      />
-    </Box>
+        )}
+      </PanelSection>
+    </div>
   )
 }
 
 /**
- * Who is responsible for it (*Assigned to*): a chip per `assigned` row, the
- * rows kept here taken off here, a unit that does not serve this domain
- * marked, and *+ Unit*, which picks from the whole organisation — the row is
- * kept here, with a unit filed elsewhere as its far end.
+ * *Answers for it*: a row per `assigned` row, the ones kept here taken off here, a
+ * unit that does not serve this domain marked, and *+ Unit*, which picks from the
+ * whole organisation. Where the row is kept is said only where a unit is filed
+ * elsewhere.
  */
-function AssignedTo({ element, model, readOnly, actions, responsible, assigned, own, named }: {
+function AssignedTo({ element, model, readOnly, actions, responsible, elsewhere, describe, applications }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
   responsible: SheetResponsible | undefined
-  assigned: readonly ElementId[]
-  own: readonly ElementId[]
-  named: (id: ElementId) => string
+  elsewhere: readonly Relation[] | undefined
+  describe: MapDescribe | undefined
+  applications: readonly Supporter[] | undefined
 }) {
   const { t } = useStrings()
+  const { own, coverage } = rowsOf(element, model, elsewhere)
+  const named = namer(model, applications, responsible, describe)
+  const assigned = coverage.assignedTo
   const choices = responsible?.choices
     ?? model.elements.filter((held) => held.kind === 'actor').map((held) => ({ id: held.id, label: held.name }))
   const offered = choices.filter((one) => !assigned.includes(one.id))
+  const elsewhereFiled = assigned.some((id) => !model.elements.some((held) => held.id === id))
   return (
-    <Box data-testid="sheet-assigned-to" data-guide="sheet.assignedTo" sx={{ mt: 1.5 }}>
-      <SectionHeading sx={{ mb: 0.5 }}>{t('sheet.assignedTo')}</SectionHeading>
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-        {assigned.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.assignedNobody')}</Typography>}
+    <div className="sheet-held" data-testid="sheet-assigned-to" data-guide="sheet.assignedTo">
+      <span className="sheet-held__label">{t('sheet.assignedTo')}</span>
+      <div className="sheet-held__values">
+        {assigned.length === 0 && <span>{t('sheet.assignedNobody')}</span>}
         {assigned.map((id) => {
           const outside = responsible ? !responsible.serves(id, element.id) : false
           return (
-            <Chip
-              key={id} variant={outside ? 'outlined' : 'filled'} color={outside ? 'warning' : 'default'}
-              data-testid="sheet-assigned" data-outside={outside || undefined}
-              label={outside ? `${named(id)} · ${t('sheet.assignedOutside')}` : named(id)}
-              {...(!readOnly && own.includes(id)
-                ? { onDelete: () => actions.setCoverage({ type: 'assigned', sourceId: id, functionId: element.id, on: false }) }
-                : {})}
-            />
+            <span className="sheet-held" key={id} data-testid="sheet-assigned" data-outside={outside || undefined} data-warn={outside || undefined}>
+              <span className="sheet-held__name">{named(id)}</span>
+              {outside && <span className="sheet-held__note">{t('sheet.assignedOutside')}</span>}
+              {!readOnly && own.assignedTo.includes(id) && (
+                <IconButton size="small" label={t('sheet.takeOff', { name: named(id) })} onClick={() => actions.setCoverage({ type: 'assigned', sourceId: id, functionId: element.id, on: false })}><CloseIcon /></IconButton>
+              )}
+            </span>
           )
         })}
-      </Box>
-      {!readOnly && (
-        <PickToAdd
-          options={offered} label={t('sheet.assignUnit')} field={t('sheet.findUnit')} nothing={t('sheet.noUnit')}
-          guide="sheet.doneBy" testId="sheet-assign" disabled={offered.length === 0}
-          onPick={(sourceId) => actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on: true })}
-        />
-      )}
-      <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>{t('sheet.assignedFarEnd')}</Typography>
-    </Box>
+        {!readOnly && (
+          <PickToAdd
+            options={offered} label={t('sheet.assignUnit')} field={t('sheet.findUnit')} nothing={t('sheet.noUnit')}
+            guide="sheet.doneBy" testId="sheet-assign" disabled={offered.length === 0}
+            onPick={(sourceId) => actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on: true })}
+          />
+        )}
+        {elsewhereFiled && <span className="sheet-held__say">{t('sheet.assignedFarEnd')}</span>}
+      </div>
+    </div>
   )
 }
 
 /**
- * Which domains it is handed to (ADR-0040 §4), and which took it up (§5).
+ * *Handed to* (ADR-0040 §4) and *Taken up by* (§5). A row per path in its `scopes`,
+ * taken off with its ×, and *+ Domain*, which offers the scopes below the one that
+ * defines it, each change one `element.update` of `scopes`. A stand-in shows them
+ * and no editor: its domains are the definition's (ADR-0012 §10).
  *
- * A chip per path in its `scopes`, taken off with its ×, and *+ Domain*,
- * which offers the scopes below the one that defines it. Each change is one
- * `element.update` of `scopes`: one step, one Activity line. A stand-in shows
- * the chips and no editor — its domains are the definition's (ADR-0012 §10).
- *
- * *Taken up by* is the other half, read and never written here: every scope
- * that holds a stand-in of it, a way to that scope's home. One that took it up
- * without being handed it is marked in the warning colour, and a domain it was
- * handed to that has not taken it up is said to be not started. Both are
- * ADR-0012 §3's two findings, neither an error.
+ * *Taken up by* is read and never written here. One that took it up without being
+ * handed it is marked, and a domain it was handed to that has not taken it up is
+ * said to be not started: ADR-0012 §3's two findings, neither an error.
  */
 function Domains({ element, model, readOnly, owned, actions, domains }: {
   element: DesignElement
@@ -793,73 +794,65 @@ function Domains({ element, model, readOnly, owned, actions, domains }: {
   const takers = domains.takenUpBy(element.id)
   const within = (path: string, scope: string) => scope === '' || path === scope || path.startsWith(`${scope}/`)
   const started = (scope: string) => takers.some((taker) => within(taker, scope))
-  const chipLabel = (scope: string) => {
-    if (domains.known && !domains.known(scope)) return `${domains.name(scope)} · ${t('sheet.domainUnknown')}`
-    return started(scope) ? domains.name(scope) : `${domains.name(scope)} · ${t('sheet.notStarted')}`
-  }
   const editable = !readOnly && !owned
-  const place = (scope: string, warn: boolean) => (domains.openScope
-    ? (
-      <Link
-        component="button" type="button" underline="hover" key={scope}
-        sx={{ fontSize: 11.5, ...(warn ? { color: 'warning.main' } : {}) }}
-        onClick={() => domains.openScope?.(scope)}
-      >
-        {domains.name(scope)}
-      </Link>
-    )
-    : <Typography component="span" key={scope} sx={{ fontSize: 11.5, ...(warn ? { color: 'warning.main' } : {}) }}>{domains.name(scope)}</Typography>)
+  const choices = editable ? domains.choices(element.id) : []
+  const place = (scope: string) => (domains.openScope
+    ? <button type="button" className="sheet-page__link sheet-held__name" onClick={() => domains.openScope?.(scope)}>{domains.name(scope)}</button>
+    : <span className="sheet-held__name">{domains.name(scope)}</span>)
   return (
-    <Box data-testid="sheet-domains" data-guide="sheet.domains">
-      <SectionHeading sx={{ mb: 0.5 }}>{t('sheet.domains')}</SectionHeading>
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* A stand-in keeps none of its own: the scope that defines it says them, and they are read there. */}
-        {owned && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsThere')}</Typography>}
-        {!owned && handed.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.domainsNone')}</Typography>}
-        {handed.map((scope) => {
-          const notStarted = !started(scope)
-          const unknown = domains.known ? !domains.known(scope) : false
-          return (
-            <Chip
-              key={scope} size="small" data-testid="sheet-domain" data-scope={scope} data-not-started={notStarted || undefined}
-              variant={notStarted ? 'outlined' : 'filled'} color={unknown ? 'warning' : 'default'}
-              label={chipLabel(scope)}
-              {...(editable ? { onDelete: () => actions.updateElement(element.id, { scopes: handed.filter((held) => held !== scope) }) } : {})}
-            />
-          )
-        })}
-      </Box>
-      {above && (
-        <Typography data-testid="sheet-domains-above" sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>
-          {t('sheet.domainsThrough', { name: above.name, scopes: above.scopes.map(domains.name).join(', ') })}
-        </Typography>
-      )}
-      {editable && (
-        <PickToAdd
-          options={domains.choices(element.id)} label={t('sheet.domainsAdd')} field={t('sheet.domainsFind')} nothing={t('sheet.domainsNothing')}
-          testId="sheet-domain-add" disabled={domains.choices(element.id).length === 0}
-          onPick={(scope) => actions.updateElement(element.id, { scopes: [...handed, scope] })}
-        />
-      )}
-      <Box data-testid="sheet-taken-up" sx={{ mt: 1 }}>
-        <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>{t('sheet.takenUpBy')}</Typography>
-        {takers.length === 0
-          ? <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.takenUpNobody')}</Typography>
-          : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              {takers.map((taker) => {
-                const unasked = !owned && ![...handed, ...(above?.scopes ?? [])].some((scope) => within(taker, scope))
-                return (
-                  <Box key={taker} data-testid="sheet-taker" data-unasked={unasked || undefined}>
-                    {place(taker, unasked)}
-                    {unasked && <Typography component="span" sx={{ fontSize: 10.5, color: 'warning.main', ml: 0.5 }}>{t('sheet.takenUpUnasked')}</Typography>}
-                  </Box>
-                )
-              })}
-            </Box>
+    <div data-testid="sheet-domains" data-guide="sheet.domains">
+      <div className="sheet-held">
+        <span className="sheet-held__label">{t('sheet.domains')}</span>
+        <div className="sheet-held__values">
+          {/* A stand-in keeps none of its own: the scope that defines it says them, and they are read there. */}
+          {owned && <span>{t('sheet.domainsThere')}</span>}
+          {!owned && handed.length === 0 && <span>{t('sheet.domainsNone')}</span>}
+          {handed.map((scope) => {
+            const unknown = domains.known ? !domains.known(scope) : false
+            const notStarted = !started(scope)
+            return (
+              <span
+                className="sheet-held" key={scope} data-testid="sheet-domain" data-scope={scope} data-not-started={notStarted || undefined}
+                data-warn={unknown || undefined}
+              >
+                {place(scope)}
+                {unknown
+                  ? <span className="sheet-held__note">{t('sheet.domainUnknown')}</span>
+                  : notStarted && <span className="sheet-held__note">{t('sheet.notStarted')}</span>}
+                {editable && <IconButton size="small" label={t('sheet.takeOff', { name: domains.name(scope) })} onClick={() => actions.updateElement(element.id, { scopes: handed.filter((held) => held !== scope) })}><CloseIcon /></IconButton>}
+              </span>
+            )
+          })}
+          {above && (
+            <span className="sheet-held__say" data-testid="sheet-domains-above">
+              {t('sheet.domainsThrough', { name: above.name, scopes: above.scopes.map(domains.name).join(', ') })}
+            </span>
           )}
-      </Box>
-    </Box>
+          {editable && (
+            <PickToAdd
+              options={choices} label={t('sheet.domainsAdd')} field={t('sheet.domainsFind')} nothing={t('sheet.domainsNothing')}
+              testId="sheet-domain-add" disabled={choices.length === 0}
+              onPick={(scope) => actions.updateElement(element.id, { scopes: [...handed, scope] })}
+            />
+          )}
+        </div>
+      </div>
+      <div className="sheet-held" data-testid="sheet-taken-up">
+        <span className="sheet-held__label">{t('sheet.takenUpBy')}</span>
+        <div className="sheet-held__values">
+          {takers.length === 0 && <span>{t('sheet.takenUpNobody')}</span>}
+          {takers.map((taker) => {
+            const unasked = !owned && ![...handed, ...(above?.scopes ?? [])].some((scope) => within(taker, scope))
+            return (
+              <span className="sheet-held" key={taker} data-testid="sheet-taker" data-unasked={unasked || undefined} data-warn={unasked || undefined}>
+                {place(taker)}
+                {unasked && <span className="sheet-held__note">{t('sheet.takenUpUnasked')}</span>}
+              </span>
+            )
+          })}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -882,68 +875,4 @@ function handedAbove(
     at = parent.parentId
   }
   return undefined
-}
-
-/**
- * What covers this, as something a person picks by typing.
- *
- * Coverage is derived from rows (`business/coverage.ts`) and this is the one
- * place a row is written by hand: a pick is one `supports` or `assigned`
- * relation, an unpick takes it away, and the line above redraws from the
- * model rather than from anything held here. One pick per change, because
- * the field hands back a whole list and only ever one of them moved — which
- * keeps each pick its own undo step and its own Activity line.
- *
- * Typed rather than scrolled: an organisation's register runs to hundreds of
- * applications, and a list that long is found, not browsed. Ids the scope
- * names in a row and does not hold are ordinary (ADR-0012 §5), so the value
- * is narrowed to what is actually on offer; the row itself stays where it is
- * and the line above still names it.
- */
-function Picker({ label, named, options, picked, onPick, t }: {
-  label: string
-  /** Its stable name (`data-guide`, `CONTROL_NAMES`). */
-  named: string
-  options: readonly Supporter[]
-  picked: readonly ElementId[]
-  onPick(id: ElementId, on: boolean): void
-  t: Translate
-}) {
-  const offered = [...options].sort((a, b) => a.name.localeCompare(b.name))
-  const held = offered.filter((option) => picked.includes(option.id))
-
-  return (
-    <Autocomplete
-      multiple
-      data-guide={named}
-      // The list stays open after a pick: what supports a capability is
-      // usually several things, and closing after each was a click per row.
-      disableCloseOnSelect
-      options={offered}
-      value={held}
-      getOptionLabel={(option) => option.name}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      noOptionsText={t('sheet.coverageNobody')}
-      renderOption={(props, option) => (
-        <li {...props} key={option.id}>
-          <Typography component="span" sx={{ fontSize: 12.5 }}>{option.name}</Typography>
-          {option.where && (
-            <Typography component="span" aria-hidden sx={{ fontSize: 10.5, color: 'text.secondary', ml: 'auto', pl: 1 }}>
-              {option.where}
-            </Typography>
-          )}
-        </li>
-      )}
-      renderInput={(params) => <TextField {...params} label={label} />}
-      slotProps={{ chip: { size: 'small', sx: { height: 20, fontSize: 11 } } }}
-      onChange={(_event, next) => {
-        const ids = next.map((option) => option.id)
-        const before = held.map((option) => option.id)
-        const added = ids.find((id) => !before.includes(id))
-        if (added !== undefined) { onPick(added, true); return }
-        const removed = before.find((id) => !ids.includes(id))
-        if (removed !== undefined) onPick(removed, false)
-      }}
-    />
-  )
 }

@@ -17,18 +17,14 @@
  * of an A0 at two pixels per point is past what some of them will draw.
  */
 import { useState } from 'react'
-import Button from '@mui/material/Button'
-import CircularProgress from '@mui/material/CircularProgress'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
-import { PAPER_SIZES, paperHeight, paperWidth } from '../grid'
+import type { DesignDiagram, SheetPaper } from '../../model'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField } from '../../widgets/kit/Field'
+import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
+import type { SheetActions } from './FunctionInspector'
 
 /** The window as it is, or a sheet of paper. */
 export type ExportLayout = 'screen' | PaperSize
@@ -39,9 +35,18 @@ export type SheetExportDialogProps = {
   /** Draw the page at the width, or as it is, and hand the picture over. Rejects when the browser declined. */
   onExport(layout: ExportLayout): Promise<void>
   onClose(): void
+  /** The sheet's own canvas and columns, which say how a picture is laid out. Absent for a reader, and for a map. */
+  sheet?: DesignDiagram
+  actions?: Pick<SheetActions, 'updateSheet'>
+  /** What the dialog is called, where it is not the sheet's. */
+  title?: string
+  hint?: string
 }
 
-export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDialogProps) {
+/** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
+const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
+
+export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, title, hint }: SheetExportDialogProps) {
   const { t } = useStrings()
   const [layout, setLayout] = useState<ExportLayout>(initial ?? 'A1')
   const [busy, setBusy] = useState(false)
@@ -61,39 +66,41 @@ export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDia
   }
 
   return (
-    <FieldsDialog open onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{t('sheet.exportTitle')}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('sheet.exportHint')}</Typography>
-        <TextField
-          select fullWidth
-          label={t('sheet.exportPaper')}
-          value={layout}
-          disabled={busy}
-          slotProps={{ htmlInput: { 'aria-label': t('sheet.exportPaper') } }}
-          onChange={(e) => setLayout(e.target.value as ExportLayout)}
-        >
-          <MenuItem value="screen">{t('sheet.exportScreen')}</MenuItem>
-          {PAPER_SIZES.map((paper) => (
-            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} × {paperHeight(paper)} px</MenuItem>
-          ))}
-        </TextField>
-        {failure !== undefined && (
-          <Typography role="alert" sx={{ fontSize: 12, color: 'error.main' }}>
-            {t('sheet.exportFailed', { message: failure })}
-          </Typography>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
-        <Button
-          size="small" variant="contained" disabled={busy}
-          startIcon={busy ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
-          onClick={() => { void save() }}
-        >
-          {busy ? t('sheet.exportBusy') : t('sheet.exportSave')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open size="m" title={title ?? t('sheet.exportTitle')} onClose={onClose} working={busy}
+      {...(failure !== undefined ? { error: t('sheet.exportFailed', { message: failure }) } : {})}
+      actions={(
+        <>
+          <Button onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
+          <Button variant="primary" working={busy} onClick={() => { void save() }}>{busy ? t('sheet.exportBusy') : t('sheet.exportSave')}</Button>
+        </>
+      )}
+    >
+      <p>{hint ?? t('sheet.exportHint')}</p>
+      <SelectField
+        label={t('sheet.exportPaper')} value={layout} disabled={busy} onChange={(value) => setLayout(value as ExportLayout)}
+        options={[
+          { value: 'screen', label: t('sheet.exportScreen') },
+          ...PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` })),
+        ]}
+      />
+      {sheet && actions && (
+        <>
+          <SelectField
+            label={t('sheet.settingsPaper')} value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER} disabled={busy}
+            onChange={(value) => actions.updateSheet({ paper: value === DEFAULT_PAPER ? undefined : value as SheetPaper })}
+            options={[
+              ...PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` })),
+              { value: 'fit', label: t('sheet.paperFit') },
+            ]}
+          />
+          <SelectField
+            label={t('sheet.settingsColumns')} value={sheet.columns === undefined ? '' : String(sheet.columns)} disabled={busy}
+            onChange={(value) => actions.updateSheet({ columns: value === '' ? undefined : Number(value) })}
+            options={[{ value: '', label: t('sheet.columnsFit') }, ...COLUMN_CHOICES.map((count) => ({ value: String(count), label: String(count) }))]}
+          />
+        </>
+      )}
+    </Dialog>
   )
 }

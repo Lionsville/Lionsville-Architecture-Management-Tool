@@ -18,26 +18,15 @@
  * redraws under the dialog, which is the point — this is a view onto the
  * sheet, not a form about it.
  */
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import { FieldLabel, FieldsDialog, SectionHeading } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
+import { useState } from 'react'
 import type { DesignDiagram, DesignModel, ElementId } from '../../model'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
+import { Button, IconButton } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField } from '../../widgets/kit/Field'
 import { journeyOf } from '../lanes'
-import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
-import type { SheetPaper } from '../../model'
 import { rootsOfKind } from '../sheetDiagram'
 import type { SheetActions } from './FunctionInspector'
 
@@ -52,7 +41,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
   const { t } = useStrings()
   const journeys = rootsOfKind(model.elements, 'step')
   const roots = rootsOfKind(model.elements, 'function')
-  // An absent list draws every root, so that is the list this dialog shows —
+  // An absent list draws every root, so that is the list this dialog shows,
   // and the moment somebody touches it, it is written down.
   const drawn = sheet.areas ?? roots.map((root) => root.id)
   const named = (id: ElementId) => model.elements.find((held) => held.id === id)?.name ?? id
@@ -67,168 +56,79 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
       .filter((id): id is ElementId => id !== undefined)
 
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{t('sheet.settings')}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-        <TextField
-          select fullWidth
-          label={t('sheet.settingsJourney')}
-          value={sheet.journeyId ?? ''}
-          slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsJourney') } }}
-          onChange={(e) => actions.updateSheet({
-            journeyId: e.target.value === '' ? undefined : e.target.value,
-          })}
-        >
-          <MenuItem value="">{t('common.none')}</MenuItem>
-          {journeys.map((journey) => (
-            <MenuItem key={journey.id} value={journey.id}>{journey.name}</MenuItem>
-          ))}
-        </TextField>
+    <Dialog open size="m" title={t('sheet.settings')} onClose={onClose} actions={<Button onClick={onClose}>{t('common.close')}</Button>}>
+      <SelectField
+        label={t('sheet.settingsJourney')} value={sheet.journeyId ?? ''}
+        options={[{ value: '', label: t('common.none') }, ...journeys.map((journey) => ({ value: journey.id, label: journey.name }))]}
+        onChange={(value) => actions.updateSheet({ journeyId: value === '' ? undefined : value })}
+      />
 
-        <Box>
-          <Caption text={t('sheet.settingsAreas')} />
-          {[...drawn, ...roots.map((root) => root.id).filter((id) => !drawn.includes(id))]
-            .map((id) => {
-              const on = drawn.includes(id)
-              const at = drawn.indexOf(id)
-              return (
-                <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FormControlLabel
-                    sx={{ flex: 1, minWidth: 0 }}
-                    control={(
-                      <Checkbox
-                        checked={on}
-                        slotProps={{ input: { 'aria-label': t('sheet.settingsDraw', { name: named(id) }) } }}
-                        onChange={() => actions.updateSheet({
-                          areas: on ? drawn.filter((held) => held !== id) : [...drawn, id],
-                        })}
-                      />
-                    )}
-                    label={<Typography sx={{ fontSize: 12 }}>{named(id)}</Typography>}
-                  />
-                  {on && (
-                    <Move
-                      name={named(id)}
-                      up={at > 0 ? () => actions.updateSheet({ areas: swapped(drawn, at, -1) }) : undefined}
-                      down={at < drawn.length - 1
-                        ? () => actions.updateSheet({ areas: swapped(drawn, at, 1) })
-                        : undefined}
-                      t={t}
-                    />
-                  )}
-                </Box>
-              )
-            })}
-        </Box>
+      <OrderList
+        heading={t('sheet.settingsAreas')} order={drawn} named={named}
+        extra={roots.map((root) => root.id).filter((id) => !drawn.includes(id))}
+        onOrder={(areas) => actions.updateSheet({ areas })} drawWord={(name) => t('sheet.settingsDraw', { name })} t={t}
+      />
 
-        <Box>
-          <Caption text={t('sheet.settingsLanes')} />
-          {lanes.length === 0 && <FieldLabel>{t('sheet.settingsNoLanes')}</FieldLabel>}
-          {lanes.map((id, at) => (
-            <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
-              <Typography sx={{ fontSize: 12, flex: 1, minWidth: 0 }}>{named(id)}</Typography>
-              <Move
-                name={named(id)}
-                up={at > 0 ? () => actions.updateSheet({ lanes: swapped(lanes, at, -1) }) : undefined}
-                down={at < lanes.length - 1
-                  ? () => actions.updateSheet({ lanes: swapped(lanes, at, 1) })
-                  : undefined}
-                t={t}
-              />
-            </Box>
-          ))}
-        </Box>
+      <OrderList
+        heading={t('sheet.settingsLanes')} order={lanes} named={named} none={t('sheet.settingsNoLanes')}
+        onOrder={(next) => actions.updateSheet({ lanes: next })} t={t}
+      />
 
-        <FormControlLabel
-          control={(
-            <Checkbox
-              checked={sheet.showActors !== false}
-              slotProps={{ input: { 'aria-label': t('sheet.settingsRail') } }}
-              onChange={(e) => actions.updateSheet({ showActors: e.target.checked })}
-            />
-          )}
-          label={<Typography sx={{ fontSize: 12 }}>{t('sheet.settingsRail')}</Typography>}
+      <label className="sheet-held">
+        <input
+          type="checkbox" checked={sheet.showActors !== false} aria-label={t('sheet.settingsRail')}
+          onChange={(event) => actions.updateSheet({ showActors: event.target.checked })}
         />
-
-        {/* The canvas: a sheet of paper the page is laid out on, scrolling
-            sideways in a window narrower than it, or the window itself. */}
-        <TextField
-          select fullWidth
-          label={t('sheet.settingsPaper')}
-          value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER}
-          slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsPaper') } }}
-          onChange={(e) => actions.updateSheet({
-            paper: e.target.value === DEFAULT_PAPER ? undefined : e.target.value as SheetPaper,
-          })}
-        >
-          {PAPER_SIZES.map((paper) => (
-            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} × {paperHeight(paper)} px</MenuItem>
-          ))}
-          <MenuItem value="fit">{t('sheet.paperFit')}</MenuItem>
-        </TextField>
-
-        {/* How many columns the areas tile in: as many as the canvas has room
-            for, which is the default, or a fixed count. */}
-        <TextField
-          select fullWidth
-          label={t('sheet.settingsColumns')}
-          value={sheet.columns ?? ''}
-          slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsColumns') } }}
-          onChange={(e) => actions.updateSheet({
-            columns: e.target.value === '' ? undefined : Number(e.target.value),
-          })}
-        >
-          <MenuItem value="">{t('sheet.columnsFit')}</MenuItem>
-          {COLUMN_CHOICES.map((count) => (
-            <MenuItem key={count} value={count}>{count}</MenuItem>
-          ))}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose}>{t('common.close')}</Button>
-      </DialogActions>
-    </FieldsDialog>
+        {t('sheet.settingsRail')}
+      </label>
+    </Dialog>
   )
 }
 
-/** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
-const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
-
-function Caption({ text }: { text: string }) {
-  return <SectionHeading sx={{ mb: 0.5 }}>{text}</SectionHeading>
-}
-
-function Move({ name, up, down, t }: {
-  name: string
-  up?: () => void
-  down?: () => void
+/** A list in its order, dragged or moved by the arrows, with a tick on each where it can be left out. */
+function OrderList({ heading, order, extra = [], named, none, onOrder, drawWord, t }: {
+  heading: string
+  order: readonly ElementId[]
+  /** What could be drawn and is not. */
+  extra?: readonly ElementId[]
+  named(id: ElementId): string
+  none?: string
+  onOrder(next: ElementId[]): void
+  drawWord?: (name: string) => string
   t: Translate
 }) {
+  const [dragged, setDragged] = useState<number | undefined>(undefined)
   return (
-    <>
-      <Tooltip title={t('sheet.moveUp')}>
-        <span>
-          <IconButton
-            size="small" disabled={!up} sx={{ transform: 'rotate(180deg)' }}
-            aria-label={`${name}: ${t('sheet.moveUp')}`}
-            onClick={up}
-          >
-            <CaretIcon size={12} />
-          </IconButton>
-        </span>
-      </Tooltip>
-      <Tooltip title={t('sheet.moveDown')}>
-        <span>
-          <IconButton
-            size="small" disabled={!down}
-            aria-label={`${name}: ${t('sheet.moveDown')}`}
-            onClick={down}
-          >
-            <CaretIcon size={12} />
-          </IconButton>
-        </span>
-      </Tooltip>
-    </>
+    <div>
+      <h3 className="sheet-areas__heading">{heading}</h3>
+      {order.length === 0 && extra.length === 0 && none && <div className="sheet-held__say">{none}</div>}
+      {order.map((id, at) => (
+        <div
+          className="sheet-held" key={id} draggable onDragStart={() => setDragged(at)} onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault()
+            if (dragged === undefined || dragged === at) return
+            const next = [...order]
+            next.splice(at, 0, ...next.splice(dragged, 1))
+            setDragged(undefined)
+            onOrder(next)
+          }}
+        >
+          {drawWord && <input type="checkbox" checked aria-label={drawWord(named(id))} onChange={() => onOrder(order.filter((held) => held !== id))} />}
+          <span className="sheet-held__name">{named(id)}</span>
+          <span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
+            <IconButton size="small" label={`${named(id)}: ${t('sheet.moveUp')}`} disabled={at === 0} onClick={() => onOrder(swapped(order, at, -1))}><CaretIcon size={12} /></IconButton>
+          </span>
+          <IconButton size="small" label={`${named(id)}: ${t('sheet.moveDown')}`} disabled={at === order.length - 1} onClick={() => onOrder(swapped(order, at, 1))}><CaretIcon size={12} /></IconButton>
+        </div>
+      ))}
+      {extra.map((id) => (
+        <label className="sheet-held" key={id}>
+          <input type="checkbox" checked={false} aria-label={drawWord?.(named(id))} onChange={() => onOrder([...order, id])} />
+          <span className="sheet-held__name">{named(id)}</span>
+        </label>
+      ))}
+    </div>
   )
 }
 

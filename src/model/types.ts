@@ -963,6 +963,8 @@ export interface DesignDiagram {
   colourBy?:
     | 'platform' | 'technologyLifecycle'
     | 'lifecycle' | 'category' | 'owner' | 'vendor' | 'technology'
+    // A business sheet's own questions (`business/lens`), kept with it by *Keep with the view*.
+    | 'coveredBy' | 'who' | 'domains' | 'retiring'
     | `one:${string}` | `aspect:${string}`;
   /**
    * Where it all ended up. A separate file, and a separate question (§6).

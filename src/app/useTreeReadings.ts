@@ -95,6 +95,7 @@ export function useTreeReadings(deps: {
       ...(entry.lifecycleDates !== undefined ? { lifecycleDates: entry.lifecycleDates } : {}),
       ...(entry.category !== undefined ? { category: entry.category } : {}),
       ...(entry.owner !== undefined ? { owner: entry.owner } : {}),
+      ...(entry.lifecycleDates?.retiring !== undefined ? { retiring: entry.lifecycleDates.retiring } : {}),
     }
   }, [index, scope, scopeLabel])
 

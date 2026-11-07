@@ -14,19 +14,15 @@
  * Where to go is the host's (`SheetResponsible.openScope`, `.openUnit`): this
  * module knows no scope tree, only the names and paths it is handed.
  *
- * **Everybody, behind the toggle.** *Show who is responsible* adds a chip for
- * each other actor the rows point at, and marks the ones nobody answers for.
- * Off by default and the page's own, for the session: a view of the sheet,
- * not something the sheet says.
+ * **Everybody, under its lens.** *Who answers* names each other actor the rows
+ * point at and marks the ones nobody answers for, on every row. It is the
+ * reader's own until kept, and the layout does not move for it.
  *
  * A unit that serves neither the function's domain nor sits under one that
  * does is drawn as a warning, as the check says it.
  */
 import { useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
+import { Menu } from '../../widgets/kit/Menu'
 import type { DesignModel, ElementId, Relation } from '../../model'
 import type { Translate } from '../../i18n'
 import { coverageOf } from '../coverage'
@@ -40,9 +36,9 @@ export type UnitHolder = Holder & { serves: readonly { scope: string; name: stri
 
 /** Who answers for each function on the page. */
 export type Who = {
-  /** Whether *Show who is responsible* is on: the chips of the actors that are not units. */
+  /** Whether *Who answers* is the lens up: the actors that are not units are named then. */
   shown: boolean
-  /** The actors that are not units, while the toggle is on; every holder where the host says nothing of units. */
+  /** The actors that are not units, under that lens; every holder where the host says nothing of units. */
   of(functionId: ElementId): readonly Holder[]
   /** The units, always: what the label names. */
   units(functionId: ElementId): readonly UnitHolder[]
@@ -81,36 +77,6 @@ export function whoOf(model: DesignModel, elsewhere: readonly Relation[] | undef
   }
 }
 
-const CHIP = {
-  display: 'inline-block', fontSize: 9.5, fontWeight: 400, letterSpacing: 0, textTransform: 'none',
-  lineHeight: '16px', px: 0.75, borderRadius: 8, border: 1, mr: 0.5, mt: 0.25,
-} as const
-
-/** The chips under a name while the toggle is on: each other actor responsible, or *nobody*, marked. Plain text, since a card is itself a button. */
-export function ResponsibleChips({ who, functionId, t }: { who: Who | undefined; functionId: ElementId; t: Translate }) {
-  if (!who?.shown) return null
-  const holders = who.of(functionId)
-  const nobody = !who.anybody(functionId)
-  if (!nobody && holders.length === 0) return null
-  return (
-    <Box component="span" data-testid={`sheet-responsible-${functionId}`} sx={{ display: 'block' }}>
-      {nobody && (
-        <Box component="span" data-responsible="nobody" sx={{ ...CHIP, borderStyle: 'dashed', borderColor: 'warning.main', color: 'warning.main' }}>
-          {t('sheet.responsibleNobody')}
-        </Box>
-      )}
-      {holders.map((one) => (
-        <Box
-          component="span" key={one.id} data-responsible={one.outside ? 'outside' : 'serves'}
-          sx={{ ...CHIP, borderColor: one.outside ? 'warning.main' : 'divider', color: one.outside ? 'warning.main' : 'text.primary', bgcolor: 'action.hover' }}
-        >
-          {one.outside ? `${one.name} · ${t('sheet.assignedOutside')}` : one.name}
-        </Box>
-      ))}
-    </Box>
-  )
-}
-
 /** Where a label may lead: a scope's home, or a unit where it is kept. */
 export type UnitTarget = { key: string; label: string; note?: string; go: () => void }
 
@@ -135,7 +101,7 @@ export function unitTargets(units: readonly UnitHolder[], open: Who['open'], t: 
  * target is, or opens a menu of them. Its own button beside the card's, never
  * inside it, and it stops the press at itself so the card is not chosen too.
  */
-export function UnitLabel({ who, functionId, t, sx }: { who: Who | undefined; functionId: ElementId; t: Translate; sx?: object }) {
+export function UnitLabel({ who, functionId, t }: { who: Who | undefined; functionId: ElementId; t: Translate }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const units = who?.units(functionId) ?? []
   if (!who || units.length === 0) return null
@@ -145,8 +111,8 @@ export function UnitLabel({ who, functionId, t, sx }: { who: Who | undefined; fu
   const more = units.length - 1
   return (
     <>
-      <ButtonBase
-        data-testid={`sheet-unit-${functionId}`} data-sheet-unit={outside ? 'outside' : 'serves'}
+      <button
+        type="button" className="sheet-unit" data-testid={`sheet-unit-${functionId}`} data-sheet-unit={outside ? 'outside' : 'serves'}
         title={names} aria-label={t('sheet.unitLabel', { units: names })}
         disabled={targets.length === 0} aria-haspopup={targets.length > 1 ? 'menu' : undefined}
         onClick={(event) => {
@@ -154,24 +120,13 @@ export function UnitLabel({ who, functionId, t, sx }: { who: Who | undefined; fu
           if (targets.length === 1) targets[0].go()
           else setAnchor(event.currentTarget)
         }}
-        sx={{
-          ...CHIP, mt: 0, mr: 0, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-          fontFamily: 'inherit', borderStyle: 'solid', borderColor: outside ? 'warning.main' : 'divider',
-          color: outside ? 'warning.main' : 'text.primary', bgcolor: 'action.hover',
-          '&:focus-visible': { outline: 2, outlineColor: 'primary.main', outlineStyle: 'solid' },
-          ...sx,
-        }}
       >
         {more > 0 ? `${units[0].name} ${t('sheet.unitLabelMore', { count: more })}` : units[0].name}
-      </ButtonBase>
-      <Menu anchorEl={anchor} open={anchor !== null} onClose={() => setAnchor(null)} onClick={(event) => event.stopPropagation()}>
-        {targets.map((target) => (
-          <MenuItem key={target.key} dense onClick={() => { setAnchor(null); target.go() }} sx={{ fontSize: 12.5, gap: 1 }}>
-            {target.label}
-            {target.note && <Box component="span" sx={{ fontSize: 10.5, color: 'text.secondary' }}>{target.note}</Box>}
-          </MenuItem>
-        ))}
-      </Menu>
+      </button>
+      <Menu
+        open={anchor !== null} anchorEl={anchor} label={names} onClose={() => setAnchor(null)}
+        items={targets.map((target) => ({ label: target.note ? `${target.label} · ${target.note}` : target.label, onSelect: target.go }))}
+      />
     </>
   )
 }

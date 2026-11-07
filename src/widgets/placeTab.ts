@@ -27,6 +27,24 @@ export type PlaceTabs = {
   readonly go?: (to: PlaceTo) => void
   readonly look?: string | undefined
   readonly chooseLook?: (look: string | undefined) => void
+  /** The tab another place opens on: for a way to a view at one of its levels. */
+  readonly chooseFor?: (page: string, tab: string) => void
+}
+
+/** How a view is being read, beside its level: the question it is coloured by and the day looked at. */
+export type PlaceReading = { readonly colour?: string; readonly day?: string }
+
+export const PlaceReadingContext = createContext<{ readonly reading: PlaceReading; readonly choose: (reading: PlaceReading) => void } | undefined>(undefined)
+
+/** The reader's colour and day, kept in the frame so they are in the address; a page's own with no frame above it. */
+export function usePlaceReading(): readonly [PlaceReading, (reading: PlaceReading) => void] {
+  const held = useContext(PlaceReadingContext)
+  const [own, setOwn] = useState<PlaceReading>({})
+  const choose = useCallback((reading: PlaceReading) => {
+    setOwn(reading)
+    held?.choose(reading)
+  }, [held])
+  return [held?.reading ?? own, choose]
 }
 
 /** What a list keeps in the address, handed down beside the tab. */
@@ -139,4 +157,10 @@ export function usePlaceLook(): readonly [string | undefined, (look: string | un
     held?.chooseLook?.(look)
   }, [held])
   return [held ? held.look : own, choose]
+}
+
+/** The tab another place will open on, said on the way there. Nothing with no frame above. */
+export function usePlaceTabFor(page: string): (tab: string) => void {
+  const held = useContext(PlaceTabContext)
+  return useCallback((tab: string) => { held?.chooseFor?.(page, tab) }, [held, page])
 }

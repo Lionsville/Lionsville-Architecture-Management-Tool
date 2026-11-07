@@ -262,7 +262,8 @@ function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): TabLis
     case 'sheet':
       return props.onOpenSheet ? 'sheet' : 'none'
     case 'map':
-      return props.onOpenMap ? 'map' : 'none'
+      // Coverage is a reading of the sheet, in the sheet's own tab, wherever there is a sheet for it to be a reading of.
+      return props.onOpenMap && !props.model.diagrams.some((diagram) => diagram.kind === 'sheet') ? 'map' : 'none'
     case 'technology':
       return props.onOpenTechnology ? 'technology' : 'none'
     case 'drawing':
@@ -441,7 +442,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       ) : (
         <>
           <Tabs
-            value={host?.pageUp ? false : selectedTab(tabs, props.activeDiagram.id)}
+            value={host?.pageUp ? false : selectedTab(tabs, activeTabOf(props))}
             onChange={(_e, value: string) => {
               // A laid-out view is a tab like any other since ADR-0016: the
               // host draws it in place of the canvas. The host's openers stay
@@ -834,6 +835,12 @@ function NewViewMenu({ props }: { props: EditorToolbarProps }) {
  * host draws it but offers no opener for its kind; then no tab is the answer,
  * not an id MUI cannot find among the tabs.
  */
+function activeTabOf(props: EditorToolbarProps): string {
+  const { activeDiagram, model } = props
+  if (activeDiagram.kind !== 'map') return activeDiagram.id
+  return model.diagrams.find((diagram) => diagram.kind === 'sheet')?.id ?? activeDiagram.id
+}
+
 function selectedTab(tabs: readonly DesignDiagram[], active: string): string | false {
   return tabs.some((d) => d.id === active) ? active : false;
 }

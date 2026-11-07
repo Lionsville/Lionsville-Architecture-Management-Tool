@@ -5,120 +5,103 @@
  * The business architecture, on one page (ADR-0012 §6).
  *
  * A page, not a canvas: no React Flow, no drag, no router, no geometry. Every
- * position on it is derived from the model's own trees by `business/sheet.ts`
- * and this file turns that answer into boxes — a cell into a chevron, a depth
- * into a card. The split is deliberate: the arithmetic is tested in node, and
- * a second drawing of the same page (the PNG an agent asks for) cannot drift
- * from the first, because there is only one answer to draw.
+ * position on it is derived from the model's own trees by `business/sheet.ts`,
+ * and this file turns that answer into rows. The split is deliberate: the
+ * arithmetic is tested in node, and a second drawing of the same page (the PNG an
+ * agent asks for) cannot drift from the first, because there is only one answer.
  *
- * Four bands, top to bottom and left to right: the stakeholder rail down the
- * side, the journey across the top with a row per lane, the responsibility
- * areas as columns, and what nobody has mapped to a domain yet.
+ * **Three readings of one layer.** *Names* is a reflowing grid of one-line rows
+ * under area headings, downward only. *Overview* is every area on one screen, one
+ * square per capability. *Coverage* is the crossing (`MapPage`), which keeps its
+ * own address. Colour is one question at a time over the same layout
+ * (`business/lens.ts`), and a day is read as a look: nothing can change while
+ * looking at another one.
  *
- * **Every band can be written as well as read.** Beta 1 drew all of this and
- * offered nothing to make it with, so the only authors were a file and an
- * agent; the first person to try the beta hit that in the first minute. Each
- * *+* here is one `Command` through the session — undoable, with an Activity
- * line — and each one selects what it just made and puts the cursor in its
- * name, so the whole gesture is click, type, Enter. Under `readOnly` not one
- * of them is rendered.
+ * **The window reflows and paper packs.** A sheet's paper, columns and an area's
+ * width say how the *picture* is laid out and have no say over the screen, which
+ * is why a window never scrolls sideways. For a picture the page lays itself out
+ * at that width, with everything unfolded, and packs the areas by measuring them
+ * (`business/grid`), since the fit decides what to draw and the measuring follows.
  *
- * **The areas are packed, not three columns.** How many columns is what the
- * width has room for, or what the sheet fixes; an area takes the columns the
- * sheet says it does, with one column of capabilities per column it takes;
- * and the page measures each card and drops it at the lowest place it fits,
- * in the sheet's own order (`business/grid.packAreas`). The first sheet
- * drawn for a real organisation had eleven areas of very different sizes in
- * three tall columns, and a CSS grid after it left the whole of a row empty
- * under its shortest card — which is why the cards are placed by hand.
- *
- * **On paper, the page is landscape.** A sheet of paper has two sides, and
- * the first real sheet — fifteen areas of a column each — came out three
- * deep down an A2, a portrait page on a landscape canvas. So on paper an
- * area nobody has made wider or narrower is given the columns that bring
- * the page under the short side (`business/grid.fitSpans`), worked out from
- * what each area holds rather than measured, because the fit decides what
- * to draw and the measuring comes after. A span a person set is kept, one
- * column included. The window (`fit`) has no short side, and there the
- * spans are the sheet's own.
- *
- * The rail and the details are the page's own: one eye hides both, and each
- * has a seam to drag. The glass beside the eye finds anything the page draws
- * by name (`business/find.ts`) and takes you to it: selected, scrolled into
- * view, and ringed for a moment — a wall-sized sheet in a laptop window is
- * mostly off screen, and a name is how a person knows what they are after. A picture of the page can be asked for at the width of
- * a sheet of paper, and the page lays itself out at that width for the
- * capture — an A1 print tiles wider than a laptop window does.
- *
- * A fullscreen dialog, and it takes `windowChrome` for the reason the other
- * pages do: the shell toolbar's drag strip stays live underneath it, and
- * Electron computes drag regions from geometry rather than from what is
- * painted on top.
+ * **Every band can be written as well as read.** Each *+* is one `Command` through
+ * the session, undoable with an Activity line, and selects what it made with the
+ * cursor in its name. Under `readOnly`, and under a look, none of them is rendered.
  */
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import InputBase from '@mui/material/InputBase'
-import Popover from '@mui/material/Popover'
-import Switch from '@mui/material/Switch'
-import Typography from '@mui/material/Typography'
-import { alpha, useTheme } from '@mui/material/styles'
-import type { SxProps, Theme } from '@mui/material/styles'
-import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model'
+import { useTheme } from '@mui/material/styles'
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../../model'
+import type { AspectScale } from '../../model/aspectScale'
 import { useStrings } from '../../i18n'
-import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { plural } from '../../i18n/strings'
+import { formatDay } from '../../i18n/dates'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { SearchIcon } from '../../widgets/icons'
+import { Band } from '../../widgets/kit/Band'
+import { Button } from '../../widgets/kit/Button'
+import { ColourMenu } from '../../widgets/kit/ColourMenu'
+import { DayControl } from '../../widgets/kit/DayControl'
+import type { DayGroup } from '../../widgets/kit/DayControl'
+import { KeyStrip } from '../../widgets/kit/KeyStrip'
+import type { KeyValue } from '../../widgets/kit/KeyStrip'
+import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
-import {
-  AREA_COLUMN, MAX_SPAN, fitSpans, isPaperSize, packAreas, paperHeight, paperOfWidth, paperWidth, sheetColumns, sheetPaper,
-  sheetPaperWidth, spanOf, withSpan,
-} from '../grid'
-import { sheetPage } from '../sheet'
-import { drawnOnSheet, findOnSheet } from '../find'
-import type { SheetBand, SheetHit } from '../find'
-import type { Relation } from '../../model'
-import type { LaidOutSheet, SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
-import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
+import { usePlaceReading, usePlaceTab } from '../../widgets/placeTab'
+import { useSessionSet } from '../../widgets/sessionMemory'
 import { captureSheet } from '../../widgets/capturePage'
+import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
+import { lazyPart } from '../../widgets/lazyPart'
+import { ArrivingDialog } from '../../widgets/Arriving'
+import {
+  AREA_COLUMN, fitSpans, isPaperSize, packAreas, paperHeight, paperOfWidth, paperWidth, sheetColumns, sheetPaper, spanOf,
+} from '../grid'
+import { coverageOf } from '../coverage'
+import type { FunctionCoverage } from '../coverage'
+import { DEFAULT_LENS, isSheetLens, lensCounts, lensValue, sheetLenses } from '../lens'
+import type { LensFacts, LensValue, SheetLens } from '../lens'
+import { liveRows } from '../map'
+import type { MapDescribe } from '../map'
+import { sheetPage } from '../sheet'
+import type { SheetArea } from '../sheet'
+import { drawnOnSheet, findOnSheet } from '../find'
+import { leavesOfArea, rowAbove, rowsOfArea } from '../sheetRows'
+import type { SheetRow } from '../sheetRows'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
 import type { FunctionInspectorProps, NewLane, SheetActions, SheetDomains, SheetResponsible, Supporter } from './FunctionInspector'
-import { GroupedPicker } from '../../widgets/PickToAdd'
-import type { PickOption } from '../../widgets/PickToAdd'
-import { ResponsibleChips, UnitLabel, useWho } from './Responsible'
-import type { Who } from './Responsible'
-import { SheetBar } from './SheetBar'
+import { useWho } from './Responsible'
+import { AreaBlock, OverviewTile, onRowKeys } from './SheetRows'
+import type { Answered, RowContext } from './SheetRows'
+import { AreaAdds, EmptySheet } from './SheetAuthor'
+import type { Author, SheetClaims } from './SheetAuthor'
+import { JourneyBand } from './SheetJourney'
+import { SheetRail } from './SheetRail'
+import { FindBar } from './SheetFind'
+import { ReadingSwitch, SheetBar } from './SheetBar'
+import type { SheetReading } from './SheetBar'
 import { LaneDialog } from './LaneDialog'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
 import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSettingsDialog'
-import { lazyPart } from '../../widgets/lazyPart'
-import { ArrivingDialog } from '../../widgets/Arriving'
+import { lensWord, lookOf, valueWord } from './sheetLook'
 import { useRail } from './useRail'
-import type { RailUnits } from './useRail'
+import './Sheet.css'
 
-/**
- * A sheet's settings are drawn only while they are open, and arrive the
- * first time they are (`widgets/lazyPart`).
- */
+export type { SheetClaims } from './SheetAuthor'
+
+/** A sheet's settings are drawn only while they are open (`widgets/lazyPart`). */
 const SheetSettingsDialog = lazyPart<ComponentProps<typeof SheetSettingsDialogShape>>(
   () => import('./SheetSettingsDialog').then((held) => held.SheetSettingsDialog), { fallback: () => <ArrivingDialog /> },
 )
 
 export type SheetPageProps = {
   open: boolean
-  /**
-   * Drawn in the tab rather than as a page over the editor (ADR-0016): no
-   * dialog, no back button, no window chrome — the tab strip is the way out.
-   */
+  /** Drawn in the tab rather than as a page over the editor (ADR-0016). */
   inline?: boolean
   model: DesignModel
   /** Absent while the page is closing, or when the sheet was deleted under it. */
@@ -127,491 +110,84 @@ export type SheetPageProps = {
   actions: SheetActions
   onClose(): void
   windowChrome?: WindowChrome
-  /**
-   * The page, as the agent's renderer reaches it (ADR-0007): handed over while
-   * one is on screen and withdrawn when it goes, the way the editor hands the
-   * workspace its own handle. Absent = nothing can ask for a picture.
-   */
+  /** The page, as the agent's renderer reaches it (ADR-0007). Absent = nothing can ask for a picture. */
   onHandle?(handle: SheetHandle | undefined): void
-  /**
-   * Who answers for a record on this page, where it is not this scope
-   * (ADR-0012 §10). Passed straight to the inspector; see it for the shape and
-   * for why `business` is handed the answer rather than working it out.
-   */
+  /** Who answers for a record on this page, where it is not this scope (ADR-0012 §10). */
   ownerOf?: FunctionInspectorProps['ownerOf']
   /**
-   * Rows written in another scope of the same organisation (ADR-0012 §2) —
-   * see `sheetPage`. The `supports` rows behind "2 apps" under a capability
-   * this scope defines are usually a landscape's, not this page's.
-   *
-   * It has to be a STABLE array: it is a dependency of the page's one memo,
-   * and a fresh one per render would lay the whole sheet out per render.
+   * Rows written in another scope of the same organisation (ADR-0012 §2). It has
+   * to be a STABLE array: it is a dependency of the page's one memo.
    */
   elsewhere?: readonly Relation[]
-  /** Every application in the organisation, for *Supported by…*. See the inspector. */
+  /** Every application in the organisation, for *Supported by…*. */
   applications?: readonly Supporter[]
-  /**
-   * Who may be made responsible for an area, a grouping or a capability, and
-   * what they are called (ADR-0036, amended 11 October 2026): the host's,
-   * because the units are the organisation's. Absent: no *Show who is
-   * responsible*, and *Assigned to* offers this scope's own actors.
-   */
+  /** Who may be made responsible for a function, and what they are called (ADR-0036, amended). Absent: no *Who answers*. */
   responsible?: SheetResponsible
-  /**
-   * The functions a scope below holds a stand-in of (ADR-0040 §6): taken up,
-   * and not waiting in the band. A STABLE set, for the reason `elsewhere` is.
-   */
+  /** The functions a scope below holds a stand-in of (ADR-0040 §6). A STABLE set. */
   takenUp?: ReadonlySet<ElementId>
   /** Which domains a function is handed to and taken up by (ADR-0040 §4, §5). Absent: no *Domains*. */
   domains?: SheetDomains
-  /**
-   * The functions of the sheets above that this scope may take up, and the
-   * gesture that takes one (ADR-0040 §5): *From above…* beside *+ area*.
-   * Absent, or nothing to offer: no *From above…*.
-   */
+  /** The functions of the sheets above this scope may take up (ADR-0040 §5). */
   claims?: SheetClaims
-  /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
+  /** The way to an element's own page. Absent = no *Page ›*. */
   onOpenDocumentation?(id: ElementId): void
-  /**
-   * Hand a picture of the page to the person (ADR-0003's gateway, behind the
-   * host). Absent = no *Save as a picture…* on the bar.
-   */
+  /** Hand a picture of the page to the person. Absent = no *Picture…*. */
   onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }): void
-  /**
-   * Select this, where the page draws it: a place opened with something
-   * selected on it (ADR-0019, amended). Each number once; nothing where the
-   * page does not draw it.
-   */
+  /** Select this, where the page draws it: a place opened with something selected on it. */
   select?: SelectRequest
-  /**
-   * Where the rail's *All units* and the units kept on it are remembered for
-   * the session: the view's key in the shell's session memory
-   * (`widgets/sessionMemory`). Absent: for as long as the page is drawn.
-   */
+  /** Where the rail's and the rows' folds are remembered for the session: the view's key. */
   remember?: string
-  /** A short note to the person: here, that a stakeholder typed as a unit is now on the organisation chart. */
+  /** A short note to the person. */
   notify?(message: string): void
+  /** The organisation's numeric scales (ADR-0046), each a question to colour by. */
+  scales?: readonly AspectScale[]
+  /** Names, owners and dates of what the rows name and this scope may not hold. */
+  describe?: MapDescribe
+  /** Today, so a sheet and its Coverage count the same rows. Absent counts every row. */
+  today?: string
+  /** The days worth looking at: each plan's. */
+  days?: readonly DayGroup[]
+  /** To the Coverage reading: this scope's map, made on first use where the person may. Absent: nowhere to go. */
+  onCoverage?(): void
 }
 
-/** What *From above…* offers, and what a pick does: one step in this scope's session. */
-export type SheetClaims = {
-  /** Grouped by the scope that defines each, each saying what it sits in. */
-  choices: readonly PickOption[]
-  claim(id: ElementId): void
-}
-
-/** What only the drawn page can do: hand over what it looks like. */
 /** The handle every laid-out page hands over; the sheet's was the first (`widgets/capturePage`). */
 export type SheetHandle = PageHandle
 export type SheetCaptureOptions = PageCaptureOptions
 
-/** The rail, the lane labels and the notch: the design's own numbers, in one place. */
-const RAIL = { default: 178, min: 120, max: 420 } as const
-const LANE_LABEL_WIDTH = 136
-const NOTCH = 9
-/** The column the *+ phase* sits in, kept off the phases so the row lines up. */
-const ADD_COLUMN = 72
-const CHEVRON = `polygon(0 0, calc(100% - ${NOTCH}px) 0, 100% 50%, calc(100% - ${NOTCH}px) 100%, 0 100%)`
-/** The body's padding above and below the canvas, and the gap over the areas: what the paper's height is not for. */
+const RAIL = { default: 200, min: 120, max: 420 } as const
+/** The body's padding above and below the canvas: what the paper's height is not for. */
 const PAGE_MARGINS = 32 + 24
-
-export function SheetPage(props: SheetPageProps) {
-  const { model, sheet, readOnly, actions } = props
-  const { t } = useStrings()
-  const chrome = props.windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
-  const [selectedId, setSelectedId] = useState<ElementId | undefined>(undefined)
-  /**
-   * A nonce rather than a flag: "put the cursor in the name" asked twice is
-   * two requests, and the inspector is not remounted between two things made
-   * one after the other.
-   */
-  const [nameFocus, setNameFocus] = useState(0)
-  const [laneOpen, setLaneOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [exportOpen, setExportOpen] = useState(false)
-  /** *Show who is responsible*: the page's own, off until asked for. */
-  const [whoShown, setWhoShown] = useState(false)
-  const who = useWho(model, props.elsewhere, props.responsible, whoShown)
-  /**
-   * The rail and the details, together: one eye for both, because "give me
-   * the whole width for the page" is one wish and was two toggles. The
-   * page's own rather than the sheet's, since it says nothing about what the
-   * sheet is of; `showActors` on the sheet still takes the rail off for good.
-   */
-  const [panelsShown, setPanelsShown] = useState(true)
-  /** The finder under the glass: where it is anchored while open, and what is typed in it. */
-  const [findAnchor, setFindAnchor] = useState<HTMLElement | null>(null)
-  const [query, setQuery] = useState('')
-  const [railWidth, setRailWidth] = useState<number>(RAIL.default)
-  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
-  /**
-   * While a picture is being drawn: the page laid out for it rather than for
-   * the window — no details panel, nothing scrolling, and at `width` when a
-   * paper size asked for one. Cleared the moment the capture returns.
-   */
-  const [exporting, setExporting] = useState<{ width?: number } | undefined>(undefined)
-  const theme = useTheme()
-  const page = useRef<HTMLDivElement | null>(null)
-  const bodyWidth = useMeasuredWidth()
-  const cards = useMeasuredHeights()
-  const above = useMeasuredHeight()
-
-  /**
-   * The handle, while a sheet is up. Withdrawn on the way out so a request
-   * that arrives after the page has closed is refused rather than answered
-   * with a picture of nothing.
-   */
-  const onHandle = props.onHandle
-  const sheetId = sheet?.id
-  const capture = useCallback(async (options: SheetCaptureOptions) => {
-    const node = page.current
-    if (!node) throw new Error('SheetPage: the page is not on screen')
-    // Laid out for the picture first, and given two frames to be: the grid
-    // is measured by a ResizeObserver and drawn by React, and neither has
-    // run between a state change and the next line of this function.
-    setExporting({ ...(options.width !== undefined ? { width: options.width } : {}) })
-    try {
-      await settled()
-      return await captureSheet(node, {
-        maxPixels: options.maxPixels, background: theme.palette.background.default,
-      })
-    } finally {
-      setExporting(undefined)
-    }
-  }, [theme])
-  useEffect(() => {
-    if (!onHandle) return undefined
-    if (!props.open || sheetId === undefined) { onHandle(undefined); return undefined }
-    onHandle({ diagramId: sheetId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
-    return () => onHandle(undefined)
-  }, [onHandle, props.open, sheetId, capture, selectedId])
-
-  const rail = useRail(model, { remember: props.remember, readOnly, sheet, notify: props.notify, note: t('sheet.nowAUnit') })
-  const laidOut = useMemo(
-    () => (sheet ? sheetPage(model, sheet, props.elsewhere, rail.options, props.takenUp) : undefined), [model, sheet, props.elsewhere, rail.options, props.takenUp],
-  )
-  const selected = selectedId === undefined
-    ? undefined
-    : model.elements.find((element) => element.id === selectedId)
-
-  /** What every gesture that makes something ends with. */
-  const made = useCallback((id: ElementId | undefined) => {
-    if (id === undefined) return
-    setSelectedId(id)
-    setNameFocus((nonce) => nonce + 1)
-  }, [])
-
-  const author = readOnly ? undefined : { t, made, actions }
-
-  const hits = useMemo(
-    () => (laidOut && findAnchor ? findOnSheet(laidOut, query) : []),
-    [laidOut, findAnchor, query],
-  )
-  const closeFinder = useCallback(() => { setFindAnchor(null); setQuery('') }, [])
-  const { locatedId, locate: bringOn } = useLocated(page, setSelectedId)
-  const locate = useCallback((id: ElementId) => { closeFinder(); bringOn(id) }, [closeFinder, bringOn])
-  // Asked from outside — a place opened with something selected on it — and
-  // honoured where the page draws it.
-  useSelectRequest(props.select, drawnBy(laidOut), bringOn)
-
-  /**
-   * The width the page is laid out at: what a picture asked for, else the
-   * sheet's own paper, else the window. The grid gets it less the body's
-   * padding, which the observer counts and the grid does not. A canvas wider
-   * than the window scrolls sideways, which is what a wall-sized page in a
-   * laptop window is.
-   */
-  const layoutWidth = exporting?.width ?? (sheet ? sheetPaperWidth(sheet) : undefined)
-  const gridWidth = (layoutWidth ?? bodyWidth.width) - 32
-  const columns = sheet ? sheetColumns(sheet, gridWidth) : 1
-  /**
-   * The paper the page is on, for its short side: the one a picture asked
-   * for, else the sheet's own; a picture at a width that is no paper's is
-   * still fitted to the sheet's height. None for the window.
-   */
-  const paper = sheet
-    ? (exporting?.width !== undefined ? paperOfWidth(exporting.width) : undefined) ?? sheetPaper(sheet)
-    : undefined
-  const fitted = useMemo(() => {
-    if (!laidOut || !sheet || paper === undefined) return undefined
-    const target = paperHeight(paper) - above.height - PAGE_MARGINS
-    return fitSpans(laidOut.areas.map((area) => ({
-      id: area.element.id,
-      groupings: area.groupings.map((group) => group.capabilities.length),
-      loose: area.capabilities.length,
-      ...(sheet.areaSpans?.[area.element.id] !== undefined ? { fixed: sheet.areaSpans[area.element.id] } : {}),
-    })), columns, Math.max(0, target))
-  }, [laidOut, sheet, paper, columns, above.height])
-  const packed = useMemo(() => (laidOut && sheet
-    ? packAreas(laidOut.areas.map((area) => ({
-      id: area.element.id,
-      span: fitted?.[area.element.id] ?? spanOf(sheet, area.element.id, columns),
-      height: cards.heights[area.element.id] ?? 0,
-    })), columns)
-    : undefined), [laidOut, sheet, fitted, columns, cards.heights])
-  const fixedWidth = layoutWidth
-    ?? (sheet?.columns !== undefined ? columns * (AREA_COLUMN.min + AREA_COLUMN.gap) - AREA_COLUMN.gap + 32 : undefined)
-  const panels = panelsShown && !exporting
-
-  const exportPng = useCallback(async (layout: ExportLayout) => {
-    if (!sheet || !props.onSave) return
-    const shot = await capture({
-      maxPixels: EXPORT_MAX_PIXELS,
-      ...(layout === 'screen' ? {} : { width: paperWidth(layout) }),
-    })
-    props.onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
-  }, [sheet, props.onSave, capture])
-
-  const Frame = props.inline ? InlineFrame : PageDialog
-  return (
-    <Frame
-      open={props.open}
-      topInset={chrome.topInset}
-      onClose={props.onClose}
-      aria-label={t('sheet.page')}
-    >
-      <SheetBar
-        inline={props.inline} chrome={bar} name={sheet?.name} readOnly={readOnly} onClose={props.onClose} t={t}
-        finding={Boolean(findAnchor)} onFind={setFindAnchor} panelsShown={panelsShown} onPanels={() => setPanelsShown((shown) => !shown)}
-        {...(props.onSave ? { onExport: () => setExportOpen(true) } : {})} onSettings={() => setSettingsOpen(true)}
-        {...(props.responsible ? { responsible: { shown: whoShown, onShown: setWhoShown } } : {})}
-      />
-
-      <Popover
-        open={Boolean(findAnchor)}
-        anchorEl={findAnchor}
-        onClose={closeFinder}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { mt: 0.5, width: 320 } } }}
-      >
-        <Finder query={query} hits={hits} onQuery={setQuery} onPick={locate} t={t} />
-      </Popover>
-
-      <Box
-        ref={page}
-        sx={{
-          ...(exporting
-            // Laid out for the picture: nothing scrolls, so the node's scroll
-            // size is the page's whole size, which is what the capture reads.
-            ? { display: 'flex', alignItems: 'stretch', flex: 'none', ...(exporting.width !== undefined ? { width: exporting.width } : {}) }
-            : { flex: '1 1 auto', minHeight: 0, display: 'flex' }),
-          ...(exporting ? {} : locatedRing(locatedId)),
-        }}
-      >
-        {laidOut && sheet?.showActors !== false && panels && (
-          <>
-            <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={author} t={t} units={rail.units(laidOut)} />
-            <SeamResizer
-              orientation="vertical" region="before"
-              value={railWidth} min={RAIL.min} max={RAIL.max} defaultValue={RAIL.default}
-              onChange={setRailWidth} label={t('sheet.resizeRail')}
-            />
-          </>
-        )}
-        {laidOut && sheet?.showActors !== false && exporting && (
-          <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={undefined} t={t} />
-        )}
-
-        <Box
-          ref={bodyWidth.ref}
-          data-testid="sheet-body"
-          sx={exporting
-            ? { flex: '1 1 auto', minWidth: 0, overflow: 'visible', p: 2 }
-            : {
-              flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2,
-              // The canvas is wider than the viewport whenever the sheet has
-              // more phases than fit; an overlay scrollbar hides itself the
-              // moment the pointer leaves it, so the cut-off last phase gave
-              // no sign that the rest scrolls into view. A scrollbar that
-              // stays on screen, on every engine, says so at a glance.
-              scrollbarWidth: 'thin',
-              '&::-webkit-scrollbar': { height: 10, width: 10 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: 'action.disabled', borderRadius: 5 },
-              '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-            }}
-        >
-        <Box
-          data-testid="sheet-canvas" data-guide="sheet.canvas"
-          data-width={fixedWidth !== undefined ? fixedWidth - 32 : 'fit'}
-          sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}
-        >
-          {/* Measured, because the paper's short side is for the areas less this. */}
-          <Box ref={above.ref} data-testid="sheet-above">
-          {laidOut?.journey ? (
-            <JourneyBand
-              journey={laidOut.journey}
-              onSelect={setSelectedId}
-              onNewLane={() => setLaneOpen(true)}
-              author={author}
-              t={t}
-            />
-          ) : (
-            <Empty
-              text={t('sheet.noJourney')}
-              action={author && (
-                <Add
-                  label={t('sheet.newJourney')}
-                  title={t('sheet.newJourney')}
-                  onClick={() => author.made(author.actions.addJourney({
-                    journey: t('sheet.nameJourney'), phase: t('sheet.nameFirstPhase'),
-                  }))}
-                />
-              )}
-            />
-          )}
-          </Box>
-
-          {laidOut && sheet && packed && laidOut.areas.length > 0 ? (
-            <>
-              <Box
-                data-testid="sheet-areas"
-                data-columns={columns}
-                sx={{ mt: 3, position: 'relative', height: packed.height }}
-              >
-                {laidOut.areas.map((area) => {
-                  const at = packed.placed.find((held) => held.id === area.element.id)
-                  if (!at) return null
-                  // The column pitch is a column and a gap; a card is its
-                  // span of pitches less the last gap. In percentages, so a
-                  // resize moves the cards before the heights are re-measured.
-                  const pitch = `(100% + ${AREA_COLUMN.gap}px) / ${columns}`
-                  return (
-                    <AreaCard
-                      key={area.element.id} area={area}
-                      span={at.span}
-                      place={{
-                        left: `calc(${pitch} * ${at.column})`,
-                        width: `calc(${pitch} * ${at.span} - ${AREA_COLUMN.gap}px)`,
-                        top: at.top,
-                      }}
-                      measure={cards.observe}
-                      onSpan={author && columns > 1
-                        ? (span) => actions.updateSheet({ areaSpans: withSpan(sheet.areaSpans, area.element.id, span) })
-                        : undefined}
-                      onSelect={setSelectedId} author={author} who={who} t={t}
-                    />
-                  )
-                })}
-              </Box>
-              {author && <AreaAdds author={author} claims={props.claims} label={t('sheet.addArea')} roomy />}
-            </>
-          ) : (
-            <Empty
-              text={t('sheet.noAreas')}
-              hint={t('sheet.emptyHint')}
-              action={author && <AreaAdds author={author} claims={props.claims} label={t('sheet.newArea')} />}
-            />
-          )}
-
-          {laidOut && laidOut.unmapped.length > 0 && (
-            <UnmappedBand elements={laidOut.unmapped} onSelect={setSelectedId} t={t} />
-          )}
-        </Box>
-        </Box>
-
-        {panels && (
-          <>
-            <SeamResizer
-              orientation="vertical" region="after"
-              value={detailsWidth} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
-              defaultValue={INSPECTOR_WIDTH.default}
-              onChange={setDetailsWidth} label={t('sheet.resizeDetails')}
-            />
-            <FunctionInspector
-              element={selected}
-              model={model}
-              readOnly={readOnly}
-              actions={actions}
-              width={detailsWidth}
-              applications={props.applications}
-              onOpenDocumentation={props.onOpenDocumentation}
-              elsewhere={props.elsewhere}
-              nameFocus={nameFocus} responsible={props.responsible}
-              onRemoved={() => setSelectedId(undefined)}
-              ownerOf={props.ownerOf} domains={props.domains}
-            />
-          </>
-        )}
-      </Box>
-
-      {laneOpen && laidOut?.journey && (
-        <LaneDialog
-          model={model}
-          phases={laidOut.journey.phases}
-          onCancel={() => setLaneOpen(false)}
-          onConfirm={(lane: NewLane) => {
-            setLaneOpen(false)
-            made(actions.addLane(lane))
-          }}
-        />
-      )}
-      {settingsOpen && sheet && (
-        <SheetSettingsDialog
-          model={model}
-          sheet={sheet}
-          actions={actions}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
-      {exportOpen && sheet && (
-        <SheetExportDialog
-          initial={isPaperSize(sheet.paper) ? sheet.paper : 'screen'}
-          onExport={exportPng}
-          onClose={() => setExportOpen(false)}
-        />
-      )}
-    </Frame>
-  )
-}
-
-/** The page in the tab: the same column, with no dialog around it. */
-export function InlineFrame({ children }: { children?: React.ReactNode; open?: boolean; topInset?: number; onClose?(): void; 'aria-label'?: string }) {
-  return <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
-}
-
-/**
- * The most pixels a picture for a person may have. An A0 at two pixels per
- * point is about 9,000 wide, which is inside what browsers rasterise; the
- * budget lets the ratio fall below two on a page taller than that rather
- * than refusing it.
- */
+/** The most pixels a picture may have: an A0 at two pixels per point, and the ratio falls on a taller page. */
 const EXPORT_MAX_PIXELS = 40_000_000
 
+const NOTHING_COVERS: FunctionCoverage = { supportedBy: [], assignedTo: [], coverage: 'uncovered' }
+
 /** A name the file system will take, from what the sheet is called. */
-function fileSafe(name: string): string {
+export function fileSafe(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'
 }
 
-/**
- * Four frames from now: React has drawn at the new width, the observers have
- * measured the cards at it, React has packed them from those heights, and
- * that is on screen.
- */
-function settled(): Promise<void> {
+/** Four frames from now: React has drawn at the new width, the observers have measured, and React has packed. */
+export function settled(): Promise<void> {
   const frame = typeof requestAnimationFrame === 'function'
     ? (fn: () => void) => { requestAnimationFrame(fn) }
     : (fn: () => void) => { setTimeout(fn, 0) }
   return new Promise((resolve) => frame(() => frame(() => frame(() => frame(resolve)))))
 }
 
-/**
- * How tall each area card is, kept up to date — what the packing needs and
- * CSS cannot say. One observer for every card; a card that leaves the page
- * leaves the map. Without a `ResizeObserver` (a test) every height is 0 and
- * the cards pack at the top, which the tests do not look at.
- */
-function useMeasuredHeights(): {
-  observe: (id: ElementId, node: HTMLDivElement | null) => void
-  heights: Readonly<Record<ElementId, number>>
-} {
+/** The page in the tab: the same column, with no dialog around it. */
+export function InlineFrame({ children }: { children?: ReactNode; open?: boolean; topInset?: number; onClose?(): void; 'aria-label'?: string }) {
+  return <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
+}
+
+/** How tall each area is while a picture is packing them; one observer for all of them. */
+function useMeasuredHeights() {
   const [heights, setHeights] = useState<Readonly<Record<ElementId, number>>>({})
   const observer = useRef<ResizeObserver | undefined>(undefined)
   const ids = useRef(new WeakMap<Element, ElementId>())
-  const nodes = useRef(new Map<ElementId, Element>())
-  const observe = useCallback((id: ElementId, node: HTMLDivElement | null) => {
-    if (typeof ResizeObserver === 'undefined') return
+  const observe = useCallback((id: ElementId, node: HTMLElement | null) => {
+    if (typeof ResizeObserver === 'undefined' || !node) return
     observer.current ??= new ResizeObserver((entries) => {
       setHeights((held) => {
         let next: Record<ElementId, number> | undefined
@@ -626,875 +202,480 @@ function useMeasuredHeights(): {
         return next ?? held
       })
     })
-    const before = nodes.current.get(id)
-    if (before && before !== node) { observer.current.unobserve(before); nodes.current.delete(id) }
-    if (!node) return
     ids.current.set(node, id)
-    nodes.current.set(id, node)
     observer.current.observe(node)
   }, [])
   return { observe, heights }
 }
 
-/**
- * How wide an element is, kept up to date. The grid needs a number to fit
- * its columns to, and CSS alone cannot tell a card how many columns it may
- * span. Without a `ResizeObserver` (a test) the width stays 0, which the
- * arithmetic reads as one column.
- */
-function useMeasuredWidth(): { ref: (node: HTMLDivElement | null) => void; width: number } {
-  const { ref, size } = useMeasuredSize('width')
-  return { ref, width: size }
-}
-
-/** How tall one block is, kept up to date: what sits above the areas, so the paper's height less it is theirs. */
-function useMeasuredHeight(): { ref: (node: HTMLDivElement | null) => void; height: number } {
-  const { ref, size } = useMeasuredSize('height')
-  return { ref, height: size }
-}
-
-/** One side of one box, measured the way the cards are; the width counts the body's padding back in. */
-function useMeasuredSize(side: 'width' | 'height'): { ref: (node: HTMLDivElement | null) => void; size: number } {
-  const [size, setSize] = useState(0)
-  const observer = useRef<ResizeObserver | undefined>(undefined)
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    observer.current?.disconnect()
-    observer.current = undefined
-    if (!node || typeof ResizeObserver === 'undefined') return
-    setSize(side === 'width' ? node.clientWidth : node.clientHeight)
-    const held = new ResizeObserver((entries) => {
-      const box = entries[0]?.contentRect
-      if (box) setSize(Math.round(box[side]) + (side === 'width' ? 32 : 0))
-    })
-    held.observe(node)
-    observer.current = held
-  }, [side])
-  return { ref, size }
-}
-
-/**
- * What a gesture needs to make something, or nothing at all under `readOnly`.
- *
- * One object rather than a `readOnly` prop threaded through every band: a
- * band that cannot reach the actions cannot offer a *+*, which is a stronger
- * guarantee than remembering to write the flag into each one.
- */
-type Author = { t: Translate; made(id: ElementId | undefined): void; actions: SheetActions }
-
-/** The one shape every *+* on this page has. */
-/**
- * *+ area*, and *From above…* beside it (ADR-0040 §5): an area made here, or
- * a function of a sheet above taken up — a stand-in in this scope's session,
- * one step. The picker lists them by the scope that defines each, and is not
- * offered where there is nothing to take up.
- */
-function AreaAdds({ author, claims, label, roomy }: {
-  author: Author
-  claims: SheetClaims | undefined
-  label: string
-  /** Under the areas, as a row of its own; without, the empty sheet's line. */
-  roomy?: boolean
-}) {
-  const { t } = author
-  const [picking, setPicking] = useState(false)
-  const offered = claims?.choices ?? []
-  const size = roomy ? { sx: { py: 0.75, px: 1.5 } } : {}
-  return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', ...(roomy ? { mt: 1.5 } : {}) }}>
-      <Add label={label} title={t('sheet.newArea')} onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))} {...size} />
-      {claims && offered.length > 0 && (picking
-        ? (
-          <Box data-testid="sheet-from-above-field" sx={{ minWidth: 260, flex: '0 1 360px' }}>
-            <GroupedPicker
-              options={offered} field={t('sheet.fromAboveFind')} nothing={t('sheet.fromAboveNothing')}
-              testId="sheet-from-above-input"
-              onPick={(id) => { setPicking(false); claims.claim(id) }} onClose={() => setPicking(false)}
-            />
-          </Box>
-        )
-        : (
-          <Box data-guide="sheet.fromAbove" data-testid="sheet-from-above" sx={{ display: 'inline-flex' }}>
-            <Add label={t('sheet.fromAbove')} title={t('sheet.fromAboveTitle')} onClick={() => setPicking(true)} {...size} />
-          </Box>
-        ))}
-    </Box>
-  )
-}
-
-function Add({ label, title, onClick, disabled, sx }: {
-  label: string
-  /** What it says out loud — which of the many *+*s this is, and on what. */
-  title: string
-  onClick(): void
-  disabled?: boolean
-  sx?: SxProps<Theme>
-}) {
-  return (
-    <Box
-      component="button"
-      type="button"
-      aria-label={title}
-      title={title}
-      disabled={disabled}
-      // A picture of the page leaves these out (`captureSheet`): an exported
-      // business architecture should show the architecture, not the tool.
-      data-sheet-add
-      onClick={onClick}
-      sx={{
-        // The same `buttontext` trap the cards fell into: `font: inherit` does
-        // not bring the colour with it. Quiet in the page's second ink rather
-        // than the first at 55 %, which was 3.7:1 at 10 px; the full ink under
-        // the pointer, and the ink for a control that is off when it is.
-        appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'text.secondary',
-        bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 0.75,
-        px: 0.75, py: 0.25, fontSize: 10, whiteSpace: 'nowrap',
-        '&:hover': { color: 'text.primary', borderStyle: 'solid' },
-        '&:disabled': { color: 'text.disabled', cursor: 'default', borderStyle: 'dashed' },
-        ...sx,
-      }}
-    >
-      {label}
-    </Box>
-  )
-}
-
-// --- finding something on the page -----------------------------------------
-
-/** What the page draws, as the question a request from outside asks of it: nothing until it is laid out. */
-function drawnBy(laidOut: LaidOutSheet | undefined): ((id: ElementId) => boolean) | undefined {
-  return laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id))
-}
-
-/** Rows the finder lists before it asks for another word. */
-const FINDER_ROWS = 12
-
-const BAND_LABEL: Record<SheetBand, Parameters<Translate>[0]> = {
-  actor: 'sheet.bandActor',
-  phase: 'sheet.bandPhase',
-  step: 'sheet.bandStep',
-  area: 'sheet.bandArea',
-  grouping: 'sheet.bandGrouping',
-  capability: 'sheet.bandCapability',
-  unmapped: 'sheet.bandUnmapped',
-}
-
-/**
- * The finder: one field, and under it the hits in the page's own order, each
- * saying which band it is in and what it sits in. Enter takes the first, so
- * "type three letters, Enter" is the whole gesture for a name you know; the
- * list is capped rather than scrolled, because a longer list is a request for
- * one more word, not for a scrollbar.
- */
-function Finder({ query, hits, onQuery, onPick, t }: {
-  query: string
-  hits: readonly SheetHit[]
-  onQuery(query: string): void
-  onPick(id: ElementId): void
-  t: Translate
-}) {
-  const shown = hits.slice(0, FINDER_ROWS)
-  return (
-    <Box data-testid="sheet-finder" sx={{ display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-        <SearchIcon size={14} />
-        <InputBase
-          autoFocus
-          fullWidth
-          value={query}
-          placeholder={t('sheet.findPlaceholder')}
-          inputProps={{ 'aria-label': t('sheet.find') }}
-          onChange={(event) => onQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && shown[0]) { event.preventDefault(); onPick(shown[0].element.id) }
-          }}
-          sx={{ fontSize: 13 }}
-        />
-      </Box>
-      {/* What the list says about itself sits beside it: a listbox holds
-          options and nothing else, or a screen reader counts the sentence as
-          one. */}
-      {shown.length === 0 && (
-        <Typography sx={{ px: 1.5, pt: 1.5, pb: 1, fontSize: 12, color: 'text.secondary' }}>
-          {t('sheet.findNone')}
-        </Typography>
-      )}
-      <Box role="listbox" aria-label={t('sheet.find')} sx={{ py: 0.5, maxHeight: 360, overflow: 'auto' }}>
-        {shown.map((hit) => (
-          <Box
-            key={hit.element.id}
-            component="button"
-            type="button"
-            role="option"
-            aria-selected={false}
-            data-testid={`sheet-find-${hit.element.id}`}
-            onClick={() => onPick(hit.element.id)}
-            sx={{
-              appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
-              display: 'flex', alignItems: 'baseline', gap: 1, width: '100%', textAlign: 'left',
-              background: 'none', border: 0, px: 1.5, py: 0.5,
-              '&:hover': { bgcolor: 'action.hover' },
-              '&:focus-visible': { bgcolor: 'action.hover', outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 },
-            }}
-          >
-            <Typography sx={{ fontSize: 12.5, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {hit.element.name}
-            </Typography>
-            <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-              {t(BAND_LABEL[hit.band])}{hit.within !== undefined ? ` · ${hit.within}` : ''}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-      {hits.length > shown.length && (
-        <Typography sx={{ px: 1.5, pb: 1.25, fontSize: 10.5, color: 'text.secondary' }}>
-          {t('sheet.findMore', { count: hits.length - shown.length })}
-        </Typography>
-      )}
-    </Box>
-  )
-}
-
-// --- the stakeholder rail ---------------------------------------------------
-
-/**
- * The actor tree down the side.
- *
- * A row with something under it is a heading and a row without one is an
- * entry — read off the next row's depth rather than stored, because "has
- * children" is a fact about the tree and not a second field to keep in step.
- * A group takes a stakeholder once, after its last member, addressed to the
- * group — not on every row: at the rail's width a button beside each name
- * left the names wrapping word by word under their own chips. A top-level
- * actor with nothing under it is an entry, and becomes a group through the
- * inspector's parent field; the one at the bottom makes a new group.
- */
-
-const RAIL_HEADING = {
-  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', mb: 1,
-} as const
-
-/**
- * The stakeholder rail (ADR-0036, amended 12 October 2026): the parties'
- * tree, then *Units on this sheet* with why each is there, then — where
- * *All units* is on — the rest of the scope's units, and the switch last,
- * saying how many it would add. A unit is made on the organisation chart,
- * not here, so the rail offers no *+* for one.
- */
-function Rail({ actors, width, onSelect, author, t, units }: {
-  actors: readonly SheetActor[]
-  width: number
-  onSelect(id: ElementId): void
-  author: Author | undefined
-  t: Translate
-  units?: RailUnits
-}) {
-  const parties = actors.filter((row) => row.group === 'parties')
-  const used = actors.filter((row) => row.group === 'used')
-  const other = actors.filter((row) => row.group === 'other')
-  return (
-    <Box
-      data-testid="sheet-rail"
-      sx={{
-        width, flex: `0 0 ${width}px`, overflow: 'auto',
-        bgcolor: 'background.paper', px: 1.5, py: 2,
-      }}
-    >
-      <Typography sx={RAIL_HEADING}>{t('sheet.stakeholders')}</Typography>
-      {parties.length === 0 && (
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {t('sheet.noStakeholders')}
-        </Typography>
-      )}
-      <Parties rows={parties} onSelect={onSelect} author={author} t={t} />
-      {author && (
-        <Box sx={{ mt: 1.5 }}>
-          <Add
-            label={t('sheet.addGroup')}
-            title={t('sheet.addGroupHint')}
-            onClick={() => author.made(author.actions.addElement({
-              kind: 'actor', name: t('sheet.nameGroup'),
-            }))}
-          />
-        </Box>
-      )}
-      <RailUnitRows group="used" heading={t('sheet.unitsHere')} rows={used} onSelect={onSelect} t={t} />
-      <RailUnitRows group="other" heading={t('sheet.unitsOther')} rows={other} onSelect={onSelect} t={t} />
-      {units && (units.notDrawn > 0 || units.all) && (
-        <Box sx={{ mt: 2 }}>
-          {!units.all && (
-            <Typography data-testid="sheet-units-not-drawn" sx={{ fontSize: 10.5, color: 'text.secondary' }}>
-              {plural(t, { one: 'sheet.unitsNotDrawnOne', other: 'sheet.unitsNotDrawnOther' }, units.notDrawn)}
-            </Typography>
-          )}
-          <FormControlLabel
-            data-guide="sheet.allUnits" data-testid="sheet-all-units"
-            control={<Switch size="small" checked={units.all} onChange={(event) => units.onAll(event.target.checked)} />}
-            label={<Typography sx={{ fontSize: 11.5 }}>{t('sheet.allUnits')}</Typography>}
-            sx={{ ml: -0.5, mr: 0 }}
-          />
-        </Box>
-      )}
-    </Box>
-  )
-}
-
-/** The parties' tree: a row with rows under it is their group's heading, with a *+* after its last. */
-function Parties({ rows, onSelect, author, t }: {
-  rows: readonly SheetActor[]
-  onSelect(id: ElementId): void
-  author: Author | undefined
-  t: Translate
-}) {
-  return rows.map((row, index) => {
-    const heading = (rows[index + 1]?.depth ?? 0) > row.depth
-    // The group this row belongs to is the nearest row at depth 0 at or
-    // above it; the add line goes after the group's last member.
-    const group = row.depth === 0 ? row : [...rows.slice(0, index)].reverse().find((r) => r.depth === 0) ?? row
-    const endsGroup = row.depth > 0 && (rows[index + 1]?.depth ?? 0) === 0
-    const add = author && endsGroup && (
-      <Box sx={{ pl: 1.25, py: 0.25 }}>
-        <Add
-          label={t('sheet.addStakeholder')}
-          title={t('sheet.addStakeholderTo', { name: group.element.name })}
-          onClick={() => author.made(author.actions.addElement({
-            kind: 'actor', name: t('sheet.nameStakeholder'), parentId: group.element.id,
-          }))}
-          sx={{ px: 0.4, py: 0, fontSize: 9 }}
-        />
-      </Box>
-    )
-    return (
-      <Fragment key={row.element.id}>
-      <Box
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 0.5,
-          pl: row.depth * 1.25,
-          ...(heading ? { mt: 1.5, mb: 0.5 } : { py: 0.25 }),
-        }}
-      >
-        <Box
-          component="button"
-          type="button"
-          data-testid={`sheet-actor-${row.element.id}`}
-          data-element-id={row.element.id}
-          data-rail-group="parties"
-          onClick={() => onSelect(row.element.id)}
-          sx={{
-            ...RAIL_BUTTON,
-            ...(heading
-              ? {
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: 'text.secondary',
-              }
-              : { fontSize: 11.5, color: 'inherit' }),
-          }}
-        >
-          {row.element.name}
-        </Box>
-        {row.outside && <OutsideChip t={t} />}
-      </Box>
-      {add}
-      </Fragment>
-    )
-  })
-}
-
-/**
- * A row's button on the rail. A button's text is the browser's `buttontext`
- * unless it is told otherwise: inherit, or a heading loses its own colour.
- */
-const RAIL_BUTTON = {
-  appearance: 'none', cursor: 'pointer', font: 'inherit',
-  background: 'none', border: 0, p: 0, textAlign: 'left', minWidth: 0, flex: 1,
-} as const
-
-function OutsideChip({ t }: { t: Translate }) {
-  return (
-    <Chip
-      size="small"
-      variant="outlined"
-      label={t('sheet.outside')}
-      sx={{ height: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
-    />
-  )
-}
-
-/**
- * The units under the parties: the ones this sheet uses, each saying why in
- * a quiet second line, or the rest of the scope's, quieter still. Flat — the
- * organisation chart is where a unit's place in the structure is read.
- */
-function RailUnitRows({ group, heading, rows, onSelect, t }: {
-  group: 'used' | 'other'
-  heading: string
-  rows: readonly SheetActor[]
-  onSelect(id: ElementId): void
-  t: Translate
-}) {
-  if (rows.length === 0) return null
-  return (
-    <Box data-testid={`sheet-rail-${group}`} sx={{ mt: 2 }}>
-      <Typography sx={RAIL_HEADING}>{heading}</Typography>
-      {rows.map((row) => {
-        const why = row.uses && whyDrawn(row.uses, t)
-        return (
-          <Box key={row.element.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
-            <Box
-              component="button"
-              type="button"
-              data-testid={`sheet-actor-${row.element.id}`}
-              data-element-id={row.element.id}
-              data-rail-group={group}
-              onClick={() => onSelect(row.element.id)}
-              sx={{ ...RAIL_BUTTON, fontSize: 11.5, color: group === 'other' ? 'text.secondary' : 'inherit' }}
-            >
-              {row.element.name}
-              {why && (
-                <Box component="span" sx={{ display: 'block', fontSize: 10, color: 'text.secondary' }}>{why}</Box>
-              )}
-            </Box>
-            {row.outside && <OutsideChip t={t} />}
-          </Box>
-        )
-      })}
-    </Box>
-  )
-}
-
-/** Why a unit is among *Units on this sheet*: the first thing it answers for here, else its lane. */
-function whyDrawn(uses: NonNullable<SheetActor['uses']>, t: Translate): string | undefined {
-  const [first, ...more] = uses.responsibleFor
-  if (first) {
-    return more.length === 0
-      ? t('sheet.unitResponsible', { name: first.name })
-      : t('sheet.unitResponsibleMore', { name: first.name, count: more.length })
+/** What an application's dates say on the day read: on its way out, wherever it is kept. */
+export function retiringOn(model: Pick<DesignModel, 'elements'>, describe: MapDescribe | undefined) {
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  return (id: ElementId): boolean => {
+    const own = byId.get(id)
+    if (own?.lifecycle === 'retiring' || own?.lifecycleDates?.retiring !== undefined) return true
+    const said = describe?.(id)
+    return said?.retiring !== undefined || said?.retired !== undefined
   }
-  return uses.lane ? t('sheet.unitLane') : undefined
 }
 
-// --- the journey ------------------------------------------------------------
+function answeredOf(leaves: readonly ElementId[], coverage: (id: ElementId) => FunctionCoverage, retiring: (id: ElementId) => boolean): Answered {
+  const counts = lensCounts(leaves.map((id) => lensValue({ id } as DesignElement, 'coveredBy', { coverage, retiring })))
+  const parts = ['apps', 'moving', 'people', 'none'].flatMap((value) => ((counts.get(value) ?? 0) > 0 ? [{ value, count: counts.get(value)! }] : []))
+  return { answered: leaves.length - (counts.get('none') ?? 0), total: leaves.length, parts }
+}
 
-function JourneyBand({ journey, onSelect, onNewLane, author, t }: {
-  journey: SheetJourney
-  onSelect(id: ElementId): void
-  onNewLane(): void
-  author: Author | undefined
-  t: Translate
-}) {
-  return (
-    <Box data-testid="sheet-journey">
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
-        <Box sx={{ flex: `0 0 ${LANE_LABEL_WIDTH}px` }} />
-        {journey.phases.map((phase) => (
-          <Box
-            key={phase.id}
-            data-testid={`sheet-phase-${phase.id}`}
-            data-element-id={phase.id}
-            component="button"
-            type="button"
-            title={phase.name}
-            onClick={() => onSelect(phase.id)}
-            sx={{
-              appearance: 'none', cursor: 'pointer', font: 'inherit',
-              // A phase used to shrink to nothing beside its neighbours; a
-              // floor keeps its name legible, and the ellipsis (with the
-              // full name in the title) says there is more than fits rather
-              // than wrapping or overlapping the next phase.
-              flex: 1, minWidth: 96, textAlign: 'center', px: 1, py: 0.5, border: 0,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              bgcolor: 'primary.main', color: 'primary.contrastText',
-              borderRadius: '3px 3px 0 0',
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            }}
-          >
-            {phase.name}
-          </Box>
-        ))}
-        {author && (
-          <Box sx={{ flex: `0 0 ${ADD_COLUMN}px`, display: 'flex', alignItems: 'center' }}>
-            <Add
-              label={t('sheet.addPhase')}
-              title={t('sheet.addPhaseTo', { name: journey.element.name })}
-              onClick={() => author.made(author.actions.addElement({
-                kind: 'step', name: t('sheet.namePhase'), parentId: journey.element.id,
-              }))}
-            />
-          </Box>
-        )}
-      </Box>
-      {journey.lanes.map((lane, index) => (
-        <LaneRow
-          key={lane.actorId ?? 'common'}
-          lane={lane}
-          phases={journey.phases}
-          first={index === 0}
-          onSelect={onSelect}
-          author={author}
-          t={t}
-        />
-      ))}
-      {author && (
-        <Box sx={{ display: 'flex', borderTop: 1, borderColor: 'divider', pt: 1 }}>
-          <Box sx={{ flex: `0 0 ${LANE_LABEL_WIDTH}px`, pr: 1 }}>
-            <Add label={t('sheet.addLane')} title={t('sheet.addLane')} onClick={onNewLane} />
-          </Box>
-        </Box>
-      )}
-    </Box>
+/** What a gesture on the page means: the rows and how they fold, named, walked and added to. */
+function usePageSelection(model: DesignModel, remember: string | undefined) {
+  const [selectedId, setSelectedId] = useState<ElementId | undefined>(undefined)
+  const [naming, setNaming] = useState<{ id: ElementId; fresh: boolean; nonce: number } | undefined>(undefined)
+  const [folded, setFolded] = useSessionSet(remember !== undefined ? `${remember}:folds` : undefined)
+  const [journeyOpen, setJourneyOpen] = useState(false)
+  const [railOpen, setRailOpen] = useState(false)
+  const toggleFold = useCallback((id: ElementId) => {
+    const next = new Set(folded)
+    if (!next.delete(id)) next.add(id)
+    setFolded(next)
+  }, [folded, setFolded])
+  /** Whatever is to be seen has its band open and nothing folded above it. */
+  const reveal = useCallback((id: ElementId) => {
+    const element = model.elements.find((held) => held.id === id)
+    if (element?.kind === 'step') setJourneyOpen(true)
+    if (element?.kind === 'actor') setRailOpen(true)
+    if (element?.kind !== 'function' || folded.size === 0) return
+    const next = new Set(folded)
+    for (let at = element.parentId; at !== undefined;) {
+      next.delete(at)
+      at = model.elements.find((held) => held.id === at)?.parentId
+    }
+    if (next.size !== folded.size) setFolded(next)
+  }, [model.elements, folded, setFolded])
+  const select = useCallback((id: ElementId | undefined) => {
+    setSelectedId(id)
+    if (id !== undefined) reveal(id)
+  }, [reveal])
+  const made = useCallback((id: ElementId | undefined) => {
+    if (id === undefined) return
+    setSelectedId(id)
+    setNaming((was) => ({ id, fresh: true, nonce: (was?.nonce ?? 0) + 1 }))
+    reveal(id)
+  }, [reveal])
+  const name = useCallback((id: ElementId) => {
+    setNaming((was) => ({ id, fresh: false, nonce: (was?.nonce ?? 0) + 1 }))
+  }, [])
+  return { selectedId, select, naming, setNaming, made, name, folded, toggleFold, journeyOpen, setJourneyOpen, railOpen, setRailOpen }
+}
+
+export function SheetPage(props: SheetPageProps) {
+  const { model, sheet, actions } = props
+  const { t, language } = useStrings()
+  const theme = useTheme()
+  const page = useRef<HTMLDivElement | null>(null)
+  // The reader's, and in the address: a link and an agent reach them, and a look writes nothing.
+  const [tab, chooseTab] = usePlaceTab('names')
+  const level = tab === 'overview' ? 'overview' : 'names'
+  const [reading, changeReading] = usePlaceReading()
+  const scales = useMemo(() => props.scales ?? [], [props.scales])
+
+  // The day: a look when it is not what the view is saved on, and a look writes nothing (ADR-0027, amended).
+  const day = reading.day ?? sheet?.asOf
+  const looking = reading.day !== undefined && reading.day !== sheet?.asOf
+  const readOnly = props.readOnly || looking
+
+  const lensAsked = reading.colour ?? sheet?.colourBy
+  const lens: SheetLens | undefined = lensAsked === 'none'
+    ? undefined
+    : isSheetLens(lensAsked, scales) ? lensAsked : DEFAULT_LENS
+  const [only, setOnly] = useState<string | undefined>(undefined)
+
+  const [laneOpen, setLaneOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [finding, setFinding] = useState(false)
+  const [query, setQuery] = useState('')
+  const [findAt, setFindAt] = useState<number | undefined>(undefined)
+  const [railWidth, setRailWidth] = useState<number>(RAIL.default)
+  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
+  const [exporting, setExporting] = useState<{ width?: number } | undefined>(undefined)
+  const cards = useMeasuredHeights()
+
+  const rail = useRail(model, { remember: props.remember, readOnly, sheet, notify: props.notify, note: t('sheet.nowAUnit') })
+  const asOf = day ?? props.today
+  const live = useMemo(() => {
+    const [relations, elsewhere] = liveRows(model, asOf, { elsewhere: props.elsewhere ?? [], ...(props.describe ? { describe: props.describe } : {}) })
+    return { relations, elsewhere }
+  }, [model, asOf, props.elsewhere, props.describe])
+  const laidOut = useMemo(
+    () => (sheet ? sheetPage({ elements: model.elements, relations: live.relations }, sheet, live.elsewhere, rail.options, props.takenUp) : undefined),
+    [model.elements, live, sheet, rail.options, props.takenUp],
   )
-}
+  const covering = useMemo(() => coverageOf(live.relations, live.elsewhere), [live])
+  const liveModel = useMemo(() => ({ ...model, relations: live.relations }), [model, live.relations])
+  const who = useWho(liveModel, live.elsewhere, props.responsible, lens === 'who')
 
-function LaneRow({ lane, phases, first, onSelect, author, t }: {
-  lane: SheetLane
-  phases: readonly DesignElement[]
-  first: boolean
-  onSelect(id: ElementId): void
-  author: Author | undefined
-  t: Translate
-}) {
-  const laneName = lane.actor?.name ?? (first ? t('sheet.commonLane') : lane.actorId ?? '')
-  return (
-    <Box
-      data-testid={`sheet-lane-${lane.actorId ?? 'common'}`}
-      sx={{ display: 'flex', gap: 0.5, borderTop: first ? 0 : 1, borderColor: 'divider' }}
-    >
-      <Box sx={{
-        flex: `0 0 ${LANE_LABEL_WIDTH}px`, display: 'flex', alignItems: 'center', pr: 1, py: 1,
-      }}>
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{laneName}</Typography>
-      </Box>
-      {lane.cells.map((cell, index) => (
-        <Box
-          key={cell.phaseId}
-          data-testid={`sheet-cell-${lane.actorId ?? 'common'}-${cell.phaseId}`}
-          sx={{
-            flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            gap: 0.5, py: 1, minHeight: 40,
-          }}
-        >
-          {cell.steps.map((step) => (
-            <Chevron key={step.element.id} step={step} onSelect={onSelect} t={t} />
-          ))}
-          {cell.passThrough && (
-            <Box
-              data-testid={`sheet-passthrough-${lane.actorId ?? 'common'}-${cell.phaseId}`}
-              role="img"
-              aria-label={t('sheet.passThrough')}
-              sx={{ borderTop: '1px dashed', borderColor: 'divider', mx: 1 }}
-            />
-          )}
-          {author && (
-            <Add
-              label={t('sheet.addStep')}
-              title={t('sheet.addStepTo', {
-                phase: phases[index]?.name ?? cell.phaseId, lane: laneName,
-              })}
-              onClick={() => author.made(author.actions.addElement({
-                kind: 'step',
-                name: t('sheet.nameStep'),
-                parentId: cell.phaseId,
-                ...(lane.actorId !== undefined ? { lane: lane.actorId } : {}),
-              }))}
-              sx={{ alignSelf: 'flex-start' }}
-            />
-          )}
-        </Box>
-      ))}
-      {/* The column the *+ phase* stands in, so every row lines up under it. */}
-      {author && <Box sx={{ flex: `0 0 ${ADD_COLUMN}px` }} />}
-    </Box>
-  )
-}
+  const selection = usePageSelection(model, props.remember)
+  const { selectedId, select, naming, setNaming, made, folded, toggleFold, journeyOpen, setJourneyOpen, railOpen, setRailOpen } = selection
+  const selected = selectedId === undefined ? undefined : model.elements.find((element) => element.id === selectedId)
 
-/** One step. Outside the organisation, it is drawn as a dashed outline. */
-function Chevron({ step, onSelect, t }: {
-  step: SheetStep
-  onSelect(id: ElementId): void
-  t: Translate
-}) {
-  return (
-    <Box
-      component="button"
-      type="button"
-      data-testid={`sheet-step-${step.element.id}`}
-      data-element-id={step.element.id}
-      aria-label={step.outside ? t('sheet.outsideStep', { name: step.element.name }) : step.element.name}
-      onClick={() => onSelect(step.element.id)}
-      sx={{
-        appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit',
-        display: 'flex', alignItems: 'center', minHeight: 40, px: 1, pr: `${NOTCH + 8}px`,
-        bgcolor: 'background.paper',
-        border: 1, borderStyle: step.outside ? 'dashed' : 'solid', borderColor: 'divider',
-        color: step.outside ? 'text.secondary' : 'text.primary',
-        fontSize: 10, lineHeight: 1.25,
-        clipPath: CHEVRON,
-      }}
-    >
-      {step.element.name}
-    </Box>
-  )
-}
+  const onHandle = props.onHandle
+  const sheetId = sheet?.id
+  const capture = useCallback(async (options: SheetCaptureOptions) => {
+    const node = page.current
+    if (!node) throw new Error('SheetPage: the page is not on screen')
+    setExporting({ ...(options.width !== undefined ? { width: options.width } : {}) })
+    try {
+      await settled()
+      return await captureSheet(node, { maxPixels: options.maxPixels, background: theme.palette.background.default })
+    } finally {
+      setExporting(undefined)
+    }
+  }, [theme])
+  useEffect(() => {
+    if (!onHandle) return undefined
+    if (!props.open || sheetId === undefined) { onHandle(undefined); return undefined }
+    onHandle({ diagramId: sheetId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
+    return () => onHandle(undefined)
+  }, [onHandle, props.open, sheetId, capture, selectedId])
 
-// --- the areas --------------------------------------------------------------
+  const { locatedId, locate: bringOn } = useLocated(page, select)
+  useSelectRequest(props.select, laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id)), bringOn)
 
-/**
- * The capabilities of a grouping, or an area's loose ones: one column per
- * column the area takes, so *wider* adds exactly one column of them. Fitting
- * as many as the width allowed went from one column to three in a step.
- */
-const capabilityGrid = (span: number) => ({
-  display: 'grid', gap: 0.75, gridTemplateColumns: `repeat(${span}, minmax(0, 1fr))`, alignItems: 'start',
-})
+  const hits = useMemo(() => (laidOut && finding ? findOnSheet(laidOut, query) : []), [laidOut, finding, query])
+  const lit = useMemo(() => (finding && query.trim() !== '' ? new Set(hits.map((hit) => hit.element.id)) : undefined), [finding, query, hits])
+  const closeFinder = useCallback(() => { setFinding(false); setQuery(''); setFindAt(undefined) }, [])
+  const walkTo = (to: number) => {
+    setFindAt(to)
+    const hit = hits[to]
+    if (hit) bringOn(hit.element.id)
+  }
 
-function AreaCard({ area, span, place, measure, onSpan, onSelect, author, who, t }: {
-  area: SheetArea
-  /** How many columns of the grid it takes. */
-  span: number
-  /** Where the packing put it. */
-  place: { left: string; width: string; top: number }
-  /** Tell the page how tall it is, for the packing. */
-  measure(id: ElementId, node: HTMLDivElement | null): void
-  /** Make it wider or narrower — absent where the grid has one column, or under `readOnly`. */
-  onSpan?(span: number): void
-  onSelect(id: ElementId): void
-  author: Author | undefined
-  /** Who answers for each function, while *Show who is responsible* is on. */
-  who?: Who
-  t: Translate
-}) {
-  return (
-    <Box
-      ref={(node: HTMLDivElement | null) => measure(area.element.id, node)}
-      data-testid={`sheet-area-${area.element.id}`}
-      data-element-id={area.element.id}
-      data-span={span}
-      data-column={place.left}
-      sx={{
-        border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden',
-        bgcolor: 'background.paper', minWidth: 0, boxSizing: 'border-box',
-        position: 'absolute', left: place.left, width: place.width, top: place.top,
-      }}
-    >
-      <Box
-        onClick={() => onSelect(area.element.id)}
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, cursor: 'pointer',
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16),
-        }}
+  const coverageAt = useCallback((id: ElementId) => covering.get(id) ?? NOTHING_COVERS, [covering])
+  const retiring = useMemo(() => retiringOn(model, props.describe), [model, props.describe])
+  const facts: LensFacts = useMemo(() => ({
+    coverage: coverageAt, retiring, scales,
+    ...(props.domains ? { takenUpBy: props.domains.takenUpBy } : {}),
+  }), [coverageAt, retiring, scales, props.domains])
+  const valueOf = useCallback((element: DesignElement): LensValue | undefined => (lens ? lensValue(element, lens, facts) : undefined), [lens, facts])
+
+  const areaRows = useMemo(() => new Map((laidOut?.areas ?? []).map((area) => [area.element.id, rowsOfArea(area)])), [laidOut])
+  const byId = useMemo(() => new Map(model.elements.map((element) => [element.id, element])), [model.elements])
+  const allLeaves = useMemo(() => [...areaRows.entries()].flatMap(([area, rows]) => {
+    const leaves = leavesOfArea(rows)
+    return leaves.length > 0 ? leaves : [area]
+  }), [areaRows])
+
+  const keyValues: KeyValue[] = useMemo(() => {
+    if (!lens) return []
+    const counts = lensCounts(allLeaves.flatMap((id) => { const element = byId.get(id); return element ? [lensValue(element, lens, facts)] : [] }))
+    return [...counts].map(([value, count]) => {
+      const look = lookOf(lens, { value, ...(lens.startsWith('aspect:') && value !== 'unrated' ? { heat: headingHeat(scales, lens, value) } : {}) })
+      return { id: value, label: valueWord(lens, value, t), count, ...(look.mark ? { mark: look.mark } : {}), ...(look.colour && !look.hollow ? { swatch: look.colour } : {}) }
+    })
+  }, [lens, allLeaves, byId, facts, scales, t])
+
+  const author: Author | undefined = readOnly ? undefined : { t, made, actions }
+
+  const named = useCallback((id: ElementId) => (
+    props.domains?.name(id) ?? props.describe?.(id)?.name ?? byId.get(id)?.name ?? props.responsible?.name(id) ?? id
+  ), [props.domains, props.describe, props.responsible, byId])
+  const namedFact = useCallback((id: ElementId) => {
+    // A path holds a slash, or is the organisation's own; an element's id holds neither, and the domains speak in paths.
+    if (lens === 'domains' && props.domains) return props.domains.name(id)
+    return props.describe?.(id)?.name ?? byId.get(id)?.name ?? named(id)
+  }, [lens, props.domains, props.describe, byId, named])
+
+  const onNamed: RowContext['onNamed'] = (id, name, then) => {
+    const element = byId.get(id)
+    const fresh = naming?.fresh === true
+    setNaming(undefined)
+    if (!element) return
+    if (name !== element.name) actions.updateElement(id, { name })
+    if (then === 'next' && fresh && element.kind === 'function') {
+      made(actions.addElement({ kind: 'function', name: t('sheet.nameCapability'), ...(element.parentId !== undefined ? { parentId: element.parentId } : {}) }))
+    }
+    if (then === 'under' && fresh) {
+      const rows = element.parentId !== undefined ? rowsFor(areaRows, id) : []
+      const above = rowAbove(rows, id)
+      if (above) actions.updateElement(id, { parentId: above.element.id })
+    }
+  }
+
+  const context: RowContext = {
+    lens, valueOf, named: namedFact, who, selectedId, only, hits: lit, folded, answers: (id) => coverageAt(id).coverage !== 'uncovered',
+    onFold: toggleFold, onSelect: select, naming: naming && !readOnly ? { id: naming.id } : undefined, onNamed, onName: selection.name, t,
+    ...(author ? {
+      onAddUnder: (parent: DesignElement) => made(actions.addElement({ kind: 'function', name: t('sheet.nameCapability'), parentId: parent.id })),
+    } : {}),
+  }
+
+  const paper = sheet ? (exporting?.width !== undefined ? paperOfWidth(exporting.width) : undefined) ?? sheetPaper(sheet) : undefined
+  const pictureWidth = exporting ? exporting.width ?? (paper !== undefined ? paperWidth(paper) : undefined) : undefined
+  const columns = sheet && pictureWidth !== undefined ? sheetColumns(sheet, pictureWidth - 32) : 1
+  const fitted = useMemo(() => {
+    if (!exporting || !laidOut || !sheet || paper === undefined) return undefined
+    return fitSpans(laidOut.areas.map((area) => ({
+      id: area.element.id,
+      groupings: area.groupings.map((group) => group.capabilities.length),
+      loose: area.capabilities.length,
+      ...(sheet.areaSpans?.[area.element.id] !== undefined ? { fixed: sheet.areaSpans[area.element.id] } : {}),
+    })), columns, Math.max(0, paperHeight(paper) - PAGE_MARGINS))
+  }, [exporting, laidOut, sheet, paper, columns])
+  const packed = useMemo(() => (exporting && laidOut && sheet
+    ? packAreas(laidOut.areas.map((area) => ({
+      id: area.element.id,
+      span: fitted?.[area.element.id] ?? spanOf(sheet, area.element.id, columns),
+      height: cards.heights[area.element.id] ?? 0,
+    })), columns)
+    : undefined), [exporting, laidOut, sheet, fitted, columns, cards.heights])
+
+  const exportPng = useCallback(async (layout: ExportLayout) => {
+    if (!sheet || !props.onSave) return
+    const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
+    props.onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+  }, [sheet, props.onSave, capture])
+
+  const more: MenuEntry[] = [
+    ...(props.onSave ? [{ label: t('sheet.export'), onSelect: () => setExportOpen(true) }] : []),
+    ...(!readOnly && sheet ? [{ label: t('sheet.settings'), onSelect: () => setSettingsOpen(true) }] : []),
+  ]
+  const onReadingPress = (to: SheetReading) => {
+    if (to === 'coverage') props.onCoverage?.()
+    else chooseTab(to)
+  }
+  const areaOf = (area: SheetArea) => {
+    const rows = areaRows.get(area.element.id) ?? []
+    const leaves = leavesOfArea(rows)
+    return { rows, leaves: leaves.length > 0 ? leaves : [area.element.id] }
+  }
+  const openArea = (id: ElementId) => {
+    chooseTab('names')
+    requestAnimationFrame?.(() => bringOn(id))
+  }
+  const owned = (area: SheetArea) => props.ownerOf?.(area.element.id)
+  const own = (laidOut?.areas ?? []).filter((area) => !owned(area))
+  const standIns = (laidOut?.areas ?? []).filter((area) => owned(area))
+
+  const block = (area: SheetArea, position?: ComponentProps<typeof AreaBlock>['position'], span?: number) => {
+    const { rows, leaves } = areaOf(area)
+    const domain = area.domain
+    const broken = domain !== undefined && props.domains?.known && !props.domains.known(domain)
+    const owner = owned(area)
+    return (
+      <AreaBlock
+        key={area.element.id} area={area} rows={rows} answered={answeredOf(leaves, coverageAt, retiring)} context={exporting ? { ...context, folded: new Set(), onAddUnder: undefined, naming: undefined } : context}
+        {...(position ? { position } : {})} {...(span !== undefined ? { width: span } : {})}
+        {...(broken ? { problem: t('sheet.domainGone', { name: props.domains?.name(domain) ?? domain }) } : {})}
+        {...(owner ? { standIn: t('standIn.definedIn', { scope: owner.label }) } : {})}
       >
-        <Typography component="div" sx={{ fontSize: 12, fontWeight: 700, flex: 1, minWidth: 0 }}>
-          {area.element.name}
-          <ResponsibleChips who={who} functionId={area.element.id} t={t} />
-        </Typography>
-        <UnitLabel who={who} functionId={area.element.id} t={t} sx={{ maxWidth: '40%', flexShrink: 1, minWidth: 0 }} />
-        {area.domain !== undefined && (
-          <Chip size="small" label={area.domain} sx={{ height: 18, fontSize: 9.5 }} />
+        {exporting && <span ref={(node) => cards.observe(area.element.id, node?.parentElement ?? null)} hidden />}
+      </AreaBlock>
+    )
+  }
+
+  const leaveLook = () => { const { day: _was, ...rest } = reading; changeReading(rest) }
+  const Frame = props.inline ? InlineFrame : PageDialog
+  const unmapped = laidOut?.unmapped ?? []
+  const panelUp = selected !== undefined && !exporting
+  return (
+    <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('sheet.page')}>
+      <SheetBar
+        t={t}
+        reading={(
+          <ReadingSwitch value={level} onChange={onReadingPress} canCover={props.onCoverage !== undefined} t={t} guide="sheet.reading" />
         )}
-        {onSpan && (
-          <Box
-            data-sheet-add
-            onClick={(event) => event.stopPropagation()}
-            sx={{ display: 'flex', gap: 0.25, ml: 0.5, flexShrink: 0 }}
-          >
-            <Add
-              label="−" title={t('sheet.narrower', { name: area.element.name })}
-              disabled={span <= 1} onClick={() => onSpan(span - 1)} sx={{ px: 0.6, lineHeight: 1.3 }}
+        {...(sheet ? {
+          colour: (
+            <ColourMenu
+              data-guide="sheet.showResponsible"
+              questions={sheetLenses(scales, { who: props.responsible !== undefined, domains: props.domains !== undefined }).map((id) => ({ id, label: lensWord(id, scales, t) }))}
+              value={lens} onChange={(to) => { setOnly(undefined); changeReading({ ...reading, colour: to ?? 'none' }) }}
             />
-            <Add
-              label="+" title={t('sheet.wider', { name: area.element.name })}
-              disabled={span >= MAX_SPAN} onClick={() => onSpan(span + 1)} sx={{ px: 0.6, lineHeight: 1.3 }}
+          ),
+          day: (
+            <DayControl
+              data-guide="sheet.day" day={day} groups={props.days ?? []}
+              onChange={(to) => { const { day: _was, ...rest } = reading; const asked = to ?? (sheet.asOf !== undefined ? props.today : undefined); changeReading(asked !== undefined ? { ...rest, day: asked } : rest) }}
             />
-          </Box>
+          ),
+          ...(laidOut?.journey ? { journey: { shown: journeyOpen, onShown: setJourneyOpen } } : {}),
+          ...(sheet.showActors !== false ? { stakeholders: { shown: railOpen, onShown: setRailOpen } } : {}),
+        } : {})}
+        finding={finding} onFind={() => (finding ? closeFinder() : setFinding(true))} more={more}
+      />
+      {looking && reading.day !== undefined && (
+        <Band
+          tone="looking" title={t('sheet.looking', { day: formatDay(reading.day, language) })} detail={t('sheet.lookingDetail')}
+          action={(
+            <>
+              <Button variant="plain" size="small" onClick={leaveLook}>{t('sheet.lookingBack')}</Button>
+              {!props.readOnly && <Button variant="quiet" size="small" onClick={() => { actions.updateSheet({ asOf: reading.day }); leaveLook() }}>{t('sheet.lookingKeep')}</Button>}
+            </>
+          )}
+        />
+      )}
+      {finding && <FindBar query={query} hits={hits} at={findAt} onQuery={(to) => { setQuery(to); setFindAt(undefined) }} onWalk={walkTo} onClose={closeFinder} t={t} />}
+
+      <Box
+        ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined}
+        style={exporting?.width !== undefined ? { width: exporting.width } : undefined}
+        sx={exporting ? undefined : locatedRing(locatedId)}
+      >
+        {laidOut?.journey && (journeyOpen || !exporting) && (
+          <JourneyBand
+            journey={laidOut.journey} open={journeyOpen || exporting !== undefined} onOpen={setJourneyOpen}
+            selectedId={selectedId} onSelect={select} onNewLane={() => setLaneOpen(true)} author={author} t={t}
+          />
         )}
-      </Box>
-      <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        {area.groupings.map((group) => (
-          <Box
-            key={group.element.id}
-            data-testid={`sheet-grouping-${group.element.id}`}
-            data-element-id={group.element.id}
-            sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}
-          >
-            {/* The unit's label beside the heading, in its row: never inside the heading's button. */}
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mb: 0.75 }}>
-              <Box
-                component="button"
-                type="button"
-                onClick={() => onSelect(group.element.id)}
-                sx={{
-                  appearance: 'none', cursor: 'pointer', font: 'inherit', background: 'none',
-                  border: 0, p: 0, textAlign: 'left', flex: 1, minWidth: 0,
-                  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  color: 'text.secondary',
-                }}
-              >
-                {group.element.name}
-                <ResponsibleChips who={who} functionId={group.element.id} t={t} />
-              </Box>
-              <UnitLabel who={who} functionId={group.element.id} t={t} sx={{ maxWidth: '45%', flexShrink: 0 }} />
-            </Box>
-            <Box sx={capabilityGrid(span)}>
-              {group.capabilities.map((capability) => (
-                <CapabilityCard
-                  key={capability.element.id}
-                  capability={capability}
-                  onSelect={onSelect}
-                  who={who}
-                  t={t}
-                />
-              ))}
-              {author && (
-                <Add
-                  label={t('sheet.addCapability')}
-                  title={t('sheet.addCapabilityTo', { name: group.element.name })}
-                  onClick={() => author.made(author.actions.addElement({
-                    kind: 'function',
-                    name: t('sheet.nameCapability'),
-                    parentId: group.element.id,
-                  }))}
-                  sx={{ alignSelf: 'flex-start' }}
+        {(laidOut?.areas.length ?? 0) > 0 && lens && (
+          <div className="sheet-page__keyRow">
+            <KeyStrip
+              values={keyValues} pressed={only} onPress={setOnly} data-guide="sheet.key"
+              {...(!props.readOnly && sheet && lens !== sheet.colourBy && !(sheet.colourBy === undefined && lens === DEFAULT_LENS)
+                ? { onKeep: () => actions.updateSheet({ colourBy: lens as DesignDiagram['colourBy'] }) }
+                : {})}
+            />
+            {unmapped.length > 0 && (
+              <button type="button" className="sheet-page__link sheet-page__keyEnd" onClick={() => document.getElementById('sheet-unmapped')?.scrollIntoView?.()}>
+                {plural(t, { one: 'sheet.unmappedJumpOne', other: 'sheet.unmappedJumpOther' }, unmapped.length)}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="sheet-page__work">
+          {laidOut && sheet?.showActors !== false && (railOpen || exporting) && (
+            <>
+              <SheetRail
+                actors={laidOut.actors} width={railWidth} selectedId={selectedId} onSelect={select} t={t}
+                author={exporting ? undefined : author} {...(exporting ? {} : { units: rail.units(laidOut) })}
+              />
+              {!exporting && (
+                <SeamResizer
+                  orientation="vertical" region="before" value={railWidth} min={RAIL.min} max={RAIL.max} defaultValue={RAIL.default}
+                  onChange={setRailWidth} label={t('sheet.resizeRail')}
                 />
               )}
-            </Box>
-          </Box>
-        ))}
-        {/* The area's own leaves, after the boxes: a column reads as structure
-            and then the capabilities nobody has grouped yet. */}
-        {area.capabilities.length > 0 && (
-          <Box sx={capabilityGrid(span)}>
-            {area.capabilities.map((capability) => (
-              <CapabilityCard
-                key={capability.element.id}
-                capability={capability}
-                onSelect={onSelect}
-                who={who}
-                t={t}
-              />
-            ))}
-          </Box>
-        )}
-        {author && (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Add
-              label={t('sheet.addGrouping')}
-              title={t('sheet.addGroupingTo', { name: area.element.name })}
-              onClick={() => author.made(author.actions.addElement({
-                kind: 'function', name: t('sheet.nameGrouping'), parentId: area.element.id,
-              }))}
-            />
-            <Add
-              label={t('sheet.addCapability')}
-              title={t('sheet.addCapabilityTo', { name: area.element.name })}
-              onClick={() => author.made(author.actions.addElement({
-                kind: 'function', name: t('sheet.nameCapability'), parentId: area.element.id,
-              }))}
-            />
-          </Box>
-        )}
-      </Box>
-    </Box>
-  )
-}
-
-function CapabilityCard({ capability, onSelect, who, t }: {
-  capability: SheetCapability
-  onSelect(id: ElementId): void
-  who?: Who
-  t: Translate
-}) {
-  const { coverage } = capability
-  const label = coverage.coverage === 'covered'
-    ? plural(t, { one: 'sheet.appsOne', other: 'sheet.appsOther' }, coverage.supportedBy.length)
-    : coverage.coverage === 'manual' ? t('sheet.people') : t('sheet.nothingYet')
-  const colour = coverage.coverage === 'covered'
-    ? 'primary.main'
-    : coverage.coverage === 'manual' ? 'text.secondary' : 'warning.main'
-
-  return (
-    // A refinement of a capability sits one step in, so the tree is readable
-    // without a second kind of card for it. The unit's label sits on the
-    // coverage line, the card's last, beside the card's button and not in it.
-    <Box sx={{ position: 'relative', ml: (capability.depth - 1) * 1.5 }}>
-      <Box
-        component="button"
-        type="button"
-        data-testid={`sheet-capability-${capability.element.id}`}
-        data-element-id={capability.element.id}
-        onClick={() => onSelect(capability.element.id)}
-        sx={{
-          // `font: inherit` does not bring the colour with it: a button's text is
-          // the browser's `buttontext`, black in every theme, which on the dark
-          // ground is a card with a coverage line and no name.
-          appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', width: '100%',
-          bgcolor: 'background.default', border: 1, borderColor: 'divider', borderRadius: 0.75,
-          px: 1, py: 0.75,
-        }}
-      >
-        <Typography sx={{ fontSize: 11.5 }}>{capability.element.name}</Typography>
-        <ResponsibleChips who={who} functionId={capability.element.id} t={t} />
-        <Typography data-testid={`sheet-coverage-${capability.element.id}`} sx={{ fontSize: 10, color: colour }}>
-          {label}
-        </Typography>
-      </Box>
-      <UnitLabel who={who} functionId={capability.element.id} t={t} sx={{ position: 'absolute', right: 6, bottom: 5, maxWidth: '55%' }} />
-    </Box>
-  )
-}
-
-// --- what nobody has placed yet ---------------------------------------------
-
-function UnmappedBand({ elements, onSelect, t }: {
-  elements: readonly DesignElement[]
-  onSelect(id: ElementId): void
-  t: Translate
-}) {
-  return (
-    <Box
-      data-testid="sheet-unmapped" data-guide="sheet.unmapped"
-      sx={{
-        mt: 3, p: 1.5, borderRadius: 1,
-        border: '1px dashed', borderColor: 'warning.main',
-        bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{t('sheet.unmapped')}</Typography>
-        <Chip
-          size="small"
-          label={t('sheet.unmappedCount', { count: elements.length })}
-          sx={{ height: 18, fontSize: 9.5 }}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {elements.map((element) => (
-          <Box
-            key={element.id}
-            component="button"
-            type="button"
-            data-testid={`sheet-unmapped-${element.id}`}
-            data-element-id={element.id}
-            onClick={() => onSelect(element.id)}
-            sx={{
-              // The same `buttontext` trap as the capability card: inherit the colour too.
-              appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
-              bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: 0.75,
-              px: 1, py: 0.5, fontSize: 11.5,
-            }}
+            </>
+          )}
+          <div
+            className="sheet-page__body" data-testid="sheet-body" onKeyDown={(event) => onRowKeys(event, context)}
           >
-            {element.name}
-          </Box>
-        ))}
+            <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={lit ? '' : undefined}>
+              {!laidOut?.journey && author && (laidOut?.areas.length ?? 0) > 0 && (
+                <div className="sheet-adds">
+                  <Button variant="quiet" size="small" onClick={() => made(actions.addJourney({ journey: t('sheet.nameJourney'), phase: t('sheet.nameFirstPhase') }))}>{t('sheet.newJourney')}</Button>
+                </div>
+              )}
+              {laidOut && (laidOut.areas.length === 0
+                ? <EmptySheet author={author} claims={props.claims} t={t} />
+                : level === 'overview' && !exporting
+                  ? (
+                    <div className="sheet-tiles">
+                      {laidOut.areas.map((area) => {
+                        const { rows, leaves } = areaOf(area)
+                        return (
+                          <OverviewTile
+                            key={area.element.id} area={area} answered={answeredOf(leaves, coverageAt, retiring)} lens={lens} valueOf={valueOf}
+                            leaves={leaves.flatMap((id) => { const element = byId.get(id); return element ? [element] : [] })}
+                            items={rows.length} onOpen={openArea} t={t}
+                          />
+                        )
+                      })}
+                    </div>
+                  )
+                  : exporting && packed
+                    ? (
+                      <div className="sheet-areas__packed" data-testid="sheet-areas" data-columns={columns} style={{ height: packed.height }}>
+                        {laidOut.areas.map((area) => {
+                          const at = packed.placed.find((held) => held.id === area.element.id)
+                          if (!at) return null
+                          const pitch = `(100% + ${AREA_COLUMN.gap}px) / ${columns}`
+                          return block(area, { left: `calc(${pitch} * ${at.column})`, width: `calc(${pitch} * ${at.span} - ${AREA_COLUMN.gap}px)`, top: at.top }, at.span)
+                        })}
+                      </div>
+                    )
+                    : (
+                      <>
+                        <div className="sheet-areas" data-testid="sheet-areas">{own.map((area) => block(area))}</div>
+                        {standIns.length > 0 && (
+                          <>
+                            <h3 className="sheet-areas__heading">{t('sheet.takenUpSection')}</h3>
+                            <div className="sheet-areas">{standIns.map((area) => block(area))}</div>
+                          </>
+                        )}
+                      </>
+                    ))}
+              {author && (laidOut?.areas.length ?? 0) > 0 && <AreaAdds author={author} claims={props.claims} label={t('sheet.addArea')} />}
+              {unmapped.length > 0 && level !== 'overview' && <UnmappedBand elements={unmapped} selectedId={selectedId} onSelect={select} t={t} />}
+            </div>
+          </div>
+          {panelUp && (
+            <div className="sheet-page__over">
+              <SeamResizer
+                orientation="vertical" region="after" value={detailsWidth} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
+                defaultValue={INSPECTOR_WIDTH.default} onChange={setDetailsWidth} label={t('sheet.resizeDetails')}
+              />
+              <FunctionInspector
+                element={selected} model={model} readOnly={readOnly} actions={actions} width={detailsWidth}
+                applications={props.applications} onOpenDocumentation={props.onOpenDocumentation} elsewhere={props.elsewhere}
+                {...(naming && naming.id === selected?.id && selected.kind !== 'function' ? { nameFocus: naming.nonce } : {})}
+                responsible={props.responsible} domains={props.domains} ownerOf={props.ownerOf} scales={scales}
+                describe={props.describe} today={asOf}
+                onClose={() => select(undefined)} onRemoved={() => select(undefined)} onSelect={select}
+                columnsInPrint={sheet ? { span: sheet.areaSpans?.[selected.id] ?? 1, onSpan: (areaSpans) => actions.updateSheet({ areaSpans }), spans: sheet.areaSpans, drawn: laidOut?.areas.some((area) => area.element.id === selected.id) ?? false } : undefined}
+              />
+            </div>
+          )}
+        </div>
       </Box>
-    </Box>
+
+      {laneOpen && laidOut?.journey && (
+        <LaneDialog
+          model={model} phases={laidOut.journey.phases} onCancel={() => setLaneOpen(false)}
+          onConfirm={(lane: NewLane) => { setLaneOpen(false); made(actions.addLane(lane)) }}
+        />
+      )}
+      {settingsOpen && sheet && <SheetSettingsDialog model={model} sheet={sheet} actions={actions} onClose={() => setSettingsOpen(false)} />}
+      {exportOpen && sheet && (
+        <SheetExportDialog
+          initial={isPaperSize(sheet.paper) ? sheet.paper : 'screen'} onExport={exportPng} onClose={() => setExportOpen(false)}
+          {...(!props.readOnly ? { sheet, actions } : {})}
+        />
+      )}
+    </Frame>
   )
 }
 
-function Empty({ text, hint, action }: { text: string; hint?: string; action?: ReactNode }) {
+/** The rows of the area a function sits in. */
+function rowsFor(areas: ReadonlyMap<ElementId, readonly SheetRow[]>, id: ElementId): readonly SheetRow[] {
+  for (const rows of areas.values()) if (rows.some((row) => row.element.id === id)) return rows
+  return []
+}
+
+/** A rating on the key takes the step its rows draw. */
+function headingHeat(scales: readonly AspectScale[], lens: string, value: string): number {
+  const held = lensValue({ id: '', kind: 'function', ratings: { [lens.slice('aspect:'.length)]: Number(value) } } as unknown as DesignElement, lens as SheetLens, { coverage: () => NOTHING_COVERS, retiring: () => false, scales })
+  return held.heat ?? 1
+}
+
+function UnmappedBand({ elements, selectedId, onSelect, t }: {
+  elements: readonly DesignElement[]
+  selectedId: ElementId | undefined
+  onSelect(id: ElementId): void
+  t: Translate
+}) {
   return (
-    <Box sx={{ py: 3 }}>
-      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{text}</Typography>
-      {hint && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{hint}</Typography>}
-      {action && <Box sx={{ mt: 1 }}>{action}</Box>}
-    </Box>
+    <div className="sheet-unmapped" id="sheet-unmapped" data-testid="sheet-unmapped" data-guide="sheet.unmapped">
+      <div className="sheet-unmapped__title">{t('sheet.unmapped')} · {t('sheet.unmappedCount', { count: elements.length })}</div>
+      <div>{t('sheet.unmappedSay')}</div>
+      <div className="sheet-unmapped__rows">
+        {elements.map((element) => (
+          <button
+            type="button" key={element.id} className="sheet-unmapped__row" data-testid={`sheet-unmapped-${element.id}`} data-element-id={element.id}
+            aria-current={selectedId === element.id || undefined} onClick={() => onSelect(element.id)}
+          >{element.name}</button>
+        ))}
+      </div>
+    </div>
   )
 }
