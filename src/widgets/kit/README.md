@@ -33,6 +33,7 @@ and behaves is said here, once.
 | `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes. `PanelDockProvider`: the column holding it says its width and its fold, so a screen hands a panel in without knowing it is docked. `PanelName`, a name pressed to edit, for a record's title too; `PanelLink`, a word that goes somewhere |
 | `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
+| `SettleRow.tsx` | **Settle row**: one value two people left differently, a pair of choices in words, neither the default |
 | `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
 | `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
 | `Section.tsx` | **Section**: a heading over part of a page, and **LinkLine**: what a place does not hold, folded into one line of names |
