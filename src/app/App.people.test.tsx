@@ -254,6 +254,34 @@ describe('a source that does more about its people than keep them', () => {
     expect(screen.queryByTestId('people-me')).toBeNull()
   })
 
+  it('says what is true of the account a record names to an agent, which a forget reaches, and lists who recorded it among what points at them', async () => {
+    const observation = {
+      id: 'ob-1', number: 1, title: 'Orders arrive twice', date: '2026-10-01', impact: 'minor' as const, seen: 1, body: '',
+      history: [{ date: '2026-10-01', kind: 'recorded' as const }],
+    }
+    const seeded = (recordedBy: { name?: string; account?: string; person?: string }): ScopeSnapshot => ({
+      ...root, model: { ...root.model, observations: [{ ...observation, recordedBy }] },
+    })
+    const held = heldRepositories([seeded({ name: 'Stored Words', account: 'sub-pia' })])
+    const pia = await added(held, 'Pia Schulz')
+    const wire = gateway()
+    renderApp({ agent: wire.gateway, repositories: held, today: () => TODAY, provider: { people: { recorder: () => ({ person: pia.id }) } } })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    const recorder = async () => ((await wire.ask('observations.list', { scope: '' })).observations as { recordedBy: unknown }[])[0].recordedBy
+    expect(await recorder()).toEqual({ person: pia.id, name: 'Pia Schulz' })
+    await act(async () => { await held.people.forget(pia.id, TODAY) })
+    expect(await recorder()).toEqual({ person: pia.id, name: `Former colleague ${pia.pseudonym}` })
+    cleanup()
+
+    const named = heldRepositories([seeded({ person: 'pe-pia' })])
+    await named.people.bringIn([{ id: 'pe-pia', name: 'Pia Schulz', pseudonym: 'BCDF', kind: 'internal', state: 'active' }])
+    renderApp({ repositories: named, today: () => TODAY })
+    await openPeople()
+    fireEvent.click(within(await screen.findByTestId('people-row-pe-pia')).getByRole('button'))
+    const pointed = await within(await screen.findByTestId('people-points-at')).findAllByTestId('people-pointed')
+    expect(pointed.map((line) => line.textContent)).toEqual(['OB-0001 Orders arrive twice: recorded by · in the organisation'])
+  })
+
   it('hears the register change elsewhere, and the page reads it again', async () => {
     const held = heldRepositories([root])
     await added(held, 'Pia Schulz')
