@@ -1,5 +1,6 @@
 .kit-segmented {
   display: inline-flex;
+  align-self: flex-start;
   max-width: 100%;
   height: var(--ctl-h);
   border: 1px solid var(--line-strong);

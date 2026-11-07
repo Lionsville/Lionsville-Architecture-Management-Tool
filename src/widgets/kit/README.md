@@ -12,6 +12,20 @@ and behaves is said here, once.
 | `oklch.ts` | OKLCH and sRGB both ways, and the WCAG ratio |
 | `accent.ts` | an accent somebody chose, as the shades each mode draws it in, or why it is refused |
 | `fonts/` | Source Sans 3 and Source Code Pro as woff2, with their licence |
+| `Button.tsx` | **Button** (primary, plain, quiet, danger; working; refused with its reason) and `IconButton`, for a glyph with a required name |
+| `Tabs.tsx` | **Tabs**, on by edge, with a count, and `TabPanel` |
+| `Menu.tsx` | **Menu** from a list of entries (final acts last, refused with a reason, one level of submenu), `MenuButton`, `MoreMenu` |
+| `Tooltip.tsx` | **Tooltip**: describes a control and does not rename it |
+| `Dialog.tsx` | **Dialog** in S, M, L; `DialogChoices`, `DialogFacts`, `DialogDanger` |
+| `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save |
+| `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
+| `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time |
+| `Picker.tsx` | **Picker**, in a panel or a form, and `PickerAt` where a canvas landed; `matching` is its search |
+| `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
+| `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
+| `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
+
+What a control always says is in `widgets/strings/`, under `kit.*`.
 
 A component arrives with its own file, a test beside it, and a line in this
 table.
