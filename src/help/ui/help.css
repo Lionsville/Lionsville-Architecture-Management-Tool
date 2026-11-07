@@ -160,7 +160,7 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-background h4 { font-size: var(--t-large); margin: 20px 0 6px }
 .help-background code, .help-section code, .help-worked code {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--t-small);
   background: var(--surface-2);
   padding: 0 3px;
   border-radius: 3px;

@@ -23,6 +23,8 @@ const FIXED: Record<string, number> = {
   'src/editor/edges/FloatingEdge.tsx': 1,
   'src/editor/nodes/ActorNode.tsx': 1,
   'src/editor/nodes/LogoGrid.tsx': 3,
+  // The help's small screens: a picture of the app at a reading size, drawn to scale.
+  'src/help/ui/pictures/pictures.css': 11,
   'src/layout/edgeLabelSize.ts': 2,
   'src/model/placement.ts': 6,
   'src/observations/ui/AnalysisPicture.tsx': 3,
