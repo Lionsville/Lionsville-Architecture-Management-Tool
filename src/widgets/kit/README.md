@@ -143,6 +143,13 @@ column, or one of the frame's: `FRAME_PANELS`, `#/…?panel=work`, opened with
 `onWork` when that moves: the status word is asked again and cannot say *sent*
 while it is offline.
 
+**A source with a far end** speaks on the frame through `SourceFrame` on its
+registration (`ports/ProviderParts.ts`): its own status word, a band, what holds a
+home it cannot read yet (`holding`, `Hold`), what opens *Your work* (`YourWork`), the
+panel `settle`, and the page `agents`, which *Connect an agent* goes to instead of the
+dialog. Each is optional: a source that says none of it gets the frame as it is for a
+folder.
+
 **A command** goes in `platform/menu.ts`, which is the desktop's menu bar, the ⋯,
 the ? menu, ⌘K and the sheet of keys (`app/frame/commandsTable.ts`). It must have a
 handler with nothing open (`useShellCommands`): an item that does nothing from the
