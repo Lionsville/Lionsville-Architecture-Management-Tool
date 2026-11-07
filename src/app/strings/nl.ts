@@ -1763,8 +1763,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'topics.isScope': 'Een onderwerp is een scope: de geschiedenis staat op zijn startpagina.',
   'topics.removeRefusedShort': 'Het bewaart nog een principe, bouwsteen of subonderwerp: verplaats of verwijder die eerst.',
   'topics.linkMore': 'Meer voor {scope}',
-  'topics.factKeeps': 'Het bewaart',
-  'topics.keepsWords': '{principles} principes, {blocks} bouwstenen, {subtopics} subonderwerpen',
   // The organisation chart as a tree (4.0.0).
   'chart.vacant': "vacant",
   'chart.assignWord': "toewijzen",

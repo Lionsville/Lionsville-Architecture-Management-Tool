@@ -1991,8 +1991,6 @@ export const EN = {
   'topics.isScope': 'A topic is a scope: its history is on its home.',
   'topics.removeRefusedShort': 'It still keeps a principle, a building block or a subtopic: move or remove those first.',
   'topics.linkMore': 'More for {scope}',
-  'topics.factKeeps': 'It keeps',
-  'topics.keepsWords': '{principles} principles, {blocks} building blocks, {subtopics} subtopics',
   // The organisation chart as a tree (4.0.0).
   'chart.vacant': "vacant",
   'chart.assignWord': "assign",

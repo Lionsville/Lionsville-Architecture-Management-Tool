@@ -1764,8 +1764,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'topics.isScope': 'Ein Thema ist ein Bereich: sein Verlauf steht auf seiner Startseite.',
   'topics.removeRefusedShort': 'Es hält noch ein Prinzip, einen Baustein oder ein Unterthema: verschieben oder entfernen Sie diese zuerst.',
   'topics.linkMore': 'Mehr zu {scope}',
-  'topics.factKeeps': 'Es hält',
-  'topics.keepsWords': '{principles} Prinzipien, {blocks} Bausteine, {subtopics} Unterthemen',
   // The organisation chart as a tree (4.0.0).
   'chart.vacant': "unbesetzt",
   'chart.assignWord': "zuweisen",

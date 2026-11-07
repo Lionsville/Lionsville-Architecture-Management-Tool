@@ -198,7 +198,6 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
         facts={(
           <>
             <PreviewFact label={t('topics.relevantTo')}>{plural(t, { one: 'topics.scopesOne', other: 'topics.scopesOther' }, access.relevantPlaces(topic.id).length)}</PreviewFact>
-            <PreviewFact label={t('topics.factKeeps')}>{t('topics.keepsWords', { principles: keeps.principles, blocks: keeps.blocks, subtopics: keeps.subtopics })}</PreviewFact>
           </>
         )}
         foot={(
