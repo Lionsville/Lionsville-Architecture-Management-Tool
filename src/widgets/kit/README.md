@@ -34,6 +34,8 @@ and behaves is said here, once.
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
 | `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
 | `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
+| `Section.tsx` | **Section**: a heading over part of a page, and **LinkLine**: what a place does not hold, folded into one line of names |
+| `FirstRun.tsx` | **First-run page**: what this is, a small picture (`StructurePicture`), the real choices side by side |
 | `Frame.tsx`, `placeHost.ts` | **Frame**: two rows, the band, the tree, the main column and the panel, knowing no scope; where a page and a view's tabs are drawn. The rows' contents are `app/frame/` |
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 | `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |

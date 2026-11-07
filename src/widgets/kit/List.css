@@ -147,3 +147,15 @@
 @media (prefers-reduced-motion: reduce) {
   .kit-list__caret { transition: none; }
 }
+
+.kit-list__item[data-fact] > .kit-list__text { flex: 0 1 auto; max-width: 60%; }
+.kit-list__fact {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+.kit-list__end { flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--s-1); }

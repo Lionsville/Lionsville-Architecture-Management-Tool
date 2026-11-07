@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.kit-section { margin-block-start: var(--s-5); }
+.kit-section__title { margin: 0 0 var(--s-1); font-size: var(--t-lg); font-weight: var(--fw-strong); color: var(--ink); }
+.kit-linkline { margin: var(--s-3) 0 0; padding-inline: var(--s-3); font-size: var(--t-sm); color: var(--ink-2); }
+.kit-linkline__link {
+  appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer;
+}
+.kit-linkline__link:hover { text-decoration: underline; }
+.kit-linkline__link:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 1px; }

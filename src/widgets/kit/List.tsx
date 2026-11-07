@@ -44,6 +44,15 @@ export type ListRow = {
   readonly actions?: ReactNode
   /** What something outside points at this row by: a test id, a `data-` name. */
   readonly attributes?: Readonly<Record<string, string>>
+  /** A short fact after the name, in the quiet ink, where the name alone would not say why to press: *56 elements*. */
+  readonly fact?: string
+  /** A control at the end of the row, always there: its menu, say. Its press is its own and not the row's. */
+  readonly end?: ReactNode
+  /** How far in, for a row that belongs to the one above it. */
+  readonly indent?: number
+  /** A row's own stable name, where the rows of a list are different things. Defaults to the list's `rowGuide`. */
+  readonly guide?: string
+  readonly testId?: string
 }
 
 export type ListGroup = {
@@ -123,7 +132,8 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       data-group={groupId}
       data-selected={selected || undefined}
       data-unread={row.unread || undefined}
-      data-guide={guide}
+      data-guide={row.guide ?? guide}
+      data-testid={row.testId}
       aria-selected={selected}
       aria-level={level}
       tabIndex={focusable ? 0 : -1}
@@ -134,7 +144,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
           <input type="checkbox" tabIndex={-1} checked={ticked} readOnly aria-label={`${words.tick}: ${row.text}`} />
         </div>
       )}
-      <div role="gridcell" className="kit-list__item">
+      <div role="gridcell" className="kit-list__item" data-fact={row.fact !== undefined || undefined} style={row.indent ? { paddingInlineStart: `calc(${row.indent} * var(--s-5))` } : undefined}>
         {row.unread && <span className="kit-list__dot" aria-hidden="true" />}
         {row.mark && <span className="kit-list__mark">{row.mark}</span>}
         {row.code && <span className="kit-list__code">{row.code}</span>}
@@ -142,7 +152,9 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
           {row.unread && <span className="kit-hidden">{words.unread}: </span>}
           {row.text}
         </span>
+        {row.fact !== undefined && <span className="kit-list__fact" title={row.fact}>{row.fact}</span>}
         {row.note && <span className="kit-list__note">{row.note}</span>}
+        {row.end && <span className="kit-list__end" data-kit-actions="">{row.end}</span>}
       </div>
       {columns?.map((column) => (
         <div role="gridcell" className="kit-list__cell" key={column.id}>{row.cells?.[column.id]}</div>

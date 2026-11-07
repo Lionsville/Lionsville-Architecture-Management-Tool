@@ -238,6 +238,22 @@ describe('the list as a whole', () => {
     expect(document.querySelector('[data-guide="register.list"]')).toBeTruthy()
     expect(document.querySelectorAll('[data-guide="register.row"]')).toHaveLength(3)
   })
+
+  it('says a fact after the name, keeps a press on the end control its own, and names a row of its own', () => {
+    const onOpen = vi.fn()
+    const onMenu = vi.fn()
+    renderShell(<List label="Views" onOpen={onOpen} groups={[{ id: 'g', label: '', rows: [
+      { id: 'a', text: 'Landscape', fact: '56 elements', testId: 'row-a', guide: 'one.row', indent: 1, end: <button type="button" onClick={onMenu}>More</button> },
+    ] }]} />)
+    const row = screen.getByTestId('row-a')
+    expect(row.getAttribute('data-guide')).toBe('one.row')
+    expect(row.textContent).toContain('56 elements')
+    fireEvent.click(within(row).getByRole('button', { name: 'More' }))
+    expect(onMenu).toHaveBeenCalledOnce()
+    expect(onOpen).not.toHaveBeenCalled()
+    fireEvent.click(row)
+    expect(onOpen).toHaveBeenCalledWith('a')
+  })
 })
 
 describe('a list row and a column say what points at them', () => {

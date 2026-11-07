@@ -74,6 +74,8 @@ export type PageStateProps = Common & (
       readonly body?: ReactNode
       /** One first step. None where this person could not take it. */
       readonly action?: PageAction
+      /** Several first steps, where the place truly has several ways to begin: the screen's own buttons, in order. */
+      readonly steps?: ReactNode
     }
   | {
       readonly state: 'offline'
@@ -150,6 +152,7 @@ export function PageState(props: PageStateProps) {
     case 'empty':
       return (
         <Card state="empty" role="status" title={props.title} body={props.body} compact={compact} guide={dataGuide}>
+          {props.steps && <div className="kit-state__steps">{props.steps}</div>}
           {props.action && <div><Button variant="primary" onClick={props.action.onPress} data-guide={props.action.dataGuide}>{props.action.label}</Button></div>}
         </Card>
       )

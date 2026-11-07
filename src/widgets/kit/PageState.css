@@ -21,3 +21,4 @@
 .kit-state__skeleton span { display: block; height: var(--row-prop); border-radius: var(--r-1); background: var(--skeleton); }
 .kit-state__skeleton span:nth-child(2) { width: 80%; }
 .kit-state__skeleton span:nth-child(3) { width: 60%; }
+.kit-state__steps { display: flex; flex-wrap: wrap; gap: var(--s-2); }
