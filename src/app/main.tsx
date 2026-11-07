@@ -397,6 +397,12 @@ const askedDialog = (() => {
  */
 const bootPlace = readPlace(window.location.hash)
 
+/** The tab and the look the address says of its page, for the frame to hold from the first look. */
+function pageLookOfAddress(place: typeof bootPlace) {
+  if (place?.page === undefined || (place.tab === undefined && place.look === undefined)) return {}
+  return { initialPageLook: { page: place.page, ...(place.tab !== undefined ? { tab: place.tab } : {}), ...(place.look !== undefined ? { look: place.look } : {}) } }
+}
+
 // A link shared before 3.7.0 is read and written over in the shape links have
 // now, in place, so the bar shows what Copy link would make (ADR-0033, amended
 // 17 October 2026).
@@ -496,9 +502,7 @@ function renderApp(
           ...(landing?.initialFramePage ? { initialFramePage: landing.initialFramePage } : {}),
           ...(landing?.initialLook ? { initialLook: landing.initialLook } : {}),
           ...(landing?.initialFacets ? { initialFacets: landing.initialFacets } : {}),
-          ...(bootPlace?.page !== undefined && (bootPlace.tab !== undefined || bootPlace.look !== undefined)
-            ? { initialPageLook: { page: bootPlace.page, ...(bootPlace.tab !== undefined ? { tab: bootPlace.tab } : {}), ...(bootPlace.look !== undefined ? { look: bootPlace.look } : {}) } }
-            : {}),
+          ...pageLookOfAddress(bootPlace),
           ...(landing?.notice ? { notice: landing.notice } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
