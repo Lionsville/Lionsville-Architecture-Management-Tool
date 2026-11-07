@@ -69,4 +69,5 @@
 .kit-prop__action { padding: 0 var(--s-1); min-height: 20px; border: 0; border-radius: var(--r-1); background: transparent; color: var(--accent); font: inherit; cursor: pointer; }
 .kit-prop__action:hover { text-decoration: underline; }
 .kit-prop__action:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.kit-prop__editing { flex-basis: 100%; min-width: 0; }
 .kit-prop__error { flex-basis: 100%; margin: 2px 0 var(--s-1); color: var(--bad); font-size: var(--t-sm); }

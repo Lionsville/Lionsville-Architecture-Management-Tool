@@ -46,6 +46,8 @@ export type MenuAct = Act & {
   onSelect: () => void
   /** Shown at the end of the row, as a key cap. The key itself is the screen's. */
   shortcut?: string
+  /** A line under the word, where a hover would have said it and a menu has none to wait for. */
+  detail?: string
   /** A choice that is on or off, for a menu of settings. */
   checked?: boolean
   /** What holds a refused choice, line by line, drawn under it. Each is a way to the thing to clear. */
@@ -139,6 +141,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
           {act?.shortcut && <kbd className="kit-menu__key">{act.shortcut}</kbd>}
           {submenu && <span className="kit-menu__more"><CaretIcon size={12} /></span>}
         </span>
+        {act?.detail && <span className="kit-menu__reason">{act.detail}</span>}
         {refused && ' '}
         {refused && <span className="kit-menu__reason" id={reasonId}>{entry.refused}</span>}
       </MenuItem>

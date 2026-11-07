@@ -14,12 +14,14 @@ import { useStrings } from '../../i18n/LanguageContext'
 export type PressNameProps = {
   readonly name: string
   readonly onRename?: ((name: string) => string | void) | undefined
+  /** A new number opens the field, for a command that asks for the name from elsewhere. */
+  readonly renameRequest?: number | undefined
   readonly heading: 'h1' | 'h2'
   /** The look is the place's: a panel's name and a record's title are not the same size. */
   readonly classes: { readonly heading: string; readonly press: string; readonly field: string; readonly refused: string }
 }
 
-export function PressName({ name, onRename, heading: Heading, classes }: PressNameProps) {
+export function PressName({ name, onRename, renameRequest, heading: Heading, classes }: PressNameProps) {
   const { t } = useStrings()
   const [typed, setTyped] = useState<string | null>(null)
   const [refused, setRefused] = useState<string | null>(null)
@@ -33,6 +35,14 @@ export function PressName({ name, onRename, heading: Heading, classes }: PressNa
     if (!editing && wasEditing.current) pressed.current?.focus()
     wasEditing.current = editing
   }, [editing])
+
+  const asked = useRef(renameRequest)
+  useEffect(() => {
+    if (renameRequest === asked.current) return
+    asked.current = renameRequest
+    if (onRename && renameRequest !== undefined) setTyped(name)
+    // Only a new request opens the field; a name moving under it does not.
+  }, [renameRequest])
 
   // Another selection is another name, and whatever was being typed was not about it.
   useEffect(() => {

@@ -49,3 +49,10 @@
 .kit-picker__over .kit-picker__field { border-top: 0; }
 .kit-picker__over .kit-picker__field:focus-within { outline: none; border-color: var(--line); }
 .kit-picker__over .kit-picker__results { border-bottom: 0; }
+
+.kit-picker__many { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.kit-picker__chosen { display: flex; flex-wrap: wrap; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+.kit-picker__chosen li { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-1); border: 1px solid var(--line); border-radius: var(--r-1); font-size: var(--t-sm); overflow-wrap: anywhere; }
+.kit-picker__unchoose { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--ink-3); cursor: pointer; }
+.kit-picker__unchoose:hover { color: var(--ink); }
+.kit-picker__unchoose:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }

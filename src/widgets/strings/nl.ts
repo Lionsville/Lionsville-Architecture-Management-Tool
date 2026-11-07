@@ -19,6 +19,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.property.from': '{value}, van {source}',
   'kit.property.showAll': 'Alles tonen',
   'kit.property.showLess': 'Minder tonen',
+  'kit.picker.remove': '{name} eruit halen',
   'kit.picker.add': '“{query}” toevoegen',
   'kit.picker.recent': 'Recent',
   'kit.picker.didYouMean': 'Bedoel je',

@@ -30,7 +30,7 @@ import Popover from '@mui/material/Popover'
 import Popper from '@mui/material/Popper'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
-import { AddIcon, SearchIcon } from '../icons'
+import { AddIcon, CloseIcon, SearchIcon } from '../icons'
 import './Picker.css'
 
 export type PickerOption = {
@@ -86,6 +86,8 @@ export type PickerProps = {
   maxShown?: number
   /** Escape with nothing left for the field to put away. */
   onEscape?: () => void
+  /** The focus left the field: a list that stands in a row goes back to being the row. */
+  onLeave?: () => void
   'data-guide'?: string
 }
 
@@ -129,7 +131,7 @@ export function pickerRows({ options, recent, typed, didYouMean, canCreate, maxS
 
 export function Picker({
   label, options, onPick, onCreate, createLabel, recent, didYouMean, refusal, placeholder, posture = 'open',
-  autoFocus = false, maxShown = 50, onEscape, 'data-guide': guide,
+  autoFocus = false, maxShown = 50, onEscape, onLeave, 'data-guide': guide,
 }: PickerProps) {
   const { t } = useStrings()
   const base = useId()
@@ -239,7 +241,7 @@ export function Picker({
           autoFocus={autoFocus}
           onChange={(event) => { setQuery(event.target.value); setActive(0); setPopped(true) }}
           onFocus={() => setPopped(true)}
-          onBlur={() => setPopped(false)}
+          onBlur={() => { setPopped(false); onLeave?.() }}
           onKeyDown={onKeyDown}
         />
       </div>
@@ -256,6 +258,54 @@ export function Picker({
           {list}
         </Popper>
       )}
+    </div>
+  )
+}
+
+/**
+ * Several picked out of one list, while it stands in a row: what is chosen, each
+ * with its ×, and the field for the next. The screen says when a change is written.
+ */
+export function PickerMany({ label, chosen, options, onAdd, onRemove, onDone, placeholder, 'data-guide': guide }: {
+  label: string
+  chosen: readonly { id: string; label: string; detail?: string }[]
+  options: readonly PickerOption[]
+  onAdd: (id: string) => void
+  onRemove: (id: string) => void
+  /** Escape, or the focus left the whole of it. */
+  onDone: () => void
+  placeholder?: string
+  'data-guide'?: string
+}) {
+  const { t } = useStrings()
+  const held = new Set(chosen.map((one) => one.id))
+  return (
+    <div
+      className="kit-picker__many"
+      data-guide={guide}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDone() }}
+    >
+      {chosen.length > 0 && (
+        <ul className="kit-picker__chosen">
+          {chosen.map((one) => (
+            <li key={one.id} title={one.detail}>
+              {one.label}
+              <button
+                type="button" className="kit-picker__unchoose" aria-label={t('kit.picker.remove', { name: one.label })}
+                onMouseDown={(event) => event.preventDefault()} onClick={() => onRemove(one.id)}
+              >
+                <CloseIcon size={10} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Picker
+        label={label} placeholder={placeholder} autoFocus posture="open" maxShown={12}
+        options={options.filter((option) => !held.has(option.id))}
+        onPick={(option) => onAdd(option.id)}
+        onEscape={onDone}
+      />
     </div>
   )
 }

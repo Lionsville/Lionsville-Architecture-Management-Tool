@@ -21,7 +21,7 @@
  * value from above names its source, a selection's mixed value says how many, and
  * a long one stops at three lines with *Show all*.
  */
-import { createContext, useContext, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ComponentPropsWithRef, KeyboardEvent, ReactNode, RefObject } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
@@ -128,7 +128,12 @@ export function SelectField({ label, hint, error, required, value, options, onCh
   )
 }
 
-type Rows = { editing: string | undefined; setEditing: (id: string | undefined) => void; readOnly: boolean }
+type Rows = {
+  editing: string | undefined
+  setEditing: (id: string | undefined) => void
+  readOnly: boolean
+  onHelp: ((help: string | undefined) => void) | undefined
+}
 const RowsContext = createContext<Rows | undefined>(undefined)
 
 export type PropertyRowsProps = {
@@ -142,15 +147,17 @@ export type PropertyRowsProps = {
   onEditing?: (rowId: string | undefined) => void
   /** Side by side with no labels on show, for the facts in a record's head. Each row still has its name. */
   line?: boolean
+  /** The help of the row being edited, and nothing once none is: a panel says it in its foot. */
+  onHelp?: (help: string | undefined) => void
 }
 
 /** The rows of a record. It is what keeps editing to one row at a time. */
-export function PropertyRows({ children, readOnly = false, add, editing: held, onEditing, line }: PropertyRowsProps) {
+export function PropertyRows({ children, readOnly = false, add, editing: held, onEditing, line, onHelp }: PropertyRowsProps) {
   const [own, setOwn] = useState<string>()
   const editing = onEditing ? held : own
   const setEditing = onEditing ?? setOwn
   return (
-    <RowsContext.Provider value={{ editing, setEditing, readOnly }}>
+    <RowsContext.Provider value={{ editing, setEditing, readOnly, onHelp }}>
       <div className="kit-props" data-line={line || undefined}>
         <dl className="kit-props__list">{children}</dl>
         {add && !readOnly && (
@@ -176,6 +183,7 @@ export type RowEditor = {
 export type PropertyRowEdit =
   | 'text'
   | 'long'
+  | 'date'
   | { options: readonly SelectOption[] }
   | ((editor: RowEditor) => ReactNode)
 
@@ -187,8 +195,12 @@ export type PropertyRowProps = {
   display?: ReactNode
   /** What the row says with nothing in it: *Nobody yet*. */
   empty?: string
-  /** An act beside the empty word: *+ Unit*. */
-  action?: { label: string; onPress: () => void }
+  /** An act beside the empty word: *+ Unit*. `always` keeps it beside a value too, and it then reads as its words alone: *Replace…*. */
+  action?: { label: string; onPress: () => void; always?: boolean }
+  /** What this field is for, said while it is being edited. */
+  help?: string
+  /** Opens as a field on arrival: a row somebody just asked for with *+ add*. */
+  startOpen?: boolean
   /** The value is not this record's own. `true` says from above; a name says from where. */
   inherited?: boolean | string
   /** A selection disagrees: how many values it holds. */
@@ -206,6 +218,7 @@ export type PropertyRowProps = {
   /** The row's name to `PropertyRows`' `editing`. */
   rowId?: string
   'data-guide'?: string
+  'data-testid'?: string
 }
 
 /** How a value that is not simply this record's own is said. */
@@ -216,7 +229,7 @@ function notOwnWords(t: Translate, value: string, inherited: PropertyRowProps['i
     : t('kit.property.fromAbove', { value })
 }
 
-export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, 'data-guide': guide, ...reading }: PropertyRowProps) {
+export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, help, startOpen = false, 'data-guide': guide, 'data-testid': testId, ...reading }: PropertyRowProps) {
   const rows = useContext(RowsContext)
   if (!rows) throw new Error('A PropertyRow belongs in PropertyRows.')
   const ownId = useId()
@@ -234,8 +247,19 @@ export function PropertyRow({ label, edit, error, check, onCommit, readOnly = fa
     }
   }, [editing])
 
+  const { setEditing, onHelp } = rows
+  useLayoutEffect(() => {
+    if (startOpen && edit !== undefined && writable) setEditing(id)
+    // On arrival and no other time: a row that was closed stays closed.
+  }, [])
+  useEffect(() => {
+    if (!editing || !help || !onHelp) return undefined
+    onHelp(help)
+    return () => onHelp(undefined)
+  }, [editing, help, onHelp])
+
   return (
-    <div className="kit-prop" data-guide={guide}>
+    <div className="kit-prop" data-guide={guide} data-testid={testId}>
       <dt className="kit-prop__label">{label}</dt>
       <dd className="kit-prop__value">
         {editing
@@ -295,8 +319,8 @@ function RowReading({ label, value = '', display, empty, action, inherited, mixe
           {t(clamp.all ? 'kit.property.showLess' : 'kit.property.showAll')}
         </button>
       )}
-      {action && writable && value === '' && (
-        <button type="button" className="kit-prop__action" onClick={action.onPress}>+ {action.label}</button>
+      {action && writable && (action.always || value === '') && (
+        <button type="button" className="kit-prop__action" onClick={action.onPress}>{action.always ? action.label : `+ ${action.label}`}</button>
       )}
       {error && <p className="kit-prop__error">{error}</p>}
     </>
@@ -355,6 +379,7 @@ function RowEditing({ label, edit, startsFrom, refusal, check, onCommit, onClose
   const field = (): ReactNode => {
     if (typeof edit === 'function') return edit({ value: draft, onChange: setDraft, commit: (next) => commit(next ?? draft, true), cancel, ties })
     if (edit === 'long') return <TextArea {...ties} {...typing} rows={3} />
+    if (edit === 'date') return <TextInput {...ties} {...typing} type="date" data-fit />
     if (edit !== 'text') {
       return (
         <Select
@@ -366,11 +391,12 @@ function RowEditing({ label, edit, startsFrom, refusal, check, onCommit, onClose
     return <TextInput {...ties} {...typing} data-fit />
   }
 
+  // The keys are this field's while it is one: Escape puts it back and must not reach a canvas beside it.
   return (
-    <>
+    <div className="kit-prop__editing" data-shortcuts-ignore="">
       {field()}
       {said && <p className="kit-prop__error" id={errorId}>{said}</p>}
-    </>
+    </div>
   )
 }
 
