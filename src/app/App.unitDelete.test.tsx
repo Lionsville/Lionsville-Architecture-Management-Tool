@@ -106,7 +106,9 @@ async function askToDelete(id: string) {
   })
   card.focus()
   fireEvent.keyDown(card, { key: 'Enter' })
-  fireEvent.click(await screen.findByRole('button', { name: 'Remove / delete…' }))
+  await waitFor(() => expect(document.querySelector('[data-guide="board.inspector"]')).not.toBeNull())
+  fireEvent.click(within(document.querySelector<HTMLElement>('[data-guide="board.inspector"]')!).getByRole('button', { name: 'More' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove / delete…' }))
   return screen.findByRole('dialog')
 }
 

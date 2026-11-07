@@ -94,6 +94,7 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
         ? () => props.history?.onDescription?.(element.id)
         : undefined}
       windowChrome={props.windowChrome}
+      railWidth={{ value: docs.railWidth, onChange: docs.setRailWidth }}
     />
   );
 }

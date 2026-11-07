@@ -36,7 +36,7 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
       kind={t('inspector.thisView')}
       name={diagram.name}
       facts={t('inspector.viewFacts', { elements: drawn.size, lines: lines.length, day })}
-      dataGuide="board.thisView"
+      dataGuide="board.inspector"
       onClose={onClose}
       {...(canTidy ? {
         tabs: [{ value: 'properties', label: t('inspector.properties') }, { value: 'tidy', label: t('inspector.tidy') }],
@@ -57,7 +57,6 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
           <>
             <PropertyRows readOnly>
               <PropertyRow label={t('inspector.shownDay')} data-testid="view-day" value={day} />
-              {board.colourBy !== undefined && <PropertyRow label={t('toolbar.colourBy')} data-testid="view-colour" value={String(board.colourBy)} />}
               {columns && <PropertyRow label={t('inspector.columns')} data-testid="view-columns" value={columns} />}
             </PropertyRows>
             <PanelSection title={t('inspector.onThisBoard')}>

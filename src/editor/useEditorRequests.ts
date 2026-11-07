@@ -12,7 +12,7 @@ import { placedNodes } from '../model/placement';
 import type { EditorRequests, SolutionDesignEditorProps } from './props';
 import { selectElement, type EditorState } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
-import { FIELDS_COLUMN } from '../documentation/ui/fieldsColumn';
+import { RECORD_RAIL } from '../documentation/ui/DocumentationPage.rail';
 import { useSeamWidth } from '../widgets/useSeamWidth';
 
 /** Is `next` a request not yet adopted? A host re-asks for the same element by bumping only the nonce. */
@@ -118,7 +118,7 @@ export function useDocumentation(
 ) {
   const [documentationId, setDocumentationId] = useState<ElementId | undefined>(undefined);
   const [diagramId, setDiagramId] = useState<string | undefined>(undefined);
-  const [fieldsWidth, setFieldsWidth] = useSeamWidth('documentation.fields', FIELDS_COLUMN.default);
+  const [railWidth, setRailWidth] = useSeamWidth('documentation.rail', RECORD_RAIL.default);
   const { setSelection } = state;
   // A move may leave one page and open another in one go, and the leaving is an
   // effect, which runs after: it must not take away what that same go opened.
@@ -148,7 +148,7 @@ export function useDocumentation(
   const onDocumentation = props.requests?.onDocumentation;
   const shownId = element?.id;
   useEffect(() => { onDocumentation?.(shownId); }, [onDocumentation, shownId]);
-  return { open, close, leave: () => setDocumentationId(undefined), element, diagram, fieldsWidth, setFieldsWidth };
+  return { open, close, leave: () => setDocumentationId(undefined), element, diagram, railWidth, setRailWidth };
 }
 
 export type Documentation = ReturnType<typeof useDocumentation>;

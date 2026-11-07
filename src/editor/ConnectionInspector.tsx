@@ -40,6 +40,7 @@ import { certaintyRow } from './inspector/elementRows';
 import { DASH, RowSet, pickEdit } from './inspector/rowTools';
 import type { RowSpec } from './inspector/rowTools';
 import type { EditorActions } from './useEditorState';
+import './inspector/inspector.css';
 
 export const LINE_STYLE_OPTIONS: { value: EdgeLineStyle | ''; labelKey: StringKey }[] = [
   { value: '', labelKey: 'option.solidDefault' },
@@ -225,7 +226,7 @@ function ConnectionAppearance({ connection, route, routeStatus, badge, bends, re
                 )}
               />
             </PropertyRows>
-            <div data-testid="route-section">
+            <div data-testid="route-section" className="inspector-section">
               <PanelSection title={t('section.route')}>
                 <p className="inspector-note">
                   <span data-testid="route-badge">{badge}</span>{', '}

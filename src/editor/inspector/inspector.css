@@ -21,3 +21,5 @@
 .inspector-list { display: flex; flex-direction: column; margin: 0 0 var(--s-3); padding: 0; list-style: none; }
 .inspector-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-1); min-height: var(--row-prop); overflow-wrap: anywhere; }
 .inspector-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-block-start: var(--s-1); }
+
+.inspector-section { margin-block-start: var(--s-3); }

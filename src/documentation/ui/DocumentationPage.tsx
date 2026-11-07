@@ -21,13 +21,15 @@
  * closes or moves to another element. Under one key, so a page's worth of writing
  * is one undo step rather than one per pause.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
 import { PageClose } from '../../widgets/PageClose';
+import { SeamResizer } from '../../widgets/SeamResizer';
+import { RECORD_RAIL } from './DocumentationPage.rail';
 import { Button } from '../../widgets/kit/Button';
 import { TextInput } from '../../widgets/kit/Field';
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow';
@@ -104,6 +106,8 @@ export interface DocumentationPageProps {
   images?: DocumentImages;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
+  /** How wide the list down the left is. The host's, so it outlives the page. Absent = the default, and no seam. */
+  railWidth?: { value: number; onChange(next: number): void };
 }
 
 /** The text as it reads: *Edit text* above it, its contents, and calm words where nothing is written yet. */
@@ -330,8 +334,15 @@ export function DocumentationPage(props: DocumentationPageProps) {
 
   return (
     <PageDialog open topInset={chrome.topInset} onClose={close} aria-label={t('doc.title')}>
-      <div className="doc-record">
+      <div className="doc-record" style={{ '--doc-rail': `${props.railWidth?.value ?? RECORD_RAIL.default}px` } as CSSProperties}>
         <RecordRail groups={groups} current={element.id} onOpen={navigate} />
+        {props.railWidth && (
+          <SeamResizer
+            orientation="vertical" region="before"
+            value={props.railWidth.value} min={RECORD_RAIL.min} max={RECORD_RAIL.max} defaultValue={RECORD_RAIL.default}
+            onChange={props.railWidth.onChange} label={t('doc.resizeRail')}
+          />
+        )}
         <RecordPage
           title={(
             <PanelName

@@ -82,17 +82,6 @@ export function partyChoices(
   };
 }
 
-/** What to call the party a record names: its name where this scope or one above keeps it. */
-function partyName(
-  partyId: ElementId | undefined,
-  model: DesignModel,
-  elsewhere: readonly PartyElsewhere[] = [],
-): string | undefined {
-  if (partyId === undefined) return undefined;
-  return model.elements.find((other) => other.id === partyId)?.name
-    ?? elsewhere.find((other) => other.id === partyId)?.name;
-}
-
 /**
  * Who answers for a record, in words (ADR-0036 §8): its own owner, the owner
  * its master names for a stand-in, or — where nobody wrote one — whoever the
