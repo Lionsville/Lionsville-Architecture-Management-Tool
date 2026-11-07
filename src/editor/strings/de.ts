@@ -377,7 +377,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.linesHand': '{count}, {hand} von Hand',
   'inspector.groups': 'Gruppen',
   'inspector.viewSettings': 'Board-Einstellungen…',
-  'field.certainty': 'Sicherheit',
+  'field.certainty': 'Gewissheit',
   'certainty.confirmed': 'Bestätigt',
   'certainty.assumed': 'Angenommen',
   'certainty.unsaid': 'Niemand hat es gesagt',
