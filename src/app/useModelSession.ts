@@ -730,7 +730,9 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
     })
     modelRef.current = off.model
     run.between?.()
-    const back = rewind(modelRef.current, whole)
+    const left = new Set(run.leave ?? [])
+    for (const id of left) unsettled.current.delete(id)
+    const back = rewind(modelRef.current, whole.filter((fold) => !left.has(fold.changeId)))
     const rejoin = new Map<string, StepFold[]>()
     for (const fold of back.kept) {
       if (fold.stepId === undefined) continue

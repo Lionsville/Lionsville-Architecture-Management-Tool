@@ -768,6 +768,20 @@ describe('useModelSession — rebase', () => {
       .toEqual(['remote', undefined, undefined])
   })
 
+  it('leaves off a step the far end refused, on neither the model nor the stack, and keeps what came after', () => {
+    const { session } = mount()
+    act(() => { session().dispatch(rename('Refused')) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Also mine' }) })
+    const [refused, kept] = folds(session).slice(-2)
+    const stepIds = [refused, kept]
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => { report = session().steps.rebase({ stepIds, leave: [refused] }) })
+    expect(report.reapplied).toEqual([kept])
+    expect(report.dropped).toEqual([])
+    expect(session().current().elements[0].name).not.toBe('Refused')
+    expect(session().current().diagrams[0].name).toBe('Also mine')
+  })
+
   it('drops the one step the reducer now refuses, and says which', () => {
     const { session } = mount()
     act(() => { session().dispatch(rename('Mine')) })

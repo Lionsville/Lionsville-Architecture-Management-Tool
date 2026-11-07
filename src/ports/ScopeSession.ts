@@ -204,6 +204,14 @@ export type RebaseRun = {
    * elsewhere belongs underneath it — `applyExternal`, usually more than once.
    */
   between?: () => void
+  /**
+   * Folds of the run, by `changeId`, that do not go back on: the far end said no
+   * and will not change its mind. Off the model and off the stack with nothing
+   * announced, because taking back what was never accepted is not a change anybody
+   * made. Without it a refused step stays on this model while everybody else's
+   * goes on without it, and nothing ever says the two differ.
+   */
+  leave?: readonly string[]
 }
 
 /** What a rebase did, for a caller that has to tell somebody about it. */
