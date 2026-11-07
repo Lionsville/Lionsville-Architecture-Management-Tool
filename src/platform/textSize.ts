@@ -38,9 +38,3 @@ export function applyTextSize(size: TextSize): void {
   root.style.fontSize = size === DEFAULT_TEXT_SIZE ? '' : `${size}%`
   root.dataset.textSize = String(size)
 }
-
-/** How many times the browser's own rem this step is: for the few widths a script has to work out. */
-export function textScale(): number {
-  const raw = Number(rootElement()?.dataset.textSize)
-  return Number.isFinite(raw) && raw > 0 ? raw / 100 : 1
-}

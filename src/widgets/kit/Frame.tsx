@@ -20,8 +20,7 @@ import { SeamResizer } from '../SeamResizer'
 import { useSeamWidth } from '../useSeamWidth'
 import { PlaceHostContext } from './placeHost'
 import type { PlaceHost } from './placeHost'
-import { px } from './tokens'
-import { textScale } from '../../platform/textSize'
+import { px, textScale } from './tokens'
 import './Frame.css'
 
 /** Enough for a name and its number, and never so much that the page beside it is what gives way. */

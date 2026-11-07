@@ -217,3 +217,9 @@ export function px(token: ScaleToken): number {
   if (named) return px(named as ScaleToken)
   return Number.parseFloat(value) * (value.endsWith('rem') ? 16 : 1)
 }
+
+/** How many times the browser's own rem the person's text size is, as `platform/textSize` writes it on the root: for the few widths a script works out. */
+export function textScale(): number {
+  const raw = Number(document.documentElement.dataset.textSize)
+  return Number.isFinite(raw) && raw > 0 ? raw / 100 : 1
+}

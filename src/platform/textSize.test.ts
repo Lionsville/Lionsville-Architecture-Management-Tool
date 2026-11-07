@@ -3,7 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyTextSize, movedTextSize, readTextSize, textScale } from './textSize'
+import { applyTextSize, movedTextSize, readTextSize } from './textSize'
 
 describe('the text size', () => {
   afterEach(() => applyTextSize(100))
@@ -26,9 +26,9 @@ describe('the text size', () => {
   it('lands on the root as a percentage, and the default leaves the browser alone', () => {
     applyTextSize(125)
     expect(document.documentElement.style.fontSize).toBe('125%')
-    expect(textScale()).toBe(1.25)
+    expect(document.documentElement.dataset.textSize).toBe('125')
     applyTextSize(100)
     expect(document.documentElement.style.fontSize).toBe('')
-    expect(textScale()).toBe(1)
+    expect(document.documentElement.dataset.textSize).toBe('100')
   })
 })
