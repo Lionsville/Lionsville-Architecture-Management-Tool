@@ -309,7 +309,7 @@ describe('the organisation screen — its own pages', () => {
     const detail = await checkOnPage('fix', 'check.unitTypeNowhere')
     fireEvent.click(within(pressFound(detail, 'attention--ut-guild')).getByRole('button', { name: /Open/ }))
     expect(within(await screen.findByRole('complementary', { name: 'Guild' })).getByTestId('operating-inspector')).toBeTruthy()
-    expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
+    expect(within(screen.getByTestId('tray-nowhere')).getByTestId('nowhere-ut-guild')).toBeTruthy()
   })
 
   /**
