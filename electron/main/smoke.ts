@@ -38,7 +38,7 @@
  * read — an empty answer there is the exact symptom the switch tests exist to
  * catch.
  */
-import { app, Menu } from 'electron'
+import { app, dialog, Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { productName } from '../../package.json'
 import { sendCommand } from './appMenu'
@@ -303,13 +303,44 @@ const pressInEditor = (words: string) => `(() => {
   return 'pressed'
 })()`
 
-/** The drawing the run loads into the editor: a shape that points at an element, and one that does not. */
+/**
+ * Move over a row of the menu that is open, or press it, as the mouse would:
+ * draw.io's rows listen for the mouse events themselves, and a `click` is not one.
+ */
+const gestureOnRow = (words: string, kinds: readonly string[]) => `(() => {
+  const row = [...document.querySelectorAll('table.mxPopupMenu tr')].find((one) => one.textContent.trim() === ${JSON.stringify(words)})
+  if (!row) return null
+  for (const kind of ${JSON.stringify(kinds)}) row.dispatchEvent(new MouseEvent(kind, { bubbles: true, cancelable: true, view: window, button: 0 }))
+  return 'pressed'
+})()`
+
+/** The bar's *Diagram*, which the side panel's tab of the same name is not: the first in the bar at the top. */
+const OPEN_DIAGRAM_MENU = `(() => {
+  const menu = [...document.querySelectorAll('a')].find((one) => one.textContent.trim() === 'Diagram' && one.getBoundingClientRect().top < 80)
+  if (!menu) return null
+  menu.click()
+  return document.querySelector('table.mxPopupMenu tr') && 'open'
+})()`
+
+/** What each format's file starts with, or holds, read off the disk. */
+const EXPORTED: readonly { row: string; file: string; holds: (bytes: Buffer) => boolean }[] = [
+  { row: 'PNG...', file: 'smoke-drawing.drawio.png', holds: (bytes) => bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
+  { row: 'JPEG...', file: 'smoke-drawing.jpg', holds: (bytes) => bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) },
+  { row: 'WebP...', file: 'smoke-drawing.webp', holds: (bytes) => bytes.toString('latin1', 0, 4) === 'RIFF' && bytes.toString('latin1', 8, 12) === 'WEBP' },
+  { row: 'Animation...', file: 'smoke-drawing.gif', holds: (bytes) => bytes.toString('latin1', 0, 4) === 'GIF8' },
+  { row: 'SVG...', file: 'smoke-drawing.drawio.svg', holds: (bytes) => bytes.toString('utf8').includes('<svg') },
+  { row: 'XML...', file: 'smoke-drawing.drawio.xml', holds: (bytes) => bytes.toString('utf8').includes('<mxfile') },
+  { row: 'JSON...', file: 'smoke-drawing.json', holds: (bytes) => Array.isArray((JSON.parse(bytes.toString('utf8')) as { pages?: unknown }).pages) },
+]
+
+/** The drawing the run loads into the editor: a shape that points at an element, one that does not, and a line that moves, so that the animation has something to draw. */
 function smokeDrawingXml(elementId: string, elementName: string): string {
   const label = elementName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
   return '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
     + `<UserObject id="smoke-a" label="${label}" link="element:${elementId}" lvElement="${elementId}">`
     + '<mxCell vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;"><mxGeometry x="40" y="40" width="160" height="60" as="geometry"/></mxCell></UserObject>'
     + '<mxCell id="smoke-b" value="A note" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;"><mxGeometry x="320" y="200" width="120" height="50" as="geometry"/></mxCell>'
+    + '<mxCell id="smoke-c" edge="1" source="smoke-a" target="smoke-b" parent="1" style="flowAnimation=1;"><mxGeometry relative="1" as="geometry"/></mxCell>'
     + '</root></mxGraphModel>'
 }
 
@@ -323,7 +354,7 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
   const { window, page, agent, scope } = run
   const { createHash } = await import('node:crypto')
   const { readFile } = await import('node:fs/promises')
-  const { join } = await import('node:path')
+  const { basename, join } = await import('node:path')
   // What the editor says, and what anything in this window asks of the
   // network, from here on: a CSP refusal is said on the console, and a
   // request off the machine would be heard here.
@@ -374,7 +405,7 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     const xml = smokeDrawingXml(run.elementId, run.elementName)
     await page(`(() => {
       const frame = document.querySelector('[data-testid="drawing-frame"]')
-      frame.contentWindow.postMessage(JSON.stringify({ action: 'load', xml: ${JSON.stringify(xml)} }), 'drawing://local')
+      frame.contentWindow.postMessage(JSON.stringify({ action: 'load', xml: ${JSON.stringify(xml)}, exportProtocol: 1 }), 'drawing://local')
       return 'loaded'
     })()`)
     await untilInFrame(window, 'the shape on the page', `document.querySelector('.geDiagramContainer').innerText.includes(${JSON.stringify(run.elementName)}) && 'drawn'`)
@@ -390,6 +421,63 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     const svg = await readFile(join(run.root, scope, 'images', '.drawings', `${definition.picture.slice('sha256:'.length)}.svg`))
     if (`sha256:${createHash('sha256').update(svg).digest('hex')}` !== definition.picture) throw new Error('the picture on disk is not the bytes its name says')
     return `${listed.diagrams.length} diagrams; ${drawn.id}.drawio, links ${definition.links?.map((one) => one.shapeId).join(', ')}, images/.drawings/${definition.picture.slice(7, 15)}….svg`
+  }))
+
+  results.push(await checkHere('the editor exports through the app: each format on its menu, a file with its own signature, said once it is there', async () => {
+    const { mkdtemp, rm, stat } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const folder = await mkdtemp(join(tmpdir(), 'lvarch-smoke-export-'))
+    // Answered without a dialog, as the folders of this run are granted without one.
+    const showSaveDialog = dialog.showSaveDialog
+    const offered: string[] = []
+    let answer: string | undefined
+    dialog.showSaveDialog = ((options: { defaultPath?: string }) => {
+      offered.push(options.defaultPath ?? '')
+      return Promise.resolve(answer ? { canceled: false, filePath: answer } : { canceled: true, filePath: '' })
+    }) as unknown as typeof dialog.showSaveDialog
+    const press = async (row: string) => {
+      await untilInFrame(window, 'the Diagram menu open', OPEN_DIAGRAM_MENU)
+      await untilInFrame(window, 'Export as open', gestureOnRow('Export as', ['mousemove']))
+      await untilInFrame(window, `${row} pressed`, gestureOnRow(row, ['mousemove', 'mousedown', 'mouseup']))
+      await untilInFrame(window, 'the export dialog pressed', `(() => { const button = document.querySelector('.geDialog .gePrimaryBtn'); if (!button) return null; button.click(); return 'pressed' })()`)
+    }
+    const toasts = "[...document.querySelectorAll('[role=\"alert\"]')].map((one) => one.textContent).join(' | ')"
+    try {
+      await untilInFrame(window, 'the Diagram menu open', OPEN_DIAGRAM_MENU)
+      await untilInFrame(window, 'Export as open', gestureOnRow('Export as', ['mousemove']))
+      const rows = await untilInFrame(window, 'the rows of Export as', `(() => { const rows = [...document.querySelectorAll('table.mxPopupMenu tr')].map((one) => one.textContent.trim()); return rows.includes('PNG...') && JSON.stringify(rows) })()`)
+      const onMenu = JSON.parse(rows) as string[]
+      for (const gone of ['PDF...', 'URL...', 'HTML...', 'Embed']) if (onMenu.includes(gone)) throw new Error(`the menu still offers ${gone}`)
+      for (const one of EXPORTED) if (!onMenu.includes(one.row)) throw new Error(`the menu does not offer ${one.row}: ${rows}`)
+      await untilInFrame(window, 'the menu closed', `(() => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); document.body.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); return document.querySelector('table.mxPopupMenu') ? null : 'closed' })()`)
+
+      // A person who closes the dialog has lost nothing, and hears nothing.
+      await press('PNG...')
+      await untilRead('the dialog asked', () => Promise.resolve(offered), (held) => held.length === 1)
+      if (basename(offered[0]) !== 'smoke-drawing.drawio.png') throw new Error(`the dialog offered ${offered[0]}`)
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      const afterCancel = await page(toasts)
+      if (afterCancel.includes('smoke-drawing') || await page(`Boolean(document.querySelector('.MuiAlert-colorError'))`) as unknown === true) throw new Error(`closing the dialog said: ${afterCancel}`)
+
+      const said: string[] = []
+      for (const one of EXPORTED) {
+        const path = join(folder, one.file)
+        answer = path
+        const asked = offered.length
+        await press(one.row)
+        await untilRead(`${one.row} asked`, () => Promise.resolve(offered), (held) => held.length === asked + 1)
+        if (basename(offered[asked]) !== one.file) throw new Error(`${one.row}: the dialog offered ${offered[asked]}, not ${one.file}`)
+        // The toast waits for the file: when it is up, the file is on the disk.
+        await page(waitFor(`${toasts}.includes(${JSON.stringify(`${one.file} saved.`)}) && 'said'`, `the toast for ${one.file}`))
+        const bytes = await readFile(path)
+        if (!one.holds(bytes)) throw new Error(`${one.file} does not hold what it says: ${bytes.subarray(0, 12).toString('hex')}`)
+        said.push(`${one.file} ${(await stat(path)).size} B`)
+      }
+      return said.join(', ')
+    } finally {
+      dialog.showSaveDialog = showSaveDialog
+      await rm(folder, { recursive: true, force: true })
+    }
   }))
 
   results.push(await checkHere('Exit leaves the editor; the picture shows, its area on the shape draw.io drew', async () => {
