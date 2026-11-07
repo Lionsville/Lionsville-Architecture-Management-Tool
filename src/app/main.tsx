@@ -58,6 +58,7 @@ import {
 import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
 import { readLanguage, withoutLastScope } from '../projects/preferences'
+import { applyTextSize, readTextSize } from '../platform/textSize'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
 import {
@@ -656,6 +657,8 @@ void settled()
   .then(() => shell.preferences.read())
   .then(async (storedPreferences) => {
     stored = storedPreferences
+    // Before anything is drawn, so that nothing jumps when the app's own hook says the same.
+    applyTextSize(readTextSize(storedPreferences))
     // An address the page was opened at wins over the place this machine last
     // worked from: it is what was asked for just now, and the preference is
     // what was asked for last time. Before the scope is read, because it

@@ -11,6 +11,8 @@
 /* Row one is what the window is dragged by, except where something is pressed: stated once, so a control added later cannot become dead surface. */
 .kit-frame__row--one[data-draggable] :is(button, a, input) { -webkit-app-region: no-drag; }
 .kit-frame__views { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; }
+.kit-frame__views:not(:empty) { min-width: min(10rem, 30%); }
+
 .kit-frame__views .MuiTabs-root { min-height: var(--tabs-h); }
 .kit-frame__views .MuiTab-root { min-height: var(--tabs-h); padding-block: 0; text-transform: none; }
 .kit-frame__grow { flex: 1 1 0; min-width: 0; }

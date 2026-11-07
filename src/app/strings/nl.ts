@@ -1917,6 +1917,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.tidySpacious': 'Ruim',
   'prefs.canvasReset': 'Terug naar de standaard',
   'prefs.density': 'Dichtheid',
+  'prefs.textSize': 'Tekstgrootte',
+  'prefs.textSizeHint': 'Balken, panelen, lijsten en pagina\'s. Een canvas houdt zijn eigen letter: zoom in om die groter te maken.',
   'prefs.densityHint': 'Hoeveel een lijst of boom op één scherm toont.',
   'prefs.densityComfortable': 'Ruim',
   'prefs.densityCompact': 'Compact',

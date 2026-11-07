@@ -52,7 +52,7 @@ import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
   ZOOM_ALIASES, ZOOM_ITEMS,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
@@ -95,7 +95,7 @@ import { EN } from '../../src/platform/strings/en'
  */
 export const HELD_AT_MOST = 16
 const KEPT_WHILE_HELD: ReadonlySet<HostCommand['type']> = new Set<HostCommand['type']>([
-  'connect', 'reopen', 'open', 'openDocument', 'preferences', 'theme', 'connectAgent', 'manual', 'shortcuts',
+  'connect', 'reopen', 'open', 'openDocument', 'preferences', 'theme', 'textSize', 'connectAgent', 'manual', 'shortcuts',
 ])
 const held: HostCommand[] = []
 let listening = false
@@ -390,6 +390,8 @@ function viewMenuFor(packaged: boolean): Menu {
     ] as MenuItemConstructorOptions[]),
     ...ZOOM_ITEMS.map(itemFor),
     ...ZOOM_ALIASES.map((spec) => ({ ...itemFor(spec), visible: false })),
+    { type: 'separator' },
+    ...TEXT_SIZE_ITEMS.map(itemFor),
     { type: 'separator' },
     { role: 'togglefullscreen' },
     { type: 'separator' },

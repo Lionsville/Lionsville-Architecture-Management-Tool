@@ -227,6 +227,17 @@ export const ZOOM_ITEMS: readonly MenuItemSpec[] = [
   item('menu.zoomOut', { type: 'zoom', how: 'out' }, 'CmdOrCtrl+-'),
 ]
 
+/**
+ * The text size, with no key of its own. ⌘ or Ctrl with + − 0 are the zoom above,
+ * and on the desktop a menu's key fires even where the page handled it, so these
+ * could not share them; the buttons in row one are the quick way.
+ */
+export const TEXT_SIZE_ITEMS: readonly MenuItemSpec[] = [
+  item('menu.textLarger', { type: 'textSize', how: 'larger' }),
+  item('menu.textSmaller', { type: 'textSize', how: 'smaller' }),
+  item('menu.textDefault', { type: 'textSize', how: 'default' }),
+]
+
 /** The same three by the other keys that say them, which a menu has no room to show: + without its Shift, and the keypad. */
 export const ZOOM_ALIASES: readonly MenuItemSpec[] = [
   item('menu.zoomIn', { type: 'zoom', how: 'in' }, 'CmdOrCtrl+='),

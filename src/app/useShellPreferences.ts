@@ -10,7 +10,7 @@
  * this shell does not recognise — so an older shell does not prune a newer one's
  * settings.
  */
-import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
+import { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { Theme } from '@mui/material/styles'
 import { shellTheme } from './theme'
@@ -19,6 +19,8 @@ import type { EditorPreferences } from '../editor'
 import type { Language } from '../i18n'
 import { readLanguage, readThemeMode } from '../projects/preferences'
 import type { ThemeMode } from '../platform/theme'
+import { applyTextSize, movedTextSize, readTextSize } from '../platform/textSize'
+import type { TextSize, TextSizeMove } from '../platform/textSize'
 import type { KeepNotice } from './useKeepNotice'
 import type { AccentShades } from '../widgets/kit/tokens'
 
@@ -57,6 +59,10 @@ export type ShellPreferences = {
   chooseLanguage: (next: Language) => void
   density: Density
   chooseDensity: (next: Density) => void
+  /** How large this person reads: the bars, panels and pages, not what is on a canvas. */
+  textSize: TextSize
+  chooseTextSize: (next: TextSize) => void
+  moveTextSize: (how: TextSizeMove) => void
   /**
    * One of the three, said outright. The toolbar used to cycle them from a
    * glyph; the View menu, the overflow and the preferences dialog all name
@@ -101,6 +107,9 @@ export function useShellPreferences(deps: {
     const root = globalThis.document?.documentElement
     if (root) root.dataset.density = density
   }, [density])
+  const [textSize, setTextSize] = useState<TextSize>(() => readTextSize(initial))
+  // Before the paint: `main.tsx` has set it for the first one, and this is every one after.
+  useLayoutEffect(() => { applyTextSize(textSize) }, [textSize])
   const blob = useRef<Record<string, unknown>>(
     initial && typeof initial === 'object' ? { ...(initial as Record<string, unknown>) } : {})
   const writePrefs = useCallback((patch: Record<string, unknown>) => {
@@ -125,6 +134,12 @@ export function useShellPreferences(deps: {
     writePrefs({ density: next })
   }, [writePrefs])
 
+  const chooseTextSize = useCallback((next: TextSize) => {
+    setTextSize(next)
+    writePrefs({ textSize: next })
+  }, [writePrefs])
+  const moveTextSize = useCallback((how: TextSizeMove) => chooseTextSize(movedTextSize(textSize, how)), [chooseTextSize, textSize])
+
   // Not the updater form of `setThemeMode`: React is allowed to call such an
   // updater twice (StrictMode), and then the write to storage would go out
   // twice. A mode that is already on is not written again either.
@@ -144,8 +159,8 @@ export function useShellPreferences(deps: {
   const theme = useMemo(() => shellTheme(mode, language, accent ? { accent } : {}), [mode, language, accent])
 
   return {
-    preferences, language, themeMode, theme, density,
-    savePreferences, chooseLanguage, chooseDensity, chooseTheme, writePreference: writePrefs,
+    preferences, language, themeMode, theme, density, textSize,
+    savePreferences, chooseLanguage, chooseDensity, chooseTextSize, moveTextSize, chooseTheme, writePreference: writePrefs,
     readPreferences: useCallback(() => blob.current, []),
   }
 }

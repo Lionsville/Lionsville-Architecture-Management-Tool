@@ -34,6 +34,7 @@
   hyphens: auto;
 }
 .kit-panel__namePress {
+  min-height: var(--target-min);
   display: block;
   width: 100%;
   padding: 0;
@@ -109,6 +110,7 @@
 }
 .kit-panel__icon:hover { background: var(--surface-2); color: var(--ink); }
 .kit-panel__link {
+  min-height: var(--target-min);
   padding: 0;
   border: 0;
   background: none;

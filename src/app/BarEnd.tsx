@@ -23,6 +23,7 @@ import type { HostCommand } from '../platform/hostCommands'
 import type { MenuCapabilities } from '../platform/menu'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { AgentIcon } from '../widgets/icons'
+import type { MenuEntry } from '../widgets/kit/Menu'
 import { OverflowMenu } from './OverflowMenu'
 
 /**
@@ -56,6 +57,8 @@ export type ToolbarOverflow = {
   sourceEntries?: () => readonly SourceMenuEntry[]
   /** A provider says its own answer has moved, so an open menu asks again. */
   onSourceWork?: SourceWorkChanged
+  /** What the row had no room for: first in the menu. */
+  folded?: readonly MenuEntry[]
 }
 
 export function BarEnd({ agent, button, chip, overflow, s }: {
@@ -82,6 +85,7 @@ export function BarEnd({ agent, button, chip, overflow, s }: {
           onCommand={overflow.onCommand}
           sourceEntries={overflow.sourceEntries}
           onSourceWork={overflow.onSourceWork}
+          folded={overflow.folded}
           s={s}
         />
       )}

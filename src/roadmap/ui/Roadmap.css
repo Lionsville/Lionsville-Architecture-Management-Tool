@@ -8,7 +8,7 @@
 .roadmap-main { flex: 1; min-width: 0; overflow: auto; }
 .roadmap-main:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
 .roadmap-quiet { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
-.roadmap-lanesaid { grid-row: 1; grid-column: 1; padding-inline: var(--s-2); line-height: 20px; }
+.roadmap-lanesaid { grid-row: 1; grid-column: 1; padding-inline: var(--s-2); line-height: 1.25rem; }
 .roadmap-readerline { margin: 0 0 var(--s-1); overflow-wrap: anywhere; }
 .roadmap-readerfoot { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
 .roadmap-link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-align: start; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

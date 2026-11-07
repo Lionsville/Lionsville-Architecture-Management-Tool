@@ -1918,6 +1918,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'prefs.tidySpacious': 'Großzügig',
   'prefs.canvasReset': 'Zurück zum Standard',
   'prefs.density': 'Dichte',
+  'prefs.textSize': 'Textgröße',
+  'prefs.textSizeHint': 'Leisten, Bereiche, Listen und Seiten. Eine Zeichenfläche behält ihre eigene Schrift: zum Vergrößern hineinzoomen.',
   'prefs.densityHint': 'Wie viel eine Liste oder ein Baum auf einem Bildschirm zeigt.',
   'prefs.densityComfortable': 'Großzügig',
   'prefs.densityCompact': 'Kompakt',

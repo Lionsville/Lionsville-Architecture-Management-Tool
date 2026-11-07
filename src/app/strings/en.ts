@@ -2145,6 +2145,8 @@ export const EN = {
   'prefs.tidySpacious': 'Spacious',
   'prefs.canvasReset': 'Back to the defaults',
   'prefs.density': 'Density',
+  'prefs.textSize': 'Text size',
+  'prefs.textSizeHint': 'Bars, panels, lists and pages. A canvas keeps its own type: zoom it to make it larger.',
   'prefs.densityHint': 'How much a list or a tree holds on one screen.',
   'prefs.densityComfortable': 'Comfortable',
   'prefs.densityCompact': 'Compact',

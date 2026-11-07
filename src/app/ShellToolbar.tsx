@@ -323,7 +323,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
     minWidth: order === 0 ? '6ch' : 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
   return (
-    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flex: '1 1 0', maxWidth: 'max-content' }}>
+    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '1 1 0', maxWidth: 'max-content' }}>
       {crumbs.map((crumb, index) => (
         <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
@@ -333,7 +333,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
               onClick={() => go(crumb.path)}
               data-testid={`crumb-${crumb.path}`}
               sx={{
-                fontSize: 'var(--t-body)', fontWeight: 500, px: 0.75, py: 0,
+                fontSize: 'var(--t-body)', fontWeight: 500, px: 0.75, py: 0, minHeight: 'var(--target-min)',
                 textTransform: 'none', color: 'text.secondary',
                 ...shrinking(1), display: 'block',
               }}

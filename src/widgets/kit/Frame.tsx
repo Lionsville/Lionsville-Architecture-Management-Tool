@@ -21,6 +21,7 @@ import { useSeamWidth } from '../useSeamWidth'
 import { PlaceHostContext } from './placeHost'
 import type { PlaceHost } from './placeHost'
 import { px } from './tokens'
+import { textScale } from '../../platform/textSize'
 import './Frame.css'
 
 /** Enough for a name and its number, and never so much that the page beside it is what gives way. */
@@ -51,7 +52,8 @@ export type FrameProps = {
 /** The docked tree and the seam that gives it more room. */
 function DockedTree({ children }: { readonly children: ReactNode }) {
   const { t } = useStrings()
-  const fallback = px('panel-w-tree')
+  // Grows with the text, and never past what leaves the work beside it room.
+  const fallback = Math.min(px('panel-w-tree') * textScale(), TREE_MAX)
   const [width, setWidth] = useSeamWidth('frame.tree', fallback)
   return (
     <>

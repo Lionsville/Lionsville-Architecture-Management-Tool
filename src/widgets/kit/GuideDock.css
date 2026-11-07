@@ -20,7 +20,7 @@
 .kit-guide-ring { position: fixed; z-index: 1289; pointer-events: none; border-radius: var(--r-3); outline: 2px solid var(--guide-ring); outline-offset: 0; }
 .kit-guide-tag {
   position: fixed; z-index: 1289; pointer-events: none; transform: translateY(-50%); padding: 0 var(--s-2); white-space: nowrap;
-  font-size: var(--t-small); line-height: 20px; color: var(--on-accent); background: var(--guide-ring); border-radius: var(--r-2);
+  font-size: var(--t-small); line-height: 1.25rem; color: var(--on-accent); background: var(--guide-ring); border-radius: var(--r-2);
 }
 .kit-guide-line { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1288; pointer-events: none; }
 .kit-guide-line line { stroke: var(--guide-ring); stroke-width: 1; }

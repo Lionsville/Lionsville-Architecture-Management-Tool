@@ -9,7 +9,7 @@
 
 /* The canvas scrolls, and the zoom is the stage's: what is drawn is laid out again at the zoom, so a box's words wrap for it. */
 .chart-canvas { flex: 1 1 auto; min-height: 0; overflow: auto; }
-.chart-stage { position: relative; box-sizing: border-box; width: max-content; min-width: 100%; padding: var(--s-3); }
+.chart-stage { font-size: var(--canvas-t-md); position: relative; box-sizing: border-box; width: max-content; min-width: 100%; padding: var(--s-3); }
 .chart-foot { flex: none; display: flex; align-items: center; min-height: var(--target-min); padding-inline: var(--s-3); border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-3); font-size: var(--t-small); }
 .chart-foot__line { padding: 2px var(--s-1); border: 0; background: transparent; color: var(--ink-2); font: inherit; cursor: pointer; }
 .chart-foot__line:hover { text-decoration: underline; }

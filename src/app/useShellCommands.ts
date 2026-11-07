@@ -70,6 +70,7 @@ export function useShellCommands(deps: {
     if (command.type === 'connect') onConnect?.()
     if (command.type === 'reopen') onReopen?.(command.key)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
+    if (command.type === 'textSize') prefs.moveTextSize(command.how)
     if (command.type === 'zoom' && !zoomCanvasInUse(command.how)) onWindowZoom?.(command.how)
     if (command.type === 'preferences') openPreferences(true)
     if (command.type === 'connectAgent') openAgent()

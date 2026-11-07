@@ -20,6 +20,7 @@
  * host with no menu bar the toolbar carries the list, and it goes through the
  * same stream so that nothing is reachable from one and not the other.
  */
+import type { TextSizeMove } from './textSize'
 import type { ThemeMode } from './theme'
 
 /** What the zoom keys ask for. */
@@ -54,6 +55,8 @@ export type HostCommand =
   | { type: 'theme'; mode: ThemeMode }
   /** The View menu's zoom: the canvas in use if there is one, else the window. */
   | { type: 'zoom'; how: WindowZoom }
+  /** The View menu's text size: of the bars, panels and pages, never of what is on a canvas. */
+  | { type: 'textSize'; how: TextSizeMove }
   /** Open the dialog that explains and enables an agent's way in (ADR-0007). */
   | { type: 'connectAgent' }
   /**

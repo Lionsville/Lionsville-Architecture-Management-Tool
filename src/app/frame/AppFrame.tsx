@@ -28,8 +28,8 @@ import { BandStack } from '../../widgets/kit/Band'
 import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Frame } from '../../widgets/kit/Frame'
-import { MenuButton } from '../../widgets/kit/Menu'
-import type { MenuEntry } from '../../widgets/kit/Menu'
+import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuAct, MenuEntry, MenuSpacer } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceReading, PlaceTo, ViewFacets } from '../../widgets/placeTab'
@@ -43,6 +43,10 @@ import { agentTip } from '../BarEnd'
 import { lazyPart } from '../../widgets/lazyPart'
 import type { FindingBandStack as FindingBandShape } from './FindingBand'
 import { commandsTable, keyCap } from './commandsTable'
+import { useRowFold } from '../../widgets/kit/useRowFold'
+import { TextSizeControl, textSizeEntries } from '../../widgets/kit/TextSizeControl'
+import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from '../../platform/textSize'
+import { useStrings } from '../../i18n/LanguageContext'
 import type { CommandRow } from './commandsTable'
 import { FrameCommandsContext, useFrameState } from './frameStore'
 import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
@@ -356,8 +360,22 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const name = facts?.name ?? (at === ROOT_SCOPE ? (tree.name.trim() || s('common.organisation')) : (flattenScopes(tree).find((one) => one.path === at)?.name ?? at))
   const chip = frameChip(parts)
   const scopeOpen = facts?.kind === 'workspace'
+  const { prefs } = parts.services
+  // What goes first when the row runs out: the words beside the work, the size last, since it is what makes room for reading.
+  const { folded: gone, anchor } = useRowFold(4, `${prefs.textSize} ${prefs.language}`)
+  const { t } = useStrings()
+  const sizing = { size: prefs.textSize, steps: TEXT_SIZES, normal: DEFAULT_TEXT_SIZE, onChoose: prefs.chooseTextSize }
+  const togglePanel = (panel: 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
+  const foldedEntries: MenuEntry[] = [
+    ...(gone >= 1 ? [{ label: s('shell.activity'), checked: state.panel === 'activity', onSelect: () => togglePanel('activity') }] : []),
+    ...(gone >= 2 ? [agentEntry(parts)] : []),
+    ...(gone >= 3 ? [{ label: s('frame.help'), items: helpEntries(parts) }] : []),
+    ...(gone >= 4 ? textSizeEntries(sizing, t) : []),
+  ]
+  const overflow = frameOverflow(parts, scopeOpen)
   return (
     <>
+      <span ref={anchor} hidden />
       <BackForward s={s} />
       <TreeToggle parts={parts} pinned={state.pinned} />
       <Trail parts={parts} at={at} name={name} />
@@ -366,11 +384,14 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
       <div className="kit-frame__grow" />
       {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. */}
       {!state.work && <UndoRedo facts={facts} s={s} />}
-      <SafeWords parts={parts} state={state} />
-      <AgentButton parts={parts} />
+      <SafeWords parts={parts} state={state} activity={gone < 1} />
+      {gone < 2 && <AgentButton parts={parts} />}
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
-      <HelpMenu parts={parts} />
-      <BarEnd overflow={frameOverflow(parts, scopeOpen)} s={s} />
+      {gone < 4 && <TextSizeControl {...sizing} />}
+      {gone < 3 && <HelpMenu parts={parts} />}
+      {overflow && <BarEnd overflow={{ ...overflow, folded: foldedEntries }} s={s} />}
+      {/* A host with a menu bar has no ⋯ of its own, and needs one only for what has folded. */}
+      {!overflow && foldedEntries.length > 0 && <MoreMenu items={foldedEntries} size="small" data-guide="frame.rowMore" />}
     </>
   )
 }
@@ -415,7 +436,7 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 }
 
 /** Whether work is safe, who else is here, and what was lately done: the word and the two panels behind it. */
-function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
+function SafeWords({ parts, state, activity }: { parts: ShellParts; state: FrameState; activity: boolean }) {
   const { services: { s, prefs } } = parts
   const facts = state.screen
   const word = statusOf(parts, facts, prefs.language, s, state.work)
@@ -436,13 +457,22 @@ function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
         </button>
       )}
       {here.length > 0 && <AlsoHere names={here} s={s} />}
-      <Tooltip title={s(facts?.activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
-        <Button variant="quiet" size="small" aria-expanded={state.panel === 'activity'} onClick={() => togglePanel('activity')} data-guide="shell.activity" data-testid="frame-activity">
-          {s('shell.activity')}
-        </Button>
-      </Tooltip>
+      {activity && (
+        <Tooltip title={s(facts?.activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
+          <Button variant="quiet" size="small" aria-expanded={state.panel === 'activity'} onClick={() => togglePanel('activity')} data-guide="shell.activity" data-testid="frame-activity">
+            {s('shell.activity')}
+          </Button>
+        </Tooltip>
+      )}
     </>
   )
+}
+
+/** The agent's button as a line in the row's ⋯. */
+function agentEntry(parts: ShellParts): MenuAct {
+  const { services: { s }, agentServer: { bar }, agent } = parts
+  if (parts.props.provider?.frame?.Agents) return { label: s('frame.agents'), onSelect: () => agent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents' }) }
+  return { label: bar.status.kind === 'connected' ? bar.status.client.name : s('frame.agent'), onSelect: bar.onOpen }
 }
 
 function AgentButton({ parts }: { parts: ShellParts }) {
@@ -471,17 +501,19 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 }
 
 /** The ? in row one: the manual, the keys, and the two ways out of this build on a host with no menu bar. */
-function HelpMenu({ parts }: { parts: ShellParts }) {
+function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true })
-  const items: MenuEntry[] = help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command) }] : []))
+  const items: (MenuAct | MenuSpacer)[] = help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command) }] : []))
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
     items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })
   }
-  return (
-    <MenuButton label={s('frame.help')} variant="quiet" size="small" items={items} data-guide="frame.help" />
-  )
+  return items
+}
+
+function HelpMenu({ parts }: { parts: ShellParts }) {
+  return <MenuButton label={parts.services.s('frame.help')} variant="quiet" size="small" items={helpEntries(parts)} data-guide="frame.help" />
 }
 
 function TreeGlyph() {
@@ -541,9 +573,16 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
     ...MORE_PLACES.map((one) => ({ label: s(one.label), checked: page === one.page, onSelect: () => go({ scope: HOME_PAGES.includes(one.page) ? at : ROOT_SCOPE, page: one.page }) })),
   ]
   const shows = (one: FramePlace) => (one.page === 'documentation' ? page === 'document' || page === 'documentation' : page === one.page)
+  // The places go from the end when the row runs out, into the More beside them: never out of reach, never off the window.
+  const { folded: gone, anchor } = useRowFold(SCOPE_PLACES.length, `${parts.services.prefs.textSize} ${parts.services.prefs.language}`)
+  const kept = SCOPE_PLACES.slice(0, SCOPE_PLACES.length - gone)
+  const foldedPlaces: MenuEntry[] = SCOPE_PLACES.slice(SCOPE_PLACES.length - gone).map((one) => (
+    { label: s(one.label), checked: shows(one), 'data-testid': `frame-page-${one.page}`, onSelect: () => go({ scope: at, page: one.page } as Destination & { scope: string }) }
+  ))
   return (
     <>
-      {SCOPE_PLACES.map((one) => (
+      <span ref={anchor} hidden />
+      {kept.map((one) => (
         <button
           key={one.page} type="button" className="kit-frame__tab" aria-current={shows(one) ? 'page' : undefined} data-testid={`frame-page-${one.page}`}
           onClick={() => go({ scope: at, page: one.page } as Destination & { scope: string })}
@@ -551,7 +590,7 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
           {s(one.label)}
         </button>
       ))}
-      <MenuButton label={s('frame.more')} variant="quiet" size="small" items={more} data-guide="frame.more" />
+      <MenuButton label={s('frame.more')} variant="quiet" size="small" items={foldedPlaces.length > 0 ? [...foldedPlaces, { line: true }, ...more] : more} data-guide="frame.more" />
     </>
   )
 }

@@ -7,7 +7,7 @@
  * browser draws: the ⋯, the ? menu, ⌘K and the sheet of keys. A command is
  * added once, there or here, and is in all of them.
  */
-import { EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, ZOOM_ITEMS, goMenu, offered } from '../../platform/menu'
+import { EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, ZOOM_ITEMS, goMenu, offered } from '../../platform/menu'
 import type { MenuCapabilities, MenuItemSpec } from '../../platform/menu'
 import type { HostCommand } from '../../platform/hostCommands'
 import type { StringKey } from '../../i18n'
@@ -36,6 +36,7 @@ export function commandsTable(can: MenuCapabilities, platform: string): readonly
     ...goMenu(platform).map((item) => row('go', item)),
     ...THEME_ITEMS.map(({ mode, label }): CommandRow => ({ id: `view:${mode}`, label, group: 'view', command: { type: 'theme', mode } })),
     ...items(ZOOM_ITEMS, 'web').map((item) => row('view', item)),
+    ...items(TEXT_SIZE_ITEMS, 'web').map((item) => row('view', item)),
     row('view', PREFERENCES_ITEM),
     ...items(HELP_MENU, 'web').map((item) => row('help', item)),
   ]

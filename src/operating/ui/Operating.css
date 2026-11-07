@@ -34,7 +34,7 @@
 .op-card[data-look='lit'] { border-color: var(--selected-edge); }
 .op-card[data-look='dim'] { background: var(--surface-2); color: var(--ink-dim); }
 .op-card__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
-.op-card__name { font: inherit; font-weight: var(--fw-strong); color: inherit; background: none; border: 0; padding: 0; text-align: start; cursor: pointer; }
+.op-card__name { min-height: var(--target-min); font: inherit; font-weight: var(--fw-strong); color: inherit; background: none; border: 0; padding: 0; text-align: start; cursor: pointer; }
 .op-card__count { margin-inline-start: auto; font-size: var(--t-small); color: var(--ink-2); white-space: nowrap; }
 .op-card[data-look='dim'] .op-card__count { color: var(--ink-dim); }
 .op-card__meta { font-size: var(--t-small); color: var(--ink-2); }

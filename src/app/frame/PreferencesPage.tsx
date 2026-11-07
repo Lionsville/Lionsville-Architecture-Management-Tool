@@ -22,6 +22,8 @@ import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { THEME_ITEMS } from '../../platform/menu'
 import type { ThemeMode } from '../../platform/theme'
+import { TEXT_SIZES } from '../../platform/textSize'
+import type { TextSize } from '../../platform/textSize'
 import type { UpdateChannel, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type { ProjectOrder } from '../../projects/scope'
 import { PageClose } from '../../widgets/PageClose'
@@ -43,6 +45,8 @@ export type PreferencesPageProps = {
   onOrderChange: (next: ProjectOrder) => void
   density: Density
   onDensityChange: (next: Density) => void
+  textSize: TextSize
+  onTextSizeChange: (next: TextSize) => void
   /** What the canvas remembers, and how a change reaches it. */
   editor: unknown
   onEditorChange: (next: EditorPreferences) => void
@@ -64,7 +68,7 @@ export type PreferencesPageProps = {
 }
 
 export function PreferencesPage({
-  open, onClose, language, onLanguageChange, themeMode, onThemeChange, order, onOrderChange, density, onDensityChange, editor, onEditorChange,
+  open, onClose, language, onLanguageChange, themeMode, onThemeChange, order, onOrderChange, density, onDensityChange, textSize, onTextSizeChange, editor, onEditorChange,
   updates, sourcePanel, s,
 }: PreferencesPageProps) {
   const canvas = mergePreferences(editor)
@@ -86,6 +90,12 @@ export function PreferencesPage({
             <Segmented
               label={s('prefs.theme')} value={themeMode} onChange={onThemeChange}
               options={THEME_ITEMS.map((held) => ({ value: held.mode, label: s(held.label) }))}
+            />
+          </PreferenceRow>
+          <PreferenceRow label={s('prefs.textSize')} hint={s('prefs.textSizeHint')}>
+            <Segmented
+              label={s('prefs.textSize')} value={String(textSize)} onChange={(next) => onTextSizeChange(Number(next) as TextSize)} data-guide="prefs.textSize"
+              options={TEXT_SIZES.map((size) => ({ value: String(size), label: `${size}%` }))}
             />
           </PreferenceRow>
           <PreferenceRow label={s('prefs.density')} hint={s('prefs.densityHint')}>

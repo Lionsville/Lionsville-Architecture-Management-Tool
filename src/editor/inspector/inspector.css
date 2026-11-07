@@ -13,7 +13,7 @@
 .inspector-description > :first-child { align-self: stretch; }
 .inspector-description__text,
 .inspector-description__press { margin: 0; color: var(--ink); font: inherit; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--clamp-lines); overflow: hidden; }
-.inspector-description__press { width: 100%; padding: 0 var(--s-1); margin-inline-start: calc(var(--s-1) * -1); border: 0; border-radius: var(--r-1); background: none; text-align: start; cursor: text; }
+.inspector-description__press { min-height: var(--target-min); width: 100%; padding: 0 var(--s-1); margin-inline-start: calc(var(--s-1) * -1); border: 0; border-radius: var(--r-1); background: none; text-align: start; cursor: text; }
 .inspector-description__press:hover { background: var(--surface-2); }
 .inspector-description__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
 .inspector-description__press[data-empty] { color: var(--ink-3); }

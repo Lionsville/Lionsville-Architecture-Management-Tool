@@ -43,6 +43,8 @@ export type OverflowMenuProps = {
    * how *Sign in…* becomes a name while the person is looking at it.
    */
   onSourceWork?: SourceWorkChanged
+  /** What the row had no room for: first, above a line. */
+  folded?: readonly MenuEntry[]
   s: Translate
 }
 
@@ -55,7 +57,7 @@ function keyCap(accelerator: string | undefined): string | undefined {
     : accelerator.replace('CmdOrCtrl', 'Ctrl')
 }
 
-export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, s }: OverflowMenuProps) {
+export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, folded = [], s }: OverflowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
 
@@ -75,7 +77,8 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, s }:
     return onSourceWork?.(() => setLines(sourceEntries()))
   }, [anchor, sourceEntries, onSourceWork])
 
-  const items: MenuEntry[] = []
+  const closing = (entry: MenuEntry): MenuEntry => ('onSelect' in entry ? { ...entry, onSelect: () => { setAnchor(null); entry.onSelect() } } : entry)
+  const items: MenuEntry[] = folded.length > 0 ? [...folded.map(closing), { line: true }] : []
   // A file, then a place: the two ways to what you have, side by side. The menu bar's order is the File menu's.
   const listed = offered(FILE_MENU, 'web', { ...can, scope: true })
   const elsewhere = listed.find((entry) => entry.kind === 'item' && entry.label === 'menu.connect')

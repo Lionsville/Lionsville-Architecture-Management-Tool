@@ -220,17 +220,19 @@ export type MenuButtonProps = {
   items: readonly MenuEntry[]
   variant?: ButtonVariant
   size?: 'normal' | 'small'
+  /** Its name in full, where its word alone says too little out of its place: a percentage, say. */
+  'aria-label'?: string
   'data-guide'?: string
   'data-testid'?: string
 }
 
 /** A word that opens a menu. */
-export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'data-guide': guide, 'data-testid': testId }: MenuButtonProps) {
+export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'aria-label': name, 'data-guide': guide, 'data-testid': testId }: MenuButtonProps) {
   const { anchor, open, toggle, close } = useAnchored()
   return (
     <>
       <Button
-        ref={anchor} variant={variant} size={size} data-guide={guide} data-testid={testId} aria-haspopup="menu" aria-expanded={open}
+        ref={anchor} variant={variant} size={size} aria-label={name} data-guide={guide} data-testid={testId} aria-haspopup="menu" aria-expanded={open}
         onClick={toggle}
       >
         {label}

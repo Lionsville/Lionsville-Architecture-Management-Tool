@@ -555,6 +555,8 @@ export function FramePages({ parts }: { parts: ShellParts }) {
       onOrderChange={parts.order.chooseOrder}
       density={prefs.density}
       onDensityChange={prefs.chooseDensity}
+      textSize={prefs.textSize}
+      onTextSizeChange={prefs.chooseTextSize}
       editor={prefs.preferences}
       onEditorChange={prefs.savePreferences}
       {...(parts.host.updateSettings && updates ? { updates: { checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: machine.changeUpdates } } : {})}
