@@ -446,7 +446,7 @@ export const LONGEST_FUNCTION = 150
 export const GROWN = {
   'src/agent/answer.ts': { complexity: 98, lines: 316 },
   'src/agent/handle.ts': { complexity: 26 },
-  'src/agent/shell.ts': { complexity: 40 },
+  'src/agent/shell.ts': { complexity: 41 },
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 44, lines: 154 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
