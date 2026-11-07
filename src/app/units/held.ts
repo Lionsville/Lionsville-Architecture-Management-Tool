@@ -11,8 +11,9 @@ import type { PersonId } from '../../model/person'
 import { isBlankRef } from '../../model/person'
 import { unitsByRule } from '../../model/owners'
 import { scopesServed } from '../../model/serving'
-import { isExceptionPlacement, linesOfHolder, personOf } from '../../model/units'
-import type { HeldAssignment, OwnedByRule } from '../../people/hold'
+import { holdersAt, isExceptionPlacement, linesOfHolder, managersOfHolder, personOf, runsOn } from '../../model/units'
+import type { Assignment, Organisation } from '../../model/units'
+import type { HeldAssignment, OwnedByRule, Reporting, ReportingPerson } from '../../people/hold'
 import type { Person } from '../../people/person'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 
@@ -40,6 +41,7 @@ export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>, d
         id: assignment.id,
         scope,
         unit: name(assignment.unitId),
+        unitId: assignment.unitId,
         role: roles.get(assignment.roleId) ?? assignment.roleId,
         ...(assignment.share !== undefined ? { share: assignment.share } : {}),
         ...(assignment.from !== undefined ? { from: assignment.from } : {}),
@@ -49,6 +51,53 @@ export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>, d
         ...(isExceptionPlacement(organisation, assignment) ? { exception: true as const } : {}),
       }
     })
+}
+
+/** Each person once per role in a unit, in the order first met: the nearest first. */
+function once(lines: readonly ReportingPerson[]): ReportingPerson[] {
+  const seen = new Set<string>()
+  return lines.filter((line) => {
+    const key = JSON.stringify([line.person, line.role, line.unit, line.functional ?? false])
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+/**
+ * Who a person reports to and who reports to them on `day`, by the same reads
+ * as a holder's inspector (`managersOfHolder`), so nesting is said as a line
+ * is. Manages is who has this person among their nearest managers, and whoever
+ * has a functional line to them: the rest of the chain below is on the chart.
+ */
+export function reportingOf(index: ScopeIndex, ids: ReadonlySet<PersonId>, day: string): Reporting {
+  const organisation: Organisation = index.organisation()
+  const roles = new Map(index.operatingModel().roles.map((role) => [role.id, role.name]))
+  const scopes = new Map(index.units().map(({ scope, unit }) => [unit.id, scope]))
+  const said = (assignment: Pick<Assignment, 'person' | 'unitId' | 'roleId'>, via: ReportingPerson['via'], functional: boolean): ReportingPerson => {
+    const scope = scopes.get(assignment.unitId)
+    return {
+      person: personOf(assignment), role: roles.get(assignment.roleId) ?? assignment.roleId, unit: index.lookup(assignment.unitId)?.name ?? assignment.unitId,
+      via, unitId: assignment.unitId, ...(scope !== undefined ? { scope } : {}), ...(functional ? { functional: true as const } : {}),
+    }
+  }
+  const running = organisation.assignments.filter((one) => runsOn(one, day))
+  const mine = running.filter((one) => ids.has(personOf(one)))
+  const others = running.filter((one) => !ids.has(personOf(one)) && !isBlankRef(personOf(one)))
+  const functionalTo = (one: Assignment) => linesOfHolder(organisation, one, day)
+    .filter((line) => line.kind === 'dotted' && line.state === 'lands' && line.to)
+    .flatMap((line) => holdersAt(organisation.assignments, line.to!, day).map((to) => ({ to, via: line.override ? 'override' as const : 'line' as const })))
+  const reportsTo = mine.flatMap((one) => [
+    ...managersOfHolder(organisation, one, day).filter((up) => !ids.has(up.person)).map((up) => said(up.assignment, up.via, false)),
+    ...functionalTo(one).filter(({ to }) => !ids.has(personOf(to))).map(({ to, via }) => said(to, via, true)),
+  ])
+  const manages = others.flatMap((one) => {
+    // A holder of a managing role is among their own unit's managers: the nearest is the first who is somebody else.
+    const nearest = managersOfHolder(organisation, one, day).find((up) => up.person !== personOf(one))
+    const under = nearest && mine.some((held) => held.unitId === nearest.unitId && held.roleId === nearest.roleId) ? [said(one, nearest.via, false)] : []
+    return [...under, ...functionalTo(one).filter(({ to }) => ids.has(personOf(to))).map(({ via }) => said(one, via, true))]
+  })
+  return { reportsTo: once(reportsTo), manages: once(manages) }
 }
 
 /**

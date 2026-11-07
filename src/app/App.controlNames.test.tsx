@@ -266,12 +266,27 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId('open-technology'))
     await screen.findByTestId('technology-register-table')
   }]],
-  [['the people register', ['people.row', 'people.add', 'people.importCsv', 'people.policy'], async () => {
+  [['the people register', ['people.row', 'people.add', 'people.importCsv', 'people.tabs', 'people.find', 'people.day'], async () => {
     const held = heldRepositories(example)
     await held.people.add({ name: 'Pia Schulz' })
     renderApp({ repositories: held })
     fireEvent.click(await screen.findByTestId('open-people'))
     await screen.findByTestId('people-table')
+  }]],
+  [['its privacy tab', ['people.policy'], async () => {
+    renderApp({ repositories: heldRepositories(example) })
+    fireEvent.click(await screen.findByTestId('open-people'))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Privacy' }))
+    await screen.findByTestId('people-policy')
+  }]],
+  [['a person', ['people.person', 'people.correct', 'people.more'], async () => {
+    const held = heldRepositories(example)
+    await held.people.add({ name: 'Pia Schulz' })
+    renderApp({ repositories: held })
+    fireEvent.click(await screen.findByTestId('open-people'))
+    await screen.findByTestId('people-table')
+    fireEvent.click(document.querySelector('[data-guide="people.row"]') as HTMLElement)
+    await screen.findByTestId('people-person')
   }]],
   [['its possible duplicates, reviewed', ['people.duplicates', 'people.duplicatePair', 'people.answered'], async () => {
     const held = heldRepositories(example)
@@ -283,7 +298,8 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await held.people.answerDistinct(ids[2], ids[3], '2026-10-11')
     renderApp({ repositories: held })
     fireEvent.click(await screen.findByTestId('open-people'))
-    fireEvent.click(await screen.findByTestId('people-duplicates-review'))
+    fireEvent.click(await screen.findByRole('tab', { name: /To review/ }))
+    fireEvent.click(await screen.findByTestId('people-answered-toggle').catch(() => screen.getByTestId('people-duplicates')))
   }]],
   [['a landscape open on its board', [
     'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.inspector',

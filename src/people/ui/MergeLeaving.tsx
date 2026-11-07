@@ -16,14 +16,12 @@
  * the leaving day — the person was evidently back, rehired or as an external —
  * and *left* otherwise.
  */
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
-import Typography from '@mui/material/Typography'
+import { DialogChoices } from '../../widgets/kit/Dialog'
 import { leavingOn } from '../hold'
 import type { HeldAssignment } from '../hold'
 import type { MergeLeaving } from '../person'
 import type { Translate } from '../shown'
+import { useDayWords } from './parts'
 
 /** The answer chosen to start with: *still here* where any role of the one absorbed began after the leaving day. */
 export function mergeLeavingFirst(held: readonly HeldAssignment[], leftOn: string): MergeLeaving {
@@ -44,22 +42,24 @@ export type MergeLeavingChoiceProps = {
 }
 
 export function MergeLeavingChoice({ drop, keep, leftOn, held, value, onChange, s }: MergeLeavingChoiceProps) {
+  const dayWords = useDayWords()
   const { ends, later } = leavingOn(held, leftOn)
-  const day = leftOn
-  const help = { fontSize: 12, color: 'text.secondary', ml: 4, mt: -0.5, mb: 0.5 }
+  const day = dayWords(leftOn)
+  const leftEffect = [
+    ends === 0 ? s('people.mergeLeftNone', { drop, day }) : s(ends === 1 ? 'people.mergeLeftEndsOne' : 'people.mergeLeftEndsOther', { count: ends, drop, day }),
+    ...(later > 0 ? [s(later === 1 ? 'people.mergeLeftLaterOne' : 'people.mergeLeftLaterOther', { count: later, day })] : []),
+  ].join(' ')
   return (
     <div data-testid="people-merge-leaving">
-      <Typography sx={{ fontSize: 14, mt: 1.5, fontWeight: 600 }}>{s('people.mergeLeftAsk', { keep, drop, day })}</Typography>
-      {later > 0 && <Typography sx={{ fontSize: 12, mt: 0.5 }} data-testid="people-merge-later">{s('people.mergeLater', { drop, day })}</Typography>}
-      <RadioGroup value={value} onChange={(event) => onChange(event.target.value as MergeLeaving)} aria-label={s('people.mergeLeftAsk', { keep, drop, day })}>
-        <FormControlLabel value="stillHere" control={<Radio size="small" />} label={s('people.mergeStillHere')} data-testid="people-merge-still-here" />
-        <Typography sx={help}>{s('people.mergeStillHereHelp', { keep })}</Typography>
-        <FormControlLabel value="left" control={<Radio size="small" />} label={s('people.mergeLeft', { day })} data-testid="people-merge-left" />
-        <Typography sx={help} data-testid="people-merge-left-help">
-          {ends === 0 ? s('people.mergeLeftNone', { drop, day }) : s(ends === 1 ? 'people.mergeLeftEndsOne' : 'people.mergeLeftEndsOther', { count: ends, drop, day })}
-          {later > 0 && ` ${s(later === 1 ? 'people.mergeLeftLaterOne' : 'people.mergeLeftLaterOther', { count: later, day })}`}
-        </Typography>
-      </RadioGroup>
+      <p className="people-heading">{s('people.mergeLeftAsk', { keep, drop, day })}</p>
+      {later > 0 && <p className="people-note" data-testid="people-merge-later">{s('people.mergeLater', { drop, day })}</p>}
+      <DialogChoices<MergeLeaving>
+        label={s('people.mergeLeftAsk', { keep, drop, day })} value={value} onChange={onChange}
+        options={[
+          { value: 'stillHere', label: s('people.mergeStillHere'), effect: s('people.mergeStillHereHelp', { keep }) },
+          { value: 'left', label: s('people.mergeLeft', { day }), effect: leftEffect },
+        ]}
+      />
     </div>
   )
 }

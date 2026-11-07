@@ -2,23 +2,20 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The organisation's policy for the register (ADR-0036 §10): how long a
- * leaver's name is kept, how long the forgotten entry after that, and what an
- * agent sees. A setting of the organisation's, not a step; read-only where
- * the organisation's settings are not this person's to change.
+ * The Privacy tab (ADR-0036 §10): how long a leaver's name is kept, how long the
+ * forgotten entry after that, and what an agent sees, with the periods drawn as
+ * the three steps they are. A setting of the organisation's, not a step. Whoever
+ * may not change it reads the same things as sentences, not as greyed fields.
  */
-import { useEffect, useState, type ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
+import { useEffect, useState } from 'react'
+import { plural } from '../../i18n/strings'
+import { Button } from '../../widgets/kit/Button'
+import { SelectField, TextField } from '../../widgets/kit/Field'
 import { AGENT_SEES } from '../policy'
 import type { AgentSees, PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
 import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
-import { Section } from './parts'
 
 const SEES_LABEL = { names: 'people.agentsNames', pseudonyms: 'people.agentsPseudonyms' } as const
 
@@ -44,42 +41,36 @@ export function PolicyPanel({ register, saying, s }: { register: PeopleRegisterA
   }
   const changed = change.keepNameDays !== policy.keepNameDays || change.removeAfterDays !== policy.removeAfterDays || sees !== policy.agentsSee
   const save = () => { void saying.run(register.setPolicy(change).then(() => ({})), () => s('people.policySaved')) }
-  const fixed = !mayDo(register, 'policy')
+  const daysWords = (count: number) => plural(s, { one: 'people.daysOne', other: 'people.daysOther' }, count)
+  const kept = days(keep) ?? policy.keepNameDays
+  const removed = days(remove) ?? policy.removeAfterDays
+  const mayChange = mayDo(register, 'policy')
   return (
-    <Section title={s('people.policy')}>
-      <Box data-testid="people-policy" data-guide="people.policy" sx={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 1, alignItems: 'center' }}>
-        <Typography component="label" htmlFor="people-keep" sx={{ fontSize: 12 }}>{s('people.keepName')}</Typography>
-        <Days s={s}>
-          <TextField id="people-keep" size="small" type="number" value={keep} disabled={fixed} onChange={(event) => setKeep(event.target.value)}
-            sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.keepName')} (${s('people.days')})` } }} />
-        </Days>
-        <Typography component="label" htmlFor="people-remove" sx={{ fontSize: 12 }}>{s('people.removeAfter')}</Typography>
-        <Days s={s}>
-          <TextField id="people-remove" size="small" type="number" value={remove} disabled={fixed} onChange={(event) => setRemove(event.target.value)}
-            sx={{ width: 110 }} slotProps={{ htmlInput: { min: 0, 'aria-label': `${s('people.removeAfter')} (${s('people.days')})` } }} />
-        </Days>
-        <Typography component="label" htmlFor="people-sees" sx={{ fontSize: 12 }}>{s('people.agentsSee')}</Typography>
-        <TextField id="people-sees" size="small" select value={sees} disabled={fixed} onChange={(event) => setSees(event.target.value as AgentSees)}
-          sx={{ width: 110 }} slotProps={{ select: { inputProps: { 'aria-label': s('people.agentsSee') } } }}>
-          {AGENT_SEES.map((one) => <MenuItem key={one} value={one}>{s(SEES_LABEL[one])}</MenuItem>)}
-        </TextField>
-      </Box>
-      {!fixed && (
-        <Button size="small" variant="outlined" disabled={!changed} onClick={save} sx={{ mt: 1 }} data-testid="people-policy-save">
-          {s('people.save')}
-        </Button>
+    <section className="people-policy" data-testid="people-policy" data-guide="people.policy" aria-label={s('people.policy')}>
+      <h2 className="people-heading">{s('people.policy')}</h2>
+      {mayChange ? (
+        <>
+          <TextField label={`${s('people.keepName')} (${s('people.days')})`} type="number" min={0} value={keep} onChange={setKeep} data-testid="people-keep" />
+          <TextField label={`${s('people.removeAfter')} (${s('people.days')})`} type="number" min={0} value={remove} onChange={setRemove} data-testid="people-remove-after" />
+        </>
+      ) : (
+        <p data-testid="people-policy-read">{s('people.policyRead', { keep: daysWords(policy.keepNameDays), remove: daysWords(policy.removeAfterDays) })}</p>
       )}
-      <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1 }}>{s('people.policyNote')}</Typography>
-    </Section>
-  )
-}
-
-/** A number of days, with the unit beside the field: a bare *90* names none. */
-function Days({ s, children }: { s: Translate; children: ReactNode }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      {children}
-      <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.days')}</Typography>
-    </Box>
+      <ol className="people-steps">
+        <li className="people-steps__step"><span className="people-steps__label">{s('people.stepLeft')}</span>{s('people.stepLastDay')}</li>
+        <li className="people-steps__step"><span className="people-steps__label">{s('people.stepForgotten')}</span>{s('people.stepPlus', { days: daysWords(kept) })}</li>
+        <li className="people-steps__step"><span className="people-steps__label">{s('people.stepRemoved')}</span>{s('people.stepPlus', { days: daysWords(removed) })}</li>
+      </ol>
+      {mayChange ? (
+        <>
+          <SelectField
+            label={s('people.agentsSee')} value={sees} onChange={(next) => setSees(next as AgentSees)}
+            options={AGENT_SEES.map((one) => ({ value: one, label: s(SEES_LABEL[one]) }))}
+          />
+          <div><Button variant="primary" disabled={!changed} onClick={save} data-testid="people-policy-save">{s('people.save')}</Button></div>
+        </>
+      ) : <p>{s('people.agentsSeeRead', { sees: s(SEES_LABEL[policy.agentsSee]) })}</p>}
+      <p className="people-note">{s('people.policyNote')}</p>
+    </section>
   )
 }

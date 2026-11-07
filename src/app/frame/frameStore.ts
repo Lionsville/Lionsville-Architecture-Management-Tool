@@ -65,6 +65,9 @@ export type FrameState = {
   /** The tab of the page that is up, where its page keeps it here (`usePlaceTab`), and which page it is of. */
   readonly tab?: string
   readonly tabOf?: Page
+  /** The record of the page that is up, where its page keeps it here (`usePlaceRecord`), and which page it is of. */
+  readonly record?: string
+  readonly recordOf?: Page
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
   /** ⌘\: the tree docked on every screen, by this person's choice. */

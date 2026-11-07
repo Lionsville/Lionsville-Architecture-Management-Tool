@@ -145,10 +145,12 @@ export function useShellAgent(deps: {
       openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, openPreferences.current)
       return
     }
-    frame?.set({ panel: to.panel, tab: to.tab, tabOf: to.tab === undefined ? undefined : to.page })
+    // A person is the People page's record, by the path or by the shell's own *Open in People*.
+    const record = to.page === 'people' ? to.id ?? to.select : undefined
+    frame?.set({ panel: to.panel, tab: to.tab, tabOf: to.tab === undefined ? undefined : to.page, record, recordOf: record === undefined ? undefined : 'people' })
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
-      // The Checks page picks the check its id names; the People page the person `select` names.
-      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.select)
+      // The Checks page picks the check its id names; the People page the person in the frame, set above.
+      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? to.id ?? to.select : to.select)
       return
     }
     const open = agentSessionRef.current
@@ -408,9 +410,10 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   if (!held) return screen
   const page = screen.page
   const tab = page && held.tabOf === page.page && !('tab' in page && page.tab !== undefined) && isPageTab(page.page, held.tab) ? held.tab : undefined
+  const record = page?.page === 'people' && held.recordOf === 'people' ? held.record : undefined
   return {
     ...screen,
-    ...(page && tab !== undefined ? { page: { ...page, tab } as Screen['page'] } : {}),
+    ...(page && (tab !== undefined || record !== undefined) ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(record !== undefined ? { id: record } : {}) } as Screen['page'] } : {}),
     ...(held.panel !== undefined ? { panel: held.panel } : {}),
   }
 }

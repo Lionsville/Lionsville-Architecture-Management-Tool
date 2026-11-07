@@ -30,6 +30,9 @@ export type BootLanding = {
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  /** What the address says of that page beyond its name: the tab up, and the person on the People page. */
+  initialHomeTab?: string
+  initialHomeRecord?: string
   /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /**
@@ -147,7 +150,13 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   const { scope, page } = place
   if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'settings' | 'preferences' }
   if (page !== undefined && HOME_PAGES.includes(page)) {
-    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' }) }
+    const record = page === 'people' ? place.id ?? place.select : undefined
+    return {
+      ...homeOf(scope),
+      ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' }),
+      ...(place.tab !== undefined ? { initialHomeTab: place.tab } : {}),
+      ...(record !== undefined ? { initialHomeRecord: record } : {}),
+    }
   }
   // A scope that is not there lands on the organisation's home, and says so
   // where the address pointed at something in it.

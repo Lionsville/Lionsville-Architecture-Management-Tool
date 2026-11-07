@@ -234,9 +234,9 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
 /**
  * The home pages that pick what their id names, which no scope's document
  * holds: a check by its key, a topic by its path (ADR-0042), a building
- * block by its id across the tree (ADR-0043).
+ * block by its id across the tree (ADR-0043), a person by their register id.
  */
-const PICKING_PAGES: ReadonlySet<string> = new Set(['checks', 'topics', 'blocks'])
+const PICKING_PAGES: ReadonlySet<string> = new Set(['checks', 'topics', 'blocks', 'people'])
 
 /**
  * Whether a destination names something a scope's own document must hold —

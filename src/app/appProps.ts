@@ -68,6 +68,8 @@ export type AppBoot = {
    */
   initialPage?: InitialPage
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  initialHomeTab?: string
+  initialHomeRecord?: string
   /** One of the frame's own places the address named (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */

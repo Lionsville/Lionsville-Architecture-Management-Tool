@@ -68,6 +68,8 @@ async function openPeople() {
   return screen.findByTestId('people-table')
 }
 
+const rowOf = (id: string) => document.querySelector(`[data-kit-row="row:${id}"]`) as HTMLElement
+
 describe('the People page in the app', () => {
   it('is a card on the organisation’s home, and what is added on it lands in the register', async () => {
     const held = heldRepositories([root])
@@ -93,6 +95,24 @@ describe('the People page in the app', () => {
     expect((listed.people as { name: string }[]).map((one) => one.name)).toEqual(['Pia Schulz'])
     await act(async () => { await wire.ask('person.add', { name: 'Sara Kaya' }) })
     await waitFor(() => expect(within(screen.getByTestId('people-table')).getByText('Sara Kaya')).toBeDefined())
+  })
+
+  it('gives a person an address an agent lands on, that Back lets go of, and refuses nothing it can say', async () => {
+    const held = heldRepositories([root])
+    const pia = await added(held, 'Pia Schulz')
+    const wire = gateway()
+    renderApp({ agent: wire.gateway, repositories: held, today: () => TODAY })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    await wire.ask('app.open', { scope: '', page: 'people' })
+    await screen.findByTestId('people-table')
+    const opened = await wire.ask('app.open', { scope: '', page: 'people', id: pia.id })
+    expect(opened.arrived).toBe(true)
+    expect(opened.page).toEqual({ page: 'people', id: pia.id })
+    expect(await screen.findByTestId('people-person-name')).toBeDefined()
+    await waitFor(() => expect(window.location.hash).toBe(`#/-/people/${pia.id}`))
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    await waitFor(() => expect(window.location.hash).toBe('#/-/people'))
+    expect(screen.queryByTestId('people-person')).toBeNull()
   })
 
   it('applies the policy when the organisation is opened: a name kept past the period is forgotten', async () => {
@@ -141,8 +161,9 @@ describe('from the organisation chart to the person', () => {
     expect(within(inspector).getByTestId('assignment-days').textContent).toBe('From 1 Jan 2026')
     fireEvent.click(within(inspector).getByTestId('assignment-people'))
     await screen.findByTestId('people-table')
-    await waitFor(() => expect(within(screen.getByTestId('people-row-pe-sara')).getByRole('button').getAttribute('aria-pressed')).toBe('true'))
-    expect(within(screen.getByTestId('people-row-pe-pia')).getByRole('button').getAttribute('aria-pressed')).toBe('false')
+    await waitFor(() => expect(screen.getByTestId('people-person-name').textContent).toBe('Sara Kaya'))
+    // The person has an address, so a link and Back reach them.
+    await waitFor(() => expect(window.location.hash).toBe('#/-/people/pe-sara'))
   })
 })
 
@@ -212,9 +233,10 @@ describe('a forget reaches everything that shows the person', () => {
     expect(within(screen.getByTestId('people-table')).getByText('Gijs Mulder')).toBeDefined()
     expect(JSON.stringify(await wire.ask('people.list'))).toContain('Gijs Mulder')
 
-    fireEvent.click(within(screen.getByTestId(`people-row-${gijs.id}`)).getByRole('button'))
-    fireEvent.click(screen.getByTestId('people-forget'))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Forget Gijs Mulder?' })).getByRole('button', { name: 'Forget now' }))
+    fireEvent.click(rowOf(gijs.id))
+    fireEvent.click(document.querySelector('[data-guide="people.more"]') as HTMLElement)
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Forget now…' }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Forget Gijs Mulder?' })).getByRole('button', { name: 'Forget Gijs Mulder' }))
 
     const pseudonym = `Former colleague ${gijs.pseudonym}`
     await waitFor(() => expect(screen.getByTestId('people-person-name').textContent).toBe(pseudonym))
@@ -248,10 +270,12 @@ describe('a source that does more about its people than keep them', () => {
     await added(held, 'Ruben Dekker')
     renderApp({ repositories: held, today: () => TODAY, provider: { people: { me: () => pia.id } } })
     await openPeople()
-    await waitFor(() => expect(within(screen.getByTestId(`people-row-${pia.id}`)).getByText('you')).toBeDefined())
-    fireEvent.click(within(screen.getByTestId(`people-row-${pia.id}`)).getByRole('button'))
+    await waitFor(() => expect(within(rowOf(pia.id)).getByText('you')).toBeDefined())
+    fireEvent.click(rowOf(pia.id))
     expect(await screen.findByTestId('people-this-is-you')).toBeDefined()
-    expect(screen.queryByTestId('people-me')).toBeNull()
+    fireEvent.click(document.querySelector('[data-guide="people.more"]') as HTMLElement)
+    expect(screen.queryByRole('menuitem', { name: 'This is me' })).toBeNull()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
   })
 
   it('says what is true of the account a record names to an agent, which a forget reaches, and lists who recorded it among what points at them', async () => {
@@ -277,7 +301,8 @@ describe('a source that does more about its people than keep them', () => {
     await named.people.bringIn([{ id: 'pe-pia', name: 'Pia Schulz', pseudonym: 'BCDF', kind: 'internal', state: 'active' }])
     renderApp({ repositories: named, today: () => TODAY })
     await openPeople()
-    fireEvent.click(within(await screen.findByTestId('people-row-pe-pia')).getByRole('button'))
+    await screen.findByTestId('people-table')
+    fireEvent.click(rowOf('pe-pia'))
     const pointed = await within(await screen.findByTestId('people-points-at')).findAllByTestId('people-pointed')
     expect(pointed.map((line) => line.textContent)).toEqual(['OB-0001 Orders arrive twice: recorded by · in the organisation'])
   })
@@ -315,11 +340,14 @@ describe('a source that does more about its people than keep them', () => {
     })
     await openPeople()
     expect(screen.queryByTestId('people-add')).toBeNull()
-    fireEvent.click(within(await screen.findByTestId(`people-row-${pia.id}`)).getByRole('button'))
+    await screen.findByTestId('people-table')
+    fireEvent.click(rowOf(pia.id))
     expect(await screen.findByTestId('people-correct')).toBeDefined()
-    expect(screen.queryByTestId('people-forget')).toBeNull()
+    fireEvent.click(document.querySelector('[data-guide="people.more"]') as HTMLElement)
+    expect(screen.queryByRole('menuitem', { name: 'Forget now…' })).toBeNull()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     expect(screen.getByTestId('people-person-email').textContent).toBe('an address not shown to you')
-    fireEvent.click(within(screen.getByTestId(`people-row-${gijs.id}`)).getByRole('button'))
+    fireEvent.click(rowOf(gijs.id))
     expect((await screen.findByTestId('people-held-back')).textContent).toMatch(/signed in after their last day/)
   })
 
@@ -385,7 +413,7 @@ describe('a source that does more about its people than keep them', () => {
     renderApp({ repositories: held, today: () => TODAY, source, provider: { people } })
     await openPeople()
     // The other Yara holds nothing in Webshop: her pairs are not this manager's to answer.
-    fireEvent.click(await screen.findByRole('button', { name: 'Review' }))
+    fireEvent.click(await screen.findByRole('tab', { name: /To review/ }))
     const pair = screen.getByTestId('people-pair-pe-vera-pe-yara')
     expect(screen.getAllByTestId(/^people-pair-pe-/)).toHaveLength(1)
     expect(within(pair).queryByRole('button', { name: /^Merge/ })).toBeNull()

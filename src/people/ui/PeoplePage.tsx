@@ -2,79 +2,76 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The People page (ADR-0036): the organisation's register of people, on a
- * page of its own over the organisation's home.
+ * The People page (ADR-0036): a directory first, a register second. Most visits
+ * ask who somebody is and what they hold, so the list is one line each, and a
+ * person is a page with an address (`#/-/people/<id>`), up in the large preview
+ * over the list, that a link reaches and Back steps through.
  *
- * Everyone, by state and by search, each with the roles they hold on the
- * page's day on one line — the first and how many more, *none* said as such,
- * so whoever holds nothing stands out; the pairs that may be one person,
- * folded until somebody reviews them, each a merge or an answer away
- * (`Duplicates.tsx`); a person, with what is held about them and what may be
- * done;
- * a new person, checked for duplicates before anyone is added; a list
- * imported, row by row through the same check; and the policy.
+ * Three tabs, each in the address: *People*; *To review*, the pairs that may be one
+ * person (`Duplicates.tsx`), which is gone when nothing is left to review; and
+ * *Privacy*, the policy (`PolicyPanel.tsx`).
  *
- * **Not a command.** Nothing on this page is a step: there is no undo and no
- * line in the Activity list, because the register is kept outside the
- * history — which is what lets a name be forgotten. The page says so, under
- * *About the register*, and the three changes that are final — merge,
- * forget, remove — ask first. A merge from a pair asks which entry to keep. A
- * merge of somebody active into an entry that has left asks which is true,
- * still here or left (`MergeLeaving.tsx`), and never ends a role in silence.
+ * **Not a command.** Nothing on this page is a step: there is no undo and no line
+ * in the Activity list, because the register is kept outside the history — which
+ * is what lets a name be forgotten. The foot of the page says so, and whatever has
+ * no way back asks first, saying what it does (`PersonQuestions.tsx`). A leaving
+ * can be taken back until the name is forgotten (the owner, 7 November 2026).
  *
- * A full-window page like the registers: it takes the window chrome, works
- * in both themes, and `readOnly` hides everything that changes the register.
- * Where the source says who may do what (`may`), each change is offered only
- * to whoever may make it — of this entry, where that is the entry's — and an
- * address the source keeps from this person is said to be kept, not missing.
+ * `readOnly` hides everything that changes the register. Where the source says who
+ * may do what (`may`), each change is offered only to whoever may make it — of this
+ * entry, where that is the entry's — and an address the source keeps from this
+ * person is said to be kept, not missing.
  */
-import { useEffect, useMemo, useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PersonId } from '../../model/person'
-import { matchesQuery } from '../../model/textSearch'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
+import { Band } from '../../widgets/kit/Band'
+import { Button } from '../../widgets/kit/Button'
+import { DayControl } from '../../widgets/kit/DayControl'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import { List } from '../../widgets/kit/List'
+import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
+import type { ListHow, ListView } from '../../widgets/kit/listView'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
+import { PageState } from '../../widgets/kit/PageState'
+import { Preview } from '../../widgets/kit/Preview'
+import { Tabs } from '../../widgets/kit/Tabs'
+import { Toast } from '../../widgets/kit/Toast'
+import { PageClose } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
-import { useLocatedIn } from '../../widgets/useLocated'
-import { duplicatePairs } from '../duplicates'
+import { usePlaceGo, usePlaceRecord, usePlaceTab } from '../../widgets/placeTab'
+import { duplicatePairs, possibleDuplicates } from '../duplicates'
 import { rolesOn } from '../hold'
-import { meIn } from '../me'
-import type { MergeLeaving, Person, PersonState } from '../person'
-import { entriesOf, mergeAsks } from '../person'
-import { registerOf, shownEntry, shownText } from '../shown'
+import { meIdIn, meIn } from '../me'
+import type { Person, PersonState } from '../person'
+import { entriesOf } from '../person'
+import { registerOf, resolvePerson, shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
 import { mayDo, useSaying } from './access'
-import type { PeopleRegisterAccess, Saying } from './access'
-import { AddPerson } from './AddPerson'
+import type { PeopleRegisterAccess } from './access'
+import { AddPerson, tellsApart } from './AddPerson'
+import { CorrectPerson } from './CorrectPerson'
 import { CsvImport } from './CsvImport'
-import { Duplicates } from './Duplicates'
-import { MergeLeavingChoice, mergeLeavingFirst } from './MergeLeaving'
-import { KIND_LABEL, RolesLine, SHOW_LABEL } from './parts'
+import { Duplicates, reviewable } from './Duplicates'
+import { KIND_LABEL, rolesText, SHOW_LABEL, useDayWords } from './parts'
 import type { RolesHeld } from './parts'
-import { PersonPanel } from './PersonPanel'
-import type { PeopleLook } from './PersonPanel'
+import { PersonFacts, PersonReader } from './PersonReader'
+import type { PeopleLook } from './PersonReader'
+import { PersonQuestion } from './PersonQuestions'
+import type { Question } from './PersonQuestions'
 import { PolicyPanel } from './PolicyPanel'
-import { PageClose } from '../../widgets/PageClose'
-import { SeamResizer } from '../../widgets/SeamResizer'
-import { useSeamWidth } from '../../widgets/useSeamWidth'
+import { WhatWeHold } from './WhatWeHold'
+
+export type { PeopleLook }
 
 export type PeoplePageProps = {
   open: boolean
   onClose: () => void
   register: PeopleRegisterAccess
-  /** A person to show, asked for from outside: an agent's `app.open`, a link. */
+  /** A person to show, asked for from outside: a page beside this one; a link or an agent goes through the address. */
   select?: PersonId
   readText?: (file: Blob) => Promise<string>
   copyText?: (text: string) => void
@@ -87,324 +84,320 @@ export type PeoplePageProps = {
   windowChrome?: WindowChrome
 }
 
-type Show = PersonState | 'all'
+const STATES: readonly PersonState[] = ['active', 'left', 'forgotten']
 
-/**
- * One of the three changes that are final, waiting for the person's yes. A
- * merge that asks whether the person is still here carries the answer
- * chosen so far, and the day the entry kept left; one from a pair of
- * possible duplicates (`choose`) asks which of the two is kept.
- */
-type Asking =
-  | { kind: 'merge'; from: Person; into: Person; leaving?: { answer: MergeLeaving; leftOn: string }; choose?: true }
-  | { kind: 'forget'; person: Person }
-  | { kind: 'remove'; person: Person }
+type Row = { person: Person; text: string; roles: RolesHeld }
 
-const SHOWS: readonly Show[] = ['all', 'active', 'left', 'forgotten']
-
-function stateText(person: Person, s: Translate): string {
-  if (person.state === 'left') return s('people.stateLeft', { day: person.leftOn ?? '' })
-  if (person.state === 'forgotten') return s('people.stateForgotten', { day: person.forgottenOn ?? '' })
-  return s('people.stateActive')
+/** The one quiet word at the end of a row, only where it differs: *you*, *External*, *Left 7 Nov 2026*. */
+function noteOf(person: Person, me: PersonId | undefined, day: (day: string | undefined) => string, s: Translate): string | undefined {
+  const words = [
+    person.id === me ? s('people.you') : undefined,
+    person.kind === 'external' ? s('people.kindExternal') : undefined,
+    person.state === 'left' ? s('people.stateLeft', { day: day(person.leftOn) }) : undefined,
+    person.state === 'forgotten' ? s('people.stateForgotten', { day: day(person.forgottenOn) }) : undefined,
+  ].filter(Boolean)
+  return words.length ? words.join(' · ') : undefined
 }
 
-/** What a final change asks, and what saying yes does. */
-function asked(asking: Asking, register: PeopleRegisterAccess, saying: Saying, s: Translate) {
-  const name = (person: Person) => shownText(shownEntry(person), s)
-  if (asking.kind === 'merge') {
-    const words = { drop: name(asking.from), keep: name(asking.into) }
-    const leaving = asking.leaving
-    const done = (merged: { ended: number }) => {
-      if (leaving?.answer === 'stillHere') return s('people.mergeDoneHere', words)
-      if (leaving?.answer === 'left') return s('people.mergeDoneLeft', { ...words, count: merged.ended, day: leaving.leftOn })
-      return s('people.mergeDone', words)
-    }
-    return {
-      title: s('people.mergeTitle', words), body: s('people.mergeBody', words), confirm: s('people.mergeConfirm'),
-      run: () => saying.run(register.merge(asking.from.id, asking.into.id, leaving?.answer), done),
-    }
-  }
-  if (asking.kind === 'forget') {
-    const words = { name: name(asking.person), pseudonym: s('people.former', { code: asking.person.pseudonym }) }
-    return {
-      title: s('people.forgetTitle', words), body: s('people.forgetBody', words), confirm: s('people.forget'),
-      run: () => saying.run(register.forget(asking.person.id, register.today), () => s('people.forgetDone', words)),
-    }
-  }
-  const words = { pseudonym: name(asking.person) }
-  return {
-    title: s('people.removeTitle', words), body: s('people.removeBody'), confirm: s('people.remove'),
-    run: () => saying.run(register.remove(asking.person.id), () => s('people.removeDone')),
-  }
+/** A place on the rows from the find: the arrow goes down from the field to the list, as it does along it. */
+function intoList(event: React.KeyboardEvent<HTMLDivElement>) {
+  if (event.key !== 'ArrowDown' || !(event.target instanceof HTMLInputElement) || event.target.type !== 'search') return
+  const first = event.currentTarget.querySelector<HTMLElement>('[data-kit-row][tabindex="0"]')
+  if (first) { event.preventDefault(); first.focus() }
 }
 
-/** Which of a pair a merge keeps: the two, the one kept now, and the other kept instead. */
-function KeepChoice({ from, into, onSwap, s }: { from: Person; into: Person; onSwap: () => void; s: Translate }) {
-  const name = (person: Person) => shownText(shownEntry(person), s)
-  const either = [from, into].sort((one, other) => one.id.localeCompare(other.id))
-  return (
-    <RadioGroup value={into.id} onChange={(event) => { if (event.target.value !== into.id) onSwap() }} aria-label={s('people.mergeKeep')}
-      data-testid="people-merge-keep" sx={{ mt: 1.5 }}>
-      <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{s('people.mergeKeep')}</Typography>
-      {either.map((one) => <FormControlLabel key={one.id} value={one.id} control={<Radio size="small" />} label={name(one)} />)}
-    </RadioGroup>
-  )
-}
-
-/**
- * The question a final change asks, and — for a merge from a pair, which
- * entry is kept; for a merge of somebody active into an entry that has left,
- * which is true, still here or left.
- */
-function Asked({ asking, onAsking, onSwap, register, saying, s }: {
-  asking: Asking | undefined; onAsking: (next: Asking | undefined) => void; onSwap: () => void
-  register: PeopleRegisterAccess; saying: Saying; s: Translate
+/** Nobody matches: the near names the register's own check finds, and adding the name that was typed. */
+function NoMatch({ typed, people, register, onPick, onAdd, s }: {
+  typed: string; people: readonly Person[]; register: PeopleRegisterAccess; onPick: (id: PersonId) => void; onAdd: (() => void) | undefined; s: Translate
 }) {
-  const asks = asking && asked(asking, register, saying, s)
-  const merging = asking?.kind === 'merge' ? asking : undefined
-  const leaving = merging?.leaving
+  const near = possibleDuplicates({ name: typed }, people).slice(0, 5)
   return (
-    <ConfirmDialog
-      open={asks !== undefined}
-      title={asks?.title ?? ''}
-      body={asks?.body ?? ''}
-      confirmLabel={asks?.confirm ?? ''}
-      cancelLabel={s('people.cancel')}
-      onCancel={() => onAsking(undefined)}
-      onConfirm={() => {
-        if (asks) void asks.run()
-        onAsking(undefined)
-      }}
-    >
-      {merging?.choose && <KeepChoice from={merging.from} into={merging.into} onSwap={onSwap} s={s} />}
-      {merging && leaving && (
-        <MergeLeavingChoice
-          drop={shownText(shownEntry(merging.from), s)} keep={shownText(shownEntry(merging.into), s)}
-          leftOn={leaving.leftOn} held={register.assignmentsOf?.(merging.from.id) ?? []} value={leaving.answer}
-          onChange={(answer) => onAsking({ ...merging, leaving: { leftOn: leaving.leftOn, answer } })} s={s}
-        />
+    <div className="people-stack" data-testid="people-no-match">
+      <p>{s('people.searchEmpty', { query: typed })}{near.length > 0 && ` ${s('people.didYouMean')}`}</p>
+      {near.length > 0 && (
+        <div className="people-lines">
+          {near.map(({ person }) => (
+            <span key={person.id} className="people-line">
+              <button type="button" className="people-link" onClick={() => onPick(person.id)}>{shownText(shownEntry(person), s)}</button>
+              <span className="people-quiet"> · {tellsApart(person, register, s)}</span>
+            </span>
+          ))}
+        </div>
       )}
-    </ConfirmDialog>
+      {onAdd && <div><Button onClick={onAdd} data-testid="people-add-typed">{s('people.addTyped', { name: typed })}</Button></div>}
+    </div>
   )
 }
 
-/**
- * What the register is, in one muted line, and the rest behind *About the
- * register*: one entry each by an id, and that nothing here is a step. That
- * the register is only read here is said on the line itself.
- */
-function About({ readOnly, s }: { readOnly: boolean; s: Translate }) {
-  const [open, setOpen] = useState(false)
-  const muted = { fontSize: 12, color: 'text.secondary' }
-  return (
-    <Box sx={{ mb: 2 }}>
-      <Typography sx={muted}>
-        {s('people.whatShort')}
-        {readOnly && <>{' '}<Box component="span" data-testid="people-not-a-step">{s('people.readOnly')}</Box></>}
-        {' '}
-        <Button size="small" onClick={() => setOpen((was) => !was)} aria-expanded={open} aria-controls="people-about" data-testid="people-about"
-          sx={{ textTransform: 'none', fontSize: 12, minWidth: 0, p: 0, verticalAlign: 'baseline' }}>
-          {s('people.about')}
-        </Button>
-      </Typography>
-      {open && (
-        <Box id="people-about" sx={{ mt: 0.5 }}>
-          <Typography sx={{ ...muted, mb: 0.5 }}>{s('people.what')}</Typography>
-          {!readOnly && <Typography sx={muted} data-testid="people-not-a-step">{s('people.notAStep')}</Typography>}
-        </Box>
-      )}
-    </Box>
-  )
+/** What may be done to this person, in the one ⋯: reading first, what cannot be undone last. */
+function personMenu(person: Person, register: PeopleRegisterAccess, acts: {
+  ask: (question: Question) => void; setMe: (id: PersonId | undefined) => void; hold: () => void; copyAddress: (() => void) | undefined
+}, s: Translate): MenuEntry[] {
+  const named = person.state !== 'forgotten'
+  const isMe = meIdIn(register.me, register.people) === person.id
+  const may = (action: Parameters<typeof mayDo>[1]) => mayDo(register, action, person.id)
+  const can = (on: boolean, entry: MenuEntry): MenuEntry[] => (on ? [entry] : [])
+  return [
+    ...can(named && !register.readOnly && !register.meSaid, { label: s(isMe ? 'people.notMe' : 'people.thisIsMe'), onSelect: () => acts.setMe(isMe ? undefined : person.id), 'data-guide': 'people.thisIsMe' }),
+    ...can(acts.copyAddress !== undefined, { label: s('people.copyAddress'), onSelect: () => acts.copyAddress?.() }),
+    { label: s('people.holdAsk'), onSelect: acts.hold, 'data-guide': 'people.hold' },
+    { line: true },
+    ...can(person.state === 'active' && may('leave'), { label: s('people.markLeftAsk'), onSelect: () => acts.ask({ kind: 'leave', person }), 'data-guide': 'people.markLeft' }),
+    ...can(person.state === 'left' && register.takeBackLeaving !== undefined && may('leave'), { label: s('people.takeBackLeavingAsk'), onSelect: () => acts.ask({ kind: 'takeBack', person }), 'data-guide': 'people.takeBackLeaving' }),
+    ...can(named && may('merge'), { label: s('people.mergeWith'), onSelect: () => acts.ask({ kind: 'mergePick', person }), 'data-guide': 'people.mergeWith' }),
+    ...can(named && may('forget'), { label: s('people.forgetAsk'), final: true, onSelect: () => acts.ask({ kind: 'forget', person }), 'data-guide': 'people.forget' }),
+    ...can(!named && may('remove'), { label: s('people.removeAsk'), final: true, onSelect: () => acts.ask({ kind: 'remove', person }), 'data-guide': 'people.remove' }),
+  ]
 }
 
-function Everyone({ shown, selected, me, withheld, roles, day, today, onSelect, s }: {
-  shown: readonly Person[]; selected: PersonId | undefined; me: PersonId | undefined
-  withheld: ((id: PersonId) => boolean) | undefined
-  /** What each holds on `day`; absent where the shell has no tree to read, and the column with it. */
-  roles: ReadonlyMap<PersonId, RolesHeld> | undefined
-  day: string; today: string
-  onSelect: (id: PersonId) => void; s: Translate
-}) {
-  return (
-    <Box component="table" data-testid="people-table" sx={{
-      width: '100%', borderCollapse: 'collapse', fontSize: 13,
-      '& th': { textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.6, py: 0.75 },
-      '& th, & td': { borderBottom: 1, borderColor: 'divider', pr: 1 },
-      '& td': { py: 0.5 },
-    }}>
-      <thead>
-        <tr>
-          <th>{s('people.colName')}</th><th>{s('people.colKind')}</th><th>{s('people.colState')}</th>
-          {roles && <th>{day === today ? s('people.colRoles') : s('people.colRolesOn', { day })}</th>}
-          <th>{s('people.colEmail')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {shown.map((person) => (
-          <Box component="tr" key={person.id} data-testid={`people-row-${person.id}`} data-guide="people.row" data-person-id={person.id}
-            sx={{ bgcolor: person.id === selected ? 'action.selected' : undefined }}>
-            <td>
-              <Box component="button" type="button" onClick={() => onSelect(person.id)} aria-pressed={person.id === selected}
-                sx={{ font: 'inherit', fontWeight: 600, p: 0, border: 0, bgcolor: 'transparent', color: 'text.primary', cursor: 'pointer', textAlign: 'left', '&:hover': { color: 'primary.main', textDecoration: 'underline' } }}>
-                {shownText(shownEntry(person), s)}
-              </Box>
-              {person.id === me && <Chip size="small" label={s('people.you')} sx={{ ml: 1, height: 18, fontSize: 10 }} />}
-            </td>
-            <td>{s(KIND_LABEL[person.kind])}</td>
-            <td>{stateText(person, s)}</td>
-            {roles && (
-              <td data-testid="people-roles">
-                <Box sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><RolesLine roles={roles.get(person.id) ?? []} s={s} /></Box>
-              </td>
-            )}
-            <td>{person.email ?? (withheld?.(person.id) ? s('people.emailWithheld') : '')}</td>
-          </Box>
-        ))}
-      </tbody>
-    </Box>
-  )
-}
-
-function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd, onImport, onFindMe, onClose, s }: {
-  chrome: WindowChrome; show: Show; onShow: (show: Show) => void; query: string; onQuery: (query: string) => void
-  counts: string; readOnly: boolean; onAdd: () => void; onImport: () => void
-  /** *Find me* (ADR-0036 §11): absent while nobody is said to be you. */
-  onFindMe: (() => void) | undefined
-  onClose: () => void; s: Translate
-}) {
-  const bar = barChromeFor(chrome)
-  return (
-    <Box data-testid="people-topbar" sx={{
-      display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`,
-      WebkitAppRegion: bar.draggable ? 'drag' : undefined, '& button, & a, & input, & [role="combobox"]': { WebkitAppRegion: 'no-drag' },
-      minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-    }}>
-      <Tooltip title={s('common.close')}>
-        <IconButton size="small" aria-label={s('common.close')} onClick={onClose}>
-          <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-        </IconButton>
-      </Tooltip>
-      <Typography component="h1" variant="body2" sx={{ fontWeight: 600 }}>{s('people.title')}</Typography>
-      <Chip size="small" variant="outlined" label={s('people.badge')} sx={{ height: 20, fontSize: 11 }} />
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }} data-testid="people-counts">{counts}</Typography>
-      <Box sx={{ flex: 1 }} />
-      <TextField size="small" select value={show} onChange={(event) => onShow(event.target.value as Show)}
-        slotProps={{ select: { inputProps: { 'aria-label': s('people.show') } } }} sx={{ minWidth: 120 }}>
-        {SHOWS.map((one) => <MenuItem key={one} value={one}>{s(SHOW_LABEL[one])}</MenuItem>)}
-      </TextField>
-      <TextField size="small" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={s('people.search')}
-        slotProps={{ htmlInput: { 'aria-label': s('people.search'), autoComplete: 'off', 'data-testid': 'people-search' } }} sx={{ width: 200 }} />
-      {onFindMe && <Button size="small" variant="outlined" onClick={onFindMe} data-testid="people-find-me">{s('people.findMe')}</Button>}
-      {!readOnly && (
-        <>
-          <Button size="small" onClick={onImport} data-testid="people-import" data-guide="people.importCsv">{s('people.importCsv')}</Button>
-          <Button size="small" variant="contained" onClick={onAdd} data-testid="people-add" data-guide="people.add">{s('people.add')}</Button>
-        </>
-      )}
-      <PageClose onClose={onClose} />
-    </Box>
-  )
-}
-
-/**
- * *Find me* (ADR-0036 §11): the whole list, so your row is in it, chosen,
- * brought on screen and ringed. Absent while nobody is said to be you.
- */
-function useFindMe(me: PersonId | undefined, pick: (id: PersonId) => void, showAll: () => void) {
-  const located = useLocatedIn(pick, 'data-person-id')
-  const findMe = me === undefined ? undefined : () => { showAll(); located.locate(me) }
-  return { ref: located.ref, ring: located.ring, findMe }
+/** The address of this page where the host has one to give: a browser's, not an installed app's. */
+function hasAddress(): boolean {
+  return /^https?:/.test(window.location.href)
 }
 
 export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
-  const [show, setShow] = useState<Show>('all')
-  const [asideWidth, setAsideWidth] = useSeamWidth('people.aside', 400)
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<PersonId | undefined>(select)
-  const [adding, setAdding] = useState(false)
+  const dayWords = useDayWords()
+  const [tabAsked, setTab] = usePlaceTab('people')
+  const [record, choose] = usePlaceRecord('people', select)
+  const go = usePlaceGo()
+  const [view, setView] = useState<ListView>(FRESH_VIEW)
+  const [adding, setAdding] = useState<{ name?: string } | undefined>(undefined)
   const [importing, setImporting] = useState(false)
-  const [asking, setAsking] = useState<Asking | undefined>(undefined)
+  const [correcting, setCorrecting] = useState<Person | undefined>(undefined)
+  const [holding, setHolding] = useState<Person | undefined>(undefined)
+  const [question, setQuestion] = useState<Question | undefined>(undefined)
+  const [about, setAbout] = useState(false)
   const saying = useSaying(s)
-  useEffect(() => { if (select !== undefined) { setSelected(select); setAdding(false) } }, [select])
-  // Each opening of the page is a fresh look: the possible duplicates are folded again, whatever was open before.
-  const [openings, setOpenings] = useState(0)
-  useEffect(() => { if (open) setOpenings((was) => was + 1) }, [open])
+  const page = useRef<HTMLDivElement>(null)
+
+  // Asked for once, as it is asked: `choose` is new whenever the record moves, and must not bring somebody back who was let go of.
+  const chooseNow = useRef(choose)
+  chooseNow.current = choose
+  useEffect(() => { if (select !== undefined) chooseNow.current(select) }, [select])
+  // The page closed lets go of the person, so opening it again is the list and not whoever was last up.
+  const wasOpen = useRef(open)
+  useEffect(() => {
+    if (wasOpen.current && !open) chooseNow.current(undefined)
+    wasOpen.current = open
+  }, [open])
 
   const people = useMemo(() => register.people ?? [], [register.people])
   const entries = useMemo(() => entriesOf(people), [people])
-  // What each holds on the page's day, read once for the rows and the search: the same read the person's *Holds today* is.
   const day = look?.day ?? register.today
   const { assignmentsOf } = register
-  const roles = useMemo(
-    () => (assignmentsOf ? new Map(entries.map((person) => [person.id, rolesOn(assignmentsOf(person.id), day)])) : undefined),
-    [assignmentsOf, entries, day],
-  )
-  // By what each reads as, so a forgotten entry sorts by its pseudonym and never by a name it no longer has.
-  const shown = useMemo(
-    () => entries.filter((person) => (show === 'all' || person.state === show)
-      && (!query.trim() || matchesQuery(query, [
-        shownText(shownEntry(person), s), person.email, ...(roles?.get(person.id) ?? []).flatMap((one) => [one.role, one.unit]),
-      ])))
-      .map((person) => ({ person, text: shownText(shownEntry(person), s) }))
-      .sort((one, other) => one.text.localeCompare(other.text))
-      .map(({ person }) => person),
-    [entries, show, query, roles, s],
-  )
+  const rows = useMemo<readonly Row[]>(() => entries
+    .map((person) => ({ person, text: shownText(shownEntry(person), s), roles: assignmentsOf ? rolesOn(assignmentsOf(person.id), day) : [] }))
+    .sort((one, other) => one.text.localeCompare(other.text)), [entries, assignmentsOf, day, s])
+  const roles = useMemo(() => (assignmentsOf ? new Map(rows.map((row) => [row.person.id, row.roles])) : undefined), [assignmentsOf, rows])
+  const how = useMemo<ListHow<Row>>(() => ({
+    // What can be seen can be found: by name, address, role and unit, and by the words a row says about somebody.
+    words: ({ person, text, roles: held }) => [
+      text, person.email ?? '', ...held.flatMap((one) => [one.role, one.unit]), held.length === 0 && assignmentsOf ? s('people.rolesNone') : '',
+      person.kind === 'external' ? s('people.kindExternal') : '', person.state === 'active' ? '' : s(SHOW_LABEL[person.state]),
+    ],
+    filterBy: { state: ({ person }) => person.state, kind: ({ person }) => person.kind, holds: ({ roles: held }) => (held.length === 0 ? 'nothing' : 'some') },
+    sortBy: {
+      name: ({ text }) => text, roles: ({ roles: held }) => held[0]?.role ?? null, kind: ({ person }) => s(KIND_LABEL[person.kind]),
+      state: ({ person }) => person.state, email: ({ person }) => person.email ?? null,
+    },
+  }), [assignmentsOf, s])
+  const shown = useMemo(() => listed(rows, view, how).flatMap((group) => group.rows), [rows, view, how])
+  const ids = useMemo(() => shown.map((row) => row.person.id), [shown])
+  const countOf = (state: PersonState) => entries.filter((one) => one.state === state).length
   const pairs = useMemo(() => duplicatePairs(people, register.distinct), [people, register.distinct])
+  const { offered, answered } = reviewable(pairs, register)
+  const reviewing = offered.length + answered.length > 0
+  const tab = tabAsked === 'review' && !reviewing ? 'people' : tabAsked
   const me = meIn(register.me, registerOf(people))?.id
-  const person = selected === undefined ? undefined : entries.find((one) => one.id === selected)
-  const counts = s('people.counts', {
-    active: entries.filter((one) => one.state === 'active').length,
-    left: entries.filter((one) => one.state === 'left').length,
-    forgotten: entries.filter((one) => one.state === 'forgotten').length,
-  })
-  const pick = (id: PersonId) => { setSelected(id); setAdding(false) }
-  // Somebody active into an entry that has left: still here or left, chosen to start with by their roles.
-  const askMerge = (from: Person, into: Person, choose = false) => {
-    const leftOn = into.leftOn
-    const leaving = mergeAsks(from, into) && leftOn !== undefined
-      ? { answer: mergeLeavingFirst(register.assignmentsOf?.(from.id) ?? [], leftOn), leftOn }
-      : undefined
-    setAsking({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}), ...(choose ? { choose: true as const } : {}) })
+  const person = record === undefined ? undefined : resolvePerson(record, registerOf(people))
+  const readRegister = register.people !== undefined
+
+  // An address that names nobody the register holds, or one who is gone since: said, and the list is what is left.
+  useEffect(() => {
+    if (open && readRegister && record !== undefined && !person) {
+      choose(undefined)
+      void saying.run(Promise.resolve({ refused: 'people.unknown' as const }), () => '')
+    }
+  }, [open, readRegister, record, person, choose, saying])
+
+  // Ready to type on arrival, and on /: a directory is mostly looked things up in.
+  useEffect(() => {
+    if (open && readRegister && record === undefined) page.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus({ preventScroll: true })
+    // Once for each opening: never again under somebody who has moved on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, readRegister])
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
+      const field = page.current?.querySelector<HTMLInputElement>('input[type="search"]')
+      if (field) { event.preventDefault(); field.focus() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const pick = useCallback((id: PersonId) => { if (tabAsked !== 'people') setTab('people'); choose(id) }, [tabAsked, setTab, choose])
+  const findMe = me === undefined ? undefined : () => { setView(FRESH_VIEW); pick(me) }
+  const setMe = (id: string | undefined) => {
+    void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))
   }
-  // The other of the pair kept instead: asked again from the start, as if it had been chosen first.
-  const swapKept = () => { if (asking?.kind === 'merge') askMerge(asking.into, asking.from, true) }
-  const located = useFindMe(me, pick, () => { setShow('all'); setQuery('') })
+  const mayAdd = mayDo(register, 'add')
+  const typed = view.find.trim()
+  const canCorrect = person !== undefined && person.state !== 'forgotten' && mayDo(register, 'change', person.id)
+  const columnsOn = view.columns ?? (assignmentsOf ? ['roles'] : [])
+  const columnChoices = [
+    ...(assignmentsOf ? [{ id: 'roles', label: day === register.today ? s('people.colRoles') : s('people.colRolesOn', { day: dayWords(day) }) }] : []),
+    { id: 'kind', label: s('people.colKind') }, { id: 'state', label: s('people.colState') }, { id: 'email', label: s('people.colEmail') },
+  ]
+  const stateWord = (one: Person) => (one.state === 'left' ? s('people.stateLeft', { day: dayWords(one.leftOn) })
+    : one.state === 'forgotten' ? s('people.stateForgotten', { day: dayWords(one.forgottenOn) }) : s('people.stateActive'))
 
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={s('people.title')}>
-      <TopBar chrome={windowChrome} show={show} onShow={setShow} query={query} onQuery={setQuery} counts={counts} readOnly={!mayDo(register, 'add')}
-        onAdd={() => setAdding(true)} onImport={() => setImporting(true)} onFindMe={located.findMe} onClose={onClose} s={s} />
-      <Box ref={located.ref} sx={{ flex: 1, minHeight: 0, display: 'flex', ...located.ring }}>
-        <Box component="main" sx={{ flex: '1 1 auto', minWidth: 0, px: 3, py: 2, overflowY: 'auto' }}>
-          <About readOnly={register.readOnly} s={s} />
-          <Duplicates key={openings} pairs={pairs} register={register} saying={saying} roles={roles} onMerge={(keep, drop) => askMerge(drop, keep, true)} s={s} />
-          {entries.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.empty')}</Typography>}
-          {entries.length > 0 && shown.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.searchEmpty', { query: query.trim() })}</Typography>}
-          {shown.length > 0 && (
-            <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} roles={roles} day={day} today={register.today} onSelect={pick} s={s} />
+      <div className="people-page" ref={page}>
+        <div className="people-head" data-testid="people-topbar">
+          <Tabs
+            label={s('people.title')} value={tab} onChange={setTab} data-guide="people.tabs"
+            items={[
+              { value: 'people', label: s('people.title'), count: entries.length },
+              { value: 'review', label: s('people.tabReview'), count: offered.length, hidden: !reviewing },
+              { value: 'privacy', label: s('people.tabPrivacy') },
+            ]}
+          />
+          <div className="people-head__end">
+            {look && tab === 'people' && <DayControl day={look.day} onChange={look.onDay} data-guide="people.day" />}
+            {mayAdd && (
+              <>
+                <Button onClick={() => setImporting(true)} data-testid="people-import" data-guide="people.importCsv">{s('people.importCsv')}</Button>
+                <Button variant="primary" onClick={() => setAdding({})} data-testid="people-add" data-guide="people.add">{s('people.add')}</Button>
+              </>
+            )}
+            <PageClose onClose={onClose} />
+          </div>
+        </div>
+        {look?.day !== undefined && tab === 'people' && (
+          <Band
+            tone="looking" title={s('people.lookingAt', { day: dayWords(look.day) })} detail={s('people.lookingNote')}
+            action={<Button size="small" onClick={() => look.onDay(undefined)} data-testid="people-look-today">{s('people.lookToday')}</Button>}
+          />
+        )}
+        <div className="people-main" role="tabpanel" aria-label={tab === 'people' ? s('people.title') : tab === 'review' ? s('people.tabReview') : s('people.tabPrivacy')} onKeyDown={intoList}>
+          {tab === 'people' && !readRegister && <PageState state="loading" />}
+          {tab === 'people' && readRegister && entries.length === 0 && (
+            <PageState
+              state="empty" title={s('people.emptyTitle')} body={s(mayAdd ? 'people.emptyBody' : 'people.emptyReader')}
+              {...(mayAdd ? { action: { label: s('people.add'), onPress: () => setAdding({}) } } : {})}
+            />
           )}
-        </Box>
-        <SeamResizer orientation="vertical" region="after" value={asideWidth} min={280} max={800} defaultValue={400} onChange={setAsideWidth} label={s('common.resizeColumn')} />
-        <Box component="aside" aria-label={s('people.title')} sx={{ flex: `0 0 ${asideWidth}px`, minWidth: 0, px: 2, py: 2, overflowY: 'auto', bgcolor: 'background.paper' }}>
-          {saying.said && (
-            <Alert severity={saying.said.tone} role="status" sx={{ mb: 1.5, fontSize: 12 }} data-testid="people-said">{saying.said.text}</Alert>
+          {tab === 'people' && entries.length > 0 && (
+            <>
+              <FilterWords
+                find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={s('people.search')} dataGuide="people.find"
+                fields={[
+                  { id: 'state', label: s('people.show'), options: STATES.map((one) => ({ value: one, label: s(SHOW_LABEL[one]), count: countOf(one) })) },
+                  { id: 'kind', label: s('people.kind'), options: [{ value: 'internal', label: s('people.kindInternal') }, { value: 'external', label: s('people.kindExternal') }] },
+                  ...(assignmentsOf ? [{ id: 'holds', label: s('people.colRoles'), options: [{ value: 'nothing', label: s('people.rolesNone') }] }] : []),
+                ]}
+                filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
+                columns={columnChoices} shownColumns={columnsOn} onColumns={(columns) => setView((was) => ({ ...was, columns }))}
+                shown={{ count: shown.length, total: entries.length }}
+                actions={(
+                  <span className="people-actions">
+                    <span className="people-counts" data-testid="people-counts">{s('people.counts', { active: countOf('active'), left: countOf('left'), forgotten: countOf('forgotten') })}</span>
+                    {findMe && <Button variant="quiet" onClick={findMe} data-testid="people-find-me">{s('people.findMe')}</Button>}
+                  </span>
+                )}
+              />
+              <div className="people-list" data-testid="people-table">
+                <List
+                  label={s('people.title')} itemLabel={s('people.colName')} itemSortable rowGuide="people.row"
+                  sort={view.sort} onSort={(sort) => setView((was) => ({ ...was, sort }))}
+                  columns={columnChoices.filter((one) => columnsOn.includes(one.id)).map((one) => ({ ...one, sortable: true }))}
+                  selectedId={person?.id ?? null} onOpen={pick}
+                  groups={shown.length === 0 ? [] : [{
+                    id: '', label: '',
+                    rows: shown.map((row) => {
+                      const note = noteOf(row.person, me, dayWords, s)
+                      return {
+                        id: row.person.id, text: row.text, ...(note ? { note } : {}),
+                        cells: {
+                          roles: <span data-testid="people-roles" className={row.roles.length ? undefined : 'people-quiet'} title={row.roles.map((one) => s('people.roleIn', one)).join(', ')}>{rolesText(row.roles, s)}</span>,
+                          kind: s(KIND_LABEL[row.person.kind]),
+                          state: stateWord(row.person),
+                          email: row.person.email ?? (register.withheld?.(row.person.id) ? s('people.emailWithheld') : ''),
+                        },
+                      }
+                    }),
+                  }]}
+                  empty={(
+                    <NoMatch
+                      typed={typed} people={people} register={register} onPick={pick} s={s}
+                      onAdd={mayAdd && typed ? () => setAdding({ name: typed }) : undefined}
+                    />
+                  )}
+                />
+              </div>
+            </>
           )}
-          {adding && mayDo(register, 'add') && (
-            <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} s={s} />
+          {tab === 'review' && (
+            <Duplicates
+              pairs={pairs} register={register} saying={saying} roles={roles} s={s}
+              onMerge={(keep, drop) => setQuestion({ kind: 'merge', one: keep, other: drop })}
+            />
           )}
-          {!adding && person && (
-            <PersonPanel person={person} register={register} saying={saying} copyText={copyText} s={s} look={look}
-              onForget={(one) => setAsking({ kind: 'forget', person: one })}
-              onRemove={(one) => setAsking({ kind: 'remove', person: one })}
-              onMerge={askMerge} />
-          )}
-          {!adding && !person && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('people.noneSelected')}</Typography>}
-          <PolicyPanel register={register} saying={saying} s={s} />
-        </Box>
-      </Box>
-      <Asked asking={asking} onAsking={setAsking} onSwap={swapKept} register={register} saying={saying} s={s} />
-      <CsvImport open={importing} register={register} saying={saying} readText={readText} onClose={() => setImporting(false)} s={s} />
+          {tab === 'privacy' && <PolicyPanel register={register} saying={saying} s={s} />}
+        </div>
+        <div className="people-foot" data-testid="people-foot">
+          <span data-testid="people-not-a-step">{s(register.readOnly ? 'people.readOnly' : 'people.notAStepShort')}</span>{' '}
+          <button type="button" className="people-link" aria-expanded={about} aria-controls="people-about" onClick={() => setAbout((was) => !was)} data-testid="people-about">{s('people.about')}</button>
+          {about && <p id="people-about" className="people-foot__more">{s('people.what')}</p>}
+        </div>
+      </div>
+      <Preview
+        ids={ids} currentId={person?.id ?? null} onSelect={(id) => choose(id ?? undefined)} dataGuide="people.person"
+        title={<span data-testid="people-person-name">{person ? shownText(shownEntry(person), s) : ''}</span>}
+        listWord={s('people.title').toLowerCase()}
+        {...(person ? { facts: <PersonFacts person={person} register={register} s={s} /> } : {})}
+        foot={person && (
+          <div className="people-actions">
+            {canCorrect && <Button onClick={() => setCorrecting(person)} data-testid="people-correct" data-guide="people.correct">{s('people.correct')}</Button>}
+            <MoreMenu
+              data-guide="people.more"
+              items={personMenu(person, register, {
+                ask: setQuestion, setMe, hold: () => setHolding(person),
+                copyAddress: copyText && go && hasAddress() ? () => { copyText(window.location.href); void saying.run(Promise.resolve({}), () => s('people.addressCopied')) } : undefined,
+              }, s)}
+            />
+          </div>
+        )}
+      >
+        {person && (
+          <PersonReader
+            person={person} register={register} day={day} go={go} onPerson={pick} s={s}
+            {...(mayDo(register, 'forget', person.id) && person.state === 'left' ? { onForget: () => setQuestion({ kind: 'forget', person }) } : {})}
+          />
+        )}
+      </Preview>
+      <Dialog
+        open={adding !== undefined} size="m" title={s('people.addTitle')} onClose={() => setAdding(undefined)}
+        actions={null}
+      >
+        {adding && mayAdd && (
+          <AddPerson
+            register={register} saying={saying} {...(adding.name ? { initialName: adding.name } : {})} s={s}
+            onAdded={(id) => { setAdding(undefined); pick(id) }} onUse={(id) => { setAdding(undefined); pick(id) }} onCancel={() => setAdding(undefined)}
+          />
+        )}
+      </Dialog>
+      {correcting && <CorrectPerson person={correcting} register={register} saying={saying} onClose={() => setCorrecting(undefined)} s={s} />}
+      {holding && <WhatWeHold person={holding} register={register} copyText={copyText} onClose={() => setHolding(undefined)} s={s} />}
+      <PersonQuestion question={question} day={day} register={register} saying={saying} onAsk={setQuestion} onClose={() => setQuestion(undefined)} s={s} />
+      <CsvImport open={importing} register={register} saying={saying} {...(readText ? { readText } : {})} onClose={() => setImporting(false)} s={s} />
+      <Toast toast={saying.said ? { key: saying.said.key, message: saying.said.text } : null} onClose={saying.clear} />
     </PageDialog>
   )
 }
+

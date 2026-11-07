@@ -32,6 +32,7 @@ import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceTabContext } from '../../widgets/placeTab'
+import type { PlaceTo } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
@@ -74,7 +75,11 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const tabs = useMemo(() => ({
     tab: state.tabOf === page ? state.tab : undefined,
     choose: (tab: string) => { frame.set({ tab, tabOf: page }); lookAgain() },
-  }), [state.tab, state.tabOf, page, frame, lookAgain])
+    record: state.record,
+    recordOf: state.recordOf,
+    chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
+    go: (to: PlaceTo) => go(to as Destination),
+  }), [state.tab, state.tabOf, state.record, state.recordOf, page, frame, lookAgain, go])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return

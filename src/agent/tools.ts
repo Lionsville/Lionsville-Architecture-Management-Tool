@@ -3491,7 +3491,7 @@ const SPECS = [
       + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
       + 'platform or service (a report, by id), register, technologyRegister or people (the organisation-wide '
-      + 'lists and the people register, on the home), operating (the operating model: unit types, roles, '
+      + 'lists and the people register, on the home; people optionally on one person, their register id as id), operating (the operating model: unit types, roles, '
       + 'responsibilities and the libraries — kept at the organisation, so its scope is "" and may be left out; '
       + 'optionally on one unit type, role or responsibility), checks (every check by category over the scope\'s home — '
       + 'what it finds there, why each matters and how to fix it, and what was marked as intended — optionally on one '

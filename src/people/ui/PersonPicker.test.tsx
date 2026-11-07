@@ -92,7 +92,7 @@ describe('the person picker', () => {
   it('searches by name and says when nobody matches', () => {
     renderShell(<Harness onPicked={() => {}} />)
     fireEvent.change(screen.getByTestId('person-picker-search'), { target: { value: 'nobody here' } })
-    expect(screen.getByText('Nobody matches “nobody here”.')).toBeTruthy()
+    expect(screen.getByText('Nobody is called “nobody here”.')).toBeTruthy()
   })
 
   it('lets a pick go again', () => {

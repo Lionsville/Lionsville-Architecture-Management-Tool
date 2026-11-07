@@ -61,8 +61,8 @@ import type { SearchableModel } from '../../model/searchable'
 import { leaveConsequences, returnConsequences } from './leaving'
 import type { OpenScope } from './leaving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
-import { heldAssignments, idsOfPerson, ownedByRule } from '../units/held'
-import type { HeldAssignment, PointsAt } from '../../people/hold'
+import { heldAssignments, idsOfPerson, ownedByRule, reportingOf } from '../units/held'
+import type { HeldAssignment, PointsAt, Reporting } from '../../people/hold'
 import { pointersIn } from '../../model/pointers'
 import type { PointedModel } from '../../model/pointers'
 
@@ -121,6 +121,8 @@ export type PeopleAccess = {
   agent: PeopleView
   /** What each person holds across the tree, where the shell has a tree. */
   assignmentsOf?: (id: PersonId) => readonly HeldAssignment[]
+  /** Who a person reports to and who reports to them on a day; absent where the shell has no tree to read. */
+  reportingOf?: (id: PersonId, day: string) => Reporting
   /** What points at a person across the tree: records by id, signatures, what the rules work out. */
   pointsAt?: (id: PersonId) => Promise<PointsAt>
   /** A chosen file's text, for a list to import; where the host can read one. */
@@ -340,7 +342,10 @@ export function usePeopleRegister(deps: {
     mentionsOf: async (name) => searchAll({ sources: await everyModel(repositories.scopes), query: name, limitPerKind: 1000 })
       .map((hit) => ({ scope: hit.scope ?? '', kind: hit.kind, id: hit.id, title: hit.title })),
     agent,
-    ...(index ? { assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? []), today) } : {}),
+    ...(index ? {
+      assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? []), today),
+      reportingOf: (id: PersonId, day: string) => reportingOf(index, idsOfPerson(id, held.people ?? []), day),
+    } : {}),
     pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),

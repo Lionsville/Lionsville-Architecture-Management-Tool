@@ -5,30 +5,28 @@
  * A list of people brought into the register (ADR-0036 §9): pasted, or read
  * from a file, and every row checked against the register before anyone is
  * added. A row that is plainly somebody already there adds nobody; a row
- * that only may be is flagged, and added only where the person ticks *Add
- * anyway*; a row nobody resembles is added.
+ * that only may be is flagged, with what tells them apart, and added only where
+ * the person ticks *Add anyway*; a row nobody resembles is added. The tally says
+ * what the button will do before it is pressed.
  */
 import { useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { plural } from '../../i18n/strings'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField } from '../../widgets/kit/Field'
 import { matchRows, newPersonOf, readCsv } from '../csv'
 import type { RowMatch } from '../csv'
 import { shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
 import type { PeopleRegisterAccess, Saying } from './access'
+import { SIGN_LABEL, tellsApart } from './AddPerson'
 
-function result(match: RowMatch, s: Translate): string {
+function result(match: RowMatch, register: PeopleRegisterAccess, s: Translate): string {
   switch (match.as) {
     case 'matched': return s('people.csvMatched', { name: shownText(shownEntry(match.person), s) })
-    case 'flagged': return s('people.csvFlagged', { names: match.candidates.map((one) => shownText(shownEntry(one.person), s)).join(', ') })
+    case 'flagged': return s('people.csvFlagged', {
+      names: match.candidates.map((one) => `${shownText(shownEntry(one.person), s)} (${tellsApart(one.person, register, s)}), ${s(SIGN_LABEL[one.sign])}`).join('; '),
+    })
     case 'new': return s('people.csvNew')
     default: return s(match.why === 'noName' ? 'people.csvNoName' : 'people.csvBadEmail')
   }
@@ -48,6 +46,7 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
   const [busy, setBusy] = useState(false)
   const matches = useMemo(() => matchRows(readCsv(text), register.people ?? []), [text, register.people])
   const adding = matches.filter((one) => one.as === 'new' || (one.as === 'flagged' && anyway.has(one.row.line)))
+  const tally = (as: RowMatch['as']) => matches.filter((one) => one.as === as).length
   const tick = (line: number, on: boolean) => setAnyway((was) => {
     const next = new Set(was)
     if (on) next.add(line)
@@ -67,24 +66,36 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
     onClose()
   }
   return (
-    <FieldsDialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle sx={{ fontSize: 16 }}>{s('people.csvTitle')}</DialogTitle>
-      <DialogContent>
-        <Typography sx={{ fontSize: 13, mb: 1.5 }}>{s('people.csvLead')}</Typography>
-        <TextField fullWidth multiline minRows={4} maxRows={10} label={s('people.csvRows')} value={text}
-          onChange={(event) => setText(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'people-csv-text' } }} />
-        {readText && (
-          <Button component="label" size="small" sx={{ mt: 1 }}>
-            {s('people.csvChoose')}
-            <input hidden type="file" accept=".csv,text/csv,text/plain"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void readText(file).then(setText, () => setText(''))
-              }} />
+    <Dialog
+      open={open} size="l" title={s('people.csvTitle')} onClose={onClose} working={busy}
+      actions={(
+        <>
+          <Button onClick={onClose}>{s('people.cancel')}</Button>
+          <Button variant="primary" disabled={adding.length === 0} working={busy} onClick={() => { void add() }} data-testid="people-csv-add">
+            {plural(s, { one: 'people.csvImportOne', other: 'people.csvImportOther' }, adding.length)}
           </Button>
+        </>
+      )}
+    >
+      <div className="people-stack">
+        <p className="people-note">{s('people.csvLead')}</p>
+        <TextField label={s('people.csvRows')} rows={5} value={text} onChange={setText} data-testid="people-csv-text" />
+        {readText && (
+          <div>
+            <label className="people-link">
+              {s('people.csvChoose')}
+              <input
+                hidden type="file" accept=".csv,text/csv,text/plain"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void readText(file).then(setText, () => setText(''))
+                }}
+              />
+            </label>
+          </div>
         )}
         {matches.length > 0 && (
-          <Box component="table" data-testid="people-csv-rows" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, mt: 2, '& th, & td': { textAlign: 'left', py: 0.5, pr: 1, borderBottom: 1, borderColor: 'divider' } }}>
+          <table className="people-csv" data-testid="people-csv-rows">
             <thead>
               <tr>
                 <th>{s('people.csvColLine')}</th>
@@ -98,26 +109,27 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
                 <tr key={one.row.line}>
                   <td>{one.row.line}</td>
                   <td>{[one.row.name, one.row.email].filter(Boolean).join(' · ')}</td>
-                  <td>{result(one, s)}</td>
+                  <td>{result(one, register, s)}</td>
                   <td>
                     {one.as === 'flagged' && (
-                      <Checkbox checked={anyway.has(one.row.line)} onChange={(event) => tick(one.row.line, event.target.checked)}
-                        slotProps={{ input: { 'aria-label': `${s('people.csvAddAnyway')}: ${one.row.name}` } }} />
+                      <input
+                        type="checkbox" checked={anyway.has(one.row.line)} onChange={(event) => tick(one.row.line, event.target.checked)}
+                        aria-label={`${s('people.csvAddAnyway')}: ${one.row.name}`}
+                      />
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
-          </Box>
+          </table>
         )}
-        {matches.length > 0 && adding.length === 0 && <Typography sx={{ fontSize: 12, mt: 1 }}>{s('people.csvNothing')}</Typography>}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{s('people.cancel')}</Button>
-        <Button variant="contained" disabled={adding.length === 0 || busy} onClick={() => { void add() }} data-testid="people-csv-add">
-          {plural(s, { one: 'people.csvImportOne', other: 'people.csvImportOther' }, adding.length)}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+        {matches.length > 0 && (
+          <p className="people-note" role="status" data-testid="people-csv-tally">
+            {s('people.csvTally', { fresh: tally('new'), decide: tally('flagged'), there: tally('matched') })}
+          </p>
+        )}
+        {matches.length > 0 && adding.length === 0 && <p className="people-note">{s('people.csvNothing')}</p>}
+      </div>
+    </Dialog>
   )
 }

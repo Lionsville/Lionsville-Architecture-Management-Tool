@@ -155,7 +155,7 @@ export type ScreenPage =
   | { readonly page: 'register'; readonly tab?: string }
   | { readonly page: 'technologyRegister'; readonly tab?: string }
   /** The people register (ADR-0036), on the organisation's home. */
-  | { readonly page: 'people'; readonly tab?: string }
+  | { readonly page: 'people'; readonly id?: string; readonly tab?: string }
   /** Every check, by category, over a home (ADR-0036, amended 11 October 2026). */
   | { readonly page: 'checks'; readonly tab?: string }
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
@@ -228,6 +228,11 @@ function onTab(screen: Screen, tab: string | undefined): boolean {
   return tab === undefined || (screen.page !== undefined && 'tab' in screen.page && screen.page.tab === tab)
 }
 
+/** On the person asked for, where the People page was asked for one. */
+function onPerson(screen: Screen, to: Destination): boolean {
+  return to.page !== 'people' || to.id === undefined || (screen.page?.page === 'people' && screen.page.id === to.id)
+}
+
 /** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
 function onHome(screen: Screen, page: Page, scope: string): boolean {
   if (!screen.home || screen.home.path !== scope || screen.open) return false
@@ -253,7 +258,7 @@ export function arrived(screen: Screen, to: Destination, scope: string): boolean
   if (page !== undefined && FRAME_PAGES.includes(page)) return arrivedInFrame(screen, page, scope)
   // No page: the scope open on whatever its tab shows, with nothing over it.
   if (page === undefined) return screen.open?.path === scope && screen.page === undefined
-  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope) && onTab(screen, to.tab)
+  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope) && onTab(screen, to.tab) && onPerson(screen, to)
   if (!screen.open || screen.open.path !== scope) return false
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {

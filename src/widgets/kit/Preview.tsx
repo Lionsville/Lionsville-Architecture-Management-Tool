@@ -60,6 +60,8 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
   useEffect(() => { body.current?.scrollTo?.({ top: 0 }) }, [currentId])
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // A menu opened from the foot is a portal: its arrows bubble here through React and walk its own items.
+    if (!event.currentTarget.contains(event.target as Node)) return
     if ((event.target as HTMLElement).closest(WRITES)) return
     const to = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? previous
       : event.key === 'ArrowRight' || event.key === 'ArrowDown' ? next : undefined

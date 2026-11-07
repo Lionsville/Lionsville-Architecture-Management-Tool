@@ -12,13 +12,13 @@
  * sentence the page words — said in the page's status line, because the
  * register keeps no Activity line to say it in.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ManagesPeople } from '../../model/managing'
 import type { RecorderSource } from '../../model/observation'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
 import type { DistinctPair } from '../distinct'
-import type { HeldAssignment, Mention, PointsAt } from '../hold'
+import type { HeldAssignment, Mention, PointsAt, Reporting } from '../hold'
 import type { MergeLeaving, NewPerson, PeopleAction, PeopleRefusal, Person, PersonPatch, PolicyHold } from '../person'
 import type { PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
@@ -82,6 +82,8 @@ export type PeopleRegisterAccess = {
   change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>
   leave(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
   forget(id: PersonId, on: string): Promise<{ person: Person; ended: number } | Refused>
+  /** A leaving taken back, until the name is forgotten: the entry active again, and what leaving ended restored by steps. */
+  takeBackLeaving?(id: PersonId): Promise<{ person: Person; restored: number } | Refused>
   remove(id: PersonId): Promise<{ removed: readonly PersonId[] } | Refused>
   /** Where an active entry goes into one that has left, `leaving` says which is true (`MergeLeaving`). */
   merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<{ person: Person; ended: number } | Refused>
@@ -98,6 +100,8 @@ export type PeopleRegisterAccess = {
    * the shell has no tree to read.
    */
   assignmentsOf?(id: PersonId): readonly HeldAssignment[]
+  /** Who a person reports to and who reports to them on a day (ADR-0039). Absent where the shell has no tree to read. */
+  reportingOf?(id: PersonId, day: string): Reporting
   /**
    * Everything across the tree that points at a person — under their id and
    * every id merged into it — by its fields: the records that name them, the
@@ -131,10 +135,11 @@ export function mayMerge(register: Pick<PeopleRegisterAccess, 'readOnly' | 'may'
 }
 
 /** What the status line says, and how loudly. */
-export type Said = { text: string; tone: 'success' | 'error' }
+export type Said = { text: string; tone: 'success' | 'error'; key: number }
 
 export type Saying = {
   said: Said | undefined
+  clear: () => void
   /**
    * Run a change, and say how it went: `done` words a change made; a refusal
    * and a failure are said in the register's words. Answers the change, or
@@ -145,22 +150,30 @@ export type Saying = {
 
 export function useSaying(s: Translate): Saying {
   const [said, setSaid] = useState<Said | undefined>(undefined)
+  const count = useRef(0)
+  // A turn later: what a change opens, a person's page say, is up by then, and a toast goes when a dialog opens.
+  const say = useCallback((text: string, tone: Said['tone']) => {
+    count.current += 1
+    const key = count.current
+    window.setTimeout(() => setSaid({ text, tone, key }), 0)
+  }, [])
+  const clear = useCallback(() => setSaid(undefined), [])
   const run = useCallback(async <T extends object>(work: Promise<T | Refused>, done: (answer: T) => string) => {
     try {
       const answer = await work
       if ('refused' in answer) {
-        setSaid({ text: s(answer.refused), tone: 'error' })
+        say(s(answer.refused), 'error')
         return undefined
       }
-      setSaid({ text: done(answer as T), tone: 'success' })
+      say(done(answer as T), 'success')
       return answer as T
     } catch (cause) {
       const text = cause instanceof ShellError
         ? s(cause.key, cause.params)
         : s('people.failed', { message: cause instanceof Error ? cause.message : String(cause) })
-      setSaid({ text, tone: 'error' })
+      say(text, 'error')
       return undefined
     }
-  }, [s])
-  return { said, run }
+  }, [s, say])
+  return useMemo(() => ({ said, clear, run }), [said, clear, run])
 }

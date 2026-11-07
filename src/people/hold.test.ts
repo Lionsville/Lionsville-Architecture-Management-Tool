@@ -6,6 +6,7 @@
  * Acme Logistics: a role held now, one held before, one still to come, and
  * the same role held twice in one unit.
  */
+import { vacancyOf } from './hold'
 import { describe, expect, it } from 'vitest'
 import { heldOn, rolesOn } from './hold'
 import type { HeldAssignment } from './hold'
@@ -36,5 +37,15 @@ describe('what a person holds on a day', () => {
     ])
     expect(rolesOn(held, '2020-01-01')).toEqual([{ role: 'Product owner', unit: 'Parcel' }, { role: 'Release manager', unit: 'Parcel' }])
     expect(rolesOn([], DAY)).toEqual([])
+  })
+})
+
+describe('a vacancy', () => {
+  const one = { id: 'a', scope: '', unit: 'Dock crew', role: 'Lead' }
+  it('opens where nobody else holds the role there on the day', () => {
+    expect(vacancyOf(one, [], '2026-11-07')).toBe(true)
+    expect(vacancyOf(one, [{ ...one, id: 'b', unit: 'Yard crew' }], '2026-11-07')).toBe(true)
+    expect(vacancyOf(one, [{ ...one, id: 'b', until: '2026-01-01' }], '2026-11-07')).toBe(true)
+    expect(vacancyOf(one, [{ ...one, id: 'b' }], '2026-11-07')).toBe(false)
   })
 })

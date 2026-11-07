@@ -25,6 +25,8 @@ export type HeldAssignment = {
   id: string
   scope: string
   unit: string
+  /** The unit by its id, for the way to it on its chart. */
+  unitId?: string
   role: string
   share?: number
   from?: string
@@ -39,6 +41,34 @@ export type HeldAssignment = {
   reportsTo?: readonly { kind: 'solid' | 'dotted'; role: string; unit: string; person?: string; override?: true }[]
   /** A role the unit's slots do not have: an exception placement, allowed and said. */
   exception?: true
+}
+
+/**
+ * One person at the other end of a reporting line, and how the line comes about
+ * (ADR-0039): by nesting, by a line of the model, or by an exception to it; a
+ * functional line is never a manager's.
+ */
+export type ReportingPerson = {
+  person: PersonId
+  role: string
+  unit: string
+  via: 'nesting' | 'line' | 'override'
+  functional?: true
+  /** The scope that keeps the unit, and the unit, for the way to its chart. */
+  scope?: string
+  unitId?: string
+}
+
+/** Who a person reports to and who reports to them on a day, nearest first: a person's page always answers both. */
+export type Reporting = { reportsTo: readonly ReportingPerson[]; manages: readonly ReportingPerson[] }
+
+/**
+ * What a role ending opens: whether anybody else holds it there on the day. Names
+ * are what the register's reader is given, so a role is the same role when its
+ * unit and its name are.
+ */
+export function vacancyOf(one: Pick<HeldAssignment, 'unit' | 'role'>, others: readonly HeldAssignment[], day: string): boolean {
+  return !heldOn(others, day).now.some((held) => held.unit === one.unit && held.role === one.role)
 }
 
 /** A person's assignments on a day: those that run on it, those still to begin, and those over. */

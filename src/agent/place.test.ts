@@ -321,6 +321,10 @@ describe('the frame in a place (4.0.0)', () => {
 
   it('takes a tab on any page that has that tab, and no other', () => {
     expect(readPlace('#/-/people?tab=privacy')).toEqual({ scope: '', page: 'people', tab: 'privacy' })
+    expect(readPlace('#/-/people/pe-f2c6')).toEqual({ scope: '', page: 'people', id: 'pe-f2c6' })
+    expect(placeOf({ home: { path: '', name: 'Acme' }, page: { page: 'people', id: 'pe-f2c6' } })).toEqual({ scope: '', page: 'people', id: 'pe-f2c6' })
+    // Another person is a step: Back walks between people, as it does not between a page's own records.
+    expect(stepBetween({ scope: '', page: 'people', id: 'pe-1' }, { scope: '', page: 'people', id: 'pe-2' })).toBe('push')
     expect(readPlace('#/-/register?tab=services')).toEqual({ scope: '', page: 'register', tab: 'services' })
     expect(readPlace('#/-/people?tab=analysis')).toBeUndefined()
     expect(readPlace('#/-/board/x?tab=privacy')).toBeUndefined()

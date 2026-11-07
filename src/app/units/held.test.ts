@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Person } from '../../people/person'
 import { indexScopes } from '../../projects/scopeIndex'
-import { heldAssignments, idsOfPerson, ownedByRule } from './held'
+import { heldAssignments, idsOfPerson, ownedByRule, reportingOf } from './held'
 
 const people: Person[] = [
   { id: 'pe-femke', name: 'Femke Bos', pseudonym: 'BCDF', kind: 'internal', state: 'active' },
@@ -35,8 +35,8 @@ describe('what a person holds', () => {
     const ids = idsOfPerson('pe-femke', people)
     expect([...ids]).toEqual(['pe-femke', 'pe-old'])
     expect(heldAssignments(index, ids)).toEqual([
-      { id: 'as-1', scope: 'customer', unit: 'Webshop', role: 'Product owner', share: 0.5, from: '2022-01-01', until: '2026-12-31', acting: true },
-      { id: 'as-2', scope: 'customer', unit: 'gone', role: 'ro-gone' },
+      { id: 'as-1', scope: 'customer', unit: 'Webshop', unitId: 'webshop', role: 'Product owner', share: 0.5, from: '2022-01-01', until: '2026-12-31', acting: true },
+      { id: 'as-2', scope: 'customer', unit: 'gone', unitId: 'gone', role: 'ro-gone' },
     ])
   })
 
@@ -64,7 +64,7 @@ describe('what a person holds', () => {
     ])
     expect(heldAssignments(index, new Set(['pe-femke']), '2026-10-17')).toEqual([{
       id: 'as-1', scope: '', unit: 'Webshop', role: 'Developer',
-      reportsTo: [{ kind: 'solid', role: 'Product owner', unit: 'Webshop' }, { kind: 'dotted', role: 'Domain owner', unit: 'Customer' }],
+      unitId: 'webshop', reportsTo: [{ kind: 'solid', role: 'Product owner', unit: 'Webshop' }, { kind: 'dotted', role: 'Domain owner', unit: 'Customer' }],
     }])
     // Without a day, nothing is said about reporting.
     expect(heldAssignments(index, new Set(['pe-femke']))[0]).not.toHaveProperty('reportsTo')
@@ -124,5 +124,53 @@ describe('what the rules make a person own', () => {
       },
     }])
     expect(ownedByRule(top, ids, '2026-10-11', (path) => path)).toEqual([])
+  })
+})
+
+describe('who a person reports to, and who reports to them', () => {
+  const unit = (id: string, name: string, parentId?: string) => ({
+    id, kind: 'actor' as const, name, unitTypeId: 'ut', lifecycle: 'live' as const, isManaged: false, aspects: {}, ...(parentId ? { parentId } : {}),
+  })
+  const index = indexScopes([{
+    path: '',
+    model: {
+      elements: [unit('terminal', 'Terminal'), unit('dock', 'Dock crew', 'terminal'), unit('desk', 'Planning desk', 'terminal')],
+      relations: [],
+      unitTypes: [{ id: 'ut', name: 'Unit', top: true, within: ['ut'], slots: [] }],
+      roles: [
+        { id: 'ro-head', name: 'Head', duties: [], manages: true },
+        { id: 'ro-lead', name: 'Lead', duties: [], manages: true },
+        { id: 'ro-member', name: 'Member', duties: [] },
+      ],
+      assignments: [
+        { id: 'a-anna', unitId: 'terminal', roleId: 'ro-head', person: { person: 'pe-anna' } },
+        { id: 'a-tom', unitId: 'dock', roleId: 'ro-lead', person: { person: 'pe-tom' } },
+        { id: 'a-sam', unitId: 'dock', roleId: 'ro-member', person: { person: 'pe-sam' } },
+        { id: 'a-pia', unitId: 'desk', roleId: 'ro-lead', person: { person: 'pe-pia' }, reportsTo: [{ kind: 'dotted', to: { unit: 'dock', role: 'ro-lead' } }] },
+      ],
+    },
+  }])
+  const of = (id: string) => reportingOf(index, new Set([id]), '2026-11-07')
+
+  it('says nesting as a line is said, nearest first', () => {
+    expect(of('pe-sam').reportsTo.map(({ person, role, unit: where, via }) => [person, role, where, via])).toEqual([
+      ['pe-tom', 'Lead', 'Dock crew', 'nesting'],
+      ['pe-anna', 'Head', 'Terminal', 'nesting'],
+    ])
+  })
+
+  it('says a functional line, and that it is the holder\'s own, from both ends', () => {
+    expect(of('pe-pia').reportsTo).toContainEqual(expect.objectContaining({ person: 'pe-tom', functional: true, via: 'override' }))
+    expect(of('pe-tom').manages).toContainEqual(expect.objectContaining({ person: 'pe-pia', role: 'Lead', unit: 'Planning desk', functional: true }))
+  })
+
+  it('lists only who has them as their nearest manager, the rest being further down the chart', () => {
+    expect(of('pe-tom').manages.filter((one) => !one.functional).map((one) => one.person)).toEqual(['pe-sam'])
+    expect(of('pe-anna').manages.map((one) => one.person).sort()).toEqual(['pe-pia', 'pe-tom'])
+    expect(of('pe-sam').manages).toEqual([])
+  })
+
+  it('reports to nobody on a day nothing runs', () => {
+    expect(of('pe-nobody')).toEqual({ reportsTo: [], manages: [] })
   })
 })
