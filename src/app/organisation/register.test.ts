@@ -14,6 +14,7 @@ import { identityFindings } from '../../projects/checks'
 import { indexScopes } from '../../projects/scopeIndex'
 import type { ScopeModel } from '../../projects/scope'
 import { isUnattributed, matchingRows, registerRows, registerSummary, registerWithin, sortRows } from './register'
+import type { RegisterRow } from './register'
 
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
@@ -89,13 +90,20 @@ describe('registerSummary', () => {
     expect(registerSummary(rows())).toEqual({
       applications: 5,
       keptInADomain: 3,
-      owned: 0,
+      owned: 1,
       ownerNamed: 0,
-      unowned: 5,
+      unowned: 4,
       outside: 2,
       definedTwice: 1,
       unattributed: 1,
       stale: 2,
+    })
+  })
+
+  it('counts an owner as the check does: a unit or a name, the name said apart, and where it is kept is another matter', () => {
+    const row = (owner: RegisterRow['owner']): RegisterRow => ({ id: 'a', name: 'A', master: 'retail', drawnIn: [], findings: [], owner })
+    expect(registerSummary([row({ kind: 'unit', unitId: 'team' }), row({ kind: 'named', name: 'Finance systems' }), row({ kind: 'none' })])).toMatchObject({
+      keptInADomain: 3, owned: 2, ownerNamed: 1, unowned: 1,
     })
   })
 
