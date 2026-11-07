@@ -226,7 +226,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       (`applyGuarded`)
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
-                    hostModel · fromInterchange · toInterchange · containerDiagram
+                    hostModel · containerDiagram
                     platformReport · serviceReport   one platform, and what
                                       would be left standing if it went
                                       (ADR-0013); one service, and what would
@@ -349,6 +349,16 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       manages it before and after — one
                                       `element.update` of `parentId` per unit,
                                       in the scope that keeps it
+                    aspectScale       a numeric scale on an aspect, kept at the
+                                      organisation, and a function's rating on
+                                      it, read as unrated off its scale
+                                      (`ratingOn`, `heatOf`; ADR-0046)
+                    ownerField        an application's owner as one field: a
+                                      unit picked, or a name flagged as not one
+                                      (ADR-0036, amended 7 November 2026)
+                    technologyWrites  a use, or where something runs, said as
+                                      commands on the scope that keeps the
+                                      application (ADR-0012 §7, ADR-0020)
                     conwayReading     what the map comes to: each pair's standing,
                                       one sum that reconciles, whether it can
                                       answer yet, one pair, unit or application
@@ -398,8 +408,14 @@ src/people/       The people register (ADR-0036): who the organisation's people
                                       (ending assignments,
                                       `app/organisation/leaving`), *What we
                                       hold* and what a person holds on a day
-                    ui/PeoplePage     the page, over the shell's register hook
-                                      (`app/organisation/usePeopleRegister`);
+                    ui/PeoplePage     a directory, one line each, over the
+                                      shell's register hook
+                                      (`app/organisation/usePeopleRegister`); a
+                                      person at their own address
+                                      (`PersonReader`), the questions before what
+                                      cannot be undone (`PersonQuestions`), a
+                                      correction (`CorrectPerson`) and *What we
+                                      hold* (`WhatWeHold`);
                                       `ui/Duplicates`, its possible duplicates,
                                       folded, a pair to a row, and the pairs
                                       answered, each with *Take back*
@@ -419,6 +435,17 @@ src/editor/       The canvas and everything docked to it. React.
                                       is the slot a laid-out view is drawn through
                                       in place of the canvas (ADR-0016)
                     useEditorState    the selection, and gestures said as commands
+                    BoardBar · AddPicker   the View bar over a board in words,
+                                      and adding where the person is looking
+                    nodes/BoardTile   every kind on a board as the kit's Card,
+                                      saying more as the reader comes closer
+                    canvas/boardFocus · canvas/useBoardFrame   what a card picked
+                                      talks to, the rest receding; where a board
+                                      stands when first shown, framed before it
+                                      is drawn
+                    containerLines · inspector/LinesTab   a container diagram's
+                                      lines as data, numbered, for the canvas,
+                                      its key, the export and the Lines list
                     inspector/        an element's rows, said once for the panel and
                                       the record (`elementRows`), which is shown where
                                       (`rowTools`), the view's own panel
@@ -445,6 +472,24 @@ src/documentation/  Descriptions as documents.
                                       MarkdownFlow (one document in headed parts under one bar),
                                       MarkdownDocument (a record's text as it is read), blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
+                    adrList           the page's questions answered from the
+                                      status: still open, in force, ended
+                    adrSections       a body cut at its headings to be written a
+                                      box a section, and put back to the character
+                    ui/               the list, a record read in the large preview
+                                      (`AdrRecord`), written in a full window
+                                      (`AdrWriting`), and what both show (`AdrParts`)
+src/principles/   Architecture principles (ADR-0041): what one is, a draft while
+                  it is written, a merge as one step, and what may apply to a
+                  record being written (`suggest`). Pure at its root;
+                  `ui/GuidanceFrame` is Guidance, one entry with a tab each for
+                  principles, topics and building blocks, and
+                  `ui/PrinciplesPage`, its reader, editor and citations
+src/blocks/       Building blocks and their evaluations (ADR-0043), in `ui/`
+                  only: the register, a block's page, its evaluation grid
+src/comments/     Comments on any record (ADR-0037): a thread, what travels
+                  with a record on a merge or a move, and the one thread every
+                  reader mounts (`CommentThread`), with a record's changes
 src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                   done about it (ADR-0026); local and global (ADR-0032).
                     observation       numbering, seen again, merging with history
@@ -510,10 +555,22 @@ src/operating/    The operating model (ADR-0036): what is done with the records
                                       for its entry; never merged
                     edit              the page's edits as commands: a role taken
                                       out of the slots and rules that name it
-                    ui/OperatingModelPage   unit types and roles drawn as a
-                                      structure, the rules, the matrix of
-                                      responsibilities against roles, the
-                                      libraries
+                    organisationFacts   what the page reads about the
+                                      organisation it shapes: units today, their
+                                      roles and holders, vacancies, and every
+                                      place that says otherwise than the model
+                    raciView          what the Responsibilities tab shows: a
+                                      part picked in the groups' tree, the whole
+                                      organisation, or one unit's
+                    ui/OperatingModelPage   the model by question, a tab each:
+                                      Structure (`StructureTab`), Roles
+                                      (`RolesTab`), Responsibilities
+                                      (`ResponsibilitiesTab` over `RaciGrid`,
+                                      reordered in `ArrangePanel`), Exceptions
+                                      (`ExceptionsTab`) and Libraries; a reader
+                                      per thing (`UnitTypeReader`, `RoleReader`,
+                                      `SlotReader`, `ResponsibilityReader`,
+                                      sharing `ReaderParts`)
                     ui/StructureLanes the lanes, a type once in each, and the
                                       lines measured from the cards
                                       (`laneLines`, the rail over a lane
@@ -531,9 +588,16 @@ src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009)
                     timeline          rows and spans, in days rather than pixels;
                                       a window, and a plan's shadow run
                     planTemplate      what a new plan's body starts as
-                    ui/RoadmapPage    the axis, the bands, the findings
-                    ui/PlanPage       one plan: its facts, its interfaces, its
-                                      document (ADR-0010)
+                    planReading       what a plan's page and the roadmap read
+                                      off a plan, in days and ids: the lines it
+                                      moves, the boards it changes, a slip
+                    ui/RoadmapPage    the kit's ruler, its rows (`RoadmapRows`),
+                                      a reader beside the axis (`RoadmapReader`),
+                                      the window remembered per person
+                    ui/PlanPage       one plan as one document: what it does
+                                      (`PlanMoves`), the lines it moves away from
+                                      (`PlanInterfaces`), a slip asked first
+                                      (`PlanMoveDialog`) (ADR-0010)
                     ui/ReplaceDialog  the three inputs a replacement needs
 src/business/     The business layer, and the arithmetic over its four trees
                   (ADR-0012 §4). Laid out, never dragged — so it is pure.
@@ -545,6 +609,12 @@ src/business/     The business layer, and the arithmetic over its four trees
                     sheet · sheetDiagram   the laid-out page — rail, journey,
                                       areas, unmapped — and what a new one
                                       starts out showing
+                    sheetRows         an area as one list of one-line rows
+                    posterLayout · posterPlaces   a sheet's poster (ADR-0048): the
+                                      first layout as arithmetic on fixed
+                                      sizes, so a browser and a server agree,
+                                      and where each block is — its geometry,
+                                      the first layout for what it does not say
                     map               the enterprise map: functions against
                                       the applications the rows name, rolled
                                       up on the sections, the gap on the leaves
@@ -552,7 +622,14 @@ src/business/     The business layer, and the arithmetic over its four trees
                                       captureSheet; the sheet's bar
                                       (`SheetBar`) and *Show who is
                                       responsible* (`Responsible`), over what
-                                      the host hands in (`SheetResponsible`)
+                                      the host hands in (`SheetResponsible`);
+                                      Names as rows (`SheetRows`, `SheetRail`,
+                                      `SheetJourney`, `SheetFind`), a lens's
+                                      look said once (`sheetLook`); the poster
+                                      read (`SheetPoster`, `posterCamera`) and
+                                      placed (`PosterWork`, `PosterDesign`,
+                                      `PosterTray`, `PosterItem`), and on paper
+                                      (`PosterExportDialog`)
 src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
                   and a service's. Read, never drawn; the arithmetic is the
                   model's, because the agent asks for it too.
@@ -600,6 +677,12 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                                       address in the fragment and back, what a
                                       move does to the history, and where a
                                       place that is gone lands (ADR-0033)
+                    write/poster      a sheet's poster placed by the tools that
+                                      place a board (ADR-0048)
+                    agentRun          an agent's session as one step: undone
+                                      while its steps are the newest, put back as
+                                      one new step where the log is shared
+                                      (ADR-0019, amended)
                     persons           every answer says a picked person by name
                                       or pseudonym, as it leaves the handler
                                       (ADR-0036 §8, §13)
@@ -699,6 +782,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       processes share (ADR-0005)
                     windowTitle       what a scope is called on screen, which
                                       main reads about a folder
+                    textSize          how large this person reads: a step on
+                                      the root's font size, 90 to 150 percent
                     updates           is this newer, which file is mine, can this
                                       copy replace itself where it runs — the
                                       desktop's update check, without its fetch
@@ -774,14 +859,21 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   (`FindingMarks`: *Mark as intended…* asking why, and
                   *Accepted (N)* with *Take back*), and a set kept for the
                   session under a key, from the shell's folds handed down as
-                  a context (`sessionMemory`).
+                  a context (`sessionMemory`); a page made ready for paper
+                  (`printPage`), work that waits on a window nobody can see
+                  (`outOfSight`), a page's tab in the address (`placeTab`), and
+                  what a person left a view at (`useViewerKeep`).
                     kit/              one design system (ADR-0045; `kit/README.md`
-                                      says the architecture): `tokens`, every
-                                      colour and measure in both modes, read as
-                                      custom properties, as MUI's palette and
-                                      as values (`tokensOf`); `accent` over
-                                      `oklch`, a source's accent as shades or a
-                                      refusal; `fonts/`, the typefaces
+                                      says the architecture and lists every
+                                      part): `tokens`, every colour and measure
+                                      in both modes, read as custom properties,
+                                      as MUI's palette and as values
+                                      (`tokensOf`); `accent` over `oklch`, a
+                                      source's accent as shades or a refusal;
+                                      `fonts/`, the typefaces; the base
+                                      controls, the one List, Panel, Matrix,
+                                      Dialog and focused window, the Frame, the
+                                      canvas's parts and one zoom
 src/ports/        The seams. Interfaces only, no implementations.
                     PreferencesStore · DocumentGateway
                     Diagnostics · HostControls · UpdateSettings
@@ -854,7 +946,9 @@ src/adapters/     The outside world, one folder per flavour.
                                       `history.perf.test.ts` holds the history
                                       to a budget on ten thousand commits
                                       …and `format/`: the folder's own format,
-                                      all of it — a scope as files
+                                      all of it, every file written through
+                                      `writeInto` so a failure leaves none
+                                      empty — a scope as files
                                       (`folderFormat`, with `adrFile`,
                                       `transitionFile`, `observationFile`,
                                       `fileText` and `scopeHeader`), the last
@@ -929,6 +1023,10 @@ src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
                                       questions about the work its key-value
                                       storage kept before
                     memory/           nowhere at all, and a notice that says so
+                    example/          the example as a place you visit: the
+                                      shipped organisation in memory, opened
+                                      at `?example=<key>`, nothing kept until
+                                      *Keep this as my start*
                     strings/          what they say, in three languages
 src/app/          The shell around the editor.
                     main.tsx          the boot: every source opened through the
@@ -947,7 +1045,25 @@ src/app/          The shell around the editor.
                                       is the **fold**, one announcement's worth
                                       of a step, because a step that coalesces
                                       is answered for one fold at a time
-                    App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
+                    App · ProjectWorkspace · ShellToolbar · ToastBar
+                    frame/            what fills the kit's Frame: row one and
+                                      its status word (`statusWord`), every
+                                      place said once (`places`), one table of
+                                      commands for ⋯, ?, ⌘K and the sheet of
+                                      keys (`commandsTable`), the tree in two
+                                      postures (`ScopeTreePanel`), *Your work*
+                                      and Activity (`FramePanels`), Preferences
+                                      as a page, *Continue* (`recentPlaces`),
+                                      and what the screen under it says
+                                      (`frameStore`)
+                    handOver          every save said only once it has, and
+                                      nothing of a dialog the person closed
+                    DrawingPage · DrawingEditorParts · DrawingPanels ·
+                    drawingSkin · drawingExport   a drawing in draw.io, in the
+                                      app's clothes, with what it points at
+                                      beside it and a file from its picture
+                                      (ADR-0034); `NewViewDialog`, which kind
+                                      of view to make
                     BarEnd            the right end both bars draw: the agent
                                       glyph, the provider's own button, the chip
                                       where it sits at the end, and the menu
@@ -991,8 +1107,12 @@ src/app/          The shell around the editor.
                                       a scope's *Served by* on its home and
                                       in its settings, its domain owner, and
                                       each edit written where the unit is
+                                      FirstRunScreen · HomeFirstRun   an
+                                      organisation nobody has started
+                                      ScopeSettingsPage   a scope's settings
+                                      as a page, `#/<scope>/-/settings`
                                       HomePages · useHomePages   the pages
-                                      over a home's cards, one at a time,
+                                      over a home's rows, one at a time,
                                       each a part of its own, and what the
                                       one up was asked to pick
                                       treeChecks · useHomeChecks · checksView ·
@@ -1103,8 +1223,6 @@ src/app/          The shell around the editor.
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
-                    carryRefs         the pass a move makes over the refs
-                                      pointing into it (§3)
                     useChangeBelow    a change to a scope below made from the
                                       observations page: that scope's step,
                                       through `changeScope` (ADR-0032 §2)
@@ -1569,6 +1687,9 @@ identifiers is still a list of a customer's identifiers.
 | Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the organisation's home, with *Continue*. The tree's *Open* goes to a scope's home too; a view is opened from the home's list |
 | A link to a place (ADR-0033, amended) | *Share with a Link…* (`{ type: 'share' }`, File menu, both hosts, no accelerator), answered by the shell from every screen: the open source's **`ProviderParts.shareAddress()`** — where somebody else reaches the same work, `undefined` for not now, absent for core's three — with the place as its fragment (`linkTo`, `agent/place.ts`), copied through `HostControls.copyText` and shown in `ShareLinkDialog`; with no address the dialog says why and nothing is copied (`app/useShareLink.ts`) |
 | A dialog an address may open (ADR-0022, amended) | `?open=preferences`, and nothing else (`BOOT_DIALOGS`): open at the first paint, taken out of the address at once |
+| A place's address (ADR-0033, amended) | the fragment `#/<scope path>/-/<page>[/<id>]`, the organisation's path empty: `#/-/home`, `#/<scope>/-/board/<view id>`, `#/<scope>/-/settings` for a scope's settings, `#/-/preferences` for this person's; a page's tab as `?tab=` (`PAGE_TABS`, `agent/screen.ts`); the example visited at `?example=<key>` before the fragment. Every place is listed once (`app/frame/places.ts`) |
+| Words on screen for the working file (owner, 7 November 2026) | *a saved copy* and *password*, never *working file* and *seal*; the extension, the code's names and the format's stay as they are |
+| Typefaces and text size (ADR-0045) | Source Sans 3 and Source Code Pro, bundled under the OFL in `widgets/kit/fonts/`; five sizes in rem; a person's step `TEXT_SIZES` 90 · 100 · 112 · 125 · 150, kept as `textSize` in the preferences and set on the root (`platform/textSize.ts`) |
 | What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A change to a scope outside the open session goes through `projects/scopeAccess.changeScope`, as steps that expect what was read and are worked out again over a scope that moved; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |
 | What a refusal where work is kept says (ADR-0022, amended) | the source's own **`sourceFailure`**: a sentence rather than a key, because what is worth saying depends on the cause — and carried with a source's parts rather than declared on the kind, since what a store said no for is a fact about this opening and not about the sort of place it is. `undefined` is *nothing from me about this one*, and then nothing of ours is said either and the latch stays open, because a refusal nobody mentioned must not be followed by *saving works again*. Core's three bring none |
 | Whether a way in is drawn where it is about to be (ADR-0022, amended) | `connect.offer(context)`: told the source as it stands and the address the boot read, answering `null` for *not here* and a label for something else to say — so a standing *Connect to…* does not offer a person the place they are already working from. Asked again on `onSourceWork`, afresh per source, and a provider that throws costs its own button the label it asked for. Absent, or `undefined`, leaves `connect.labelKey` exactly as it is, which is what the folder's does |
@@ -1578,7 +1699,7 @@ identifiers is still a list of a customer's identifiers.
 | One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase` · `settled`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, `openedFrom` — the store's revision of the read it was opened on — and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
 | A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one — named by `stepId` or by `changeId`, and with `steps` for the bodies of what the cap has taken off this stack; `steps.onChange` is how anything outside hears what was done here, **once per announcement**, each under a `changeId` of its own, because a step that coalesces is one step here and one sequenced step per fold out there (`HistoryStep.folds`); `steps.settled` is how the far end says it is done with one, and the log's cap of 200 will not evict a fold nobody has said that about; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
-| Where a working file lands (ADR-0025) | **asked, every time**, after the file is read: *A new folder…* — chosen with the folder picker, written with the file's top scope as its root, occupied folders confirmed separately, and the app moves there — or *Replace “<scope>” here*, what opening always did, with the warning on the button. `landWorkingFile` in `app/workingFileFlows.ts`; `chooseFolderDestination` in the composition; the boot's `folder.onChooseForWorkingFile` |
+| Where a working file lands (ADR-0025) | **asked, every time**, after the file is read: *A new folder…* — chosen with the folder picker, written with the file's top scope as its root, occupied folders confirmed separately, and the app moves there — or *Replace “<scope>” here*, what opening always did, with the warning on the button. `landWorkingFile` in `app/workingFileFlows.ts`; `chooseFolderDestination` in the folder's provider (`providers/folder/folderSource`) |
 | Working-folder format | **17** — `SCOPE_FORMAT_VERSION` (`adapters/folder/format/scopeHeader.ts`), and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else (`observations/rootsFromSolutions`, which browser storage and memory read their content format 1 by too); 10 is 9 with a drawing's XML in `diagrams/<id>.drawio` (ADR-0034); 11 is 10 with `_operating/` and `_assignments/` (ADR-0036): a 10 reads as an 11 with no operating model and no assignments, and the pass moves no scope; 12 is 11 with `_checks/` (ADR-0036, amended): an 11 reads as a 12 with nothing marked, the pass moves no scope, and a build that reads 11 refuses a 12 rather than save over `_checks/`; 13 is 12 with `_comments/<kind>-<id>.json` (ADR-0037), `bright` and the `moved`/`movedIn` events on an observation (ADR-0038), and `reportsTo` on a unit type's slot and `reportingLines` on a unit (ADR-0039): all optional, so a 12 reads as a 13 with none of them, the pass moves no scope, and a build that reads 12 refuses a 13; 14 is 13 with a holder's own reporting lines, `reportsTo` on an assignment in `_assignments/assignments.json`, and `to.person` on a unit's own line (ADR-0039, amended 17 October 2026): a 13 reads as a 14 in which nobody has a line of their own, the pass moves no scope, and a build that reads 13 refuses a 14; 15 is 14 with what 3.8.0 keeps (ADR-0038, amended 25 October 2026; ADR-0041 to ADR-0043); 16 is 15 with an observation's recorder held without a name where an entry answers (ADR-0038, amended 7 November 2026): a build that reads 15 reads no `recordedBy:` as nobody and would drop the entry, the account and the agent on its way back, so it refuses a 16; a 15 reads as a 16 whose records still hold both, and the pass rewrites the headers and nothing else; 17 is 16 with `aspectScales` on the header and `ratings` on a function (ADR-0046), `certainty` on an element and a relation (ADR-0047), `noted` on an observation with its two events (ADR-0038, amended) and `endedByLeaving` on an assignment (ADR-0036, amended): a 16 reads as a 17 that says none of them, the pass rewrites the headers and nothing else, and a build that reads 16 refuses a 17 |
 | What one scope's folder holds | `scope.json` · `model.json` · the folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` — and `_operating`, `_assignments`, `_checks` and `_comments`, which no child can take anyway: a scope's name is a slug, and a slug holds no underscore |
@@ -1594,7 +1715,7 @@ identifiers is still a list of a customer's identifiers.
 | The libraries (ADR-0036 §5) | Scrum, SAFe, the IT4IT value streams (3.0) and Team Topologies, shipped as data with a version in `src/operating/libraries/`, every word this project's own, with `alike` hints (`library:entry`) said on both ends; brought in as one transaction (`operating/bringIn.ts`), with `names`, `placements` and `reuse` by entry, settled first as the rows of *What will come in* (`operating/comingIn.ts`) in a dialog over the page (`operating/ui/LibraryDialog.tsx`), listed after as *What came in* (`operating/cameIn.ts`), and compared, never merged (`operating/compare.ts`) |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The view kinds (ADR-0012 §6, ADR-0015, ADR-0016, ADR-0034, ADR-0036 §7) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` · `chart` · `conway` **laid out**, no geometry — the technology landscape is three columns over the layer, no lines at rest, with a matrix of the same rows (`?tab=matrix`), read on a day; the organisation chart is the units nested on the view's day; the Conway map the units over their applications and the interfaces between them; and `drawing`, draw.io's XML, neither. Any of them is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot; the technology landscape has a reader of its own and takes the inspector into that column for a record (`PageView.record`), the chart keeps the inspector (`docksOf`), the Conway map has its own panel, and both keep the day control (`isDated`). Every switch on a view's kind is exhaustive. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
+| The view kinds (ADR-0012 §6, ADR-0015, ADR-0016, ADR-0034, ADR-0036 §7) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` · `chart` · `conway` **laid out**, no geometry — but a sheet's poster, once placed by hand, keeps its blocks, tiles and free items in the view's geometry file (ADR-0048) — the technology landscape is three columns over the layer, no lines at rest, with a matrix of the same rows (`?tab=matrix`), read on a day; the organisation chart is the units nested on the view's day; the Conway map the units over their applications and the interfaces between them; and `drawing`, draw.io's XML, neither. Any of them is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot; the technology landscape has a reader of its own and takes the inspector into that column for a record (`PageView.record`), the chart keeps the inspector (`docksOf`), the Conway map has its own panel, and both keep the day control (`isDated`). Every switch on a view's kind is exhaustive. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `plan.move` `milestone.add` `milestone.update` `milestone.remove` — `plan.move` puts a unit under a new parent on a plan's day (ADR-0036 §6), one per unit and plan, `remove` to take it off |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -2325,3 +2446,18 @@ desktop's file channel stopped taking any path into a `.git`, at any depth and
 in any spelling, and every git the app runs takes a folder's own configuration
 only for what a folder needs (`platform/node/gitGuard.ts`): no hook, no
 file-system monitor, and nothing a folder names run as a program.
+
+Then the screens were rebuilt on **one design system** (`docs/decisions/0045`,
+implemented): tokens as the one source of colour and measure, handed to MUI
+through CSS variables; Source Sans 3 and Source Code Pro bundled; a type scale
+of five sizes in rem that a person's text size reaches; and a kit in
+`src/widgets/kit/` that every screen composes, with `kit/README.md` as its
+architecture. Every page became a place in one frame of two rows
+(`docs/decisions/0033`, amended), with one list, one panel, one dialog family
+and one zoom for every canvas. A board is drawn neutral and read at three
+distances, a look at another day is read-only (`0027`, amended), observations
+are a chain, the operating model is read by question, a sheet can be placed
+and read as a poster (`0048`), and the model gained a numeric scale on an
+aspect (`0046`) and a confirmed or assumed mark (`0047`) at folder format 17.
+`build/literalColours.test.ts` and `build/literalFontSizes.test.ts` keep a
+colour or a size from being written outside the tokens.
