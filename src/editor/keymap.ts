@@ -242,8 +242,6 @@ const KEY_GLYPH: Record<string, string> = {
   ArrowDown: '↓',
   ArrowUp: '↑',
   ContextMenu: 'Menu',
-  ArrowUp: '↑',
-  ArrowDown: '↓',
   ArrowLeft: '←',
   ArrowRight: '→',
   '=': '+',
