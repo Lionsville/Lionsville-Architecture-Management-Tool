@@ -26,7 +26,6 @@ import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { RecordPage } from '../../widgets/kit/RecordPage'
 import { CHAIN_STEPS, standingOf } from '../chain'
 import type { ChainStep } from '../chain'
-import { nodeKey } from '../graph'
 import { causeLabel, explainedBy, formatObservationNumber, isNoted, isRootCause, toneOf } from '../observation'
 import type { Cause, Observation } from '../observation'
 import { formatExperimentNumber, formatSolutionNumber, implementedOn, isConcluded, isLive } from '../solution'
@@ -36,7 +35,6 @@ import type { ReaderContext, Selected } from './PageReaders'
 import { causeBar, observationBar, observationFacts } from './Readers'
 import type { CausePanel } from './Readers'
 import { experimentBar, solutionBar } from './SolutionReaders'
-import { toMenu } from './readerActions'
 
 /** What the frames ask of the page beside what the reader wires: going to the editor, and asking a cause's question in its reader. */
 export type RecordPageWrites = {
@@ -45,7 +43,7 @@ export type RecordPageWrites = {
 }
 
 /** The actions that stand beside the next question rather than under More. */
-const EVERYDAY = new Set(['edit', 'seen', 'verify', 'restore'])
+const EVERYDAY = new Set(['edit', 'seen', 'verify', 'restore', 'experiment'])
 
 export type RecordView = {
   readonly code: string
@@ -207,7 +205,7 @@ function BarButtons({ view, ctx, held }: { view: RecordView; ctx: ReaderContext;
   return (
     <>
       {everyday.map((one) => (
-        <Button key={one.key} variant={one.primary ? 'primary' : 'quiet'} title={one.tip} onClick={one.onClick} data-testid={one.testId} data-guide={one.guide}>{one.label}</Button>
+        <Button key={one.key} variant={one.key === 'restore' ? 'primary' : 'quiet'} title={one.tip} onClick={one.onClick} data-testid={one.testId} data-guide={one.guide}>{one.label}</Button>
       ))}
       {items.length > 0 && <MoreMenu items={items} label={s('observation.more')} />}
       {edit && <Button onClick={edit.onClick} title={edit.tip} data-testid={edit.testId}>{edit.label}</Button>}
@@ -282,4 +280,3 @@ export function RecordFull({ held, heldKey, ctx, page, backLabel, onBack }: Reco
   )
 }
 
-export { toMenu, nodeKey }

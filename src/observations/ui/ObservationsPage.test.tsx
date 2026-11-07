@@ -893,7 +893,7 @@ describe('a map opens readable', () => {
     mount({ below: [], explainedAbove: new Map([['c1', [{ scope: 'acme', cause: cause({ id: 'up', number: 9, root: true, title: 'Above' }), strength: 'normal' as const }]]]), initialTab: 'analysis-map', initialNonce: 1 })
     const card = screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!
     const marker = within(card as HTMLElement).getByTestId('picture-marker')
-    const ys = [...card.querySelectorAll('text')].filter((one) => one !== marker).map((one) => one.getAttribute('y'))
+    const ys = [...card.querySelectorAll('text')].filter((one) => (one as Element) !== marker).map((one) => one.getAttribute('y'))
     expect(ys).not.toContain(marker.getAttribute('y'))
   })
 })

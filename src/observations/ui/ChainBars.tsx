@@ -16,7 +16,6 @@ import { TextField } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { FilterField, FilterWord } from '../../widgets/kit/FilterWords'
 import { OBSERVATION_TONES } from '../observation'
-import type { ObservationTone } from '../observation'
 import { TONE_WORD } from '../observationScope'
 import type { Filters } from '../filter'
 import { SavedPopover, ScopesPopover } from './FilterPopovers'
@@ -52,8 +51,8 @@ export type ChainFilterProps = {
 export function ChainFilter({ f, scopeLabel, showMerged, onShowMerged, showArchived, onShowArchived, columns, actions, s }: ChainFilterProps) {
   const set = (patch: Partial<Filters>) => f.setFilters({ ...f.filters, ...patch })
   const fields: FilterField[] = [
-    { id: 'tone', label: s('observation.toneLabel'), options: OBSERVATION_TONES.map((one) => ({ value: one, label: s(TONE_WORD[one]) })) },
-    { id: 'whose', label: s('observation.whoseLabel'), options: [{ value: 'mine', label: s('observation.whoseMine') }] },
+    { id: 'tone', label: s('observation.toneLabel'), guide: 'observations.tone', options: OBSERVATION_TONES.map((one) => ({ value: one, label: s(TONE_WORD[one]) })) },
+    { id: 'whose', label: s('observation.whoseLabel'), guide: 'observations.mine', options: [{ value: 'mine', label: s('observation.whoseMine') }] },
     { id: 'show', label: s('observation.showLabel'), options: [{ value: 'merged', label: s('observation.showMerged') }, { value: 'archived', label: s('observation.showArchived') }] },
   ]
   const tones = OBSERVATION_TONES.filter((one) => !f.filters.tonesOff.includes(one))
@@ -113,9 +112,6 @@ export function ChainFilter({ f, scopeLabel, showMerged, onShowMerged, showArchi
     />
   )
 }
-
-/** Said in words where a tone filter is asked what is on: a tone chosen off the kit's own list. */
-export const toneWords = (tones: readonly ObservationTone[], s: Translate) => tones.map((one) => s(TONE_WORD[one]))
 
 /**
  * A scope with nothing yet: no zero counters, no legend, no empty sections. The chain

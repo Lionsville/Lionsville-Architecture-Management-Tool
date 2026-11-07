@@ -1017,11 +1017,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
       <span className="chain-page__said" data-testid="picture-count">
         {stageSaid[stage]}{f.hiddenLocal > 0 ? ` · ${s('observation.localHidden', { count: f.hiddenLocal })}` : ''}
       </span>
-      {f.hasBelow && (
-        <Button variant={f.viewLocal ? 'primary' : 'plain'} size="small" aria-pressed={f.viewLocal} title={s('observation.viewLocalTip')} onClick={() => f.setViewLocal(!f.viewLocal)} data-testid="view-local" data-guide="observations.viewLocal">
-          {f.viewLocal ? s('observation.scopesBelowOn') : s('observation.scopesBelowOff')}
-        </Button>
-      )}
+      <Button
+        variant={f.viewLocal ? 'primary' : 'quiet'} size="small" aria-pressed={f.viewLocal} {...(f.hasBelow ? { title: s('observation.viewLocalTip') } : { reason: s('observation.viewLocalNone') })}
+        onClick={() => f.setViewLocal(!f.viewLocal)} data-testid="view-local" data-guide="observations.viewLocal"
+      >
+        {f.viewLocal ? s('observation.scopesBelowOn') : s('observation.scopesBelowOff')}
+      </Button>
       {lensSwitch}
       {newButton}
     </span>
@@ -1052,7 +1053,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const groupOf = selectedKey ? groups.find((one) => one.rows.some((row) => row.id === selectedKey)) : undefined
   const previewIds = groupOf ? groupOf.rows.map((row) => row.id) : []
   const listWord = groupOf?.label.toLowerCase()
-  const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined
+  // The merge and move screens are places under the frame: a modal over them would hide them from everybody.
+  const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined && !merging.state && !moving.state
 
   const list = (
     <List

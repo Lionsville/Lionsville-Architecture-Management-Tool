@@ -116,14 +116,15 @@ describe('the scopes below', () => {
     expect(screen.getByText('Local to Intake · 1')).toBeTruthy()
   })
 
-  it('offers no switch where the scope has no scopes below', () => {
+  it('is off, and says why, where the scope has no scopes below', () => {
     renderShell(
       <ObservationsPage
         open onClose={() => {}} model={model} groupName="Acme" onChange={() => {}} s={translator('en')} language="en"
         makeId={(prefix) => prefix} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
       />,
     )
-    expect(screen.queryByTestId('view-local')).toBeNull()
+    expect(screen.getByTestId('view-local').getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByTestId('view-local').getAttribute('aria-disabled')).toBe('true')
   })
 })
 

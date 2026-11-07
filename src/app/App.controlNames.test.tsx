@@ -390,29 +390,50 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     show(false)
     fireEvent.click(await screen.findByTestId('open-map'))
   }]],
-  // The register lists the solutions under its observations, so the proven
-  // one is read from there before the tabs are changed.
-  [['the observations, one of them read', [
-    'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
-    'observations.row', 'observations.new', 'observation.seenAgain', 'observation.merge', 'observation.cause',
-    'observations.filters', 'observations.filterRow', 'observations.viewLocal', 'observations.tone', 'observations.mine',
+  [['the observations', [
+    'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.tabResults', 'observations.register',
+    'observations.row', 'observations.new', 'observations.filters', 'observations.viewLocal',
   ], async () => {
-    const dialog = await page('Observations')
-    fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
+    await page('Observations')
+    await within(placePageNow()!).findAllByTestId(/^observation-row-/)
+  }],
+  ['the filters, open', ['observations.filterRow', 'observations.tone', 'observations.mine'], async () => {
+    fireEvent.click(within(placePageNow()!).getByRole('button', { name: /^Filter/ }))
+    await screen.findByTestId('filter-row')
+  }],
+  ['one of them read', ['observations.preview', 'observation.seenAgain', 'observation.cause'], async () => {
+    fireEvent.keyDown(document.querySelector('.kit-filter__pop')!, { key: 'Escape' })
+    await waitFor(() => expect(document.querySelector('.kit-filter__pop')).toBeNull())
+    fireEvent.click(within(placePageNow()!).getAllByTestId(/^observation-row-/)[0])
+    await screen.findByTestId('observation-reader')
+  }],
+  ['what else it offers', ['observation.merge'], async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await screen.findByRole('menu')
+  }],
+  ['the ladder', ['observations.ladder'], async () => {
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    fireEvent.click(screen.getByTestId('observation-cause'))
+    await screen.findByTestId('why-ladder')
   }],
   ['a solution being tested, read', ['solution.planExperiment', 'solution.move'], async () => {
-    const list = await within(placePageNow()!).findByTestId('solution-list')
-    fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
+    fireEvent.click(screen.getByTestId('ladder-stop'))
+    fireEvent.click(within(placePageNow()!).getByTestId('observation-tab-solutions'))
+    const row = (await within(placePageNow()!).findAllByTestId(/^solution-row-/)).find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!
+    fireEvent.click(row)
   }],
   ['a proven solution, read', ['solution.decide'], async () => {
-    const list = within(placePageNow()!).getByTestId('solution-list')
-    fireEvent.click(within(list).getAllByRole('button').find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    const row = within(placePageNow()!).getAllByTestId(/^solution-row-/).find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!
+    fireEvent.click(row)
   }]],
-  // The page's other two tabs and its form, a journey of their own: as one
-  // with the register's, it ran past its limit on GitHub's runner.
-  [['the analysis', ['observations.picture', 'observations.size'], async () => {
+  // The page's maps and its form, a journey of their own: as one with the list's,
+  // it ran past its limit on GitHub's runner.
+  [['the analysis', ['observations.picture', 'observations.size', 'observations.lens', 'observations.mapWindow'], async () => {
     const dialog = await page('Observations')
     fireEvent.click(await within(dialog).findByTestId('observation-tab-analysis'))
+    await screen.findByTestId('analysis-picture')
   }],
   ['a cause, read', ['cause.root'], async () => {
     const picture = await within(placePageNow()!).findByTestId('analysis-picture')
@@ -429,7 +450,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const page = placePageNow()!
     fireEvent.click(within(page).getByTestId('observation-tab-register'))
     fireEvent.click(within(page).getByRole('button', { name: 'New observation' }))
-    await screen.findByRole('region', { name: 'New observation' }).catch(() => screen.findByRole('dialog', { name: 'New observation' }))
+    await screen.findByRole('form', { name: 'New observation' })
   }]],
   // The merge screen, over the observations page, on the record read.
   [['the merge screen, opened on an observation', [
@@ -437,16 +458,19 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
-    fireEvent.click(dialog.querySelector<HTMLElement>(controlSelector('observation.merge'))!)
+    fireEvent.click(await screen.findByRole('button', { name: 'More actions' }))
+    fireEvent.click(document.querySelector<HTMLElement>(controlSelector('observation.merge'))!)
     await screen.findByRole('region', { name: 'Merge observations' })
   }]],
   // The move screen, over the observations page, on the record read (ADR-0038 §5).
-  [['the move screen, opened on an observation', [
-    'observation.move', 'move.what', 'move.target', 'move.search', 'move.cut', 'move.confirm',
-  ], async () => {
+  [['what an observation offers, read', ['observation.move'], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
-    fireEvent.click(dialog.querySelector<HTMLElement>(controlSelector('observation.move'))!)
+    fireEvent.click(await screen.findByRole('button', { name: 'More actions' }))
+    await screen.findByRole('menu')
+  }],
+  ['the move screen, opened on an observation', ['move.what', 'move.target', 'move.search', 'move.cut', 'move.confirm'], async () => {
+    fireEvent.click(document.querySelector<HTMLElement>(controlSelector('observation.move'))!)
     await screen.findByRole('region', { name: 'Move an observation to another scope' })
   }]],
   [['the decisions, one from above read', [

@@ -220,7 +220,7 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     await waitFor(() => expect(told().where.home?.path).toBe(''))
     const from = handed.length
     fireEvent.click(screen.getByRole('button', { name: 'To the solutions' }))
-    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'solutions' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', tab: 'solutions' }))
     expect(movers(from)).not.toContain('person')
     fireEvent.click(within(await placePage()).getByTestId('observation-tab-analysis'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'analysis' }))
@@ -233,7 +233,7 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
     const from = handed.length
     fireEvent.click(screen.getByRole('button', { name: 'To the observations' }))
-    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'register' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', tab: 'register' }))
     expect(movers(from)).not.toContain('person')
     fireEvent.click(within(await placePage()).getByTestId('observation-row-o1'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', id: 'o1' }))
@@ -251,7 +251,7 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o1', tab: 'register' }))
     const from = handed.length
     fireEvent.click(screen.getByText('To the observations'))
-    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'register' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', tab: 'register' }))
     expect(movers(from).length).toBeGreaterThan(0)
     expect(movers(from)).not.toContain('person')
   })
@@ -327,7 +327,7 @@ describe('the observations page, on a tab', () => {
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'solutions' }))
     expect(told().movedBy).toBe('provider')
     const page = await placePage()
-    expect(within(page).getByTestId('observation-tab-solutions').getAttribute('aria-pressed')).toBe('true')
+    expect(within(page).getByTestId('observation-tab-solutions').getAttribute('aria-selected')).toBe('true')
     // The person changes the tab: the screen says so, and it is theirs.
     fireEvent.click(within(page).getByTestId('observation-tab-analysis'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'analysis' }))

@@ -38,6 +38,7 @@ export type FilterField = {
   readonly options: readonly FilterOption[]
   /** A long list keeps a field to type in, so that all of it can stay in the list and none of it is in the way. */
   readonly narrow?: boolean
+  readonly guide?: string
 }
 
 export type FilterChoice = { readonly id: string; readonly label: string }
@@ -123,7 +124,7 @@ function GroupPop({ groups, group, onGroup, name }: {
   const label = groups.find((one) => one.id === group)?.label ?? t('kit.filter.groupNone')
   return (
     <Pop label={t('kit.filter.group')} face={<>{t('kit.filter.groupOn', { group: label })} <CaretIcon /></>}>
-      <fieldset className="kit-filter__field">
+      <fieldset className="kit-filter__field" data-guide={field.guide}>
         <legend>{t('kit.filter.group')}</legend>
         {[{ id: '', label: t('kit.filter.groupNone') }, ...groups].map((one) => (
           <label className="kit-filter__option" key={one.id}>

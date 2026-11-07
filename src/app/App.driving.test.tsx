@@ -210,7 +210,7 @@ describe('with the organisation screen up', () => {
     const out = parsed(await ask('app.open', { scope: '', page: 'observations', tab: 'solutions' }))
     expect(out.arrived).toBe(true)
     expect(out.page).toMatchObject({ page: 'observations', tab: 'solutions' })
-    expect(screen.getByTestId('observation-tab-solutions').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('observation-tab-solutions').getAttribute('aria-selected')).toBe('true')
     fireEvent.click(screen.getByTestId('observation-tab-register'))
     await waitFor(async () => expect(parsed(await ask('app.current')).page).toMatchObject({ page: 'observations', tab: 'register' }))
   })
