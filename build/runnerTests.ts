@@ -164,7 +164,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/observations/ui/SolutionsTab.test.tsx', // 26 s
   'src/operating/ui/LibraryDialog.test.tsx', // 23 s
   'src/operating/ui/OperatingModelPage.test.tsx', // 49 s
-  'src/operating/ui/UnitsAndRoles.test.tsx', // 15 s
   'src/people/ui/PeoplePage.test.tsx', // 28 s
   'src/platform/node/git.test.ts', // 71 s
   'src/platform/node/gitEntries.test.ts', // 49 s

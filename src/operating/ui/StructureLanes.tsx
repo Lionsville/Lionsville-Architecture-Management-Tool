@@ -120,7 +120,6 @@ const NO_ROLE_LINES: readonly RoleLine[] = []
 
 /** The pick's reporting lines, over the cards: solid or dotted, and a dot where each lands. */
 function RoleLines({ lines }: { lines: readonly (RoleLine & { d: string; x: number; y: number })[] }) {
-  const theme = useTheme()
   if (lines.length === 0) return null
   return (
     <Box component="svg" aria-hidden data-testid="structure-role-lines"

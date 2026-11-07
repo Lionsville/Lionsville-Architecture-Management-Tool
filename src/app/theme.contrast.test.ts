@@ -504,9 +504,7 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   'src/widgets/icons.tsx': [6, 'icon shapes'],
   // A unit type and the organisation out of what is picked on the structure, and the card's fade between the two:
   // a dim that says "not this", where the words are there to be found, not read.
-  'src/operating/ui/TypeCard.tsx': [2, 'out-of-pick dim and its transition'],
   // The organisation's card out of the pick, and a reporting line away from the pick: lines, no words (ADR-0039 §7, amended).
-  'src/operating/ui/StructureLanes.tsx': [1, 'out-of-pick dim'],
   // A reporting line on the chart away from the unit picked: a line, no words.
   // The token for a dim that is the point, for the uses above to read from.
   'src/widgets/kit/tokens.ts': [1, 'the dim token'],

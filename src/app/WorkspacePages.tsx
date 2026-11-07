@@ -139,7 +139,7 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
   const lists = useMemo(() => ({
     unitTypes: (held ?? model).unitTypes ?? [], roles: (held ?? model).roles ?? [],
     responsibilities: (held ?? model).responsibilities ?? [], operatingRules: (held ?? model).operatingRules ?? [],
-  }), [held, model.unitTypes, model.roles, model.responsibilities, model.operatingRules]) // eslint-disable-line react-hooks/exhaustive-deps
+  }), [held, model.unitTypes, model.roles, model.responsibilities, model.operatingRules])
   // The units of each type today, across the tree with this scope's session over it: counted while the page is up, and only then.
   const unitCounts = useMemo(
     () => (page.open ? unitCountsHere(props.tree.index, scope, model, todayDay) : undefined),

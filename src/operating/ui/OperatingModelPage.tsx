@@ -25,7 +25,10 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Panel } from '../../widgets/kit/Panel'
 import { Tabs } from '../../widgets/kit/Tabs'
+import { PageClose } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { usePlaceLook, usePlaceTab } from '../../widgets/placeTab'
 import { editResponsibility, editRole, editUnitType, itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
@@ -132,8 +135,9 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const selected = look.select
   const [matrixView, setMatrixView] = useState<MatrixView>(ALL_OF_THE_MATRIX)
   const [arranging, setArranging] = useState(false)
+  const [asideWidth, setAsideWidth] = useSeamWidth('operating.aside', 360)
   const [removing, setRemoving] = useState<string | undefined>(undefined)
-  const [takingOut, setTakingOut] = useState<{ typeId: string; roleId: RoleId } | undefined>(undefined)
+  const clearTakingRef = useRef(() => {})
   const [slotOpen, setSlotOpen] = useState<RoleId | undefined>(undefined)
   const libraries = props.libraries ?? LIBRARIES
   const fromLibrary = useLibraryStep({ pageOpen: props.open, dispatch, undoStep: props.undoStep })
@@ -141,7 +145,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const select = (id: string | undefined) => {
     const { select: _was, ...rest } = look
     setLook(id === undefined ? rest : { ...rest, select: id })
-    setTakingOut(undefined)
+    clearTakingRef.current()
     setSlotOpen(undefined)
     if (id !== undefined) setArranging(false)
   }
@@ -157,28 +161,16 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   latest.current = model
   useEffect(() => {
     const asked = itemOf(latest.current, initialId)
-    if (!asked) return
+    // A reload whose address says what was picked since keeps that.
+    if (!asked || look.select !== undefined) return
     setTab(tabOf(asked.kind))
     setLookWords(writeLook({ select: asked.item.id }))
-  }, [initialId, initialNonce]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialId, initialNonce])
 
   const picked = useMemo(() => itemOf(model, selected), [model, selected])
   const exceptions = useMemo(() => exceptionsOf(model.unitTypes, model.roles, facts), [model.unitTypes, model.roles, facts])
-  // A slot somebody holds through the type alone waits for the host's list of them; any other goes at once.
-  const removeSlotOf = (type: UnitType, index: number) => {
-    const roleId = type.slots[index].role
-    const left = type.slots.some((slot, at) => at !== index && slot.role === roleId)
-    setSlotOpen(undefined)
-    if (!left && props.slotTakeOut?.held(type, roleId)) {
-      setTakingOut({ typeId: type.id, roleId })
-      return
-    }
-    dispatch(removeSlot(type, index))
-    if (takingOut?.typeId === type.id && takingOut.roleId === roleId) setTakingOut(undefined)
-  }
-  const taking = takingOut && picked?.kind === 'unitType' && picked.item.id === takingOut.typeId
-    ? props.slotTakeOut?.aside(picked.item, takingOut.roleId, () => setTakingOut(undefined))
-    : undefined
+  const { removeSlotOf, taking, clearTaking } = useSlotTaking(props, picked, () => setSlotOpen(undefined))
+  clearTakingRef.current = clearTaking
   // An item opened from elsewhere on the page: picked, on its own tab, unless this tab reads it beside itself.
   const openItem = (id: string) => {
     const held = itemOf(model, id)
@@ -219,6 +211,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           <span className="op-bar__counts" data-testid="operating-counts">
             {countsLine(t, model.unitTypes.length, model.roles.length, model.responsibilities.length)}
           </span>
+          <PageClose onClose={props.onClose} />
         </div>
         {!props.atOrganisation && (
           <div className="op-readonly" data-testid="operating-read-only">
@@ -228,6 +221,72 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
         )}
         <div className="op-body">
           <div className="op-main" data-flat={flat || undefined}>
+            <TabBody
+              tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} look={look} setLook={setLook}
+              setTab={setTab} matrixView={matrixView} setMatrixView={setMatrixView} arranging={arranging} setArranging={setArranging} exceptions={exceptions} openItem={openItem}
+            />
+          </div>
+          {beside && (arranging || picked) && (
+            <SeamResizer orientation="vertical" region="after" value={asideWidth} min={260} max={720} defaultValue={360} onChange={setAsideWidth} label={t('common.resizeColumn')} />
+          )}
+          {beside && picked && !arranging && (
+            <Reader
+              width={asideWidth} picked={picked} parts={parts} slotOpen={slotOpen} onSlot={setSlotOpen} onClose={() => select(undefined)} slotAside={taking}
+              removeSlotOf={removeSlotOf} part={tab === 'responsibilities' ? look.part : undefined}
+            />
+          )}
+          {tab === 'responsibilities' && arranging && (
+            <ArrangePanel
+              width={asideWidth} model={model} order={matrixView.order} onOrder={(order) => setMatrixView({ ...matrixView, order })} part={look.part}
+              dispatch={dispatch} onClose={() => setArranging(false)} readOnly={readOnly}
+            />
+          )}
+        </div>
+      </div>
+      <RemoveConfirm
+        item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
+        onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
+      />
+      <FromLibrary
+        step={fromLibrary} readOnly={readOnly} model={model} libraries={libraries} language={language} makeId={makeId} chrome={props.windowChrome}
+        // What came in is drawn where it now stands, marked new.
+        onBrought={() => chooseTab('structure')}
+      />
+    </PageDialog>
+  )
+}
+
+/** A slot somebody holds through the type alone waits for the host's list of them; any other goes at once. */
+function useSlotTaking(props: OperatingModelPageProps, picked: OperatingItem | undefined, leaveSlot: () => void) {
+  const [takingOut, setTakingOut] = useState<{ typeId: string; roleId: RoleId } | undefined>(undefined)
+  const removeSlotOf = (type: UnitType, index: number) => {
+    const roleId = type.slots[index].role
+    const left = type.slots.some((slot, at) => at !== index && slot.role === roleId)
+    leaveSlot()
+    if (!left && props.slotTakeOut?.held(type, roleId)) {
+      setTakingOut({ typeId: type.id, roleId })
+      return
+    }
+    props.dispatch(removeSlot(type, index))
+    if (takingOut?.typeId === type.id && takingOut.roleId === roleId) setTakingOut(undefined)
+  }
+  const taking = takingOut && picked?.kind === 'unitType' && picked.item.id === takingOut.typeId
+    ? props.slotTakeOut?.aside(picked.item, takingOut.roleId, () => setTakingOut(undefined))
+    : undefined
+  return { removeSlotOf, taking, clearTaking: () => setTakingOut(undefined) }
+}
+
+/** What the tab that is up shows. */
+function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected, select, look, setLook, setTab, matrixView, setMatrixView, arranging, setArranging, exceptions, openItem }: {
+  tab: OperatingTab; parts: ReaderParts; props: OperatingModelPageProps; readOnly: boolean; libraries: readonly Library[]; fromLibrary: LibraryStep
+  selected: string | undefined; select(id: string | undefined): void; look: RaciLook; setLook(look: RaciLook): void; setTab(tab: OperatingTab): void
+  matrixView: MatrixView; setMatrixView(view: MatrixView): void; arranging: boolean; setArranging(on: boolean): void
+  exceptions: readonly OutsideTheModel[]; openItem(id: string): void
+}) {
+  const { language } = useStrings()
+  const { model, dispatch, makeId, facts } = props
+  return (
+    <>
             {tab === 'structure' && (
               <StructureTab
                 model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId}
@@ -257,37 +316,13 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
                 onFromLibrary={fromLibrary.open} onOpenItem={openItem} selected={selected} onSelect={select}
               />
             )}
-          </div>
-          {beside && picked && !arranging && (
-            <Reader
-              picked={picked} parts={parts} slotOpen={slotOpen} onSlot={setSlotOpen} onClose={() => select(undefined)} slotAside={taking}
-              removeSlotOf={removeSlotOf} part={tab === 'responsibilities' ? look.part : undefined}
-            />
-          )}
-          {tab === 'responsibilities' && arranging && (
-            <ArrangePanel
-              model={model} order={matrixView.order} onOrder={(order) => setMatrixView({ ...matrixView, order })} part={look.part}
-              dispatch={dispatch} onClose={() => setArranging(false)} readOnly={readOnly}
-            />
-          )}
-        </div>
-      </div>
-      <RemoveConfirm
-        item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
-        onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
-      />
-      <FromLibrary
-        step={fromLibrary} readOnly={readOnly} model={model} libraries={libraries} language={language} makeId={makeId} chrome={props.windowChrome}
-        // What came in is drawn where it now stands, marked new.
-        onBrought={() => chooseTab('structure')}
-      />
-    </PageDialog>
+    </>
   )
 }
 
 /** The panel beside the structure or the grid: an item, or one role of a unit type. */
-function Reader({ picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlotOf, part }: {
-  picked: OperatingItem; parts: ReaderParts; slotOpen: RoleId | undefined; onSlot(role: RoleId | undefined): void; onClose(): void
+function Reader({ width, picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlotOf, part }: {
+  width: number; picked: OperatingItem; parts: ReaderParts; slotOpen: RoleId | undefined; onSlot(role: RoleId | undefined): void; onClose(): void
   slotAside: ReactNode; removeSlotOf(type: UnitType, index: number): void; part: string | undefined
 }) {
   const { t } = useStrings()
@@ -300,7 +335,7 @@ function Reader({ picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlo
     const type = picked.item
     return (
       <Panel
-        kind={type.name} name={model.roles.find((role) => role.id === slot.role)?.name ?? slot.role} onClose={() => onSlot(undefined)} width={360} dataGuide="operating.reader"
+        kind={type.name} name={model.roles.find((role) => role.id === slot.role)?.name ?? slot.role} onClose={() => onSlot(undefined)} width={width} dataGuide="operating.reader"
         actions={<button type="button" className="op-link op-small" onClick={() => onSlot(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
       >
         <SlotReader type={type} slot={slot} index={slotAt} parts={parts} onTakeOut={() => removeSlotOf(type, slotAt)} />
@@ -309,7 +344,7 @@ function Reader({ picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlo
   }
   return (
     <Panel
-      kind={kind} name={picked.item.name} onClose={onClose} width={360} dataGuide="operating.reader"
+      kind={kind} name={picked.item.name} onClose={onClose} width={width} dataGuide="operating.reader"
       {...(readOnly ? {} : { onRename: (name: string) => { dispatch(rename(picked.item.id, 'name', name)) } })}
     >
       <div data-testid="operating-inspector">

@@ -93,7 +93,6 @@ export function RolesTab({ parts, makeId, selected, onSelect, onNew }: {
     filterBy: { part: (role) => (role.duties.length ? 'has' : 'none'), held: (role) => (typesHolding(model.unitTypes, role.id).length ? 'held' : 'nowhere') },
     sortBy: { item: (role) => role.name, held: heldIn, line: (role) => lineOf(role, model.roles, t), part: (role) => role.duties.length },
     language,
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- the words are read off the model and the language
   }), [model, view, language, t])
   const ids = rows.flatMap((group) => group.rows.map((role) => role.id))
   const shownColumns = view.columns ?? columnsAll.map((one) => one.id)

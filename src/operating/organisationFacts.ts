@@ -82,6 +82,45 @@ function lineByModel(type: UnitType | undefined, role: Role | undefined, roleId:
   return linesSaid(slotOfRole(type, roleId)?.reportsTo).find((one) => one.kind === kind) ?? linesSaid(role?.reportsTo).find((one) => one.kind === kind)
 }
 
+type Models = { readonly types: ReadonlyMap<string, UnitType>; readonly roles: ReadonlyMap<string, Role> }
+
+/** What a unit says for itself. */
+function saidByUnit(unit: UnitLike, { types, roles }: Models, seen: OrganisationSeen): OutsideTheModel[] {
+  const { organisation, day, scopeOfUnit } = seen
+  const type = unit.unitTypeId ? types.get(unit.unitTypeId) : undefined
+  return (unit.reportingLines ?? []).filter((line) => runsOn(line, day)).map((line): OutsideTheModel => {
+    const departs = lineByModel(type, roles.get(line.role), line.role, line.kind)?.role
+    return {
+      on: 'unit', key: `unit/${unit.id}/${line.role}/${line.kind}`, roleId: line.role, kind: line.kind, unitId: unit.id, unitName: unit.name, units: 1,
+      ...(line.to ? { saysRole: line.to.role, saysUnit: organisation.units.find((one) => one.id === line.to?.unit)?.name ?? line.to.unit } : {}),
+      ...(departs ? { departsFrom: departs } : {}), scope: scopeOfUnit(unit.id) ?? '',
+      own: (unit.reportingLines ?? []).filter((held) => held !== line),
+    }
+  })
+}
+
+/** What one holder says for themselves, and whether they are placed outside the slots. */
+function saidByHolder(one: Assignment, { types, roles }: Models, seen: OrganisationSeen): OutsideTheModel[] {
+  const { organisation, day, personName, scopeOfAssignment } = seen
+  const unit = organisation.units.find((held) => held.id === one.unitId)
+  if (!unit) return []
+  const type = unit.unitTypeId ? types.get(unit.unitTypeId) : undefined
+  const holder = personName(one)
+  const lines = (one.reportsTo ?? []).filter((line) => runsOn(line, day)).map((line): OutsideTheModel => {
+    const departs = lineByModel(type, roles.get(one.roleId), one.roleId, line.kind)?.role
+    return {
+      on: 'holder', key: `holder/${one.id}/${line.kind}`, roleId: one.roleId, kind: line.kind, unitId: unit.id, unitName: unit.name, assignmentId: one.id,
+      holder, units: 1, saysRole: line.to.role,
+      saysUnit: organisation.units.find((held) => held.id === line.to.unit)?.name ?? line.to.unit,
+      ...(departs ? { departsFrom: departs } : {}), scope: scopeOfAssignment(one) ?? '',
+      ownHolder: (one.reportsTo ?? []).filter((held) => held !== line),
+    }
+  })
+  return isExceptionPlacement(organisation, one)
+    ? [...lines, { on: 'outside', key: `outside/${one.id}`, roleId: one.roleId, kind: 'solid', unitId: unit.id, unitName: unit.name, assignmentId: one.id, holder, units: 1 }]
+    : lines
+}
+
 export function organisationFacts({ organisation, day, personName, scopeOfUnit, scopeOfAssignment }: OrganisationSeen): OrganisationFacts {
   const types = new Map(organisation.unitTypes.map((type) => [type.id, type]))
   const roles = new Map(organisation.roles.map((role) => [role.id, role]))
@@ -99,41 +138,9 @@ export function organisationFacts({ organisation, day, personName, scopeOfUnit, 
   const units = unitsLike.map(seen).sort((a, b) => a.name.localeCompare(b.name))
   const holdersIn = (unitId: string, roleId: RoleId): HolderFact[] =>
     holdersOn(running, unitId, roleId, day).map((one) => ({ name: personName(one), acting: one.acting === true }))
-  const saidBelow: OutsideTheModel[] = []
-  for (const unit of unitsLike) {
-    const type = unit.unitTypeId ? types.get(unit.unitTypeId) : undefined
-    for (const line of unit.reportingLines ?? []) {
-      if (!runsOn(line, day)) continue
-      const departs = lineByModel(type, roles.get(line.role), line.role, line.kind)?.role
-      saidBelow.push({
-        on: 'unit', key: `unit/${unit.id}/${line.role}/${line.kind}`, roleId: line.role, kind: line.kind, unitId: unit.id, unitName: unit.name, units: 1,
-        ...(line.to ? { saysRole: line.to.role, saysUnit: organisation.units.find((one) => one.id === line.to?.unit)?.name ?? line.to.unit } : {}),
-        ...(departs ? { departsFrom: departs } : {}), scope: scopeOfUnit(unit.id) ?? '',
-        own: (unit.reportingLines ?? []).filter((held) => held !== line),
-      })
-    }
-  }
-  for (const one of running) {
-    const unit = organisation.units.find((held) => held.id === one.unitId)
-    if (!unit) continue
-    const type = unit.unitTypeId ? types.get(unit.unitTypeId) : undefined
-    for (const line of one.reportsTo ?? []) {
-      if (!runsOn(line, day)) continue
-      const departs = lineByModel(type, roles.get(one.roleId), one.roleId, line.kind)?.role
-      saidBelow.push({
-        on: 'holder', key: `holder/${one.id}/${line.kind}`, roleId: one.roleId, kind: line.kind, unitId: unit.id, unitName: unit.name, assignmentId: one.id,
-        holder: personName(one), units: 1, saysRole: line.to.role,
-        saysUnit: organisation.units.find((held) => held.id === line.to.unit)?.name ?? line.to.unit,
-        ...(departs ? { departsFrom: departs } : {}), scope: scopeOfAssignment(one) ?? '',
-        ownHolder: (one.reportsTo ?? []).filter((held) => held !== line),
-      })
-    }
-    if (isExceptionPlacement(organisation, one)) {
-      saidBelow.push({
-        on: 'outside', key: `outside/${one.id}`, roleId: one.roleId, kind: 'solid', unitId: unit.id, unitName: unit.name, assignmentId: one.id, holder: personName(one), units: 1,
-      })
-    }
-  }
+  const seenHere = { organisation, day, personName, scopeOfUnit, scopeOfAssignment }
+  const models = { types, roles }
+  const saidBelow = [...unitsLike.flatMap((unit) => saidByUnit(unit, models, seenHere)), ...running.flatMap((one) => saidByHolder(one, models, seenHere))]
   return {
     units,
     holdersIn,

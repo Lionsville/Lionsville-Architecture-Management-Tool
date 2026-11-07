@@ -26,8 +26,8 @@ function Row({ label, up, down, words, dispatch }: { label: string; up: Command 
   )
 }
 
-export function ArrangePanel({ model, order, onOrder, part, dispatch, onClose, readOnly }: {
-  model: OperatingModel; order: MatrixOrder; onOrder(order: MatrixOrder): void; part: string | undefined; dispatch(command: Command): void; onClose(): void; readOnly: boolean
+export function ArrangePanel({ width, model, order, onOrder, part, dispatch, onClose, readOnly }: {
+  width: number; model: OperatingModel; order: MatrixOrder; onOrder(order: MatrixOrder): void; part: string | undefined; dispatch(command: Command): void; onClose(): void; readOnly: boolean
 }) {
   const { t } = useStrings()
   const groups = responsibilityGroups(inOwnOrder(model.responsibilities)).filter((one) => one.group !== '')
@@ -35,7 +35,7 @@ export function ArrangePanel({ model, order, onOrder, part, dispatch, onClose, r
   const up = t('operating.orderUp')
   const down = t('operating.orderDown')
   return (
-    <Panel kind={t('operating.arrange')} name={t('operating.arrangeName')} onClose={onClose} dataGuide="operating.arrange">
+    <Panel kind={t('operating.arrange')} name={t('operating.arrangeName')} onClose={onClose} width={width} dataGuide="operating.arrange">
       <Segmented
         label={t('operating.matrixOrder')} value={order} onChange={onOrder} data-guide="operating.matrixOrder"
         options={[{ value: 'own', label: t('operating.orderOwn') }, { value: 'name', label: t('operating.orderName') }]}

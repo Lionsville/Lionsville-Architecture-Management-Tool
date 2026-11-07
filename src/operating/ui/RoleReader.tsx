@@ -18,7 +18,7 @@ import { editRole, moveRole, setFlag, setRoleReportsTo } from '../edit'
 import { LinesEditor } from './LinesEditor'
 import { Fold, OverTime, Prose, ReaderFoot, SourceWord, Tick } from './ReaderParts'
 import type { ReaderParts } from './ReaderParts'
-import { lineWords, roleNamed } from './reading'
+import { roleNamed } from './reading'
 import { ReportedBy } from './SlotReader'
 
 const PLACES_SHOWN = 5
