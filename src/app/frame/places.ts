@@ -16,6 +16,15 @@ export type FramePlace = {
   readonly guide?: string
   /** Other pages this one entry stands for: its tabs, each with its own address. */
   readonly also?: readonly Page[]
+  /** What the one entry holds, said under it and each a press away: a person looks for a word, not for the entry it was filed under. */
+  readonly within?: readonly PlaceWithin[]
+}
+
+export type PlaceWithin = {
+  readonly page: Page
+  /** Its tab, where the page has several and this word is one of them. */
+  readonly tab?: string
+  readonly label: StringKey
 }
 
 /** Is this place the one on screen? */
@@ -33,10 +42,24 @@ export const SCOPE_PLACES: readonly FramePlace[] = [
 
 /** The organisation's: the foot of the tree, and the top of More. */
 export const ORGANISATION_PLACES: readonly FramePlace[] = [
-  { page: 'register', label: 'frame.place.register', guide: 'org.card.register' },
+  {
+    page: 'register', label: 'frame.place.register', guide: 'org.card.register',
+    within: [
+      { page: 'register', tab: 'applications', label: 'register.tabApplications' },
+      { page: 'technologyRegister', tab: 'services', label: 'register.tabServices' },
+      { page: 'technologyRegister', tab: 'platforms', label: 'register.tabPlatforms' },
+    ],
+  },
   { page: 'people', label: 'frame.place.people', guide: 'org.card.people' },
   { page: 'operating', label: 'frame.place.operating', guide: 'org.card.operating' },
-  { page: 'principles', label: 'frame.place.guidance', also: ['topics', 'blocks'] },
+  {
+    page: 'principles', label: 'frame.place.guidance', also: ['topics', 'blocks'],
+    within: [
+      { page: 'principles', label: 'frame.place.principles' },
+      { page: 'topics', label: 'frame.place.topics' },
+      { page: 'blocks', label: 'frame.place.blocks' },
+    ],
+  },
   { page: 'checks', label: 'frame.place.checks', guide: 'org.card.checks' },
 ]
 
@@ -45,6 +68,7 @@ export const MORE_PLACES: readonly FramePlace[] = []
 
 /** What ⌘K finds by its own name, though one entry stands for it everywhere else. */
 export const FOUND_PLACES: readonly FramePlace[] = [
+  { page: 'technologyRegister', label: 'frame.place.technology' },
   { page: 'topics', label: 'frame.place.topics' },
   { page: 'blocks', label: 'frame.place.blocks' },
 ]

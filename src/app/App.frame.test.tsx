@@ -96,6 +96,26 @@ describe('the two rows', () => {
   })
 })
 
+describe('the foot of the tree', () => {
+  it('says what its entries hold, each word going to that page by its own address', async () => {
+    await home()
+    const press = async (word: string) => {
+      fireEvent.click(within(await screen.findByTestId('tree-foot')).getByRole('button', { name: word }))
+      await placePage()
+    }
+    const foot = screen.getByTestId('tree-foot')
+    for (const word of ['Applications', 'Services', 'Platforms', 'Principles', 'Topics', 'Building blocks']) expect(within(foot).getByRole('button', { name: word })).toBeDefined()
+    await press('Building blocks')
+    await waitFor(() => expect(window.location.hash).toBe('#/-/blocks'))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await press('Topics')
+    await waitFor(() => expect(window.location.hash).toBe('#/-/topics'))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await press('Platforms')
+    await waitFor(() => expect(window.location.hash).toMatch(/^#\/-\/register\?.*tab=platforms/))
+  })
+})
+
 describe('a page as a place', () => {
   it('has an address, and Esc and Home both leave it', async () => {
     await home()

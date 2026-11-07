@@ -54,23 +54,28 @@ export type LineLink = {
   readonly 'data-testid'?: string
   /** The words a hover adds: what the link's sentence was before it folded into a word. */
   readonly title?: string
+  /** The one on screen. */
+  readonly current?: boolean
 }
 
 /** *Nothing here yet: Documentation · Building blocks*. Nothing to say draws nothing. */
-export function LinkLine({ label, links, 'data-testid': testId }: {
-  readonly label: string
+export function LinkLine({ label, links, className, 'data-testid': testId }: {
+  /** Absent where what the line is about stands right above it. */
+  readonly label?: string
+  /** Where a place other than a page's end draws it. */
+  readonly className?: string
   readonly links: readonly LineLink[]
   readonly 'data-testid'?: string
 }) {
   if (links.length === 0) return null
   return (
-    <p className="kit-linkline" data-testid={testId}>
-      <span>{label}</span>{' '}
+    <p className={className ?? 'kit-linkline'} data-testid={testId}>
+      {label !== undefined && <><span>{label}</span>{' '}</>}
       {links.map((link, at) => (
         <span key={link.label}>
           {at > 0 && <span aria-hidden="true"> · </span>}
           <button
-            type="button" className="kit-linkline__link" title={link.title} data-guide={link['data-guide']} data-testid={link['data-testid']}
+            type="button" className="kit-linkline__link" title={link.title} aria-current={link.current ? 'page' : undefined} data-guide={link['data-guide']} data-testid={link['data-testid']}
             onClick={link.onPress}
           >
             {link.label}

@@ -34,6 +34,7 @@ export const EN = {
   'kit.guide.drag': 'Move this card',
   'kit.guide.menu': 'More',
   'kit.guide.grow': 'Show the card',
+  'kit.frame.treeWidth': 'Width of the tree of scopes',
   'kit.list.tick': 'Select',
   'kit.list.tickGroup': 'Select all in',
   'kit.list.unread': 'Not read yet',

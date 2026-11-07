@@ -35,6 +35,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.guide.drag': 'Deze kaart verplaatsen',
   'kit.guide.menu': 'Meer',
   'kit.guide.grow': 'De kaart tonen',
+  'kit.frame.treeWidth': 'Breedte van de boom met scopes',
   'kit.list.tick': 'Selecteren',
   'kit.list.tickGroup': 'Alles selecteren in',
   'kit.list.unread': 'Nog niet gelezen',

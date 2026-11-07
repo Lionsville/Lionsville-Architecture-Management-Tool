@@ -7,14 +7,25 @@
  * column (decision 1). The tree docks at its start and a panel at its end, and
  * a page takes the column over the view rather than opening over the window.
  *
+ * The docked tree is as wide as its person dragged it to and never as wide as
+ * what it holds: a long name is cut, on hover and to a screen reader whole.
+ *
  * It knows no scope and no model. What the rows hold is handed in, and where a
  * page or a view's tabs go is said to whoever asks through {@link PlaceHostContext}.
  */
 import { useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
+import { useStrings } from '../../i18n/LanguageContext'
+import { SeamResizer } from '../SeamResizer'
+import { useSeamWidth } from '../useSeamWidth'
 import { PlaceHostContext } from './placeHost'
 import type { PlaceHost } from './placeHost'
+import { px } from './tokens'
 import './Frame.css'
+
+/** Enough for a name and its number, and never so much that the page beside it is what gives way. */
+const TREE_MIN = 220
+const TREE_MAX = 560
 
 export type FrameProps = {
   /** Wear a thin band of the accent above the rows: an environment somebody gave a colour, told apart at a glance. */
@@ -35,6 +46,19 @@ export type FrameProps = {
   /** Row one is the surface the window is dragged by. */
   readonly draggable?: boolean
   readonly children: ReactNode
+}
+
+/** The docked tree and the seam that gives it more room. */
+function DockedTree({ children }: { readonly children: ReactNode }) {
+  const { t } = useStrings()
+  const fallback = px('panel-w-tree')
+  const [width, setWidth] = useSeamWidth('frame.tree', fallback)
+  return (
+    <>
+      <aside className="kit-frame__tree" data-testid="frame-tree" style={{ width }}>{children}</aside>
+      <SeamResizer orientation="vertical" region="before" value={width} min={TREE_MIN} max={TREE_MAX} defaultValue={fallback} onChange={setWidth} label={t('kit.frame.treeWidth')} />
+    </>
+  )
 }
 
 export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, controlsInset = 0, draggable = false, accented = false, panelName, children }: FrameProps) {
@@ -58,7 +82,7 @@ export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageU
         </nav>
         {band}
         <div className="kit-frame__body">
-          {tree && <aside className="kit-frame__tree" data-testid="frame-tree">{tree}</aside>}
+          {tree && <DockedTree>{tree}</DockedTree>}
           <main className="kit-frame__main">
             {children}
             <div className="kit-frame__pages" ref={setPage} data-testid="frame-pages" />

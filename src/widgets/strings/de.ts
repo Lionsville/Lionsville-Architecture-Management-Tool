@@ -35,6 +35,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.guide.drag': 'Diese Karte verschieben',
   'kit.guide.menu': 'Mehr',
   'kit.guide.grow': 'Karte zeigen',
+  'kit.frame.treeWidth': 'Breite des Scope-Baums',
   'kit.list.tick': 'Auswählen',
   'kit.list.tickGroup': 'Alle auswählen in',
   'kit.list.unread': 'Noch nicht gelesen',

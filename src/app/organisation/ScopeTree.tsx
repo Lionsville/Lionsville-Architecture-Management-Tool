@@ -190,11 +190,9 @@ function ScopeRow({ scope, depth, shut, current, foldable, above, unread, count,
       {unread
         ? <span className="kit-tree__holds" data-testid="scope-not-read">{s('org.notRead')}</span>
         : count > 0 && <span className="kit-tree__holds" data-testid="scope-holds">{count}</span>}
-      {items.length > 0 && (
-        <span className="kit-tree__menu" onClick={(event) => event.stopPropagation()}>
-          <MoreMenu size="small" label={s('frame.scopeMenu', { name: scope.name })} items={items} />
-        </span>
-      )}
+      <span className="kit-tree__menu" onClick={(event) => event.stopPropagation()}>
+        {items.length > 0 && <MoreMenu size="small" label={s('frame.scopeMenu', { name: scope.name })} items={items} />}
+      </span>
     </div>
   )
 }
@@ -213,11 +211,9 @@ export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }
       <span className="kit-tree__fold" aria-hidden />
       <button type="button" className="kit-tree__name">{name}</button>
       {count > 0 && <span className="kit-tree__holds">{count}</span>}
-      {items.length > 0 && (
-        <span className="kit-tree__menu" onClick={(event) => event.stopPropagation()}>
-          <MoreMenu size="small" label={s('frame.scopeMenu', { name })} items={items} />
-        </span>
-      )}
+      <span className="kit-tree__menu" onClick={(event) => event.stopPropagation()}>
+        {items.length > 0 && <MoreMenu size="small" label={s('frame.scopeMenu', { name })} items={items} />}
+      </span>
     </div>
   )
 }

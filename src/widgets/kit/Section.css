@@ -7,7 +7,7 @@
 .kit-linkline__link {
   appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer;
 }
-.kit-linkline__link:hover { text-decoration: underline; }
+.kit-linkline__link:hover, .kit-linkline__link[aria-current='page'] { text-decoration: underline; }
 .kit-linkline__link:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 1px; }
 
 .kit-page { padding: var(--s-3) var(--s-4) var(--s-5); min-width: 0; }

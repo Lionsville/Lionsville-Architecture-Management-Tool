@@ -8,6 +8,8 @@ import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
 import { PageDialog } from '../PageDialog'
 import { PageClose } from '../PageClose'
+import { SeamWidthsProvider } from '../useSeamWidth'
+import type { SeamWidths } from '../useSeamWidth'
 import { Frame } from './Frame'
 import type { ReactNode } from 'react'
 
@@ -77,6 +79,55 @@ describe('a page in the frame', () => {
 
   it('reads clean to axe, the rows included', async () => {
     inFrame(<PageDialog open aria-label="Roadmap"><p>a</p></PageDialog>)
+    expect(await axeFindings()).toEqual([])
+  })
+})
+
+describe('the docked tree', () => {
+  const docked = (widths?: SeamWidths) => renderShell(
+    <SeamWidthsProvider value={widths}>
+      <Frame pageUp={false} rowOne={null} rowTwoStart={null} rowTwoEnd={null} tree={<p>A long scope name that goes on and on and on</p>}>
+        <p>page</p>
+      </Frame>
+    </SeamWidthsProvider>,
+  )
+  const seam = () => screen.getByRole('separator', { name: /tree/i })
+  const width = () => screen.getByTestId('frame-tree').style.width
+
+  it('starts at the sensible width whatever it holds', () => {
+    docked()
+    expect(width()).toBe('300px')
+    expect(seam().getAttribute('aria-valuenow')).toBe('300')
+  })
+
+  it('is made wider and narrower from the keyboard, within its limits, and Home puts it back', () => {
+    docked()
+    fireEvent.keyDown(seam(), { key: 'ArrowRight' })
+    expect(width()).toBe('308px')
+    fireEvent.keyDown(seam(), { key: 'ArrowLeft', shiftKey: true })
+    expect(width()).toBe('276px')
+    for (let step = 0; step < 10; step += 1) fireEvent.keyDown(seam(), { key: 'ArrowLeft', shiftKey: true })
+    expect(width()).toBe('220px')
+    fireEvent.keyDown(seam(), { key: 'Home' })
+    expect(width()).toBe('300px')
+  })
+
+  it('comes back as it was left, kept per person with the other widths', () => {
+    const held = new Map<string, number>([['frame.tree', 410]])
+    const keep = vi.fn((key: string, next: number) => { held.set(key, next) })
+    docked({ widthOf: (key) => held.get(key), keep })
+    expect(width()).toBe('410px')
+    fireEvent.keyDown(seam(), { key: 'ArrowRight' })
+    expect(keep).toHaveBeenCalledWith('frame.tree', 418)
+  })
+
+  it('has no seam with no tree', () => {
+    renderShell(<Frame pageUp={false} rowOne={null} rowTwoStart={null} rowTwoEnd={null}><p>page</p></Frame>)
+    expect(screen.queryByRole('separator')).toBeNull()
+  })
+
+  it('is clean to axe', async () => {
+    docked()
     expect(await axeFindings()).toEqual([])
   })
 })

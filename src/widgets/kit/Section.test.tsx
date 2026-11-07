@@ -14,6 +14,14 @@ describe('Section and LinkLine', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Views here' })).toBeTruthy()
   })
 
+  it('stands without a label under what it is about, and says which one is on screen', () => {
+    const { container } = render(<LinkLine className="mine" links={[{ label: 'Principles', onPress: vi.fn(), current: true }, { label: 'Topics', onPress: vi.fn() }]} />)
+    expect(container.textContent).toBe('Principles · Topics')
+    expect(container.querySelector('p.mine')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Principles' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('button', { name: 'Topics' }).hasAttribute('aria-current')).toBe(false)
+  })
+
   it('keeps every word a press away, and says nothing with nothing to name', () => {
     const onPress = vi.fn()
     const { container, rerender } = render(<LinkLine label="Nothing here yet:" links={[{ label: 'Documentation', onPress, 'data-testid': 'one' }, { label: 'Building blocks', onPress: vi.fn() }]} />)

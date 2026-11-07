@@ -13,7 +13,7 @@
  * by the topics relevant to it, and shows each match flat with its path, so
  * nothing needs unfolding.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { Language, Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
 import { flattenScopes, sortScopes } from '../../projects/scope'
@@ -26,6 +26,7 @@ import { matchesQuery } from '../../model/textSearch'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { TextInput } from '../../widgets/kit/Field'
+import { LinkLine } from '../../widgets/kit/Section'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { heldInWords, RootRow, ScopeTree } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
@@ -155,8 +156,8 @@ export function ScopeTreePanel({
           ]}
         />
       </div>
-      <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
       <div className="kit-tree__rows">
+        <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
         {matching === undefined && (
           <RootRow
             tree={tree} name={name} current={at === ROOT_SCOPE} count={holdings.count(ROOT_SCOPE)} words={heldInWords(holdings.all(ROOT_SCOPE), s)}
@@ -175,14 +176,26 @@ export function ScopeTreePanel({
         {ORGANISATION_PLACES.map((place) => {
           const fact = placeFact?.(place.page)
           return (
+            <Fragment key={place.page}>
             <button
-              key={place.page} type="button" className="kit-tree__place" data-testid={`tree-place-${place.page}`} data-guide={place.guide}
+              type="button" className="kit-tree__place" data-testid={`tree-place-${place.page}`} data-guide={place.guide}
               aria-current={placeShows(place, page) ? 'page' : undefined} title={fact?.words}
               onClick={() => go({ scope: ROOT_SCOPE, page: place.page })}
             >
               <span>{s(place.label)}</span>
               {fact && <span className="kit-tree__holds">{fact.count}</span>}
             </button>
+            {place.within && (
+              <LinkLine
+                className="kit-tree__within" data-testid={`tree-within-${place.page}`}
+                links={place.within.map((inside) => ({
+                  label: s(inside.label), 'data-testid': `tree-within-${inside.page}${inside.tab ? `-${inside.tab}` : ''}`,
+                  current: inside.tab === undefined && inside.page === page,
+                  onPress: () => go({ scope: ROOT_SCOPE, page: inside.page, ...(inside.tab ? { tab: inside.tab } : {}) }),
+                }))}
+              />
+            )}
+            </Fragment>
           )
         })}
       </div>
