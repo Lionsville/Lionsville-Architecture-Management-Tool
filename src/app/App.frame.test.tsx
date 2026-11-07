@@ -1,6 +1,6 @@
-// @vitest-environment jsdom
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+// @vitest-environment jsdom
 
 /**
  * The frame, through the app: two rows that do not change from a home to a

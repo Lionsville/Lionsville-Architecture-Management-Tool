@@ -12,7 +12,6 @@
  * once per render, so a hook below must depend on a field and never on one
  * of these objects, which is new every time.
  */
-import type { ReactNode } from 'react'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import type { PersonId } from '../model/person'
 import type { Language, Translate } from '../i18n'

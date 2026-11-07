@@ -51,23 +51,6 @@ afterEach(() => {
   delete (window as { navigation?: unknown }).navigation
 })
 
-const props = {
-  designName: 'Warehouse landscape',
-  crumbs: [{ path: '', name: 'Acme Logistics' }],
-  savedAt: null,
-  language: 'en' as const,
-  onGoHome: () => {},
-  onOpenSettings: () => {},
-  onOpenDocumentation: () => {},
-  onOpenDecisions: () => {},
-  onOpenObservations: () => {},
-  onOpenRoadmap: () => {},
-  onOpenSearch: () => {},
-  activity: () => [],
-  scopePath: 'retail',
-  s: translator('en'),
-}
-
 const s_ = translator('en')
 
 describe('the bar', () => {

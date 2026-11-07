@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PATH_PREFIX, PLACE_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
+  PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
 

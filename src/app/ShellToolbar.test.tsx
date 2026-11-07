@@ -3,23 +3,14 @@
 
 // @vitest-environment jsdom
 /**
- * What the bar does for the window, which is the part of it nobody can see.
- *
- * On the desktop this bar *is* the title bar (`titleBarStyle: 'hiddenInset'`),
- * and both of the jobs it inherited are silent when they go wrong: without the
- * inset the traffic lights sit on top of the first button, and without a drag
- * region the window cannot be moved at all. Two CSS declarations, no visible
- * difference in a screenshot, so they are pinned here.
- *
- * The rules are read out of the stylesheet rather than off the element:
- * `-webkit-app-region` is a property jsdom's computed style does not keep, and
- * "did Emotion emit it" is exactly the question worth asking.
+ * What the frame still takes from the bar's module: the crumbs a place is named
+ * by, and what the chip says about the source. The rows themselves are pinned in
+ * `widgets/kit/Frame.test.tsx` and `App.frame.test.tsx`.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup } from '@testing-library/react'
 import { translator } from '../i18n'
 import { crumbsFor, sourceIsAlarming, sourceLabel, sourceTipKey } from './ShellToolbar'
-import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -38,18 +29,6 @@ const props = {
   activity: () => [],
   scopePath: 'retail/warehouse',
   s: translator('en'),
-}
-
-/** Rendered per test rather than looked up globally: two bars in one document
-    would leave the second test reading the first one's rules. */
-const barIn = (container: HTMLElement) =>
-  container.querySelector<HTMLElement>('[data-testid="shell-toolbar"]')!
-
-/** Every rule Emotion wrote for that element, its nested selectors included. */
-const rulesFor = (element: HTMLElement): string => {
-  const css = [...document.querySelectorAll('style')].map((tag) => tag.textContent).join('')
-  const own = [...element.classList].find((name) => css.includes(`.${name}{`))
-  return (css.match(/[^{}]*\{[^{}]*\}/g) ?? []).filter((rule) => rule.includes(`.${own}`)).join('')
 }
 
 describe('the crumbs', () => {

@@ -25,7 +25,7 @@
  * from a fault.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import { transaction } from '../model'
 import type { Command } from '../model'

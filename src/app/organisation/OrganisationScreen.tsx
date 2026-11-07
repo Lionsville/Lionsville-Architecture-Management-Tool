@@ -344,12 +344,7 @@ export function OrganisationScreen({
   )
   const atRoot = home.path === ROOT_SCOPE
 
-  /**
-   * Ordered here and not in the store: the order is what this screen shows, and
-   * the toggle has to change it without a round trip to storage.
-   */
-  const ordered = useMemo<ScopeSummary>(() => ({ ...home, children: sortScopes(home.children, order) }), [home, order])
-  /** The whole tree in the same order, for the dialogs' *filed under* selects. */
+  /** The whole tree in the frame tree's order, for the dialogs' *filed under* selects. */
   const orderedTree = useMemo<ScopeSummary>(
     () => ({ ...tree, children: sortScopes(tree.children, order) }),
     [tree, order],

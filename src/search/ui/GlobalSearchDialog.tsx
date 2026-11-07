@@ -127,6 +127,41 @@ export function chipOf(hit: SearchHit, s: Translate): string | undefined {
   return undefined
 }
 
+const optionId = (index: number) => `lv-gsearch-option-${index}`
+
+/** The commands under the hits, a group to a heading: they count on from the hits for the arrows. */
+function PaletteRows({ lines, first, active, onHover, onRun }: {
+  lines: readonly PaletteLine[]
+  first: number
+  active: number
+  onHover(index: number): void
+  onRun(line: PaletteLine): void
+}) {
+  return (
+    <>
+      {runsOfGroup(lines).map(({ group, from, run: inGroup }) => (
+          <Box key={group} role="group" aria-label={group}>
+            <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11 }}>{group}</ListSubheader>
+            {inGroup.map((line, offset) => {
+              const index = first + from + offset
+              return (
+                <ListItemButton
+                  key={line.id} id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
+                  onMouseMove={() => onHover(index)} onClick={() => onRun(line)}
+                  data-testid={`palette-${line.id}`}
+                  sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
+                >
+                  <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
+                  {line.keys !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{line.keys}</Typography>}
+                </ListItemButton>
+              )
+            })}
+          </Box>
+        ))}
+    </>
+  )
+}
+
 export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, people, more, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -159,7 +194,6 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
   const lines = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
   const total = hits.length + lines.length
   const active = total > 0 ? Math.min(activeIndex, total - 1) : -1
-  const optionId = (index: number) => `lv-gsearch-option-${index}`
 
   useEffect(() => {
     if (active < 0) return
@@ -258,25 +292,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
             })}
           </Box>
         ))}
-        {runsOfGroup(lines).map(({ group, from, run: inGroup }) => (
-          <Box key={group} role="group" aria-label={group}>
-            <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11 }}>{group}</ListSubheader>
-            {inGroup.map((line, offset) => {
-              const index = hits.length + from + offset
-              return (
-                <ListItemButton
-                  key={line.id} id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
-                  onMouseMove={() => setActiveIndex(index)} onClick={() => run(line)}
-                  data-testid={`palette-${line.id}`}
-                  sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
-                >
-                  <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
-                  {line.keys !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{line.keys}</Typography>}
-                </ListItemButton>
-              )
-            })}
-          </Box>
-        ))}
+        <PaletteRows lines={lines} first={hits.length} active={active} onHover={setActiveIndex} onRun={run} />
       </Box>
       {/* What a whole sentence needs room for: a hit read before it is opened. */}
       {previewed && (
