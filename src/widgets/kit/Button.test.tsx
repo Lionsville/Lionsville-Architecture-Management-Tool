@@ -3,6 +3,8 @@
 
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
@@ -11,6 +13,23 @@ import { Button, IconButton } from './Button'
 import { Tooltip } from './Tooltip'
 
 afterEach(cleanup)
+
+/** The rules a pressed button is drawn by, off its own stylesheet: jsdom paints nothing. */
+const STYLES = readFileSync(join(process.cwd(), 'src/widgets/kit/Button.css'), 'utf8')
+
+describe('a pressed Button', () => {
+  it('sets its ground and its ink together, after every variant, in each of its states', () => {
+    const pressed = STYLES.indexOf("[aria-pressed='true']")
+    for (const variant of ['primary', 'quiet', 'danger']) expect(STYLES.lastIndexOf(`[data-variant='${variant}']`)).toBeLessThan(pressed)
+    const rule = /\.kit-button\[aria-pressed='true'\],\s*\.kit-button\[aria-pressed='true'\]:hover,\s*\.kit-button\[aria-pressed='true'\]:active \{([^}]*)\}/.exec(STYLES)
+    expect(rule?.[1]).toContain('background: var(--selected-soft)')
+    expect(rule?.[1]).toContain('color: var(--ink)')
+  })
+
+  it('still reads as refused where it is refused: that rule comes after', () => {
+    expect(STYLES.indexOf('.kit-button[data-refused]')).toBeGreaterThan(STYLES.lastIndexOf("[aria-pressed='true']"))
+  })
+})
 
 describe('Button', () => {
   it('draws the four variants, each a button named by its word', async () => {

@@ -28,11 +28,16 @@
 .kit-button[data-variant='quiet'] { background: transparent; border-color: transparent; }
 .kit-button[data-variant='quiet']:hover { background: var(--surface-2); }
 .kit-button[data-variant='quiet']:active { background: var(--line); }
-.kit-button[aria-pressed='true'] { background: var(--selected-soft); }
 
 .kit-button[data-variant='danger'] { background: var(--surface); border-color: var(--bad); color: var(--bad); }
 .kit-button[data-variant='danger']:hover { background: var(--bad-soft); }
 .kit-button[data-variant='danger']:active { background: var(--bad-soft); border-width: 2px; }
+
+/* Pressed is one look whatever the variant: ground, edge and ink set together, after the variants, so a variant's ink never lands on this ground. */
+.kit-button[aria-pressed='true'],
+.kit-button[aria-pressed='true']:hover,
+.kit-button[aria-pressed='true']:active { background: var(--selected-soft); border-color: var(--selected-edge); color: var(--ink); }
+.kit-button[aria-pressed='true']:hover { box-shadow: inset 0 0 0 1px var(--selected-edge); }
 
 /* Refused and native-disabled are drawn alike, and answer nothing under the pointer. */
 .kit-button:disabled,
