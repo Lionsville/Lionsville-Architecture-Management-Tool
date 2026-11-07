@@ -299,6 +299,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.dutiesAll': 'Alle {count}',
   'operating.inTheOrganisation': 'In der Organisation',
   'operating.vacant': 'Frei',
+  'operating.nobodyYet': 'Noch niemand',
   'operating.acting': '{name}, kommissarisch',
   'operating.moreCount': '{count} weitere',
   'operating.openInOrganisation': 'In der Organisation öffnen',

@@ -92,7 +92,8 @@ export function RoleReader({ role, parts, partName, partDuties }: {
               <span className="op-small">
                 {place.holders.length
                   ? place.holders.map((one) => (one.acting ? t('operating.acting', { name: one.name }) : one.name)).join(', ')
-                  : <span className="op-vacant">{t('operating.vacant')}</span>}
+                  // Vacant is what the slot's minimum says is missing, as the count above reads it; an optional place nobody holds is quiet.
+                  : place.vacant > 0 ? <span className="op-vacant">{t('operating.vacant')}</span> : <span className="op-quiet">{t('operating.nobodyYet')}</span>}
               </span>
             </div>
           ))}

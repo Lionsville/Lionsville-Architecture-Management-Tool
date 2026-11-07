@@ -299,6 +299,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.dutiesAll': 'Alle {count}',
   'operating.inTheOrganisation': 'In de organisatie',
   'operating.vacant': 'Vacant',
+  'operating.nobodyYet': 'Nog niemand',
   'operating.acting': '{name}, waarnemend',
   'operating.moreCount': 'Nog {count}',
   'operating.openInOrganisation': 'In de organisatie openen',

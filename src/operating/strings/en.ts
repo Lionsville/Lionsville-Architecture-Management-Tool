@@ -310,6 +310,7 @@ export const EN = {
   'operating.dutiesAll': 'All {count}',
   'operating.inTheOrganisation': 'In the organisation',
   'operating.vacant': 'Vacant',
+  'operating.nobodyYet': 'Nobody yet',
   'operating.acting': '{name}, acting',
   'operating.moreCount': '{count} more',
   'operating.openInOrganisation': 'Open in the organisation',

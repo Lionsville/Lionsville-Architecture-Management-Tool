@@ -20,6 +20,7 @@ import { entryOf } from '../library'
 import { libraryById } from '../libraries'
 import type { OrganisationFacts } from '../organisationFacts'
 import type { LineChange, RefuseLine } from './lineChange'
+import '../../widgets/kit/hidden.css'
 
 const MarkdownEditor = lazyPart<ComponentProps<typeof MarkdownEditorShape>>(
   () => import('../../documentation/ui/MarkdownEditor').then((held) => held.MarkdownEditor),
@@ -65,7 +66,9 @@ export function Prose({ label, value, onChange, readOnly, render, testId }: {
   if (readOnly) return value ? <div className="op-prose" data-testid={testId}>{render ? render(value) : value}</div> : null
   return (
     <div className="op-prose" data-testid={testId}>
-      <button type="button" className="op-prose__read" aria-label={t('operating.write', { label })} onClick={() => setWriting(true)}>
+      {/* The name read out holds the words shown, so a person who says what they see can press it (WCAG 2.5.3). */}
+      <button type="button" className="op-prose__read" onClick={() => setWriting(true)}>
+        {value && <span className="kit-hidden">{t('operating.write', { label })}: </span>}
         {value ? (render ? render(value) : value) : <span className="op-quiet">{t('operating.writeEmpty', { label })}</span>}
       </button>
     </div>

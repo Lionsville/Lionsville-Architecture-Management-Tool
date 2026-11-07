@@ -167,6 +167,21 @@ describe('a role read', () => {
     expect(onOpenChart).toHaveBeenCalled()
   })
 
+  it('calls a place vacant only where the count above does, and an optional one nobody holds quietly', () => {
+    const facts = { placesOf: () => [place(1), { ...place(2), vacant: 0 }] } as unknown as OrganisationFacts
+    renderShell(<RoleReader role={roleOf('dev')} parts={parts({ facts })} />)
+    expect(screen.getByTestId('operating-holders').textContent).toBe('Holders: 0 · vacant: 1')
+    const [needed, optional] = screen.getAllByTestId('operating-role-place')
+    expect(needed.textContent).toContain('Vacant')
+    expect(optional.textContent).toContain('Nobody yet')
+  })
+
+  it('names its purpose with the words it shows, so the press is found by what is read', () => {
+    const role = { ...roleOf('dev'), purpose: 'Builds the work' }
+    renderShell(<RoleReader role={role} parts={parts()} />)
+    expect(screen.getByRole('button', { name: /^Write Purpose.*Builds the work$/ })).toBeTruthy()
+  })
+
   it('names a place it cannot go to, and says a role held in no type', () => {
     const facts = { placesOf: () => [place(1)] } as unknown as OrganisationFacts
     renderShell(<RoleReader role={roleOf('ops')} parts={parts({ facts })} />)
