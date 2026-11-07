@@ -38,6 +38,7 @@ import {
 } from '../projects/scopeAccess'
 import type { RecordLink } from '../projects/links'
 import { SCOPE_MOVED } from '../projects/revision'
+import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
