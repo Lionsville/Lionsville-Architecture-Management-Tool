@@ -96,6 +96,7 @@ const STATUS_TABLES: Partial<Record<SearchKind, Readonly<Record<string, StringKe
   cause: STATE_LABEL,
   solution: PHASE_LABEL,
   experiment: OUTCOME_LABEL,
+  person: { active: 'gsearch.person.active', left: 'gsearch.person.left', forgotten: 'gsearch.person.forgotten' },
 }
 
 /** What the chip beside a title says: which kind of element or view, or where the record stands. */

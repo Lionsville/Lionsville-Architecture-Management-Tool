@@ -40,10 +40,12 @@ export type HomeSearchProps = {
   /** Every scope as the shell's tree read has it. Absent: the home's own scope alone. */
   treeRead?: TreeRead
   onOpen: (path: ScopePath, page?: InitialPage) => void
+  /** The People page with one person picked, for a hit on a person. */
+  onOpenPerson?: (person: string) => void
   s: Translate
 }
 
-export function HomeSearch({ at, root, tree, treeRead, onOpen, s }: HomeSearchProps) {
+export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, s }: HomeSearchProps) {
   const [open, setOpen] = useState(false)
   const people = usePersonNames()
 
@@ -76,8 +78,9 @@ export function HomeSearch({ at, root, tree, treeRead, onOpen, s }: HomeSearchPr
 
   const choose = useCallback((hit: SearchHit) => {
     setOpen(false)
-    onOpen(hit.scope ?? at, initialPageFor({ page: hit.opens.page, id: hit.opens.id }))
-  }, [onOpen, at])
+    if (hit.kind === 'person') onOpenPerson?.(hit.id)
+    else onOpen(hit.scope ?? at, initialPageFor({ page: hit.opens.page, id: hit.opens.id }))
+  }, [onOpen, onOpenPerson, at])
 
   return (
     <>

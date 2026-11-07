@@ -469,7 +469,7 @@ export function OrganisationScreen({
         onGoHome={closePagesAndGoHome}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
-        agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open }}
+        agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open, onOpenPerson: (person) => homePages.open('people', person) }}
         s={s}
         windowChrome={windowChrome}
       />
@@ -885,7 +885,7 @@ function OrganisationBar({
   /** The open source's provider's own button, already drawn: at the end, before the chip. */
   barButton?: ReactNode
   /** What ⌘K reads on a home and where a hit opens (`HomeSearch`). */
-  search: Pick<HomeSearchProps, 'root' | 'treeRead' | 'onOpen'>
+  search: Pick<HomeSearchProps, 'root' | 'treeRead' | 'onOpen' | 'onOpenPerson'>
   s: Translate
   windowChrome: WindowChrome
 }) {

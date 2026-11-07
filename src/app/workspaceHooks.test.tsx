@@ -158,6 +158,7 @@ describe('a search hit, chosen', () => {
     id: 'ob-1', number: 1, title: 'Tills freeze at noon', date: '2026-09-01', impact: 'major', seen: 1, body: '', history: [],
   }
   function mount() {
+    const onOpenPeople = vi.fn()
     const onOpenScope = vi.fn()
     const openDocumentation = vi.fn()
     const view = renderHook(() => {
@@ -171,12 +172,12 @@ describe('a search hit, chosen', () => {
       })
       const dialogs = useWorkspaceDialogs({
         session, settings: { onOpen: vi.fn(), onApply: vi.fn() }, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
-        scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation, vi.fn()), onOpenScope,
+        scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation, vi.fn()), onOpenScope, onOpenPeople,
         save: () => Promise.resolve(), pointComment: vi.fn(),
       })
       return { session, pages, dialogs }
     })
-    return { view, onOpenScope, openDocumentation }
+    return { view, onOpenScope, onOpenPeople, openDocumentation }
   }
 
   it('opens on its page when this scope holds it', () => {
@@ -186,6 +187,13 @@ describe('a search hit, chosen', () => {
     act(() => view.result.current.dialogs.chooseHit(hit))
     expect(view.result.current.pages.page()).toEqual({ page: 'observations', id: 'ob-1' })
     expect(onOpenScope).not.toHaveBeenCalled()
+  })
+
+  it('opens the People page with the person picked, for a hit on a person', () => {
+    const { view, onOpenPeople } = mount()
+    act(() => view.result.current.dialogs.chooseHit({ kind: 'person', id: 'pe-1', title: 'Ada', about: [], snippet: '', opens: { page: 'people', id: 'pe-1' } }))
+    expect(onOpenPeople).toHaveBeenCalledWith('pe-1')
+    expect(view.result.current.pages.page()).toBeUndefined()
   })
 
   it('opens the scope that holds it, on the same page, when another scope does', () => {

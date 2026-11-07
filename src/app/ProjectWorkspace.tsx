@@ -510,7 +510,8 @@ function useScreenParts(
   )
   const dialogs = useWorkspaceDialogs({
     session, settings: props.settings, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,
-    scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}), pointComment: requests.pointComment,
+    scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
+    ...(navigation.onOpenPeople ? { onOpenPeople: navigation.onOpenPeople } : {}), pointComment: requests.pointComment,
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
   return { snapshots, toolbarRef, pageChrome, todayDay, today, pages, show, dialogs, analysis }

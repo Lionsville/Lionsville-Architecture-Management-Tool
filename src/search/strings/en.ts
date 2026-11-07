@@ -45,6 +45,9 @@ export const EN = {
   'gsearch.kind.responsibility': 'Responsibilities',
   'gsearch.kind.principle': 'Principles',
   'gsearch.kind.person': 'People',
+  'gsearch.person.active': 'Active',
+  'gsearch.person.left': 'Left',
+  'gsearch.person.forgotten': 'Forgotten',
   'gsearch.kind.comment': 'Comments',
   'gsearch.kind.experiment': 'Experiments',
   // A view is one kind of hit; which view it is, beside it.

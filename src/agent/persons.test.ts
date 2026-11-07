@@ -100,6 +100,16 @@ const parsed = (out: AgentAnswer): Record<string, unknown> => {
 const refusal = (out: AgentAnswer) => (out.ok ? undefined : [out.refusal, out.detail])
 const ask = (tool: string, args: unknown, on: SessionView | undefined, around?: ShellView) => handle({ id: '1', tool, args }, on, around)
 
+describe('the register as the agent searches it', () => {
+  it('finds an entry by its name, or by its pseudonym alone where names are withheld (the owner, 7 November 2026)', () => {
+    const entry: Person = { id: 'pe-a', name: 'Ada Example', pseudonym: 'BCDF', kind: 'internal', state: 'active' }
+    expect(agentRegister([entry], DEFAULT_POLICY).match.entries?.(['ada']).map((one) => one.id)).toEqual(['pe-a'])
+    const withheld = agentRegister([entry], { ...DEFAULT_POLICY, agentsSee: 'pseudonyms' }).match
+    expect(withheld.entries?.(['ada'])).toEqual([])
+    expect(withheld.entries?.(['bcdf']).map((one) => one.id)).toEqual(['pe-a'])
+  })
+})
+
 describe('the arguments that name a person', () => {
   it('take text, or a person from the register by id, and nothing else', () => {
     const schema = toolSpec('element.update').inputSchema
