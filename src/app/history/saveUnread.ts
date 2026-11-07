@@ -23,7 +23,7 @@ export function unreadFileName(scopeName: string, at: number, extension: string)
 /** Saving an entry's unread part, where the history can give it; `undefined` where it cannot. */
 export function useSaveUnread(deps: {
   history?: Pick<HistoryRepository, 'unreadAt'>
-  keep: (doc: SavedDocument) => Promise<void>
+  keep: (doc: SavedDocument) => Promise<void | 'cancelled'>
   scopeName: () => string
   notify: Notify
   s: Translate

@@ -30,13 +30,13 @@ export class DesktopDocumentGateway implements DocumentGateway {
     this.files = files
   }
 
-  async save(doc: SavedDocument): Promise<void> {
+  async save(doc: SavedDocument): Promise<void | 'cancelled'> {
     const bytes = doc.text === undefined
       ? doc.bytes as Uint8Array
       : new TextEncoder().encode(doc.text)
-    // Cancelling is not failing. The caller says "saved" on a resolved promise,
-    // and a person who changed their mind has not lost anything to report.
-    await this.files.saveDocument(doc.name, bytes, doc.mediaType)
+    // Cancelling is not failing: a person who changed their mind has not lost
+    // anything to report, and the answer lets a caller say nothing at all.
+    return await this.files.saveDocument(doc.name, bytes, doc.mediaType) ? undefined : 'cancelled'
   }
 
   readText(blob: Blob): Promise<string> {

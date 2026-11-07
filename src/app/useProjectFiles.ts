@@ -42,7 +42,7 @@ import { putBackSaid } from './history/useProjectHistory'
  * building except what the user asked for.
  */
 export type ProjectFileChannel = {
-  save(doc: SavedDocument): Promise<void>
+  save(doc: SavedDocument): Promise<void | 'cancelled'>
   readBytes(blob: Blob): Promise<Uint8Array>
   readDataUrl(blob: Blob): Promise<string>
 }

@@ -32,8 +32,15 @@ export type TextDocument = SavedDocument & { text: string }
 export interface DocumentGateway {
   readonly id: string
 
-  /** Hand a document to the user. */
-  save(doc: SavedDocument): Promise<void>
+  /**
+   * Hand a document to the user.
+   *
+   * `'cancelled'` when they were asked where and said nowhere, which is not a
+   * failure: nothing is said about it, and nothing about it having been saved.
+   * A browser that drops it in the downloads folder asks nobody, and answers
+   * nothing.
+   */
+  save(doc: SavedDocument): Promise<void | 'cancelled'>
 
   /** A chosen file as text. */
   readText(blob: Blob): Promise<string>
