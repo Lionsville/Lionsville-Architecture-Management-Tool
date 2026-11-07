@@ -123,7 +123,7 @@ export const CONTROL_NAMES = [
   // operating.bringIn; and What came in on each library's card.
   // Version 4: tabs by question, the reader and its preview, the tree and the grid's own controls.
   'operating.tabRoles', 'operating.tabExceptions', 'operating.reader', 'operating.roleList', 'operating.rolePreview', 'operating.raciTree', 'operating.raciScope',
-  'operating.raciUnit', 'operating.raciExport', 'operating.arrange', 'operating.exceptions', 'operating.exceptionsBar', 'operating.exceptionPreview',
+  'operating.raciUnit', 'operating.raciExport', 'operating.arrange', 'operating.exceptions', 'operating.exceptionsBar',
   'operating.libraries', 'operating.libraryPreview', 'operating.typeLimit',
   'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
   // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.

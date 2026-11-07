@@ -690,6 +690,7 @@ function useShellParts(props: AppProps): ShellParts {
     frame: base.frame,
     openPreferences: () => base.machine.setOpen(true),
     ...(props.boot.initialFramePage ? { initialFramePage: props.boot.initialFramePage } : {}),
+    ...(props.boot.initialPageLook ? { initialPageLook: props.boot.initialPageLook } : {}),
   })
   base.screenRef.current = shellAgent.screenNow
   openScopeRef.current = shellAgent.openSession

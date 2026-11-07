@@ -16,6 +16,7 @@ import type { StringKey } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { BootDialog, BootNotice } from './bootLanding'
+import type { Page } from '../agent/screen'
 import type { InitialPage } from './App'
 import type { WindowZoom } from '../platform/hostCommands'
 import type { ThemeMode } from '../platform/theme'
@@ -81,6 +82,8 @@ export type AppBoot = {
   initialLook?: { view?: string; day: string }
   /** What the address keeps of the view it lands on (`useViewFacets`). */
   initialFacets?: ViewFacets & { of: string }
+  /** The tab and the look of the page the address arrived on. */
+  initialPageLook?: { page: Page; tab?: string; look?: string }
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
   /**

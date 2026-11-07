@@ -15,7 +15,7 @@ import { readFinding, writeFinding } from '../agent/place'
 import type { CheckKey } from '../model/checkCatalogue'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import { readPlace, viewFacetsOf } from '../agent/place'
+import { viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
 import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor, viewPage } from '../agent/screen'
 import type { DesignDiagram } from '../model/types'
@@ -102,6 +102,8 @@ export function useShellAgent(deps: {
   openPreferences?: () => void
   /** One of the frame's own places the address named, opened once as the app comes up. */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  /** The tab and the look of the page the address arrived on: what the frame holds for it. */
+  initialPageLook?: { page: Page; tab?: string; look?: string }
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
@@ -292,7 +294,7 @@ export function useShellAgent(deps: {
     agentDriving.current = false
     agentOpened.current = false
   }, [driving])
-  const setPanel = useFrameMoves(frame, deps.initialFramePage, openFor, project?.path ?? home, lookAgainRef)
+  const setPanel = useFrameMoves(frame, deps.initialFramePage, openFor, project?.path ?? home, lookAgainRef, deps.initialPageLook)
   const registerAgent = agentShell.register
   const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
     agentSessionRef.current = view
@@ -401,12 +403,12 @@ function openInFrame(page: Page, leave: (() => void) | undefined, frame: FrameSt
 function useFrameMoves(
   frame: FrameStore | undefined, initial: 'work' | 'activity' | 'settings' | 'preferences' | undefined,
   openFor: (to: Destination & { scope: string }) => void, here: ScopePath, lookAgain: { current: () => void },
+  arrivedOn?: { page: Page; tab?: string; look?: string },
 ) {
   const asked = useRef(initial)
   // A page opened by its address on a tab, or on what it looks at: held here from the first look, since the page reads it from here.
   useState(() => {
-    const said = typeof window === 'undefined' ? undefined : readPlace(window.location.hash)
-    if (frame && said?.page !== undefined && (said.tab !== undefined || said.look !== undefined)) frame.set({ tab: said.tab, look: said.look, tabOf: said.page })
+    if (frame && arrivedOn) frame.set({ tab: arrivedOn.tab, look: arrivedOn.look, tabOf: arrivedOn.page })
     return undefined
   })
   useEffect(() => {

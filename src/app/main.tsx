@@ -496,6 +496,9 @@ function renderApp(
           ...(landing?.initialFramePage ? { initialFramePage: landing.initialFramePage } : {}),
           ...(landing?.initialLook ? { initialLook: landing.initialLook } : {}),
           ...(landing?.initialFacets ? { initialFacets: landing.initialFacets } : {}),
+          ...(bootPlace?.page !== undefined && (bootPlace.tab !== undefined || bootPlace.look !== undefined)
+            ? { initialPageLook: { page: bootPlace.page, ...(bootPlace.tab !== undefined ? { tab: bootPlace.tab } : {}), ...(bootPlace.look !== undefined ? { look: bootPlace.look } : {}) } }
+            : {}),
           ...(landing?.notice ? { notice: landing.notice } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,

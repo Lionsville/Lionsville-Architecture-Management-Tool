@@ -502,36 +502,43 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // The operating model, from the organisation's card, empty: a library
   // brought in from its dialog, so the matrix has a column to press.
   [['the operating model', [
-    'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
-    'operating.rules', 'operating.structure', 'operating.startFromLibrary',
+    'operating.tabUnits', 'operating.newUnitType', 'operating.startFromLibrary',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('tree-place-operating'))
-    await screen.findByRole('tab', { name: 'Units and roles' })
+    await screen.findByRole('tab', { name: 'Structure' })
   }],
   ['its dialog for a library', ['operating.libraryList', 'operating.comingIn', 'operating.bringIn'], async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start from a library' }))
     fireEvent.click(within(await screen.findByTestId('library-dialog')).getByRole('checkbox', { name: 'Scrum Team' }))
   }],
   // What came in, drawn as the structure, with a type picked.
-  ['its structure', ['operating.typeCard', 'operating.typeOrder', 'operating.fromLibrary'], async () => {
+  ['its structure', ['operating.structure', 'operating.newRole', 'operating.typeCard', 'operating.fromLibrary', 'operating.reader', 'operating.typeOrder', 'operating.typeLimit'], async () => {
     fireEvent.click(within(screen.getByTestId('library-dialog')).getByRole('button', { name: /^Bring in 8 items/ }))
     await waitFor(() => expect(screen.queryByTestId('library-dialog')).toBeNull())
     fireEvent.click(await within(screen.getByTestId('structure-lanes')).findByRole('button', { name: 'Scrum Team' }))
   }],
-  ['its libraries', ['operating.compare', 'operating.cameIn'], async () => {
+  ['its libraries', ['operating.tabLibraries', 'operating.libraries', 'operating.compare'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    fireEvent.click(await screen.findByTestId('operating-compare'))
+  }],
+  ['a library read', ['operating.libraryPreview', 'operating.cameIn'], async () => {
+    fireEvent.click(screen.getByRole('row', { name: /^Scrum/ }))
     await screen.findByTestId('library-scrum')
   }],
   ['its responsibilities', [
-    'operating.newResponsibility', 'operating.matrix', 'operating.cell', 'operating.filterRoles', 'operating.filterGroups', 'operating.matrixOrder',
-    'operating.groupOrder',
+    'operating.tabRaci', 'operating.newResponsibility', 'operating.matrix', 'operating.cell', 'operating.filterRoles', 'operating.filterGroups',
+    'operating.raciTree', 'operating.raciScope', 'operating.raciUnit', 'operating.raciExport', 'operating.arrange',
   ], async () => {
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Scrum' }), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Scrum' })).toBeNull())
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getAllByRole('gridcell')[1])
+  }],
+  ['its arranging', ['operating.matrixOrder', 'operating.groupOrder', 'operating.responsibilityOrder', 'operating.roleOrder'], async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Arrange' }))
   }]],
-  // A journey of its own, so the one above stays well inside its time on a slow
-  // runner: Scrum brought in, then a responsibility picked in the matrix and a
-  // role, each with its place in the own order.
+  // A journey of its own, so the one above stays well inside its time on a slow runner.
   [['the operating model with a library in it', [], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('tree-place-operating'))
@@ -541,12 +548,17 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(within(dialog).getByRole('button', { name: /^Bring in 8 items/ }))
     await waitFor(() => expect(screen.queryByTestId('library-dialog')).toBeNull())
   }],
-  ['a responsibility picked', ['operating.responsibilityOrder'], async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
-    fireEvent.click(within(screen.getAllByRole('rowheader')[0]).getByRole('button'))
+  ['its roles', ['operating.tabRoles', 'operating.roleList', 'operating.rules'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Roles' }))
   }],
-  ['a role picked', ['operating.roleOrder'], async () => {
-    fireEvent.click(within(screen.getByRole('table')).getByRole('button', { name: 'Scrum Master' }))
+  ['a role read', ['operating.rolePreview'], async () => {
+    fireEvent.click(document.querySelector('[data-kit-row^="row:"]') as Element)
+    await screen.findByRole('dialog')
+  }],
+  ['its exceptions', ['operating.tabExceptions', 'operating.exceptions', 'operating.exceptionsBar'], async () => {
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    fireEvent.click(screen.getByRole('tab', { name: /Exceptions/ }))
   }]],
   // An organisation chart, made on a landscape's home: the example has no
   // units, and the outline, the bar and the summary beside it are drawn all the same.

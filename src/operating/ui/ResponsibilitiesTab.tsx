@@ -106,7 +106,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
         {noRoles
           ? <p className="op-quiet">{t('operating.noRolesForMatrix')}</p>
           : grid.rows.length === 0 && model.responsibilities.length > 0
-            ? <p className="op-quiet">{t(unit && view.roles.length === 0 && view.groups.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')}</p>
+            ? <p className="op-quiet">{t(noRowsWord(unit, view))}</p>
             : (
               <RaciGrid
                 grid={grid} allRoles={model.roles} readOnly={readOnly} dispatch={dispatch} pick={pick} onPick={setPick}
@@ -134,6 +134,9 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
     </>
   )
 }
+
+const noRowsWord = (unit: UnitFact | undefined, view: MatrixView) =>
+  (unit && view.roles.length === 0 && view.groups.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')
 
 const gridTitle = (look: RaciLook, unit: UnitFact | undefined, part: string | undefined, t: Translate): string => {
   if (look.whole) return t('operating.wholeOrganisation')
@@ -221,15 +224,17 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
               />
             </span>
           )}
-          <FilterWords
-            find="" onFind={() => {}} noFind dataGuide="operating.filterRoles"
-            fields={[
-              { id: 'roles', label: t('operating.filterRoles'), options: model.roles.map((role) => ({ value: role.id, label: role.name })) },
-              { id: 'groups', label: t('operating.filterGroups'), options: groupOptions.map((group) => ({ value: group, label: group || t('operating.noGroup') })) },
-            ]}
-            filters={{ roles: view.roles, groups: view.groups }}
-            onFilters={(filters) => onView({ ...view, roles: filters.roles ?? [], groups: filters.groups ?? [] })}
-          />
+          <span data-guide="operating.filterGroups">
+            <FilterWords
+              find="" onFind={() => {}} noFind dataGuide="operating.filterRoles"
+              fields={[
+                { id: 'roles', label: t('operating.filterRoles'), options: model.roles.map((role) => ({ value: role.id, label: role.name })) },
+                { id: 'groups', label: t('operating.filterGroups'), options: groupOptions.map((group) => ({ value: group, label: group || t('operating.noGroup') })) },
+              ]}
+              filters={{ roles: view.roles, groups: view.groups }}
+              onFilters={(filters) => onView({ ...view, roles: filters.roles ?? [], groups: filters.groups ?? [] })}
+            />
+          </span>
           <Button variant="quiet" aria-pressed={arranging} data-guide="operating.arrange" onClick={() => onArrange(!arranging)}>{t('operating.arrange')}</Button>
           {onExport && (
             <MenuButton
