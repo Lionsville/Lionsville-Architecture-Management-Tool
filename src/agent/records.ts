@@ -8,7 +8,12 @@
  * takes `scope` as a filter, as every tree-wide read does.
  */
 import { percent, ranking } from '../model/evaluation'
-import type { Principle, PrincipleGroup } from '../model/principle'
+import type { HostModel } from '../model/hostModel'
+import { principleUse } from '../principles/principle'
+import { suggestPrinciples } from '../principles/suggest'
+import type { Adr } from '../model/adr'
+import type { Citation } from '../model/citable'
+import type { Principle, PrincipleGroup, PrincipleRef } from '../model/principle'
 import type { TreeRecords } from '../model/treeRecords'
 import type { DesignElement } from '../model/types'
 import type { AgentAnswer } from './tools'
@@ -24,7 +29,30 @@ const NONE: TreeRecords = {
   topics: () => [], blocks: () => [], evaluations: () => [], citations: () => [],
 }
 
-const recordsOf = (tree: TreeView | undefined): TreeRecords => tree?.records?.() ?? NONE
+/** The open scope, as a read lays it over the index: what was just written reads back. */
+export type OpenRecords = { readonly path: string; readonly current: Pick<HostModel, 'principles' | 'principleGroups' | 'citations' | 'decisions'> }
+
+/** The tree's records, the open scope's principles and citations as its session holds them. */
+function recordsOf(tree: TreeView | undefined, open?: OpenRecords): TreeRecords {
+  const held = tree?.records?.() ?? NONE
+  if (!open) return held
+  const principles = open.current.principles ?? []
+  const below = (path: string) => path === open.path || open.path === '' || path.startsWith(`${open.path}/`)
+  return {
+    ...held,
+    principleScopes: () => [...new Set([...held.principleScopes(), ...(principles.length || open.current.principleGroups?.length ? [open.path] : [])])],
+    principlesAt: (path) => (path === open.path ? { principles, groups: open.current.principleGroups ?? [] } : held.principlesAt(path)),
+    inForce: (path) => {
+      const others = held.inForce(path).filter((one) => one.scope !== open.path)
+      const via = held.inForce(path).find((one) => one.scope === open.path)?.via ?? (path === open.path ? 'here' : below(path) ? 'above' : undefined)
+      return via ? [...others, ...principles.filter((one) => one.mergedInto === undefined).map((principle) => ({ scope: open.path, via, principle }))] : others
+    },
+    citations: () => [
+      ...held.citations().filter((one) => one.scope !== open.path),
+      ...(open.current.citations ?? []).map((citation) => ({ scope: open.path, citation })),
+    ],
+  }
+}
 
 /** A principle as an answer says it: its aspects numbered under it, its groups by name. */
 function said(principle: Principle, groups: readonly PrincipleGroup[]) {
@@ -38,10 +66,10 @@ function said(principle: Principle, groups: readonly PrincipleGroup[]) {
   }
 }
 
-export function listPrinciples(tree: TreeView | undefined, rawArgs: unknown): AgentAnswer {
+export function listPrinciples(tree: TreeView | undefined, rawArgs: unknown, open?: OpenRecords): AgentAnswer {
   const wrong = checkArguments(toolSpec('principles.list').inputSchema, withoutScope(rawArgs))
   if (wrong) return refused('agent.badArguments', wrong)
-  const records = recordsOf(tree)
+  const records = recordsOf(tree, open)
   const scope = scopeAsked(rawArgs)
   const live = (list: readonly Principle[]) => list.filter((one) => one.mergedInto === undefined)
   if (scope !== undefined && (rawArgs as Args).own !== true) {
@@ -54,8 +82,72 @@ export function listPrinciples(tree: TreeView | undefined, rawArgs: unknown): Ag
   return json({
     scopes: scopes.map((path) => {
       const kept = records.principlesAt(path)
-      return { scope: path, groups: kept.groups.map((one) => one.name), principles: live(kept.principles).map((one) => said(one, kept.groups)) }
+      return { scope: path, groups: kept.groups, principles: live(kept.principles).map((one) => said(one, kept.groups)) }
     }),
+  })
+}
+
+/** One principle whole, with how it is used: `scope` names where it is kept, and the open scope is the default. */
+export function readPrinciple(tree: TreeView | undefined, rawArgs: unknown, open?: OpenRecords): AgentAnswer {
+  const wrong = checkArguments(toolSpec('principle.read').inputSchema, withoutScope(rawArgs))
+  if (wrong) return refused('agent.badArguments', wrong)
+  const records = recordsOf(tree, open)
+  const id = (rawArgs as Args).id as string
+  const asked = scopeAsked(rawArgs)
+  const scopes = asked !== undefined ? [asked] : [...(open ? [open.path] : []), ...records.principleScopes()]
+  const scope = scopes.find((path) => records.principlesAt(path).principles.some((one) => one.id === id))
+  if (scope === undefined) return refused('agent.unknownId', `principle ${id}`)
+  const kept = records.principlesAt(scope)
+  const principle = kept.principles.find((one) => one.id === id)!
+  const citations = records.citations()
+    .filter((one) => one.citation.principle.scope === scope && one.citation.principle.id === id)
+    .map(({ scope: by, citation }) => ({ ...citation, scope: by }))
+  return json({
+    scope, ...said(principle, kept.groups), lastAspect: principle.lastAspect,
+    aspects: principle.aspects,
+    ...(principle.keywords?.length ? { keywords: principle.keywords } : {}),
+    ...(principle.question ? { question: principle.question } : {}),
+    ...(principle.acceptedOn ? { acceptedOn: principle.acceptedOn } : {}),
+    ...(principle.relations?.length ? { relations: principle.relations } : {}),
+    ...(principle.sharpened?.length ? { sharpened: principle.sharpened } : {}),
+    ...(principle.mergedInto ? { mergedInto: principle.mergedInto } : {}),
+    use: principleUse({ scope, id }, citations as never),
+    citations,
+  })
+}
+
+/** What other records about the same subject cite (§9): a decision about an element and the element read each other's. */
+function nearby(about: { kind: string; id: string }, citations: readonly Citation[], decisions: readonly Pick<Adr, 'id' | 'subjectId'>[]): PrincipleRef[] {
+  const subjectOf = (record: { kind: string; id: string }) => (record.kind === 'element' ? record.id : record.kind === 'decision' ? decisions.find((one) => one.id === record.id)?.subjectId : undefined)
+  const subject = subjectOf(about)
+  if (subject === undefined) return []
+  return citations.filter((one) => !(one.about.kind === about.kind && one.about.id === about.id) && subjectOf(one.about) === subject).map((one) => one.principle)
+}
+
+/** What may apply to what is being written (§9): the one function the page's *May apply* reads. */
+export function suggestPrinciplesFor(tree: TreeView | undefined, rawArgs: unknown, open?: OpenRecords): AgentAnswer {
+  const wrong = checkArguments(toolSpec('principles.suggest').inputSchema, withoutScope(rawArgs))
+  if (wrong) return refused('agent.badArguments', wrong)
+  const records = recordsOf(tree, open)
+  const scope = scopeAsked(rawArgs) ?? open?.path
+  if (scope === undefined) return refused('agent.badArguments', 'nothing is open: say which scope with scope')
+  const args = rawArgs as Args
+  const about = args.about as { kind: string; id: string } | undefined
+  const here = records.citations().filter((one) => one.scope === scope).map((one) => one.citation)
+  const inForce = records.inForce(scope).map((one) => ({ scope: one.scope, principle: one.principle, groups: records.principlesAt(one.scope).groups }))
+  const found = suggestPrinciples({
+    text: args.text as string,
+    inForce,
+    alreadyCited: about ? here.filter((one) => one.about.kind === about.kind && one.about.id === about.id).map((one) => one.principle) : [],
+    citedNearby: about ? nearby(about, here, open?.path === scope ? open.current.decisions ?? [] : []) : [],
+    ...(typeof args.limit === 'number' ? { limit: args.limit } : {}),
+  })
+  return json({
+    scope,
+    suggestions: found.map((one) => ({
+      scope: one.ref.scope, id: one.ref.id, number: one.principle.number, title: one.principle.title, regime: one.principle.regime,
+      ...(one.aspect ? { aspect: one.aspect.number } : {}), matched: one.matched, why: one.why,
+    })),
   })
 }
 

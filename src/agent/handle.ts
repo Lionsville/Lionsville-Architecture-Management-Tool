@@ -19,7 +19,8 @@
 import { agentRun } from './agentRun'
 import type { AgentSessionOf } from './agentRun'
 import { listReferences } from './references'
-import { listBlocks, listPrinciples, listTopics } from './records'
+import { listBlocks, listPrinciples, listTopics, readPrinciple, suggestPrinciplesFor } from './records'
+import type { OpenRecords } from './records'
 import { listChanges } from './changes'
 import type { ChangesOf } from './changes'
 import type { StringKey } from '../i18n/strings'
@@ -612,7 +613,9 @@ function treeWide(
     case 'technology.list': return listTechnology(tree, request.args)
     case 'checks.list': return listChecks(tree, request.args)
     // The 3.8.0 records, off the index (ADR-0041, ADR-0042, ADR-0043).
-    case 'principles.list': return listPrinciples(tree, request.args)
+    case 'principles.list': return listPrinciples(tree, request.args, openRecords(session))
+    case 'principle.read': return readPrinciple(tree, request.args, openRecords(session))
+    case 'principles.suggest': return suggestPrinciplesFor(tree, request.args, openRecords(session))
     case 'topics.list': return listTopics(tree, request.args)
     case 'blocks.list': return listBlocks(tree, request.args)
     // What a document may refer to: the open scope's, or the scope named (ADR-0043 §9).
@@ -668,6 +671,11 @@ function inspectDiagram(model: Model, activeDiagramId: string, args: Record<stri
 }
 
 /** The open scope as a read across the tree lays it over the index. */
+/** The open scope's principles, as a read of the records lays them over the index. */
+function openRecords(session: SessionView | undefined): OpenRecords | undefined {
+  return session ? { path: session.scopePath(), current: session.current() } : undefined
+}
+
 function openDocument(session: SessionView | undefined): OpenDocument | undefined {
   return session ? { path: session.scopePath(), current: session.current(), today: session.today() } : undefined
 }

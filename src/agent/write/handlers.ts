@@ -21,8 +21,10 @@ import {
   align, distribute, drawElement, groupElements, moveBy, placeElement, placeNextTo, undrawElement, ungroup,
 } from './canvas'
 import { proposeDecision, removeDecision, transitionDecision, updateDecision } from './decisions'
-import { addPrinciple, updatePrinciple } from './principleRecords'
-import { citePrinciple } from './citing'
+import {
+  addAspect, addPrinciple, mergePrinciple, relatePrinciple, removeAspect, removePrinciple, setPrincipleGroups, unrelatePrinciple, updateAspect, updatePrinciple,
+} from './principleRecords'
+import { citePrinciple, citing, unciteCitation } from './citing'
 import { proposeChoice, rateEvaluation, startEvaluation } from './evaluations'
 import { updateBlock } from './buildingBlocks'
 import { createDiagram, updateDiagram } from './diagrams'
@@ -89,8 +91,8 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'relation.update': updateRelation,
   'relation.remove': removeRelation,
 
-  'decision.propose': proposeDecision,
-  'decision.update': updateDecision,
+  'decision.propose': citing('decision', proposeDecision),
+  'decision.update': citing('decision', updateDecision),
   'decision.remove': removeDecision,
   'decision.transition': transitionDecision,
 
@@ -98,13 +100,22 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'principle.add': addPrinciple,
   'principle.update': updatePrinciple,
   'citation.add': citePrinciple,
+  'principle.uncite': unciteCitation,
+  'principleGroups.set': setPrincipleGroups,
+  'principle.relate': relatePrinciple,
+  'principle.unrelate': unrelatePrinciple,
+  'principle.merge': mergePrinciple,
+  'principle.remove': removePrinciple,
+  'aspect.add': addAspect,
+  'aspect.update': updateAspect,
+  'aspect.remove': removeAspect,
   'evaluation.rate': rateEvaluation,
   'evaluation.add': startEvaluation,
   'evaluation.propose': proposeChoice,
   'block.update': updateBlock,
 
-  'observation.record': recordObservation,
-  'observation.update': updateObservationTool,
+  'observation.record': citing('observation', recordObservation),
+  'observation.update': citing('observation', updateObservationTool),
   'observation.seen': observationSeen,
   'element.rate': rateElement,
   'aspectScale.set': setAspectScale,

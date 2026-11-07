@@ -146,6 +146,37 @@ const SCOPE_KINDS = ['organisation', 'domain', 'programme', 'team', 'landscape',
 
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
+/** A principle somewhere in the tree. */
+const PRINCIPLE_REF: ArgumentSchema = {
+  type: 'object', description: 'The other principle, with the scope that keeps it ("" the organisation). Default: the scope open.',
+  properties: { scope: { type: 'string', description: 'The scope that keeps it.' }, id: { type: 'string', description: 'Its id.' } },
+  required: ['id'], additionalProperties: false,
+}
+
+/** What an aspect says beside its words. */
+const ASPECT_FIELDS: Record<string, ArgumentSchema> = {
+  nature: { type: 'string', description: 'design: about what is built; behaviour: about how people work. Default design.', enum: ['design', 'behaviour'] },
+  signal: { type: 'string', description: 'What would show it holds: a measure, a share, a count.' },
+  steering: { type: 'string', description: 'Who or what keeps it true.' },
+  note: { type: 'string', description: 'Why, on an accepted principle.' },
+}
+
+/** The principles a decision or an observation cites as it is written, in the one step. */
+const PRINCIPLES_CITED: ArgumentSchema = {
+  type: 'array', description: 'Principles in force here that this record cites, in the same step (ADR-0041 §7); principles.suggest finds them. Adds to what it cites; principle.uncite takes one back.',
+  items: {
+    type: 'object', description: 'One principle cited.',
+    properties: {
+      id: { type: 'string', description: 'The principle\'s id.' },
+      scope: { type: 'string', description: 'The scope that keeps it ("" the organisation). Default: the scope open.' },
+      aspect: { type: 'integer', description: 'One aspect, by its number.', minimum: 1 },
+      stance: { type: 'string', description: 'A decision: supports (default) or deviates. An observation: holds (default), chafes or missing.', enum: ['supports', 'deviates', 'holds', 'chafes', 'missing'] },
+      reason: { type: 'string', description: 'Why; required on deviates.' },
+    },
+    required: ['id'], additionalProperties: false,
+  },
+}
+
 /**
  * What a thing IS (ADR-0012 §4), which stopped being the same question as how
  * it is drawn. `externalSystem`, `inputChannel` and `managementTool` were the
@@ -690,10 +721,45 @@ const SPECS = [
       + 'and those of the topics relevant to it (ADR-0042) — each with the scope that keeps it and via (here · above · topic); '
       + 'with own: true, only the scope\'s own, with its groups. Without scope: every scope\'s own. Each principle says '
       + 'its number (PR-NNNN on screen), title, statement, status (candidate · accepted · retired), regime and its aspects, '
-      + 'numbered under it. A merged one is left out. Cite one on a record from the app: an agent cannot cite yet.',
+      + 'numbered under it. A merged one is left out. A scope\'s groups come with their ids, what principleGroups.set renames one by; a principle names its groups by name. principle.read says the rest of one.',
     inputSchema: {
       type: 'object',
       properties: { own: { type: 'boolean', description: 'Only the scope\'s own principles, with its groups.' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.read',
+    tier: 'read',
+    description:
+      'One principle whole (ADR-0041), in the scope that keeps it: its statement, aspects with their nature, signal and steering, groups, '
+      + 'relations, sharpenings, keywords, what it was merged into, how it is used across the tree and every citation of it, with the citation ids principle.uncite takes.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('principle') },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principles.suggest',
+    tier: 'read',
+    description:
+      'Which principles in force at a scope may apply to what is being written (ADR-0041 §9), best first: the words of text matched against each '
+      + 'principle\'s title, statement, aspects, keywords and group names, and what other records about the same subject cite. Each says the words that matched and why. '
+      + 'It is word matching, not understanding: read them and cite what holds. Ask before proposing a decision, recording an observation or changing a design.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'What is being written: a title and a body.' },
+        about: {
+          type: 'object', description: 'The record it is about, where there is one: what it cites already is left out, and what records about its subject cite counts.',
+          properties: { kind: { type: 'string', description: 'decision, observation, solution, transition, element.', enum: ['decision', 'observation', 'solution', 'transition', 'element'] }, id: { type: 'string', description: 'Its id.' } },
+          required: ['kind', 'id'], additionalProperties: false,
+        },
+        limit: { type: 'integer', description: 'At most this many. Default 8.', minimum: 1, maximum: 50 },
+      },
+      required: ['text'],
       additionalProperties: false,
     },
   },
@@ -1877,6 +1943,7 @@ const SPECS = [
         planIds: { type: 'array', description: 'Plans that rest on this decision; each is linked to it.', items: { type: 'string' } },
         supersedes: SUPERSEDES,
         proposedBy: PROPOSED_BY,
+        principles: PRINCIPLES_CITED,
       },
       required: ['title'],
       additionalProperties: false,
@@ -1899,6 +1966,7 @@ const SPECS = [
         signers: SIGNERS,
         supersedes: SUPERSEDES,
         proposedBy: { ...PROPOSED_BY, description: `${PROPOSED_BY.description} null clears it.` },
+        principles: PRINCIPLES_CITED,
       },
       required: ['id'],
       additionalProperties: false,
@@ -1920,6 +1988,9 @@ const SPECS = [
         status: { type: 'string', description: 'candidate (default) or accepted, where the person said so.', enum: ['candidate', 'accepted'] },
         question: { type: 'string', description: 'What a candidate asks.' },
         rationale: { type: 'string', description: 'Why it holds.' },
+        implications: { type: 'string', description: 'What follows from it.' },
+        keywords: { type: 'array', description: 'Words it is found by besides its own.', items: { type: 'string' } },
+        groups: { type: 'array', description: 'The groups it is filed under, by name. One the scope has not got is made, in the same step.', items: { type: 'string' } },
       },
       required: ['title', 'statement', 'aspects'],
       additionalProperties: false,
@@ -1929,8 +2000,9 @@ const SPECS = [
     name: 'principle.update',
     tier: 'write',
     description:
-      'Change a principle of the open scope: its title, statement, regime, status (candidate, accepted, retired) or rationale. '
-      + 'An accepted principle\'s statement changed is sharpened, which the page asks a note for; say what changed in your answer.',
+      'Change a principle of the open scope: its title, statement, regime, status (candidate, accepted, retired), rationale, implications, question, keywords, or the groups it is filed under. '
+      + 'groups is the whole list, by name, so moving it to another group is naming that one: [] files it under none, and a name the scope has not got is made in the same step. '
+      + 'An accepted principle\'s statement changed is sharpened, and needs note saying why.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1938,6 +2010,11 @@ const SPECS = [
         regime: { type: 'string', description: 'fixed or flexible.', enum: ['fixed', 'flexible'] },
         status: { type: 'string', description: 'candidate, accepted or retired.', enum: ['candidate', 'accepted', 'retired'] },
         rationale: { type: 'string', description: 'Why it holds.' },
+        implications: { type: 'string', description: 'What follows from it.' },
+        question: { type: 'string', description: 'What a candidate asks.' },
+        keywords: { type: 'array', description: 'Words it is found by besides its own: the whole list.', items: { type: 'string' } },
+        groups: { type: 'array', description: 'The groups it is filed under, by name: the whole list.', items: { type: 'string' } },
+        note: { type: 'string', description: 'Why an accepted principle\'s words change.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -1960,6 +2037,124 @@ const SPECS = [
         reason: { type: 'string', description: 'Why; required on deviates.' },
       },
       required: ['about', 'principle', 'stance'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.uncite',
+    tier: 'write',
+    description: 'Take a citation back: the record no longer says anything about the principle. principle.read lists a principle\'s citations with their ids.',
+    inputSchema: { type: 'object', properties: { id: ID('citation') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'principleGroups.set',
+    tier: 'write',
+    description:
+      'The open scope\'s groups of principles, whole and in order (ADR-0041 §3): this is how groups are made, renamed, ordered and removed. An entry with an id is that group, under the name it says; '
+      + 'one with no id is the group of that name, or a new one. A group left out is removed, and taken off its principles in the same step; none of them goes. principles.list with own says the ids.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        groups: {
+          type: 'array', description: 'Every group the scope is to have, in order.',
+          items: {
+            type: 'object', description: 'One group.',
+            properties: { id: { type: 'string', description: 'The group\'s id, to keep it under a new name.' }, name: { type: 'string', description: 'Its name.' }, description: { type: 'string', description: 'What it holds.' } },
+            required: ['name'], additionalProperties: false,
+          },
+        },
+      },
+      required: ['groups'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.relate',
+    tier: 'write',
+    description: 'A principle of the open scope is in tension with another, or refines one, here or in a scope above (ADR-0041 §5). Said on the one that makes it, shown on both.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('principle'), kind: { type: 'string', description: 'tension or refines.', enum: ['tension', 'refines'] },
+        to: PRINCIPLE_REF,
+      },
+      required: ['id', 'kind', 'to'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.unrelate',
+    tier: 'write',
+    description: 'Take back a relation principle.relate made.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('principle'), kind: { type: 'string', description: 'tension or refines.', enum: ['tension', 'refines'] },
+        to: PRINCIPLE_REF,
+      },
+      required: ['id', 'kind', 'to'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.merge',
+    tier: 'write',
+    description:
+      'One principle of the open scope absorbs others of it (ADR-0041 §6): their aspects come after its own, renumbered, with their groups, relations, keywords, comments and this scope\'s citations; each absorbed one is kept as history. '
+      + 'What says the same thing twice is merged. citedElsewhere in the answer names citations other scopes keep, which are theirs to change: tell the person.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        into: ID('principle that stays'),
+        from: { type: 'array', description: 'The principles it absorbs.', items: { type: 'string' } },
+      },
+      required: ['into', 'from'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'principle.remove',
+    tier: 'write',
+    description: 'Remove a principle of the open scope, with its comments, while nothing in any scope cites it (agent.principleCited otherwise). One that has been used is retired instead, with principle.update.',
+    inputSchema: { type: 'object', properties: { id: ID('principle') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'aspect.add',
+    tier: 'write',
+    description: 'A new aspect on a principle of the open scope: one more claim a record can follow or depart from. It gets the next number, never one used before. On an accepted principle this sharpens it and needs note.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        principle: ID('principle'), text: { type: 'string', description: 'What it claims.' }, ...ASPECT_FIELDS,
+      },
+      required: ['principle', 'text'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'aspect.update',
+    tier: 'write',
+    description: 'Change an aspect of a principle of the open scope, by its number. Its words or nature on an accepted principle sharpen it, and need note.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        principle: ID('principle'), number: { type: 'integer', description: 'The aspect\'s number.', minimum: 1 }, text: { type: 'string', description: 'What it claims.' }, ...ASPECT_FIELDS,
+      },
+      required: ['principle', 'number'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'aspect.remove',
+    tier: 'write',
+    description: 'Remove an aspect of a principle of the open scope, by its number, which stays taken. A principle keeps at least one. On an accepted principle this sharpens it and needs note.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        principle: ID('principle'), number: { type: 'integer', description: 'The aspect\'s number.', minimum: 1 },
+        note: { type: 'string', description: 'Why, on an accepted principle.' },
+      },
+      required: ['principle', 'number'],
       additionalProperties: false,
     },
   },
@@ -2132,6 +2327,7 @@ const SPECS = [
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
         tone: { type: 'string', description: 'bright: something that works, analysed the same way — its causes are what make it work, and a solution on its root spreads it; problem: something that goes wrong; neutral: not said either way (ADR-0038). Default: neutral. Who recorded it is never an argument: it is the person you act for.', enum: ['bright', 'neutral', 'problem'] },
         bright: { type: 'boolean', description: 'Deprecated, read for one release: true is tone bright, false tone problem.' },
+        principles: PRINCIPLES_CITED,
       },
       required: ['title', 'where', 'by'],
       additionalProperties: false,
@@ -2156,6 +2352,7 @@ const SPECS = [
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
         tone: { type: 'string', description: 'bright, neutral or problem.', enum: ['bright', 'neutral', 'problem'] },
         bright: { type: 'boolean', description: 'Deprecated, read for one release: true is tone bright, false tone problem.' },
+        principles: PRINCIPLES_CITED,
       },
       required: ['id'],
       additionalProperties: false,
@@ -3706,7 +3903,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
 export const TREE_WIDE: readonly string[] = [
   'scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list', 'reportingLines.list',
-  'principles.list', 'topics.list', 'blocks.list',
+  'principles.list', 'principle.read', 'principles.suggest', 'topics.list', 'blocks.list',
 ]
 
 /**
@@ -3783,6 +3980,7 @@ export type AgentAnswer =
  */
 export type AgentRefusal =
   | 'agent.off'
+  | 'agent.principleCited'
   | 'agent.noProject'
   | 'agent.readOnly'
   | 'agent.conflict'
@@ -3956,6 +4154,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
+  'agent.principleCited': 'A record cites that principle, so it stays: retire it with principle.update status retired. The detail says which scopes cite it.',
   'agent.mayNotModerate':
     'That comment is somebody else\'s, and the person you act for may not remove other people\'s comments in this scope. '
     + 'Its author may remove it, or someone who moderates the scope; ask the person whether to reply to it instead.',

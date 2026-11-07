@@ -44,8 +44,15 @@ const element = (id: string, name: string, over: Partial<HostModel['elements'][n
   id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...over,
 })
 
+const standing = (id: string, number: number) => ({
+  id, number, title: id, statement: id, groups: [], regime: 'flexible' as const, status: 'candidate' as const, lastAspect: 1,
+  aspects: [{ id: `${id}-a1`, number: 1, text: id, nature: 'design' as const }],
+})
+
 const host: HostModel = {
   name: 'Landscape',
+  // Two to relate and merge: every principle.add here is the first of its model.
+  principles: [standing('pr-one', 91), standing('pr-two', 92)],
   elements: [
     element('billing', 'Billing'),
     element('crm', 'CRM'),
@@ -216,6 +223,18 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
     args: { about: { kind: 'decision', id: 'adr-1' }, principle: { id: 'pr-new-1' }, stance: 'deviates', reason: 'The ledger is ours.' },
     on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare'] }]],
   }],
+  'principle.uncite': [{
+    args: { id: 'ci-new-1' },
+    on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare'] }], ['citation.add', { about: { kind: 'decision', id: 'adr-1' }, principle: { id: 'pr-new-1' }, stance: 'supports' }]],
+  }],
+  'principleGroups.set': [{ args: { groups: [{ name: 'Security' }] } }],
+  'principle.relate': [{ args: { id: 'pr-one', kind: 'tension', to: { id: 'pr-two' } } }],
+  'principle.unrelate': [{ args: { id: 'pr-one', kind: 'tension', to: { id: 'pr-two' } }, on: [['principle.relate', { id: 'pr-one', kind: 'tension', to: { id: 'pr-two' } }]] }],
+  'principle.merge': [{ args: { into: 'pr-one', from: ['pr-two'] } }],
+  'principle.remove': [{ args: { id: 'pr-new-1' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
+  'aspect.add': [{ args: { principle: 'pr-new-1', text: 'Ask' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
+  'aspect.update': [{ args: { principle: 'pr-new-1', number: 1, text: 'Compare twice' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
+  'aspect.remove': [{ args: { principle: 'pr-new-1', number: 2 }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
   'evaluation.rate': [{ args: { block: { id: 'blk-gw' }, option: 'sb-a', capability: 'cap-route', level: 3 } }],
   'evaluation.add': [{ args: { block: 'blk-id', contexts: ['Staff'] } }],
   'evaluation.propose': [{

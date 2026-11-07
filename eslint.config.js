@@ -93,7 +93,7 @@ const MAY_IMPORT = {
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports', 'people'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search', 'people', 'comments', 'principles', 'blocks'],
-  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people', 'comments'],
+  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search', 'people', 'comments', 'principles'],
   ports: ['model', 'platform', 'projects', 'agent', 'people'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations', 'people'],
   providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters', 'people'],

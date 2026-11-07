@@ -170,7 +170,10 @@ building block or a subtopic, and otherwise removes that one scope, after
 asking. The choices for a link are every scope that is not a topic and not
 the place; the organisation is one of them.
 
-**The tree's ↗ rows** open the topic's home, where it lives.
+**The tree's ↗ rows** open the topic's home, where it lives. Since 7 November 2026
+a row comes with the scope's own branch, once that is opened, and folds away with it,
+so a scope with only a topic under it has a fold; what the organisation is relevant to
+shows at once, its branch being always open. A find and *With work* show none.
 
 **Principles in force** (§4): a topic's principles are listed on a scope's
 principles page under *From <topic> (a topic relevant here)*, apart from those

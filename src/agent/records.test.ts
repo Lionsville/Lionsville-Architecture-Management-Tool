@@ -61,7 +61,7 @@ describe('the tree’s principles, topics and building blocks, for an agent', ()
       }],
     })
     // Every scope's own, without one.
-    expect((body(listPrinciples(tree, {})).scopes as { scope: string; groups: string[] }[])[0]).toMatchObject({ scope: '', groups: ['Security'] })
+    expect((body(listPrinciples(tree, {})).scopes as { scope: string; groups: unknown[] }[])[0]).toMatchObject({ scope: '', groups: [{ id: 'gr-1', name: 'Security' }] })
   })
 
   it('lists the topics, or those relevant at a scope', () => {

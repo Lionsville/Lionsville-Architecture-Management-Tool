@@ -19,7 +19,7 @@ import { useMemo, useRef } from 'react'
 import { apply } from '../../model/reducer'
 import type { Command } from '../../model/commands'
 import { principleList } from '../../model/normalised'
-import { formatPrincipleNumber, mergePrinciples, nextPrincipleNumber } from '../../model/principle'
+import { formatPrincipleNumber, nextPrincipleNumber } from '../../model/principle'
 import type { Principle, PrincipleGroup, PrincipleRelation, PrincipleStatus } from '../../model/principle'
 import { isAboutRecord, isCiting } from '../../model/citable'
 import type { HostModel } from '../../model/hostModel'
@@ -30,6 +30,7 @@ import { citationRefusal } from '../../principles/principle'
 import type { Citation, CitationRefusal, CitingRecord } from '../../principles/principle'
 import { newAdr, nextAdrNumber } from '../../decisions/adr'
 import type { Translate } from '../../i18n'
+import { principleMerge } from '../../principles/merge'
 import { principleOf } from '../../principles/draft'
 import type { PrincipleDraft } from '../../principles/draft'
 import type { PrinciplesAccess, PrincipleSource } from '../../principles/ui/PrinciplesContext'
@@ -253,17 +254,8 @@ export function principlesAccess(deps: PrinciplesDeps, version: number): Princip
     },
     merge: (scope, into, from) => {
       if (scope !== here) return
-      const survivor = heldHere(into)
-      const absorbed = from.map(heldHere).filter((one): one is Principle => one !== undefined && one.id !== into)
-      if (!survivor || absorbed.length === 0) return
-      const merged = mergePrinciples(survivor, absorbed)
-      land(deps, {
-        type: 'transaction',
-        commands: [
-          { type: 'principle.update', id: into, patch: merged.survivor },
-          ...merged.absorbed.map((one): Command => ({ type: 'principle.update', id: one.id, patch: { mergedInto: into } })),
-        ],
-      })
+      const merged = principleMerge(deps.session.indexed(), here, into, from)
+      if (merged) land(deps, { type: 'transaction', commands: merged.commands })
     },
     ...(deps.t ? { deviate: (about: CitingRecord, ref: PrincipleRef, aspect: number | undefined, reason: string) => deviate(deps, about, ref, aspect, reason) } : {}),
     open: (ref) => (ref.scope === here ? deps.openHere(ref.id) : deps.openThere?.(ref.scope, ref.id)),

@@ -365,8 +365,29 @@ regime, status and rationale), and `citation.add` (a record of the open scope
 follows, deviates from or supports a principle, or a part of it, with its
 reason). The method sent on connect says to cite rather than restate.
 
-The rest of §13 — `principle.read` and `principles.suggest`, relating,
-merging and removing principles, the aspects' own tools, the groups set
-whole, `principle.uncite`, and `principles` on the decision and observation
-tools — is scheduled after 3.8.0 (the roadmap, *Open*); until then those are
-the principles page's.
+## As built, 7 November 2026: the rest of the agent's tools (§13)
+
+Reads: `principle.read` (one principle whole, its use and every citation of it,
+with the ids `principle.uncite` takes) and `principles.suggest` (`principles/suggest.ts`,
+the function *May apply* reads). Both, and `principles.list`, lay the open scope's
+session over the index, so what was just written reads back. `principles.list` says a
+scope's groups with their ids.
+
+Writes, each one step and each usable in a batch: `principleGroups.set` (the list whole
+and in order, so it makes, renames, orders and removes; a group left out is taken off
+its principles in the step), `groups` by name and `note` on `principle.update` and
+`groups` on `principle.add` (a name the scope has not got is made in the step),
+`principle.relate`, `principle.unrelate`, `principle.merge`, `principle.remove`,
+`aspect.add`, `aspect.update`, `aspect.remove`, `principle.uncite`, and `principles` on
+`decision.propose`, `decision.update`, `observation.record` and `observation.update`.
+
+**Names.** §13's `principle.propose` and `principle.cite` stay `principle.add` and
+`citation.add`, as they shipped. `principle.transition` is not a tool: status is
+`principle.update`'s, as a transition is a patch of the principle in the reducer.
+
+**What the tools ask first.** A citation is asked what the principle says, as the page
+asks it: fixed, retired, gone, or not read here, with a sentence. `citation.add` did not
+ask this until now. A merge is `principles/merge.ts`, which the page now reads too: this
+scope's citations and the absorbed ones' comments come along as §6 says, which the page
+did not do. Citations other scopes keep cannot be written by this scope's step, so the
+agent's answer names them (`citedElsewhere`) and `check.citationGone` says them after.

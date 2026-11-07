@@ -405,3 +405,14 @@ where a merged cause or observation went (`mergedInto`, and
 answers the cause's history. The method an agent is handed on connect says
 that observations and causes are merged, that `merge.plan` says what a
 merge would do, and that a merge may take records of any scope.
+
+## As built, 7 November 2026: the open scope's part in the same apply
+
+Where the source carries every step (`publishesSteps`), the open scope's part of a
+change across scopes no longer goes through its session after the others: it goes in
+the one apply, once the session's own steps are answered
+(`ScopeRepository.settle`, absent where a session writes through `apply`). A source can
+then hold the whole change to what it says: a record arriving from a scope that lets it
+go in the same apply, a thread brought home to where that apply takes it from. The part
+comes back to the session as a step on the scope, so it is on no undo stack, where
+before ⌘Z could take back this scope's half. A source that writes whole is as it was.

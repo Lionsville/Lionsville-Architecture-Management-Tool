@@ -125,7 +125,9 @@ export const SHEET_MAPPING_PARAGRAPH =
 export const RECORDS_PARAGRAPH =
   'Principles, topics and building blocks are records of their own. A principle is kept where it applies and holds in every '
   + 'scope under it and wherever a topic that keeps it is relevant (principles.list says which hold at a scope, and how); a '
-  + 'record that follows, deviates from or supports one cites it with citation.add rather than restating it. A topic is a '
+  + 'record that follows, deviates from or supports one cites it with citation.add, or principles on the decision and observation tools, rather than restating it. '
+  + 'Ask principles.suggest before proposing a decision, recording an observation or changing a design; a departure is a decision with its reason, and only from a flexible principle. '
+  + 'Written from a source, one idea is one principle, its claims are its aspects, what says the same thing twice is merged (principle.merge), and groups are kept with principleGroups.set. A topic is a '
   + 'scope filed under the organisation\'s Topics, made with scope.create topic, and linked to the scopes it is relevant to '
   + 'with dated links, given whole with scope.update relevantTo — one topic for a subject, linked wherever it applies, never '
   + 'one per scope (topics.list). A building block says what many solutions must provide — its capabilities, its usage '

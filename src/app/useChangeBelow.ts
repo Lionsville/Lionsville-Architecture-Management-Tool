@@ -39,7 +39,7 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopePath } from '../projects/scopePath'
 
 /** As much of a scope repository as a change below takes: read a scope, and apply a step to it. */
-export type BelowScopes = ScopeReader & Pick<ScopeRepository, 'apply'>
+export type BelowScopes = ScopeReader & Pick<ScopeRepository, 'apply' | 'settle'>
 
 /** The one step a change makes, from the scope's lists before it and after. */
 export function stepFor(model: Model, next: ObservationWork): Command | undefined {

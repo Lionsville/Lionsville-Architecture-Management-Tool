@@ -17,7 +17,13 @@ class Sent {
   static permission = 'granted'
   static all: Sent[] = []
   closed = false
-  constructor(readonly title: string, readonly options: { body: string }) { Sent.all.push(this) }
+  title: string
+  options: { body: string }
+  constructor(title: string, options: { body: string }) {
+    this.title = title
+    this.options = options
+    Sent.all.push(this)
+  }
   close() { this.closed = true }
 }
 
