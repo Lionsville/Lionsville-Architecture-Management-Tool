@@ -92,7 +92,7 @@ export const INSTRUCTIONS =
   + 'register.list is every application across the tree, technology.list every service and platform, and '
   + 'checks.list what the tree contradicts about itself. '
   + 'people.list is the organisation\'s register of people, kept outside the history: person.add checks '
-  + 'for somebody similar first, person.leave marks someone as left, and no tool forgets, removes or merges anyone. '
+  + 'for somebody similar first, person.leave marks someone as left, person.takeBackLeaving takes that back when it was a mistake, and no tool forgets, removes or merges anyone. '
   + 'The person is watching and may click while you work. Your first call that moves the app or changes '
   + 'the model puts a banner on their screen naming you; session.start lets you say why, and session.end '
   + 'takes the banner down when you are done. If they press Stop, your next call is refused with '

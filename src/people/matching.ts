@@ -16,7 +16,7 @@
  */
 import { fold } from '../model/textSearch'
 import type { PersonId } from '../model/person'
-import type { Person } from './person'
+import type { Person, PersonState } from './person'
 import { registerOf, resolvePerson, shownEntry, signatureApart } from './shown'
 import type { Shown, Showing } from './shown'
 
@@ -24,7 +24,17 @@ import type { Shown, Showing } from './shown'
  * For one folded word, the register ids it names — and which ids a signature's
  * kept name no longer links to (`signatureApart`): forgotten, or gone.
  */
-export type PeopleMatching = ((token: string) => ReadonlySet<PersonId>) & { readonly apart: (id: PersonId) => boolean }
+export type PeopleMatching = ((token: string) => ReadonlySet<PersonId>) & {
+  readonly apart: (id: PersonId) => boolean
+  /**
+   * The entries a query names, for a search to find the person themselves
+   * (the owner, 7 November 2026): every word in what the reader may read of the
+   * entry, so one forgotten or withheld is found by pseudonym and nothing else.
+   * A redirect is no entry: its words are the entry's it points at. Never the
+   * address, which most readers of the register are not shown.
+   */
+  readonly entries: (tokens: readonly string[]) => readonly { readonly id: PersonId; readonly title: string; readonly state: PersonState }[]
+}
 
 /**
  * A match over a register as it is now. `words` says an entry in the reader's
@@ -36,9 +46,14 @@ export function peopleMatching(
 ): PeopleMatching {
   const register = registerOf(people)
   const read = new Map<PersonId, string>()
+  const said: { id: PersonId; title: string; folded: string; state: PersonState }[] = []
   for (const entry of people) {
     const kept = resolvePerson(entry.id, register)
-    if (kept) read.set(entry.id, fold(words(shownEntry(kept, showing))))
+    if (!kept) continue
+    const title = words(shownEntry(kept, showing))
+    const folded = fold(title)
+    read.set(entry.id, folded)
+    if (kept.id === entry.id) said.push({ id: entry.id, title, folded, state: entry.state })
   }
   const answered = new Map<string, ReadonlySet<PersonId>>()
   const match = (token: string): ReadonlySet<PersonId> => {
@@ -49,5 +64,8 @@ export function peopleMatching(
     answered.set(token, named)
     return named
   }
-  return Object.assign(match, { apart: (id: PersonId) => signatureApart(id, register) })
+  const entries = (tokens: readonly string[]) => said
+    .filter((one) => tokens.every((token) => one.folded.includes(token)))
+    .map(({ id, title, state }) => ({ id, title, state }))
+  return Object.assign(match, { apart: (id: PersonId) => signatureApart(id, register), entries })
 }

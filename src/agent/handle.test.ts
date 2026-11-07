@@ -65,7 +65,9 @@ function session(over: Partial<SessionView> = {}): SessionView & {
   model: () => Model
   saved: () => number
   remote: (command: Command, by: string, via?: string) => void
+  taken: () => number
 } {
+  let taken = 0
   let model = fromArrays(host)
   let counter = 0
   let revision = 0
@@ -99,6 +101,10 @@ function session(over: Partial<SessionView> = {}): SessionView & {
      * As the session's own does: the newest step that is not another author's,
      * stepped over rather than stopped at.
      */
+    undoRun: () => {
+      taken += 1
+      return true
+    },
     undo: () => {
       let at = past.length - 1
       while (at >= 0 && past[at].origin === 'remote') at -= 1
@@ -121,6 +127,7 @@ function session(over: Partial<SessionView> = {}): SessionView & {
       library.push({ name: image.file, mediaType: image.url.slice(5, image.url.indexOf(';')), size: 70, width: 1, height: 1, contentAddress: `sha256:${'0'.repeat(64)}` })
     },
     save: () => { saved += 1; return Promise.resolve() },
+    taken: () => taken,
     saved: () => saved,
     ...over,
   }
@@ -295,6 +302,22 @@ describe('the session’s own: revision, the log, undo, save', () => {
     // Nobody said which client the second was made with, so nothing says one.
     expect(out.steps[0].by).toBe('B. Bee')
     expect(out.steps[0]).not.toHaveProperty('via')
+  })
+
+  it('takes a whole session back as one step while its steps are the newest (ADR-0019, amended)', async () => {
+    const held = session()
+    await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)
+    await handle({ id: '2', tool: 'element.add', args: { name: 'ERP' } }, held)
+    const out = parsed(await handle({ id: '3', tool: 'undo', args: { session: true } }, held))
+    expect(out).toMatchObject({ undone: ['Added ERP', 'Added CRM'], asOneStep: true })
+    expect(held.taken()).toBe(1)
+  })
+
+  it('refuses a whole session with somebody else\'s step on top', async () => {
+    const held = session()
+    await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)
+    held.dispatch({ type: 'diagram.rename', id: 'l7', name: 'Mine' })
+    expect(await handle({ id: '2', tool: 'undo', args: { session: true } }, held)).toMatchObject({ refusal: 'agent.notYours' })
   })
 
   it('undoes the newest steps while they are an agent’s, and stops at a person’s', async () => {

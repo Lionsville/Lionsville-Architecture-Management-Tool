@@ -26,7 +26,7 @@ const service = (over: Partial<TechnologyRow> & Pick<TechnologyRow, 'id' | 'name
 })
 
 const application = (over: Partial<RegisterRow> & Pick<RegisterRow, 'id' | 'name'>): RegisterRow => ({
-  drawnIn: [], findings: [], ...over,
+  drawnIn: [], findings: [], owner: { kind: 'none' }, ...over,
 })
 
 describe('attentionItems', () => {

@@ -319,7 +319,7 @@ export function OrganisationCards({
         // the cards, as sentences (`NeedsAttention`), not tallied here.
         count={[
           plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, register.applications),
-          plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, register.ownedByADomain),
+          plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, register.owned),
           plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
         ].join(' · ')}
         actions={openWay(onOpenRegister, s('org.register'), 'open-register', 'org.card.register', s)}

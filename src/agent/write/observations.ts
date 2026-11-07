@@ -19,7 +19,7 @@ import { forgetCause, formatSolutionNumber } from '../../observations/solution'
 import {
   causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
   makeCause, makeRootCause, newCause, newObservation, nextCauseNumber, nextObservationNumber, removeCause,
-  removeObservation, seenAgain, seenDayProblem, setArchived, unlinkCause, updateCause, updateObservation,
+  isMerged, removeObservation, seenAgain, seenDayProblem, setArchived, setNoted, unlinkCause, updateCause, updateObservation,
 } from '../../observations/observation'
 import type {
   Analysis, CausePatch, LinkContext, LinkRefusal, ObservationPatch, RootChangeRefusal,
@@ -214,6 +214,20 @@ export const archiveObservation = onObservation((held, args, view, work) => {
   const observations = setArchived(before.observations, held.id, !restore, view.today(), args.note as string | undefined)
   if (observations[before.observations.indexOf(held)] === held) {
     return refused('agent.badArguments', `${held.id} is ${restore ? 'not archived' : 'archived already'}`)
+  }
+  const after = { ...before, observations }
+  return finish(work, after, observationAnswer(after, held.id))
+})
+
+export const noteObservation = onObservation((held, args, view, work) => {
+  const { before } = work
+  const takeBack = args.takeBack === true
+  if (held.archived || isMerged(before.observations, held.id)) {
+    return refused('agent.badArguments', `${held.id} is not on the waiting list to leave: it is ${held.archived ? 'archived' : 'merged'}`)
+  }
+  const observations = setNoted(before.observations, held.id, !takeBack, view.today(), args.reason as string | undefined)
+  if (observations[before.observations.indexOf(held)] === held) {
+    return refused('agent.badArguments', `${held.id} is ${takeBack ? 'not noted' : 'noted already'}`)
   }
   const after = { ...before, observations }
   return finish(work, after, observationAnswer(after, held.id))

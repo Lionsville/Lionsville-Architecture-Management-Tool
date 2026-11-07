@@ -324,6 +324,36 @@ export function setArchived(
   })
 }
 
+/**
+ * Say an observation wants no cause, or take that back. A choice among the
+ * live: an archived or merged one is on no list to leave. Saying what it
+ * already is changes nothing, and the note is kept beside the day.
+ */
+export function setNoted(
+  list: readonly Observation[], id: string, noted: boolean, date: string, note?: string,
+): Observation[] {
+  return replace(list, id, (one) => {
+    if (Boolean(one.noted) === noted) return one
+    const next = { ...one }
+    if (noted) next.noted = true
+    else delete next.noted
+    return withEvent(next, { date, kind: noted ? 'noted' : 'unnoted', ...(note?.trim() ? { note: note.trim() } : {}) })
+  })
+}
+
+export function isNoted(one: Pick<Observation, 'noted'>): boolean {
+  return one.noted === true
+}
+
+/**
+ * The waiting list: what still stands, nothing explains yet and nobody has
+ * said wants nothing. `explained` says whether a cause explains one, the
+ * caller's to answer since a cause may be kept in the scope above.
+ */
+export function waitingObservations(list: readonly Observation[], explained: (id: string) => boolean): Observation[] {
+  return liveObservations(list).filter((one) => !isNoted(one) && !explained(one.id))
+}
+
 export function isArchived(one: Pick<Observation, 'archived'>): boolean {
   return one.archived === true
 }

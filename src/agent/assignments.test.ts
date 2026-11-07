@@ -119,6 +119,7 @@ function shell(policy: PeoplePolicy = DEFAULT_POLICY): ShellView {
     read: () => Promise.resolve({ people, policy }),
     add: () => Promise.reject(new Error('not here')),
     leave: () => Promise.reject(new Error('not here')),
+    takeBackLeaving: () => Promise.reject(new Error('not here')),
     today: () => TODAY,
     readOnly: () => false,
   }

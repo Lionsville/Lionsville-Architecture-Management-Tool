@@ -16,6 +16,8 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
+import { agentRun } from '../projects/agentRun'
+import type { AgentSessionOf } from '../projects/agentRun'
 import { listReferences } from './references'
 import { listBlocks, listPrinciples, listTopics } from './records'
 import { listChanges } from './changes'
@@ -173,6 +175,12 @@ export type SessionView = {
   history(): readonly HistoryEntry[]
   /** ⌘Z. The handler has already checked whose step is on top. */
   undo(): void
+  /**
+   * A driving session's steps at the top of the stack, undone as one step
+   * (`projects/agentRun.ts`). Answers whether it landed. Absent where nothing
+   * here keeps a stack to take a run off.
+   */
+  undoRun?(of: AgentSessionOf): boolean
   /**
    * The pictures the documents may show: the scope's library, an entry per
    * picture named as the documents name it (ADR-0009, ADR-0031 §3). Shell
@@ -390,7 +398,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (request.tool === 'diagram.tidy' || request.tool === 'diagram.route') {
     return seeing(request.tool, args, session)
   }
-  const own = answeredBySession(request.tool, args, session)
+  const own = answeredBySession(request.tool, args, session, shell)
   if (own) return own
 
   // A merge that writes other scopes, where the host writes several as one
@@ -509,11 +517,11 @@ function withFollowed(held: AgentAnswer, followed: readonly ScopeTypeFollowed[])
 
 /** The write tools the session answers itself, rather than as one command; nothing for any other tool. */
 function answeredBySession(
-  tool: ToolName, args: Record<string, unknown>, session: SessionView,
+  tool: ToolName, args: Record<string, unknown>, session: SessionView, shell?: ShellView,
 ): Promise<AgentAnswer> | AgentAnswer | undefined {
   switch (tool) {
     case 'image.upload': return uploadImage(args, session)
-    case 'undo': return undoSteps(args, session)
+    case 'undo': return args.session === true ? undoSession(session, shell) : undoSteps(args, session)
     case 'project.save': return saveProject(session)
     case 'batch': return batch(args, session)
     default: return undefined
@@ -801,6 +809,28 @@ function newestOurs(history: readonly HistoryEntry[]): HistoryEntry | undefined 
     if (history[i].origin !== 'remote') return history[i]
   }
   return undefined
+}
+
+/**
+ * A whole driving session as one step (`projects/agentRun.ts`): the one running,
+ * or the one that ended last. A step of anybody else's on top refuses it.
+ */
+function undoSession(session: SessionView, shell: ShellView | undefined): AgentAnswer {
+  const since = shell?.driving.latest()?.since
+  const of = since !== undefined ? { since: Date.parse(since) } : {}
+  const run = agentRun(session.history(), of)
+  if (run.steps.length === 0) {
+    const top = session.history().at(-1)
+    return top === undefined ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours', 'the newest step is not this session\'s')
+  }
+  const undone = run.steps.map((step) => session.translate(step.summary.key, {
+    name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
+  }))
+  if (!session.undoRun?.(of)) return refused('agent.stale', 'the session\'s steps no longer apply')
+  return json({
+    undone, asOneStep: true, revision: session.revision(),
+    ...(run.barrier !== undefined ? { stopped: 'an earlier step of the session crossed two scopes' } : {}),
+  })
 }
 
 function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAnswer {

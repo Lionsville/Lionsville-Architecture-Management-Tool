@@ -163,7 +163,8 @@ function conwaySubject(finding: ConwayFinding): string {
   switch (finding.kind) {
     case 'undeclared': return finding.flow.sourceId
     case 'unused': return finding.interaction.sourceId
-    case 'unowned': return finding.applicationId
+    case 'unowned':
+    case 'ownerNamed': return finding.applicationId
     case 'overLimit': return finding.unitId
   }
 }

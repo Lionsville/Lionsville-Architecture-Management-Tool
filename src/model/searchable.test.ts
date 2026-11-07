@@ -24,7 +24,8 @@ describe('what each kind of record says to a search', () => {
 
   it('makes every kind of hit somewhere, and each kind in one list only', () => {
     const made = Object.values(SEARCHABLE).flat().map((one) => one.kind)
-    expect([...made].sort()).toEqual([...SEARCH_KINDS].sort())
+    // A person is no list of the model: the register is outside it, and whoever may read it hands it in.
+    expect([...made].sort()).toEqual(SEARCH_KINDS.filter((kind) => kind !== 'person').sort())
   })
 
   it('gives every record of the generated landscape an id, a title and a place to open', () => {

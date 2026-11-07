@@ -11,6 +11,7 @@
  * time. The few write and see tools the session answers itself are named
  * below, and are the only ones that may be missing.
  */
+import { rateElement, removeAspectScale, setAspectScale } from './ratings'
 import type { ToolName, ToolOfTier } from '../tools'
 import {
   acceptInterface, addRelation, connect, removeConnection, removeConnections, removeRelation, updateConnection,
@@ -28,7 +29,7 @@ import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
 import { claimFunction } from './functions'
 import {
-  addCause, archiveObservation, linkCauseTool, observationSeen, recordObservation, removeCauseTool,
+  addCause, archiveObservation, linkCauseTool, noteObservation, observationSeen, recordObservation, removeCauseTool,
   removeObservationTool, unlinkCauseTool, updateCauseTool, updateObservationTool,
 } from './observations'
 import { mergeCause, mergeObservation } from './merge'
@@ -59,7 +60,7 @@ export const ANSWERED_BY_SESSION = [
   // never as one command here, and no batch holds it.
   'observation.move',
   'diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus',
-  'person.add', 'person.leave',
+  'person.add', 'person.leave', 'person.takeBackLeaving',
   // The tree's (ADR-0040 §1): each its scope's own step through the host, never a command here, and no batch holds one.
   'scope.create', 'scope.update', 'scope.move', 'scope.remove',
 ] as const satisfies readonly ToolOfTier<'write' | 'see'>[]
@@ -104,7 +105,11 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'observation.record': recordObservation,
   'observation.update': updateObservationTool,
   'observation.seen': observationSeen,
+  'element.rate': rateElement,
+  'aspectScale.set': setAspectScale,
+  'aspectScale.remove': removeAspectScale,
   'observation.archive': archiveObservation,
+  'observation.note': noteObservation,
   'observation.merge': mergeObservation,
   'observation.remove': removeObservationTool,
   'unitType.add': addUnitType,

@@ -207,7 +207,9 @@ const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummar
   sort: sortRows,
   counts: [
     { one: 'register.applicationsOne', other: 'register.applicationsOther', of: (summary) => summary.applications },
-    { one: 'register.ownedOne', other: 'register.ownedOther', of: (summary) => summary.ownedByADomain },
+    { one: 'register.ownedOne', other: 'register.ownedOther', of: (summary) => summary.owned },
+    { one: 'register.ownerNamedOne', other: 'register.ownerNamedOther', of: (summary) => summary.ownerNamed },
+    { one: 'register.keptOne', other: 'register.keptOther', of: (summary) => summary.keptInADomain },
     { one: 'register.outsideOne', other: 'register.outsideOther', of: (summary) => summary.outside },
   ],
   findings: [

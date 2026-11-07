@@ -9,6 +9,8 @@ import type { Model } from '../normalised'
 import { assignmentsOf, routesOf } from '../normalised'
 import { datesInOrder } from '../lifecycle'
 import { blockRefusal } from '../buildingBlock'
+import { ratingsRefusal, withRating } from '../aspectScale'
+import { ownerFieldNamed, withOneOwner } from '../ownerField'
 import type { DesignElement, ElementId } from '../types'
 import { gone, ok, outOfOrder, taken } from './handler'
 import type { ApplyResult, CommandTable, PatchKeys } from './handler'
@@ -23,11 +25,13 @@ const ELEMENT_FIELDS: PatchKeys<'element.update'> = {
   category: true, vendor: true, technology: true, platformArchetype: true, shared: true,
   description: true, outside: true, partyId: true, scopes: true, unitTypeId: true, extraSlots: true, reportingLines: true,
   lifecycle: true, lifecycleDates: true, successorId: true, owner: true, isManaged: true, aspects: true,
+  ratings: true, certainty: true,
   accentColor: true, shapeVariant: true, iconKey: true, iconSize: true,
   capabilities: true, contexts: true, sbbs: true,
 }
 
 const badBlock = { ok: false, reason: 'command.badBlock' } as const
+const badScale = { ok: false, reason: 'command.badScale' } as const
 
 export const ELEMENT_COMMANDS = {
   'element.create': {
@@ -37,6 +41,7 @@ export const ELEMENT_COMMANDS = {
       const { element, at } = command
       if (element.id in model.elements) return taken
       if (blockRefusal(element)) return badBlock
+      if (ratingsRefusal(element)) return badScale
       const rows = put(model.elements, model.order.elements, element.id, element, at)
       return ok(withElements(model, rows), { type: 'element.delete', id: element.id }, meta)
     },
@@ -45,7 +50,8 @@ export const ELEMENT_COMMANDS = {
   'element.update': {
     carries: { id: true, patch: true },
     patch: { keys: ELEMENT_FIELDS, row: (model, command) => model.elements[command.id] },
-    writes: (command) => patchWrites(`element/${command.id}`, command.patch),
+    // The owner of an application is one field (`withOneOwner`), so naming either half may write both.
+    writes: (command) => patchWrites(`element/${command.id}`, ownerFieldNamed(command.patch)),
     /**
      * A stand-in's owner's detail, its caches and its description are the
      * defining scope's (`projects/mayEdit.ts`, `model/standIn.ts`).
@@ -57,15 +63,35 @@ export const ELEMENT_COMMANDS = {
     apply(model, command, { meta }) {
       const held = model.elements[command.id]
       if (!held) return gone
-      const { row, inverse } = patched(held, command.patch)
+      const { row, inverse } = patched(held, withOneOwner(held, command.patch))
       // A lifecycle that runs backwards is not a landscape anybody can read,
       // and refusing here rather than in the inspector means the agent, a
       // paste and an undo all get the same answer (ADR-0009).
       if (!datesInOrder(row.lifecycleDates)) return outOfOrder
       // A building block's fields hold together, and only a building block has them (ADR-0043 §2, §3).
       if (blockRefusal(row)) return badBlock
+      if (ratingsRefusal(row)) return badScale
       const rows = put(model.elements, model.order.elements, command.id, row)
       return ok(withElements(model, rows), { type: 'element.update', id: command.id, patch: inverse }, meta)
+    },
+  },
+
+  'element.rate': {
+    carries: { id: true, aspect: true },
+    writes: (command) => [`element/${command.id}/ratings/${command.aspect}`],
+    guard(model, command) {
+      return model.elements[command.id]?.ref !== undefined ? 'command.ownedElsewhere' : undefined
+    },
+    apply(model, command, { meta }) {
+      const held = model.elements[command.id]
+      if (!held) return gone
+      const was = held.ratings?.[command.aspect]
+      if (was === command.value) return ok(model, NOTHING, meta)
+      const ratings = withRating(held.ratings, command.aspect, command.value)
+      const { row } = patched(held, { ratings })
+      if (ratingsRefusal(row)) return badScale
+      const rows = put(model.elements, model.order.elements, command.id, row)
+      return ok(withElements(model, rows), { type: 'element.rate', id: command.id, aspect: command.aspect, ...(was !== undefined ? { value: was } : {}) }, meta)
     },
   },
 

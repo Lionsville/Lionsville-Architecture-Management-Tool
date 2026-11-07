@@ -97,6 +97,8 @@ export type CommandRefusal =
   | 'command.sharpenNote'
   /** A scope's groups of principles with one unnamed, or an id said twice (ADR-0041 §3). */
   | 'command.badGroups'
+  /** A scale that does not hold together, or a rating on something that takes none (ADR-0046). */
+  | 'command.badScale'
   /** A kind that does not cite, or a stance it may not take (ADR-0041 §7, `model/citable.ts`). */
   | 'command.notCitable'
   /** A departure from a principle without its reason (ADR-0041 §7). */
@@ -160,6 +162,7 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.titleEmpty': true,
   'command.sharpenNote': true,
   'command.badGroups': true,
+  'command.badScale': true,
   'command.notCitable': true,
   'command.reasonMissing': true,
   'command.badBlock': true,

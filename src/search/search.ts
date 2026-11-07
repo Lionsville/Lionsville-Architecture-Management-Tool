@@ -90,7 +90,11 @@ export const SEARCH_LIMIT_PER_KIND = 8
  * its name no longer links to such an entry, so a record is not found
  * through it by the register — only by the name as signed, its own text.
  */
-export type PeopleMatch = ((token: string) => ReadonlySet<string>) & { readonly apart?: (id: string) => boolean }
+export type PeopleMatch = ((token: string) => ReadonlySet<string>) & {
+  readonly apart?: (id: string) => boolean
+  /** The entries themselves a query names, in the same words: a hit of their own, `person`. */
+  readonly entries?: (tokens: readonly string[]) => readonly { readonly id: string; readonly title: string; readonly state: string }[]
+}
 
 export type SearchInput = {
   /** Nearest first: the open scope, then the scopes above, then the rest. Earlier sources rank first within a band. */
@@ -119,10 +123,19 @@ export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND
   const hits: SearchHit[] = []
   for (const kind of SEARCH_KINDS) {
     if (kinds && !kinds.includes(kind)) continue
+    // Not a list of the model: the register is outside the history, and whoever may read it hands it in.
+    if (kind === 'person') { hits.push(...personHits(tokens, people, limitPerKind)); continue }
     hits.push(...bestOfKind(kind, indexed, matches, folded, limitPerKind).map(({ entry, source, index }) =>
       hitOf(entry, source, index, tokens, query)))
   }
   return hits
+}
+
+/** The people a query names, each opening on the register. */
+function personHits(tokens: readonly string[], people: PeopleMatch | undefined, limit: number): SearchHit[] {
+  return (people?.entries?.(tokens) ?? []).slice(0, limit).map(({ id, title, state }) => ({
+    kind: 'person', id, title, status: state, about: [], snippet: '', opens: { page: 'people', id },
+  }))
 }
 
 type Found = { entry: RecordEntry; source: SearchSource; index: RecordIndex }

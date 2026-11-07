@@ -8,7 +8,7 @@ import {
   isArchived, isBright, isMerged, toneOf, tonesMerge, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
-  setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
+  setArchived, setNoted, isNoted, waitingObservations, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
   causeTemplate, causeAbsorbedBy, isCauseMerged, liveCauses, mergedInto,
 } from './observation'
 import type { Analysis, Cause, LinkContext, Observation, ScopeAnalysis } from './observation'
@@ -404,5 +404,30 @@ describe('a merged cause is history (ADR-0035 §4)', () => {
     const gone = observation({ id: 'o9', history: [{ date: '2026-09-08', kind: 'recorded' }, { date: '2026-10-01', kind: 'merged', id: 'x', scope: 'acme' }] })
     expect(isMerged([gone], 'o9')).toBe(true)
     expect(liveObservations([gone])).toEqual([])
+  })
+})
+
+describe('Noted: read, and it wants no cause (ADR-0038, amended 7 November 2026)', () => {
+  const list = () => [observation({}), observation({ id: 'o2', number: 2 })]
+
+  it('leaves the waiting list and stays live, with the day and the reason in its history', () => {
+    const noted = setNoted(list(), 'o1', true, '2026-11-07', ' A fact worth keeping ')
+    expect(isNoted(noted[0])).toBe(true)
+    expect(noted[0].history.at(-1)).toEqual({ date: '2026-11-07', kind: 'noted', note: 'A fact worth keeping' })
+    expect(waitingObservations(noted, () => false).map((one) => one.id)).toEqual(['o2'])
+    expect(liveObservations(noted).map((one) => one.id)).toEqual(['o1', 'o2'])
+  })
+
+  it('goes back on the list when it is taken back, and saying what it already is changes nothing', () => {
+    const noted = setNoted(list(), 'o1', true, '2026-11-07')
+    expect(setNoted(noted, 'o1', true, '2026-11-08')[0]).toBe(noted[0])
+    const back = setNoted(noted, 'o1', false, '2026-11-08')
+    expect(back[0].history.map((one) => one.kind)).toEqual(['recorded', 'noted', 'unnoted'])
+    expect('noted' in back[0]).toBe(false)
+    expect(waitingObservations(back, () => false).map((one) => one.id)).toEqual(['o1', 'o2'])
+  })
+
+  it('waits only while nothing explains it', () => {
+    expect(waitingObservations(list(), (id) => id === 'o1').map((one) => one.id)).toEqual(['o2'])
   })
 })

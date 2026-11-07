@@ -9,7 +9,7 @@
  * here per diagram and wins over the stored answer; the write that keeps it
  * is the session's to refuse.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Theme } from '@mui/material/styles';
 import type { DesignDiagram, DesignModel, ElementId } from '../model/types';
 import type { PlatformTree } from '../model/deployment';
@@ -17,7 +17,7 @@ import { overlayBands, type ColourBy } from '../model/overlay';
 import { today } from '../model/lifecycle';
 import { overlayIndex, overlayInk, overlayTint, type OverlayMark } from './theme/overlayColors';
 import { usePersonNames } from '../people/ui/names';
-import { shownAsOf, useShownDays, type ShownDays } from './useShownDays';
+import { shownAsOf, type ShownDays } from './useShownDays';
 import type { EditorActions } from './useEditorState';
 
 /** Whether a board draws its deployment boxes: the reader's flip, else the stored answer, else yes. */
@@ -38,14 +38,14 @@ export function shownColourBy(
 export function useBoardView(args: {
   model: DesignModel;
   diagram: DesignDiagram | undefined;
-  /** The host's day, when it has one, so its scrubber and this bar move one thing. */
-  viewing: ShownDays | undefined;
+  /** The day a person is looking at: the host's when it has one, so its scrubber and this bar move one thing. */
+  viewing: ShownDays;
   platformTree: PlatformTree | undefined;
   theme: Theme;
   actions: Pick<EditorActions, 'setShowDeployment' | 'setColourBy'>;
 }) {
   const { diagram, actions } = args;
-  const shown = useShownDiagram(args.model, diagram, args.viewing);
+  const shown = useShownDiagram(diagram, args.viewing);
   const [deploymentShown, setDeploymentShown] = useState<Record<string, boolean>>({});
   const showDeployment = shownDeployment(diagram, deploymentShown);
   const [colourShown, setColourShown] = useState<Record<string, ColourBy | 'none'>>({});
@@ -60,10 +60,24 @@ export function useBoardView(args: {
   };
   const chooseColourBy = (by: ColourBy | undefined) => {
     if (!diagram) return;
-    setColourShown((kept) => ({ ...kept, [diagram.id]: by ?? 'none' }));
-    actions.setColourBy(by);
+    setColourShown((kept) => {
+      // Back on what the view keeps, it is no longer a lens of this reader's.
+      if (by === diagram.colourBy) {
+        const { [diagram.id]: _gone, ...rest } = kept;
+        return rest;
+      }
+      return { ...kept, [diagram.id]: by ?? 'none' };
+    });
   };
-  return { ...shown, showDeployment, toggleDeployment, colourBy, chooseColourBy, ...overlay };
+  // Reading writes nothing (ADR-0027, amended): the lens is this reader's, in
+  // this window, until they say *Keep with the view*, and that is the one write.
+  const lensIsOwn = diagram !== undefined && diagram.id in colourShown;
+  const keepLens = () => {
+    if (!diagram || !lensIsOwn) return;
+    actions.setColourBy(colourBy);
+    setColourShown(({ [diagram.id]: _kept, ...rest }) => rest);
+  };
+  return { ...shown, showDeployment, toggleDeployment, colourBy, chooseColourBy, lensIsOwn, keepLens, ...overlay };
 }
 
 export type BoardView = ReturnType<typeof useBoardView>;
@@ -75,13 +89,7 @@ export type BoardView = ReturnType<typeof useBoardView>;
  * write is always built from the model's diagram, so the look cannot leak
  * into one.
  */
-function useShownDiagram(model: DesignModel, diagram: DesignDiagram | undefined, hostViewing: ShownDays | undefined) {
-  const modelRef = useRef(model);
-  modelRef.current = model;
-  const ownDays = useShownDays(
-    useCallback((id: string) => modelRef.current.diagrams.find((d) => d.id === id)?.asOf, []),
-  );
-  const viewing = hostViewing ?? ownDays;
+function useShownDiagram(diagram: DesignDiagram | undefined, viewing: ShownDays) {
   const lookingAt = diagram ? shownAsOf(diagram, viewing.days) : undefined;
   const shownDiagram = useMemo(() => {
     if (!diagram || lookingAt === diagram.asOf) return diagram;

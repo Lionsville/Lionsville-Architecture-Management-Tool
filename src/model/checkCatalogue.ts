@@ -69,7 +69,7 @@ export const DATE_CHECK_KEYS = [
  * more than its type's limit, is the tree's `check.unitOverLimit`: one kind,
  * whichever screen finds it.
  */
-export const CONWAY_CHECK_KEYS = ['check.interfaceUndeclared', 'check.interactionUnused', 'check.applicationUnowned'] as const
+export const CONWAY_CHECK_KEYS = ['check.interfaceUndeclared', 'check.interactionUnused', 'check.applicationUnowned', 'check.applicationOwnerNamed'] as const
 
 /**
  * A service nothing delivers, read off the technology rows the organisation's
@@ -101,6 +101,7 @@ export const CONWAY_CHECK: Record<ConwayFinding['kind'], CheckKey> = {
   undeclared: 'check.interfaceUndeclared',
   unused: 'check.interactionUnused',
   unowned: 'check.applicationUnowned',
+  ownerNamed: 'check.applicationOwnerNamed',
   overLimit: 'check.unitOverLimit',
 }
 
@@ -373,6 +374,11 @@ const ENTRIES = {
   'check.applicationUnowned': {
     name: 'check.name.applicationUnowned', why: 'check.why.applicationUnowned', how: 'check.how.applicationUnowned',
     category: 'teams', weight: 'review', actions: ['setOwner', 'openApplication'],
+  },
+  // A note and not a review: somebody does answer for it, the name is just not a unit the map can place.
+  'check.applicationOwnerNamed': {
+    name: 'check.name.applicationOwnerNamed', why: 'check.why.applicationOwnerNamed', how: 'check.how.applicationOwnerNamed',
+    category: 'teams', weight: 'note', actions: ['setOwner', 'openApplication'],
   },
   // --- analysis -----------------------------------------------------------
   // Information in the first pass; a review here, because ADR-0032 §9 names

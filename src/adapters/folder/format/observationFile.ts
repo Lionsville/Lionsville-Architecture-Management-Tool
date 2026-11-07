@@ -125,6 +125,7 @@ export function observationFileText(observation: Observation): string {
     recordedByVia: observation.recordedBy?.via,
     seen: observation.seen,
     archived: observation.archived,
+    noted: observation.noted,
     // None at all is said, so it reads back as none rather than as the one a hand-written file is given.
     history: observation.history.length ? historyRows(observation.history) : NO_HISTORY,
   })
@@ -257,6 +258,7 @@ export function observationFromFile(text: string, path: string): Observation | u
     // `shared: true` in a file written before ADR-0032 is read past and not
     // written again: nothing is shared any more, and the events stay as history.
     ...(frontMatterString(fields, 'archived') === 'true' ? { archived: true as const } : {}),
+    ...(frontMatterString(fields, 'noted') === 'true' ? { noted: true as const } : {}),
     body,
     history: history.length || frontMatterString(fields, 'history') === NO_HISTORY ? history : [{ date, kind: 'recorded' }],
   }

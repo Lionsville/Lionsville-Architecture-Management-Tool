@@ -42,9 +42,9 @@ import { holdsAllIn, managesPeople } from '../../model/managing'
 import type { ManagesPeople } from '../../model/managing'
 import type { RecorderSource } from '../../model/observation'
 import type { PersonId } from '../../model/person'
-import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
+import { forgetPerson, leavePerson, mergePerson, takeBackLeaving } from '../../people/leave'
 import { registerOf, resolvePerson } from '../../people/shown'
-import type { Left } from '../../people/leave'
+import type { Left, Returned } from '../../people/leave'
 import { meOf, mePatch } from '../../people/me'
 import type { DistinctPair } from '../../people/distinct'
 import type { MergeLeaving, NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
@@ -58,7 +58,7 @@ import type { SourceAccount, SourcePeople } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { searchAll } from '../../search/search'
 import type { SearchableModel } from '../../model/searchable'
-import { leaveConsequences } from './leaving'
+import { leaveConsequences, returnConsequences } from './leaving'
 import type { OpenScope } from './leaving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import { heldAssignments, idsOfPerson, ownedByRule } from '../units/held'
@@ -104,6 +104,8 @@ export type PeopleAccess = {
   add: (person: NewPerson) => Promise<PersonWritten | PeopleRefused>
   change: (id: PersonId, patch: PersonPatch) => Promise<PersonWritten | PeopleRefused>
   leave: (id: PersonId, on: string) => Promise<Left | PeopleRefused>
+  /** A mistaken leaving taken back, until the name is forgotten, with the roles it ended restored by steps. */
+  takeBackLeaving: (id: PersonId) => Promise<Returned | PeopleRefused>
   forget: (id: PersonId, on: string) => Promise<Left | PeopleRefused>
   remove: (id: PersonId) => Promise<PersonRemoved | PeopleRefused>
   merge: (from: PersonId, into: PersonId, leaving?: MergeLeaving) => Promise<Left | PeopleRefused>
@@ -255,6 +257,13 @@ export function usePeopleRegister(deps: {
     () => leaveConsequences({ repositories, openScope, origin: 'agent', onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
   )
 
+  const returning = useMemo(
+    () => returnConsequences({ repositories, openScope, onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
+  )
+  const agentReturning = useMemo(
+    () => returnConsequences({ repositories, openScope, origin: 'agent', onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
+  )
+
   /** A change made, and the register read again before it answers: what every write below ends with. */
   const changed = useCallback(async <T>(work: Promise<T>): Promise<T> => {
     try {
@@ -289,10 +298,11 @@ export function usePeopleRegister(deps: {
     },
     add: (person) => changed(repositories.people.add(person)),
     leave: (id, on) => changed(leavePerson(repositories.people, agentConsequences, id, on)),
+    takeBackLeaving: (id) => changed(takeBackLeaving(repositories.people, agentReturning, id)),
     today: () => today,
     readOnly: () => readOnly,
     ...(source?.recorder ? { recorder: source.recorder } : {}),
-  }), [read, changed, repositories, agentConsequences, today, readOnly, source?.recorder])
+  }), [read, changed, repositories, agentConsequences, agentReturning, today, readOnly, source?.recorder])
 
   // The host's two doors, read through a ref: a shell hands new functions on every render, and the
   // register is one object while nothing it says has changed — what a screen built on it is memoised by.
@@ -319,6 +329,7 @@ export function usePeopleRegister(deps: {
     add: (person) => changed(repositories.people.add(person)),
     change: (id, patch) => changed(repositories.people.change(id, patch)),
     leave: (id, on) => changed(leavePerson(repositories.people, consequences, id, on)),
+    takeBackLeaving: (id) => changed(takeBackLeaving(repositories.people, returning, id)),
     forget: (id, on) => changed(forgetPerson(repositories.people, consequences, id, on)),
     remove: (id) => changed(repositories.people.remove(id)),
     merge: (from, into, leaving) => changed(mergePerson(repositories.people, consequences, from, into, leaving)),
@@ -333,6 +344,6 @@ export function usePeopleRegister(deps: {
     pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
-  }), [held, source, readOnly, manages, managesBoth, today, current, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
+  }), [held, source, readOnly, manages, managesBoth, today, current, refresh, changed, repositories, consequences, returning, agent, index, canRead, canCopy])
 }
 

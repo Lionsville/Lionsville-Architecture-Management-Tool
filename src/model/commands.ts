@@ -31,6 +31,7 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
+import type { AspectScale } from './aspectScale'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
@@ -60,6 +61,8 @@ export type ProjectPatch = Partial<{
   defaultAspectConfig: NonNullable<Diagram['aspectConfig']>
   /** The scope's own ordered groups of principles (ADR-0041 §3): the whole list, as it is to be. */
   principleGroups: PrincipleGroup[]
+  /** The organisation's numeric scales (ADR-0046): the whole list, as it is to be. */
+  aspectScales: AspectScale[]
 }>
 
 /**
@@ -91,6 +94,13 @@ export type CommandBody =
   | { type: 'element.update'; id: ElementId; patch: Partial<DesignElement> }
   /** Takes its relations, its placements and any container view about it. */
   | { type: 'element.delete'; id: ElementId }
+  /**
+   * One value of a function on one aspect's scale (ADR-0046), or with no
+   * `value` that value taken away. Its own command rather than a patch of
+   * `ratings`, because a patch carries the whole map: two people rating one
+   * capability on two aspects are not writing the same thing.
+   */
+  | { type: 'element.rate'; id: ElementId; aspect: string; value?: number }
   /**
    * Write a stand-in's caches back to what the tree says (ADR-0012 §9).
    *
@@ -281,7 +291,7 @@ export type StandInCache = {
 
 /** What a restore put back, for the line that names the step. */
 export type Restored = {
-  what: 'diagram' | 'description' | 'decision' | 'project'
+  what: 'diagram' | 'description' | 'decision' | 'project' | 'agentSession'
   /** The thing's id; absent for the project. */
   id?: string
   /** What a person calls it; the project's name for a project. */

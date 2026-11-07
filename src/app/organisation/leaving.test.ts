@@ -16,11 +16,11 @@ import { fromArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { apply } from '../../model/reducer'
 import type { Assignment } from '../../model/units'
-import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
+import { forgetPerson, leavePerson, mergePerson, takeBackLeaving } from '../../people/leave'
 import type { Repositories } from '../../ports/Repositories'
 import { placeWhole, readScope } from '../../projects/scopeAccess'
 import { emptyContent } from '../../projects/scopeState'
-import { leaveConsequences } from './leaving'
+import { leaveConsequences, returnConsequences } from './leaving'
 import type { OpenScope } from './leaving'
 
 const as = (id: string, unitId: string, person: string, over: Partial<Assignment> = {}): Assignment => ({
@@ -96,12 +96,12 @@ describe('leaving ends a person\'s assignments', () => {
     expect(left).toMatchObject({ person: { state: 'left', leftOn: '2026-10-31' }, ended: 3 })
     const customer = (await readScope(repositories.scopes, 'customer'))!
     expect(customer.model.assignments).toEqual([
-      as('as-1', 'webshop', femke, { until: '2026-10-31' }), as('as-2', 'webshop', bram),
+      as('as-1', 'webshop', femke, { until: '2026-10-31', endedByLeaving: {} }), as('as-2', 'webshop', bram),
     ])
     expect(customer.revision).not.toBe(before?.revision)
     const shipping = (await readScope(repositories.scopes, 'shipping'))!
     expect(shipping.model.assignments).toEqual([
-      as('as-1', 'parcel', femke, { share: 0.5, until: '2026-10-31' }), as('as-2', 'parcel', femke, { until: '2026-01-31' }),
+      as('as-1', 'parcel', femke, { share: 0.5, until: '2026-10-31', endedByLeaving: {} }), as('as-2', 'parcel', femke, { until: '2026-01-31' }),
     ])
   })
 
@@ -173,6 +173,36 @@ describe('leaving ends a person\'s assignments', () => {
  * it, one that began after it is taken away and never ended before it began,
  * one already over is left as it was. Told *still here*, no scope moves.
  */
+describe('a leaving taken back', () => {
+  it('restores by a step in each scope what the leaving ended, and the register says active', async () => {
+    const repositories = await tree()
+    const { femke, old, bram } = await entries(repositories)
+    await withIds(repositories, { 'pe-femke': femke, 'pe-old': old, 'pe-bram': bram })
+    let told = 0
+    const asked = { repositories, onTreeChanged: () => { told += 1 } }
+    await leavePerson(repositories.people, leaveConsequences(asked), femke, '2026-10-31')
+    const answer = await takeBackLeaving(repositories.people, returnConsequences(asked), femke)
+    expect(answer).toMatchObject({ person: { id: femke, state: 'active' }, restored: 2 })
+    if ('refused' in answer) throw new Error(answer.refused)
+    expect(answer.person.leftOn).toBeUndefined()
+    const held = async (scope: string) => (await readScope(repositories.scopes, scope))!.model.assignments ?? []
+    // Runs on again, the mark gone; the one already over by then was never ended.
+    expect((await held('customer')).find((one) => one.id === 'as-1')).toEqual(as('as-1', 'webshop', femke))
+    expect((await held('shipping')).find((one) => one.id === 'as-1')).toEqual(as('as-1', 'parcel', femke, { share: 0.5 }))
+    expect((await held('shipping')).find((one) => one.id === 'as-2')).toEqual(as('as-2', 'parcel', femke, { until: '2026-01-31' }))
+    expect(told).toBeGreaterThan(0)
+  })
+
+  it('is refused with nothing moved once the name is forgotten', async () => {
+    const repositories = await tree()
+    const { bram } = await entries(repositories)
+    const asked = { repositories }
+    await leavePerson(repositories.people, leaveConsequences(asked), bram, '2026-10-31')
+    await repositories.people.forget(bram, '2026-11-01')
+    expect(await takeBackLeaving(repositories.people, returnConsequences(asked), bram)).toEqual({ refused: 'people.forgotten' })
+  })
+})
+
 describe('a merge into an entry that has left', () => {
   async function merging() {
     const repositories = memoryRepositories()
@@ -197,7 +227,7 @@ describe('a merge into an entry that has left', () => {
     expect(merged).toMatchObject({ person: { id: kept, state: 'left', leftOn: '2026-03-31' }, ended: 2 })
     const held = (await readScope(repositories.scopes, 'customer'))!.model.assignments!
     expect(held).toEqual([
-      as('as-run', 'webshop', absorbed, { from: '2025-01-01', until: '2026-03-31' }),
+      as('as-run', 'webshop', absorbed, { from: '2025-01-01', until: '2026-03-31', endedByLeaving: {} }),
       as('as-over', 'webshop', absorbed, { from: '2025-01-01', until: '2025-12-31' }),
     ])
     expect(held.every((one) => one.until === undefined || one.from === undefined || one.until >= one.from)).toBe(true)

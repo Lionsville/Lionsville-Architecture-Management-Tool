@@ -95,6 +95,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.eventMerged': 'Zusammengeführt mit {name}',
   'observation.eventMoved': 'Verschoben nach {label} in {scope}',
   'observation.eventMovedIn': 'Hierher verschoben von {label} in {scope}',
+  'observation.eventNoted': 'Vermerkt',
+  'observation.eventUnnoted': 'Nicht mehr vermerkt',
   'observation.movedTo': 'Verschoben nach {name} in {scope}',
   'observation.fromScope': 'Lokal in {scope}. Was Sie hier hinzufügen, wird in {scope} angelegt, als Schritt dort; geändert wird es dort.',
   'observation.openScope': '{scope} öffnen',

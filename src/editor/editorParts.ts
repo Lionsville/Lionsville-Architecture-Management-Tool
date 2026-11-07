@@ -24,6 +24,10 @@ export interface EditorParts {
   props: SolutionDesignEditorProps;
   state: EditorState;
   readOnly: boolean;
+  /** The source may be written: `readOnly` also says so while a person looks at another day, and this does not. */
+  writable: boolean;
+  /** Looking at the board on a day that is not its own (ADR-0027, amended). */
+  looking: boolean;
   view: ViewSettings;
   board: BoardView;
   layout: LayoutActions;

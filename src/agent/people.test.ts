@@ -38,6 +38,12 @@ function register(policy: PeoplePolicy = DEFAULT_POLICY, readOnly = false) {
       people = answer.people
       return Promise.resolve({ person: people.find((one) => one.id === 'pe-new')! })
     },
+    takeBackLeaving: (id) => {
+      const answer = changePeople(people, { kind: 'takeBackLeaving', id })
+      if ('refused' in answer) return Promise.resolve(answer)
+      people = answer.people
+      return Promise.resolve({ person: people.find((one) => one.id === id)!, restored: 1 })
+    },
     leave: (id, on) => {
       const answer = changePeople(people, { kind: 'leave', id, on })
       if ('refused' in answer) return Promise.resolve(answer)
@@ -162,6 +168,14 @@ describe('person.leave', () => {
     expect(refusal(await handle(call('person.leave', { id: 'pe-eva' }), undefined, shell(register(DEFAULT_POLICY, true).view)))).toBe('agent.readOnly')
   })
 
+  it('takes a leaving back, and says how many roles came back; refused for somebody active', async () => {
+    const held = register()
+    const out = await handle(call('person.takeBackLeaving', { id: 'pe-gijs' }), undefined, shell(held.view))
+    expect(out.ok).toBe(true)
+    expect(refusal(await handle(call('person.takeBackLeaving', { id: 'pe-eva' }), undefined, shell(held.view)))).toBe('people.notLeft')
+    expect(refusal(await handle(call('person.takeBackLeaving', { id: 'pe-gijs' }), undefined, shell(register(DEFAULT_POLICY, true).view)))).toBe('agent.readOnly')
+  })
+
   it('refuses a last day so far back that the name would be forgotten at once: agents do not forget people', async () => {
     const held = register()
     expect(refusal(await handle(call('person.leave', { id: 'pe-eva', on: '2020-01-01' }), undefined, shell(held.view)))).toBe('agent.badArguments')
@@ -174,7 +188,7 @@ describe('person.leave', () => {
 describe('what an agent may not do with people', () => {
   it('has no tool that forgets, removes or merges a person, or changes the policy', () => {
     const about = TOOLS.filter((tool) => /^(people|person)\./.test(tool.name)).map((tool) => tool.name).sort()
-    expect(about).toEqual(['people.list', 'person.add', 'person.leave'])
+    expect(about).toEqual(['people.list', 'person.add', 'person.leave', 'person.takeBackLeaving'])
     for (const tool of TOOLS) expect(tool.name, tool.name).not.toMatch(/forget|policy|person\.(remove|merge)/)
   })
 

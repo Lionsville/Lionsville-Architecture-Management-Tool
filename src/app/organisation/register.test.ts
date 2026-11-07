@@ -88,7 +88,10 @@ describe('registerSummary', () => {
   it('counts what the card says and the page repeats', () => {
     expect(registerSummary(rows())).toEqual({
       applications: 5,
-      ownedByADomain: 3,
+      keptInADomain: 3,
+      owned: 0,
+      ownerNamed: 0,
+      unowned: 5,
       outside: 2,
       definedTwice: 1,
       unattributed: 1,

@@ -151,13 +151,21 @@ describe('colour by', () => {
     expect(screen.getByTestId('overlay-legend-unset').textContent).toBe('2Not set3');
   });
 
-  it('keeps the answer on the view', async () => {
+  it('leaves the view as it was until the lens is kept with it (ADR-0027, amended)', async () => {
     const { host } = renderEditor();
     await measured();
     open();
     choose('Technology lifecycle');
     await measured();
+    expect(host.current.model.diagrams[0].colourBy).toBeUndefined();
+    open();
+    fireEvent.click(screen.getByTestId('keep-lens'));
+    await measured();
     expect(host.current.model.diagrams[0].colourBy).toBe('technologyLifecycle');
+    expect(screen.getByLabelText('Colour by').textContent).toBe('Technology lifecycle');
+    // Kept: nothing is this reader's any more, so there is nothing to keep.
+    open();
+    expect(screen.queryByTestId('keep-lens')).toBeNull();
   });
 
   it('colours the cards that stand on one platform or offering and fades the rest (ADR-0020)', async () => {
@@ -166,7 +174,7 @@ describe('colour by', () => {
     open();
     fireEvent.click(screen.getByTestId('colour-by-one-openshift'));
     await measured();
-    expect(host.current.model.diagrams[0].colourBy).toBe('one:openshift');
+    expect(host.current.model.diagrams[0].colourBy).toBeUndefined();
     // Both on the cluster wear its wash; the one on nothing is faded, not washed.
     expect(wash('wms')).toBe(wash('portal'));
     expect(wash('crm')).not.toBe(wash('wms'));

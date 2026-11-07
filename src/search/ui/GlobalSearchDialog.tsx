@@ -70,6 +70,7 @@ const KIND_LABEL: Record<SearchKind, StringKey> = {
   responsibility: 'gsearch.kind.responsibility',
   comment: 'gsearch.kind.comment',
   principle: 'gsearch.kind.principle',
+  person: 'gsearch.kind.person',
 }
 
 const VIEW_LABEL = {

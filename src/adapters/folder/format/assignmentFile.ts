@@ -117,6 +117,9 @@ function assignmentOf(row: Record<string, unknown>): Assignment[] {
     ...(text(row.until) !== undefined ? { until: text(row.until) } : {}),
     ...(row.acting === true ? { acting: true as const } : {}),
     ...linesOf(row.reportsTo),
+    ...(record(row.endedByLeaving) !== undefined
+      ? { endedByLeaving: text(record(row.endedByLeaving)?.until) !== undefined ? { until: text(record(row.endedByLeaving)?.until) } : {} }
+      : {}),
   }]
 }
 

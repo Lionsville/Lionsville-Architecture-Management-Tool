@@ -18,6 +18,8 @@
  */
 import { matchesQuery } from '../../model'
 import type { ElementId } from '../../model'
+import { applicationOwner } from '../../model/ownerField'
+import type { ApplicationOwner } from '../../model/ownerField'
 import type { Finding } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import { isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
@@ -37,6 +39,11 @@ export type RegisterRow = {
   outside?: true
   /** Whose it is, named rather than keyed — absent where nobody has said. */
   party?: string
+  /**
+   * Who answers for it, as one field (`model/ownerField.ts`): the unit, or a
+   * name, which is flagged as not being a unit.
+   */
+  owner: ApplicationOwner
   /** Every scope holding a stand-in: who else draws it. */
   drawnIn: readonly ScopePath[]
   /** The findings that concern this application, in the order they were found. */
@@ -46,8 +53,17 @@ export type RegisterRow = {
 /** The line the card says, and the line under the page's heading. */
 export type RegisterSummary = {
   applications: number
-  /** Answered for by a scope that is not the organisation itself. */
-  ownedByADomain: number
+  /**
+   * Kept in a scope that is not the organisation itself. Where a record is
+   * filed, and no answer to who owns it: that is {@link RegisterSummary.owned}.
+   */
+  keptInADomain: number
+  /** Somebody answers for it: a unit, or a name, as the check counts. */
+  owned: number
+  /** Of those, the ones whose owner is a name and not a unit. */
+  ownerNamed: number
+  /** Nobody answers for it. The same applications `check.applicationUnowned` finds, on any day they are there. */
+  unowned: number
   outside: number
   /** Two scopes define it at the same depth. */
   definedTwice: number
@@ -92,6 +108,7 @@ export function registerRows(
       ...(entry.master !== undefined ? { master: entry.master } : {}),
       ...(entry.outside ? { outside: entry.outside } : {}),
       ...(party !== undefined ? { party } : {}),
+      owner: applicationOwner(entry),
       drawnIn: entry.drawnIn,
       findings: about.get(entry.id) ?? [],
     }
@@ -130,7 +147,10 @@ export function registerSummary(rows: readonly RegisterRow[]): RegisterSummary {
     row.findings.some((finding) => finding.key === key)
   return {
     applications: rows.length,
-    ownedByADomain: rows.filter((row) => row.master !== undefined && row.master !== ROOT_SCOPE).length,
+    keptInADomain: rows.filter((row) => row.master !== undefined && row.master !== ROOT_SCOPE).length,
+    owned: rows.filter((row) => row.owner.kind !== 'none').length,
+    ownerNamed: rows.filter((row) => row.owner.kind === 'named').length,
+    unowned: rows.filter((row) => row.owner.kind === 'none').length,
     outside: rows.filter((row) => row.outside).length,
     definedTwice: rows.filter((row) => has(row, 'check.conflict')).length,
     unattributed: rows.filter(isUnattributed).length,

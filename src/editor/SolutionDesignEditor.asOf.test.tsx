@@ -114,6 +114,23 @@ describe('the date control', () => {
     expect(control().getAttribute('data-looking')).toBeNull();
   });
 
+  it('puts edits away while looking, and one press back brings them back; a view saved on its day stays editable (ADR-0027, amended)', () => {
+    renderEditor(model({ asOf: '2027-01-01' }));
+    // On the board's own day it is an ordinary board.
+    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
+    expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
+    fireEvent.click(control());
+    fireEvent.change(dateField(), { target: { value: '2028-03-01' } });
+    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).toBeNull();
+    expect(document.querySelector('[data-guide="board.palette"]')).toBeNull();
+    // *Save* and undo are about the look, and stay.
+    expect(screen.getByRole('button', { name: new RegExp(`Save ${day('2028-03-01')}`), hidden: true })).toBeTruthy();
+    expect(screen.queryAllByRole('button', { name: /undo/i, hidden: true }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`Back to ${day('2027-01-01')}`), hidden: true }));
+    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
+    expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
+  });
+
   it('lets a reader look, and offers a reader no save', () => {
     const host = renderEditor(model(), { readOnly: true });
     fireEvent.click(control());

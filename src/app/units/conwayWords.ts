@@ -27,6 +27,8 @@ export function findingText(finding: ConwayFinding, here: UnitViewsHere, t: Tran
       })
     case 'unowned':
       return t('check.applicationUnowned', { name: here.name(finding.applicationId) })
+    case 'ownerNamed':
+      return t('check.applicationOwnerNamed', { name: here.name(finding.applicationId) })
     case 'overLimit': {
       const unit = here.at.organisation.units.find((one) => one.id === finding.unitId)
       const type = here.at.organisation.unitTypes.find((one) => one.id === unit?.unitTypeId)?.name ?? ''

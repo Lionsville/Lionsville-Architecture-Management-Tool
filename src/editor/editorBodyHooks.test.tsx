@@ -17,6 +17,7 @@ import { useViewSettings } from './useViewSettings';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useDocumentation } from './useEditorRequests';
 import { useBoardView } from './useBoardView';
+import type { ShownDays } from './useShownDays';
 
 function model(): DesignModel {
   return {
@@ -140,15 +141,30 @@ describe('what a reader’s choice on a board writes', () => {
   it('flips the deployment boxes for this board and writes the flip', () => {
     const a = actions();
     const m = model();
+    const viewing: ShownDays = { days: {}, show: () => {}, forget: () => {} };
     const view = renderHook(() => useBoardView({
-      model: m, diagram: m.diagrams[0], viewing: undefined, platformTree: undefined, theme: createTheme(), actions: a,
+      model: m, diagram: m.diagrams[0], viewing, platformTree: undefined, theme: createTheme(), actions: a,
     }));
     expect(view.result.current.showDeployment).toBe(true);
     act(() => view.result.current.toggleDeployment());
     expect(view.result.current.showDeployment).toBe(false);
     expect(a.setShowDeployment).toHaveBeenCalledWith(false);
-    act(() => view.result.current.chooseColourBy(undefined));
-    expect(view.result.current.colourBy).toBeUndefined();
-    expect(a.setColourBy).toHaveBeenCalledWith(undefined);
+  });
+
+  it('colours by a lens that is the reader\'s, and writes it only when it is kept (ADR-0027, amended)', () => {
+    const a = actions();
+    const m = model();
+    const viewing: ShownDays = { days: {}, show: () => {}, forget: () => {} };
+    const view = renderHook(() => useBoardView({
+      model: m, diagram: m.diagrams[0], viewing, platformTree: undefined, theme: createTheme(), actions: a,
+    }));
+    expect(view.result.current.lensIsOwn).toBe(false);
+    act(() => view.result.current.chooseColourBy('vendor'));
+    expect(view.result.current.colourBy).toBe('vendor');
+    expect(view.result.current.lensIsOwn).toBe(true);
+    expect(a.setColourBy).not.toHaveBeenCalled();
+    act(() => view.result.current.keepLens());
+    expect(a.setColourBy).toHaveBeenCalledWith('vendor');
+    expect(view.result.current.lensIsOwn).toBe(false);
   });
 });

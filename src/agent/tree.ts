@@ -32,6 +32,7 @@ import type { HostModel } from '../model/hostModel'
 import type { Transition, TransitionMove } from '../model/transition'
 import { isDay } from '../model/lifecycle'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
+import type { AspectScale } from '../model/aspectScale'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
 import { checkEntry } from '../model/checkCatalogue'
@@ -196,6 +197,7 @@ export type TreeView = {
   /** The operating model the organisation keeps (ADR-0036 §2), whatever scope is open. */
   operatingModel?(): {
     unitTypes: readonly UnitType[]; roles: readonly Role[]; responsibilities: readonly Responsibility[]; operatingRules: readonly OperatingRule[]
+    aspectScales?: readonly AspectScale[]
   }
   /** One scope's whole document, or nothing where there is no such scope. */
   read(path: string): Promise<ForeignScope | undefined>

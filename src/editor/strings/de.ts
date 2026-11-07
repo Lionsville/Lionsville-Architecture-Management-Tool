@@ -224,6 +224,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.legendLifecycleHidden': 'Auf dieser Tafel ausgeblendet; der Schalter neben dieser Schaltfläche zeigt sie.',
   'toolbar.deployment': 'Deployment-Rahmen',
   'toolbar.colourBy': 'Einfärben nach',
+  'toolbar.keepLens': 'Mit der Ansicht behalten',
   'toolbar.colourByTip': 'Die Karten danach einfärben, worauf sie stehen, was ihr Datensatz sagt — Phase, Kategorie, Eigentümer, Hersteller, Technologie, ein Aspekt — oder wer auf einer Plattform oder einem Dienst steht',
   'overlay.platform': 'Plattform',
   'overlay.technologyLifecycle': 'Lebenszyklus der Technik',

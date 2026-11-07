@@ -13,7 +13,7 @@ import { isDay } from '../../model/lifecycle'
 import { interactsRefusal, isInteractionMode, technologyEndsRefusal } from '../../model/relations'
 import { mayBeHosted } from '../../model/hosting'
 import { acceptImplied, impliedInterfacesOn } from '../../model/implied'
-import type { EdgeLineStyle, ElementId, Relation, RelationType } from '../../model/types'
+import type { Certainty, EdgeLineStyle, ElementId, Relation, RelationType } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, WriteView } from './shared'
@@ -279,6 +279,9 @@ function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAns
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
   }
+  // Whether it has been checked (ADR-0047): the schema holds it to the two words.
+  if (args.certainty === null || args.certainty === '') patch.certainty = undefined
+  else if (typeof args.certainty === 'string') patch.certainty = args.certainty as Certainty
   // Which interface this one is part of (ADR-0013). Whether the ends satisfy
   // the rule is the reducer's to say, and is left to it: it is the writer, and
   // a second copy of the rule here is a second place for it to be wrong.

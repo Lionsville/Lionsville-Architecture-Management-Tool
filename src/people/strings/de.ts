@@ -206,6 +206,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.badEmail': 'Das ist keine Arbeitsadresse.',
   'people.badDay': 'Das ist kein Tag.',
   'people.notActive': 'Nur wer aktiv ist, kann ausscheiden.',
+  'people.notLeft': 'Diese Person ist nicht ausgeschieden, also gibt es kein Ausscheiden zurückzunehmen.',
   'people.forgotten': 'Dieser Eintrag ist vergessen: Es gibt nichts mehr zu ändern.',
   'people.notForgotten': 'Nur ein vergessener Eintrag wird entfernt: Vergessen Sie ihn zuerst.',
   'people.badMerge': 'Ein Eintrag wird mit einem anderen zusammengeführt, der noch einen Namen hat.',

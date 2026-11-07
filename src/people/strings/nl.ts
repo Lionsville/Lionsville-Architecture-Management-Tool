@@ -206,6 +206,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.badEmail': 'Dat is geen werkadres.',
   'people.badDay': 'Dat is geen dag.',
   'people.notActive': 'Alleen wie actief is kan vertrekken.',
+  'people.notLeft': 'Deze persoon is niet vertrokken, dus er is geen vertrek om terug te nemen.',
   'people.forgotten': 'Die vermelding is vergeten: er valt niets meer te wijzigen.',
   'people.notForgotten': 'Alleen een vergeten vermelding wordt verwijderd: vergeet haar eerst.',
   'people.badMerge': 'Een vermelding wordt samengevoegd met een andere die nog een naam heeft.',

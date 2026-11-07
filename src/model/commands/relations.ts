@@ -18,7 +18,7 @@ import { patchWrites } from './writes'
 /** Every field of a relation but its id: what `relation.update` may name. */
 const RELATION_FIELDS: PatchKeys<'relation.update'> = {
   type: true, sourceId: true, targetId: true, label: true, protocol: true, technology: true,
-  refines: true, validFrom: true, validUntil: true, isBidirectional: true, mode: true,
+  refines: true, validFrom: true, validUntil: true, certainty: true, isBidirectional: true, mode: true,
   color: true, lineStyle: true, routing: true, sourceArrowhead: true, targetArrowhead: true,
 }
 

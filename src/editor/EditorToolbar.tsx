@@ -57,6 +57,12 @@ export interface EditorToolbarProps {
   model: DesignModel;
   activeDiagram: DesignDiagram;
   readOnly: boolean;
+  /**
+   * Looking at another day (ADR-0027, amended): what lays the board out is put
+   * away, as under `readOnly`, while what is about the look, the day, *Save*,
+   * undo, stays.
+   */
+  looking?: boolean;
   busy?: LayoutAction;
   onActiveDiagramChange(diagramId: string): void;
   onCreateLayer7Diagram(): void;
@@ -157,6 +163,8 @@ export interface EditorToolbarProps {
    */
   colourBy?: ColourBy;
   onColourByChange?(by: ColourBy | undefined): void;
+  /** Keep this reader's lens with the view, for everybody who opens it. Absent: nothing to keep, or nobody here may. */
+  onKeepColourBy?(): void;
   overlayBands?: readonly OverlayBand[];
   /** What the one-thing overlay may ask about (ADR-0020): this scope's platforms and offerings, by name. */
   overlayCandidates?: readonly { id: ElementId; name: string }[];
@@ -520,7 +528,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </Tooltip>
         </>
       )}
-      {!props.readOnly && !props.laidOut && (
+      {!props.readOnly && !props.looking && !props.laidOut && (
         <TidySplitButton
           busy={props.busy}
           onTidy={props.onTidy}
@@ -532,7 +540,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           boundaryLabels={isContainer}
         />
       )}
-      {!props.readOnly && !props.laidOut && (
+      {!props.readOnly && !props.looking && !props.laidOut && (
         <Tooltip title={t('toolbar.routeOnlyTip')}>
           <span>
             <IconButton
@@ -546,7 +554,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </span>
         </Tooltip>
       )}
-      {!props.readOnly && !props.laidOut && (
+      {!props.readOnly && !props.looking && !props.laidOut && (
         <Tooltip
           title={
             (props.autoRoute ? t('toolbar.autoRouteOn') : t('toolbar.autoRouteOff')) +
@@ -658,6 +666,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         <ColourByControl
           colourBy={props.colourBy}
           onChange={props.onColourByChange}
+          {...(props.onKeepColourBy ? { onKeep: props.onKeepColourBy } : {})}
           bands={props.overlayBands ?? []}
           candidates={props.overlayCandidates ?? []}
           aspectColumns={aspectConfigFor(props.activeDiagram)}
@@ -1282,12 +1291,14 @@ function AsOfControl(
  * coloured by vendor, and a person who has forgotten which they chose would
  * otherwise read one as the other. The legend moved onto the canvas
  * (`OverlayLegend`), where it stays while a person reads the board; this menu
- * only chooses. Nothing here writes a row — what a view SHOWS is a reader's
- * to change, which is why it is offered read-only too.
+ * only chooses. Nothing here writes — what a view SHOWS is a reader's to change,
+ * which is why it is offered read-only too — but *Keep with the view*, which is
+ * offered while the lens is this reader's and they may write (ADR-0027, amended).
  */
 function ColourByControl(props: {
   colourBy: ColourBy | undefined;
   onChange(by: ColourBy | undefined): void;
+  onKeep?(): void;
   bands: readonly OverlayBand[];
   candidates: readonly { id: ElementId; name: string }[];
   aspectColumns: readonly AspectConfigEntry[];
@@ -1352,6 +1363,11 @@ function ColourByControl(props: {
         {/* A MenuItem stands in a MenuList since MUI 9, which is also what
             gives the choices their arrow keys inside a popover. */}
         <MenuList dense disablePadding aria-label={t('toolbar.colourBy')}>
+          {props.onKeep && (
+            <MenuItem data-guide="board.keepLens" data-testid="keep-lens" onClick={() => { props.onKeep?.(); setAnchor(null); }}>
+              {t('toolbar.keepLens')}
+            </MenuItem>
+          )}
           {item(undefined, t('common.none'))}
           {group(t('overlay.groupRows'), [
             item('platform', t(COLOUR_BY_LABEL.platform)),

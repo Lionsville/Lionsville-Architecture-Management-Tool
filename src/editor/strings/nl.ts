@@ -224,6 +224,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.legendLifecycleHidden': 'Verborgen op dit bord; de knop naast deze toont ze.',
   'toolbar.deployment': 'Deploymentkaders',
   'toolbar.colourBy': 'Kleuren op',
+  'toolbar.keepLens': 'Bewaren bij de weergave',
   'toolbar.colourByTip': 'De kaarten kleuren op waar ze op staan, op wat hun record zegt — fase, categorie, eigenaar, leverancier, technologie, een aspect — of op wie er op één platform of dienst staat',
   'overlay.platform': 'Platform',
   'overlay.technologyLifecycle': 'Levenscyclus van de techniek',

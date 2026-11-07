@@ -89,6 +89,8 @@ export type PeopleChange =
   | { kind: 'add'; person: NewPerson }
   | { kind: 'change'; id: PersonId; patch: PersonPatch }
   | { kind: 'leave'; id: PersonId; on: string }
+  /** A leaving taken back: active again, and no last day. Refused once the name is forgotten. */
+  | { kind: 'takeBackLeaving'; id: PersonId }
   | { kind: 'merge'; from: PersonId; into: PersonId; leaving?: MergeLeaving }
   | { kind: 'forget'; id: PersonId; on: string }
   | { kind: 'remove'; id: PersonId }
@@ -128,6 +130,7 @@ function entriesChanged(
     case 'add': return add(people, change.person, minting)
     case 'change': return correct(people, change.id, change.patch)
     case 'leave': return leave(people, change.id, change.on)
+    case 'takeBackLeaving': return takeBackLeaving(people, change.id)
     case 'merge': return merge(people, change.from, change.into, change.leaving)
     case 'forget': return forget(people, change.id, change.on)
     case 'remove': return remove(people, change.id)
@@ -216,6 +219,15 @@ function leave(people: readonly Person[], id: PersonId, on: string): EntriesChan
   if ('refused' in found) return found
   if (found.state !== 'active') return refused('people.notActive')
   return { people: replaced(people, { ...found, state: 'left', leftOn: on }), changed: [id], removed: [], tombstones: [] }
+}
+
+function takeBackLeaving(people: readonly Person[], id: PersonId): EntriesChanged | RefusedChange {
+  const found = find(people, id)
+  if ('refused' in found) return found
+  if (found.state === 'forgotten') return refused('people.forgotten')
+  if (found.state !== 'left') return refused('people.notLeft')
+  const { leftOn: _was, ...rest } = found
+  return { people: replaced(people, { ...rest, state: 'active' }), changed: [id], removed: [], tombstones: [] }
 }
 
 function forget(people: readonly Person[], id: PersonId, on: string): EntriesChanged | RefusedChange {

@@ -12,6 +12,7 @@
  * look like nothing: a container diagram vanishing without a word, and an
  * editor that will not lay out a document it has "already seen".
  */
+import { agentRun } from '../projects/agentRun'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { placedNodes } from '../model/placement';
 import { placeOn } from '../model/commands';
@@ -271,6 +272,42 @@ describe('useModelSession — undo and redo', () => {
     const { session } = mount()
     expect(session().canUndo).toBe(false)
     expect(session().canRedo).toBe(false)
+  })
+
+  it('undoes a run of an agent\'s steps as one step, and brings it back as one (ADR-0019, amended)', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'First', origin: 'agent' }) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Second', origin: 'agent' }) })
+    const heard: string[] = []
+    session().steps.onChange((change) => { heard.push(change.kind) })
+
+    const run = agentRun(session().history())
+    expect(run.steps).toHaveLength(2)
+    let landed = false
+    act(() => { landed = session().undoRun(run) })
+    expect(landed).toBe(true)
+    expect(session().current().diagrams[0].name).toBe('Mine')
+    expect(session().history()).toHaveLength(1)
+    expect(heard).toEqual(['undo'])
+
+    act(() => session().redo())
+    expect(session().current().diagrams[0].name).toBe('Second')
+    expect(session().history()).toHaveLength(1 + 1)
+    expect(session().canRedo).toBe(false)
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('Mine')
+  })
+
+  it('moves nothing for a run that is no longer the top of the stack', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'First', origin: 'agent' }) })
+    const run = agentRun(session().history())
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    let landed = true
+    act(() => { landed = session().undoRun(run) })
+    expect(landed).toBe(false)
+    expect(session().current().diagrams[0].name).toBe('Mine')
   })
 
   it('undoes and redoes a change that never went near the editor', () => {

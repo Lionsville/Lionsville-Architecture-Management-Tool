@@ -190,6 +190,13 @@ const words: FieldReader = (args, _held, view, patch) => {
   return undefined
 }
 
+/** Whether it has been checked (ADR-0047): the word, or null for nobody having said. */
+const certainty: FieldReader = (args, _held, _view, patch) => {
+  if (cleared(args.certainty)) patch.certainty = undefined
+  else if (typeof args.certainty === 'string') patch.certainty = args.certainty
+  return undefined
+}
+
 const technologyFields: FieldReader = (args, held, _view, patch) => {
   if (cleared(args.platformArchetype)) patch.platformArchetype = undefined
   else if (typeof args.platformArchetype === 'string') {
@@ -425,7 +432,7 @@ const unit: FieldReader = (args, held, view, patch) => {
   return undefined
 }
 
-const ELEMENT_FIELDS: readonly FieldReader[] = [words, technologyFields, lifecycleFields, dates, look, ownership, tree, unit]
+const ELEMENT_FIELDS: readonly FieldReader[] = [words, certainty, technologyFields, lifecycleFields, dates, look, ownership, tree, unit]
 
 /**
  * The patch an element.update or element.add asks for. Null clears an

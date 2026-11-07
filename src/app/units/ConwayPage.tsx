@@ -214,7 +214,8 @@ function keysOf(finding: ConwayFinding | undefined): string[] {
   switch (finding.kind) {
     case 'undeclared': return [finding.flow.sourceId, finding.flow.targetId]
     case 'unused': return [finding.interaction.sourceId, finding.interaction.targetId]
-    case 'unowned': return [finding.applicationId]
+    case 'unowned':
+    case 'ownerNamed': return [finding.applicationId]
     case 'overLimit': return [finding.unitId]
   }
 }
@@ -352,6 +353,7 @@ function findingKey(finding: ConwayFinding): string {
     case 'undeclared': return `undeclared:${finding.flow.id}`
     case 'unused': return `unused:${finding.interaction.id}`
     case 'unowned': return `unowned:${finding.applicationId}`
+    case 'ownerNamed': return `ownerNamed:${finding.applicationId}`
     case 'overLimit': return `overLimit:${finding.unitId}`
   }
 }
@@ -377,7 +379,7 @@ function conwayActions({ input, here, open, declarable, removable: remove }: {
     modelInterface: (one) => unitsOf(one).flatMap((unit) => input.applications
       .filter((app) => app.partyId === unit)
       .map((app) => ({ key: app.id, label: here.name(app.id), group: here.name(unit), run: () => open(app.id) }))),
-    openApplication: (one) => (one.kind === 'unowned' ? () => open(one.applicationId) : undefined),
+    openApplication: (one) => (one.kind === 'unowned' || one.kind === 'ownerNamed' ? () => open(one.applicationId) : undefined),
     openUnit: (one) => (one.kind === 'overLimit' ? () => open(one.unitId) : undefined),
   }
 }

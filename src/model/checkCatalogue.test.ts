@@ -104,8 +104,8 @@ describe('the catalogue', () => {
       // A topic's link to a scope that is not there (ADR-0042 §5).
       'relevantGone',
     ].sort())
-    expect(of('note')).toEqual(['interactionUnused', 'notDrawn', 'principleUnused', 'proposal', 'scopeTypeUnserved'])
-    expect(of('review')).toHaveLength(CHECK_KEYS.length - 25)
+    expect(of('note')).toEqual(['applicationOwnerNamed', 'interactionUnused', 'notDrawn', 'principleUnused', 'proposal', 'scopeTypeUnserved'])
+    expect(of('review')).toHaveLength(CHECK_KEYS.length - 26)
   })
 
   it('reads a key it does not know as nothing', () => {

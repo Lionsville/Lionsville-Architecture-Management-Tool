@@ -233,6 +233,7 @@ export const EN = {
   'toolbar.legendLifecycleHidden': 'Hidden on this board; the toggle beside this button shows them.',
   'toolbar.deployment': 'Deployment boxes',
   'toolbar.colourBy': 'Colour by',
+  'toolbar.keepLens': 'Keep with the view',
   'toolbar.colourByTip': 'Colour the cards by what they stand on, by what their records say — phase, category, owner, vendor, technology, an aspect — or by who stands on one platform or offering',
   'overlay.platform': 'Platform',
   'overlay.technologyLifecycle': 'Technology lifecycle',

@@ -44,6 +44,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gsearch.kind.role': 'Rollen',
   'gsearch.kind.responsibility': 'Verantwortungen',
   'gsearch.kind.principle': 'Prinzipien',
+  'gsearch.kind.person': 'Personen',
   'gsearch.kind.comment': 'Kommentare',
   'gsearch.kind.experiment': 'Experimente',
   'gsearch.view.layer7': 'Landschaft',

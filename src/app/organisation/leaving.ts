@@ -33,14 +33,15 @@
  * has left holding everything they held.
  */
 import type { StringKey } from '../../i18n'
-import type { Command } from '../../model/commands'
+import type { Command, CommandMeta } from '../../model/commands'
 import { assignmentList, fromArrays } from '../../model/normalised'
 import { apply } from '../../model/reducer'
 import { ShellError } from '../../platform/errors'
 import type { Model } from '../../model/normalised'
 import type { PersonId } from '../../model/person'
-import { endingFor, leavingStep } from '../../model/units'
-import type { LeaveConsequence } from '../../people/leave'
+import { endingFor, leavingStep, restoringFor, returningStep } from '../../model/units'
+import type { Assignment } from '../../model/units'
+import type { LeaveConsequence, ReturnConsequence } from '../../people/leave'
 import type { Person } from '../../people/person'
 import type { Repositories } from '../../ports/Repositories'
 import { changeScopes } from '../../projects/scopeAccess'
@@ -70,7 +71,23 @@ export type LeavingDeps = {
 }
 
 export function leaveConsequences(deps: LeavingDeps): readonly LeaveConsequence[] {
-  return [endAssignments(deps)]
+  return [stepsForEachScope(deps, endingFor, (held, ids, lastDay, meta) => {
+    const step = leavingStep(held, ids, lastDay, meta)
+    return step && { command: step.command, counted: step.ended }
+  })]
+}
+
+/**
+ * What a leaving taken back does: the same path over the same scopes, each one
+ * step, restoring what that leaving ended (`model/units.restoringFor`). The
+ * open scope's step keeps the barrier a leave's has, for the same reason: the
+ * register keeps no history for an undo to walk back in step with.
+ */
+export function returnConsequences(deps: LeavingDeps): readonly ReturnConsequence[] {
+  return [stepsForEachScope(deps, restoringFor, (held, ids, lastDay, meta) => {
+    const step = returningStep(held, ids, lastDay, meta)
+    return step && { command: step.command, counted: step.restored }
+  })]
 }
 
 /** Every id that is this person's: the entry, and each one a merge folded into it. */
@@ -79,13 +96,19 @@ async function idsOf(person: Person, deps: LeavingDeps): Promise<Set<PersonId>> 
   return new Set([person.id, ...people.filter((one) => one.mergedInto === person.id).map((one) => one.id)])
 }
 
-function endAssignments(deps: LeavingDeps): LeaveConsequence {
+type StepOf = (
+  assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string, meta: CommandMeta,
+) => { command: Command; counted: number } | undefined
+
+function stepsForEachScope(
+  deps: LeavingDeps, touches: (assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string) => readonly unknown[], stepOf: StepOf,
+): LeaveConsequence {
   return async (person, lastDay) => {
     const ids = await idsOf(person, deps)
     const meta = deps.origin ? { origin: deps.origin } : {}
     const open = deps.openScope?.()
     const openPath = open?.scopePath()
-    const here = open ? leavingStep(assignmentList(open.indexed()), ids, lastDay, meta) : undefined
+    const here = open ? stepOf(assignmentList(open.indexed()), ids, lastDay, meta) : undefined
     if (open && here) {
       const blocked = open.blocked?.()
       if (blocked !== undefined) throw new ShellError(blocked === 'agent.conflict' ? 'shell.scopeMoved' : 'shell.scopeReadOnly')
@@ -93,28 +116,28 @@ function endAssignments(deps: LeavingDeps): LeaveConsequence {
     }
     const read = await deps.repositories.index.read()
     const others = read.scopes
-      .filter((scope) => scope.address !== openPath && endingFor(scope.model.assignments ?? [], ids, lastDay).length > 0)
+      .filter((scope) => scope.address !== openPath && touches(scope.model.assignments ?? [], ids, lastDay).length > 0)
       .map((scope) => scope.address)
-    let ended = 0
+    let counted = 0
     if (others.length > 0) {
       await changeScopes(deps.repositories.scopes, others, (held) => {
-        ended = 0
+        counted = 0
         const steps = new Map<string, ScopeCommand[]>()
         for (const [path, scope] of held) {
-          const step = leavingStep(assignmentList(fromArrays(scope.model)), ids, lastDay, meta)
+          const step = stepOf(assignmentList(fromArrays(scope.model)), ids, lastDay, meta)
           if (!step) continue
-          ended += step.ended
+          counted += step.counted
           steps.set(path, [step.command])
         }
         return steps
       })
-      if (ended > 0) deps.onTreeChanged?.()
+      if (counted > 0) deps.onTreeChanged?.()
     }
     if (open && here) {
       // Read again: the session may have moved while the other scopes were written.
-      const now = leavingStep(assignmentList(open.indexed()), ids, lastDay, meta)
-      if (now && open.dispatch({ ...now.command, barrier: LEAVE_BARRIER }) !== undefined) ended += now.ended
+      const now = stepOf(assignmentList(open.indexed()), ids, lastDay, meta)
+      if (now && open.dispatch({ ...now.command, barrier: LEAVE_BARRIER }) !== undefined) counted += now.counted
     }
-    return ended
+    return counted
   }
 }

@@ -20,8 +20,8 @@ import { unitTypeLanes } from '../model/unitOrder'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
 
-/** The three reads of the operating model. */
-export const OPERATING_READS = ['unitTypes.list', 'roles.list', 'responsibilities.list'] as const satisfies readonly ToolName[]
+/** The reads of what the organisation keeps for everybody under it. */
+export const OPERATING_READS = ['unitTypes.list', 'roles.list', 'responsibilities.list', 'aspectScales.list'] as const satisfies readonly ToolName[]
 
 export type OperatingRead = (typeof OPERATING_READS)[number]
 
@@ -30,7 +30,7 @@ export function isOperatingRead(tool: string): tool is OperatingRead {
 }
 
 /** The operating model's lists out of a document, each present. */
-export type OperatingDocument = Pick<HostModel, 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules'>
+export type OperatingDocument = Pick<HostModel, 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'aspectScales'>
 
 const named = (list: readonly { id: string; name: string }[], id: string) => ({ id, name: list.find((one) => one.id === id)?.name ?? id })
 
@@ -161,6 +161,7 @@ export function answerOperating(tool: OperatingRead, rawArgs: unknown, model: Op
   const roles = model.roles ?? []
   const responsibilities = model.responsibilities ?? []
   switch (tool) {
+    case 'aspectScales.list': return json({ scope: '', aspectScales: model.aspectScales ?? [] })
     case 'unitTypes.list': {
       const { lanes, laneOf, nowhere } = unitTypeLanes(unitTypes)
       const listed = [...lanes.flatMap((lane) => lane.types), ...nowhere]

@@ -42,6 +42,7 @@ export type DrivingState = {
 
 export class Driving {
   private state: DrivingState = {}
+  private ended: DrivingSession | undefined
   private readonly stopListeners = new Set<() => void>()
   private readonly changeListeners = new Set<() => void>()
   /**
@@ -59,6 +60,15 @@ export class Driving {
 
   current(): DrivingState {
     return this.state
+  }
+
+  /**
+   * The session running, or the one that ended last: what a finished line
+   * offers to take back as one step (`projects/agentRun.ts`), after the banner
+   * has gone.
+   */
+  latest(): DrivingSession | undefined {
+    return this.state.session ?? this.ended
   }
 
   /**
@@ -95,6 +105,7 @@ export class Driving {
   end(by: 'agent' | 'person' | 'client'): void {
     const held = this.state.session
     if (!held && by !== 'person') return
+    if (held) this.ended = held
     this.set(by === 'person'
       ? { stopped: { at: this.clock(), ...(held?.client !== undefined ? { client: held.client } : {}) } }
       : {})

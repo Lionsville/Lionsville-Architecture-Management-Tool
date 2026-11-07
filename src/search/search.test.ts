@@ -148,7 +148,7 @@ describe('every kind of record a scope holds', () => {
   const hits = searchAll({ sources: scopeSources({ model: everything, scope: 'port' }), query: 'harbour' })
 
   it('is found, and says what it is', () => {
-    expect(new Set(hits.map((hit) => hit.kind))).toEqual(new Set(SEARCH_KINDS))
+    expect(new Set(hits.map((hit) => hit.kind))).toEqual(new Set(SEARCH_KINDS.filter((kind) => kind !== 'person')))
   })
 
   it('opens where it lives', () => {

@@ -19,6 +19,7 @@
  * Everything here is arithmetic without an outside world: no storage, no React,
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
+import type { AspectScale } from '../model/aspectScale'
 import { TOPICS_PLACE } from './topics'
 import type { TopicLink } from './topics'
 import type {
@@ -320,6 +321,8 @@ export type ScopeModel = {
      */
     principles?: readonly Principle[]
     principleGroups?: readonly PrincipleGroup[]
+    /** The organisation's numeric scales (ADR-0046), which every scope below rates on. */
+    aspectScales?: readonly AspectScale[]
     /** The citations of principles by the scope's records (ADR-0041 §7): how a principle is used, read across the tree. */
     citations?: readonly Citation[]
     /** The scope's evaluations of building blocks (ADR-0043 §4): where each block is weighed and chosen. */

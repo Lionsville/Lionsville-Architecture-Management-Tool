@@ -204,7 +204,8 @@ function conwaySubjects(finding: ConwayFinding): string[] {
   switch (finding.kind) {
     case 'undeclared': return [finding.flow.id, finding.flow.sourceId, finding.flow.targetId]
     case 'unused': return [finding.interaction.id, finding.interaction.sourceId, finding.interaction.targetId]
-    case 'unowned': return [finding.applicationId]
+    case 'unowned':
+    case 'ownerNamed': return [finding.applicationId]
     case 'overLimit': return [finding.unitId]
   }
 }

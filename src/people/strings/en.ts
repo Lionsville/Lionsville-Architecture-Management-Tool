@@ -220,6 +220,7 @@ export const EN = {
   'people.badEmail': 'That is not a work address.',
   'people.badDay': 'That is not a day.',
   'people.notActive': 'Only someone active can leave.',
+  'people.notLeft': 'This person has not left, so there is no leaving to take back.',
   'people.forgotten': 'That entry is forgotten: there is nothing left to change.',
   'people.notForgotten': 'Only a forgotten entry is removed: forget it first.',
   'people.badMerge': 'An entry is merged into another entry that still has a name.',

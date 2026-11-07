@@ -67,9 +67,9 @@ function customer(): ScopeSnapshot {
 
 describe('format 16', () => {
   it('is what a scope is written at now, one past 15', () => {
-    expect(SCOPE_FORMAT_VERSION).toBe(15 + 1)
+    expect(SCOPE_FORMAT_VERSION).toBeGreaterThanOrEqual(15 + 1)
     const header = scopeFiles(customer()).find((file) => file.path === SCOPE_FILE)!
-    expect(JSON.parse(textOf(header)).version).toBe(16)
+    expect(JSON.parse(textOf(header)).version).toBe(SCOPE_FORMAT_VERSION)
   })
 
   it('keeps a record with no name, and one that still holds both, read back as written', () => {

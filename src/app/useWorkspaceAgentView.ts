@@ -7,6 +7,7 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
+import { agentRun } from '../projects/agentRun'
 import { treeRecords } from '../projects/treeRecords'
 import type { HistoryRepository } from '../ports/HistoryRepository'
 import type { ChangesOf } from '../agent/changes'
@@ -338,7 +339,7 @@ function throughSession(
   session: ModelSession, putPicture: (name: ImageName, bytes: Uint8Array) => Promise<ImageEntry>,
 ): Pick<
   WorkspaceAgentView,
-  'indexed' | 'current' | 'activeDiagramId' | 'dispatch' | 'ids' | 'revision' | 'history' | 'undo' | 'images' | 'addImage'
+  'indexed' | 'current' | 'activeDiagramId' | 'dispatch' | 'ids' | 'revision' | 'history' | 'undo' | 'undoRun' | 'images' | 'addImage'
 > {
   return {
     indexed: session.indexed,
@@ -349,6 +350,7 @@ function throughSession(
     revision: session.revision,
     history: session.history,
     undo: session.undo,
+    undoRun: (of) => session.undoRun(agentRun(session.history(), of)),
     images: session.currentImages,
     addImage: async (image) => {
       const read = readDataUrl(image.url)

@@ -107,6 +107,8 @@ export const EN = {
   'observation.eventMerged': 'Merged into {name}',
   'observation.eventMoved': 'Moved to {label} in {scope}',
   'observation.eventMovedIn': 'Moved here from {label} in {scope}',
+  'observation.eventNoted': 'Noted',
+  'observation.eventUnnoted': 'No longer noted',
   'observation.movedTo': 'Moved to {name} in {scope}',
   'observation.fromScope': 'Local to {scope}. What you add to it here is made in {scope}, as a step there; it is changed there.',
   'observation.openScope': 'Open {scope}',

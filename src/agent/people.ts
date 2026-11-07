@@ -26,7 +26,7 @@ import type { RecorderSource } from '../model/observation'
 import type { PersonId } from '../model/person'
 import type { DistinctPair } from '../people/distinct'
 import { possibleDuplicates, duplicatePairs } from '../people/duplicates'
-import type { Left } from '../people/leave'
+import type { Left, Returned } from '../people/leave'
 import type { NewPerson, PeopleRefusal, Person, PersonKind, PersonState } from '../people/person'
 import { entriesOf, isRedirect } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
@@ -44,12 +44,14 @@ export type PeopleView = {
   add(person: NewPerson): Promise<{ person: Person } | { refused: PeopleRefusal }>
   /** Marks them as left, and does everything leaving does beyond the register (`people/leave.ts`). */
   leave(id: PersonId, on: string): Promise<Left | { refused: PeopleRefusal }>
+  /** Takes a leaving back, and restores by steps what it ended (`people/leave.ts`). */
+  takeBackLeaving(id: PersonId): Promise<Returned | { refused: PeopleRefusal }>
   today(): string
   readOnly(): boolean
 }
 
-/** The three tools, said once. */
-export const PEOPLE_TOOLS = ['people.list', 'person.add', 'person.leave'] as const
+/** The register's tools, said once. */
+export const PEOPLE_TOOLS = ['people.list', 'person.add', 'person.leave', 'person.takeBackLeaving'] as const
 export type PeopleTool = (typeof PEOPLE_TOOLS)[number]
 
 export function isPeopleTool(tool: string): tool is PeopleTool {
@@ -125,7 +127,15 @@ async function leave(view: PeopleView, args: Record<string, unknown>): Promise<A
   return json({ left: told(answer.person, policy), endedAssignments: answer.ended })
 }
 
-/** One of the three, answered over the register the shell lends; refused where it lends none. */
+async function takeBack(view: PeopleView, args: Record<string, unknown>): Promise<AgentAnswer> {
+  if (view.readOnly()) return refused('agent.readOnly')
+  const { policy } = await view.read()
+  const answer = await view.takeBackLeaving(String(args.id))
+  if ('refused' in answer) return refused(answer.refused)
+  return json({ back: told(answer.person, policy), restoredAssignments: answer.restored })
+}
+
+/** One of the tools, answered over the register the shell lends; refused where it lends none. */
 export function answerPeople(tool: PeopleTool, args: unknown, view: PeopleView | undefined): Promise<AgentAnswer> | AgentAnswer {
   if (!view) return refused('agent.noRegister')
   const given = (args ?? {}) as Record<string, unknown>
@@ -133,6 +143,7 @@ export function answerPeople(tool: PeopleTool, args: unknown, view: PeopleView |
     case 'people.list': return listPeople(view, given)
     case 'person.add': return addPerson(view, given)
     case 'person.leave': return leave(view, given)
+    case 'person.takeBackLeaving': return takeBack(view, given)
     default: {
       const unexpected: never = tool
       return unexpected

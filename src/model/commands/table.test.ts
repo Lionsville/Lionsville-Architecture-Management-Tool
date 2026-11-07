@@ -36,7 +36,7 @@ import { ROUTE_COMMANDS } from './routes'
  * there — fails the typecheck of this file as well as of the table.
  */
 const EVERY_TYPE: Record<CommandType, true> = {
-  'element.create': true, 'element.update': true, 'element.delete': true,
+  'element.create': true, 'element.update': true, 'element.delete': true, 'element.rate': true,
   'standin.refresh': true, 'element.link': true,
   'relation.create': true, 'relation.update': true, 'relation.delete': true,
   'member.set': true, 'member.remove': true, 'node.set': true, 'node.remove': true,

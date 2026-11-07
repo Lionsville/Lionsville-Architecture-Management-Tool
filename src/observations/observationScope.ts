@@ -81,6 +81,8 @@ export const EVENT_LABEL: Record<ObservationEventKind, StringKey> = {
   restored: 'observation.eventRestored',
   moved: 'observation.eventMoved',
   movedIn: 'observation.eventMovedIn',
+  noted: 'observation.eventNoted',
+  unnoted: 'observation.eventUnnoted',
 }
 
 // --- solutions and experiments (ADR-0026) -----------------------------------------

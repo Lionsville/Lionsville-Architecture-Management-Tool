@@ -96,7 +96,8 @@ function heldHere(model: OpenForMarking['model'], finding: ConwayFinding): boole
   switch (finding.kind) {
     case 'undeclared': return row(finding.flow.id)
     case 'unused': return row(finding.interaction.id)
-    case 'unowned': return own(finding.applicationId)
+    case 'unowned':
+    case 'ownerNamed': return own(finding.applicationId)
     case 'overLimit': return own(finding.unitId)
   }
 }

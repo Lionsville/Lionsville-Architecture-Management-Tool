@@ -58,6 +58,7 @@ import { isBlankRef } from '../model/person'
 import type { PersonRef } from '../model/person'
 import type { Transition } from '../model/transition'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
+import type { AspectScale } from '../model/aspectScale'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { isUnit } from '../model/units'
 import type { Assignment, Organisation, UnitMove } from '../model/units'
@@ -252,6 +253,8 @@ export type IndexedOperatingModel = {
   roles: readonly Role[]
   responsibilities: readonly Responsibility[]
   operatingRules: readonly OperatingRule[]
+  /** The numeric scales the organisation keeps (ADR-0046). Absent: none yet. */
+  aspectScales?: readonly AspectScale[]
 }
 
 const NO_OPERATING_MODEL: IndexedOperatingModel = { unitTypes: [], roles: [], responsibilities: [], operatingRules: [] }
@@ -754,6 +757,7 @@ function operatingOf(model: ScopeModel['model']): IndexedOperatingModel {
     roles: model.roles ?? [],
     responsibilities: model.responsibilities ?? [],
     operatingRules: model.operatingRules ?? [],
+    ...(model.aspectScales ? { aspectScales: model.aspectScales } : {}),
   }
 }
 

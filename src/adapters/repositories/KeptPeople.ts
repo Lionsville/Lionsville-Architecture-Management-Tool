@@ -102,6 +102,10 @@ export class KeptPeople implements PeopleRepository {
     return this.written(await this.apply({ kind: 'leave', id, on }))
   }
 
+  async takeBackLeaving(id: PersonId): Promise<PersonWritten | PeopleRefused> {
+    return this.written(await this.apply({ kind: 'takeBackLeaving', id }))
+  }
+
   async merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<PersonWritten | PeopleRefused> {
     return this.written(await this.apply({ kind: 'merge', from, into, ...(leaving ? { leaving } : {}) }), into)
   }

@@ -42,6 +42,8 @@ import type { ElementId, InteractionMode, Lifecycle, LifecycleDates, Relation } 
 import { compareUnits, unitTypeRank } from './unitOrder'
 import { isUnit, organisationOn, unitOn, unitsAbove } from './units'
 import type { UnitLike, UnitMove } from './units'
+import { applicationOwner } from './ownerField'
+import type { PersonRef } from './person'
 
 /**
  * An application as the map reads it: who owns it, if anybody says, and its
@@ -49,15 +51,18 @@ import type { UnitLike, UnitMove } from './units'
  */
 export type ConwayApplication = {
   id: ElementId; name: string; partyId?: ElementId; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
+  /** Its owner is a name and not a unit (`ownerField.ts`): owned, and with no place on the map. */
+  ownerNamed?: true
 }
 
 /** An application as the map reads it, off an element or an index entry: its owner and its lifecycle, each where it says something. */
 export function conwayApplication(held: {
-  id: ElementId; name: string; partyId?: ElementId; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
+  id: ElementId; name: string; partyId?: ElementId; owner?: PersonRef; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
 }): ConwayApplication {
   return {
     id: held.id, name: held.name,
     ...(held.partyId !== undefined ? { partyId: held.partyId } : {}),
+    ...(applicationOwner(held).kind === 'named' ? { ownerNamed: true as const } : {}),
     ...(held.lifecycle !== undefined && held.lifecycle !== 'live' ? { lifecycle: held.lifecycle } : {}),
     ...(held.lifecycleDates !== undefined && Object.keys(held.lifecycleDates).length > 0 ? { lifecycleDates: held.lifecycleDates } : {}),
   }
@@ -158,6 +163,7 @@ export type ConwayFinding =
   | { kind: 'unused'; interaction: ConwayInteraction }
   /** An application nobody owns on the day. */
   | { kind: 'unowned'; applicationId: ElementId }
+  | { kind: 'ownerNamed'; applicationId: ElementId }
   /** A unit owning more applications than its type's limit. */
   | { kind: 'overLimit'; unitId: ElementId; owns: number; limit: number }
 
@@ -221,7 +227,7 @@ export function conwayMap(given: ConwayInput, day: string, options: ConwayOption
         : [])),
     ...unused(lines, reading),
     ...input.applications.filter((app) => reading.owner.get(app.id) === undefined)
-      .map((app): ConwayFinding => ({ kind: 'unowned', applicationId: app.id })),
+      .map((app): ConwayFinding => ({ kind: app.ownerNamed ? 'ownerNamed' : 'unowned', applicationId: app.id })),
     ...overLimit(input, reading, day),
   ]
   const groups = groupsOf(input.applications, reading, compareUnits(unitTypeRank(input.unitTypes)))

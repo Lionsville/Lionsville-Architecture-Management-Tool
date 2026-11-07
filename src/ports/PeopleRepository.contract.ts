@@ -96,6 +96,21 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       expect(refusal(await repositories.people.leave(gijs.id, '2026-08-15'))).toBe('people.notActive')
     })
 
+    it('takes a leaving back: active again with no last day, until the name is forgotten', async () => {
+      const { repositories } = await fresh()
+      const gijs = entry(await repositories.people.add({ name: 'Gijs Mulder' }))
+      expect(refusal(await repositories.people.takeBackLeaving(gijs.id))).toBe('people.notLeft')
+      expect(refusal(await repositories.people.takeBackLeaving('pe-nobody'))).toBe('people.unknown')
+      await repositories.people.leave(gijs.id, '2026-08-14')
+      const back = entry(await repositories.people.takeBackLeaving(gijs.id))
+      expect(back).toMatchObject({ id: gijs.id, name: 'Gijs Mulder', state: 'active' })
+      expect(back.leftOn).toBeUndefined()
+      expect(await repositories.people.read(gijs.id)).toEqual(back)
+      await repositories.people.leave(gijs.id, '2026-08-20')
+      await repositories.people.forget(gijs.id, '2026-11-20')
+      expect(refusal(await repositories.people.takeBackLeaving(gijs.id))).toBe('people.forgotten')
+    })
+
     it('forgets: the name and the address go, the pseudonym stays, and it cannot be corrected back', async () => {
       const { repositories } = await fresh()
       const gijs = entry(await repositories.people.add({ name: 'Gijs Mulder', email: 'gijs.mulder@acme.example' }))

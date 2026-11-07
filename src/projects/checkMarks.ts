@@ -43,7 +43,8 @@ export function checkMarkScope(
   switch (finding.kind) {
     case 'undeclared': return rowAt(finding.flow)
     case 'unused': return rowAt(finding.interaction)
-    case 'unowned': return index.lookup(finding.applicationId)?.master
+    case 'unowned':
+    case 'ownerNamed': return index.lookup(finding.applicationId)?.master
     case 'overLimit': return index.lookup(finding.unitId)?.master
   }
 }

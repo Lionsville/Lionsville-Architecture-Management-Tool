@@ -10,6 +10,7 @@ import { NOTHING, reverse } from '../commands'
 import type { Command } from '../commands'
 import { ok } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
+import { aspectScalesRefusal } from '../aspectScale'
 import type { PrincipleGroup } from '../principle'
 import { patched } from './rows'
 import { patchWrites } from './writes'
@@ -23,7 +24,7 @@ import { patchWrites } from './writes'
  * scope with whatever came with it.
  */
 const PROJECT_FIELDS: PatchKeys<'project.settings'> = {
-  name: true, description: true, defaultAuthor: true, defaultAspectConfig: true, principleGroups: true,
+  name: true, description: true, defaultAuthor: true, defaultAspectConfig: true, principleGroups: true, aspectScales: true,
 }
 
 /** Why a scope's groups cannot be as they would be (ADR-0041 §3): a group with no name, or an id said twice. */
@@ -44,6 +45,7 @@ export const PROJECT_COMMANDS = {
     apply(model, command, { meta }) {
       const refused = groupsRefusal(command.patch.principleGroups)
       if (refused) return refused
+      if (command.patch.aspectScales !== undefined && aspectScalesRefusal(command.patch.aspectScales)) return { ok: false, reason: 'command.badScale' }
       const { row, inverse } = patched(model, command.patch)
       return ok(row, { type: 'project.settings', patch: inverse }, meta)
     },

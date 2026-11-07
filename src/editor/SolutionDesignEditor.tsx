@@ -18,6 +18,7 @@ import { useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
 import { useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
+import { isLookingAway, useShownDays } from './useShownDays';
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useLayoutActions } from './useLayoutActions';
@@ -134,8 +135,18 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const { t, language } = useStrings();
   const state = useEditorState(props);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
+  // The host's look when it holds one, so its scrubber and this bar move one
+  // thing; the editor's own otherwise.
+  const modelRef = useRef(state.model);
+  modelRef.current = state.model;
+  const ownDays = useShownDays(useCallback((id: string) => modelRef.current.diagrams.find((d) => d.id === id)?.asOf, []));
+  const viewing = props.document.viewing ?? ownDays;
+  const looking = isLookingAway(activeDiagram, viewing.days);
+  const writable = !(props.editing.readOnly ?? false);
+  // A look is read-only (ADR-0027, amended): everything that draws from `readOnly`
+  // puts its edits away, and what takes the day it is looking at reads `writable`.
+  const readOnly = !writable || looking;
   const view = useViewSettings(props.preferences);
   const session = useEditorSession();
   const layout = useLayoutActions({
@@ -143,7 +154,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     tidyOptions: view.tidyOptions, groupTidyOptions: view.groupTidyOptions, t, viewports: session.viewports,
   });
   const board = useBoardView({
-    model: state.model, diagram: layout.shown, viewing: props.document.viewing,
+    model: state.model, diagram: layout.shown, viewing,
     platformTree: props.ownership?.platformTree, theme, actions: state.actions,
   });
   const requests = useCanvasRequests(props, state, view.setInspectorCollapsed);
@@ -163,7 +174,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const dialogs = useEditorDialogs();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
   const parts: EditorParts = {
-    props, state, readOnly, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
+    props, state, readOnly, writable, looking, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
     capturing: capture.capturing, ...session,
   };
   useEditorHandle({

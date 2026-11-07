@@ -14,6 +14,7 @@ import {
   dayBefore, endedBy, endingFor, heldThroughType, holdersOn, holdingFrom, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent,
   organisationOn, parentOn, parentTypeOf, runsOn, shareOf, slotsOf, unitCountsOn, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn,
   unitTypeOn,
+  restoringFor, returningStep,
 } from './units'
 import type { Assignment, Organisation } from './units'
 
@@ -330,11 +331,42 @@ describe('what a person\'s leaving ends', () => {
       held2('as-d', 'pe-femke', { from: '2027-01-01' }), held2('as-e', 'pe-old'), held2('as-f', 'pe-bram'),
     ]
     expect(endingFor(held, new Set(['pe-femke', 'pe-old']), '2026-10-31')).toEqual([
-      { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } },
-      { type: 'assignment.update', id: 'as-b', patch: { until: '2026-10-31' } },
+      { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31', endedByLeaving: {} } },
+      { type: 'assignment.update', id: 'as-b', patch: { until: '2026-10-31', endedByLeaving: { until: '2027-06-30' } } },
       { type: 'assignment.remove', id: 'as-d' },
-      { type: 'assignment.update', id: 'as-e', patch: { until: '2026-10-31' } },
+      { type: 'assignment.update', id: 'as-e', patch: { until: '2026-10-31', endedByLeaving: {} } },
     ])
+  })
+})
+
+describe('a leaving taken back', () => {
+  it('restores what that leaving ended, to the day it had, and leaves everything else', () => {
+    const persons = new Set(['pe-femke'])
+    const held = [
+      // Ended by the leaving, having run on, and having had a later last day.
+      held2('as-a', 'pe-femke', { until: '2026-10-31', endedByLeaving: {} }),
+      held2('as-b', 'pe-femke', { until: '2026-10-31', endedByLeaving: { until: '2027-06-30' } }),
+      // Ended by a person on that same day: theirs, and not the leaving's.
+      held2('as-c', 'pe-femke', { until: '2026-10-31' }),
+      // Ended by the leaving, and somebody has set another day since.
+      held2('as-d', 'pe-femke', { until: '2026-09-30', endedByLeaving: {} }),
+      held2('as-e', 'pe-bram', { until: '2026-10-31', endedByLeaving: {} }),
+    ]
+    expect(restoringFor(held, persons, '2026-10-31')).toEqual([
+      { type: 'assignment.update', id: 'as-a', patch: { until: undefined, endedByLeaving: undefined } },
+      { type: 'assignment.update', id: 'as-b', patch: { until: '2027-06-30', endedByLeaving: undefined } },
+    ])
+    expect(returningStep(held, persons, '2026-10-31', { origin: 'agent' })).toMatchObject({ restored: 2, command: { type: 'transaction', origin: 'agent' } })
+    expect(returningStep(held, new Set(['pe-nobody']), '2026-10-31')).toBeUndefined()
+  })
+
+  it('puts back exactly what the leaving wrote, as the reducer sees it', () => {
+    const held = [held2('as-b', 'pe-femke', { until: '2027-06-30' })]
+    const [ending] = endingFor(held, new Set(['pe-femke']), '2026-10-31')
+    if (ending.type !== 'assignment.update') throw new Error('expected an end')
+    const ended = { ...held[0], ...ending.patch }
+    const [back] = restoringFor([ended], new Set(['pe-femke']), '2026-10-31')
+    expect({ ...ended, ...back.patch }).toEqual({ ...held[0], endedByLeaving: undefined })
   })
 })
 
@@ -345,12 +377,12 @@ function held2(id: string, person: string, over: Partial<Assignment> = {}): Assi
 describe('the one step a leaving makes in a scope', () => {
   it('is one command for one end, a transaction for several, nothing for none, marked as asked', () => {
     const one = leavingStep([held2('as-a', 'pe-femke')], new Set(['pe-femke']), '2026-10-31')
-    expect(one).toEqual({ command: { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } }, ended: 1 })
+    expect(one).toEqual({ command: { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31', endedByLeaving: {} } }, ended: 1 })
     const two = leavingStep([held2('as-a', 'pe-femke'), held2('as-b', 'pe-femke', { from: '2027-01-01' })], new Set(['pe-femke']), '2026-10-31', { origin: 'agent' })
     expect(two).toEqual({
       command: {
         type: 'transaction', origin: 'agent',
-        commands: [{ type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } }, { type: 'assignment.remove', id: 'as-b' }],
+        commands: [{ type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31', endedByLeaving: {} } }, { type: 'assignment.remove', id: 'as-b' }],
       },
       ended: 2,
     })

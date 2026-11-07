@@ -86,6 +86,7 @@ function shell(policy: PeoplePolicy, register: readonly Person[] = people): Shel
     read: () => Promise.resolve({ people: [...register], policy }),
     add: () => Promise.reject(new Error('not here')),
     leave: () => Promise.reject(new Error('not here')),
+    takeBackLeaving: () => Promise.reject(new Error('not here')),
     today: () => TODAY,
     readOnly: () => false,
   }

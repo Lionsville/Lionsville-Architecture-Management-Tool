@@ -17,13 +17,14 @@ import type { EditorDialogState } from './EditorDialogs';
 import type { EditorParts } from './editorParts';
 
 export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; diagram: DesignDiagram; laidOut: boolean }) {
-  const { props, state, readOnly, view, board, layout, exports, dialogs } = parts;
+  const { props, state, writable, looking, view, board, layout, exports, dialogs } = parts;
   const { fitView } = useReactFlow();
   return (
     <EditorToolbar
       model={state.model}
       activeDiagram={diagram}
-      readOnly={readOnly}
+      readOnly={!writable}
+      looking={looking}
       busy={layout.busy}
       laidOut={laidOut}
       dated={isDated(diagram.kind)}
@@ -47,8 +48,8 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       onOpenHelp={dialogs.openHelp}
       showLifecycle={view.showLifecycle}
       onToggleLifecycle={() => view.setShowLifecycle((on) => !on)}
-      {...boardControls(diagram, board)}
-      {...dayControls(diagram, board, readOnly, state)}
+      {...boardControls(diagram, board, writable)}
+      {...dayControls(diagram, board, !writable, state)}
       onUndo={state.undo}
       onRedo={state.redo}
       canUndo={state.canUndo}
@@ -99,17 +100,19 @@ function diagramMenus(
 /**
  * A landscape's overlay and a container view's deployment boxes. A reader may
  * change what a view SHOWS (the lifecycle toggle's rule), so the click always
- * lands; the write that keeps it is the session's to refuse, which it does
- * under readOnly.
+ * lands. A lens writes nothing until *Keep with the view* (ADR-0027, amended),
+ * offered to whoever may write; the deployment boxes still write, and the
+ * session refuses that under readOnly.
  */
-function boardControls(diagram: DesignDiagram, board: BoardView): Partial<Pick<EditorToolbarProps,
-  'colourBy' | 'overlayBands' | 'overlayCandidates' | 'onColourByChange' | 'showDeployment' | 'onToggleDeployment'>> {
+function boardControls(diagram: DesignDiagram, board: BoardView, writable: boolean): Partial<Pick<EditorToolbarProps,
+  'colourBy' | 'overlayBands' | 'overlayCandidates' | 'onColourByChange' | 'onKeepColourBy' | 'showDeployment' | 'onToggleDeployment'>> {
   if (diagram.kind === 'layer7') {
     return {
       colourBy: board.colourBy,
       overlayBands: board.overlay,
       overlayCandidates: board.overlayCandidates,
       onColourByChange: board.chooseColourBy,
+      ...(writable && board.lensIsOwn ? { onKeepColourBy: board.keepLens } : {}),
     };
   }
   if (diagram.kind === 'container') {

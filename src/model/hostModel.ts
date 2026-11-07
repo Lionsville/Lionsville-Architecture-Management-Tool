@@ -21,6 +21,7 @@ import type { CheckMark } from './checkMarks'
 import type { Citation } from './citable'
 import type { Evaluation } from './evaluation'
 import type { Principle, PrincipleGroup } from './principle'
+import type { AspectScale } from './aspectScale'
 import type { Comment } from './comment'
 
 /**
@@ -97,6 +98,12 @@ export interface HostExtras {
    * them is a change of the scope's own record.
    */
   principleGroups?: PrincipleGroup[]
+  /**
+   * The organisation's numeric scales, one per aspect that has one (ADR-0046).
+   * Said on the organisation's own scope and read from there by every scope
+   * under it; a scope below holding some is read past.
+   */
+  aspectScales?: AspectScale[]
   /**
    * The citations of principles by this scope's records (ADR-0041 §7): each
    * about a citing record of the scope, of a principle here, above or in a

@@ -221,6 +221,14 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],
   'observation.seen': [{ args: { id: 'ob-2' } }],
   'observation.archive': [{ args: { id: 'ob-2', note: 'Fixed in the checklist' } }],
+  'element.rate': [{
+    args: { id: 'fulfilment', aspect: 'maturity', value: 3 },
+    on: [['aspectScale.set', { key: 'maturity', label: 'Maturity' }], ['element.add', { name: 'Fulfilment', kind: 'function' }]],
+    at: '',
+  }],
+  'aspectScale.set': [{ args: { key: 'maturity', label: 'Maturity' }, at: '' }],
+  'aspectScale.remove': [{ args: { key: 'maturity' }, on: [['aspectScale.set', { key: 'maturity', label: 'Maturity' }]], at: '' }],
+  'observation.note': [{ args: { id: 'ob-2', reason: 'A fact worth keeping, nothing to explain' } }],
   'observation.merge': [
     { args: { id: 'ob-2', into: 'ob-1' } },
     { args: { into: 'ob-1', absorb: [{ id: 'OB-2' }], values: { title: 'Invoices arrive late, per channel' } } },

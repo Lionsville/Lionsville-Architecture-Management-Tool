@@ -92,6 +92,8 @@ export const PEOPLE_REFUSALS = [
   'people.badDay',
   /** Only someone active can leave. */
   'people.notActive',
+  /** Only a leaving is taken back, and there is none. */
+  'people.notLeft',
   /** A forgotten entry has nothing left to correct. */
   'people.forgotten',
   /** Only a forgotten entry is removed: forgetting comes first. */

@@ -108,7 +108,7 @@ describe('search matches the register first, and then the ids', () => {
 
   it('finds every record that points at a person by their name, a merged id included', () => {
     const found = searching('eva lind', [eva, kim, evaToo]).map((hit) => `${hit.kind}:${hit.id}`).sort()
-    expect(found).toEqual(['decision:ad-1', 'element:shop', 'observation:ob-1'])
+    expect(found).toEqual(['decision:ad-1', 'element:shop', 'observation:ob-1', 'person:pe-eva'])
   })
 
   it('takes the words of a query from the record and from the register together', () => {
@@ -119,17 +119,32 @@ describe('search matches the register first, and then the ids', () => {
   it('finds a forgotten person by their pseudonym and no longer by their name, but a signature by the name it kept', () => {
     const after = [forgotten(eva), kim, evaToo]
     expect(searching('lind', after).map((hit) => hit.id)).toEqual(['ad-1'])
-    expect(searching('BCDF', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'element:shop', 'observation:ob-1'])
+    expect(searching('BCDF', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'element:shop', 'observation:ob-1', 'person:pe-eva'])
   })
 
   /** A signature keeps its name, and once its signer is forgotten it links to nobody: the pseudonym does not find it (ADR-0036 §8). */
   it('finds a signature by its signer\'s pseudonym never, once forgotten — only by the name it kept', () => {
     const after = [eva, forgotten(kim), evaToo]
-    expect(searching('GHJK', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['experiment:ex-1', 'plan:tr-1'])
+    expect(searching('GHJK', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['experiment:ex-1', 'person:pe-kim', 'plan:tr-1'])
     expect(searching('bakker', after).map((hit) => hit.id)).toEqual(['ad-1'])
     // While Kim has a name, the signature is found through the register as every other field is.
     expect(searching('GHJK', [eva, kim, evaToo])).toEqual([])
-    expect(searching('kim bakker', [eva, kim, evaToo]).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'experiment:ex-1', 'plan:tr-1'])
+    expect(searching('kim bakker', [eva, kim, evaToo]).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'experiment:ex-1', 'person:pe-kim', 'plan:tr-1'])
+  })
+
+  it('finds the entry itself, opening on the register, by what the reader may read of it (the owner, 7 November 2026)', () => {
+    expect(searching('eva lind', [eva, kim, evaToo]).find((hit) => hit.kind === 'person')).toMatchObject({
+      id: 'pe-eva', title: 'Eva Lind', status: 'active', opens: { page: 'people', id: 'pe-eva' },
+    })
+    // Forgotten: by the pseudonym, and the name finds no entry.
+    const after = [forgotten(eva), kim, evaToo]
+    expect(searching('lind', after).some((hit) => hit.kind === 'person')).toBe(false)
+    expect(searching('BCDF', after).find((hit) => hit.kind === 'person')?.title).toBe('Former colleague BCDF')
+    // Names withheld: the pseudonym, for an active entry too.
+    const withheld = searchAll({ sources: [], query: 'eva', people: peopleMatching([eva], (shown) => shownText(shown, s), { withhold: true }) })
+    expect(withheld).toEqual([])
+    // A merge's redirect is no second entry, and an address is never searched.
+    expect(searching('eva', [eva, kim, evaToo]).filter((hit) => hit.kind === 'person').map((hit) => hit.id)).toEqual(['pe-eva'])
   })
 
   it('finds people by text alone where no register is handed over', () => {

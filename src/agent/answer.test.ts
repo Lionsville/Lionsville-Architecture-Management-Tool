@@ -104,6 +104,7 @@ describe('elements.list', () => {
     expect(held.elements[0]).toEqual({
       id: 'billing', name: 'Billing', kind: 'application', lifecycle: 'live',
       category: 'Finance', vendor: 'Kestrel', technology: undefined, parentId: undefined,
+      ownerIs: 'nobody',
       hasDescription: true,
     })
     expect(held.elements.find((e) => e.id === 'crm')).toMatchObject({ hasDescription: false })

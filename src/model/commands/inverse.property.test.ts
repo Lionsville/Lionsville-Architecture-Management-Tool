@@ -201,6 +201,10 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     type: 'element.create', element: element(r.chance(0.9) ? `new-${r.int(1000)}` : m.order.elements[0], { kind: r.pick(KINDS) }),
     ...(r.chance(0.3) ? { at: r.int(m.order.elements.length + 1) } : {}),
   }),
+  'element.rate': (r, m) => ({
+    type: 'element.rate', id: held(r, m.order.elements, 'e'), aspect: r.pick(['maturity', 'importance']),
+    ...(r.chance(0.7) ? { value: 1 + r.int(5) } : {}),
+  }),
   'element.update': (r, m) => ({
     type: 'element.update',
     id: held(r, m.order.elements, 'e'),

@@ -45,6 +45,16 @@ export interface AspectEntry {
   note?: string;
 }
 
+/**
+ * Whether what a record says has been checked (ADR-0047): `confirmed`, or
+ * `assumed`, which a row says as a word and a card draws dashed. Absent is
+ * nobody having said, which is every record from before format 17, and is
+ * neither: an old landscape does not turn dashed overnight.
+ */
+export type Certainty = 'confirmed' | 'assumed';
+
+export const CERTAINTIES: readonly Certainty[] = ['confirmed', 'assumed'];
+
 /** One configured aspect column on a layer7 diagram (ordered). */
 export interface AspectConfigEntry {
   /**
@@ -351,6 +361,16 @@ export interface DesignElement {
   /** Keyed by aspect key (superset or custom slug). */
   aspects: Record<string, AspectEntry>;
   /**
+   * A function only: its value on each aspect the organisation keeps a scale
+   * for, by the aspect's key (ADR-0046). Kept apart from `aspects`, whose
+   * entries are a status a badge says: a rating is a number a heat map reads.
+   * A value outside its scale stays as written and reads as unrated
+   * (`model/aspectScale.ratingOn`), so narrowing a scale loses nothing.
+   */
+  ratings?: Record<string, number>;
+  /** Whether what this says has been checked (ADR-0047). Absent: nobody has said. */
+  certainty?: Certainty;
+  /**
    * Per-element presentation overrides (U6a). Each is absent-means-inherit: the
    * accent falls back to the theme category strip (card) / surface tint (others),
    * the shape to each kind's current radius, and the logo to today's glyph.
@@ -507,6 +527,8 @@ export interface DesignConnection {
    */
   validFrom?: string;
   validUntil?: string;
+  /** Whether this line has been checked (ADR-0047). Absent: nobody has said. */
+  certainty?: Certainty;
   /**
    * `flow` only: the interface runs both ways. Absent means it does not, which
    * is why nothing has to write `false` on a relation that could not be

@@ -74,7 +74,7 @@ export type PeopleChanges = {
  * leaver's assignments as it marks them — and the caller then ends nothing
  * more (`people/leave.ts`).
  */
-export type PersonWritten = { revision: Revision; person: Person; ended?: number }
+export type PersonWritten = { revision: Revision; person: Person; ended?: number; restored?: number }
 
 /** An entry removed: the register's revision after it, and every id that went (its redirects too). */
 export type PersonRemoved = { revision: Revision; removed: readonly PersonId[] }
@@ -124,6 +124,15 @@ export interface PeopleRepository {
    * `ended` is the repository having done it.
    */
   leave(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused>
+
+  /**
+   * A leaving taken back: the entry active again, with no last day. Refused
+   * once the name is forgotten (`people.forgotten`), and where nobody has left
+   * (`people.notLeft`). What leaving ended is restored by the caller, by steps
+   * (`people/leave.ts`), unless the repository says {@link endsAssignments}:
+   * then it restores them itself and answers how many in `restored`.
+   */
+  takeBackLeaving(id: PersonId): Promise<PersonWritten | PeopleRefused>
 
   /**
    * One entry kept and the other made a redirect into it, with no name and no

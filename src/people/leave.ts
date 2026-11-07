@@ -17,6 +17,11 @@
  * asks. Until assignments exist the list is empty; the step that brings them
  * adds the one that ends them.
  *
+ * **A leaving is taken back** by the same path the other way round (the owner, 7
+ * November 2026), until the name is forgotten: for each consequence, the steps
+ * that restore what leaving ended, then the register says *active*. Only
+ * what the leaving itself ended comes back (`model/units.restoringFor`).
+ *
  * **A merge told *left*** is the same path: an active entry merged into one
  * that has left, where the person did leave on that day, has its roles ended
  * on it as a leave would end them — first, and then the register — so no
@@ -34,6 +39,9 @@ import { changePeople } from './register'
  */
 export type LeaveConsequence = (person: Person, lastDay: string) => Promise<number>
 
+/** What a leaving taken back does beyond the register: the same shape, answering how many things it restored. */
+export type ReturnConsequence = LeaveConsequence
+
 type PeopleRefused = { refused: PeopleRefusal }
 
 /**
@@ -48,6 +56,14 @@ export type LeavingRegister = {
   leave(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
   forget(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
 }
+
+/** As much of a register as taking a leaving back needs. One that says `endsAssignments` restores them itself, and says how many. */
+export type ReturningRegister = Pick<LeavingRegister, 'endsAssignments' | 'read'> & {
+  takeBackLeaving(id: PersonId): Promise<{ person: Person; restored?: number } | PeopleRefused>
+}
+
+/** A leaving taken back: the entry active again, and how many things its consequences restored. */
+export type Returned = { person: Person; restored: number }
 
 /** As much of a register as a merge needs: leaving's, and the merge. */
 export type MergingRegister = Pick<LeavingRegister, 'endsAssignments' | 'read'> & {
@@ -117,6 +133,30 @@ export async function forgetPerson(
   const answer = await register.forget(id, on)
   if ('refused' in answer) return answer
   return { person: answer.person, ended: answer.ended ?? ended }
+}
+
+/**
+ * Take a leaving back. **The steps first**, as a leave's are: a scope that will
+ * not take its part means nothing is marked, and the same question can be asked
+ * again. Asked of the rules before anything is written, so a refusal is said first.
+ */
+export async function takeBackLeaving(
+  register: ReturningRegister, consequences: readonly ReturnConsequence[], id: PersonId,
+): Promise<Returned | PeopleRefused> {
+  if (register.endsAssignments) return restoredBy(await register.takeBackLeaving(id))
+  const before = await register.read(id)
+  if (!before) return { refused: 'people.unknown' }
+  const asked = changePeople([before], { kind: 'takeBackLeaving', id })
+  if ('refused' in asked) return asked
+  let restored = 0
+  for (const consequence of consequences) restored += await consequence(before, before.leftOn ?? '')
+  const answer = await register.takeBackLeaving(id)
+  if ('refused' in answer) return answer
+  return { person: answer.person, restored: answer.restored ?? restored }
+}
+
+function restoredBy(answer: { person: Person; restored?: number } | PeopleRefused): Returned | PeopleRefused {
+  return 'refused' in answer ? answer : { person: answer.person, restored: answer.restored ?? 0 }
 }
 
 /**

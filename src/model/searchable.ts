@@ -60,7 +60,7 @@ import type { DesignDiagram, DesignElement, ElementKind, Relation } from './type
 export const SEARCH_KINDS = [
   'element', 'documentation', 'view', 'relation', 'decision', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'comment', 'principle',
+  'unitType', 'role', 'responsibility', 'comment', 'principle', 'person',
 ] as const
 
 export type SearchKind = (typeof SEARCH_KINDS)[number]
@@ -72,7 +72,7 @@ export type SearchKind = (typeof SEARCH_KINDS)[number]
  */
 export type SearchPage =
   | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
-  | 'decisions' | 'plan' | 'observations' | 'operating' | 'principles'
+  | 'decisions' | 'plan' | 'observations' | 'operating' | 'principles' | 'people'
 
 export type SearchPlace = { readonly page: SearchPage; readonly id: string }
 

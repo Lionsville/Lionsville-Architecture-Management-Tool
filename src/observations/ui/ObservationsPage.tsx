@@ -60,7 +60,7 @@ import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
   absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged, isMoved, movedTo,
-  isScopeBelow, linkCause, liveObservations, observationsBelow, removeCause, removeObservation,
+  isScopeBelow, linkCause, liveObservations, waitingObservations, observationsBelow, removeCause, removeObservation,
   rootCauses, setArchived, sortCauses, sortObservations, unlinkCause,
 } from '../observation'
 import type {
@@ -784,7 +784,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   // --- the analysis ----------------------------------------------------------------------
 
-  const queue = liveObservations(observations).filter((one) => analysedInto(one.id).length === 0)
+  const queue = waitingObservations(observations, (id) => analysedInto(id).length > 0)
   /** The counts over the picture are the picture's: the scopes below while View local is on, less what the filters hid. */
   const counted = f.counts(aboveOf)
   const phases = phaseRows(counted)

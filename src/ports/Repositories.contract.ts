@@ -202,6 +202,7 @@ export function over(under: RepositoriesUnderTest) {
       forget: (id, on) => settled(people.forget(id, on)),
       remove: (id) => settled(people.remove(id)),
       bringIn: (entries, removed?: readonly string[], distinct?: readonly DistinctPair[]) => settled(people.bringIn(entries, removed, distinct)),
+      takeBackLeaving: (id) => settled(people.takeBackLeaving(id)),
       answerDistinct: (a, b, on) => settled(people.answerDistinct(a, b, on)),
       takeBackDistinct: (a, b) => settled(people.takeBackDistinct(a, b)),
       since: (revision) => people.since(revision),

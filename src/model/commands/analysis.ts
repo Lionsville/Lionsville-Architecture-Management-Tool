@@ -18,7 +18,7 @@ import { sameValue } from '../recordKey'
 /** Every field of an observation but its id. */
 const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
   number: true, title: true, date: true, where: true, by: true, impact: true, bright: true, tone: true, recordedBy: true, seen: true,
-  archived: true, body: true, history: true,
+  archived: true, noted: true, body: true, history: true,
 }
 
 /** Every field of a cause but its id. */

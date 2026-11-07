@@ -68,6 +68,8 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
+import { aspectScale, aspectScalesRefusal } from '../../../model/aspectScale'
+import type { AspectScale } from '../../../model/aspectScale'
 import { isTopicLinkList } from '../../../projects/topics'
 import type { TopicLink } from '../../../projects/topics'
 import { ADR_STATUSES } from '../../../model/adr'
@@ -265,8 +267,17 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, 
  */
 export { SCOPE_FORMAT_VERSION }
 
-/** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+/** The versions of a scope's own folder this build reads without folding. *
+ * **17 adds what the owner decided for 4.0.0**, each absent on everything older:
+ * a function's `ratings` and the root header's `aspectScales` (ADR-0046),
+ * `certainty` on an element and a relation (ADR-0047), an observation's `noted`
+ * and its two events (ADR-0038, amended), and an assignment's `endedByLeaving`
+ * (ADR-0036, amended). An application's owner stays in its two keys and is read
+ * as one (`model/ownerField.ts`). A 16 is a 17 that says none of them, so the
+ * pass rewrites the headers and nothing else; a 16 reader would drop all of it
+ * on its way back, so it refuses a 17.
+ */
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -363,6 +374,8 @@ type ScopeFile = {
   /** Diagram ids in tab order — the one list whose order is a decision. */
   diagrams: string[]
   defaults?: { author?: string; aspectConfig?: AspectConfigEntry[] }
+  /** The organisation's numeric scales (ADR-0046, format 17): on the root scope's header, where one is said. */
+  aspectScales?: AspectScale[]
   logos?: { key: string; label: string; file?: string; url?: string }[]
   /**
    * What an imported interchange document carried and this tool does not use,
@@ -659,6 +672,7 @@ function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
       }
       : {}),
     ...(logos.length ? { logos } : {}),
+    ...(model.aspectScales?.length ? { aspectScales: model.aspectScales } : {}),
     ...(model.formatVersion !== undefined || model.adrLinks !== undefined
       ? {
         interchange: {
@@ -668,6 +682,16 @@ function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
       }
       : {}),
   }
+}
+
+/** The scales a header says, each one that holds together; a hand's mistake is passed over, as a row's is. */
+function aspectScalesIn(held: unknown): { aspectScales?: AspectScale[] } {
+  if (!Array.isArray(held)) return {}
+  const scales = held.flatMap((one: Partial<AspectScale> | null): AspectScale[] => {
+    if (!one || typeof one.key !== 'string' || typeof one.label !== 'string') return []
+    return [aspectScale(one.key, one.label, one)]
+  }).filter((one, at, all) => !aspectScalesRefusal([one]) && all.findIndex((other) => other.key === one.key) === at)
+  return scales.length ? { aspectScales: scales } : {}
 }
 
 /**
@@ -1260,6 +1284,7 @@ export function scopeFromFolder(
     name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
     ...(typeof held.description === 'string' ? { description: held.description } : {}),
     ...(held.defaults?.author !== undefined ? { defaultAuthor: held.defaults.author } : {}),
+    ...(aspectScalesIn(held.aspectScales)),
     ...(held.defaults?.aspectConfig !== undefined
       ? { defaultAspectConfig: held.defaults.aspectConfig } : {}),
     ...(held.interchange?.formatVersion !== undefined

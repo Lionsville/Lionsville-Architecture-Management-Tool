@@ -34,6 +34,7 @@ import { findings } from '../model/checks'
 import { ELEMENT_KINDS } from '../model/kinds'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
+import { applicationOwner } from '../model/ownerField'
 import { personIdOf } from '../model/person'
 import type { PersonId, PersonRef } from '../model/person'
 import type { AgentRegister } from './persons'
@@ -815,6 +816,7 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(observation.recordedBy ? { recordedBy: observation.recordedBy } : {}),
     seen: observation.seen,
     ...(observation.archived ? { archived: true } : {}),
+    ...(observation.noted ? { noted: true } : {}),
     ...wentTo(merged, observation.history),
     causes: explainedBy(causes, observation.id, scope).map((cause) => ({
       id: cause.id,
@@ -914,6 +916,17 @@ function businessCaseOf(body: string) {
   }
 }
 
+/**
+ * An application's owner as one field (`model/ownerField.ts`): a name is said
+ * to be one, since it reads the same as a unit's in a list. Nothing on the
+ * other kinds, where the two keys mean what they say.
+ */
+function ownerLine(element: DesignElement): { ownerIs?: 'unit' | 'name' | 'nobody' } {
+  if (element.kind !== 'application') return {}
+  const owner = applicationOwner(element)
+  return { ownerIs: owner.kind === 'unit' ? 'unit' : owner.kind === 'named' ? 'name' : 'nobody' }
+}
+
 function elementLine(element: DesignElement) {
   return {
     id: element.id,
@@ -926,6 +939,9 @@ function elementLine(element: DesignElement) {
     platformArchetype: element.platformArchetype,
     shared: element.shared,
     owner: element.owner,
+    ...ownerLine(element),
+    ...(element.certainty !== undefined ? { certainty: element.certainty } : {}),
+    ...(element.ratings !== undefined ? { ratings: element.ratings } : {}),
     lifecycleDates: element.lifecycleDates,
     successorId: element.successorId,
     parentId: element.parentId,
@@ -1080,6 +1096,7 @@ function connectionLine(model: Model, c: Relation, dated?: Map<string, Transitio
     isBidirectional: c.isBidirectional,
     validFrom: c.validFrom,
     validUntil: c.validUntil,
+    ...(c.certainty !== undefined ? { certainty: c.certainty } : {}),
     // How two units work together (ADR-0036 §7), where the row says.
     ...(c.mode !== undefined ? { mode: c.mode } : {}),
     ...(c.refines !== undefined ? { refines: c.refines } : {}),
@@ -1187,7 +1204,7 @@ const PROTOCOL_KIND: Record<SearchKind, (typeof SEARCH_HIT_KINDS)[number]> = {
   element: 'element', documentation: 'documentation', view: 'view', relation: 'relation',
   decision: 'adr', plan: 'plan', milestone: 'milestone',
   observation: 'observation', cause: 'cause', solution: 'solution', experiment: 'experiment',
-  unitType: 'unitType', role: 'role', responsibility: 'responsibility', comment: 'comment', principle: 'principle',
+  unitType: 'unitType', role: 'role', responsibility: 'responsibility', comment: 'comment', principle: 'principle', person: 'person',
 }
 
 function searchKindOf(word: string): SearchKind {

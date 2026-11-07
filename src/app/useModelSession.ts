@@ -28,6 +28,8 @@
  * with a change that was made here and who is told about a refusal are all the
  * business of whoever composes the session.
  */
+import { runInverses } from '../projects/agentRun'
+import type { AgentRun } from '../projects/agentRun'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type {
@@ -164,6 +166,8 @@ export type ModelSession = {
    */
   steps: SessionSteps
   undo: () => void
+  /** A run of steps at the top of the stack, undone as one step. Answers whether it landed. */
+  undoRun: (run: AgentRun) => boolean
   redo: () => void
   /**
    * Is there a step of OURS to take back? Another author's step on the stack
@@ -600,6 +604,45 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
     })
   }, [notify, s, announce, keep, problem])
 
+  /**
+   * A run of steps at the top of the stack, undone as one (`projects/agentRun.ts`):
+   * one change, one line for a listener, one ⌘⇧Z to bring it all back. Whoever
+   * asks has read the run off `history()`; one that is no longer the top of the
+   * stack is stale, and nothing moves.
+   */
+  const undoRun = useCallback((run: AgentRun): boolean => {
+    if (!mayChange() || run.steps.length === 0) return false
+    const stack = past.current
+    const from = stack.length - run.steps.length
+    if (from < 0 || run.steps.some((held, at) => stack[stack.length - 1 - at] !== held)) return false
+    const inverses = runInverses(run)
+    const result = apply(modelRef.current, transaction(inverses))
+    if (!result.ok) {
+      notify(s(result.reason), 'error', ...offerFor(problem, { where: 'session.undo', key: result.reason }))
+      return false
+    }
+    const oldestFirst = stack.splice(from)
+    const newest = run.steps[0]
+    future.current.push({
+      ...newest,
+      folds: oldestFirst.flatMap((one) => one.folds),
+      commands: oldestFirst.flatMap((one) => one.commands),
+      inverses,
+    })
+    modelRef.current = result.model
+    setModel(result.model)
+    revision.current += 1
+    setHistoryVersion((v) => v + 1)
+    const changeId = mintStepId()
+    keep(changeId, inverses)
+    announce({
+      kind: 'undo', changeId, stepId: newest.stepId, commands: [...inverses], at: Date.now(), revision: revision.current,
+      ...(newest.origin !== undefined ? { origin: newest.origin } : {}),
+      ...(newest.by !== undefined ? { by: newest.by } : {}),
+    })
+    return true
+  }, [mayChange, notify, s, announce, keep, problem])
+
   const undo = useCallback(() => { if (mayChange()) step('past') }, [step, mayChange])
   const redo = useCallback(() => { if (mayChange()) step('future') }, [step, mayChange])
 
@@ -823,7 +866,7 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,
     ids,
     editorKey, logoLibrary, setLogoLibrary: guardedLogos, imageLibrary, setImageLibrary: guardedImages,
-    readOnly, mayChange, dispatch, undo, redo,
+    readOnly, mayChange, dispatch, undo, undoRun, redo,
     steps,
     canUndo: newestOwn(past.current) >= 0,
     canRedo: future.current.length > 0,

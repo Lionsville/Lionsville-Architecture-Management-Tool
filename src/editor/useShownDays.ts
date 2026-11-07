@@ -39,6 +39,19 @@ export function shownAsOf(
 }
 
 /**
+ * Whether a person is looking at a board on a day that is not the one it is
+ * saved as (ADR-0027, amended 7 November 2026): what locks the board. A look
+ * that reached the board's own day forgot itself, so this is one question and a
+ * view saved on its day stays editable on it.
+ */
+export function isLookingAway(
+  diagram: { id: string } | undefined,
+  days: Readonly<Record<string, ShownDay>> | undefined,
+): boolean {
+  return diagram !== undefined && days?.[diagram.id] !== undefined
+}
+
+/**
  * The day the organisation and the landscape are looked at, as a day: the
  * board's look, its own day, or `today` where neither says one — or where
  * there is no board. What every panel beside a board reads its day from

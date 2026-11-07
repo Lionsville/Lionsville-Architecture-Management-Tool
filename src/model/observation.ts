@@ -53,6 +53,9 @@ export const OBSERVATION_IMPACTS: readonly ObservationImpact[] = ['minor', 'majo
  * tombstone, read as a merged one is. `movedIn` — it came from `scope`, where
  * it was `number`. A record that moves back to a scope holding its tombstone
  * is that tombstone come back to life: the last of the two says which it is.
+ * `noted` — read, and nobody is asked to explain it (ADR-0038, amended 7 November
+ * 2026): it leaves the waiting list and stays live, a note saying why where one
+ * was given; `unnoted` puts it back on the list.
  *
  * The record's own count moves with the events; the events are why it stands
  * where it does, kept because "seen seven times" is worth less than "seen on
@@ -79,10 +82,10 @@ export type ObservationEvent = {
 }
 
 export type ObservationEventKind =
-  'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged' | 'archived' | 'restored' | 'moved' | 'movedIn'
+  'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged' | 'archived' | 'restored' | 'moved' | 'movedIn' | 'noted' | 'unnoted'
 
 export const OBSERVATION_EVENT_KINDS: readonly ObservationEventKind[] =
-  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored', 'moved', 'movedIn']
+  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored', 'moved', 'movedIn', 'noted', 'unnoted']
 
 /** What an observation says, left to right as the form asks it (ADR-0038, amended). */
 export type ObservationTone = 'bright' | 'neutral' | 'problem'
@@ -151,6 +154,12 @@ export type Observation = {
    * for the history, and is out of the analysis until it is restored.
    */
   archived?: true
+  /**
+   * Read, and it wants no cause (ADR-0038, amended 7 November 2026): off the
+   * waiting list, and otherwise as live as any other. Archived says it stopped
+   * being true; this says it is true and needs nothing.
+   */
+  noted?: true
   /** Markdown: what was seen, the evidence, first thoughts. */
   body: string
   /** What happened to it, oldest first. */

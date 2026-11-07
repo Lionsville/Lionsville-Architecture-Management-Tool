@@ -267,7 +267,7 @@ describe('the organisation screen — its own pages', () => {
     renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('2 applications'))
-    expect(cards.textContent).toContain('2 owned by a domain')
+    expect(cards.textContent).toContain('0 owned')
     expect(cards.textContent).toContain('1 outside')
     // What the register disagrees about is counted under the cards and said
     // on the Checks page, not tallied on the card: the card keeps the counts.

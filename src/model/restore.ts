@@ -470,7 +470,7 @@ function ownFields(
   return own
 }
 
-const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig', 'principleGroups'] as const
+const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig', 'principleGroups', 'aspectScales'] as const
 
 function projectSettings(model: Model): ProjectPatch {
   return pick(model, PROJECT_FIELDS) as ProjectPatch

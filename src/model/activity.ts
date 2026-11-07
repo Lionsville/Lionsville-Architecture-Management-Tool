@@ -104,6 +104,7 @@ const RESTORED: Record<Restored['what'], StringKey> = {
   description: 'activity.descriptionRestored',
   decision: 'activity.decisionRestored',
   project: 'activity.projectRestored',
+  agentSession: 'activity.agentSessionPutBack',
 }
 
 export function summarise(commands: readonly Command[], before: Model): StepSummary {
@@ -136,6 +137,8 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
         name: before.elements[lead.id]?.name,
         count: many('element.update'),
       }
+    case 'element.rate':
+      return { key: 'activity.elementRated', name: before.elements[lead.id]?.name }
     case 'element.delete':
       return {
         key: 'activity.elementDeleted',

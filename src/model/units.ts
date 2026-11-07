@@ -79,6 +79,13 @@ export type Assignment = {
    * assignment.
    */
   reportsTo?: AssignmentReportingLine[]
+  /**
+   * This last day is the holder's leaving, and `until` inside is the last day
+   * it had before (absent: it ran on). What lets a leaving taken back restore
+   * exactly what the leaving ended and nothing a person ended themselves on
+   * the same day (ADR-0036, amended 7 November 2026). Read only then.
+   */
+  endedByLeaving?: { until?: string }
 }
 
 /**
@@ -1154,7 +1161,7 @@ export function rolesEndedBy(
 
 /** What ending an assignment is, as the writer takes it: its last day set, or — one not begun — taken away. */
 export type Ending =
-  | { type: 'assignment.update'; id: AssignmentId; patch: { until: string } }
+  | { type: 'assignment.update'; id: AssignmentId; patch: { until: string; endedByLeaving: { until?: string } } }
   | { type: 'assignment.remove'; id: AssignmentId }
 
 /**
@@ -1170,10 +1177,29 @@ export function endingFor(assignments: readonly Assignment[], persons: ReadonlyS
     if (!persons.has(personOf(assignment))) continue
     if (isDay(assignment.from) && assignment.from > lastDay) ends.push({ type: 'assignment.remove', id: assignment.id })
     else if (!isDay(assignment.until) || assignment.until > lastDay) {
-      ends.push({ type: 'assignment.update', id: assignment.id, patch: { until: lastDay } })
+      ends.push({
+        type: 'assignment.update', id: assignment.id,
+        patch: { until: lastDay, endedByLeaving: isDay(assignment.until) ? { until: assignment.until } : {} },
+      })
     }
   }
   return ends
+}
+
+/**
+ * What a leaving taken back restores in one scope's assignments: each one the
+ * leaving on `lastDay` ended, back to the last day it had. One whose last day
+ * somebody has changed since is theirs and stays. One the leaving took away,
+ * because it only began after that day, is not here to restore.
+ */
+export function restoringFor(
+  assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string,
+): Extract<Command, { type: 'assignment.update' }>[] {
+  return assignments
+    .filter((one) => persons.has(personOf(one)) && one.endedByLeaving !== undefined && one.until === lastDay)
+    .map((one) => ({
+      type: 'assignment.update', id: one.id, patch: { until: one.endedByLeaving?.until, endedByLeaving: undefined },
+    }))
 }
 
 /**
@@ -1191,4 +1217,14 @@ export function leavingStep(
   if (ends.length === 0) return undefined
   const command: Command = ends.length === 1 ? { ...ends[0], ...meta } : { type: 'transaction', commands: [...ends], ...meta }
   return { command, ended: ends.length }
+}
+
+/** The one step a leaving taken back makes in one scope, as {@link leavingStep} makes the leaving's. */
+export function returningStep(
+  assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string, meta: CommandMeta = {},
+): { command: Command; restored: number } | undefined {
+  const back = restoringFor(assignments, persons, lastDay)
+  if (back.length === 0) return undefined
+  const command: Command = back.length === 1 ? { ...back[0], ...meta } : { type: 'transaction', commands: [...back], ...meta }
+  return { command, restored: back.length }
 }

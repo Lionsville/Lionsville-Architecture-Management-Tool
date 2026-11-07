@@ -162,7 +162,7 @@ const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'manag
 export const SEARCH_HIT_KINDS = [
   'element', 'documentation', 'view', 'relation', 'adr', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'comment', 'principle',
+  'unitType', 'role', 'responsibility', 'comment', 'principle', 'person',
 ] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
@@ -191,6 +191,17 @@ const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned', 'u
 /** Team Topologies' three modes, for an `interacts` row (ADR-0036 §7) — a protocol literal, for the reason above. */
 const INTERACTION_MODES = ['collaboration', 'service', 'facilitating'] as const
 
+/**
+ * Whether what a record says has been checked (ADR-0047). The word to use in
+ * place of writing "(assumed)" into a name or "???" into a protocol.
+ */
+const CERTAINTY_ARGUMENT: ArgumentSchema = {
+  type: 'string',
+  description: 'assumed where nobody has checked this, confirmed where somebody has; a card draws dashed and a row says the word. '
+    + 'Use it rather than writing (assumed) or ??? into a name or a protocol. Null: nobody has said.',
+  enum: ['confirmed', 'assumed'],
+}
+
 /** How a line is drawn. Absent means the theme's own stroke and a solid line. */
 const LINE_FIELDS = {
   color: { type: 'string', description: 'The stroke, as a hex colour like #c0392b. The theme\'s own when absent.' },
@@ -203,6 +214,7 @@ const LINE_FIELDS = {
  */
 const RELATION_FIELDS = {
   label: { type: 'string', description: 'What the row says, in a few words.' },
+  certainty: CERTAINTY_ARGUMENT,
   validFrom: { type: 'string', description: 'The first day it holds, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
   validUntil: { type: 'string', description: 'The last day it holds, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
   mode: {
@@ -216,6 +228,7 @@ const RELATION_FIELDS = {
 /** What a line says and when it is there. Null clears any of them. */
 const CONNECTION_FIELDS = {
   label: { type: 'string', description: 'What flows, in a few words.' },
+  certainty: CERTAINTY_ARGUMENT,
   protocol: {
     type: 'string',
     description: 'How: REST, AMQP, SFTP, a file drop. On the CONTAINER line (ADR-0013): an application-level '
@@ -245,6 +258,7 @@ const ASPECT_STATUSES = ['managed', 'partial', 'none', 'atRisk'] as const
  */
 const ELEMENT_FIELDS = {
   name: { type: 'string', description: 'The name.' },
+  certainty: CERTAINTY_ARGUMENT,
   description: { type: 'string', description: 'The documentation, as markdown. The first paragraph is drawn on the card.' },
   category: { type: 'string', description: 'A business category or capability.' },
   vendor: { type: 'string', description: 'Who makes it.' },
@@ -253,9 +267,9 @@ const ELEMENT_FIELDS = {
   shared: { type: 'boolean', description: 'A platformService only: offered for use beyond the team that maintains it (ADR-0014). False or null takes it off. Where unsaid, a service assigned to one actor and used by an application of another team is reported as check.offeredNotShared rather than assumed.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Kept on the record for the files that carry it; nothing in the app reads or shows it since 3.7.0. Whose a system is, is `outside`.' },
-  owner: personArgument('Who answers for it — a person or a team. Which scope owns it is the scope it is kept in. Where none is written, an application\'s owner may be worked out from the operating model\'s rule (answered as ownerByRule).'),
+  owner: personArgument('Who answers for it. On an application this and partyId are one field: name a unit with partyId where a unit answers for it; text here is a name, and is flagged as not being a unit (check.applicationOwnerNamed). Setting one clears the other. Which scope owns it is the scope it is kept in. Where none is written, an application\'s owner may be worked out from the operating model\'s rule (answered as ownerByRule).'),
   outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
-  partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said: one this scope keeps or one a scope above it keeps. Only meaningful with outside.' },
+  partyId: { type: 'string', description: 'The id of the actor it belongs to: one this scope keeps or one a scope above it keeps. On an application this is its owner, the unit that answers for it, and clears a name in owner. Without outside it says whose it is in the organisation; with outside, whose it is outside it.' },
   order: { type: 'number', description: 'Where it sits among its siblings, low first. Only say it where the order is a decision — a journey reads left to right.' },
   lane: { type: 'string', description: 'A step only: the id of the actor whose own path this step is. Absent means the row every lane shares.' },
   liveOn: { type: 'string', description: 'The day it goes live, yyyy-mm-dd. Before it, planned.' },
@@ -961,6 +975,21 @@ const SPECS = [
     },
   },
   {
+    name: 'person.takeBackLeaving',
+    tier: 'write',
+    description:
+      'Take back a leaving that was a mistake, when the person you act for says so: the entry is active again with no last day, and '
+      + 'each assignment that leaving ended runs on as it did, by steps in Activity — `restoredAssignments` says how many. One whose last day '
+      + 'somebody changed since stays as it is, and one the leaving took away, because it only began after that day, does not come back: say so. '
+      + 'Refused once the name is forgotten. The register itself is not a step.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('person, from people.list') },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'elements.list',
     tier: 'read',
     description:
@@ -1281,6 +1310,15 @@ const SPECS = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
+    name: 'aspectScales.list',
+    tier: 'read',
+    description:
+      'The aspects the organisation rates on a numeric scale (ADR-0046): each key, its name and its lowest and highest value. '
+      + 'A function, whether an area, a grouping or a capability, is rated on one with element.rate, and elements.list and element.describe answer its ratings. '
+      + 'Kept at the organisation: whatever scope is open, this answers from there.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
     name: 'roles.list',
     tier: 'read',
     description:
@@ -1547,6 +1585,55 @@ const SPECS = [
         parentId: { type: 'string', description: 'What contains it now: a component\'s application, a function\'s area or grouping, a step\'s phase, an actor\'s group, a unit\'s parent unit anywhere in the organisation. Null makes it a root — a unit at the top.' },
       },
       required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.rate',
+    tier: 'write',
+    description:
+      'Rate a function, whether an area, a grouping or a capability, on one aspect the organisation keeps a scale for (ADR-0046; aspectScales.list): '
+      + 'a whole number on that scale, or null to take the rating away. Call it in the scope that defines the function: a stand-in is rated there. '
+      + 'A sheet\'s heat map reads these. Rate what the person gave you a reason for, not a guess.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('function'),
+        aspect: { type: 'string', description: 'The key of the aspect, from aspectScales.list.' },
+        value: { type: 'integer', description: 'The value, on the scale. Null takes it away.' },
+      },
+      required: ['id', 'aspect', 'value'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'aspectScale.set',
+    tier: 'write',
+    description:
+      'Give an aspect a numeric scale, or change one, for the whole organisation (ADR-0046): 1 to 5 unless said otherwise. Any aspect may have one: '
+      + 'an existing column\'s key, or a new key such as maturity. Narrowing a scale keeps every rating; one left outside it reads as unrated until it is rated again. '
+      + 'Kept at the organisation: open it first. The organisation\'s word to give: ask before changing one in use.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', description: 'What ratings are filed under. Stable: renaming a scale keeps its key.' },
+        label: { type: 'string', description: 'What it is called.' },
+        code: { type: 'string', description: 'What a tight cell shows, where a derived code would be wrong.' },
+        min: { type: 'integer', description: 'The lowest value. Default 1.' },
+        max: { type: 'integer', description: 'The highest value, above min. Default 5.' },
+      },
+      required: ['key', 'label'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'aspectScale.remove',
+    tier: 'write',
+    description: 'Take an aspect\'s scale away (ADR-0046). The ratings stay on the functions and read as unrated; setting the scale again brings them back. Kept at the organisation: open it first.',
+    inputSchema: {
+      type: 'object',
+      properties: { key: { type: 'string', description: 'The key, from aspectScales.list.' } },
+      required: ['key'],
       additionalProperties: false,
     },
   },
@@ -2096,6 +2183,25 @@ const SPECS = [
         id: ID('observation'),
         note: { type: 'string', description: 'Why: what fixed it, or why it stopped mattering. Kept beside the day.' },
         restore: { type: 'boolean', description: 'true: bring an archived observation back instead.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'observation.note',
+    tier: 'write',
+    description:
+      'Say an observation has been read and wants no cause: it leaves the waiting list and stays what it is, drawn, '
+      + 'searchable and a merge target — or, with takeBack, put it back on the list. Only when the person you act for said so: '
+      + 'a problem nobody has explained is a cause waiting to be found, not something to tidy away. '
+      + 'Archive is for what stopped being true; this is for what is true and needs nothing. Kept in its history, with the day and the reason.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('observation'),
+        reason: { type: 'string', description: 'Why it wants no cause, where the person said. Kept beside the day.' },
+        takeBack: { type: 'boolean', description: 'true: put it back on the waiting list instead.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -3095,10 +3201,13 @@ const SPECS = [
     tier: 'write',
     description:
       'Take back the newest step, or several, as ⌘Z does — but only while the newest step is an agent\'s. '
-      + 'A person\'s step stops it, and is theirs to undo. Answers with what was undone.',
+      + 'A person\'s step stops it, and is theirs to undo. With session, the whole of this driving session\'s steps go as one step, while they are the newest (ADR-0019, amended); a person\'s or anybody else\'s step on top refuses it. Answers with what was undone.',
     inputSchema: {
       type: 'object',
-      properties: { steps: { type: 'integer', description: 'How many steps. Default 1.', minimum: 1, maximum: 200 } },
+      properties: {
+        steps: { type: 'integer', description: 'How many steps. Default 1.', minimum: 1, maximum: 200 },
+        session: { type: 'boolean', description: 'true: every step of this driving session, as one step. Not with steps.' },
+      },
       additionalProperties: false,
     },
   },
@@ -3133,7 +3242,7 @@ const SPECS = [
       + 'as a tree on the view\'s day, each role with its holders by person id, their share, who is over 100% and '
       + 'the vacancies; on a Conway map, the units over their applications, every interface that crosses between '
       + 'units with whether an interaction covers it, the interactions that hold, and the findings, each with its key '
-      + '(check.interfaceUndeclared, check.interactionUnused, check.applicationUnowned, check.unitOverLimit), weight '
+      + '(check.interfaceUndeclared, check.interactionUnused, check.applicationUnowned, check.applicationOwnerNamed, check.unitOverLimit), weight '
       + 'and category as checks.list says them.',
     inputSchema: {
       type: 'object',
@@ -3497,7 +3606,7 @@ export const TREE_WIDE: readonly string[] = [
  * no `scope`, and no project revision to guard, because the register is
  * outside the history and has a revision of its own.
  */
-export const ON_THE_REGISTER: readonly string[] = ['people.list', 'person.add', 'person.leave']
+export const ON_THE_REGISTER: readonly string[] = ['people.list', 'person.add', 'person.leave', 'person.takeBackLeaving']
 
 /**
  * About the tree of scopes rather than the scope open (ADR-0040 §1): each
@@ -3778,6 +3887,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'people.badEmail': 'That is not a work address: one @, something either side of it, no spaces.',
   'people.badDay': 'That is not a day: write it yyyy-mm-dd.',
   'people.notActive': 'Only someone active can leave; this one has left already, or been forgotten.',
+  'people.notLeft': 'This person has not left, so there is no leaving to take back.',
   'people.forgotten': 'That entry is forgotten: it has no name left to change.',
   'people.notForgotten': 'Only a forgotten entry is removed, and only by a person.',
   'people.badMerge': 'An entry is merged only into another that still has a name, and only by a person.',
@@ -3799,6 +3909,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.titleEmpty': 'A principle needs a title.',
   'command.sharpenNote': 'Changing an accepted principle\'s statement or aspects sharpens it: pass note, saying why, with the change.',
   'command.badGroups': 'Every group needs a name, and each is listed once.',
+  'command.badScale': 'A scale needs a name and whole numbers with the lowest below the highest, each aspect listed once; a rating is a whole number on a function.',
   'command.notCitable': 'Which kinds cite with which stances: decision supports or deviates; element, plan (transition) and solution support; observation holds, chafes or missing.',
   'command.reasonMissing': 'stance deviates needs reason: why this record departs from the principle.',
   'command.badBlock': 'A building block\'s capabilities, contexts and solutions each need an id of their own and a name; a context needs only the block\'s capabilities, each 0 to 4; a solution\'s sort is product, service or inHouse and its status candidate, evaluated, inUse or retired. Only a buildingBlock has these fields.',
