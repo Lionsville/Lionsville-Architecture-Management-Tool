@@ -198,8 +198,6 @@
 .lv-settings__help { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
 .lv-settings__preview { display: grid; align-content: start; gap: var(--s-2); }
 .lv-settings__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
-.lv-settings__handle { border: 0; background: transparent; color: var(--ink-2); font: inherit; cursor: grab; min-width: var(--target-min); min-height: var(--target-min); }
-.lv-settings__handle:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 
 /* The key gives way to the dock, wrapping its words. */
 .lv-board { container-type: inline-size; }
