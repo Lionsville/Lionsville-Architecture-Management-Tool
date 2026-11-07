@@ -295,6 +295,12 @@ describe('a building block\'s page', () => {
     await waitFor(() => expect(access.evaluate).toHaveBeenCalledWith('blk-gw', 'stock', ['cx-filings'], 'sales'))
   })
 
+  it('offers no evaluation for a scope this person may not write', () => {
+    page(accessOver({ mayWrite: (scope) => scope !== 'stock' }))
+    fireEvent.click(screen.getByRole('tab', { name: s('blocks.whereUsed') }))
+    expect(screen.queryByTestId('block-evaluate')).toBeNull()
+  })
+
   it('offers no change at all to a person who may only read it', () => {
     page(accessOver({ mayWrite: () => false }), { evaluation: 'sales' })
     expect(screen.queryByTestId('block-propose')).toBeNull()

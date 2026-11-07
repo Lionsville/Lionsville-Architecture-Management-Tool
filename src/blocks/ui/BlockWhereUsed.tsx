@@ -55,7 +55,8 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
           />
         </div>
       )}
-      {access.evaluateChoices(block.id).length > 0 && (
+      {/* An evaluation is written where it is made: offered only where this person may write. */}
+      {access.evaluateChoices(block.id).some((one) => access.mayWrite(one.path)) && (
         <div><Button variant="primary" onClick={() => setAdding(true)} data-testid="block-evaluate">{t('blocks.evaluateFor')}</Button></div>
       )}
       {adding && <EvaluateDialog row={row} onClose={(made) => { setAdding(false); if (made !== undefined) onEvaluate(made) }} />}
@@ -67,7 +68,7 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
 function EvaluateDialog({ row, onClose }: { row: BlockRow; onClose: (made?: string) => void }) {
   const access = useBlocks()
   const { t } = useStrings()
-  const choices = access?.evaluateChoices(row.block.id) ?? []
+  const choices = access?.evaluateChoices(row.block.id).filter((one) => access.mayWrite(one.path)) ?? []
   const before = access?.evaluationsOf(row.block.id) ?? []
   const [scope, setScope] = useState(choices[0]?.path ?? '')
   const [contexts, setContexts] = useState<string[]>([])
