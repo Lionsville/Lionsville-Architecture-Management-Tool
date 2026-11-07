@@ -155,6 +155,7 @@ describe('the Checks page', { timeout: 20_000 }, () => {
     fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
     const accepted = await within(detail()).findByTestId('checks-accepted')
     expect(within(accepted).getByTestId('accepted-reason').textContent).toContain('“Bought in, run by the shop”')
+    fireEvent.click(within(accepted).getAllByRole('row')[1] as HTMLElement)
     fireEvent.click(within(accepted).getByTestId('finding-take-back'))
     await waitFor(async () => expect((await held.read('retail'))?.model.checkMarks ?? []).toEqual([]))
     await waitFor(() => expect(screen.getByTestId('checks-row-check.applicationUnowned').textContent).toMatch(/1$/))

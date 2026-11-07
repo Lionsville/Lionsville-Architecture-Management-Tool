@@ -676,6 +676,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'checks.noneMatch': 'Geen hiervan komt overeen.',
   'checks.colUnit': 'Eenheid',
   'checks.colSubject': 'Waar het over gaat',
+  'checks.colReason': 'Reden',
+  'checks.colMarked': 'Gemarkeerd',
   'checks.colUnder': 'Valt onder',
   'checks.foundBy.role': 'Rol',
   'checks.foundBy.unitType': 'Eenheidstype',

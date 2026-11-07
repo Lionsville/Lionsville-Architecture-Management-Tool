@@ -141,8 +141,10 @@ describe('the Checks page', () => {
     const { marking } = page({ request: { select: 'check.interactionUnused' } }, [{ scope: '', mark }])
     fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
     const accepted = within(detail()).getByTestId('checks-accepted')
-    expect(accepted.textContent).toContain('Operations and Sales declare As a service, and no interface runs between them. (in the organisation)')
     expect(within(accepted).getByTestId('accepted-reason').textContent).toContain('“They design the API together”')
+    // The sentence and Take back come with the line pressed, as on Found.
+    fireEvent.click(within(accepted).getAllByRole('row')[1] as HTMLElement)
+    expect(accepted.textContent).toContain('Operations and Sales declare As a service, and no interface runs between them.')
     fireEvent.click(within(accepted).getByTestId('finding-take-back'))
     expect(marking.takeBack).toHaveBeenCalledWith({ scope: '', mark })
   })

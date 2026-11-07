@@ -881,6 +881,8 @@ export const EN = {
   'checks.noneMatch': 'None of these match.',
   'checks.colUnit': 'Unit',
   'checks.colSubject': 'What it is about',
+  'checks.colReason': 'Reason',
+  'checks.colMarked': 'Marked',
   'checks.colUnder': 'Sits under',
   'checks.foundBy.role': 'Role',
   'checks.foundBy.unitType': 'Unit type',

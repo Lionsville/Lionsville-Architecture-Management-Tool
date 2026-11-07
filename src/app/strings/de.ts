@@ -677,6 +677,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.noneMatch': 'Keiner davon passt.',
   'checks.colUnit': 'Einheit',
   'checks.colSubject': 'Worum es geht',
+  'checks.colReason': 'Grund',
+  'checks.colMarked': 'Markiert',
   'checks.colUnder': 'Liegt unter',
   'checks.foundBy.role': 'Rolle',
   'checks.foundBy.unitType': 'Einheitstyp',

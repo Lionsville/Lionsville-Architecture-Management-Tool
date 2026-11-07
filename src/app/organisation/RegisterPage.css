@@ -18,6 +18,8 @@
 .org-finding__line { display: flex; align-items: baseline; gap: var(--s-2); font-weight: var(--fw-strong); }
 .org-finding__why { margin: var(--s-1) 0 var(--s-2); color: var(--ink-2); }
 .org-finding__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+/* A finding's own acts sit inside the row's: one row of buttons, not an empty slot before See in Checks. */
+.org-finding__acts .org-finding__acts { display: contents; }
 .org-preview__foot { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
 .org-fix { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); min-width: 200px; }
 .org-fix__picker { flex: 1 1 200px; min-width: 160px; }

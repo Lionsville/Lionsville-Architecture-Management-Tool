@@ -33,7 +33,8 @@ import type { ScopeIndex } from '../../projects/scopeIndex'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { AcceptedFindings } from '../../widgets/FindingMarks'
+import { useStrings } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceListView, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
@@ -233,6 +234,53 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
   )
 }
 
+/**
+ * What was marked as intended under one check, as the same list Found is: one line
+ * a finding, its reason and day beside it, and *Take back* with the sentence once
+ * the line is pressed rather than a button on every line.
+ */
+function AcceptedList({ row, index, marking, scopeName, s }: {
+  row: CheckRow; index: ChecksPageProps['index']; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string; s: Translate
+}) {
+  const { language } = useStrings()
+  const [density] = useListDensity()
+  const [pressed, setPressed] = useState<string | null>(null)
+  const rows = row.marked.map(({ instance, mark, keptIn }): ListRow => {
+    const takeBack = marking?.mayTakeBack(keptIn) ? () => { void marking.takeBack({ scope: keptIn, mark }) } : undefined
+    return {
+      id: `${keptIn}\u0000${checkMarkId(mark)}\u0000${instance.id}`, text: instance.subject ?? instance.text,
+      cells: {
+        reason: <span data-testid="accepted-reason">{mark.reason ? `\u201c${mark.reason}\u201d` : s(CHECK_MARK_WORDS.noReason)}</span>,
+        on: formatDay(mark.on, language),
+        master: instance.scope !== undefined ? scopeName(instance.scope) : undefined,
+      },
+      actions: (
+        <span className="org-finding">
+          <p className="checks-page__text">{instance.text}</p>
+          {takeBack && (
+            <span className="org-finding__acts">
+              <Button data-guide="findings.takeBack" data-testid="finding-take-back" onClick={takeBack}>{s(CHECK_MARK_WORDS.takeBack)}</Button>
+            </span>
+          )}
+        </span>
+      ),
+    }
+  })
+  const columns: readonly ListColumn[] = [
+    { id: 'reason', label: s('checks.colReason') },
+    { id: 'on', label: s('checks.colMarked'), width: 'minmax(96px, 140px)' },
+    { id: 'master', label: s('register.colMaster') },
+  ]
+  return (
+    <div data-testid="checks-accepted">
+      <List
+        label={s('checks.tabAccepted')} groups={[{ id: 'all', label: '', rows }]} density={density} columns={columns} itemLabel={s(subjectWord(row, index))}
+        selectedId={pressed} onOpen={(id) => setPressed((was) => (was === id ? null : id))}
+      />
+    </div>
+  )
+}
+
 /** The check picked: what the catalogue says of it, what is found, and what was marked as intended. */
 function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, fixes, onOpenScope, onFixed, onMarked, scopeName, s }: {
   row: CheckRow; tab: string; setTab: (tab: string) => void; view: ListView; setView: (next: ListView) => void; finding: string | undefined
@@ -263,15 +311,7 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
             {onOpenScope && <Button onClick={onOpenScope}>{s('checks.openToCount')}</Button>}
           </PanelSection>
         ) : accepted ? (
-          <AcceptedFindings
-            unfolded words={CHECK_MARK_WORDS} testId="checks-accepted"
-            items={row.marked.map(({ instance, mark, keptIn }) => ({
-              key: `${keptIn}\u0000${checkMarkId(mark)}\u0000${instance.id}`,
-              sentence: instance.scope !== undefined ? `${instance.text} (${s('checks.in', { scope: scopeName(instance.scope) })})` : instance.text,
-              reason: mark.reason, on: mark.on,
-              onTakeBack: marking?.mayTakeBack(keptIn) ? () => marking.takeBack({ scope: keptIn, mark }) : undefined,
-            }))}
-          />
+          <AcceptedList row={row} index={index} marking={marking} scopeName={scopeName} s={s} />
         ) : row.shown.length === 0 ? (
           <PanelSection><p className="checks-page__text checks-page__quiet">{s('checks.none')}</p></PanelSection>
         ) : (
