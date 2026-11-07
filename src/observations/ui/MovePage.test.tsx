@@ -216,6 +216,48 @@ describe('the move screen', () => {
     expect(screen.getByRole('dialog', { name: 'Move an observation to another scope' })).toBeTruthy()
   })
 
+  describe.each(['light', 'dark'] as const)('a refusal, in the %s theme', (mode) => {
+    const refusedBy = (changeAcross: ChangeAcross) => {
+      const deps: MoveDeps = {
+        here: 'north', scopes: [north, south], paths: ['', 'north', 'south'], readOnly: false, today: () => DAY, t,
+        scopeLabel: (path) => NAMES[path] ?? path, onMoved: () => {}, onChangeAcross: changeAcross,
+      }
+      renderShell(<Harness id="n1" deps={deps} />, { mode })
+      const page = within(screen.getByRole('dialog', { name: 'Move an observation to another scope' }))
+      fireEvent.click(within(page.getByTestId('move-target-south')).getByRole('radio'))
+      return page
+    }
+
+    it('is read inside the screen, by a role query and by axe, where storage failed', async () => {
+      const page = refusedBy(() => Promise.reject(new Error('the disk is full')))
+      await act(async () => { fireEvent.click(page.getByTestId('move-confirm')) })
+      expect((await page.findByRole('alert')).textContent).toBe(t('observation.moveNotMade'))
+      expect(page.getByTestId('move-note')).toBeTruthy()
+      expect(page.getByTestId('move-confirm')).toHaveProperty('disabled', false)
+      expect(await axeFindings()).toEqual([])
+    })
+
+    it('goes when it is dismissed, and the screen stays up', async () => {
+      const page = refusedBy(() => Promise.resolve({ ok: false, reason: 'unchanged' }))
+      await act(async () => { fireEvent.click(page.getByTestId('move-confirm')) })
+      expect(await page.findByRole('alert')).toBeTruthy()
+      fireEvent.keyDown(document.body, { key: 'Escape' })
+      await waitFor(() => expect(page.queryByRole('alert')).toBeNull())
+      expect(screen.getByRole('dialog', { name: 'Move an observation to another scope' })).toBeTruthy()
+    })
+  })
+
+  it('says what was done where the page can read it, once the screen has closed', async () => {
+    const { changeAcross } = host(new Map([['', work(empty(''))], ['north', work(north)], ['south', work(south)]]))
+    const { page } = mount('n1', { onChangeAcross: changeAcross })
+    const screenOf = screen.getByRole('dialog', { name: 'Move an observation to another scope' })
+    fireEvent.click(within(page().getByTestId('move-target-south')).getByRole('radio'))
+    await act(async () => { fireEvent.click(page().getByTestId('move-confirm')) })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Move an observation to another scope' })).toBeNull())
+    expect(screenOf.contains(screen.getByRole('alert'))).toBe(false)
+    expect(screen.getByRole('alert').textContent).toContain('Moved to OB-0005 in South quay.')
+  })
+
   it('cannot be pressed where only this scope may be written from here, or the observation is archived', () => {
     const { page } = mount('n1')
     fireEvent.click(within(page().getByTestId('move-target-south')).getByRole('radio'))

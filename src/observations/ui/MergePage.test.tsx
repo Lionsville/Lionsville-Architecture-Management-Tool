@@ -182,6 +182,40 @@ describe('the merge screen', () => {
     expect(merge.getByTestId('merge-confirm').textContent).toBe('Merge 1 cause into RC-0002')
   })
 
+  describe.each(['light', 'dark'] as const)('a refusal, in the %s theme', (mode) => {
+    const refusedBy = (onChangeAcross: NonNullable<MergeDeps['onChangeAcross']>) => {
+      const deps: MergeDeps = {
+        here: 'north', scopes: [north, south], readOnly: false, commit: () => {}, today: () => '2026-10-08', t,
+        scopeLabel: (path) => (path === 'north' ? 'North quay' : 'South quay'), day: (date) => date, select: () => {}, onChangeAcross,
+      }
+      renderShell(<Harness opening={{ kind: 'observation', id: 'n1' }} deps={deps} />, { mode })
+      const merge = within(screen.getByRole('dialog', { name: 'Merge observations' }))
+      fireEvent.click(merge.getByRole('checkbox', { name: 'Across scopes' }))
+      fireEvent.click(within(merge.getByTestId('merge-hit-south#s1')).getByRole('checkbox'))
+      return merge
+    }
+
+    it('is read inside the screen, by a role query and by axe, where storage failed', async () => {
+      const merge = refusedBy(() => Promise.reject(new Error('the disk is full')))
+      fireEvent.click(merge.getByTestId('merge-confirm'))
+      expect((await merge.findByRole('alert')).textContent).toBe(t('observation.mergeNotMade'))
+      expect(merge.getByTestId('merge-note')).toBeTruthy()
+      expect(merge.getByTestId('merge-confirm')).toHaveProperty('disabled', false)
+      expect(await axeFindings()).toEqual([])
+    })
+  })
+
+  it('says what was done where the page can read it, once the screen has closed', async () => {
+    const onChangeAcross = vi.fn(async () => ({ ok: true as const, changed: ['south', 'north'] }))
+    const { page } = mount(undefined, { onChangeAcross })
+    const merge = within(page())
+    fireEvent.click(merge.getByRole('checkbox', { name: 'Across scopes' }))
+    fireEvent.click(within(merge.getByTestId('merge-hit-south#s1')).getByRole('checkbox'))
+    fireEvent.click(merge.getByTestId('merge-confirm'))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Merge observations' })).toBeNull())
+    expect(screen.getByRole('alert').textContent).toContain('It changed South quay and North quay')
+  })
+
   it('closes with Escape, and says after a merge across where it went', async () => {
     const onChangeAcross = vi.fn(async () => ({ ok: true as const, changed: ['south', 'north'] }))
     const { page } = mount(undefined, { onChangeAcross })

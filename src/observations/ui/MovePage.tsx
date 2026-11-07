@@ -149,12 +149,17 @@ export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePage
   const close = () => state?.close()
   // Named by its own heading: a dialog's aria-label lands on the modal's root, not on the dialog.
   const titleId = useId()
-  return (
-    <>
+  // Inside the screen while it is up: a dialog over a dialog covers whatever the page holds and hides it from
+  // a reader, so a refusal drawn beside it was never seen. Beside it once closed, for what was done to outlast it.
+  const said = (
     <Snackbar
       open={note !== undefined} message={note} autoHideDuration={8000} onClose={onNoteClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} data-testid="move-note"
     />
+  )
+  return (
+    <>
+    {!state && said}
     <PageDialog open={Boolean(state)} topInset={chrome.topInset} onClose={close} aria-labelledby={titleId}>
       <Box
         data-testid="move-topbar"
@@ -195,6 +200,7 @@ export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePage
               {state.confirm.label}
             </Button>
           </Box>
+          {said}
         </>
       )}
     </PageDialog>
