@@ -21,9 +21,18 @@ import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import { groupBox, groupNameOn, groupNamed, growGroup, keptInBand, membersOf, newGroupId, seedPlacement } from './placement'
 import type { Args, Handler } from './shared'
-import { diagramOrRefusal, hexColour, onDiagram } from './shared'
+import { diagramOf, diagramOrRefusal, hexColour, onDiagram } from './shared'
+import { arrangeOnSheet, moveByOnSheet, placeNextToOnSheet, placeOnSheet } from './poster'
+
+/** The sheet a placing tool names, where it names one: its blocks are placed by `poster.ts` (ADR-0048). */
+function sheetAsked(args: Args, view: ReadView): Diagram | undefined {
+  const diagram = diagramOf(args, view)
+  return diagram?.kind === 'sheet' ? diagram : undefined
+}
 
 export const moveBy: Handler = (args, view) => {
+  const sheet = sheetAsked(args, view)
+  if (sheet) return moveByOnSheet(args, sheet, view)
   const placed = onDiagram(args, view)
   if ('ok' in placed) return placed
   const { diagram, placements } = placed
@@ -50,6 +59,7 @@ export const placeNextTo: Handler = (args, view) => {
   const { model } = view
   const diagram = diagramOrRefusal(args, view)
   if ('ok' in diagram) return diagram
+  if (diagram.kind === 'sheet') return placeNextToOnSheet(args, diagram, view)
   const elementId = args.elementId as string
   const anchorId = args.anchorId as string
   const element = model.elements[elementId]
@@ -93,6 +103,10 @@ export const placeElement: Handler = (args, view) => {
   const { model } = view
   const diagram = diagramOrRefusal(args, view)
   if ('ok' in diagram) return diagram
+  if (diagram.kind === 'sheet') return placeOnSheet(args, diagram, view)
+  if (args.width !== undefined || args.height !== undefined || args.cell !== undefined) {
+    return refused('agent.badArguments', 'a size and a cell are a sheet\'s: a card on a board is the size its kind draws')
+  }
   const id = args.id as string
   const element = model.elements[id]
   if (!element) return refused('agent.unknownId', `element ${id}`)
@@ -316,6 +330,8 @@ export const ungroup: Handler = (args, view) => {
 /** `align` and `distribute`: the layout's own arithmetic over the named cards' rectangles. */
 function arrange(how: 'align' | 'distribute'): Handler {
   return (args, view) => {
+    const sheet = sheetAsked(args, view)
+    if (sheet) return arrangeOnSheet(how, args, sheet, view)
     const placed = onDiagram(args, view)
     if ('ok' in placed) return placed
     const { diagram, placements } = placed

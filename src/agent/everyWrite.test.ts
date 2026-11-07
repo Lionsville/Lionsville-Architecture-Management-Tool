@@ -53,6 +53,9 @@ const host: HostModel = {
     element('api', 'Billing API', { kind: 'component', parentId: 'billing' }),
     element('who', 'Clerk', { kind: 'actor' }),
     element('bus', 'Message brokering', { kind: 'platformService' }),
+    element('fn-area', 'Fulfilment', { kind: 'function' }),
+    element('fn-tile', 'Picking', { kind: 'function', parentId: 'fn-area' }),
+    element('fn-other', 'Billing', { kind: 'function' }),
     // A building block kept here (ADR-0043), for block.update, evaluation.add and evaluation.propose.
     element('blk-id', 'Identity service', {
       kind: 'buildingBlock', isManaged: false,
@@ -78,6 +81,12 @@ const host: HostModel = {
         { id: 'who', zone: 'actors', x: 20, y: 20 },
       ],
     }),
+    // A sheet, whose blocks the placing tools write too (ADR-0048).
+    {
+      id: 'sh', kind: 'sheet', name: 'Sheet', members: [], areas: ['fn-area'],
+      poster: { items: [{ id: 'it-1', kind: 'note', text: 'Said here' }] },
+      geometry: { nodes: [], items: [{ id: 'it-1', x: 10, y: 10, width: 90, height: 60 }] },
+    },
   ],
   // This scope's evaluation of a building block another scope keeps (ADR-0043 §4), for evaluation.rate.
   evaluations: [{ id: 'topics.integration~blk-gw', block: { scope: 'topics/integration', id: 'blk-gw' }, contexts: [], options: [], coverage: {} }],
@@ -177,7 +186,11 @@ const ADOPTED: readonly Step[] = [
 
 const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'element.add': [{ args: { name: 'Warehouse' } }, { args: { name: 'Fulfilment', kind: 'function' } }],
-  'element.update': [{ args: { id: 'billing', description: 'Sends the invoices.' } }],
+  'element.update': [
+    { args: { id: 'billing', description: 'Sends the invoices.' } },
+    { args: { id: 'fn-tile', parentId: 'fn-other' } },
+    { args: { id: 'who', icon: 'truck' } },
+  ],
   'element.remove': [{ args: { id: 'fax' } }],
 
   connect: [{ args: { sourceId: 'billing', targetId: 'crm', label: 'invoices' } }],
@@ -287,16 +300,26 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
     // what lands is still the agent's.
     { args: { kind: 'container', applicationId: 'billing' }, on: [['diagram.create', { kind: 'container', applicationId: 'billing' }]] },
   ],
-  'diagram.update': [{ args: { id: 'l7', asOf: '2027-01-01' } }],
+  'diagram.update': [
+    { args: { id: 'l7', asOf: '2027-01-01' } },
+    { args: { id: 'sh', labels: ['fn-tile'], poster: { tile: 's', foot: 'Draft' }, paper: 'wide' } },
+  ],
+  'posterItem.add': [{ args: { diagramId: 'sh', kind: 'note', text: 'A note' } }],
+  'posterItem.update': [{ args: { diagramId: 'sh', id: 'it-1', text: 'Said again' } }],
+  'posterItem.remove': [{ args: { diagramId: 'sh', id: 'it-1' } }],
 
-  moveBy: [{ args: { elementIds: ['billing', 'crm'], dx: 40, dy: -20 } }],
-  placeNextTo: [{ args: { elementId: 'crm', anchorId: 'billing', side: 'below' } }],
-  'element.place': [{ args: { id: 'crm', x: 600, y: 500 } }],
+  moveBy: [{ args: { elementIds: ['billing', 'crm'], dx: 40, dy: -20 } }, { args: { diagramId: 'sh', elementIds: ['fn-area'], dx: 8, dy: 8 } }],
+  placeNextTo: [{ args: { elementId: 'crm', anchorId: 'billing', side: 'below' } }, { args: { diagramId: 'sh', elementId: 'it-1', anchorId: 'fn-area' } }],
+  'element.place': [
+    { args: { id: 'crm', x: 600, y: 500 } },
+    { args: { diagramId: 'sh', id: 'fn-area', x: 188, y: 200, width: 400 } },
+    { args: { diagramId: 'sh', id: 'fn-tile', cell: { col: 1, row: 0 } } },
+  ],
   'element.draw': [{ args: { id: 'fax' } }],
   'element.undraw': [{ args: { id: 'crm' } }],
   group: [{ args: { name: 'Sales', elementIds: ['crm'] } }],
   ungroup: [{ args: { name: 'Finance', elementIds: ['billing'] } }],
-  align: [{ args: { elementIds: ['billing', 'crm'], axis: 'top' } }],
+  align: [{ args: { elementIds: ['billing', 'crm'], axis: 'top' } }, { args: { diagramId: 'sh', elementIds: ['fn-area', 'it-1'], axis: 'top' } }],
   distribute: [{ args: { elementIds: ['billing', 'crm', 'who'], axis: 'horizontal' } }],
 }
 

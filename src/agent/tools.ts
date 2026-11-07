@@ -129,6 +129,12 @@ export type InputSchema = {
 export type ToolSpec<Name extends string = ToolName> = {
   readonly name: Name
   readonly tier: ToolTier
+  /**
+   * A see-tier tool that needs no screen when the diagram it names is a sheet
+   * (ADR-0048): placing there is arithmetic on fixed sizes, and a host with no
+   * screen offers it, as a write or as a read, and refuses it for a board.
+   */
+  readonly onASheet?: 'write' | 'read'
   readonly description: string
   readonly inputSchema: InputSchema
 }
@@ -284,6 +290,7 @@ const ELEMENT_FIELDS = {
   },
   accentColor: { type: 'string', description: 'The card\'s accent, as a hex colour like #2e86c1. Empty or null gives the theme\'s back.' },
   iconKey: { type: 'string', description: 'The mark drawn on the card, by its key in the icon registry. Empty or null takes it off.' },
+  icon: { type: 'string', description: 'A step or an actor: its picture on a sheet\'s poster, a shipped icon\'s name or a content address from images.list (image.upload puts one there). Empty or null takes it off.' },
   unitTypeId: {
     type: 'string',
     description: 'An actor only: the organisation\'s kind of unit it is, by the id of a unit type (unitTypes.list) — which makes it a unit '
@@ -3107,7 +3114,9 @@ const SPECS = [
       + 'paper an area not named there is widened until the page fits the paper\'s short side. '
       + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
       + 'journey band, every root. A technology landscape takes nothing here: everything on it is derived. Each list given replaces that list whole; null clears a field. A board '
-      + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
+      + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this. '
+      + 'A sheet\'s `labels` are the functions whose answering unit its poster shows on the tile (who answers is still relation.add '
+      + 'type assigned, in the same batch), and `poster` says its tile size, how many rows its journey takes and the free line at its foot.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3116,7 +3125,18 @@ const SPECS = [
         lanes: { type: 'array', description: 'A sheet: the actors that get a row of their own under the phases, in order.', items: { type: 'string' } },
         areas: { type: 'array', description: 'A sheet or a map: the function roots drawn, in order. Null draws every root.', items: { type: 'string' } },
         showActors: { type: 'boolean', description: 'A sheet: whether the stakeholder rail is drawn.' },
-        paper: { type: 'string', description: 'A sheet: the canvas it is laid out on. Null is the default, A2.', enum: ['A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
+        paper: { type: 'string', description: 'A sheet: the canvas it is laid out on; wide is what a new sheet starts on. Null is A2, what a sheet that says nothing means.', enum: ['wide', 'A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
+        labels: { type: 'array', description: 'A sheet: the functions whose answering unit its poster shows on the tile. Replaces the list; null clears it, and no assignment ends by it.', items: { type: 'string' } },
+        poster: {
+          type: 'object',
+          description: 'A sheet: what its poster says of its own. Each field given changes, null clears it; its free items stay, which are posterItem\'s.',
+          properties: {
+            tile: { type: 'string', description: 'How big its tiles are. Default m.', enum: ['s', 'm', 'l'] },
+            bandRows: { type: 'integer', description: 'How many rows its journey takes. Absent: two where one would leave its words too small.', minimum: 1, maximum: 2 },
+            foot: { type: 'string', description: 'The free line at the foot of its print.' },
+          },
+          additionalProperties: false,
+        },
         columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the canvas.' },
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
         asOf: { type: 'string', description: 'A board, an organisation chart or a Conway map: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
@@ -3222,8 +3242,64 @@ const SPECS = [
 
   // --- the see tier: structure first, then pixels, then relational placement ------
   {
+    name: 'posterItem.add',
+    tier: 'write',
+    description:
+      'A free note or picture on a sheet\'s poster: on this view only and no fact about the model, so it never stands in for a record. '
+      + 'A note takes `text`; a picture takes `image`, a content address from images.list, and `alt`, what it shows in words. Lands in a free place '
+      + 'unless x and y say; element.place moves it. First layout leaves it where it is.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        diagramId: { type: 'string', description: 'The sheet. Default: the one on screen.' },
+        kind: { type: 'string', description: 'Which it is.', enum: ['note', 'picture'] },
+        text: { type: 'string', description: 'A note\'s words.' },
+        image: { type: 'string', description: 'A picture\'s content address from images.list.' },
+        alt: { type: 'string', description: 'What a picture shows, in words. Required of one.' },
+        x: { type: 'number', description: 'Its left, in poster units.' },
+        y: { type: 'number', description: 'Its top.' },
+        width: { type: 'number', description: 'Its width. Default 220.' },
+        height: { type: 'number', description: 'Its height. Default 120.' },
+      },
+      required: ['kind'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'posterItem.update',
+    tier: 'write',
+    description: 'Change what a free note or picture on a sheet\'s poster says or shows. Where it is, is element.place.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('free item'),
+        diagramId: { type: 'string', description: 'The sheet. Default: the one on screen.' },
+        text: { type: 'string', description: 'A note\'s words.' },
+        image: { type: 'string', description: 'A picture\'s content address from images.list.' },
+        alt: { type: 'string', description: 'What a picture shows, in words.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'posterItem.remove',
+    tier: 'write',
+    description: 'Take a free note or picture off a sheet\'s poster. Its picture stays in the scope\'s images.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('free item'),
+        diagramId: { type: 'string', description: 'The sheet. Default: the one on screen.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'diagram.inspect',
     tier: 'see',
+    onASheet: 'read',
     description:
       'A layout report on a diagram, in geometry rather than pixels: the box around everything, on a '
       + 'landscape the rectangle of every band and of every domain group with its members, '
@@ -3231,8 +3307,9 @@ const SPECS = [
       + 'than they are filed in, group members outside their group, cards off the board, cards nothing '
       + 'connects to, and how full each band is. Lists are capped; totals are whole. Read this before '
       + 'and after moving anything, and read the band rectangles before choosing a coordinate. '
-      + 'On a business architecture sheet, which is laid out and has no geometry, it reports the page '
-      + 'instead: the stakeholder rail (the parties, then the units the sheet uses, with a count of the '
+      + 'On a business architecture sheet it reports the page instead, with `poster` saying where each block is, '
+      + 'whether anybody placed them, which overlap, the tiles in hand-placed cells, the blocks waiting under the page, '
+      + 'and the names a tile\'s clamp would likely cut: the stakeholder rail (the parties, then the units the sheet uses, with a count of the '
       + 'units it leaves out), the journey with a row per lane, and every area with what '
       + 'covers each capability. On an enterprise map it reports the rows — every function in tree '
       + 'order with the applications supporting it, rolled up on the sections — and the columns. On a '
@@ -3284,12 +3361,18 @@ const SPECS = [
   {
     name: 'diagram.tidy',
     tier: 'see',
+    onASheet: 'write',
     description:
       'Lay a diagram out, as the Tidy button does: the app\'s layout engine places every card and routes '
-      + 'every line. One undo step. Refuses a board over the cap. Answers with the layout report afterwards.',
+      + 'every line. One undo step. Refuses a board over the cap. Answers with the layout report afterwards. '
+      + 'On a sheet it is First layout, which is arithmetic: every block and hand-placed tile back to computed, so the '
+      + 'poster follows the model again and its free items stay. With tiles true, Reset tiles: only the hand-placed tiles.',
     inputSchema: {
       type: 'object',
-      properties: { diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' } },
+      properties: {
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+        tiles: { type: 'boolean', description: 'A sheet: only its hand-placed tiles flow again, and its blocks stay.' },
+      },
       additionalProperties: false,
     },
   },
@@ -3321,7 +3404,8 @@ const SPECS = [
   {
     name: 'moveBy',
     tier: 'see',
-    description: 'Nudge elements on a diagram by a distance, in flow coordinates. One undo step.',
+    onASheet: 'write',
+    description: 'Nudge elements on a diagram by a distance, in flow coordinates. One undo step. On a sheet: blocks (an area, the journey, the stakeholder column as rail) and free items, in poster units.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3337,6 +3421,7 @@ const SPECS = [
   {
     name: 'placeNextTo',
     tier: 'see',
+    onASheet: 'write',
     description:
       'Put an element beside another one on a diagram — to its right, left, above or below — with a gap, '
       + 'in the same band and domain group: kept inside the band, and the group\'s box grown to hold it. '
@@ -3357,11 +3442,15 @@ const SPECS = [
   {
     name: 'element.place',
     tier: 'see',
+    onASheet: 'write',
     description:
       'Put an element at a spot on a diagram, in flow coordinates, and on a landscape file it in a band '
       + 'or a domain group. A spot in another band than the one it is filed in is refused unless the band '
       + 'is named too; a card put in a band is kept inside it; a group named grows its box to hold the card, '
-      + 'and null takes the card out of its group. With only a group given the card lands at a free slot inside its box.',
+      + 'and null takes the card out of its group. With only a group given the card lands at a free slot inside its box. '
+      + 'On a sheet it places a block, in poster units on the 1860 wide page: an area or the journey by its id, the stakeholder '
+      + 'column as rail, a free item by its id, with width and height to resize. The first block placed writes every block, and the '
+      + 'poster stops following the first layout until diagram.tidy. A tile takes cell instead, in its block\'s grid, and null flows again.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3371,6 +3460,19 @@ const SPECS = [
         y: { type: 'number', description: 'The top edge, in flow coordinates.' },
         zone: { type: 'string', description: 'On a landscape: the band to file it in.', enum: ZONES },
         domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under; null for none.' },
+        width: { type: 'number', description: 'On a sheet: a block\'s or a free item\'s width.' },
+        height: { type: 'number', description: 'On a sheet: a block\'s or a free item\'s height.' },
+        cell: {
+          type: 'object',
+          description: 'On a sheet: a tile\'s place in its block\'s grid, counted from 0 at the top left. Null lets it flow again.',
+          properties: {
+            col: { type: 'integer', description: 'The column.', minimum: 0 },
+            row: { type: 'integer', description: 'The row.', minimum: 0 },
+            span: { type: 'integer', description: 'How many columns it takes. Default 1.', minimum: 1 },
+          },
+          required: ['col', 'row'],
+          additionalProperties: false,
+        },
       },
       required: ['id'],
       additionalProperties: false,
@@ -3451,6 +3553,7 @@ const SPECS = [
   {
     name: 'align',
     tier: 'see',
+    onASheet: 'write',
     description: 'Align two or more elements to a shared edge or centre line of their bounding box.',
     inputSchema: {
       type: 'object',
@@ -3466,6 +3569,7 @@ const SPECS = [
   {
     name: 'distribute',
     tier: 'see',
+    onASheet: 'write',
     description: 'Space three or more elements evenly along an axis, keeping the first and last where they are.',
     inputSchema: {
       type: 'object',
@@ -3555,7 +3659,7 @@ const SPECS = [
       + 'the next call that drives starts a new session.',
     inputSchema: NO_ARGUMENTS,
   },
-] as const satisfies readonly { name: string; tier: ToolTier; description: string; inputSchema: InputSchema }[]
+] as const satisfies readonly { name: string; tier: ToolTier; onASheet?: 'write' | 'read'; description: string; inputSchema: InputSchema }[]
 
 export type ToolName = (typeof SPECS)[number]['name']
 

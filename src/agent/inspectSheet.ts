@@ -24,11 +24,17 @@
  */
 import type { Coverage } from '../business/coverage'
 import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, paperHeight, sheetPaper, sheetPaperWidth, spanOf } from '../business/grid'
+import { nameLikelyCut, overlapsOf } from '../business/posterLayout'
+import type { PosterTileSize } from '../business/posterLayout'
+import { posterPlaces } from '../business/posterPlaces'
 import { sheetPage } from '../business/sheet'
 import type { RailGroup } from '../business/sheet'
 import type { Diagram, Model } from '../model/normalised'
-import { toArrays } from '../model/normalised'
+import { fromDiagram, toArrays } from '../model/normalised'
 import type { ElementId, SheetPaper } from '../model/types'
+
+/** A tile's width at each size, the narrowest a name is wrapped at. */
+const TILE_WIDTH: Readonly<Record<PosterTileSize, number>> = { s: 92, m: 98, l: 128 }
 
 /** How many of each list the report carries. The totals beside them are whole. */
 export const SHEET_LIMIT = 40
@@ -105,6 +111,29 @@ export type SheetReport = {
   }
   /** Function roots no domain has been given and this sheet does not draw (§9). */
   unmapped: { total: number; some: { id: ElementId; name: string }[] }
+  /**
+   * Where the poster's blocks are (ADR-0048), in units on its 1860 wide page, and
+   * what a person placing it would want said: nothing here is ever fixed by itself.
+   */
+  poster: {
+    /** Whether anybody has placed anything; absent places are the first layout, worked out each time. */
+    placed: boolean
+    width: number
+    height: number
+    bandRows: 1 | 2
+    tile: PosterTileSize
+    blocks: { id: ElementId; x: number; y: number; width: number; height: number }[]
+    /** Blocks with no room on the page, on a shelf under it: an area added since. */
+    waiting: ElementId[]
+    overlaps: { a: string; b: string }[]
+    /** Tiles placed by hand: the rest flow. */
+    handPlaced: { id: ElementId; col: number; row: number; span?: number }[]
+    /** The functions whose answering unit this poster shows on the tile. */
+    labels: ElementId[]
+    /** Names a tile's clamp would likely cut, as near as arithmetic knows. A print counts the real ones. */
+    namesCut: { total: number; some: ElementId[] }
+    items: { id: string; kind: 'note' | 'picture'; x?: number; y?: number; width?: number; height?: number }[]
+  }
   /** What the page adds up to, whatever the lists above had room for. */
   counts: {
     phases: number
@@ -152,10 +181,29 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
     ...area.capabilities,
   ])
 
+  const places = posterPlaces(page, fromDiagram(diagram))
+  const tile = diagram.poster?.tile ?? 'm'
+  const labelled = new Set(diagram.labels ?? [])
+  const cut = capabilities.filter((held) => nameLikelyCut(held.element.name, TILE_WIDTH[tile], labelled.has(held.element.id) ? 2 : undefined))
+
   return {
     diagramId: diagram.id,
     name: diagram.name,
     kind: 'sheet',
+    poster: {
+      placed: places.placed,
+      width: places.width,
+      height: places.height,
+      bandRows: places.bandRows,
+      tile,
+      blocks: places.blocks,
+      waiting: places.waiting.map((block) => block.id),
+      overlaps: overlapsOf(places.blocks),
+      handPlaced: Object.values(diagram.cells ?? {}),
+      labels: diagram.labels ?? [],
+      namesCut: { total: cut.length, some: cut.slice(0, limit).map((held) => held.element.id) },
+      items: (diagram.poster?.items ?? []).map((item) => ({ id: item.id, kind: item.kind, ...diagram.itemPlaces?.[item.id] })),
+    },
     journey: page.journey && {
       id: page.journey.element.id,
       name: page.journey.element.name,
@@ -186,7 +234,7 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
       })),
     },
     grid: {
-      paper: isSheetPaper(diagram.paper) ? diagram.paper : DEFAULT_PAPER,
+      paper: isSheetPaper(diagram.paper) || diagram.paper === 'wide' ? diagram.paper : DEFAULT_PAPER,
       ...(sheetPaperWidth(diagram) !== undefined ? { width: sheetPaperWidth(diagram) } : {}),
       ...(sheetPaper(diagram) !== undefined ? { height: paperHeight(sheetPaper(diagram)!) } : {}),
       ...(diagram.columns !== undefined ? { columns: diagram.columns } : {}),

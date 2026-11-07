@@ -53,6 +53,8 @@ import { landAcross } from './merge'
 import { moveObservation } from './move'
 import { isUnitRemoval, unitRemoval } from './write/removeUnit'
 import type { ChangeAcross } from './merge'
+import { tidySheet } from './write/poster'
+import { withDetail } from './write/shared'
 import type { Prepared } from './write/shared'
 import { scopeTypesToFollow } from './scopeTypes'
 import type { ScopeTypeFollowed } from './scopeTypes'
@@ -105,6 +107,11 @@ export type SessionView = {
    * conflict, or the project is read-only. A read still answers.
    */
   blocked(): Extract<AgentRefusal, 'agent.conflict' | 'agent.readOnly'> | undefined
+  /**
+   * This host has no screen (ADR-0048): a see-tier tool is refused, but for what
+   * a tool marked {@link ToolSpec.onASheet} does on a sheet. Absent on a desktop.
+   */
+  noScreen?: boolean
   /**
    * The one way in (ADR-0002): apply a command at the session, so it is one
    * undo step and one Activity line. Answers with nothing when the reducer
@@ -379,6 +386,9 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (wrong) return refused('agent.badArguments', wrong)
   const args = (request.args ?? {}) as Record<string, unknown>
 
+  const noScreen = wantsAScreen(request.tool, args, session)
+  if (noScreen) return noScreen
+
   // The report changes nothing, so it is answered like a read: while the
   // session is blocked, and without a command.
   if (request.tool === 'diagram.inspect') return inspectDiagram(view.model, view.activeDiagramId, args, session)
@@ -395,6 +405,11 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
     return refused('agent.stale', `the project is at revision ${session.revision()}, not ${args.ifRevision}`)
   }
 
+  if (request.tool === 'diagram.tidy') {
+    // First layout on a sheet is arithmetic, and a step like any other (ADR-0048).
+    const diagram = diagramOf(view.model, args, view.activeDiagramId)
+    if (diagram?.kind === 'sheet') return await landCommand(request.tool, tidySheet(args, diagram, writeView(session)), view.model, session)
+  }
   if (request.tool === 'diagram.tidy' || request.tool === 'diagram.route') {
     return seeing(request.tool, args, session)
   }
@@ -719,6 +734,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     ...(session.standInFor ? { standInFor: session.standInFor } : {}),
     ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...(session.people ? { people: session.people } : {}),
+    imageAddresses: () => new Set(session.images().map((image) => image.contentAddress)),
     ...whoOf(session),
     ...(session.mayModerate ? { mayModerate: session.mayModerate } : {}),
     ...over,
@@ -962,6 +978,8 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
   let activeDiagramId: string | undefined
   for (const [index, step] of steps.entries()) {
     if (!batchable(step.tool)) return refused('agent.badArguments', `steps[${index}]: ${step.tool} cannot be part of a batch`)
+    const noScreen = wantsAScreen(step.tool, (step.args ?? {}) as Record<string, unknown>, session, model)
+    if (noScreen) return withDetail(noScreen, `steps[${index}]`)
     // A step addressed to another scope is refused, not landed here: a batch
     // is one transaction at THIS session (ADR-0012 §10).
     const asked = scopeAsked(step.args)
@@ -986,6 +1004,20 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
   }
   session.dispatch(transaction(commands, { origin: 'agent' }), activeDiagramId ? { activeDiagramId } : undefined)
   return json({ steps: answers, revision: session.revision() })
+}
+
+/**
+ * The refusal a host with no screen answers a see-tier call with, unless the tool
+ * works on a sheet and a sheet is what it names. In one place for a call and a
+ * batch's step: a board is as far out of reach inside a batch as outside one.
+ */
+function wantsAScreen(tool: ToolName, args: Record<string, unknown>, session: SessionView, model = session.indexed()): AgentAnswer | undefined {
+  if (!session.noScreen) return undefined
+  const spec = toolSpec(tool)
+  if (spec.tier !== 'see') return undefined
+  const diagram = diagramOf(model, args, session.activeDiagramId())
+  if (spec.onASheet && (!diagram || diagram.kind === 'sheet')) return undefined
+  return refused('agent.noScreen', `${tool} on a ${diagram?.kind ?? 'view'} needs a screen; a sheet's poster does not`)
 }
 
 function diagramOf(model: Model, args: Record<string, unknown>, active: string): Diagram | undefined {

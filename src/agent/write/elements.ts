@@ -6,7 +6,8 @@
  * an element's fields the first two share: a new row is a bare row with the
  * same patch an update would lay over it.
  */
-import { transaction, placeOn } from '../../model/commands'
+import { tileLeft, transaction, placeOn } from '../../model/commands'
+import type { Command } from '../../model/commands'
 import type { Diagram } from '../../model/normalised'
 import { rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
 import { CANVAS_KINDS, canPlaceKind } from '../../model/placement'
@@ -124,8 +125,11 @@ export const updateElement: Handler = (args, view) => {
   // the refusal carries that scope so a client can go and open it.
   const owned = view.ownedElsewhere?.(id, patch)
   if (owned) return refused('check.ownedElsewhere', owned.owner ?? '')
+  const update: Command = { type: 'element.update', id, patch, origin: 'agent' }
+  // A tile moved to another block leaves its cell behind, on every sheet (ADR-0048).
+  const left = 'parentId' in patch && patch.parentId !== held.parentId ? tileLeft(view.model, id) : []
   return {
-    command: { type: 'element.update', id, patch, origin: 'agent' },
+    command: left.length ? transaction([update, ...left], { origin: 'agent' }) : update,
     answer: json({ id, changed: Object.keys(patch), ...misplacedBy(view, held, patch) }),
   }
 }
@@ -244,7 +248,7 @@ const dates: FieldReader = (args, held, _view, patch) => {
   return undefined
 }
 
-const look: FieldReader = (args, held, _view, patch) => {
+const look: FieldReader = (args, held, view, patch) => {
   if (args.aspects !== undefined && args.aspects !== null) {
     const aspects = { ...held.aspects }
     for (const [key, status] of Object.entries(args.aspects as Record<string, string | null>)) {
@@ -260,6 +264,14 @@ const look: FieldReader = (args, held, _view, patch) => {
   }
   if (args.iconKey !== undefined) {
     patch.iconKey = cleared(args.iconKey) ? undefined : args.iconKey
+  }
+  if (args.icon !== undefined) {
+    if (held.kind !== 'step' && held.kind !== 'actor') return refused('agent.badArguments', `"icon" is a step's or an actor's on a sheet's poster; this is a ${held.kind}`)
+    if (typeof args.icon === 'string' && args.icon.startsWith('sha256:')) {
+      const images = view.imageAddresses?.()
+      if (images && !images.has(args.icon)) return refused('agent.unknownId', `image ${args.icon}; upload it first with image.upload`)
+    }
+    patch.icon = cleared(args.icon) ? undefined : args.icon
   }
   return undefined
 }

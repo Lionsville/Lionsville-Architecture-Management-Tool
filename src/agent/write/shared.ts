@@ -60,6 +60,8 @@ export type WriteView = ReadView & {
    * known, which is what a session with no tree honestly has.
    */
   readonly known?: (id: ElementId) => boolean
+  /** The content addresses the scope's images hold, for a picture to name one. Absent, an address is taken as given. */
+  readonly imageAddresses?: () => ReadonlySet<string>
   /**
    * The stand-in this scope would keep of a platform or a service another
    * scope defines (ADR-0017, ADR-0020): the two caches and nothing of the
@@ -108,7 +110,7 @@ export function merged<T extends object>(held: T, patch: Partial<T>): T {
 
 // --- which diagram ----------------------------------------------------------------------
 
-function diagramOf(args: Args, view: ReadView): Diagram | undefined {
+export function diagramOf(args: Args, view: ReadView): Diagram | undefined {
   const id = typeof args.diagramId === 'string' ? args.diagramId : view.activeDiagramId
   return view.model.diagrams[id]
 }

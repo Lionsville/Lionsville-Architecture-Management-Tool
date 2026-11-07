@@ -7,8 +7,9 @@
  * Three answers differ from a board's, and each for the same reason — a sheet
  * has no geometry. The report is the page rather than the pixels; the picture
  * is the whole page rather than a crop, and comes from the page's own handle
- * rather than from the canvas; and tidy and route are refused as questions
- * about the model rather than about the drawing.
+ * rather than from the canvas; and on a map tidy and route are refused as
+ * questions about the model. A sheet's poster is placed (ADR-0048), so tidy is
+ * First layout there, at the end of this file, with what else places one.
  */
 import type { SheetReport } from './inspectSheet'
 import { describe, expect, it, vi } from 'vitest'
@@ -252,13 +253,11 @@ describe('diagram.render on a sheet', () => {
   })
 })
 
-describe('tidy and route on a sheet', () => {
-  it('are refused, because a sheet’s layout is a question about the model', async () => {
+describe('route on a sheet', () => {
+  it('is refused, because a sheet draws no lines', async () => {
     const { renderer } = fakePage()
-    for (const tool of ['diagram.tidy', 'diagram.route'] as const) {
-      expect(await handle({ id: '1', tool, args: { diagramId: 'sh-1' } }, session({ renderer })))
-        .toMatchObject({ ok: false, refusal: 'agent.badArguments' })
-    }
+    expect(await handle({ id: '1', tool: 'diagram.route', args: { diagramId: 'sh-1' } }, session({ renderer })))
+      .toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 })
 
@@ -401,5 +400,207 @@ describe('a function taken up from a scope above (ADR-0040 §5)', () => {
     expect((await handle({ id: '1', tool: 'diagram.update', args: { id: 'sh-1', areas: ['billing'] } }, at)).ok).toBe(true)
     const report = parsed(await handle({ id: '2', tool: 'diagram.inspect', args: { diagramId: 'sh-1' } }, at)) as never as SheetReport
     expect(report.unmapped.some.map((row) => row.id)).not.toContain('fulfilment')
+  })
+})
+
+describe('a sheet\'s poster, placed by an agent (ADR-0048)', () => {
+  const report = async (at: SessionView) => parsed(await handle({ id: '1', tool: 'diagram.inspect', args: { diagramId: 'sh-1' } }, at)) as never as SheetReport
+  const call = (at: SessionView, tool: string, args: Record<string, unknown>) => handle({ id: '1', tool: tool as never, args }, at)
+  const sheetIn = (at: SessionView) => at.current().diagrams.find((one) => one.id === 'sh-1')!
+
+  it('is computed until somebody places it, and opening or reading one writes nothing', async () => {
+    const at = session()
+    const before = at.revision()
+    const { poster } = await report(at)
+    expect(poster.placed).toBe(false)
+    expect(poster.blocks.map((block) => block.id)).toEqual(expect.arrayContaining(['ship', 'fulfilment', 'billing', 'rail']))
+    expect(poster.overlaps).toEqual([])
+    expect(at.revision()).toBe(before)
+    expect(sheetIn(at).geometry).toEqual({ nodes: [] })
+  })
+
+  it('writes every block on the first place, as one step, and the blocks nobody named stay where they were', async () => {
+    const at = session()
+    const { poster: first } = await report(at)
+    const out = await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1000, y: 800, width: 320 })
+    expect(out.ok).toBe(true)
+    expect(at.revision()).toBe(1)
+    const { poster } = await report(at)
+    expect(poster.placed).toBe(true)
+    expect(poster.blocks.find((block) => block.id === 'billing')).toMatchObject({ x: 1000, y: 800, width: 320 })
+    expect(poster.blocks.find((block) => block.id === 'fulfilment')).toEqual(first.blocks.find((block) => block.id === 'fulfilment'))
+    expect(poster.blocks.find((block) => block.id === 'rail')).toEqual(first.blocks.find((block) => block.id === 'rail'))
+    expect(sheetIn(at).geometry?.groups?.map((box) => box.id)).toEqual(['rail'])
+    expect(sheetIn(at).members).toEqual([])
+  })
+
+  it('writes only what moved after that, and places the column as rail', async () => {
+    const at = session()
+    await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1000, y: 800 })
+    await call(at, 'moveBy', { diagramId: 'sh-1', elementIds: ['rail'], dx: 0, dy: 40 })
+    expect(sheetIn(at).geometry?.groups?.[0]).toMatchObject({ id: 'rail', y: 40 })
+    expect(at.revision()).toBe(2)
+  })
+
+  it('says what lies over what, and fixes nothing', async () => {
+    const at = session()
+    const { poster: first } = await report(at)
+    const fulfilment = first.blocks.find((block) => block.id === 'fulfilment')!
+    const out = parsed(await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: fulfilment.x, y: fulfilment.y }))
+    expect(out.overlaps).toEqual(expect.arrayContaining([expect.objectContaining({ b: expect.any(String) })]))
+    expect((await report(at)).poster.overlaps.length).toBeGreaterThan(0)
+  })
+
+  it('lines blocks up and puts one beside another', async () => {
+    const at = session()
+    await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1000, y: 800 })
+    await call(at, 'align', { diagramId: 'sh-1', elementIds: ['billing', 'fulfilment'], axis: 'top' })
+    const blocks = (await report(at)).poster.blocks
+    expect(blocks.find((block) => block.id === 'billing')?.y).toBe(blocks.find((block) => block.id === 'fulfilment')?.y)
+    const beside = parsed(await call(at, 'placeNextTo', { diagramId: 'sh-1', elementId: 'billing', anchorId: 'fulfilment', side: 'below' }))
+    const anchor = blocks.find((block) => block.id === 'fulfilment')!
+    expect(beside).toMatchObject({ x: anchor.x, y: anchor.y + anchor.height + 10 })
+  })
+
+  it('puts a tile in a cell and lets it flow again, and knows a tile from a block', async () => {
+    const at = session()
+    const tile = (await report(at)).areas.some[0].groupings[0]?.capabilities[0]?.id ?? (await report(at)).areas.some[0].capabilities[0].id
+    expect((await call(at, 'element.place', { diagramId: 'sh-1', id: tile, cell: { col: 1, row: 2 } })).ok).toBe(true)
+    expect((await report(at)).poster.handPlaced).toEqual([{ id: tile, col: 1, row: 2 }])
+    expect((await call(at, 'element.place', { diagramId: 'sh-1', id: tile, cell: null })).ok).toBe(true)
+    expect((await report(at)).poster.handPlaced).toEqual([])
+    const asBlock = await call(at, 'element.place', { diagramId: 'sh-1', id: tile, x: 1, y: 1 })
+    expect(!asBlock.ok && asBlock.detail).toContain('is a tile')
+    const noCell = await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', cell: { col: 0, row: 0 } })
+    expect(!noCell.ok && noCell.detail).toContain('no tile')
+  })
+
+  it('clears a tile\'s cell when element.update moves it to another area, in one step', async () => {
+    const at = session()
+    const tile = (await report(at)).areas.some[0].groupings[0]?.capabilities[0]?.id ?? (await report(at)).areas.some[0].capabilities[0].id
+    await call(at, 'element.place', { diagramId: 'sh-1', id: tile, cell: { col: 1, row: 0 } })
+    const before = at.revision()
+    expect((await call(at, 'element.update', { id: tile, parentId: 'billing' })).ok).toBe(true)
+    expect(at.revision()).toBe(before + 1)
+    expect((await report(at)).poster.handPlaced).toEqual([])
+  })
+
+  it('takes First layout, and Reset tiles alone, each one step, with free items staying', async () => {
+    const at = session()
+    const tile = (await report(at)).areas.some[0].groupings[0]?.capabilities[0]?.id ?? (await report(at)).areas.some[0].capabilities[0].id
+    await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1000, y: 800 })
+    await call(at, 'element.place', { diagramId: 'sh-1', id: tile, cell: { col: 1, row: 0 } })
+    await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'note', text: 'Said here', x: 5, y: 5 })
+    const before = at.revision()
+    expect((await call(at, 'diagram.tidy', { diagramId: 'sh-1', tiles: true })).ok).toBe(true)
+    expect(at.revision()).toBe(before + 1)
+    expect((await report(at)).poster).toMatchObject({ placed: true, handPlaced: [] })
+    expect((await call(at, 'diagram.tidy', { diagramId: 'sh-1' })).ok).toBe(true)
+    const { poster } = await report(at)
+    expect(poster.placed).toBe(false)
+    expect(poster.items).toHaveLength(1)
+  })
+
+  it('adds a note and a picture, and holds a picture to words and to an image the scope has', async () => {
+    const held = 'sha256:abc'
+    const at = session({ images: () => [{ name: 'a.png', mediaType: 'image/png', size: 1, contentAddress: held }] as never })
+    const note = parsed(await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'note', text: 'Said here' }))
+    expect(note.id).toBeTypeOf('string')
+    const noAlt = await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'picture', image: held })
+    expect(!noAlt.ok && noAlt.detail).toContain('alt')
+    const unknown = await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'picture', image: 'sha256:nope', alt: 'A depot' })
+    expect(!unknown.ok && unknown.refusal).toBe('agent.unknownId')
+    expect((await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'picture', image: held, alt: 'A depot' })).ok).toBe(true)
+    expect((await call(at, 'element.place', { diagramId: 'sh-1', id: note.id as string, x: 700, y: 20 })).ok).toBe(true)
+    expect((await report(at)).poster.items[0]).toMatchObject({ id: note.id, x: 700, y: 20 })
+    expect((await call(at, 'posterItem.update', { diagramId: 'sh-1', id: note.id as string, text: 'Said again' })).ok).toBe(true)
+    expect((await call(at, 'posterItem.remove', { diagramId: 'sh-1', id: note.id as string })).ok).toBe(true)
+    expect((await report(at)).poster.items).toHaveLength(1)
+    const onBoard = await call(at, 'posterItem.add', { diagramId: 'l7', kind: 'note', text: 'x' })
+    expect(!onBoard.ok && onBoard.detail).toContain('sheet')
+  })
+
+  it('says what a poster shows with diagram.update, keeping its items, and labels are functions', async () => {
+    const at = session()
+    await call(at, 'posterItem.add', { diagramId: 'sh-1', kind: 'note', text: 'Said here' })
+    expect((await call(at, 'diagram.update', { id: 'sh-1', labels: ['billing'], poster: { tile: 's', bandRows: 1, foot: 'Draft' }, paper: 'wide' })).ok).toBe(true)
+    expect(sheetIn(at)).toMatchObject({ labels: ['billing'], paper: 'wide', poster: { tile: 's', bandRows: 1, foot: 'Draft' } })
+    expect(sheetIn(at).poster?.items).toHaveLength(1)
+    expect((await call(at, 'diagram.update', { id: 'sh-1', poster: { foot: null } })).ok).toBe(true)
+    expect(sheetIn(at).poster).not.toHaveProperty('foot')
+    expect(sheetIn(at).poster?.tile).toBe('s')
+    const notAFunction = await call(at, 'diagram.update', { id: 'sh-1', labels: ['ship'] })
+    expect(!notAFunction.ok && notAFunction.detail).toContain('functions')
+    const onBoard = await call(at, 'diagram.update', { id: 'l7', labels: ['billing'] })
+    expect(!onBoard.ok && onBoard.detail).toContain('a sheet')
+  })
+
+  it('gives a step and an actor an icon, and nothing else', async () => {
+    const at = session()
+    expect((await call(at, 'element.update', { id: 'ship', icon: 'truck' })).ok).toBe(true)
+    expect(at.current().elements.find((one) => one.id === 'ship')?.icon).toBe('truck')
+    expect((await call(at, 'element.update', { id: 'ship', icon: null })).ok).toBe(true)
+    expect(at.current().elements.find((one) => one.id === 'ship')).not.toHaveProperty('icon')
+    const onFunction = await call(at, 'element.update', { id: 'billing', icon: 'truck' })
+    expect(!onFunction.ok && onFunction.detail).toContain('icon')
+  })
+
+  it('takes back with undo, as any step', () => {
+    let model = fromArrays(host())
+    const step = apply(model, { type: 'node.set', diagramId: 'sh-1', nodes: [{ id: 'billing', x: 1, y: 1 }] })
+    if (!step.ok) throw new Error(step.reason)
+    model = step.model
+    const undone = apply(model, step.inverse)
+    expect(undone.ok && toArrays(undone.model).diagrams.find((one) => one.id === 'sh-1')?.geometry).toEqual({ nodes: [] })
+  })
+})
+
+describe('a host with no screen (ADR-0048)', () => {
+  const server = (over: Partial<SessionView> = {}) => session({ noScreen: true, renderer: undefined, activeDiagramId: () => '', ...over })
+  const call = (at: SessionView, tool: string, args: Record<string, unknown>) => handle({ id: '1', tool: tool as never, args }, at)
+
+  it('places a sheet, tidies it and reads the report, with no renderer anywhere', async () => {
+    const at = server()
+    expect((await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1000, y: 800 })).ok).toBe(true)
+    expect((await call(at, 'moveBy', { diagramId: 'sh-1', elementIds: ['billing'], dx: 8, dy: 0 })).ok).toBe(true)
+    const report = parsed(await call(at, 'diagram.inspect', { diagramId: 'sh-1' })) as never as SheetReport
+    expect(report.poster.blocks.find((block) => block.id === 'billing')?.x).toBe(1008)
+    expect((await call(at, 'diagram.tidy', { diagramId: 'sh-1' })).ok).toBe(true)
+    expect(at.current().diagrams.find((one) => one.id === 'sh-1')?.geometry).toEqual({ nodes: [] })
+  })
+
+  it('refuses every placing tool on a board, and the tools that have no sheet at all', async () => {
+    const at = server()
+    for (const [tool, args] of [
+      ['element.place', { diagramId: 'l7', id: 'billing', x: 1, y: 1 }],
+      ['moveBy', { diagramId: 'l7', elementIds: ['billing'], dx: 1, dy: 1 }],
+      ['diagram.tidy', { diagramId: 'l7' }],
+      ['diagram.inspect', { diagramId: 'l7' }],
+      ['diagram.route', { diagramId: 'sh-1' }],
+      ['element.draw', { diagramId: 'sh-1', id: 'billing' }],
+    ] as const) {
+      const out = await call(at, tool, args)
+      expect(!out.ok && out.refusal, tool).toBe('agent.noScreen')
+    }
+  })
+
+  it('refuses a board\'s placing inside a batch too, and lands a sheet\'s', async () => {
+    const at = server()
+    const onBoard = await call(at, 'batch', { steps: [{ tool: 'moveBy', args: { diagramId: 'l7', elementIds: ['billing'], dx: 1, dy: 1 } }] })
+    expect(!onBoard.ok && onBoard.refusal).toBe('agent.noScreen')
+    expect(at.revision()).toBe(0)
+    const onSheet = await call(at, 'batch', { steps: [
+      { tool: 'element.place', args: { diagramId: 'sh-1', id: 'billing', x: 8, y: 8 } },
+      { tool: 'diagram.update', args: { id: 'sh-1', labels: ['billing'] } },
+    ] })
+    expect(onSheet.ok).toBe(true)
+    expect(at.revision()).toBe(1)
+  })
+
+  it('refuses placing to somebody who may only read, and still reads the report', async () => {
+    const at = server({ blocked: () => 'agent.readOnly' })
+    const out = await call(at, 'element.place', { diagramId: 'sh-1', id: 'billing', x: 1, y: 1 })
+    expect(!out.ok && out.refusal).toBe('agent.readOnly')
+    expect((await call(at, 'diagram.inspect', { diagramId: 'sh-1' })).ok).toBe(true)
   })
 })

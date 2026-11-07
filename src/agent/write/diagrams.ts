@@ -14,7 +14,7 @@ import { DEFAULT_PAPER, isSheetPaper } from '../../business/grid'
 import { seedMap } from '../../business/map'
 import { rootsOfKind, seedSheet } from '../../business/sheetDiagram'
 import { isCompressedDrawing, linksFromXml } from '../../model/drawing'
-import type { C4Level, DesignDiagram } from '../../model/types'
+import type { C4Level, DesignDiagram, PosterSettings } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
@@ -168,6 +168,8 @@ const ONLY: readonly [field: string, allowed: (kind: Kind) => boolean, what: str
   ['columns', (kind) => kind === 'sheet', 'a sheet'],
   ['areaSpans', (kind) => kind === 'sheet', 'a sheet'],
   ['paper', (kind) => kind === 'sheet', 'a sheet'],
+  ['labels', (kind) => kind === 'sheet', 'a sheet'],
+  ['poster', (kind) => kind === 'sheet', 'a sheet'],
   ['areas', (kind) => kind === 'sheet' || kind === 'map', 'a sheet or a map'],
   // The day a view draws the model as of: a board's, and the organisation chart's and the Conway map's (ADR-0036 §7).
   ['asOf', (kind) => kind === 'layer7' || kind === 'container' || kind === 'chart' || kind === 'conway' || kind === 'sheet' || kind === 'map', 'a board, a business sheet, its Coverage, an organisation chart or a Conway map'],
@@ -258,7 +260,7 @@ const page: ViewField = (args, _model, patch) => {
   }
   if (args.paper === null) patch.paper = undefined
   else if (args.paper !== undefined) {
-    if (!isSheetPaper(args.paper)) return refused('agent.badArguments', '"paper" is A4, A3, A2, A1, A0 or fit')
+    if (!isSheetPaper(args.paper) && args.paper !== 'wide') return refused('agent.badArguments', '"paper" is wide, A4, A3, A2, A1, A0 or fit')
     patch.paper = args.paper === DEFAULT_PAPER ? undefined : args.paper
   }
   return undefined
@@ -280,6 +282,43 @@ const areaSpans: ViewField = (args, model, patch) => {
     }
     patch.areaSpans = Object.keys(spans).length ? spans : undefined
   }
+  return undefined
+}
+
+/** Which functions a poster shows who answers for (ADR-0048): a display choice, each a function of this scope's. */
+const labels: ViewField = (args, model, patch) => {
+  if (args.labels === null) patch.labels = undefined
+  else if (Array.isArray(args.labels)) {
+    for (const id of args.labels as string[]) {
+      const held = model.elements[id]
+      if (!held) return refused('agent.unknownId', `element ${id}`)
+      if (held.kind !== 'function') return refused('agent.badArguments', `"labels" must name functions; ${id} is a ${held.kind}`)
+    }
+    patch.labels = args.labels.length ? [...new Set(args.labels as string[])] : undefined
+  }
+  return undefined
+}
+
+/**
+ * What a poster says of its own: each given field changes, null clears it, and
+ * its free items stay, which are `posterItem`'s. A patch of `poster` carries the
+ * whole of it, so they are written back as they are.
+ */
+const poster: ViewField = (args, model, patch) => {
+  if (args.poster === undefined) return undefined
+  const held = model.diagrams[args.id as string]?.poster ?? {}
+  const asked = (args.poster ?? { tile: null, bandRows: null, foot: null }) as { tile?: 's' | 'm' | 'l' | null; bandRows?: number | null; foot?: string | null }
+  if (asked.bandRows !== undefined && asked.bandRows !== null && asked.bandRows !== 1 && asked.bandRows !== 2) {
+    return refused('agent.badArguments', '"bandRows" is 1 or 2')
+  }
+  const next: PosterSettings = { ...held }
+  if (asked.tile === null) delete next.tile
+  else if (asked.tile !== undefined) next.tile = asked.tile
+  if (asked.bandRows === null) delete next.bandRows
+  else if (asked.bandRows !== undefined) next.bandRows = asked.bandRows as 1 | 2
+  if (asked.foot === null || asked.foot === '') delete next.foot
+  else if (asked.foot !== undefined) next.foot = asked.foot
+  patch.poster = Object.keys(next).length ? next : undefined
   return undefined
 }
 
@@ -305,7 +344,7 @@ const xmlField: ViewField = (args, _model, patch) => {
   return undefined
 }
 
-const VIEW_FIELDS: readonly ViewField[] = [colourBy, showDeployment, journey, lanes, areas, page, areaSpans, asOf, xmlField]
+const VIEW_FIELDS: readonly ViewField[] = [colourBy, showDeployment, journey, lanes, areas, page, areaSpans, labels, poster, asOf, xmlField]
 
 /**
  * What a laid-out view is OF (ADR-0012 §6), and a board's day. Each id is

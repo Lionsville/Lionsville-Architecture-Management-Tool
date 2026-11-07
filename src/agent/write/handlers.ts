@@ -26,6 +26,7 @@ import { citePrinciple } from './citing'
 import { proposeChoice, rateEvaluation, startEvaluation } from './evaluations'
 import { updateBlock } from './buildingBlocks'
 import { createDiagram, updateDiagram } from './diagrams'
+import { addPosterItem, removePosterItem, updatePosterItem } from './poster'
 import { addElement, removeElement, updateElement } from './elements'
 import { claimFunction } from './functions'
 import {
@@ -158,6 +159,10 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
 
   'diagram.create': createDiagram,
   'diagram.update': updateDiagram,
+
+  'posterItem.add': addPosterItem,
+  'posterItem.update': updatePosterItem,
+  'posterItem.remove': removePosterItem,
 
   moveBy,
   placeNextTo,
