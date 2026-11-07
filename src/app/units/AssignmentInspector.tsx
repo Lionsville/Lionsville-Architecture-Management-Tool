@@ -45,7 +45,7 @@ import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram } from '../../model/types'
 import { dayBefore, loadOn, personOf, roleOn, shareOf, slotsOf } from '../../model/units'
-import type { Assignment } from '../../model/units'
+import type { Assignment, Organisation } from '../../model/units'
 import { registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
@@ -53,6 +53,7 @@ import type { PersonNames } from '../../people/ui/names'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { AssignDialog } from './AssignDialog'
+import { reportsInto } from './chartLines'
 import { HolderLines } from './HolderLines'
 import { organisationHere } from './organisationHere'
 
@@ -91,13 +92,15 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
   const entry = resolvePerson(personOf(held), registerOf(people?.people ?? []))
   const keptIn = props.keptIn
   const mayWrite = mayWriteHere(props, held)
+  const roleName = roleNameOf(roles, held.roleId)
   const load = (person: PersonId) => loadOn(organisation.assignments, person, day, names.canonical)
   return (
     <div data-testid="assignment-inspector" className="chart-held">
-      <Said held={held} unitName={unit?.name ?? held.unitId} roleName={roles.get(held.roleId)?.name ?? held.roleId}
+      <Said held={held} unitName={unit?.name ?? held.unitId} roleName={roleName}
         external={entry?.kind === 'external' && entry.state !== 'forgotten'} load={load(personOf(held))} day={day} names={names} language={language} t={t} />
       <HolderLines organisation={organisation} held={held} day={day} editable={mayWrite} scopeOf={(id) => at.unitAt(id)?.scope}
         names={names} dispatch={props.dispatch} s={t} />
+      <ReportsAndTime held={held} organisation={organisation} day={day} load={load(personOf(held))} names={names} t={t} />
       {keptIn && <KeptIn keptIn={keptIn} t={t} />}
       <div className="chart-held__acts">
         {mayWrite && people && unit && (
@@ -108,7 +111,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
         )}
       </div>
       {mayWrite && held.until === undefined && (
-        <EndOn key={held.id} held={held} day={day} today={props.today} person={names.text(pickedPerson(personOf(held)))} role={roles.get(held.roleId)?.name ?? held.roleId} language={language} t={t}
+        <EndOn key={held.id} held={held} day={day} today={props.today} person={names.text(pickedPerson(personOf(held)))} role={roleName} language={language} t={t}
           onEnd={(until) => props.dispatch({ type: 'assignment.update', id: held.id, patch: { until } })} />
       )}
       {correcting && people && unit && (
@@ -131,6 +134,32 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
 function mayWriteHere(props: AssignmentInspectorProps, held: Assignment): boolean {
   if (props.keptIn !== undefined) return false
   return !props.readOnly || mayChangeIn(props.people?.manages, held.unitId, held.roleId, held.id)
+}
+
+const roleNameOf = (roles: ReadonlyMap<string, { name: string }>, id: string) => roles.get(id)?.name ?? id
+
+/** Who reports to them, and how much of their time it is. */
+function ReportsAndTime({ held, organisation, day, load, names, t }: { held: Assignment; organisation: Organisation; day: string; load: number; names: PersonNames; t: Translate }) {
+  const into = reportsInto(organisation, held, day)
+  const share = shareOf(held)
+  const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
+  const unitName = (id: string) => organisation.units.find((one) => one.id === id)?.name ?? id
+  return (
+    <>
+      <p className="chart-held__h">{t('chart.assignmentReportsThem')}</p>
+      {into.length === 0
+        ? <p className="chart-held__quiet" data-testid="assignment-reports-none">{t('chart.assignmentNobody')}</p>
+        : into.map((one) => (
+          <p key={one.id} className="chart-held__line" data-testid="assignment-reports">
+            {names.text(pickedPerson(personOf(one)))}, {t('chart.assignmentIn', { role: roleName(one.roleId), unit: unitName(one.unitId) })}
+          </p>
+        ))}
+      <p className="chart-held__h">{t('chart.assignmentTime')}</p>
+      <p className="chart-held__line" data-testid="assignment-time">
+        {load <= share + 0.005 ? t('chart.assignmentTimeOnly', { share: Math.round(share * 100) }) : t('chart.assignmentTimeOf', { share: Math.round(share * 100), all: Math.round(load * 100) })}
+      </p>
+    </>
+  )
 }
 
 /** Where an assignment kept in another scope is changed, and the way there. */

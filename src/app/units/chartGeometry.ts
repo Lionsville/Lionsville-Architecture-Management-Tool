@@ -12,6 +12,8 @@ import type { ChartShape } from '../../model/orgChart'
 
 export type Rect = { left: number; top: number; right: number; bottom: number }
 export type Point = { x: number; y: number }
+/** A box a line leaves, and the name in it the line is about: the line starts at the box's edge, level with the name, so it crosses none of its words. */
+export type LineEnd = Rect & { at?: Point }
 
 /** How far under a parent the bus of an across row runs, as a share of the gap, and how far in a hanging rail is. */
 const RAIL_IN = 10
@@ -57,22 +59,24 @@ export function connectorsOf(parent: Rect, children: readonly Rect[], shape: Cha
  * Two boxes that overlap on neither axis go out and up, and within one box the
  * line hooks out of the left of the two rows.
  */
-export function routeBetween(a: Rect, b: Rect, within: boolean): Point[] {
+export function routeBetween(a: LineEnd, b: LineEnd, within: boolean): Point[] {
+  const xOf = (end: LineEnd) => end.at?.x ?? middleX(end)
+  const yOf = (end: LineEnd) => end.at?.y ?? middleY(end)
   if (within) {
     const bend = Math.min(a.left, b.left) - HOOK
-    return [{ x: a.left, y: middleY(a) }, { x: bend, y: middleY(a) }, { x: bend, y: middleY(b) }, { x: b.left, y: middleY(b) }]
+    return [{ x: a.left, y: yOf(a) }, { x: bend, y: yOf(a) }, { x: bend, y: yOf(b) }, { x: b.left, y: yOf(b) }]
   }
   if (b.bottom <= a.top || a.bottom <= b.top) {
     const down = b.top >= a.bottom
-    const start = { x: middleX(a), y: down ? a.bottom : a.top }
-    const end = { x: middleX(b), y: down ? b.top : b.bottom }
+    const start = { x: xOf(a), y: down ? a.bottom : a.top }
+    const end = { x: xOf(b), y: down ? b.top : b.bottom }
     if (Math.abs(start.x - end.x) < 1) return [start, { x: start.x, y: end.y }]
     const middle = (start.y + end.y) / 2
     return [start, { x: start.x, y: middle }, { x: end.x, y: middle }, end]
   }
   const rightwards = b.left >= a.left
-  const start = { x: rightwards ? a.right : a.left, y: middleY(a) }
-  const end = { x: rightwards ? b.left : b.right, y: middleY(b) }
+  const start = { x: rightwards ? a.right : a.left, y: yOf(a) }
+  const end = { x: rightwards ? b.left : b.right, y: yOf(b) }
   if (Math.abs(start.y - end.y) < 1) return [start, { x: end.x, y: start.y }]
   const middle = (start.x + end.x) / 2
   return [start, { x: middle, y: start.y }, { x: middle, y: end.y }, end]

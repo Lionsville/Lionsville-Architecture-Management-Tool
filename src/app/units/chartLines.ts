@@ -188,6 +188,23 @@ function* walkUnits(units: readonly ChartUnit[]): Generator<ChartUnit> {
   }
 }
 
+/** Who reports to a holder on the day: their ids, along any line that lands on them. What their panel says under *Reports to them*. */
+export function reportsInto(organisation: Organisation, picked: Assignment, day: string): Assignment[] {
+  const own = new Set(personLinesOn(organisation, day).map((line) => `${line.assignmentId}/${line.kind}`))
+  const byId = new Map(organisation.assignments.map((one) => [one.id, one]))
+  const found = new Map<string, Assignment>()
+  for (const line of everyLineOn(organisation, day)) {
+    const to = line.to
+    if (line.state !== 'lands' || !to || to.unitId !== picked.unitId || to.roleId !== picked.roleId) continue
+    if (to.person !== undefined && to.person !== personOf(picked)) continue
+    const from = line.assignmentId !== undefined
+      ? [byId.get(line.assignmentId)].filter((one): one is Assignment => one !== undefined)
+      : holdersOn(organisation.assignments, line.unitId, line.roleId, day).filter((one) => !own.has(`${one.id}/${line.kind}`))
+    for (const one of from) if (one.id !== picked.id) found.set(one.id, one)
+  }
+  return [...found.values()]
+}
+
 /** Each unit drawn, by the box it is shown in: its own, or the topmost folded unit above it. */
 function foldedInto(chart: OrgChart, folded: ReadonlySet<ElementId>): Map<ElementId, ElementId> {
   const shown = new Map<ElementId, ElementId>()

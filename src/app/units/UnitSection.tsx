@@ -100,6 +100,8 @@ import { PickToAdd } from '../../widgets/PickToAdd'
 import { SectionHeading } from '../../widgets/CompactForms'
 
 export type UnitSectionProps = {
+  /** A chart beside this inspector moves the unit itself, with the chart in view: true where it took the press. Absent or false: the dialog. */
+  moveHere?: (unitId: string) => boolean
   element: DesignElement
   readOnly: boolean
   /** The scope open: where this record is kept. */
@@ -308,7 +310,7 @@ function UnitParts(props: UnitSectionProps & {
  * anywhere in the organisation, in the dialog that says what the move does
  * before it lands (`useMoveUnit`).
  */
-function SitsUnder({ element, facts, editable, move, now, scopeLabel, name, s }: UnitSectionProps & {
+function SitsUnder({ element, facts, editable, move, moveHere, now, scopeLabel, name, s }: UnitSectionProps & {
   now: string; facts: Facts; editable: boolean; name: (person: string) => string
 }) {
   const moving = useMoveUnit({
@@ -322,7 +324,7 @@ function SitsUnder({ element, facts, editable, move, now, scopeLabel, name, s }:
       {moving.open
         ? (
           <Button
-            size="small" variant="text" onClick={() => moving.open?.(element.id)} aria-label={s('unitMove.sitsUnderMove', { parent: where })}
+            size="small" variant="text" onClick={() => { if (!moveHere?.(element.id)) moving.open?.(element.id) }} aria-label={s('unitMove.sitsUnderMove', { parent: where })}
             title={s('unitMove.openNamed', { name: element.name })}
             data-testid="unit-sits-under-move" data-guide="unit.sitsUnder"
             sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 13, textTransform: 'none', justifyContent: 'flex-start' }}

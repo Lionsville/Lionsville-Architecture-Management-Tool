@@ -75,11 +75,11 @@ const seam = () => screen.getByRole('separator', { name: 'Resize the outline' })
 const pointer = (type: string, init: MouseEventInit) => new MouseEvent(type, { button: 0, bubbles: true, cancelable: true, ...init })
 
 describe('a first open of a small chart', () => {
-  it('shows the top units and the units under them, folds the rest, and says so', () => {
+  it('shows the top units and the units under them, folds the rest, and the Levels control says so', () => {
     renderShell(<Harness />)
     // Seven units, so no size rule folds them: the departments fold because they are on the second level.
     expect(drawn()).toEqual(['ops', 'hub', 'yard'])
-    expect(screen.getByTestId('chart-folded-note').textContent).toMatch(/^Opened two levels deep/)
+    expect(screen.getByRole('radio', { name: '2' }).getAttribute('aria-checked')).toBe('true')
     expect(within(outline()).getAllByTestId('chart-outline-unit').map((row) => row.getAttribute('data-unit-id'))).toEqual(['ops', 'hub', 'yard'])
   })
 
@@ -89,7 +89,7 @@ describe('a first open of a small chart', () => {
     fireEvent.click(within(outline()).getByRole('button', { name: 'Unfold Hub' }))
     expect(drawn()).toEqual(expect.arrayContaining(['sort']))
     // The team itself is folded on neither: it was never on the second level.
-    fireEvent.click(within(outline()).getByRole('button', { name: 'Team Sorting' }))
+    fireEvent.click(within(outline()).getByRole('button', { name: 'Sorting' }))
     expect(drawn()).toEqual(expect.arrayContaining(['sort', 'night']))
     expect(onSelect).toHaveBeenLastCalledWith('sort')
   })
@@ -133,21 +133,11 @@ describe('the outline\'s width', () => {
 })
 
 describe('a unit type\'s name on the chart', () => {
-  it('cuts each long word on the box and in the outline, with the whole name on hover and in the accessible name', async () => {
+  it('says the whole word on the box, and leaves it off the outline', async () => {
     renderShell(<Harness />)
     const hub = screen.getAllByTestId('chart-unit').find((box) => box.getAttribute('data-element-id') === 'hub')!
-    const label = within(hub).getAllByTestId('chart-type-label')[0]!
-    expect(label.getAttribute('title')).toBe('Organisational department')
-    expect(label.querySelector('[aria-hidden="true"]')?.textContent).toBe('Organi. depart.')
-    // The box's button and the outline's row are named by the whole type.
-    expect(within(hub).getByRole('button', { name: 'Organisational department Hub' })).toBeTruthy()
-    const row = within(outline()).getByRole('button', { name: 'Organisational department Hub' })
-    expect(within(row).getByTestId('chart-type-label').getAttribute('title')).toBe('Organisational department')
-    // A short name is drawn as it is, with no hover of its own.
-    const ops = screen.getAllByTestId('chart-unit').find((box) => box.getAttribute('data-element-id') === 'ops')!
-    const opsName = within(ops).getAllByTestId('chart-unit-open')[0]!
-    expect(opsName.textContent).toBe('RegionOperations')
-    expect(within(opsName).queryByTestId('chart-type-label')).toBeNull()
+    expect(within(hub).getByText('Organisational department')).toBeTruthy()
+    expect(within(outline()).getByRole('button', { name: 'Hub' }).textContent).toBe('Hub')
     expect(await axeFindings()).toEqual([])
   })
 })

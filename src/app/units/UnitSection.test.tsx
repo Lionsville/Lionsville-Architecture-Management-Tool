@@ -510,11 +510,10 @@ describe('a unit a manager changes the people of, where the scope is only read',
     expect(within(screen.getByTestId('unit-type')).queryByRole('combobox')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
     const dialog = await screen.findByTestId('assign-dialog')
-    fireEvent.mouseDown(within(dialog).getByRole('combobox'))
-    // The unit's slots first; the organisation's other roles apart, under a heading, as exceptions.
-    expect(screen.getAllByRole('option').map((one) => one.textContent).slice(0, 2)).toEqual(['Product owner', 'Developer'])
-    expect(screen.getByTestId('assign-other-roles').textContent).toBe('Another role (an exception)')
-    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    // The unit's slots first; the organisation's other roles after them, each said to be an exception.
+    const offered = within(within(dialog).getByTestId('assign-role')).getAllByRole('option').map((one) => one.textContent)
+    expect(offered.slice(0, 2)).toEqual(['Product owner', 'Developer'])
+    expect(offered.slice(2).every((one) => one?.endsWith('(an exception)'))).toBe(true)
     fireEvent.click(within(dialog).getByTestId('person-pick-pe-ivo'))
     fireEvent.click(within(dialog).getByTestId('assign-save'))
     expect(commands).toEqual([{
@@ -573,9 +572,7 @@ describe('a unit whose role reports to a manager by a line, where the scope is o
     expect(screen.queryByTestId('assign-dialog')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
     const dialog = await screen.findByTestId('assign-dialog')
-    fireEvent.mouseDown(within(dialog).getByRole('combobox'))
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Developer'])
-    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    expect(within(within(dialog).getByTestId('assign-role')).getAllByRole('option').map((one) => one.textContent)).toEqual(['Developer'])
     fireEvent.click(within(dialog).getByTestId('person-pick-pe-gijs'))
     fireEvent.click(within(dialog).getByTestId('assign-save'))
     expect(commands).toEqual([{

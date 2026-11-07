@@ -154,6 +154,8 @@ describe('from the organisation chart to the person', () => {
     const held = heldRepositories([organisation])
     await held.people.bringIn([PIA, SARA])
     renderApp({ repositories: held, today: () => TODAY, boot: { initialProject: organisation } })
+    fireEvent.click(await screen.findByRole('button', { name: 'People: Leaders' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Required roles' }))
     await waitFor(() => expect(screen.getByTestId('chart-holder').textContent).toBe('Sara Kaya'))
     fireEvent.click(screen.getByTestId('chart-holder'))
     const inspector = await screen.findByTestId('assignment-inspector')

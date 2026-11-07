@@ -26,6 +26,9 @@ export type ChartChoosing = {
   chosenOn: (diagramId: string) => string | undefined
   /** Choose one on a chart; nothing lets the choice go. */
   choose: (diagramId: string, assignmentId: string | undefined) => void
+  /** A unit a press outside the chart asked it to move, which its panel then opens for. */
+  moveAskedOn: (diagramId: string) => { unitId: string; nonce: number } | undefined
+  askMove: (diagramId: string, unitId: string) => void
 }
 
 export function useChartChoice(): ChartChoosing {
@@ -37,5 +40,8 @@ export function useChartChoice(): ChartChoosing {
       return was?.diagramId === diagramId && was.assignmentId === assignmentId ? was : { diagramId, assignmentId }
     })
   }, [])
-  return useMemo(() => ({ chosenOn, choose }), [chosenOn, choose])
+  const [asked, setAsked] = useState<{ diagramId: string; unitId: string; nonce: number } | undefined>(undefined)
+  const moveAskedOn = useCallback((diagramId: string) => (asked?.diagramId === diagramId ? { unitId: asked.unitId, nonce: asked.nonce } : undefined), [asked])
+  const askMove = useCallback((diagramId: string, unitId: string) => setAsked((was) => ({ diagramId, unitId, nonce: (was?.nonce ?? 0) + 1 })), [])
+  return useMemo(() => ({ chosenOn, choose, moveAskedOn, askMove }), [chosenOn, choose, moveAskedOn, askMove])
 }

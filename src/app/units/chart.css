@@ -31,6 +31,7 @@
 .org-under[data-shape='across'] > .org-branch[data-spreads] > .org-node { align-self: center; width: var(--org-box-w); }
 .org-under[data-shape='hanging'] { flex-direction: column; gap: var(--s-1); margin-top: calc(var(--s-2) - var(--s-4)); padding-inline-start: 18px; }
 .org-under[data-shape='grid'] { display: grid; grid-template-columns: repeat(3, minmax(200px, 1fr)); gap: var(--s-2); width: 100%; }
+.chart-assign[data-flat] { width: auto; padding: 0; }
 .org-tree { --org-box-w: 168px; }
 .org-tree[data-focused] { width: 100%; }
 .org-branch[data-focus] { width: 100%; }
@@ -150,8 +151,8 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-assign__check { display: flex; align-items: center; gap: var(--s-1); }
 .chart-assign__said { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
 .chart-assign__said[data-tone='error'] { color: var(--bad); }
-.chart-assign__foot { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
-.chart-assign__grow { flex: 1 1 auto; }
+.chart-assign__foot { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-2); }
+.chart-assign__foot .chart-assign__said { flex-basis: 100%; }
 .chart-read__sample { display: inline-block; }
 .chart-read__box { display: inline-block; width: 40px; height: 18px; border: 1px dashed var(--ink-3); border-radius: var(--r-2); vertical-align: middle; }
 
@@ -170,3 +171,5 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-held__acts { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
 /* The dock sits over the canvas, clear of the line under it. */
 .chart-page__work > .kit-dock[data-corner] { bottom: calc(var(--target-min) + var(--s-3)); }
+.chart-held__h { margin: var(--s-3) 0 2px; color: var(--ink-2); font-weight: var(--fw-strong); }
+.chart-move__holder { display: contents; }

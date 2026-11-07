@@ -486,8 +486,8 @@ export function focusedOn(chart: OrgChart, id: ElementId | undefined): ChartUnit
 /** How a unit's units are drawn under it: beside each other where any has units of its own, else hanging in a column; in a grid where a focus has room for one. */
 export type ChartShape = 'across' | 'hanging' | 'grid'
 
-/** How many units under a focused one it takes for a grid to read better than a column. */
-const GRID_FROM = 4
+/** How many units under a focused one it takes for a grid to read better than a column as wide as the window. */
+const GRID_FROM = 2
 
 export function shapeOf(unit: Pick<ChartUnit, 'children'>, folded: ReadonlySet<ElementId>, focused = false): ChartShape {
   if (unit.children.some((child) => drawsUnitsBelow(child, folded))) return 'across'

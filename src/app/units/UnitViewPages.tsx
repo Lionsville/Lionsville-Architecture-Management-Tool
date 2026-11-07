@@ -84,8 +84,9 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
     onOpenOperating: () => (scope === ROOT_SCOPE ? parts.pages.openOperating() : onOpenScope?.(ROOT_SCOPE, { page: 'operating' })),
   }), [scopes, writable, session.dispatch, session.ids, writeIn, scope, parts.pages.openOperating, onOpenScope])
   if (kind === 'chart') {
-    const { chosenOn, choose } = parts.pages.chartChoice
+    const { chosenOn, choose, moveAskedOn } = parts.pages.chartChoice
     const chosen = chosenOn(diagram.id)
+    const moveAsked = moveAskedOn(diagram.id)
     return (
       <ChartPage
         {...common} {...(select ? { select } : {})} {...(chosen !== undefined ? { chosen } : {})}
@@ -94,6 +95,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
         scope={scope} {...(props.shell.folds ? { folds: props.shell.folds } : {})} reorder={parts.landMoves}
         make={make} {...(view.outline ? { outline: view.outline } : {})}
         {...(view.onDock ? { onDock: view.onDock } : {})} {...(view.day ? { day: view.day } : {})}
+        {...(moveAsked ? { moveAsked } : {})}
       />
     )
   }

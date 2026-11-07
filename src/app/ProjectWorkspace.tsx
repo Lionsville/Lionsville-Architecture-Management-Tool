@@ -408,10 +408,11 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     published: source.publishesSteps ?? false, onTreeChanged, origin: 'agent',
   })
   const agentLandSteps = useCallback<LandSteps>((steps) => agentLandStructure(steps, DELETE_BARRIER), [agentLandStructure])
+  const chartMove = useRef<((unitId: string) => boolean) | undefined>(undefined)
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
-    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, deleting, s,
+    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, deleting, s, chartMove,
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
   const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })
@@ -443,7 +444,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   }), [index, writeIn, today, notify, s, project.path, session.model, session.dispatch, base.readOnly, source.writable, source.readOnly])
   // Where a unit made on the chart is filed in another scope (3.6.2): written there, under its rights.
   const unitWrites = useMemo(() => ({ writeIn, writable: source.writable ?? writableLikeHere(source.readOnly ?? false) }), [writeIn, source.writable, source.readOnly])
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, agentLandSteps, marking, unitWrites }
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, chartMove, viewing, landMoves, agentLandSteps, marking, unitWrites }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */
@@ -490,6 +491,9 @@ function useScreenParts(
     maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome, documentationShown: requests.documentationShown,
     duplicateBoard: base.diagrams.onDuplicateDiagram,
   })
+  // A unit's *Sits under* beside a chart moves it with the chart in view, as the chart's own Move to… does.
+  const shownView = session.model.diagrams.find((one) => one.id === session.activeDiagramId)
+  tree.chartMove.current = shownView?.kind === 'chart' ? (unitId) => { pages.chartChoice.askMove(shownView.id, unitId); return true } : undefined
   useWorkspaceAgentView({
     session, scope: project.path, indexRef: base.indexRef, rowsElsewhereRef: tree.readings.rowsElsewhereRef,
     scopes: props.tree.scopes, reader: source.repositories.scopes, ancestorRecords: base.ancestorRecords, readOnly: base.readOnly,

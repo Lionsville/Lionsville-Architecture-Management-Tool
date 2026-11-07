@@ -103,7 +103,11 @@ function Harness({ scope = 'shipping', root = ROOT, shipping = SHIPPING, command
 }
 
 const unitBox = (id: string) => screen.getAllByTestId('chart-unit').find((box) => box.getAttribute('data-element-id') === id)!
-const addInside = (id: string) => within(unitBox(id)).getAllByTestId('chart-add-inside')[0]
+/** The unit picked, as the verbs on a box are the picked box's. */
+const addInside = (id: string) => {
+  fireEvent.click(within(unitBox(id)).getByTestId('chart-unit-open'))
+  return within(unitBox(id)).getByTestId('chart-add-inside')
+}
 const dialog = () => screen.getByTestId('new-unit-dialog')
 const typesOffered = async () => {
   fireEvent.mouseDown(within(dialog()).getAllByRole('combobox')[0])
@@ -172,8 +176,9 @@ describe('a unit made at the top', () => {
     const commands: Command[] = []
     const written: Written[] = []
     renderShell(<Harness scope="" commands={commands} written={written} />)
-    // Shipping's units serve the organisation from below: the chart draws them, and the bar and the outline offer the top.
-    expect(screen.getByTestId('chart-outline-add').textContent).toBe('+ Unit at the top')
+    // Shipping's units serve the organisation from below: the chart draws them, and the bar offers the top.
+    expect(screen.getByTestId('chart-add-top').textContent).toBe('+ Unit')
+    expect(screen.getByTestId('chart-add-top').getAttribute('title')).toBe('+ Unit at the top')
     fireEvent.click(screen.getByTestId('chart-add-top'))
     expect(within(dialog()).getByRole('heading').textContent).toBe('New unit at the top')
     expect(await typesOffered()).toEqual(['Domain', 'Cluster'])

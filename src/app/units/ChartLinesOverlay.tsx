@@ -24,7 +24,7 @@ import type { ChartShape } from '../../model/orgChart'
 import { KeyStrip } from '../../widgets/kit/KeyStrip'
 import { arrowAt, Line, LineLabel } from '../../widgets/kit/Line'
 import { connectorsOf, middleOf, pathOf, routeBetween } from './chartGeometry'
-import type { Point, Rect } from './chartGeometry'
+import type { LineEnd, Point, Rect } from './chartGeometry'
 import type { ChartLine, ChartLineEnd } from './chartLines'
 
 export type { Rect }
@@ -118,6 +118,15 @@ function anchorsOf(boxes: ReadonlyMap<string, HTMLElement>, end: ChartLineEnd): 
   return row ? [{ element: row }] : whole(false)
 }
 
+/** An end of a line as it is measured: the box the name is in, and the name. */
+function endOf(element: HTMLElement, rectOf: (element: Element) => Rect | undefined): LineEnd | undefined {
+  const box = element.closest('[data-tree-box]')
+  const rect = rectOf(box ?? element)
+  const name = rectOf(element)
+  if (!rect || !name) return undefined
+  return box === element ? rect : { ...rect, at: { x: (name.left + name.right) / 2, y: (name.top + name.bottom) / 2 } }
+}
+
 /** Where each line runs, measured from the names on the stage. */
 function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, redraw: unknown): Drawn[] {
   const [drawn, setDrawn] = useState<Drawn[]>([])
@@ -131,8 +140,8 @@ function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, re
       for (const from of anchorsOf(boxes, line.from)) {
         for (const to of anchorsOf(boxes, line.to)) {
           if (from.element === to.element) continue
-          const a = rectOf(from.element)
-          const b = rectOf(to.element)
+          const a = endOf(from.element, rectOf)
+          const b = endOf(to.element, rectOf)
           if (!a || !b) continue
           const folded = to.folded ?? from.folded
           next.push({ key: `${line.key}:${next.length}`, points: routeBetween(a, b, line.within === true), line, ...(folded !== undefined ? { folded } : {}) })
@@ -164,6 +173,7 @@ export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
     const tag = tagOf(one.line, one.folded, unitName, t)
     return tag ? [{ key: one.key, tag, at: middleOf(one.points) }] : []
   })
+  if (lines.length === 0) return null
   return (
     <>
       <svg className="org-lines" aria-hidden="true" data-testid="chart-lines">
@@ -181,7 +191,7 @@ export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
         })}
       </svg>
       {tags.map(({ key, tag, at }) => (
-        <div key={key} className="org-line__tag" style={{ left: at.x, top: at.y }} data-testid="chart-line-tag">
+        <div key={key} className="org-line__tag" style={{ left: at.x, top: at.y }} data-testid="chart-tag">
           <LineLabel words={tag.words} />
         </div>
       ))}

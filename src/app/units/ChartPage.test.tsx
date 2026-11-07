@@ -104,8 +104,9 @@ const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', nam
 const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
 
 /** The chart over the shipping scope's session, changed by the model's own writer, with the editor's selection and the chart's choice held as the workspace holds them. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select, root = ROOT, onHandle }: {
+function Harness({ onDock, asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true, select, root = ROOT, onHandle }: {
   root?: HostModel
+  onDock?: (shown: boolean) => void
   onHandle?: (handle: { selectedId?: string } | undefined) => void
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
@@ -135,7 +136,7 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
       scopeLabel={(path) => LABELS[path] ?? path} {...(selectedId !== undefined ? { selectedId } : {})}
       onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} {...(select ? { select } : {})} {...(onHandle ? { onHandle } : {})}
       {...(choosing ? { onChoose: setChosen, ...(chosen !== undefined ? { chosen } : {}) } : {})}
-      assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }} folds={folds}
+      assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }} folds={folds} {...(onDock ? { onDock } : {})}
     />
     </PersonNamesProvider>
   )
@@ -143,15 +144,22 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
 
 const units = () => screen.getAllByTestId('chart-unit').map((box) => box.getAttribute('data-element-id'))
 const unitBox = (id: string) => screen.getAllByTestId('chart-unit').find((box) => box.getAttribute('data-element-id') === id)!
+/** A word on the bar opened, and one of its items pressed. */
+const pressMenu = (word: string, item: string) => {
+  fireEvent.click(screen.getByRole('button', { name: word }))
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: item }))
+}
 
 describe('the organisation chart', () => {
   it('draws the units of its scope as a tree, and a unit serving it from above', () => {
     renderShell(<Harness commands={[]} />)
     // A domain's lane is above a cluster's, which may sit in one: Shipping first.
     expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
-    expect(within(unitBox('pf')).getAllByTestId('chart-unit').map((box) => box.getAttribute('data-element-id'))).toEqual(['tt'])
+    expect(unitBox('tt').closest('[data-tree-under]')?.getAttribute('data-tree-under')).toBe('pf')
     expect(within(unitBox('data')).getByTestId('chart-badge-serves').textContent).toBe('serves Shipping · Warehouse')
-    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people')
+    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 vacant')
+    // The organisation stands at the top, with its units under it.
+    expect(screen.getByTestId('chart-organisation').textContent).toBe('the organisation')
   })
 
   it('names each holder through the register, marks you, the people over all of their time, and the vacancies', () => {
@@ -164,38 +172,52 @@ describe('the organisation chart', () => {
   })
 
   /** Moved on purpose (3.6.1): the findings and the legend are the summary's, in the inspector beside the chart. */
-  it('says no findings under the chart and no legend on its bar', () => {
+  it('says its findings once, in the panel, opened from a line under the chart, and keeps a legend in a corner of its own', () => {
     renderShell(<Harness commands={[]} />)
     expect(screen.queryByTestId('chart-findings')).toBeNull()
     expect(screen.queryByTestId('chart-finding')).toBeNull()
-    expect(within(screen.getByTestId('chart-bar')).queryByText(/Dashed/)).toBeNull()
+    expect(screen.getByTestId('chart-summary-line').textContent).toMatch(/to look at/)
+    expect(screen.getByTestId('chart-lines-legend')).toBeTruthy()
   })
 
-  it('draws an optional role nobody holds only under Show optional roles, and a vacancy always', async () => {
+  it('has the inspector up only for what is picked, and for the summary asked for', () => {
+    const onDock = vi.fn()
+    const { rerender } = renderShell(<Harness commands={[]} onDock={onDock} />)
+    expect(onDock).toHaveBeenLastCalledWith(false)
+    fireEvent.click(screen.getByTestId('chart-summary-line'))
+    expect(onDock).toHaveBeenLastCalledWith(true)
+    fireEvent.click(screen.getByTestId('chart-summary-line'))
+    expect(onDock).toHaveBeenLastCalledWith(false)
+    rerender(<Harness commands={[]} onDock={onDock} selectedId="tt" />)
+    expect(onDock).toHaveBeenLastCalledWith(true)
+  })
+
+  it('draws leaders, required roles or all of them, by the People menu', async () => {
     renderShell(<Harness commands={[]} />)
     // Parcel & Freight has a lead and no coach, who is optional; Track & Trace is a developer short.
     expect(within(unitBox('pf')).queryByTestId('chart-slot-ro-coach')).toBeNull()
     expect(within(unitBox('tt')).getByTestId('chart-vacant')).toBeTruthy()
-    const shown = screen.getByRole('switch', { name: 'Show optional roles' })
-    expect((shown as HTMLInputElement).checked).toBe(false)
-    fireEvent.click(shown)
+    pressMenu('People: Required roles', 'All roles')
     const coach = within(unitBox('pf')).getByTestId('chart-slot-ro-coach')
-    expect(coach.textContent).toBe('Agile coach+ assign')
+    expect(coach.textContent).toBe('Agile coach: assign')
     expect(within(coach).getByTestId('chart-assign')).toBeTruthy()
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(shown)
+    pressMenu('People: All roles', 'Leaders')
     expect(within(unitBox('pf')).queryByTestId('chart-slot-ro-coach')).toBeNull()
+    // Track & Trace's developers are no leaders; its product owner is.
+    expect(within(unitBox('tt')).queryByTestId('chart-slot-ro-dev')).toBeNull()
   })
 
-  it('lays the units out in a grid that uses the width, a whole row for each one drawn with units under it', () => {
+  it('hangs units with nothing under them in a column, and draws units with units of their own across', () => {
     renderShell(<Harness commands={[]} />)
-    // Shipping and Parcel & Freight have units under them; Track & Trace and Data & Integration do not.
-    expect(screen.getAllByTestId('chart-unit').filter((box) => box.getAttribute('data-wide') === 'true').map((box) => box.getAttribute('data-element-id')))
-      .toEqual(['shipping', 'pf'])
-    expect(within(unitBox('pf')).getByTestId('chart-units').contains(unitBox('tt'))).toBe(true)
-    // Folded, a unit takes one cell like a team, and says what it hides.
+    // The top units are always across; Shipping's cluster has a team of its own; that team hangs from it.
+    expect(unitBox('pf').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('across')
+    expect(unitBox('tt').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('hanging')
+    expect(unitBox('shipping').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('across')
+    // Folded, a unit says what it hides.
     fireEvent.click(within(unitBox('pf')).getByRole('button', { name: 'Fold Parcel & Freight' }))
-    expect(unitBox('pf').getAttribute('data-wide')).toBeNull()
+    expect(within(unitBox('pf')).getByTestId('chart-rollup').textContent).toBe('1 unit · 1 vacant')
+    expect(unitBox('pf').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('hanging')
   })
 
   it('is on its day: a unit ended with somebody still in it is drawn ended, its badge says when', () => {
@@ -331,7 +353,7 @@ describe('the organisation chart', () => {
     renderShell(<Harness commands={[]} onSelect={onSelect} />)
     const outline = screen.getByRole('navigation', { name: 'Units' })
     expect(within(outline).getAllByTestId('chart-outline-unit').map((row) => row.getAttribute('data-unit-id'))).toEqual(['shipping', 'pf', 'tt', 'data'])
-    fireEvent.click(within(outline).getByRole('button', { name: 'Cluster Parcel & Freight' }))
+    fireEvent.click(within(outline).getByRole('button', { name: 'Parcel & Freight' }))
     expect(onSelect).toHaveBeenLastCalledWith('pf')
     expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
   })
@@ -341,7 +363,7 @@ describe('the organisation chart', () => {
     const shipping: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'pf', 'ro-dev', 'pe-noor2', { share: 0.5 })] }
     renderShell(<Harness commands={[]} shipping={shipping} people={people} />)
     // Noor holds the domain, and Parcel & Freight's developer role under the id merged into hers: one person, at 150%.
-    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people')
+    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 vacant')
     const noor = screen.getAllByTestId('chart-holder').filter((chip) => chip.textContent?.includes('Noor Haddad'))
     expect(noor).toHaveLength(2)
     expect(noor.every((chip) => chip.getAttribute('data-over') === 'true')).toBe(true)
@@ -437,13 +459,16 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
 
   /** Where each chip and row is on the stage: the people's chips by their assignment, everything else the stage itself. */
   const CHIPS: Record<string, { left: number; top: number }> = {
-    'as-1': { left: 20, top: 40 }, 'as-2': { left: 200, top: 120 }, 'as-3': { left: 300, top: 200 }, 'as-4': { left: 300, top: 240 },
+    'as-1': { left: 20, top: 40 }, 'as-2': { left: 40, top: 150 }, 'as-3': { left: 60, top: 260 }, 'as-4': { left: 60, top: 290 },
   }
+  /** And each box, one under the other. */
+  const BOXES: Record<string, { left: number; top: number }> = { shipping: { left: 0, top: 0 }, pf: { left: 20, top: 110 }, tt: { left: 40, top: 220 }, data: { left: 400, top: 0 } }
   const rect = (left: number, top: number, width: number, height: number) => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
   const measured = () => vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
     const at = this.dataset.testid === 'chart-holder' ? CHIPS[this.dataset.assignmentId ?? ''] : undefined
     if (at) return rect(at.left, at.top, 80, 20)
-    if (this.dataset.testid === 'chart-unit-open') return rect(20, 100, 120, 30)
+    const box = this.dataset.testid === 'chart-unit' ? BOXES[this.dataset.elementId ?? ''] : undefined
+    if (box) return rect(box.left, box.top, 280, 100)
     return rect(0, 0, 1000, 1000)
   })
   const holder = (unitId: string, roleId: string) => within(within(unitBox(unitId)).getByTestId(`chart-slot-${roleId}`)).getAllByTestId('chart-holder')[0]
@@ -467,7 +492,7 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     const spy = measured()
     try {
       renderShell(<Harness root={lined} commands={[]} />)
-      expect(within(screen.getByTestId('chart-show-lines')).getByRole('switch')).toHaveProperty('checked', true)
+      expect(screen.getByRole('button', { name: 'Lines: Person picked' })).toBeTruthy()
       expect(screen.queryByTestId('chart-lines')).toBeNull()
       cleanup()
       renderShell(<Harness root={lined} commands={[]} selectedId="shipping" />)
@@ -481,18 +506,20 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     const spy = measured()
     try {
       renderShell(<Harness root={chipped} commands={[]} />)
-      // Sara as the team's product owner: from her chip to Noor's, the domain owner, out of her chip's left edge into the right of Noor's.
+      // Sara as the team's product owner: out of the top of her box, level with her name, into the bottom of the domain's, level with Noor's.
       fireEvent.click(holder('tt', 'ro-po'))
       expect(drawn()).toEqual([
-        ['chart-line-solid', '300,210', '100,50'],
-        // And in from the developer's chip, within the team: a hook from the left of the one chip to the left of the other.
-        ['chart-line-solid', '300,250', '300,210'],
+        ['chart-line-solid', '100,220', '60,100'],
+        // And in from the developer, within the team: a hook out of the box's left, from the one's row to the other's.
+        ['chart-line-solid', '40,300', '40,270'],
       ])
-      // Omar, the cluster lead: the developer's dotted line in, from her chip to his.
+      // Omar, the cluster lead: the developer's dotted line in.
       fireEvent.click(holder('pf', 'ro-lead'))
-      expect(drawn()).toEqual([['chart-line-dotted', '300,250', '280,130']])
-      // Reporting lines off: nothing, whoever is picked.
-      fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+      expect(drawn()).toEqual([['chart-line-dotted', '100,220', '80,210']])
+      // Every line that runs has an arrowhead, because direction is not left to the colour.
+      expect(document.querySelector('[data-testid="chart-line-dotted"] .kit-line__head')).toBeTruthy()
+      // Lines off: nothing, whoever is picked.
+      pressMenu('Lines: Person picked', 'Off')
       expect(screen.queryByTestId('chart-lines')).toBeNull()
     } finally {
       spy.mockRestore()
@@ -503,12 +530,10 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
     const spy = measured()
     try {
       renderShell(<Harness root={chipped} commands={[]} />)
-      expect(screen.queryByTestId('chart-lines-legend')).toBeNull()
       fireEvent.click(holder('tt', 'ro-po'))
       const lines = () => [...document.querySelectorAll<SVGGElement>('[data-testid^="chart-line-"]')].map((one) => [one.dataset.direction, one.dataset.override ?? ''])
       expect(lines()).toEqual([['up', ''], ['into', '']])
-      expect(within(screen.getByTestId('chart-lines-legend')).getAllByRole('listitem').map((one) => one.textContent))
-        .toEqual(['Reports to', 'Reports to them', 'An exception to the model', 'Dotted: functional'])
+      expect(screen.getByTestId('chart-lines-legend').textContent).toBe('Where a unit sits Reports to Reports to them Dotted: functional An exception to the model ')
       cleanup()
       // The developer reports to the cluster lead by a line of her own: drawn in place of the role's, as an override.
       const own: HostModel = { ...SHIPPING, assignments: SHIPPING.assignments!.map((one) => (one.id === 'as-4' ? { ...one, reportsTo: [{ to: { scope: 'shipping', unit: 'pf', role: 'ro-lead' }, kind: 'solid' as const }] } : one)) }
@@ -516,7 +541,7 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
       fireEvent.click(holder('tt', 'ro-dev'))
       expect(lines()).toEqual([['up', 'true'], ['up', '']])
       // From her chip to his.
-      expect(drawn()[0]).toEqual(['chart-line-solid', '300,250', '280,130'])
+      expect(drawn()[0]).toEqual(['chart-line-solid', '100,220', '80,210'])
     } finally {
       spy.mockRestore()
     }
@@ -540,8 +565,24 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
       const line = document.querySelector<SVGGElement>('[data-testid="chart-line-solid"]')!
       expect(line.dataset.folded).toBe('true')
       expect(line.querySelector('title')?.textContent).toBe('Ends at Parcel & Freight, folded: unfold it to see whose role the line reaches.')
-      // From the folded unit's name, out of its right edge, into Noor's chip.
-      expect(drawn()).toEqual([['chart-line-solid', '140,115', '100,50']])
+      // From the folded unit's box into the domain's, level with Noor's name.
+      expect(drawn()).toEqual([['chart-line-solid', '160,110', '60,100']])
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('draws every dotted line, and every exception with a tag on it and a list beside it, by the Lines menu', () => {
+    const spy = measured()
+    try {
+      const own: HostModel = { ...SHIPPING, elements: SHIPPING.elements.map((one) => (one.id === 'pf' ? { ...one, reportingLines: [{ role: 'ro-lead', kind: 'solid' as const, to: { scope: 'shipping', unit: 'shipping', role: 'ro-owner' } }] } : one)) }
+      renderShell(<Harness root={chipped} shipping={own} commands={[]} />)
+      pressMenu('Lines: Person picked', 'Dotted')
+      expect(drawn().map((one) => one[0])).toEqual(['chart-line-dotted'])
+      pressMenu('Lines: Dotted', 'Exceptions')
+      expect(drawn().map((one) => one[0])).toEqual(['chart-line-solid'])
+      expect(screen.getByTestId('chart-tag').textContent).toBe('Own line of Parcel & Freight')
+      expect(within(screen.getByTestId('chart-exceptions')).getByTestId('chart-exception').textContent).toContain('Parcel & Freight')
     } finally {
       spy.mockRestore()
     }
@@ -549,10 +590,9 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
 
   it('starts with Reporting lines off where the organisation says no line', () => {
     renderShell(<Harness root={ROOT} commands={[]} />)
-    expect(within(screen.getByTestId('chart-show-lines')).getByRole('switch')).toHaveProperty('checked', false)
-    fireEvent.click(within(screen.getByTestId('chart-show-lines')).getByRole('switch'))
+    expect(screen.getByRole('button', { name: 'Lines: Off' })).toBeTruthy()
+    pressMenu('Lines: Off', 'Person picked')
     fireEvent.click(holder('tt', 'ro-po'))
-    expect(screen.getByTestId('chart-lines')).toBeTruthy()
     expect(drawn()).toEqual([])
   })
 })

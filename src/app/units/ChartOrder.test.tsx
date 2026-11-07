@@ -102,11 +102,11 @@ describe('a unit moved among its siblings', () => {
     const landed: Landed[] = []
     renderShell(<Harness landed={landed} answer={ok} />)
     expect(outlined()).toEqual(['shipping', 'pf', 'lm', 'rp', 'tt', 'data', 'ops'])
-    pick('Team Track & Trace')
+    pick('Track & Trace')
     const panel = within(screen.getByTestId('chart-order'))
     expect(panel.getByTestId('chart-order-of').textContent).toBe('The Team units in Parcel & Freight')
-    expect((panel.getByRole('button', { name: 'Move down' }) as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(panel.getByRole('button', { name: 'Move up' }))
+    expect(panel.getByRole('button', { name: 'Down' }).getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(panel.getByRole('button', { name: 'Up' }))
     await waitFor(() => expect(screen.getByTestId('chart-order-said').textContent).toBe('One step. Undo takes it back.'))
     expect(landed).toEqual([{
       steps: new Map([['shipping', [
@@ -125,9 +125,9 @@ describe('a unit moved among its siblings', () => {
   it('moves a unit among siblings filed in two scopes as a step in each, and says so', async () => {
     const landed: Landed[] = []
     renderShell(<Harness landed={landed} answer={ok} />)
-    pick('Cluster Operations')
+    pick('Operations')
     expect(screen.getByTestId('chart-order-of').textContent).toBe('The Cluster units at the top')
-    fireEvent.click(screen.getByRole('button', { name: 'Move up' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Up' }))
     await waitFor(() => expect(screen.getByTestId('chart-order-said').textContent)
       .toBe('One step in each of 2 scopes that keep these units. It is undone in each scope it changed.'))
     expect(landed[0].steps).toEqual(new Map([
@@ -138,21 +138,22 @@ describe('a unit moved among its siblings', () => {
 
   it('says why nothing was written where a scope it writes may only be read', async () => {
     renderShell(<Harness landed={[]} answer={() => ({ ok: false, reason: 'shell.scopeReadOnly' })} />)
-    pick('Cluster Operations')
-    fireEvent.click(screen.getByRole('button', { name: 'Move up' }))
+    pick('Operations')
+    fireEvent.click(screen.getByRole('button', { name: 'Up' }))
     await waitFor(() => expect(screen.getByTestId('chart-order-said').textContent).toBe('Nothing was written: a scope it writes may only be read here.'))
   })
 
   it('offers no move among siblings for a unit with no sibling of its type — only Move to… — and nothing where the scope is only read', () => {
     const answer = vi.fn(ok)
     renderShell(<Harness landed={[]} answer={answer} />)
-    pick('Cluster Parcel & Freight')
-    expect(screen.queryByTestId('chart-order-up')).toBeNull()
+    pick('Parcel & Freight')
+    // The foot stays where it is, so nothing moves under the reader: Up says why not.
+    expect(screen.getByTestId('chart-order-up').getAttribute('aria-disabled')).toBe('true')
     expect(screen.queryByTestId('chart-order-of')).toBeNull()
     expect(within(screen.getByTestId('chart-order')).getByRole('button', { name: 'Move to…' })).toBeTruthy()
     cleanup()
     renderShell(<Harness landed={[]} answer={answer} readOnly />)
-    pick('Team Track & Trace')
+    pick('Track & Trace')
     expect(screen.queryByTestId('chart-order')).toBeNull()
     expect(answer).not.toHaveBeenCalled()
   })

@@ -43,6 +43,13 @@ describe('a reporting line', () => {
     expect(pathOf(routeBetween(box(0, 0, 100, 40), box(200, 20, 300, 80), false))).toBe('M100,20 L150,20 L150,50 L200,50')
   })
 
+  it('leaves a box at its edge, level with the name it is about', () => {
+    const lower = { ...box(0, 100, 100, 140), at: { x: 30, y: 120 } }
+    expect(pathOf(routeBetween(lower, box(0, 0, 60, 40), false))).toBe('M30,100 L30,40')
+    const beside = { ...box(0, 0, 100, 40), at: { x: 30, y: 20 } }
+    expect(pathOf(routeBetween(beside, { ...box(200, 0, 300, 40), at: { x: 250, y: 20 } }, false))).toBe('M100,20 L200,20')
+  })
+
   it('hooks out of the left between two rows of one box', () => {
     expect(pathOf(routeBetween(box(20, 0, 80, 10), box(20, 20, 80, 30), true))).toBe('M20,5 L6,5 L6,25 L20,25')
   })

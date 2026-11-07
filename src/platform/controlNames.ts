@@ -138,17 +138,13 @@ export const CONTROL_NAMES = [
   'chart.showOptional', 'chart.summary',
   // …which lines it draws (the Lines menu, ADR-0039 §7), and the list of its exceptions.
   'chart.showLines', 'chart.exceptions',
-  // …its day, and the band while another is shown.
-  'chart.day', 'chart.dayBand',
-  // …a focus on one unit, from its box, and the band with the way up.
-  'chart.focus', 'chart.focusBand',
+  // …its day, and a focus on one unit, from its box.
+  'chart.day', 'chart.focus',
   // …and making a unit from it (3.6.2): + Unit on the bar and on an empty chart, + Unit inside on a picked box, and the dialog they open.
   'chart.addAtTop', 'chart.addFirst', 'chart.addInside', 'chart.newUnit',
   // …and moving a unit to another place in the organisation (3.7.1): Move to… on a picked box and at the foot of the outline,
   // the panel they open, and Sits under in the unit's inspector.
   'chart.moveTo', 'chart.outlineMoveTo', 'chart.moveUnit', 'unit.sitsUnder',
-  // …and someone put in a vacancy, in the popover beside it.
-  'chart.assign',
   // Deleting a unit (3.6.2): the confirmation's End on a day…, offered first, and where the units inside it go.
   'unitDelete.end', 'unitDelete.inside',
   // A list of findings, wherever it is drawn (ADR-0036, amended 11 October 2026):

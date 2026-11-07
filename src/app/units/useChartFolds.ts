@@ -54,6 +54,8 @@ export type ChartFolds = {
   reveal: (id: ElementId) => void
   /** Unfold this unit and every unit above it on the chart, and the way to it in the outline: what the outline asks of the chart. */
   expand: (id: ElementId) => void
+  /** The same, with the unit open in the outline too: what a focus on it needs, since nothing else is listed there. */
+  expandBoth: (id: ElementId) => void
   /** How many of a unit's roles the chart draws. */
   people: ChartPeople
   setPeople: (people: ChartPeople) => void
@@ -114,5 +116,9 @@ export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldK
   }, [chart])
   const [people, setPeople] = useState<ChartPeople>(() => peopleKept(memory.recall(keys.optional)))
   useEffect(() => memory.keep(keys.optional, new Set([people])), [people, memory, keys])
-  return { folded: held.chart, outline: held.outline, toggle, toggleOutline, setLevels, reveal, expand, people, setPeople }
+  const expandBoth = useCallback((id: ElementId) => {
+    const way = [...unitsAboveIn(chart, id), id]
+    setHeld((was) => ({ ...was, chart: opened(was.chart, way), outline: opened(was.outline, way) }))
+  }, [chart])
+  return { folded: held.chart, outline: held.outline, toggle, toggleOutline, setLevels, reveal, expand, expandBoth, people, setPeople }
 }

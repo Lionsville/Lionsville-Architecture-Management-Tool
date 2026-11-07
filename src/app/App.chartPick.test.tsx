@@ -74,7 +74,7 @@ async function press(id: string, twice = false) {
 describe('pressing a unit on the organisation chart', { timeout: 20_000 }, () => {
   it('selects one this scope keeps, and the inspector beside the chart is the unit\'s', async () => {
     renderApp({ repositories: heldRepositories([organisation, customer]), today: () => TODAY, boot: { initialProject: organisation } })
-    await screen.findByTestId('chart-summary')
+    await screen.findByTestId('chart-page')
     await press('webshop')
     const section = await within(inspector()).findByTestId('unit-section')
     expect(section).toBeTruthy()
@@ -84,11 +84,11 @@ describe('pressing a unit on the organisation chart', { timeout: 20_000 }, () =>
 
   it('goes to one another scope keeps on a click, and opens it there on a double-click, on its chart, selected, with the unit\'s inspector', async () => {
     renderApp({ repositories: heldRepositories([organisation, customer]), today: () => TODAY, boot: { initialProject: organisation } })
-    await screen.findByTestId('chart-summary')
+    await screen.findByTestId('chart-page')
     await press('sales')
-    // A click stays on this chart: the summary is still the inspector's.
-    expect(within(inspector()).getByTestId('chart-summary')).toBeTruthy()
-    expect(within(inspector()).queryByTestId('unit-section')).toBeNull()
+    // A click stays on this chart, and the unit's inspector is that scope's: there is none here.
+    expect(screen.getByTestId('chart-page')).toBeTruthy()
+    expect(screen.queryByTestId('unit-section')).toBeNull()
     await press('sales', true)
     await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
     expect(within(inspector()).getByRole('heading', { level: 2, name: 'Sales' })).toBeTruthy()
@@ -99,7 +99,9 @@ describe('pressing a unit on the organisation chart', { timeout: 20_000 }, () =>
 
   it('chooses a person in a unit another scope keeps by a click, without leaving the chart: the inspector reads the assignment and opens it there on request', async () => {
     renderApp({ repositories: heldRepositories([organisation, customer]), today: () => TODAY, boot: { initialProject: organisation } })
-    await screen.findByTestId('chart-summary')
+    await screen.findByTestId('chart-page')
+    fireEvent.click(await screen.findByRole('button', { name: 'People: Leaders' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Required roles' }))
     const chip = await waitFor(() => {
       const found = document.querySelector<HTMLElement>('[data-testid="chart-unit"][data-element-id="sales"] [data-testid="chart-holder"]')
       expect(found).not.toBeNull()

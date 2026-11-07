@@ -132,7 +132,8 @@ describe('an assignment chosen on the chart', () => {
   it('ends on the day the person chooses, as one step, and then says its last day', async () => {
     const commands: Command[] = []
     renderShell(<Harness id="as-1" commands={commands} />)
-    const until = within(screen.getByTestId('assignment-end')).getByTestId('assignment-until') as HTMLInputElement
+    fireEvent.click(screen.getByTestId('assignment-end-ask'))
+    const until = screen.getByTestId('assignment-until') as HTMLInputElement
     expect(until.value).toBe(TODAY)
     fireEvent.change(until, { target: { value: '2026-11-30' } })
     fireEvent.click(screen.getByTestId('assignment-end-on'))
@@ -143,10 +144,11 @@ describe('an assignment chosen on the chart', () => {
 
   it('offers the day before a later chart day, and refuses a last day before its first', () => {
     renderShell(<Harness id="as-1" commands={[]} asOf="2027-01-01" />)
+    fireEvent.click(screen.getByTestId('assignment-end-ask'))
     const until = screen.getByTestId('assignment-until') as HTMLInputElement
     expect(until.value).toBe('2026-12-31')
     fireEvent.change(until, { target: { value: '2026-05-01' } })
-    expect((screen.getByTestId('assignment-end-on') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('assignment-end-on').getAttribute('aria-disabled')).toBe('true')
     expect(screen.getByText('Its last day cannot be before its first, 1 Jun 2026.')).toBeTruthy()
   })
 

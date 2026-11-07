@@ -88,12 +88,16 @@ function Harness({ landed, answer = ok, readOnly = false }: { landed: Landed[]; 
 const ok = (changed: ScopePath[]): PeopleMoved => ({ ok: true, changed, ended: 0, begun: 0 })
 const boxOf = (id: string) => document.querySelector<HTMLElement>(`[data-testid="chart-unit"][data-element-id="${id}"]`)!
 const dialog = () => within(screen.getByTestId('move-unit-dialog'))
+/** A unit picked on the chart, and its Move to… pressed. */
+const moveFromBox = (id: string, name: string) => {
+  fireEvent.click(within(boxOf(id)).getByTestId('chart-unit-open'))
+  fireEvent.click(within(boxOf(id)).getByRole('button', { name: `Move ${name} to…` }))
+}
+const refused = (button: HTMLElement) => button.getAttribute('aria-disabled') === 'true'
 
 /** Opens the parent picker and picks the option named, by the keyboard and the pointer a person would use. */
 function pickParent(query: string, option: string) {
   const input = dialog().getByTestId('move-unit-parent')
-  fireEvent.focus(input)
-  fireEvent.keyDown(input, { key: 'ArrowDown' })
   fireEvent.change(input, { target: { value: query } })
   fireEvent.click(screen.getByRole('option', { name: new RegExp(`^${option}`) }))
 }
@@ -102,9 +106,12 @@ describe('a unit moved from the chart', () => {
   it('opens Move to… from a unit\'s box, finds the parent anywhere in the tree, says who manages it after, and lands in the scope that keeps it', async () => {
     const landed: Landed[] = []
     renderShell(<Harness landed={landed} />)
-    fireEvent.click(within(boxOf('lob-a')).getByRole('button', { name: 'Move Line of business A to…' }))
+    moveFromBox('lob-a', 'Line of business A')
     expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
-    expect((dialog().getByTestId('move-unit-move') as HTMLButtonElement).disabled).toBe(true)
+    expect(refused(dialog().getByTestId('move-unit-move'))).toBe(true)
+    // The chart stays in view beside it, with the places lit.
+    expect(boxOf('board').getAttribute('data-drop')).toBe('ok')
+    expect(boxOf('tech').getAttribute('data-drop')).toBe('current')
     pickParent('board', 'Board')
     expect(dialog().getByTestId('move-unit-managed-before').textContent).toContain('Chief information officer, Technology')
     expect(dialog().getByTestId('move-unit-managed-after').textContent).toContain('Chair, Board')
@@ -121,7 +128,7 @@ describe('a unit moved from the chart', () => {
   it('takes the units beside it along where they are ticked, and none by default', async () => {
     const landed: Landed[] = []
     renderShell(<Harness landed={landed} />)
-    fireEvent.click(within(boxOf('lob-a')).getByRole('button', { name: 'Move Line of business A to…' }))
+    moveFromBox('lob-a', 'Line of business A')
     const along = dialog().getAllByTestId('move-unit-along-unit').map((one) => one.getAttribute('data-unit-id'))
     expect(along).toEqual(['lob-b'])
     expect((dialog().getByRole('checkbox', { name: 'Line of business B' }) as HTMLInputElement).checked).toBe(false)
@@ -135,41 +142,58 @@ describe('a unit moved from the chart', () => {
 
   it('offers the parents its type may sit under first, and the others below under their own heading in the one order for units, a move there said as a misfit', () => {
     renderShell(<Harness landed={[]} />)
-    fireEvent.click(within(boxOf('lob-a')).getByRole('button', { name: 'Move Line of business A to…' }))
-    const input = dialog().getByTestId('move-unit-parent')
-    fireEvent.focus(input)
-    fireEvent.keyDown(input, { key: 'ArrowDown' })
-    const groups = screen.getAllByRole('group').map((group) => [
-      group.firstElementChild?.textContent,
-      within(group).getAllByRole('option').map((option) => option.textContent),
-    ])
-    expect(groups).toEqual([
-      ['Where its type may sit', ['Board']],
-      ['Where its type may not sit', [
-        'At the top', 'Line of business Abeing moved', 'Line of business Bin Technology', 'Technologywhere it sits now', 'Team A1inside it',
-      ]],
-    ])
+    moveFromBox('lob-a', 'Line of business A')
+    const rows = within(screen.getByRole('listbox')).getAllByRole('option').map((option) => option.textContent)
+    expect(rows).toEqual(['Board', 'At the top', 'Line of business Bin Technology', 'Technologywhere it sits now', 'Team A1inside it'])
+    expect(screen.getByRole('listbox').textContent).toContain('Where its type may sit')
+    expect(screen.getByRole('listbox').textContent).toContain('Where its type may not sit')
     // Its own place, and what it holds, are shown and not offered.
     expect(screen.getByRole('option', { name: /^Team A1/ }).getAttribute('aria-disabled')).toBe('true')
     fireEvent.click(screen.getByRole('option', { name: /^At the top/ }))
     expect(dialog().getByTestId('move-unit-misfit').textContent).toContain('Line of business A is a Line of business, which may not sit there')
-    expect((dialog().getByTestId('move-unit-move') as HTMLButtonElement).disabled).toBe(false)
+    expect(refused(dialog().getByTestId('move-unit-move'))).toBe(false)
   })
 
   it('opens Move to… for the unit picked in the outline, and says where nothing was written', async () => {
     renderShell(<Harness landed={[]} answer={() => ({ ok: false, reason: 'shell.scopeReadOnly' })} />)
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Units' })).getByRole('button', { name: 'Line of business Line of business B' }))
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Units' })).getByRole('button', { name: 'Line of business B' }))
     fireEvent.click(within(screen.getByTestId('chart-order')).getByRole('button', { name: 'Move to…' }))
-    expect(screen.getByRole('heading', { name: 'Move Line of business B to…' })).toBeTruthy()
+    expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
     pickParent('board', 'Board')
     fireEvent.click(dialog().getByTestId('move-unit-move'))
     await waitFor(() => expect(dialog().getByTestId('move-unit-said').textContent).toBe('Nothing was written: a scope it writes may only be read here.'))
   })
 
+  it('chooses a place by a press on the chart, and opens filled in from a drag, writing nothing until Move', () => {
+    const landed: Landed[] = []
+    renderShell(<Harness landed={landed} />)
+    moveFromBox('lob-a', 'Line of business A')
+    fireEvent.click(within(boxOf('board')).getByTestId('chart-unit-open'))
+    expect(boxOf('board').getAttribute('data-target')).toBe('ok')
+    expect(dialog().getByTestId('move-unit-managed-after').textContent).toContain('Chair, Board')
+    expect(landed).toEqual([])
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(screen.queryByTestId('move-unit-dialog')).toBeNull()
+    // Dragged onto a place: the same panel, filled in, and still nothing written.
+    const data = new Map<string, string>()
+    const dataTransfer = { setData: (key: string, value: string) => data.set(key, value), getData: (key: string) => data.get(key) ?? '', types: ['application/x-lvarch-unit'], effectAllowed: '' }
+    fireEvent.dragStart(boxOf('lob-a'), { dataTransfer })
+    fireEvent.drop(boxOf('board'), { dataTransfer })
+    expect(dialog().getByTestId('move-unit-managed-after').textContent).toContain('Chair, Board')
+    expect(landed).toEqual([])
+  })
+
+  it('moves the unit picked by M, and says it comes back from the keyboard', () => {
+    renderShell(<Harness landed={[]} />)
+    fireEvent.keyDown(within(boxOf('lob-a')).getByTestId('chart-unit-open'), { key: 'm' })
+    expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
+  })
+
   it('offers no Move to… on a chart that is only read', () => {
     renderShell(<Harness landed={[]} readOnly />)
     expect(screen.queryByTestId('chart-move-to')).toBeNull()
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Units' })).getByRole('button', { name: 'Line of business Line of business B' }))
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Units' })).getByRole('button', { name: 'Line of business B' }))
     expect(screen.queryByTestId('chart-outline-move-to')).toBeNull()
+    expect(screen.queryByTestId('chart-move-to')).toBeNull()
   })
 })

@@ -184,7 +184,7 @@ export function AssignDialog(props: AssignDialogProps) {
   const { held, form, role, done, save } = state
   return (
     <Dialog
-      open size="s" onClose={onClose} onSubmit={save}
+      open size="s" onClose={onClose} onSubmit={save} data-testid="assign-dialog"
       title={s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
       actions={(
         <>
@@ -194,7 +194,6 @@ export function AssignDialog(props: AssignDialogProps) {
             </Button>
           )}
           {held && <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>}
-          <span className="chart-assign__grow" />
           <Button onClick={onClose}>{s('assign.cancel')}</Button>
           <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">
             {s(held ? 'assign.saveChange' : 'assign.save')}
@@ -202,7 +201,7 @@ export function AssignDialog(props: AssignDialogProps) {
         </>
       )}
     >
-      <div className="chart-assign" data-testid="assign-dialog" data-flat=""><AssignFields props={props} state={state} /></div>
+      <div className="chart-assign" data-flat=""><AssignFields props={props} state={state} /></div>
     </Dialog>
   )
 }
@@ -221,12 +220,11 @@ export function AssignPopover({ at, ...props }: AssignDialogProps & { at: HTMLEl
       open anchorEl={at} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       slotProps={{ backdrop: { invisible: true } }} aria-label={s('assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
     >
-      <form className="chart-assign" data-testid="assign-dialog" data-guide="chart.assign" onSubmit={(event) => { event.preventDefault(); save() }}>
+      <form className="chart-assign" data-testid="assign-dialog" onSubmit={(event) => { event.preventDefault(); save() }}>
         <h2 className="chart-assign__title">{s('assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}</h2>
         <AssignFields props={props} state={state} />
         <div className="chart-assign__foot">
           <p className="chart-assign__said">{s('assign.oneStepShort')}</p>
-          <span className="chart-assign__grow" />
           <Button onClick={onClose}>{s('assign.cancel')}</Button>
           <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">{s('assign.save')}</Button>
         </div>

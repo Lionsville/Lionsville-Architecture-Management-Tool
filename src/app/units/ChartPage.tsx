@@ -46,7 +46,7 @@ import { useTheme } from '@mui/material/styles'
 import { isChartLines } from '../../agent/screen'
 import type { ChartLines } from '../../agent/screen'
 import { useStrings } from '../../i18n'
-import type { Translate } from '../../i18n'
+import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
 import { focusedOn, levelOfFolds, rollUp, unitsAboveIn, unitsHolding, vacanciesIn, walk } from '../../model/orgChart'
@@ -75,7 +75,7 @@ import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { foldKey, SessionFolds } from '../sessionFolds'
 import { AddAtTop } from './AddUnit'
-import { AssignDialog, AssignPopover } from './AssignDialog'
+import { AssignPopover } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { ChartBar } from './ChartBar'
 import type { ChartDay } from './ChartBar'
@@ -148,46 +148,124 @@ export type ChartPageProps = {
 
 export function ChartPage(props: ChartPageProps) {
   const { t, language } = useStrings()
-  const theme = useTheme()
-  const { here, diagram, people, today } = props
+  const { here, diagram, today } = props
   const day = diagram.asOf ?? today
-  const [assigning, setAssigning] = useState<{ unit: ChartUnit; assigning: Assigning; at: HTMLElement | null } | undefined>(undefined)
-  const [note, setNote] = useState<string | undefined>(undefined)
-  const [summaryAsked, setSummaryAsked] = useState(false)
   const names = usePersonNames()
-  const canonical = names.canonical
-  const { chart, byUnit } = useChartReading(here, day, canonical)
-  const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
-  const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
+  const { chart, byUnit } = useChartReading(here, day, names.canonical)
   const folds = useFoldsOf(chart, props.scope ?? '', diagram.id, props.folds)
   const page = useRef<HTMLDivElement | null>(null)
   const stage = useRef<HTMLDivElement | null>(null)
   const zoom = useChartZoom(page, stage)
   const [reading, setReading] = usePlaceReading(diagram.id)
   const focused = useMemo(() => focusedOn(chart, reading.focus), [chart, reading.focus])
-  // The Lines menu: the person picked's from the start where the organisation says any line, none where it says none.
-  const asked = isChartLines(reading.lines) ? reading.lines : undefined
-  const lines: ChartLines = asked ?? (hasReportingLines(here.at.organisation) ? 'person' : 'off')
-  const { onChoose, chosen, onSelect } = props
-  const drawnLines = useMemo(() => {
+  const lines = useChartLines(props, chart, day, folds, reading.lines)
+  const going = useChartGoing(props, chart, folds, page, reading.focus, setReading)
+  const moving = useChartMove(props, names, going.goTo, t)
+  const [assigning, setAssigning] = useState<HeldAssigning | undefined>(undefined)
+  const typeName = useTypeName(here)
+  const newUnit = useNewUnit({
+    make: props.make, readOnly: props.readOnly, here, chart, day, scope: props.scope ?? '', scopeLabel: props.scopeLabel, typeName, goTo: going.goTo, t,
+  })
+  const drawnTop = focused ? [focused] : chart.roots
+  const drawing = useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, language, t })
+  useFindKey(stage)
+  const organisationName = props.scopeLabel('')
+  const empty = chart.roots.length === 0
+  const redraw = useMemo(
+    () => ({ people: folds.people, folded: folds.folded, chart, selected: props.selectedId, chosen: props.chosen, focus: reading.focus, zoom: zoom.zoom }),
+    [folds.people, folds.folded, chart, props.selectedId, props.chosen, reading.focus, zoom.zoom],
+  )
+  const ownPanel = useChartDock(props, moving.up !== undefined, lines.lines === 'exceptions', going.summaryAsked)
+  const closeExceptions = () => setReading({ lines: 'person' })
+  return (
+    <div data-testid="chart-page" className="chart-page">
+      <ChartHead
+        props={props} chart={chart} folds={folds} lines={lines.lines} onLines={(next) => setReading({ lines: next })} moving={moving.up} empty={empty}
+        focused={moving.up === undefined ? focused : undefined} organisation={organisationName} onFocus={going.focus} newUnit={newUnit} language={language} t={t}
+      />
+      <div className="chart-page__main">
+        {moving.up === undefined && !empty && (
+          <ChartOutlinePane props={props} chart={chart} units={drawnTop} folds={folds} going={going} moving={moving} names={names} day={day} language={language} t={t} />
+        )}
+        <div className="chart-page__work">
+          <Box ref={zoom.attach} {...(empty ? {} : zoom.canvas)} data-testid="chart-body" className="chart-canvas" sx={locatedRing(going.locatedId)}>
+            {empty
+              ? <EmptyChart day={day} language={language} add={firstUnit(newUnit, props.make, t)} t={t} />
+              : (
+                <div ref={stage} className="chart-stage" style={{ zoom: zoom.zoom }}>
+                  <ChartConnectors stage={stage} zoom={zoom.zoom} redraw={redraw} />
+                  <OrgTree organisation={organisationName} focused={focused} drawing={drawing} />
+                  <ChartLinesOverlay stage={stage} lines={lines.drawn} zoom={zoom.zoom} redraw={redraw} unitName={here.name} t={t} />
+                </div>
+              )}
+          </Box>
+          {!empty && (
+            <>
+              <CanvasDock zoom={zoom.zoom} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />
+              <ChartLinesLegend t={t} />
+              <SummaryLine chart={chart} byUnit={byUnit} asked={going.summaryAsked} onPress={going.toggleSummary} t={t} />
+            </>
+          )}
+        </div>
+        {moving.panel && <div className="chart-page__panel">{moving.panel}</div>}
+        {!moving.panel && ownPanel && (
+          <div className="chart-page__panel">
+            <ExceptionsPanel
+              exceptions={lines.exceptions} organisation={here.at.organisation} names={names} onGoTo={going.goTo} onOperating={props.make?.onOpenOperating}
+              onClose={closeExceptions} t={t}
+            />
+          </div>
+        )}
+      </div>
+      {assigning && <AssignThere held={assigning} props={props} day={day} names={names} onClose={() => setAssigning(undefined)} t={t} />}
+      {newUnit.dialog}
+    </div>
+  )
+}
+
+/** A vacancy pressed: where, and in which role. */
+type HeldAssigning = { unit: ChartUnit; assigning: Assigning; at: HTMLElement | null }
+
+/** The Lines menu: which it says, and what that draws. The person picked's from the start where the organisation says any line, none where it says none. */
+function useChartLines(props: ChartPageProps, chart: OrgChart, day: string, folds: ChartFolds, said: string | undefined) {
+  const { here, selectedId, chosen } = props
+  const lines: ChartLines = isChartLines(said) ? said : hasReportingLines(here.at.organisation) ? 'person' : 'off'
+  const drawn = useMemo(() => {
     if (lines === 'off') return []
     if (lines !== 'person') return chartWideLines(here.at.organisation, chart, day, folds.folded, lines)
-    const held = props.selectedId === undefined && chosen !== undefined ? here.at.organisation.assignments.find((one) => one.id === chosen) : undefined
+    const held = selectedId === undefined && chosen !== undefined ? here.at.organisation.assignments.find((one) => one.id === chosen) : undefined
     return held ? holderLines(here.at.organisation, chart, day, folds.folded, held) : []
-  }, [lines, props.selectedId, chosen, here, chart, day, folds.folded])
+  }, [lines, selectedId, chosen, here, chart, day, folds.folded])
   const exceptions = useMemo(() => (lines === 'exceptions' ? chartExceptions(here.at.organisation, chart, day) : []), [lines, here, chart, day])
-  // Whenever the boxes may have moved, the lines are measured again from them.
-  const redraw = useMemo(
-    () => ({ people: folds.people, folded: folds.folded, chart, selected: props.selectedId, chosen, focus: reading.focus }),
-    [folds.people, folds.folded, chart, props.selectedId, chosen, reading.focus],
-  )
+  return { lines, drawn, exceptions }
+}
+
+/** The panel docked beside the chart is up for what is picked and for the summary, and otherwise the chart has the width. Says whether the page draws a panel of its own. */
+function useChartDock(props: ChartPageProps, moving: boolean, exceptions: boolean, summaryAsked: boolean): boolean {
+  const { onDock, selectedId, chosen } = props
+  const somethingPicked = selectedId !== undefined || chosen !== undefined
+  const ownPanel = moving || (exceptions && !somethingPicked)
+  const docked = !ownPanel && (somethingPicked || summaryAsked)
+  useEffect(() => { onDock?.(docked) }, [onDock, docked])
+  useEffect(() => () => onDock?.(true), [onDock])
+  return ownPanel
+}
+
+/** Going about the chart: what a press picks, where a unit is gone to, and the focus that lets go of what it does not draw. */
+function useChartGoing(
+  props: ChartPageProps, chart: OrgChart, folds: ChartFolds, page: { current: HTMLDivElement | null }, focus: string | undefined,
+  setReading: (patch: { focus?: string | undefined }) => void,
+) {
+  const theme = useTheme()
+  const { here, onSelect, onChoose, chosen, selectedId, diagram } = props
+  const [summaryAsked, setSummaryAsked] = useState(false)
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { onSelect(id); return }
     const scope = here.scopeOf(id)
     if (scope !== undefined) props.onOpenElsewhere(scope, id)
   }, [here, onSelect, props.onOpenElsewhere])
   // The editor selecting anything — a unit pressed, a finding followed, a link — lets the assignment go.
-  useEffect(() => { if (props.selectedId !== undefined && chosen !== undefined) onChoose?.(undefined) }, [props.selectedId, chosen, onChoose])
+  useEffect(() => { if (selectedId !== undefined && chosen !== undefined) onChoose?.(undefined) }, [selectedId, chosen, onChoose])
   // A person pressed picks their assignment, wherever the unit is kept: nothing leaves the chart on a single click.
   const choose = useCallback((holder: ChartHolder, unit: ChartUnit) => {
     if (!onChoose) { if (here.heldHere(unit.id)) onSelect(unit.id); return }
@@ -198,9 +276,10 @@ export function ChartPage(props: ChartPageProps) {
   const { current, goTo: goToUnit } = useGoTo(chart, folds, locate, props)
   // Going somewhere a focus does not draw lets the focus go, so the unit is on screen.
   const goTo = useCallback((id: ElementId) => {
-    if (reading.focus !== undefined && id !== reading.focus && !unitsAboveIn(chart, id).includes(reading.focus)) setReading({ focus: undefined })
+    setSummaryAsked(false)
+    if (focus !== undefined && id !== focus && !unitsAboveIn(chart, id).includes(focus)) setReading({ focus: undefined })
     goToUnit(id)
-  }, [reading.focus, chart, goToUnit, setReading])
+  }, [focus, chart, goToUnit, setReading])
   // A unit's name picks it: selected where it is kept here, gone to on this chart where it is kept elsewhere.
   const pick = useCallback((id: ElementId) => {
     setSummaryAsked(false)
@@ -210,48 +289,43 @@ export function ChartPage(props: ChartPageProps) {
   }, [here, onSelect, onChoose, goTo])
   useSelectRequest(props.select, (id) => [...walk(chart.roots)].some((unit) => unit.id === id), goTo)
   // What a link made here selects (ADR-0033, amended 17 October 2026): the unit gone to, kept here or elsewhere, while no person is chosen.
-  usePageHandle(page, diagram.id, chosen === undefined ? current : props.selectedId, props.onHandle, theme.palette.background.default)
-  const order = useSiblingOrder({
-    here, day, scope: props.scope ?? '', unitId: current, land: props.readOnly ? undefined : props.reorder, t,
-  })
-  const moving = useChartMove(props, names, goTo, t)
+  usePageHandle(page, diagram.id, chosen === undefined ? current : selectedId, props.onHandle, theme.palette.background.default)
+  const focusOn = useCallback((id: ElementId | undefined) => {
+    setReading({ focus: id })
+    if (id !== undefined) folds.expandBoth(id)
+  }, [setReading, folds.expandBoth])
+  const toggleSummary = useCallback(() => {
+    onSelect(undefined)
+    onChoose?.(undefined)
+    setSummaryAsked((was) => !was)
+  }, [onSelect, onChoose])
+  return { open, choose, locatedId, current, goTo, pick, focus: focusOn, summaryAsked, toggleSummary }
+}
 
-  const findMe = () => {
-    if (me === undefined) { setNote(t('chart.findMeWho')); return }
-    const found = unitsHolding(chart, me)
-    const first = found[0]
-    if (first === undefined) { setNote(t('chart.findMeNone', { day: formatDay(day, language) })); return }
-    setNote(undefined)
-    goTo(first)
-  }
+type Going = ReturnType<typeof useChartGoing>
+
+/** What the boxes read, worked out once per render of the page. */
+function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, language, t }: {
+  props: ChartPageProps; chart: OrgChart; day: string; folds: ChartFolds; byUnit: ReadonlyMap<ElementId, number>; going: Going
+  moving: ReturnType<typeof useChartMove>; newUnit: NewUnit; names: PersonNames; typeName: (id: string | undefined) => string
+  drawnTop: readonly ChartUnit[]; stage: { current: HTMLElement | null }; setAssigning: (held: HeldAssigning) => void; language: Language; t: Translate
+}): Drawing {
+  const { here, people, today } = props
+  const { current, pick, open, choose } = going
+  const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
   const roles = useMemo(() => new Map(here.at.organisation.roles.map((role) => [role.id, role])), [here])
-  const roleName = useCallback((id: string) => roles.get(id)?.name ?? id, [roles])
-  const typeName = useTypeName(here)
-  const newUnit = useNewUnit({
-    make: props.make, readOnly: props.readOnly, here, chart, day, scope: props.scope ?? '', scopeLabel: props.scopeLabel, typeName, goTo, t,
-  })
+  const [roving, setRoving] = useState<ElementId | undefined>(undefined)
   const writes = props.assign !== undefined && people !== undefined && !people.readOnly
   // Where the scope is only read, a vacancy in a unit kept here that the person manages
   // still assigns — a managing role's only strictly below one they hold (ADR-0036 §12).
   const manages = people?.manages
   const editable = writes && (!props.readOnly || manages !== undefined)
-  const mayAssign = (unit: ChartUnit, roleId: string) => !props.readOnly || (here.heldHere(unit.id) && mayChangeIn(manages, unit.id, roleId))
-  const external = (person: PersonId) => {
-    const entry = resolvePerson(person, register)
-    return entry?.kind === 'external' && entry.state !== 'forgotten'
-  }
-  const pickedUnit = useMemo(() => (props.selectedId === undefined ? undefined : [...walk(chart.roots)].find((unit) => unit.id === props.selectedId)), [chart, props.selectedId])
-  const focus = useCallback((id: ElementId | undefined) => {
-    setReading({ focus: id })
-    if (id !== undefined) folds.expand(id)
-  }, [setReading, folds.expand])
-  const drawnTop = focused ? [focused] : chart.roots
   const onKey = (unit: ChartUnit, event: KeyboardEvent) => {
     const said = chartKey(event)
     if (said === undefined || moving.up !== undefined) return
     if (said === 'move') { if (moving.open) { event.preventDefault(); moving.open(unit.id) } return }
-    if (said === 'focus') { event.preventDefault(); focus(unit.id); return }
     event.preventDefault()
+    if (said === 'focus') { going.focus(unit.id); return }
     const onward = said === 'pick'
       ? (current === unit.id ? stepInTree(drawnTop, folds.folded, unit.id, 'down') : unit.id)
       : stepInTree(drawnTop, folds.folded, unit.id, said)
@@ -260,104 +334,122 @@ export function ChartPage(props: ChartPageProps) {
     else setRoving(onward)
     focusBox(stage.current, onward)
   }
-  const [roving, setRoving] = useState<ElementId | undefined>(undefined)
-  const drawing: Drawing = {
-    chart, roles, typeName, names, external, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
-    day, today, language, t, selectedId: props.selectedId, chosen, pick, open, choose, mayAssign,
-    loadOf: (person) => Math.round(loadOn(here.at.organisation.assignments, person, day, canonical) * 100),
+  return {
+    chart, roles, typeName, names, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
+    day, today, language, t, selectedId: props.selectedId, chosen: props.chosen, pick, open, choose,
+    external: (person: PersonId) => {
+      const entry = resolvePerson(person, register)
+      return entry?.kind === 'external' && entry.state !== 'forgotten'
+    },
+    mayAssign: (unit, roleId) => !props.readOnly || (here.heldHere(unit.id) && mayChangeIn(manages, unit.id, roleId)),
+    // A unit kept elsewhere cannot be the editor's selection: gone to, it is picked as far as this chart goes.
+    pickedId: props.selectedId ?? (props.chosen === undefined && current !== undefined && !here.heldHere(current) ? current : undefined),
+    loadOf: (person) => Math.round(loadOn(here.at.organisation.assignments, person, day, names.canonical) * 100),
     vacancy: editable ? (unit, roleId, at) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId }, at })
       else open(unit.id)
     } : undefined,
     folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, byUnit) },
     people: folds.people,
-    focus,
+    focus: going.focus,
     roving: roving ?? current ?? drawnTop[0]?.id,
     onKey,
     ...(newUnit.offer ? { add: { offer: newUnit.offer, open: newUnit.open } } : {}),
     ...(moving.open ? { move: moving.open } : {}),
     ...(moving.tree ? { moving: moving.tree } : {}),
   }
-  useFindKey(stage)
-  // The panel docked beside the chart is up for what is picked and for the summary, and otherwise the chart has the width.
-  const ownPanel = moving.up !== undefined || (lines === 'exceptions' && props.selectedId === undefined && chosen === undefined)
-  const docked = !ownPanel && (props.selectedId !== undefined || chosen !== undefined || summaryAsked)
-  const { onDock } = props
-  useEffect(() => { onDock?.(docked) }, [onDock, docked])
-  useEffect(() => () => onDock?.(true), [onDock])
-  const organisationName = props.scopeLabel('')
-  const level = levelOfFolds(chart, folds.folded)
-  const unitName = useCallback((id: ElementId) => here.name(id), [here])
-  const empty = chart.roots.length === 0
+}
+
+/** What is over the chart: the bar, or the word that a move is under way; and the bands for another day and a focus. */
+function ChartHead({ props, chart, folds, lines, onLines, moving, empty, focused, organisation, onFocus, newUnit, language, t }: {
+  props: ChartPageProps; chart: OrgChart; folds: ChartFolds; lines: ChartLines; onLines: (lines: ChartLines) => void; moving: ElementId | undefined; empty: boolean
+  focused: ChartUnit | undefined; organisation: string; onFocus: (id: ElementId | undefined) => void; newUnit: NewUnit; language: Language; t: Translate
+}) {
+  const { here, selectedId, diagram } = props
+  const picked = selectedId !== undefined && here.heldHere(selectedId) ? [...walk(chart.roots)].find((unit) => unit.id === selectedId) : undefined
   return (
-    <div data-testid="chart-page" className="chart-page">
-      {moving.up !== undefined
-        ? <Band tone="editing" title={t('unitMove.bandTitle', { name: here.name(moving.up) })} detail={t('unitMove.bandDetail')} />
-        : !empty && (
-          <ChartBar
-            level={level} onLevel={folds.setLevels} people={folds.people} onPeople={folds.setPeople} lines={lines} onLines={(next) => setReading({ lines: next })}
-            add={addOnBar(newUnit, props.make, pickedUnit && here.heldHere(pickedUnit.id) ? pickedUnit : undefined, t)} day={props.day} shownDay={diagram.asOf} t={t}
-          />
-        )}
-      <ShownDayBand day={props.day} asOf={diagram.asOf} language={language} t={t} />
-      {focused && !moving.up && <FocusBand chart={chart} focused={focused} organisation={organisationName} onFocus={focus} t={t} />}
-      <div className="chart-page__main">
-        {!moving.up && !empty && (
-          <ChartOutline
-            chart={chart} units={drawnTop} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={(id) => { folds.expand(id); setSummaryAsked(false); goTo(id) }}
-            order={order} moveTo={moving.open && current !== undefined ? () => moving.open?.(current) : undefined} canMove={moving.open !== undefined} {...(props.outline ? { width: props.outline } : {})}
-            find={<ChartFind chart={chart} names={names} roleName={roleName} onUnit={(id) => { setSummaryAsked(false); goTo(id) }} onHolder={(holder, unit) => { goTo(unit.id); choose(holder, unit) }} onMe={findMe} note={note} t={t} />}
-            t={t}
-          />
-        )}
-        <div className="chart-page__work">
-          <Box ref={zoom.attach} {...(empty ? {} : zoom.canvas)} data-testid="chart-body" className="chart-canvas" sx={locatedRing(locatedId)}>
-            {empty
-              ? <EmptyChart day={day} language={language} add={newUnit.offer && props.make ? <AddAtTop offer={newUnit.offer()} onAdd={() => newUnit.open()} onLink={props.make.onOpenOperating} guide="chart.addFirst" testId="chart-add-first" primary t={t} /> : undefined} t={t} />
-              : (
-                <div ref={stage} className="chart-stage" style={{ zoom: zoom.zoom }}>
-                  <ChartConnectors stage={stage} zoom={zoom.zoom} redraw={redraw} />
-                  <OrgTree organisation={organisationName} focused={focused} drawing={drawing} />
-                  <ChartLinesOverlay stage={stage} lines={drawnLines} zoom={zoom.zoom} redraw={redraw} unitName={unitName} t={t} />
-                </div>
-              )}
-          </Box>
-          {!empty && <CanvasDock zoom={zoom.zoom} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />}
-          {!empty && <ChartLinesLegend t={t} />}
-          {!empty && (
-            <div className="chart-foot">
-              <button type="button" className="chart-foot__line" data-testid="chart-count" data-guide="chart.summary" aria-expanded={summaryAsked} onClick={() => { onSelect(undefined); onChoose?.(undefined); setSummaryAsked((was) => !was) }}>
-                {summaryWords({ units: chart.units, people: chart.people, vacant: vacanciesIn(chart) }, t).map((part) => part.text).join(' · ')}
-                {byUnit.size > 0 ? <span className="chart-foot__part" data-warn=""> · {t('chart.rollFindingsOther', { count: [...byUnit.values()].reduce((sum, one) => sum + one, 0) })}</span> : null}
-              </button>
-            </div>
-          )}
-        </div>
-        {moving.panel && <div className="chart-page__panel">{moving.panel}</div>}
-        {!moving.panel && ownPanel && (
-          <div className="chart-page__panel">
-            <ExceptionsPanel
-              exceptions={exceptions} organisation={here.at.organisation} names={names} onGoTo={goTo} onOperating={props.make?.onOpenOperating}
-              onClose={() => setReading({ lines: 'person' })} t={t}
-            />
-          </div>
-        )}
-      </div>
-      {assigning && people && props.assign && (
-        <AssignPopover
-          at={assigning.at} assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
-          roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? []).filter((role) => mayAssign(assigning.unit, role.id))}
-          others={here.at.organisation.roles.filter((role) => roleOn(role, day) && mayAssign(assigning.unit, role.id))}
-          register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
-          makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
-          loadOf={(person) => t('assign.loadNow', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100) })}
-          shareOf={(person) => Math.round(loadOn(here.at.organisation.assignments, person, day, canonical) * 100)} personName={(person) => names.text(pickedPerson(person))}
-          onClose={() => setAssigning(undefined)} s={t}
+    <>
+      {moving !== undefined && <Band tone="editing" title={t('unitMove.bandTitle', { name: here.name(moving) })} detail={t('unitMove.bandDetail')} />}
+      {moving === undefined && !empty && (
+        <ChartBar
+          level={levelOfFolds(chart, folds.folded)} onLevel={folds.setLevels} people={folds.people} onPeople={folds.setPeople} lines={lines} onLines={onLines}
+          add={addOnBar(newUnit, props.make, picked, t)} day={props.day} shownDay={diagram.asOf} t={t}
         />
       )}
-      {newUnit.dialog}
+      <ShownDayBand day={props.day} asOf={diagram.asOf} language={language} t={t} />
+      {focused && <FocusBand chart={chart} focused={focused} organisation={organisation} onFocus={onFocus} t={t} />}
+    </>
+  )
+}
+
+/** The outline, with the find on top of it. */
+function ChartOutlinePane({ props, chart, units, folds, going, moving, names, day, language, t }: {
+  props: ChartPageProps; chart: OrgChart; units: readonly ChartUnit[]; folds: ChartFolds; going: Going; moving: ReturnType<typeof useChartMove>
+  names: PersonNames; day: string; language: Language; t: Translate
+}) {
+  const { here, people } = props
+  const [note, setNote] = useState<string | undefined>(undefined)
+  const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
+  const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
+  const { current, goTo, choose } = going
+  const order = useSiblingOrder({ here, day, scope: props.scope ?? '', unitId: current, land: props.readOnly ? undefined : props.reorder, t })
+  const roleName = useCallback((id: string) => here.at.organisation.roles.find((role) => role.id === id)?.name ?? id, [here])
+  const findMe = () => {
+    if (me === undefined) { setNote(t('chart.findMeWho')); return }
+    const first = unitsHolding(chart, me)[0]
+    if (first === undefined) { setNote(t('chart.findMeNone', { day: formatDay(day, language) })); return }
+    setNote(undefined)
+    goTo(first)
+  }
+  const { open: moveOpen } = moving
+  return (
+    <ChartOutline
+      chart={chart} units={units} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={(id) => { folds.expand(id); goTo(id) }}
+      order={order} moveTo={moveOpen && current !== undefined ? () => moveOpen(current) : undefined} canMove={moveOpen !== undefined} {...(props.outline ? { width: props.outline } : {})}
+      find={<ChartFind chart={chart} names={names} roleName={roleName} onUnit={goTo} onHolder={(holder, unit) => { goTo(unit.id); choose(holder, unit) }} onMe={findMe} note={note} t={t} />}
+      t={t}
+    />
+  )
+}
+
+/** The line under the chart: what it holds, and the way to the panel that says the rest. */
+function SummaryLine({ chart, byUnit, asked, onPress, t }: { chart: OrgChart; byUnit: ReadonlyMap<ElementId, number>; asked: boolean; onPress: () => void; t: Translate }) {
+  const findings = [...byUnit.values()].reduce((sum, one) => sum + one, 0)
+  return (
+    <div className="chart-foot">
+      <button type="button" className="chart-foot__line" data-testid="chart-summary-line" data-guide="chart.summary" aria-expanded={asked} onClick={onPress}>
+        <span data-testid="chart-count">{summaryWords({ units: chart.units, people: chart.people, vacant: vacanciesIn(chart) }, t).map((part) => part.text).join(' · ')}</span>
+        {findings > 0 && <span className="chart-foot__part" data-warn=""> · {t('chart.rollFindingsOther', { count: findings })}</span>}
+      </button>
     </div>
   )
+}
+
+/** Someone put in the vacancy pressed, in the popover beside it. */
+function AssignThere({ held, props, day, names, onClose, t }: { held: HeldAssigning; props: ChartPageProps; day: string; names: PersonNames; onClose: () => void; t: Translate }) {
+  const { here, people, assign, today } = props
+  if (!people || !assign) return null
+  const { organisation } = here.at
+  const manages = people.manages
+  const mayAssign = (roleId: string) => !props.readOnly || (here.heldHere(held.unit.id) && mayChangeIn(manages, held.unit.id, roleId))
+  const share = (person: PersonId) => Math.round(loadOn(organisation.assignments, person, day, names.canonical) * 100)
+  return (
+    <AssignPopover
+      at={held.at} assigning={held.assigning} unit={{ id: held.unit.id, name: held.unit.name }}
+      roles={held.unit.slots.flatMap((slot) => organisation.roles.find((role) => role.id === slot.roleId) ?? []).filter((role) => mayAssign(role.id))}
+      others={organisation.roles.filter((role) => roleOn(role, day) && mayAssign(role.id))}
+      register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
+      makeId={assign.makeId} dispatch={assign.dispatch} scopeName={assign.scopeName}
+      loadOf={(person) => t('assign.loadNow', { share: share(person.id) })} shareOf={share} personName={(person) => names.text(pickedPerson(person))}
+      onClose={onClose} s={t}
+    />
+  )
+}
+
+/** *+ Unit at the top* on an empty chart, or why none can be made yet. */
+function firstUnit(newUnit: NewUnit, make: UnitMaking | undefined, t: Translate): ReactNode {
+  if (!newUnit.offer || !make) return undefined
+  return <AddAtTop offer={newUnit.offer()} onAdd={() => newUnit.open()} onLink={make.onOpenOperating} guide="chart.addFirst" testId="chart-add-first" primary t={t} />
 }
 
 /** The box a key moved to takes the focus, on the render after the one that made it tabbable. */
@@ -385,11 +477,11 @@ function useFindKey(stage: { current: HTMLElement | null }) {
 }
 
 /** A chart saved on a day says so while nobody is looking away from it; a look says so in the frame's own band. */
-function ShownDayBand({ day, asOf, language, t }: { day: ChartDay | undefined; asOf: string | undefined; language: string; t: Translate }) {
+function ShownDayBand({ day, asOf, language, t }: { day: ChartDay | undefined; asOf: string | undefined; language: Language; t: Translate }) {
   if (!day || asOf === undefined || day.looking) return null
   return (
     <Band
-      tone="looking" title={t('chart.dayShown', { day: formatDay(asOf, language as Parameters<typeof formatDay>[1]) })} dataGuide="chart.dayBand"
+      tone="looking" title={t('chart.dayShown', { day: formatDay(asOf, language) })}
       action={<Button size="small" onClick={() => day.onChange(undefined)} data-testid="chart-day-back">{t('chart.dayBack')}</Button>}
     />
   )
@@ -403,7 +495,7 @@ function FocusBand({ chart, focused, organisation, onFocus, t }: {
   const above = unitsAboveIn(chart, focused.id).map((id) => units.find((unit) => unit.id === id)).filter((unit): unit is ChartUnit => unit !== undefined)
   return (
     <Band
-      tone="info" dataGuide="chart.focusBand"
+      tone="info"
       title={(
         <span data-testid="chart-focus-way">
           {t('chart.focusLabel')}{' '}
@@ -420,10 +512,10 @@ function FocusBand({ chart, focused, organisation, onFocus, t }: {
 }
 
 /** A chart with no units: what it is, and the first step, or why none can be taken yet. */
-function EmptyChart({ day, language, add, t }: { day: string; language: string; add: ReactNode; t: Translate }) {
+function EmptyChart({ day, language, add, t }: { day: string; language: Language; add: ReactNode; t: Translate }) {
   return (
     <div className="chart-empty" data-testid="chart-empty">
-      <PageState state="empty" title={t('chart.emptyTitle')} body={t('chart.emptyBody', { day: formatDay(day, language as Parameters<typeof formatDay>[1]) })} />
+      <PageState state="empty" title={t('chart.emptyTitle')} body={t('chart.emptyBody', { day: formatDay(day, language) })} />
       {add}
     </div>
   )

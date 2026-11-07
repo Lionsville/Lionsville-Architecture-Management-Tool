@@ -564,36 +564,39 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     fireEvent.click(screen.getByRole('tab', { name: /Exceptions/ }))
   }]],
-  // An organisation chart, made on a landscape's home: the example has no
-  // units, and the outline, the bar and the summary beside it are drawn all the same.
-  [['an organisation chart', [
-    'chart.outline', 'chart.foldAll', 'chart.unfoldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst',
-    'chart.showLines',
-  ], async () => {
+  // An organisation chart, made on a landscape's home: the example has no units, so its first step is what is drawn.
+  [['an organisation chart', ['chart.addFirst'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     fireEvent.click(await screen.findByTestId('new-board'))
     fireEvent.click(await screen.findByTestId('new-board-chart'))
     await screen.findByTestId('chart-page')
   }]],
-  // A chart of the organisation's own teams: a unit's + makes a unit inside it, in a dialog.
-  [['an organisation chart with a unit', ['chart.addInside', 'chart.moveTo'], async () => {
+  // A chart of the organisation's own teams: its bar, its outline and its find, and the line that opens its summary.
+  [['an organisation chart with a unit', ['chart.outline', 'chart.bar', 'chart.foldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.showLines', 'chart.day', 'chart.find', 'chart.findMe'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
-    await screen.findAllByTestId('chart-add-inside')
+    await screen.findAllByTestId('chart-unit-open')
   }],
-  ['its dialog for a new unit', ['chart.newUnit'], async () => {
-    fireEvent.click(screen.getAllByTestId('chart-add-inside')[0])
-    await screen.findByTestId('new-unit-dialog')
+  ['the list of its exceptions', ['chart.exceptions'], async () => {
+    fireEvent.click(screen.getByRole('button', { name: /^Lines:/ }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Exceptions' }))
+    await screen.findByTestId('chart-exceptions')
   }]],
-  // A unit picked on the chart: Move to… in the outline, Sits under in its inspector, and the dialog they open (3.7.1).
-  [['a unit picked on the chart', ['chart.outlineMoveTo', 'unit.sitsUnder'], async () => {
+  // A unit picked: its verbs on its box, a unit inside it made in a dialog.
+  [['a unit picked on the chart', ['chart.addInside', 'chart.moveTo', 'chart.focus', 'chart.outlineMoveTo', 'unit.sitsUnder'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
     fireEvent.click((await screen.findAllByTestId('chart-unit-open'))[0])
     await screen.findByTestId('unit-sits-under-move')
   }],
-  ['its dialog for a move', ['chart.moveUnit'], async () => {
+  ['its dialog for a new unit', ['chart.newUnit'], async () => {
+    fireEvent.click(screen.getByTestId('chart-add-inside'))
+    await screen.findByTestId('new-unit-dialog')
+  }],
+  ['its panel for a move', ['chart.moveUnit'], async () => {
+    fireEvent.click(within(screen.getByTestId('new-unit-dialog')).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByTestId('new-unit-dialog')).toBeNull())
     fireEvent.click(screen.getByTestId('chart-outline-move-to'))
     await screen.findByTestId('move-unit-dialog')
   }]],

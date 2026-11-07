@@ -43,11 +43,12 @@ export function placesOf(options: readonly PickOption[], unitId: ElementId): Pic
 export function MovePanel({ unitId, organisation, name, personName, planning, onClose, s }: MovePanelProps) {
   const { parent, setParent, options, current, along, toggleAlong, beside, plan, parentId, said, ready, move } = planning
   return (
+    <div className="chart-move__holder" data-testid="move-unit-dialog">
     <Panel
       kind={s('unitMove.panelKind')} name={s('unitMove.panelName', { name: name(unitId) })} onClose={onClose} dataGuide="chart.moveUnit"
-      facts={current === undefined ? s('unitMove.atTopNow') : s('unitMove.sitsNow', { parent: name(current) })}
+      facts={<span data-testid="move-unit-now">{current === undefined ? s('unitMove.atTopNow') : s('unitMove.sitsNow', { parent: name(current) })}</span>}
     >
-      <div className="chart-move" data-testid="move-unit-dialog">
+      <div className="chart-move">
         <Picker
           label={s('unitMove.parent')} placeholder={s('unitMove.parent')} options={placesOf(options, unitId)} selected={parent ?? undefined} posture="open" autoFocus
           onPick={(place) => setParent(place.id)} onEscape={onClose} inputTestId="move-unit-parent" maxShown={200}
@@ -72,6 +73,7 @@ export function MovePanel({ unitId, organisation, name, personName, planning, on
         </div>
       </div>
     </Panel>
+    </div>
   )
 }
 

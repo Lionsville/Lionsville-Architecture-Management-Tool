@@ -3,9 +3,10 @@
 
 /**
  * An organisation chart as a test meets it unfolded. A first open folds
- * below the second level (3.7.3), so a test about what a chart of three
- * levels draws opens it as a person who had unfolded it before would: with
- * the view's folds kept for the session, and none of them shut.
+ * below the second level (3.7.3) and draws the leaders only (4.0.0), so a test
+ * about what a chart of three levels draws opens it as a person who had unfolded
+ * it before would: with the view's folds kept for the session, none of them
+ * shut, and every role a unit must fill drawn.
  */
 import { foldKey, SessionFolds } from '../sessionFolds'
 
@@ -14,5 +15,6 @@ export function leftUnfolded(scope: string, viewId: string): SessionFolds {
   const folds = new SessionFolds()
   folds.keep(foldKey(scope, viewId, 'chart'), new Set())
   folds.keep(foldKey(scope, viewId, 'outline'), new Set())
+  folds.keep(foldKey(scope, viewId, 'optional'), new Set(['required']))
   return folds
 }

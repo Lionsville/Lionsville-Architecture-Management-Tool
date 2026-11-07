@@ -71,6 +71,8 @@ export type Drawing = {
   language: Language
   t: Translate
   selectedId: ElementId | undefined
+  /** The unit picked on this chart: the editor's selection, or one kept elsewhere that was gone to. */
+  pickedId: ElementId | undefined
   /** The assignment chosen on this chart, while nothing else is selected. */
   chosen: string | undefined
   /** A unit's name pressed: the unit picked, on the chart. */
@@ -161,7 +163,7 @@ function Branch({ unit, drawing, focus = false }: { unit: ChartUnit; drawing: Dr
 /** One unit: its type, name, the people in it, and what is worth saying. */
 function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   const { t, folds, moving } = drawing
-  const selected = drawing.selectedId === unit.id
+  const selected = drawing.pickedId === unit.id
   const shut = unit.children.length > 0 && folds.folded.has(unit.id)
   const state = moving?.stateOf(unit.id)
   const pressable = !moving || state === 'ok' || state === 'warn'

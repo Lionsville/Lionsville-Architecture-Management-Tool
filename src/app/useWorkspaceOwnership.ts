@@ -70,6 +70,8 @@ export function useWorkspaceOwnership(deps: {
    * today and the day the board is looked at (ADR-0027), fresh ids, every
    * scope's path.
    */
+  /** The chart on screen, asked to move a unit itself: filled in once the pages are there, which come after this. */
+  chartMove?: { current: ((unitId: string) => boolean) | undefined }
   units: {
     people: PeopleRegisterAccess | undefined; today: string; day?: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[]
     /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
@@ -157,6 +159,7 @@ export function useWorkspaceOwnership(deps: {
         ...(units.openResponsibilities ? { onOpenResponsibilities: units.openResponsibilities } : {}),
         // Sits under moves the unit as a delete's units are moved: the structure's lander, all or none (3.7.1).
         ...(deleting ? { move: deleting.land } : {}),
+        ...(deps.chartMove ? { moveHere: (unitId: string) => deps.chartMove?.current?.(unitId) ?? false } : {}),
       }),
       leads: isUnit(element),
     }),
