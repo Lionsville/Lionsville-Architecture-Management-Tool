@@ -51,6 +51,7 @@ import type { CauseStrength } from '../observation'
 import {
   GATE_HINT, GATE_LABEL, OUTCOME_LABEL, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
+import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
 import { LinkList, ReaderRoot, Term, Value } from './Readers'
 import type { ReaderPart } from './Readers'
 import { StepLadder } from '../../widgets/kit/NextStep'
@@ -364,7 +365,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               </Section>
             )}
 
-            <div className="chain-body" data-document>{rendered}</div>
+            <MarkdownDocument className="chain-body">{rendered}</MarkdownDocument>
 
             {part === 'full' && (<>
             <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
@@ -533,7 +534,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
         <Term>{s('solution.result')}</Term><Value testId="experiment-result">{shown(experiment.result)}</Value>
       </Box>
       {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}
-      <div className="chain-body" data-document>{rendered}</div>
+      <MarkdownDocument className="chain-body">{rendered}</MarkdownDocument>
       {part === 'full' && (
         <>
           <RecordChanges about={{ kind: 'experiment', id: experiment.id }} first="proposed" />

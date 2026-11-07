@@ -8,6 +8,7 @@
   min-height: 0;
   background: var(--surface);
   color: var(--ink);
+  font-family: var(--font-ui);
   font-size: var(--t-body);
   line-height: var(--lh-body);
 }

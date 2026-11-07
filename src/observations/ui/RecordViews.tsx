@@ -268,10 +268,11 @@ export function RecordFull({ held, heldKey, ctx, page, backLabel, onBack }: Reco
       title={view.title}
       actions={<BarButtons view={view} ctx={ctx} held={held} />}
       sections={[{
-        id: 'record', heading: ctx.s('observation.fullRecord'),
+        // The record's title is the page's heading: the text starts straight under the question, as a document does.
+        id: 'record', heading: ctx.s('observation.fullRecord'), headless: true,
         children: (
           <>
-            {view.next && <NextStep {...view.next} />}
+            {view.next && <div className="chain-read__next"><NextStep inline {...view.next} /></div>}
             <RecordBody selected={held} selectedKey={heldKey} ctx={ctx} part="full" />
           </>
         ),

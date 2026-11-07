@@ -28,6 +28,7 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { fillEmptySections } from '../../documentation/documentation'
+import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
@@ -110,6 +111,28 @@ export const READER_ROOT_SX = {
 /** The reader's outermost box, and the panel's treatment for its fields (`CompactForms`). */
 export function ReaderRoot({ testId, children }: { testId: string; children: ReactNode }) {
   return <Box data-testid={testId} sx={READER_ROOT_SX}><CompactForms>{children}</CompactForms></Box>
+}
+
+/** A record's text as it is read: on its reader, and on the Preview of its editor, which is the same document. */
+export function renderedBody(body: string, s: Translate, renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode): ReactNode {
+  // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
+  return body.trim() ? renderMarkdown(fillEmptySections(body, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+}
+
+/**
+ * A whole record as a document: its text, and what is known about it in a quiet
+ * column beside it. Where there is no room for the column, as in the panel beside a
+ * map, the facts stand above the text.
+ */
+export function RecordDocument({ side, children }: { side: ReactNode; children: ReactNode }) {
+  return (
+    <div className="chain-read">
+      <div className="chain-read__page">
+        <div className="chain-read__text">{children}</div>
+        <div className="chain-read__side">{side}</div>
+      </div>
+    </div>
+  )
 }
 
 /** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
@@ -283,8 +306,7 @@ export function ObservationReader(props: ObservationReaderProps) {
   const canEdit = !readOnly && !fromScope && !mergedInto && !archived
   // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
   const names = usePersonNames()
-  // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
-  const rendered = observation.body.trim() ? renderMarkdown(fillEmptySections(observation.body, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  const rendered = renderedBody(observation.body, s, renderMarkdown)
   const label = formatObservationNumber(observation.number)
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
@@ -306,22 +328,23 @@ export function ObservationReader(props: ObservationReaderProps) {
           {notedEvent.note ? s('observation.notedOnWhy', { date: day(notedEvent.date), reason: notedEvent.note }) : s('observation.notedOn', { date: day(notedEvent.date) })}
         </p>
       )}
-      {part === 'full' && (
-        <ObservationFacts
-          observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
-          explainedBy={props.explainedBy} onOpen={props.onOpen}
-          unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
-        />
-      )}
-      <div className="chain-body" data-document>{rendered}</div>
-      {part === 'full' && (
-        <>
+      {part === 'full' ? (
+        <RecordDocument
+          side={(
+            <ObservationFacts
+              observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
+              explainedBy={props.explainedBy} onOpen={props.onOpen}
+              unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
+            />
+          )}
+        >
+          <MarkdownDocument>{rendered}</MarkdownDocument>
           {!fromScope && <CitationsSection about={{ kind: 'observation', id: observation.id }} subject={`${observation.title}\n${observation.body}`} readOnly={!canEdit} />}
           <RecordChanges about={{ kind: 'observation', id: observation.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
           <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />
           <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
-        </>
-      )}
+        </RecordDocument>
+      ) : <MarkdownDocument className="chain-body">{rendered}</MarkdownDocument>}
     </ReaderRoot>
   )
 }
@@ -357,7 +380,7 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
 }) {
   const quiet = (shown: boolean) => ({ color: shown ? 'inherit' : 'text.secondary' })
   return (
-    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 'var(--t-body)' }}>
+    <dl className="chain-facts">
       <Term>{s('observation.toneField')}</Term><Value testId={`observation-tone-${toneOf(observation)}`}><ToneWord tone={toneOf(observation)} s={s} /></Value>
       <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
       <Term>{s('observation.whereField')}</Term>
@@ -378,7 +401,7 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
       <Value testId="observation-explained-by">
         <ExplainedBy links={explainedBy} label={label} s={s} onOpen={onOpen} onUnlink={unlink} />
       </Value>
-    </Box>
+    </dl>
   )
 }
 
@@ -575,8 +598,7 @@ export function CauseReader(props: CauseReaderProps) {
     setAnswered(props.asked)
     if (props.asked) setPanel(props.asked.panel)
   }
-  // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
-  const rendered = cause.body.trim() ? renderMarkdown(fillEmptySections(cause.body, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  const rendered = renderedBody(cause.body, s, renderMarkdown)
   const root = isRootCause(cause)
   const label = causeLabel(cause)
   const flipped = formatCauseNumber(cause.number, !root)
@@ -600,18 +622,25 @@ export function CauseReader(props: CauseReaderProps) {
           action={fromScope.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, fromScope.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
         />
       )}
-      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 'var(--t-body)' }}>
-        <Term>{s('observation.colState')}</Term>
-        <Value testId="cause-state">{s(STATE_LABEL[cause.state])}{root && <span data-testid="cause-root"> · {s('observation.rootCause')}</span>}</Value>
-      </Box>
-      <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
-      <div className="chain-body" data-document>{rendered}</div>
-      {part === 'full' && (
-        <>
-          <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
-          <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
-        </>
-      )}
+      <RecordDocument
+        side={(
+          <>
+            <dl className="chain-facts">
+              <Term>{s('observation.colState')}</Term>
+              <Value testId="cause-state">{s(STATE_LABEL[cause.state])}{root && <span data-testid="cause-root"> · {s('observation.rootCause')}</span>}</Value>
+            </dl>
+            <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
+          </>
+        )}
+      >
+        <MarkdownDocument>{rendered}</MarkdownDocument>
+        {part === 'full' && (
+          <>
+            <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
+            <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
+          </>
+        )}
+      </RecordDocument>
     </ReaderRoot>
   )
 }
@@ -630,7 +659,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
   const label = causeLabel(cause)
   const unlinkFrom = (from: string) => s('observation.tipUnlink', { from, to: label })
   return (
-    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 'var(--t-body)' }}>
+    <dl className="chain-facts">
               <Term>{s('observation.explains')}</Term>
               <Value testId="cause-explains">
                 {cause.explains.length === 0
@@ -682,7 +711,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
                   </Value>
                 </>
               )}
-            </Box>
+            </dl>
   )
 }
 

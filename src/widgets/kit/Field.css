@@ -43,7 +43,7 @@
 .kit-grow__text.kit-grow__text { height: 100%; overflow: hidden; resize: none; outline: none; }
 .kit-grow__text::placeholder { color: var(--ink-3); opacity: 1; }
 
-.kit-titleField { display: flex; flex-direction: column; gap: var(--s-1); margin-bottom: var(--s-5); font-size: var(--t-xl); font-weight: var(--fw-strong); line-height: var(--lh-tight); }
+.kit-titleField { display: flex; flex-direction: column; gap: var(--s-1); margin-bottom: var(--s-5); font-size: var(--t-title); font-weight: var(--fw-strong); line-height: var(--lh-tight); }
 .kit-titleField > .kit-field__words { font-weight: var(--fw-regular); line-height: var(--lh-body); }
 .kit-titleField__read { margin: 0; padding-bottom: var(--s-1); border-bottom: 1px solid transparent; font: inherit; overflow-wrap: anywhere; }
 .kit-titleField > .kit-grow { padding-bottom: var(--s-1); border-bottom: 1px solid var(--line); }
