@@ -11,7 +11,7 @@
  * lists, and a change below is handed to the host as that scope's.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
@@ -72,40 +72,43 @@ const landedBelow = (onChangeBelow: ReturnType<typeof vi.fn<ChangeBelow>>) => {
   return { path, next: change({ observations: [...held.observations], causes: [...held.causes], solutions: [], experiments: [] })! }
 }
 
-describe('the readers’ buttons', () => {
-  it('names every action, says in full what it does, and says it on keyboard focus too', async () => {
-    mount({ initialId: 'o1' })
-    const actions = within(screen.getByRole('group', { name: 'Actions on OB-0001' }))
-    expect(actions.getAllByRole('button').map((one) => one.textContent)).toEqual(['Seen again', 'Cause', 'Edit', 'Merge', 'Archive', 'Delete'])
-    const seen = actions.getByRole('button', { name: 'Seen again' })
+const more = () => fireEvent.click(screen.getAllByRole('button', { name: 'More actions' }).at(-1)!)
+
+describe('what a record offers', () => {
+  it('has the next question’s verb in the Next step, the everyday ones beside it, and the others under More, each saying in full what it does', async () => {
+    mount({ initialId: 'o1', initialTab: 'register' })
+    const seen = screen.getByTestId('observation-seen-again')
+    expect(seen.textContent).toBe('Seen again')
     expect(seen.getAttribute('title')).toBe('Record that this was seen again. It adds a sighting to this observation; nothing new is recorded.')
-    fireEvent.keyDown(document.body, { key: 'Tab' })
-    act(() => seen.focus())
-    const tip = await screen.findByRole('tooltip')
-    expect(tip.textContent).toContain('nothing new is recorded')
-    expect(seen.getAttribute('aria-describedby')).toBe(tip.id)
-    // A cause's say what they change it into.
+    expect(screen.getByTestId('reader-edit').textContent).toBe('Edit')
+    more()
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent?.trim())).toEqual(['Merge…', 'Archive…', 'Delete…'])
     cleanup()
-    mount({ initialId: 'c1' })
-    const make = screen.getByRole('button', { name: 'Make root cause' })
-    expect(make.getAttribute('title')).toContain('CA-0001 becomes RC-0001. Refused while a cause explains it.')
-    expect(screen.getByRole('button', { name: 'Deeper cause' })).toBeTruthy()
+    // A cause's say what they change it into.
+    mount({ initialId: 'c1', initialTab: 'analysis-list', initialNonce: 1 })
+    expect(screen.getByRole('dialog', { name: 'Window sized for 2019' }).textContent).toContain('And why is that?')
+    expect(screen.getByTestId('cause-deeper').textContent).toBe('Ask why')
+    expect(screen.getByTestId('cause-root-toggle').textContent).toBe('This is the root cause')
     expect(await axeFindings()).toEqual([])
   })
 
   it('offers a root cause a solution and never a deeper cause', () => {
-    mount({ initialId: 'c2' })
-    const actions = within(screen.getByRole('group', { name: 'Actions on RC-0002' }))
-    expect(actions.getAllByRole('button').map((one) => one.textContent)).toEqual(['Solution', 'Make cause', 'Local cause', 'Verify', 'Edit', 'Merge', 'Delete'])
+    mount({ initialId: 'c2', initialTab: 'analysis-list', initialNonce: 1 })
+    expect(screen.getByRole('dialog', { name: 'Nobody owns the batch' }).textContent).toContain('What could take this away?')
+    expect(screen.getByTestId('cause-solution').textContent).toBe('Solution')
+    expect(screen.queryByTestId('cause-deeper')).toBeNull()
+    expect(screen.getByTestId('cause-verify')).toBeTruthy()
+    more()
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent?.trim())).toEqual(['Not the root after all…', 'Local cause…', 'Merge…', 'Delete…'])
   })
 
   it('adds a deeper cause to a cause below in its own scope, and says so before and after', async () => {
-    const { onChange, onChangeBelow } = mount({ initialId: 'acme/claims/intake#bc1' })
+    const { onChange, onChangeBelow } = mount({ initialId: 'acme/claims/intake#bc1', initialTab: 'analysis-list', initialNonce: 1 })
     expect(screen.getByTestId('cause-from-below').textContent).toContain('Local to Intake. What you add to it here is made in Intake')
-    fireEvent.click(screen.getByRole('button', { name: 'Deeper cause' }))
-    expect(screen.getByTestId('link-made-as').textContent).toBe('Made in Intake as CA-0003.')
-    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Intake has no duplicate check' } })
-    fireEvent.click(screen.getByTestId('link-create'))
+    fireEvent.click(screen.getByTestId('cause-deeper'))
+    expect(screen.getByTestId('ladder-made-as').textContent).toContain('CA-0003')
+    fireEvent.change(screen.getByTestId('ladder-title'), { target: { value: 'Intake has no duplicate check' } })
+    fireEvent.click(screen.getByTestId('ladder-add'))
     expect(onChange).not.toHaveBeenCalled()
     const { path, next } = landedBelow(onChangeBelow)
     expect(path).toBe('acme/claims/intake')
@@ -114,18 +117,19 @@ describe('the readers’ buttons', () => {
   })
 
   it('says plainly when the person may read the scope below and not change it', async () => {
-    const { onChangeBelow } = mount({ initialId: 'acme/claims/intake#bc1' })
+    const { onChangeBelow } = mount({ initialId: 'acme/claims/intake#bc1', initialTab: 'analysis-list', initialNonce: 1 })
     onChangeBelow.mockImplementation(() => Promise.resolve({ ok: false, reason: 'shell.scopeReadOnly' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Deeper cause' }))
-    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Intake has no duplicate check' } })
-    fireEvent.click(screen.getByTestId('link-create'))
+    fireEvent.click(screen.getByTestId('cause-deeper'))
+    fireEvent.change(screen.getByTestId('ladder-title'), { target: { value: 'Intake has no duplicate check' } })
+    fireEvent.click(screen.getByTestId('ladder-add'))
     await waitFor(() => expect(screen.getByTestId('observation-notice').textContent)
       .toBe('Nothing was made in Intake: you may read it, but not change it.'))
   })
 
-  it('links a cause here to a cause below from either end, and keeps the link on the cause here', () => {
-    const { onChange } = mount({ initialId: 'c1' })
-    fireEvent.click(screen.getByRole('button', { name: 'Local cause' }))
+  it('links a cause here to a cause below from either end, and keeps the link on the cause here', async () => {
+    const { onChange } = mount({ initialId: 'c1', initialTab: 'analysis-list', initialNonce: 1 })
+    more()
+    fireEvent.click(screen.getByTestId('cause-local'))
     // Only a cause below that is not a root is offered: a root ends its chain.
     expect(screen.getAllByTestId('link-candidate').map((one) => one.textContent)).toEqual(['CA-0001 The intake form has no lookup (Intake)'])
     fireEvent.click(screen.getByRole('radio', { name: 'CA-0001 The intake form has no lookup (Intake)' }))
@@ -135,8 +139,9 @@ describe('the readers’ buttons', () => {
     ])
     cleanup()
     // From below: a new cause here, a root as the mockup has it, explaining the one below.
-    const again = mount({ initialId: 'acme/claims/intake#bc1' })
-    fireEvent.click(screen.getByRole('button', { name: 'Org cause' }))
+    const again = mount({ initialId: 'acme/claims/intake#bc1', initialTab: 'analysis-list', initialNonce: 1 })
+    more()
+    fireEvent.click(screen.getByTestId('cause-org'))
     fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Policyholder data has no owner' } })
     fireEvent.click(screen.getByTestId('link-create'))
     expect(again.onChangeBelow).not.toHaveBeenCalled()
@@ -145,11 +150,12 @@ describe('the readers’ buttons', () => {
     })
   })
 
-  it('refuses an Org cause on a root cause below, saying why and how to put it right', () => {
-    const { onChange } = mount({ initialId: 'acme/claims/intake#bc2' })
-    fireEvent.click(screen.getByRole('button', { name: 'Org cause' }))
+  it('refuses an Org cause on a root cause below, saying why and how to put it right', async () => {
+    const { onChange } = mount({ initialId: 'acme/claims/intake#bc2', initialTab: 'analysis-list', initialNonce: 1 })
+    more()
+    fireEvent.click(screen.getByTestId('cause-org'))
     expect(screen.queryByRole('dialog', { name: /A cause of Claims/ })).toBeNull()
-    expect(screen.getByRole('alert').textContent).toContain('is a root cause: nothing explains it. Make it a cause first')
+    await waitFor(() => expect(screen.getByTestId('cause-org-refused').textContent).toContain('is a root cause: nothing explains it. Make it a cause first'))
     expect(onChange).not.toHaveBeenCalled()
   })
 })

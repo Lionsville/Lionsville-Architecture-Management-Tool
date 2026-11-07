@@ -25,6 +25,8 @@ import { ObservationsPage } from './ObservationsPage'
 afterEach(() => cleanup())
 
 const STORED = 'Stored Words'
+const VIEW = /^(View|Weergave|Ansicht)/
+const RECORDED_BY = /^(Recorded by|Vastgelegd door|Erfasst von)/
 const observation = (recordedBy: RecordedBy): Observation => ({
   id: 'o1', number: 1, title: 'Nightly batch overruns', date: '2026-09-08', impact: 'major', seen: 1, body: '',
   history: [{ date: '2026-09-08', kind: 'recorded' }], recordedBy,
@@ -44,10 +46,15 @@ function mount(recordedBy: RecordedBy, people: readonly Person[] | undefined, re
     </PersonNamesProvider>,
   )
 }
-const onTheColumn = () => screen.getByTestId('observation-recorded-by-o1').textContent
+const onTheColumn = () => {
+  fireEvent.click(screen.getByRole('button', { name: VIEW }))
+  fireEvent.click(screen.getByRole('checkbox', { name: RECORDED_BY }))
+  return screen.getByTestId('observation-recorded-by-o1').textContent
+}
 const inTheReader = () => {
+  fireEvent.keyDown(document.querySelector('.kit-filter__pop')!, { key: 'Escape' })
   fireEvent.click(screen.getByTestId('observation-row-o1'))
-  return within(screen.getByTestId('observation-reader')).getByTestId('observation-recorded-by').textContent
+  return screen.getByTestId('observation-recorded-by').textContent
 }
 const both = (want: string) => {
   expect(onTheColumn()).toBe(want)

@@ -211,6 +211,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
       <form
         className="chain-form"
         aria-label={s('observation.new')}
+        noValidate
         onSubmit={(event) => { event.preventDefault(); record() }}
         onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); cancel() } }}
       >
@@ -259,7 +260,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
         />
         <ExampleField
           required label={s(affected.label)} value={sections.affected} onChange={(value) => setSection('affected', value)}
-          example={s(affected.example)} problem={shown.affected ? s('observation.formAffectedMissing') : undefined} testId="form-section-affected"
+          example={s(affected.example)} problem={shown.affected ? s('observation.formAffectedMissing') : undefined} testId="form-affected"
         />
         <details className="chain-more" open={more || Boolean(shown.date)} onToggle={(event) => setMore(event.currentTarget.open)}>
           <summary data-testid="form-more">{s('observation.formMore')}</summary>

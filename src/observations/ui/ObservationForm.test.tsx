@@ -65,7 +65,7 @@ function mount(over: Partial<ObservationsPageProps> = {}) {
 }
 
 const lastChange = (onChange: ReturnType<typeof vi.fn>) => onChange.mock.calls.at(-1)![0] as ObservationWork
-const form = () => within(screen.getByRole('dialog', { name: 'New observation' }))
+const form = () => within(screen.getByRole('form', { name: 'New observation' }))
 const openForm = () => fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
 const fill = (title: string) => {
   fireEvent.change(screen.getByTestId('form-title'), { target: { value: title } })
@@ -288,30 +288,63 @@ describe('the new observation form', { timeout: 20_000 }, () => {
 })
 
 describe('a tone, read and changed (ADR-0038, amended §9)', () => {
-  it('is changed in the reader\'s edit, as a step', () => {
+  it('is changed in the full window, as a step', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
-    const reader = within(screen.getByTestId('observation-reader'))
-    expect(reader.getByTestId('observation-tone-neutral')).toBeTruthy()
-    fireEvent.click(reader.getByTestId('reader-edit'))
-    expect(reader.getByRole('button', { name: 'Neutral' }).getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(reader.getByRole('button', { name: 'Bright spot' }))
-    // Leaving the edit commits it.
-    fireEvent.click(reader.getByTestId('reader-read'))
+    expect(screen.getByTestId('observation-tone-neutral')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('reader-edit'))
+    const tone = screen.getByRole('combobox', { name: 'What it is' }) as HTMLSelectElement
+    expect(tone.value).toBe('neutral')
+    fireEvent.change(tone, { target: { value: 'bright' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', tone: 'bright' })
   })
 
-  it('says so on its chip, a 14\'s bright spot too, and who recorded it', () => {
+  it('says so beside the text, a 14\'s bright spot too, and who recorded it', () => {
     mount({ model: { ...model, observations: [observation({ bright: true, recordedBy: { name: 'Ada Example', via: 'An agent' } })] } })
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
-    const reader = within(screen.getByTestId('observation-reader'))
-    expect(reader.getByTestId('observation-tone-bright').textContent).toBe('Bright spot')
-    expect(reader.getByTestId('observation-recorded-by').textContent).toBe('Ada Example via An agent')
+    expect(screen.getByTestId('observation-tone-bright').textContent).toBe('Bright spot')
+    expect(screen.getByTestId('observation-recorded-by').textContent).toBe('Ada Example via An agent')
   })
 
   it('says when who recorded it was not kept', () => {
     mount()
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
-    expect(within(screen.getByTestId('observation-reader')).getByTestId('observation-recorded-by').textContent).toBe('Who recorded it was not kept')
+    fireEvent.click(screen.getByRole('button', { name: 'Open full record' }))
+    expect(screen.getByTestId('observation-recorded-by').textContent).toBe('Who recorded it was not kept')
+  })
+})
+
+describe('a long title', () => {
+  it('is told so once, with one press to move the rest down, and nothing refuses it', () => {
+    mount()
+    openForm()
+    fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'The planners said in the review that the estimate differs from the depot, and that customers ring the depot to ask' } })
+    expect(screen.getByTestId('form-title-long').textContent).toContain('characters')
+    fireEvent.click(screen.getByTestId('form-title-move'))
+    expect((screen.getByTestId('form-title') as HTMLTextAreaElement).value).toBe('The planners said in the review that the estimate differs from the depot')
+    expect((screen.getByTestId('form-saw') as HTMLTextAreaElement).value).toBe('and that customers ring the depot to ask')
+    expect(screen.queryByTestId('form-title-long')).toBeNull()
+  })
+})
+
+describe('after recording', () => {
+  it('asks once why, and Not now leaves it on the waiting list', () => {
+    const { onChange, rerender } = mount()
+    openForm()
+    fill('Labels print twice')
+    fireEvent.click(screen.getByTestId('form-record'))
+    const next = lastChange(onChange)
+    expect(next.observations.at(-1)!.title).toBe('Labels print twice')
+    // The page is handed the record back, as the workspace would.
+    rerender(
+      <ObservationsPage
+        open onClose={() => {}} model={{ ...model, observations: next.observations }} groupName="Acme" onChange={onChange}
+        s={translator('en')} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    expect(screen.getByTestId('form-recorded').textContent).toContain('OB-0002')
+    fireEvent.click(screen.getByTestId('form-not-now'))
+    expect(screen.queryByTestId('form-recorded')).toBeNull()
   })
 })

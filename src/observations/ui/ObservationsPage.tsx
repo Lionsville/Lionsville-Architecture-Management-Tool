@@ -26,6 +26,7 @@
  */
 import type { Citation } from '../../model/citable'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import Box from '@mui/material/Box'
 import { LanguageProvider } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
@@ -1069,6 +1070,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
     />
   )
   const leaving = useBackToReading(full, () => setFull(false), onClose, s('observation.close'))
+  // A panel opened from a preview replaces it: what it asks about stands beside it in the list.
+  const panelUp = forms.panel !== undefined && forms.panel !== null
+  useEffect(() => { if (panelUp && !onMap) setSelectedKey(undefined) }, [panelUp, onMap, setSelectedKey])
   const side = forms.panel ?? (onMap && selected && selectedKey ? (
     <>
       <SeamResizer
@@ -1084,7 +1088,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   return (
     <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
-        <div className="chain-page" ref={located.ref}>
+        <Box className="chain-page" ref={located.ref} sx={located.ring}>
           <div className="chain-page__tabs" data-testid="observation-topbar" style={bar.controlsInset > 0 ? { paddingInlineStart: 12 + bar.controlsInset } : undefined} data-draggable={bar.draggable || undefined}>
             <PageBack onBack={leaving.leave} label={leaving.said} />
             <Tabs<Tab>
@@ -1121,7 +1125,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
               </div>
             </>
           )}
-        </div>
+        </Box>
         {showPreview && (
           <RecordPreview
             held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} ids={previewIds} {...(listWord ? { listWord } : {})}

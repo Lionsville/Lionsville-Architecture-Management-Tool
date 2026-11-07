@@ -11,7 +11,7 @@
  * caller keeps them.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { translator } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { HostModel } from '../../model/hostModel'
@@ -70,6 +70,12 @@ function mount(model: HostModel, over: Partial<ObservationsPageProps> = {}) {
 }
 
 const lastChange = (onChange: ReturnType<typeof vi.fn>) => onChange.mock.calls.at(-1)![0] as ObservationWork
+/** Solve opens as its list; what a map draws is a press away. */
+const toSolveMap = () => {
+  fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+  fireEvent.click(screen.getByRole('radio', { name: 'Map' }))
+}
+const more = () => fireEvent.click(screen.getAllByRole('button', { name: 'More actions' }).at(-1)!)
 
 describe('the Solutions tab', () => {
   it('proposes a solution from a root cause, linked to it, and opens it', () => {
@@ -88,7 +94,7 @@ describe('the Solutions tab', () => {
     const gate = screen.getByTestId('solution-gate')
     expect(within(gate).getByTestId('solution-gate-addresses').dataset.ok).toBe('true')
     expect(within(gate).getByTestId('solution-gate-benefit').dataset.ok).toBe('false')
-    expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('solution-move').getAttribute('aria-disabled')).toBe('true')
     // "Was this tried before?" is unanswered, so why-now is not ticked either.
     expect(gate.textContent).toContain('5 to go')
   })
@@ -142,7 +148,7 @@ describe('the Solutions tab', () => {
     const shaped = solution({ state: 'shaped' })
     mount({ ...base, solutions: [shaped], experiments: [experiment({ outcome: 'confirmed' })] }, { initialId: 'so:s1' })
     expect(screen.getByTestId('solution-gate-experimentPlanned').dataset.ok).toBe('true')
-    expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByTestId('solution-move').getAttribute('aria-disabled')).toBeNull()
   })
 
   it('asks the host for the decision record when that is what the gate waits on', () => {
@@ -155,7 +161,8 @@ describe('the Solutions tab', () => {
   it('concludes an experiment from its reader, with a result and the day it ended', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({ from: '2026-09-10' })] }, { initialId: 'ex:e1' })
     // Running: back to planned, or one of the three outcomes; nothing else.
-    expect(within(screen.getByRole('group', { name: 'Move the experiment' })).getAllByRole('button').map((one) => one.textContent))
+    expect(screen.getByRole('dialog', { name: 'Two weeks at one desk' }).textContent).toContain('What did it show?')
+    expect(['experiment-outcome-planned', 'experiment-outcome-confirmed', 'experiment-outcome-refuted', 'experiment-outcome-inconclusive'].map((id) => screen.getByTestId(id).textContent))
       .toEqual(['Back to planned', 'Confirmed', 'Refuted', 'Inconclusive'])
     fireEvent.click(screen.getByTestId('experiment-outcome-confirmed'))
     expect(onChange).not.toHaveBeenCalled()
@@ -180,10 +187,11 @@ describe('the Solutions tab', () => {
       ...base, solutions: [solution({ state: 'proven' })],
       experiments: [experiment({ outcome: 'confirmed', from: '2026-09-01', to: '2026-09-10', result: 'Halved' })],
     }, { initialId: 'ex:e1' })
+    more()
     fireEvent.click(screen.getByTestId('experiment-outcome-running'))
-    expect(screen.getByRole('dialog').textContent).toContain('SO-0001 is proven on this experiment; reopening it withdraws that proof.')
+    expect(screen.getByRole('dialog', { name: /Reopen/ }).textContent).toContain('SO-0001 is proven on this experiment; reopening it withdraws that proof.')
     // Reopening takes nothing away, so it is not drawn as a danger; and it is in sentence case.
-    const reopen = within(screen.getByRole('dialog')).getByRole('button', { name: 'Reopen' })
+    const reopen = within(screen.getByRole('dialog', { name: /Reopen/ })).getByRole('button', { name: 'Reopen' })
     expect(reopen.className.split(' ')).toContain('MuiButton-colorPrimary')
     expect(getComputedStyle(reopen).textTransform).toBe('none')
     fireEvent.click(reopen)
@@ -198,22 +206,23 @@ describe('the Solutions tab', () => {
     }, { initialId: 'so:s1' })
     expect(screen.getByTestId('solution-question-proofWithdrawn')).toBeTruthy()
     expect(screen.getByTestId('solution-gate-experimentConfirmed').dataset.ok).toBe('false')
-    expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('solution-move').getAttribute('aria-disabled')).toBe('true')
     // Proven: no new cause and no new experiment until it moves back to testing.
     expect(screen.queryByTestId('solution-address')).toBeNull()
     expect(within(screen.getByTestId('solution-reader')).queryByRole('button', { name: 'Plan an experiment…' })).toBeNull()
   })
 
   it('preselects the cause being read when a new solution is proposed from the bar', () => {
-    mount(base, { initialId: 'c2' })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    mount(base, { initialTab: 'solutions-map', initialNonce: 1 })
+    fireEvent.click(screen.getByTestId('solution-picture').querySelector('[data-key="c2"]')!)
     fireEvent.click(screen.getByTestId('solution-new'))
     expect(screen.getByRole('dialog').textContent).toContain('RC-0002')
   })
 
   it('shows each experiment\'s outcome in the register', () => {
     mount({ ...base, solutions: [solution({})], experiments: [experiment({ outcome: 'refuted' })] })
-    expect(screen.getByTestId('experiment-row-outcome-e1').textContent).toBe('Refuted')
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    expect(screen.getByTestId('experiment-row-ex:e1').textContent).toContain('Refuted')
   })
 
   it('asks whether an implemented solution worked, and names what was seen since', () => {
@@ -224,7 +233,7 @@ describe('the Solutions tab', () => {
       decisions: [{ id: 'adr1', number: 1, title: 'Own the data', status: 'accepted', date: '2026-08-01', body: '', signers: [] }],
       transitions: [{ id: 'tr1', number: 1, title: 'Owner', status: 'done', to: '2026-09-01', elements: [], decisions: ['adr1'], milestones: [], body: '' }],
     }, { initialId: 'so:s1' })
-    expect(screen.getByTestId('solution-phase').textContent).toBe('Implemented')
+    expect(within(screen.getByTestId('solution-phase')).getByRole('list').querySelector('[aria-current="step"]')?.textContent).toBe('Implemented')
     expect(screen.getByTestId('solution-did-it-work').textContent).toContain(`Seen again on ${formatDay('2026-09-10', 'en')}`)
     expect(screen.getByTestId('solution-seen-again').textContent).toContain('OB-0001')
     // Its decision stands accepted, so the step back is not offered, and the reader says how to get one.
@@ -246,7 +255,7 @@ describe('the Solutions tab', () => {
 
   it('draws the picture with the solution in its lane and flags a root nobody works on', () => {
     mount({ ...base, solutions: [solution({ addresses: [{ id: 'c1', strength: 'normal' }] })] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     const picture = screen.getByTestId('solution-picture')
     expect(picture.querySelector('[data-key="so:s1"]')?.getAttribute('data-phase')).toBe('idea')
     expect(picture.querySelectorAll('[data-testid="picture-flag"]')).toHaveLength(1)
@@ -255,7 +264,7 @@ describe('the Solutions tab', () => {
 
   it('draws a proven solution after the direction it was and the experiment that confirmed it, and opens it from either box', () => {
     mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     const picture = screen.getByTestId('solution-picture')
     expect(picture.querySelector('[data-key="so:s1"]')?.getAttribute('data-phase')).toBe('proven')
     const kinds = [...picture.querySelectorAll('[data-testid="solution-link"]')].map((line) => line.getAttribute('data-kind')).sort()
@@ -264,13 +273,14 @@ describe('the Solutions tab', () => {
     const into = picture.querySelector('[data-testid="solution-link"][data-kind="tests"]')!
     expect(into.getAttribute('stroke-dasharray')).toBeNull()
     fireEvent.click(picture.querySelector('[data-key="so:s1#direction"]')!)
-    expect(screen.getByTestId('solution-phase').textContent).toBe('Proven')
+    expect(screen.getByTestId('solution-phase').querySelector('[aria-current="step"]')?.textContent).toBe('Proven')
   })
 
   it('removing a cause takes it out of every solution that addressed it', () => {
     const { onChange } = mount({ ...base, solutions: [solution({})] }, { initialId: 'c2' })
-    fireEvent.click(within(screen.getByTestId('cause-reader')).getByText('Delete'))
-    fireEvent.click(within(screen.getByRole('dialog')).getByText('Delete'))
+    more()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete…' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Delete/ })).getByText('Delete'))
     const next = lastChange(onChange)
     expect(next.causes.map((one) => one.id)).toEqual(['c1'])
     expect(next.solutions[0].addresses).toEqual([])
@@ -283,7 +293,7 @@ describe('the solutions picture’s right-click', () => {
 
   it('offers a solution’s own actions, with the move enabled once its gate is clear', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'shaped' })], experiments: [experiment({ outcome: 'confirmed' })] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
     // The reader's bar in its order, the steps its gate offers, then the occasional ones.
     expect(items().map((item) => item.textContent)).toEqual([
@@ -295,7 +305,7 @@ describe('the solutions picture’s right-click', () => {
 
   it('concludes an experiment from the picture, asking for the result first', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="ex:e1"]')!)
     // The reader's moves, with "…" where the result is asked first.
     expect(items().map((item) => item.textContent)).toEqual(['Back to planned', 'Confirmed…', 'Refuted…', 'Inconclusive…', 'Edit', 'Delete…'])
@@ -319,7 +329,7 @@ describe('the solutions picture’s right-click', () => {
 
   it('changes how firmly an experiment bears on a solution from either of its lines, and unlinks it', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     const line = (kind: string) => [...screen.getAllByTestId('solution-link-hit')].find((hit) => hit.getAttribute('data-kind') === kind)!
     rightClick(line('tests'))
     fireEvent.click(screen.getByTestId('picture-menu-strength-strong'))
@@ -331,15 +341,14 @@ describe('the solutions picture’s right-click', () => {
 
   it('changes how strongly a solution addresses a cause from its line, and the direction it was opens it', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     const line = [...screen.getAllByTestId('solution-link-hit')].find((hit) => hit.getAttribute('data-kind') === 'addresses')!
     rightClick(line)
     fireEvent.click(screen.getByTestId('picture-menu-strength-normal'))
     expect(lastChange(onChange).solutions[0].addresses).toEqual([{ id: 'c2', strength: 'normal' }])
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1#direction"]')!)
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
-    expect(screen.queryByTestId('solution-picture')).toBeNull()
-    expect(screen.getByTestId('solution-reader')).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: 'Editing a solution' })).toBeTruthy()
   })
 })
 
@@ -361,7 +370,7 @@ describe('a link to a record, from the picture', () => {
   it('names a solution by its own id, which the page opens on its tab by itself', () => {
     const onCopyLink = vi.fn()
     mount({ ...base, solutions: [solution({})] }, { onCopyLink })
-    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    toSolveMap()
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
     fireEvent.click(screen.getByTestId('picture-menu-copy-link'))
     expect(onCopyLink).toHaveBeenCalledWith({ id: 's1' })
@@ -401,30 +410,28 @@ describe('the record a link opens on', () => {
 
 /** ADR-0033, amended 11 October 2026: *Copy link* where each reader's bar ends, read-only too. */
 describe('a link to a record, from its reader', () => {
-  const copyLink = () => fireEvent.click(screen.getByTestId('reader-copy-link'))
+  const copyLink = () => { more(); fireEvent.click(screen.getByTestId('reader-copy-link')) }
 
-  it('copies an observation from its reader, read-only too, on the tab it is read on', () => {
+  it('copies an observation from its reader, read-only too, on the stage it is read on', () => {
     const onCopyLink = vi.fn()
     mount(base, { readOnly: true, onCopyLink, initialId: 'o1' })
     expect(screen.queryByTestId('reader-edit')).toBeNull()
-    expect(within(screen.getByTestId('observation-reader')).getByTestId('reader-copy-link').textContent).toBe('Copy link')
     copyLink()
     expect(onCopyLink).toHaveBeenCalledWith({ id: 'o1', tab: 'register' })
   })
 
-  it('copies a cause from its reader, after what the bar offers', () => {
+  it('copies a cause from its reader', () => {
     const onCopyLink = vi.fn()
     mount(base, { onCopyLink, initialId: 'c1' })
-    const bar = within(screen.getByTestId('cause-reader')).getByTestId('reader-copy-link').parentElement!
-    expect(bar.lastElementChild?.getAttribute('data-testid')).toBe('reader-copy-link')
-    copyLink()
-    expect(onCopyLink).toHaveBeenCalledWith({ id: 'c1', tab: 'register' })
+    more()
+    fireEvent.click(screen.getByTestId('reader-copy-link'))
+    expect(onCopyLink).toHaveBeenCalledWith({ id: 'c1', tab: 'analysis' })
   })
 
   it('copies a solution from its reader by its own id', () => {
     const onCopyLink = vi.fn()
     mount({ ...base, solutions: [solution({})] }, { onCopyLink, initialId: 'so:s1' })
-    within(screen.getByTestId('solution-reader')).getByTestId('reader-copy-link').click()
+    copyLink()
     expect(onCopyLink).toHaveBeenCalledWith({ id: 's1' })
   })
 
@@ -432,11 +439,11 @@ describe('a link to a record, from its reader', () => {
     const onCopyLink = vi.fn()
     mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] }, { readOnly: true, onCopyLink, initialId: 'ex:e1' })
     expect(screen.queryByTestId('reader-edit')).toBeNull()
-    within(screen.getByTestId('experiment-reader')).getByTestId('reader-copy-link').click()
+    copyLink()
     expect(onCopyLink).toHaveBeenCalledWith({ id: 'e1' })
   })
 
-  it('copies a record of a scope below from its reader, in the scope it lives in', () => {
+  it('copies a record of a scope below from its reader, in the scope it lives in', async () => {
     const onCopyLink = vi.fn()
     const scope = 'acme/delivery/intake'
     const below: ScopeAnalysis[] = [{
@@ -447,15 +454,22 @@ describe('a link to a record, from its reader', () => {
       experiments: [experiment({ id: 'eb1', title: 'Start at ten for a week', tests: ['sb1'] })],
     }]
     mount(base, { readOnly: true, onCopyLink, below, path: 'acme/delivery', scopeLabel: (path) => path })
-    const open = (testId: string) => { fireEvent.click(screen.getByTestId(testId)); copyLink() }
-    open(`observation-row-${scope}#ob1`)
-    open(`cause-row-${scope}#cb1`)
-    open(`solution-row-${scope}#so:sb1`)
-    fireEvent.click(within(screen.getByTestId('experiment-list')).getByText('EX-0001 Start at ten for a week'))
-    copyLink()
+    const copyFrom = async (testId: string) => {
+      fireEvent.click(screen.getByTestId(testId))
+      copyLink()
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    }
+    await copyFrom(`observation-row-${scope}#ob1`)
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
+    await copyFrom(`cause-row-${scope}#cb1`)
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    await copyFrom(`solution-row-${scope}#so:sb1`)
+    await copyFrom(`experiment-row-${scope}#ex:eb1`)
     expect(onCopyLink.mock.calls.map(([link]) => link)).toEqual([
       { id: 'ob1', scope, tab: 'register' },
-      { id: 'cb1', scope, tab: 'register' },
+      { id: 'cb1', scope, tab: 'analysis' },
       { id: 'sb1', scope },
       { id: 'eb1', scope },
     ])
@@ -463,6 +477,7 @@ describe('a link to a record, from its reader', () => {
 
   it('offers none where the host makes no links', () => {
     mount(base, { initialId: 'o1' })
+    more()
     expect(screen.queryByTestId('reader-copy-link')).toBeNull()
   })
 })

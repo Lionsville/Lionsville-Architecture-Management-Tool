@@ -247,7 +247,7 @@ export function PictureFrame({ content, view, label, children, dockExtra, overvi
   }, [fit, fitted, content, viewport])
 
   const start = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || (event.target as Element).closest('[data-key]')) return
+    if (event.button !== 0 || (event.target as Element).closest('[data-key], [data-handle]')) return
     const element = event.currentTarget
     setPan({ x: event.clientX, y: event.clientY, left: element.scrollLeft, top: element.scrollTop })
     element.setPointerCapture?.(event.pointerId)
@@ -436,9 +436,9 @@ function Nodes(props: NodesProps) {
   return (
     <g>
       {picture.nodes.map((node) => (
+        // The + stands beside the card and not in it: a button inside a button is reached by nobody's keyboard.
+        <g key={node.key} transform={`translate(${node.x},${node.y})`} onMouseEnter={() => onHot(node.key)} onMouseLeave={() => onHot(undefined)}>
         <g
-          key={node.key}
-          transform={`translate(${node.x},${node.y})`}
           role="button"
           tabIndex={0}
           aria-label={node.kind === 'more'
@@ -452,8 +452,6 @@ function Nodes(props: NodesProps) {
           style={{ cursor: 'pointer' }}
           onClick={() => press(node)}
           onKeyDown={keyDown(node)}
-          onMouseEnter={() => onHot(node.key)}
-          onMouseLeave={() => onHot(undefined)}
           onFocus={() => onHot(node.key)}
           onBlur={() => onHot(undefined)}
           onContextMenu={onMenu && node.kind !== 'more' ? (event) => {
@@ -472,12 +470,13 @@ function Nodes(props: NodesProps) {
             fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen, toneOf(node.observation)) : theme.palette.background.paper}
             s={props.s}
           />
+        </g>
           {size !== 'small' && onAsk && asksWhy(node) && (props.hot === node.key || node.key === props.selectedKey) && (
             <g
-              role="button" tabIndex={0} aria-label={props.s('observation.mapHandle')} data-testid="analysis-handle"
+              role="button" tabIndex={0} aria-label={props.s('observation.mapHandle')} data-testid="analysis-handle" data-handle={node.key}
               transform={`translate(${slot.width},${slot.height / 2})`} style={{ cursor: 'crosshair' }}
-              onClick={(event) => { event.stopPropagation(); onAsk(node.key) }}
-              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); onAsk(node.key) } }}
+              onClick={() => onAsk(node.key)}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onAsk(node.key) } }}
               onPointerDown={(event) => {
                 if (!onDragLink) return
                 event.stopPropagation()
