@@ -126,6 +126,15 @@ export type ProviderParts<Own = unknown> = {
    * write, and may remove any comment there.
    */
   comments?: SourceComments
+  /**
+   * The accent this source's environment wears, a `#rgb` or `#rrggbb`, so a
+   * person can tell one place from another at a glance. Only a hue and a rough
+   * strength are taken from it: the shades are derived and measured, and one
+   * close to a status's hue or with no hue at all is refused, said on the trail,
+   * and the default stands (`widgets/kit/accent.ts`, ADR-0045). Absent for all
+   * three core registers.
+   */
+  accent?: string
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
 }

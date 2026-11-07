@@ -3,11 +3,12 @@
 
 import { alpha, type Theme } from '@mui/material/styles';
 import type { AspectStatus, Layer7Zone, Lifecycle } from '../../model/types';
+import { tokensOf } from '../../widgets/kit/tokens';
 
 /**
- * Visual tokens for canvas chrome and nodes, derived entirely from the host's
- * MUI theme so light and dark mode both look intentional. No hardcoded hex
- * here. The package has exactly one documented exception, for identity that a
+ * Visual tokens for canvas chrome and nodes, read from the design system's
+ * tokens through the host's theme (`widgets/kit/tokens.ts`), so the board wears
+ * the paper, ink and accent the screens around it wear. No hardcoded hex here. The package has exactly one documented exception, for identity that a
  * MUI palette cannot supply enough distinct hues for, carrying its rationale in
  * the file: `categoryColors.ts` — deterministic per-category strip hues (nodes).
  *
@@ -53,10 +54,10 @@ export interface NodeTokens {
     description: string;
     selectedRing: string;
     /**
-     * Keyboard focus ring on a node (4B). Deliberately a DIFFERENT hue from
-     * `selectedRing`: focus and selection are different states and routinely
-     * disagree — you can tab past a node without selecting it — so drawing both
-     * in the primary colour would make "where am I" unanswerable.
+     * Keyboard focus ring on a node (4B): the one focus ring there is. Focus and
+     * selection routinely disagree — you can tab past a node without selecting
+     * it — so the two are told apart by where they are drawn as well as by this
+     * token.
      */
     focusRing: string;
     warningBorder: string;
@@ -142,139 +143,123 @@ export function getNodeTokens(theme: Theme): NodeTokens {
   return tokens;
 }
 
-function statusToken(theme: Theme, color: 'success' | 'warning' | 'error' | 'info'): AspectToken {
-  const dark = theme.palette.mode === 'dark';
-  const main = theme.palette[color].main;
-  return {
-    bg: alpha(main, dark ? 0.28 : 0.14),
-    fg: dark ? theme.palette[color].light : theme.palette[color].dark,
-    border: alpha(main, dark ? 0.5 : 0.35),
-  };
+type Colours = ReturnType<typeof tokensOf>;
+
+/** A status drawn as a badge: its soft ground, its own ink, and its ink as the edge. */
+function statusToken(soft: string, ink: string): AspectToken {
+  return { bg: soft, fg: ink, border: ink };
 }
 
-function surfaceToken(theme: Theme, main: string): SurfaceToken {
-  const dark = theme.palette.mode === 'dark';
-  return {
-    bg: alpha(main, dark ? 0.16 : 0.07),
-    border: alpha(main, dark ? 0.55 : 0.4),
-    fg: theme.palette.text.primary,
-  };
+/** A shape on the board: neutral, told from a card by its form and not by a hue. */
+function surfaceToken(colours: Colours, bg: string, border = colours['card-edge']): SurfaceToken {
+  return { bg, border, fg: colours.ink };
 }
 
 function buildTokens(theme: Theme): NodeTokens {
   const { palette } = theme;
   const dark = palette.mode === 'dark';
-  const text = palette.text.primary;
+  const colours = tokensOf(theme);
+  const text = colours.ink;
 
   return {
     mode: palette.mode,
     canvas: {
-      dot: alpha(text, dark ? 0.16 : 0.14),
-      outline: alpha(text, 0.12),
+      dot: colours['grid-line'],
+      outline: colours.line,
     },
     zone: {
-      // Subtle per-zone identity tints; landscape stays paper. Twice as deep
-      // on the light ground as the dark one's share: a tint at a twentieth
-      // over white was a lane nobody could see, where the same over near-black
-      // reads.
+      // A zone is told by its frame and its name, not by a hue: a tint per zone
+      // was four more colours on a drawing where colour answers one question at
+      // a time. The landscape stays the board's own ground.
       fill: {
-        actors: alpha(palette.primary.main, dark ? 0.07 : 0.1),
-        inputChannels: alpha(palette.info.main, dark ? 0.07 : 0.1),
-        externalSystems: alpha(palette.secondary.main, dark ? 0.08 : 0.11),
-        management: alpha(palette.warning.main, dark ? 0.07 : 0.12),
+        actors: colours['zone-fill'],
+        inputChannels: colours['zone-fill'],
+        externalSystems: colours['zone-fill'],
+        management: colours['zone-fill'],
         landscape: 'transparent',
       },
-      // A band's name is words at 11px: the secondary ink, not a fainter one.
-      label: palette.text.secondary,
+      // A band's name is words at 11px: the second ink, not a fainter one.
+      label: colours['ink-2'],
     },
     domainGroup: {
-      border: alpha(text, 0.35),
-      fill: alpha(text, dark ? 0.04 : 0.045),
-      label: palette.text.secondary,
+      border: colours['zone-edge'],
+      fill: 'transparent',
+      label: colours['ink-2'],
     },
     card: {
-      bg: palette.background.paper,
-      border: palette.divider,
-      headerBg: alpha(text, dark ? 0.06 : 0.06),
+      bg: colours['card-surface'],
+      border: colours['card-edge'],
+      headerBg: 'transparent',
       title: text,
-      subtitle: palette.text.secondary,
-      description: palette.text.secondary,
-      selectedRing: palette.primary.main,
-      focusRing: palette.info.main,
-      warningBorder: palette.warning.main,
+      subtitle: colours['ink-2'],
+      description: colours['ink-3'],
+      selectedRing: colours['selected-edge'],
+      focusRing: colours['focus-ring'],
+      warningBorder: colours['state-attention-border'],
       // `common.white` rather than a literal — this file keeps its no-hex rule.
       logoPlate: alpha(palette.common.white, dark ? 0.92 : 0),
     },
     aspects: {
-      managed: statusToken(theme, 'success'),
-      partial: statusToken(theme, 'warning'),
-      atRisk: statusToken(theme, 'error'),
+      managed: statusToken(colours['ok-soft'], colours['status-managed']),
+      partial: statusToken(colours['warn-soft'], colours['status-partial']),
+      atRisk: statusToken(colours['bad-soft'], colours['status-risk']),
       // A badge's letters are words, 8px of them, so both quiet states are
-      // drawn in the secondary ink (4.5:1 and more) and told apart by their
-      // border; the disabled ink is for a control that is off, and was 2.7:1.
+      // drawn in a measured ink and told apart by their border.
       none: {
         bg: 'transparent',
-        fg: palette.text.secondary,
-        border: palette.divider,
+        fg: colours['status-none'],
+        border: colours.line,
       },
       unset: {
         bg: 'transparent',
-        fg: palette.text.secondary,
-        border: alpha(palette.divider, 0.6),
+        fg: colours['status-unset'],
+        border: alpha(colours.line, 0.6),
       },
     },
     lifecycle: {
       // Semantic mapping (plan D2): upcoming → info, healthy → success,
-      // sunsetting → warning, decommissioned → neutral/disabled (not an alert).
-      planned: statusToken(theme, 'info'),
-      live: statusToken(theme, 'success'),
-      retiring: statusToken(theme, 'warning'),
-      // Neutral rather than an alert, in the secondary ink for the reason the
-      // quiet aspect states are; the tint is the same grey it always was.
-      retired: {
-        bg: alpha(palette.text.secondary, dark ? 0.18 : 0.1),
-        fg: palette.text.secondary,
-        border: palette.divider,
-      },
+      // sunsetting → warning, decommissioned → neutral (not an alert).
+      planned: statusToken(colours['life-planned-soft'], colours['life-planned']),
+      live: statusToken(colours['life-live-soft'], colours['life-live']),
+      // The warning's soft ground: a badge carries words, and the timeline's
+      // deeper `life-retiring-soft` is for a bar, at 3:1 with this ink.
+      retiring: statusToken(colours['warn-soft'], colours['life-retiring']),
+      retired: statusToken(colours['life-gone-soft'], colours['life-gone']),
     },
-    actor: surfaceToken(theme, palette.primary.main),
-    externalSystem: {
-      bg: alpha(text, dark ? 0.08 : 0.04),
-      border: alpha(text, 0.3),
-      fg: text,
-    },
-    inputChannel: surfaceToken(theme, palette.info.main),
-    managementTool: surfaceToken(theme, palette.secondary.main),
-    component: surfaceToken(theme, palette.primary.main),
+    actor: surfaceToken(colours, colours['card-surface']),
+    externalSystem: surfaceToken(colours, colours['surface-2']),
+    inputChannel: surfaceToken(colours, colours['card-surface']),
+    managementTool: surfaceToken(colours, colours['surface-2']),
+    component: surfaceToken(colours, colours['c4-container-fill'], colours['c4-container-line']),
     boundary: {
-      bg: alpha(text, dark ? 0.03 : 0.015),
-      border: alpha(text, 0.35),
-      fg: palette.text.secondary,
+      bg: colours['c4-context-fill'],
+      border: colours['line-strong'],
+      fg: colours['ink-2'],
     },
     edge: {
-      stroke: alpha(text, dark ? 0.55 : 0.45),
-      strokeSelected: palette.primary.main,
-      labelBg: palette.background.paper,
-      labelFg: palette.text.secondary,
-      labelBorder: palette.divider,
+      stroke: colours['line-uses'],
+      strokeSelected: colours['selected-edge'],
+      labelBg: colours['card-surface'],
+      labelFg: colours['ink-2'],
+      labelBorder: colours.line,
     },
     chips: {
-      priceBg: alpha(palette.success.main, dark ? 0.25 : 0.12),
-      priceFg: dark ? palette.success.light : palette.success.dark,
-      driftBg: alpha(palette.warning.main, dark ? 0.3 : 0.15),
-      driftFg: dark ? palette.warning.light : palette.warning.dark,
-      danglingBg: alpha(palette.error.main, dark ? 0.3 : 0.12),
-      danglingFg: dark ? palette.error.light : palette.error.dark,
+      priceBg: colours['ok-soft'],
+      priceFg: colours.ok,
+      driftBg: colours['warn-soft'],
+      driftFg: colours.warn,
+      danglingBg: colours['bad-soft'],
+      danglingFg: colours.bad,
     },
     handle: {
-      bg: alpha(palette.primary.main, 0.9),
-      border: palette.background.paper,
+      bg: colours.accent,
+      border: colours.surface,
     },
     minimap: {
-      bg: palette.background.paper,
+      bg: colours.surface,
       mask: alpha(text, dark ? 0.5 : 0.12),
       node: alpha(text, dark ? 0.35 : 0.22),
-      nodeBorder: palette.divider,
+      nodeBorder: colours.line,
     },
   };
 }

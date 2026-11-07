@@ -13,11 +13,13 @@ import {
   noticesOver,
   packagesImportedBy,
   drawioNotice,
+  fontNotice,
   renderNotices,
   shipsCode,
   type Manifest,
 } from './thirdPartyNotices'
-import { drawioPin } from './dependencyPolicy'
+import { createHash } from 'node:crypto'
+import { drawioPin, fontPins } from './dependencyPolicy'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const COMMITTED = readFileSync(new URL('../THIRD-PARTY-NOTICES.md', import.meta.url), 'utf8')
@@ -170,7 +172,7 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
   // The drift guard: a new dependency without a regenerated file is a red check,
   // rather than a release that quietly ships an incomplete notice.
   it('is what generating it now produces', () => {
-    expect(renderNotices(noticesFor(root), PRODUCT, [drawioNotice(drawioPin)])).toBe(COMMITTED)
+    expect(renderNotices(noticesFor(root), PRODUCT, [drawioNotice(drawioPin), ...fontPins.map(fontNotice)])).toBe(COMMITTED)
   })
 
   it('names the libraries whose licences ask for more than a mention', () => {
@@ -189,6 +191,18 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
     const section = COMMITTED.slice(COMMITTED.indexOf(`## draw.io ${drawioPin.version}`))
     expect(section).toContain('TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION')
     expect(section).toContain('END OF TERMS AND CONDITIONS')
+  })
+
+  it('carries the typefaces with their licence, and the files are the ones pinned', () => {
+    for (const pin of fontPins) {
+      const section = COMMITTED.slice(COMMITTED.indexOf(`## ${pin.family} ${pin.version}`))
+      expect(section).toContain('SIL OPEN FONT LICENSE Version 1.1')
+      for (const [file, sha256] of Object.entries(pin.files)) {
+        const bytes = readFileSync(new URL(`../src/widgets/kit/fonts/${file}`, import.meta.url))
+        expect(createHash('sha256').update(bytes).digest('hex'), file).toBe(sha256)
+        expect(section).toContain(file)
+      }
+    }
   })
 
   it('pins draw.io once: the policy, the notice and the fetch name the same version', () => {

@@ -33,6 +33,8 @@ import { groupColors } from '../editor/canvas/DomainGroupLayer'
 import { seenTint } from '../observations/ui/ChainMarks'
 import { conwayCellShade } from './units/ConwayTable'
 import { dangerInk, inkOn } from '../widgets'
+import { coloursOf, tokensOf } from '../widgets/kit/tokens'
+import type { ColourToken } from '../widgets/kit/tokens'
 
 type Rgb = { r: number; g: number; b: number }
 
@@ -246,10 +248,143 @@ function nonTextPairs(mode: 'light' | 'dark'): Pair[] {
   return out
 }
 
+/**
+ * The design system's own pairs: what each token is drawn on as words, and what
+ * has to be seen beside what. Read from the tokens in both modes, so a value
+ * changed there is measured here before anybody sees it.
+ */
+const TOKEN_TEXT: Record<string, string[]> = {
+  'ink': ['ground', 'surface', 'surface-2', 'surface-raised', 'canvas-ground', 'zone-fill', 'card-surface', 'accent-soft', 'selected-soft', 'warn-soft', 'ok-soft', 'bad-soft', 'info-soft', 'agent-soft', 'looking-soft', 'exception-soft', 'crosshair', 'editing-bar', 'raci-r', 'life-planned-soft', 'life-live-soft', 'life-retiring-soft', 'life-gone-soft', 'cat-1-soft', 'cat-2-soft', 'cat-3-soft', 'cat-4-soft', 'cat-5-soft', 'cat-6-soft'],
+  'ink-2': ['ground', 'surface', 'surface-2', 'surface-raised', 'canvas-ground', 'zone-fill', 'card-surface', 'accent-soft', 'selected-soft', 'warn-soft', 'ok-soft', 'bad-soft', 'info-soft', 'agent-soft', 'looking-soft', 'exception-soft', 'crosshair', 'editing-bar', 'life-gone-soft', 'cat-1-soft', 'cat-2-soft', 'cat-3-soft', 'cat-4-soft', 'cat-5-soft', 'cat-6-soft'],
+  'ink-3': ['ground', 'surface', 'surface-2', 'surface-raised', 'canvas-ground', 'zone-fill', 'card-surface', 'accent-soft', 'selected-soft', 'warn-soft', 'ok-soft', 'bad-soft', 'info-soft', 'agent-soft', 'looking-soft', 'exception-soft', 'crosshair', 'editing-bar'],
+  'on-accent': ['accent'],
+  'accent': ['surface', 'ground', 'surface-2', 'surface-raised', 'accent-soft', 'selected-soft', 'card-surface'],
+  'ok': ['surface', 'ground', 'surface-2', 'surface-raised', 'ok-soft'],
+  'warn': ['surface', 'ground', 'surface-2', 'surface-raised', 'warn-soft'],
+  'bad': ['surface', 'ground', 'surface-2', 'surface-raised', 'bad-soft'],
+  'info': ['surface', 'ground', 'surface-2', 'surface-raised', 'info-soft'],
+  'agent': ['surface', 'ground', 'surface-2', 'surface-raised', 'agent-soft'],
+  'looking': ['surface', 'ground', 'surface-2', 'surface-raised', 'looking-soft'],
+  'exception': ['surface', 'ground', 'surface-2', 'surface-raised', 'exception-soft'],
+  'diff-before': ['diff-before-soft'],
+  'diff-after': ['diff-after-soft'],
+  'cov-apps': ['cov-apps-soft'],
+  'cov-moving': ['cov-moving-soft'],
+  'cov-people': ['cov-people-soft'],
+  'raci-a-ink': ['raci-a'],
+  'on-heat-1': ['heat-1'],
+  'on-heat-2': ['heat-2'],
+  'on-heat-3': ['heat-3'],
+  'on-heat-4': ['heat-4'],
+  'on-heat-5': ['heat-5'],
+}
+
+const TOKEN_NON_TEXT: Record<string, string[]> = {
+  'line-strong': ['surface', 'ground', 'surface-2'],
+  'accent': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'focus-ring': ['surface', 'ground', 'surface-2', 'card-surface', 'zone-fill', 'canvas-ground', 'accent-soft', 'selected-soft'],
+  'selected-edge': ['surface', 'ground', 'surface-2'],
+  'progress-track': ['surface', 'ground', 'surface-2'],
+  'line-quiet': ['canvas-ground', 'zone-fill', 'card-surface'],
+  'line-ink': ['canvas-ground', 'zone-fill', 'card-surface'],
+  'line-focus': ['canvas-ground', 'zone-fill', 'card-surface'],
+  'line-signal': ['canvas-ground', 'zone-fill', 'card-surface'],
+  'exception': ['canvas-ground', 'zone-fill', 'card-surface'],
+  'zone-edge': ['canvas-ground'],
+  'card-edge': ['zone-fill', 'canvas-ground'],
+  'progress-fill': ['surface'],
+  'axis-today': ['surface'],
+  'axis-day': ['surface', 'surface-2'],
+  'status-managed': ['card-surface'],
+  'status-partial': ['card-surface'],
+  'status-risk': ['card-surface'],
+  'status-none': ['card-surface'],
+  'status-unset': ['card-surface'],
+  'weight-fix': ['surface'],
+  'weight-review': ['surface'],
+  'weight-note': ['surface'],
+  'state-attention-border': ['surface', 'warn-soft'],
+  'life-planned': ['life-planned-soft'],
+  'life-live': ['life-live-soft'],
+  'life-retiring': ['life-retiring-soft'],
+  'life-gone': ['life-gone-soft'],
+  'cov-apps': ['surface'],
+  'cov-moving': ['surface'],
+  'cov-people': ['surface'],
+  'cov-none': ['surface'],
+  'agent': ['card-surface'],
+  'looking': ['canvas-ground'],
+  'raci-a': ['surface'],
+  'cat-1': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'cat-2': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'cat-3': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'cat-4': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'cat-5': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+  'cat-6': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
+}
+
+const tokenPairs = (mode: 'light' | 'dark', table: Record<string, string[]>): Pair[] => {
+  const colours = coloursOf(mode)
+  return Object.entries(table).flatMap(([ink, grounds]) => grounds.map((ground) => ({
+    name: `${mode} --${ink} on --${ground}`,
+    value: ratio(colours[ink as ColourToken], colours[ground as ColourToken]),
+  })))
+}
+
 const luminanceOf = (colour: string) => luminance(over(colour, { r: 0, g: 0, b: 0 }))
 
 const below = (pairs: Pair[], floor: number) =>
   pairs.filter(({ value }) => value < floor).map(({ name, value }) => `${name}: ${value.toFixed(2)}`)
+
+describe('the tokens’ contrast', () => {
+  it('draws every token that carries words at 4.5:1 or more, in both modes', () => {
+    expect(below([...tokenPairs('light', TOKEN_TEXT), ...tokenPairs('dark', TOKEN_TEXT)], 4.5)).toEqual([])
+  })
+
+  it('draws every token that has to be seen at 3:1 or more beside what it sits on, in both modes', () => {
+    expect(below([...tokenPairs('light', TOKEN_NON_TEXT), ...tokenPairs('dark', TOKEN_NON_TEXT)], 3)).toEqual([])
+  })
+
+  it('hands MUI the tokens: what a screen reads off the palette is what the tokens say', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      const { palette } = shellTheme(mode)
+      const colours = coloursOf(mode)
+      expect(palette.primary.main).toBe(colours.accent)
+      expect(palette.error.main).toBe(colours.bad)
+      expect(palette.warning.main).toBe(colours.warn)
+      expect(palette.info.main).toBe(colours.info)
+      expect(palette.success.main).toBe(colours.ok)
+      expect(palette.background.default).toBe(colours.ground)
+      expect(palette.background.paper).toBe(colours.surface)
+      expect(palette.text.primary).toBe(colours.ink)
+      expect(palette.text.secondary).toBe(colours['ink-2'])
+      expect(palette.divider).toBe(colours.line)
+    }
+  })
+
+  it('hands MUI the tokens through CSS variables, and a theme inside another carries values', () => {
+    const theme = shellTheme('light')
+    expect(theme.vars?.palette.primary.main).toContain('var(--mui-palette-primary-main')
+    expect(theme.vars?.palette.background.default).toContain('var(--mui-palette-background-default')
+    expect(shellTheme('dark', 'en', { cssVariables: false }).vars).toBeUndefined()
+    expect(shellTheme('dark', 'en', { cssVariables: false }).palette.primary.main).toBe(coloursOf('dark').accent)
+  })
+
+  it('wears an accent everywhere the accent is read, and nothing else moves', () => {
+    const shades = { light: { accent: '#7a1f5c', 'focus-ring': '#7a1f5c', 'selected-edge': '#7a1f5c' }, dark: {} }
+    const theme = shellTheme('light', 'en', { accent: shades })
+    expect(theme.palette.primary.main).toBe('#7a1f5c')
+    expect(tokensOf(theme).accent).toBe('#7a1f5c')
+    expect(tokensOf(theme)['line-reports-to']).toBe('#7a1f5c')
+    expect(getNodeTokens(theme).card.selectedRing).toBe('#7a1f5c')
+    expect(getNodeTokens(theme).card.focusRing).toBe('#7a1f5c')
+    expect(theme.palette.background.default).toBe(coloursOf('light').ground)
+    const baseline = theme.components?.MuiCssBaseline?.styleOverrides as Record<string, Record<string, string>>
+    expect(baseline[':root']['--accent']).toBe('#7a1f5c')
+    expect(baseline[':root']['--line-reports-to']).toBe('var(--accent)')
+    expect(baseline[':root'].colorScheme).toBe('light')
+  })
+})
 
 describe('the palette’s contrast', () => {
   it('draws every text at 4.5:1 or more on its ground, in both modes', () => {
@@ -388,6 +523,8 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // The organisation's card out of the pick, and a reporting line away from the pick: lines, no words (ADR-0039 §7, amended).
   'src/operating/ui/StructureLanes.tsx': [1, 'out-of-pick dim'],
   // A reporting line on the chart away from the unit picked: a line, no words.
+  // The token for a dim that is the point, for the uses above to read from.
+  'src/widgets/kit/tokens.ts': [1, 'the dim token'],
 }
 
 /** A text colour given as an alpha: `color: alpha(…)`, directly or from the theme. */

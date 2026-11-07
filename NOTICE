@@ -13,6 +13,11 @@ contribution's copyright to Lionsville Group BV. Everything in this
 repository, including every merged contribution, stays under the licence
 in LICENSE.
 
+Typefaces. Source Sans 3 and Source Code Pro (src/widgets/kit/fonts/) are
+Copyright 2010-2024 Adobe, with Reserved Font Name 'Source', and are licensed
+under the SIL Open Font License 1.1, whose text is in OFL.txt beside them and in
+THIRD-PARTY-NOTICES.md. The licence covers the fonts and not this program.
+
 Names of frameworks. The operating model's libraries (src/operating/libraries/)
 name the frameworks they start from, as the frameworks name themselves. SAFe is
 a registered trademark of Scaled Agile, Inc. IT4IT is a trademark of The Open

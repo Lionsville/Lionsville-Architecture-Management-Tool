@@ -21,7 +21,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { drawioPin } from './dependencyPolicy.ts'
+import { drawioPin, fontPins } from './dependencyPolicy.ts'
 
 /** What `renderNotices` needs to say about one package. */
 export interface PackageNotice {
@@ -202,6 +202,30 @@ export function drawioNotice(pin: { version: string; sha256: string }): PackageN
       ...DRAWIO_BUNDLED.map((line) => `- ${line}`),
       '',
       apache,
+    ].join('\n'),
+  }
+}
+
+/**
+ * A typeface, as the notices say it: OFL-1.1, the licence's own text beside the
+ * files and repeated here, because the licence asks that it travel with them.
+ */
+export function fontNotice(pin: (typeof fontPins)[number]): PackageNotice {
+  const ofl = readFileSync(new URL('../src/widgets/kit/fonts/OFL.txt', import.meta.url), 'utf8').trimEnd()
+  return {
+    name: pin.family,
+    version: pin.version,
+    license: 'OFL-1.1',
+    homepage: 'https://github.com/adobe-fonts',
+    text: [
+      `${pin.family} is shipped with the app as woff2 files, not as an npm dependency:`,
+      `${Object.keys(pin.files).join(', ')},`,
+      `copied unchanged from ${pin.from} ${pin.version}.`,
+      '',
+      "Copyright 2010-2024 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.",
+      'Source is a trademark of Adobe in the United States and/or other countries.',
+      '',
+      ofl,
     ].join('\n'),
   }
 }
@@ -390,7 +414,7 @@ export function noticesFor(root: string, sourceRoots = ['src', 'electron']): Pac
 if (process.argv[1]?.endsWith('thirdPartyNotices.ts')) {
   const target = 'THIRD-PARTY-NOTICES.md'
   const product = 'Lionsville Architect'
-  const generated = renderNotices(noticesFor(process.cwd()), product, [drawioNotice(drawioPin)])
+  const generated = renderNotices(noticesFor(process.cwd()), product, [drawioNotice(drawioPin), ...fontPins.map(fontNotice)])
   if (process.argv.includes('--check')) {
     const current = readFileSync(target, 'utf8')
     if (current !== generated) {

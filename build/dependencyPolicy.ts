@@ -37,6 +37,34 @@ export const drawioPin = {
   asset: 'draw.war',
 } as const
 
+/**
+ * The typefaces, shipped as files in `src/widgets/kit/fonts/` and not installed
+ * as a package: four subset files out of two packages, where a dependency would
+ * bring every script and subset through the lockfile. Copied unchanged from these
+ * versions; `thirdPartyNotices.test.ts` holds the files to these sums, and the
+ * hand entries in the notices are written from here.
+ */
+export const fontPins = [
+  {
+    family: 'Source Sans 3',
+    from: '@fontsource-variable/source-sans-3',
+    version: '5.3.1',
+    files: {
+      'source-sans-3-latin-wght-normal.woff2': '19143dca075972bc84e3fd9eab7416dd40cc565dccb2435a044bdfabe060c7d5',
+      'source-sans-3-latin-ext-wght-normal.woff2': 'a85a7459bdb3cdc1136751e151a506bae653fc29ada3ca86237477df6f1b59e6',
+      'source-sans-3-latin-wght-italic.woff2': '5fbc14d56cea35e60596c72ca969b349443c6a536f74e11748eed8b3a396e61d',
+    },
+  },
+  {
+    family: 'Source Code Pro',
+    from: '@fontsource-variable/source-code-pro',
+    version: '5.3.1',
+    files: {
+      'source-code-pro-latin-wght-normal.woff2': '8b774aaa5137a38ef40f4ac9d36db9a5eee152b2f66589dfdc82ff007fc87135',
+    },
+  },
+] as const
+
 export const policy: Policy = {
   allowed: [
     'MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Clause', 'Apache-2.0', '0BSD', 'CC0-1.0',

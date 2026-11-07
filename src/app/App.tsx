@@ -19,6 +19,8 @@ import type { ComponentType } from 'react'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
+import { LanguageProvider } from '../i18n'
+import '../widgets/kit/fonts/fonts.css'
 import type { Command, ElementId } from '../model'
 import type { ObservationTab, Screen } from '../agent/screen'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
@@ -441,9 +443,14 @@ export function App(props: AppProps) {
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
-       it, because that is what paints the page background. */
-    <ThemeProvider theme={prefs.theme}>
+       it, because that is what paints the page background. No storage manager:
+       the mode is the shell's preference, and MUI keeping a second copy of it
+       would be one more place to be wrong. */
+    <ThemeProvider theme={prefs.theme} storageManager={null}>
       <CssBaseline />
+      {/* The language for everything under the shell, once. Without it a page
+          that asked `useStrings` got the English default under a translated bar. */}
+      <LanguageProvider language={prefs.language}>
       {/* The open source's provider's action on a problem, for every boundary
           below: nothing where it offers none. */}
       <ProblemOfferContext.Provider value={parts.services.problem}>
@@ -472,6 +479,7 @@ export function App(props: AppProps) {
       </SessionMemoryContext.Provider>
       </PersonNamesProvider>
       </ProblemOfferContext.Provider>
+      </LanguageProvider>
     </ThemeProvider>
   )
 }
@@ -690,6 +698,7 @@ function useShellBase(props: AppProps) {
   /** The element selected on the view on screen, likewise: what a link selects again (ADR-0033, amended). */
   const selectedRef = useRef<() => string | undefined>(() => undefined)
   const services = useShellServices({
+    ...(props.provider?.accent ? { accent: props.provider.accent } : {}),
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
     keepFailure: props.provider?.keepFailure, diagnostics, problemAction: props.provider?.problemAction,
     screen: () => screenRef.current(),

@@ -524,6 +524,7 @@ function renderApp(
           drawingOrigin: shell.drawingOrigin,
           people: shell.people,
           comments: shell.comments,
+          ...(shell.accent ? { accent: shell.accent } : {}),
           sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,

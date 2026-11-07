@@ -20,6 +20,7 @@ import type { Language } from '../i18n'
 import { readLanguage, readThemeMode } from '../projects/preferences'
 import type { ThemeMode } from '../platform/theme'
 import type { KeepNotice } from './useKeepNotice'
+import type { AccentShades } from '../widgets/kit/tokens'
 
 /**
  * What this hook needs from a store: writing. Nothing else.
@@ -72,8 +73,10 @@ export function useShellPreferences(deps: {
   onWriteFailed: KeepNotice
   /** The languages the browser reports; passed in so a test can pin it. */
   browserLanguages?: readonly string[] | string
+  /** The accent's shades, where the source's environment has one and it was accepted. */
+  accent?: AccentShades
 }): ShellPreferences {
-  const { store, initial, onWriteFailed, browserLanguages } = deps
+  const { store, initial, onWriteFailed, browserLanguages, accent } = deps
 
   const [preferences, setPreferences] = useState(initial)
   // The language starts from what the browser says and then stays wherever the
@@ -118,7 +121,7 @@ export function useShellPreferences(deps: {
   const mode: 'light' | 'dark' = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode
   // The language rides on the theme as well as in context: MUI's own labels
   // (an autocomplete's buttons, a toast's close) are read off the theme.
-  const theme = useMemo(() => shellTheme(mode, language), [mode, language])
+  const theme = useMemo(() => shellTheme(mode, language, accent ? { accent } : {}), [mode, language, accent])
 
   return {
     preferences, language, themeMode, theme,

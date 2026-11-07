@@ -22,6 +22,8 @@ import type { ShellDiagnostics } from './App'
 import { offerFor, problemOffer } from './problem'
 import type { ProblemAction, ProblemOffer } from './problem'
 import { useGlobalErrors } from './useGlobalErrors'
+import { deriveAccent } from '../widgets/kit/accent'
+import type { AccentShades } from '../widgets/kit/tokens'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
 import { useKeepNotice } from './useKeepNotice'
@@ -53,18 +55,35 @@ export type ShellServices = {
   failedRef: RefObject<Failed>
 }
 
+/**
+ * The shades of the accent the source asks for. Refused, the default stands and
+ * the trail says why: a colour an administrator picked that cannot be an accent
+ * is nothing to stop anybody's work over, and the screen that sets it says so
+ * itself by asking `deriveAccent`.
+ */
+function useAccentShades(accent: string | undefined, diagnostics: ShellDiagnostics): AccentShades | undefined {
+  const answer = useMemo(() => (accent === undefined ? undefined : deriveAccent(accent)), [accent])
+  const refused = answer && !answer.ok ? answer.why : undefined
+  useEffect(() => {
+    if (refused) diagnostics.report({ level: 'warn', where: 'source', message: `the source's accent was refused: ${refused}` })
+  }, [refused, diagnostics])
+  return answer?.ok ? answer.shades : undefined
+}
+
 export function useShellServices(deps: {
   preferences: PreferencesWriter
   initialPreferences: unknown
   browserLanguages: readonly string[] | string | undefined
   keepFailure: SourceFailure | undefined
   diagnostics: ShellDiagnostics
+  /** The accent the source's environment asks for, not yet looked at. */
+  accent?: string
   /** The open source's provider's action on a problem, where it offers one. */
   problemAction?: ProblemAction
   /** Where the app is now, for a problem to say where it happened; read when it happens. */
   screen?: () => Screen | undefined
 }): ShellServices {
-  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics, problemAction } = deps
+  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics, accent, problemAction } = deps
   const toasts = useToasts()
   /**
    * Preferences and the storage notice need each other: writing a preference can
@@ -76,11 +95,13 @@ export function useShellServices(deps: {
   const reportKept = useCallback<KeepNotice>(
     (ok, cause) => noticeRef.current(ok, cause), [])
 
+  const shades = useAccentShades(accent, diagnostics)
   const prefs = useShellPreferences({
     store: preferences,
     initial: initialPreferences,
     onWriteFailed: reportKept,
     browserLanguages,
+    ...(shades ? { accent: shades } : {}),
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
   noticeRef.current = useKeepNotice(toasts.notify, s, keepFailure)

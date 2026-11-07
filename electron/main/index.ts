@@ -198,7 +198,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#0e0b16',
+    backgroundColor: '#0c151d',
     // macOS only: the app draws to the top of the window instead of sitting
     // under a strip of grey. The renderer then owes the window the two things
     // the title bar was doing — room for the traffic lights, and something to

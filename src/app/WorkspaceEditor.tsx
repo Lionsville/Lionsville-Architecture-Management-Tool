@@ -22,6 +22,7 @@ import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
 import { foldKey } from './sessionFolds'
+import { useTheme } from '@mui/material/styles'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -152,7 +153,11 @@ function useEditorSeams(parts: WorkspaceParts) {
    * The app's own theme in the other mode, for an export made in it: the
    * picture wears this palette's surfaces and accent, not MUI's defaults.
    */
-  const themeFor = useCallback((mode: 'light' | 'dark') => shellTheme(mode, language), [language])
+  const accent = useTheme().tokens?.shades
+  const themeFor = useCallback(
+    (mode: 'light' | 'dark') => shellTheme(mode, language, { cssVariables: false, ...(accent ? { accent } : {}) }),
+    [language, accent],
+  )
   return { onExportImagesMissing, onLayoutError, historyRequests, history, themeFor }
 }
 

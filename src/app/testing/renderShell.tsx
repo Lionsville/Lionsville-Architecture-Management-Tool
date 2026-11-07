@@ -76,7 +76,9 @@ export type ShellRender = RenderResult & {
 
 export function renderShell(node: ReactElement, options: ShellOptions = {}): ShellRender {
   const { language = 'en', mode = 'dark' } = options
-  const theme = shellTheme(mode, language)
+  // Values rather than variables: jsdom paints nothing and resolves no `var()`,
+  // and a test reading a computed colour is asking what was asked for.
+  const theme = shellTheme(mode, language, { cssVariables: false })
   const wrapper = ({ children }: { children: ReactNode }) =>
     <Surroundings theme={theme} language={language}>{children}</Surroundings>
 

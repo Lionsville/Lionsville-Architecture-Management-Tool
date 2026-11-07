@@ -291,6 +291,8 @@ export type AppProvider = {
    * `removeKey`, `unreadableKey`). Read from the registration by the boot.
    */
   sayings?: SourceSayings
+  /** The accent the source's environment wears (`ProviderParts.accent`); the default where absent. */
+  accent?: string
   /**
    * Work has nowhere to be kept here until a way in is taken (`SourceConnect.required`):
    * the first screen asks where it should live, and nothing else is drawn
