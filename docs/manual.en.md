@@ -2762,6 +2762,11 @@ editor, and asks first when there are changes no save has kept; **Save &
 Exit** leaves once the save has landed. When somebody else saves the same
 drawing while the editor is open, theirs is merged into what is open.
 
+**Diagram › Export as** in the editor makes a file of the drawing: PNG, JPEG,
+WebP, an animation as a GIF, SVG, XML or JSON. It is named after the drawing, and
+the app says so once it is saved. The desktop asks where; a browser puts it with
+its downloads. Exporting changes nothing in the drawing, and it is not a save.
+
 The editor and the picture follow the app's theme: light, dark, or the
 system's. Changing it while the editor is open keeps what is being drawn.
 

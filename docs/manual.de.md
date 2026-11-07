@@ -3187,6 +3187,12 @@ sobald das Speichern gelungen ist. Speichert jemand anderes dieselbe Zeichnung,
 während der Editor offen ist, wird deren Fassung mit dem Offenen
 zusammengeführt.
 
+**Diagramm › Exportieren als** im Editor macht aus der Zeichnung eine Datei: PNG, JPEG,
+WebP, eine Animation als GIF, SVG, XML oder JSON. Sie trägt den Namen der
+Zeichnung, und die App sagt es, sobald sie gespeichert ist. Der Desktop fragt,
+wohin; ein Browser legt sie zu seinen Downloads. Exportieren ändert nichts an der
+Zeichnung und ist kein Speichern.
+
 Editor und Bild folgen dem Thema der App: hell, dunkel oder dem des Systems.
 Ein Wechsel, während der Editor offen ist, behält, was gezeichnet wird.
 

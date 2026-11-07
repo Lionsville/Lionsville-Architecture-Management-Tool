@@ -4,7 +4,8 @@
   already does, settled before the build); as built, 11 October 2026, in this
   repository: the view kind, the editor on the desktop, the links, the
   anchors and the documents — a provider's own drawing origin is not built
-  here (see *As built*)
+  here (see *As built*); amended 7 November 2026 (a file exported from the
+  editor is saved by the app)
 * Date: 2026-10-08
 * Deciders: Wouter Simons
 * Extends: ADR-0009 (a document that computes: a document can show a view),
@@ -496,3 +497,62 @@ that origin through `ProviderParts.drawingOrigin`; this repository's web
 build supplies none. That provider's files, host, certificate and headers
 are its own record.
 
+## Amended — a file exported from the editor is saved by the app
+
+*7 November 2026.* The record says the frame has no downloads and that the
+editor "exports" with its two sandbox flags. That was true of the picture a
+save asks for over the protocol. It was not true of the editor's own *Export
+as*, and the smoke run never pressed it: exporting a PNG, by *Download* or by
+*Device*, did nothing and said nothing, on the desktop and in a browser.
+
+Two gates stood in the way, each of them on purpose. `suppressNewWindows` makes
+draw.io cancel the click on its own `<a download>` and post `openLink`, which
+this side drops; and the sandbox has no `allow-downloads`. Opening both gives a
+file, and gives every page the frame ever loads the right to start a download.
+
+**The frame stays as it is.** Its sandbox is still `allow-scripts
+allow-same-origin` and its query still says `suppressNewWindows`. What changes
+is who saves.
+
+* **`exportProtocol: 1` on every `load`.** draw.io then posts what its menu
+  exports as an `export` event, with the bytes, and shows no save dialog of its
+  own. It reads the flag from each `load` afresh, so a load in another look says
+  it too.
+* **An export is told by the request it answers, not by its format.** The answer
+  to this side's `xmlsvg` comes back as `format: 'svg'`, which is also what a
+  person's SVG says, and a person's XML says `xml` as the answer to this side's
+  `xml` does. draw.io echoes the request in `message` on an answer and only on
+  an answer: `xmlsvg` is a save, `xml` is a reload, and an export with no request
+  behind it is a file for the person (`exportRoute`). It touches neither the
+  drawing nor a save waiting for its export.
+* **The file goes through `DocumentGateway`**, as every other file does: a save
+  dialog on the desktop, a download in a browser. The dialog draw.io no longer
+  shows named the file, so the name is the drawing's, slugged, with the format's
+  extension, and `.drawio` before it where the file holds a copy of the drawing,
+  as draw.io's own name says (`exportedFile`).
+* **A save that was cancelled is an answer.** `DocumentGateway.save` answers
+  `'cancelled'` when the person closed the dialog, so that nothing is said about
+  it. A file that was saved is said once it is; one that could not be goes on the
+  trail and is said as a failure.
+
+**What is offered is what can be saved**, read off the pinned editor with this
+query and this sandbox:
+
+| On *Export as* | Under this protocol | |
+|---|---|---|
+| PNG, JPEG, WebP, Animation (a GIF), SVG, XML, JSON | posted, saved by the app | offered |
+| PDF | the print preview, a window the sandbox refuses | not offered |
+| URL | a dialog with an address on the drawing origin | not offered |
+| HTML | saved, but it loads a viewer from the drawing origin, which ships none: a blank page | not offered |
+| *Embed* | more HTML of that kind, and links out | not offered |
+
+They are taken off with draw.io's own `hideMenuItems`, in the configuration.
+Visio is not offered by this editor to begin with.
+
+**Left as they are.** *Print* opens the same preview and says it could not. The
+shortcut for *Copy as image* has no menu entry, and still opens draw.io's save
+dialog, whose buttons come to nothing. Neither is an export on the menu, and no
+configuration reaches the second.
+
+The smoke run presses each format on the menu, closes the dialog once, and reads
+each file back off the disk.

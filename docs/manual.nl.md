@@ -3018,6 +3018,12 @@ zijn; **Opslaan & afsluiten** verlaat hem zodra het bewaren gelukt is. Bewaart
 iemand anders dezelfde tekening terwijl de editor open is, dan wordt die van
 hen samengevoegd met wat open staat.
 
+**Diagram › Exporteren als** in de editor maakt een bestand van de tekening: PNG, JPEG,
+WebP, een animatie als GIF, SVG, XML of JSON. Het krijgt de naam van de tekening,
+en de app zegt het zodra het bewaard is. De desktop vraagt waar; een browser zet
+het bij zijn downloads. Exporteren verandert niets aan de tekening en is geen
+bewaren.
+
 De editor en de afbeelding volgen het thema van de app: licht, donker of dat
 van het systeem. Het wisselen terwijl de editor open is, houdt wat getekend
 wordt.
