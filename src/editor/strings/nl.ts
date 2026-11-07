@@ -654,8 +654,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'diagramSettings.noColumns': 'Geen kolommen. Applicaties tonen helemaal geen operationele aspecten.',
   'diagramSettings.allStandardUsed': 'Elke standaardkolom staat er al',
 
-  'help.title': 'Sneltoetsen',
-  'help.intro':
+  'shortcuts.title': 'Sneltoetsen',
+  'shortcuts.intro':
     'Klik met rechts op een element, een lijn, een domeingroep, een tabblad of het lege canvas voor een menu met alles wat daar kan. De sneltoetsen hieronder staan naast de bijbehorende menu-ingangen. Sleep vanaf de rand van een element naar een ander om ze te koppelen, of rechtsklik en kies Koppeling starten naar…',
   'shortcutGroup.selection': 'Selectie',
   'shortcutGroup.edit': 'Bewerken',

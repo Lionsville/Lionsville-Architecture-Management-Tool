@@ -53,10 +53,10 @@ export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps)
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('help.title')}</DialogTitle>
+      <DialogTitle>{t('shortcuts.title')}</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('help.intro')}
+          {t('shortcuts.intro')}
         </Typography>
         {GROUP_LABELS.map(({ group, labelKey }) => {
           const defs = byGroup.get(group);

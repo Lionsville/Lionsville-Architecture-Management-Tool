@@ -673,8 +673,8 @@ export const EN = {
   'diagramSettings.noColumns': 'No columns. Applications show no operational aspects at all.',
   'diagramSettings.allStandardUsed': 'Every standard column is already here',
 
-  'help.title': 'Keyboard shortcuts',
-  'help.intro':
+  'shortcuts.title': 'Keyboard shortcuts',
+  'shortcuts.intro':
     'Right-click an element, a line, a domain group, a diagram tab or the empty canvas for a menu of everything you can do there. The shortcuts below appear beside the matching menu entries. Drag from the edge of an element to another to connect them, or right-click and choose Start connection to…',
   'shortcutGroup.selection': 'Selection',
   'shortcutGroup.edit': 'Edit',

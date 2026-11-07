@@ -654,8 +654,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'diagramSettings.noColumns': 'Keine Spalten. Anwendungen zeigen gar keine betrieblichen Aspekte.',
   'diagramSettings.allStandardUsed': 'Jede Standardspalte ist bereits vorhanden',
 
-  'help.title': 'Tastenkürzel',
-  'help.intro': 'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen. Ziehen Sie vom Rand eines Elements zu einem anderen, um sie zu verbinden, oder klicken Sie mit rechts und wählen Sie „Verbindung beginnen zu…“',
+  'shortcuts.title': 'Tastenkürzel',
+  'shortcuts.intro': 'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen. Ziehen Sie vom Rand eines Elements zu einem anderen, um sie zu verbinden, oder klicken Sie mit rechts und wählen Sie „Verbindung beginnen zu…“',
   'shortcutGroup.selection': 'Auswahl',
   'shortcutGroup.edit': 'Bearbeiten',
   'shortcutGroup.view': 'Ansicht',
