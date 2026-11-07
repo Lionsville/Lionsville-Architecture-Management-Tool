@@ -52,7 +52,7 @@ import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, HELP_MENU_ITEM, PREFERENCES_ITEM, SETTINGS_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
   ZOOM_ALIASES, ZOOM_ITEMS,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
@@ -201,9 +201,14 @@ function editMenuFor(): MenuItemConstructorOptions[] {
  * and the rule above it are both absent, rather than an item that calls
  * nothing.
  */
-function helpMenuFor(onCheck?: () => void): MenuItemConstructorOptions[] {
+function helpMenuFor(onCheck?: () => void, onHelp?: () => void): MenuItemConstructorOptions[] {
   return [
-    ...HELP_MENU.map((entry): MenuItemConstructorOptions => (entry.kind === 'item' ? itemFor(entry) : { type: 'separator' })),
+    ...HELP_MENU.map((entry): MenuItemConstructorOptions => (
+      entry.kind !== 'item' ? { type: 'separator' }
+        // The help is main's to open: it needs no page to be listening.
+        : entry === HELP_MENU_ITEM && onHelp ? { label: label(entry.label as keyof typeof EN), click: onHelp }
+          : itemFor(entry)
+    )),
     { label: label('menu.website'), click: () => { void shell.openExternal(WEBSITE_LINK.href) } },
     ...helpMenuTail(onCheck !== undefined).map((entry): MenuItemConstructorOptions => (
       entry.kind === 'separator' ? { type: 'separator' } : { label: label('menu.checkForUpdates'), click: onCheck }
@@ -273,13 +278,15 @@ export function installAppMenu(options: {
   onCheckForUpdates?: () => void
   /** A packaged build: the developer items leave the View menu. */
   packaged: boolean
+  /** Open the help's window; without it, the item is sent to the page as every other is. */
+  onHelp?: () => void
 }): void {
   const first = defaults === undefined
   defaults ??= Menu.getApplicationMenu()?.items ? [...Menu.getApplicationMenu()!.items] : []
 
   const file = new MenuItem({ label: label('menu.file'), submenu: fileMenuFor(options.recents) })
   const edit = new MenuItem({ label: label('menu.edit'), submenu: editMenuFor() })
-  const help = new MenuItem({ label: label('menu.help'), role: 'help', submenu: helpMenuFor(options.onCheckForUpdates) })
+  const help = new MenuItem({ label: label('menu.help'), role: 'help', submenu: helpMenuFor(options.onCheckForUpdates, options.onHelp) })
   const go = new MenuItem({ label: label('menu.go'), submenu: goMenu(process.platform).map(itemFor) })
   // Once: the menu is rebuilt with the recents, and the theme's radios are held by reference.
   viewMenu ??= new MenuItem({ label: label('menu.view'), role: 'viewMenu', submenu: viewMenuFor(options.packaged) })

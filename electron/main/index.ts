@@ -45,6 +45,9 @@ import { registerFolderSettingsChannel } from './folderSettings'
 import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 import { showsWindow } from './smokeWindow'
+import { closeHelpWindow, isHelpWindow, openHelpWindow } from './helpWindow'
+import { helpAddress } from '../../src/platform/helpAddress'
+import { isLanguage } from '../../src/i18n/languages'
 
 /**
  * A throw nobody caught. Logged rather than left to Electron's default, which
@@ -87,6 +90,13 @@ protocol.registerSchemesAsPrivileged([
     privileges: { standard: true, secure: true, supportFetchAPI: true },
   },
 ])
+
+/**
+ * The ground a window is made with, before its page paints: dark, because the
+ * app's page paints dark first (`index.html`) and a white flash between the two
+ * is the most visible thing about starting it.
+ */
+const GROUND = '#0c151d'
 
 /** One host, so `app://local/x` has a stable origin to resolve URLs against. */
 const APP_ORIGIN = 'app://local'
@@ -145,7 +155,8 @@ function serveRenderer(): void {
     let filePath: string
     try {
       requested = decodeURIComponent(url.pathname)
-      filePath = resolve(RENDERER_ROOT, `.${requested === '/' ? '/index.html' : requested}`)
+      // A folder's page is its index: the app's at `/`, the help's at `/help/`.
+      filePath = resolve(RENDERER_ROOT, `.${requested.endsWith('/') ? `${requested}index.html` : requested}`)
     } catch {
       return new Response('forbidden', { status: 403 })
     }
@@ -198,7 +209,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#0c151d',
+    backgroundColor: GROUND,
     // macOS only: the app draws to the top of the window instead of sitting
     // under a strip of grey. The renderer then owes the window the two things
     // the title bar was doing — room for the traffic lights, and something to
@@ -214,6 +225,12 @@ function createWindow(): BrowserWindow {
     },
   })
 
+  // Where the app quits with its last window, the help goes with it rather
+  // than keeping a process alive with nothing of the app's in it.
+  window.on('closed', () => {
+    if (process.platform !== 'darwin' && liveWindows(appWindows()) === 0) closeHelpWindow()
+  })
+
   // Off the screen under `--smoke`, and only there (`smokeWindow.ts`).
   window.once('ready-to-show', () => {
     if (showsWindow(UNATTENDED, process.env)) window.show()
@@ -226,8 +243,11 @@ function createWindow(): BrowserWindow {
 
   // Nothing in this app opens a second window or navigates away from itself. A
   // link in a document is the browser's job, not ours.
+  // Nothing but the help: the app's ways into it open its address, and main
+  // gives it the one window of its own (`helpWindow.ts`).
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) void shell.openExternal(url)
+    else openHelpWindow(url, RENDERER_URL, helpLook())
     return { action: 'deny' }
   })
   window.webContents.on('will-navigate', (event, url) => {
@@ -369,7 +389,7 @@ function sendDocument(path: string): void {
 const documents = openedDocuments({
   listening: commandsListened,
   ready: () => app.isReady(),
-  windowOpen: () => liveWindows(BrowserWindow.getAllWindows()) > 0,
+  windowOpen: () => liveWindows(appWindows()) > 0,
   makeWindow: () => windowAgain(),
   send: sendDocument,
 })
@@ -397,7 +417,7 @@ app.on('open-file', (event, path) => {
 if (!UNATTENDED && !app.requestSingleInstanceLock()) app.exit(0)
 
 app.on('second-instance', (_event, argv) => {
-  const window = BrowserWindow.getAllWindows()[0]
+  const window = appWindows()[0]
   if (window) {
     if (window.isMinimized()) window.restore()
     window.focus()
@@ -446,6 +466,7 @@ void app.whenReady().then(() => {
   const menu = () => installAppMenu({
     recents: recentDirectories(),
     onCheckForUpdates: updating ? checkForUpdatesNow : undefined,
+    onHelp: openHelp,
     packaged: app.isPackaged,
   })
   menu()
@@ -470,7 +491,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('app:unsaved', (event, held: unknown) => { reportUnsaved(event.sender, held === true) })
 
   // The second fact the renderer reports, so the View menu's radio is right.
-  ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
+  ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) { themeSaid = held; reportTheme(held) } })
   // And the app's language, so the question closing asks is asked in it.
   ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
   ipcMain.handle('app:zoomWindow', (event, how: unknown) => { zoomWindow(event.sender, how) })
@@ -527,6 +548,31 @@ function fatal(during: string, error: unknown): void {
 /** The app's language as the page last said it (`app:language`); nothing until it has. */
 let language: unknown
 
+/** The theme the page last said it is in (`app:theme`); the system's until it has. */
+let themeSaid: unknown
+
+/** The window's ground before the help paints, and whether to show it (never under `--smoke`). */
+function helpLook(): { background: string; show: boolean } {
+  return { background: GROUND, show: !UNATTENDED }
+}
+
+/**
+ * The Help menu's item, answered here rather than by the page: it works before
+ * the app has loaded, with nothing open, and while a dialog holds the page. In
+ * the language the page last said, else the system's.
+ */
+function openHelp(): void {
+  const said = isLanguage(language) ? language : app.getLocale().split('-')[0]
+  const theme = themeSaid === 'light' || themeSaid === 'dark' ? themeSaid : undefined
+  const address = helpAddress({ ...(isLanguage(said) ? { language: said } : {}), ...(theme ? { theme } : {}) })
+  openHelpWindow(new URL(address, RENDERER_URL).href, RENDERER_URL, helpLook())
+}
+
+/** The app's windows, the help's left out: it is no window of work, and holds nothing to keep the app open for. */
+function appWindows(): BrowserWindow[] {
+  return BrowserWindow.getAllWindows().filter((one) => !isHelpWindow(one))
+}
+
 /**
  * Every window, made through one door and guarded there (`windowGuard.ts`):
  * the first at the start, and one again where the app runs with none — the
@@ -540,7 +586,7 @@ const windows = windowsOf({
     words: () => platformWords(language),
   }),
   load: (window) => window.loadURL(RENDERER_URL),
-  open: () => liveWindows(BrowserWindow.getAllWindows()),
+  open: () => liveWindows(appWindows()),
   failed: fatal,
 })
 
