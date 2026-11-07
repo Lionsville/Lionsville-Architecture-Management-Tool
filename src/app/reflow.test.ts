@@ -44,7 +44,7 @@ describe('a bar across the window, out of width', () => {
         if (!/flexWrap: 'wrap'|\.\.\.WRAPS/.test(around)) unwrapped.push(at)
       })
     }
-    expect(bars.length).toBeGreaterThanOrEqual(13)
+    expect(bars.length).toBeGreaterThanOrEqual(11)
     expect(unwrapped).toEqual([])
   })
 

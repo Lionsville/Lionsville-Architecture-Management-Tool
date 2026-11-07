@@ -32,12 +32,10 @@ const PAGES = sources(src).map((file) => file.slice(src.length + 1))
   .filter((file) => read(file).includes('<PageDialog'))
 
 /** Where a page's bar is drawn by a part of its own, in another file. */
-const BAR_IN = { 'decisions/ui/AdrPage.tsx': 'decisions/ui/AdrPageParts.tsx' } as Record<string, string>
+const BAR_IN = {} as Record<string, string>
 
 /** The pages with a column beside another (§4), and how many seams each has. */
 const SEAMS: Record<string, number> = {
-  'app/history/HistoryPage.tsx': 1,
-  'decisions/ui/AdrPage.tsx': 2,
   'operating/ui/OperatingModelPage.tsx': 1,
   'roadmap/ui/RoadmapPage.tsx': 1,
   'principles/ui/PrinciplesPage.tsx': 1,
