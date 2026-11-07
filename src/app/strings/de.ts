@@ -1625,7 +1625,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.offline': 'Offline am Arbeiten',
   'frame.offlineWaiting': 'Offline: Änderungen warten',
   'frame.nothingWaiting': 'Nichts wartet',
-  'frame.yourWork': 'Deine Arbeit',
+  'frame.yourWork': 'Ihre Arbeit',
   'frame.keepIt': 'Aufbewahren',
   'frame.moveIt': 'Verschieben',
   'frame.lookBack': 'Zurückblicken',
