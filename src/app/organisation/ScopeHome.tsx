@@ -149,7 +149,7 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
       id: 'open-roadmap', label: s('shell.roadmap'), icon: <TimelineIcon />, guide: 'org.card.roadmap',
       fact: roadmapFact(pages, initiatives, s), holds: pages.roadmap.total + initiatives > 0, open: () => open(at, { page: 'roadmap' }),
       ...(finding ? { end: (
-        <Button variant="quiet" size="small" data-testid="open-roadmap-finding" aria-label={s('org.openFinding')} onClick={() => onFinding(finding)}>{s('org.findingShow')}</Button>
+        <Button variant="quiet" size="small" data-testid="open-roadmap-finding" aria-label={`${s('org.findingShow')}: ${s('org.openFinding')}`} onClick={() => onFinding(finding)}>{s('org.findingShow')}</Button>
       ) } : {}),
     },
     {

@@ -259,7 +259,7 @@ describe('the organisation screen — its own pages', () => {
   it('opens what the roadmap card\u2019s finding is about, and the record the decisions card names', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
-    const finding = await within(cards).findByRole('button', { name: 'What the dates disagree about' })
+    const finding = await within(cards).findByRole('button', { name: 'Show: What the dates disagree about' })
     fireEvent.click(finding)
     expect(await screen.findByRole('heading', { name: /Retire the rater/ })).toBeTruthy()
     cleanup()
