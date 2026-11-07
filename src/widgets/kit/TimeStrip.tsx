@@ -61,7 +61,10 @@ export function TimeStrip({ label, today, from, to, items, pickedId, onPick, 'da
         ))}
       </div>
       {sideOf(view, today) === 'inside' && (
-        <span className="kit-strip__today" style={{ left: `${fractionOf(view, today) * 100}%` }}>{t('kit.axis.today')}</span>
+        <>
+          <span className="kit-strip__todayline" style={{ left: `${fractionOf(view, today) * 100}%` }} aria-hidden="true" />
+          <span className="kit-strip__today" style={{ left: `${fractionOf(view, today) * 100}%` }}>{t('kit.axis.today')}</span>
+        </>
       )}
       {band && <span className="kit-strip__band" style={{ left: `${band.left * 100}%`, width: `${band.width * 100}%` }} />}
       {clusters.map((cluster, at) => {
