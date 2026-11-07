@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { drawingPictureAddresses, drawingProse, isCompressedDrawing, linksFromXml } from './drawing'
+import { drawingPictureAddresses, drawingProse, drawnShapes, isCompressedDrawing, linksFromXml, pageCount } from './drawing'
 
 const NESTED = `
 <mxfile>
@@ -91,5 +91,20 @@ describe('links from a drawing', () => {
   it('reads nothing from an empty drawing', () => {
     expect(linksFromXml('')).toEqual([])
     expect(drawingProse('')).toBe('')
+  })
+})
+
+describe('what a drawing reaches', () => {
+  it('lists the shapes on the first page, a group too, with their words and what each points at; a line is no shape', () => {
+    expect(drawnShapes(NESTED)).toEqual(expect.arrayContaining([
+      { shapeId: 'a', label: 'Billing', elementId: 'billing' }, { shapeId: 'note', label: 'A note' },
+    ]))
+    const lines = '<mxGraphModel><root><mxCell id="e" edge="1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel>'
+    expect(drawnShapes(lines)).toEqual([])
+  })
+
+  it('counts pages, a bare model being one', () => {
+    expect(pageCount('<mxGraphModel/>')).toBe(1)
+    expect(pageCount('<mxfile><diagram/><diagram/></mxfile>')).toBe(2)
   })
 })

@@ -128,6 +128,17 @@ describe('the documentation page', () => {
     expect(view.result.current.element).toBeUndefined();
   });
 
+  it('opens an element when a host leaves the page and asks for it in one move: an element on no board has only its page', () => {
+    const setSelection = vi.fn();
+    const state = { model: model(), setSelection, selectedElement: undefined } as unknown as EditorState;
+    const view = renderHook(
+      (requests: { documentation?: { nonce: number; elementId: string }; leaveDocumentation?: { nonce: number } }) => useDocumentation({ requests } as never, state, state.model.diagrams[0]),
+      { initialProps: {} },
+    );
+    view.rerender({ documentation: { nonce: 1, elementId: 'a' }, leaveDocumentation: { nonce: 1 } });
+    expect(view.result.current.element?.id).toBe('a');
+  });
+
   it('sends a stand-in’s page to its owner rather than opening one here', () => {
     const { view, setSelection, onDocument } = mount();
     act(() => view.result.current.open('far'));

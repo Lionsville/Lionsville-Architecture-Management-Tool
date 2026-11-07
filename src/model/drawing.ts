@@ -77,6 +77,30 @@ export function linksFromXml(xml: string): DrawingLink[] {
   return links
 }
 
+/** One shape a person drew: a vertex on the first page, with its words, and the element it points at where it does. */
+export type DrawnShape = { shapeId: string; label: string; elementId?: ElementId }
+
+/**
+ * Every shape on the first page, in document order: what a reader is told about
+ * how far a drawing reaches into the model. A line is not a shape, and neither
+ * is an edge's label or anything drawn inside something hidden.
+ */
+export function drawnShapes(xml: string): DrawnShape[] {
+  const cells = cellsIn(xml)
+  const byId = new Map(cells.map((cell) => [cell.id, cell]))
+  const hidden = hiddenCells(cells, byId)
+  return cells.flatMap((cell) => {
+    if (!cell.vertex || cell.relative || hidden.has(cell.id)) return []
+    const elementId = elementOf(cell.link)
+    return [{ shapeId: cell.id, label: labelText(cell.label, cell.html), ...(elementId ? { elementId } : {}) }]
+  })
+}
+
+/** How many pages the file holds. A drawing read from a bare model is one. Only the first is pictured. */
+export function pageCount(xml: string): number {
+  return Math.max(1, xml.match(/<diagram\b/gi)?.length ?? 0)
+}
+
 /**
  * The words on the shapes, one label a line: what a search indexes as the
  * drawing's prose. HTML in a label is the text, not the tags.
