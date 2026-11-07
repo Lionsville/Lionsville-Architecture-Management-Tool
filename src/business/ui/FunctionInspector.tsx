@@ -111,7 +111,7 @@ export type SheetActions = {
   /** Move one among its neighbours, up or down. One step, however many rows it renumbers. */
   moveElement(id: ElementId, by: -1 | 1): void
   /** The sheet's own fields: the rail, the journey, which areas, in which order and how wide. */
-  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper' | 'asOf' | 'colourBy'>>): void
+  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper' | 'asOf' | 'colourBy' | 'labels' | 'poster' | 'author' | 'client' | 'documentDate'>>): void
   /** Show an application where it is drawn — where the coverage links go. */
   onOpenElement(id: ElementId): void
 
@@ -218,6 +218,23 @@ export type SheetDomains = {
   takenUpBy(functionId: ElementId): readonly string[]
   /** A scope's home, opened from its name. Absent: the names open nothing. */
   openScope?(scope: string): void
+  /**
+   * The applications filed in a scope, read off the register: what a subscope a
+   * function is handed to has, which does not count as what covers it until mapped.
+   */
+  applicationsIn?(scope: string): readonly { id: ElementId; name: string }[]
+}
+
+/** What a poster says about the one record the panel is on: this view's, and no fact. */
+export type PosterPanel = {
+  /** Whether its answering unit shows on the tile at reading distance. */
+  labelled: boolean
+  onLabel(on: boolean): void
+  /** Its hand-placed cell. Absent: it flows. */
+  cell?: { col: number; row: number } | undefined
+  onCell(cell: { col: number; row: number } | undefined): void
+  /** The icon a step or a stakeholder carries, chosen in a dialog of the poster's. */
+  onChooseIcon?: (() => void) | undefined
 }
 
 export type FunctionInspectorProps = {
@@ -272,6 +289,8 @@ export type FunctionInspectorProps = {
   describe?: MapDescribe
   /** The day read. */
   today?: string
+  /** What this poster says about it; absent off a poster. */
+  poster?: PosterPanel | undefined
   /** How wide an area is in a picture: the sheet's, since the window reflows. */
   columnsInPrint?: { span: number; drawn: boolean; spans: Record<ElementId, number> | undefined; onSpan(spans: Record<ElementId, number> | undefined): void }
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
@@ -341,12 +360,15 @@ function FunctionBlocks({ props, owned }: { props: FunctionInspectorProps & { el
         element={element} model={model} readOnly={readOnly} actions={actions} applications={props.applications}
         elsewhere={props.elsewhere} responsible={props.responsible} describe={props.describe}
       />
+      <InSubscope element={element} model={model} readOnly={readOnly} actions={actions} domains={props.domains} />
       <PanelSection title={t('sheet.whoHolds')}>
         <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
         <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
         {props.domains && <div className="sheet-held__say">{t('sheet.handingSay')}</div>}
       </PanelSection>
       <Ratings element={element} readOnly={readOnly || owned('ratings')} actions={actions} scales={props.scales ?? []} />
+      <Inside element={element} model={model} onSelect={props.onSelect} />
+      {props.poster && <OnThisPoster poster={props.poster} readOnly={readOnly} />}
     </>
   )
 }
@@ -381,7 +403,7 @@ function FoldedLines({ props, owned }: { props: FunctionInspectorProps & { eleme
         />
       </FoldLine>
       <FoldLine label={t('sheet.place')} value={place} testId="sheet-fold-place">
-        <ParentField element={element} model={model} readOnly={readOnly} actions={actions} />
+        <ParentField element={element} model={model} readOnly={readOnly} actions={actions} keptIn={props.ownerOf?.(element.id)?.label} />
         {print?.drawn && !readOnly && (
           <label className="kit-field">
             <span>{t('sheet.widthInPrint')}</span>
@@ -439,7 +461,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
       >
         <CompactForms>
           {element.kind === 'function' && <FunctionBlocks props={held} owned={owned} />}
-          {element.kind === 'step' && <PanelSection><LaneField element={element} model={model} readOnly={readOnly} actions={actions} /></PanelSection>}
+          {element.kind === 'step' && <PanelSection><LaneField element={element} model={model} readOnly={readOnly} actions={actions} /><IconRow element={element} readOnly={readOnly} poster={props.poster} /></PanelSection>}
           {element.kind === 'actor' && (
             <PanelSection>
               <label className="sheet-held">
@@ -449,6 +471,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
                 />
                 {t('sheet.outsideOrganisation')}
               </label>
+              <IconRow element={element} readOnly={readOnly} poster={props.poster} />
             </PanelSection>
           )}
           <Description element={element} readOnly={readOnly} actions={actions} renderMarkdown={props.renderMarkdown} />
@@ -463,6 +486,19 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           )}
         </CompactForms>
       </Panel>
+    </div>
+  )
+}
+
+/** An icon is optional, and a press on a poster's own dialog: no icon, no gap. */
+function IconRow({ element, readOnly, poster }: { element: DesignElement; readOnly: boolean; poster: PosterPanel | undefined }) {
+  const { t } = useStrings()
+  if (!poster?.onChooseIcon || readOnly) return null
+  return (
+    <div className="sheet-held">
+      <span className="sheet-held__label">{t('sheet.poster.icon')}</span>
+      <span className="sheet-held__name">{element.icon && !element.icon.startsWith('sha256:') ? element.icon : element.icon ? t('sheet.poster.iconImage') : t('common.none')}</span>
+      <Button variant="quiet" size="small" onClick={poster.onChooseIcon}>{t('sheet.poster.iconChoose')}</Button>
     </div>
   )
 }
@@ -603,11 +639,13 @@ function Remove({ element, model, actions, onRemoved, onSelect, rolesEnded, unit
  * so the answer to "why can I not do that" is in the list rather than absent
  * from it.
  */
-function ParentField({ element, model, readOnly, actions }: {
+function ParentField({ element, model, readOnly, actions, keptIn }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
+  /** The scope that defines it, where this is a stand-in: moved there, and only there. */
+  keptIn?: string | undefined
 }) {
   const { t } = useStrings()
   const kin = model.elements.filter((held) => held.kind === element.kind && held.id !== element.id)
@@ -621,9 +659,10 @@ function ParentField({ element, model, readOnly, actions }: {
     <>
       <TextField
         select fullWidth
-        label={t('sheet.parent')}
+        label={t(element.kind === 'function' ? 'sheet.moveTo' : 'sheet.parent')}
         value={element.parentId ?? ''}
-        disabled={readOnly}
+        disabled={readOnly || keptIn !== undefined}
+        helperText={keptIn !== undefined ? t('standIn.definedIn', { scope: keptIn }) : undefined}
         onChange={(e) => actions.updateElement(
           element.id, { parentId: e.target.value === '' ? undefined : e.target.value },
         )}
@@ -651,6 +690,82 @@ function ParentField({ element, model, readOnly, actions }: {
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * What a subscope it is handed to has filed: read off the register, and a press away
+ * from being mapped. It does not feed `coverage.ts`, so it counts for nothing until then.
+ */
+function InSubscope({ element, model, readOnly, actions, domains }: {
+  element: DesignElement
+  model: DesignModel
+  readOnly: boolean
+  actions: SheetActions
+  domains: SheetDomains | undefined
+}) {
+  const { t } = useStrings()
+  const scope = element.scopes?.[0]
+  const apps = scope !== undefined ? domains?.applicationsIn?.(scope) ?? [] : []
+  if (scope === undefined || apps.length === 0 || !domains) return null
+  const mapped = coverageFor(model.relations, element.id).supportedBy
+  return (
+    <div data-testid="sheet-in-subscope">
+      <PanelSection title={t('sheet.poster.inScope', { name: domains.name(scope) })}>
+        {apps.map((app) => (
+          <div className="sheet-held" key={app.id}>
+            <span className="sheet-held__name">{app.name}</span>
+            {!readOnly && !mapped.includes(app.id) && (
+              <Button variant="quiet" size="small" aria-label={t('sheet.poster.mapThis', { name: app.name })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: app.id, functionId: element.id, on: true })}>{t('sheet.poster.mapIt')}</Button>
+            )}
+          </div>
+        ))}
+        <div className="sheet-held__say">{t('sheet.poster.inScopeSay')}</div>
+      </PanelSection>
+    </div>
+  )
+}
+
+/** A capability under this one has no tile of its own on a poster: it opens from here. */
+function Inside({ element, model, onSelect }: { element: DesignElement; model: DesignModel; onSelect?: ((id: ElementId) => void) | undefined }) {
+  const { t } = useStrings()
+  const under = childrenOf(model.elements.filter((held) => held.kind === 'function'), element.id)
+  if (under.length === 0 || element.parentId === undefined || !onSelect) return null
+  return (
+    <PanelSection title={t('sheet.poster.insideHeading')}>
+      {under.map((one) => <button type="button" key={one.id} className="sheet-page__link sheet-held" onClick={() => onSelect(one.id)}>{one.name}</button>)}
+    </PanelSection>
+  )
+}
+
+/** This view's say about it: taking a label off the plate is not ending an assignment, so the panel names both. */
+function OnThisPoster({ poster, readOnly }: { poster: PosterPanel; readOnly: boolean }) {
+  const { t } = useStrings()
+  if (readOnly) return null
+  const { cell } = poster
+  const number = (value: string) => Math.max(1, Math.round(Number(value)) || 1) - 1
+  return (
+    <div data-testid="sheet-on-poster">
+      <PanelSection title={t('sheet.poster.onThis')}>
+        <label className="sheet-held">
+          <input type="checkbox" checked={poster.labelled} aria-label={t('sheet.poster.showLabel')} onChange={(event) => poster.onLabel(event.target.checked)} />
+          {t('sheet.poster.showLabel')}
+        </label>
+        <div className="sheet-held__say">{t('sheet.poster.showLabelSay')}</div>
+        <div className="sheet-held">
+          <span className="sheet-held__label">{t('sheet.poster.cell')}</span>
+          {cell
+            ? (
+              <>
+                <input type="number" min={1} className="kit-input" style={{ width: 56 }} aria-label={t('sheet.poster.cellColumn')} value={cell.col + 1} onChange={(event) => poster.onCell({ ...cell, col: number(event.target.value) })} />
+                <input type="number" min={1} className="kit-input" style={{ width: 56 }} aria-label={t('sheet.poster.cellRow')} value={cell.row + 1} onChange={(event) => poster.onCell({ ...cell, row: number(event.target.value) })} />
+                <Button variant="quiet" size="small" onClick={() => poster.onCell(undefined)}>{t('sheet.poster.flow')}</Button>
+              </>
+            )
+            : <Button variant="quiet" size="small" onClick={() => poster.onCell({ col: 0, row: 0 })}>{t('sheet.poster.flows')}</Button>}
+        </div>
+      </PanelSection>
+    </div>
   )
 }
 

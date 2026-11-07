@@ -234,11 +234,11 @@ export interface EditorToolbarProps {
  */
 /** The tab lists, in the order the strip shows them. */
 /**
- * The technology landscape has a View bar of its own, and undo and find are the
- * frame's: nothing is left for this bar to hold but the tabs, which are row two.
+ * The technology landscape and the sheet have a View bar of their own, and undo and
+ * find are the frame's: nothing is left for this bar to hold but the tabs, which are row two.
  */
 function barDisplay(framed: boolean, kind: DesignDiagram['kind']): 'none' | 'flex' {
-  return framed && (kind === 'technology' || kind === 'chart') ? 'none' : 'flex';
+  return framed && (kind === 'technology' || kind === 'chart' || kind === 'sheet') ? 'none' : 'flex';
 }
 
 const TAB_LISTS = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] as const;

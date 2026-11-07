@@ -77,7 +77,7 @@ export const CONTROL_NAMES = [
   'sheet.domains', 'sheet.fromAbove',
   // The rail's switch that draws every unit of the scope, not only the ones the sheet uses.
   'sheet.allUnits',
-  'sheet.reading', 'sheet.day', 'sheet.key', 'sheet.poster',
+  'sheet.reading', 'sheet.day', 'sheet.key', 'sheet.poster', 'sheet.posture',
   'map.grid', 'map.summary', 'map.reading', 'map.filter', 'map.levels', 'map.day', 'map.matrix',
   // The observations page: its three tabs, one observation, the form, and the solutions.
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.tabResults',

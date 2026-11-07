@@ -39,6 +39,12 @@ export class DesktopDocumentGateway implements DocumentGateway {
     return await this.files.saveDocument(doc.name, bytes, doc.mediaType) ? undefined : 'cancelled'
   }
 
+  async print(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'> {
+    if (!this.files.printToPdf) throw new Error('shell.pathRefused')
+    const bytes = await this.files.printToPdf(doc.widthMm, doc.heightMm)
+    return await this.files.saveDocument(doc.name, bytes, 'application/pdf') ? undefined : 'cancelled'
+  }
+
   readText(blob: Blob): Promise<string> {
     return this.browser.readText(blob)
   }

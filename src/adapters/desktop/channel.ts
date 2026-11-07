@@ -251,6 +251,8 @@ export type DesktopFiles = {
    * that one file, once, and nothing about the place it went is remembered.
    */
   saveDocument(name: string, bytes: Uint8Array, mediaType: string): Promise<boolean>
+  /** The window as it stands for print, as a PDF of that paper: text and lines, unsigned by anything. */
+  printToPdf?(widthMm: number, heightMm: number): Promise<Uint8Array>
   /**
    * Start reporting changes under this folder. Watching one twice is fine and
    * watches it once.

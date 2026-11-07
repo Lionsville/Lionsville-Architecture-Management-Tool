@@ -267,6 +267,10 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       {...sheetMapping(parts, diagram)}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
+      onPrint={files.printPage}
+      addImage={files.addImage}
+      {...(view.readOnly ? {} : { poster: parts.sheets.poster })}
+      scopeName={parts.readings.scopeLabel(parts.props.project.path)}
       select={parts.pages.selectRequestFor(diagram.id)}
       // The rail's *All units* and the units kept on it, for the session and per view (ADR-0036, amended 12 October 2026).
       remember={foldKey(parts.props.project.path, diagram.id, 'rail')}

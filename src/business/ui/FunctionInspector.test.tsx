@@ -89,7 +89,7 @@ describe('the fields', () => {
 describe('re-parenting', () => {
   it('offers the other members of its own tree', () => {
     open('picking')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Move to/ }))
     const list = within(screen.getByRole('listbox'))
     expect(list.getByRole('option', { name: 'Fulfilment' })).toBeTruthy()
     // A journey is a tree of its own: a capability never belongs under one.
@@ -98,12 +98,12 @@ describe('re-parenting', () => {
 
   it('writes the new parent as a change, and lets a thing go back to the top of its tree', () => {
     const { actions } = open('picking')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Move to/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Invoicing' }))
     expect(actions.updateElement).toHaveBeenCalledWith('picking', { parentId: 'invoicing' })
     cleanup()
     const { actions: actions2 } = open('warehousing')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Move to/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /top-level/ }))
     expect(actions2.updateElement).toHaveBeenCalledWith('warehousing', { parentId: undefined })
   })
@@ -112,7 +112,7 @@ describe('re-parenting', () => {
     // Refused rather than hidden: "why can I not do that" should be answered
     // in the list rather than by the option's absence.
     open('warehousing')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Move to/ }))
     const loop = within(screen.getByRole('listbox')).getByRole('option', { name: /Picking/ })
     expect(loop.getAttribute('aria-disabled')).toBe('true')
     expect(loop.textContent).toContain('Already inside this one')
@@ -179,7 +179,7 @@ describe('readOnly', () => {
     open('picking', true)
     expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull()
-    expect(screen.getByRole('combobox', { name: /Sits under/ }).getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByRole('combobox', { name: /Move to/ }).getAttribute('aria-disabled')).toBe('true')
   })
 })
 

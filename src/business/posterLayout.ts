@@ -26,6 +26,7 @@ const BAND_ROW = 112
 const LANE = 40
 /** Padding, title bar, meter and border. */
 const AREA_FRAME = 16 + 26 + 2 + 2
+const AREA_LINE = 16
 const GROUPING_HEAD = 18
 const GROUPING_FRAME = 5 + 2
 const COLUMN_FRAME = 10
@@ -46,6 +47,8 @@ export type PosterAreaSize = {
   loose: number
   /** The area's own span in tile columns, where the sheet says one. */
   span?: number
+  /** A line under the title: it is handed to a domain, or a stand-in saying where it is kept. */
+  line?: boolean
 }
 
 export type PosterBand = { id: string; steps: number; lanes: number; rows?: 1 | 2 }
@@ -57,11 +60,12 @@ export const POSTER_COLUMN_ID = SHEET_COLUMN_BOX
 
 /** A tile per poster: its width a minimum in a flowing grid, its height never changing. */
 export type PosterTileSize = 's' | 'm' | 'l'
-const TILES: Readonly<Record<PosterTileSize, { width: number; height: number }>> = {
-  s: { width: 92, height: 40 },
-  m: { width: POSTER_TILE.width, height: POSTER_TILE.height },
-  l: { width: 128, height: 54 },
+export const POSTER_TILES: Readonly<Record<PosterTileSize, { width: number; minWidth: number; height: number }>> = {
+  s: { width: 92, minWidth: 80, height: 40 },
+  m: { width: POSTER_TILE.width, minWidth: POSTER_TILE.minWidth, height: POSTER_TILE.height },
+  l: { width: 128, minWidth: 116, height: 54 },
 }
+const TILES = POSTER_TILES
 
 const rowsOf = (tiles: number, cols: number) => Math.ceil(tiles / cols)
 const tilesHeight = (tiles: number, cols: number, size: PosterTileSize) => rowsOf(tiles, cols) * (TILES[size].height + POSTER_TILE.gap) - POSTER_TILE.gap
@@ -79,11 +83,11 @@ function isGrouped(area: PosterAreaSize): boolean {
 export function contentHeight(area: PosterAreaSize, size: PosterTileSize = 'm'): number {
   if (!isGrouped(area)) {
     const tiles = Math.max(area.loose, 1)
-    return tilesHeight(tiles, area.span ?? tileColumns(tiles), size) + AREA_FRAME
+    return tilesHeight(tiles, area.span ?? tileColumns(tiles), size) + AREA_FRAME + (area.line ? AREA_LINE : 0)
   }
   const groupings = area.groupings.map((tiles) => tilesHeight(Math.max(tiles, 1), tileColumns(Math.max(tiles, 1)), size) + GROUPING_HEAD + GROUPING_FRAME)
   const loose = area.loose > 0 ? [tilesHeight(area.loose, tileColumns(area.loose), size)] : []
-  return Math.max(...groupings, ...loose) + AREA_FRAME
+  return Math.max(...groupings, ...loose) + AREA_FRAME + (area.line ? AREA_LINE : 0)
 }
 
 /** The narrowest an area is drawn: its tiles in their columns, or its groupings side by side. */
@@ -96,6 +100,46 @@ export function minWidth(area: PosterAreaSize, size: PosterTileSize = 'm'): numb
   const groupings = area.groupings.map((tiles) => tileColumns(Math.max(tiles, 1)) * step + 12)
   const loose = area.loose > 0 ? [tileColumns(area.loose) * step] : []
   return [...groupings, ...loose].reduce((sum, width) => sum + width + POSTER_TILE.gap, 16 - POSTER_TILE.gap)
+}
+
+/**
+ * How tall an area must be at this width: what its tiles come to when the block has
+ * been pulled wider or narrower, its groupings wrapping as the browser wraps them.
+ */
+export function contentHeightAt(area: PosterAreaSize, width: number, size: PosterTileSize = 'm'): number {
+  const inner = width - 2 - 16
+  const line = area.line ? AREA_LINE : 0
+  if (!isGrouped(area)) {
+    const tiles = Math.max(area.loose, 1)
+    return tilesHeight(tiles, flowColumns(inner, size), size) + AREA_FRAME + line
+  }
+  const pitch = TILES[size].minWidth + POSTER_TILE.gap
+  const parts = [
+    ...area.groupings.map((count) => ({ tiles: Math.max(count, 1), framed: true })),
+    ...(area.loose > 0 ? [{ tiles: area.loose, framed: false }] : []),
+  ].map((part) => ({ ...part, cols: tileColumns(part.tiles), basis: tileColumns(part.tiles) * pitch + POSTER_TILE.gap }))
+  let total = 0
+  let row: typeof parts = []
+  let used = 0
+  const close = () => {
+    if (row.length === 0) return
+    const weight = row.reduce((sum, part) => sum + part.cols, 0)
+    const spare = Math.max(0, inner - used)
+    total += (total > 0 ? POSTER_TILE.gap : 0) + Math.max(...row.map((part) => {
+      const wide = part.basis + (spare * part.cols) / weight
+      if (!part.framed) return tilesHeight(part.tiles, flowColumns(wide, size), size)
+      return tilesHeight(part.tiles, flowColumns(wide - GROUPING_FRAME - 5, size), size) + GROUPING_HEAD + GROUPING_FRAME
+    }))
+    row = []
+    used = 0
+  }
+  for (const part of parts) {
+    if (row.length > 0 && used + POSTER_TILE.gap + part.basis > inner) close()
+    used += (row.length > 0 ? POSTER_TILE.gap : 0) + part.basis
+    row.push(part)
+  }
+  close()
+  return total + AREA_FRAME + line
 }
 
 /**
@@ -152,10 +196,10 @@ function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: 
 export type PosterLayout = { width: number; height: number; blocks: PosterBlock[]; bandRows: 1 | 2 }
 
 /** The whole page. Same inputs, same answer, in the browser and on a server. */
-export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: PosterBand; column?: PosterColumn; tile?: PosterTileSize }): PosterLayout {
-  const { areas, band, column, tile = 'm' } = input
+export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: PosterBand; column?: PosterColumn; tile?: PosterTileSize; pageWidth?: number }): PosterLayout {
+  const { areas, band, column, tile = 'm', pageWidth = POSTER_WIDTH } = input
   const left = column ? COLUMN_WIDTH + COLUMN_GAP : 0
-  const width = POSTER_WIDTH - left
+  const width = pageWidth - left
   const bandRows = band ? band.rows ?? bandRowsFor(band.steps, width) : 1
   const blocks: PosterBlock[] = []
   let y = 0
@@ -170,7 +214,37 @@ export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: Po
   const asked = column ? COLUMN_FRAME + column.groups * COLUMN_HEAD + column.rows * COLUMN_ROW : 0
   const height = Math.max(down, asked)
   if (column) blocks.push({ id: POSTER_COLUMN_ID, x: 0, y: 0, width: COLUMN_WIDTH, height })
-  return { width: POSTER_WIDTH, height, blocks, bandRows }
+  return { width: pageWidth, height, blocks, bandRows }
+}
+
+/** ISO paper's long side over its short side. */
+const PAPER_RATIO = 1.41
+const PAPER_STEP = 120
+
+/**
+ * The first layout for a poster meant only for print: a page as wide as it must be
+ * to come out at paper's shape or flatter, and its rows then pulled taller until it
+ * is that shape. Never narrower than the wide page, so the sizes a person reads stay
+ * what they are; a page with few tiles gains height, one with many gains width.
+ */
+export function paperLayout(input: Parameters<typeof firstLayout>[0]): PosterLayout {
+  let layout = firstLayout(input)
+  while (layout.height * PAPER_RATIO > layout.width) {
+    layout = firstLayout({ ...input, pageWidth: layout.width + PAPER_STEP })
+  }
+  const wanted = Math.round(layout.width / PAPER_RATIO)
+  const bandId = input.band?.id
+  const rows = [...new Set(layout.blocks.filter((block) => block.id !== POSTER_COLUMN_ID && block.id !== bandId).map((block) => block.y))].sort((a, b) => a - b)
+  const spare = wanted - layout.height
+  if (rows.length === 0 || spare <= 0) return layout
+  const more = Math.floor(spare / rows.length)
+  const blocks = layout.blocks.map((block) => {
+    if (block.id === POSTER_COLUMN_ID) return { ...block, height: wanted }
+    if (block.id === bandId) return block
+    const at = rows.indexOf(block.y)
+    return { ...block, y: block.y + at * more, height: block.height + more }
+  })
+  return { ...layout, height: wanted, blocks }
 }
 
 /** The order a person reads a page in, top then left, never the order things were placed in. */
@@ -236,6 +310,11 @@ export function tileCells(
     cells.push({ id, col, row, span: 1 })
   }
   return cells
+}
+
+/** How many tile columns a flow of this width holds: what `repeat(auto-fill, minmax(…))` makes of it. */
+export function flowColumns(width: number, size: PosterTileSize = 'm'): number {
+  return Math.max(1, Math.floor((width + POSTER_TILE.gap) / (TILES[size].minWidth + POSTER_TILE.gap)))
 }
 
 /**

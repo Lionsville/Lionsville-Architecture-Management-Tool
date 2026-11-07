@@ -31,7 +31,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
-import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../../model'
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, PosterItem, Relation } from '../../model'
 import type { AspectScale } from '../../model/aspectScale'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -40,6 +40,7 @@ import { formatDay } from '../../i18n/dates'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { Band } from '../../widgets/kit/Band'
+import { tokenVar } from '../../widgets/kit/tokens'
 import { Button } from '../../widgets/kit/Button'
 import { ColourMenu } from '../../widgets/kit/ColourMenu'
 import { DayControl } from '../../widgets/kit/DayControl'
@@ -55,7 +56,11 @@ import { locatedRing, locatedSelector, useLocated } from '../../widgets/useLocat
 import { usePlaceReading, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import { captureSheet } from '../../widgets/capturePage'
-import { SheetPoster } from './SheetPoster'
+import { posterShot, PosterWork } from './PosterWork'
+import type { PosterHostParts } from './PosterWork'
+import type { PosterHandle } from './SheetPoster'
+import type { PosterActions } from './PosterDesign'
+import { PRINT_PAPERS } from '../../widgets/printPage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { lazyPart } from '../../widgets/lazyPart'
 import { ArrivingDialog } from '../../widgets/Arriving'
@@ -71,19 +76,21 @@ import type { MapDescribe } from '../map'
 import { sheetPage } from '../sheet'
 import type { LaidOutSheet, SheetArea } from '../sheet'
 import { drawnOnSheet, findOnSheet } from '../find'
+import type { SheetHit } from '../find'
+import { matchesQuery } from '../../model/textSearch'
 import { leavesOfArea, rowAbove, rowsOfArea } from '../sheetRows'
 import type { SheetRow } from '../sheetRows'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
-import type { FunctionInspectorProps, NewLane, SheetActions, SheetDomains, SheetResponsible, Supporter } from './FunctionInspector'
+import type { FunctionInspectorProps, NewLane, PosterPanel, SheetActions, SheetDomains, SheetResponsible, Supporter } from './FunctionInspector'
 import { useWho } from './Responsible'
-import { AreaBlock, OverviewTile, onRowKeys } from './SheetRows'
+import { AreaBlock, onRowKeys } from './SheetRows'
 import type { Answered, RowContext } from './SheetRows'
 import { AreaAdds, EmptySheet } from './SheetAuthor'
 import type { Author, SheetClaims } from './SheetAuthor'
 import { JourneyBand } from './SheetJourney'
 import { SheetRail } from './SheetRail'
 import { FindBar } from './SheetFind'
-import { ReadingSwitch, SheetBar } from './SheetBar'
+import { PostureSwitch, ReadingSwitch, SheetBar } from './SheetBar'
 import type { SheetReading } from './SheetBar'
 import { LaneDialog } from './LaneDialog'
 import { SheetExportDialog } from './SheetExportDialog'
@@ -133,7 +140,15 @@ export type SheetPageProps = {
   /** The way to an element's own page. Absent = no *Page ›*. */
   onOpenDocumentation?(id: ElementId): void
   /** Hand a picture of the page to the person. Absent = no *Picture…*. */
-  onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }): void
+  onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }): void
+  /** What placing on a poster writes. Absent: the poster is only read. */
+  poster?: PosterActions
+  /** An image into this scope's library, for a picture or an icon on a poster. */
+  addImage?(file: File): Promise<string | undefined>
+  /** The page as it now stands for print, to paper: the host's, Electron's or the browser's own. */
+  onPrint?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void>
+  /** What the scope is called, for a poster's title. */
+  scopeName?: string
   /** Select this, where the page draws it: a place opened with something selected on it. */
   select?: SelectRequest
   /** Where the rail's and the rows' folds are remembered for the session: the view's key. */
@@ -157,6 +172,8 @@ export type SheetHandle = PageHandle
 export type SheetCaptureOptions = PageCaptureOptions
 
 const RAIL = { default: 200, min: 120, max: 420 } as const
+/** Under about this a poster is no use, and Names comes first. */
+const POSTER_LEAST_WINDOW = 900
 /** The body's padding above and below the canvas: what the paper's height is not for. */
 const PAGE_MARGINS = 32 + 24
 /** The most pixels a picture may have: an A0 at two pixels per point, and the ratio falls on a taller page. */
@@ -302,7 +319,7 @@ function useLens(props: SheetPageProps, lensAsked: string | undefined, day: stri
 }
 
 /** The page laid out for a picture: what is packed where, for as long as one is being drawn. */
-function usePicture(props: SheetPageProps, node: { current: HTMLDivElement | null }, laidOut: LaidOutSheet | undefined) {
+function usePicture(props: SheetPageProps, node: { current: HTMLDivElement | null }, laidOut: LaidOutSheet | undefined, poster: { current: PosterHandle | undefined }) {
   const { sheet, onSave } = props
   const theme = useTheme()
   const [exporting, setExporting] = useState<{ width?: number } | undefined>(undefined)
@@ -321,8 +338,11 @@ function usePicture(props: SheetPageProps, node: { current: HTMLDivElement | nul
   // Asked for from outside with no width: the paper the sheet is on, as ever.
   const paperOfSheet = sheet ? sheetPaperWidth(sheet) : undefined
   const capture = useCallback(
-    (options: SheetCaptureOptions) => shoot(options.maxPixels, options.width ?? paperOfSheet),
-    [shoot, paperOfSheet],
+    // The poster is what is up: its own page, not the Names page laid out for paper.
+    (options: SheetCaptureOptions) => (poster.current
+      ? posterShot(poster.current, PRINT_PAPERS.A2, options.maxPixels)
+      : shoot(options.maxPixels, options.width ?? paperOfSheet)),
+    [shoot, paperOfSheet, poster],
   )
   const exportPng = useCallback(async (layout: ExportLayout) => {
     if (!sheet || !onSave) return
@@ -351,12 +371,19 @@ function usePicture(props: SheetPageProps, node: { current: HTMLDivElement | nul
   return { exporting, capture, exportPng, columns, packed, observe: cards.observe }
 }
 
+/** A note on a poster is found as well, by its words: it is no element, so only its id and words matter to a hit. */
+function notesFound(items: readonly PosterItem[] | undefined, query: string): SheetHit[] {
+  if (query.trim() === '') return []
+  return (items ?? []).filter((item) => item.kind === 'note' && matchesQuery(query, [item.text ?? '']))
+    .map((item) => ({ element: { id: item.id, name: item.text ?? '' } as DesignElement, band: 'note' }))
+}
+
 /** What the find bar holds: what is lit, and walking it. */
-function useFinder(laidOut: LaidOutSheet | undefined, bringOn: (id: ElementId) => void) {
+function useFinder(laidOut: LaidOutSheet | undefined, bringOn: (id: ElementId) => void, items?: readonly PosterItem[]) {
   const [finding, setFinding] = useState(false)
   const [query, setQuery] = useState('')
   const [at, setAt] = useState<number | undefined>(undefined)
-  const hits = useMemo(() => (laidOut && finding ? findOnSheet(laidOut, query) : []), [laidOut, finding, query])
+  const hits = useMemo(() => (laidOut && finding ? [...findOnSheet(laidOut, query), ...notesFound(items, query)] : []), [laidOut, items, finding, query])
   const lit = useMemo(() => (finding && query.trim() !== '' ? new Set(hits.map((hit) => hit.element.id)) : undefined), [finding, query, hits])
   const close = useCallback(() => { setFinding(false); setQuery(''); setAt(undefined) }, [])
   return {
@@ -372,26 +399,16 @@ function useFinder(laidOut: LaidOutSheet | undefined, bringOn: (id: ElementId) =
 }
 
 /** The areas as the reading wants them: tiles, packed for paper, or flowing in the window. */
-function AreasView({ laidOut, level, picture, sheet, block, areaOf, tile, standIns, own, t }: {
+function AreasView({ laidOut, picture, sheet, block, standIns, own, t }: {
   laidOut: LaidOutSheet
-  level: 'overview' | 'names'
   picture: ReturnType<typeof usePicture>
   sheet: DesignDiagram | undefined
   block(area: SheetArea, position?: CSSProperties, span?: number): ReactNode
-  areaOf(area: SheetArea): { rows: readonly SheetRow[]; leaves: readonly ElementId[] }
-  tile(area: SheetArea, rows: readonly SheetRow[], leaves: readonly ElementId[]): ReactNode
   own: readonly SheetArea[]
   standIns: readonly SheetArea[]
   t: Translate
 }) {
   const { exporting, packed, columns } = picture
-  if (level === 'overview' && !exporting) {
-    return (
-      <div className="sheet-tiles">
-        {laidOut.areas.map((area) => { const { rows, leaves } = areaOf(area); return tile(area, rows, leaves) })}
-      </div>
-    )
-  }
   if (exporting && packed) {
     const pitch = `(100% + ${AREA_COLUMN.gap}px) / ${columns}`
     return (
@@ -478,7 +495,7 @@ function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
 }
 
 /** The panel over the page, on what is chosen. */
-function OverPanel({ selected, sheet, laidOut, width, onWidth, readOnly, naming, asOf, select, props }: {
+function OverPanel({ selected, sheet, laidOut, width, onWidth, readOnly, naming, asOf, select, props, poster }: {
   selected: DesignElement
   sheet: DesignDiagram | undefined
   laidOut: LaidOutSheet | undefined
@@ -489,11 +506,13 @@ function OverPanel({ selected, sheet, laidOut, width, onWidth, readOnly, naming,
   asOf: string | undefined
   select(id: ElementId | undefined): void
   props: SheetPageProps
+  /** On a poster: what it says about this one, and the way back to its tile. */
+  poster?: { panel: PosterPanel | undefined; onEscape(): void } | undefined
 }) {
   const { t } = useStrings()
   const { actions } = props
   return (
-    <div className="sheet-page__over">
+    <div className="sheet-page__over" onKeyDown={poster ? (event) => { if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); poster.onEscape() } } : undefined}>
       <SeamResizer
         orientation="vertical" region="after" value={width} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
         defaultValue={INSPECTOR_WIDTH.default} onChange={onWidth} label={t('sheet.resizeDetails')}
@@ -501,7 +520,8 @@ function OverPanel({ selected, sheet, laidOut, width, onWidth, readOnly, naming,
       <FunctionInspector
         element={selected} model={props.model} readOnly={readOnly} actions={actions} width={width}
         applications={props.applications} onOpenDocumentation={props.onOpenDocumentation} elsewhere={props.elsewhere}
-        {...(naming && naming.id === selected.id && selected.kind !== 'function' ? { nameFocus: naming.nonce } : {})}
+        {...(naming && naming.id === selected.id && (selected.kind !== 'function' || poster) ? { nameFocus: naming.nonce } : {})}
+        poster={poster?.panel}
         responsible={props.responsible} domains={props.domains} ownerOf={props.ownerOf} scales={props.scales}
         describe={props.describe} today={asOf}
         onClose={() => select(undefined)} onRemoved={() => select(undefined)} onSelect={select}
@@ -520,7 +540,11 @@ function usePage(props: SheetPageProps, page: { current: HTMLDivElement | null }
   const { model, sheet, actions } = props
   const { t } = useStrings()
   // The reader's, and in the address: a link and an agent reach them, and a look writes nothing.
-  const [tab, chooseTab] = usePlaceTab('names')
+  const posterHandle = useRef<PosterHandle | undefined>(undefined)
+  const [asked, chooseTab] = usePlaceTab(firstReading(props))
+  // An old address's Overview is the poster's far distance now; Design is the poster, placed.
+  const onPoster = asked === 'poster' || asked === 'overview' || asked === 'design'
+  const tab = onPoster ? 'poster' : asked
   const [reading, changeReading] = usePlaceReading()
   const day = reading.day ?? sheet?.asOf
   const looking = reading.day !== undefined && reading.day !== sheet?.asOf
@@ -533,10 +557,12 @@ function usePage(props: SheetPageProps, page: { current: HTMLDivElement | null }
     [model.elements, live, sheet, rail.options, props.takenUp],
   )
   const selection = usePageSelection(model, props.remember)
-  const picture = usePicture(props, page, laidOut)
+  const picture = usePicture(props, page, laidOut, posterHandle)
   const { locatedId, locate } = useLocated(page, selection.select)
-  useSelectRequest(props.select, laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id)), locate)
-  const finder = useFinder(laidOut, locate)
+  const bringOn = useCallback((id: ElementId) => { locate(id); posterHandle.current?.bringOn(id) }, [locate])
+  const finder = useFinder(laidOut, bringOn, props.sheet?.poster?.items)
+  const designing = asked === 'design' && !readOnly && props.poster !== undefined
+  useSelectRequest(props.select, laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id)), bringOn)
   const areaRows = useMemo(() => new Map((laidOut?.areas ?? []).map((area) => [area.element.id, rowsOfArea(area)])), [laidOut])
   const named = (id: ElementId) => {
     if (lensed.lens === 'domains' && props.domains) return props.domains.name(id)
@@ -561,7 +587,7 @@ function usePage(props: SheetPageProps, page: { current: HTMLDivElement | null }
   const leaveLook = () => { const { day: _was, ...rest } = reading; changeReading(rest) }
   return {
     tab, chooseTab, reading, changeReading, day, looking, readOnly, lensed, rail, laidOut, selection, picture, locatedId, locate, finder, context, areaOf,
-    author, only, setOnly, leaveLook, areaRows,
+    author, only, setOnly, leaveLook, areaRows, posterHandle, designing, bringOn,
   }
 }
 
@@ -594,14 +620,15 @@ function AreaOf({ area, at, context, picture, position, span, domains, owner, co
   )
 }
 
-function SheetTopBar({ at, props, onLevel }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onLevel(level: 'overview' | 'names'): void }) {
+function SheetTopBar({ at, props, onLevel, onPosterExport }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onLevel(level: 'poster' | 'names'): void; onPosterExport(): void }) {
   const { t } = useStrings()
   const { sheet } = props
   const { lensed, reading, changeReading, selection, laidOut, picture, finder, day, readOnly } = at
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const onPosterTab = at.tab === 'poster'
   const more: MenuEntry[] = [
-    ...(props.onSave ? [{ label: t('sheet.export'), onSelect: () => setExportOpen(true) }] : []),
+    ...(props.onSave ? [{ label: t(onPosterTab ? 'sheet.poster.export' : 'sheet.export'), onSelect: () => (onPosterTab ? onPosterExport() : setExportOpen(true)) }] : []),
     ...(!readOnly && sheet ? [{ label: t('sheet.settings'), onSelect: () => setSettingsOpen(true) }] : []),
   ]
   const chooseDay = (to: string | undefined) => {
@@ -615,7 +642,12 @@ function SheetTopBar({ at, props, onLevel }: { at: ReturnType<typeof usePage>; p
     <>
       <SheetBar
         t={t}
-        reading={<ReadingSwitch value={at.tab === 'overview' ? 'overview' : 'names'} onChange={onReading} canCover={props.onCoverage !== undefined} t={t} guide="sheet.reading" />}
+        reading={(
+          <>
+            <ReadingSwitch value={onPosterTab ? 'poster' : 'names'} onChange={onReading} canCover={props.onCoverage !== undefined} t={t} guide="sheet.reading" />
+            {onPosterTab && props.poster && !readOnly && <PostureSwitch value={at.designing ? 'design' : 'read'} onChange={(to) => at.chooseTab(to === 'design' ? 'design' : 'poster')} t={t} />}
+          </>
+        )}
         {...(sheet ? {
           colour: (
             <ColourMenu
@@ -624,8 +656,9 @@ function SheetTopBar({ at, props, onLevel }: { at: ReturnType<typeof usePage>; p
             />
           ),
           day: <DayControl data-guide="sheet.day" day={day} groups={props.days ?? []} onChange={chooseDay} />,
-          ...(laidOut?.journey ? { journey: { shown: selection.journeyOpen, onShown: selection.setJourneyOpen } } : {}),
-          ...(sheet.showActors !== false ? { stakeholders: { shown: selection.railOpen, onShown: selection.setRailOpen } } : {}),
+          // On a poster the band and the column are blocks, and whether they are drawn is the view's, in its settings.
+          ...(laidOut?.journey && !onPosterTab ? { journey: { shown: selection.journeyOpen, onShown: selection.setJourneyOpen } } : {}),
+          ...(sheet.showActors !== false && !onPosterTab ? { stakeholders: { shown: selection.railOpen, onShown: selection.setRailOpen } } : {}),
         } : {})}
         finding={finder.finding} onFind={finder.toggle} more={more}
       />
@@ -641,21 +674,16 @@ function SheetTopBar({ at, props, onLevel }: { at: ReturnType<typeof usePage>; p
 }
 
 /** What is on the page once it has a sheet: the empty sheet, or its readings, and what waits at the end. */
-function SheetBody({ at, props, level, openArea }: { at: ReturnType<typeof usePage>; props: SheetPageProps; level: 'overview' | 'names'; openArea(id: ElementId): void }) {
+function SheetBody({ at, props }: { at: ReturnType<typeof usePage>; props: SheetPageProps }) {
   const { t } = useStrings()
   const { laidOut, picture, lensed, author, context, areaOf, selection } = at
   if (!laidOut) return null
+
   const owned = (area: SheetArea) => props.ownerOf?.(area.element.id)
   const block = (area: SheetArea, position?: CSSProperties, span?: number) => (
     <AreaOf
       key={area.element.id} area={area} at={areaOf(area)} context={context} picture={picture} domains={props.domains} owner={owned(area)}
       coverageAt={lensed.coverageAt} retiring={lensed.retiring} t={t} {...(position ? { position } : {})} {...(span !== undefined ? { span } : {})}
-    />
-  )
-  const tile = (area: SheetArea, rows: readonly SheetRow[], leaves: readonly ElementId[]) => (
-    <OverviewTile
-      key={area.element.id} area={area} answered={answeredOf(leaves, lensed.coverageAt, lensed.retiring)} lens={lensed.lens} valueOf={lensed.valueOf}
-      leaves={leaves.flatMap((id) => { const element = lensed.byId.get(id); return element ? [element] : [] })} items={rows.length} onOpen={openArea} t={t}
     />
   )
   const hasAreas = laidOut.areas.length > 0
@@ -669,13 +697,13 @@ function SheetBody({ at, props, level, openArea }: { at: ReturnType<typeof usePa
       {hasAreas
         ? (
           <AreasView
-            laidOut={laidOut} level={level} picture={picture} sheet={props.sheet} block={block} areaOf={areaOf} tile={tile} t={t}
+            laidOut={laidOut} picture={picture} sheet={props.sheet} block={block} t={t}
             own={laidOut.areas.filter((area) => !owned(area))} standIns={laidOut.areas.filter((area) => owned(area))}
           />
         )
         : <EmptySheet author={author} claims={props.claims} t={t} />}
       {author && hasAreas && <AreaAdds author={author} claims={props.claims} label={t('sheet.addArea')} />}
-      {laidOut.unmapped.length > 0 && level !== 'overview' && <UnmappedBand elements={laidOut.unmapped} selectedId={selection.selectedId} onSelect={selection.select} t={t} />}
+      {laidOut.unmapped.length > 0 && <UnmappedBand elements={laidOut.unmapped} selectedId={selection.selectedId} onSelect={selection.select} t={t} />}
     </>
   )
 }
@@ -751,9 +779,11 @@ export function SheetPage(props: SheetPageProps) {
   const at = usePage(props, page)
   const { laidOut, picture, selection, finder, lensed, readOnly, author, reading } = at
   const { selectedId, naming, journeyOpen } = selection
-  const level = at.tab === 'overview' ? 'overview' : 'names'
   const [laneOpen, setLaneOpen] = useState(false)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
+  const [posterExport, setPosterExport] = useState(false)
+  const [iconAsked, setIconAsked] = useState(0)
+  const [full, setFull] = useState(false)
   const room = useRoomForPick(page, selectedId, detailsWidth)
   const { exporting, capture } = picture
   const selected = selectedId === undefined ? undefined : model.elements.find((element) => element.id === selectedId)
@@ -767,18 +797,29 @@ export function SheetPage(props: SheetPageProps) {
     return () => onHandle(undefined)
   }, [onHandle, props.open, sheetId, capture, selectedId])
 
-  const openArea = (id: ElementId) => {
-    at.chooseTab('names')
-    requestAnimationFrame(() => at.locate(id))
-  }
   const jump = () => {
     at.chooseTab('names')
     requestAnimationFrame(() => document.getElementById('sheet-unmapped')?.scrollIntoView?.())
   }
+  // On a poster nothing scrolls for the browser's own find to reach: ⌘F is this one, which lights what it finds.
+  const { finding, toggle: toggleFind } = finder
+  useEffect(() => {
+    if (at.tab !== 'poster') return undefined
+    const keys = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'f') return
+      event.preventDefault()
+      event.stopPropagation()
+      if (!finding) toggleFind()
+    }
+    // Ahead of the editor's own, which has the document.
+    window.addEventListener('keydown', keys, true)
+    return () => window.removeEventListener('keydown', keys, true)
+  }, [at.tab, finding, toggleFind])
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
     <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('sheet.page')}>
-      <SheetTopBar at={at} props={props} onLevel={at.chooseTab} />
+      <div className="sheet-full" data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && !selected) setFull(false) } : undefined}>
+      <SheetTopBar at={at} props={props} onLevel={at.chooseTab} onPosterExport={() => setPosterExport(true)} />
       {at.looking && reading.day !== undefined && <SheetLook day={reading.day} at={at} props={props} />}
       {finder.finding && <FindBar query={finder.query} hits={finder.hits} at={finder.at} onQuery={finder.onQuery} onWalk={finder.walk} onClose={finder.close} t={t} />}
 
@@ -795,27 +836,38 @@ export function SheetPage(props: SheetPageProps) {
         )}
         {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
         <div className="sheet-page__work">
-          {at.tab === 'poster' && laidOut && (
-            <SheetPoster
-              laidOut={laidOut} areaSpans={sheet?.areaSpans} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
-              nameOf={at.context.named} selectedId={selectedId} onSelect={selection.select} strip={<SheetKey at={at} props={props} onJump={jump} />} t={t}
-            />
-          )}
+          {at.tab === 'poster' && laidOut && sheet && (laidOut.areas.length > 0 || laidOut.journey
+            ? (
+              <PosterWork
+                parts={posterParts(props, sheet, lensed.retiring)} laidOut={laidOut} designing={at.designing} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
+                nameOf={at.context.named} selectedId={selectedId} onSelect={selection.select} made={selection.made} only={at.only} lit={finder.lit} who={lensed.who}
+                day={lensed.asOf} kept={at.rail.options.kept} keyStrip={<SheetKey at={at} props={props} onJump={jump} />} handle={at.posterHandle} author={author}
+                dockExtra={<Button variant="quiet" size="small" aria-pressed={full} onClick={() => setFull((was) => !was)} data-testid="poster-full">{t(full ? 'sheet.poster.back' : 'sheet.poster.fullWindow')}</Button>}
+                exporting={posterExport} onExported={() => setPosterExport(false)} keyWords={keyWordsOf(at)} today={props.today ?? ''} scopeName={props.scopeName} onLane={() => setLaneOpen(true)}
+                iconAsked={iconAsked} t={t}
+              />
+            )
+            : <div className="sheet-page__body"><EmptySheet author={author} claims={props.claims} t={t} /></div>)}
           {at.tab !== 'poster' && <RailPart at={at} props={props} />}
           {at.tab !== 'poster' && <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
             <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={finder.lit ? '' : undefined}>
-              <SheetBody at={at} props={props} level={level} openArea={openArea} />
+              <SheetBody at={at} props={props} />
             </div>
           </div>}
           {selected && !exporting && (
             <OverPanel
               selected={selected} sheet={sheet} laidOut={laidOut} width={detailsWidth} onWidth={setDetailsWidth} readOnly={readOnly}
               naming={naming} asOf={lensed.asOf} select={selection.select} props={props}
+              poster={at.tab === 'poster' ? {
+                panel: posterPanelOf(selected, sheet, props.poster, () => setIconAsked((was) => was + 1), selectedId),
+                onEscape: () => { const id = selected.id; selection.select(undefined); requestAnimationFrame(() => at.posterHandle.current?.focus(id)) },
+              } : undefined}
             />
           )}
         </div>
       </Box>
 
+      </div>
       {laneOpen && laidOut?.journey && (
         <LaneDialog
           model={model} phases={laidOut.journey.phases} onCancel={() => setLaneOpen(false)}
@@ -824,6 +876,40 @@ export function SheetPage(props: SheetPageProps) {
       )}
     </Frame>
   )
+}
+
+/** The poster first where it can be of use: the sheet has an area and the window has room. Names otherwise, one press from it. */
+function firstReading(props: SheetPageProps): 'poster' | 'names' {
+  const { sheet, model } = props
+  const areas = sheet?.areas?.length ?? model.elements.filter((element) => element.kind === 'function' && element.parentId === undefined).length
+  const wide = typeof window.matchMedia === 'function' && window.matchMedia(`(min-width: ${POSTER_LEAST_WINDOW}px)`).matches
+  return areas > 0 && wide ? 'poster' : 'names'
+}
+
+/** What the poster is handed of the page's props, stable while they are. */
+function posterParts(props: SheetPageProps, sheet: DesignDiagram, retiring: (id: ElementId) => boolean): PosterHostParts {
+  return { ...props, sheet, retiring }
+}
+
+/** What a print's key says. */
+function keyWordsOf(at: ReturnType<typeof usePage>): { label: string; swatch?: string }[] {
+  const { laidOut, lensed } = at
+  if (!laidOut || !lensed.lens) return []
+  const leaves = [...at.areaRows.entries()].flatMap(([area, rows]) => { const held = leavesOfArea(rows); return held.length > 0 ? held : [area] })
+  return lensed.keyOf(leaves).map((one) => ({ label: `${one.label} ${one.count}`, ...(one.swatch ? { swatch: tokenVar(one.swatch) } : {}) }))
+}
+
+/** The panel's *On this poster*: what this view shows of the record and where it placed it, and nothing while it only reads. */
+function posterPanelOf(selected: DesignElement, sheet: DesignDiagram | undefined, poster: PosterActions | undefined, onChooseIcon: () => void, id: ElementId | undefined): PosterPanel | undefined {
+  if (!sheet || !poster || id === undefined) return undefined
+  const cell = sheet.geometry?.cells?.find((one) => one.id === id)
+  return {
+    labelled: sheet.labels?.includes(id) ?? false,
+    onLabel: (on) => poster.showLabel(id, on),
+    ...(cell ? { cell: { col: cell.col, row: cell.row } } : {}),
+    onCell: (to) => poster.cell(id, to),
+    ...(selected.kind === 'step' || selected.kind === 'actor' ? { onChooseIcon } : {}),
+  }
 }
 
 /** The rows of the area a function sits in. */

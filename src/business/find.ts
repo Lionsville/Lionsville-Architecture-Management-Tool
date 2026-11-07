@@ -20,7 +20,7 @@ import { matchesQuery } from '../model/textSearch'
 import type { LaidOutSheet } from './sheet'
 
 /** Which band a hit is drawn in; the page says the word for each. */
-export type SheetBand = 'actor' | 'phase' | 'step' | 'area' | 'grouping' | 'capability' | 'unmapped'
+export type SheetBand = 'actor' | 'phase' | 'step' | 'area' | 'grouping' | 'capability' | 'unmapped' | 'note'
 
 export type SheetHit = {
   element: DesignElement

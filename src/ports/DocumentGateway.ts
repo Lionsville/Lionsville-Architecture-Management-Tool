@@ -42,6 +42,13 @@ export interface DocumentGateway {
    */
   save(doc: SavedDocument): Promise<void | 'cancelled'>
 
+  /**
+   * The page as it now stands for print, to a PDF the user is asked where to put:
+   * text and lines rather than pixels, at the page's own `@page` size. Absent where the
+   * only way to paper is a browser's own print dialog.
+   */
+  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'>
+
   /** A chosen file as text. */
   readText(blob: Blob): Promise<string>
 

@@ -11,6 +11,7 @@
  * props and view settings are in `editor/`, the string table in `i18n/`.
  */
 export type {
+  PosterCell, PosterItem, PosterItemPlace, PosterSettings,
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
   Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType, PlatformArchetype,
   EdgeLineStyle, EdgeRouting,

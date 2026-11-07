@@ -80,6 +80,7 @@ function domainsOf(at: SheetMappingAt & { openScope?: (path: ScopePath) => void 
     name: trail,
     known: (path) => path === '' || known.has(path),
     takenUpBy: (functionId) => takenUpBy(index, functionId),
+    applicationsIn: (path) => index.entries().flatMap((entry) => (entry.kind === 'application' && entry.master === path ? [{ id: entry.id, name: entry.name }] : [])),
     ...(at.openScope ? { openScope: open } : {}),
   }
 }

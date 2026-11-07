@@ -252,13 +252,13 @@ describe('the rows', () => {
 })
 
 describe('the readings', () => {
-  it('opens on Names, offers Overview, and a press on a tile comes back to that area', () => {
+  it('offers the poster, whose far distance is what Overview was, and every tile is there', () => {
     open()
-    fireEvent.click(screen.getByRole('radio', { name: 'Overview' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Poster' }))
     expect(screen.queryByTestId('sheet-areas')).toBeNull()
-    const tile = screen.getByTestId('sheet-tile-fulfilment')
-    expect(tile.textContent).toContain('Fulfilment')
-    fireEvent.click(tile)
+    expect(screen.getByTestId('sheet-poster')).toBeTruthy()
+    expect(screen.getByTestId('poster-tile-picking').textContent).toContain('Picking')
+    fireEvent.click(screen.getByRole('radio', { name: 'Names' }))
     expect(screen.getByTestId('sheet-areas')).toBeTruthy()
   })
 

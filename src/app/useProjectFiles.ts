@@ -43,6 +43,7 @@ import { putBackSaid } from './history/useProjectHistory'
  */
 export type ProjectFileChannel = {
   save(doc: SavedDocument): Promise<void | 'cancelled'>
+  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'>
   readBytes(blob: Blob): Promise<Uint8Array>
   readDataUrl(blob: Blob): Promise<string>
 }
@@ -51,7 +52,9 @@ export type ProjectFiles = {
   /** Answers once the copy is saved or the person has cancelled. */
   saveWorkingFile: () => Promise<void>
   /** A picture of a page — the sheet at a paper size — through the same gateway, so the desktop gets a save dialog. */
-  savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => void
+  savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }) => void
+  /** The page as it stands for print: a PDF where the host makes one, else the browser's own print dialog. */
+  printPage: (doc: { name: string; widthMm: number; heightMm: number }) => Promise<void>
   openFile: (file: File) => void
   /**
    * The same act, from bytes somebody else read.
@@ -323,9 +326,21 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     session.setImageLibrary((library) => library.filter((image) => image.name !== name))
   }, [session])
 
-  const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => {
+  const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }) => {
     void handOver(doc, s('shell.savedPicture'))
   }, [handOver, s])
 
-  return { saveWorkingFile, savePicture, openFile, openDocument, addLogo, addImage, removeImage }
+  const printPage = useCallback(async (doc: { name: string; widthMm: number; heightMm: number }) => {
+    if (!documents.print) {
+      // The copy on paper is taken away when this answers, so not before the dialog has gone.
+      await new Promise<void>((done) => {
+        window.addEventListener('afterprint', () => done(), { once: true })
+        window.print()
+      })
+      return
+    }
+    if (await documents.print(doc) !== 'cancelled') notify(s('shell.savedPicture'), 'success')
+  }, [documents, notify, s])
+
+  return { saveWorkingFile, savePicture, printPage, openFile, openDocument, addLogo, addImage, removeImage }
 }

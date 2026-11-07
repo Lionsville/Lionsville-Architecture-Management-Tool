@@ -16,7 +16,7 @@ export type ViewerKeep = {
   keep(key: string, value: unknown): void
 }
 
-const ViewerKeepContext = createContext<ViewerKeep | undefined>(undefined)
+export const ViewerKeepContext = createContext<ViewerKeep | undefined>(undefined)
 
 export const ViewerKeepProvider = ViewerKeepContext.Provider
 

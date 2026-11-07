@@ -14,8 +14,8 @@ import { ViewBar, ViewBarButton, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 
-/** The three readings of one layer, one switch: two levels of the sheet, and the crossing. */
-export type SheetReading = 'overview' | 'names' | 'coverage'
+/** The three readings of one layer, one switch: the poster, the same facts in a line, and the crossing. */
+export type SheetReading = 'poster' | 'names' | 'coverage'
 
 /** Other views of the same kind in this scope, under the reading's menu. */
 export type OtherView = { id: string; name: string; here: boolean }
@@ -30,7 +30,7 @@ export function ReadingSwitch({ value, onChange, canCover, others, t, guide }: {
   guide: string
 }) {
   const options: { value: SheetReading; label: string }[] = [
-    { value: 'overview', label: t('sheet.reading.overview') },
+    { value: 'poster', label: t('sheet.reading.poster') },
     { value: 'names', label: t('sheet.reading.names') },
     ...(canCover ? [{ value: 'coverage' as const, label: t('sheet.reading.coverage') }] : []),
   ]
@@ -45,6 +45,16 @@ export function ReadingSwitch({ value, onChange, canCover, others, t, guide }: {
         />
       )}
     </>
+  )
+}
+
+/** Reading or placing: a drag in Read pans, so no reader ever moves anything by accident. */
+export function PostureSwitch({ value, onChange, t }: { value: 'read' | 'design'; onChange(to: 'read' | 'design'): void; t: Translate }) {
+  return (
+    <Segmented
+      label={t('sheet.poster.posture')} value={value} onChange={onChange} data-guide="sheet.posture"
+      options={[{ value: 'read', label: t('sheet.poster.read') }, { value: 'design', label: t('sheet.poster.design') }]}
+    />
   )
 }
 

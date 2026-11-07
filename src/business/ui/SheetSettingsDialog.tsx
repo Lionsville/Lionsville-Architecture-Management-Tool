@@ -81,6 +81,19 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
         />
         {t('sheet.settingsRail')}
       </label>
+      <SelectField
+        label={t('sheet.poster.tileSize')} value={sheet.poster?.tile ?? 'm'}
+        options={[{ value: 's', label: t('sheet.poster.tileS') }, { value: 'm', label: t('sheet.poster.tileM') }, { value: 'l', label: t('sheet.poster.tileL') }]}
+        onChange={(value) => actions.updateSheet({ poster: { ...sheet.poster, tile: value as 's' | 'm' | 'l' } })}
+      />
+      <SelectField
+        label={t('sheet.poster.bandRows')} value={sheet.poster?.bandRows === undefined ? '' : String(sheet.poster.bandRows)}
+        options={[{ value: '', label: t('sheet.poster.bandRowsAuto') }, { value: '1', label: '1' }, { value: '2', label: '2' }]}
+        onChange={(value) => {
+          const { bandRows: _was, ...rest } = sheet.poster ?? {}
+          actions.updateSheet({ poster: value === '' ? rest : { ...rest, bandRows: Number(value) as 1 | 2 } })
+        }}
+      />
     </Dialog>
   )
 }

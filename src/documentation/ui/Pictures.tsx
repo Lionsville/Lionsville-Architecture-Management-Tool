@@ -101,7 +101,7 @@ const NONE: Pictures = {
   watch: seenAtOnce(),
 }
 
-const PicturesContext = createContext<Pictures>(NONE)
+export const PicturesContext = createContext<Pictures>(NONE)
 
 export type PicturesProviderProps = {
   /** Where the bytes are asked for. Keep it stable: a new source is a new cache. */
@@ -140,6 +140,12 @@ export function usePictureScope(): string {
 /** The library entry a name is, under the nearest provider; `undefined` where it holds none. */
 export function usePictureEntry(name: ImageName): ImageEntry | undefined {
   return useContext(PicturesContext).entries.get(imageNameKey(name))
+}
+
+/** The library entry a content address is: a view keeps a picture by its address, not its name. */
+export function usePictureByAddress(address: string): ImageEntry | undefined {
+  const { entries } = useContext(PicturesContext)
+  return [...entries.values()].find((entry) => entry.contentAddress === address)
 }
 
 /** Where a picture is: waiting for its bytes, drawn from an address, or without bytes after asking. */

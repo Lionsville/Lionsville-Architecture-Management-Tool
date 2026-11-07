@@ -68,6 +68,7 @@ const files: DesktopFiles = {
   revealInFolder: (root, path) => ipcRenderer.invoke('files:revealInFolder', root, path),
   saveDocument: (name, bytes, mediaType) =>
     ipcRenderer.invoke('files:saveDocument', name, bytes, mediaType),
+  printToPdf: (widthMm, heightMm) => ipcRenderer.invoke('files:printToPdf', widthMm, heightMm),
   watch: (root) => ipcRenderer.invoke('files:watch', root),
   unwatch: (root) => ipcRenderer.invoke('files:unwatch', root),
   onChanged: (listener) => {
