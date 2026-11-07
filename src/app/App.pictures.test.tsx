@@ -158,7 +158,9 @@ describe('pictures, through the app', { timeout: 20_000 }, () => {
     const { asked, card: node } = await opened()
     node.focus()
     fireEvent.keyDown(node, { key: 'Enter' })
-    fireEvent.click(await screen.findByRole('button', { name: 'Preview description' }))
+    // The description's own view: the comment being written under it is an editor too.
+    const [description] = await screen.findAllByTestId('markdown-field')
+    fireEvent.click(within(description!).getByRole('button', { name: 'Preview' }))
     await waitFor(() => onScreen('yard.png'))
     const box = { width: onScreen('depot.png').getAttribute('width'), height: onScreen('depot.png').getAttribute('height') }
     expect(box).toEqual({ width: '640', height: '480' })

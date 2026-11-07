@@ -156,12 +156,17 @@ describe('the board without a mouse', () => {
     // Out of the Tab order only where a pattern puts it there on purpose: the
     // tabs a tablist moves between with the arrows (one of them is in it), and
     // an autocomplete's clear and open buttons, whose keys are the field's own
-    // (typing clears it, ↓ opens it).
+    // (typing clears it, ↓ opens it), and a toolbar's buttons, which the arrows
+    // move along (one of them is in it).
     const byPattern = (one: HTMLElement) =>
       one.getAttribute('role') === 'tab'
+      || one.closest('[role="toolbar"]') !== null
       || one.matches('.MuiAutocomplete-clearIndicator, .MuiAutocomplete-popupIndicator');
     const skipped = controls.filter((one) => one.tabIndex < 0 && !byPattern(one));
     expect(skipped.map((one) => one.outerHTML.slice(0, 120))).toEqual([]);
+    for (const toolbar of within(inspector).queryAllByRole('toolbar')) {
+      expect([...toolbar.querySelectorAll<HTMLElement>('button')].filter((one) => one.tabIndex === 0)).toHaveLength(1);
+    }
 
     const tabs = within(inspector).getAllByRole('tab');
     expect(tabs.filter((one) => one.tabIndex === 0)).toHaveLength(1);
