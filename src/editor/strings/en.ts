@@ -322,6 +322,7 @@ export const EN = {
   'inspector.expand': 'Expand inspector',
   'inspector.collapse': 'Collapse inspector',
   'inspector.resize': 'Resize inspector',
+  'inspector.emptyRead': 'Select an element or connection to read its properties.',
   'inspector.empty':
     'Select an element or connection to edit its properties. Double-click an application to open its container diagram.',
   'inspector.emptyHint': 'Shift-click to add an element to the selection or take it out again.',

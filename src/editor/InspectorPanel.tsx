@@ -105,12 +105,12 @@ export function InspectorPanel({
  * click and named no column; it is the toolbar's legend button now, drawn
  * from the board's own columns (`badgeLegend`).
  */
-export function InspectorEmptyState() {
+export function InspectorEmptyState({ readOnly = false }: { readOnly?: boolean } = {}) {
   const { t } = useStrings();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
       <Typography variant="body2" color="text.secondary">
-        {t('inspector.empty')}
+        {t(readOnly ? 'inspector.emptyRead' : 'inspector.empty')}
       </Typography>
       {/* Said here so it can be read before the gesture is known, not only
           once a second element is already selected. */}

@@ -311,6 +311,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.expand': 'Inspektor ausklappen',
   'inspector.collapse': 'Inspektor einklappen',
   'inspector.resize': 'Breite des Inspektors anpassen',
+  'inspector.emptyRead': 'Wähle ein Element oder eine Verbindung, um die Eigenschaften zu lesen.',
   'inspector.empty':
     'Wählen Sie ein Element oder eine Verbindung aus, um die Eigenschaften zu bearbeiten. Doppelklicken Sie eine Anwendung, um ihr Container-Diagramm zu öffnen.',
   'inspector.emptyHint': 'Umschalt-Klick fügt ein Element der Auswahl hinzu oder nimmt es wieder heraus.',

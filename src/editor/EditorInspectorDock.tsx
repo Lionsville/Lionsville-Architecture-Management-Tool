@@ -88,7 +88,7 @@ function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: D
     );
   }
   // A laid-out page's own choice, which is not an element — on the day the page is drawn on.
-  return parts.props.pages?.inspector?.(parts.board.shownDiagram ?? diagram) ?? <InspectorEmptyState />;
+  return parts.props.pages?.inspector?.(parts.board.shownDiagram ?? diagram) ?? <InspectorEmptyState readOnly={parts.readOnly} />;
 }
 
 function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {

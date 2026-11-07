@@ -311,6 +311,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.expand': 'Inspector uitklappen',
   'inspector.collapse': 'Inspector inklappen',
   'inspector.resize': 'Breedte van de inspector aanpassen',
+  'inspector.emptyRead': 'Kies een element of verbinding om de eigenschappen te lezen.',
   'inspector.empty':
     'Selecteer een element of koppeling om de eigenschappen te bewerken. Dubbelklik een applicatie om haar containeraanzicht te openen.',
   'inspector.emptyHint': 'Shift-klik om een element aan de selectie toe te voegen of er weer uit te halen.',
