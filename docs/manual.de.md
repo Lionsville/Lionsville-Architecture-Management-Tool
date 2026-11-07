@@ -1082,14 +1082,13 @@ Anwendung stehen. Klicken Sie mit rechts auf einen Landschaftsreiter für
 dasselbe Menü, mit Duplizieren dazu. **Zurück zur Landschaft** bringt Sie
 genau zu der Ansicht zurück, die Sie verlassen haben.
 
-Wo diese Container laufen, wird um sie herum gezeichnet: gestrichelte
-**Deployment-Rahmen**, einer je Plattform, geschachtelt wie die Plattformen
+**Wo es läuft** in der Leiste zeichnet gestrichelte Rahmen um die Container,
+einer je Plattform, geschachtelt wie die Plattformen
 geschachtelt sind — der Namespace im Cluster im Konto — wobei ein Container,
 der auf nichts läuft, außerhalb jedes Rahmens sitzt. Sie werden aus den Zeilen
 abgeleitet und lassen sich nicht verschieben: ein Rahmen ist dort, wo seine
-Mitglieder sind. Die Schaltfläche **Deployment-Rahmen** in der Werkzeugleiste
-nimmt sie weg, wenn jemand das schlichte C4-Bild lesen möchte, und die Ansicht
-merkt es sich.
+Mitglieder sind. Sie sind aus, bis jemand danach fragt, denn das schlichte C4-Bild
+bleibt auf einer Ebene, und die Ansicht merkt es sich.
 
 **Dinge finden.** ⌘F / Ctrl+F öffnet den Sucher: Tippen Sie einen Namen, eine
 Kategorie, einen Anbieter oder eine Technologie, Enter oder ein Klick wählt das
@@ -3344,8 +3343,8 @@ Zwei Wege hinaus, für zwei Zwecke.
   nur den nackten Linien, mit oder ohne den Titelblock am unteren Rand — Kunde,
   Autor und Datum — und mit oder ohne die Legende darunter, die sagt, was die
   Abzeichen- und Lebenszyklusfarben bedeuten. Der Export eines
-  Container-Diagramms trägt seine C4-Ecke im Streifen: die Ebene, die
-  Anwendung, einen Satz und das Datum. Lebenszyklus-Abzeichen lassen sich für
+  Containerdiagramms trägt seinen Titel im Streifen, die
+  Anwendung, einen Satz und das Datum, immer seine Legende, und auf Wunsch jede Linie in Worten. Lebenszyklus-Abzeichen lassen sich für
   ein sauberes Bild vorher ausschalten. Konnte ein Logo nicht eingebettet
   werden, sagt die untere Leiste, welches. Ein sehr großes Board hat Dutzende
   Megapixel und braucht eine Weile zum Zeichnen, deshalb sagt der Dialog, wie

@@ -20,6 +20,7 @@ import {
   memberOf,
   nodeGeometryOf,
   placedNodes,
+  placementRect,
   placementSize,
 } from '../model/placement';
 import { nodeFigure } from '../model/kinds';
@@ -37,6 +38,7 @@ import type { BoardGeometry } from '../model/zones';
 type BoardLayout = BoardGeometry & Pick<Geometry, 'groups'>;
 import type { SkippedTier } from './libavoidRouter';
 import { routeDiagramEdges } from './routeOnly';
+import { categoryLayerMoves } from './categoryLayers';
 
 /**
  * The board a routing pass should see: this view with a laid-out result on it.
@@ -1550,11 +1552,8 @@ export async function tidyContainer(
     }
     return { ...placement, x: pos.x, y: pos.y };
   });
-  // Route against the laid-out board, same seam as layer7. `routeDiagramEdges`
-  // recognises a container diagram's application boundary and treats it as a
-  // synthetic group — one opaque box from outside, transparent to the components
-  // inside it — so a component↔context edge dodges the boundary while a
-  // component↔component edge dodges only its siblings.
+  // Route against the laid-out board, same seam as layer7. `routeDiagramEdges` holds
+  // every box on a container diagram an obstacle and its boundary none.
   //
   // `'clear'` for the same reason as layer7: this pass moved the components, so a
   // stored route for an edge the router declined is stale geometry.
@@ -1571,4 +1570,23 @@ export async function tidyContainer(
     routingError,
     skipped,
   };
+}
+
+/**
+ * A row per category on a container diagram, and the lines routed for it, as one result
+ * and so one step. Every line, whoever bent it: none of its old bends still fits.
+ */
+export async function layersByCategory(model: DesignModel, diagram: DesignDiagram): Promise<TidyResult> {
+  const byId = new Map(model.elements.map((element) => [element.id, element]));
+  const moves = new Map(categoryLayerMoves(placedNodes(diagram).flatMap((placement) => {
+    const element = byId.get(placement.id);
+    if (element?.kind !== 'component') return [];
+    return [{ id: placement.id, ...placementRect('component', placement), ...(element.category ? { category: element.category } : {}) }];
+  })).map((move) => [move.id, move]));
+  const placements = placedNodes(diagram).map((placement) => {
+    const move = moves.get(placement.id);
+    return move ? { ...placement, x: move.x, y: move.y } : placement;
+  });
+  const { edgeRoutes, routingError, skipped } = await routeOrDegrade(model, boardWith(diagram, placements), 'clear');
+  return { placements, edgeRoutes, routingError, skipped };
 }

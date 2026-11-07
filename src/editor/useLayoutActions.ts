@@ -15,7 +15,7 @@ import { useReactFlow, useStoreApi } from '@xyflow/react';
 import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram, DesignModel } from '../model/types';
 import type { Translate } from '../i18n';
-import { tidyContainer, tidyGroup, tidyLayer7, type TidyOptions, type TidyResult } from '../layout/tidy';
+import { layersByCategory, tidyContainer, tidyGroup, tidyLayer7, type TidyOptions, type TidyResult } from '../layout/tidy';
 import { MAX_CONNECTORS_PER_TIER, type SkippedTier } from '../layout/libavoidRouter';
 import { isLayoutRefusal, MAX_TIDY_NODES } from '../layout/elkLayout';
 import type { StringKey } from '../i18n/strings';
@@ -88,13 +88,30 @@ export interface LayoutArgs {
 }
 
 export function useLayoutActions(args: LayoutArgs) {
-  const { props, diagram, readOnly, tidyOptions } = args;
+  const { props, diagram, readOnly, tidyOptions, state, t } = args;
   const [busy, setBusy] = useState<LayoutAction | undefined>(undefined);
   const reports = useLayoutReports(props.layout?.onError, args.t);
   const running = { busy, setBusy, ...reports };
   const frameBoard = useFrameBoard();
   const handleTidy = useTidy(args, running, frameBoard);
   const handleTidyGroup = useTidyGroup(args, running);
+  // A row per category, as one step: the same answers to a failure as a tidy's, and the frame over the result.
+  const handleLayers = useCallback(async () => {
+    if (!diagram || busy) return;
+    setBusy('tidy');
+    try {
+      const result = await layersByCategory(state.model, diagram);
+      state.actions.applyTidyResult(result);
+      if (result.routingError !== undefined) running.reportLayoutError(t('error.tidyRouting'), result.routingError);
+      else running.reportSkippedTiers(result.skipped);
+      frameBoard();
+    } catch (error) {
+      const message = layoutFailureMessage(error, 'error.tidy', t);
+      if (message !== undefined) running.reportLayoutError(message, error);
+    } finally {
+      setBusy(undefined);
+    }
+  }, [diagram, busy, setBusy, state.model, state.actions, running, t, frameBoard]);
 
   /**
    * Lay this diagram out once if a machine wrote its geometry (intent rule 12).
@@ -139,7 +156,7 @@ export function useLayoutActions(args: LayoutArgs) {
   });
 
   const routes = useRouteActions(args, running);
-  return { busy, ...reports, handleTidy, handleTidyGroup, ...routes, shown, reading };
+  return { busy, ...reports, handleTidy, handleTidyGroup, handleLayers, ...routes, shown, reading };
 }
 
 export type LayoutActions = ReturnType<typeof useLayoutActions>;

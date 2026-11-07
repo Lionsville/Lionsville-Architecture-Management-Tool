@@ -65,13 +65,13 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
               <PropertyRow label={t('inspector.shownDay')} data-testid="view-day" value={day} />
               {columns && <PropertyRow label={t('inspector.columns')} data-testid="view-columns" value={columns} />}
             </PropertyRows>
-            <PanelSection title={t('inspector.onThisBoard')}>
+            {!container && <PanelSection title={t('inspector.onThisBoard')}>
               <PropertyRows readOnly>
                 <PropertyRow label={t('inspector.elements')} data-testid="view-elements" value={String(drawn.size)} />
                 <PropertyRow label={t('inspector.lines')} data-testid="view-lines" value={handRouted > 0 ? t('inspector.linesHand', { count: lines.length, hand: handRouted }) : String(lines.length)} />
                 {groups > 0 && <PropertyRow label={t('inspector.groups')} data-testid="view-groups" value={String(groups)} />}
               </PropertyRows>
-            </PanelSection>
+            </PanelSection>}
             {props.diagrams.onSettingsChange && !readOnly && (
               <div className="inspector-actions">
                 <Button size="small" onClick={() => dialogs.setSettingsDiagramId(diagram.id)}>{t('inspector.viewSettings')}</Button>

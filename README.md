@@ -206,8 +206,8 @@ Three ways out, for three different purposes:
   what changed about the architecture rather than what moved on the canvas.
 - **PNG export**, from a dialog with a preview: light or dark, with or without
   line labels, a title block along the bottom carrying client, title, author
-  and date, and a legend of the badge colours. A container diagram carries its
-  C4 corner on screen and on the sheet.
+  and date, and a legend of the badge colours. A container diagram names itself
+  in its bar and on the sheet, and its key, generated from what is drawn, goes with it.
 
 Reading is broad and writing is narrow: a key this tool does not understand
 survives a round trip untouched, and files written by older builds keep opening

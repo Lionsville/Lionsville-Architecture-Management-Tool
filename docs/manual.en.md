@@ -937,15 +937,27 @@ container diagrams under a chevron: right-click an entry there, or press the
 chevron after the name once the diagram is open, to rename it, open its
 **diagram settings** or delete it. Deleting one takes its components with it
 and keeps the application. Right-click a landscape tab for the same menu, with
-duplicate as well. **Back to landscape** returns to the view exactly as you
-left it.
+duplicate as well. **‹** with the name of the board you came from, or ⌘↑ / Ctrl+↑, returns to it
+on its day, with its zoom and what was selected; a diagram opened from a board on
+another day opens on that day. ⌘↓ / Ctrl+↓ on an application goes in, as does a
+double-click or **Open container diagram** in its panel; its card says how many
+containers it holds.
 
-Where those containers run is drawn around them: dashed **deployment boxes**,
+Every box says what it is, **[Container: Java]** or **[Application]**, and every
+line what it carries, in two lines at most with the whole text on hover and in the
+panel. **Labels on** on the bar takes the words away. A line that stops at the edge of
+the application is dashed: it names no container yet, and the panel offers one. The
+**key** on the canvas is made from what is drawn, and **Show** takes it down. Pressing
+the title opens what the diagram holds and its **Lines**, numbered as the canvas numbers
+them on a dense diagram, where zooming in brings the words back. **Layers by category**
+under **Arrange** gives each category a row, which is drawn while the rows stand.
+
+**Where it runs** on the bar draws dashed boxes around the containers,
 one per platform, nested the way the platforms nest — the namespace inside the
 cluster inside the account — with a container that runs on nothing outside
 every box. They are worked out from the rows and cannot be moved: a box is
-where its members are. **Deployment boxes** under **Show** takes them
-away for a reader who wants the plain C4 picture, and the view remembers.
+where its members are. It is off until asked for, as the plain C4 picture
+keeps to one level, and the view remembers.
 
 **Finding things.** ⌘F / Ctrl+F opens the finder: type a name, category,
 vendor or technology, Enter or a click selects the element and the canvas
@@ -2988,8 +3000,8 @@ Two ways out, for two purposes.
   one on screen, with every line's label or only the bare lines, with or
   without the title block along the bottom — client, author and date — and
   with or without the legend under it, which says what the badge and lifecycle
-  colours mean. A container diagram's export carries its C4 corner in the
-  strip: the level, the application, a sentence and the date. Lifecycle badges
+  colours mean. A container diagram's export carries its title in the
+  strip, the application, a sentence and the date, its key always, and if asked every line in words. Lifecycle badges
   can be switched off first for a clean picture. If a logo could not be
   embedded, the bottom bar says which. A very large board is tens of megapixels
   and takes a while to draw, so the dialog says how big the image will be and

@@ -1022,13 +1022,12 @@ Rechtsklik een landschapstabblad voor hetzelfde menu, met dupliceren erbij.
 **Terug naar het landschap** brengt je terug naar het aanzicht precies zoals je
 het verliet.
 
-Waar die containers draaien wordt eromheen getekend: gestippelde
-**deploymentkaders**, één per platform, genest zoals de platformen genest zijn
+**Waar het draait** op de balk tekent gestippelde kaders om de containers,
+één per platform, genest zoals de platformen genest zijn
 — de namespace in het cluster in het account — met een container die nergens op
 draait buiten elk kader. Ze worden uit de rijen afgeleid en zijn niet te
-verplaatsen: een kader staat waar zijn leden staan. De knop **Deploymentkaders**
-in de werkbalk haalt ze weg voor een lezer die de kale C4-plaat wil, en de
-weergave onthoudt het.
+verplaatsen: een kader staat waar zijn leden staan. Ze staan uit tot iemand erom vraagt, want
+de kale C4-plaat blijft op één niveau, en de weergave onthoudt het.
 
 **Zoeken.** ⌘F / Ctrl+F opent de zoeker: typ een naam, categorie, leverancier
 of technologie, Enter of een klik selecteert het element en de plaat schuift
@@ -3188,8 +3187,8 @@ Twee uitgangen, voor twee doelen.
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of
   zonder het titelblok onderaan — klant, auteur en datum — en met of zonder de
   legenda eronder, die zegt wat de badge- en levenscycluskleuren betekenen. De
-  export van een containerdiagram draagt zijn C4-hoek in de strook: het niveau,
-  de applicatie, een zin en de datum. Levenscyclusbadges kun je eerst uitzetten
+  export van een containerdiagram draagt zijn titel in de strook, de applicatie,
+  een zin en de datum, altijd zijn legenda, en op verzoek elke lijn in woorden. Levenscyclusbadges kun je eerst uitzetten
   voor een schone plaat. Kon een logo niet worden ingebed, dan zegt de balk
   onderin welk. Een heel groot bord is tientallen megapixels en kost tijd om te
   tekenen, dus de dialoog zegt hoe groot de afbeelding wordt en de knop vraagt

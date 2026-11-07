@@ -65,7 +65,7 @@ export function ContainerKey({ model, diagram, day, showDeployment, showStatus }
     }))
     : [];
   return (
-    <Panel position="bottom-right" style={{ maxWidth: 'min(720px, 60%)' }}>
+    <Panel position="bottom-right" style={{ maxWidth: 'calc(100% - 420px)' }}>
       <KeyStrip
         all
         data-testid="container-key"

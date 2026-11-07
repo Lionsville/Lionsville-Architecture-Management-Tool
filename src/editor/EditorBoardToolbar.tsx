@@ -6,8 +6,6 @@
  * and what they can do, the layout passes, the day, the view toggles.
  */
 import type { DesignDiagram } from '../model/types';
-import { placedNodes, placementRect } from '../model/placement';
-import { categoryLayerMoves } from '../layout/categoryLayers';
 import { cancelElkLayout, canCancelElkLayout } from '../layout/elkLayout';
 import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
 import { labelsOn } from './useViewSettings';
@@ -46,7 +44,7 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       tidyOptions={view.tidyOptions}
       onTidyOptionsChange={view.setTidyOptions}
       onRouteEdges={() => void layout.handleRouteEdges()}
-      {...(diagram.kind === 'container' && writable ? { onLayersByCategory: () => layersByCategory(state, diagram, () => void layout.handleRouteEdgesAll()) } : {})}
+      {...(diagram.kind === 'container' && writable ? { onLayersByCategory: () => void layout.handleLayers() } : {})}
       onRouteEdgesAll={() => void layout.handleRouteEdgesAll()}
       {...(add ? { add } : {})}
       show={{
@@ -79,18 +77,6 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       onOpenThisView={!laidOut ? () => { dialogs.setThisViewOpen(true); state.setSelection(EMPTY_SELECTION); } : undefined}
     />
   );
-}
-
-/** A row per category on the diagram: the moves as one step, and every line routed again, as none of its old bends still fits. */
-function layersByCategory(state: EditorParts['state'], diagram: DesignDiagram, route: () => void): void {
-  const byId = new Map(state.model.elements.map((one) => [one.id, one]));
-  const boxes = placedNodes(diagram).flatMap((placement) => {
-    const element = byId.get(placement.id);
-    if (element?.kind !== 'component') return [];
-    return [{ id: placement.id, ...placementRect('component', placement), ...(element.category ? { category: element.category } : {}) }];
-  });
-  state.actions.movePlacements(categoryLayerMoves(boxes));
-  route();
 }
 
 /** What Add offers, each opening the picker at the middle of the board. */
