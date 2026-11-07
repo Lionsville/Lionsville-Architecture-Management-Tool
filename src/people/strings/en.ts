@@ -308,4 +308,7 @@ export const EN = {
   'people.viaLine': 'by line',
   'people.viaNesting': 'by nesting',
   'people.viaOverride': 'an exception to the model',
+  'people.leftDoneOne': '{name} is marked as left on {day}; {count} role ended. The name is shown until {forget}.',
+  'people.takenBackDoneOne': '{name} is active again; {count} role restored.',
+  'people.listWord': 'people',
 } as const

@@ -155,7 +155,7 @@ export function Duplicates({ pairs, register, saying, roles, onMerge, s }: Dupli
             label={s('people.duplicates')} itemLabel={s('people.reviewWhy')}
             columns={[
               { id: 'one', label: s('people.reviewOne') }, { id: 'other', label: s('people.reviewOther') },
-              { id: 'do', label: s('people.reviewDo'), width: 'auto' },
+              { id: 'do', label: s('people.reviewDo'), width: '320px' },
             ]}
             groups={[{
               id: '', label: '',

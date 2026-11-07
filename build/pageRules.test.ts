@@ -40,7 +40,6 @@ const SEAMS: Record<string, number> = {
   'decisions/ui/AdrPage.tsx': 2,
   'operating/ui/OperatingModelPage.tsx': 1,
   'roadmap/ui/RoadmapPage.tsx': 1,
-  'people/ui/PeoplePage.tsx': 1,
   'principles/ui/PrinciplesPage.tsx': 1,
   'app/organisation/TopicsPage.tsx': 1,
   'observations/ui/ObservationsPage.tsx': 1,

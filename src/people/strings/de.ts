@@ -18,7 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.showActive': 'Aktiv',
   'people.showLeft': 'Ausgeschieden',
   'people.showForgotten': 'Vergessen',
-  'people.search': 'Nach Name, Adresse, Rolle oder Einheit suchen',
+  'people.search': 'Name, Adresse, Rolle oder Einheit',
   'people.counts': '{active} aktiv · {left} ausgeschieden · {forgotten} vergessen',
   'people.importCsv': 'Liste importieren…',
   'people.add': 'Person hinzufügen',
@@ -294,4 +294,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.viaLine': 'über eine Linie',
   'people.viaNesting': 'über die Verschachtelung',
   'people.viaOverride': 'eine Ausnahme vom Modell',
+  'people.leftDoneOne': '{name} ist als ausgeschieden am {day} markiert; {count} Rolle beendet. Der Name wird bis {forget} angezeigt.',
+  'people.takenBackDoneOne': '{name} ist wieder aktiv; {count} Rolle wiederhergestellt.',
+  'people.listWord': 'Personen',
 }

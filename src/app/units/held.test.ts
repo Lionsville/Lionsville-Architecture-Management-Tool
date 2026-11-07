@@ -146,7 +146,7 @@ describe('who a person reports to, and who reports to them', () => {
         { id: 'a-anna', unitId: 'terminal', roleId: 'ro-head', person: { person: 'pe-anna' } },
         { id: 'a-tom', unitId: 'dock', roleId: 'ro-lead', person: { person: 'pe-tom' } },
         { id: 'a-sam', unitId: 'dock', roleId: 'ro-member', person: { person: 'pe-sam' } },
-        { id: 'a-pia', unitId: 'desk', roleId: 'ro-lead', person: { person: 'pe-pia' }, reportsTo: [{ kind: 'dotted', to: { unit: 'dock', role: 'ro-lead' } }] },
+        { id: 'a-pia', unitId: 'desk', roleId: 'ro-lead', person: { person: 'pe-pia' }, reportsTo: [{ kind: 'dotted', to: { scope: '', unit: 'dock', role: 'ro-lead' } }] },
       ],
     },
   }])

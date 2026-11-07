@@ -200,6 +200,8 @@ describe('the People page, as a directory', () => {
 
   it('answers a search that finds nobody with who was probably meant, and adding the name', async () => {
     renderShell(<Harness />)
+    find('Schulzz')
+    expect(screen.getByTestId('people-no-match').textContent).toContain('Pia Schulz')
     find('Pia Schultz')
     const none = screen.getByTestId('people-no-match')
     expect(none.textContent).toContain('Nobody is called “Pia Schultz”. Did you mean:')
@@ -508,7 +510,7 @@ describe('leaving', () => {
     expect(dialog.textContent).toContain('restored by steps')
     fireEvent.click(within(dialog).getByTestId('people-take-back-confirm'))
     await waitFor(() => expect(screen.getByTestId('people-counts').textContent).toBe('4 active · 0 left · 1 forgotten'))
-    await waitFor(() => expect(said()).toContain('Gijs Mulder is active again; 2 roles restored'))
+    await waitFor(() => expect(said()).toContain('Gijs Mulder is active again; 2 roles restored.'))
   })
 
   it('offers no taking back on anybody active or forgotten', async () => {

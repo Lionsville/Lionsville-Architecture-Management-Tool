@@ -32,7 +32,7 @@ import { DayControl } from '../../widgets/kit/DayControl'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
-import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
+import { didYouMean, FRESH_VIEW, listed } from '../../widgets/kit/listView'
 import type { ListHow, ListView } from '../../widgets/kit/listView'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
@@ -51,7 +51,7 @@ import { entriesOf } from '../person'
 import { registerOf, resolvePerson, shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
 import { mayDo, useSaying } from './access'
-import type { PeopleRegisterAccess } from './access'
+import type { PeopleRegisterAccess, Saying } from './access'
 import { AddPerson, tellsApart } from './AddPerson'
 import { CorrectPerson } from './CorrectPerson'
 import { CsvImport } from './CsvImport'
@@ -110,13 +110,18 @@ function intoList(event: React.KeyboardEvent<HTMLDivElement>) {
 function NoMatch({ typed, people, register, onPick, onAdd, s }: {
   typed: string; people: readonly Person[]; register: PeopleRegisterAccess; onPick: (id: PersonId) => void; onAdd: (() => void) | undefined; s: Translate
 }) {
-  const near = possibleDuplicates({ name: typed }, people).slice(0, 5)
+  // The register's own check for a whole name, and the word closest to what was typed for part of one: Marrek finds Marek Nowak.
+  const word = didYouMean(typed, entriesOf(people).map((one) => one.name ?? ''))
+  const near = [
+    ...possibleDuplicates({ name: typed }, people).map(({ person }) => person),
+    ...entriesOf(people).filter((one) => word !== null && (one.name ?? '').split(/\s+/).includes(word)),
+  ].filter((one, at, all) => all.findIndex((other) => other.id === one.id) === at).slice(0, 5)
   return (
     <div className="people-stack" data-testid="people-no-match">
       <p>{s('people.searchEmpty', { query: typed })}{near.length > 0 && ` ${s('people.didYouMean')}`}</p>
       {near.length > 0 && (
         <div className="people-lines">
-          {near.map(({ person }) => (
+          {near.map((person) => (
             <span key={person.id} className="people-line">
               <button type="button" className="people-link" onClick={() => onPick(person.id)}>{shownText(shownEntry(person), s)}</button>
               <span className="people-quiet"> · {tellsApart(person, register, s)}</span>
@@ -155,40 +160,176 @@ function hasAddress(): boolean {
   return /^https?:/.test(window.location.href)
 }
 
-export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
-  const dayWords = useDayWords()
-  const [tabAsked, setTab] = usePlaceTab('people')
-  const [record, choose] = usePlaceRecord('people', select)
-  const go = usePlaceGo()
-  const [view, setView] = useState<ListView>(FRESH_VIEW)
-  const [adding, setAdding] = useState<{ name?: string } | undefined>(undefined)
-  const [importing, setImporting] = useState(false)
-  const [correcting, setCorrecting] = useState<Person | undefined>(undefined)
-  const [holding, setHolding] = useState<Person | undefined>(undefined)
-  const [question, setQuestion] = useState<Question | undefined>(undefined)
-  const [about, setAbout] = useState(false)
-  const saying = useSaying(s)
+/** Ready to type on arrival and on /: a directory is mostly looked things up in. */
+function useFindReady(open: boolean, ready: boolean, personUp: boolean) {
   const page = useRef<HTMLDivElement>(null)
+  const field = () => page.current?.querySelector<HTMLInputElement>('input[type="search"]')
+  // Once for each opening: never again under somebody who has moved on.
+  const arrived = useRef(false)
+  useEffect(() => {
+    if (!open) { arrived.current = false; return }
+    if (!ready || arrived.current) return
+    arrived.current = true
+    if (!personUp) field()?.focus({ preventScroll: true })
+  }, [open, ready, personUp])
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
+      const found = field()
+      if (found) { event.preventDefault(); found.focus() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+  return page
+}
 
+/** The person in the address: asked for from outside, let go of when the page closes, and said to be gone where the register holds nobody by that id. */
+function usePersonUp(open: boolean, select: PersonId | undefined, register: PeopleRegisterAccess, saying: Saying) {
+  const [record, choose] = usePlaceRecord('people', select)
   // Asked for once, as it is asked: `choose` is new whenever the record moves, and must not bring somebody back who was let go of.
   const chooseNow = useRef(choose)
   chooseNow.current = choose
   useEffect(() => { if (select !== undefined) chooseNow.current(select) }, [select])
-  // The page closed lets go of the person, so opening it again is the list and not whoever was last up.
   const wasOpen = useRef(open)
   useEffect(() => {
     if (wasOpen.current && !open) chooseNow.current(undefined)
     wasOpen.current = open
   }, [open])
+  const person = record === undefined ? undefined : resolvePerson(record, registerOf(register.people ?? []))
+  const gone = open && register.people !== undefined && record !== undefined && !person
+  useEffect(() => {
+    if (!gone) return
+    chooseNow.current(undefined)
+    void saying.run(Promise.resolve({ refused: 'people.unknown' as const }), () => '')
+  }, [gone, saying])
+  return { person, choose }
+}
 
-  const people = useMemo(() => register.people ?? [], [register.people])
-  const entries = useMemo(() => entriesOf(people), [people])
-  const day = look?.day ?? register.today
+type ListPartProps = {
+  register: PeopleRegisterAccess
+  view: ListView
+  setView: (change: (was: ListView) => ListView) => void
+  rows: readonly Row[]
+  shown: readonly Row[]
+  me: PersonId | undefined
+  day: string
+  selected: PersonId | undefined
+  onPick: (id: PersonId) => void
+  onAdd: ((name?: string) => void) | undefined
+  s: Translate
+}
+
+/** The list: its find, filters and columns, the rows, and what it says when it shows nobody. */
+function PeopleList({ register, view, setView, rows, shown, me, day, selected, onPick, onAdd, s }: ListPartProps) {
+  const dayWords = useDayWords()
   const { assignmentsOf } = register
+  const entries = rows.map((row) => row.person)
+  const countOf = (state: PersonState) => entries.filter((one) => one.state === state).length
+  const typed = view.find.trim()
+  const columnsOn = view.columns ?? (assignmentsOf ? ['roles'] : [])
+  const columnChoices = [
+    ...(assignmentsOf ? [{ id: 'roles', label: day === register.today ? s('people.colRoles') : s('people.colRolesOn', { day: dayWords(day) }) }] : []),
+    { id: 'kind', label: s('people.colKind') }, { id: 'state', label: s('people.colState') }, { id: 'email', label: s('people.colEmail') },
+  ]
+  const stateWord = (one: Person) => (one.state === 'left' ? s('people.stateLeft', { day: dayWords(one.leftOn) })
+    : one.state === 'forgotten' ? s('people.stateForgotten', { day: dayWords(one.forgottenOn) }) : s('people.stateActive'))
+  const findMe = me === undefined ? undefined : () => { setView(() => FRESH_VIEW); onPick(me) }
+  return (
+    <>
+      <FilterWords
+        find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={s('people.search')} dataGuide="people.find"
+        fields={[
+          { id: 'state', label: s('people.show'), options: STATES.map((one) => ({ value: one, label: s(SHOW_LABEL[one]), count: countOf(one) })) },
+          { id: 'kind', label: s('people.kind'), options: [{ value: 'internal', label: s('people.kindInternal') }, { value: 'external', label: s('people.kindExternal') }] },
+          ...(assignmentsOf ? [{ id: 'holds', label: s('people.colRoles'), options: [{ value: 'nothing', label: s('people.rolesNone') }] }] : []),
+        ]}
+        filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
+        columns={columnChoices} shownColumns={columnsOn} onColumns={(columns) => setView((was) => ({ ...was, columns }))}
+        shown={{ count: shown.length, total: entries.length }}
+        actions={(
+          <span className="people-actions">
+            <span className="people-counts" data-testid="people-counts">{s('people.counts', { active: countOf('active'), left: countOf('left'), forgotten: countOf('forgotten') })}</span>
+            {findMe && <Button variant="quiet" onClick={findMe} data-testid="people-find-me">{s('people.findMe')}</Button>}
+          </span>
+        )}
+      />
+      <div className="people-list" data-testid="people-table">
+        <List
+          label={s('people.title')} itemLabel={s('people.colName')} itemSortable rowGuide="people.row"
+          sort={view.sort} onSort={(sort) => setView((was) => ({ ...was, sort }))}
+          columns={columnChoices.filter((one) => columnsOn.includes(one.id)).map((one) => ({ ...one, sortable: true }))}
+          selectedId={selected ?? null} onOpen={onPick}
+          groups={shown.length === 0 ? [] : [{
+            id: '', label: '',
+            rows: shown.map((row) => {
+              const note = noteOf(row.person, me, dayWords, s)
+              return {
+                id: row.person.id, text: row.text, ...(note ? { note } : {}),
+                cells: {
+                  roles: <span data-testid="people-roles" className={row.roles.length ? undefined : 'people-quiet'} title={row.roles.map((one) => s('people.roleIn', one)).join(', ')}>{rolesText(row.roles, s)}</span>,
+                  kind: s(KIND_LABEL[row.person.kind]),
+                  state: stateWord(row.person),
+                  email: row.person.email ?? (register.withheld?.(row.person.id) ? s('people.emailWithheld') : ''),
+                },
+              }
+            }),
+          }]}
+          empty={<NoMatch typed={typed} people={register.people ?? []} register={register} onPick={onPick} s={s} onAdd={onAdd && typed ? () => onAdd(typed) : undefined} />}
+        />
+      </div>
+    </>
+  )
+}
+
+/** A person, up over the list: the rows, the facts, and in the foot what may be done. */
+function PersonUp({ person, ids, register, day, saying, copyText, onSelect, onPick, onCorrect, onHold, onAsk, s }: {
+  person: Person | undefined; ids: readonly string[]; register: PeopleRegisterAccess; day: string; saying: Saying
+  copyText: ((text: string) => void) | undefined
+  onSelect: (id: string | null) => void; onPick: (id: PersonId) => void; onCorrect: (person: Person) => void; onHold: (person: Person) => void; onAsk: (question: Question) => void
+  s: Translate
+}) {
+  const go = usePlaceGo()
+  const setMe = (id: string | undefined) => {
+    void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))
+  }
+  const copyAddress = copyText && go && hasAddress()
+    ? () => { copyText(window.location.href); void saying.run(Promise.resolve({}), () => s('people.addressCopied')) }
+    : undefined
+  return (
+    <Preview
+      ids={ids} currentId={person?.id ?? null} onSelect={onSelect} dataGuide="people.person"
+      title={<span data-testid="people-person-name">{person ? shownText(shownEntry(person), s) : ''}</span>}
+      listWord={s('people.listWord')}
+      {...(person ? { facts: <PersonFacts person={person} register={register} s={s} /> } : {})}
+      foot={person && (
+        <div className="people-actions">
+          {person.state !== 'forgotten' && mayDo(register, 'change', person.id) && (
+            <Button onClick={() => onCorrect(person)} data-testid="people-correct" data-guide="people.correct">{s('people.correct')}</Button>
+          )}
+          <MoreMenu data-guide="people.more" items={personMenu(person, register, { ask: onAsk, setMe, hold: () => onHold(person), copyAddress }, s)} />
+        </div>
+      )}
+    >
+      {person && (
+        <PersonReader
+          person={person} register={register} day={day} go={go} onPerson={onPick} s={s}
+          {...(mayDo(register, 'forget', person.id) && person.state === 'left' ? { onForget: () => onAsk({ kind: 'forget', person }) } : {})}
+        />
+      )}
+    </Preview>
+  )
+}
+
+function useRows(register: PeopleRegisterAccess, day: string, view: ListView, s: Translate) {
+  const { assignmentsOf } = register
+  const entries = useMemo(() => entriesOf(register.people ?? []), [register.people])
   const rows = useMemo<readonly Row[]>(() => entries
     .map((person) => ({ person, text: shownText(shownEntry(person), s), roles: assignmentsOf ? rolesOn(assignmentsOf(person.id), day) : [] }))
     .sort((one, other) => one.text.localeCompare(other.text)), [entries, assignmentsOf, day, s])
-  const roles = useMemo(() => (assignmentsOf ? new Map(rows.map((row) => [row.person.id, row.roles])) : undefined), [assignmentsOf, rows])
   const how = useMemo<ListHow<Row>>(() => ({
     // What can be seen can be found: by name, address, role and unit, and by the words a row says about somebody.
     words: ({ person, text, roles: held }) => [
@@ -202,145 +343,105 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
     },
   }), [assignmentsOf, s])
   const shown = useMemo(() => listed(rows, view, how).flatMap((group) => group.rows), [rows, view, how])
-  const ids = useMemo(() => shown.map((row) => row.person.id), [shown])
-  const countOf = (state: PersonState) => entries.filter((one) => one.state === state).length
+  return { rows, shown }
+}
+
+/** The first tab, as it truly stands: still being read, nobody yet, or the list. */
+function PeopleTab(props: ListPartProps) {
+  const { register, rows, onAdd, s } = props
+  if (register.people === undefined) return <PageState state="loading" />
+  if (rows.length > 0) return <PeopleList {...props} />
+  return (
+    <PageState
+      state="empty" title={s('people.emptyTitle')} body={s(onAdd ? 'people.emptyBody' : 'people.emptyReader')}
+      {...(onAdd ? { action: { label: s('people.add'), onPress: () => onAdd() } } : {})}
+    />
+  )
+}
+
+/** What is on every tab's head: the tabs, the day, and adding. */
+function PeopleHead({ tab, onTab, people, toReview, reviewing, look, onImport, onAdd, onClose, s }: {
+  tab: string; onTab: (tab: string) => void; people: number; toReview: number; reviewing: boolean; look: PeopleLook | undefined
+  onImport?: () => void; onAdd?: () => void; onClose: () => void; s: Translate
+}) {
+  return (
+    <div className="people-head" data-testid="people-topbar">
+      <Tabs
+        label={s('people.title')} value={tab} onChange={onTab} data-guide="people.tabs"
+        items={[
+          { value: 'people', label: s('people.title'), count: people },
+          { value: 'review', label: s('people.tabReview'), count: toReview, hidden: !reviewing },
+          { value: 'privacy', label: s('people.tabPrivacy') },
+        ]}
+      />
+      <div className="people-head__end">
+        {look && tab === 'people' && <DayControl day={look.day} onChange={look.onDay} data-guide="people.day" />}
+        {onImport && <Button onClick={onImport} data-testid="people-import" data-guide="people.importCsv">{s('people.importCsv')}</Button>}
+        {onAdd && <Button variant="primary" onClick={onAdd} data-testid="people-add" data-guide="people.add">{s('people.add')}</Button>}
+        <PageClose onClose={onClose} />
+      </div>
+    </div>
+  )
+}
+
+/** The foot of every tab: why nothing here has an undo, and *About the register*. */
+function PeopleFoot({ readOnly, s }: { readOnly: boolean; s: Translate }) {
+  const [about, setAbout] = useState(false)
+  return (
+    <div className="people-foot" data-testid="people-foot">
+      <span data-testid="people-not-a-step">{s(readOnly ? 'people.readOnly' : 'people.notAStepShort')}</span>{' '}
+      <button type="button" className="people-link" aria-expanded={about} aria-controls="people-about" onClick={() => setAbout((was) => !was)} data-testid="people-about">{s('people.about')}</button>
+      {about && <p id="people-about" className="people-foot__more">{s('people.what')}</p>}
+    </div>
+  )
+}
+
+const TAB_WORD = { people: 'people.title', review: 'people.tabReview', privacy: 'people.tabPrivacy' } as const
+
+export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
+  const dayWords = useDayWords()
+  const [tabAsked, setTab] = usePlaceTab('people')
+  const [view, setView] = useState<ListView>(FRESH_VIEW)
+  const [adding, setAdding] = useState<{ name?: string } | undefined>(undefined)
+  const [importing, setImporting] = useState(false)
+  const [correcting, setCorrecting] = useState<Person | undefined>(undefined)
+  const [holding, setHolding] = useState<Person | undefined>(undefined)
+  const [question, setQuestion] = useState<Question | undefined>(undefined)
+  const saying = useSaying(s)
+  const { person, choose } = usePersonUp(open, select, register, saying)
+  const page = useFindReady(open, register.people !== undefined, person !== undefined)
+
+  const people = useMemo(() => register.people ?? [], [register.people])
+  const day = look?.day ?? register.today
+  const { rows, shown } = useRows(register, day, view, s)
+  const roles = useMemo(() => (register.assignmentsOf ? new Map(rows.map((row) => [row.person.id, row.roles])) : undefined), [register.assignmentsOf, rows])
   const pairs = useMemo(() => duplicatePairs(people, register.distinct), [people, register.distinct])
   const { offered, answered } = reviewable(pairs, register)
   const reviewing = offered.length + answered.length > 0
-  const tab = tabAsked === 'review' && !reviewing ? 'people' : tabAsked
-  const me = meIn(register.me, registerOf(people))?.id
-  const person = record === undefined ? undefined : resolvePerson(record, registerOf(people))
-  const readRegister = register.people !== undefined
-
-  // An address that names nobody the register holds, or one who is gone since: said, and the list is what is left.
-  useEffect(() => {
-    if (open && readRegister && record !== undefined && !person) {
-      choose(undefined)
-      void saying.run(Promise.resolve({ refused: 'people.unknown' as const }), () => '')
-    }
-  }, [open, readRegister, record, person, choose, saying])
-
-  // Ready to type on arrival, and on /: a directory is mostly looked things up in.
-  useEffect(() => {
-    if (open && readRegister && record === undefined) page.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus({ preventScroll: true })
-    // Once for each opening: never again under somebody who has moved on.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, readRegister])
-  useEffect(() => {
-    if (!open) return undefined
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
-      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
-      const field = page.current?.querySelector<HTMLInputElement>('input[type="search"]')
-      if (field) { event.preventDefault(); field.focus() }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
-
+  const tab = (tabAsked === 'review' && !reviewing ? 'people' : tabAsked) as keyof typeof TAB_WORD
   const pick = useCallback((id: PersonId) => { if (tabAsked !== 'people') setTab('people'); choose(id) }, [tabAsked, setTab, choose])
-  const findMe = me === undefined ? undefined : () => { setView(FRESH_VIEW); pick(me) }
-  const setMe = (id: string | undefined) => {
-    void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))
-  }
   const mayAdd = mayDo(register, 'add')
-  const typed = view.find.trim()
-  const canCorrect = person !== undefined && person.state !== 'forgotten' && mayDo(register, 'change', person.id)
-  const columnsOn = view.columns ?? (assignmentsOf ? ['roles'] : [])
-  const columnChoices = [
-    ...(assignmentsOf ? [{ id: 'roles', label: day === register.today ? s('people.colRoles') : s('people.colRolesOn', { day: dayWords(day) }) }] : []),
-    { id: 'kind', label: s('people.colKind') }, { id: 'state', label: s('people.colState') }, { id: 'email', label: s('people.colEmail') },
-  ]
-  const stateWord = (one: Person) => (one.state === 'left' ? s('people.stateLeft', { day: dayWords(one.leftOn) })
-    : one.state === 'forgotten' ? s('people.stateForgotten', { day: dayWords(one.forgottenOn) }) : s('people.stateActive'))
+  const looked = tab === 'people' ? look?.day : undefined
 
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={s('people.title')}>
       <div className="people-page" ref={page}>
-        <div className="people-head" data-testid="people-topbar">
-          <Tabs
-            label={s('people.title')} value={tab} onChange={setTab} data-guide="people.tabs"
-            items={[
-              { value: 'people', label: s('people.title'), count: entries.length },
-              { value: 'review', label: s('people.tabReview'), count: offered.length, hidden: !reviewing },
-              { value: 'privacy', label: s('people.tabPrivacy') },
-            ]}
-          />
-          <div className="people-head__end">
-            {look && tab === 'people' && <DayControl day={look.day} onChange={look.onDay} data-guide="people.day" />}
-            {mayAdd && (
-              <>
-                <Button onClick={() => setImporting(true)} data-testid="people-import" data-guide="people.importCsv">{s('people.importCsv')}</Button>
-                <Button variant="primary" onClick={() => setAdding({})} data-testid="people-add" data-guide="people.add">{s('people.add')}</Button>
-              </>
-            )}
-            <PageClose onClose={onClose} />
-          </div>
-        </div>
-        {look?.day !== undefined && tab === 'people' && (
+        <PeopleHead
+          tab={tab} onTab={setTab} people={rows.length} toReview={offered.length} reviewing={reviewing} look={look} s={s}
+          {...(mayAdd ? { onImport: () => setImporting(true), onAdd: () => setAdding({}) } : {})} onClose={onClose}
+        />
+        {looked !== undefined && (
           <Band
-            tone="looking" title={s('people.lookingAt', { day: dayWords(look.day) })} detail={s('people.lookingNote')}
-            action={<Button size="small" onClick={() => look.onDay(undefined)} data-testid="people-look-today">{s('people.lookToday')}</Button>}
+            tone="looking" title={s('people.lookingAt', { day: dayWords(looked) })} detail={s('people.lookingNote')}
+            action={<Button size="small" onClick={() => look?.onDay(undefined)} data-testid="people-look-today">{s('people.lookToday')}</Button>}
           />
         )}
-        <div className="people-main" role="tabpanel" aria-label={tab === 'people' ? s('people.title') : tab === 'review' ? s('people.tabReview') : s('people.tabPrivacy')} onKeyDown={intoList}>
-          {tab === 'people' && !readRegister && <PageState state="loading" />}
-          {tab === 'people' && readRegister && entries.length === 0 && (
-            <PageState
-              state="empty" title={s('people.emptyTitle')} body={s(mayAdd ? 'people.emptyBody' : 'people.emptyReader')}
-              {...(mayAdd ? { action: { label: s('people.add'), onPress: () => setAdding({}) } } : {})}
+        <div className="people-main" role="tabpanel" aria-label={s(TAB_WORD[tab])} onKeyDown={intoList}>
+          {tab === 'people' && (
+            <PeopleTab
+              register={register} view={view} setView={setView} rows={rows} shown={shown} day={day} selected={person?.id} onPick={pick} s={s}
+              me={meIn(register.me, registerOf(people))?.id} onAdd={mayAdd ? (name) => setAdding(name ? { name } : {}) : undefined}
             />
-          )}
-          {tab === 'people' && entries.length > 0 && (
-            <>
-              <FilterWords
-                find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={s('people.search')} dataGuide="people.find"
-                fields={[
-                  { id: 'state', label: s('people.show'), options: STATES.map((one) => ({ value: one, label: s(SHOW_LABEL[one]), count: countOf(one) })) },
-                  { id: 'kind', label: s('people.kind'), options: [{ value: 'internal', label: s('people.kindInternal') }, { value: 'external', label: s('people.kindExternal') }] },
-                  ...(assignmentsOf ? [{ id: 'holds', label: s('people.colRoles'), options: [{ value: 'nothing', label: s('people.rolesNone') }] }] : []),
-                ]}
-                filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
-                columns={columnChoices} shownColumns={columnsOn} onColumns={(columns) => setView((was) => ({ ...was, columns }))}
-                shown={{ count: shown.length, total: entries.length }}
-                actions={(
-                  <span className="people-actions">
-                    <span className="people-counts" data-testid="people-counts">{s('people.counts', { active: countOf('active'), left: countOf('left'), forgotten: countOf('forgotten') })}</span>
-                    {findMe && <Button variant="quiet" onClick={findMe} data-testid="people-find-me">{s('people.findMe')}</Button>}
-                  </span>
-                )}
-              />
-              <div className="people-list" data-testid="people-table">
-                <List
-                  label={s('people.title')} itemLabel={s('people.colName')} itemSortable rowGuide="people.row"
-                  sort={view.sort} onSort={(sort) => setView((was) => ({ ...was, sort }))}
-                  columns={columnChoices.filter((one) => columnsOn.includes(one.id)).map((one) => ({ ...one, sortable: true }))}
-                  selectedId={person?.id ?? null} onOpen={pick}
-                  groups={shown.length === 0 ? [] : [{
-                    id: '', label: '',
-                    rows: shown.map((row) => {
-                      const note = noteOf(row.person, me, dayWords, s)
-                      return {
-                        id: row.person.id, text: row.text, ...(note ? { note } : {}),
-                        cells: {
-                          roles: <span data-testid="people-roles" className={row.roles.length ? undefined : 'people-quiet'} title={row.roles.map((one) => s('people.roleIn', one)).join(', ')}>{rolesText(row.roles, s)}</span>,
-                          kind: s(KIND_LABEL[row.person.kind]),
-                          state: stateWord(row.person),
-                          email: row.person.email ?? (register.withheld?.(row.person.id) ? s('people.emailWithheld') : ''),
-                        },
-                      }
-                    }),
-                  }]}
-                  empty={(
-                    <NoMatch
-                      typed={typed} people={people} register={register} onPick={pick} s={s}
-                      onAdd={mayAdd && typed ? () => setAdding({ name: typed }) : undefined}
-                    />
-                  )}
-                />
-              </div>
-            </>
           )}
           {tab === 'review' && (
             <Duplicates
@@ -350,41 +451,13 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
           )}
           {tab === 'privacy' && <PolicyPanel register={register} saying={saying} s={s} />}
         </div>
-        <div className="people-foot" data-testid="people-foot">
-          <span data-testid="people-not-a-step">{s(register.readOnly ? 'people.readOnly' : 'people.notAStepShort')}</span>{' '}
-          <button type="button" className="people-link" aria-expanded={about} aria-controls="people-about" onClick={() => setAbout((was) => !was)} data-testid="people-about">{s('people.about')}</button>
-          {about && <p id="people-about" className="people-foot__more">{s('people.what')}</p>}
-        </div>
+        <PeopleFoot readOnly={register.readOnly} s={s} />
       </div>
-      <Preview
-        ids={ids} currentId={person?.id ?? null} onSelect={(id) => choose(id ?? undefined)} dataGuide="people.person"
-        title={<span data-testid="people-person-name">{person ? shownText(shownEntry(person), s) : ''}</span>}
-        listWord={s('people.title').toLowerCase()}
-        {...(person ? { facts: <PersonFacts person={person} register={register} s={s} /> } : {})}
-        foot={person && (
-          <div className="people-actions">
-            {canCorrect && <Button onClick={() => setCorrecting(person)} data-testid="people-correct" data-guide="people.correct">{s('people.correct')}</Button>}
-            <MoreMenu
-              data-guide="people.more"
-              items={personMenu(person, register, {
-                ask: setQuestion, setMe, hold: () => setHolding(person),
-                copyAddress: copyText && go && hasAddress() ? () => { copyText(window.location.href); void saying.run(Promise.resolve({}), () => s('people.addressCopied')) } : undefined,
-              }, s)}
-            />
-          </div>
-        )}
-      >
-        {person && (
-          <PersonReader
-            person={person} register={register} day={day} go={go} onPerson={pick} s={s}
-            {...(mayDo(register, 'forget', person.id) && person.state === 'left' ? { onForget: () => setQuestion({ kind: 'forget', person }) } : {})}
-          />
-        )}
-      </Preview>
-      <Dialog
-        open={adding !== undefined} size="m" title={s('people.addTitle')} onClose={() => setAdding(undefined)}
-        actions={null}
-      >
+      <PersonUp
+        person={person} ids={shown.map((row) => row.person.id)} register={register} day={day} saying={saying} copyText={copyText} s={s}
+        onSelect={(id) => choose(id ?? undefined)} onPick={pick} onCorrect={setCorrecting} onHold={setHolding} onAsk={setQuestion}
+      />
+      <Dialog open={adding !== undefined} size="m" title={s('people.addTitle')} onClose={() => setAdding(undefined)} actions={null}>
         {adding && mayAdd && (
           <AddPerson
             register={register} saying={saying} {...(adding.name ? { initialName: adding.name } : {})} s={s}
@@ -400,4 +473,3 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
     </PageDialog>
   )
 }
-

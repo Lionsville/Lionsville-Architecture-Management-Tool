@@ -64,7 +64,7 @@ function Leave({ person, day, register, saying, onClose, s }: Asked & { person: 
   const forgets = valid ? addDays(lastDay, register.policy.keepNameDays) : ''
   const removes = valid ? addDays(forgets, register.policy.removeAfterDays) : ''
   const leave = () => {
-    void saying.run(register.leave(person.id, lastDay), (left) => s('people.leftDone', {
+    void saying.run(register.leave(person.id, lastDay), (left) => s(left.ended === 1 ? 'people.leftDoneOne' : 'people.leftDone', {
       name: name(left.person, s), day: dayWords(lastDay), forget: dayWords(forgets), count: left.ended,
     }))
     onClose()
@@ -107,7 +107,7 @@ function TakeBack({ person, register, saying, onClose, s }: Asked & { person: Pe
   const dayWords = useDayWords()
   const words = { name: name(person, s), day: dayWords(person.leftOn) }
   const back = () => {
-    void saying.run(register.takeBackLeaving!(person.id), (done) => s('people.takenBackDone', { ...words, count: done.restored }))
+    void saying.run(register.takeBackLeaving!(person.id), (done) => s(done.restored === 1 ? 'people.takenBackDoneOne' : 'people.takenBackDone', { ...words, count: done.restored }))
     onClose()
   }
   return (
@@ -218,10 +218,13 @@ function MergePick({ person, register, onPicked, onClose, s }: Asked & { person:
 
 /** What a card in the merge says: what they hold, their address, an account, and how many records name them. */
 function useCardWords(person: Person, register: PeopleRegisterAccess, s: Translate): string {
+  const dayWords = useDayWords()
   const found = usePointsAt(person.id, register)
   const named = found ? found.pointers.length + found.byRule.length : undefined
   return [
+    person.state === 'left' ? s('people.stateLeft', { day: dayWords(person.leftOn) }) : undefined,
     tellsApart(person, register, s),
+    person.kind === 'external' ? s('people.kindExternal') : undefined,
     register.linked?.(person.id) ? s('people.account') : undefined,
     named === undefined ? undefined : named === 0 ? s('people.namedOnNothing') : plural(s, { one: 'people.namedOnOne', other: 'people.namedOnOther' }, named),
   ].filter(Boolean).join(' · ')

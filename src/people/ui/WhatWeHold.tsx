@@ -86,7 +86,7 @@ export function WhatWeHold({ person, register, copyText, onClose, s }: {
         <p className="people-note">{s('people.holdNote')}</p>
         <dl className="people-hold">
           {sections.map(([label, lines]) => (
-            <div key={label} style={{ display: 'contents' }}>
+            <div key={label} className="people-hold__row">
               <dt>{label}</dt>
               <dd>
                 {lines.length === 0 && <span className="people-quiet">{none}</span>}

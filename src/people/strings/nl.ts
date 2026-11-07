@@ -18,7 +18,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.showActive': 'Actief',
   'people.showLeft': 'Vertrokken',
   'people.showForgotten': 'Vergeten',
-  'people.search': 'Zoek op naam, adres, rol of eenheid',
+  'people.search': 'Naam, adres, rol of eenheid',
   'people.counts': '{active} actief · {left} vertrokken · {forgotten} vergeten',
   'people.importCsv': 'Lijst importeren…',
   'people.add': 'Persoon toevoegen',
@@ -294,4 +294,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.viaLine': 'via een lijn',
   'people.viaNesting': 'via de nesting',
   'people.viaOverride': 'een uitzondering op het model',
+  'people.leftDoneOne': '{name} is gemarkeerd als vertrokken op {day}; {count} rol beëindigd. De naam wordt getoond tot {forget}.',
+  'people.takenBackDoneOne': '{name} is weer actief; {count} rol hersteld.',
+  'people.listWord': 'personen',
 }

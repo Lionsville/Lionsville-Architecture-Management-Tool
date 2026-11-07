@@ -30,7 +30,7 @@
   text-underline-offset: 2px;
   cursor: pointer;
 }
-.people-link:hover { color: var(--accent-ink, var(--ink)); text-decoration-color: currentColor; }
+.people-link:hover { color: var(--ink); text-decoration-color: currentColor; }
 .people-quiet { color: var(--ink-2); font-size: var(--t-sm); }
 .people-line { display: block; }
 .people-lines { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; padding-block: 2px; }
@@ -54,6 +54,7 @@
 .people-side__line { display: block; color: var(--ink-2); font-size: var(--t-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .people-hold { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 3fr); gap: var(--s-2) var(--s-4); margin: 0; }
+.people-hold__row { display: contents; }
 .people-hold dt { color: var(--ink-2); font-size: var(--t-sm); }
 .people-hold dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 

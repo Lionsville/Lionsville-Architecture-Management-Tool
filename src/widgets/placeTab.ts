@@ -33,7 +33,8 @@ export function usePlaceTab(first: string): readonly [string, (tab: string) => v
     setOwn(tab)
     held?.choose(tab)
   }, [held])
-  return [held?.tab ?? own, choose]
+  // In a frame the address is the truth: no tab said is the first, whatever was last pressed here.
+  return [held ? held.tab ?? first : own, choose]
 }
 
 /** Which record of a page is up, in the address where there is a frame. Undefined is the list with nothing open over it. */
