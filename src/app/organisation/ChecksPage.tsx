@@ -291,7 +291,8 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
   const fix = entry.weight === 'fix'
   const accepted = !fix && tab === 'accepted'
   const tabs = [
-    { value: 'found', label: s('checks.tabFound'), count: row.shown.length },
+    // A check not counted here has found nothing that can be said here, which is not none.
+    { value: 'found', label: s('checks.tabFound'), ...(row.counted ? { count: row.shown.length } : {}) },
     ...(fix ? [] : [{ value: 'accepted', label: s('checks.tabAccepted'), count: row.marked.length }]),
   ]
   return (
@@ -370,7 +371,8 @@ export function ChecksPage(props: ChecksPageProps) {
       id: section.kind === 'scope' ? `${row.key}@${section.scope ?? ''}` : row.key,
       attributes: { 'data-testid': `checks-row-${row.key}`, 'data-check': row.key },
       text: s(row.entry.name), mark: <Mark kind={row.entry.weight} label={s(CHECK_WEIGHT_LABEL[row.entry.weight].name)} />,
-      note: row.counted ? String(row.shown.length) : s('checks.openToCount'),
+      // Under its own heading the words would say the heading again on every line.
+      ...(row.counted ? { note: String(row.shown.length) } : section.kind === 'notCounted' ? {} : { note: s('checks.openToCount') }),
     })),
   }))
   const selectedId = current && by === 'scope'

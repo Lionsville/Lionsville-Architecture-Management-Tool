@@ -149,11 +149,13 @@ describe('the Checks page', () => {
     expect(marking.takeBack).toHaveBeenCalledWith({ scope: '', mark })
   })
 
-  it('says of a check only an open scope works out where it is found, in words and with a way there', () => {
+  it('says of a check only an open scope works out where it is found, in words and with a way there, and no count', () => {
     const onOpenScope = vi.fn()
     page({ request: { select: 'check.notDrawn' }, onOpenScope })
     expect(screen.getByTestId('checks-where-open').textContent).toContain('found where the scope is open')
-    expect(listRow(new RegExp(t(CHECK_CATALOGUE['check.notDrawn'].name)))?.textContent).toContain('Open the scope to count')
+    // Under its own heading, which says it once; and Found says no number it does not have.
+    expect(listRow(new RegExp(t(CHECK_CATALOGUE['check.notDrawn'].name)))?.textContent).not.toContain('Open the scope to count')
+    expect(within(detail()).getByRole('tab', { name: /Found/ }).textContent).toBe('Found')
     fireEvent.click(within(detail()).getByRole('button', { name: 'Open the scope to count' }))
     expect(onOpenScope).toHaveBeenCalledOnce()
   })
