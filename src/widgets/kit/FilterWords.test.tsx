@@ -25,6 +25,23 @@ function Host(props: Partial<FilterWordsProps>) {
 }
 
 describe('filter words', () => {
+  it('says an option\'s heading once, and a long list narrows to what was typed', async () => {
+    const long: FilterField = {
+      id: 'about', label: 'About', narrow: true,
+      options: [
+        { value: 'a', label: 'Billing', group: 'With records' }, { value: 'b', label: 'Bookings', group: 'With records' },
+        { value: 'c', label: 'Customs', group: 'With none' },
+      ],
+    }
+    renderShell(<Host fields={[long]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }))
+    const panel = await screen.findByRole('dialog', { name: 'Filter' })
+    expect(within(panel).getAllByText('With records')).toHaveLength(1)
+    fireEvent.change(within(panel).getByRole('searchbox'), { target: { value: 'cus' } })
+    expect(within(panel).queryByText('Billing')).toBeNull()
+    expect(within(panel).getByText('Customs')).toBeTruthy()
+  })
+
   it('at rest is the field and the button, with nothing on', () => {
     renderShell(<Host />)
     expect(screen.getByRole('searchbox', { name: 'Find in this list' })).toBeTruthy()

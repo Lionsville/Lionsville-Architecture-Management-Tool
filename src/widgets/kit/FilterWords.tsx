@@ -28,9 +28,17 @@ export type FilterOption = {
   readonly word?: string
   /** Only where it is a real number. */
   readonly count?: number
+  /** A heading the options fall under, said once where it changes. */
+  readonly group?: string
 }
 
-export type FilterField = { readonly id: string; readonly label: string; readonly options: readonly FilterOption[] }
+export type FilterField = {
+  readonly id: string
+  readonly label: string
+  readonly options: readonly FilterOption[]
+  /** A long list keeps a field to type in, so that all of it can stay in the list and none of it is in the way. */
+  readonly narrow?: boolean
+}
 
 export type FilterChoice = { readonly id: string; readonly label: string }
 
@@ -162,6 +170,44 @@ function ViewPop({ columns, shownColumns, onColumns, density, onDensity, onReset
   )
 }
 
+/** One filter's options, under their headings, narrowed by what was typed where the field asks for that. */
+function FieldPart({ field, values, onValues }: {
+  readonly field: FilterField
+  readonly values: readonly string[]
+  readonly onValues: (values: readonly string[]) => void
+}) {
+  const { t } = useStrings()
+  const [typed, setTyped] = useState('')
+  const wanted = typed.trim().toLowerCase()
+  const options = field.options.filter((option) => !wanted || option.label.toLowerCase().includes(wanted))
+  return (
+    <fieldset className="kit-filter__field">
+      <legend>{field.label}</legend>
+      {field.narrow && (
+        <input
+          type="search" className="kit-filter__narrow" aria-label={t('kit.filter.narrow', { field: field.label })}
+          placeholder={t('kit.filter.narrow', { field: field.label })} value={typed} onChange={(event) => setTyped(event.target.value)}
+        />
+      )}
+      {options.map((option, index) => (
+        <div key={option.value}>
+          {option.group !== undefined && option.group !== options[index - 1]?.group && (
+            <div className="kit-filter__optionGroup">{option.group}</div>
+          )}
+          <label className="kit-filter__option">
+            <input
+              type="checkbox" checked={values.includes(option.value)}
+              onChange={(event) => onValues(onOff(values, option.value, event.target.checked))}
+            />
+            <span>{option.label}</span>
+            {option.count !== undefined && <span className="kit-filter__count">{option.count}</span>}
+          </label>
+        </div>
+      ))}
+    </fieldset>
+  )
+}
+
 export function FilterWords({
   find, onFind, findLabel, noFind, fields = [], filters = {}, onFilters, filterExtra, groups, group, onGroup,
   columns, shownColumns = [], onColumns, density, onDensity, onReset, shown, actions, dataGuide,
@@ -195,22 +241,7 @@ export function FilterWords({
         {(fields.length > 0 || filterExtra) && (
           <Pop label={t('kit.filter.filter')} active={on.length > 0} face={on.length ? `${t('kit.filter.filter')} · ${on.length}` : t('kit.filter.filter')}>
             {fields.map((field) => (
-              <fieldset className="kit-filter__field" key={field.id}>
-                <legend>{field.label}</legend>
-                {field.options.map((option) => {
-                  const values = filters[field.id] ?? []
-                  return (
-                    <label className="kit-filter__option" key={option.value}>
-                      <input
-                        type="checkbox" checked={values.includes(option.value)}
-                        onChange={(event) => setField(field.id, onOff(values, option.value, event.target.checked))}
-                      />
-                      <span>{option.label}</span>
-                      {option.count !== undefined && <span className="kit-filter__count">{option.count}</span>}
-                    </label>
-                  )
-                })}
-              </fieldset>
+              <FieldPart key={field.id} field={field} values={filters[field.id] ?? []} onValues={(values) => setField(field.id, values)} />
             ))}
             {filterExtra}
           </Pop>

@@ -81,4 +81,6 @@
   cursor: pointer;
 }
 .kit-filter__option input { margin: 0; accent-color: var(--accent); }
+.kit-filter__narrow { width: 100%; min-height: var(--row-h); margin-block-end: var(--s-1); padding-inline: var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; }
+.kit-filter__optionGroup { margin-block-start: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); font-weight: 600; }
 .kit-filter__count { margin-inline-start: auto; color: var(--ink-3); font-size: var(--t-sm); }

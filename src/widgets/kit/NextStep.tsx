@@ -29,6 +29,7 @@ export type NextAction = {
   /** Held: what holds it is `holds`. Drawn off, with the count beside it. */
   readonly held?: boolean
   readonly dataGuide?: string
+  readonly testId?: string
 }
 
 export type NextHold = { readonly label: string; readonly onPress?: () => void }
@@ -72,7 +73,7 @@ export function NextStep({ steps, orientation, stepsLabel, question, actions, ho
     <Button
       key={action.label} variant={action.primary ? 'primary' : 'plain'}
       reason={action.held && held > 0 ? t('kit.next.holds', { count: held }) : undefined}
-      onClick={action.onPress} data-guide={action.dataGuide}
+      onClick={action.onPress} data-guide={action.dataGuide} data-testid={action.testId}
     >
       {action.label}
     </Button>

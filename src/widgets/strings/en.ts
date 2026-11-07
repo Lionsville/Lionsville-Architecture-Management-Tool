@@ -46,6 +46,7 @@ export const EN = {
   'kit.filter.showing': 'Showing',
   'kit.filter.remove': 'Stop filtering on {field}: {value}',
   'kit.filter.clear': 'Clear',
+  'kit.filter.narrow': 'Find in {field}',
   'kit.preview.previous': 'Previous',
   'kit.preview.next': 'Next',
   'kit.preview.position': '{at} of {total}',

@@ -47,6 +47,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.filter.showing': 'Getoond',
   'kit.filter.remove': 'Niet meer filteren op {field}: {value}',
   'kit.filter.clear': 'Wissen',
+  'kit.filter.narrow': 'Zoek in {field}',
   'kit.preview.previous': 'Vorige',
   'kit.preview.next': 'Volgende',
   'kit.preview.position': '{at} van {total}',
