@@ -49,6 +49,18 @@ describe('a list', () => {
     expect(row(/portal and the planning/).dataset.unread).toBe('true')
   })
 
+  it('marks a list of ways on, which a stylesheet draws as pressable at rest, and a row still opens by press and key', () => {
+    const onOpen = vi.fn()
+    const rows = [{ id: 'one', text: 'Observations', fact: '4 here' }]
+    const { container, rerender } = renderShell(<List label="L" groups={[{ id: 'g', label: '', rows }]} onOpen={onOpen} />)
+    expect(container.querySelector('.kit-list')?.hasAttribute('data-doors')).toBe(false)
+    rerender(<List label="L" groups={[{ id: 'g', label: '', rows }]} onOpen={onOpen} doors />)
+    expect(container.querySelector('.kit-list')?.hasAttribute('data-doors')).toBe(true)
+    fireEvent.click(screen.getByText('Observations'))
+    key(row('Observations'), 'Enter')
+    expect(onOpen).toHaveBeenCalledTimes(2)
+  })
+
   it('wraps only when asked to, and a clipped line can still be read', () => {
     const { container, rerender } = renderShell(<List label="L" groups={GROUPS} />)
     expect(container.querySelector('.kit-list')?.hasAttribute('data-wrap')).toBe(false)

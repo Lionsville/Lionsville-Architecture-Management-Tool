@@ -194,7 +194,7 @@ function belowRows({ register, technology, onHomePage, s }: ScopeHomeProps): Kep
   ]
 }
 
-/** The organisation's: a view it has not been given yet, a word on the line for somebody who may make it; and more of its places, until they have merged into those at the tree's foot. */
+/** The organisation's: a view it has not been given yet, a word on the line for somebody who may make it; and two of its places by the words a person knew them by, which the tree's foot also says. */
 function rootRows({ at, views, pages, writable, technology, open, onHomePage, s }: ScopeHomeProps, hasTopics: boolean): Kept[] {
   const lacks = (kind: DesignDiagram['kind']) => writable && !views.some((one) => one.kind === kind)
   // The business layer may be written with no sheet drawn of it yet: what it holds is said all the same.
@@ -274,7 +274,7 @@ function Continue({ recent, at, onContinue, language, s }: { recent: readonly Re
   }))
   return (
     <Section title={s('org.continue')} data-testid="continue">
-      <List label={s('org.continue')} density="compact" groups={[{ id: 'continue', label: '', rows }]} onOpen={(id) => { const found = recent.find((one) => key(one) === id); if (found) onContinue(found) }} />
+      <List label={s('org.continue')} density="compact" doors groups={[{ id: 'continue', label: '', rows }]} onOpen={(id) => { const found = recent.find((one) => key(one) === id); if (found) onContinue(found) }} />
     </Section>
   )
 }
@@ -312,13 +312,13 @@ function EmptyScope({ at, tree, kept, holdings, doors, writable, principles, s }
       />
       {inForce && (principles?.inForce ?? 0) > 0 && (
         <Section title={s('org.inForceHere')}>
-          <List label={s('org.inForceHere')} density="compact" groups={[{ id: 'force', label: '', rows: [keptRow(inForce)] }]} onOpen={inForce.open} />
+          <List label={s('org.inForceHere')} density="compact" doors groups={[{ id: 'force', label: '', rows: [keptRow(inForce)] }]} onOpen={inForce.open} />
         </Section>
       )}
       {nearby.length > 0 && (
         <Section title={s('org.nearestWork')} data-testid="nearest-work">
           <List
-            label={s('org.nearestWork')} density="compact" onOpen={doors.onGoHome}
+            label={s('org.nearestWork')} density="compact" doors onOpen={doors.onGoHome}
             groups={[{ id: 'near', label: '', rows: nearby.map((one) => ({ id: one.path, text: one.name, fact: `${s(STANDS[one.stands])}: ${heldInWords(one.held, s)}` })) }]}
           />
         </Section>
@@ -361,13 +361,13 @@ export function ScopeHome(props: ScopeHomeProps) {
       {atRoot && onContinue && <Continue recent={recent} at={at} onContinue={onContinue} language={language} s={s} />}
       {views.length > 0 && (
         <Section title={s('org.viewsHere')} data-testid="boards" data-guide="org.boards">
-          <List label={s('org.viewsHere')} density="compact" groups={[{ id: 'views', label: '', rows: viewRows(views, pages, writable ? doors.onDeleteView : undefined, onOpenView, language, s) }]} onOpen={onOpenView} />
+          <List label={s('org.viewsHere')} density="compact" doors groups={[{ id: 'views', label: '', rows: viewRows(views, pages, writable ? doors.onDeleteView : undefined, onOpenView, language, s) }]} onOpen={onOpenView} />
         </Section>
       )}
       {shown.length > 0 && (
         <Section title={s('org.keptHere')}>
           <List
-            label={s('org.keptHere')} density="compact" groups={[{ id: 'kept', label: '', rows: shown.map(keptRow) }]}
+            label={s('org.keptHere')} density="compact" doors groups={[{ id: 'kept', label: '', rows: shown.map(keptRow) }]}
             onOpen={(id) => kept.find((one) => one.id === id)?.open()}
           />
         </Section>

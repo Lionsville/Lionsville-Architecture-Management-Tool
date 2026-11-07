@@ -161,3 +161,21 @@
   font-size: var(--t-sm);
 }
 .kit-list__end { flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--s-1); }
+
+/* A way on: a raised block of rows ending in a chevron, plain at rest in either mode and with no colour spent on it. */
+.kit-list[data-doors] .kit-list__grid { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
+.kit-list[data-doors] .kit-list__row { cursor: pointer; }
+.kit-list[data-doors] [role='rowgroup']:last-child > .kit-list__row:last-child { border-bottom: 0; }
+.kit-list[data-doors] .kit-list__text { font-weight: var(--fw-medium); }
+.kit-list[data-doors] .kit-list__item::after {
+  content: '';
+  flex: none;
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  margin-inline: var(--s-1) 2px;
+  border-block-start: 1.5px solid var(--ink-2);
+  border-inline-end: 1.5px solid var(--ink-2);
+  transform: rotate(45deg);
+}
+.kit-list[data-doors] .kit-list__row:hover .kit-list__item::after { border-color: var(--ink); }

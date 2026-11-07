@@ -110,6 +110,11 @@ export type ListProps = {
   readonly onRowDragStart?: (id: string, event: DragEvent<HTMLDivElement>) => void
   /** Drawn in place of the rows when there are none: a `PageState`, or a no-match line. */
   readonly empty?: ReactNode
+  /**
+   * Every row is a way on, as on a home, and not an item read in a list: it looks
+   * like something to press before the pointer gets there.
+   */
+  readonly doors?: boolean
   readonly dataGuide?: string
   readonly rowGuide?: string
 }
@@ -352,7 +357,7 @@ const INTERACTIVE = 'button, a, input, select, textarea, [data-kit-actions]'
 
 export function List({
   label, groups, wrap, density = 'normal', columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
-  checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, dataGuide, rowGuide,
+  checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, doors, dataGuide, rowGuide,
 }: ListProps) {
   const { t } = useStrings()
   const root = useRef<HTMLDivElement>(null)
@@ -455,7 +460,7 @@ export function List({
   ].join(' '), [ticks, columns])
 
   return (
-    <div className="kit-list" data-density={density} data-wrap={wrap || undefined} data-guide={dataGuide} style={{ '--kit-list-cols': tracks } as CSSProperties}>
+    <div className="kit-list" data-density={density} data-wrap={wrap || undefined} data-doors={doors || undefined} data-guide={dataGuide} style={{ '--kit-list-cols': tracks } as CSSProperties}>
       {ticks && checked.size > 0 && (
         <div className="kit-list__bulk" role="group" aria-label={t('kit.list.bulk')}>
           <span aria-live="polite">{t('kit.list.ticked', { count: checked.size })}</span>
