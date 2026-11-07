@@ -126,6 +126,12 @@ export type Destination = {
   readonly id?: string
   /** Which tab of the page, one of {@link PAGE_TABS}'s for it. */
   readonly tab?: string
+  /**
+   * The day a view is looked at, `yyyy-mm-dd` or `today`, where that is not its
+   * own day (ADR-0027, amended): so a link and an agent reach the same look, and
+   * whoever opens it sees the same band.
+   */
+  readonly day?: string
   /** A frame panel open beside the place (`FRAME_PANELS`); a page of `work` or `activity` says the same over a home. */
   readonly panel?: FramePanel
   /** What a list on the page is showing, as its own query (`widgets/kit/listView.ts`). */
@@ -177,6 +183,8 @@ export type ScreenView = {
   readonly id: string
   readonly name: string
   readonly kind: string
+  /** The day it is looked at, where that is not its own (`Destination.day`). */
+  readonly day?: string
 }
 
 export type Screen = {

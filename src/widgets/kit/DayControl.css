@@ -8,6 +8,7 @@
   box-shadow: var(--shadow);
 }
 .kit-day__chooser form { display: grid; gap: var(--s-2); justify-items: start; }
+.kit-day__note { max-width: 32ch; margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
 .kit-day__label { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
 .kit-day__field {
   height: var(--ctl-h);
@@ -21,3 +22,18 @@
   color-scheme: inherit;
 }
 .kit-day__field:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+/* What a look does to what is drawn: an edge round the canvas, heavy enough to read from the middle of the board. */
+[data-look-edge] { position: relative; }
+[data-look-edge]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border: var(--canvas-frame-width) solid transparent;
+  border-image: repeating-linear-gradient(135deg, var(--looking) 0 6px, var(--looking-soft) 6px 12px) 4;
+}
+
+/* A view saved on its own day says so on its tab; today says nothing. */
+.editor-tab__day { color: var(--ink-2); font-size: var(--t-sm); font-weight: normal; }

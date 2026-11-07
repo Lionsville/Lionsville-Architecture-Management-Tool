@@ -11,7 +11,6 @@ import { cancelElkLayout, canCancelElkLayout } from '../layout/elkLayout';
 import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
 import { FIT_ALL } from './canvas/fitAll';
 import type { SolutionDesignEditorProps } from './props';
-import type { EditorState } from './useEditorState';
 import type { BoardView } from './useBoardView';
 import type { EditorDialogState } from './EditorDialogs';
 import type { EditorParts } from './editorParts';
@@ -25,6 +24,7 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       activeDiagram={diagram}
       readOnly={!writable}
       looking={looking}
+      {...(parts.cameFrom ? { cameFrom: parts.cameFrom } : {})}
       busy={layout.busy}
       laidOut={laidOut}
       dated={isDated(diagram.kind)}
@@ -49,7 +49,7 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       showLifecycle={view.showLifecycle}
       onToggleLifecycle={() => view.setShowLifecycle((on) => !on)}
       {...boardControls(diagram, board, writable)}
-      {...dayControls(diagram, board, !writable, state)}
+      {...dayControls(diagram, board, props.ownership?.roles?.today)}
       onUndo={state.undo}
       onRedo={state.redo}
       canUndo={state.canUndo}
@@ -147,20 +147,15 @@ export function isDated(kind: DesignDiagram['kind']): boolean {
   }
 }
 
-/** The day the board is looked at, and saving that day onto it (ADR-0027). */
+/** The day the board is looked at (ADR-0027). */
 function dayControls(
   diagram: DesignDiagram,
   board: BoardView,
-  readOnly: boolean,
-  state: EditorState,
-): Pick<EditorToolbarProps, 'asOf' | 'savedAsOf' | 'onAsOfChange' | 'onSaveAsOf'> {
+  today: string | undefined,
+): Pick<EditorToolbarProps, 'asOf' | 'onAsOfChange' | 'today'> {
   return {
     asOf: board.lookingAt,
-    savedAsOf: diagram.asOf,
+    today: today ?? new Date().toISOString().slice(0, 10),
     onAsOfChange: (day) => board.viewing.show(diagram.id, day),
-    onSaveAsOf: readOnly ? undefined : () => {
-      state.actions.setAsOf(board.lookingAt);
-      board.viewing.forget(diagram.id);
-    },
   };
 }

@@ -5,7 +5,7 @@
  * The bar over an open scope, and the notices under it: a scope whose files
  * did not all read, and a folder somebody else changed.
  */
-import { useMemo } from 'react'
+import { useContext, useEffect, useMemo } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -18,7 +18,9 @@ import { isLookingAway, shownAsOf } from '../editor'
 import { agentRun, putBackRun } from '../agent/agentRun'
 import type { StackedBand } from '../widgets/kit/Band'
 import { Button as KitButton } from '../widgets/kit/Button'
-import { useFrameFacts } from './frame/frameStore'
+import { formatDay } from '../i18n/dates'
+import { FrameStoreContext, useFrameFacts } from './frame/frameStore'
+import type { DesignDiagram } from '../model/types'
 import type { WorkspaceParts } from './workspaceParts'
 
 /**
@@ -30,7 +32,7 @@ export function usePageChrome(windowChrome: WindowChrome | undefined) {
     () => ({ ...(windowChrome ?? NO_WINDOW_CHROME), controlsInset: 0, draggable: false, topInset: 0 }),
     [windowChrome],
   )
-  return { pageChrome }
+  return { pageChrome, windowChrome: windowChrome ?? NO_WINDOW_CHROME }
 }
 
 /**
@@ -55,17 +57,14 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   const boardUp = pages.page() === undefined && requests.documentationShown === undefined
     && (active?.kind === 'layer7' || active?.kind === 'container')
   const looking = active !== undefined && isLookingAway(active, parts.viewing.days)
-  const bands = useMemo<readonly StackedBand[]>(() => (looking && active ? [{
-    id: 'looking', tone: 'looking',
-    title: s('frame.lookingAt', { day: shownAsOf(active, parts.viewing.days) ?? '' }),
-    detail: s('frame.lookingDetail'),
-    action: <KitButton size="small" onClick={() => parts.viewing.forget(active.id)} data-testid="looking-back">{s('frame.lookingBack')}</KitButton>,
-  }] : NO_BANDS), [looking, active, parts.viewing, s])
+  const bands = useLookBand(parts, active, looking)
+  useLookInAddress(parts, active, looking)
   const publishes = props.source.publishesSteps
   useFrameFacts({
     kind: 'workspace', path: props.project.path, name: session.model.name,
     openSearch: () => dialogs.setSearchOpen(true), openSettings: dialogs.openSettings,
-    ...(session.readOnly ? {} : {
+    // A look writes nothing, so nothing takes back from under it; the band says so.
+    ...(session.readOnly || looking ? {} : {
       undo: { can: session.canUndo, run: session.undo },
       redo: { can: session.canRedo, run: session.redo },
     }),
@@ -100,6 +99,58 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
 }
 
 const NO_BANDS: readonly StackedBand[] = []
+
+/**
+ * Looking at another day as a state of the whole window (ADR-0027, amended): what
+ * day, who sees it, the one press back to the view's own day, and the deliberate
+ * step of making the day its own, which is one edit and one line in Activity.
+ */
+function useLookBand(parts: WorkspaceParts, active: DesignDiagram | undefined, looking: boolean): readonly StackedBand[] {
+  const { props, session, viewing } = parts
+  const { s, language } = props.shell
+  return useMemo<readonly StackedBand[]>(() => {
+    if (!looking || !active) return NO_BANDS
+    const day = shownAsOf(active, viewing.days)
+    const say = (value: string | undefined) => (value ? formatDay(value, language) : s('frame.lookingDayToday'))
+    const keep = () => {
+      session.dispatch({ type: 'diagram.update', id: active.id, patch: { asOf: day } })
+      viewing.forget(active.id)
+    }
+    return [{
+      id: 'looking', tone: 'looking', dataGuide: 'board.look',
+      title: s('frame.lookingAt', { day: say(day) }),
+      detail: s('frame.lookingDetail'),
+      action: (
+        <>
+          <KitButton size="small" variant="primary" onClick={() => viewing.forget(active.id)} data-testid="looking-back">
+            {active.asOf ? s('frame.lookingBack', { day: say(active.asOf) }) : s('frame.lookingToday')}
+          </KitButton>
+          {!session.readOnly && <KitButton size="small" onClick={keep} data-testid="looking-keep">{s('frame.lookingKeep')}</KitButton>}
+        </>
+      ),
+    }]
+  }, [looking, active, viewing, session, s, language])
+}
+
+/** The look said to the frame, so the address carries it; and one the address or an agent asked for, taken up. */
+function useLookInAddress(parts: WorkspaceParts, active: DesignDiagram | undefined, looking: boolean): void {
+  const store = useContext(FrameStoreContext)
+  const { viewing } = parts
+  const day = looking && active ? shownAsOf(active, viewing.days) ?? 'today' : undefined
+  const view = looking ? active?.id : undefined
+  useEffect(() => {
+    store?.set({ lookOf: view, lookDay: day })
+  }, [store, view, day])
+  useEffect(() => () => { store?.set({ lookOf: undefined, lookDay: undefined }) }, [store])
+  const asked = store?.get().asksLook
+  useEffect(() => {
+    if (!asked || !store) return
+    const target = asked.view ?? active?.id
+    if (target === undefined) return
+    store.set({ asksLook: undefined })
+    viewing.show(target, asked.day === 'today' ? undefined : asked.day)
+  })
+}
 
 /**
  * A scope that could not be read whole: what could not, and — where the

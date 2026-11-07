@@ -20,6 +20,7 @@ import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
 import { arrived, HOME_PAGES, isPageTab, NEEDS_ID, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
+import { isLookDay } from './place'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 import type { TreeView } from './tree'
@@ -172,7 +173,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 
 // --- app.open --------------------------------------------------------------------
 
-type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string }
+type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; day?: string }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
@@ -367,6 +368,9 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
   if (asked.tab !== undefined && !isPageTab(target.page, asked.tab)) {
     return refused('agent.badArguments', `"tab" must be one of the tabs of the page: ${target.page ? (PAGE_TABS[target.page] ?? []).join(', ') || 'it has none' : 'it has none'}`)
   }
+  if (asked.day !== undefined && !(isLookDay(asked.day) && target.page !== undefined && VIEW_PAGES.includes(target.page))) {
+    return refused('agent.badArguments', '"day" is for a view, as yyyy-mm-dd or today')
+  }
   if (asked.select !== undefined) {
     // A drawing opens as a view and does not select an element on a board.
     if (target.page === undefined || !SELECTS.includes(target.page)) {
@@ -380,6 +384,7 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...target,
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
     ...(asked.select !== undefined ? { select: asked.select } : {}),
+    ...(asked.day !== undefined ? { day: asked.day } : {}),
   }
 }
 

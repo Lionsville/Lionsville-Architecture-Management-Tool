@@ -401,11 +401,11 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab, list, pick, finding } = frame.get()
+    let { panel, tab, list, pick, finding, lookOf, lookDay } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding) return
-      ({ panel, tab, list, pick, finding } = now)
+      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay) return
+      ({ panel, tab, list, pick, finding, lookOf, lookDay } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
@@ -430,6 +430,7 @@ function holdInFrame(frame: FrameStore | undefined, to: Destination): Destinatio
     panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
     record, recordOf: record === undefined ? undefined : 'people',
     list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
+    ...(to.day !== undefined ? { asksLook: { ...(to.id !== undefined ? { view: to.id } : {}), day: to.day } } : {}),
   })
   return listPage
 }
@@ -443,8 +444,13 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const record = page?.page === 'people' && held.recordOf === 'people' ? held.record : undefined
   const listed = page && held.listOf === page.page
   const pick = listed && held.pick !== undefined ? held.pick : record
+  const open = screen.open
+  const looked = open?.view && held.lookOf === open.view.id && held.lookDay !== undefined
+    ? { open: { ...open, view: { ...open.view, day: held.lookDay } } }
+    : {}
   return {
     ...screen,
+    ...looked,
     ...(page && (tab !== undefined || pick !== undefined)
       ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
       : {}),

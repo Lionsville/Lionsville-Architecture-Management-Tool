@@ -18,7 +18,7 @@ import { useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
 import { useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
-import { isLookingAway, useShownDays } from './useShownDays';
+import { isLookingAway, useCarriedDay, useShownDays } from './useShownDays';
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useLayoutActions } from './useLayoutActions';
@@ -108,7 +108,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
       sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}
     >
       <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} />
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      {/* A look is a state of the window: nothing else about the board may read as the live one (decision 4). */}
+      <Box data-look-edge={parts.looking ? '' : undefined} data-testid="look-edge" sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {!readOnly && docks.palette && <PaletteDock parts={parts} diagram={activeDiagram} />}
         {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} />}
         {docks.inspector && <InspectorDock parts={parts} diagram={activeDiagram} />}
@@ -143,6 +144,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const ownDays = useShownDays(useCallback((id: string) => modelRef.current.diagrams.find((d) => d.id === id)?.asOf, []));
   const viewing = props.document.viewing ?? ownDays;
   const looking = isLookingAway(activeDiagram, viewing.days);
+  const cameFrom = useCarriedDay(activeDiagram, viewing);
   const writable = !(props.editing.readOnly ?? false);
   // A look is read-only (ADR-0027, amended): everything that draws from `readOnly`
   // puts its edits away, and what takes the day it is looking at reads `writable`.
@@ -174,7 +176,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const dialogs = useEditorDialogs();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
   const parts: EditorParts = {
-    props, state, readOnly, writable, looking, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
+    props, state, readOnly, writable, looking, cameFrom, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
     capturing: capture.capturing, ...session,
   };
   useEditorHandle({

@@ -8,6 +8,7 @@
  * accent, and the band, the frame and the address are the screen's.
  */
 import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -21,13 +22,15 @@ export type DayGroup = {
   days: readonly { day: string; label: string }[]
 }
 
-export function DayControl({ day, groups = [], onChange, outsideData, 'data-guide': guide }: {
+export function DayControl({ day, groups = [], onChange, outsideData, note, 'data-guide': guide }: {
   /** The day looked at or saved on; nothing for today. */
   day: string | undefined
   groups?: readonly DayGroup[]
   onChange: (day: string | undefined) => void
   /** The day is past every date this view holds, which a person should not have to work out. */
   outsideData?: boolean
+  /** Said where a day is typed: what a day is and is not, which only the screen knows. */
+  note?: ReactNode
   'data-guide'?: string
 }) {
   const { t, language } = useStrings()
@@ -67,6 +70,7 @@ export function DayControl({ day, groups = [], onChange, outsideData, 'data-guid
         slotProps={{ paper: { className: 'kit-day__chooser' } }}
       >
         <form onSubmit={(event) => { event.preventDefault(); show() }}>
+          {note && <p className="kit-day__note">{note}</p>}
           <label className="kit-day__label">
             {t('kit.day.field')}
             <input

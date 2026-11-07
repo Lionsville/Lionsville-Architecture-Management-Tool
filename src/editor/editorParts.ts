@@ -28,6 +28,8 @@ export interface EditorParts {
   writable: boolean;
   /** Looking at the board on a day that is not its own (ADR-0027, amended). */
   looking: boolean;
+  /** The board a container diagram was opened from, where it was opened from one. */
+  cameFrom?: string;
   view: ViewSettings;
   board: BoardView;
   layout: LayoutActions;

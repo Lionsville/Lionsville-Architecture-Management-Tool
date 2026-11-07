@@ -76,11 +76,11 @@ describe('the organisation chart and the Conway map in the strip', () => {
 
   it('keeps the day control when laid out, where a sheet keeps none', () => {
     renderToolbar({ activeDiagram: chart, laidOut: true, dated: isDated('chart'), onOpenChart: vi.fn() });
-    expect(screen.getByLabelText('Showing')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Day' })).toBeTruthy();
     expect(screen.queryByLabelText(/Minimap/i)).toBeNull();
     cleanup();
     renderToolbar({ activeDiagram: sheet, laidOut: true, dated: isDated('sheet') });
-    expect(screen.queryByLabelText('Showing')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Day' })).toBeNull();
   });
 
   it('says which kinds are drawn on a day', () => {

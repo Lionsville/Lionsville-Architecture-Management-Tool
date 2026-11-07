@@ -38,6 +38,8 @@ export type BootLanding = {
   initialFinding?: string
   /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  /** The look the address named, taken up by the workspace once it is there. */
+  initialLook?: { view?: string; day: string }
   /**
    * What to say once the app is up, where the address did not land where it
    * pointed: a page this app has no such thing as, or a view or record that
@@ -175,7 +177,10 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     // A link's element, selected and marked on the view it opens (ADR-0033,
     // amended 11 October 2026): on arrival only, where the view draws it.
     const select = near.select === undefined ? undefined : initialPageFor({ ...near, id: view })
-    return { initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...gone }
+    return {
+      initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...gone,
+      ...(near.day !== undefined ? { initialLook: { view, day: near.day } } : {}),
+    }
   }
   const opened = initialPageFor(near)
   return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}), ...gone }

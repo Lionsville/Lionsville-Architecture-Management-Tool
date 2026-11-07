@@ -78,6 +78,11 @@ export type FrameState = {
   readonly listOf?: Page
   /** The finding a band is carrying to where it is fixed, and which home's Checks it came from (`FindingBand`). */
   readonly finding?: FindingWalk
+  /** The view looked at on another day, and the day, as the screen says it: what the address carries (`Destination.day`). */
+  readonly lookOf?: string
+  readonly lookDay?: string
+  /** A look an address or an agent asked for, which the workspace takes up once it is there. */
+  readonly asksLook?: { readonly view?: string; readonly day: string }
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
   /** ⌘\: the tree docked on every screen, by this person's choice. */

@@ -54,89 +54,79 @@ function renderEditor(document: DesignModel, overrides: Partial<HostedEditorProp
 }
 
 // `hidden`: an open popover hides the bar under it from the accessibility tree.
-const control = () => screen.getByRole('button', { name: 'Showing', hidden: true });
+const control = () => screen.getByRole('button', { name: /^Day/, hidden: true });
 const dateField = () => document.querySelector('input[type="date"]') as HTMLInputElement;
 const asOfWrites = (host: { current: EditorHostState }) => host.current.commands.filter(
   (command) => command.type === 'diagram.update' && 'asOf' in command.patch,
 );
+const look = (value: string) => {
+  fireEvent.click(control());
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Choose a day…' }));
+  act(() => { fireEvent.change(dateField(), { target: { value } }); });
+  fireEvent.click(screen.getByRole('button', { name: 'Show this day' }));
+};
 
 describe('the date control', () => {
   it('looks at another day without sending the host anything', () => {
     const host = renderEditor(model());
-    fireEvent.click(control());
-    act(() => { fireEvent.change(dateField(), { target: { value: '2028-01-01' } }); });
-    act(() => { fireEvent.change(dateField(), { target: { value: '2028-02-01' } }); });
-
+    look('2028-01-01');
+    look('2028-02-01');
     expect(asOfWrites(host)).toEqual([]);
     expect(host.current.model.diagrams[0]?.asOf).toBeUndefined();
     expect(control().textContent).toContain(day('2028-02-01'));
-    expect(control().getAttribute('data-looking')).toBe('true');
-    expect(screen.getByText('Only you see this day. Nothing is saved until you save it.')).toBeDefined();
   });
 
-  it('saves the day on screen onto the board as one command, and stops looking', () => {
-    const host = renderEditor(model());
+  it('says what a day is and is not, where it is typed', () => {
+    renderEditor(model());
     fireEvent.click(control());
-    act(() => { fireEvent.change(dateField(), { target: { value: '2028-01-01' } }); });
-    fireEvent.click(screen.getByRole('button', { name: `Save ${day('2028-01-01')} as this board’s day` }));
-
-    expect(asOfWrites(host)).toHaveLength(1);
-    expect(host.current.model.diagrams[0]?.asOf).toBe('2028-01-01');
-    expect(control().textContent).toContain(day('2028-01-01'));
-    expect(control().getAttribute('data-looking')).toBeNull();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Choose a day…' }));
+    expect(screen.getByText(/Drawn from today’s model using its dates/)).toBeTruthy();
   });
 
-  it('opens a dated board on its day, and saves today over it as a clear', () => {
+  it('offers the days worth looking at', () => {
+    renderEditor({ ...model(), elements: [{ id: 'e', kind: 'application', name: 'Yard', lifecycle: 'planned', isManaged: true, aspects: {}, lifecycleDates: { live: '2031-03-01' } }] } as DesignModel);
+    fireEvent.click(control());
+    fireEvent.click(screen.getByText(`Yard goes live · ${day('2031-03-01')}`));
+    expect(control().textContent).toContain(day('2031-03-01'));
+  });
+
+  it('opens a dated board on its day, says so on its tab, and today is a look like any other', () => {
     const host = renderEditor(model({ asOf: '2027-06-01' }));
     expect(control().textContent).toContain(day('2027-06-01'));
-    expect(control().getAttribute('data-looking')).toBeNull();
-
+    expect(document.querySelector('[data-look-edge]')).toBeNull();
     fireEvent.click(control());
-    fireEvent.click(screen.getByRole('button', { name: 'Show today' }));
-    expect(control().textContent).toContain('Today');
-    expect(control().getAttribute('data-looking')).toBe('true');
+    fireEvent.click(screen.getByText('Today'));
+    expect(control().textContent).toBe('Day');
+    expect(document.querySelector('[data-look-edge]')).not.toBeNull();
     expect(asOfWrites(host)).toEqual([]);
-
-    fireEvent.click(control());
-    fireEvent.click(screen.getByRole('button', { name: 'Save: this board shows today' }));
-    const [cleared] = asOfWrites(host);
-    expect(cleared).toMatchObject({ type: 'diagram.update', id: 'd1' });
-    expect(cleared && 'patch' in cleared && 'asOf' in cleared.patch).toBe(true);
-    expect(host.current.model.diagrams[0]?.asOf).toBeUndefined();
   });
 
-  it('goes back to the board\'s own day, and forgets the look', () => {
+  it('forgets the look on arriving at the board\'s own day', () => {
     renderEditor(model({ asOf: '2027-06-01' }));
-    fireEvent.click(control());
-    act(() => { fireEvent.change(dateField(), { target: { value: '2029-01-01' } }); });
-    fireEvent.click(screen.getByRole('button', { name: `Back to ${day('2027-06-01')}` }));
-    expect(control().textContent).toContain(day('2027-06-01'));
-    expect(control().getAttribute('data-looking')).toBeNull();
+    look('2029-01-01');
+    expect(document.querySelector('[data-look-edge]')).not.toBeNull();
+    look('2027-06-01');
+    expect(document.querySelector('[data-look-edge]')).toBeNull();
   });
 
-  it('puts edits away while looking, and one press back brings them back; a view saved on its day stays editable (ADR-0027, amended)', () => {
+  it('puts edits away while looking and draws the edge; a view saved on its day stays editable (ADR-0027, amended)', () => {
     renderEditor(model({ asOf: '2027-01-01' }));
     // On the board's own day it is an ordinary board.
     expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
-    fireEvent.click(control());
-    fireEvent.change(dateField(), { target: { value: '2028-03-01' } });
+    look('2028-03-01');
     expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).toBeNull();
-    // *Save* and undo are about the look, and stay.
-    expect(screen.getByRole('button', { name: new RegExp(`Save ${day('2028-03-01')}`), hidden: true })).toBeTruthy();
-    expect(screen.queryAllByRole('button', { name: /undo/i, hidden: true }).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(`Back to ${day('2027-01-01')}`), hidden: true }));
+    expect(document.querySelector('[data-look-edge]')).not.toBeNull();
+    look('2027-01-01');
     expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
   });
 
-  it('lets a reader look, and offers a reader no save', () => {
+  it('lets a reader look', () => {
     const host = renderEditor(model(), { readOnly: true });
-    fireEvent.click(control());
-    act(() => { fireEvent.change(dateField(), { target: { value: '2028-01-01' } }); });
+    look('2028-01-01');
     expect(control().textContent).toContain(day('2028-01-01'));
-    expect(screen.queryByRole('button', { name: /^Save/ })).toBeNull();
     expect(asOfWrites(host)).toEqual([]);
   });
 });

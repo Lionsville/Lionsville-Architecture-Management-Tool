@@ -15,7 +15,7 @@
  * that lands on the board's own day forgets itself, so "am I looking away?"
  * is one comparison and never a stale entry.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /** One board's look: `day` absent = today. */
 export type ShownDay = { day?: string };
@@ -64,6 +64,30 @@ export function dayShown(
   today: string,
 ): string {
   return (diagram ? shownAsOf(diagram, days) : undefined) ?? today;
+}
+
+/**
+ * Going into an application's containers from a board, the day goes along and
+ * Back returns there (ADR-0027, amended): a container diagram opened from a board
+ * on 1 Sep 2027 is that landscape's, not today's, and the board a person came from
+ * is the one to go back to, not the first one that places it. Answers that board.
+ */
+export function useCarriedDay(
+  active: { id: string; kind: string; asOf?: string } | undefined,
+  viewing: ShownDays,
+): string | undefined {
+  const last = useRef(active);
+  const [cameFrom, setCameFrom] = useState<Readonly<Record<string, string>>>({});
+  useEffect(() => {
+    const was = last.current;
+    last.current = active;
+    if (!was || !active || was.id === active.id || was.kind !== 'layer7' || active.kind !== 'container') return;
+    setCameFrom((held) => ({ ...held, [active.id]: was.id }));
+    const day = shownAsOf(was, viewing.days);
+    if (day) viewing.show(active.id, day);
+    else viewing.forget(active.id);
+  }, [active, viewing]);
+  return active ? cameFrom[active.id] : undefined;
 }
 
 /**

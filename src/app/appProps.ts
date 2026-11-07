@@ -76,6 +76,8 @@ export type AppBoot = {
   initialFinding?: string
   /** One of the frame's own places the address named (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
+  /** The look the address named: a view on a day. */
+  initialLook?: { view?: string; day: string }
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
   /**

@@ -8,10 +8,10 @@
  * place is not a new idea: it is what `app.current` says (ADR-0019's
  * {@link Screen}), written in the three words `app.open` takes — a scope, a
  * page and an id, a {@link Destination}. Nothing else is part of one: not the
- * element selected on a board, not the day a board is looked at on
- * (ADR-0027), not a dialog, a filter or a scroll position. A place that held
- * any of those would make every look at another day a step, and a Back that
- * walked through them would be useless.
+ * element selected on a board, not a dialog, a filter or a scroll position. The
+ * day a view is looked at (ADR-0027, amended) is said in the address, so a link
+ * lands on the same look with the same band, and a change of it replaces the
+ * entry: a Back that walked through every day looked at would be useless.
  *
  * **The address.** A place is written into the address's fragment, so a
  * reload in a browser lands where the person was, and the fragment never
@@ -91,7 +91,7 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel', 'finding'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel', 'finding', 'day'])
 
 /**
  * What a list says about itself in the address (`widgets/kit/listView.ts`):
@@ -102,7 +102,7 @@ const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel', 'finding'
 const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'sort' || key === 'cols' || key.startsWith('f.')
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel', 'finding'])
+const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel', 'finding', 'day'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -125,6 +125,7 @@ export function writePlace(place: Place): string {
   if (place.select !== undefined) query.set('select', place.select)
   if (place.panel !== undefined) query.set('panel', place.panel)
   if (place.finding !== undefined) query.set('finding', place.finding)
+  if (place.day !== undefined) query.set('day', place.day)
   const rest = [query.toString(), place.list ?? ''].filter(Boolean).join('&')
   return `#${PLACE_PATH_PREFIX}${path.join('/')}${rest === '' ? '' : `?${rest}`}`
 }
@@ -188,7 +189,7 @@ function readPath(text: string): Place | undefined {
   // and on the path at once, is not a place.
   if (said.id !== undefined && page !== undefined) return undefined
   const scope = scopeParts.join('/')
-  const place = placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel)
+  const place = placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel, said.day)
   if (!place) return undefined
   return { ...place, ...(list !== '' ? { list } : {}), ...(said.finding !== undefined ? { finding: said.finding } : {}) }
 }
@@ -198,11 +199,11 @@ function readQueryForm(text: string): Place | undefined {
   const said = queryOf(new URLSearchParams(text), KEYS)
   if (said === undefined || said.scope === undefined) return undefined
   if (said.page !== undefined && !isPage(said.page)) return undefined
-  return placeFrom(said.scope, said.page, said.id, said.tab, said.select, said.panel)
+  return placeFrom(said.scope, said.page, said.id, said.tab, said.select, said.panel, said.day)
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel' | 'finding', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel' | 'finding' | 'day', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -211,15 +212,21 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
   return out
 }
 
-function placeFrom(scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string): Place | undefined {
+function placeFrom(scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string, day?: string): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
   if (tab !== undefined && !(page === undefined ? anyPageHasTab(tab) : isPageTab(page, tab))) return undefined
   if (panel !== undefined && !isFramePanel(panel)) return undefined
+  if (day !== undefined && !(isLookDay(day) && page !== undefined && VIEW_PAGES.includes(page))) return undefined
   return {
-    scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}),
+    scope, ...(day !== undefined ? { day } : {}), ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}),
     ...(panel !== undefined ? { panel } : {}),
     ...(select !== undefined && select !== '' ? { select } : {}),
   }
+}
+
+/** A day a look may be on: a date, or today where a view is saved on another. */
+export function isLookDay(day: unknown): day is string {
+  return typeof day === 'string' && (day === 'today' || /^\d{4}-\d{2}-\d{2}$/.test(day))
 }
 
 /** Every segment as it was written, or nothing where one is not an escape the browser would make. */
@@ -262,7 +269,7 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
-  const { scope, page, id, tab, panel, list, finding } = held as Record<string, unknown>
+  const { scope, page, id, tab, panel, list, finding, day } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
   if (id !== undefined && typeof id !== 'string') return undefined
@@ -272,6 +279,7 @@ export function placeInState(state: unknown): Place | undefined {
     ...(isFramePanel(panel) ? { panel } : {}),
     ...(typeof list === 'string' && list !== '' ? { list } : {}),
     ...(typeof finding === 'string' && finding !== '' ? { finding } : {}),
+    ...(isLookDay(day) && typeof page === 'string' && isPage(page) && VIEW_PAGES.includes(page) ? { day } : {}),
   }
 }
 
@@ -296,7 +304,7 @@ export function placeOf(screen: Screen): Place | undefined {
       }
     }
     const view = screen.open.view
-    return view ? { scope, page: viewPage(diagramKind(view.kind)), id: view.id, ...beside } : undefined
+    return view ? { scope, page: viewPage(diagramKind(view.kind)), id: view.id, ...(view.day !== undefined ? { day: view.day } : {}), ...beside } : undefined
   }
   if (screen.home) {
     const up = screen.page
@@ -314,7 +322,7 @@ export function placeOf(screen: Screen): Place | undefined {
 /** The same place: the same scope, page, id, tab, panel, list and finding carried. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel && a.list === b.list && a.finding === b.finding
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel && a.list === b.list && a.finding === b.finding && a.day === b.day
 }
 
 /** The pages where moving from one record to the next is choosing, not going somewhere. */

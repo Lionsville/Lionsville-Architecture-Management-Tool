@@ -3523,6 +3523,7 @@ const SPECS = [
           enum: [...new Set(Object.values(PAGE_TABS).flat())],
         },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },
+        day: { type: 'string', description: 'A day to look at a view on, yyyy-mm-dd, or today for a view saved on another: the person\'s window only, read-only while it lasts, and nothing is written.' },
       },
       additionalProperties: false,
     },

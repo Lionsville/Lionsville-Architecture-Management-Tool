@@ -39,11 +39,13 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { AspectConfigEntry, DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { aspectConfigFor, badgeLegend } from '../model/aspects';
 import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { useStrings } from '../i18n/LanguageContext';
+import { DayControl } from '../widgets/kit/DayControl';
 import { formatDay } from '../i18n/dates';
+import { daysWorthLooking } from './daysWorthLooking';
 import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
 /**
@@ -65,6 +67,8 @@ export interface EditorToolbarProps {
    * undo, stays.
    */
   looking?: boolean;
+  /** The board this container diagram was opened from: where its way back goes. */
+  cameFrom?: string;
   busy?: LayoutAction;
   onActiveDiagramChange(diagramId: string): void;
   onCreateLayer7Diagram(): void;
@@ -176,14 +180,13 @@ export interface EditorToolbarProps {
    * than by copying the project.
    *
    * Moving it is looking, not writing (ADR-0027): `onAsOfChange` changes what
-   * this window shows and nothing else. `savedAsOf` is the day the board is
-   * saved as, and `onSaveAsOf` makes the day on screen that — absent, the
-   * control only looks, which is what a reader gets.
+   * this window shows and nothing else. Making it the board's day is the
+   * band's, which is up while the look is.
    */
   asOf?: string;
-  savedAsOf?: string;
   onAsOfChange(day: string | undefined): void;
-  onSaveAsOf?(): void;
+  /** `yyyy-mm-dd`, what the days worth looking at are counted from. */
+  today?: string;
   /** In-memory undo/redo (U7); buttons hidden under readOnly, gated on stack depth. */
   onUndo(): void;
   onRedo(): void;
@@ -411,6 +414,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             model={props.model}
             activeDiagram={props.activeDiagram}
             onActiveDiagramChange={props.onActiveDiagramChange}
+            cameFrom={props.cameFrom}
             onMenu={hasTabMenu ? openTabMenuBelow : undefined}
           />
           <ContextMenu
@@ -642,7 +646,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         </span>
       </Tooltip>
       </>)}
-      {(!props.laidOut || props.dated) && <DayControl props={props} />}
+      {(!props.laidOut || props.dated) && <ViewDay props={props} />}
       {!props.laidOut && (<>
       <Tooltip title={t('toolbar.lifecycleTip')}>
         <IconButton
@@ -733,17 +737,27 @@ export function EditorToolbar(props: EditorToolbarProps) {
  *
  * Visible in read-only too: which language you read a board in is not a mutation.
  */
+const DAY_PHASE = { live: 'toolbar.dayLive', retiring: 'toolbar.dayRetiring', retired: 'toolbar.dayRetired' } as const;
+
 /**
- * The day the view is drawn on, and saving it onto the view (ADR-0027): a
- * board's, and a laid-out view's that is drawn on a day.
+ * The day the view is drawn on (ADR-0027): a board's, and a laid-out view's that
+ * is drawn on a day. Today says nothing; the days worth looking at come first and
+ * a typed one is one step on.
  */
-function DayControl({ props }: { props: EditorToolbarProps }) {
+function ViewDay({ props }: { props: EditorToolbarProps }) {
+  const { t } = useStrings();
+  const days = useMemo(() => daysWorthLooking(props.model, props.today ?? '', {
+    plan: (plan, milestone) => t('toolbar.dayPlan', { plan, milestone }),
+    phase: (phase, name) => t(DAY_PHASE[phase], { name }),
+    board: (name) => t('toolbar.dayBoard', { name }),
+  }), [props.model, props.today, t]);
   return (
-    <AsOfControl
-      asOf={props.asOf}
-      savedAsOf={props.savedAsOf}
+    <DayControl
+      day={props.asOf}
+      groups={days.length > 0 ? [{ heading: t('toolbar.dayHere'), days }] : []}
       onChange={props.onAsOfChange}
-      onSave={props.readOnly ? undefined : props.onSaveAsOf}
+      note={t('toolbar.dayNote')}
+      data-guide="board.day"
     />
   );
 }
@@ -1006,7 +1020,7 @@ function TabLabel({
    */
   onContainerMenu?(event: React.MouseEvent, diagramId: string): void;
 }) {
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const placed = new Set(placedNodes(diagram).map((p) => p.id));
   const containers = model.diagrams.filter(
@@ -1028,6 +1042,7 @@ function TabLabel({
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       <span>{diagram.name}</span>
+      {diagram.asOf && <span className="editor-tab__day">{formatDay(diagram.asOf, language)}</span>}
       {containers.length > 0 && (
         <>
           <Tooltip title={t('toolbar.containerDiagrams')}>
@@ -1101,11 +1116,13 @@ function Breadcrumb({
   model,
   activeDiagram,
   onActiveDiagramChange,
+  cameFrom,
   onMenu,
 }: {
   model: DesignModel;
   activeDiagram: DesignDiagram;
   onActiveDiagramChange(diagramId: string): void;
+  cameFrom: string | undefined;
   /**
    * This view's own menu — rename, settings, delete — under a chevron after
    * its name, because a container diagram has no tab to right-click. Absent
@@ -1115,10 +1132,10 @@ function Breadcrumb({
 }) {
   const { t } = useStrings();
   const application = model.elements.find((e) => e.id === activeDiagram.applicationElementId);
-  // Back target: the layer7 diagram where this application is placed,
-  // falling back to the first layer7 diagram.
+  // Back target: the board this was opened from; else the layer7 diagram where
+  // this application is placed, falling back to the first layer7 diagram.
   const parent =
-    model.diagrams.find(
+    model.diagrams.find((d) => d.id === cameFrom) ?? model.diagrams.find(
       (d) =>
         d.kind === 'layer7' &&
         placedNodes(d).some((p) => p.id === activeDiagram.applicationElementId),
@@ -1169,125 +1186,6 @@ function Breadcrumb({
         </Tooltip>
       )}
     </Box>
-  );
-}
-
-/**
- * What day the board shows (ADR-0009), and whether that is the board's day or
- * only this window's (ADR-0027).
- *
- * A button that reads "Today" until somebody names a day, and reads the day —
- * highlighted — once they have. The highlight is the point: a board showing
- * 2028 looks exactly like a board showing now, and a person who has forgotten
- * they set a date will otherwise read a future landscape as the present one.
- * A day that is only being looked at wears a dashed outline on top of that,
- * because it is also the one thing on the bar that nobody else sees.
- *
- * Picking a day looks; it writes nothing, so it is offered to a reader too.
- * *Save* is the write: it makes the day on screen the one the board opens on
- * for everybody, and "today" is a day it can save as well — that is how a
- * board somebody dated goes back to following the calendar.
- *
- * Clearing is a first-class action rather than emptying the field, because
- * "no date" and "an unfinished date" are different things and a date input
- * cannot tell you which one it is holding.
- */
-function AsOfControl(
-  { asOf, savedAsOf, onChange, onSave }: {
-    asOf?: string
-    savedAsOf?: string
-    onChange(day: string | undefined): void
-    onSave?(): void
-  },
-) {
-  const { t, language } = useStrings();
-  const theme = useTheme();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const dated = Boolean(asOf);
-  const looking = asOf !== savedAsOf;
-  // A day as the rest of the screen says one (`formatDay`); the date input
-  // below is the one place the stored shape is shown, because it is the
-  // browser's own control.
-  const day = (value: string) => formatDay(value, language);
-  const tip = looking
-    ? t('toolbar.asOfLooking', {
-      date: asOf ? day(asOf) : t('toolbar.asOfToday'),
-      saved: savedAsOf ? day(savedAsOf) : t('toolbar.asOfToday'),
-    })
-    : dated ? t('toolbar.asOfSet', { date: asOf ? day(asOf) : '' }) : t('toolbar.asOfTodayTip');
-  return (
-    <>
-      <Tooltip title={tip}>
-        <Button
-          size="small"
-          aria-label={t('toolbar.asOf')}
-          data-looking={looking ? 'true' : undefined}
-          onClick={(e) => setAnchor(e.currentTarget)}
-          startIcon={<AsOfIcon />}
-          sx={{
-            minWidth: 0,
-            textTransform: 'none',
-            fontSize: 12,
-            fontWeight: dated ? 700 : 500,
-            color: dated || looking ? 'primary.main' : 'text.secondary',
-            backgroundColor: dated ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
-            outline: looking ? `1px dashed ${theme.palette.primary.main}` : 'none',
-            outlineOffset: -1,
-          }}
-        >
-          {asOf ? day(asOf) : t('toolbar.asOfToday')}
-        </Button>
-      </Tooltip>
-      <Popover
-        open={Boolean(anchor)}
-        anchorEl={anchor}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 240 }}>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {t('toolbar.asOfHelp')}
-          </Typography>
-          <TextField
-            type="date"
-            size="small"
-            autoFocus
-            label={t('toolbar.asOf')}
-            value={asOf ?? ''}
-            onChange={(e) => onChange(e.target.value || undefined)}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <Button
-            size="small"
-            disabled={!dated}
-            onClick={() => { onChange(undefined); setAnchor(null); }}
-          >
-            {t('toolbar.asOfClear')}
-          </Button>
-          {looking && savedAsOf && (
-            <Button size="small" onClick={() => { onChange(savedAsOf); setAnchor(null); }}>
-              {t('toolbar.asOfBack', { date: day(savedAsOf) })}
-            </Button>
-          )}
-          {looking && (
-            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-              {t('toolbar.asOfOnlyHere')}
-            </Typography>
-          )}
-          {onSave && (
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={!looking}
-              onClick={() => { onSave(); setAnchor(null); }}
-            >
-              {dated ? t('toolbar.asOfSave', { date: asOf ? day(asOf) : '' }) : t('toolbar.asOfSaveToday')}
-            </Button>
-          )}
-        </Box>
-      </Popover>
-    </>
   );
 }
 

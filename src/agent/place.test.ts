@@ -369,3 +369,30 @@ describe('a finding carried in the address', () => {
   })
 })
 
+describe('a look in the address (ADR-0027, amended)', () => {
+  it('is written and read back on a view, a date or today', () => {
+    for (const day of ['2027-06-01', 'today']) {
+      const place = { scope: 'acme', page: 'board', id: 'd1', day } as const
+      expect(writePlace(place)).toBe(`#/acme/-/board/d1?day=${day}`)
+      expect(readPlace(writePlace(place))).toEqual(place)
+    }
+  })
+
+  it('is refused anywhere but a view, and in any other shape', () => {
+    expect(readPlace('#/acme/-/decisions?day=2027-06-01')).toBeUndefined()
+    expect(readPlace('#/acme/-/board/d1?day=soon')).toBeUndefined()
+  })
+
+  it('tells two places apart, and moving it replaces the entry: Back does not walk through every day looked at', () => {
+    const on = { scope: 'acme', page: 'board', id: 'd1' } as const
+    const looked = { ...on, day: '2027-06-01' }
+    expect(samePlace(on, looked)).toBe(false)
+    expect(stepBetween(on, looked)).toBe('replace')
+    expect(stepBetween(looked, { ...on, day: '2028-01-01' })).toBe('replace')
+  })
+
+  it('comes off the screen a view says', () => {
+    expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'd1', name: 'B', kind: 'layer7', day: '2027-06-01' } } }))
+      .toEqual({ scope: 'acme', page: 'board', id: 'd1', day: '2027-06-01' })
+  })
+})
