@@ -178,6 +178,11 @@ describe('an agent citing', () => {
     expect(citationList(write('observation.update', { id: 'ob-1', title: 'Other', principles: [{ id: 'pr-a' }] }).after)[0]).toMatchObject({ stance: 'holds' })
   })
 
+  it('cites with nothing else to change', () => {
+    expect(citationList(write('decision.update', { id: 'adr-1', principles: [{ id: 'pr-a' }] }).after)).toHaveLength(1)
+    expect(citationList(write('observation.update', { id: 'ob-1', principles: [{ id: 'pr-a' }] }).after)).toHaveLength(1)
+  })
+
   it('asks what the principle says, before the step: fixed, retired, gone, not here', () => {
     expect(refusal('decision.propose', { title: 'X', principles: [{ id: 'pr-acc', stance: 'deviates', reason: 'Why' }] })).toBe('agent.badArguments')
     expect(refusal('decision.propose', { title: 'X', principles: [{ id: 'pr-a', stance: 'deviates' }] })).toBe('agent.badArguments')

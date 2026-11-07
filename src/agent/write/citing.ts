@@ -15,7 +15,7 @@
 import type { Citation, CitationStance } from '../../model/citable'
 import type { Command } from '../../model/commands'
 import { transaction } from '../../model/commands'
-import { citationsOf, principlesOf } from '../../model/normalised'
+import { citationsOf, decisionsOf, observationsOf, principlesOf } from '../../model/normalised'
 import type { Principle } from '../../model/principle'
 import { citationRefusal } from '../../principles/principle'
 import type { CitingKind } from '../../principles/principle'
@@ -93,17 +93,25 @@ export const unciteCitation: Handler = (args, view) => {
  */
 export function citing(kind: 'decision' | 'observation', handler: Handler): Handler {
   return (args, view) => {
-    const built = handler(args, view)
     const asked = args.principles as (Omit<Asked, 'stance'> & { stance?: CitationStance })[] | undefined
-    if (!asked?.length || 'ok' in built) return built
-    const id = (args.id as string | undefined) ?? idOf(built)
+    // Citing and nothing else is a change of its own, where the tool would find nothing to change.
+    const only = asked?.length && args.id !== undefined && Object.keys(args).every((key) => key === 'id' || key === 'principles')
+    const held = kind === 'decision' ? decisionsOf(view.model) : observationsOf(view.model)
+    if (only && !held[args.id as string]) return refused('agent.unknownId', `${kind} ${args.id as string}`)
+    const built = only ? undefined : handler(args, view)
+    if (built && (!asked?.length || 'ok' in built)) return built
+    const id = (args.id as string | undefined) ?? idOf(built!)
     const adds: Command[] = []
-    for (const [at, one] of asked.entries()) {
+    for (const [at, one] of (asked ?? []).entries()) {
       const made = citationOf(view, { kind, id }, { ...one, stance: one.stance ?? (kind === 'decision' ? 'supports' : 'holds') })
       if ('ok' in made) return made.ok ? made : { ...made, detail: `principles[${at}]: ${made.detail ?? ''}` }
       adds.push({ type: 'citation.add', citation: made })
     }
-    return { ...built, command: transaction([built.command, ...adds], { origin: 'agent' }), answer: alsoCited(built, adds) }
+    return {
+      ...built,
+      command: transaction([...(built ? [built.command] : []), ...adds], { origin: 'agent' }),
+      answer: built ? alsoCited(built, adds) : json({ id, cited: citedIn(adds) }),
+    }
   }
 }
 
@@ -115,5 +123,9 @@ function idOf(built: Prepared): string {
 function alsoCited(built: Prepared, adds: readonly Command[]): AgentAnswer {
   const first = built.answer.ok ? built.answer.content[0] : undefined
   const said = first?.type === 'text' ? JSON.parse(first.text) as Record<string, unknown> : {}
-  return json({ ...said, cited: adds.flatMap((one) => (one.type === 'citation.add' ? [one.citation.id] : [])) })
+  return json({ ...said, cited: citedIn(adds) })
+}
+
+function citedIn(adds: readonly Command[]): string[] {
+  return adds.flatMap((one) => (one.type === 'citation.add' ? [one.citation.id] : []))
 }
