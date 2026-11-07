@@ -76,7 +76,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const { lookAgain } = agent
   const tabs = useMemo(() => ({
     tab: state.tabOf === page ? state.tab : undefined,
-    choose: (tab: string) => { frame.set({ tab, tabOf: page }); lookAgain() },
+    choose: (tab: string, of?: string) => { frame.set({ tab, tabOf: (of as Page | undefined) ?? page }); lookAgain() },
     record: state.record,
     recordOf: state.recordOf,
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },

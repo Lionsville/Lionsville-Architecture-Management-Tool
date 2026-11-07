@@ -17,7 +17,8 @@ export type PlaceTo = { readonly scope: string; readonly page?: string; readonly
 
 export type PlaceTabs = {
   readonly tab: string | undefined
-  readonly choose: (tab: string) => void
+  /** `of` is the page asking, where it says: a page arriving asks before the frame has looked again. */
+  readonly choose: (tab: string, of?: string) => void
   /** The record up, and the page it is of: said by the page, since a page arrives before the frame has looked again. */
   readonly record?: string | undefined
   readonly recordOf?: string | undefined
@@ -38,13 +39,13 @@ export const PlaceListContext = createContext<PlaceLists | undefined>(undefined)
 
 export const PlaceTabContext = createContext<PlaceTabs | undefined>(undefined)
 
-export function usePlaceTab(first: string): readonly [string, (tab: string) => void] {
+export function usePlaceTab(first: string, of?: string): readonly [string, (tab: string) => void] {
   const held = useContext(PlaceTabContext)
   const [own, setOwn] = useState(first)
   const choose = useCallback((tab: string) => {
     setOwn(tab)
-    held?.choose(tab)
-  }, [held])
+    held?.choose(tab, of)
+  }, [held, of])
   // In a frame the address is the truth: no tab said is the first, whatever was last pressed here.
   return [held ? held.tab ?? first : own, choose]
 }

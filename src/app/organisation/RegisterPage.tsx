@@ -303,7 +303,7 @@ function factsOf(tab: RegisterTab, row: Shown, words: RegisterWords, s: Translat
 export function RegisterPage(props: RegisterPageProps) {
   const { open, onClose, rows, technology, instances, scopes, index, today, language, scopeName, request, onOpen, onOpenPage, onLink, onReport, onSeeInChecks, onHome, s } = props
   const readOnly = props.readOnly ?? false
-  const [rawTab, setRawTab] = usePlaceTab('applications')
+  const [rawTab, setRawTab] = usePlaceTab('applications', 'register')
   const tab: RegisterTab = isRegisterTab(rawTab) ? rawTab : 'applications'
   const [view, setView] = usePlaceListView('register')
   const marking = useCheckMarking()
