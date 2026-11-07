@@ -20,7 +20,6 @@ import type { DocumentStatus } from '../../projects/documentSession'
 import type { ScopePath } from '../../projects/scopePath'
 import type { PaletteLine } from '../../search/ui/GlobalSearchDialog'
 import type { StackedBand } from '../../widgets/kit/Band'
-import type { PlaceReadingHeld } from '../../widgets/placeReading'
 import type { ActivityEntry, ActivityMenuProps } from '../ActivityMenu'
 
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */

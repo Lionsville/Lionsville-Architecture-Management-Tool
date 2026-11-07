@@ -22,7 +22,7 @@
  * **Overview.** Levels fold the whole chart, a caret one unit, and neither is
  * saved (`useChartFolds`). The canvas zooms as every canvas does (`useCanvasZoom`,
  * `CanvasDock`), and a focus draws one unit and what is under it, with one line
- * for the way up, in the address so an agent opens it too (`usePlaceReading`).
+ * for the way up, in the address so an agent opens it too (`useViewFacets`).
  * Going to a unit from anywhere unfolds the way to it and scrolls to it.
  *
  * **Lines.** One menu, in the address: none, the person picked's, every dotted
@@ -69,7 +69,7 @@ import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
 import { PageState } from '../../widgets/kit/PageState'
-import { usePlaceReading } from '../../widgets/placeReading'
+import { useViewFacets } from '../../widgets/placeTab'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
@@ -156,7 +156,7 @@ export function ChartPage(props: ChartPageProps) {
   const page = useRef<HTMLDivElement | null>(null)
   const stage = useRef<HTMLDivElement | null>(null)
   const zoom = useChartZoom(page, stage)
-  const [reading, setReading] = usePlaceReading(diagram.id)
+  const [reading, setReading] = useViewFacets(diagram.id)
   const focused = useMemo(() => focusedOn(chart, reading.focus), [chart, reading.focus])
   const lines = useChartLines(props, chart, day, folds, reading.lines)
   const going = useChartGoing(props, chart, folds, page, reading.focus, setReading)

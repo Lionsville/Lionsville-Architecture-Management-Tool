@@ -659,6 +659,8 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['a chart with a finding, a check unfolded', ['findings.group', 'findings.instance'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartWithAVacancy(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
+    // At rest the chart has the width; the line under it opens what it says as a whole.
+    fireEvent.click(await screen.findByTestId('chart-summary-line'))
     fireEvent.click(await within(await screen.findByTestId('chart-findings')).findByTestId('findings-group'))
   }],
   ['its finding, opened', ['findings.back', 'findings.action'], async () => {

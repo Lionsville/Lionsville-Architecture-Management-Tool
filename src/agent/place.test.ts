@@ -438,7 +438,6 @@ describe('how a sheet or a map is being read, in the address', () => {
     const screen = { open: { path: 'acme', name: 'Acme', view: { id: 's1', name: 'S', kind: 'sheet', tab: 'overview', colour: 'who' } } }
     expect(placeOf(screen)).toEqual({ scope: 'acme', page: 'sheet', id: 's1', tab: 'overview', colour: 'who' })
     expect(stepBetween({ scope: 'acme', page: 'sheet', id: 's1' }, { scope: 'acme', page: 'sheet', id: 's1', colour: 'who' })).toBe('replace')
-    })
   })
 })
 
