@@ -11,7 +11,7 @@
  * list a promise rather than a wish.
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from './testing/heldRepositories'
 import { laidOut } from '../model/testFixtures'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
@@ -22,6 +22,9 @@ import { EXAMPLES, exampleScopes } from './testing/examples'
 import { AlsoHere } from './frame/AppFrame'
 import { renderApp, renderShell } from './testing/renderShell'
 import { placePage, placePageNow } from './testing/placePage'
+import { translator } from '../i18n'
+import { DrawingView } from './DrawingView'
+import { NewViewDialog } from './NewViewDialog'
 
 configure({ asyncUtilTimeout: 5_000 })
 beforeAll(() => installReactFlowMocks())
@@ -355,6 +358,13 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.keyDown(card, { key: 'F10', shiftKey: true })
     const menu = await screen.findByRole('menu', { name: 'Element menu' })
     fireEvent.click(within(menu).getByRole('menuitem', { name: /Start connection to/ }))
+  }]],
+  [['an application with a container diagram under it', ['inspector.openContainer'], async () => {
+    await onBoard()
+    await selectCard('wms')
+  }], ['its container diagram', ['board.labels', 'board.deployment', 'board.levelUp', 'board.key'], async () => {
+    fireEvent.click(await screen.findByTestId('open-container'))
+    await screen.findByTestId('container-labels')
   }]],
   [['a landscape on its board, looked at on another day', ['board.day', 'board.look'], async () => {
     await onBoard()
@@ -697,14 +707,61 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }]],
 ]
 
+/** A drawing with its picture and one link, on its own page: the editor's frame is not the example's to give. */
+function drawingOnItsPage() {
+  const s = translator('en')
+  const xml = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<UserObject id="s" label="Billing" link="element:billing"><mxCell parent="1" vertex="1"><mxGeometry width="3" height="4" as="geometry"/></mxCell></UserObject>'
+    + '</root></mxGraphModel>'
+  const links = [{ shapeId: 's', elementId: 'billing', area: { x: 0, y: 0, width: 3, height: 4 } }]
+  const picture = { mediaType: 'image/svg+xml', bytes: new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>') }
+  renderShell(
+    <DrawingView
+      diagram={{ id: 'ctx', kind: 'drawing', name: 'Context', members: [], drawing: { xml, picture: 'sha256:aa', links } }}
+      scope="acme" images={{ bytesAt: () => Promise.resolve(picture), put: () => Promise.resolve({ contentAddress: 'sha256:aa' }) } as never}
+      elements={[{ id: 'billing', name: 'Billing' }]} origin={() => 'drawing://local'} dispatch={() => {}}
+      documents={{ save: () => Promise.resolve() } as never} diagnostics={{ report: () => {} }} notify={() => {}} s={s}
+    />,
+  )
+}
+
+/** What the drawing's editor says to the page, from the frame's own window. */
+function theEditorSays(data: unknown) {
+  const frame = screen.getByTestId('drawing-frame') as HTMLIFrameElement
+  const win = frame.contentWindow!
+  win.postMessage = (() => {}) as Window['postMessage']
+  act(() => { window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(data), source: win, origin: 'drawing://local' })) })
+}
+
+const DRAWN: readonly Screen[] = [
+  ['a drawing, read', ['drawing.bar', 'drawing.links', 'drawing.export', 'drawing.edit'], async () => {
+    drawingOnItsPage()
+    await screen.findByTestId('drawing-picture')
+  }],
+  ['an element a drawing points at', ['drawing.openPage'], async () => {
+    fireEvent.click(await screen.findByTestId('drawing-area-s'))
+  }],
+  ['a drawing, in its editor', ['drawing.editorBar', 'drawing.done', 'drawing.save', 'drawing.shapeStrip'], async () => {
+    fireEvent.click(screen.getByTestId('drawing-edit'))
+    theEditorSays({ event: 'init' })
+    theEditorSays({ event: 'lvSelection', shape: 's', element: 'billing' })
+  }],
+]
+
+const CHOSEN: readonly Screen[] = [
+  ['the choice of a new view', ['drawing.chooser'], async () => {
+    renderShell(<NewViewDialog open canDraw make={{}} onMakeDrawing={() => {}} onClose={() => {}} s={translator('en')} />)
+  }],
+]
+
 describe('the stable control names', { timeout: 20_000 }, () => {
   it('are each claimed by a screen below, and every one claimed is on the list', () => {
-    const claimed = new Set(JOURNEYS.flat().flatMap(([, names]) => names))
+    const claimed = new Set([...JOURNEYS, DRAWN, CHOSEN].flat().flatMap(([, names]) => names))
     claimed.add('shell.alsoHere')
     expect([...claimed].sort()).toEqual([...new Set(CONTROL_NAMES)].sort())
   })
 
-  it.each(JOURNEYS.map((journey) => [journey.map(([label]) => label).join(', then '), journey] as const))(
+  it.each([...JOURNEYS, DRAWN, CHOSEN].map((journey) => [journey.map(([label]) => label).join(', then '), journey] as const))(
     'are on %s', async (_label, journey) => {
       for (const [, names, reach] of journey) {
         await reach()

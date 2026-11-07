@@ -56,6 +56,8 @@ export const CONTROL_NAMES = [
   'board.keepLens',
   // The View bar over a board: its panels, and the Colour menu.
   'board.arrange', 'board.show', 'board.colour', 'board.day', 'board.look',
+  // A container diagram: what its lines say, where things run, its key, and the way back up and down.
+  'board.labels', 'board.deployment', 'board.levelUp', 'board.key', 'inspector.openContainer',
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // The register, and the technology register drawn by the same page.
