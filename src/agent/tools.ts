@@ -2319,7 +2319,7 @@ const SPECS = [
     inputSchema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'What was seen, as one neutral sentence: no cause and no fix in it.' },
+        title: { type: 'string', description: 'What was seen, in a few neutral words: no cause and no fix in it. Under 80 characters reads whole on the map; the rest belongs in body.' },
         body: { type: 'string', description: 'What was seen, the evidence, and who or what it affected, as markdown. Facts only: the reading of them is a cause.' },
         where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id. Required.' },
         by: personArgument('Who saw it, or who wrote it down. Required.'),

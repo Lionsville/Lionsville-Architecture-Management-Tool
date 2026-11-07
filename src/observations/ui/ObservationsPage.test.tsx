@@ -362,7 +362,7 @@ describe('the chain', () => {
     fireEvent.change(screen.getByTestId('editor-title'), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(onChange).not.toHaveBeenCalled()
-    expect(screen.getAllByText('Say what was seen, in one sentence.').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Say what was seen, in a few words.').length).toBeGreaterThan(0)
     fireEvent.change(screen.getByTestId('editor-title'), { target: { value: 'Back' } })
     fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
     expect(screen.getByTestId('editor-preview').textContent).toContain('Back')
@@ -511,7 +511,7 @@ describe('the ladder', () => {
     fireEvent.click(screen.getByTestId('observation-cause'))
     fireEvent.click(screen.getByTestId('ladder-add'))
     expect(onChange).not.toHaveBeenCalled()
-    expect(screen.getByText('Say why it happens, in one sentence.')).toBeTruthy()
+    expect(screen.getByText('Say why it happens, in a few words.')).toBeTruthy()
   })
 
   it('links an existing cause, offering only what the rules allow', () => {

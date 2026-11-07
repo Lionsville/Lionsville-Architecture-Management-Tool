@@ -93,7 +93,7 @@ describe('the new observation form', { timeout: 20_000 }, () => {
     fireEvent.click(screen.getByTestId('form-record'))
     expect(onChange).not.toHaveBeenCalled()
     expect(screen.getByTestId('form-problems').textContent).toBe('4 fields need filling in.')
-    expect(form().getByText('Say what was seen, in one sentence.')).toBeTruthy()
+    expect(form().getByText('Say what was seen, in a few words.')).toBeTruthy()
     expect(form().getByText('Say where it was seen.')).toBeTruthy()
     expect(form().getByText('Say who saw it.')).toBeTruthy()
     expect(form().getByText('Say who or what it affected.')).toBeTruthy()

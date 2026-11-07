@@ -131,7 +131,7 @@ export function WhyLadder(props: WhyLadderProps) {
           <>
             <TextField
               label={s('observation.ladderField')} value={title} onChange={(value) => { setTitle(value); setMissing(false) }}
-              hint={s('observation.causeTitleExample')} {...(missing ? { error: s('observation.causeTitleMissing') } : {})}
+              hint={s('observation.ladderExample')} {...(missing ? { error: s('observation.causeTitleMissing') } : {})}
               autoFocus data-testid="ladder-title"
               onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); add() } }}
             />
