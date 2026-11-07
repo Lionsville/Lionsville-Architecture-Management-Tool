@@ -42,7 +42,7 @@ export function PageBack({ onBack, label, children }: { onBack: () => void; labe
   return (
     <Tooltip title={label}>
       <IconButton size="small" aria-label={label} onClick={onBack} data-testid="page-back">
-        {children ?? <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>}
+        {children ?? <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>‹</Box>}
       </IconButton>
     </Tooltip>
   )

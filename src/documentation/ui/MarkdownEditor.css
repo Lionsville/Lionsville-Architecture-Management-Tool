@@ -17,8 +17,8 @@
    so that a press in the text never moves the text out from under the pointer. */
 .md-editor__heading { display: grid; flex: 1; min-width: 0; align-items: center; }
 .md-editor__heading > * { grid-area: 1 / 1; min-width: 0; }
-.md-editor__label { font-size: var(--t-sm); font-weight: var(--fw-strong); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.md-editor__label small { font-size: var(--t-xs); font-weight: var(--fw-regular); color: var(--ink-3); margin-left: var(--s-2); }
+.md-editor__label { font-size: var(--t-small); font-weight: var(--fw-strong); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-editor__label small { font-size: var(--t-small); font-weight: var(--fw-regular); color: var(--ink-3); margin-left: var(--s-2); }
 .md-editor[data-variant='field'][data-active='true'] .md-editor__label { visibility: hidden; }
 .md-editor[data-variant='field'][data-active='false'] .md-editor__tools { visibility: hidden; }
 
@@ -27,7 +27,7 @@
 .md-editor__tool {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
   width: 26px; height: 26px; padding: 0; border: 0; border-radius: var(--r-2);
-  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-sm); cursor: pointer;
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-body); cursor: pointer;
 }
 .md-editor__tool:hover { background: var(--surface-2); color: var(--ink); }
 .md-editor__tool:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
@@ -38,7 +38,7 @@
 .md-editor__switch { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
 .md-editor__switch button {
   display: inline-flex; align-items: center; gap: var(--s-1); height: 24px; padding: 0 var(--s-2); border: 0;
-  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-xs); cursor: pointer; white-space: nowrap;
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-small); cursor: pointer; white-space: nowrap;
 }
 .md-editor__switch button + button { border-left: 1px solid var(--line); }
 .md-editor__switch button:hover { background: var(--surface-2); }
@@ -59,7 +59,7 @@
 .md-editor[data-variant='pane'] .md-editor__preview { padding: var(--s-4); }
 .md-editor__body[data-view='preview'] > .md-editor__preview > * { margin-inline: auto; }
 .md-editor[data-variant='field'] .md-editor__preview {
-  border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); font-size: var(--t-sm); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); font-size: var(--t-body); background: var(--surface);
 }
 .md-editor__nothing { color: var(--ink-3); }
 
@@ -67,7 +67,7 @@
    address with no place to break breaks anyway rather than pushing it wider. */
 .md-editor__text {
   flex: 1; min-height: 0; width: 100%; box-sizing: border-box; display: block; resize: none; margin: 0; border: 0; outline: none;
-  background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--t-sm); line-height: 1.6; tab-size: 2;
+  background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--t-body); line-height: 1.6; tab-size: 2;
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .md-editor__text::placeholder { color: var(--ink-3); opacity: 1; }
@@ -82,24 +82,24 @@
 
 /* --- the foot --------------------------------------------------------------- */
 
-.md-editor__foot { display: flex; align-items: center; gap: var(--s-3); min-height: 22px; font-size: var(--t-xs); color: var(--ink-3); min-width: 0; }
+.md-editor__foot { display: flex; align-items: center; gap: var(--s-3); min-height: 22px; font-size: var(--t-small); color: var(--ink-3); min-width: 0; }
 .md-editor[data-variant='pane'] .md-editor__foot { padding: 2px var(--s-4); border-top: 1px solid var(--line); }
 .md-editor[data-variant='field'][data-active='false'] .md-editor__foot { visibility: hidden; }
 .md-editor__hint { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.md-editor__hint kbd, .md-editor__guide code { font-family: var(--font-mono); font-size: var(--t-xs); }
+.md-editor__hint kbd, .md-editor__guide code { font-family: var(--font-mono); font-size: var(--t-small); }
 .md-editor__more { padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; flex: none; }
 .md-editor__more:hover { text-decoration: underline; }
 .md-editor__more:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .md-editor__count { flex: none; font-variant-numeric: tabular-nums; }
-.md-editor__said { padding: 2px 0; font-size: var(--t-xs); color: var(--ink-2); }
+.md-editor__said { padding: 2px 0; font-size: var(--t-small); color: var(--ink-2); }
 .md-editor__said[data-refused='true'] { color: var(--bad); }
 .md-editor[data-variant='pane'] .md-editor__said { padding-inline: var(--s-4); }
-.md-editor__helper { font-size: var(--t-xs); color: var(--ink-3); }
+.md-editor__helper { font-size: var(--t-small); color: var(--ink-3); }
 .md-editor[data-error='true'] .md-editor__helper { color: var(--bad); }
 
 /* --- the help under the text ------------------------------------------------- */
 
-.md-editor__guide { max-height: 240px; overflow: auto; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-xs); }
+.md-editor__guide { max-height: 240px; overflow: auto; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-small); }
 .md-editor[data-variant='pane'] .md-editor__guide { padding-inline: var(--s-4); }
 .md-editor__guide table { width: 100%; border-collapse: collapse; }
 .md-editor__guide td { vertical-align: top; padding: 3px var(--s-3) 3px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
@@ -111,7 +111,7 @@
 
 .md-editor__pictures { max-height: 220px; overflow: auto; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); }
 .md-editor__picture { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) 0; }
-.md-editor__picture-name { flex: 1; min-width: 0; font-size: var(--t-xs); font-family: var(--font-mono); }
+.md-editor__picture-name { flex: 1; min-width: 0; font-size: var(--t-small); font-family: var(--font-mono); }
 .md-editor__picture-name > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-editor__picture-name small { font-family: var(--font-ui); color: var(--ink-3); }
 

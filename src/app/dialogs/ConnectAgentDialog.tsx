@@ -114,11 +114,11 @@ export function ConnectAgentDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="connect-agent-dialog">
-      <DialogTitle sx={{ fontSize: 15 }}>{s('agent.title')}</DialogTitle>
+      <DialogTitle sx={{ fontSize: 'var(--t-large)' }}>{s('agent.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {/* About this machine and nothing else: over a source with a far end the same words would be false, so its panel says its own. */}
-          {!sourcePanel && <Typography sx={{ fontSize: 13 }}>{s('agent.what')}</Typography>}
+          {!sourcePanel && <Typography sx={{ fontSize: 'var(--t-body)' }}>{s('agent.what')}</Typography>}
 
           {status === undefined ? (sourcePanel ? (
             /* In its place, not beside it: the sentence says to go and open this
@@ -126,7 +126,7 @@ export function ConnectAgentDialog({
                itself answers for agents. */
             <Box data-testid="agent-source-panel">{sourcePanel}</Box>
           ) : (
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="agent-desktop-only">
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="agent-desktop-only">
               {s('agent.desktopOnly')}{' '}
               {/* Where the desktop app is had, said where it is needed. */}
               <Link href={DESKTOP_APP_LINK.href} target="_blank" rel="noreferrer" data-testid="agent-download" data-guide="agent.download" sx={{ whiteSpace: 'nowrap' }}>
@@ -145,10 +145,10 @@ export function ConnectAgentDialog({
                     slotProps={{ input: { 'aria-label': s('agent.enable') } }}
                   />
                 )}
-                label={<Typography sx={{ fontSize: 13 }}>{s('agent.enable')}</Typography>}
+                label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('agent.enable')}</Typography>}
               />
               {on && (
-                <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="agent-state">
+                <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="agent-state">
                   {status.kind === 'connected'
                     ? s('agent.connected', { name: status.client.name })
                     : s('agent.listening', { port: status.port })}
@@ -161,15 +161,15 @@ export function ConnectAgentDialog({
           {on && !readOnly && (
             <>
               <Divider />
-              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
+              <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
                 {s('agent.recipes')}
               </Typography>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('agent.recipesNote')}</Typography>
+              <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('agent.recipesNote')}</Typography>
               <Tabs
                 value={tab}
                 onChange={(_event, next: string) => setTab(next)}
                 variant="scrollable"
-                sx={{ minHeight: 32, '& .MuiTab-root': { minHeight: 32, fontSize: 12, py: 0 } }}
+                sx={{ minHeight: 32, '& .MuiTab-root': { minHeight: 32, fontSize: 'var(--t-small)', py: 0 } }}
               >
                 {RECIPES.map((held) => <Tab key={held.id} value={held.id} label={s(held.tab)} />)}
               </Tabs>
@@ -177,7 +177,7 @@ export function ConnectAgentDialog({
                 component="pre"
                 data-testid="agent-recipe"
                 sx={{
-                  m: 0, p: 1.25, fontSize: 11.5, lineHeight: 1.5, borderRadius: 1,
+                  m: 0, p: 1.25, fontSize: 'var(--t-small)', lineHeight: 1.5, borderRadius: 1,
                   bgcolor: 'action.hover', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
                 }}
@@ -189,7 +189,7 @@ export function ConnectAgentDialog({
                   {copied ? s('agent.copied') : s('agent.copy')}
                 </Button>
                 <Button size="small" onClick={onNewToken}>{s('agent.newToken')}</Button>
-                <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('agent.newTokenNote')}</Typography>
+                <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('agent.newTokenNote')}</Typography>
               </Stack>
             </>
           )}

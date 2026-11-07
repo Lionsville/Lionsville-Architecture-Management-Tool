@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
 /* What a row of the inspector says beside its value, in the panel and on the record. */
-.inspector-note { display: block; margin: 0; color: var(--ink-3); font-size: var(--t-sm); line-height: var(--lh-tight); }
+.inspector-note { display: block; margin: 0; color: var(--ink-3); font-size: var(--t-small); line-height: var(--lh-tight); }
 .inspector-links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 .inspector-links button { text-align: start; overflow-wrap: anywhere; }
 .inspector-swatch { display: inline-block; width: 12px; height: 12px; margin-inline-end: var(--s-1); border: 1px solid var(--line); border-radius: var(--r-1); vertical-align: -1px; }
@@ -20,7 +20,7 @@
 
 .inspector-list { display: flex; flex-direction: column; margin: 0 0 var(--s-3); padding: 0; list-style: none; }
 .inspector-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-1); min-height: var(--row-prop); overflow-wrap: anywhere; }
-.inspector-open-under { display: grid; justify-items: start; gap: var(--s-1); margin-block: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.inspector-open-under { display: grid; justify-items: start; gap: var(--s-1); margin-block: var(--s-1); color: var(--ink-2); font-size: var(--t-small); }
 .inspector-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-block-start: var(--s-1); }
 
 .inspector-section { margin-block-start: var(--s-3); }

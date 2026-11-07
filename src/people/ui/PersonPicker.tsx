@@ -89,11 +89,11 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
             sx={{ justifyContent: 'space-between', textTransform: 'none', fontWeight: person.id === value ? 700 : 400 }}
           >
             <span>{shownText(shownEntry(person), s)}{person.id === me ? ` · ${s('people.you')}` : ''}</span>
-            {note?.(person) && <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>{note(person)}</Typography>}
+            {note?.(person) && <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{note(person)}</Typography>}
           </Button>
         ))}
         {found.length === 0 && query.trim() && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.searchEmpty', { query })}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('people.searchEmpty', { query })}</Typography>
         )}
       </Box>
       {mayDo(register, 'add') && (

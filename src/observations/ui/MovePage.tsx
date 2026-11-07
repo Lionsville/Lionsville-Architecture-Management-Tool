@@ -172,7 +172,7 @@ export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePage
       >
         <Tooltip title={s('observation.moveClose')}>
           <IconButton size="small" aria-label={s('observation.moveClose')} onClick={close}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
+            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>‹</Box>
           </IconButton>
         </Tooltip>
         <Typography variant="body1" component="h1" id={titleId} sx={{ fontWeight: 600 }}>{s('observation.moveTitle')}</Typography>

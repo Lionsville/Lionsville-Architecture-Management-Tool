@@ -117,14 +117,14 @@ const HIDDEN = {
   whiteSpace: 'nowrap', width: '1px',
 } as const
 
-const SMALL = { fontSize: 12 } as const
-const QUIET = { fontSize: 11.5, color: 'text.secondary' } as const
+const SMALL = { fontSize: 'var(--t-small)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 /** A weight's mark: its glyph in its colour, its name for a screen reader. */
 function Mark({ weight, name }: { weight: FindingWeight; name: string }) {
   return (
     <>
-      <Box component="span" aria-hidden data-weight={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...WEIGHT_MARK[weight].sx }}>
+      <Box component="span" aria-hidden data-weight={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 'var(--t-small)', flex: 'none', ...WEIGHT_MARK[weight].sx }}>
         {WEIGHT_MARK[weight].glyph}
       </Box>
       <Box component="span" sx={HIDDEN}>{name}</Box>
@@ -215,7 +215,7 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
       <Box component="ul" data-testid="findings-legend" sx={{ listStyle: 'none', p: 0, m: 0, mt: 0.5, display: 'flex', flexWrap: 'wrap', columnGap: 1.5 }}>
         {weights.map((weight) => (
           <Box component="li" key={weight} sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-            <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
+            <Box component="span" aria-hidden sx={{ fontSize: 'var(--t-small)', ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
             {t(words.weight[weight].name)}: {t(words.weight[weight].about)}
           </Box>
         ))}
@@ -235,9 +235,9 @@ function Group<F, A extends string>(props: FindingsListProps<F, A> & {
       <ButtonBase
         aria-expanded={open} aria-controls={id} onClick={() => props.onToggle(group.key)}
         data-guide="findings.group" data-testid="findings-group"
-        sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, width: '100%', justifyContent: 'flex-start', textAlign: 'left', py: 0.5, fontSize: 12.5, '&:hover .findings-name': { textDecoration: 'underline' } }}
+        sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, width: '100%', justifyContent: 'flex-start', textAlign: 'left', py: 0.5, fontSize: 'var(--t-small)', '&:hover .findings-name': { textDecoration: 'underline' } }}
       >
-        <Box component="span" aria-hidden sx={{ width: 10, flex: 'none', color: 'text.secondary', fontSize: 10 }}>{open ? '▾' : '▸'}</Box>
+        <Box component="span" aria-hidden sx={{ width: 10, flex: 'none', color: 'text.secondary', fontSize: 'var(--t-small)' }}>{open ? '▾' : '▸'}</Box>
         <Mark weight={group.weight} name={t(words.weight[group.weight].name)} />
         <Box component="span" className="findings-name" sx={{ flex: 1, minWidth: 0 }}>{t(group.entry.name)}</Box>
         <Box component="span" sx={{ color: 'text.secondary', flex: 'none' }}>({group.count})</Box>
@@ -275,20 +275,20 @@ function Explanation<F, A extends string>(props: FindingsListProps<F, A> & {
     const doing = props.actions?.[action]?.(finding)
     return doing === undefined || (Array.isArray(doing) && doing.length === 0) ? [] : [{ action, doing }]
   })
-  const heading = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
+  const heading = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
   return (
     <Box role="region" aria-labelledby={titleId} data-testid="finding-explanation" data-check={group.key}>
-      <Button size="small" onClick={props.onBack} data-guide="findings.back" data-testid="findings-back" sx={{ fontSize: 11.5, px: 0.5, minWidth: 0 }}>
+      <Button size="small" onClick={props.onBack} data-guide="findings.back" data-testid="findings-back" sx={{ fontSize: 'var(--t-small)', px: 0.5, minWidth: 0 }}>
         <Box component="span" aria-hidden sx={{ mr: 0.5 }}>{'←'}</Box>{t(words.back)}
       </Button>
       <Typography sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 0.5 }} data-testid="finding-weight">
-        <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[group.weight].sx }}>{WEIGHT_MARK[group.weight].glyph}</Box>
+        <Box component="span" aria-hidden sx={{ fontSize: 'var(--t-small)', ...WEIGHT_MARK[group.weight].sx }}>{WEIGHT_MARK[group.weight].glyph}</Box>
         {t(words.weight[group.weight].name)} · {t(words.category[group.category])}
       </Typography>
-      <Typography component="h3" id={titleId} ref={title} tabIndex={-1} sx={{ fontSize: 15, fontWeight: 700, outline: 'none' }}>
+      <Typography component="h3" id={titleId} ref={title} tabIndex={-1} sx={{ fontSize: 'var(--t-large)', fontWeight: 700, outline: 'none' }}>
         {t(group.entry.name)}
       </Typography>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 600, mt: 0.5 }} data-testid="finding-sentence">{props.sentence(finding)}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 600, mt: 0.5 }} data-testid="finding-sentence">{props.sentence(finding)}</Typography>
       <Typography component="h4" sx={heading}>{t(words.why)}</Typography>
       <Typography sx={SMALL} data-testid="finding-why">{t(group.entry.why)}</Typography>
       <Typography component="h4" sx={heading}>{t(words.how)}</Typography>
@@ -312,7 +312,7 @@ function Action({ action, label, doing, first }: { action: string; label: string
   const common = {
     size: 'small' as const, variant: first ? 'contained' as const : 'outlined' as const,
     'data-guide': 'findings.action', 'data-action': action, 'data-testid': `finding-action-${action}`,
-    sx: { fontSize: 11.5, textTransform: 'none' },
+    sx: { fontSize: 'var(--t-small)', textTransform: 'none' },
   }
   if (typeof doing === 'function') return <Button {...common} onClick={doing}>{label}</Button>
   return (

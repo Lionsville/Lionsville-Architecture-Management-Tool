@@ -21,10 +21,10 @@ export function RolesEnded({ lines, instead }: {
   if (lines.length === 0) return null
   return (
     <Box data-testid="roles-ended" sx={{ mt: 1.5 }}>
-      <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: 14 }}>
+      <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: 'var(--t-body)' }}>
         {lines.map((line) => <li key={line} data-testid="role-ended">{line}</li>)}
       </Box>
-      <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 1 }} data-testid="roles-ended-instead">{instead}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 1 }} data-testid="roles-ended-instead">{instead}</Typography>
     </Box>
   )
 }

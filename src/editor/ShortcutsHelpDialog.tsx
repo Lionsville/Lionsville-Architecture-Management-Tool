@@ -85,7 +85,7 @@ export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps)
                     component="kbd"
                     sx={{
                       fontFamily: 'inherit',
-                      fontSize: 12,
+                      fontSize: 'var(--t-small)',
                       fontWeight: 600,
                       color: 'text.secondary',
                       px: 0.75,

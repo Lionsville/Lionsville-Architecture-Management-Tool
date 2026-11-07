@@ -294,7 +294,7 @@ export function MergePage({ state, s, renderMarkdown, windowChrome, note, onNote
       >
         <Tooltip title={s('observation.mergeClose')}>
           <IconButton size="small" aria-label={s('observation.mergeClose')} onClick={close}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
+            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>‹</Box>
           </IconButton>
         </Tooltip>
         <Typography variant="body1" component="h1" id={titleId} sx={{ fontWeight: 600 }}>{title}</Typography>

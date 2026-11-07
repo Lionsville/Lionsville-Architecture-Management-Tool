@@ -181,7 +181,7 @@ export function SectionsField({ label, sections, body, renderMarkdown, s }: {
         </Box>
       </Box>
       {preview ? (
-        <Box data-testid="form-preview" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, px: 1.5, py: 1, minHeight: 210, bgcolor: 'background.default', fontSize: 14, overflow: 'auto' }}>
+        <Box data-testid="form-preview" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, px: 1.5, py: 1, minHeight: 210, bgcolor: 'background.default', fontSize: 'var(--t-body)', overflow: 'auto' }}>
           {renderMarkdown(body)}
         </Box>
       ) : sections.map((one) => (
@@ -232,8 +232,8 @@ export function LookAlikes({ title, rows, action, testId }: {
 }) {
   if (rows.length === 0) return null
   return (
-    <Box data-testid={testId} sx={{ border: 1, borderColor: 'primary.main', bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1, display: 'grid', gap: 0.75, fontSize: 13 }}>
-      <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{title}</Typography>
+    <Box data-testid={testId} sx={{ border: 1, borderColor: 'primary.main', bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1, display: 'grid', gap: 0.75, fontSize: 'var(--t-body)' }}>
+      <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600 }}>{title}</Typography>
       {rows.map((row) => (
         <Box key={row.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
@@ -280,7 +280,7 @@ export function CauseDraftFields({ draft, onChange, problem, rootFixed, noRoot, 
       {!noRoot && (
         <FormControlLabel
           control={<Checkbox size="small" checked={rootFixed || draft.root} disabled={rootFixed} onChange={(event) => onChange({ ...draft, root: event.target.checked })} />}
-          label={<Typography sx={{ fontSize: 14 }}>{s('observation.causeRoot')}</Typography>}
+          label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('observation.causeRoot')}</Typography>}
         />
       )}
       <StrengthSelect
@@ -313,11 +313,11 @@ export function CausePicker({ candidates, taken, onPick, s, heading, onClose }: 
         slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}
       />
       <Box sx={{ maxHeight: 190, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper', mt: 0.75 }}>
-        {shown.length === 0 && <Typography sx={{ px: 1.25, py: 0.75, fontSize: 13, color: 'text.secondary' }}>{s('observation.causeNoMatch')}</Typography>}
+        {shown.length === 0 && <Typography sx={{ px: 1.25, py: 0.75, fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('observation.causeNoMatch')}</Typography>}
         {shown.map((one) => (
-          <Box key={one.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.5, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 }, fontSize: 13 }}>
+          <Box key={one.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.5, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 }, fontSize: 'var(--t-body)' }}>
             <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{one.label}</Box>
-            {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 10 }} />}
+            {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 'var(--t-small)' }} />}
             <Button
               size="small" variant="outlined" disabled={taken.has(one.id)} onClick={() => onPick(one.id)}
               startIcon={<LinkIcon size={14} />} sx={{ textTransform: 'none' }}
@@ -357,16 +357,16 @@ export function ExistingCause({ candidates, picked, onPick, label, empty, s }: {
         slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}
       />
       <Box sx={{ maxHeight: 260, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-        {shown.length === 0 && <Typography sx={{ px: 1.5, py: 1, fontSize: 13, color: 'text.secondary' }}>{empty}</Typography>}
+        {shown.length === 0 && <Typography sx={{ px: 1.5, py: 1, fontSize: 'var(--t-small)', color: 'text.secondary' }}>{empty}</Typography>}
         <RadioGroup value={picked} onChange={(event) => onPick(event.target.value)} aria-label={label}>
           {shown.map((one) => (
             <FormControlLabel
               key={one.key} value={one.key} data-testid="link-candidate"
               control={<Radio size="small" />}
               label={(
-                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 13 }}>
+                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 'var(--t-body)' }}>
                   {one.label}
-                  {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 10 }} />}
+                  {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 'var(--t-small)' }} />}
                 </Box>
               )}
               sx={{ mx: 0, px: 1, borderBottom: 1, borderColor: 'divider' }}
@@ -389,7 +389,7 @@ export function SubPanel({ heading, onClose, closeLabel, children, testId }: {
   return (
     <Box data-testid={testId} sx={{ mt: 1.25, border: 1, borderColor: 'primary.main', borderRadius: 1.5, px: 1.75, py: 1.5, bgcolor: 'action.hover' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{heading}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600 }}>{heading}</Typography>
         <Tooltip title={closeLabel}>
           <IconButton size="small" aria-label={closeLabel} onClick={onClose}><CloseIcon size={14} /></IconButton>
         </Tooltip>
@@ -439,8 +439,8 @@ export function LinkRowsTable({ rows, onStrength, onRemove, empty, s, testId, gu
           <TableRow key={row.key} data-testid="form-link-row">
             <TableCell>{row.role ? <Box component="span" sx={{ color: 'text.secondary' }}>{row.role}: </Box> : null}{row.label}</TableCell>
             <TableCell sx={{ whiteSpace: 'nowrap' }}>
-              <Chip size="small" variant="outlined" color={row.kind === 'new' ? 'primary' : 'default'} label={row.kind === 'new' ? s('observation.formKindNew') : s('observation.formKindExisting')} sx={{ height: 20, fontSize: 11 }} />
-              {row.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 20, fontSize: 11, ml: 0.5 }} />}
+              <Chip size="small" variant="outlined" color={row.kind === 'new' ? 'primary' : 'default'} label={row.kind === 'new' ? s('observation.formKindNew') : s('observation.formKindExisting')} sx={{ height: 20, fontSize: 'var(--t-small)' }} />
+              {row.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 20, fontSize: 'var(--t-small)', ml: 0.5 }} />}
             </TableCell>
             <TableCell>
               <StrengthSelect compact value={row.strength} onChange={(strength) => onStrength(row.key, strength)} label={s('observation.formStrengthOf', { name: row.label })} s={s} />

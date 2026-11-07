@@ -42,10 +42,10 @@ export function RefBlock({ code }: { code: string }) {
   const drawn = access && kind ? access.draw(fields) : undefined
   if (drawn !== undefined) return <Box component="span" data-testid={`ref-${kind}`} sx={{ display: 'block', my: '0.8em' }}>{drawn}</Box>
   if (!access) {
-    return <Box component="code" data-testid="ref-source" sx={{ display: 'block', whiteSpace: 'pre-wrap', fontSize: '0.85em', color: 'text.secondary', my: '0.7em' }}>{code}</Box>
+    return <Box component="code" data-testid="ref-source" sx={{ display: 'block', whiteSpace: 'pre-wrap', fontSize: 'var(--t-small)', color: 'text.secondary', my: '0.7em' }}>{code}</Box>
   }
   return (
-    <Typography component="span" data-testid="ref-gone" sx={{ display: 'block', my: '0.7em', fontSize: '0.9em', color: 'text.secondary', fontStyle: 'italic', borderLeft: 3, borderColor: 'divider', pl: 1.5 }}>
+    <Typography component="span" data-testid="ref-gone" sx={{ display: 'block', my: '0.7em', fontSize: 'var(--t-small)', color: 'text.secondary', fontStyle: 'italic', borderLeft: 3, borderColor: 'divider', pl: 1.5 }}>
       {t('doc.refGone', { what: kind ? `${kind}: ${fields[kind]}` : code.split('\n')[0] ?? '' })}
     </Typography>
   )

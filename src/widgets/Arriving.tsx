@@ -21,7 +21,7 @@ function Arriving() {
   return (
     <Box role="status" data-testid="arriving" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, flex: 1, minHeight: 160, color: 'text.secondary' }}>
       <CircularProgress size={18} color="inherit" />
-      <Typography sx={{ fontSize: 13 }}>{t('common.arriving')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)' }}>{t('common.arriving')}</Typography>
     </Box>
   )
 }

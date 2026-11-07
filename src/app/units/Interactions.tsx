@@ -158,8 +158,8 @@ export function InteractionsSection({ lines, onDeclare, onEdit, s }: {
 }) {
   return (
     <Box data-testid="unit-interactions">
-      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 }}>{s('interacts.title')}</Typography>
-      {lines.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('interacts.none')}</Typography>}
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 }}>{s('interacts.title')}</Typography>
+      {lines.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('interacts.none')}</Typography>}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
         {lines.map(({ row, other, keptIn, editable }) => (
           <Chip
@@ -174,7 +174,7 @@ export function InteractionsSection({ lines, onDeclare, onEdit, s }: {
         ))}
       </Box>
       {onDeclare && (
-        <MuiButton size="small" sx={{ mt: 0.5, fontSize: 12 }} onClick={onDeclare} data-testid="unit-interaction-add">{s('interacts.add')}</MuiButton>
+        <MuiButton size="small" sx={{ mt: 0.5, fontSize: 'var(--t-small)' }} onClick={onDeclare} data-testid="unit-interaction-add">{s('interacts.add')}</MuiButton>
       )}
     </Box>
   )

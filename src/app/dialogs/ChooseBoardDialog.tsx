@@ -30,7 +30,7 @@ export function ChooseBoardDialog({ choice, onChoose, onCancel, s }: {
     <Dialog open={choice !== undefined} onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('shell.chooseBoard')}>
       <DialogTitle>{s('shell.chooseBoard')}</DialogTitle>
       <DialogContent sx={{ pt: 0 }}>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1 }}>
           {s('shell.chooseBoardHint', { name: choice?.name ?? '' })}
         </Typography>
         <List component="div" dense disablePadding>
@@ -39,7 +39,7 @@ export function ChooseBoardDialog({ choice, onChoose, onCancel, s }: {
               <ListItemText
                 primary={board.name}
                 secondary={board.asOf ? s('shell.chooseBoardAsOf', { day: board.asOf }) : undefined}
-                slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
+                slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
               />
             </ListItemButton>
           ))}

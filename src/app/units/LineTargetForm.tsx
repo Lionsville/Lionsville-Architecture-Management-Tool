@@ -121,7 +121,7 @@ export function LineTargetForm(props: LineTargetFormProps) {
   const field = (name: string) => ({ htmlInput: { 'data-testid': `${testId}-${name}` } })
   return (
     <Box data-testid={`${testId}-form`} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1, mt: 0.75, display: 'grid', gap: 0.75 }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{props.title}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 600 }}>{props.title}</Typography>
       <TextField select label={s('line.toWhat')} value={mode} onChange={(event) => setMode(event.target.value === 'person' ? 'person' : 'role')} slotProps={field('mode')}>
         <MenuItem value="role">{s('line.toRole')}</MenuItem>
         <MenuItem value="person">{s('line.toPerson')}</MenuItem>
@@ -150,7 +150,7 @@ export function LineTargetForm(props: LineTargetFormProps) {
             {people.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
           </TextField>
           {whose && whose.places.length === 1 && (
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid={`${testId}-place`}>{placeLabel(whose.places[0])}</Typography>
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid={`${testId}-place`}>{placeLabel(whose.places[0])}</Typography>
           )}
           {whose && whose.places.length > 1 && (
             <TextField select label={s('line.position')} value={position} onChange={(event) => setPosition(event.target.value)} slotProps={field('position')}>

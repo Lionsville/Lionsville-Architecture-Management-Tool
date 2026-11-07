@@ -194,7 +194,7 @@ export function SolutionReader(props: SolutionReaderProps) {
         aria-label={s(field === 'benefit' ? 'solution.benefitField' : 'solution.costField')}
         data-testid={`solution-${field}`}
       >
-        {SOLUTION_SIZES.map((size) => <ToggleButton key={size} value={size} sx={{ py: 0, px: 1, fontSize: 11, textTransform: 'none' }}>{s(SIZE_LABEL[size])}</ToggleButton>)}
+        {SOLUTION_SIZES.map((size) => <ToggleButton key={size} value={size} sx={{ py: 0, px: 1, fontSize: 'var(--t-small)', textTransform: 'none' }}>{s(SIZE_LABEL[size])}</ToggleButton>)}
       </ToggleButtonGroup>
     ) : value ? s(SIZE_LABEL[value]) : <Muted>{s('solution.unset')}</Muted>
   )
@@ -224,19 +224,19 @@ export function SolutionReader(props: SolutionReaderProps) {
               </Typography>
             )}
             {props.questions.map((question) => (
-              <Box key={question} data-testid={`solution-question-${question}`} sx={{ mt: 1.5, px: 1.5, py: 1, border: 1, borderColor: 'warning.main', borderRadius: 1, fontSize: 13 }}>
+              <Box key={question} data-testid={`solution-question-${question}`} sx={{ mt: 1.5, px: 1.5, py: 1, border: 1, borderColor: 'warning.main', borderRadius: 1, fontSize: 'var(--t-body)' }}>
                 {s(QUESTION_LABEL[question])}
               </Box>
             ))}
             {props.implemented?.observations.some((one) => one.seenOn) && (
-              <Box data-testid="solution-seen-again" sx={{ mt: 1.5, px: 1.5, py: 1, border: 1, borderColor: 'error.main', borderRadius: 1, fontSize: 13 }}>
+              <Box data-testid="solution-seen-again" sx={{ mt: 1.5, px: 1.5, py: 1, border: 1, borderColor: 'error.main', borderRadius: 1, fontSize: 'var(--t-body)' }}>
                 {s('solution.findingSeenAgain', {
                   names: props.implemented.observations.filter((one) => one.seenOn).map((one) => one.label).join(', '),
                 })}
               </Box>
             )}
 
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'minmax(88px, 26%) minmax(0, 1fr)', columnGap: 2, rowGap: 1, mt: 2, mb: 0, fontSize: 14, alignItems: 'start' }}>
+            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'minmax(88px, 26%) minmax(0, 1fr)', columnGap: 2, rowGap: 1, mt: 2, mb: 0, fontSize: 'var(--t-body)', alignItems: 'start' }}>
               <Term>{s('solution.addresses')}</Term>
               <Value testId="solution-addresses">
                 {props.addresses.length === 0
@@ -280,14 +280,14 @@ export function SolutionReader(props: SolutionReaderProps) {
               <Value testId="solution-attempts">
                 {solution.attempts.length === 0 && (
                   canEdit
-                    ? <FormControlLabel control={<Checkbox checked={solution.noneKnown === true} onChange={(event) => props.onUpdate({ noneKnown: event.target.checked })} data-testid="solution-none-known" />} label={<Typography sx={{ fontSize: 13 }}>{s('solution.noneKnown')}</Typography>} />
+                    ? <FormControlLabel control={<Checkbox checked={solution.noneKnown === true} onChange={(event) => props.onUpdate({ noneKnown: event.target.checked })} data-testid="solution-none-known" />} label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('solution.noneKnown')}</Typography>} />
                     : <Muted>{solution.noneKnown ? s('solution.noneKnown') : s('solution.notAnswered')}</Muted>
                 )}
                 <Box component="ul" sx={{ m: 0, pl: 2 }}>
                   {solution.attempts.map((one, index) => (
                     <li key={index}>
                       {one.when ? <b>{one.when}: </b> : null}{one.what}{one.why ? <> — <i>{one.why}</i></> : null}
-                      {canEdit && <Button size="small" sx={{ textTransform: 'none', minWidth: 0, px: 0.5, fontSize: 11 }} onClick={() => props.onUpdate({ attempts: solution.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>}
+                      {canEdit && <Button size="small" sx={{ textTransform: 'none', minWidth: 0, px: 0.5, fontSize: 'var(--t-small)' }} onClick={() => props.onUpdate({ attempts: solution.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>}
                     </li>
                   ))}
                 </Box>
@@ -320,7 +320,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 {props.experiments.length === 0
                   ? <Muted>{s('solution.none')}</Muted>
                   : <LinkList onOpen={props.onOpen} links={props.experiments.map((one) => ({ key: one.key, label: one.label, note: s(OUTCOME_LABEL[one.outcome]).toLowerCase() }))} />}
-                {solution.waived && <Typography sx={{ fontSize: 13, mt: 0.5 }}>{s('solution.waived', { reason: solution.waived })}</Typography>}
+                {solution.waived && <Typography sx={{ fontSize: 'var(--t-body)', mt: 0.5 }}>{s('solution.waived', { reason: solution.waived })}</Typography>}
               </Value>
               <Term>{s('solution.decision')}</Term>
               <Value testId="solution-decision">
@@ -347,7 +347,7 @@ export function SolutionReader(props: SolutionReaderProps) {
             {props.implemented && (
               <Section title={s('solution.didItWork')} testId="solution-did-it-work">
                 <Typography variant="body2" color="text.secondary">{s('solution.didItWorkHelp')}</Typography>
-                <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, mt: 1, fontSize: 14 }}>
+                <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, mt: 1, fontSize: 'var(--t-body)' }}>
                   {props.implemented.observations.map((one) => (
                     <Box component="li" key={one.key} sx={{ display: 'flex', gap: 1, py: 0.25 }}>
                       <Link component="button" type="button" onClick={() => props.onOpen(one.key)} sx={{ flex: 1, textAlign: 'left' }}>{one.label}</Link>
@@ -368,7 +368,7 @@ export function SolutionReader(props: SolutionReaderProps) {
 
             {part === 'full' && (<>
             <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
-            <Box component="ol" data-testid="solution-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
+            <Box component="ol" data-testid="solution-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 'var(--t-body)' }}>
               {solution.history.map((event, index) => (
                 <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
                   <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
@@ -426,7 +426,7 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
   )
   return (
     <Section title={s('solution.gateTitle', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })} testId="solution-gate">
-      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 14 }}>
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 'var(--t-body)' }}>
         {gate.items.map((one) => (
           <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
             <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.secondary' }}>{one.ok ? '✓' : '○'}</Box>
@@ -518,7 +518,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
   const shownDay = (value: string | undefined) => (value ? formatDay(value, language) : <Muted>—</Muted>)
   return (
     <ReaderRoot testId="experiment-reader">
-      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 14 }}>
+      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 'var(--t-body)' }}>
         <Term>{s('solution.outcomeField')}</Term><Value testId="experiment-outcome">{s(OUTCOME_LABEL[experiment.outcome])}</Value>
         <Term>{s('solution.tests')}</Term>
         <Value testId="experiment-tests">

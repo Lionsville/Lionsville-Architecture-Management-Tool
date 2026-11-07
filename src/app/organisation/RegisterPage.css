@@ -5,10 +5,10 @@
 .org-page { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--surface); }
 .org-page__head { flex: none; padding: var(--s-3) var(--s-4) 0; }
 .org-page__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin: 0; }
-.org-page__name { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); color: var(--ink); }
-.org-page__covers { font-size: var(--t-md); color: var(--ink-2); }
+.org-page__name { margin: 0; font-size: var(--canvas-t-lg); font-weight: var(--fw-strong); color: var(--ink); }
+.org-page__covers { font-size: var(--canvas-t-md); color: var(--ink-2); }
 .org-page__body { flex: 1; min-height: 0; overflow-y: auto; }
-.org-page__nomatch { padding: var(--s-3) var(--s-4); font-size: var(--t-md); color: var(--ink-2); }
+.org-page__nomatch { padding: var(--s-3) var(--s-4); font-size: var(--canvas-t-md); color: var(--ink-2); }
 .org-weights { display: inline-flex; align-items: center; gap: var(--s-2); }
 .org-weights__one { display: inline-flex; align-items: center; gap: var(--s-1); font-variant-numeric: tabular-nums; }
 .org-cell-quiet { color: var(--ink-2); }

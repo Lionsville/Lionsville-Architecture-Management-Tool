@@ -107,9 +107,9 @@ export function ScopesPopover({ scopes, off, onChange, s }: {
                 sx={{ display: 'flex', mx: 0 }}
                 control={<Checkbox size="small" checked={!off.includes(one.path)} onChange={(event) => toggle(one.path, event.target.checked)} />}
                 label={(
-                  <Typography sx={{ fontSize: 13 }}>
+                  <Typography sx={{ fontSize: 'var(--t-body)' }}>
                     {one.label}{' '}
-                    <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>
+                    <Box component="span" sx={{ color: 'text.secondary', fontSize: 'var(--t-small)' }}>
                       {one.here ? s('observation.filterScopeHere') : s('observation.filterScopeLocal')}
                     </Box>
                   </Typography>
@@ -169,7 +169,7 @@ export function SavedPopover({ list, canSave, onSave, onRecall, onDelete, s }: {
                 )}
               >
                 <ListItemButton onClick={() => { onRecall(one); close() }} sx={{ borderRadius: 1 }}>
-                  <ListItemText primary={one.name} secondary={describeFilters(one.filters, s)} slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11.5 } } }} />
+                  <ListItemText primary={one.name} secondary={describeFilters(one.filters, s)} slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }} />
                 </ListItemButton>
               </ListItem>
             ))}

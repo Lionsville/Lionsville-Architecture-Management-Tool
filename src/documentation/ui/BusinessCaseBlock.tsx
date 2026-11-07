@@ -79,7 +79,7 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
         <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.5 }}>
           {t('doc.businessCaseUnreadable')}
         </Typography>
-        <Box component="pre" sx={{ m: 0, p: '0.8em', overflowX: 'auto', borderRadius: 1, bgcolor: 'action.hover', fontFamily: CODE_FONT, fontSize: '0.9em' }}>
+        <Box component="pre" sx={{ m: 0, p: '0.8em', overflowX: 'auto', borderRadius: 1, bgcolor: 'action.hover', fontFamily: CODE_FONT, fontSize: 'inherit' }}>
           <code>{code}</code>
         </Box>
       </Box>
@@ -149,7 +149,7 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
             <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.2 }}>
               {figure.label}
             </Typography>
-            <Typography component="div" sx={{ fontWeight: 600, fontSize: '1.05em' }}>
+            <Typography component="div" sx={{ fontWeight: 600, fontSize: 'var(--t-large)' }}>
               {figure.value}
             </Typography>
           </Box>
@@ -168,7 +168,7 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
               scale: String(result.score.scale),
             })}
           </Typography>
-          <Box component="ul" sx={{ my: 0.5, pl: '1.2em', color: 'text.secondary', fontSize: '0.9em' }}>
+          <Box component="ul" sx={{ my: 0.5, pl: '1.2em', color: 'text.secondary', fontSize: 'var(--t-small)' }}>
             {held.criteria.map((criterion, at) => (
               <Box component="li" key={`${criterion.name}-${at}`}>
                 {criterion.name} — {criterion.score} × {criterion.weight}

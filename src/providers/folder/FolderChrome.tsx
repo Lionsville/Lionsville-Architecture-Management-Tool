@@ -151,7 +151,7 @@ function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<Folder
     <Alert
       severity="warning"
       square
-      sx={{ py: 0.25, fontSize: 13, borderRadius: 0, flex: '0 0 auto' }}
+      sx={{ py: 0.25, fontSize: 'var(--t-body)', borderRadius: 0, flex: '0 0 auto' }}
       data-testid="sync-notice"
       action={(
         <Stack direction="row" spacing={1}>

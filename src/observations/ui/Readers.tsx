@@ -113,7 +113,7 @@ export function ReaderRoot({ testId, children }: { testId: string; children: Rea
 }
 
 /** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
-export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: '1.5rem' } } as const
+export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: 'var(--t-page)' } } as const
 
 /**
  * The strip that says a record lives in a scope below (ADR-0032 §2): read
@@ -131,7 +131,7 @@ export function ScopeStrip({ text, action, testId }: { text: string; action?: Re
       }}
     >
       <Box component="span" aria-hidden sx={{ color: 'info.main', display: 'inline-flex', pt: 0.25 }}><ScopeIcon size={14} /></Box>
-      <Typography variant="caption" sx={{ fontSize: 12.5 }}>{text}</Typography>
+      <Typography variant="caption" sx={{ fontSize: 'var(--t-small)' }}>{text}</Typography>
       {action && <Box sx={{ gridColumn: 2 }}>{action}</Box>}
     </Box>
   )
@@ -357,7 +357,7 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
 }) {
   const quiet = (shown: boolean) => ({ color: shown ? 'inherit' : 'text.secondary' })
   return (
-    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
+    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 'var(--t-body)' }}>
       <Term>{s('observation.toneField')}</Term><Value testId={`observation-tone-${toneOf(observation)}`}><ToneWord tone={toneOf(observation)} s={s} /></Value>
       <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
       <Term>{s('observation.whereField')}</Term>
@@ -399,7 +399,7 @@ function ObservationHistory({ history, s, day, nameOf, scopeLabel }: {
   return (
     <>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
-      <Box component="ol" data-testid="observation-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
+      <Box component="ol" data-testid="observation-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 'var(--t-body)' }}>
         {history.map((event, index) => (
           <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
             <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
@@ -600,7 +600,7 @@ export function CauseReader(props: CauseReaderProps) {
           action={fromScope.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, fromScope.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
         />
       )}
-      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 14 }}>
+      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 'var(--t-body)' }}>
         <Term>{s('observation.colState')}</Term>
         <Value testId="cause-state">{s(STATE_LABEL[cause.state])}{root && <span data-testid="cause-root"> · {s('observation.rootCause')}</span>}</Value>
       </Box>
@@ -630,7 +630,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
   const label = causeLabel(cause)
   const unlinkFrom = (from: string) => s('observation.tipUnlink', { from, to: label })
   return (
-    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
+    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 'var(--t-body)' }}>
               <Term>{s('observation.explains')}</Term>
               <Value testId="cause-explains">
                 {cause.explains.length === 0

@@ -80,7 +80,7 @@ export function StructureLanes({ structure, label, organisation, laneLabel, card
 function Lane({ heading, lane, width, children }: { heading: string; lane: number; width: number; children: ReactNode }) {
   return (
     <Box sx={{ width, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
-      <Typography aria-hidden sx={{ fontSize: 'var(--t-xs)', color: 'text.secondary', height: 16, mb: 0.5 }}>
+      <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', height: 16, mb: 0.5 }}>
         {heading}
       </Typography>
       <Box role="list" aria-label={heading} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

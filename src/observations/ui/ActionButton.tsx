@@ -100,7 +100,7 @@ export function OverflowActions({ actions, label }: { actions: readonly MenuActi
         }}
         sx={{ display: 'none', [COMPACT]: { display: 'inline-flex' } }}
       >
-        <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>⋯</Box>
+        <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>⋯</Box>
       </IconButton>
       <PictureMenu at={at} actions={actions} onClose={() => setAt(undefined)} />
     </>
@@ -169,11 +169,11 @@ export function ReaderNotice({ refused, lines, confirm, onConfirm, onClose, clos
       role={refused ? 'alert' : undefined}
       data-testid={testId}
       sx={{
-        mx: 2, mt: 1, px: 1.5, py: 1, borderRadius: 1, border: 1, fontSize: 13,
+        mx: 2, mt: 1, px: 1.5, py: 1, borderRadius: 1, border: 1, fontSize: 'var(--t-body)',
         borderColor: refused ? 'error.main' : 'primary.main', bgcolor: refused ? 'transparent' : 'action.hover',
       }}
     >
-      {lines.map((line, index) => <Typography key={index} sx={{ fontSize: 13, mb: 0.75 }}>{line}</Typography>)}
+      {lines.map((line, index) => <Typography key={index} sx={{ fontSize: 'var(--t-body)', mb: 0.75 }}>{line}</Typography>)}
       <Box sx={{ display: 'flex', gap: 1 }}>
         {confirm && onConfirm && (
           <Button size="small" variant="contained" onClick={onConfirm} sx={{ textTransform: 'none' }} data-testid={testId ? `${testId}-confirm` : undefined}>{confirm}</Button>

@@ -76,7 +76,7 @@ export function pickMatches(options: readonly PickOption[], query: string): Pick
 const matches = (options: PickOption[], state: { inputValue: string }) => pickMatches(options, state.inputValue)
 
 const GROUP_HEADING = {
-  px: 1.5, pt: 1, pb: 0.25, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary',
+  px: 1.5, pt: 1, pb: 0.25, fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary',
 } as const
 
 /** The *+*, and the field it opens in its place. */
@@ -94,7 +94,7 @@ export function PickToAdd({ options, label, field, nothing, onPick, guide, testI
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
         <Button
           ref={plus} size="small" disabled={disabled} onClick={() => setOpen(true)}
-          sx={{ fontSize: 11.5, minWidth: 0, px: 0.75, textTransform: 'none' }}
+          sx={{ fontSize: 'var(--t-small)', minWidth: 0, px: 0.75, textTransform: 'none' }}
           {...(guide ? { 'data-guide': guide } : {})} {...(testId ? { 'data-testid': testId } : {})}
         >
           {label}
@@ -154,9 +154,9 @@ export function GroupedPicker({ options, field, nothing, onPick, onClose, testId
       onClose={(_event, reason) => { if (reason === 'escape' || reason === 'blur') onClose?.() }}
       renderOption={(props, option) => (
         <li {...props} key={option.id}>
-          <Typography component="span" sx={{ fontSize: 12.5, flex: 1, minWidth: 0 }}>{option.label}</Typography>
+          <Typography component="span" sx={{ fontSize: 'var(--t-small)', flex: 1, minWidth: 0 }}>{option.label}</Typography>
           {option.note && (
-            <Typography component="span" sx={{ fontSize: 10.5, color: 'text.secondary', pl: 1, whiteSpace: 'nowrap' }}>
+            <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', pl: 1, whiteSpace: 'nowrap' }}>
               {option.note}
             </Typography>
           )}

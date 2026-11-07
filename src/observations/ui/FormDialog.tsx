@@ -86,13 +86,13 @@ export function FormDialog(props: FormDialogProps) {
       <DialogTitle id={titleId}>{title}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          {intro && <Typography color="text.secondary" sx={{ fontSize: 14 }}>{intro}</Typography>}
+          {intro && <Typography color="text.secondary" sx={{ fontSize: 'var(--t-small)' }}>{intro}</Typography>}
           {props.children}
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 1.5, ...(size === 'lg' ? { borderTop: 1, borderColor: 'divider' } : {}) }}>
         <Box sx={{ flex: 1 }}>
-          {problem && <Typography role="alert" color="error" sx={{ fontSize: 13 }} data-testid={props.problemTestId}>{problem}</Typography>}
+          {problem && <Typography role="alert" color="error" sx={{ fontSize: 'var(--t-body)' }} data-testid={props.problemTestId}>{problem}</Typography>}
         </Box>
         <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
         <Button

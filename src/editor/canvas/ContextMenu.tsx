@@ -179,7 +179,7 @@ function ItemContent({
       )}
       <ListItemText
         primary={item.label}
-        slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } } }}
+        slotProps={{ primary: { noWrap: true, sx: { fontSize: 'var(--t-body)' } } }}
         sx={{ my: 0 }}
       />
       {item.shortcut && (
@@ -189,7 +189,7 @@ function ItemContent({
           sx={{
             ml: 3,
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-            fontSize: 11,
+            fontSize: 'var(--t-small)',
             color: 'text.secondary',
             whiteSpace: 'nowrap',
           }}

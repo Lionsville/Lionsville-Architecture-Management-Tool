@@ -58,7 +58,7 @@ export type EndedHoldersProps = {
   s: Translate
 }
 
-const HEADING = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 0.5 } as const
+const HEADING = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 0.5 } as const
 
 /** The organisation as the open scope's session has it, and the names *Move the people* says it in. */
 function useMoveFacts({ index, scope, model, people, s }: Pick<EndedHoldersProps, 'index' | 'scope' | 'model' | 'people' | 's'>) {
@@ -85,13 +85,13 @@ export function EndedHolders(props: EndedHoldersProps) {
     return (
       <Box data-testid="operating-ended">
         <Typography sx={HEADING}>{s('move.typeEnds', { day: until })}</Typography>
-        {units.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('move.typeEndsNone')}</Typography>}
+        {units.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('move.typeEndsNone')}</Typography>}
         {units.map(({ unit, holders }) => (
-          <Typography key={unit.id} sx={{ fontSize: 13 }} data-testid="operating-ended-unit">
+          <Typography key={unit.id} sx={{ fontSize: 'var(--t-body)' }} data-testid="operating-ended-unit">
             {unit.name}: {holders.length ? holders.map((one) => `${facts.names.person(personOf(one))} (${facts.names.role(one.roleId)})`).join(', ') : s('move.nobodyThere')}
           </Typography>
         ))}
-        {units.length > 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('move.typeEndsHint')}</Typography>}
+        {units.length > 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('move.typeEndsHint')}</Typography>}
       </Box>
     )
   }
@@ -146,7 +146,7 @@ export function SlotHolders(props: SlotHoldersProps) {
   return (
     <Box data-testid="operating-slot-out" sx={{ mt: 1, mb: 1.5, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
       <Typography sx={{ ...HEADING, mt: 0 }}>{s(still ? 'move.slotOut' : 'move.slotOutDone', { role })}</Typography>
-      {still && <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>{s('move.slotOutHint', { role, day: today })}</Typography>}
+      {still && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1 }}>{s('move.slotOutHint', { role, day: today })}</Typography>}
       <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s} />
       <Button size="small" onClick={onDone} sx={{ mt: 0.5, textTransform: 'none', px: 0 }} data-testid="operating-slot-out-done">
         {still ? s('move.slotKeep', { role }) : s('common.close')}

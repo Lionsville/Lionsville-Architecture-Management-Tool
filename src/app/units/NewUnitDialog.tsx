@@ -66,7 +66,7 @@ export function NewUnitDialog(props: NewUnitDialogProps) {
   const parent = place.parent
   return (
     <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="new-unit-dialog" data-guide="chart.newUnit">
-      <DialogTitle sx={{ fontSize: 16 }}>{parent ? s('chart.addTitleInside', { name: parent.name }) : s('chart.addTitleTop')}</DialogTitle>
+      <DialogTitle sx={{ fontSize: 'var(--t-large)' }}>{parent ? s('chart.addTitleInside', { name: parent.name }) : s('chart.addTitleTop')}</DialogTitle>
       {none ? <NothingMaySit none={none} onClose={onClose} s={s} /> : <NewUnitForm {...props} />}
     </FieldsDialog>
   )
@@ -77,7 +77,7 @@ function NothingMaySit({ none, onClose, s }: { none: NewUnitNone; onClose: () =>
   return (
     <>
       <DialogContent>
-        <Typography sx={{ fontSize: 13 }} data-testid="new-unit-none">{none.reason}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-body)' }} data-testid="new-unit-none">{none.reason}</Typography>
       </DialogContent>
       <DialogActions>
         <Button size="small" onClick={onClose}>{s('chart.addCancel')}</Button>
@@ -138,7 +138,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
         />
         {asked
           ? <ServesField serves={servesNow} spans={spans} scopes={scopes} scopeLabel={scopeLabel} onChange={setServes} s={s} />
-          : <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="new-unit-through">{s('chart.addServesThrough', { name: parent?.name ?? '' })}</Typography>}
+          : <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="new-unit-through">{s('chart.addServesThrough', { name: parent?.name ?? '' })}</Typography>}
         <TextField
           select label={s('chart.addFiledIn')} value={filedIn === undefined ? '' : choiceOf(filedIn)} onChange={(event) => setFiled(pathOf(event.target.value))}
           disabled={filedIn === undefined}
@@ -149,7 +149,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
             <MenuItem key={path} value={choiceOf(path)}>{path === preferred ? s('chart.addDefault', { scope: scopeTrail(path, scopeLabel) }) : scopeTrail(path, scopeLabel)}</MenuItem>
           ))}
         </TextField>
-        {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 12, color: 'error.main' }}>{said}</Typography>}
+        {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
       <DialogActions>
         <Button size="small" onClick={onClose}>{s('chart.addCancel')}</Button>
@@ -169,7 +169,7 @@ function ServesField({ serves, spans, scopes, scopeLabel, onChange, s }: {
     <Box data-testid="new-unit-serves">
       <FieldLabel>{s(spans ? 'chart.addServesMany' : 'chart.addServes')}</FieldLabel>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.25 }}>
-        {serves.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('chart.addServesNone')}</Typography>}
+        {serves.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('chart.addServesNone')}</Typography>}
         {serves.map((path) => (
           <Chip
             key={path} label={scopeTrail(path, scopeLabel)} data-testid="new-unit-serves-chip"

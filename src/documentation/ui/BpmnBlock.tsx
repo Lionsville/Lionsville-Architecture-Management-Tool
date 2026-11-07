@@ -71,7 +71,7 @@ export function BpmnBlock({ code }: BpmnBlockProps) {
         component="pre"
         sx={{
           m: 0, p: '0.8em', overflowX: 'auto', borderRadius: 1, bgcolor: 'action.hover',
-          fontFamily: CODE_FONT, fontSize: '0.9em', lineHeight: 1.5,
+          fontFamily: CODE_FONT, fontSize: 'inherit', lineHeight: 1.5,
         }}
       >
         <code>{code}</code>

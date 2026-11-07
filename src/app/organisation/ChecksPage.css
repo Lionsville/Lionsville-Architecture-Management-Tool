@@ -11,7 +11,7 @@
 .checks-page__quiet { color: var(--ink-2); }
 .checks-mark { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .checks-mark__reason { flex: 1 1 220px; min-width: 160px; }
-.checks-mark__returns { flex-basis: 100%; color: var(--ink-2); font-size: var(--t-sm); }
+.checks-mark__returns { flex-basis: 100%; color: var(--ink-2); font-size: var(--t-small); }
 .checks-clear { display: flex; align-items: baseline; gap: var(--s-2); padding: var(--s-2) var(--s-3); color: var(--ink-2); }
 
 @media (max-width: 860px) {

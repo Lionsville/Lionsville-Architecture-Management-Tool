@@ -33,9 +33,9 @@ import { intoOf } from '../../model/unitDeletion'
 import type { UnitDeletion, UnitsChoice } from '../../model/unitDeletion'
 import { usePersonNames } from '../../people/ui/names'
 
-const LINE = { fontSize: 13.5, mt: 0.5 } as const
-const QUIET = { fontSize: 12.5, color: 'text.secondary', mt: 0.5 } as const
-const HEAD = { fontSize: 13, fontWeight: 600, mt: 1.5 } as const
+const LINE = { fontSize: 'var(--t-body)', mt: 0.5 } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 } as const
+const HEAD = { fontSize: 'var(--t-body)', fontWeight: 600, mt: 1.5 } as const
 /** How many units inside are named before the rest are counted. */
 const NAMED = 3
 
@@ -72,7 +72,7 @@ function EndFirst({ plan, today, onEnd, s }: UnitDeletionPartsProps) {
   const one = plan.units.length === 1
   return (
     <Box data-testid="unit-delete-end-first" sx={{ p: 1, borderRadius: 1, bgcolor: 'action.hover' }}>
-      <Typography sx={{ fontSize: 13.5 }}>{s(one ? 'unitDelete.endFirst' : 'unitDelete.endFirstMany')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)' }}>{s(one ? 'unitDelete.endFirst' : 'unitDelete.endFirstMany')}</Typography>
       {one && onEnd && !open && (
         <Button size="small" variant="outlined" sx={{ mt: 0.75, textTransform: 'none' }} data-guide="unitDelete.end" data-testid="unit-delete-end"
           onClick={() => setOpen(true)}>
@@ -100,7 +100,7 @@ function People({ plan, names, s }: UnitDeletionPartsProps) {
   if (lines.length === 0) return null
   return (
     <Box data-testid="roles-ended">
-      <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5, fontSize: 13.5 }}>
+      <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5, fontSize: 'var(--t-body)' }}>
         {lines.map((line) => <li key={line} data-testid="role-ended">{line}</li>)}
       </Box>
       <Typography sx={QUIET}>{s('unitDelete.peopleNote')}</Typography>

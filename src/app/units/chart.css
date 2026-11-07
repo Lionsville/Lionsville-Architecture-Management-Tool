@@ -5,19 +5,19 @@
 .chart-page__panel { flex: none; display: flex; min-height: 0; }
 @media (max-width: 899px) { .chart-page__main { flex-direction: column; } }
 
-.chart-bar__levels { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); margin-inline-end: var(--s-2); }
+.chart-bar__levels { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-3); font-size: var(--t-small); margin-inline-end: var(--s-2); }
 
 /* The canvas scrolls, and the zoom is the stage's: what is drawn is laid out again at the zoom, so a box's words wrap for it. */
 .chart-canvas { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .chart-stage { position: relative; box-sizing: border-box; width: max-content; min-width: 100%; padding: var(--s-3); }
-.chart-foot { flex: none; display: flex; align-items: center; min-height: var(--target-min); padding-inline: var(--s-3); border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-3); font-size: var(--t-xs); }
+.chart-foot { flex: none; display: flex; align-items: center; min-height: var(--target-min); padding-inline: var(--s-3); border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-3); font-size: var(--t-small); }
 .chart-foot__line { padding: 2px var(--s-1); border: 0; background: transparent; color: var(--ink-2); font: inherit; cursor: pointer; }
 .chart-foot__line:hover { text-decoration: underline; }
 .chart-foot__line:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .chart-foot__part[data-warn] { color: var(--accent); }
 .chart-legend { position: absolute; right: var(--s-3); bottom: calc(var(--target-min) + var(--s-3)); z-index: 4; }
 .chart-legend .kit-key__values { flex-direction: column; align-items: flex-start; gap: 0; }
-.chart-legend .kit-key__value { min-height: 18px; font-size: var(--t-xs); gap: var(--s-2); }
+.chart-legend .kit-key__value { min-height: 18px; font-size: var(--t-small); gap: var(--s-2); }
 .chart-legend__sample { display: block; flex: none; overflow: visible; }
 @media (max-width: 899px) { .chart-legend { display: none; } }
 
@@ -103,7 +103,7 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 @media (max-width: 899px) { .chart-outline { max-height: 200px; width: auto !important; border-inline-end: 0; border-bottom: 1px solid var(--line); } }
 .chart-outline__find { flex: none; display: flex; gap: var(--s-2); padding: var(--s-2); position: relative; }
 .chart-outline__find .kit-picker { flex: 1 1 auto; }
-.chart-outline__note { position: absolute; inset-inline: var(--s-2); top: 100%; z-index: 6; margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-xs); }
+.chart-outline__note { position: absolute; inset-inline: var(--s-2); top: 100%; z-index: 6; margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-small); }
 .chart-outline__tree { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0; padding: 0 var(--s-1) var(--s-2); list-style: none; }
 .chart-outline__tree ul { margin: 0; padding: 0; list-style: none; }
 .chart-outline__row { display: flex; align-items: center; gap: 2px; min-height: var(--row-h); border-radius: var(--r-2); }
@@ -112,27 +112,27 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-outline__caret { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
 .chart-outline__caret[data-shut] svg { transform: rotate(-90deg); }
 .chart-outline__gap { flex: none; width: 20px; }
-.chart-outline__name { all: unset; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--t-sm); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.chart-outline__name { all: unset; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--t-body); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .chart-outline__name:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
-.chart-outline__count { flex: none; padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
-.chart-outline__empty { padding: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); }
+.chart-outline__count { flex: none; padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+.chart-outline__empty { padding: var(--s-2); color: var(--ink-3); font-size: var(--t-small); }
 .chart-outline__foot { flex: none; display: grid; gap: var(--s-1); padding: var(--s-2); border-top: 1px solid var(--line); }
 .chart-outline__foot-row { display: flex; flex-wrap: wrap; gap: var(--s-1); }
-.chart-outline__of { color: var(--ink-3); font-size: var(--t-xs); overflow-wrap: anywhere; }
-.chart-outline__said { font-size: var(--t-xs); color: var(--ink-2); }
+.chart-outline__of { color: var(--ink-3); font-size: var(--t-small); overflow-wrap: anywhere; }
+.chart-outline__said { font-size: var(--t-small); color: var(--ink-2); }
 .chart-outline__said[data-tone='error'] { color: var(--bad); }
 
 /* Panels beside the chart. */
-.chart-panel__lead { margin: 0 0 var(--s-2); color: var(--ink-2); font-size: var(--t-sm); }
-.chart-panel__h { margin: var(--s-3) 0 var(--s-1); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
-.chart-panel__item { display: block; box-sizing: border-box; width: 100%; margin-bottom: var(--s-1); padding: 2px var(--s-2); border: 0; border-inline-start: 3px solid var(--exception); background: transparent; color: var(--ink); font: inherit; font-size: var(--t-sm); text-align: start; cursor: pointer; }
+.chart-panel__lead { margin: 0 0 var(--s-2); color: var(--ink-2); font-size: var(--t-body); }
+.chart-panel__h { margin: var(--s-3) 0 var(--s-1); color: var(--ink-2); font-size: var(--t-small); font-weight: var(--fw-strong); }
+.chart-panel__item { display: block; box-sizing: border-box; width: 100%; margin-bottom: var(--s-1); padding: 2px var(--s-2); border: 0; border-inline-start: 3px solid var(--exception); background: transparent; color: var(--ink); font: inherit; font-size: var(--t-body); text-align: start; cursor: pointer; }
 .chart-panel__item:hover { background: var(--surface-2); }
 .chart-panel__item:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
-.chart-panel__sub { display: block; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-panel__sub { display: block; color: var(--ink-3); font-size: var(--t-small); }
 .chart-panel__link { all: unset; color: var(--accent); cursor: pointer; }
 .chart-panel__link:hover { text-decoration: underline; }
-.chart-move { display: flex; flex-direction: column; gap: var(--s-2); min-height: 100%; font-size: var(--t-sm); }
-.chart-move__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-move { display: flex; flex-direction: column; gap: var(--s-2); min-height: 100%; font-size: var(--t-body); }
+.chart-move__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
 .chart-move__warn { margin: 0; padding: var(--s-1) var(--s-2); background: var(--warn-soft); color: var(--warn); }
 .chart-move__bad { margin: 0; color: var(--bad); }
 .chart-move__h { margin: 0; color: var(--ink-2); font-weight: var(--fw-strong); }
@@ -143,13 +143,13 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-move__foot { flex: none; display: flex; justify-content: flex-end; gap: var(--s-2); padding-block-start: var(--s-2); }
 
 /* Assigning: a popover beside the vacancy, with the chart still to be seen. */
-.chart-assign { width: 320px; padding: var(--s-3); display: grid; gap: var(--s-2); font-size: var(--t-sm); color: var(--ink); }
-.chart-assign__title { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); }
-.chart-assign__note { margin: 0; padding-inline-start: var(--s-2); border-inline-start: 3px solid var(--exception); color: var(--ink-2); font-size: var(--t-xs); }
+.chart-assign { width: 320px; padding: var(--s-3); display: grid; gap: var(--s-2); font-size: var(--t-body); color: var(--ink); }
+.chart-assign__title { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); }
+.chart-assign__note { margin: 0; padding-inline-start: var(--s-2); border-inline-start: 3px solid var(--exception); color: var(--ink-2); font-size: var(--t-small); }
 .chart-assign__over { margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--warn); border-radius: var(--r-2); background: var(--warn-soft); color: var(--ink); }
 .chart-assign__two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 .chart-assign__check { display: flex; align-items: center; gap: var(--s-1); }
-.chart-assign__said { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-assign__said { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
 .chart-assign__said[data-tone='error'] { color: var(--bad); }
 .chart-assign__foot { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-2); }
 .chart-assign__foot .chart-assign__said { flex-basis: 100%; }
@@ -159,15 +159,15 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 /* An assignment in the panel: facts, lines, and the quiet way to end it at the foot. */
 .chart-end { margin-top: var(--s-4); }
 .chart-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding-block: 15vh; }
-.chart-add-none { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); }
+.chart-add-none { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); color: var(--ink-3); font-size: var(--t-small); }
 .chart-outline__seam { display: flex; }
 @media (max-width: 899px) { .chart-outline__seam { display: none; } }
 
-.chart-held { font-size: var(--t-sm); }
-.chart-held__who { margin: 0; font-size: var(--t-xl); font-weight: var(--fw-strong); }
+.chart-held { font-size: var(--t-body); }
+.chart-held__who { margin: 0; font-size: var(--t-title); font-weight: var(--fw-strong); }
 .chart-held__line { margin: 0; }
-.chart-held__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
-.chart-held__over { margin: var(--s-1) 0 0; color: var(--bad); font-size: var(--t-xs); }
+.chart-held__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
+.chart-held__over { margin: var(--s-1) 0 0; color: var(--bad); font-size: var(--t-small); }
 .chart-held__acts { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
 /* The dock sits over the canvas, clear of the line under it. */
 .chart-page__work > .kit-dock[data-corner] { bottom: calc(var(--target-min) + var(--s-3)); }

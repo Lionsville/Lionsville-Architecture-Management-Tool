@@ -69,7 +69,7 @@
   box-sizing: border-box;
 }
 .lv-tile__type { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lv-tile__under { color: var(--ink-2); font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); line-height: var(--lh-tight); white-space: nowrap; }
+.lv-tile__under { color: var(--ink-2); font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); line-height: var(--lh-tight); white-space: nowrap; }
 
 .lv-boundary { color: var(--ink); }
 .lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
@@ -97,19 +97,19 @@
 .lv-key-line path { fill: currentColor; }
 
 .lv-lines { display: grid; gap: var(--s-2); }
-.lv-lines__said { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); white-space: normal; }
+.lv-lines__said { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--canvas-t-sm); white-space: normal; }
 .lv-unlanded { display: grid; gap: var(--s-1); padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-2); }
 .lv-unlanded__title { color: var(--ink); font-weight: var(--fw-strong); }
-.lv-unlanded__how { color: var(--ink-2); font-size: var(--t-sm); }
+.lv-unlanded__how { color: var(--ink-2); font-size: var(--canvas-t-sm); }
 
 .lv-levelbar { display: flex; align-items: center; gap: var(--s-2); min-width: 0; padding-inline: var(--s-2); }
-.lv-levelbar__title, .lv-levelbar__title button { color: var(--ink); font-size: var(--t-md); font-weight: var(--fw-strong); white-space: nowrap; }
+.lv-levelbar__title, .lv-levelbar__title button { color: var(--ink); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); white-space: nowrap; }
 
 /* A row per category, under the containers. */
 .lv-layer { position: absolute; z-index: -5; box-sizing: border-box; border: calc(1px / var(--canvas-zoom, 1)) solid var(--line); border-radius: var(--r-2); background: var(--surface); pointer-events: none; }
-.lv-layer__name { position: absolute; top: 50%; left: calc(var(--s-2) / var(--canvas-zoom, 1)); color: var(--ink-2); font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); transform: translateY(-50%); }
+.lv-layer__name { position: absolute; top: 50%; left: calc(var(--s-2) / var(--canvas-zoom, 1)); color: var(--ink-2); font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); transform: translateY(-50%); }
 
-.lv-crossing { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-sm); }
+.lv-crossing { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--canvas-t-sm); }
 
 /* Where it runs: derived and never pressed, around the containers and under them. */
 .lv-deployment {
@@ -124,7 +124,7 @@
   bottom: calc(2px / var(--canvas-zoom, 1));
   left: calc(var(--s-2) / var(--canvas-zoom, 1));
   color: var(--ink-3);
-  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   line-height: var(--lh-tight);
   white-space: nowrap;
 }
@@ -137,7 +137,7 @@
   border-radius: var(--r-1);
   background: var(--lv-lens-ink);
   color: var(--lv-lens-on);
-  font-size: var(--t-xs);
+  font-size: var(--canvas-t-xs);
   font-weight: var(--fw-strong);
   line-height: 16px;
   text-align: center;
@@ -155,15 +155,15 @@
   padding: 0 calc(5px / var(--canvas-zoom, 1));
   border-radius: var(--r-1);
   color: var(--ink-2);
-  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   font-weight: var(--fw-strong);
   letter-spacing: .02em;
   line-height: calc(16px / var(--canvas-zoom, 1));
   white-space: nowrap;
 }
 .lv-status .kit-mark {
-  width: calc(var(--mark-size) / var(--canvas-zoom, 1));
-  height: calc(var(--mark-size) / var(--canvas-zoom, 1));
+  width: calc(var(--canvas-mark) / var(--canvas-zoom, 1));
+  height: calc(var(--canvas-mark) / var(--canvas-zoom, 1));
 }
 .lv-status[data-status='managed'] { background: var(--ok-soft); }
 .lv-status[data-status='partial'] { background: var(--warn-soft); }
@@ -175,7 +175,7 @@
 /* Lifecycle is a word on the card. */
 .lv-life {
   margin-left: auto;
-  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   font-weight: var(--fw-strong);
   line-height: var(--lh-tight);
   white-space: nowrap;
@@ -224,7 +224,7 @@
   border-radius: var(--r-1);
   background: var(--surface-raised);
   color: var(--ink);
-  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   white-space: nowrap;
 }
 
@@ -256,7 +256,7 @@
   background: var(--surface-raised);
   box-shadow: var(--shadow);
 }
-.lv-selection-bar__count { color: var(--ink-2); font-size: var(--t-sm); }
+.lv-selection-bar__count { color: var(--ink-2); font-size: var(--canvas-t-sm); }
 
 .lv-empty {
   position: absolute;
@@ -271,7 +271,7 @@
   background: var(--surface-raised);
   transform: translate(-50%, -50%);
 }
-.lv-empty__title { margin: 0 0 var(--s-2); font-size: var(--t-md); font-weight: var(--fw-strong); }
+.lv-empty__title { margin: 0 0 var(--s-2); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); }
 .lv-empty__how { margin: 0 0 var(--s-3); color: var(--ink-2); }
 .lv-empty__acts { display: flex; gap: var(--s-2); }
 
@@ -282,8 +282,8 @@
 .lv-settings__cards, .lv-settings__export { display: grid; gap: var(--s-3); padding-block-start: var(--s-3); }
 .lv-settings__columns { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--s-4); }
 .lv-settings__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
-.lv-settings__title { margin: 0; font-size: var(--t-md); font-weight: var(--fw-strong); }
-.lv-settings__help { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
+.lv-settings__title { margin: 0; font-size: var(--canvas-t-md); font-weight: var(--fw-strong); }
+.lv-settings__help { margin: 0; color: var(--ink-2); font-size: var(--canvas-t-sm); }
 .lv-settings__preview { display: grid; align-content: start; gap: var(--s-2); }
 .lv-settings__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 

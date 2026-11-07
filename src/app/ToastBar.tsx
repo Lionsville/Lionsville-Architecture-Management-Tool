@@ -65,7 +65,7 @@ export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
         severity={toast?.severity ?? 'info'}
         variant="filled"
         onClose={onClose}
-        sx={{ maxWidth: 640, fontSize: 13 }}
+        sx={{ maxWidth: 640, fontSize: 'var(--t-body)' }}
         // An offer, when the toast has one: the button closes the toast and
         // does the thing, so it cannot be pressed twice.
         action={toast?.action

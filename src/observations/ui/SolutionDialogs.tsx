@@ -97,7 +97,7 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, r
       </Box>
       <Box component="section" aria-labelledby="new-solution-addresses" sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography id="new-solution-addresses" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('solution.formAddresses')}</Typography>
+          <Typography id="new-solution-addresses" component="h3" sx={{ fontSize: 'var(--t-large)', fontWeight: 600 }}>{s('solution.formAddresses')}</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('solution.formAddressesNote')}</Typography>
           <Tooltip title={s('solution.formAddRootTip')} describeChild>
             <Button size="small" variant="outlined" startIcon={<RootCauseIcon size={14} />} onClick={() => setPicking(true)} sx={{ textTransform: 'none' }} data-testid="new-solution-add-root">

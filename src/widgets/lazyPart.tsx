@@ -93,7 +93,7 @@ export function PartNotLoaded({ message = 'common.partNotLoaded', onRetry }: { m
   const { t } = useStrings()
   return (
     <Box data-testid="part-not-loaded" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', my: 0.5 }}>
-      <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{t(message)}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t(message)}</Typography>
       <Button size="small" onClick={onRetry} data-testid="part-retry">{t('common.tryAgain')}</Button>
     </Box>
   )

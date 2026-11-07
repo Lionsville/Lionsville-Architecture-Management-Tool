@@ -245,7 +245,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
           }))}
         />
         {hint && (
-          <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 13 }}>
+          <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 'var(--t-body)' }}>
             {s('observation.formWordingHint', { word: hint })}
           </Alert>
         )}
@@ -407,7 +407,7 @@ function CausesSection({ scope, rows, onRows, dropped, onDismissDropped, s }: {
   return (
     <Box component="section" aria-labelledby="new-observation-causes" sx={{ pt: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-        <Typography id="new-observation-causes" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('observation.formCauses')}</Typography>
+        <Typography id="new-observation-causes" component="h3" sx={{ fontSize: 'var(--t-large)', fontWeight: 600 }}>{s('observation.formCauses')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('observation.formCausesNote')}</Typography>
         <Tooltip title={s('observation.formNewCauseTip')} describeChild>
           <Button size="small" variant="outlined" startIcon={<AddIcon size={14} />} onClick={() => { setSub('new'); setDraftProblem(false) }} sx={{ textTransform: 'none' }} data-testid="form-new-cause" data-guide="observations.newCause">
@@ -421,7 +421,7 @@ function CausesSection({ scope, rows, onRows, dropped, onDismissDropped, s }: {
         </Tooltip>
       </Box>
       {dropped && (
-        <Alert severity="info" variant="outlined" onClose={onDismissDropped} data-testid="form-scope-dropped" sx={{ mb: 1, fontSize: 13 }}>
+        <Alert severity="info" variant="outlined" onClose={onDismissDropped} data-testid="form-scope-dropped" sx={{ mb: 1, fontSize: 'var(--t-body)' }}>
           {s('observation.formScopeDropped')}
         </Alert>
       )}

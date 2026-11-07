@@ -65,7 +65,7 @@ function KeepsNothing({ own }: { own: BrowserOwn }) {
   }, [own])
   if (!nothing) return null
   return (
-    <Alert severity="warning" square data-testid="storage-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}>
+    <Alert severity="warning" square data-testid="storage-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}>
       {s(own.shownFromOlder() ? 'browser.shownFromOlder' : 'shell.keepFailed')}
     </Alert>
   )
@@ -81,7 +81,7 @@ function StillAnswering({ own }: { own: BrowserOwn }) {
   }, [own])
   if (!still) return null
   return (
-    <Alert severity="info" square data-testid="browser-still-answering" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}>
+    <Alert severity="info" square data-testid="browser-still-answering" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}>
       {s('browser.stillAnswering')}
     </Alert>
   )
@@ -100,7 +100,7 @@ function StandingStrip({ own }: { own: BrowserOwn }) {
       severity={standing === 'reload' ? 'error' : 'warning'}
       square
       data-testid="browser-standing"
-      sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}
+      sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}
     >
       {s(standing === 'reload' ? 'shell.storageReload' : 'shell.storageBlocked')}
     </Alert>
@@ -189,7 +189,7 @@ function Choice({ text, path, onBring, onLeave }: { text: string; path?: string;
     <Alert
       severity="warning"
       square
-      sx={{ borderRadius: 0, py: 0.25, fontSize: 13 }}
+      sx={{ borderRadius: 0, py: 0.25, fontSize: 'var(--t-body)' }}
       action={(
         <Stack direction="row" spacing={1}>
           <Button size="small" onClick={onBring} aria-label={path === undefined ? undefined : s('browser.earlierBringAt', { path })}>

@@ -66,8 +66,8 @@ export type ChartSummaryProps = {
   onOpenPeople?: ((person: string) => void) | undefined
 }
 
-const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.75, mb: 0.5 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+const SECTION = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.75, mb: 0.5 } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 export function ChartSummary(props: ChartSummaryProps) {
   const { t, language } = useStrings()
@@ -82,10 +82,10 @@ export function ChartSummary(props: ChartSummaryProps) {
   const whose = props.scopeLabel(scope)
   return (
     <Box data-testid="chart-summary" data-guide="chart.summary" sx={{ pt: 0.5 }}>
-      <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700 }} data-testid="chart-summary-title">
+      <Typography component="h2" sx={{ fontSize: 'var(--t-large)', fontWeight: 700 }} data-testid="chart-summary-title">
         {day === today ? t('chart.summaryToday', { scope: whose }) : t('chart.summaryOn', { scope: whose, day: formatDay(day, language) })}
       </Typography>
-      <Typography sx={{ fontSize: 13 }} data-testid="chart-summary-counts">
+      <Typography sx={{ fontSize: 'var(--t-body)' }} data-testid="chart-summary-counts">
         {summaryWords({ units: chart.units, people: chart.people, vacant }, t).map((part, at) => (
           <Box component="span" key={part.key} data-part={part.key} sx={part.warn ? { color: 'warning.main', fontWeight: 600 } : undefined}>
             {at > 0 ? ' · ' : ''}{part.text}
@@ -150,7 +150,7 @@ function HowToRead({ t }: { t: Translate }) {
     },
     {
       key: 'manages', text: t('chart.readManages'),
-      sample: <Box component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>{t('unit.managesBadge')}</Box>,
+      sample: <Box component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('unit.managesBadge')}</Box>,
     },
     {
       key: 'ended', text: t('chart.readEnded'),
@@ -163,7 +163,7 @@ function HowToRead({ t }: { t: Translate }) {
         {marks.map((mark) => (
           <Box component="li" key={mark.key} data-mark={mark.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.375 }}>
             <Box sx={{ flex: 'none', width: 84 }}>{mark.sample}</Box>
-            <Typography sx={{ fontSize: 12 }}>{mark.text}</Typography>
+            <Typography sx={{ fontSize: 'var(--t-small)' }}>{mark.text}</Typography>
           </Box>
         ))}
       </Box>

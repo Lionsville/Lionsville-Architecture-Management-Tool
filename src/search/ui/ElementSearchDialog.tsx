@@ -175,8 +175,8 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
             onClick={() => choose(hit.id)}
             sx={{ display: 'block', px: 2, py: 0.75 }}
           >
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{hit.name}</Typography>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600 }}>{hit.name}</Typography>
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
               {[
                 kindLabel(hit.kind, t),
                 hit.detail,
@@ -196,11 +196,11 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
       </Box>
       {/* Beside the listbox, not in it: a listbox holds options and nothing else. */}
       {hits.length === 0 && (
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, pb: 1.5 }}>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pb: 1.5 }}>
           {trimmed === '' ? t('search.empty') : t('search.noMatches', { query: trimmed })}
         </Typography>
       )}
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 2, pb: 1.5 }}>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pb: 1.5 }}>
         {t('search.hint')}
       </Typography>
     </Dialog>

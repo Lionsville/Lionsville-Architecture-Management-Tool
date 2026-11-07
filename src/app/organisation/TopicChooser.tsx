@@ -31,7 +31,7 @@ import { topicChoices } from './topicChoices'
 import type { TopicChoice } from './topicChoices'
 import { NewTopicDialog } from './topicDialogs'
 
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 /** How many places a row names before it counts the rest. */
 const PLACES_NAMED = 3
 
@@ -111,11 +111,11 @@ function ChoiceRow({ row, access, picked, onToggle, onPoint }: {
       />
       <Box sx={{ minWidth: 0, flex: 1 }}>
         {/* A row kept only for a match below it says its name in the quieter ink. */}
-        <Typography noWrap sx={{ fontSize: 13, fontWeight: depth === 0 ? 600 : 500, color: row.matched ? 'text.primary' : 'text.secondary' }}>{topic.name}</Typography>
+        <Typography noWrap sx={{ fontSize: 'var(--t-small)', fontWeight: depth === 0 ? 600 : 500, color: row.matched ? 'text.primary' : 'text.secondary' }}>{topic.name}</Typography>
         {topic.description && <Typography noWrap sx={QUIET}>{topic.description}</Typography>}
-        <Typography noWrap sx={{ ...QUIET, fontSize: 11 }}>{placesLine(access, topic, t)}</Typography>
+        <Typography noWrap sx={{ ...QUIET, fontSize: 'var(--t-small)' }}>{placesLine(access, topic, t)}</Typography>
       </Box>
-      {said && <Chip size="small" label={said} variant="outlined" sx={{ height: 18, fontSize: 10, flex: '0 0 auto' }} />}
+      {said && <Chip size="small" label={said} variant="outlined" sx={{ height: 18, fontSize: 'var(--t-small)', flex: '0 0 auto' }} />}
     </Box>
   )
 }
@@ -136,18 +136,18 @@ function TopicAbout({ topic, access }: { topic: TopicSummary; access: TopicsAcce
   const places = access.relevantPlaces(topic.id)
   const subtopics = access.list().filter((one) => one.parent === topic.id)
   const keeps = access.keeps(topic.id)
-  const HEAD = { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', mt: 1.5, mb: 0.25 } as const
+  const HEAD = { fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', mt: 1.5, mb: 0.25 } as const
   return (
     <Box>
-      <Typography component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{topic.name}</Typography>
+      <Typography component="h3" sx={{ fontSize: 'var(--t-large)', fontWeight: 600 }}>{topic.name}</Typography>
       {parent && <Typography sx={QUIET}>{t('topics.subtopicOf', { name: parent.name })}</Typography>}
-      <Typography sx={{ fontSize: 13, mt: 1, whiteSpace: 'pre-wrap' }}>{topic.description || '—'}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, whiteSpace: 'pre-wrap' }}>{topic.description || '—'}</Typography>
       <Typography sx={HEAD}>{t('topics.relevantTo')}</Typography>
-      <Typography sx={{ fontSize: 13 }}>{places.map((path) => access.scopeLabel(path)).join(', ') || t('topics.chooseNowhere')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)' }}>{places.map((path) => access.scopeLabel(path)).join(', ') || t('topics.chooseNowhere')}</Typography>
       <Typography sx={HEAD}>{t('topics.subtopics')}</Typography>
-      <Typography sx={{ fontSize: 13 }}>{subtopics.map((one) => one.name).join(', ') || t('topics.subtopicsNone')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)' }}>{subtopics.map((one) => one.name).join(', ') || t('topics.subtopicsNone')}</Typography>
       <Typography sx={HEAD}>{t('topics.chooseKeepsHead')}</Typography>
-      <Typography sx={{ fontSize: 13 }}>{t('topics.chooseKeeps', { principles: keeps.principles, blocks: keeps.blocks })}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)' }}>{t('topics.chooseKeeps', { principles: keeps.principles, blocks: keeps.blocks })}</Typography>
     </Box>
   )
 }

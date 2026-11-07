@@ -150,7 +150,7 @@ export function SourceChipView({ source, describeKey, labelKey, chip, panel, fac
           data-testid="working-source"
           {...(presses ? { component: 'button' as const, type: 'button', onClick: press } : {})}
           sx={{
-            fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1, whiteSpace: 'nowrap',
+            fontSize: 'var(--t-small)', px: 0.75, py: 0.25, borderRadius: 1, whiteSpace: 'nowrap',
             color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
             border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
             // A button brings the browser's own font and background with it,
@@ -333,7 +333,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
               onClick={() => go(crumb.path)}
               data-testid={`crumb-${crumb.path}`}
               sx={{
-                fontSize: 13, fontWeight: 500, px: 0.75, py: 0,
+                fontSize: 'var(--t-body)', fontWeight: 500, px: 0.75, py: 0,
                 textTransform: 'none', color: 'text.secondary',
                 ...shrinking(1), display: 'block',
               }}
@@ -341,7 +341,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
               {crumb.name}
             </Button>
           </Tooltip>
-          <Typography aria-hidden sx={{ fontSize: 12, color: 'text.disabled' }}>›</Typography>
+          <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.disabled' }}>›</Typography>
         </Box>
       ))}
       {/* The open scope is a button as well: a page that ends on a canvas with
@@ -353,7 +353,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           color="inherit"
           onClick={() => go(currentPath)}
           data-testid="crumb-current"
-          sx={{ fontSize: 13, fontWeight: 700, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
+          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
         >
           {current}
         </Button>
@@ -368,7 +368,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
  * nothing (`minWidth: 0`) and its label spilled over its neighbour's; at 400 %
  * zoom (1.4.10) every label in the bar was drawn over another.
  */
-export const QUIET = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary', flexShrink: 0, whiteSpace: 'nowrap' } as const
+export const QUIET = { fontSize: 'var(--t-small)', minWidth: 0, px: 1, color: 'text.secondary', flexShrink: 0, whiteSpace: 'nowrap' } as const
 
 /** A top bar that runs out of width takes a second row, rather than overlapping itself. */
 export const WRAPS = { flexWrap: 'wrap', rowGap: 0.5 } as const

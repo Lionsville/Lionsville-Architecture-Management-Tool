@@ -489,7 +489,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           <Dialog open={duplicateAsOf !== null} onClose={() => setDuplicateAsOf(null)} maxWidth="xs" fullWidth>
             <DialogTitle>{t('menu.duplicateDiagramAsOf')}</DialogTitle>
             <DialogContent>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
+              <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1.5 }}>
                 {t('toolbar.asOfHelp')}
               </Typography>
               <TextField
@@ -807,7 +807,7 @@ function TabLabel({
                 <ListItemText
                   primary={nameOf(container)}
                   secondary={t('toolbar.containerView')}
-                  slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 10.5 } } }}
+                  slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
                 />
               </MenuItem>
             ))}

@@ -93,7 +93,7 @@ export function MovePeople({ moves, placesFor, names, readOnly, manages, onWrite
   }
   return (
     <Box data-testid="move-people">
-      {moves.length === 0 && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('move.nobody')}</Typography>}
+      {moves.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('move.nobody')}</Typography>}
       {moves.length > 0 && (
         <Box component="table" sx={TABLE}>
           <thead>
@@ -116,7 +116,7 @@ export function MovePeople({ moves, placesFor, names, readOnly, manages, onWrite
         </Box>
       )}
       {said && (
-        <Typography sx={{ fontSize: 12, mt: 0.75, color: said.tone === 'error' ? 'error.main' : 'text.secondary' }} role="status" data-testid="move-said">
+        <Typography sx={{ fontSize: 'var(--t-small)', mt: 0.75, color: said.tone === 'error' ? 'error.main' : 'text.secondary' }} role="status" data-testid="move-said">
           {said.text}
         </Typography>
       )}
@@ -125,11 +125,11 @@ export function MovePeople({ moves, placesFor, names, readOnly, manages, onWrite
 }
 
 const TABLE = {
-  width: '100%', borderCollapse: 'collapse', fontSize: 12, lineHeight: 1.3,
+  width: '100%', borderCollapse: 'collapse', fontSize: 'var(--t-small)', lineHeight: 1.3,
   '& td, & th': { py: 0.5, pr: 1.5, textAlign: 'left', verticalAlign: 'middle' },
-  '& th': { fontSize: 11, color: 'text.secondary', fontWeight: 700 },
+  '& th': { fontSize: 'var(--t-small)', color: 'text.secondary', fontWeight: 700 },
   '& tr + tr td': { borderTop: 1, borderColor: 'divider' },
-  '& .MuiSelect-select': { fontSize: 12, py: 0.25 },
+  '& .MuiSelect-select': { fontSize: 'var(--t-small)', py: 0.25 },
 } as const
 
 function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: {
@@ -162,7 +162,7 @@ function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: 
           <MenuItem value={END}>{s('move.endOnly', { day: lastDay })}</MenuItem>
         </TextField>
       </td>
-      <td style={{ color: 'inherit' }}><Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{why.join(' · ')}</Typography></td>
+      <td style={{ color: 'inherit' }}><Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{why.join(' · ')}</Typography></td>
     </tr>
   )
 }

@@ -51,7 +51,7 @@ export function ChangedElsewhereNotice({
     <Alert
       severity={conflict ? 'warning' : 'info'}
       square
-      sx={{ py: 0.25, fontSize: 13, borderRadius: 0 }}
+      sx={{ py: 0.25, fontSize: 'var(--t-body)', borderRadius: 0 }}
       data-testid="changed-elsewhere-notice"
       action={(
         <Stack direction="row" spacing={1}>

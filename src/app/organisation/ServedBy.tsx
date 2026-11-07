@@ -30,7 +30,7 @@ import { pickableBy } from './servedByView'
 import type { ScopeTypeLink } from './servedByView'
 import type { ServedByAccess } from './useServedBy'
 
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   scope: ScopePath
@@ -58,11 +58,11 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
       <TypeLine type={view.type} s={s} />
       {view.rows.map((row) => (
         <Box key={row.id} data-testid="served-by-row" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', my: 0.25 }}>
-          <Typography sx={{ fontSize: 13 }}>
+          <Typography sx={{ fontSize: 'var(--t-body)' }}>
             <Box component="span" sx={{ color: 'text.secondary' }}>{row.type ? `${row.type} · ` : ''}</Box>
             <Link
               component="button" type="button" underline="hover" data-testid="served-by-unit"
-              onClick={() => { onLeave?.(); servedBy.open(row.id) }} sx={{ fontSize: 13, verticalAlign: 'baseline' }}
+              onClick={() => { onLeave?.(); servedBy.open(row.id) }} sx={{ fontSize: 'var(--t-body)', verticalAlign: 'baseline' }}
             >
               {row.name}
             </Link>
@@ -76,7 +76,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
           {row.mayStop && servedBy.mayChange(row.id) && (
             <IconButton
               size="small" aria-label={s('org.servedByRemove', { unit: row.name, scope: here })}
-              onClick={() => servedBy.remove(scope, row.id)} sx={{ p: 0.25, fontSize: 12 }}
+              onClick={() => servedBy.remove(scope, row.id)} sx={{ p: 0.25, fontSize: 'var(--t-small)' }}
             >
               ✕
             </IconButton>
@@ -96,7 +96,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
         />
       </Box>
       {view.owner && (
-        <Typography sx={{ fontSize: 13, mt: 0.75 }} data-testid="served-by-owner">
+        <Typography sx={{ fontSize: 'var(--t-body)', mt: 0.75 }} data-testid="served-by-owner">
           {view.owner.unit === undefined
             ? s('org.domainOwnerNoUnit', { role: view.owner.role })
             : view.owner.people.length === 0
@@ -116,7 +116,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   }
   return (
     <Box data-testid="served-by" data-guide="org.servedBy">
-      <Typography component="h2" sx={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' }}>{s('org.servedBy')}</Typography>
+      <Typography component="h2" sx={{ fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' }}>{s('org.servedBy')}</Typography>
       <Typography sx={{ ...QUIET, mb: 0.75 }}>{s('org.servedByHint', { scope: here })}</Typography>
       {body}
     </Box>
@@ -144,7 +144,7 @@ function TypeLine({ type, s }: { type: ScopeTypeLink; s: Translate }) {
           : s('org.typeUnsaid', { types })
   const warns = type.link === 'disagrees' || type.link === 'gone'
   return (
-    <Typography sx={{ fontSize: 12, color: warns ? 'warning.main' : 'text.secondary', mb: 0.5 }} data-testid="served-by-type" data-link={type.link}>
+    <Typography sx={{ fontSize: 'var(--t-small)', color: warns ? 'warning.main' : 'text.secondary', mb: 0.5 }} data-testid="served-by-type" data-link={type.link}>
       {said}
     </Typography>
   )

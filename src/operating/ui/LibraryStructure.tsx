@@ -76,7 +76,7 @@ export function LibraryStructure(props: LibraryStructureProps) {
         noSlots={t('operating.libraryNoSlots')} showRange
       >
         <Note standing={standing} row={row} rows={rows} t={t} />
-        {type.purpose && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{type.purpose}</Typography>}
+        {type.purpose && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{type.purpose}</Typography>}
         {answers.map((slot) => (
           <Answers key={slot.role} library={library} role={slot.role} name={roles.get(slot.role)?.name ?? slot.role} language={language} />
         ))}
@@ -117,7 +117,7 @@ function Tick({ entry, name, standing, ticked, onTick }: {
 } & Pick<LibraryStructureProps, 'ticked' | 'onTick'>) {
   return (
     <FormControlLabel
-      sx={{ m: 0, mr: 0.5, '& .MuiFormControlLabel-label': { fontWeight: 700, fontSize: 13 } }}
+      sx={{ m: 0, mr: 0.5, '& .MuiFormControlLabel-label': { fontWeight: 700, fontSize: 'var(--t-body)' } }}
       control={(
         <Checkbox size="small" sx={{ p: 0.25, mr: 0.5 }} checked={standing !== undefined || ticked.has(entry)} disabled={standing !== undefined}
           onChange={(_event, on) => onTick(entry, on)} />
@@ -135,7 +135,7 @@ function Note({ standing, row, rows, t }: {
   if (standing) words = t(standing.matched ? 'operating.inYourModelMatched' : 'operating.inYourModel', { name: standing.name })
   else if (row?.fate === 'reused') words = t('operating.usesYour', { name: row.name })
   else if (row && !row.asked) words = t('operating.comesAlong', { names: row.by.map((entry) => rows.get(entry)?.term ?? entry).join(', ') })
-  return words ? <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, fontStyle: 'italic' }}>{words}</Typography> : null
+  return words ? <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.25, fontStyle: 'italic' }}>{words}</Typography> : null
 }
 
 /** What a role answers for, folded out under its card: each responsibility, and its letter. */
@@ -144,13 +144,13 @@ function Answers({ library, role, name, language, id }: { library: Library; role
   const answers = answersOf(library, role, language)
   return (
     <Box id={id} sx={{ mt: 0.75, pl: 1, borderLeft: 2, borderColor: 'divider' }}>
-      <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{t('operating.answersFor', { role: name })}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700 }}>{t('operating.answersFor', { role: name })}</Typography>
       {answers.length === 0
-        ? <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('operating.answersNone')}</Typography>
+        ? <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('operating.answersNone')}</Typography>
         : (
           <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
             {answers.map((one) => (
-              <Typography component="li" key={one.entry} sx={{ fontSize: 11 }}>
+              <Typography component="li" key={one.entry} sx={{ fontSize: 'var(--t-small)' }}>
                 <Box component="abbr" title={t(`operating.raci.${one.raci}`)} sx={{ fontWeight: 700, mr: 0.5, textDecoration: 'none' }}>{one.raci}</Box>
                 {one.name}
               </Typography>
@@ -175,7 +175,7 @@ function LooseRole({ role, ...props }: { role: LibraryRole } & LibraryStructureP
         {role.manages && <Badge>{t('operating.managesBadge')}</Badge>}
       </Box>
       <Note standing={standing} row={rows.get(role.entry)} rows={rows} t={t} />
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{role.purpose[language]}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{role.purpose[language]}</Typography>
       <Fold open={open} onClick={() => onFold(role.entry)} controls={`answers-${role.entry}`}>
         {t(count === 1 ? 'operating.answersCountOne' : 'operating.answersCountOther', { count })}
       </Fold>
@@ -187,7 +187,7 @@ function LooseRole({ role, ...props }: { role: LibraryRole } & LibraryStructureP
 function Fold({ open, onClick, controls, children }: { open: boolean; onClick(): void; controls: string; children: ReactNode }) {
   return (
     <ButtonBase onClick={onClick} aria-expanded={open} aria-controls={open ? controls : undefined}
-      sx={{ mt: 0.5, fontSize: 11, color: 'primary.main', borderRadius: 0.5, px: 0.25 }}>
+      sx={{ mt: 0.5, fontSize: 'var(--t-small)', color: 'primary.main', borderRadius: 0.5, px: 0.25 }}>
       {open ? '▾ ' : '▸ '}{children}
     </ButtonBase>
   )

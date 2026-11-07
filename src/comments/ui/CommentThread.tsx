@@ -74,7 +74,7 @@ export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, o
   if (scope !== undefined && scope !== access.scope) {
     return (
       <ThreadFrame count={undefined}>
-        <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
           {t('comments.elsewhere')}
           {onOpenScope && (
             <>
@@ -149,7 +149,7 @@ function OpenThread({ access, about, nameOf, openFrom }: {
 
   return (
     <ThreadFrame count={count}>
-      {entries.length === 0 && <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{t('comments.empty')}</Typography>}
+      {entries.length === 0 && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.empty')}</Typography>}
       {entries.map(({ comment, replies }) => (
         <Box key={comment.id} sx={{ display: 'grid', gap: 0.75 }}>
           <Entry comment={comment} actions={actions} />
@@ -166,7 +166,7 @@ function OpenThread({ access, about, nameOf, openFrom }: {
           )}
         </Box>
       ))}
-      {refused && <Typography role="alert" sx={{ fontSize: 12.5, color: 'error.main' }}>{t('comments.refused')}</Typography>}
+      {refused && <Typography role="alert" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{t('comments.refused')}</Typography>}
       {asking
         ? <AskMe names={names} onCancel={() => setAsking(undefined)} onPicked={(id) => {
           setAsking(undefined)
@@ -183,8 +183,8 @@ function NewComment({ access, names, writing, onWrite }: {
   access: CommentsAccess; names: PersonNames; writing: Writing | undefined; onWrite: (body: string) => void
 }) {
   const { t } = useStrings()
-  if (!access.mayComment) return <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('comments.readOnly')}</Typography>
-  if (!names.access) return <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('comments.noRegister')}</Typography>
+  if (!access.mayComment) return <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.readOnly')}</Typography>
+  if (!names.access) return <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.noRegister')}</Typography>
   if (writing && writing.kind !== 'new') return null
   return <Composer label={t('comments.write')} submit={t('comments.send')} testId="comment-new" onSubmit={onWrite} clears />
 }
@@ -196,7 +196,7 @@ function AskMe({ names, onPicked, onCancel }: { names: PersonNames; onPicked: (i
   if (!names.access) return null
   return (
     <Box data-testid="comment-who" sx={{ display: 'grid', gap: 0.75, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-      <Typography sx={{ fontSize: 12.5 }}>{t('comments.who')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)' }}>{t('comments.who')}</Typography>
       <PersonPicker register={names.access} saying={saying} value={undefined} onChange={(id) => { if (id) onPicked(id) }} s={t} />
       <Box><Button size="small" onClick={onCancel}>{t('comments.cancel')}</Button></Box>
     </Box>
@@ -266,14 +266,14 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
       ref={root} data-testid={`comment-${comment.id}`} data-pointed={pointed ? 'true' : undefined}
       sx={{ display: 'grid', gap: 0.25, ...(pointed ? { outline: 2, outlineColor: 'primary.main', outlineOffset: 4, borderRadius: 1 } : {}) }}
     >
-      <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{byline}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{byline}</Typography>
       {comment.from && <CameWith from={comment.from} actions={actions} />}
-      {gone && <Typography sx={{ fontSize: 13, fontStyle: 'italic', color: 'text.secondary' }}>{t('comments.removed')}</Typography>}
+      {gone && <Typography sx={{ fontSize: 'var(--t-small)', fontStyle: 'italic', color: 'text.secondary' }}>{t('comments.removed')}</Typography>}
       {!gone && editing && (
         <Composer label={t('comments.edit')} submit={t('comments.save')} initial={comment.body} testId="comment-edit-field"
           onSubmit={(body) => actions.edit(comment.id, body)} onCancel={() => actions.setWriting(undefined)} />
       )}
-      {!gone && !editing && <Box sx={{ fontSize: 13.5 }}>{renderMarkdown(comment.body)}</Box>}
+      {!gone && !editing && <Box sx={{ fontSize: 'var(--t-body)' }}>{renderMarkdown(comment.body)}</Box>}
       {!gone && !editing && <EntryButtons comment={comment} mine={mine} actions={actions} />}
     </Box>
   )
@@ -289,7 +289,7 @@ function CameWith({ from, actions }: { from: CommentFrom; actions: EntryActions 
   const name = actions.nameOf?.(from) ?? from.id
   const open = actions.openFrom?.(from)
   return (
-    <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }} data-testid="comment-from">
+    <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="comment-from">
       {t('comments.cameWith')}{' '}
       {open
         ? <Link component="button" type="button" onClick={open} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>{name}</Link>

@@ -106,7 +106,7 @@ function ViewCaption({ diagram, caption, onOpen }: { diagram: DesignDiagram; cap
   const { t } = useStrings()
   const name = caption || diagram.name
   return (
-    <Box component="span" sx={{ display: 'flex', gap: 1, alignItems: 'baseline', mt: 0.5, fontSize: '0.8em', color: 'text.secondary' }}>
+    <Box component="span" sx={{ display: 'flex', gap: 1, alignItems: 'baseline', mt: 0.5, fontSize: 'var(--t-small)', color: 'text.secondary' }}>
       <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{name}</Box>
       {onOpen && (
         <Link component="button" type="button" underline="hover" onClick={() => onOpen(diagram.id)} data-testid="view-open" sx={{ fontSize: 'inherit', whiteSpace: 'nowrap' }}>

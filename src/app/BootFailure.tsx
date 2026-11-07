@@ -36,8 +36,8 @@ export function BootFailure({ s, error, onStartFresh, onReload }: BootFailurePro
     <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
       <Alert severity="error" sx={{ maxWidth: 640, width: '100%' }} data-testid="boot-failure">
         <AlertTitle>{s('shell.bootFailed')}</AlertTitle>
-        <Typography sx={{ fontSize: 13 }}>{s('shell.bootFailedNote')}</Typography>
-        <Typography sx={{ fontSize: 12, mt: 1, color: 'text.secondary' }}>
+        <Typography sx={{ fontSize: 'var(--t-body)' }}>{s('shell.bootFailedNote')}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-small)', mt: 1, color: 'text.secondary' }}>
           {describeCause(error)}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>

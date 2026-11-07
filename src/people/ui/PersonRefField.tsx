@@ -69,7 +69,7 @@ const OFFERED = 3
 function Picked({ value, names, label, disabled, onChange, testId, s }: PersonRefFieldProps & { value: PersonRef }) {
   return (
     <Box data-testid={testId} sx={{ display: 'grid', gap: 0.25 }}>
-      <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
+      <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{label}</Typography>
       <Box>
         <Chip
           size="small" color="primary" variant="outlined" data-testid={testId ? `${testId}-picked` : undefined}
@@ -103,9 +103,9 @@ export function PersonRefField(props: PersonRefFieldProps) {
   if (picking && access) {
     return (
       <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
-        <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
+        <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{label}</Typography>
         <PersonPicker register={access} saying={saying} value={undefined} onChange={(id) => { if (id) pick(id) }} initialQuery={draft} s={s} />
-        {saying.said && <Typography sx={{ fontSize: 12, color: saying.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>{saying.said.text}</Typography>}
+        {saying.said && <Typography sx={{ fontSize: 'var(--t-small)', color: saying.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>{saying.said.text}</Typography>}
         <Box><Button size="small" onClick={() => setPicking(false)}>{s('people.cancel')}</Button></Box>
       </Box>
     )
@@ -123,8 +123,8 @@ export function PersonRefField(props: PersonRefFieldProps) {
   const inputId = props.inputTestId ?? (testId ? `${testId}-text` : undefined)
   const toPicker = access && people && !disabled ? () => setPicking(true) : undefined
   const offeredRow = !disabled && offered.length > 0 && (
-    <Box data-testid={testId ? `${testId}-offered` : undefined} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
-      <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.inRegister')}</Typography>
+    <Box data-testid={testId ? `${testId}-offered` : undefined} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', fontSize: 'var(--t-small)' }}>
+      <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('people.inRegister')}</Typography>
       {offered.map(({ person }) => (
         <Button
           key={person.id} size="small" sx={{ textTransform: 'none', minWidth: 0 }} onClick={() => pick(person.id)}

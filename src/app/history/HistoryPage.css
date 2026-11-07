@@ -4,12 +4,12 @@
 .history-page { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; color: var(--ink); background: var(--surface); }
 .history-page__inner { width: 100%; max-width: var(--w-dialog-l); margin-inline: auto; padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
 .history-page__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
-.history-page__head h1 { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); }
-.history-subject { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-2); font-size: var(--t-sm); }
-.history-subject select { height: var(--ctl-h); max-width: 40ch; padding-inline: var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--t-md); }
-.history-everywhere { padding: var(--s-2) var(--s-3); border-radius: var(--r-2); background: var(--surface-2); color: var(--ink-2); font-size: var(--t-sm); }
+.history-page__head h1 { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); }
+.history-subject { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-2); font-size: var(--t-body); }
+.history-subject select { height: var(--ctl-h); max-width: 40ch; padding-inline: var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--t-body); }
+.history-everywhere { padding: var(--s-2) var(--s-3); border-radius: var(--r-2); background: var(--surface-2); color: var(--ink-2); font-size: var(--t-small); }
 .history-everywhere p { margin: 0; }
-.history-since { margin: 0 0 var(--s-2); font-size: var(--t-md); font-weight: var(--fw-strong); }
+.history-since { margin: 0 0 var(--s-2); font-size: var(--t-body); font-weight: var(--fw-strong); }
 .history-changes { margin: 0; padding-inline-start: var(--s-4); }
 .history-changes li { margin-block-end: var(--s-1); }
 .history-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); width: 100%; }

@@ -52,7 +52,7 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
     <Dialog open onClose={props.onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ fontSize: 14 }}>
+        <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>
           <strong>{t('dialog.removeFromDiagram')}</strong> {t('dialog.deleteElementKeeps')}{' '}
           <strong>{t('dialog.deleteFromModelButton')}</strong>{' '}
           {t('dialog.deleteElementRemoves')}

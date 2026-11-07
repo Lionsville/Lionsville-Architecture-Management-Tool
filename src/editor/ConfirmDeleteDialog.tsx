@@ -68,7 +68,7 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
     <Dialog open onClose={props.onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.deleteTitle', { what })}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ fontSize: 14 }}>
+        <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>
           {subject || single
             ? t('dialog.deleteFromModel', { what: describeDeletion(summary, t) })
             : t('dialog.deleteThemFromModel')}

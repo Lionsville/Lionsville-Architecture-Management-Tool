@@ -24,7 +24,7 @@ export function CommentBadge({ about }: { about: RecordKey }) {
     <Tooltip title={t('comments.count', { count })}>
       <Box
         component="span" data-testid={`comment-badge-${about.kind}-${about.id}`} aria-label={t('comments.count', { count })}
-        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, ml: 1, fontSize: 11, fontWeight: 400, color: 'text.secondary', verticalAlign: 'middle' }}
+        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, ml: 1, fontSize: 'var(--t-small)', fontWeight: 400, color: 'text.secondary', verticalAlign: 'middle' }}
       >
         <CommentIcon size={12} />{count}
       </Box>

@@ -111,12 +111,12 @@ export function RecordChanges({ about, scope, first = 'recorded', defaultOpen = 
     <Box data-testid="record-changes" sx={{ mt: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="caption" color="text.secondary" data-testid="record-changes-line">{line}</Typography>
-        <Button size="small" onClick={() => setOpen((was) => !was)} aria-expanded={open} sx={{ fontSize: 11, minWidth: 0, px: 0.75, py: 0 }}>
+        <Button size="small" onClick={() => setOpen((was) => !was)} aria-expanded={open} sx={{ fontSize: 'var(--t-small)', minWidth: 0, px: 0.75, py: 0 }}>
           {open ? t('changes.hide') : t('changes.show')}
         </Button>
       </Box>
       {open && (
-        <Box component="ol" aria-label={t('changes.heading')} data-testid="record-changes-list" sx={{ listStyle: 'none', m: 0, mt: 0.5, p: 0, fontSize: 13 }}>
+        <Box component="ol" aria-label={t('changes.heading')} data-testid="record-changes-list" sx={{ listStyle: 'none', m: 0, mt: 0.5, p: 0, fontSize: 'var(--t-body)' }}>
           {entries.map((entry, index) => (
             <Box component="li" key={entry.id} sx={{ display: 'grid', gridTemplateColumns: 'max-content max-content 1fr', columnGap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
               <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{when(entry.at, locale)}</Box>

@@ -80,7 +80,7 @@ export function LibraryDialog(props: LibraryDialogProps) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, minHeight: 48, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-        <Typography component="h2" id={titleId} sx={{ fontWeight: 700, fontSize: 15 }}>{t('operating.libraryDialog')}</Typography>
+        <Typography component="h2" id={titleId} sx={{ fontWeight: 700, fontSize: 'var(--t-large)' }}>{t('operating.libraryDialog')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{t('operating.libraryDialogHint')}</Typography>
         <Tooltip title={t('operating.libraryDialogClose')}>
           <IconButton size="small" aria-label={t('operating.libraryDialogClose')} onClick={props.onClose}><CloseIcon /></IconButton>
@@ -130,7 +130,7 @@ function Body({ lists, libraries, libraryId, language, makeId, onBring }: Librar
             label={(
               <Box>
                 <Box component="span" sx={{ display: 'block', fontWeight: 700, color: 'text.primary' }}>{one.name}</Box>
-                <Box component="span" sx={{ display: 'block', fontSize: 11, color: 'text.secondary' }}>
+                <Box component="span" sx={{ display: 'block', fontSize: 'var(--t-small)', color: 'text.secondary' }}>
                   {countsLine(t, one.unitTypes.length, one.roles.length, one.responsibilities.length)}
                 </Box>
               </Box>

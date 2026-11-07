@@ -230,7 +230,7 @@ function UnreadableNotice({ parts }: { parts: WorkspaceParts }) {
     <Alert
       severity="warning"
       square
-      sx={{ py: 0.25, fontSize: 13, borderRadius: 0, '& .MuiAlert-action': { alignItems: 'center', pt: 0 } }}
+      sx={{ py: 0.25, fontSize: 'var(--t-body)', borderRadius: 0, '& .MuiAlert-action': { alignItems: 'center', pt: 0 } }}
       data-testid="unreadable-notice"
       action={recovering ? (
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

@@ -39,15 +39,15 @@ export function BlockFacts({ element }: { element: Pick<DesignElement, 'id' | 'k
   const chosen = facts.chosenAs(element.id)
   if (element.kind !== 'buildingBlock' && chosen.length === 0) return null
   return (
-    <Box sx={{ fontSize: 13, display: 'grid', gap: 0.5 }} data-testid="block-facts">
+    <Box sx={{ fontSize: 'var(--t-body)', display: 'grid', gap: 0.5 }} data-testid="block-facts">
       {element.kind === 'buildingBlock' && (
-        <Typography sx={{ fontSize: 13 }}>
+        <Typography sx={{ fontSize: 'var(--t-body)' }}>
           {t('blocks.factBlock')}{' '}
           <Link component="button" type="button" onClick={() => facts.openBlock(element.id)} data-testid="block-facts-open">{t('blocks.factOpen')}</Link>
         </Typography>
       )}
       {chosen.map((one) => (
-        <Typography key={`${one.scope}~${one.block}`} sx={{ fontSize: 13 }}>
+        <Typography key={`${one.scope}~${one.block}`} sx={{ fontSize: 'var(--t-body)' }}>
           {t('blocks.factChosen', { sbb: one.sbb, block: one.blockName, scope: one.scopeName })}{' '}
           <Link component="button" type="button" onClick={() => facts.openBlock(one.block, one.scope)}>{t('blocks.factEvaluation')}</Link>
         </Typography>

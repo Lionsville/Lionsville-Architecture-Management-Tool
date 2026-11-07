@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
 /* The sheet and its Coverage reading. Static, because a real sheet draws hundreds of rows. */
-.sheet-page { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-xs); }
+.sheet-page { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-small); }
 .sheet-page__work { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
 .sheet-page[data-exporting] { flex: none; }
 .sheet-page[data-exporting] .sheet-page__work { flex: none; }
@@ -26,12 +26,12 @@
 /* The areas reflow in the window, downward only: what paper wants is the picture's. */
 .sheet-areas { column-width: 232px; column-gap: var(--s-4); }
 .sheet-area { break-inside: avoid; margin-block-end: var(--s-4); }
-.sheet-areas__heading { margin: var(--s-4) 0 var(--s-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.sheet-areas__heading { margin: var(--s-4) 0 var(--s-2); font-size: var(--t-small); font-weight: var(--fw-strong); }
 .sheet-areas__packed { position: relative; }
 .sheet-areas__packed .sheet-area { position: absolute; margin: 0; }
 .sheet-area[data-standin] { border-inline-start: 1px dashed var(--line-strong); padding-inline-start: var(--s-2); }
 .sheet-area__head { display: flex; align-items: flex-start; gap: var(--s-2); padding-block: var(--s-1); border-bottom: 1px solid var(--line-strong); }
-.sheet-area__headMain { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; font-size: var(--t-sm); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; }
+.sheet-area__headMain { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; font-size: var(--t-body); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; }
 .sheet-area__count { flex: none; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .sheet-area__note { padding-block: var(--s-1); color: var(--ink-2); }
 .sheet-area__problem { display: flex; gap: var(--s-1); align-items: center; padding-block: 2px; color: var(--warn); }
@@ -79,7 +79,7 @@
 .sheet-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: var(--s-3); align-items: start; }
 .sheet-tile { display: flex; flex-direction: column; gap: var(--s-1); appearance: none; border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-2); background: var(--surface); color: inherit; font: inherit; text-align: start; cursor: pointer; }
 .sheet-tile:hover { border-color: var(--line-strong); }
-.sheet-tile__name { font-size: var(--t-sm); font-weight: var(--fw-strong); overflow-wrap: anywhere; hyphens: auto; }
+.sheet-tile__name { font-size: var(--t-body); font-weight: var(--fw-strong); overflow-wrap: anywhere; hyphens: auto; }
 .sheet-tile__squares { display: flex; flex-wrap: wrap; gap: 2px; }
 .sheet-tile__square { width: 10px; height: 10px; border: 1px solid var(--sheet-square, var(--line-strong)); background: var(--sheet-square, transparent); }
 .sheet-tile__square[data-hollow] { background: transparent; }
@@ -156,5 +156,5 @@
 .sheet-page[data-exporting] .kit-matrix__scroll { overflow: visible; }
 .map-verdict[data-gap] { color: var(--warn); font-weight: var(--fw-medium); }
 .map-column__row { display: flex; gap: var(--s-2); }
-.map-count { color: var(--cov-apps); font-size: var(--t-xs); }
+.map-count { color: var(--cov-apps); font-size: var(--t-small); }
 .map-list { flex: 1 1 auto; min-width: 0; overflow: auto; }

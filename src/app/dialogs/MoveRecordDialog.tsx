@@ -110,7 +110,7 @@ export function MoveRecordDialog({
             ))}
           </TextField>
           {gesture !== '' && (
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
               {s(GESTURE_WHAT[gesture])}
             </Typography>
           )}
@@ -138,8 +138,8 @@ export function MoveRecordDialog({
               )}
               label={(
                 <span>
-                  <Typography component="span" sx={{ fontSize: 13 }}>{s('gesture.keepStandIn')}</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                  <Typography component="span" sx={{ fontSize: 'var(--t-body)' }}>{s('gesture.keepStandIn')}</Typography>
+                  <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
                     {s('gesture.keepStandInHelp')}
                   </Typography>
                 </span>

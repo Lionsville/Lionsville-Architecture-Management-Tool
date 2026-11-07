@@ -211,7 +211,7 @@ function NewCause({ spec, create, made, onMade, root, problem, onUse, renderMark
       </Box>
       <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography component="h3" sx={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{s('observation.causeLinks')}</Typography>
+          <Typography component="h3" sx={{ fontSize: 'var(--t-large)', fontWeight: 600, flex: 1 }}>{s('observation.causeLinks')}</Typography>
           {!root && create.behind.length > 0 && (
             <Tooltip title={s('observation.causeBehindTip')} describeChild>
               <Button size="small" variant="outlined" startIcon={<LinkIcon size={14} />} onClick={() => setPicking(true)} sx={{ textTransform: 'none' }} data-testid="link-behind-add">
@@ -220,7 +220,7 @@ function NewCause({ spec, create, made, onMade, root, problem, onUse, renderMark
             </Tooltip>
           )}
         </Box>
-        {root && <Alert severity="info" variant="outlined" sx={{ mb: 1, fontSize: 13 }}>{s('observation.rootNote')}</Alert>}
+        {root && <Alert severity="info" variant="outlined" sx={{ mb: 1, fontSize: 'var(--t-body)' }}>{s('observation.rootNote')}</Alert>}
         <LinkRowsTable
           rows={rows} s={s} testId="link-rows" empty=""
           onStrength={(key, strength) => (key === 'explains'

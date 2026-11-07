@@ -40,9 +40,9 @@ export function RestoreDialog({ open, name, date, whole = false, onCancel, onRes
       }
   return (
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm" aria-labelledby="restore-title">
-      <DialogTitle id="restore-title" sx={{ fontSize: 16 }}>{said.title}</DialogTitle>
+      <DialogTitle id="restore-title" sx={{ fontSize: 'var(--t-large)' }}>{said.title}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ fontSize: 13 }}>{said.body}</DialogContentText>
+        <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>{said.body}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>

@@ -141,7 +141,7 @@ function PaletteRows({ lines, first, active, onHover, onRun }: {
     <>
       {runsOfGroup(lines).map(({ group, from, run: inGroup }) => (
           <Box key={group} role="group" aria-label={group}>
-            <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11 }}>{group}</ListSubheader>
+            <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)' }}>{group}</ListSubheader>
             {inGroup.map((line, offset) => {
               const index = first + from + offset
               return (
@@ -151,8 +151,8 @@ function PaletteRows({ lines, first, active, onHover, onRun }: {
                   data-testid={`palette-${line.id}`}
                   sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
                 >
-                  <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
-                  {line.keys !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{line.keys}</Typography>}
+                  <Typography sx={{ fontSize: 'var(--t-body)', flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
+                  {line.keys !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{line.keys}</Typography>}
                 </ListItemButton>
               )
             })}
@@ -269,7 +269,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
             which kind a row is as it reaches the first of them. */}
         {runsOfKind(hits).map(({ kind, from, run }) => (
           <Box key={`${kind}-${from}`} role="group" aria-labelledby={`lv-gsearch-kind-${from}`}>
-            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
               {s(KIND_LABEL[kind])}
             </ListSubheader>
             {run.map((hit, offset) => {
@@ -297,21 +297,21 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
       {/* What a whole sentence needs room for: a hit read before it is opened. */}
       {previewed && (
         <Box data-testid="palette-preview" sx={{ flex: '0 0 300px', minWidth: 0, borderLeft: 1, borderColor: 'divider', p: 1.5, overflowY: 'auto', maxHeight: 420 }}>
-          {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
-          <Typography sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
-          {previewed.scope !== undefined && <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
-          {previewed.detail && <Typography sx={{ fontSize: 13, mt: 1, overflowWrap: 'anywhere' }}>{previewed.detail}</Typography>}
-          {previewed.snippet && <Typography sx={{ fontSize: 13, mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
+          {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
+          <Typography sx={{ fontSize: 'var(--t-large)', fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
+          {previewed.scope !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
+          {previewed.detail && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.detail}</Typography>}
+          {previewed.snippet && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
         </Box>
       )}
       </Box>
       {/* Beside the listbox, not in it: a listbox holds options and nothing else. */}
       {total === 0 && (
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, pb: 1.5 }}>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pb: 1.5 }}>
           {trimmed === '' ? s('gsearch.empty') : s('gsearch.noMatches', { query: trimmed })}
         </Typography>
       )}
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 2, pb: 1.5 }}>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pb: 1.5 }}>
         {s('gsearch.hint')}
       </Typography>
     </Dialog>
@@ -357,15 +357,15 @@ function HitRow({ hit, scopeLabel, s }: {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {hit.label !== undefined && (
-          <Typography sx={{ fontSize: 11, color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
+          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
             {hit.label}
           </Typography>
         )}
-        <Typography sx={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0 }} noWrap>{title}</Typography>
-        {chip !== undefined && <Chip size="small" label={chip} sx={{ height: 18, fontSize: 10 }} />}
+        <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600, flex: 1, minWidth: 0 }} noWrap>{title}</Typography>
+        {chip !== undefined && <Chip size="small" label={chip} sx={{ height: 18, fontSize: 'var(--t-small)' }} />}
       </Box>
       {second !== '' && (
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>{second}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} noWrap>{second}</Typography>
       )}
     </>
   )

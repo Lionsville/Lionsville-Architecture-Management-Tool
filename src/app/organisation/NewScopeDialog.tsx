@@ -101,7 +101,7 @@ export function NewScopeDialog({
               />
             )}
             label={s('picker.withBoard')}
-            slotProps={{ typography: { sx: { fontSize: 13 } } }}
+            slotProps={{ typography: { sx: { fontSize: 'var(--t-body)' } } }}
           />
         </>
       )}

@@ -133,7 +133,7 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('replace.also')}</Typography>
           {also.map((id) => (
             <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 13, flex: 1 }}>{nameOf(id)}</Typography>
+              <Typography sx={{ fontSize: 'var(--t-body)', flex: 1 }}>{nameOf(id)}</Typography>
               <Button size="small" onClick={() => setAlso((list) => list.filter((one) => one !== id))}>{t('plan.remove')}</Button>
             </Box>
           ))}

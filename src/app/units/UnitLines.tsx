@@ -52,16 +52,16 @@ export type UnitLinesProps = {
   s: Translate
 }
 
-const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
-const LINE = { fontSize: 13 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
-const ACTION = { minWidth: 0, px: 0.5, py: 0, fontSize: 12, textTransform: 'none' } as const
+const SECTION = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
+const LINE = { fontSize: 'var(--t-body)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
+const ACTION = { minWidth: 0, px: 0.5, py: 0, fontSize: 'var(--t-small)', textTransform: 'none' } as const
 
 /** The mark an override wears: a unit's own line, a holder's own, in the override colour (ADR-0039, amended 17 October 2026). */
 export function OverrideMark({ s, testId = 'line-override-mark' }: { s: Translate; testId?: string }) {
   return (
     <Chip variant="outlined" label={s('unit.lineOverrideMark')} data-testid={testId}
-      sx={{ height: 18, fontSize: 10, ml: 0.5, borderColor: (theme) => reportingLineColours(theme).override, borderWidth: 2, borderStyle: 'dashed' }} />
+      sx={{ height: 18, fontSize: 'var(--t-small)', ml: 0.5, borderColor: (theme) => reportingLineColours(theme).override, borderWidth: 2, borderStyle: 'dashed' }} />
   )
 }
 
@@ -103,7 +103,7 @@ export function UnitLines(props: UnitLinesProps) {
           <Typography component="div" sx={LINE}>
             {lineWords(line, organisation, day, s, names)}
             <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
-              sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
+              sx={{ height: 18, fontSize: 'var(--t-small)', ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
             <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>
               {s(line.source === 'type' ? 'unit.lineFromType' : line.source === 'role' ? 'unit.lineFromRole' : 'unit.lineOwn')}
               {(line.from !== undefined || line.until !== undefined) ? ` · ${s('unit.lineDays', { from: line.from ?? '…', until: line.until ?? '…' })}` : ''}
@@ -143,7 +143,7 @@ export function UnitLines(props: UnitLinesProps) {
           onSave={(said) => write({ role: editing, ...said })} onCancel={() => { setEditing(undefined); setRefused(undefined) }}
         />
       )}
-      {refused && <Typography role="alert" sx={{ fontSize: 12, color: 'error.main' }} data-testid="unit-line-refused">{refused}</Typography>}
+      {refused && <Typography role="alert" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }} data-testid="unit-line-refused">{refused}</Typography>}
       {into.length > 0 && (
         <>
           <Typography sx={SECTION}>{s('unit.reportedToBy')}</Typography>
@@ -154,7 +154,7 @@ export function UnitLines(props: UnitLinesProps) {
               <Typography key={`${line.unitId}/${line.roleId}/${line.kind}/${line.assignmentId ?? ''}`} component="div" sx={LINE} data-testid="unit-line-into" data-kind={line.kind}>
                 {holder !== undefined ? s('unit.reportedToByHolder', { ...words, person: holder }) : s('unit.reportedToByLine', words)}
                 <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
-                  sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
+                  sx={{ height: 18, fontSize: 'var(--t-small)', ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
                 {line.override && <OverrideMark s={s} />}
               </Typography>
             )

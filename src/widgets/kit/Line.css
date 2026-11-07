@@ -19,7 +19,7 @@
   border-radius: var(--r-2);
   background: var(--surface-raised);
   color: var(--ink-2);
-  font-size: var(--t-small);
+  font-size: var(--canvas-t-xs);
   line-height: var(--lh-tight);
   text-align: center;
   overflow-wrap: anywhere;

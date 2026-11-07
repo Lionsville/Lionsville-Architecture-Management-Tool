@@ -189,12 +189,12 @@ function components(
   context: BlockContext,
 ): Components {
   return {
-    h1: heading(1, '1.6em'),
-    h2: heading(2, '1.35em'),
-    h3: heading(3, '1.15em'),
-    h4: heading(4, '1em'),
-    h5: heading(5, '0.95em'),
-    h6: heading(6, '0.9em', 500),
+    h1: heading(1, 'var(--t-title)'),
+    h2: heading(2, 'var(--t-large)'),
+    h3: heading(3, 'var(--t-body)'),
+    h4: heading(4, 'var(--t-body)'),
+    h5: heading(5, 'var(--t-body)'),
+    h6: heading(6, 'var(--t-body)', 500),
     p: ({ children, node }) => (
       <Typography
         // A paragraph of pictures only is a block: a view in it is drawn live, and a canvas is no phrasing content.
@@ -259,7 +259,7 @@ function components(
         <Box
           component="code"
           className={className}
-          sx={{ fontFamily: CODE_FONT, fontSize: '0.9em', bgcolor: 'action.hover', px: '0.35em', py: '0.1em', borderRadius: 1 }}
+          sx={{ fontFamily: CODE_FONT, fontSize: 'inherit', bgcolor: 'action.hover', px: '0.35em', py: '0.1em', borderRadius: 1 }}
         >
           {children}
         </Box>
@@ -271,7 +271,7 @@ function components(
         {...WIDE}
         sx={{
           my: '0.7em', p: '0.8em', overflowX: 'auto', borderRadius: 1, bgcolor: 'action.hover',
-          fontFamily: CODE_FONT, fontSize: '0.9em', lineHeight: 1.5,
+          fontFamily: CODE_FONT, fontSize: 'inherit', lineHeight: 1.5,
           '& code': { bgcolor: 'transparent', p: 0, fontSize: 'inherit' },
         }}
       >

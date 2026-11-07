@@ -69,7 +69,7 @@ export function InspectorSection({
           />
         </svg>
         {/* The same small capitals every panel's section wears (`SectionHeading`). */}
-        <Typography component="span" sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
+        <Typography component="span" sx={{ fontSize: 'var(--t-small)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
           {title}
         </Typography>
         {note && (

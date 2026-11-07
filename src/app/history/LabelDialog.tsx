@@ -29,9 +29,9 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
 
   return (
     <FieldsDialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontSize: 16 }}>{s('history.labelTitle')}</DialogTitle>
+      <DialogTitle sx={{ fontSize: 'var(--t-large)' }}>{s('history.labelTitle')}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ fontSize: 13, mb: 2 }}>{s('history.labelBody')}</DialogContentText>
+        <DialogContentText sx={{ fontSize: 'var(--t-body)', mb: 2 }}>{s('history.labelBody')}</DialogContentText>
         <TextField
           autoFocus
           fullWidth

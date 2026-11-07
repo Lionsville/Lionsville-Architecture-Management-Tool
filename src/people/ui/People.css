@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.people-page { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--surface); color: var(--ink); font-size: var(--t-md); }
+.people-page { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--surface); color: var(--ink); font-size: var(--t-body); }
 .people-head {
   display: flex;
   flex-wrap: wrap;
@@ -13,9 +13,9 @@
 }
 .people-head__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-inline-start: auto; padding-bottom: var(--s-1); }
 .people-main { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s-3) var(--s-4); }
-.people-foot { flex: none; margin: 0; padding: var(--s-2) var(--s-4); border-top: 1px solid var(--line); color: var(--ink-2); font-size: var(--t-sm); }
+.people-foot { flex: none; margin: 0; padding: var(--s-2) var(--s-4); border-top: 1px solid var(--line); color: var(--ink-2); font-size: var(--t-small); }
 .people-foot__more { margin: var(--s-1) 0 0; }
-.people-counts { color: var(--ink-2); font-size: var(--t-sm); white-space: nowrap; }
+.people-counts { color: var(--ink-2); font-size: var(--t-small); white-space: nowrap; }
 .people-list { margin-top: var(--s-2); }
 
 .people-link {
@@ -31,37 +31,37 @@
   cursor: pointer;
 }
 .people-link:hover { color: var(--ink); text-decoration-color: currentColor; }
-.people-quiet { color: var(--ink-2); font-size: var(--t-sm); }
+.people-quiet { color: var(--ink-2); font-size: var(--t-small); }
 .people-line { display: block; }
 .people-lines { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; padding-block: 2px; }
 .people-stack { display: flex; flex-direction: column; gap: var(--s-3); }
 .people-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
-.people-note { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
+.people-note { margin: 0; color: var(--ink-2); font-size: var(--t-small); }
 .people-warn { padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-2); }
 .people-warn__title { margin: 0 0 var(--s-1); font-weight: 600; }
 .people-effects { margin: 0; padding-inline-start: var(--s-4); }
 .people-effects > li + li { margin-top: var(--s-1); }
-.people-heading { margin: 0 0 var(--s-2); font-size: var(--t-md); font-weight: 600; }
+.people-heading { margin: 0 0 var(--s-2); font-size: var(--t-body); font-weight: 600; }
 
 /* Three dated steps: where somebody is in leaving, in plain dates. */
 .people-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin: 0 0 var(--s-3); padding: 0; list-style: none; }
 .people-steps__step { padding-top: var(--s-1); border-top: 2px solid var(--line-strong); min-width: 0; }
 .people-steps__step[data-done] { border-top-color: var(--ink-2); }
-.people-steps__label { display: block; color: var(--ink-2); font-size: var(--t-sm); }
+.people-steps__label { display: block; color: var(--ink-2); font-size: var(--t-small); }
 
 .people-side { min-width: 0; padding-block: var(--s-1); }
 .people-side__name { font-weight: 600; }
-.people-side__line { display: block; color: var(--ink-2); font-size: var(--t-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-side__line { display: block; color: var(--ink-2); font-size: var(--t-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .people-hold { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 3fr); gap: var(--s-2) var(--s-4); margin: 0; }
 .people-hold__row { display: contents; }
-.people-hold dt { color: var(--ink-2); font-size: var(--t-sm); }
+.people-hold dt { color: var(--ink-2); font-size: var(--t-small); }
 .people-hold dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
 .people-policy { display: flex; flex-direction: column; gap: var(--s-3); max-width: 560px; }
 .people-policy__days { display: flex; align-items: end; gap: var(--s-2); }
 .people-policy__days input { width: 96px; }
 
-.people-csv { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.people-csv { width: 100%; border-collapse: collapse; font-size: var(--t-body); }
 .people-csv th { color: var(--ink-2); font-weight: 400; text-align: start; }
 .people-csv th, .people-csv td { padding: var(--s-1) var(--s-2) var(--s-1) 0; border-bottom: 1px solid var(--line); text-align: start; }

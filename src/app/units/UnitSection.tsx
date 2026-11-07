@@ -143,9 +143,9 @@ export type UnitSectionProps = {
   s: Translate
 }
 
-const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
-const LINE = { fontSize: 13 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+const SECTION = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
+const LINE = { fontSize: 'var(--t-body)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 /** What the section is worked out from, once per render, on the day it is looked at. */
 function useUnitFacts(props: UnitSectionProps) {
@@ -327,7 +327,7 @@ function SitsUnder({ element, facts, editable, move, moveHere, now, scopeLabel, 
             size="small" variant="text" onClick={() => { if (!moveHere?.(element.id)) moving.open?.(element.id) }} aria-label={s('unitMove.sitsUnderMove', { parent: where })}
             title={s('unitMove.openNamed', { name: element.name })}
             data-testid="unit-sits-under-move" data-guide="unit.sitsUnder"
-            sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 13, textTransform: 'none', justifyContent: 'flex-start' }}
+            sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 'var(--t-body)', textTransform: 'none', justifyContent: 'flex-start' }}
           >
             {where}
           </Button>
@@ -496,7 +496,7 @@ function AnswersFor({ element, scope, model, index, dispatch, newRowId, writeIn,
           />
         )}
       </Box>
-      {refused && <Typography sx={{ fontSize: 12, color: 'warning.main' }} role="status">{s(refused)}</Typography>}
+      {refused && <Typography sx={{ fontSize: 'var(--t-small)', color: 'warning.main' }} role="status">{s(refused)}</Typography>}
     </>
   )
 }
@@ -538,9 +538,9 @@ function SlotLine({ slot, role, element, facts, today, editable, name, onAssign,
   const room = slot.max === undefined || holders.length < slot.max
   return (
     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', my: 0.25 }} data-testid={`unit-slot-${slot.role}`}>
-      <Typography sx={{ fontSize: 12, minWidth: 120 }}>
+      <Typography sx={{ fontSize: 'var(--t-small)', minWidth: 120 }}>
         {role?.name ?? slot.role} <Box component="span" sx={{ color: 'text.secondary' }}>{slotRange(slot)}</Box>
-        {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'text.secondary' }}>{s('unit.managesBadge')}</Box>}
+        {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('unit.managesBadge')}</Box>}
       </Typography>
       {holders.map((one, at) => (
         <Holder key={`${one.id}/${at}`} assignment={one} label={name(personOf(one))} you={facts.isMe(personOf(one))} editable={editable} onAssign={onAssign} s={s} />
@@ -656,7 +656,7 @@ function Managers(props: UnitSectionProps & {
       <Button
         size="small" variant="text" data-testid="unit-managed-why" aria-expanded={why} {...(why ? { 'aria-controls': noteId } : {})}
         onClick={() => setWhy((open) => !open)}
-        sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 12, textTransform: 'none', color: 'text.secondary' }}
+        sx={{ minWidth: 0, px: 0.5, py: 0, fontSize: 'var(--t-small)', textTransform: 'none', color: 'text.secondary' }}
       >
         <Box component="span" aria-hidden sx={{ mr: 0.5 }}>{why ? '▾' : '▸'}</Box>
         {s('unit.managedByWhy')}

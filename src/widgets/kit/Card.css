@@ -33,14 +33,14 @@
   hyphens: auto;
 }
 [data-distance='far'] .kit-card__name { -webkit-line-clamp: 2; }
-.kit-card__body { display: grid; gap: 1px; min-width: 0; font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight); }
+.kit-card__body { display: grid; gap: 1px; min-width: 0; font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight); }
 [data-distance='far'] .kit-card__over { display: none; }
 .kit-card__over,
 .kit-card__sub,
 .kit-card__about,
 .kit-card__word {
   color: var(--ink-3);
-  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   line-height: var(--lh-tight);
 }
 .kit-card[data-dimmed] .kit-card__sub,

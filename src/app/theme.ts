@@ -221,7 +221,6 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       // What MUI sizes for itself, below the scale or beside it: a tip of 11 px, a chip of 13, a cell of 14.
       MuiTooltip: { styleOverrides: { tooltip: { fontSize: SCALE['t-small'] } } },
-      MuiChip: { styleOverrides: { root: { fontSize: SCALE['t-small'], height: 'auto', minHeight: SCALE['row-h-dense'] }, label: { whiteSpace: 'normal' } } },
       MuiTableCell: { styleOverrides: { root: { fontSize: SCALE['t-body'] }, head: { fontSize: SCALE['t-small'] } } },
       MuiBadge: { styleOverrides: { badge: { fontSize: SCALE['t-small'] } } },
       MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: outline } } },
@@ -250,10 +249,13 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       },
       MuiChip: {
         styleOverrides: {
-          root: ({ ownerState, theme }) =>
-            ownerState.variant !== 'outlined' && isFilledColour(ownerState.color)
-              ? filledChip(theme, ownerState.color)
-              : {},
+          root: ({ ownerState, theme }) => ({
+            // A chip's own 13 px, and a height that lets its words grow.
+            fontSize: SCALE['t-small'],
+            height: 'auto',
+            minHeight: SCALE['row-h-dense'],
+            ...(ownerState.variant !== 'outlined' && isFilledColour(ownerState.color) ? filledChip(theme, ownerState.color) : {}),
+          }),
         },
       },
       // An unselected toggle is lettered in `action.active`, 54 % of the ink,

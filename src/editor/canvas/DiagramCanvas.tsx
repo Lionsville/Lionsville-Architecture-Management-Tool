@@ -1777,7 +1777,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             pointerEvents: 'none',
           }}
         >
-          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+          <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 600 }}>
             {t('canvas.connectHint')}
           </Typography>
         </Paper>

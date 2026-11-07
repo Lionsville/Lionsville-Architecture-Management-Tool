@@ -51,8 +51,8 @@ export type FindingMarkWords = {
   readonly takeBack: StringKey
 }
 
-const SMALL = { fontSize: 12 } as const
-const QUIET = { fontSize: 11.5, color: 'text.secondary' } as const
+const SMALL = { fontSize: 'var(--t-small)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 /**
  * *Mark as intended…*: the button, and the question it asks — the finding in
@@ -77,14 +77,14 @@ export function MarkAsIntended({ words, sentence, onMark, inline = false }: {
     <Box sx={inline ? { flex: 'none' } : { mt: 1 }}>
       <Button
         size="small" variant="text" onClick={() => setAsking(true)} aria-label={inline ? `${t(words.open)} ${sentence}` : undefined}
-        data-guide="findings.markIntended" data-testid="finding-mark" sx={{ fontSize: 11.5, textTransform: 'none', px: 0.5 }}
+        data-guide="findings.markIntended" data-testid="finding-mark" sx={{ fontSize: 'var(--t-small)', textTransform: 'none', px: 0.5 }}
       >
         {t(words.open)}
       </Button>
       <FieldsDialog open={asking} onClose={close} maxWidth="xs" fullWidth aria-labelledby={titleId}>
-        <DialogTitle id={titleId} sx={{ fontSize: 16 }}>{t(words.title)}</DialogTitle>
+        <DialogTitle id={titleId} sx={{ fontSize: 'var(--t-large)' }}>{t(words.title)}</DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
           <Typography sx={{ ...SMALL, color: 'text.secondary', mb: 1.5 }}>{t(words.about)}</Typography>
           <TextField
             autoFocus fullWidth label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
@@ -141,14 +141,14 @@ export function AcceptedFindings({ items, words, remember, unfolded = false, tes
   return (
     <Box data-testid={testId ?? 'findings-accepted'} sx={{ mt: 0.75 }}>
       {unfolded
-        ? <Typography component="h3" sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 }}>{t(words.accepted, { count: items.length })}</Typography>
+        ? <Typography component="h3" sx={{ fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 }}>{t(words.accepted, { count: items.length })}</Typography>
         : (
           <ButtonBase
             aria-expanded={open} aria-controls={id} onClick={() => setHeld(new Set(open ? [] : [OPEN]))}
             data-guide="findings.accepted" data-testid="findings-accepted-toggle"
-            sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, py: 0.25, fontSize: 12, color: 'text.secondary', '&:hover': { textDecoration: 'underline' } }}
+            sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, py: 0.25, fontSize: 'var(--t-small)', color: 'text.secondary', '&:hover': { textDecoration: 'underline' } }}
           >
-            <Box component="span" aria-hidden sx={{ width: 10, fontSize: 10 }}>{open ? '▾' : '▸'}</Box>
+            <Box component="span" aria-hidden sx={{ width: 10, fontSize: 'var(--t-small)' }}>{open ? '▾' : '▸'}</Box>
             {t(words.accepted, { count: items.length })}
           </ButtonBase>
         )}
@@ -164,7 +164,7 @@ export function AcceptedFindings({ items, words, remember, unfolded = false, tes
                 {item.onTakeBack && (
                   <Button size="small" onClick={item.onTakeBack} data-guide="findings.takeBack" data-testid="finding-take-back"
                     aria-label={`${t(words.takeBack)}: ${item.sentence}`}
-                    sx={{ fontSize: 11.5, textTransform: 'none', minWidth: 0, px: 0.5 }}>
+                    sx={{ fontSize: 'var(--t-small)', textTransform: 'none', minWidth: 0, px: 0.5 }}>
                     {t(words.takeBack)}
                   </Button>
                 )}

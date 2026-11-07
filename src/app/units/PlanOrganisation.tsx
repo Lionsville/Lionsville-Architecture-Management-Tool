@@ -77,9 +77,9 @@ export type PlanOrganisationProps = {
   s: Translate
 }
 
-const HEADING = { fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.5 } as const
-const LINE = { fontSize: 13 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+const HEADING = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.5 } as const
+const LINE = { fontSize: 'var(--t-body)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
 
 /** What the plan's organisation is worked out from, once per render. */
 function usePlanFacts(props: PlanOrganisationProps) {
@@ -252,7 +252,7 @@ function Tree({ nodes, when, facts, s }: { nodes: readonly UnitNode[]; when: 'be
           <Typography component="div" sx={LINE}>
             <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>{facts.typeName(node.unit.unitTypeId)}</Box>
             {node.unit.name}
-            {mark(node.unit.id) && <Chip size="small" label={mark(node.unit.id)} sx={{ ml: 0.75, height: 18, fontSize: 10 }} />}
+            {mark(node.unit.id) && <Chip size="small" label={mark(node.unit.id)} sx={{ ml: 0.75, height: 18, fontSize: 'var(--t-small)' }} />}
           </Typography>
           {node.holders.length > 0 && <Typography sx={QUIET}>{holdersLine(node, facts)}</Typography>}
           <Tree nodes={node.children} when={when} facts={facts} s={s} />

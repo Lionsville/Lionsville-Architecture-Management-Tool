@@ -54,7 +54,7 @@ function PrincipleQuote({ scope, principle, aspect, reads }: { scope: string; pr
   const said = aspect !== undefined ? principle.aspects.find((one) => one.number === aspect) : undefined
   return (
     <Box component="span" sx={{ ...FRAME, borderColor: 'primary.main', display: 'block' }}>
-      <Link component="button" type="button" underline="hover" onClick={() => reads.openPrinciple(scope, principle.id)} sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: '0.85em' }}>
+      <Link component="button" type="button" underline="hover" onClick={() => reads.openPrinciple(scope, principle.id)} sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)' }}>
         {said ? formatAspectNumber(principle.number, said.number) : formatPrincipleNumber(principle.number)}
       </Link>{' '}
       <Box component="span" sx={{ fontWeight: 600 }}>{principle.title}</Box>
@@ -79,7 +79,7 @@ function EvaluationRef({ block, scope, scopeName, evaluation, at, reads }: {
   return (
     <Box component="span" sx={{ display: 'block' }}>
       <EvaluationGrid block={block} evaluation={shown} />
-      <Box component="span" sx={{ display: 'flex', gap: 1, mt: 0.5, fontSize: '0.8em', color: 'text.secondary' }}>
+      <Box component="span" sx={{ display: 'flex', gap: 1, mt: 0.5, fontSize: 'var(--t-small)', color: 'text.secondary' }}>
         <Box component="span" sx={{ flex: 1 }}>
           {t('refs.evaluationIn', { block: block.name, scope: scopeName })}
           {stood === 'changed' && ` · ${t('refs.changedSince')}`}
@@ -95,8 +95,8 @@ function RecordLine({ label, status, onOpen, t }: { label: string; status?: stri
   return (
     <Box component="span" sx={{ ...FRAME, display: 'flex', gap: 1, alignItems: 'baseline' }}>
       <Box component="span" sx={{ flex: 1 }}>{label}</Box>
-      {status && <Box component="span" sx={{ fontSize: '0.8em', color: 'text.secondary' }}>{status}</Box>}
-      <Link component="button" type="button" underline="hover" onClick={onOpen} sx={{ fontSize: '0.8em' }}>{t('refs.open')}</Link>
+      {status && <Box component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{status}</Box>}
+      <Link component="button" type="button" underline="hover" onClick={onOpen} sx={{ fontSize: 'var(--t-small)' }}>{t('refs.open')}</Link>
     </Box>
   )
 }
@@ -117,7 +117,7 @@ export function drawRef(fields: RefFields, reads: RefReads, t: Translate, scopeN
       return (
         <Box component="span" sx={{ display: 'block' }}>
           <RequirementsGrid block={kept.block} />
-          <Link component="button" type="button" underline="hover" onClick={() => reads.openBlock(kept.block.id)} sx={{ fontSize: '0.8em' }}>{t('refs.openBlock', { name: kept.block.name })}</Link>
+          <Link component="button" type="button" underline="hover" onClick={() => reads.openBlock(kept.block.id)} sx={{ fontSize: 'var(--t-small)' }}>{t('refs.openBlock', { name: kept.block.name })}</Link>
         </Box>
       )
     }

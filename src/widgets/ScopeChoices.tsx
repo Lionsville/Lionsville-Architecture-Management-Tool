@@ -27,7 +27,7 @@ const indent = (depth: number) => ({ pl: 2 + depth * 1.75 })
 export function renderScopeOption(props: HTMLAttributes<HTMLLIElement> & { key?: Key }, choice: ScopeChoice): ReactNode {
   const { key, ...rest } = props
   return (
-    <Box component="li" key={key ?? choice.path} {...rest} sx={{ ...indent(choice.depth), fontSize: 14 }} data-depth={choice.depth}>
+    <Box component="li" key={key ?? choice.path} {...rest} sx={{ ...indent(choice.depth), fontSize: 'var(--t-body)' }} data-depth={choice.depth}>
       {choice.name}
     </Box>
   )
@@ -50,7 +50,7 @@ export function scopeMenuItems(choices: readonly ScopeChoice[], words: { topics:
     const under = scopeGroup(one, words)
     if (both && under !== heading) {
       heading = under
-      items.push(<ListSubheader key={`heading-${under}`} sx={{ lineHeight: '32px', fontSize: 12 }}>{under}</ListSubheader>)
+      items.push(<ListSubheader key={`heading-${under}`} sx={{ lineHeight: '32px', fontSize: 'var(--t-small)' }}>{under}</ListSubheader>)
     }
     items.push(<MenuItem key={one.path} value={one.path} sx={indent(one.depth)} data-depth={one.depth}>{one.name}</MenuItem>)
   }

@@ -29,9 +29,9 @@
 }
 .kit-time__grow { flex: 1; }
 
-.kit-time__ruler { position: relative; min-width: 0; height: 44px; overflow: hidden; }
+.kit-time__ruler { position: relative; min-width: 0; height: 3rem; overflow: hidden; }
 .kit-time__ruler:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
-.kit-time__marks { position: relative; height: 20px; font-size: var(--t-body); line-height: 20px; }
+.kit-time__marks { position: relative; height: 1.5rem; font-size: var(--t-small); line-height: 1.5rem; }
 .kit-time__todaymark,
 .kit-time__daymark { position: absolute; top: 0; padding-inline: var(--s-1); white-space: nowrap; font-weight: var(--fw-strong); }
 .kit-time__todaymark { color: var(--axis-today); }

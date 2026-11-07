@@ -124,15 +124,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }}>
         <Alert severity="error" sx={{ maxWidth: 720, width: '100%' }} data-testid="crash-fallback">
           <AlertTitle>{s('shell.crashed')}</AlertTitle>
-          <Typography sx={{ fontSize: 13 }}>{s('shell.crashedNote')}</Typography>
-          <Typography sx={{ fontSize: 12, mt: 1, color: 'text.secondary' }}>
+          <Typography sx={{ fontSize: 'var(--t-body)' }}>{s('shell.crashedNote')}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-small)', mt: 1, color: 'text.secondary' }}>
             {describeCause(error)}
           </Typography>
           {showStack && error.stack && (
             <Box
               component="pre"
               data-testid="crash-stack"
-              sx={{ fontSize: 11, mt: 1, maxHeight: 240, overflow: 'auto', whiteSpace: 'pre-wrap' }}
+              sx={{ fontSize: 'var(--t-small)', mt: 1, maxHeight: 240, overflow: 'auto', whiteSpace: 'pre-wrap' }}
             >
               {error.stack}
             </Box>

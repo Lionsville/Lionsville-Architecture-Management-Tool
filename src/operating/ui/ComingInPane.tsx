@@ -91,7 +91,7 @@ export function ComingInPane({ library, lists, coming, edits, onEdit, onBring }:
   )
 }
 
-const SUBHEADING = { fontSize: 12, fontWeight: 700, mb: 0.5 } as const
+const SUBHEADING = { fontSize: 'var(--t-small)', fontWeight: 700, mb: 0.5 } as const
 
 type RowContext = {
   library: Library
@@ -106,7 +106,7 @@ type RowContext = {
 function RowFrame({ row, rows, t, children }: { row: ComingInRow; children: ReactNode } & Pick<RowContext, 'rows' | 't'>) {
   return (
     <Box data-testid={`coming-${row.entry}`} sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      <Typography sx={{ fontSize: 12 }}>
+      <Typography sx={{ fontSize: 'var(--t-small)' }}>
         <Box component="span" sx={{ fontWeight: 700 }}>{row.term}</Box>
         {!row.asked && row.by.length > 0 && (
           <Box component="span" sx={{ color: 'text.secondary' }}>
@@ -124,7 +124,7 @@ function NameField({ row, edits, onEdit, t }: { row: ComingInRow } & Pick<RowCon
   const typed = edits.names && Object.hasOwn(edits.names, row.entry) ? edits.names[row.entry] : row.name
   return (
     <TextField
-      size="small" fullWidth value={typed} placeholder={row.term} sx={{ '& .MuiInputBase-input': { py: 0.5, fontSize: 13 } }}
+      size="small" fullWidth value={typed} placeholder={row.term} sx={{ '& .MuiInputBase-input': { py: 0.5, fontSize: 'var(--t-body)' } }}
       slotProps={{ htmlInput: { 'aria-label': t('operating.calledHere', { term: row.term }) } }}
       onChange={(event) => onEdit({ ...edits, names: { ...edits.names, [row.entry]: event.target.value } })}
     />
@@ -138,7 +138,7 @@ function TypeRow({ row, ...context }: { row: ComingInRow } & RowContext) {
       {row.fate === 'made' && <NameField row={row} {...context} />}
       {row.fate === 'made' && row.place && row.places && (
         <NativeSelect
-          value={placementKey(row.place)} sx={{ fontSize: 12 }}
+          value={placementKey(row.place)} sx={{ fontSize: 'var(--t-small)' }}
           inputProps={{ 'aria-label': t('operating.sitsInOf', { term: row.term }) }}
           onChange={(event) => {
             const choice = row.places?.find((one) => placementKey(one) === event.target.value)
@@ -188,7 +188,7 @@ function Reuse({ row, items, bringIn, edits, onEdit, t }: {
   const ordered = [...items.filter((item) => item.id === row.suggested), ...items.filter((item) => item.id !== row.suggested)]
   return (
     <NativeSelect
-      value={row.fate === 'reused' ? row.id : NEW} sx={{ fontSize: 12 }}
+      value={row.fate === 'reused' ? row.id : NEW} sx={{ fontSize: 'var(--t-small)' }}
       inputProps={{ 'aria-label': t('operating.reuseOf', { term: row.term }) }}
       onChange={(event) => onEdit({ ...edits, reuse: { ...edits.reuse, [row.entry]: event.target.value === NEW ? null : event.target.value } })}
     >

@@ -52,10 +52,10 @@ export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<F
   if (!held) return null
   return (
     <Stack spacing={1}>
-      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary' }}>
         {s('prefs.thisMachine')}
       </Typography>
-      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('prefs.thisMachineNote')}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('prefs.thisMachineNote')}</Typography>
       <FormControlLabel
         control={(
           <Checkbox
@@ -64,7 +64,7 @@ export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<F
             onChange={(e) => change({ pullOnOpen: e.target.checked })}
           />
         )}
-        label={<Typography sx={{ fontSize: 13 }}>{s('prefs.pullOnOpen')}</Typography>}
+        label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('prefs.pullOnOpen')}</Typography>}
       />
       <FormControlLabel
         control={(
@@ -74,7 +74,7 @@ export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<F
             onChange={(e) => change({ pushAfterSnapshot: e.target.checked })}
           />
         )}
-        label={<Typography sx={{ fontSize: 13 }}>{s('prefs.pushAfterSnapshot')}</Typography>}
+        label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('prefs.pushAfterSnapshot')}</Typography>}
       />
     </Stack>
   )

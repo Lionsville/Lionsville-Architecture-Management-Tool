@@ -39,7 +39,7 @@ export function CompactForms({ children }: { children: ReactNode }) {
       MuiToggleButtonGroup: { defaultProps: { size: 'small' } },
       MuiInputBase: {
         styleOverrides: {
-          root: { fontSize: 13 },
+          root: { fontSize: 'var(--t-body)' },
           input: {
             '&.Mui-disabled': { WebkitTextFillColor: outer.palette.text.primary },
           },
@@ -54,14 +54,14 @@ export function CompactForms({ children }: { children: ReactNode }) {
       },
       MuiInputLabel: {
         styleOverrides: {
-          root: { fontSize: 13, '&.Mui-disabled': { color: outer.palette.text.secondary } },
+          root: { fontSize: 'var(--t-small)', '&.Mui-disabled': { color: outer.palette.text.secondary } },
         },
       },
-      MuiFormHelperText: { styleOverrides: { root: { fontSize: 11, marginTop: 2, marginLeft: 6, marginRight: 6 } } },
-      MuiFormControlLabel: { styleOverrides: { label: { fontSize: 13 } } },
-      MuiMenuItem: { styleOverrides: { root: { fontSize: 13, minHeight: 32 } } },
+      MuiFormHelperText: { styleOverrides: { root: { fontSize: 'var(--t-small)', marginTop: 2, marginLeft: 6, marginRight: 6 } } },
+      MuiFormControlLabel: { styleOverrides: { label: { fontSize: 'var(--t-body)' } } },
+      MuiMenuItem: { styleOverrides: { root: { fontSize: 'var(--t-body)', minHeight: 32 } } },
       MuiChip: { defaultProps: { size: 'small' } },
-      MuiDialogContentText: { styleOverrides: { root: { fontSize: 14 } } },
+      MuiDialogContentText: { styleOverrides: { root: { fontSize: 'var(--t-body)' } } },
     },
   }), [outer]);
   return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
@@ -76,7 +76,7 @@ export function SectionHeading({ children, sx, testId, id, component = 'div' }: 
       component={component}
       id={id}
       data-testid={testId}
-      sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4, ...sx }}
+      sx={{ fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4, ...sx }}
     >
       {children}
     </Typography>
@@ -86,7 +86,7 @@ export function SectionHeading({ children, sx, testId, id, component = 'div' }: 
 /** The small label over a value nobody types: what a derived line or a list of chips is called — and a help line under a field. */
 export function FieldLabel({ children, sx, component = 'div', testId }: { children: ReactNode; sx?: SxProps<Theme>; component?: ElementType; testId?: string }) {
   return (
-    <Typography component={component} data-testid={testId} sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.4, ...sx }}>
+    <Typography component={component} data-testid={testId} sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', lineHeight: 1.4, ...sx }}>
       {children}
     </Typography>
   );
@@ -97,7 +97,7 @@ export function FieldText({ children, quiet, sx, testId, component = 'div' }: {
   children: ReactNode; quiet?: boolean; sx?: SxProps<Theme>; testId?: string; component?: ElementType;
 }) {
   return (
-    <Typography component={component} data-testid={testId} sx={{ fontSize: 13, lineHeight: 1.4, color: quiet ? 'text.secondary' : 'text.primary', ...sx }}>
+    <Typography component={component} data-testid={testId} sx={{ fontSize: 'var(--t-small)', lineHeight: 1.4, color: quiet ? 'text.secondary' : 'text.primary', ...sx }}>
       {children}
     </Typography>
   );

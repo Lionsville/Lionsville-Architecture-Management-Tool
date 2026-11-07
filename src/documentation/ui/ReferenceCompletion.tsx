@@ -174,15 +174,15 @@ export function useReferenceCompletion(
             onMouseDown={(event) => { event.preventDefault(); choose(one) }}
             sx={{ py: 0.25, px: 1.5, gap: 1, alignItems: 'baseline' }}
           >
-            <Typography sx={{ fontSize: 10, color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography noWrap sx={{ fontSize: 13 }}>{one.label}</Typography>
-              {one.detail && <Typography noWrap sx={{ fontSize: 11, color: 'text.secondary' }}>{one.detail}</Typography>}
+              <Typography noWrap sx={{ fontSize: 'var(--t-body)' }}>{one.label}</Typography>
+              {one.detail && <Typography noWrap sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}
             </Box>
           </ListItemButton>
         ))}
         <Divider />
-        <Typography sx={{ fontSize: 10.5, color: 'text.secondary', px: 1.5, py: 0.5 }}>{t('doc.refCompletionHint')}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 1.5, py: 0.5 }}>{t('doc.refCompletionHint')}</Typography>
       </Paper>
     </Popper>
   )
@@ -225,7 +225,7 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
           <MenuItem key={kind} onClick={() => { setAnchor(null); setPicking(kind) }} data-testid={`doc-insert-${kind}`}>{t(MENU_WORD[kind])}</MenuItem>
         ))}
         <Divider />
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 2, py: 0.5, maxWidth: 260 }}>{t('doc.insertTypeHint')}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, py: 0.5, maxWidth: 260 }}>{t('doc.insertTypeHint')}</Typography>
       </Menu>
       {picking && (
         <PickDialog kind={picking} options={all.filter((one) => one.kind === picking)} onClose={() => setPicking(undefined)} onPick={(one) => { setPicking(undefined); onInsert(one) }} />
@@ -246,7 +246,7 @@ function PickDialog({ kind, options, onClose, onPick }: { kind: ReferableKind; o
           getOptionLabel={(one) => one.label}
           renderOption={(props, one) => (
             <li {...props} key={one.key}>
-              <Box><Typography sx={{ fontSize: 13 }}>{one.label}</Typography>{one.detail && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{one.detail}</Typography>}</Box>
+              <Box><Typography sx={{ fontSize: 'var(--t-small)' }}>{one.label}</Typography>{one.detail && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}</Box>
             </li>
           )}
           renderInput={(params) => <TextField {...params} autoFocus label={t(KIND_WORD[kind])} />}

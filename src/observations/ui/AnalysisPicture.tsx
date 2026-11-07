@@ -314,7 +314,7 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
 
 function Headings({ picture, hereLabel, large, s }: { picture: SectionedPicture; hereLabel: string; large: boolean; s: Translate }) {
   const theme = useTheme()
-  const head = { fontSize: 10, fontWeight: 600, style: { textTransform: 'uppercase' as const, letterSpacing: '.09em' } }
+  const head = { fontSize: 'var(--t-small)', fontWeight: 600, style: { textTransform: 'uppercase' as const, letterSpacing: '.09em' } }
   return (
     <g data-testid="picture-headings">
       {picture.lanes.map(({ lane, x }) => (
@@ -538,11 +538,11 @@ function HoverCard({ node, picture, zoom, size, scopeLabel, s }: {
       data-testid="analysis-hover"
       sx={{
         position: 'absolute', left, top: (node.y + slot.height) * zoom + 6, width: 300, pointerEvents: 'none', zIndex: 1,
-        bgcolor: 'text.primary', color: 'background.paper', borderRadius: 1, px: 1.25, py: 0.75, boxShadow: 4, fontSize: 12.5, lineHeight: 1.4,
+        bgcolor: 'text.primary', color: 'background.paper', borderRadius: 1, px: 1.25, py: 0.75, boxShadow: 4, fontSize: 'var(--t-small)', lineHeight: 1.4,
       }}
     >
       <b>{recordLabel(node)}</b> {recordTitle(node)}
-      <Box sx={{ fontSize: 11.5, mt: 0.25 }}>{recordState(node, s)} · {scopeLabel(node.scope)}</Box>
+      <Box sx={{ fontSize: 'var(--t-small)', mt: 0.25 }}>{recordState(node, s)} · {scopeLabel(node.scope)}</Box>
     </Box>
   )
 }

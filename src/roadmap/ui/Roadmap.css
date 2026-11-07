@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.roadmap-page { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; background: var(--ground); color: var(--ink); font-size: var(--t-md); }
+.roadmap-page { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; background: var(--ground); color: var(--ink); font-size: var(--t-body); }
 .roadmap-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-3); background: var(--surface); border-bottom: 1px solid var(--line); }
-.roadmap-title { margin: 0; margin-inline-end: auto; font-size: var(--t-xl); font-weight: var(--fw-strong); line-height: var(--lh-tight); }
+.roadmap-title { margin: 0; margin-inline-end: auto; font-size: var(--t-title); font-weight: var(--fw-strong); line-height: var(--lh-tight); }
 .roadmap-body { flex: 1; display: flex; min-height: 0; }
 .roadmap-main { flex: 1; min-width: 0; overflow: auto; }
 .roadmap-main:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
-.roadmap-quiet { margin: 0; color: var(--ink-3); font-size: var(--t-sm); }
+.roadmap-quiet { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
 .roadmap-lanesaid { grid-row: 1; grid-column: 1; padding-inline: var(--s-2); line-height: 20px; }
 .roadmap-readerline { margin: 0 0 var(--s-1); overflow-wrap: anywhere; }
 .roadmap-readerfoot { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
@@ -16,18 +16,18 @@
 
 /* A plan: its facts in the head, its forms only where somebody pressed. */
 .plan-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); }
-.plan-standing { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-sm); color: var(--ink-2); }
+.plan-standing { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-small); color: var(--ink-2); }
 .plan-form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); width: 100%; }
 .plan-form__grow { flex: 1 1 200px; min-width: 0; }
 .plan-window { display: inline-flex; flex-wrap: wrap; gap: var(--s-1); align-items: center; }
-.plan-refused { margin: 0; color: var(--bad); font-size: var(--t-sm); flex-basis: 100%; }
+.plan-refused { margin: 0; color: var(--bad); font-size: var(--t-body); flex-basis: 100%; }
 .plan-gone { color: var(--ink-3); font-style: italic; }
 .plan-warning { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--warn); }
-.plan-note { max-width: var(--measure-reader); margin: var(--s-1) 0 0; color: var(--ink-3); font-size: var(--t-sm); }
+.plan-note { max-width: var(--measure-reader); margin: var(--s-1) 0 0; color: var(--ink-3); font-size: var(--t-small); }
 .plan-sentence { margin: 0 0 var(--s-2); color: var(--ink-2); }
 .plan-boardrow { display: inline-flex; align-items: center; gap: var(--s-2); }
-.plan-document { font-size: var(--t-md); }
+.plan-document { font-size: var(--t-body); }
 .plan-add { margin-top: var(--s-2); }
-.roadmap-findingsTitle { margin: 0 0 var(--s-1); font-size: var(--t-lg); font-weight: var(--fw-strong); }
+.roadmap-findingsTitle { margin: 0 0 var(--s-1); font-size: var(--t-large); font-weight: var(--fw-strong); }
 .plan-preview { padding: var(--s-3) var(--s-4); }
 .plan-form > .kit-input, .plan-window .kit-input { flex: none; width: auto; }

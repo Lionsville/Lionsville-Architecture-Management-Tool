@@ -94,12 +94,12 @@ export function StillOpen(props: StillOpenProps) {
   const groups = groupByCheck(shown)
   return (
     <Box data-testid="plan-still-open">
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.5 }}>{s('move.stillOpen', { day: after })}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.5 }}>{s('move.stillOpen', { day: after })}</Typography>
       <FindingsList
         groups={groups} words={CHECK_LIST_WORDS} sentence={(line) => line.text} keyOf={(line) => `${line.key}|${line.text}`}
         actions={stillOpenActions(onOpen, names)} attributesOf={() => ({ 'data-testid': 'plan-open-line' })} remember={props.remember}
         more={more} accepted={accepted}
-        empty={<Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('move.stillOpenNone')}</Typography>}
+        empty={<Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('move.stillOpenNone')}</Typography>}
       />
     </Box>
   )

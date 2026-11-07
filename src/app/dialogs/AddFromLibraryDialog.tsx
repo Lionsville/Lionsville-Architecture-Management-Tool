@@ -55,7 +55,7 @@ export function AddFromLibraryDialog({
       <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.ownTitle', { name: choice.name })}>
         <DialogTitle>{s('library.ownTitle', { name: choice.name })}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ fontSize: 14 }}>{s('library.ownBody', { name: choice.name })}</DialogContentText>
+          <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>{s('library.ownBody', { name: choice.name })}</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={onCancel}>{s('common.cancel')}</Button>
@@ -76,14 +76,14 @@ export function AddFromLibraryDialog({
               <ListItemText
                 primary={s('library.placeDomain')}
                 secondary={s('library.placeDomainWhat')}
-                slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
+                slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
               />
             </ListItemButton>
             <ListItemButton onClick={() => onPlace('external')} data-testid="library-place-external">
               <ListItemText
                 primary={s('library.placeExternal')}
                 secondary={s('library.placeExternalWhat')}
-                slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
+                slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
               />
             </ListItemButton>
           </List>
@@ -109,7 +109,7 @@ export function AddFromLibraryDialog({
     <FieldsDialog open={choice !== undefined} onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.title')}>
       <DialogTitle>{s('library.title')}</DialogTitle>
       <DialogContent sx={{ pt: 0 }}>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>{s('library.hint')}</Typography>
+        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1 }}>{s('library.hint')}</Typography>
         {rows.length > 0 && (
           <TextField
             autoFocus
@@ -122,10 +122,10 @@ export function AddFromLibraryDialog({
           />
         )}
         {rows.length === 0 && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('library.none')}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('library.none')}</Typography>
         )}
         {rows.length > 0 && shown.length === 0 && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('library.noMatches', { query })}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s('library.noMatches', { query })}</Typography>
         )}
         <List component="div" dense disablePadding sx={{ maxHeight: 360, overflowY: 'auto' }}>
           {shown.map((row) => (
@@ -133,7 +133,7 @@ export function AddFromLibraryDialog({
               <ListItemText
                 primary={row.name}
                 secondary={where(row)}
-                slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
+                slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
               />
             </ListItemButton>
           ))}

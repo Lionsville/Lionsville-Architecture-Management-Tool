@@ -72,7 +72,7 @@ export function MarkdownField({
               data-testid="open-documentation"
               startIcon={<FullscreenIcon size={14} />}
               onClick={onOpenDocumentation}
-              sx={{ fontSize: 11.5, textTransform: 'none', minWidth: 0, px: 0.75, py: 0.25, '& .MuiButton-startIcon': { mr: 0.5 } }}
+              sx={{ fontSize: 'var(--t-small)', textTransform: 'none', minWidth: 0, px: 0.75, py: 0.25, '& .MuiButton-startIcon': { mr: 0.5 } }}
             >
               {t('field.openDocumentation')} ›
             </Button>

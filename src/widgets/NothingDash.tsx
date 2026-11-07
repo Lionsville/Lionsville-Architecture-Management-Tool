@@ -19,7 +19,7 @@ export const VISUALLY_HIDDEN = {
 
 export function NothingDash({ says }: { says: string }) {
   return (
-    <Typography component="span" title={says} data-testid="nothing-dash" sx={{ fontSize: 12, color: 'text.secondary', cursor: 'default' }}>
+    <Typography component="span" title={says} data-testid="nothing-dash" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', cursor: 'default' }}>
       <Box component="span" aria-hidden="true">–</Box>
       <Box component="span" sx={VISUALLY_HIDDEN}>{says}</Box>
     </Typography>

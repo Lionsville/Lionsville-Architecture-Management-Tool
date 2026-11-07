@@ -35,7 +35,7 @@
   background: transparent;
   color: var(--ink-2);
   font: inherit;
-  font-size: var(--t-xs);
+  font-size: var(--t-small);
   line-height: var(--lh-tight);
   text-align: center;
   overflow-wrap: anywhere;

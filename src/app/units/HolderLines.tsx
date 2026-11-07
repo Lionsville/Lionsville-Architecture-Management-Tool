@@ -47,10 +47,10 @@ export type HolderLinesProps = {
   s: Translate
 }
 
-const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
-const LINE = { fontSize: 13 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
-const ACTION = { minWidth: 0, px: 0.5, py: 0, fontSize: 12, textTransform: 'none' } as const
+const SECTION = { fontSize: 'var(--t-small)', fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
+const LINE = { fontSize: 'var(--t-body)' } as const
+const QUIET = { fontSize: 'var(--t-small)', color: 'text.secondary' } as const
+const ACTION = { minWidth: 0, px: 0.5, py: 0, fontSize: 'var(--t-small)', textTransform: 'none' } as const
 
 const SOURCE = { role: 'holder.sourceRole', type: 'holder.sourceType', unit: 'holder.sourceUnit', person: 'holder.sourcePerson' } as const
 
@@ -115,7 +115,7 @@ export function HolderLines(props: HolderLinesProps) {
           }}
         />
       )}
-      {refused && <Typography role="alert" sx={{ fontSize: 12, color: 'error.main' }} data-testid="holder-line-refused">{refused}</Typography>}
+      {refused && <Typography role="alert" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }} data-testid="holder-line-refused">{refused}</Typography>}
       <Typography sx={SECTION}>{s('holder.managedBy')}</Typography>
       {managers.length === 0 && <Typography sx={QUIET}>{s('holder.managedByNone')}</Typography>}
       {managers.map((one) => (
@@ -134,7 +134,7 @@ function HolderLine({ line, organisation, day, names, s }: HolderLinesProps & { 
     <Typography component="div" sx={LINE} data-testid="holder-line" data-kind={line.kind} data-source={line.source} data-state={line.state}>
       {lineWords(line, organisation, day, s, names)}
       <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
-        sx={{ height: 18, fontSize: 10, ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
+        sx={{ height: 18, fontSize: 'var(--t-small)', ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
       <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>{s(SOURCE[line.source])}</Box>
       {line.override && <OverrideMark s={s} />}
     </Typography>

@@ -119,7 +119,7 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
   const { parent, setParent, along, toggleAlong, beside, current, options, plan, parentId, said, ready, move } = useMovePlan(props)
   return (
     <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth data-testid="move-unit-dialog" data-guide="chart.moveUnit">
-      <DialogTitle sx={{ fontSize: 16 }}>{s('unitMove.title', { name: props.name(unitId) })}</DialogTitle>
+      <DialogTitle sx={{ fontSize: 'var(--t-large)' }}>{s('unitMove.title', { name: props.name(unitId) })}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
         <FieldText quiet testId="move-unit-now">
           {current === undefined ? s('unitMove.atTopNow') : s('unitMove.sitsNow', { parent: props.name(current) })}
@@ -135,7 +135,7 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {beside.map((one) => (
                 <FormControlLabel
-                  key={one.id} label={<Typography sx={{ fontSize: 12.5 }}>{one.name}</Typography>}
+                  key={one.id} label={<Typography sx={{ fontSize: 'var(--t-small)' }}>{one.name}</Typography>}
                   control={<Checkbox checked={along.has(one.id)} onChange={() => toggleAlong(one.id)} slotProps={{ input: { 'aria-label': one.name } }} data-testid="move-unit-along-unit" data-unit-id={one.id} />}
                 />
               ))}
@@ -144,7 +144,7 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
         )}
         {plan && <WhatItDoes {...props} plan={plan} parentId={parentId} />}
         <FieldText quiet>{s('unitMove.keeps')}</FieldText>
-        {said && <Typography role="status" data-testid="move-unit-said" sx={{ fontSize: 12, color: 'error.main' }}>{said}</Typography>}
+        {said && <Typography role="status" data-testid="move-unit-said" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
       <DialogActions>
         <Button size="small" onClick={onClose}>{s('unitMove.cancel')}</Button>
@@ -166,7 +166,7 @@ function WhatItDoes({ plan, parentId, name, organisation, s, ...props }: MoveUni
   plan: UnitMovePlan | UnitMoveRefusal; parentId: ElementId | undefined
 }) {
   if (!plan.ok) {
-    return <Typography role="status" data-testid="move-unit-refused" sx={{ fontSize: 12.5, color: 'error.main' }}>{refusalText(plan, name, s, parentId)}</Typography>
+    return <Typography role="status" data-testid="move-unit-refused" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{refusalText(plan, name, s, parentId)}</Typography>
   }
   if (plan.moved.length === 0) return <FieldText quiet testId="move-unit-already">{s('unitMove.already')}</FieldText>
   const typeName = (id: string | undefined) => organisation.unitTypes.find((one) => one.id === id)?.name ?? id ?? ''
@@ -174,12 +174,12 @@ function WhatItDoes({ plan, parentId, name, organisation, s, ...props }: MoveUni
   return (
     <>
       {plan.fits.filter((one) => !one.fits).map((one) => (
-        <Typography key={one.unitId} sx={{ fontSize: 12.5, color: 'warning.main' }} data-testid="move-unit-misfit">
+        <Typography key={one.unitId} sx={{ fontSize: 'var(--t-small)', color: 'warning.main' }} data-testid="move-unit-misfit">
           {s('unitMove.misfit', { unit: name(one.unitId), type: typeName(typeOf(one.unitId)) })}
         </Typography>
       ))}
       {plan.planned.map((one) => (
-        <Typography key={`${one.unitId}/${one.on}`} sx={{ fontSize: 12.5, color: 'text.secondary' }} data-testid="move-unit-planned">
+        <Typography key={`${one.unitId}/${one.on}`} sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="move-unit-planned">
           {s(one.reached ? 'unitMove.plannedReached' : 'unitMove.plannedLater', { unit: name(one.unitId), day: one.on })}
         </Typography>
       ))}
@@ -199,9 +199,9 @@ export function ManagedBy({ managers, name, organisation, personName, s }: Pick<
       <FieldText quiet>{s('unitMove.managedHint')}</FieldText>
       {managers.map((one) => (
         <Box key={one.unitId} sx={{ mt: 0.5 }} data-testid="move-unit-managed-unit" data-unit-id={one.unitId}>
-          {managers.length > 1 && <Typography sx={{ fontSize: 12.5, fontWeight: 700 }}>{name(one.unitId)}</Typography>}
-          <Typography sx={{ fontSize: 12.5 }} data-testid="move-unit-managed-before">{s('unitMove.managedNow', { managers: said(one.before) })}</Typography>
-          <Typography sx={{ fontSize: 12.5 }} data-testid="move-unit-managed-after">{s('unitMove.managedAfter', { managers: said(one.after) })}</Typography>
+          {managers.length > 1 && <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 700 }}>{name(one.unitId)}</Typography>}
+          <Typography sx={{ fontSize: 'var(--t-small)' }} data-testid="move-unit-managed-before">{s('unitMove.managedNow', { managers: said(one.before) })}</Typography>
+          <Typography sx={{ fontSize: 'var(--t-small)' }} data-testid="move-unit-managed-after">{s('unitMove.managedAfter', { managers: said(one.after) })}</Typography>
         </Box>
       ))}
     </Box>
