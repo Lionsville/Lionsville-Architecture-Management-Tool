@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace, unknownPlace } from './place'
+  PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readFinding, readPlace, samePlace, stepBetween, writeFinding, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
 
@@ -334,3 +334,38 @@ describe('the frame in a place (4.0.0)', () => {
     expect(stepBetween({ scope: '', page: 'people', tab: 'review' }, { scope: '', page: 'people', tab: 'privacy' })).toBe('replace')
   })
 })
+
+describe('what a list keeps in the address', () => {
+  it('carries a list whole, a filter said twice included, and reads it back', () => {
+    const place = { scope: '', page: 'register' as const, id: 'billing', tab: 'services', list: 'q=rating&group=master&sort=-owner&f.lifecycle=live&f.lifecycle=retiring&cols=master%2Cowner' }
+    expect(readPlace(writePlace(place))).toEqual(place)
+  })
+
+  it('is another place, and choosing one replaces the entry rather than adding a Back', () => {
+    const on = { scope: '', page: 'register' as const }
+    expect(samePlace(on, { ...on, list: 'q=x' })).toBe(false)
+    expect(stepBetween(on, { ...on, list: 'q=x' })).toBe('replace')
+    expect(stepBetween(on, { ...on, id: 'billing' })).toBe('replace')
+    expect(stepBetween({ scope: '', page: 'checks', id: 'check.conflict' }, { scope: '', page: 'checks', id: 'check.drift' })).toBe('replace')
+  })
+
+  it('keeps it through the window\'s history', () => {
+    expect(placeInState({ [PLACE_STATE_KEY]: { scope: '', page: 'register', list: 'q=x', finding: 'a b c' } })).toEqual({ scope: '', page: 'register', list: 'q=x', finding: 'a b c' })
+  })
+})
+
+describe('a finding carried in the address', () => {
+  it('reads back whatever the finding\'s id holds', () => {
+    const carried = { check: 'check.lineOutlivesEnd', home: 'a/b', id: 'lineOutlivesEnd|a/b|c 48' }
+    expect(readFinding(writeFinding(carried))).toEqual(carried)
+    expect(readFinding('nothing')).toBeUndefined()
+    const place = { scope: 'a', page: 'board' as const, id: 'v', finding: writeFinding(carried) }
+    expect(readPlace(writePlace(place))).toEqual(place)
+  })
+
+  it('reads the organisation\'s home, whose path is empty', () => {
+    const carried = { check: 'check.conflict', home: '', id: 'x y' }
+    expect(readFinding(writeFinding(carried))).toEqual(carried)
+  })
+})
+

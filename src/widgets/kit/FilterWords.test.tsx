@@ -121,3 +121,11 @@ describe('filter words', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a bar over a short fixed list', () => {
+  it('has no Find with noFind, only what else it offers', () => {
+    renderShell(<FilterWords noFind find="" onFind={() => {}} groups={[{ id: 'a', label: 'A' }]} group={null} onGroup={() => {}} />)
+    expect(screen.queryByRole('searchbox')).toBeNull()
+    expect(screen.getByRole('button', { name: /Group/ })).toBeTruthy()
+  })
+})

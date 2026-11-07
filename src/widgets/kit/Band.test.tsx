@@ -71,3 +71,11 @@ describe('more than one', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a band carrying something with a mark of its own', () => {
+  it('draws the mark it is handed in place of the state\'s', () => {
+    const { container } = renderShell(<Band tone="finding" mark="fix" title="A row outlives its end" />)
+    expect(container.querySelector('circle')).not.toBeNull()
+    expect(container.querySelector('path')).toBeNull()
+  })
+})

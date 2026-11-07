@@ -239,3 +239,14 @@ describe('the list as a whole', () => {
     expect(document.querySelectorAll('[data-guide="register.row"]')).toHaveLength(3)
   })
 })
+
+describe('a list row and a column say what points at them', () => {
+  it('puts a row\'s attributes on the row, and a column\'s name on its heading', () => {
+    renderShell(<List
+      label="L" columns={[{ id: 'a', label: 'A', guide: 'x.colA' }]} itemLabel="Item"
+      groups={[{ id: '', label: '', rows: [{ id: '1', text: 'One', attributes: { 'data-testid': 'row-one', 'data-check': 'c' } }] }]}
+    />)
+    expect(screen.getByTestId('row-one').getAttribute('data-check')).toBe('c')
+    expect(screen.getByRole('columnheader', { name: 'A' }).getAttribute('data-guide')).toBe('x.colA')
+  })
+})

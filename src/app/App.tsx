@@ -62,6 +62,8 @@ import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPane
 import { AppFrame } from './frame/AppFrame'
 import { frameStore, FrameStoreContext } from './frame/frameStore'
 import { readFinding } from '../agent/place'
+import { ListDensityContext } from '../widgets/kit/listDensity'
+import type { ListDensity } from '../widgets/kit/List'
 import type { CheckKey } from '../model/checkCatalogue'
 import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
@@ -329,6 +331,11 @@ export type RegisteredMenu = {
   readonly menu: SourceMenu
 }
 
+/** A density read back: anything else in the preferences is the usual distance. */
+function densityOf(held: unknown): ListDensity {
+  return held === 'compact' || held === 'comfortable' ? held : 'normal'
+}
+
 /** What the address said of the home's page it landed on, held by the frame as a press there would be. */
 function frameFromAddress(boot: AppProps['boot']) {
   const said = boot.initialList
@@ -463,6 +470,9 @@ export function App(props: AppProps) {
   // Every page under the shell reads a person through the one register (ADR-0036 §8).
   const names = useMemo(() => personNames(parts.people, s), [parts.people, s])
   // How wide each column was left (ADR-0044 §4), kept with the preferences.
+  // One choice for every list in the product, and this person's on this computer.
+  const [listDensity, setListDensity] = useState<ListDensity>(() => densityOf(prefs.readPreferences().listDensity))
+  const density = useMemo(() => [listDensity, (next: ListDensity) => { setListDensity(next); prefs.writePreference({ listDensity: next }) }] as const, [listDensity, prefs])
   const seams = useSeamWidths(prefs)
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -482,6 +492,7 @@ export function App(props: AppProps) {
       {/* What each list of findings has unfolded, and its notes shown, for as long as the window is open. */}
       <SessionMemoryContext.Provider value={parts.folds}>
       <SeamWidthsProvider value={seams}>
+      <ListDensityContext.Provider value={density}>
       {/* Files a document may point at, where the open source keeps them. */}
       <AttachmentsProvider value={props.provider?.attachments}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
@@ -513,6 +524,7 @@ export function App(props: AppProps) {
         />
       </Box>
       </AttachmentsProvider>
+      </ListDensityContext.Provider>
       </SeamWidthsProvider>
       </SessionMemoryContext.Provider>
       </PersonNamesProvider>
