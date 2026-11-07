@@ -191,3 +191,19 @@ describe('the Help menu (ADR-0044 §6)', () => {
   })
 })
 
+describe('the zoom keys with no canvas under them', () => {
+  it('zoom the window, by the steps Electron has', async () => {
+    const { zoomWindow } = await import('./appMenu')
+    let level = 1
+    const contents = { getZoomLevel: () => level, setZoomLevel: (next: number) => { level = next } }
+    zoomWindow(contents, 'in')
+    expect(level).toBe(1.5)
+    zoomWindow(contents, 'out')
+    zoomWindow(contents, 'out')
+    expect(level).toBe(0.5)
+    zoomWindow(contents, 'home')
+    expect(level).toBe(0)
+    zoomWindow(contents, 'nonsense')
+    expect(level).toBe(0)
+  })
+})

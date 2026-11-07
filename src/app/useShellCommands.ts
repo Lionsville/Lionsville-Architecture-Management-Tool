@@ -22,6 +22,8 @@ import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { HostControls } from '../ports/HostControls'
 import { goInHistory } from './BackForward'
+import type { WindowZoom } from '../platform/hostCommands'
+import { setHostOwnsZoomKeys, zoomCanvasInUse } from '../widgets/kit/useCanvasZoom'
 import { useHostCommands } from './useHostCommands'
 import type { CommandBus, CommandStream } from './useHostCommands'
 import type { ShellPreferences } from './useShellPreferences'
@@ -41,6 +43,10 @@ export type ShellCommands = {
 
 export function useShellCommands(deps: {
   commands: CommandStream | undefined
+  /** There is a menu bar, and it owns the zoom keys. */
+  hostMenu?: boolean
+  /** The zoom keys with no canvas under them. */
+  onWindowZoom?: (how: WindowZoom) => void
   /** The host's own way in (`SourceWayIn.hostMenu`): *Open…* in its menu, and its Recent list. */
   onConnect: (() => void) | undefined
   onReopen: ((key: string) => void) | undefined
@@ -51,7 +57,8 @@ export function useShellCommands(deps: {
   share: () => void
   hostControls: HostControls
 }): ShellCommands {
-  const { commands, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls } = deps
+  const { commands, onWindowZoom, hostMenu, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls } = deps
+  useEffect(() => { setHostOwnsZoomKeys(hostMenu ?? false) }, [hostMenu])
   const bus = useHostCommands(commands)
   const homeHistory = useRef<HomeHistoryDoors | undefined>(undefined)
   /**
@@ -63,6 +70,7 @@ export function useShellCommands(deps: {
     if (command.type === 'connect') onConnect?.()
     if (command.type === 'reopen') onReopen?.(command.key)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
+    if (command.type === 'zoom' && !zoomCanvasInUse(command.how)) onWindowZoom?.(command.how)
     if (command.type === 'preferences') openPreferences(true)
     if (command.type === 'connectAgent') openAgent()
     if (command.type === 'share') share()
@@ -77,7 +85,7 @@ export function useShellCommands(deps: {
     // Here and not in the workspace, so the Go menu works from a home with
     // nothing open as well as over a scope (ADR-0033).
     if (command.type === 'back' || command.type === 'forward') goInHistory(command.type)
-  }), [bus, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls])
+  }), [bus, onWindowZoom, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls])
   return { bus, homeHistory, homeFiles }
 }
 

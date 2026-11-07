@@ -95,6 +95,7 @@ const commands: DesktopCommands = {
   reportTheme: (mode: ThemeMode) => { void ipcRenderer.invoke('app:theme', mode) },
   reportScopeOpen: (open) => { void ipcRenderer.invoke('app:scopeOpen', open) },
   reportLanguage: (language) => { void ipcRenderer.invoke('app:language', language) },
+  zoomWindow: (how) => { void ipcRenderer.invoke('app:zoomWindow', how) },
 }
 
 const history: DesktopHistory = {

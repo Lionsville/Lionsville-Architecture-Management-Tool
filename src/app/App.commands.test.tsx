@@ -174,6 +174,13 @@ describe('commands from the host', () => {
     await waitFor(() => expect(reported.at(-1)).toBe('light'))
   })
 
+  it('hands the View menu’s zoom to the window when no canvas is in use, and the zoom keys to the menu bar', async () => {
+    const zoomed: string[] = []
+    const view = show({ host: { hostMenu: true, onWindowZoom: (how) => zoomed.push(how) } })
+    view.send({ type: 'zoom', how: 'in' })
+    await waitFor(() => expect(zoomed).toEqual(['in']))
+  })
+
   it('reports the app’s language to the host, so what it asks itself is asked in it', () => {
     const reported: string[] = []
     show({ boot: { initialPreferences: { language: 'nl' } }, host: { onLanguage: (language) => reported.push(language) } })

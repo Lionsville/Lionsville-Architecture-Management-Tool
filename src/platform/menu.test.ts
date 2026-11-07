@@ -11,8 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, commandsIn, goMenu, offered, preferencesPlacement,
-  swipeCommand, titleCase,
-} from './menu'
+  swipeCommand, titleCase, ZOOM_ALIASES, ZOOM_ITEMS } from './menu'
 import { EN } from './strings/en'
 
 const labels = (entries: ReturnType<typeof offered>) =>
@@ -178,5 +177,17 @@ describe('Share with a link…', () => {
     expect(share?.kind === 'item' ? share.accelerator : 'none').toBeUndefined()
     const nothing = { history: false, connect: false, scope: false }
     expect(labels(offered(FILE_MENU, 'web', nothing))).toContain('menu.shareLink')
+  })
+})
+
+describe('the zoom items', () => {
+  it('are commands, with every key that says them, so the renderer can tell a canvas from the window', () => {
+    const keys = [...ZOOM_ITEMS, ...ZOOM_ALIASES].map((spec) => spec.accelerator)
+    expect(keys).toEqual(expect.arrayContaining(['CmdOrCtrl+0', 'CmdOrCtrl+Plus', 'CmdOrCtrl+-', 'CmdOrCtrl+=', 'CmdOrCtrl+numadd', 'CmdOrCtrl+numsub', 'CmdOrCtrl+num0']))
+    for (const spec of [...ZOOM_ITEMS, ...ZOOM_ALIASES]) expect(spec.command.type).toBe('zoom')
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(ZOOM_ITEMS.map((spec) => spec.command)).toEqual([
+      { type: 'zoom', how: 'home' }, { type: 'zoom', how: 'in' }, { type: 'zoom', how: 'out' },
+    ])
   })
 })

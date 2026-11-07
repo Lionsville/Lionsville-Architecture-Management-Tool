@@ -53,6 +53,7 @@ import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLay
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
   EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
+  ZOOM_ALIASES, ZOOM_ITEMS,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
 import type { ThemeMode } from '../../src/platform/theme'
@@ -246,6 +247,9 @@ function fileMenuFor(recents: readonly DesktopDirectory[]): MenuItemConstructorO
  */
 let defaults: MenuItem[] | undefined
 
+/** The View menu, ours since its zoom items are commands. */
+let viewMenu: MenuItem | undefined
+
 /** The View menu's radios, kept so a reported theme can tick the right one. */
 let themeRadios: { mode: ThemeMode; item: MenuItem }[] = []
 
@@ -277,6 +281,8 @@ export function installAppMenu(options: {
   const edit = new MenuItem({ label: label('menu.edit'), submenu: editMenuFor() })
   const help = new MenuItem({ label: label('menu.help'), role: 'help', submenu: helpMenuFor(options.onCheckForUpdates) })
   const go = new MenuItem({ label: label('menu.go'), submenu: goMenu(process.platform).map(itemFor) })
+  // Once: the menu is rebuilt with the recents, and the theme's radios are held by reference.
+  viewMenu ??= new MenuItem({ label: label('menu.view'), role: 'viewMenu', submenu: viewMenuFor(options.packaged) })
 
   // Over Electron's own File menu, whose one item ours ends with; then over
   // its Edit and Help, which bind the wrong things.
@@ -287,13 +293,15 @@ export function installAppMenu(options: {
   items.splice(editSlot.index, editSlot.replace ? 1 : 0, edit)
   const helpSlot = replacingSlot(items, 'help')
   items.splice(helpSlot.index, helpSlot.replace ? 1 : 0, help)
+  const viewSlot = replacingSlot(items, 'viewmenu')
+  items.splice(viewSlot.index, viewSlot.replace ? 1 : 0, viewMenu)
   items.splice(goMenuSlot(items), 0, go)
 
   const menu = new Menu()
   for (const held of items) menu.append(held)
   // Once: the default submenus are the same objects on every rebuild, so a
   // second pass would insert every item a second time.
-  if (first) decorateDefaults(menu, options.packaged)
+  if (first) decorateDefaults(menu)
   tickTheme()
   Menu.setApplicationMenu(menu)
   tickScope()
@@ -342,16 +350,8 @@ function tickScope(): void {
  * with one; elsewhere it is in the File menu above Quit, and `fileMenuFor`
  * put it there. Check for Updates… used to sit beside it here and in Help
  * elsewhere; it is in Help on every platform now (`helpMenuFor`), one place.
- *
- * **View** loses Reload, Force Reload and Toggle Developer Tools in a
- * packaged build: they are for whoever builds the app, and a person who
- * reloads by accident loses the unsaved minute. They stay in development.
- *
- * **The theme** is three radio items at the foot of the View menu Electron
- * already builds, so it sits beside zoom and full screen where a person
- * expects to find how the window looks.
  */
-function decorateDefaults(menu: Menu, packaged: boolean): void {
+function decorateDefaults(menu: Menu): void {
   if (process.platform === 'darwin' && preferencesPlacement(process.platform) === 'appMenu') {
     // The first submenu is the app menu, and its first item is About. Below
     // it, above the separator, is where every Mac app puts Settings.
@@ -359,18 +359,23 @@ function decorateDefaults(menu: Menu, packaged: boolean): void {
     appMenu?.insert(1, new MenuItem({ type: 'separator' }))
     appMenu?.insert(2, new MenuItem(itemFor(SETTINGS_ITEM)))
   }
+}
 
-  const view = menu.items.find((held) => held.role?.toLowerCase() === 'viewmenu')?.submenu
-  if (!view) return
-  if (packaged) {
-    const developer = new Set(['reload', 'forcereload', 'toggledevtools'])
-    for (const held of view.items) {
-      if (developer.has(held.role?.toLowerCase() ?? '')) held.visible = false
-    }
-    // The separator that followed them would otherwise open the menu.
-    const first = view.items.find((held) => held.visible)
-    if (first?.type === 'separator') first.visible = false
-  }
+/**
+ * View, built here rather than decorated, because Electron's own has zoom roles
+ * whose keys cannot be taken off them and an item cannot be removed from a menu.
+ *
+ * **Reload, Force Reload and Toggle Developer Tools** are for whoever builds the
+ * app, and a person who reloads by accident loses the unsaved minute: they stay in
+ * development.
+ *
+ * **Zoom** goes to the renderer, which zooms the canvas in use, or asks for the
+ * window's ({@link zoomWindow}). Its other keys are hidden items, which still fire.
+ *
+ * **The theme** is three radio items at the foot, beside zoom and full screen where
+ * a person expects to find how the window looks.
+ */
+function viewMenuFor(packaged: boolean): Menu {
   themeRadios = THEME_ITEMS.map(({ mode, label: key }) => ({
     mode,
     item: new MenuItem({
@@ -379,7 +384,29 @@ function decorateDefaults(menu: Menu, packaged: boolean): void {
       click: () => sendCommand({ type: 'theme', mode }),
     }),
   }))
-  view.append(new MenuItem({ type: 'separator' }))
-  view.append(new MenuItem({ label: label('menu.theme'), enabled: false }))
-  for (const held of themeRadios) view.append(held.item)
+  const items: MenuItemConstructorOptions[] = [
+    ...(packaged ? [] : [
+      { role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }, { type: 'separator' },
+    ] as MenuItemConstructorOptions[]),
+    ...ZOOM_ITEMS.map(itemFor),
+    ...ZOOM_ALIASES.map((spec) => ({ ...itemFor(spec), visible: false })),
+    { type: 'separator' },
+    { role: 'togglefullscreen' },
+    { type: 'separator' },
+    { label: label('menu.theme'), enabled: false },
+  ]
+  const menu = new Menu()
+  for (const held of items) menu.append(new MenuItem(held))
+  for (const held of themeRadios) menu.append(held.item)
+  return menu
+}
+
+/** The steps Electron's own Zoom In and Zoom Out take. */
+const WINDOW_ZOOM_STEP = 0.5
+
+/** The zoom keys with no canvas under them keep their usual meaning, which the renderer cannot do by itself. */
+export function zoomWindow(contents: Pick<WebContents, 'getZoomLevel' | 'setZoomLevel'>, how: unknown): void {
+  if (how === 'home') contents.setZoomLevel(0)
+  if (how === 'in') contents.setZoomLevel(contents.getZoomLevel() + WINDOW_ZOOM_STEP)
+  if (how === 'out') contents.setZoomLevel(contents.getZoomLevel() - WINDOW_ZOOM_STEP)
 }

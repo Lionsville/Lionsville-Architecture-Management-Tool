@@ -28,7 +28,7 @@ import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
 import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
-import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
+import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
 import { swipeCommand } from '../../src/platform/menu'
 import { isThemeMode } from '../../src/platform/theme'
@@ -473,6 +473,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
   // And the app's language, so the question closing asks is asked in it.
   ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
+  ipcMain.handle('app:zoomWindow', (event, how: unknown) => { zoomWindow(event.sender, how) })
   // And the third: whether a scope is open, so the items about one are enabled only while it is.
   ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 

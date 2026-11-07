@@ -53,7 +53,7 @@ export function fileMenuSlot(
  * none, at the end, which is where Help belongs and where Edit would be the
  * only thing left to place.
  */
-export function replacingSlot(items: readonly PlaceableItem[], role: 'editmenu' | 'help'): FileMenuSlot {
+export function replacingSlot(items: readonly PlaceableItem[], role: 'editmenu' | 'help' | 'viewmenu'): FileMenuSlot {
   const existing = items.findIndex((item) => roleOf(item) === role)
   return existing !== -1 ? { index: existing, replace: true } : { index: items.length, replace: false }
 }

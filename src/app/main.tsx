@@ -538,6 +538,7 @@ function renderApp(
             commands?.reportUnsaved(held)
           },
           onThemeMode: commands?.reportTheme,
+          onWindowZoom: commands?.zoomWindow,
           onLanguage: commands?.reportLanguage,
           onScopeOpen: commands?.reportScopeOpen,
           windowChrome: shell.windowChrome,

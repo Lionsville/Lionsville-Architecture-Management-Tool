@@ -746,7 +746,7 @@ function useShellBase(props: AppProps) {
     initiallyOpen: boot.opensDialog === 'preferences',
   })
   const commands = useShellCommands({
-    commands: host.commands, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
+    commands: host.commands, hostMenu: host.hostMenu, onWindowZoom: host.onWindowZoom, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
     openPreferences: machine.setOpen, openAgent: agentServer.openDialog, share: share.share, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })

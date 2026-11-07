@@ -22,6 +22,9 @@
  */
 import type { ThemeMode } from './theme'
 
+/** What the zoom keys ask for. */
+export type WindowZoom = 'in' | 'out' | 'home'
+
 export type HostCommand =
   /** Take the host's own way in (`SourceConnect.hostMenu`): ask where, then work there. */
   | { type: 'connect' }
@@ -47,6 +50,8 @@ export type HostCommand =
   | { type: 'preferences' }
   /** The View menu's radio, or the overflow's: one of the three themes. */
   | { type: 'theme'; mode: ThemeMode }
+  /** The View menu's zoom: the canvas in use if there is one, else the window. */
+  | { type: 'zoom'; how: WindowZoom }
   /** Open the dialog that explains and enables an agent's way in (ADR-0007). */
   | { type: 'connectAgent' }
   /**
@@ -101,4 +106,6 @@ export type HostCommands = {
   reportScopeOpen(open: boolean): void
   /** Which language the app is in, so what the host asks itself is asked in it. */
   reportLanguage(language: string): void
+  /** Zoom the whole window: the zoom keys with no canvas under them. */
+  zoomWindow(how: WindowZoom): void
 }

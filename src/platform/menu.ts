@@ -210,6 +210,28 @@ export function preferencesPlacement(platform: string): 'appMenu' | 'fileMenu' {
   return platform === 'darwin' ? 'appMenu' : 'fileMenu'
 }
 
+/**
+ * The View menu's zoom, the desktop's alone: a browser has its own. A command and
+ * not Electron's roles, because over a canvas these keys zoom the canvas and
+ * everywhere else the window, and only the renderer knows which it is over. On the
+ * items and nowhere else while there is a menu bar: on macOS a menu accelerator
+ * fires whether or not the page handled the key, so a keymap as well would zoom
+ * twice (`widgets/kit/useCanvasZoom`).
+ */
+export const ZOOM_ITEMS: readonly MenuItemSpec[] = [
+  item('menu.zoomActual', { type: 'zoom', how: 'home' }, 'CmdOrCtrl+0'),
+  item('menu.zoomIn', { type: 'zoom', how: 'in' }, 'CmdOrCtrl+Plus'),
+  item('menu.zoomOut', { type: 'zoom', how: 'out' }, 'CmdOrCtrl+-'),
+]
+
+/** The same three by the other keys that say them, which a menu has no room to show: + without its Shift, and the keypad. */
+export const ZOOM_ALIASES: readonly MenuItemSpec[] = [
+  item('menu.zoomIn', { type: 'zoom', how: 'in' }, 'CmdOrCtrl+='),
+  item('menu.zoomIn', { type: 'zoom', how: 'in' }, 'CmdOrCtrl+numadd'),
+  item('menu.zoomOut', { type: 'zoom', how: 'out' }, 'CmdOrCtrl+numsub'),
+  item('menu.zoomActual', { type: 'zoom', how: 'home' }, 'CmdOrCtrl+num0'),
+]
+
 /** The View menu's three radios, and the overflow's. */
 export const THEME_MODE_LABEL: Record<ThemeMode, StringKey> = {
   light: 'menu.themeLight', dark: 'menu.themeDark', system: 'menu.themeSystem',

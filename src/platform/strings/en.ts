@@ -32,6 +32,10 @@ export const EN = {
   /** Where the platform puts it decides which of the two words it gets. */
   'menu.preferences': 'Preferences…',
   'menu.settings': 'Settings…',
+  'menu.view': 'View',
+  'menu.zoomActual': 'Actual size',
+  'menu.zoomIn': 'Zoom in',
+  'menu.zoomOut': 'Zoom out',
   'menu.theme': 'Theme',
   'menu.themeLight': 'Light',
   'menu.themeDark': 'Dark',
