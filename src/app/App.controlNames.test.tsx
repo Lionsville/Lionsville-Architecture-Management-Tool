@@ -468,11 +468,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['and written', ['decision.writing'], async () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
   }]],
-  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings'], async () => {
+  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis'], async () => {
     await page('Roadmap')
   }],
-  ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision'], async () => {
-    fireEvent.click((await within(placePageNow()!).findAllByTestId('plan-band'))[0])
+  ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision', 'plan.page', 'plan.status', 'plan.move', 'plan.editText'], async () => {
+    fireEvent.click((await within(placePageNow()!).findAllByRole('button', { name: /^TR-\d+ / }))[0])
+    fireEvent.click(await within(placePageNow()!).findByRole('button', { name: 'Open plan' }))
   }]],
   // The operating model, from the organisation's card, empty: a library
   // brought in from its dialog, so the matrix has a column to press.

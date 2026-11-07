@@ -232,7 +232,7 @@ describe('what it changes', () => {
   })
 
   it('adds an element after +, grouped by kind, and introduces only what has a lifecycle', () => {
-    const model = { ...MODEL, elements: [...MODEL.elements, element('cap', 'A capability', { kind: 'capability' })] } as DesignModel
+    const model = { ...MODEL, elements: [...MODEL.elements, element('cap', 'A capability', { kind: 'function' })] } as DesignModel
     const { actions } = setup({ model })
     expect(screen.queryByTestId('plan-add-element')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '+ Element' }))
@@ -455,7 +455,7 @@ describe('read-only', () => {
     expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Edit / })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Plan' })).toBeNull()
-    fireEvent.click(within(section('What it changes')).getByRole('button', { name: 'Billing' === 'x' ? 'x' : 'Warehouse Management' }))
+    fireEvent.click(within(section('What it changes')).getByRole('button', { name: 'Warehouse Management' }))
     expect(actions.onOpenElement).toHaveBeenCalledWith('wms-old')
   })
 })

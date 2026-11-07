@@ -1787,12 +1787,12 @@ vanaf `TR-0001`.
 
 **Initiatieven.** Een plan hoort bij het niveau dat het schrijft, en de roadmap
 van een domein is die van het domein. Is een plan ook een zaak van de
-organisatie — een migratie die het hele bedrijf volgt — zet dan **Initiatief**
-aan op zijn pagina. Het verschijnt dan op de roadmap van elk niveau erboven,
-onder *Initiatieven uit de niveaus eronder*, met het niveau waar het bij hoort
-op een chip; daar wordt het gelezen en het wordt bewerkt waar het staat, en de
-chip opent het daar. De roadmapkaart op het organisatiescherm telt ze mee. De
-schakelaar is er niet op de organisatie zelf, die geen roadmap boven zich heeft.
+organisatie — een migratie die het hele bedrijf volgt — kies dan **Volgen op de
+roadmaps hierboven** onder ⋯ op zijn pagina. Het verschijnt dan op de roadmap van elk
+niveau erboven, onder *Initiatieven uit de niveaus eronder*, met in woorden bij welk
+niveau het hoort; daar wordt het gelezen en het wordt bewerkt waar het staat, en de
+lezer opent het daar. De roadmapkaart op het organisatiescherm telt ze mee. De
+keuze is er niet op de organisatie zelf, die geen roadmap boven zich heeft.
 
 ### De business case
 

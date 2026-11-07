@@ -88,7 +88,7 @@ export function PlanReader({ plan, model, about, actions, onClose }: {
   const { t, language } = useStrings()
   const days = plan.milestones.filter((one) => isDay(one.date))
   return (
-    <Panel kind={transitionLabel(plan)} name={plan.title} facts={<PlanFacts plan={plan} />} onClose={onClose} wide dataGuide="roadmap.reader">
+    <Panel kind={transitionLabel(plan)} name={plan.title} facts={<PlanFacts plan={plan} />} onClose={onClose} wide>
       <Milestones plan={plan} />
       <WhatItChanges plan={plan} model={model} />
       <FindingsAbout about={about} />
@@ -118,7 +118,7 @@ export function ElementReader({ element, below, plans, about, actions, onClose, 
   const { t, language } = useStrings()
   const dates = element.lifecycleDates
   return (
-    <Panel kind={t(KIND_LABEL_KEYS[element.kind])} name={element.name} onClose={onClose} wide dataGuide="roadmap.reader">
+    <Panel kind={t(KIND_LABEL_KEYS[element.kind])} name={element.name} onClose={onClose} wide>
       <PanelSection title={t('roadmap.status')}>
         <PropertyRows readOnly>
           {PHASES.filter((phase) => isDay(dates?.[phase])).map((phase) => (
@@ -149,7 +149,7 @@ export function ConnectionReader({ track, about, actions, onClose }: { track: Re
   const { t, language } = useStrings()
   const { relation, sourceName, targetName } = track
   return (
-    <Panel kind={t('roadmap.connection')} name={relation.label || t('roadmap.connectionName', { from: sourceName, to: targetName })} onClose={onClose} wide dataGuide="roadmap.reader">
+    <Panel kind={t('roadmap.connection')} name={relation.label || t('roadmap.connectionName', { from: sourceName, to: targetName })} onClose={onClose} wide>
       <PropertyRows readOnly>
         <PropertyRow label={t('roadmap.planFrom')} value={sourceName} />
         <PropertyRow label={t('roadmap.planTo')} value={targetName} />
@@ -169,7 +169,7 @@ export function InitiativeReader({ initiative, canOpen, actions, onClose }: { in
   const { t } = useStrings()
   const { plan, label, scope } = initiative
   return (
-    <Panel kind={`${t('roadmap.initiative')} · ${transitionLabel(plan)}`} name={plan.title} facts={<PlanFacts plan={plan} />} status={t('roadmap.inScope', { scope: label })} onClose={onClose} wide dataGuide="roadmap.reader">
+    <Panel kind={`${t('roadmap.initiative')} · ${transitionLabel(plan)}`} name={plan.title} facts={<PlanFacts plan={plan} />} status={t('roadmap.inScope', { scope: label })} onClose={onClose} wide>
       <Milestones plan={plan} />
       {canOpen && (
         <Foot>

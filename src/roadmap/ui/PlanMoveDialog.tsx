@@ -33,7 +33,7 @@ export function PlanMoveDialog({ plan, model, onMove, onClose }: {
   const said = (day: string) => formatDay(day, language)
   return (
     <Dialog
-      open size="m" title={t('plan.moveTitle')} onClose={onClose} data-guide="plan.moveDialog"
+      open size="m" title={t('plan.moveTitle')} onClose={onClose}
       actions={(
         <>
           <Button onClick={onClose}>{t('common.cancel')}</Button>

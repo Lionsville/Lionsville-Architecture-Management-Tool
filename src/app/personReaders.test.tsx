@@ -108,9 +108,9 @@ describe('a plan’s owner', () => {
 
   it('reads through the register, and the pseudonym once forgotten', () => {
     const view = renderShell(page(BEFORE))
-    expect(screen.getByTestId('plan-owner-picked').textContent).toBe('Kim Bakker')
+    expect(screen.getByRole('button', { name: 'Edit Owner: Kim Bakker' })).toBeTruthy()
     view.rerender(page(AFTER))
-    expect(screen.getByTestId('plan-owner-picked').textContent).toBe('Former colleague GHJK')
+    expect(screen.getByRole('button', { name: 'Edit Owner: Former colleague GHJK' })).toBeTruthy()
   })
 })
 

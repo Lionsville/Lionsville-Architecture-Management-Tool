@@ -98,7 +98,7 @@ export const CONTROL_NAMES = [
   'decision.status', 'decision.move', 'decision.signers', 'decision.record', 'decision.next', 'decision.more', 'decision.writing',
   'decisions.filter',
   // The roadmap, and one plan.
-  'roadmap.newPlan', 'roadmap.findings', 'plan.addElement', 'plan.milestone', 'plan.addDecision',
+  'roadmap.newPlan', 'roadmap.findings', 'roadmap.axis', 'plan.addElement', 'plan.milestone', 'plan.addDecision', 'plan.page', 'plan.status', 'plan.move', 'plan.editText',
   // The technology landscape.
   'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',
   // The operating model (ADR-0036): its three tabs, a new unit type, role and

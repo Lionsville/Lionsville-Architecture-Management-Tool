@@ -1827,14 +1827,14 @@ einem letzten Tag. Ein Winkel am Ende eines Balkens sagt, dass er über den Zeit
 hinausläuft.
 
 Heute steht auf dem Lineal, mit einem Strich durch jede Zeile. Der **Griff** auf dem
-Lineal ist der Tag, den die Tafel hinter der Seite zeigt: Ziehen Sie ihn, und die Fläche
+Lineal ist der Tag, den das Board hinter der Seite zeigt: Ziehen Sie ihn, und die Fläche
 folgt, sodass Bild und Achse sich nicht widersprechen können. Außer Sicht bleibt der Tag
 am Rand stehen, an dem er vorbeiging, und ein Druck holt ihn zurück. Wie die
-Tagessteuerung schaut der Griff nur: **Speichern** in der Leiste der Tafel behält einen Tag.
+Tagessteuerung schaut der Griff nur: **Speichern** in der Leiste des Boards behält einen Tag.
 
 Drücken Sie eine Zeile, und rechts öffnet sich ein Leser, mit der Achse noch im Blick und
-dem, was dazugehört, hervorgehoben: **Plan öffnen**, **Tafel zeigen am…** oder **Auf der
-Tafel öffnen** ist der zweite Druck. Eine Zeile, deren Daten sich widersprechen, trägt ein
+dem, was dazugehört, hervorgehoben: **Plan öffnen**, **Board zeigen am…** oder **Auf dem
+Board öffnen** ist der zweite Druck. Eine Zeile, deren Daten sich widersprechen, trägt ein
 Zeichen, und der Leser sagt warum. Ab einer Handvoll Zeilen verkürzt **Zeile suchen** sie;
 **Erledigte und abgebrochene ausblenden** lässt weg, was vorbei ist.
 
@@ -1844,8 +1844,23 @@ Ein **Plan** ist, wie eine Änderung der Landschaft aufgeschrieben wird: ein
 Titel, ein Status, das Zeitfenster, über das er läuft, wer ihn verantwortet, die
 Anwendungen, die er einführt, abschaltet oder ändert, die Entscheidungen, auf
 denen er beruht, seine Meilensteine und ein Text in Markdown. Pläne erscheinen
-als Bänder unter den Anwendungen auf der Achse, mit einer Marke je Meilenstein.
-Wählen Sie einen aus, und er öffnet sich rechts.
+als Bänder auf der Achse, mit dem Status darauf, gestrichelt für einen Entwurf, und
+einer Marke je Meilenstein; zu nahe Meilensteine fallen zusammen und sagen wie viele.
+Die Seite eines Plans ist ein Dokument mit einem Bildlauf: der Kopf, ein Streifen mit
+den Meilensteinen, der im Blick bleibt, was er ändert, je eine Zeile, dann der Text, dann
+die Boards, die er ändert, die Prinzipien, die er zitiert, die Änderungen und die
+Kommentare. Eine Gliederung links führt zu allem davon. Ein Fakt liest sich als Worte, und
+ein Druck macht aus dieser einen Zeile ein Formular. **Text bearbeiten** ist nur der Text,
+in einem eigenen Fenster mit Vorschau, gespeichert als ein Schritt. **Schnittstellen** und
+**Einheiten** warten, bis Sie danach fragen; **Dem Rest einen Tag geben…** bewegt jede
+Linie ohne Tag an einem Tag, und eine Zeile öffnet sich, um die ganze Beschriftung zu
+lesen und ihren Tag zu setzen. Ein Meilenstein außerhalb des Zeitraums ist erlaubt und
+sagt das.
+
+**Boards** nennt die Boards, die halten, was der Plan nennt. Von dort geöffnet schaut es
+nur: das Band auf dem Board nennt den Plan und den Meilenstein, geht zwischen den
+Meilensteinen und zurück zum Plan. Das Statusmenü sagt, was einen Schritt aufhält, jede
+Zeile führt dorthin, wo es sich klärt.
 
 Ein Plan läuft **Entwurf → Vereinbart → Läuft → Abgeschlossen** und kann aus
 jedem davon aufgegeben werden. Anders als bei einem Entscheidungseintrag lässt
@@ -1866,13 +1881,13 @@ nummeriert ab `TR-0001` aufwärts.
 
 **Initiativen.** Ein Plan gehört zu dem Bereich, der ihn schreibt, und der
 Fahrplan einer Domäne ist der der Domäne. Ist ein Plan zugleich Sache der
-Organisation — eine Migration, der das ganze Unternehmen folgt — schalten Sie
-auf seiner Seite **Initiative** ein. Er erscheint dann auf dem Fahrplan jedes
-Bereichs darüber, unter *Initiativen aus den Bereichen darunter*, mit dem
-Bereich, zu dem er gehört, auf einem Chip; dort wird er gelesen und bearbeitet
-wird er, wo er liegt, und der Chip öffnet ihn dort. Die Fahrplankarte auf dem
+Organisation — eine Migration, der das ganze Unternehmen folgt — wählen Sie auf
+seiner Seite unter ⋯ **Auf den Roadmaps darüber verfolgen**. Er erscheint dann auf
+dem Fahrplan jedes Bereichs darüber, unter *Initiativen aus den Bereichen darunter*,
+mit dem Bereich, zu dem er gehört, in Worten; dort wird er gelesen und bearbeitet
+wird er, wo er liegt, und der Leser öffnet ihn dort. Die Fahrplankarte auf dem
 Organisationsbildschirm zählt sie mit. Auf der Organisation selbst, die keinen
-Fahrplan über sich hat, gibt es den Schalter nicht.
+Fahrplan über sich hat, gibt es die Wahl nicht.
 
 ### Der Business Case
 

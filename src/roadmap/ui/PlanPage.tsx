@@ -313,7 +313,7 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
         )}
         band={(
           <TimeStrip
-            label={t('plan.strip')} today={today} data-guide="plan.strip"
+            label={t('plan.strip')} today={today}
             {...(isDay(plan.from) ? { from: plan.from } : {})} {...(isDay(plan.to) ? { to: plan.to } : {})}
             items={plan.milestones.map((one, at) => ({ id: String(at), day: one.date, label: one.name })).filter((one) => isDay(one.day))}
             {...(milestone !== undefined ? { pickedId: milestone } : {})}
@@ -369,7 +369,7 @@ function WritePlan({ plan, model, chrome, renderMarkdown, onAddImage, images, on
   const [draft, setDraft] = useState(plan.body)
   return (
     <FocusedWindow
-      open title={t('plan.editing')} number={transitionLabel(plan)} windowChrome={chrome} data-guide="plan.writing"
+      open title={t('plan.editing')} number={transitionLabel(plan)} windowChrome={chrome}
       changed={draft !== plan.body} saveLabel={t('plan.saveText')} onCancel={onDone}
       onSave={() => { if (draft !== plan.body) onSave(draft); onDone() }}
     >
