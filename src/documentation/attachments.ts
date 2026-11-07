@@ -14,6 +14,9 @@
 
 export const ATTACHMENT_SCHEME = 'attachment:'
 
+/** Why a source will not keep a file, in words for the person. */
+export type AttachmentRefused = { refused: string }
+
 /**
  * What a source that keeps attachments offers the editor and the reader.
  * The core's sources keep none, and then neither a button nor a drop is offered.
@@ -23,10 +26,11 @@ export type DocumentAttachments = {
   maxBytes?: number
   /**
    * Keep a file, for the scope with this identity (`usePictureScope`), answering
-   * with the id to refer to, or `undefined` where the source refused it, in
-   * which case nothing is written and the source has already said why.
+   * with the id to refer to. A source that refuses it answers why, in the
+   * person's language, and the editor says that beside the text. `undefined`
+   * where nothing is to be said. Either way nothing is written into the document.
    */
-  add(file: File, scope: string): Promise<string | undefined>
+  add(file: File, scope: string): Promise<string | AttachmentRefused | undefined>
   /** Where the file with this id is opened from. */
   href(id: string): string
 }

@@ -272,6 +272,15 @@ describe('attachments, the seam', () => {
     await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('[report.pdf](attachment:att-1)\n'))
   })
 
+  it('says a refusal in the source\'s own words, and writes nothing', async () => {
+    const source = attachments({ add: vi.fn(async () => ({ refused: 'The storage for attached files is full.' })) })
+    const onChange = vi.fn()
+    renderShell(<AttachmentsProvider value={source}><Controlled start="" onChange={onChange} /></AttachmentsProvider>)
+    fireEvent.drop(screen.getByRole('textbox', { name: 'Source' }), { dataTransfer: transfer([file()]) })
+    await screen.findByText('The storage for attached files is full.')
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('writes nothing where the source refused, and is not offered on a comment', async () => {
     const source = attachments({ add: vi.fn(async () => undefined) })
     const onChange = vi.fn()

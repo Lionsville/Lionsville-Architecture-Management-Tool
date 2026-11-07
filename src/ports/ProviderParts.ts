@@ -150,8 +150,8 @@ export type ProviderParts<Own = unknown> = {
 export type SourceAttachments = {
   /** The largest file taken, in bytes. Absent: the source alone decides. */
   maxBytes?: number
-  /** Keep a file for the scope with this identity: the id to refer to, or `undefined` where the source refused and has said why. */
-  add(file: File, scope: string): Promise<string | undefined>
+  /** Keep a file for the scope with this identity: the id to refer to, or why it will not, in words for the person. */
+  add(file: File, scope: string): Promise<string | { refused: string } | undefined>
   /** Where the file with this id is opened from. */
   href(id: string): string
 }

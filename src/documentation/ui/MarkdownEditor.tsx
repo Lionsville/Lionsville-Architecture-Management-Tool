@@ -187,9 +187,13 @@ function useFilesComing({ apply, areaRef, onAddImage, attachable }: {
     }
     setSaid({ words: t('md.attaching', { file: file.name }), refused: false })
     try {
-      const id = await attachments.add(file, scope)
+      const answer = await attachments.add(file, scope)
+      if (typeof answer === 'object') {
+        setSaid({ words: answer.refused, refused: true })
+        return
+      }
       setSaid(undefined)
-      if (id) put(attachmentMarkdown(id, file.name))
+      if (answer) put(attachmentMarkdown(answer, file.name))
     } catch {
       setSaid({ words: t('md.attachmentFailed', { file: file.name }), refused: true })
     }
