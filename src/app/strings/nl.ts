@@ -1650,6 +1650,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.group.help': 'Help',
   'frame.group.frame': 'Overal',
   'frame.group.canvas': 'Op een bord',
+  'frame.shortcutsTitle': 'Sneltoetsen',
+  'frame.keysOr': 'of',
   'frame.places': 'Plekken',
   'frame.commands': 'Opdrachten',
   'frame.close': 'Sluiten',

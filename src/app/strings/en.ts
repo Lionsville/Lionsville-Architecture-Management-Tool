@@ -1878,6 +1878,8 @@ export const EN = {
   'frame.group.help': 'Help',
   'frame.group.frame': 'Everywhere',
   'frame.group.canvas': 'On a board',
+  'frame.shortcutsTitle': 'Keyboard shortcuts',
+  'frame.keysOr': 'or',
   'frame.places': 'Places',
   'frame.commands': 'Commands',
   'frame.close': 'Close',
