@@ -52,6 +52,8 @@ export type PanelProps = {
   readonly onRename?: (name: string) => string | void
   /** A new value opens the name for typing: F2, and *Rename* on a card's menu. */
   readonly renameRequest?: number
+  /** A request there at the first draw counts too: for what was just made. */
+  readonly renameAtOnce?: boolean
   /** One line in words: *Live · 6 lines · 1 plan*. */
   readonly facts?: ReactNode
   /** Where this is really kept, or anything else said once: *Kept at … Open it there*. */
@@ -78,23 +80,24 @@ export type PanelProps = {
 }
 
 /** Shared with a record's title, so a name is changed the same way wherever it stands. */
-export function PanelName({ name, onRename, renameRequest, unheaded = false }: {
+export function PanelName({ name, onRename, renameRequest, renameAtOnce, unheaded = false }: {
   readonly name: string
   /** Standing inside a heading of its own, such as a record's title. */
   readonly unheaded?: boolean
   readonly onRename?: PanelProps['onRename']
   readonly renameRequest?: number
+  readonly renameAtOnce?: boolean
 }) {
   return (
     <PressName
-      name={name} onRename={onRename} renameRequest={renameRequest} heading={unheaded ? 'span' : 'h2'}
+      name={name} onRename={onRename} renameRequest={renameRequest} renameAtOnce={renameAtOnce} heading={unheaded ? 'span' : 'h2'}
       classes={{ heading: 'kit-panel__name', press: 'kit-panel__namePress', field: 'kit-panel__nameField', refused: 'kit-panel__refused' }}
     />
   )
 }
 
 export function Panel({
-  kind, kindIcon, name, onRename, renameRequest, facts, status, actions, onClose, collapsed, onCollapse: ownCollapse, tabs, tab, onTab, wide, width: ownWidth,
+  kind, kindIcon, name, onRename, renameRequest, renameAtOnce, facts, status, actions, onClose, collapsed, onCollapse: ownCollapse, tabs, tab, onTab, wide, width: ownWidth,
   help, undo, helpLink, loading, children, dataGuide: ownGuide,
 }: PanelProps) {
   const { t } = useStrings()
@@ -124,7 +127,7 @@ export function Panel({
             {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={onClose}><CloseIcon /></button>}
           </span>
         </div>
-        <PanelName name={name} onRename={onRename} renameRequest={renameRequest} />
+        <PanelName name={name} onRename={onRename} renameRequest={renameRequest} renameAtOnce={renameAtOnce} />
         {facts && <div className="kit-panel__facts">{facts}</div>}
         {status && <div className="kit-panel__status">{status}</div>}
       </div>

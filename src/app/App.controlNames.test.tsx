@@ -390,6 +390,9 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the enterprise map', ['map.grid', 'map.summary', 'page.seam', 'map.reading', 'map.filter', 'map.levels', 'map.day', 'map.matrix'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-map'))
+    // The seam is the panel's, and the panel is a row's.
+    await screen.findByTestId('map-grid')
+    fireEvent.click(document.querySelector('[data-kit-row] .kit-matrix__rowName')!)
   }]],
   [['the observations', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.tabResults', 'observations.register',

@@ -15,7 +15,7 @@ const TABS = [{ value: 'properties', label: 'Properties' }, { value: 'comments',
 
 describe('the panel', () => {
   it('starts typing the name when asked, for what was just made', () => {
-    renderShell(<Panel kind="Step" name="New step" onRename={vi.fn()} renameRequest={1}>rows</Panel>)
+    renderShell(<Panel kind="Step" name="New step" onRename={vi.fn()} renameAtOnce renameRequest={1}>rows</Panel>)
     expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Change the name' }))
   })
 

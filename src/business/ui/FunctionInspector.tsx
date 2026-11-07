@@ -420,7 +420,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
   const optional = {
     ...(props.width !== undefined ? { width: props.width } : {}),
     ...(!readOnly && !owned('name') ? { onRename: (name: string) => { actions.updateElement(element.id, { name }) } } : {}),
-    ...(props.nameFocus !== undefined ? { renameRequest: props.nameFocus } : {}),
+    ...(props.nameFocus !== undefined ? { renameRequest: props.nameFocus, renameAtOnce: true } : {}),
     ...(path !== '' ? { facts: path } : {}),
     ...(owner ? { status: <KeptElsewhere owner={owner} /> } : {}),
     ...(props.onClose ? { onClose: props.onClose } : {}),
