@@ -34,7 +34,7 @@ import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane 
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
 import { PictureFrame } from './AnalysisPicture'
 import type { PictureView } from './usePictureFilters'
-import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './ChainMarks'
+import { BOX, CauseMark, DIMMED, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './ChainMarks'
 import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
@@ -270,7 +270,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
             return (
               <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
                 <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
-                <g opacity={dim ? 0.25 : 0.6}>
+                <g {...(dim ? { style: DIMMED } : { opacity: 0.6 })}>
                   <title>{`${formatSolutionNumber(solution.number)} ${solution.title} — ${s('solution.trail')}`}</title>
                   <rect
                     x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill="none"
@@ -289,7 +289,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
             return (
               <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
                 <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
-                <g opacity={dim ? 0.35 : 1}>
+                <g {...(dim ? { style: DIMMED } : {})}>
                   <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
                   <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} stroke={selected ? stroke : theme.palette.divider} strokeWidth={selected ? 3 : 1.2} />
                   <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={5} height={HEIGHT} fill={outcomeColour[experiment.outcome]} />
@@ -307,7 +307,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
           return (
             <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
               <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
-              <g opacity={dim ? 0.35 : phase === 'dropped' ? 0.55 : 1}>
+              <g {...(dim ? { style: DIMMED } : phase === 'dropped' ? { opacity: 0.55 } : {})}>
                 <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>
                 <rect
                   x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10}

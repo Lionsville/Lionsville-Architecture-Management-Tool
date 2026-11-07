@@ -26,6 +26,12 @@ export const LANE_WIDTH = 260
 export const ROW_HEIGHT = 84
 export const BOX = { width: 180, height: 44 }
 export const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
+/**
+ * What a trace or a filter leaves of the records off it: the kit's one dimming, so the maps
+ * recede as far as a board does and no further. 0.25 and 0.35 of their own measured 1.67:1.
+ */
+export const DIMMED = { opacity: 'var(--dim-opacity)' } as const
+
 export const STROKE: Record<CauseStrength, { width: number; dash?: string }> = {
   strong: { width: 3.5 },
   normal: { width: 1.6 },
@@ -74,7 +80,7 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
     <g transform={`translate(${x},${y})`} {...rest} data-key={node.key}>
       {/* An opaque backing, so a dimmed mark still hides the lines behind it. */}
       <circle r={r} fill={theme.palette.background.default} />
-      <g opacity={dim ? 0.35 : 1}>
+      <g {...(dim ? { style: DIMMED } : {})}>
         <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
         <circle
           r={r}
@@ -104,7 +110,7 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
   return (
     <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
       <rect x={-BOX.width / 2} y={-BOX.height / 2} width={BOX.width} height={BOX.height} rx={node.root ? BOX.height / 2 : 5} fill={theme.palette.background.paper} />
-      <g opacity={dim ? 0.35 : 1}>
+      <g {...(dim ? { style: DIMMED } : {})}>
         <title>{`${causeLabel(node.cause)} ${node.cause.title}`}</title>
         <rect
           x={-BOX.width / 2}

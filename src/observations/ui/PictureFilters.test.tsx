@@ -335,8 +335,8 @@ describe('the picture', () => {
     const node = picture().querySelector('[data-key="o1"]')!
     fireEvent.mouseEnter(node)
     expect(screen.getByTestId('analysis-hover').textContent).toContain('The nightly claims batch runs into office hours and nobody is told')
-    expect(picture().querySelector('[data-key="o2"]')?.getAttribute('opacity')).toBe('0.25')
-    expect(picture().querySelector('[data-key="r1"]')?.getAttribute('opacity')).toBe('1')
+    expect(picture().querySelector('[data-key="o2"]')?.getAttribute('data-dimmed')).toBe('true')
+    expect(picture().querySelector('[data-key="r1"]')?.getAttribute('data-dimmed')).toBeNull()
     fireEvent.mouseLeave(node)
     expect(screen.queryByTestId('analysis-hover')).toBeNull()
     fireEvent.focus(picture().querySelector('[data-key="c2"]')!)

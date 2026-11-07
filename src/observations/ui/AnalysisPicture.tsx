@@ -38,7 +38,7 @@ import { causeLabel } from '../observation'
 import type { CauseAbove, ScopeAnalysis } from '../observation'
 import type { FilterResult } from '../filter'
 import type { MapWindow } from '../chain'
-import { LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
+import { DIMMED, LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler } from './PictureMenu'
 import { RecordMark, anchorOf, recordLabel, recordState, recordTitle } from './PictureMarks'
 import { clampZoom } from './usePictureFilters'
@@ -465,8 +465,8 @@ function Nodes(props: NodesProps) {
           data-testid={`analysis-${node.kind}`}
           data-key={node.key}
           data-root={node.kind === 'cause' && node.root ? 'true' : undefined}
-          opacity={traced && !traced.has(node.key) ? 0.25 : 1}
-          style={{ cursor: 'pointer' }}
+          data-dimmed={traced && !traced.has(node.key) ? 'true' : undefined}
+          style={traced && !traced.has(node.key) ? { ...DIMMED, cursor: 'pointer' } : { cursor: 'pointer' }}
           onClick={() => press(node)}
           onKeyDown={keyDown(node)}
           onFocus={() => onHot(node.key)}
