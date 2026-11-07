@@ -15,7 +15,7 @@ import { readFinding, writeFinding } from '../agent/place'
 import type { CheckKey } from '../model/checkCatalogue'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import { viewFacetsOf } from '../agent/place'
+import { readPlace, viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
 import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor, viewPage } from '../agent/screen'
 import type { DesignDiagram } from '../model/types'
@@ -403,6 +403,12 @@ function useFrameMoves(
   openFor: (to: Destination & { scope: string }) => void, here: ScopePath, lookAgain: { current: () => void },
 ) {
   const asked = useRef(initial)
+  // A page opened by its address on a tab, or on what it looks at: held here from the first look, since the page reads it from here.
+  useState(() => {
+    const said = typeof window === 'undefined' ? undefined : readPlace(window.location.hash)
+    if (frame && said?.page !== undefined && (said.tab !== undefined || said.look !== undefined)) frame.set({ tab: said.tab, look: said.look, tabOf: said.page })
+    return undefined
+  })
   useEffect(() => {
     const page = asked.current
     if (page === undefined) return
@@ -411,11 +417,11 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab, list, pick, finding, lookOf, lookDay, facets } = frame.get()
+    let { panel, tab, look, list, pick, finding, lookOf, lookDay, facets } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets) return
-      ({ panel, tab, list, pick, finding, lookOf, lookDay, facets } = now)
+      if (now.panel === panel && now.tab === tab && now.look === look && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets) return
+      ({ panel, tab, look, list, pick, finding, lookOf, lookDay, facets } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
@@ -457,7 +463,7 @@ function holdInFrame(frame: FrameStore | undefined, to: Destination): Destinatio
   const carried = to.finding !== undefined ? readFinding(to.finding) : undefined
   if (carried) frame?.set({ finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } })
   frame?.set({
-    panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
+    panel: to.panel, tab, look: to.look, tabOf: tab === undefined && to.look === undefined ? undefined : listPage,
     record, recordOf: record === undefined ? undefined : 'people',
     facets: facetsOf(to),
     list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
@@ -475,6 +481,7 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const view = screen.open?.view
   const reading = !page && view && isPageTab(held.tabOf, held.tab) && held.tabOf === viewPage(view.kind as DesignDiagram['kind']) ? held.tab : undefined
   const tab = page && held.tabOf === page.page && !('tab' in page && page.tab !== undefined) && isPageTab(page.page, held.tab) ? held.tab : undefined
+  const look = page && held.tabOf === page.page ? held.look : undefined
   const record = page?.page === 'people' && held.recordOf === 'people' ? held.record : undefined
   const listed = page && held.listOf === page.page
   const pick = listed && held.pick !== undefined ? held.pick : record
@@ -486,8 +493,8 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   return {
     ...screen,
     ...(opened ? { open: reading !== undefined && opened.view ? { ...opened, view: { ...opened.view, tab: reading } } : opened } : {}),
-    ...(page && (tab !== undefined || pick !== undefined)
-      ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
+    ...(page && (tab !== undefined || pick !== undefined || look !== undefined)
+      ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(look !== undefined ? { look } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
       : {}),
     ...(held.panel !== undefined ? { panel: held.panel } : {}),
     ...(listed && held.list ? { list: held.list } : {}),

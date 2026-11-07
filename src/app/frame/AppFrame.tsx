@@ -89,8 +89,10 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     record: state.record,
     recordOf: state.recordOf,
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
+    look: state.tabOf === tabPage ? state.look : undefined,
+    chooseLook: (look: string | undefined) => { frame.set({ look, tabOf: tabPage, ...(state.tabOf === tabPage ? {} : { tab: undefined }) }); lookAgain() },
     go: (to: PlaceTo) => go(to as Destination),
-  }), [state.tab, state.tabOf, state.record, state.recordOf, tabPage, frame, lookAgain, go])
+  }), [state.tab, state.tabOf, state.look, state.record, state.recordOf, tabPage, frame, lookAgain, go])
   const lists = useMemo(() => ({
     list: state.listOf === page ? state.list : undefined,
     pick: state.listOf === page ? state.pick : undefined,

@@ -26,7 +26,7 @@ import type { ComingInEdits, ComingInRow, PlacementChoice, WhatWillComeIn } from
 import type { OperatingLists } from '../bringIn'
 import type { Library } from '../library'
 import { countsLine } from './countsLine'
-import { HEADING } from './Rules'
+import { HEADING } from './heading'
 
 export type ComingInPaneProps = {
   library: Library
@@ -161,8 +161,23 @@ function RoleRow({ row, ...context }: { row: ComingInRow } & RowContext) {
     <RowFrame row={row} {...context}>
       {row.fate === 'made' && <NameField row={row} {...context} />}
       {lists.roles.length > 0 && <Reuse row={row} items={lists.roles} bringIn={t('operating.bringInNewRole')} {...context} />}
+      {row.fate === 'reused' && <Typography variant="caption" color="text.secondary" data-testid={`letters-${row.entry}`}>{lettersWords(row.entry, context)}</Typography>}
     </RowFrame>
   )
+}
+
+/**
+ * What using one of yours does to the library role's letters: they come onto your
+ * role, on the responsibilities that are new, so a row arrives with its A.
+ */
+function lettersWords(entry: string, { library, rows, t }: RowContext): string {
+  const duties = (library.roles.find((role) => role.entry === entry)?.duties ?? []).filter((duty) => rows.get(duty.responsibility)?.fate === 'made')
+  if (duties.length === 0) return t('operating.lettersNone')
+  const letters = (['R', 'A', 'C', 'I'] as const).flatMap((raci) => {
+    const count = duties.filter((duty) => duty.raci === raci).length
+    return count > 0 ? [`${count} ${raci}`] : []
+  })
+  return t('operating.lettersCome', { letters: letters.join(', ') })
 }
 
 /** Bring it in, or use one of the organisation's for it: the suggestion said, and first among them. */

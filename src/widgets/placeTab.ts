@@ -25,6 +25,8 @@ export type PlaceTabs = {
   readonly chooseRecord?: (record: string | undefined, of: string) => void
   /** Go to another place, the way `app.open` goes. */
   readonly go?: (to: PlaceTo) => void
+  readonly look?: string | undefined
+  readonly chooseLook?: (look: string | undefined) => void
 }
 
 /** What a list keeps in the address, handed down beside the tab. */
@@ -122,4 +124,19 @@ export function useViewFacets(viewId: string): readonly [ViewFacets, (patch: Vie
     held?.choose(viewId, next)
   }, [held, now, viewId])
   return [now, choose]
+}
+
+/**
+ * What a page looks at within its tab, as a query string of its own, kept where
+ * the tab is and for the same reasons (`?look=`): a filter by part or by unit is
+ * something a link and an agent reach too.
+ */
+export function usePlaceLook(): readonly [string | undefined, (look: string | undefined) => void] {
+  const held = useContext(PlaceTabContext)
+  const [own, setOwn] = useState<string | undefined>(undefined)
+  const choose = useCallback((look: string | undefined) => {
+    setOwn(look)
+    held?.chooseLook?.(look)
+  }, [held])
+  return [held ? held.look : own, choose]
 }

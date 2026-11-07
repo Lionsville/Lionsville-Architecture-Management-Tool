@@ -25,7 +25,6 @@ import type { CardBox, LaneLine } from './laneLines'
 import { roleLinePaths } from './roleLines'
 import type { RoleLine } from './roleLines'
 import type { Look } from './structurePick'
-import { ringOf } from './TypeCard'
 
 export type StructureLanesProps = {
   /** The lanes, as `unitTypeLanes` reads the types drawn: lane 1 first, the types that sit nowhere left out. */
@@ -49,7 +48,7 @@ export type StructureLanesProps = {
 }
 
 /** A lane's width and the gap between two: room in the gap for a line to bend up to the rail and down again. */
-const WIDE = { lane: 236, root: 150, gap: 48 }
+const WIDE = { lane: 200, root: 120, gap: 36 }
 const COMPACT = { lane: 200, root: 120, gap: 40 }
 
 export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named, compact = false, roleLines }: StructureLanesProps) {
@@ -81,7 +80,7 @@ export function StructureLanes({ structure, label, organisation, laneLabel, card
 function Lane({ heading, lane, width, children }: { heading: string; lane: number; width: number; children: ReactNode }) {
   return (
     <Box sx={{ width, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
-      <Typography aria-hidden sx={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', height: 16, mb: 0.5 }}>
+      <Typography aria-hidden sx={{ fontSize: 'var(--t-xs)', color: 'text.secondary', height: 16, mb: 0.5 }}>
         {heading}
       </Typography>
       <Box role="list" aria-label={heading} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -92,23 +91,18 @@ function Lane({ heading, lane, width, children }: { heading: string; lane: numbe
 }
 
 function OrganisationCard({ name, note, look = 'plain' }: StructureLanesProps['organisation']) {
-  const ring = ringOf(look)
   return (
-    <Box data-testid="structure-organisation" data-look={look} sx={{
-      border: 1, borderColor: ring ?? 'divider', borderRadius: 1.5, p: 1, bgcolor: 'background.default',
-      // Out of the pick, as a type's card is (`TypeCard`).
-      opacity: look === 'dim' ? 0.45 : 1,
-    }}>
-      <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{name}</Typography>
-      {note && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{note}</Typography>}
-    </Box>
+    <div className="op-card" data-testid="structure-organisation" data-look={look}>
+      <div className="op-card__name">{name}</div>
+      {note && <div className="op-card__meta">{note}</div>}
+    </div>
   )
 }
 
 /** The lines, under the cards; a line cut at a loop dashed. */
 function Lines({ lines, look }: { lines: readonly LaneLine[]; look: StructureLanesProps['lineLook'] }) {
   const theme = useTheme()
-  const stroke = { plain: theme.palette.text.secondary, lit: theme.palette.primary.main, dim: theme.palette.divider } as const
+  const stroke = { plain: 'var(--line-strong)', lit: 'var(--selected-edge)', dim: theme.palette.divider } as const
   return (
     <Box component="svg" aria-hidden sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 0 }}>
       {lines.map((line) => {
@@ -132,7 +126,7 @@ function RoleLines({ lines }: { lines: readonly (RoleLine & { d: string; x: numb
     <Box component="svg" aria-hidden data-testid="structure-role-lines"
       sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 2 }}>
       {lines.map((line) => {
-        const stroke = line.ambiguous ? theme.palette.warning.main : theme.palette.secondary.main
+        const stroke = line.ambiguous ? 'var(--warn)' : 'var(--selected-edge)'
         return (
           <g key={line.key} data-testid={`structure-role-line-${line.kind}`} data-within={line.within || undefined} data-source={line.source}>
             <path d={line.d} fill="none" stroke={stroke} strokeWidth={2} strokeDasharray={line.kind === 'dotted' ? '2 3' : undefined} />

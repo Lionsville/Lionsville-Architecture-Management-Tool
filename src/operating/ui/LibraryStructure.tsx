@@ -32,10 +32,10 @@ import type { ComingInRow } from '../comingIn'
 import type { Library, LibraryLanguage, LibraryRole } from '../library'
 import { answersOf, libraryRoles, libraryTypes, looseRoles, standingFor } from './libraryCards'
 import type { Standing } from './libraryCards'
-import { HEADING } from './Rules'
+import { HEADING } from './heading'
 import { StructureLanes } from './StructureLanes'
 import { Badge, TypeCard } from './TypeCard'
-import { placeOf } from './UnitsAndRoles'
+import { placeOf } from './StructureTab'
 
 export type LibraryStructureProps = {
   library: Library
@@ -73,7 +73,7 @@ export function LibraryStructure(props: LibraryStructureProps) {
         head={<Tick entry={type.id} name={type.name} standing={standing} {...props} />}
         dashed={comes(type.id)} roleDashed={comes}
         onPickRole={props.onFold} roleExpanded={(role) => props.unfolded.has(role)}
-        noSlots={t('operating.libraryNoSlots')}
+        noSlots={t('operating.libraryNoSlots')} showRange
       >
         <Note standing={standing} row={row} rows={rows} t={t} />
         {type.purpose && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{type.purpose}</Typography>}

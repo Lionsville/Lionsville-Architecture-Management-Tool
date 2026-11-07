@@ -86,7 +86,7 @@ const MAY_IMPORT = {
   blocks: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments', 'principles'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments', 'principles'],
   observations: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'people', 'comments', 'principles'],
-  operating: ['model', 'i18n', 'platform', 'widgets'],
+  operating: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'people', 'comments', 'principles'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],

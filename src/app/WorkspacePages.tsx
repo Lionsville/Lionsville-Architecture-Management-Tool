@@ -33,7 +33,7 @@ import { heldThroughType } from '../model/units'
 import { refuseRoleLines, refuseSlotLine } from '../model/reporting'
 import { refusalWords } from './units/lineWords'
 import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
-import { roleHoldersHere, unitCountsHere } from './units/operatingCounts'
+import { backToTheModel, operatingFactsHere, roleHoldersHere, unitCountsHere } from './units/operatingCounts'
 import type {
   PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
 } from './units/PlanOrganisation'
@@ -128,25 +128,37 @@ export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
  * only where the organisation is the scope open, and read anywhere else.
  */
 function OperatingPages({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, pages, readOnly, pageChrome, landMoves, todayDay } = parts
+  const { props, session, pages, readOnly, pageChrome, landMoves, todayDay, snapshots, pictures } = parts
   const model = session.model
-  const lists = useMemo(() => ({
-    unitTypes: model.unitTypes ?? [], roles: model.roles ?? [],
-    responsibilities: model.responsibilities ?? [], operatingRules: model.operatingRules ?? [],
-  }), [model.unitTypes, model.roles, model.responsibilities, model.operatingRules])
-  const page = pages.operatingPage
-  // The units of each type today, across the tree with this scope's session over it: counted while the page is up, and only then.
   const scope = props.project.path
+  const atOrganisation = scope === ROOT_SCOPE
+  const onOpenScope = props.navigation.onOpenScope
+  const page = pages.operatingPage
+  // The organisation's model wherever the page is opened: over any other scope it reads, and says so.
+  const held = useMemo(() => (atOrganisation || !page.open ? undefined : props.tree.index.operatingModel()), [atOrganisation, page.open, props.tree.index])
+  const lists = useMemo(() => ({
+    unitTypes: (held ?? model).unitTypes ?? [], roles: (held ?? model).roles ?? [],
+    responsibilities: (held ?? model).responsibilities ?? [], operatingRules: (held ?? model).operatingRules ?? [],
+  }), [held, model.unitTypes, model.roles, model.responsibilities, model.operatingRules]) // eslint-disable-line react-hooks/exhaustive-deps
+  // The units of each type today, across the tree with this scope's session over it: counted while the page is up, and only then.
   const unitCounts = useMemo(
     () => (page.open ? unitCountsHere(props.tree.index, scope, model, todayDay) : undefined),
     [page.open, props.tree.index, scope, model, todayDay],
   )
+  const people = props.shell.people?.people
+  const facts = useMemo(
+    () => (page.open ? operatingFactsHere(props.tree.index, scope, model, todayDay, people ?? [], props.shell.s) : undefined),
+    [page.open, props.tree.index, scope, model, todayDay, people, props.shell.s],
+  )
+  const goUnit = (unit: { id: string; scope: string }) => {
+    onOpenScope?.(unit.scope, { page: 'element', id: unit.id })
+  }
   return (
     <OperatingModelPage
       open={page.open}
       model={lists}
       readOnly={readOnly}
-      atOrganisation={props.project.path === ROOT_SCOPE}
+      atOrganisation={atOrganisation}
       makeId={props.shell.makeId}
       dispatch={(command) => { session.dispatch(command) }}
       {...(page.id !== undefined ? { initialId: page.id } : {})}
@@ -155,8 +167,8 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
       windowChrome={pageChrome}
       // What a unit type or a role that ends leaves to decide (ADR-0036 §6): the organisation's, so the host's.
       aside={(item) => (item.kind === 'responsibility' ? undefined : createElement(EndedHolders, {
-        item, scope: props.project.path, model, index: props.tree.index, people: props.shell.people,
-        readOnly: readOnly || props.project.path !== ROOT_SCOPE, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
+        item, scope, model, index: props.tree.index, people: props.shell.people,
+        readOnly: readOnly || !atOrganisation, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
       }))}
       slotTakeOut={slotTakeOut(parts)}
       // A slot's solid line that would close a loop over the organisation is refused (ADR-0039 §5).
@@ -168,6 +180,7 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
         return refusal && refusalWords(refusal, organisation, props.shell.s)
       }}
       {...(unitCounts ? { unitCounts } : {})}
+      {...(facts ? { facts } : {})}
       // Who holds a role, said before it is removed (ADR-0036 §6).
       roleHolders={(roleId) => roleHoldersHere(props.tree.index, scope, model, roleId, todayDay)}
       // A library's step, taken back from its toast only while no other step has come since.
@@ -179,6 +192,18 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
           return true
         }
       }}
+      {...(onOpenScope && !atOrganisation ? { onOpenOrganisation: () => onOpenScope(ROOT_SCOPE, { page: 'operating' }) } : {})}
+      onOpenUnit={goUnit}
+      {...(onOpenScope ? { onOpenChart: () => onOpenScope(ROOT_SCOPE, { page: 'chart' }) } : {})}
+      {...(snapshots.available ? { onOpenHistory: () => { pages.closeOperating(); snapshots.openPage() } } : {})}
+      onBackBelow={(exception) => {
+        const command = backToTheModel(exception)
+        if (command && exception.scope !== undefined) void landMoves(new Map([[exception.scope, [command]]]))
+      }}
+      onSave={(name, text) => {
+        void props.files.documents.save({ name, mediaType: 'text/csv', text }).catch((cause: unknown) => props.shell.notify(props.shell.s('shell.saveFileFailed', { message: String(cause) }), 'error'))
+      }}
+      renderMarkdown={(text) => pictures.renderDocument(text)}
     />
   )
 }

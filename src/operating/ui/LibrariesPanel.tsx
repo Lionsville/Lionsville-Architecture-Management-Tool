@@ -2,81 +2,114 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The third tab: the libraries to start from (ADR-0036 §5), what came in from
- * each, and how what came in differs from its library now.
- *
- * Each library is a card: what it offers, a way into the dialog that brings it
- * in (*From SAFe…*), and *What came in* (amended 11 October 2026) — every item
- * made from it, the library's term beside what it is called here, renamed in
- * place and opened on its own tab by pressing the term, with what *compare*
- * says has changed since; and every one of the organisation's own a bring-in
- * matched to an entry, "used your …". All of it read from the records
- * (`whatCameIn`), nothing guessed by name.
+ * The libraries to start from (ADR-0036 §5), as a short list, each read in a large
+ * preview: what it offers, a way into the dialog that brings it in, and *What came
+ * in*, as text, the library's term beside what it is called here and what has
+ * changed since, with every one of the organisation's own a bring-in matched to an
+ * entry. An item is renamed where it lives: pressing it opens it. How what came in
+ * differs from its library now is one press away.
  */
-import { useMemo } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import type { Command } from '../../model/commands'
+import { useMemo, useState } from 'react'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { Button } from '../../widgets/kit/Button'
+import { List } from '../../widgets/kit/List'
+import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { whatCameIn } from '../cameIn'
-import type { CameIn, CameInItem, MatchedItem } from '../cameIn'
+import type { CameInItem, MatchedItem } from '../cameIn'
 import { compareWithLibraries } from '../compare'
 import type { Difference } from '../compare'
-import { editResponsibility, editRole, editUnitType } from '../edit'
 import type { OperatingModel } from '../edit'
 import type { Library, LibraryLanguage } from '../library'
-import { NothingDash } from '../../widgets/NothingDash'
 import { countsLine } from './countsLine'
 
 type Props = {
   model: OperatingModel
   readOnly: boolean
-  dispatch(command: Command): void
   libraries: readonly Library[]
   /** The screen's language, as the libraries are written in it. */
   language: LibraryLanguage
   /** Open the dialog that brings a library in, on that library. */
-  onFromLibrary(libraryId: string): void
+  onFromLibrary(libraryId?: string): void
   /** Open an item on its own tab, picked. */
   onOpenItem(id: string): void
+  selected: string | undefined
+  onSelect(id: string | undefined): void
 }
 
-const heading = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 3, mb: 1 } as const
-
-export function LibrariesPanel({ model, readOnly, dispatch, libraries, language, onFromLibrary, onOpenItem }: Props) {
+export function LibrariesPanel({ model, readOnly, libraries, language, onFromLibrary, onOpenItem, selected, onSelect }: Props) {
   const { t } = useStrings()
   const differences = useMemo(() => compareWithLibraries(model, libraries), [model, libraries])
   const cameIn = useMemo(() => whatCameIn(model, libraries), [model, libraries])
+  const [comparing, setComparing] = useState(false)
+  const open = cameIn.find((one) => one.library.id === selected)
+  const ids = cameIn.map((one) => one.library.id)
   return (
-    <Box sx={{ maxWidth: 1000 }}>
-      <Typography variant="body2" color="text.secondary">{t('operating.librariesIntro')}</Typography>
-      {cameIn.map((one) => (
-        <LibraryCard key={one.library.id} cameIn={one} readOnly={readOnly} dispatch={dispatch} language={language}
-          onFromLibrary={onFromLibrary} onOpenItem={onOpenItem} />
-      ))}
-      <Typography component="h2" sx={heading}>{t('operating.compare')}</Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{t('operating.compareHint')}</Typography>
-      <Box data-guide="operating.compare" component="ul" sx={{ pl: '1.2em', my: 0 }}>
-        {differences.length === 0
-          ? <Typography component="li" variant="body2" color="text.secondary">{t('operating.compareNone')}</Typography>
-          : differences.map((difference, index) => (
-            <Typography component="li" variant="body2" key={`${difference.item.id}-${difference.what}-${index}`}>
-              {differenceSentence(difference, t)}
-            </Typography>
-          ))}
-      </Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 3 }}>{t('operating.notices')}</Typography>
-    </Box>
+    <>
+      <p className="op-concept">{t('operating.librariesIntro')}</p>
+      <div className="op-actions">
+        <Button variant="plain" aria-expanded={comparing} data-testid="operating-compare" onClick={() => setComparing(!comparing)}>{t('operating.compare')}</Button>
+        {!readOnly && <Button variant="plain" data-guide="operating.fromLibrary" onClick={() => onFromLibrary()}>{t('operating.fromLibrary')}</Button>}
+      </div>
+      {comparing && (
+        <section className="op-section" aria-label={t('operating.compare')}>
+          <p className="op-small">{t('operating.compareHint')}</p>
+          <ul className="op-diffs" data-guide="operating.compare">
+            {differences.length === 0
+              ? <li className="op-quiet">{t('operating.compareNone')}</li>
+              : differences.map((difference, index) => <li key={`${difference.item.id}-${difference.what}-${index}`}>{differenceSentence(difference, t)}</li>)}
+          </ul>
+        </section>
+      )}
+      <List
+        label={t('operating.tabLibraries')} wrap dataGuide="operating.libraries" selectedId={selected ?? null} onOpen={onSelect}
+        itemLabel={t('operating.library')}
+        columns={[{ id: 'note', label: t('operating.libraryAbout') }, { id: 'came', label: t('operating.cameIn'), width: '14em' }]}
+        groups={[{
+          id: 'all', label: '', rows: cameIn.map(({ library, made, matched }) => ({
+            id: library.id, text: library.name,
+            cells: { note: library.note[language], came: cameInWords(made, matched, t) },
+          })),
+        }]}
+      />
+      <p className="op-small">{t('operating.notices')}</p>
+      <Preview
+        ids={ids} currentId={open ? open.library.id : null} onSelect={(id) => onSelect(id ?? undefined)} title={open?.library.name ?? ''} dataGuide="operating.libraryPreview"
+        facts={open && (
+          <>
+            <PreviewFact label={t('operating.version')}>{open.library.version}</PreviewFact>
+            <PreviewFact label={t('operating.holds')}>{countsLine(t, open.library.unitTypes.length, open.library.roles.length, open.library.responsibilities.length)}</PreviewFact>
+          </>
+        )}
+        foot={open && !readOnly && <Button variant="primary" onClick={() => onFromLibrary(open.library.id)}>{t('operating.fromThisLibrary', { library: open.library.name })}</Button>}
+      >
+        {open && (
+          <div data-testid={`library-${open.library.id}`} className="op-section">
+            <p>{open.library.note[language]}</p>
+            <h3>{t('operating.cameIn')}</h3>
+            {open.made.length === 0 && open.matched.length === 0
+              ? <p className="op-quiet">{t('operating.cameInNone', { library: open.library.name })}</p>
+              : (
+                <div className="op-cameIn" data-guide="operating.cameIn">
+                  <span className="op-cameIn__head">{t('operating.cameInTerm')}</span>
+                  <span className="op-cameIn__head">{t('operating.cameInName')}</span>
+                  <span className="op-cameIn__head">{t('operating.cameInChanged')}</span>
+                  {open.made.map((item) => <MadeRow key={`${item.kind}-${item.id}`} item={item} onOpenItem={onOpenItem} />)}
+                  {open.matched.map((item) => <MatchedRow key={`${item.kind}-${item.id}-${item.entry}`} item={item} onOpenItem={onOpenItem} />)}
+                </div>
+              )}
+          </div>
+        )}
+      </Preview>
+    </>
   )
+}
+
+const cameInWords = (made: readonly CameInItem[], matched: readonly MatchedItem[], t: Translate): string => {
+  const count = made.length + matched.length
+  if (count === 0) return t('operating.nothingBrought')
+  const changed = made.filter((item) => item.changed.length > 0).length
+  return changed > 0 ? t('operating.broughtChanged', { count, changed }) : t('operating.brought', { count })
 }
 
 /** A difference as a sentence. */
@@ -128,102 +161,34 @@ export function changedWords(changed: readonly Difference[], t: Translate): stri
   return [...new Set(words)].join(', ')
 }
 
-type CardProps = {
-  cameIn: CameIn
-  readOnly: boolean
-  dispatch(command: Command): void
-  language: LibraryLanguage
-  onFromLibrary(libraryId: string): void
-  onOpenItem(id: string): void
-}
-
-function LibraryCard({ cameIn, readOnly, dispatch, language, onFromLibrary, onOpenItem }: CardProps) {
-  const { library, made, matched } = cameIn
-  const { t } = useStrings()
-  const titleId = `came-in-${library.id}`
-  return (
-    <Box component="section" aria-labelledby={`library-${library.id}-name`} data-testid={`library-${library.id}`}
-      sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5, mt: 2, bgcolor: 'background.paper' }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-        <Typography component="h2" id={`library-${library.id}-name`} sx={{ fontWeight: 700, fontSize: 15 }}>{library.name}</Typography>
-        <Typography variant="caption" color="text.secondary">{t('operating.libraryVersion', { version: library.version })}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {countsLine(t, library.unitTypes.length, library.roles.length, library.responsibilities.length)}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        {!readOnly && (
-          <Button size="small" variant="outlined" sx={{ textTransform: 'none' }} onClick={() => onFromLibrary(library.id)}>
-            {t('operating.fromThisLibrary', { library: library.name })}
-          </Button>
-        )}
-      </Box>
-      <Typography variant="body2" color="text.secondary">{library.note[language]}</Typography>
-      <Typography component="h3" id={titleId} sx={{ ...heading, mt: 1.5 }}>{t('operating.cameIn')}</Typography>
-      {made.length === 0 && matched.length === 0
-        ? <Typography variant="body2" color="text.secondary">{t('operating.cameInNone', { library: library.name })}</Typography>
-        : (
-          <Table size="small" aria-labelledby={titleId} data-guide="operating.cameIn">
-            <TableHead>
-              <TableRow>
-                <TableCell>{t('operating.cameInTerm')}</TableCell>
-                <TableCell>{t('operating.cameInName')}</TableCell>
-                <TableCell>{t('operating.cameInChanged')}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {made.map((item) => <MadeRow key={`${item.kind}-${item.id}`} item={item} readOnly={readOnly} dispatch={dispatch} onOpenItem={onOpenItem} />)}
-              {matched.map((item) => <MatchedRow key={`${item.kind}-${item.id}-${item.entry}`} item={item} onOpenItem={onOpenItem} />)}
-            </TableBody>
-          </Table>
-        )}
-    </Box>
-  )
-}
-
-const RENAME = { unitType: editUnitType, role: editRole, responsibility: editResponsibility } as const
-
-/** The library's term, pressed to open the item, and what kind it is. */
 function Term({ term, kind, id, onOpenItem }: { term: string; kind: CameInItem['kind']; id: string; onOpenItem(id: string): void }) {
   const { t } = useStrings()
   return (
-    <>
-      <Tooltip describeChild title={t(kind === 'responsibility' ? 'operating.openOnRaci' : 'operating.openOnUnits')}>
-        <Button size="small" onClick={() => onOpenItem(id)} sx={{ textTransform: 'none', p: 0, minWidth: 0, textAlign: 'left' }}>{term}</Button>
-      </Tooltip>
-      <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 0.75 }}>{t(`operating.entryKind.${kind}`)}</Typography>
-    </>
+    <span>
+      <button type="button" className="op-link" title={t(kind === 'responsibility' ? 'operating.openOnRaci' : kind === 'role' ? 'operating.openOnRoles' : 'operating.openOnUnits')} onClick={() => onOpenItem(id)}>{term}</button>
+      {' '}<span className="op-small">{t(`operating.entryKind.${kind}`)}</span>
+    </span>
   )
 }
 
-function MadeRow({ item, readOnly, dispatch, onOpenItem }: { item: CameInItem; readOnly: boolean; dispatch(command: Command): void; onOpenItem(id: string): void }) {
+function MadeRow({ item, onOpenItem }: { item: CameInItem; onOpenItem(id: string): void }) {
   const { t } = useStrings()
-  const term = item.term ?? item.entry
   return (
-    <TableRow data-testid={`came-in-${item.id}`}>
-      <TableCell><Term term={term} kind={item.kind} id={item.id} onOpenItem={onOpenItem} /></TableCell>
-      <TableCell>
-        {readOnly
-          ? item.name
-          : (
-            <TextField size="small" fullWidth value={item.name} sx={{ minWidth: 180, '& .MuiInputBase-input': { py: 0.5, fontSize: 13 } }}
-              slotProps={{ htmlInput: { 'aria-label': t('operating.calledHere', { term }) } }}
-              onChange={(event) => dispatch(RENAME[item.kind](item.id, 'name', event.target.value))} />
-          )}
-      </TableCell>
-      <TableCell sx={{ fontSize: 12 }}>
-        {item.changed.length === 0 ? <NothingDash says={t('operating.changedNothing')} /> : changedWords(item.changed, t)}
-      </TableCell>
-    </TableRow>
+    <>
+      <Term term={item.term ?? item.entry} kind={item.kind} id={item.id} onOpenItem={onOpenItem} />
+      <span data-testid={`came-in-${item.id}`}>{item.name}</span>
+      <span className="op-small">{item.changed.length === 0 ? '' : changedWords(item.changed, t)}</span>
+    </>
   )
 }
 
 function MatchedRow({ item, onOpenItem }: { item: MatchedItem; onOpenItem(id: string): void }) {
   const { t } = useStrings()
   return (
-    <TableRow data-testid={`came-in-matched-${item.entry}`}>
-      <TableCell><Term term={item.term ?? item.entry} kind={item.kind} id={item.id} onOpenItem={onOpenItem} /></TableCell>
-      <TableCell sx={{ fontStyle: 'italic' }}>{t('operating.usedYour', { name: item.name })}</TableCell>
-      <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>{t('operating.changedMatched')}</TableCell>
-    </TableRow>
+    <>
+      <Term term={item.term ?? item.entry} kind={item.kind} id={item.id} onOpenItem={onOpenItem} />
+      <span data-testid={`came-in-matched-${item.entry}`}>{t('operating.usedYour', { name: item.name })}</span>
+      <span className="op-small">{t('operating.changedMatched')}</span>
+    </>
   )
 }

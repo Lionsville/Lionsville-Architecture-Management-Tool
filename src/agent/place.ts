@@ -91,7 +91,7 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel', 'finding', 'day', 'group', 'pair'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'panel', 'finding', 'day', 'group', 'pair'])
 
 /**
  * What a list says about itself in the address (`widgets/kit/listView.ts`):
@@ -105,7 +105,7 @@ const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'so
 const isListKeyOn = (page: string | undefined, key: string) => isListKey(key) && !(page === 'conway' && key === 'group')
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel', 'finding', 'day', 'group', 'pair'])
+const QUERY_KEYS = new Set(['id', 'tab', 'look', 'select', 'panel', 'finding', 'day', 'group', 'pair'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -125,6 +125,7 @@ export function writePlace(place: Place): string {
     query.set('id', place.id)
   }
   if (place.tab !== undefined) query.set('tab', place.tab)
+  if (place.look !== undefined) query.set('look', place.look)
   if (place.select !== undefined) query.set('select', place.select)
   if (place.panel !== undefined) query.set('panel', place.panel)
   if (place.finding !== undefined) query.set('finding', place.finding)
@@ -208,7 +209,7 @@ function readQueryForm(text: string): Place | undefined {
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel' | 'finding' | 'day' | 'group' | 'pair', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'look' | 'select' | 'panel' | 'finding' | 'day' | 'group' | 'pair', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -219,7 +220,7 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
 
 function placeFrom(
   scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string, day?: string,
-  onView: { readonly group?: string; readonly pair?: string } = {},
+  onView: { readonly group?: string; readonly pair?: string; readonly look?: string } = {},
 ): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
   if (tab !== undefined && !(page === undefined ? anyPageHasTab(tab) : isPageTab(page, tab))) return undefined
@@ -227,6 +228,7 @@ function placeFrom(
   if (day !== undefined && !(isLookDay(day) && page !== undefined && VIEW_PAGES.includes(page))) return undefined
   return {
     scope, ...(day !== undefined ? { day } : {}), ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}),
+    ...(onView.look ? { look: onView.look } : {}),
     ...(panel !== undefined ? { panel } : {}),
     ...(select !== undefined && select !== '' ? { select } : {}),
     ...(onView.group ? { group: onView.group } : {}), ...(onView.pair ? { pair: onView.pair } : {}),
@@ -278,13 +280,14 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
-  const { scope, page, id, tab, panel, list, finding, day, group, pair } = held as Record<string, unknown>
+  const { scope, page, id, tab, look, panel, list, finding, day, group, pair } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
   if (id !== undefined && typeof id !== 'string') return undefined
   if (tab !== undefined && !(typeof page === 'string' && isPage(page) && isPageTab(page, tab))) return undefined
   return {
     scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab: tab as string } : {}),
+    ...(typeof look === 'string' && look !== '' ? { look } : {}),
     ...(isFramePanel(panel) ? { panel } : {}),
     ...(typeof list === 'string' && list !== '' ? { list } : {}),
     ...(typeof finding === 'string' && finding !== '' ? { finding } : {}),
@@ -310,7 +313,8 @@ export function placeOf(screen: Screen): Place | undefined {
       const up = screen.page
       return {
         scope, page: up.page, ...('id' in up && up.id !== undefined ? { id: up.id } : {}),
-        ...('tab' in up && up.tab !== undefined ? { tab: up.tab } : {}), ...beside,
+        ...('tab' in up && up.tab !== undefined ? { tab: up.tab } : {}),
+        ...('look' in up && up.look !== undefined ? { look: up.look } : {}), ...beside,
       }
     }
     const view = screen.open.view
@@ -340,10 +344,10 @@ export function viewFacetsOf(to: Destination, of: string): { of: string; tab?: s
   return { of, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}) }
 }
 
-/** The same place: the same scope, page, id, tab, panel, list and finding carried, day and what a view keeps. */
+/** The same place: the same scope, page, id, tab, look, panel, list and finding carried, day and what a view keeps. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel && a.list === b.list && a.finding === b.finding && a.day === b.day && a.group === b.group && a.pair === b.pair
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.look === b.look && a.panel === b.panel && a.list === b.list && a.finding === b.finding && a.day === b.day && a.group === b.group && a.pair === b.pair
 }
 
 /** The pages where moving from one record to the next is choosing, not going somewhere. */

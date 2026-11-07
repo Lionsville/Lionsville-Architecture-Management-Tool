@@ -3522,6 +3522,7 @@ const SPECS = [
           description: 'Which tab of the page, on a page with tabs. Observations: register (Seen), analysis (Why), solutions (Solve), results (Did it work); analysis and solutions also as analysis-list, analysis-map, solutions-list, solutions-map. People: people, review, privacy. Register: applications, services, platforms. A Conway map: grid, lines. Any other tab is refused and the answer lists the page\'s own.',
           enum: [...new Set(Object.values(PAGE_TABS).flat())],
         },
+        look: { type: 'string', description: 'What the page looks at within its tab. Operating model, on responsibilities: part=<group name>, part=* for the whole organisation, unit=<unit id>; select=<id> opens an item.' },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },
         day: { type: 'string', description: 'A day to look at a view on, yyyy-mm-dd, or today for a view saved on another: the person\'s window only, read-only while it lasts, and nothing is written.' },
         group: { type: 'string', description: 'On a Conway map: the id of the unit type to group it by.' },

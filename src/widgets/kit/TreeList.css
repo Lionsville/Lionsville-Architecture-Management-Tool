@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.kit-tree { display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-sm); }
+.kit-tree__item { list-style: none; }
+.kit-tree__group { margin: 0; padding: 0; }
+.kit-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: var(--row-h);
+  padding-inline: var(--s-1) var(--s-2);
+  padding-inline-start: calc(var(--s-1) + var(--kit-tree-depth, 0) * var(--s-4));
+  cursor: pointer;
+  border-radius: var(--r-1, 2px);
+}
+.kit-tree__row:hover { background: var(--surface-2); }
+.kit-tree__row[data-selected] { background: var(--selected); box-shadow: inset 2px 0 0 var(--selected-edge); }
+.kit-tree__row[data-strong] { font-weight: var(--fw-strong); }
+.kit-tree__row:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
+.kit-tree__caret { display: inline-flex; width: 14px; flex: none; color: var(--ink-2); }
+.kit-tree__caret[data-folded] { transform: rotate(-90deg); }
+.kit-tree__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-tree__note { flex: none; display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-xs); font-weight: var(--fw-regular); }
+.kit-tree__count { flex: none; color: var(--ink-2); font-size: var(--t-xs); font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }

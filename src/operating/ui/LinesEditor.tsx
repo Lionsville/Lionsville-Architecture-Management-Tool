@@ -2,27 +2,19 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Where the holders of a role report, edited (ADR-0039 §2, §7, amended 17
- * October 2026): one row for a line manager's line and one for a functional
- * line, each naming the role reported to, whether it is in the same unit or
- * found above, and the days it runs. Drawn in the role's inspector for the
- * role itself, wherever it is held, and under each slot of a unit type for
- * the units of that type — where the row shows the role's own line as what
- * holds until the slot says otherwise, and may say *by nesting* to take it
- * away for this type.
+ * Where the holders of a role report, edited (ADR-0039 §2, §7, amended 17 October
+ * 2026): one line of a kind, naming the role reported to, whether it is in the
+ * same unit or found above, and the days it runs. A slot may also say *by nesting*
+ * to take the role's line away for this type.
  *
- * A line the host says would close a loop, or one from a role to itself in
- * the same unit, is refused and said why, and not written.
+ * A line the host says would close a loop, or one from a role to itself in the
+ * same unit, is refused and said why, and not written.
  */
 import { useState } from 'react'
-import Box from '@mui/material/Box'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import { LINE_KINDS, linesWith } from '../../model/operatingModel'
+import { linesWith } from '../../model/operatingModel'
 import type { LineKind, ReportsTo, Role, RoleId } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
-import type { Translate } from '../../i18n'
+import { Field, Select, TextInput } from '../../widgets/kit/Field'
 
 export type LinesEditorProps = {
   /** The role whose holders report: its lines are never offered to itself in the same unit. */
@@ -31,10 +23,10 @@ export type LinesEditorProps = {
   name: string
   /** The lines said here. */
   said: readonly ReportsTo[]
-  /** What holds until this place says otherwise: the role's own lines, under a slot. Absent on the role itself. */
+  kind: LineKind
+  /** What holds until this place says otherwise: the role's own line, under a slot. Absent on the role itself. */
   inherited?: readonly ReportsTo[]
   roles: readonly Role[]
-  readOnly: boolean
   /** Writes the lines as they would be, or says why they are refused, in which case nothing is written. */
   onChange: (next: ReportsTo[] | undefined) => string | undefined
   testId: string
@@ -43,76 +35,69 @@ export type LinesEditorProps = {
 /** A select's value for a row that says by nesting; nothing said is the empty string, a role its id. */
 const NESTING = '\u0000nesting'
 
-export function LinesEditor({ roleId, name, said, inherited, roles, readOnly, onChange, testId }: LinesEditorProps) {
+export function LinesEditor({ roleId, name, said, kind, inherited, roles, onChange, testId }: LinesEditorProps) {
   const { t } = useStrings()
   const [refused, setRefused] = useState<string | undefined>(undefined)
-  const write = (kind: LineKind, line: ReportsTo | undefined) => setRefused(onChange(linesWith(said, kind, line)))
-  return (
-    <Box data-testid={testId} sx={{ display: 'grid', gap: 1 }}>
-      {LINE_KINDS.map((kind) => (
-        <LineRow
-          key={kind} kind={kind} roleId={roleId} name={name} roles={roles} readOnly={readOnly} t={t}
-          line={said.find((one) => one.kind === kind)} under={inherited?.find((one) => one.kind === kind)} onSlot={inherited !== undefined}
-          onWrite={(line) => write(kind, line)}
-        />
-      ))}
-      {refused && <Typography role="alert" variant="caption" color="error" sx={{ display: 'block' }} data-testid="operating-line-refused">{refused}</Typography>}
-    </Box>
-  )
-}
-
-function LineRow({ kind, roleId, name, roles, readOnly, line, under, onSlot, onWrite, t }: {
-  kind: LineKind; roleId: RoleId; name: string; roles: readonly Role[]; readOnly: boolean
-  line: ReportsTo | undefined; under: ReportsTo | undefined; onSlot: boolean
-  onWrite: (line: ReportsTo | undefined) => void; t: Translate
-}) {
-  const kindWord = t(kind === 'solid' ? 'operating.lineSolid' : 'operating.lineDotted')
-  const roleName = (id: string | undefined) => (id === undefined ? '' : roles.find((one) => one.id === id)?.name ?? id)
-  const value = line ? (line.role ?? NESTING) : ''
+  const line = said.find((one) => one.kind === kind)
+  const under = inherited?.find((one) => one.kind === kind)
+  const write = (next: ReportsTo | undefined) => setRefused(onChange(linesWith(said, kind, next)))
   const change = (patch: Partial<ReportsTo>) => {
     if (!line) return
     const next: ReportsTo = { ...line, ...patch }
     for (const key of ['from', 'until'] as const) if (next[key] === '') delete next[key]
     if (next.within !== true) delete next.within
-    onWrite(next)
+    write(next)
   }
-  // What a row says where nothing is said here: on a slot, the role's own line or none; on the role, no line.
-  const nothingSaid = onSlot
+  const roleName = (id: string | undefined) => roles.find((one) => one.id === id)?.name ?? id ?? ''
+  const nothingSaid = inherited !== undefined
     ? (under?.role !== undefined ? t('operating.reportsToAsRoleIs', { target: roleName(under.role) }) : t('operating.reportsToAsRole'))
     : t('operating.reportsToNone')
-  const label = `${name}: ${t('operating.reportsTo')} (${kindWord})`
+  const kindWord = t(kind === 'solid' ? 'operating.lineSolid' : 'operating.lineDotted')
   return (
-    <Box data-testid="operating-line-row" data-kind={kind} data-said={line ? 'true' : undefined}>
-      <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 0.25 }}>{kindWord}</Typography>
-      <TextField select fullWidth label={t('operating.reportsTo')} value={value} disabled={readOnly}
-        // What holds where nothing is said here is read in the box, not only in the list.
-        slotProps={{ htmlInput: { 'aria-label': label }, select: { displayEmpty: true }, inputLabel: { shrink: true } }}
-        onChange={(event) => {
-          const picked = event.target.value
-          if (picked === '') onWrite(undefined)
-          else if (picked === NESTING) onWrite({ kind })
-          else onWrite({ ...(line ?? { kind }), role: picked, kind })
-        }}>
-        <MenuItem value="">{nothingSaid}</MenuItem>
-        {onSlot && <MenuItem value={NESTING}>{t('operating.reportsToNesting')}</MenuItem>}
-        {roles.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
-      </TextField>
+    <div className="op-editor" data-testid={testId} data-kind={kind} data-said={line ? 'true' : undefined}>
+      <Field label={`${t('operating.reportsTo')} (${kindWord})`}>
+        {(ties) => (
+          <Select
+            {...ties} aria-label={`${name}: ${t('operating.reportsTo')} (${kindWord})`} value={line ? (line.role ?? NESTING) : ''}
+            options={[
+              { value: '', label: nothingSaid },
+              ...(inherited !== undefined ? [{ value: NESTING, label: t('operating.reportsToNesting') }] : []),
+              ...roles.map((role) => ({ value: role.id, label: role.name })),
+            ]}
+            onChange={(event) => {
+              const picked = event.target.value
+              if (picked === '') write(undefined)
+              else if (picked === NESTING) write({ kind })
+              else write({ ...(line ?? { kind }), role: picked, kind })
+            }}
+          />
+        )}
+      </Field>
       {line?.role !== undefined && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5, mt: 0.75 }}>
-          <TextField select label={t('operating.lineWhere')} value={line.within ? 'within' : 'up'} disabled={readOnly} sx={{ gridColumn: '1 / -1' }}
-            slotProps={{ htmlInput: { 'aria-label': `${name}: ${t('operating.lineWhere')} (${kindWord})` } }}
-            onChange={(event) => change({ within: event.target.value === 'within' ? true : undefined })}>
-            <MenuItem value="up">{t('operating.lineUp')}</MenuItem>
-            <MenuItem value="within" disabled={line.role === roleId}>{t('operating.lineWithin')}</MenuItem>
-          </TextField>
-          <TextField type="date" label={t('operating.lineFrom')} value={line.from ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineFrom')} (${kindWord})` } }}
-            onChange={(event) => change({ from: event.target.value })} />
-          <TextField type="date" label={t('operating.lineUntil')} value={line.until ?? ''} disabled={readOnly} sx={{ minWidth: 0 }}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${name}: ${t('operating.lineUntil')} (${kindWord})` } }}
-            onChange={(event) => change({ until: event.target.value })} />
-        </Box>
+        <>
+          <Field label={t('operating.lineWhere')}>
+            {(ties) => (
+              <Select
+                {...ties} aria-label={`${name}: ${t('operating.lineWhere')} (${kindWord})`} value={line.within ? 'within' : 'up'}
+                options={[
+                  { value: 'up', label: t('operating.lineUp') },
+                  ...(line.role === roleId ? [] : [{ value: 'within', label: t('operating.lineWithin') }]),
+                ]}
+                onChange={(event) => change({ within: event.target.value === 'within' ? true : undefined })}
+              />
+            )}
+          </Field>
+          <div className="op-editor__two">
+            <Field label={t('operating.lineFrom')}>
+              {(ties) => <TextInput {...ties} type="date" aria-label={`${name}: ${t('operating.lineFrom')} (${kindWord})`} value={line.from ?? ''} onChange={(event) => change({ from: event.target.value })} />}
+            </Field>
+            <Field label={t('operating.lineUntil')}>
+              {(ties) => <TextInput {...ties} type="date" aria-label={`${name}: ${t('operating.lineUntil')} (${kindWord})`} value={line.until ?? ''} onChange={(event) => change({ until: event.target.value })} />}
+            </Field>
+          </div>
+        </>
       )}
-    </Box>
+      {refused && <div role="alert" className="op-small op-refused" data-testid="operating-line-refused">{refused}</div>}
+    </div>
   )
 }

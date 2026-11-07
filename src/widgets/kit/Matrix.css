@@ -52,6 +52,16 @@
 .kit-matrix__colName { display: block; width: max-content; max-width: 96px; hyphens: auto; }
 .kit-matrix[data-rotate] .kit-matrix__colName { max-height: 140px; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; }
 
+.kit-matrix__colHead[data-opens] { cursor: pointer; color: var(--ink); }
+.kit-matrix__colHead[data-opens] .kit-matrix__colName { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--fw-medium); }
+.kit-matrix__colUnder { display: block; max-width: 96px; font-size: var(--t-xs); color: var(--ink-2); font-weight: var(--fw-regular); }
+
+.kit-matrix[data-wrap] { --kit-matrix-head: 320px; }
+.kit-matrix[data-wrap] .kit-matrix__rowHead { white-space: normal; padding-block: 2px; }
+.kit-matrix[data-wrap] .kit-matrix__rowName { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.kit-matrix tr[data-heading] > .kit-matrix__rowHead,
+.kit-matrix tr[data-heading] > td { background: var(--surface-2); font-weight: var(--fw-strong); }
+
 .kit-matrix__rowHead {
   position: sticky;
   left: 0;

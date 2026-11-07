@@ -28,9 +28,16 @@ export type MatrixColumn = {
   readonly group?: string
   /** A state of what the heading names, beside its name: a mark, *you*. */
   readonly mark?: ReactNode
+  /** A second line under the heading: who holds it, say. */
+  readonly under?: ReactNode
 }
 
-export type MatrixColumnGroup = { readonly id: string; readonly label: string }
+export type MatrixColumnGroup = {
+  readonly id: string
+  readonly label: string
+  /** What the folded column says in place of *label (count)*: *+9*. */
+  readonly short?: string
+}
 
 export type MatrixRowDef = {
   readonly id: string
@@ -39,6 +46,8 @@ export type MatrixRowDef = {
   readonly parent?: string
   /** A state of what the heading names, beside its name: a mark, *you*. */
   readonly mark?: ReactNode
+  /** A heading over the rows under it, drawn as one: nothing in it is a cell to read. */
+  readonly heading?: boolean
 }
 
 export type MatrixTone = 'plain' | 'soft' | 'solid'
@@ -81,13 +90,17 @@ export type MatrixProps = {
   readonly onOpenColumn?: (column: string) => void
   /** A crossing that is not there, such as a triangle's other half: drawn as nothing, and pressing it does nothing. */
   readonly absent?: (row: string, column: string) => boolean
+  /** The column lit from outside the grid, while what it names is open elsewhere. */
+  readonly litColumn?: string
+  /** Long names wrap to two lines rather than stopping at the edge. */
+  readonly wrapRows?: boolean
   readonly rotateHeads?: boolean
   readonly dataGuide?: string
 }
 
 type Drawn =
-  | { readonly kind: 'column'; readonly id: string; readonly label: string; readonly mark?: ReactNode }
-  | { readonly kind: 'folded'; readonly id: string; readonly label: string; readonly hides: number }
+  | { readonly kind: 'column'; readonly id: string; readonly label: string; readonly mark?: ReactNode; readonly under?: ReactNode }
+  | { readonly kind: 'folded'; readonly id: string; readonly label: string; readonly hides: number; readonly short?: string }
 
 /** What is drawn of the columns: a folded group is one narrow column that says how many it holds. */
 function drawnColumns(columns: readonly MatrixColumn[], groups: readonly MatrixColumnGroup[] | undefined, folded: ReadonlySet<string>): readonly Drawn[] {
@@ -97,11 +110,13 @@ function drawnColumns(columns: readonly MatrixColumn[], groups: readonly MatrixC
     if (column.group && folded.has(column.group)) {
       if (met.has(column.group)) continue
       met.add(column.group)
+      const group = groups?.find((one) => one.id === column.group)
       drawn.push({
-        kind: 'folded', id: column.group, label: groups?.find((one) => one.id === column.group)?.label ?? column.group,
+        kind: 'folded', id: column.group, label: group?.label ?? column.group,
         hides: columns.filter((one) => one.group === column.group).length,
+        ...(group?.short !== undefined ? { short: group.short } : {}),
       })
-    } else drawn.push({ kind: 'column', id: column.id, label: column.label, ...(column.mark !== undefined ? { mark: column.mark } : {}) })
+    } else drawn.push({ kind: 'column', id: column.id, label: column.label, ...(column.mark !== undefined ? { mark: column.mark } : {}), ...(column.under !== undefined ? { under: column.under } : {}) })
   }
   return drawn
 }
@@ -147,7 +162,7 @@ const MatrixRowView = memo(function MatrixRowView({
   row, depth, foldable, folded, columns, rowIndex, answer, cellOf, absent, focusColumn, selectedColumn, crossed, foldWord, emptyWord,
 }: CellProps) {
   return (
-    <tr data-crossed={crossed || undefined}>
+    <tr data-crossed={crossed || undefined} data-heading={row.heading || undefined}>
       <th
         scope="row" className="kit-matrix__rowHead" data-kit-cell={`${rowIndex}:-1`} tabIndex={focusColumn === -1 ? 0 : -1}
         aria-expanded={foldable ? !folded : undefined} style={{ '--kit-matrix-depth': depth } as CSSProperties}
@@ -179,13 +194,15 @@ const MatrixRowView = memo(function MatrixRowView({
   )
 })
 
-function MatrixHead({ rowHeading, answerLabel, drawn, columns, row, column }: {
+function MatrixHead({ rowHeading, answerLabel, drawn, columns, row, column, opens, lit }: {
   readonly rowHeading: string | undefined
   readonly answerLabel: string | undefined
   readonly drawn: readonly Drawn[]
   readonly columns: readonly MatrixColumn[]
   readonly row: number
   readonly column: number
+  readonly opens: boolean
+  readonly lit: string | undefined
 }) {
   const { t } = useStrings()
   return (
@@ -200,12 +217,14 @@ function MatrixHead({ rowHeading, answerLabel, drawn, columns, row, column }: {
               scope="col" key={one.id} className="kit-matrix__colHead" data-folded={one.kind === 'folded' || undefined}
               data-kit-cell={`-1:${index}`} tabIndex={row === -1 && column === index ? 0 : -1}
               aria-expanded={foldable ? one.kind !== 'folded' : undefined}
-              data-crossed={index === column || undefined}
+              data-crossed={index === column || lit === one.id || undefined}
+              data-opens={(opens && one.kind === 'column') || undefined}
             >
-              <span className="kit-matrix__colName" title={one.label}>
-                {one.kind === 'folded' ? t('kit.matrix.foldedColumn', { group: one.label, count: one.hides }) : one.label}
+              <span className="kit-matrix__colName" title={one.kind === 'folded' ? `${one.label} (${one.hides})` : one.label}>
+                {one.kind === 'folded' ? one.short ?? t('kit.matrix.foldedColumn', { group: one.label, count: one.hides }) : one.label}
               </span>
               {one.kind === 'column' && one.mark !== undefined && <span className="kit-matrix__headMark">{one.mark}</span>}
+              {one.kind === 'column' && one.under !== undefined && <span className="kit-matrix__colUnder">{one.under}</span>}
             </th>
           )
         })}
@@ -229,7 +248,7 @@ function useFolded(initial: readonly string[] | undefined, told: ((id: string, f
 
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, selected, onSelect, keys, onKey, hint,
-  defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, onOpenColumn, absent, rotateHeads, dataGuide,
+  defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, onOpenColumn, absent, litColumn, wrapRows, rotateHeads, dataGuide,
 }: MatrixProps) {
   const { t } = useStrings()
   const table = useRef<HTMLTableElement>(null)
@@ -273,6 +292,7 @@ export function Matrix({
     if (row === -1) {
       const head = drawn[column]
       if (head?.kind === 'folded') toggleGroup(head.id)
+      else if (head && onOpenColumn) onOpenColumn(head.id)
       else if (head) {
         const group = columns.find((one) => one.id === head.id)?.group
         if (group) toggleGroup(group)
@@ -331,9 +351,12 @@ export function Matrix({
     const rowDef = shownRows[pressedRow]
     const columnDef = drawn[pressedColumn]
     if (pressedRow === -1) {
+      if (columnDef?.kind === 'column' && onOpenColumn) {
+        onOpenColumn(columnDef.id)
+        return
+      }
       const group = columnDef?.kind === 'folded' ? columnDef.id : columns.find((one) => one.id === columnDef?.id)?.group
       if (group) toggleGroup(group)
-      else if (columnDef) onOpenColumn?.(columnDef.id)
     } else if (pressedColumn === -1 && rowDef) {
       if (rowDef.foldable) toggleRow(rowDef.row.id)
       else onOpenRow?.(rowDef.row.id)
@@ -355,15 +378,15 @@ export function Matrix({
     : ''
 
   return (
-    <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-guide={dataGuide}>
+    <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-guide={dataGuide}>
       <div className="kit-matrix__scroll">
         <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus}>
           <colgroup>
             <col />
             {answer && <col />}
-            {drawn.map((one, index) => <col key={one.id} data-crossed={index === column || undefined} />)}
+            {drawn.map((one, index) => <col key={one.id} data-crossed={index === column || litColumn === one.id || undefined} />)}
           </colgroup>
-          <MatrixHead rowHeading={rowHeading} answerLabel={answer?.label} drawn={drawn} columns={columns} row={row} column={column} />
+          <MatrixHead rowHeading={rowHeading} answerLabel={answer?.label} drawn={drawn} columns={columns} row={row} column={column} opens={onOpenColumn !== undefined} lit={litColumn} />
           <tbody>
             {shownRows.map(({ row: rowDef, depth, foldable, folded }, index) => (
               <MatrixRowView

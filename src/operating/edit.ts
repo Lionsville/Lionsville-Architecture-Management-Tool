@@ -12,8 +12,8 @@
  */
 import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
-import { dutiesWith, inOwnOrder, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
-import type { OperatingRule, OperatingRuleKind, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
+import { dutiesWith, inOwnOrder, linesSaid, linesWith, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
+import type { OperatingRule, OperatingRuleKind, Raci, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
 import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
 import type { OperatingLists } from './bringIn'
@@ -268,4 +268,30 @@ export function itemOf(model: OperatingLists, id: string | undefined): Operating
   if (role) return { kind: 'role', item: role }
   const responsibility = model.responsibilities.find((held) => held.id === id)
   return responsibility ? { kind: 'responsibility', item: responsibility } : undefined
+}
+
+/** A role's part in a responsibility set to a letter, or taken away: one step, whatever it was. */
+export function setRaci(role: Role, responsibility: string, raci: Raci | undefined): Command {
+  return { type: 'role.update', id: role.id, patch: { duties: dutiesWith(role.duties, responsibility, raci) } }
+}
+
+/**
+ * What many slots say said once, on the role: the role's line of that kind
+ * becomes `line`, and the slots that said the same say nothing any more. One
+ * step, which one undo takes back whole.
+ */
+export function moveLineToRole(model: Pick<OperatingLists, 'unitTypes'>, role: Role, line: ReportsTo): Command {
+  const commands: Command[] = [setRoleReportsTo(role, linesWith(role.reportsTo, line.kind, line) ?? [])]
+  for (const type of model.unitTypes) {
+    const slots = type.slots.map((slot) => {
+      if (slot.role !== role.id) return slot
+      const said = linesSaid(slot.reportsTo).find((one) => one.kind === line.kind)
+      if (said?.role !== line.role) return slot
+      const { reportsTo: _was, ...rest } = slot
+      const left = linesWith(slot.reportsTo, line.kind, undefined)
+      return left?.length ? { ...rest, reportsTo: left } : rest
+    })
+    if (slots.some((slot, at) => slot !== type.slots[at])) commands.push({ type: 'unitType.update', id: type.id, patch: { slots } })
+  }
+  return transaction(commands)
 }

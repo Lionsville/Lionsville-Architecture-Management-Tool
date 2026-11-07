@@ -385,6 +385,7 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
   return {
     ...target,
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
+    ...(asked.look !== undefined ? { look: asked.look } : {}),
     ...(asked.select !== undefined ? { select: asked.select } : {}),
     ...(asked.day !== undefined ? { day: asked.day } : {}),
     ...(target.page === 'conway' && asked.group !== undefined ? { group: asked.group } : {}),

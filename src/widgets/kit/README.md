@@ -29,6 +29,7 @@ and behaves is said here, once.
 | `listDensity.ts` | how close a person likes every list's rows: one choice for the product, which the app keeps |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
+| `TreeList.tsx` | **Tree list**: a short tree to choose a part by: nodes that fold and can be picked, a note and a count, one tab stop |
 | `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes |
 | `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |

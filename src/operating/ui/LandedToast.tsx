@@ -1,42 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-/**
- * The toast after a library is brought in: what the one step did, and *Undo*.
- *
- * Drawn inside the operating model's page rather than by the shell's bar,
- * because the page is a dialog: a toast outside it is out of the keyboard's
- * reach while the page holds the focus. It says what the step did and offers
- * the undo for that step alone (`useLibraryStep`); a click elsewhere does not
- * close it, as the shell's own bar does not.
- */
-import Alert from '@mui/material/Alert'
-import Button from '@mui/material/Button'
-import Snackbar from '@mui/material/Snackbar'
+/** The toast after a library is brought in: what the one step did, and *Undo* for that step alone (`useLibraryStep`). */
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { Toast } from '../../widgets/kit/Toast'
 import type { Landed } from './useLibraryStep'
-
-/** How long it stays up: long enough to read and reach *Undo*. */
-const HIDE_AFTER_MS = 8_000
 
 export function LandedToast({ landed, onUndo, onClose }: { landed: Landed | undefined; onUndo(): void; onClose(): void }) {
   const { t } = useStrings()
   const offer = landed?.kind === 'brought' && landed.undo !== undefined
   return (
-    <Snackbar
-      key={landed?.key} open={landed !== undefined} autoHideDuration={HIDE_AFTER_MS} disableWindowBlurListener
-      onClose={(_event, reason) => { if (reason !== 'clickaway') onClose() }}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-    >
-      <Alert
-        severity={landed?.kind === 'notUndone' ? 'warning' : 'success'} variant="filled" onClose={onClose} data-testid="operating-landed"
-        sx={{ maxWidth: 640, fontSize: 13 }}
-        action={offer ? <Button color="inherit" size="small" onClick={onUndo}>{t('operating.undo')}</Button> : undefined}
-      >
-        {landed ? landedWords(landed, t) : ''}
-      </Alert>
-    </Snackbar>
+    <Toast
+      toast={landed ? { key: landed.key, message: landedWords(landed, t), ...(offer ? { undo: { onPress: onUndo } } : {}) } : null}
+      onClose={onClose}
+    />
   )
 }
 

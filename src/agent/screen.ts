@@ -96,7 +96,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   people: ['people', 'review', 'privacy'],
   register: ['applications', 'services', 'platforms'],
   technologyRegister: ['services', 'platforms'],
-  operating: ['structure', 'rules', 'responsibilities', 'libraries'],
+  operating: ['structure', 'roles', 'responsibilities', 'exceptions', 'libraries'],
   principles: ['principles', 'topics', 'blocks'],
   checks: ['found', 'accepted'],
   blocks: ['about', 'requirements', 'options', 'used'],
@@ -137,6 +137,8 @@ export type Destination = {
    * whoever opens it sees the same band.
    */
   readonly day?: string
+  /** What the page is looking at within its tab, in its own words as a query: the operating model's part and unit. */
+  readonly look?: string
   /** A frame panel open beside the place (`FRAME_PANELS`); a page of `work` or `activity` says the same over a home. */
   readonly panel?: FramePanel
   /** What a list on the page is showing, as its own query (`widgets/kit/listView.ts`). */
@@ -166,7 +168,7 @@ export type ScreenPage =
   | { readonly page: 'observations'; readonly id?: string; readonly tab?: string }
   | { readonly page: 'roadmap'; readonly tab?: string }
   /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
-  | { readonly page: 'operating'; readonly id?: string; readonly tab?: string }
+  | { readonly page: 'operating'; readonly id?: string; readonly tab?: string; readonly look?: string }
   /** The scope's principles (ADR-0041), on one principle where one is picked. */
   | { readonly page: 'principles'; readonly id?: string; readonly tab?: string }
   /** A record's page over the board (the documentation page), on the element whose page it is. */

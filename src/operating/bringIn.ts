@@ -44,7 +44,7 @@
  */
 import { transaction } from '../model/commands'
 import type { Command } from '../model/commands'
-import type { BasedOn, Placed, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
+import type { BasedOn, Duty, Placed, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
 import { entryOf } from './library'
 import type { Library, LibraryEntry, LibraryLanguage, LibraryResponsibility, LibraryRole, LibraryUnitType, Words } from './library'
 
@@ -269,7 +269,7 @@ export function bringIn(ask: BringIn): Command | undefined {
     if (ids.has(item.entry)) commands.push({ type: 'unitType.add', unitType: unitTypeFrom(item, made) })
   }
   // The matches last, so the step leads with what it made and the activity line says a bring-in.
-  return transaction([...commands, ...matches])
+  return transaction([...commands, ...lettersOntoYours(lists, library, reached, made, ids), ...matches])
 }
 
 /**
@@ -293,6 +293,28 @@ function matchesOf(lists: OperatingLists, library: Library, language: LibraryLan
     if (also.length === 0) return []
     const patch = { alsoBasedOn: [...held.alsoBasedOn ?? [], ...also] }
     return [kind === 'role' ? { type: 'role.update', id, patch } : { type: 'unitType.update', id, patch }]
+  })
+}
+
+/**
+ * A library's role that uses one of the organisation's brings its letters onto
+ * that role, for the responsibilities this step makes: each row then arrives
+ * with its A. Only new rows, so nothing the organisation said is written over.
+ */
+function lettersOntoYours(lists: OperatingLists, library: Library, reached: readonly ReachedEntry[], made: Made, ids: ReadonlyMap<string, string>): Command[] {
+  const letters = new Map<string, Duty[]>()
+  for (const one of reached) {
+    if (one.fate.as !== 'reused' || one.kind !== 'role') continue
+    const item = library.roles.find((role) => role.entry === one.entry)
+    const duties = (item?.duties ?? []).flatMap((duty) => {
+      const responsibility = ids.has(duty.responsibility) ? made.idOf(duty.responsibility) : undefined
+      return responsibility ? [{ responsibility, raci: duty.raci }] : []
+    })
+    if (duties.length > 0) letters.set(one.fate.id, [...letters.get(one.fate.id) ?? [], ...duties])
+  }
+  return [...letters].flatMap(([id, duties]): Command[] => {
+    const role = lists.roles.find((held) => held.id === id)
+    return role ? [{ type: 'role.update', id, patch: { duties: [...role.duties, ...duties] } }] : []
   })
 }
 
