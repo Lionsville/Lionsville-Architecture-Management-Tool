@@ -16,7 +16,7 @@ import type {
   ElementId,
   Point,
 } from '../model/types';
-import { isEditableTarget, isShortcutIgnoredTarget, ownsArrows, ownsContextMenu } from './isEditableTarget';
+import { isEditableTarget, isShortcutIgnoredTarget, OWN_WALK_ATTR, ownsArrows, ownsContextMenu, ownsWalk } from './isEditableTarget';
 import { enterIsTheItems } from './canvas/keyboardIntent';
 import { CANVAS_SHORTCUTS, detectPlatform, matchEvent } from './keymap';
 import {
@@ -92,6 +92,9 @@ const ARROWS = new Set(['nudge', 'nudge-fine']);
  */
 function keepsItsChord(id: string, target: EventTarget | null): boolean {
   if (CONTEXT_MENU.has(id)) return ownsContextMenu(target);
+  // A page with a find of its own answers ⌘F wherever the focus is, even on nothing.
+  if (id === 'find') return document.querySelector(`[${OWN_WALK_ATTR}]`) !== null;
+  if ((ARROWS.has(id) || id === 'open-documentation') && ownsWalk(target)) return true;
   return ARROWS.has(id) && ownsArrows(target);
 }
 

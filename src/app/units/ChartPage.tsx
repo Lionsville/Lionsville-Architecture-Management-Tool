@@ -178,7 +178,7 @@ export function ChartPage(props: ChartPageProps) {
   const ownPanel = useChartDock(props, moving.up !== undefined, lines.lines === 'exceptions', going.summaryAsked)
   const closeExceptions = () => setReading({ lines: 'person' })
   return (
-    <div data-testid="chart-page" className="chart-page">
+    <div data-testid="chart-page" className="chart-page" data-own-walk="">
       <ChartHead
         props={props} chart={chart} folds={folds} lines={lines.lines} onLines={(next) => setReading({ lines: next })} moving={moving.up} empty={empty}
         focused={moving.up === undefined ? focused : undefined} organisation={organisationName} onFocus={going.focus} newUnit={newUnit} language={language} t={t}

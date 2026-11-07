@@ -1374,7 +1374,7 @@ export const EN = {
   'chart.addServesThrough': 'Serves through {name}, the unit it sits in.',
   'chart.addFiledIn': 'Filed in',
   'chart.addFiledInParent': 'Kept with the unit it sits in.',
-  'chart.addFiledInTop': "By default the domain it serves, where it serves one and its type does not serve several; otherwise this chart's scope.",
+  'chart.addFiledInTop': "Kept in the domain it serves, or else in this chart's scope.",
   'chart.addFiledNowhere': 'You may not change any scope, so no unit can be made here.',
   'chart.addDefault': '{scope} (default)',
   'chart.addCreate': 'Create',

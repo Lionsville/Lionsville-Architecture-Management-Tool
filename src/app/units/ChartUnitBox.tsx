@@ -37,6 +37,7 @@ import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
 import { Card } from '../../widgets/kit/Card'
+import { Mark } from '../../widgets/kit/Mark'
 import { rollUpWords, unitBadges } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
 import type { ChartPeople } from './useChartFolds'
@@ -319,7 +320,7 @@ function OtherRow({ other, unit, drawing, tabbable }: { other: ChartOther; unit:
     <div className="org-row" data-testid="chart-others" data-exception={other.exception || undefined}>
       {role}{other.endedRole ? ` (${t('chart.roleEnded')})` : ''}{': '}
       <Holder holder={other} drawing={drawing} unit={unit} tabbable={tabbable} {...(said !== undefined ? { exception: said } : {})} />
-      {other.exception && <span className="org-row__said" data-testid="chart-outside">{t('chart.outsideRoles')}</span>}
+      {other.exception && <span className="org-row__said" data-testid="chart-outside"><Mark kind="exception" size={10} /> {t('chart.outsideRoles')}</span>}
       {other.overloaded && <Over holder={other} drawing={drawing} />}
     </div>
   )

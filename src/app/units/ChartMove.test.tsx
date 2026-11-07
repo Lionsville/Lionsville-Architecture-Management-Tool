@@ -67,7 +67,7 @@ const view: DesignDiagram = { id: 'oc-1', kind: 'chart', name: 'Organisation', m
 type Landed = { steps: ReadonlyMap<ScopePath, readonly Command[]>; barrier: string | undefined }
 
 /** The organisation's chart, its moves landing as the test answers. */
-function Harness({ landed, answer = ok, readOnly = false }: { landed: Landed[]; answer?: (changed: ScopePath[]) => PeopleMoved; readOnly?: boolean }) {
+function Harness({ landed, answer = ok, readOnly = false, moveAsked }: { landed: Landed[]; answer?: (changed: ScopePath[]) => PeopleMoved; readOnly?: boolean; moveAsked?: { unitId: string; nonce: number } }) {
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'technology', model: TECHNOLOGY }]), [])
   const here = useMemo(() => unitViewsHere(index, '', ROOT), [index])
   const [selected, setSelected] = useState<string | undefined>(undefined)
@@ -80,7 +80,7 @@ function Harness({ landed, answer = ok, readOnly = false }: { landed: Landed[]; 
       diagram={view} here={here} today={TODAY} readOnly={readOnly} people={undefined}
       scopeLabel={(path) => (path === '' ? 'Example Group' : 'Technology')}
       {...(selected !== undefined ? { selectedId: selected } : {})} onSelect={setSelected} onOpenElsewhere={() => {}}
-      scope="" reorder={reorder}
+      scope="" reorder={reorder} {...(moveAsked ? { moveAsked } : {})}
     />
   )
 }
@@ -187,6 +187,14 @@ describe('a unit moved from the chart', () => {
     renderShell(<Harness landed={[]} />)
     fireEvent.keyDown(within(boxOf('lob-a')).getByTestId('chart-unit-open'), { key: 'm' })
     expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
+  })
+
+  it('opens the same panel when the unit\'s inspector asks, with the chart in view', () => {
+    const { rerender } = renderShell(<Harness landed={[]} />)
+    expect(screen.queryByTestId('move-unit-dialog')).toBeNull()
+    rerender(<Harness landed={[]} moveAsked={{ unitId: 'lob-b', nonce: 1 }} />)
+    expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
+    expect(screen.getByTestId('chart-units')).toBeTruthy()
   })
 
   it('offers no Move to… on a chart that is only read', () => {

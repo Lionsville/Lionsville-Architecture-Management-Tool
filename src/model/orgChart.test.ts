@@ -237,7 +237,10 @@ describe('the levels of a chart', () => {
   it('reads the level back off the folds, and none where somebody folded their own', () => {
     expect(levelOfFolds(chart, new Set())).toBe('all')
     expect(levelOfFolds(chart, new Set(['b', 'c']))).toBe(2)
-    expect(levelOfFolds(chart, new Set(['a']))).toBeUndefined()
+    expect(levelOfFolds(chart, new Set(['a']))).toBe(1)
+    const two: OrgChart = { roots: [unit('a', [unit('b', [unit('c')])]), unit('e', [unit('f', [unit('g')])])], units: 6, people: 0 }
+    expect(levelOfFolds(two, new Set(['b', 'f']))).toBe(2)
+    expect(levelOfFolds(two, new Set(['b']))).toBeUndefined()
   })
 
   it('finds a unit to focus on, and nothing for one not drawn', () => {

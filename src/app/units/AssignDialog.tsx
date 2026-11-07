@@ -20,7 +20,9 @@
  */
 import { useRef, useState } from 'react'
 import Popover from '@mui/material/Popover'
+import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
 import type { Role } from '../../model/operatingModel'
 import type { Assignment } from '../../model/units'
@@ -179,6 +181,7 @@ function AssignFields({ props, state }: { props: AssignDialogProps; state: Retur
 /** An assignment looked at again: a question over the page, with the two ways it can end besides being corrected. */
 export function AssignDialog(props: AssignDialogProps) {
   const { unit, today, onClose, s } = props
+  const { language } = useStrings()
   const endOn = props.endOn ?? today
   const state = useAssignForm(props)
   const { held, form, role, done, save } = state
@@ -190,7 +193,7 @@ export function AssignDialog(props: AssignDialogProps) {
         <>
           {held && !held.until && !(held.from && held.from > endOn) && (
             <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
-              {s('assign.endToday', { day: endOn })}
+              {s('assign.endToday', { day: formatDay(endOn, language) })}
             </Button>
           )}
           {held && <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>}

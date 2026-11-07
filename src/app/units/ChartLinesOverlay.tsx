@@ -154,6 +154,9 @@ function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, re
   return drawn
 }
 
+/** How far over its line a tag sits, so the head and the dash stay in sight in a narrow gap. */
+const TAG_ABOVE = 13
+
 /** The words on a line that is not the plain case. */
 function tagOf(line: ChartLine, folded: string | undefined, unitName: (id: string) => string, t: Translate): { words: string; exception?: string } | undefined {
   if (line.tone === 'loop') return { words: t('chart.lineLoop') }
@@ -191,7 +194,7 @@ export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
         })}
       </svg>
       {tags.map(({ key, tag, at }) => (
-        <div key={key} className="org-line__tag" style={{ left: at.x, top: at.y }} data-testid="chart-tag">
+        <div key={key} className="org-line__tag" style={{ left: at.x, top: at.y - TAG_ABOVE }} data-testid="chart-tag">
           <LineLabel words={tag.words} />
         </div>
       ))}

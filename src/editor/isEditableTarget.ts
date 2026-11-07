@@ -71,6 +71,20 @@ export function ownsContextMenu(target: EventTarget | null): boolean {
 }
 
 /**
+ * The marker a page puts on itself to say "Enter and the arrows walk me": a laid-out
+ * page with a keyboard of its own, where Enter is not the board's *open the record*.
+ * Narrower than {@link SHORTCUTS_IGNORE_ATTR}: Delete, ⌘Z and Escape still reach the editor.
+ */
+export const OWN_WALK_ATTR = 'data-own-walk';
+
+/** True when the event happened inside a page that walks by Enter and the arrows. */
+export function ownsWalk(target: EventTarget | null): boolean {
+  const node = target as (Node & { closest?: (selector: string) => Element | null }) | null;
+  const element = typeof node?.closest === 'function' ? node : node?.parentElement;
+  return !!element?.closest?.(`[${OWN_WALK_ATTR}]`);
+}
+
+/**
  * The widgets whose keyboard contract is the arrow keys (WAI-ARIA's composite
  * widgets): the canvas does not nudge from inside one. `isEditableTarget`
  * already covers a listbox and its options, which it treats as text entry.
