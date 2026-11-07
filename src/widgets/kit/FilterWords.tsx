@@ -14,7 +14,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
-import Popover from '@mui/material/Popover'
+import { SurfacePopover as Popover } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon, CloseIcon } from '../icons'
 import { Button } from './Button'

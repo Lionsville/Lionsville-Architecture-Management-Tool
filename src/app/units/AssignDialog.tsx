@@ -19,7 +19,7 @@
  * holder is shown.
  */
 import { useRef, useState } from 'react'
-import Popover from '@mui/material/Popover'
+import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'

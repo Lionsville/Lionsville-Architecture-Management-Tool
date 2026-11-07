@@ -158,7 +158,10 @@ describe('MarkdownEditor, typing /', () => {
     expect(within(list).getByText('Section: Data')).toBeTruthy()
     expect(within(list).queryByText('Section: Purpose')).toBeNull()
     expect(within(list).queryByText('From the template')).toBeNull()
-    fireEvent.mouseDown(within(list).getByText('Section: Data'))
+    // Chosen on the click: the list stays for the whole of the press, or the rest of it would land beneath.
+    expect(fireEvent.mouseDown(within(list).getByText('Section: Data'))).toBe(false)
+    expect(screen.getByTestId('reference-completion')).toBeTruthy()
+    fireEvent.click(within(list).getByText('Section: Data'))
     expect(onChange).toHaveBeenLastCalledWith('## Purpose\n\n## Data\n')
   })
 })

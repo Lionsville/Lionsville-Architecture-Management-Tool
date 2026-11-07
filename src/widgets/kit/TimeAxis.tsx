@@ -20,7 +20,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from 'react'
-import Popover from '@mui/material/Popover'
+import { SurfacePopover as Popover } from './Surface'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
 import { LOCALE } from '../../i18n/strings'

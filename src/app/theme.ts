@@ -27,6 +27,7 @@ import type { AlertColor } from '@mui/material/Alert'
 import { deDE, nlNL } from '@mui/material/locale'
 import type { Language } from '../i18n'
 import { dangerInk } from '../widgets'
+import { pressStaysHere } from '../widgets/kit/Surface'
 import { coloursOf, SCALE, tokensOf, tokenVariables } from '../widgets/kit/tokens'
 import type { AccentShades } from '../widgets/kit/tokens'
 
@@ -219,8 +220,11 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
         },
       },
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+      // What floats and has no wrapper of its own in `Surface.tsx`, and is used all over.
+      MuiSelect: { defaultProps: { MenuProps: pressStaysHere } },
+      MuiAutocomplete: { defaultProps: { slotProps: { popper: pressStaysHere } } },
       // What MUI sizes for itself, below the scale or beside it: a tip of 11 px, a chip of 13, a cell of 14.
-      MuiTooltip: { styleOverrides: { tooltip: { fontSize: SCALE['t-small'] } } },
+      MuiTooltip: { defaultProps: { slotProps: { popper: pressStaysHere } }, styleOverrides: { tooltip: { fontSize: SCALE['t-small'] } } },
       MuiTableCell: { styleOverrides: { root: { fontSize: SCALE['t-body'] }, head: { fontSize: SCALE['t-small'] } } },
       MuiBadge: { styleOverrides: { badge: { fontSize: SCALE['t-small'] } } },
       MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: outline } } },

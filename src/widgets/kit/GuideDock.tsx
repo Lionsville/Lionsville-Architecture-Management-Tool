@@ -88,10 +88,11 @@ export function GuideDock(props: GuideDockProps) {
     const follow = (moving: globalThis.PointerEvent) => onMoved({ x: from.offset.x + moving.clientX - from.x, y: from.offset.y + moving.clientY - from.y })
     const stop = () => {
       window.removeEventListener('pointermove', follow)
-      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointerup', stop, true)
     }
     window.addEventListener('pointermove', follow)
-    window.addEventListener('pointerup', stop)
+    // Going down: a surface under the pointer keeps a press from going up.
+    window.addEventListener('pointerup', stop, true)
   }
   const nudge = (event: KeyboardEvent) => {
     const by = NUDGES[event.key]

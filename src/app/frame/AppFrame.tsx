@@ -13,7 +13,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
-import Popover from '@mui/material/Popover'
+import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
 import type { Translate } from '../../i18n'
 import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'

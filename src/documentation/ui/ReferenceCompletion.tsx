@@ -22,10 +22,9 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Dialog from '@mui/material/Dialog'
 import Divider from '@mui/material/Divider'
 import ListItemButton from '@mui/material/ListItemButton'
-import Menu from '@mui/material/Menu'
+import { SurfaceMenu as Menu, SurfacePopper as Popper } from '../../widgets/kit/Surface'
 import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
-import Popper from '@mui/material/Popper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -171,7 +170,8 @@ export function useReferenceCompletion(
         {rows.map((one, index) => (
           <ListItemButton
             key={one.id} selected={index === active} role="option" aria-selected={index === active}
-            onMouseDown={(event) => { event.preventDefault(); choose(one) }}
+            // Chosen on the click, not on the press: the list goes when it is chosen, and the rest of the press would land on what is under it.
+            onMouseDown={(event) => event.preventDefault()} onClick={() => choose(one)}
             sx={{ py: 0.25, px: 1.5, gap: 1, alignItems: 'baseline' }}
           >
             <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>

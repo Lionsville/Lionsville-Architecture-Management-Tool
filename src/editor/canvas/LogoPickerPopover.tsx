@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import Box from '@mui/material/Box';
-import Popover from '@mui/material/Popover';
+import { SurfacePopover as Popover } from '../../widgets/kit/Surface';
 import type { Point } from '../../model/types';
 import { LogoGrid } from '../nodes/LogoGrid';
 import { useStrings } from '../../i18n/LanguageContext';

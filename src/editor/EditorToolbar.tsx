@@ -12,7 +12,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
+import { SurfaceMenu as Menu } from '../widgets/kit/Surface';
 import MenuItem from '@mui/material/MenuItem';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -780,7 +780,6 @@ function TabLabel({
             open={Boolean(anchor)}
             anchorEl={anchor}
             onClose={() => setAnchor(null)}
-            onClick={(event) => event.stopPropagation()}
             slotProps={{
               list: {
                 dense: true,

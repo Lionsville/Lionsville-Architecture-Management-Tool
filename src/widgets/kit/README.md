@@ -15,6 +15,7 @@ and behaves is said here, once.
 | `Button.tsx` | **Button** (primary, plain, quiet, danger; working; refused with its reason) and `IconButton`, for a glyph with a required name |
 | `Tabs.tsx` | **Tabs**, on by edge, with a count, and `TabPanel` |
 | `Menu.tsx` | **Menu** from a list of entries (final acts last, refused with a reason, one level of submenu), `MenuButton`, `MoreMenu` |
+| `Surface.tsx` | what floats over the page (`SurfaceMenu`, `SurfacePopover`, `SurfacePopper`, `pressStaysHere`): a press inside never reaches what lies beneath, a press outside only closes it, the second press of a double press is dropped |
 | `Tooltip.tsx` | **Tooltip**: describes a control and does not rename it |
 | `Dialog.tsx` | **Dialog** in S, M, L; `DialogChoices`, `DialogFacts`, `DialogDanger` |
 | `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save; the writing takes the width and height the column of facts leaves, each scrolls on its own, and the facts fold under it on a narrow window (`useInFocusedWindow` for a field that grows) |

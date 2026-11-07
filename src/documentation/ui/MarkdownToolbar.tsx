@@ -8,7 +8,7 @@
  */
 import { useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
-import Menu from '@mui/material/Menu'
+import { SurfaceMenu as Menu } from '../../widgets/kit/Surface'
 import MenuItem from '@mui/material/MenuItem'
 import { EyeIcon, PencilIcon } from '../../widgets/icons'
 import { useStrings } from '../../i18n/LanguageContext'

@@ -21,12 +21,12 @@
  * the focus back.
  */
 import { useId, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
-import MuiMenu from '@mui/material/Menu'
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import MenuItem from '@mui/material/MenuItem'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon, CheckIcon, MoreIcon } from '../icons'
 import { Button, IconButton } from './Button'
+import { SurfaceMenu as MuiMenu } from './Surface'
 import type { ButtonVariant } from './Button'
 import './Menu.css'
 
@@ -209,7 +209,9 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
 function useAnchored() {
   const anchor = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
-  return { anchor, open, toggle: () => setOpen((was) => !was), close: () => setOpen(false) }
+  // The press is the ⋯'s, and not the row's it stands in.
+  const toggle = (event: MouseEvent) => { event.stopPropagation(); setOpen((was) => !was) }
+  return { anchor, open, toggle, close: () => setOpen(false) }
 }
 
 export type MenuButtonProps = {

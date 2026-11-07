@@ -3,7 +3,7 @@
 
 import { canvasRect } from '../../model/zones';
 import { useCallback, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import { SurfacePopover as Popover } from '../../widgets/kit/Surface';
 import { domainGroupForPoint, domainGroupRectMap } from '../../model/placement';
 import { zoneForPoint } from '../../model/zones';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../../layout/tidy';

@@ -26,8 +26,7 @@
  */
 import { useId, useMemo, useRef, useState } from 'react'
 import type { ComponentPropsWithRef, KeyboardEvent, ReactNode } from 'react'
-import Popover from '@mui/material/Popover'
-import Popper from '@mui/material/Popper'
+import { SurfacePopover as Popover, SurfacePopper as Popper } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { AddIcon, CloseIcon, SearchIcon } from '../icons'

@@ -14,7 +14,7 @@
 import Divider from '@mui/material/Divider'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
-import Menu from '@mui/material/Menu'
+import { SurfaceMenu as Menu } from '../../widgets/kit/Surface'
 import MenuItem from '@mui/material/MenuItem'
 import { dangerInk } from '../../widgets'
 import type { CauseStrength } from '../observation'
