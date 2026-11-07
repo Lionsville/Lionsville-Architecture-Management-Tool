@@ -529,6 +529,7 @@ function Nodes(props: NodesProps) {
 function HoverCard({ node, picture, zoom, size, scopeLabel, s }: {
   node: PictureNode; picture: SectionedPicture; zoom: number; size: PictureSize; scopeLabel: (path: string) => string; s: Translate
 }) {
+  const { language } = useStrings()
   const slot = PICTURE_SIZE[size]
   const left = Math.min(Math.max(0, (node.x + slot.width / 2) * zoom - 150), Math.max(0, picture.width * zoom - 300))
   return (
@@ -542,7 +543,7 @@ function HoverCard({ node, picture, zoom, size, scopeLabel, s }: {
       }}
     >
       <b>{recordLabel(node)}</b> {recordTitle(node)}
-      <Box sx={{ fontSize: 'var(--t-small)', mt: 0.25 }}>{recordState(node, s)} · {scopeLabel(node.scope)}</Box>
+      <Box sx={{ fontSize: 'var(--t-small)', mt: 0.25 }}>{recordState(node, s, language)} · {scopeLabel(node.scope)}</Box>
     </Box>
   )
 }

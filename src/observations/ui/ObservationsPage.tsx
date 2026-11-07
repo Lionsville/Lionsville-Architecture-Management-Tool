@@ -70,6 +70,7 @@ import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
 import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
+import { inSentence } from '../../i18n/languages'
 import { preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
@@ -947,7 +948,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   const groupOf = selectedKey ? groups.find((one) => one.rows.some((row) => row.id === selectedKey)) : undefined
   const previewIds = groupOf ? groupOf.rows.map((row) => row.id) : []
-  const listWord = groupOf?.label.toLowerCase()
+  const listWord = groupOf && inSentence(groupOf.label, props.language)
   // The merge and move screens are places under the frame: a modal over them would hide them from everybody.
   const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined && !merging.state && !moving.state
 
@@ -1042,7 +1043,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, stage), s) : []} onClose={() => setMenu(undefined)} />
         <HowToRead
           open={reading} onClose={() => setReading(false)} stage={stage} size={f.view.size === 'large' && f.view.zoom < FAR_BELOW ? 'far' : f.view.size} local={f.viewLocal}
-          phases={phases} phaseCounts={phaseCounts} s={s}
+          phases={phases} phaseCounts={phaseCounts} language={props.language} s={s}
         />
         {forms.dialogs}
         {dialogs}
@@ -1112,7 +1113,7 @@ const EMPTY_WORD = {
 } as const
 
 /** The legend and the full counts, said when asked: what was always on screen says nothing to somebody who has read it. */
-function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, s }: {
+function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, language, s }: {
   open: boolean
   onClose: () => void
   stage: Tab
@@ -1120,6 +1121,7 @@ function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, s }
   local: boolean
   phases: readonly PhaseRow[]
   phaseCounts: readonly (readonly [SolutionPhase, number])[]
+  language: Language
   s: Translate
 }) {
   const mac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '')
@@ -1134,7 +1136,7 @@ function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, s }
         {stage === 'solutions' ? (
           <>
             <p className="chain-counts">
-              {phaseCounts.map(([phase, count]) => <span key={phase}><b>{count}</b> {s(PHASE_LABEL[phase]).toLowerCase()}</span>)}
+              {phaseCounts.map(([phase, count]) => <span key={phase}><b>{count}</b> {inSentence(s(PHASE_LABEL[phase]), language)}</span>)}
             </p>
             <SolutionLegend s={s} />
           </>

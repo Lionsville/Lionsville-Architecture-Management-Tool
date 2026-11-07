@@ -15,7 +15,9 @@ import { toneOf } from '../observation'
 import type { ObservationTone } from '../observation'
 import { useTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
+import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { inSentence } from '../../i18n/languages'
 import { inkOn, mix } from '../../widgets'
 import type { GraphNode } from '../graph'
 import { causeLabel, formatObservationNumber } from '../observation'
@@ -106,6 +108,7 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
 export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>> & { s: Translate; flag?: string }) {
   const theme = useTheme()
   const { node, x, y, selected, s, flag, dim, ...rest } = props
+  const { language } = useStrings()
   const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
   return (
     <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
@@ -127,7 +130,7 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
           {shorten(node.cause.title, 28)}
         </text>
         <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-          {causeLabel(node.cause)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
+          {causeLabel(node.cause)} · {inSentence(s(STATE_LABEL[node.cause.state]), language)}{node.root ? ` · ${inSentence(s('observation.rootCause'), language)}` : ''}
         </text>
         {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
       </g>

@@ -24,7 +24,9 @@ import { useTheme } from '@mui/material/styles'
 import { toneColor } from './ToneBar'
 import { toneOf } from '../observation'
 import type { Theme } from '@mui/material/styles'
-import type { Translate } from '../../i18n'
+import { useStrings } from '../../i18n'
+import type { Language, Translate } from '../../i18n'
+import { inSentence } from '../../i18n/languages'
 import { inkOn, mix } from '../../widgets'
 import { PICTURE_SIZE } from '../graph'
 import type { PictureNode, PictureSize } from '../graph'
@@ -51,12 +53,12 @@ export function recordTitle(node: PictureNode): string {
 }
 
 /** What kind of record it is and where it stands, in the words the reader uses. */
-export function recordState(node: PictureNode, s: Translate): string {
+export function recordState(node: PictureNode, s: Translate, language: Language): string {
   if (node.kind === 'more') return ''
   if (node.kind === 'observation') return s('observation.seenTimes', { count: node.observation.seen })
-  if (node.kind === 'solution') return s(PHASE_LABEL[node.solution.state]).toLowerCase()
-  const state = s(STATE_LABEL[node.cause.state]).toLowerCase()
-  return node.root ? `${s('observation.rootCause').toLowerCase()} · ${state}` : state
+  if (node.kind === 'solution') return inSentence(s(PHASE_LABEL[node.solution.state]), language)
+  const state = inSentence(s(STATE_LABEL[node.cause.state]), language)
+  return node.root ? `${inSentence(s('observation.rootCause'), language)} · ${state}` : state
 }
 
 /** How far a small mark reaches from its centre, for where a line meets it. */
@@ -167,13 +169,14 @@ function OpenEnd({ x, y, r, s }: { x: number; y: number; r: number; s: Translate
 
 function LargeMark({ node, selected, matched, openEnd, marker, s }: RecordMarkProps) {
   const theme = useTheme()
+  const { language } = useStrings()
   const { width, height } = PICTURE_SIZE.large
   const line = outline(theme, node)
   const root = node.kind === 'cause' && node.root
   const fill = node.kind === 'solution' ? mix(theme.palette.primary.main, 0.12, theme.palette.background.paper) : theme.palette.background.paper
   const left = root ? 16 : 13
   // The state only: a root cause says it is one by its outline, and the hover says it in words.
-  const state = node.kind === 'cause' ? s(STATE_LABEL[node.cause.state]).toLowerCase() : recordState(node, s)
+  const state = node.kind === 'cause' ? inSentence(s(STATE_LABEL[node.cause.state]), language) : recordState(node, s, language)
   const meta = `${recordLabel(node)} · ${state}`
   // A link that leaves the picture takes a title line of its own: on the label's line the two overprinted.
   const title = wrapTitle(recordTitle(node), LARGE_LINE, marker ? 2 : 3)

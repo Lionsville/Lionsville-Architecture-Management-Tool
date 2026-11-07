@@ -84,3 +84,12 @@ export function detectBrowserLanguage(
   }
   return 'en'
 }
+
+/**
+ * A label set inside a sentence: *Has a why* reads *1 of 3 has a why*. Lower case
+ * in English and Dutch; German keeps its capitals, because there every noun has
+ * one and *grundursachen ohne lösung* is a misspelling, not a quieter word.
+ */
+export function inSentence(word: string, language: Language): string {
+  return language === 'de' ? word : word.toLowerCase()
+}
