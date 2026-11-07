@@ -310,7 +310,7 @@ function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarPr
 
 export function EditorToolbar(props: EditorToolbarProps) {
   const host = usePlaceHost();
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
   // Each kind is its own list. A drawing is not dropped into a sheet's, and a
   // kind the host cannot open is not offered.
@@ -461,7 +461,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
             {tabs.map((diagram) => (
               <Tab
                 key={diagram.id}
-                value={diagram.id} aria-label={diagram.name}
+                // The day a plan board is saved on is said on the tab, so its name says it too.
+                value={diagram.id} aria-label={diagram.asOf ? `${diagram.name} ${formatDay(diagram.asOf, language)}` : diagram.name}
                 // Pressing the name of the view that is up asks about the view itself: *This view*.
                 onClick={diagram.id === props.activeDiagram.id && !host?.pageUp ? props.onOpenThisView : undefined}
                 {...tabMenuDoors(diagram.id, openTabMenu, hasTabMenu ? openTabMenuBelow : undefined)}
