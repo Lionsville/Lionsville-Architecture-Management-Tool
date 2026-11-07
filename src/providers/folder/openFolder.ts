@@ -219,7 +219,11 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     settings: repositories.settings, diagnostics,
     ...(sync ? { sync } : {}),
     ...(pulled ? { pulled } : {}),
-    ...(opening.chosen && base.beneath ? { adoption: { from: base.beneath, into: repositories, root, name } } : {}),
+    ...(opening.chosen && base.beneath ? {
+      // Read back through repositories that hold none of the bytes put on the
+      // way in: the folder as the next opening reads it, not as this one recalls it.
+      adoption: { from: base.beneath, into: repositories, check: folderRepositories({ root: handle, git: history, diagnostics }), root, name },
+    } : {}),
   })
   return {
     repositories: { ...repositories, history: pushingAfterRecord(repositories.history, own) },

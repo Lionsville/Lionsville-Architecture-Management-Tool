@@ -675,12 +675,17 @@ app vraagt alleen iets als dat bewaren niet lukte.
 
 **Je werk uit de browser meenemen.** Bewaarde deze browser al werk voordat je
 een map koos, dan vraagt het kiezen **Je werk meenemen naar deze map?**:
-- **Mijn werk erin kopiëren** kopieert elk onderdeel dat de browser bewaarde
-  naar de map. De dialoog blijft open tot het kopiëren klaar is. Dan zegt hij
-  hoeveel onderdelen zijn gekopieerd, welke niet, en welke hij liet staan
-  omdat iemand ze intussen veranderde. Onderdelen die niet geschreven konden
-  worden, biedt hij opnieuw aan met **Opnieuw proberen**, en ook de volgende
-  keer dat je die map kiest.
+- **Mijn werk erin kopiëren** kopieert elke scope die de browser bewaarde naar de
+  map, met het personenregister, de instellingen van de organisatie en elke
+  afbeelding, en leest daarna alles terug om het te vergelijken. Het venster laat
+  zien hoe ver het is, en **Stoppen** stopt het tussen twee scopes. Daarna staat er
+  wat de map bevat, per soort, en met naam alles wat niet is meegekomen, met de
+  reden: scopes die niet konden worden geschreven, scopes die met rust zijn gelaten
+  omdat de map daar ander werk bevat of omdat iemand ze intussen wijzigde.
+  **Opnieuw proberen** gaat vanaf daar verder, en dat doet ook het opnieuw kiezen
+  van de map: wat er al staat, wordt gelijk bevonden en met rust gelaten. Een map
+  die al ander werk bevat, zegt dat voordat je antwoordt, en dat werk wordt nooit
+  overschreven. De wijzigingsgeschiedenis en de benoemde versies blijven in de browser.
 - **De map openen zoals hij is** laat allebei staan.
 
 In geen van beide gevallen wordt iets verwijderd; de browser houdt zijn kopie.

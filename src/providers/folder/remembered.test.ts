@@ -65,10 +65,18 @@ describe('mayOfferAdoption', () => {
    * somebody has just made. Two new folders in a row, two copies of an
    * organisation nobody asked to move.
    */
-  it('stops once the work has been copied anywhere at all', () => {
-    const after = withMigratedFolder({}, '/Documents/test')
+  it('stops once the work has been copied whole anywhere at all', () => {
+    const after = { adoptedFolders: ['/Documents/test'] }
     expect(mayOfferAdoption(after, '/Documents/test')).toBe(false)
     expect(mayOfferAdoption(after, '/Documents/test2')).toBe(false)
+  })
+
+  /**
+   * A build before the copy read its work back could leave the organisation
+   * itself behind and write this list all the same. Its word ends nothing.
+   */
+  it('asks again where only a build that did not check says a copy happened', () => {
+    expect(mayOfferAdoption(withMigratedFolder({}, '/Documents/test'), '/Documents/test')).toBe(true)
   })
 
   it('stops for a folder that was offered and turned down', () => {

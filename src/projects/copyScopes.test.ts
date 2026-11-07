@@ -48,11 +48,12 @@ describe('work brought from one place into another', () => {
     expect(acme?.images?.map((image) => image.name)).toEqual(['logo.png'])
   })
 
-  it('keeps what the destination holds, and copies the rest', async () => {
+  it('keeps the work the destination holds, says where, and copies the rest', async () => {
     const from = await holding(scope('acme', 'Acme Logistics'), scope('globex', 'Globex'))
-    const into = await holding(scope('acme', 'Acme, as the folder has it'))
+    const theirs = scope('acme', 'Acme, as the folder has it')
+    const into = await holding({ ...theirs, model: { ...theirs.model, description: 'Worked on here.' } })
     const tally = await copyScopes(from, into)
-    expect(tally).toMatchObject({ scopes: 1, kept: 1 })
+    expect(tally).toMatchObject({ scopes: 1, kept: 1, differs: ['acme'] })
     expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme, as the folder has it')
     expect((await readScope(into.scopes, 'globex'))?.model.name).toBe('Globex')
   })
@@ -131,12 +132,13 @@ describe('work brought from one place into another', () => {
     expect((await readScope(into.scopes, 'globex'))?.model.name).toBe('Globex')
   })
 
-  /** The destination, with `meanwhile` run as the copy goes to place what it checked — somebody working in the folder. */
+  /** The destination, with `meanwhile` run as the copy goes to make or land what it checked — somebody working in the folder. */
   function workedOnMeanwhile(into: Repositories, meanwhile: () => Promise<void>): Repositories {
-    let asked = 0
+    let ran = false
+    const once = async () => { if (!ran) { ran = true; await meanwhile() } }
     const scopes = new Proxy(into.scopes, {
-      get: (target, member) => (member === 'tree'
-        ? async () => { asked += 1; if (asked === 2) await meanwhile(); return target.tree() }
+      get: (target, member) => (member === 'create' || member === 'apply'
+        ? async (...args: never[]) => { await once(); return (target[member] as (...held: never[]) => unknown)(...args) }
         : Reflect.get(target, member)),
     })
     return { ...into, scopes }
@@ -158,6 +160,8 @@ describe('work brought from one place into another', () => {
     const into = memoryRepositories()
     const tally = await copyScopes(from, workedOnMeanwhile(into, async () => {
       landed(await into.scopes.create('acme', { name: 'Acme, made meanwhile' }))
+      const made = (await into.scopes.tree()).root.children[0].id
+      landed(await into.scopes.apply([{ scope: made, steps: [stepOf({ type: 'project.settings', patch: { description: 'Theirs.' } })] }]))
     }))
     expect(tally).toMatchObject({ scopes: 0, kept: 1 })
     expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme, made meanwhile')

@@ -69,6 +69,19 @@ export function withMigratedFolder(stored: unknown, root: string): Record<string
 }
 
 /**
+ * The folders a copy reached whole: every scope there and read back the same.
+ * This is what ends the offer, and it starts from nothing in the build that
+ * first checked. A folder on {@link readMigratedFolders} was written by a build
+ * that could leave the organisation itself behind and call that done, so an
+ * entry there says only that a copy ran: its folder is a fair question again.
+ */
+export function readAdoptedFolders(stored: unknown): string[] {
+  if (!stored || typeof stored !== 'object') return []
+  const raw = (stored as Record<string, unknown>).adoptedFolders
+  return Array.isArray(raw) ? raw.filter((held): held is string => typeof held === 'string') : []
+}
+
+/**
  * The folders the offer was made for and turned down.
  *
  * Kept per folder, and the reason it is per folder rather than a flag is the
@@ -102,11 +115,11 @@ export function withDeclinedFolder(stored: unknown, root: string): Record<string
  * made per folder, so every folder somebody made was one that had never been
  * offered, and a folder made to start something new arrived full.
  *
- * One copy anywhere ends the offer everywhere: the work is in files now, and
+ * One whole copy anywhere ends the offer everywhere: the work is in files now, and
  * which files is beside the point. A no ends it for that folder only, because
  * a no is about a place — the next folder is a fair question again.
  */
 export function mayOfferAdoption(stored: unknown, root: string): boolean {
-  if (readMigratedFolders(stored).length > 0) return false
+  if (readAdoptedFolders(stored).length > 0) return false
   return !readDeclinedFolders(stored).includes(root)
 }

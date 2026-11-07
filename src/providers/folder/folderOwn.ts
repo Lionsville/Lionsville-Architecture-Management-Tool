@@ -74,6 +74,8 @@ export function syncSettingsOf(held: Settings): SyncSettings {
 export type FolderAdoption = {
   readonly from: Repositories
   readonly into: Repositories
+  /** The folder as the next opening reads it, holding none of what is put on the way in: what a copy is held to. */
+  readonly check?: Pick<Repositories, 'scopes' | 'images'>
   /** What the answer is remembered under. */
   readonly root: string
   /** What the question calls the folder. */

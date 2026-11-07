@@ -448,10 +448,33 @@ export async function placeTogether(
 ): Promise<readonly string[]> {
   const { scopes } = repositories
   const ordered = [...arriving].sort((one, other) => depthOf(one.address) - depthOf(other.address))
-  const places: { id: ScopeId; made?: Revision }[] = []
+  const places: ArrivalPlace[] = []
   for (const one of ordered) {
     places.push(await madeAt(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
   }
+  return landAt(repositories, ordered, places)
+}
+
+/**
+ * Where a content lands: the scope, and — where it was made just now to hold
+ * it — the revision it was made at.
+ */
+export type ArrivalPlace = { id: ScopeId; made?: Revision }
+
+/**
+ * Contents landed on places the caller already knows, each in the order given:
+ * {@link placeTogether}'s second half, for a caller that holds a read of the
+ * tree and need not pay for another one per scope (`copyScopes`).
+ */
+export async function landAt(
+  repositories: {
+    scopes: ScopeReader & Pick<ScopeRepository, 'apply' | 'remove'>
+    images: Pick<ImageRepository, 'put'>
+  },
+  ordered: readonly Arriving[],
+  places: readonly ArrivalPlace[],
+): Promise<readonly string[]> {
+  const { scopes } = repositories
   try {
     return await landEach(repositories, ordered, places)
   } catch (cause) {

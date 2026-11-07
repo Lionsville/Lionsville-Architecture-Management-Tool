@@ -1156,6 +1156,17 @@ a change made elsewhere.
   again at its next pick until they are; one this browser could not read is
   said, and not asked about again. A copy has the folder read again, and
   never writes over a scope somebody worked in after it was found empty.
+  **Amended, 7 November 2026.** A scope holding nothing but a name holds no
+  work: read as work, a folder's organisation — listed under the folder's own
+  name until written — was left behind, with all it held, in a copy that called
+  itself done. A copy now brings the pictures of drawings and the settings the
+  folder has nothing for, stops between two scopes on request, reads the
+  destination's tree once rather than once per scope, and reads everything
+  back through repositories holding none of what was put before it counts
+  anything: only a copy that is whole is said as done, by kind, and ends the
+  offer (`adoptedFolders`). `migratedFolders`, written without that check, no
+  longer ends it, so a folder a copy left short can be asked about again. The
+  history stays where it was, and the outcome says so.
 - **A folder in a browser tab keeps its history in this browser's
   database**, beside the folder's handle, and says so where a person starts
   one; only a tab with no database keeps it for as long as the tab is open,

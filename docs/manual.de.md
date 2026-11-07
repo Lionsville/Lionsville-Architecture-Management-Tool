@@ -718,12 +718,18 @@ Speichern nicht geklappt hat.
 **Die Arbeit aus dem Browser mitnehmen.** Hat dieser Browser schon Arbeit
 aufbewahrt, bevor Sie einen Ordner gewählt haben, fragt die Wahl **Ihre Arbeit
 in diesen Ordner mitnehmen?**:
-- **Meine Arbeit hineinkopieren** kopiert jeden Bereich, den der Browser
-  aufbewahrt hat, in den Ordner. Der Dialog bleibt offen, bis das Kopieren
-  fertig ist. Dann sagt er, wie viele Bereiche kopiert wurden, welche nicht,
-  und welche er stehen ließ, weil jemand sie inzwischen geändert hat. Bereiche,
-  die nicht geschrieben werden konnten, bietet er mit **Erneut versuchen**
-  wieder an, und auch beim nächsten Mal, wenn Sie diesen Ordner wählen.
+- **Meine Arbeit hineinkopieren** kopiert jeden Bereich, den der Browser hielt, in
+  den Ordner, mit dem Personenregister, den Einstellungen der Organisation und
+  jedem Bild, liest danach alles zurück und vergleicht es. Das Fenster zeigt, wie
+  weit es ist, und **Anhalten** hält zwischen zwei Bereichen an. Danach steht dort,
+  was der Ordner enthält, nach Art, und mit Namen alles, was nicht mitkam, mit dem
+  Grund: Bereiche, die nicht geschrieben werden konnten, Bereiche, die unberührt
+  blieben, weil der Ordner dort andere Arbeit enthält oder jemand sie inzwischen
+  geändert hat. **Erneut versuchen** macht dort weiter, ebenso die erneute Wahl des
+  Ordners: Was schon da ist, wird als gleich befunden und bleibt unberührt. Ein
+  Ordner, der schon andere Arbeit enthält, sagt das, bevor Sie antworten, und diese
+  Arbeit wird nie überschrieben. Der Änderungsverlauf und die benannten Versionen
+  bleiben im Browser.
 - **Ordner so öffnen, wie er ist** lässt beide, wo sie sind.
 
 So oder so wird nichts gelöscht; der Browser behält seine Kopie.

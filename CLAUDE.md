@@ -664,9 +664,11 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       move that carries the stand-ins, the cause
                                       links and the absorbed events naming the
                                       scopes it moves (`readdress`, ADR-0032 §4)
-                    copyScopes        every scope one place keeps, copied into
-                                      another that keeps what it has — nothing
-                                      there written over, nothing taken away
+                    copyScopes · copyCounts   every scope one place keeps, copied
+                                      into another that keeps what it has —
+                                      nothing there written over, nothing
+                                      taken away, read back and counted by
+                                      kind before it is said to be done
                     sealedFile        a working file under a password (ADR-0023)
                     putBack           a scope that could not be read whole, put
                                       back as an entry of its history held it:

@@ -608,11 +608,16 @@ window; the app asks only if that save did not work.
 
 **Bringing your browser's work along.** If this browser kept work before you
 chose a folder, choosing one asks **Bring your work into this folder?**:
-- **Copy my work in** copies every scope the browser kept into the folder. The
-  dialog stays open until the copy is done, then says how many scopes were
-  copied, which could not be, and which it left alone because somebody changed
-  them meanwhile. Scopes that could not be written are offered again with
-  **Try again**, and again the next time you choose that folder.
+- **Copy my work in** copies every scope the browser kept into the folder, with
+  the people register, the organisation's settings and every picture, then reads
+  it all back and compares it. The dialog shows how far it has got, and **Stop**
+  stops it between two scopes. It then says what the folder holds, by kind, and
+  by name whatever it did not bring, with why: scopes that could not be written,
+  scopes it left alone because the folder holds other work there or somebody
+  changed them meanwhile. **Try again** goes on from there, and so does choosing
+  the folder again: what arrived is found the same and left alone. A folder that
+  already holds other work says so before you answer, and that work is never
+  written over. The history of changes and the named versions stay in the browser.
 - **Open the folder as it is** leaves both where they are.
 
 Nothing is deleted either way; the browser keeps its copy.

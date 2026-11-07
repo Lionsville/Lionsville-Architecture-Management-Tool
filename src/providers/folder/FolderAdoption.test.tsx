@@ -101,18 +101,21 @@ describe('the question a folder pick asks', () => {
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme Logistics')
-    expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
+    expect(preferences.read()).toMatchObject({ adoptedFolders: ['/test2'], migratedFolders: ['/test2'] })
     expect(reread).toHaveBeenCalledTimes(1)
     // Nothing is taken from where it was.
     expect((await readScope(from.scopes, 'acme'))?.model.name).toBe('Acme Logistics')
     // Counts, never names.
-    expect(diagnostics.messages()).toEqual(['copied 1 scopes, kept 0, failed 0, unread 0'])
-    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+    expect(diagnostics.messages()).toEqual(['copied 1 scopes, already 0, kept 0, failed 0, unread 0, unlike 0'])
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('“test2” now holds your work, read back and found the same: 1 scope.')
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('Nothing has changed in this browser')
+    // The question has been answered, and the title no longer asks it.
+    expect(screen.getByRole('dialog', { name: 'Your work is in this folder' })).toBeDefined()
     fireEvent.click(screen.getByTestId('adopt-close'))
     await waitFor(() => expect(screen.queryByTestId('adopt-folder')).toBeNull())
   })
 
-  it('stays open and busy until the copy is done, with nothing to press, and writes the open scope first', async () => {
+  it('stays open and busy until the copy is done, with only a way to stop it, and writes the open scope first', async () => {
     const writing = deferred()
     const { into, flush } = await ask({ flush: () => writing.promise })
     fireEvent.click(screen.getByTestId('adopt-copy'))
@@ -120,20 +123,24 @@ describe('the question a folder pick asks', () => {
     expect(flush).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('adopt-busy')).toBeDefined()
     expect(screen.getByTestId('adopt-folder').textContent).toContain('Copying your work into “test2”')
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Stop'])
+    expect(screen.getByRole('dialog', { name: 'Copying your work into this folder' })).toBeDefined()
     // Nothing is copied before the open scope is written.
     expect(await readScope(into.scopes, 'acme')).toBeUndefined()
     writing.settle()
     await settled()
     expect(screen.queryByTestId('adopt-busy')).toBeNull()
-    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('read back and found the same: 1 scope.')
   })
 
   it('says on screen which scopes could not be copied', async () => {
     await ask({ from: await keptWithOneUnread() })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
-    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied; 1 could not be copied: globex.')
+    const said = screen.getByTestId('adopt-outcome').textContent
+    expect(said).toContain('Copied into “test2”, read back and found the same: 1 scope.')
+    expect(said).toContain('Could not be read whole in this browser, so they are still only here (1): globex.')
+    expect(screen.getByRole('dialog', { name: 'Not all of your work was copied' })).toBeDefined()
   })
 
   it('offers to try again the scopes that could not be written, and asks again at the next pick until they are', async () => {
@@ -153,13 +160,14 @@ describe('the question a folder pick asks', () => {
     const { preferences } = await ask({ from, into: { ...folder, scopes } })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
-    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied; 1 could not be copied: globex.')
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('Could not be written (1): globex. the disk said no')
     // Not done: the next pick of this folder asks again.
     expect(preferences.read()).toEqual({})
     refusing = false
     fireEvent.click(screen.getByTestId('adopt-again'))
     await settled()
-    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+    const again = screen.getByTestId('adopt-outcome').textContent
+    expect(again).toContain('“test2” now holds your work, read back and found the same: 2 scopes.')
     expect((await readScope(folder.scopes, 'globex'))?.model.name).toBe('Globex')
     expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
     expect(screen.queryByTestId('adopt-again')).toBeNull()
@@ -168,42 +176,44 @@ describe('the question a folder pick asks', () => {
   it('names the scopes left as they were because somebody worked in them while they were copied', async () => {
     const folder = memoryRepositories()
     const acme = landed(await folder.scopes.create('acme', { name: '' })).id
-    let asked = 0
+    let worked = false
     const scopes = new Proxy(folder.scopes, {
-      get: (target, member) => (member === 'tree'
-        ? async () => {
-          asked += 1
+      get: (target, member) => (member === 'apply'
+        ? async (work: Parameters<typeof target.apply>[0]) => {
           // The copy found it empty; somebody writes to it before the copy lands.
-          if (asked === 2) {
-            landed(await target.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme, worked on' } })] }]))
+          if (!worked) {
+            worked = true
+            landed(await target.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme, worked on', description: 'Theirs.' } })] }]))
           }
-          return target.tree()
+          return target.apply(work)
         }
         : Reflect.get(target, member)),
     })
     await ask({ into: { ...folder, scopes } })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
-    expect(screen.getByTestId('adopt-outcome').textContent)
-      .toBe('Nothing was copied into “test2”: left as they were, because they changed meanwhile: acme.')
+    const said = screen.getByTestId('adopt-outcome').textContent
+    expect(said).toContain('Nothing was copied into “test2”.')
+    expect(said).toContain('Left as they were, because they changed meanwhile: acme.')
+    expect(screen.getByRole('dialog', { name: 'Nothing was copied' })).toBeDefined()
     expect((await readScope(folder.scopes, 'acme'))?.model.name).toBe('Acme, worked on')
   })
 
-  it('offers no second try for a scope this browser could not read, and does not ask about it again', async () => {
+  it('offers no second try for a scope this browser could not read, and does not ask about it again in this folder', async () => {
     const { preferences } = await ask({ from: await keptWithOneUnread() })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect(screen.queryByTestId('adopt-again')).toBeNull()
-    expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
+    expect(preferences.read()).toEqual({ declinedFolders: ['/test2'] })
   })
 
   it('says on screen and in the trail a copy that fell over, and remembers nothing, so it is asked again', async () => {
     const from = await kept()
     let asked = 0
-    // The tree answers the question, and refuses the copy.
+    // The tree answers the question and what the folder holds, and refuses the copy.
     const scopes = new Proxy(from.scopes, {
       get: (target, member) => (member === 'tree'
-        ? () => (asked++ === 0 ? target.tree() : Promise.reject(new Error('this browser refused')))
+        ? () => (asked++ < 2 ? target.tree() : Promise.reject(new Error('this browser refused')))
         : Reflect.get(target, member)),
     })
     const { preferences, reread, diagnostics } = await ask({ from: { ...from, scopes } })
@@ -212,7 +222,7 @@ describe('the question a folder pick asks', () => {
     expect(preferences.read()).toEqual({})
     expect(reread).not.toHaveBeenCalled()
     expect(diagnostics.messages()).toEqual(['rejected'])
-    expect(screen.getByRole('alert').textContent).toBe('Nothing was copied: this browser refused')
+    expect(screen.getByRole('alert').textContent).toContain('Nothing was copied: this browser refused')
   })
 
   it('copies nothing where the open scope could not be written first, and says why', async () => {
@@ -220,7 +230,7 @@ describe('the question a folder pick asks', () => {
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect(await readScope(into.scopes, 'acme')).toBeUndefined()
-    expect(screen.getByRole('alert').textContent).toBe('Nothing was copied: the disk is full')
+    expect(screen.getByRole('alert').textContent).toContain('Nothing was copied: the disk is full')
   })
 
   it('copies nothing on a no, and remembers the no for this folder', async () => {
@@ -237,8 +247,53 @@ describe('the question a folder pick asks', () => {
     expect(screen.queryByTestId('adopt-folder')).toBeNull()
   })
 
-  it('does not ask once the work has been brought anywhere, nor again about a folder that said no', async () => {
-    await ask({ preferences: blob({ migratedFolders: ['/elsewhere'] }) })
+  it('asks again after a copy by a build that did not check, whose word for it counts for nothing', async () => {
+    await ask({ preferences: blob({ migratedFolders: ['/test2'] }) })
+    expect(screen.getByTestId('adopt-copy')).toBeDefined()
+  })
+
+  it('says what the folder already holds before anybody answers, and that it stays', async () => {
+    const folder = memoryRepositories()
+    await placeTogether(folder, [{
+      address: 'acme',
+      content: contentOf({ path: 'acme', model: { name: 'Acme, here', description: 'Theirs.', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }, []),
+    }])
+    await ask({ into: folder })
+    await settled()
+    expect(screen.getByText('This folder already holds other work at 1 of these scopes')).toBeDefined()
+    expect(screen.getByTestId('adopt-holds').textContent).toContain('stays exactly as it is, and these scopes are not copied: acme.')
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect((await readScope(folder.scopes, 'acme'))?.model.name).toBe('Acme, here')
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('The folder holds other work at these')
+  })
+
+  it('shows how far it has got, can be stopped, and goes on from there', async () => {
+    const from = await kept()
+    await placeTogether(from, [{
+      address: 'globex',
+      content: contentOf({ path: 'globex', model: { name: 'Globex', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }, []),
+    }])
+    const writing = deferred()
+    const { into, preferences } = await ask({ from, flush: () => writing.promise })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    fireEvent.click(screen.getByTestId('adopt-stop'))
+    expect(screen.getByTestId<HTMLButtonElement>('adopt-stop').disabled).toBe(true)
+    writing.settle()
+    await settled()
+    expect(screen.getByRole('dialog', { name: 'Copying stopped' })).toBeDefined()
+    expect(screen.getByTestId('adopt-outcome').textContent).toContain('Run it again to go on')
+    expect(await readScope(into.scopes, 'acme')).toBeUndefined()
+    expect(preferences.read()).toEqual({})
+    fireEvent.click(screen.getByTestId('adopt-again'))
+    await settled()
+    expect(screen.getByRole('dialog', { name: 'Your work is in this folder' })).toBeDefined()
+    expect((await readScope(into.scopes, 'globex'))?.model.name).toBe('Globex')
+  })
+
+  it('does not ask once the work has been brought whole anywhere, nor again about a folder that said no', async () => {
+    await ask({ preferences: blob({ adoptedFolders: ['/elsewhere'] }) })
     expect(screen.queryByTestId('adopt-folder')).toBeNull()
     cleanup()
     await ask({ preferences: blob({ declinedFolders: ['/test2'] }) })
