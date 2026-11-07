@@ -48,10 +48,10 @@ describe('a scope that could not be read whole', () => {
     const notice = await screen.findByTestId('unreadable-notice')
     expect(within(notice).getByTestId('unreadable-bring-in').textContent).toBe('Bring in a working file…')
     fireEvent.click(within(notice).getByTestId('unreadable-put-back'))
-    expect(within(await screen.findByTestId('history-list')).getByText('Crews in')).toBeDefined()
+    fireEvent.click(within(await screen.findByTestId('history-list')).getByText('Crews in'))
     const putBack = await screen.findByTestId('history-restore')
     // Offered although what could be read is what the snapshot held: the part that could not be read is not.
-    await waitFor(() => expect((putBack as HTMLButtonElement).disabled).toBe(false))
+    expect(putBack.getAttribute('aria-disabled')).toBeNull()
     expect(putBack.textContent).toBe('Put back the whole scope…')
     fireEvent.click(putBack)
     // Nothing is promised that is not so: what could not be read is kept first, or nothing is put back.
@@ -74,6 +74,7 @@ describe('a scope that could not be read whole', () => {
     const project = await readScope(repositories.scopes, 'acme')
     const { documents } = renderApp({ repositories, boot: { initialProject: project } })
     fireEvent.click(within(await screen.findByTestId('unreadable-notice')).getByTestId('unreadable-put-back'))
+    fireEvent.click(within(await screen.findByTestId('history-list')).getByText('Crews in'))
     fireEvent.click(await screen.findByTestId('history-restore'))
     fireEvent.click(await screen.findByRole('button', { name: 'Put back' }))
     await waitFor(() => expect(screen.queryByTestId('unreadable-notice')).toBeNull())
@@ -83,7 +84,8 @@ describe('a scope that could not be read whole', () => {
     await screen.findByTestId('overflow-menu')
     fireEvent.click(await screen.findByText('History…'))
     fireEvent.click(within(await screen.findByTestId('history-list')).getByText(kept.subject!))
-    fireEvent.click(await screen.findByTestId('history-save-unread'))
+    fireEvent.click(await screen.findByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save what could not be read…' }))
     await waitFor(() => expect(documents.saved).toHaveLength(1))
     const [saved] = documents.saved
     expect(saved.name).toMatch(/^acme-\d{4}-\d{2}-\d{2}-unread\.json$/)

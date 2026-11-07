@@ -147,7 +147,7 @@ export function useWorkspaceDialogs(deps: {
 
 /** The folder's snapshot and history (ADR-0008), and the board dialogs the shell draws. */
 export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, snapshots, diagrams, readings, pageChrome } = parts
+  const { props, session, snapshots, diagrams, readings } = parts
   const { s, language } = props.shell
   const documents = props.files.documents
   const saveUnread = useSaveUnread({
@@ -182,9 +182,9 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         whole={snapshots.whole}
         {...(saveUnread ? { onSaveUnread: saveUnread } : {})}
         onLabel={snapshots.label}
+        {...(session.readOnly ? {} : { onSnapshot: snapshots.openDialog })}
         language={language}
         s={s}
-        windowChrome={pageChrome}
       />
       <ShellDialogs
         s={s}

@@ -94,7 +94,7 @@ export type ProjectHistoryState = {
   /** Open the page, on everything or on one thing. */
   openPage: (subject?: HistorySubject) => void
   closePage: () => void
-  choose: (id: string) => void
+  choose: (id: string | undefined) => void
   setSubject: (subject: HistorySubject | undefined) => void
   restore: () => void
   /** Record the scope before a replace; `false` only where that was wanted and failed. */
@@ -269,14 +269,18 @@ export function useProjectHistory(deps: {
     })
   }, [history, save, steps, notify, s])
 
-  const choose = useCallback((id: string) => {
+  // Walking the list asks for the next before the last has answered: only the one still chosen lands.
+  const asked = useRef<string | undefined>(undefined)
+  const choose = useCallback((id: string | undefined) => {
+    asked.current = id
+    if (id === undefined) { setChosen(undefined); return }
     const entry = entries.find((held) => held.id === id)
     if (!history || !entry) return
     setChosen({ id })
     void history.stateAt(entry.scope, id).then(
-      (held) => setChosen({ id, model: held?.model }),
+      (held) => { if (asked.current === id) setChosen({ id, model: held?.model }) },
       (cause: unknown) => {
-        setChosen({ id })
+        if (asked.current === id) setChosen({ id })
         notify(s('history.readFailed', { message: reasonIn(cause, s) }), 'error')
       },
     )

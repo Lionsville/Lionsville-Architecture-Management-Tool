@@ -351,7 +351,6 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
         onLabel={history.label}
         language={prefs.language}
         s={s}
-        windowChrome={parts.windowChrome}
       />
     </>
   )

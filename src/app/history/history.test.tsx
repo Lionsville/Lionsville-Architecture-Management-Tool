@@ -19,6 +19,8 @@ import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from '../testing/heldRepositories'
 import type { HeldRepositories } from '../testing/heldRepositories'
+import { changesInWords, mergedLines } from './HistoryPage'
+import { translator } from '../../i18n'
 import { fakeHistory } from '../testing/fakeHistory'
 import type { FakeEntry, FakeHistory } from '../testing/fakeHistory'
 import type { HostModel } from '../../model/hostModel'
@@ -60,6 +62,17 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   ...over,
 })
+
+/** A snapshot read: the row pressed, as a person does. Nothing is open until then. */
+const readFirst = async () => {
+  const list = await screen.findByTestId('history-list')
+  const row = await waitFor(() => {
+    const found = list.querySelector<HTMLElement>('[data-kit-row^="row:"]')
+    if (!found) throw new Error('no row yet')
+    return found
+  })
+  fireEvent.click(row)
+}
 
 const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
@@ -167,6 +180,7 @@ describe('from the menu bar', () => {
     view.send({ type: 'history' })
 
     expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
+    await readFirst()
     // The root holds nothing now, and the snapshot held Crews: removed since.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
   })
@@ -263,6 +277,7 @@ describe('reading one back', () => {
     })])
     await openIt()
     expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
+    await readFirst()
     // The element is in the snapshot and not on screen now, so it was removed
     // since — which is the direction somebody standing in a history reads in.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
@@ -271,6 +286,7 @@ describe('reading one back', () => {
   it('says so when the scope was not there then', async () => {
     show([entry()])
     await openIt()
+    await readFirst()
     expect(await screen.findByText('This scope did not exist yet at that snapshot.')).toBeDefined()
   })
 
@@ -287,7 +303,7 @@ describe('reading one back', () => {
       host: { windowChrome: { draggable: true, controlsInset: 78 } },
     })
     await openIt()
-    await screen.findByTestId('history-topbar')
+    await screen.findByRole('heading', { name: 'History' })
     expect(screen.getByTestId('shell-toolbar').getAttribute('style')).toContain('86px')
   })
 })
@@ -337,7 +353,8 @@ describe('the history of one thing (ADR-0008)', () => {
     expect(within(list).queryByText('Wrote about billing')).toBeNull()
     expect((screen.getByLabelText('Show the history of') as HTMLSelectElement).value).toBe('diagram:d1')
     // And the changes are the diagram's own: renamed since, nothing about the decision.
-    const diff = screen.getByTestId('history-diff')
+    await readFirst()
+    const diff = await screen.findByTestId('history-diff')
     expect(await within(diff).findByText('Changed the diagram L7 (name)')).toBeDefined()
     expect(within(diff).queryByText(/One writer/)).toBeNull()
   })
@@ -346,7 +363,7 @@ describe('the history of one thing (ADR-0008)', () => {
     showDescribed(threeSnapshots())
     fireEvent.click(screen.getByText('Decisions'))
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
-    fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'History…' }))
     const list = await screen.findByTestId('history-list')
     await waitFor(() => expect(within(list).getByText('Retitled the decision')).toBeDefined())
     expect(within(list).queryByText('Moved everything')).toBeNull()
@@ -408,6 +425,15 @@ describe('the history of one thing (ADR-0008)', () => {
     expect(where.textContent).toContain('what this scope holds')
   })
 
+  it('says what changed in words, and each repeated line once with how many times', () => {
+    const s = translator('en')
+    expect(changesInWords([
+      { what: 'element', kind: 'added', id: 'a', name: 'A' }, { what: 'element', kind: 'added', id: 'b', name: 'B' },
+      { what: 'element', kind: 'removed', id: 'c', name: 'C' },
+    ] as never, s)).toBe('Since this snapshot: 2 added, 1 removed')
+    expect(mergedLines(['x', 'y', 'x'])).toEqual([{ line: 'x', count: 2 }, { line: 'y', count: 1 }])
+  })
+
   it('says so when no snapshot touched the thing', async () => {
     showDescribed([
       { id: 'c1', address: 'acme/landscape', subject: 'Something else', at, records: [{ kind: 'element', id: 'other' }] },
@@ -464,6 +490,7 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   const openHistoryOfTheDiagram = async () => {
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
+    await readFirst()
     return within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
   }
 
@@ -500,16 +527,12 @@ describe('going back, as going forward (ADR-0008)', () => {
     renderApp({ repositories: kept([now()], oneSnapshot()).repositories, boot: { initialProject: now() } })
     fireEvent.click(screen.getByText('Decisions'))
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
-    fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'History…' }))
+    await readFirst()
     await within(await screen.findByTestId('history-diff')).findByText(/Changed the decision/)
-    fireEvent.click(screen.getByRole('button', { name: 'Restore this version…' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
-
-    // Hidden to assistive technology while the full-screen page is up, which
-    // is MUI's doing; the words are there all the same.
-    expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('locked record is not changed')
-    // Nothing happened: the page is still up and the Activity list is empty.
-    expect(screen.getByTestId('history-list')).toBeDefined()
+    // Said in a sentence, with no dead button: an ended record has no version to go back to.
+    expect((await screen.findByTestId('history-refused')).textContent).toContain('This decision is accepted, so it stays as it is.')
+    expect(screen.queryByRole('button', { name: 'Restore this version…' })).toBeNull()
   })
 
   it('restores the whole project behind its own confirm', async () => {
@@ -518,8 +541,11 @@ describe('going back, as going forward (ADR-0008)', () => {
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
+    await readFirst()
     await within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
-    fireEvent.click(screen.getByRole('button', { name: 'Restore the whole scope…' }))
+    // Under ⋯: the heaviest act there is does not stand on every snapshot.
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Restore the whole scope…' }))
     expect(await screen.findByText(/Every element, connection, diagram and decision/)).toBeDefined()
 
     expect(restoreAndLetThePageGo().textContent).toContain(`Restored the whole scope as of ${asOf}.`)
