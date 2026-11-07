@@ -148,6 +148,14 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       position: { x: rect.x, y: rect.y },
       width: rect.width,
       height: rect.height,
+      // Said here as well, or the push clears the card's handles: React Flow
+      // takes a node without `measured` for one to measure afresh, and observes
+      // it again only when it went from measured to not. A second push whose
+      // store update runs just before the first's measure renders leaves it
+      // unmeasured for good, and every line touching it paints nothing. A size
+      // that does change is still read: the observer fires on the box, and its
+      // answer always measures, whatever is said here.
+      measured: { width: rect.width, height: rect.height },
       zIndex: isBoundary ? -10 : 0,
       draggable: !args.readOnly,
       selectable: true,

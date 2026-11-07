@@ -54,6 +54,14 @@ function after(command: Parameters<typeof apply>[1]): HostModel {
   return toArrays(result.model);
 }
 
+describe('a card\'s size', () => {
+  it('is declared as measured as well, so a push does not clear its handles', () => {
+    const [card] = buildNodes(argsOf(host));
+    expect(card.width).toBeGreaterThan(0);
+    expect(card.measured).toEqual({ width: card.width, height: card.height });
+  });
+});
+
 describe('deriving nodes twice', () => {
   it('hands back the very list it was given when nothing changed', () => {
     const nodes = buildNodes(argsOf(host));
