@@ -78,41 +78,43 @@ describe('a finding marked as intended where its scope is open', { timeout: 20_0
   it('is a step of the session: listed under Accepted, back with one undo, and taken back from Accepted', async () => {
     const scopes = organisation()
     const { held, send } = show(scopes, scopes[0])
-    const list = await screen.findByTestId('conway-findings')
-    unfoldFindings(list)
-    fireEvent.click(within(unused()!).getByTestId('conway-finding'))
-    fireEvent.click(within(list).getByTestId('finding-mark'))
+    await screen.findByTestId('conway-findings')
+    fireEvent.click(screen.getByTestId('conway-show-notes'))
+    fireEvent.click(screen.getByText('Operations and Sales'))
+    fireEvent.click(screen.getByTestId('finding-mark'))
     const dialog = await screen.findByRole('dialog', { name: 'Mark as intended' })
-    expect(within(dialog).getByTestId('finding-mark-sentence').textContent).toBe('Operations and Sales declare As a service, and no interface runs between them.')
+    expect(within(dialog).getByTestId('finding-mark-sentence').textContent).toBe('Operations and Sales')
     expect(await axeFindings()).toEqual([])
     fireEvent.change(within(dialog).getByTestId('finding-mark-reason'), { target: { value: 'They design the API together' } })
     fireEvent.keyDown(within(dialog).getByTestId('finding-mark-reason'), { key: 'Enter' })
-    // Out of the groups, and listed apart.
-    await waitFor(() => expect(unused()).toBeNull())
-    fireEvent.click(within(list).getByTestId('findings-accepted-toggle'))
-    expect(within(list).getByTestId('accepted-reason').textContent).toContain('“They design the API together”')
+    await waitFor(() => expect(screen.queryByTestId('finding-mark')).toBeNull())
+    // Out of the list, and listed apart.
+    fireEvent.click(screen.getByTestId('conway-all'))
+    expect(screen.queryByTestId('conway-show-notes')).toBeNull()
+    fireEvent.click(screen.getByTestId('findings-accepted-toggle'))
+    expect(screen.getByTestId('accepted-reason').textContent).toContain('“They design the API together”')
     expect(await axeFindings()).toEqual([])
 
     // One undo: the mark is gone, and the finding is back.
     send({ type: 'undo' })
-    await waitFor(() => expect(unused()).not.toBeNull())
-    expect(within(list).queryByTestId('findings-accepted')).toBeNull()
+    await waitFor(() => expect(screen.getByTestId('conway-show-notes')).toBeTruthy())
+    expect(screen.queryByTestId('findings-accepted')).toBeNull()
 
     // Marked again, and taken back from Accepted: a step of its own, written with the scope.
-    unfoldFindings(list)
-    fireEvent.click(within(unused()!).getByTestId('conway-finding'))
-    fireEvent.click(within(list).getByTestId('finding-mark'))
+    fireEvent.click(screen.getByText('Operations and Sales'))
+    fireEvent.click(screen.getByTestId('finding-mark'))
     fireEvent.click(await screen.findByTestId('finding-mark-confirm'))
-    await waitFor(() => expect(unused()).toBeNull())
+    await waitFor(() => expect(screen.queryByTestId('finding-mark')).toBeNull())
     send({ type: 'save' })
     await waitFor(async () => expect((await held.read(''))?.model.checkMarks).toEqual([
       // On the workspace's own day, which the window reads off its clock.
       { check: 'check.interactionUnused', key: 'i-ops-sales ops sales', on: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as string },
     ]))
+    fireEvent.click(screen.getByTestId('conway-all'))
     // Accepted stays as it was left for the session: open.
-    expect(within(list).getByTestId('findings-accepted-toggle').getAttribute('aria-expanded')).toBe('true')
-    fireEvent.click(within(list).getByTestId('finding-take-back'))
-    await waitFor(() => expect(unused()).not.toBeNull())
+    expect(screen.getByTestId('findings-accepted-toggle').getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(screen.getByTestId('finding-take-back'))
+    await waitFor(() => expect(screen.getByTestId('conway-show-notes')).toBeTruthy())
     send({ type: 'save' })
     await waitFor(async () => expect((await held.read(''))?.model.checkMarks ?? []).toEqual([]))
   })

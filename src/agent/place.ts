@@ -334,7 +334,13 @@ export function placeOf(screen: Screen): Place | undefined {
   return undefined
 }
 
-/** The same place: the same scope, page, id, tab, panel, list and finding carried. */
+/** What a place says of the view it opens beyond which view: its reading, what it is grouped by, the pair chosen. */
+export function viewFacetsOf(to: Destination, of: string): { of: string; tab?: string; group?: string; pair?: string } | undefined {
+  if (to.tab === undefined && to.group === undefined && to.pair === undefined) return undefined
+  return { of, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}) }
+}
+
+/** The same place: the same scope, page, id, tab, panel, list and finding carried, day and what a view keeps. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
   return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel && a.list === b.list && a.finding === b.finding && a.day === b.day && a.group === b.group && a.pair === b.pair

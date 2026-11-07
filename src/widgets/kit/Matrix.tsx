@@ -249,6 +249,13 @@ export function Matrix({
     table.current?.querySelector<HTMLElement>(`[data-kit-cell="${row}:${column}"]`)?.focus()
   }, [row, column])
 
+  // A pick from outside, or the rows moving under one: the crosshair and the line stay on what is picked.
+  const pickedRow = selected ? shownRows.findIndex((one) => one.row.id === selected.row) : -1
+  const pickedColumn = selected ? drawn.findIndex((one) => one.id === selected.column) : -1
+  useLayoutEffect(() => {
+    if (pickedRow >= 0 && pickedColumn >= 0) setAt({ row: pickedRow, column: pickedColumn })
+  }, [pickedRow, pickedColumn])
+
   const hereRow = shownRows[row]?.row
   const hereColumn = drawn[column]
   const here = hereRow && hereColumn?.kind === 'column' ? { row: hereRow.id, column: hereColumn.id } : null

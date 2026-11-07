@@ -425,8 +425,7 @@ describe('a unit in its inspector', () => {
     renderShell(<Harness more={[{ path: 'shipping', model: shipping }]} commands={[]} />)
     fireEvent.click(screen.getByTestId('unit-interaction-add'))
     const dialog = await screen.findByTestId('interact-dialog')
-    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Customer', 'Zeta', 'Accounts'])
+    expect(within(within(dialog).getByTestId('interact-with')).getAllByRole('option').map((one) => one.textContent)).toEqual(['Choose a unit', 'Customer', 'Zeta', 'Accounts'])
   })
 
   it('declares an interaction with another unit as one row, and corrects and removes one kept here (ADR-0036 §7)', async () => {
@@ -435,10 +434,10 @@ describe('a unit in its inspector', () => {
     expect(text('unit-interactions')).toContain('No interaction declared')
     fireEvent.click(screen.getByTestId('unit-interaction-add'))
     const dialog = await screen.findByTestId('interact-dialog')
-    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
-    fireEvent.click(await screen.findByRole('option', { name: 'Customer' }))
-    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[1])
-    fireEvent.click(await screen.findByRole('option', { name: 'As a service' }))
+    // Nothing is chosen for the person: a hurried press records nothing.
+    expect((within(dialog).getByTestId('interact-save') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(within(dialog).getByTestId('interact-with'), { target: { value: 'customer' } })
+    fireEvent.click(within(dialog).getByRole('radio', { name: /As a service/ }))
     fireEvent.change(within(dialog).getByTestId('interact-from'), { target: { value: '2026-11-01' } })
     fireEvent.click(within(dialog).getByTestId('interact-save'))
     expect(commands).toEqual([{
@@ -449,8 +448,7 @@ describe('a unit in its inspector', () => {
     expect(screen.getByTestId('unit-interaction').textContent).toBe('Customer · As a service · 2026-11-01 – …')
     fireEvent.click(screen.getByTestId('unit-interaction'))
     const again = await screen.findByTestId('interact-dialog')
-    fireEvent.mouseDown(within(again).getAllByRole('combobox')[1])
-    fireEvent.click(await screen.findByRole('option', { name: 'Facilitating' }))
+    fireEvent.click(within(again).getByRole('radio', { name: /Helping/ }))
     fireEvent.click(within(again).getByTestId('interact-save'))
     expect(commands[1]).toEqual({ type: 'relation.update', id: 'i-new', patch: { mode: 'facilitating' } })
     await waitFor(() => expect(screen.queryByTestId('interact-dialog')).toBeNull())

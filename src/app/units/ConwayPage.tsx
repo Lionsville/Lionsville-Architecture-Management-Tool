@@ -31,6 +31,7 @@ import { conwayPairs, conwaySum, groupingRollsUp, linesOfPair, pairId, readPairI
 import type { ConwaySum } from '../../model/conwayReading'
 import type { HostModel } from '../../model/hostModel'
 import { pickedPerson } from '../../model/person'
+import type { UnitType } from '../../model/operatingModel'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../model/units'
@@ -46,6 +47,7 @@ import { PageState } from '../../widgets/kit/PageState'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { ViewBar, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import { useViewFacets } from '../../widgets/placeTab'
+import { locatedSelector } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { useFindingMarks } from '../checkMarking'
@@ -212,6 +214,50 @@ function sideOf(map: ReturnType<typeof conwayMap>, unit: ElementId | undefined) 
   return { unitId: unit, apps }
 }
 
+/** The bar: the reading, what it is grouped by with its value said, and Find me with its reason where it cannot. */
+function ConwayBar({ flush, reading, groupBy, types, firstMine, onReading, onGroup, onFindMe, t }: {
+  flush: boolean; reading: string; groupBy: string | undefined; types: readonly UnitType[]; firstMine: ElementId | undefined
+  onReading: (tab: string) => void; onGroup: (group: string | undefined) => void; onFindMe: (id: ElementId) => void; t: Translate
+}) {
+  const groupWord = groupBy === undefined ? t('conway.byOwner') : types.find((type) => type.id === groupBy)?.name ?? ''
+  return (
+    <ViewBar
+      flush={flush} label={t('conway.barLabel')}
+      reading={(
+        <Segmented
+          label={t('conway.readingLabel')} value={reading} data-guide="conway.reading" onChange={onReading}
+          options={[{ value: 'grid', label: t('conway.grid') }, { value: 'lines', label: t('conway.lines') }]}
+        />
+      )}
+      show={(
+        <ViewBarMenu
+          label={t('conway.groupByValue', { value: groupWord })} menuLabel={t('conway.groupBy')} data-guide="conway.groupBy"
+          items={[
+            { label: t('conway.byOwner'), checked: groupBy === undefined, onSelect: () => onGroup(undefined) },
+            ...types.map((type) => ({ label: type.name, checked: type.id === groupBy, onSelect: () => onGroup(type.id) })),
+          ]}
+        />
+      )}
+      find={(
+        <Button
+          variant="quiet" data-testid="conway-find-me" data-guide="conway.findMe"
+          {...(firstMine === undefined ? { reason: t('conway.findMeNone') } : {})}
+          onClick={() => { if (firstMine !== undefined) onFindMe(firstMine) }}
+        >
+          {t('chart.findMe')}
+        </Button>
+      )}
+    />
+  )
+}
+
+/** What the reader is on, from the pair in the address and the element chosen. */
+function chosenOf(asked: ReturnType<typeof readPairId>, element: ElementId | undefined, drawn: (id: string) => boolean, isUnitId: (id: ElementId) => boolean): ConwayChosen {
+  if (asked) return { kind: 'pair', ...asked }
+  if (element === undefined || !drawn(element)) return { kind: 'none' }
+  return isUnitId(element) ? { kind: 'unit', id: element } : { kind: 'app', id: element }
+}
+
 export function ConwayPage(props: ConwayPageProps) {
   const { t, language } = useStrings()
   const theme = useTheme()
@@ -256,20 +302,23 @@ export function ConwayPage(props: ConwayPageProps) {
     onSelect(undefined)
   }, [onSelect, setFacets])
   const drawn = useCallback((id: string) => map.groups.some((group) => group.unitId === id || group.applications.some((app) => app.id === id)), [map])
-  useSelectRequest(props.select, drawn, chooseElement)
+  /** Chosen, and on the second reading brought into view: columns scroll sideways, and what was asked for may be off to the right. */
+  const goTo = useCallback((id: ElementId) => {
+    chooseElement(id)
+    page.current?.querySelector(locatedSelector(id))?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  }, [chooseElement])
+  // Until the index has been read the map draws nothing yet, and a request spent then would find nothing to select.
+  useSelectRequest(props.select, map.groups.length > 0 ? drawn : undefined, goTo)
   // Selected from outside the page, by an agent's `?select=` once it has landed: the reader follows.
   useEffect(() => {
     if (props.selectedId !== undefined && drawn(props.selectedId)) setElement(props.selectedId)
   }, [props.selectedId, drawn])
 
   const isUnitId = (id: ElementId) => map.groups.some((group) => group.unitId === id) || here.at.organisation.units.some((unit) => unit.id === id)
-  const chosen: ConwayChosen = asked
-    ? { kind: 'pair', ...asked }
-    : element !== undefined && drawn(element)
-      ? isUnitId(element) ? { kind: 'unit', id: element } : { kind: 'app', id: element }
-      : { kind: 'none' }
+  const chosen = chosenOf(asked, element, drawn, isUnitId)
   const chosenPair = chosen.kind === 'pair' ? chosen : undefined
-  const chosenLines = useMemo(() => (chosenPair ? linesOfPair(map, chosenPair.a, chosenPair.b) : []), [map, chosenPair?.a, chosenPair?.b]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [pairA, pairB] = [chosenPair?.a, chosenPair?.b]
+  const chosenLines = useMemo(() => (pairA !== undefined || pairB !== undefined ? linesOfPair(map, pairA, pairB) : []), [map, pairA, pairB])
   const kindOf = (id: ElementId) => {
     const unit = here.at.organisation.units.find((one) => one.id === id)
     return types.find((type) => type.id === unit?.unitTypeId)?.name
@@ -277,90 +326,71 @@ export function ConwayPage(props: ConwayPageProps) {
   const overLimit = useMemo(() => new Set(slots.shown.flatMap((one) => (one.kind === 'overLimit' ? [one.unitId] : []))), [slots.shown])
   const firstMine = map.groups.find((group) => group.unitId !== undefined && mine.has(group.unitId))?.unitId
   const onLine = (line: ConwayLine) => { if (line.from !== undefined || line.to !== undefined) choosePair(line.from, line.to) }
-  const groupWord = groupBy === undefined ? t('conway.byOwner') : types.find((type) => type.id === groupBy)?.name ?? ''
   const bar = (
-    <ViewBar
-      flush={props.pageBar !== undefined} label={t('conway.barLabel')}
-      reading={(
-        <Segmented
-          label={t('conway.readingLabel')} value={reading} data-guide="conway.reading"
-          options={[{ value: 'grid', label: t('conway.grid') }, { value: 'lines', label: t('conway.lines') }]}
-          onChange={(tab) => setFacets({ tab: tab === 'lines' ? 'lines' : undefined })}
-        />
-      )}
-      show={(
-        <ViewBarMenu
-          label={t('conway.groupByValue', { value: groupWord })} menuLabel={t('conway.groupBy')} data-guide="conway.groupBy"
-          items={[
-            { label: t('conway.byOwner'), checked: groupBy === undefined, onSelect: () => { setFacets({ group: undefined, pair: undefined }); setElement(undefined) } },
-            ...types.map((type) => ({ label: type.name, checked: type.id === groupBy, onSelect: () => { setFacets({ group: type.id, pair: undefined }); setElement(undefined) } })),
-          ]}
-        />
-      )}
-      find={(
-        <Button
-          variant="quiet" data-testid="conway-find-me" data-guide="conway.findMe"
-          {...(firstMine === undefined ? { reason: t('conway.findMeNone') } : {})}
-          onClick={() => { if (firstMine !== undefined) chooseElement(firstMine) }}
-        >
-          {t('chart.findMe')}
-        </Button>
-      )}
+    <ConwayBar
+      flush={props.pageBar !== undefined} reading={reading} groupBy={groupBy} types={types} firstMine={firstMine} t={t}
+      onReading={(tab) => setFacets({ tab: tab === 'lines' ? 'lines' : undefined })}
+      onGroup={(group) => { setFacets({ group, pair: undefined }); setElement(undefined) }}
+      onFindMe={goTo}
+    />
+  )
+  const reader = (
+    <ConwayReader
+      map={map} pairs={pairs} sum={sum} shown={slots.shown} accepted={slots.accepted} chosen={chosen} here={here} day={day} you={mine}
+      acting={acting}
+      mayChange={(id) => here.heldHere(id) || (props.declare?.writable?.(here.scopeOf(id) ?? '') ?? false)}
+      onPair={choosePair} onUnit={chooseElement} onApp={chooseElement} onAll={chooseNothing} onOpen={props.onOpen}
+      onOpenOperating={props.onOpenOperating} onReadMore={props.onReadMore} remember={remember}
+    />
+  )
+  const grid = (
+    <>
+      <ConwayGrid
+        map={map} pairs={pairs} chosen={chosenPair} nameOf={here.name} you={mine} overLimit={overLimit}
+        onPair={choosePair} onUnit={chooseElement} t={t}
+      />
+      {chosenPair
+        ? (
+          <ConwayPairDrawing
+            a={sideOf(map, chosenPair.a)} b={sideOf(map, chosenPair.b)} lines={chosenLines}
+            kindOf={kindOf} nameOf={here.name} pickedApp={undefined} grouped={groupBy !== undefined}
+            onUnit={chooseElement} onApp={chooseElement} onLine={onLine} t={t}
+          />
+        )
+        : <ConwayKey t={t} />}
+      {!chosenPair && !sum.lowCoverage && <p className="conway__about">{t('conway.about')}</p>}
+    </>
+  )
+  const lines = (
+    <ConwayLines
+      map={map} kindOf={kindOf} nameOf={here.name} show={show} onShow={setShow} showUnowned={showUnowned} onShowUnowned={setShowUnowned}
+      chosenLines={chosenLines} pickedUnit={chosen.kind === 'unit' ? chosen.id : undefined} pickedApp={chosen.kind === 'app' ? chosen.id : undefined}
+      grouped={groupBy !== undefined} onUnit={chooseElement} onApp={chooseElement} onLine={onLine} t={t}
     />
   )
   return (
     <>
       {props.pageBar ? createPortal(bar, props.pageBar) : props.pageBar === undefined ? bar : null}
-      {sum.applications === 0
-        ? (
-          <div className="conway" data-testid="conway-page">
+      <div className="conway" data-testid="conway-page">
+        {sum.applications === 0
+          ? (
             <div className="conway__main" ref={page}>
               <PageState
                 state="empty" title={t('conway.empty.title')} body={t('conway.empty.body')}
                 {...(props.onOpenLandscape ? { action: { label: t('conway.empty.open'), onPress: props.onOpenLandscape } } : {})}
               />
             </div>
-          </div>
-        )
-        : (
-          <div className="conway" data-testid="conway-page">
-            <div className="conway__main" ref={page} data-testid="conway-body">
-              <Verdict sum={sum} day={day} rollsUp={groupingRollsUp(map, input.units, groupBy)} typeName={types.find((type) => type.id === groupBy)?.name} t={t} language={language} />
-              {reading === 'grid'
-                ? (
-                  <>
-                    <ConwayGrid
-                      map={map} pairs={pairs} chosen={chosenPair} nameOf={here.name} you={mine} overLimit={overLimit}
-                      onPair={choosePair} onUnit={chooseElement} t={t}
-                    />
-                    {chosenPair && (
-                      <ConwayPairDrawing
-                        a={sideOf(map, chosenPair.a)} b={sideOf(map, chosenPair.b)} lines={chosenLines}
-                        kindOf={kindOf} nameOf={here.name} pickedApp={undefined} grouped={groupBy !== undefined}
-                        onUnit={chooseElement} onApp={chooseElement} onLine={onLine} t={t}
-                      />
-                    )}
-                    {!chosenPair && <ConwayKey t={t} />}
-                    {!chosenPair && !sum.lowCoverage && <p className="conway__about">{t('conway.about')}</p>}
-                  </>
-                )
-                : (
-                  <ConwayLines
-                    map={map} kindOf={kindOf} nameOf={here.name} show={show} onShow={setShow} showUnowned={showUnowned} onShowUnowned={setShowUnowned}
-                    chosenLines={chosenLines} pickedUnit={chosen.kind === 'unit' ? chosen.id : undefined} pickedApp={chosen.kind === 'app' ? chosen.id : undefined}
-                    grouped={groupBy !== undefined} onUnit={chooseElement} onApp={chooseElement} onLine={onLine} t={t}
-                  />
-                )}
-            </div>
-            <ConwayReader
-              map={map} pairs={pairs} sum={sum} shown={slots.shown} accepted={slots.accepted} chosen={chosen} here={here} day={day} you={mine}
-              acting={acting}
-              mayChange={(id) => here.heldHere(id) || (props.declare?.writable?.(here.scopeOf(id) ?? '') ?? false)}
-              onPair={choosePair} onUnit={chooseElement} onApp={chooseElement} onAll={chooseNothing} onOpen={props.onOpen}
-              onOpenOperating={props.onOpenOperating} onReadMore={props.onReadMore}
-            />
-          </div>
-        )}
+          )
+          : (
+            <>
+              <div className="conway__main" ref={page} data-testid="conway-body">
+                <Verdict sum={sum} day={day} rollsUp={groupingRollsUp(map, input.units, groupBy)} typeName={types.find((type) => type.id === groupBy)?.name} t={t} language={language} />
+                {reading === 'grid' ? grid : lines}
+              </div>
+              {reader}
+            </>
+          )}
+      </div>
       {interacting && props.declare && (
         <InteractDialog
           interacting={interacting} units={unitsInOrder(here)}

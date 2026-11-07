@@ -23,6 +23,7 @@ import type { AssignmentInspector as AssignmentInspectorShape } from './Assignme
 import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
 import { unitLanding, unitViewsHere } from './unitViewsHere'
 import { planBodyTemplate } from '../../roadmap/planTemplate'
+import { manualUrl } from '../../platform/manual'
 import type { UnitMaking } from './useNewUnit'
 import { flattenScopes } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
@@ -116,6 +117,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
       }}
       onOpenPlan={(id) => parts.show({ page: 'plan', id, scope })}
       onOpenOperating={make.onOpenOperating}
+      onReadMore={() => props.host.controls.openExternal(manualUrl(props.shell.language))}
       {...(landscape ? { onOpenLandscape: () => parts.show({ page: 'board', id: landscape.id, scope }) } : {})}
     />
   )

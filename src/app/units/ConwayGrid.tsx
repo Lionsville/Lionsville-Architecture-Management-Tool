@@ -11,7 +11,7 @@
 import type { ReactNode } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
-import type { ConwayMap } from '../../model/conway'
+import type { ConwayInteraction, ConwayMap } from '../../model/conway'
 import { pairId } from '../../model/conwayReading'
 import type { PairReading, PairStanding } from '../../model/conwayReading'
 import { INTERACTION_MODES, INTERACTION_MODE_LABEL } from '../../model/relations'
@@ -40,14 +40,14 @@ export const STANDING_WORD: Record<PairStanding, StringKey> = {
 }
 
 /** The letters of the modes said between two, each once, in the order the modes are listed; one with no mode as `?`. */
-export function modeLetters(pair: Pick<PairReading, 'interactions'>, t: Translate): string {
+export function modeLetters(pair: { readonly interactions: readonly ConwayInteraction[] }, t: Translate): string {
   const modes = INTERACTION_MODES.filter((mode) => pair.interactions.some((row) => row.mode === mode))
   const unnamed = pair.interactions.some((row) => row.mode === undefined)
   return [...modes.map((mode) => t(MODE_MARK[mode])), ...(unnamed ? [t('conway.mark.unnamed')] : [])].join('')
 }
 
 /** The modes said between two, in words. */
-export function modeWords(pair: Pick<PairReading, 'interactions'>, t: Translate): string {
+export function modeWords(pair: { readonly interactions: readonly ConwayInteraction[] }, t: Translate): string {
   const modes = INTERACTION_MODES.filter((mode) => pair.interactions.some((row) => row.mode === mode))
   const unnamed = pair.interactions.some((row) => row.mode === undefined)
   return [...modes.map((mode) => t(INTERACTION_MODE_LABEL[mode])), ...(unnamed ? [t('conway.anInteraction')] : [])].join(', ')
@@ -143,6 +143,7 @@ export function ConwayKey({ t }: { t: Translate }) {
       </div>
       <div className="conway__key">
         {INTERACTION_MODES.map((mode) => <span key={mode}>{t(MODE_MARK[mode])} {t(INTERACTION_MODE_LABEL[mode])}</span>)}
+        <span>{t('conway.mark.unnamed')} {t('conway.anInteraction')}</span>
       </div>
     </>
   )

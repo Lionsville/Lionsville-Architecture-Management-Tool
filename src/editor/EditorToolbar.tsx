@@ -512,8 +512,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         </>
       ))}
 
-      {props.laidOut && props.onPageBar && <Box ref={props.onPageBar} data-testid="toolbar-page-bar" sx={{ display: 'flex', flex: '1 1 auto', minWidth: 0 }} />}
-      <Box data-testid="toolbar-spacer" sx={{ ml: 'auto' }} />
+      <PageBarSlot props={props} /><Box data-testid="toolbar-spacer" sx={{ ml: 'auto' }} />
       {props.readOnly && <Chip size="small" label={t('toolbar.readOnly')} variant="outlined" />}
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
       {!props.readOnly && !framed && (
@@ -741,6 +740,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
  * Visible in read-only too: which language you read a board in is not a mutation.
  */
 const DAY_PHASE = { live: 'toolbar.dayLive', retiring: 'toolbar.dayRetiring', retired: 'toolbar.dayRetired' } as const;
+
+/** Where a laid-out page draws its own controls, in this row rather than a second bar of its own. */
+function PageBarSlot({ props }: { props: EditorToolbarProps }) {
+  if (!props.laidOut || !props.onPageBar) return null
+  return <Box ref={props.onPageBar} data-testid="toolbar-page-bar" sx={{ display: 'flex', flex: '1 1 auto', minWidth: 0 }} />
+}
 
 /**
  * The day the view is drawn on (ADR-0027): a board's, and a laid-out view's that

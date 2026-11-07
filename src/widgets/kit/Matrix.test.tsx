@@ -163,6 +163,27 @@ describe('the matrix', () => {
     expect(screen.getByText('answer team').className).toContain('kit-matrix__answer')
   })
 
+  it('opens what a column heading names, and says a heading\'s mark beside its name', () => {
+    const onOpenColumn = vi.fn()
+    const columns = [{ id: 'one', label: 'One', mark: <em>you</em> }]
+    renderShell(<Matrix label="Pairs" rows={[{ id: 'r', label: 'Row', mark: <em>over</em> }]} columns={columns} cellOf={() => null} onOpenColumn={onOpenColumn} />)
+    fireEvent.click(screen.getByRole('columnheader', { name: /One/ }))
+    expect(onOpenColumn).toHaveBeenCalledWith('one')
+    expect(screen.getByRole('columnheader', { name: /One/ }).textContent).toContain('you')
+    expect(screen.getByRole('rowheader', { name: /Row/ }).textContent).toContain('over')
+  })
+
+  it('draws a crossing that is not there as nothing: a press and Enter select nothing, and the line does not read it out', () => {
+    const onSelect = vi.fn()
+    renderShell(<Matrix label="Pairs" rows={[{ id: 'r', label: 'Row' }]} columns={[{ id: 'one', label: 'One' }]} cellOf={() => ({ meaning: 'something' })} absent={() => true} onSelect={onSelect} />)
+    const gone = screen.getByRole('gridcell', { name: 'Row, One' })
+    expect(gone.hasAttribute('data-absent')).toBe(true)
+    fireEvent.click(gone)
+    fireEvent.keyDown(gone, { key: 'Enter' })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.getByRole('status').textContent).not.toContain('something')
+  })
+
   it('passes axe, with answer, attention and a fold', async () => {
     renderShell(<Matrix label="RACI" rowHeading="Responsibility" {...BASE} answer={{ label: 'Comes to', of: () => 'ok' }} defaultFoldedGroups={['more']} selected={{ row: 'order', column: 'run' }} />)
     expect(await axeFindings()).toEqual([])

@@ -12,7 +12,7 @@
  * Why it matters is one line here. The full text of a check stays on the Checks
  * page, and the formal names stay in the catalogue, the manual and for an agent.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n'
 import type { StringKey, Translate } from '../../i18n'
@@ -26,6 +26,7 @@ import type { ConwaySum, PairReading } from '../../model/conwayReading'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignElement, ElementId } from '../../model/types'
 import { MarkAsIntended } from '../../widgets/FindingMarks'
+import { useSessionSet } from '../../widgets/sessionMemory'
 import type { FindingMarkWords } from '../../widgets/FindingMarks'
 import { Button } from '../../widgets/kit/Button'
 import { Select } from '../../widgets/kit/Field'
@@ -85,7 +86,12 @@ export type ConwayReaderProps = {
   onOpen: (id: ElementId) => void
   onOpenOperating?: (() => void) | undefined
   onReadMore?: (() => void) | undefined
+  /** Where the session keeps whether the notes are shown. */
+  remember?: string | undefined
 }
+
+/** The set's own word for the notes shown. */
+const NOTES_SHOWN = 'notes'
 
 const PAIR_ROW = 'pair:'
 const APP_ROW = 'app:'
@@ -169,11 +175,20 @@ function findingRows(shown: readonly ConwayFinding[], pairs: readonly PairReadin
     })
 }
 
-function WhatToLookAt({ map, pairs, sum, shown, accepted, here, day, acting, onPair, onUnit, onApp, onReadMore }: ConwayReaderProps) {
+function WhatToLookAt({ map, pairs, sum, shown, accepted, here, day, acting, onPair, onUnit, onApp, onReadMore, remember }: ConwayReaderProps) {
   const { t, language } = useStrings()
-  const [notes, setNotes] = useState(false)
+  // The session's, as a list of findings keeps its own: coming back from a pair finds the notes as they were left.
+  const [held, setHeld] = useSessionSet(remember)
+  const notes = held.has(NOTES_SHOWN)
+  const setNotes = (on: boolean) => { const next = new Set(held); if (on) next.add(NOTES_SHOWN); else next.delete(NOTES_SHOWN); setHeld(next) }
   const options = useUnitChoices(here, map)
-  const look = useMemo(() => findingRows(shown, pairs, here, false, t), [shown, pairs, here, t])
+  // Once it has asked for owners it goes on asking until they are all given: the row a person is working down must not turn into something else at the halfway mark.
+  const asked = useRef(false)
+  if (sum.lowCoverage) asked.current = true
+  const noOwner = map.groups.find((group) => group.unitId === undefined)?.applications ?? []
+  const low = sum.lowCoverage || (asked.current && noOwner.length > 0)
+  // Where the map asks for owners first they are the list above: the rest still stands under it.
+  const look = useMemo(() => findingRows(low ? shown.filter((one) => one.kind !== 'unowned') : shown, pairs, here, false, t), [low, shown, pairs, here, t])
   const noted = useMemo(() => findingRows(shown, pairs, here, true, t), [shown, pairs, here, t])
   const noteCount = noted.reduce((sum2, group) => sum2 + group.rows.length, 0)
   const open = (id: string) => {
@@ -186,8 +201,6 @@ function WhatToLookAt({ map, pairs, sum, shown, accepted, here, day, acting, onP
       onPair(a || undefined, b || undefined)
     }
   }
-  const noOwner = map.groups.find((group) => group.unitId === undefined)?.applications ?? []
-  const low = sum.lowCoverage
   const when = t('conway.onDay', { day: formatDay(day, language) })
   return (
     <Panel
@@ -195,36 +208,32 @@ function WhatToLookAt({ map, pairs, sum, shown, accepted, here, day, acting, onP
       help={t(low ? 'conway.help.owners' : 'conway.help.look')}
       {...(onReadMore ? { helpLink: { label: t('conway.readMore'), onPress: onReadMore } } : {})}
     >
-      {low
-        ? (
-          <PanelSection>
-            <p className="conway__quiet">{t(acting ? 'conway.giveOwnersAsk' : 'conway.giveOwnersRead')}</p>
-            <OwnerRows apps={noOwner} options={options} acting={acting} onApp={onApp} t={t} />
-          </PanelSection>
-        )
-        : (
-          <>
-            <div data-testid="conway-findings">
-              <List label={t('conway.toLookAt')} groups={look} wrap density="compact" onOpen={open} rowGuide="conway.finding"
-                empty={<p className="conway__quiet">{t('conway.nothing')}</p>} />
-              {notes && noted.length > 0 && <List label={t('conway.notesLabel')} groups={noted} wrap density="compact" onOpen={open} />}
-            </div>
-            {noteCount > 0 && (
-              <Button variant="quiet" size="small" aria-pressed={notes} onClick={() => setNotes((was) => !was)} data-testid="conway-show-notes">
-                {t(notes ? 'conway.hideNotes' : 'conway.showNotes', { count: noteCount })}
-              </Button>
-            )}
-          </>
+      {low && (
+        <PanelSection>
+          <p className="conway__quiet">{t(acting ? 'conway.giveOwnersAsk' : 'conway.giveOwnersRead')}</p>
+          <OwnerRows apps={noOwner} options={options} acting={acting} onApp={onApp} t={t} />
+        </PanelSection>
+      )}
+      <div data-testid="conway-findings">
+        {(!low || look.length > 0) && (
+          <List label={t('conway.toLookAt')} groups={look} wrap density="compact" onOpen={open} rowGuide="conway.finding"
+            empty={<p className="conway__quiet">{t('conway.nothing')}</p>} />
         )}
+        {notes && noted.length > 0 && <List label={t('conway.notesLabel')} groups={noted} wrap density="compact" onOpen={open} rowGuide="conway.finding" />}
+      </div>
+      {noteCount > 0 && (
+        <Button variant="quiet" size="small" aria-pressed={notes} onClick={() => setNotes(!notes)} data-testid="conway-show-notes" data-guide="findings.showNotes">
+          {t(notes ? 'conway.hideNotes' : 'conway.showNotes', { count: noteCount })}
+        </Button>
+      )}
       {accepted}
     </Panel>
   )
 }
 
 /** What a pair's sentence says, one word of the two for one interface or several. */
-function pairSentence(pair: PairReading | undefined, lines: readonly ConwayLine[], open: number, t: Translate): string {
-  const words = pair ? modeWords(pair, t) : ''
-  const standing = pair?.standing
+function pairSentence(interactions: readonly ConwayInteraction[], standing: PairReading['standing'] | undefined, lines: readonly ConwayLine[], open: number, t: Translate): string {
+  const words = modeWords({ interactions }, t)
   if (lines.length === 0 && (standing === undefined || !words)) return t('conway.say.nothing')
   if (standing === 'attention') return plural(t, { one: 'conway.say.attention.one', other: 'conway.say.attention.other' }, open)
   if (standing === 'unused') return t('conway.say.unused', { how: words })
@@ -319,39 +328,80 @@ function MarkPair({ findings, sentence }: { findings: readonly ConwayFinding[]; 
   return <MarkAsIntended words={FINE_WORDS} sentence={sentence} onMark={(reason) => findings.forEach((one) => marking.mark(one, reason))} />
 }
 
-function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?: ElementId; b?: ElementId } }) {
-  const { t, language } = useStrings()
-  const { map, pairs, here, shown, acting, day, mayChange, onAll, onPair, onUnit, onApp, onOpen, onOpenOperating } = props
-  const { a, b } = chosen
+/** Everything the panel says of a pair, worked out once from the map and what is still shown. */
+function readPair(props: ConwayReaderProps, a: ElementId | undefined, b: ElementId | undefined) {
+  const { map, pairs, shown, here } = props
   const pair = pairs.find((one) => (one.a === a && one.b === b) || (one.a === b && one.b === a))
   const lines = pair?.lines ?? linesOfPair(map, a, b)
   const open = pair?.open ?? lines.filter((line) => line.status === 'undeclared')
-  const under = pairsUnder(map, lines, open)
-  const standing = pair?.standing ?? (open.length > 0 ? 'attention' : undefined)
-  const held = heldOf(a, b, here, mayChange)
+  // Said between two units with no column here, because neither owns anything on this map: no cell, and still a finding.
+  const said = pair?.interactions ?? map.interactions.filter((row) => (row.sourceId === a && row.targetId === b) || (row.sourceId === b && row.targetId === a))
+  const standing = pair?.standing ?? standingWithNoCell(open, said, shown)
+  const asking = new Set(open.map((line) => line.flow.id))
+  const saidIds = new Set(said.map((row) => row.id))
+  const ends = lines.flatMap((line) => [line.flow.sourceId, line.flow.targetId])
+  const noOwner = map.groups.find((group) => group.unitId === undefined)?.applications ?? []
+  const appsOf = (unit: ElementId) => map.groups.flatMap((group) => group.applications.filter((app) => app.partyId === unit || group.unitId === unit))
+  return {
+    lines, open, said, standing, ends,
+    under: pairsUnder(map, lines, open),
+    findings: shown.filter((one) => (one.kind === 'undeclared' && asking.has(one.flow.id)) || (one.kind === 'unused' && saidIds.has(one.interaction.id))),
+    noOwnerApps: noOwner.filter((app) => ends.includes(app.id)),
+    modelApps: [a, b].flatMap((unit) => (unit === undefined ? [] : [{ heading: here.name(unit) }, ...appsOf(unit).map((app) => ({ label: app.name, onSelect: () => props.onOpen(app.id) }))])),
+  }
+}
+
+function standingWithNoCell(open: readonly ConwayLine[], said: readonly ConwayInteraction[], shown: readonly ConwayFinding[]): PairReading['standing'] | undefined {
+  if (open.length > 0) return 'attention'
+  return said.some((row) => shown.some((one) => one.kind === 'unused' && one.interaction.id === row.id)) ? 'unused' : undefined
+}
+
+/** What holds a pair from saying how it works, where something does, and the step that unblocks it. */
+function PairHeld({ held, onOpenOperating, here, acting, t }: {
+  held: Held; onOpenOperating?: (() => void) | undefined; here: UnitViewsHere; acting: ConwayActing | undefined; t: Translate
+}) {
+  if (held.kind === 'outside') return <p className="conway__text" data-testid="conway-held">{t('conway.held.outside', { name: held.names })}</p>
+  if (held.kind === 'elsewhere') return <p className="conway__text" data-testid="conway-held">{t('conway.held.elsewhere')}</p>
+  return (
+    <>
+      <p className="conway__text" data-testid="conway-held">{t('conway.held.notUnits', { name: held.parties.map((one) => one.name).join(', ') })}</p>
+      <MakeUnits parties={held.parties} here={here} acting={acting} onOpenOperating={onOpenOperating} t={t} />
+    </>
+  )
+}
+
+/** The answers to a pair, as the buttons themselves. */
+function pairAnswers(acting: ConwayActing | undefined, facts: ReturnType<typeof readPair>, canSay: (() => void) | undefined, t: Translate): NextAction[] {
+  if (!acting) return []
+  const remove = facts.standing === 'unused' ? facts.said.map((row) => acting.remove(row.id)).find(Boolean) : undefined
+  return [
+    ...(canSay ? [{ label: t('conway.sayHow'), onPress: canSay, primary: true, dataGuide: 'conway.sayHow' }] : []),
+    ...(facts.standing === 'attention' ? [{ label: t('conway.planAway'), onPress: () => acting.planAway(facts.ends), dataGuide: 'conway.planAway' }] : []),
+    ...(remove ? [{ label: t('conway.removeSaid'), onPress: remove, dataGuide: 'conway.removeSaid' }] : []),
+  ]
+}
+
+const PAIR_QUESTION: Partial<Record<PairReading['standing'], StringKey>> = { attention: 'conway.q.attention', unused: 'conway.q.unused' }
+
+function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?: ElementId; b?: ElementId } }) {
+  const { t, language } = useStrings()
+  const { map, here, acting, day, mayChange, onAll, onPair, onUnit, onApp, onOpen, onOpenOperating } = props
+  const { a, b } = chosen
+  const facts = readPair(props, a, b)
+  const { lines, open, said, standing, under, findings, noOwnerApps, modelApps } = facts
+  const unsettled = standing === 'attention' || standing === undefined
+  const bothEnds = a !== undefined && b !== undefined
+  const held = unsettled && bothEnds ? heldOf(a, b, here, mayChange) : undefined
   const name = t('conway.pairName', { a: end(here, a, t), b: end(here, b, t) })
   const options = useUnitChoices(here, map)
-  const askingFlows = new Set(open.map((line) => line.flow.id))
-  const interactionIds = new Set((pair?.interactions ?? []).map((row) => row.id))
-  const findings = shown.filter((one) => (one.kind === 'undeclared' && askingFlows.has(one.flow.id)) || (one.kind === 'unused' && interactionIds.has(one.interaction.id)))
-  const say = a !== undefined && b !== undefined ? acting?.sayHow(a, b) : undefined
-  const appsOf = (unit: ElementId | undefined) => map.groups.flatMap((group) => group.applications.filter((app) => app.partyId === unit || (group.unitId === unit && unit !== undefined)))
-  const flowIds = lines.flatMap((line) => [line.flow.sourceId, line.flow.targetId])
-  const actions: NextAction[] = []
-  if (say && held === undefined) actions.push({ label: t('conway.sayHow'), onPress: say, primary: true, dataGuide: 'conway.sayHow' })
-  if (acting && standing === 'attention') actions.push({ label: t('conway.planAway'), onPress: () => acting.planAway(flowIds), dataGuide: 'conway.planAway' })
-  const remove = standing === 'unused' ? pair?.interactions.map((row) => acting?.remove(row.id)).find(Boolean) : undefined
-  if (remove) actions.push({ label: t('conway.removeSaid'), onPress: remove, dataGuide: 'conway.removeSaid' })
-  const noOwnerApps = lines.flatMap((line) => [line.flow.sourceId, line.flow.targetId])
-    .filter((id, at, all) => all.indexOf(id) === at)
-    .flatMap((id) => (map.groups.find((group) => group.unitId === undefined)?.applications ?? []).filter((app) => app.id === id))
-  const modelApps = [a, b].flatMap((unit) => (unit === undefined ? [] : [{ heading: here.name(unit) }, ...appsOf(unit).map((app) => ({ label: app.name, onSelect: () => onOpen(app.id) }))]))
-  const question = standing === 'attention' ? t('conway.q.attention') : standing === 'unused' ? t('conway.q.unused') : undefined
+  const canSay = unsettled && bothEnds && held === undefined ? acting?.sayHow(a, b) : undefined
+  const actions = pairAnswers(acting, facts, canSay, t)
+  const question = standing ? PAIR_QUESTION[standing] : undefined
   return (
     <Panel
       kind={t(standing ? STANDING_WORD[standing] : 'conway.state.nothing')} name={name} dataGuide="conway.reader"
       actions={<BackToAll onAll={onAll} t={t} />}
-      facts={pairSentence(pair, lines, open.length, t)}
+      facts={pairSentence(said, standing, lines, open.length, t)}
       status={t('conway.onDay', { day: formatDay(day, language) })}
     >
       {under.length > 0 && (
@@ -363,22 +413,13 @@ function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?:
           <p className="conway__quiet">{t('conway.underHelp')}</p>
         </PanelSection>
       )}
-      {held?.kind === 'outside' && (standing === 'attention' || standing === undefined) && <p className="conway__text" data-testid="conway-held">{t('conway.held.outside', { name: held.names })}</p>}
-      {held?.kind === 'elsewhere' && (standing === 'attention' || standing === undefined) && <p className="conway__text" data-testid="conway-held">{t('conway.held.elsewhere')}</p>}
-      {held?.kind === 'notUnits' && a !== undefined && b !== undefined && (standing === 'attention' || standing === undefined) && (
-        <>
-          <p className="conway__text" data-testid="conway-held">{t('conway.held.notUnits', { name: held.parties.map((one) => one.name).join(', ') })}</p>
-          <MakeUnits parties={held.parties} here={here} acting={acting} onOpenOperating={onOpenOperating} t={t} />
-        </>
-      )}
-      {(actions.length > 0 || question) && <NextStep inline {...(question ? { question } : {})} actions={actions} />}
+      {held && <PairHeld held={held} onOpenOperating={onOpenOperating} here={here} acting={acting} t={t} />}
+      {(actions.length > 0 || question) && <NextStep inline {...(question ? { question: t(question) } : {})} actions={actions} />}
       <MarkPair findings={findings} sentence={name} />
       {standing === 'unused' && modelApps.length > 0 && acting && (
         <div className="conway__stack"><MenuButton label={t('conway.modelInterface')} items={modelApps} data-guide="conway.modelInterface" /></div>
       )}
-      {(pair?.interactions.length ?? 0) > 0 && (
-        <PanelSection title={t('conway.worksWith')}><InteractionRows rows={pair?.interactions ?? []} here={here} acting={acting} t={t} /></PanelSection>
-      )}
+      {said.length > 0 && <PanelSection title={t('conway.worksWith')}><InteractionRows rows={said} here={here} acting={acting} t={t} /></PanelSection>}
       {standing === 'unowned' && (
         <PanelSection title={t('conway.giveOwners')}><OwnerRows apps={noOwnerApps} options={options} acting={acting} onApp={onApp} t={t} /></PanelSection>
       )}

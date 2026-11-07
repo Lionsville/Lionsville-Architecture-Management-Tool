@@ -7,7 +7,7 @@
  * a shell.
  */
 import type { ViewFacets } from '../widgets/placeTab'
-import { nearestPlace } from '../agent/place'
+import { nearestPlace, viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
 import { FRAME_PAGES, HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { Destination, ObservationTab } from '../agent/screen'
@@ -180,11 +180,9 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     // A link's element, selected and marked on the view it opens (ADR-0033,
     // amended 11 October 2026): on arrival only, where the view draws it.
     const select = near.select === undefined ? undefined : initialPageFor({ ...near, id: view })
-    const facets = near.tab !== undefined || near.group !== undefined || near.pair !== undefined
-      ? { initialFacets: { of: view, ...(near.tab !== undefined ? { tab: near.tab } : {}), ...(near.group !== undefined ? { group: near.group } : {}), ...(near.pair !== undefined ? { pair: near.pair } : {}) } }
-      : {}
+    const facets = viewFacetsOf(near, view)
     return {
-      initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...facets, ...gone,
+      initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...(facets ? { initialFacets: facets } : {}), ...gone,
       ...(near.day !== undefined ? { initialLook: { view, day: near.day } } : {}),
     }
   }

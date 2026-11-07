@@ -2622,52 +2622,66 @@ as a double-click on the person does.
 
 ### The Conway map
 
-A **Conway map** is a view too: **+**, then **Conway map**. It puts the units
-over the applications they own — an application belongs to the unit it names
-as its owner — and draws the interfaces between them: a solid line where the
-two units have declared that they work together, a dashed one where they have
-not. The columns stand in the order the chart lists the units in. **Group
-by** rolls the columns up to a unit type above the owners, a domain or a
-cluster, say. A table under the map counts the interfaces between
-each pair of units, with a letter for every way they declared they work
-together — whether an interface runs between them or not. A cell is shaded
-where an interface has nothing declared, and shaded another way where an
-interaction is declared that no interface needs.
+A **Conway map** is a view too: **+**, then **Conway map**. It asks whether your
+teams and your systems line up, and says the answer in a sentence over the map,
+with one sum that adds up: of the interfaces that cross a unit, how many can be
+judged and how many cannot, because an end has no owner. An application belongs
+to the unit it names as its owner. Where half the applications or more have
+none, the map says it cannot answer yet and the panel beside it asks for owners,
+**Choose a unit** on each, one step each.
 
-**Findings on** *day* says what the two disagree about: an interface that
-crosses from one unit's applications to another's with nothing declared
-between the units; an interaction declared with no interface between the
-two, which is often meant and is said as a fact; an application nobody owns;
-and a unit that owns more applications than its type allows. They are the
-list of findings, and an interaction no interface needs is a note, behind
-**Show notes**. A finding opened marks what it is about on the map. The map
-only reads: where one of the two units is kept in this scope, **Declare an
-interaction…** answers a crossing as one step; where this scope keeps an
-interaction no interface needs, **Remove the declaration** takes it away as
-one step, and **Model the missing interface…** offers the two units'
-applications, to open the one to model it from; **Mark as intended…** says
-the two work together without an interface, with a reason; **Open the two
-units** opens either; and everything else is answered where it is kept — an owner on the
-application, a limit on the unit type. Like the chart it
-is drawn on a day, and **Find me** goes to your unit. An application is on the
-map while it is live or retiring on the map's day: one not yet live, or gone,
-is not drawn, and neither are its interfaces nor anything the map would find
-about it; a unit's limit counts what it owns on that day.
+**Grid**, the first reading, shows each two units once. A triangle in a marked
+cell is **systems connect, nothing said**, with the number of those interfaces;
+a tick is **both agree**; a ring is **said, but no system connects**, with the
+letter of how they said they work; a dash is **cannot judge, no owner**, in the
+row of applications with no owner yet; and a dot is **marked as intended**.
+**Lines**, the second reading, draws each unit as a column in the chart's order
+with its applications under it, and the interfaces in the gutters and above the
+columns, so no name is crossed out: heavy and dashed where nothing is said, thin
+where both agree. **Show** leaves out what agrees, and **Show their lines** adds
+those to applications with no owner. **Group by** rolls the columns up to a unit
+type above the owners, and says so where there is nothing to roll up. The
+reading, the grouping and the pair are in the address.
+
+The panel beside the map says **What to look at**, by check: the pairs with
+nothing said, applications with no owner, a unit that owns more than its type
+allows, and behind **Show notes** what is said with no system between, and an
+owner that is a name and not a unit. **Accepted** lists what was marked as
+intended. Nothing on the page changes anything until a button in this panel is
+pressed. Pressing a cell, a line or a row reads that pair, and draws its two
+units and its interfaces under the grid. It says why it matters and offers the
+answers: **Say how they work together…**, **They should not depend on each
+other: plan it away…**, which puts the applications on a plan of this scope or
+a new one, and **Fine as it is: mark as intended…**. Where two units cannot say
+how they work together it says why: a party that is no unit yet can be given a
+type there and then with **Make them units**, a party outside the organisation
+can only be marked or planned away, and two units another scope keeps are
+answered where they are kept. A pair that said how it works with no system
+between them can **Remove what was said** or **Draw the missing interface…**.
+Pressing a unit's name reads what it owns, who it works with and its open pairs,
+with **Open on the organisation chart** for the rest; pressing an application
+reads its owner and its interfaces. **Find me** goes to your unit, and says why
+where you hold no role in a unit on the map. Like the chart it is drawn on a
+day. An application is on the map while it is live or retiring on the map's day:
+one not yet live, or gone, is not drawn, and neither are its interfaces nor
+anything the map would find about it; a unit's limit counts what it owns on that
+day.
 
 ### Who works with whom
 
-A unit's inspector has **Works with**: every unit it has declared it works
-with, in one of three ways — **Collaboration** (side by side on one thing, for a
-while), **As a service** (one provides what the other uses, with little to
-agree each time) and **Facilitating** (one helps the other learn or take
-something up) — and the days it holds, where they are known. **+ Declare an
-interaction…** adds one, a press on one corrects it or removes it, each as one
-step in the scope that keeps the unit. One kept in another scope is listed with
-where it is kept. A draw.io box that points at a unit opens it on the scope's
-organisation chart, where there is one.
+A unit's inspector has **Works with**: every unit it has said it works with, in
+one of three ways: **Side by side** (on one thing, for a while), **As a service**
+(one provides what the other uses, with little to agree each time) and
+**Helping** (one helps the other learn or take something up), and the days it
+holds, where they are known. **+ Say how you work with a unit…** adds one, with
+nothing chosen until you choose it, and a press on one corrects it or removes
+it, each as one step in the scope that keeps the unit. One kept in another scope
+is listed with where it is kept. A draw.io box that points at a unit opens it on
+the scope's organisation chart, where there is one.
 
 An agent makes either view with `diagram.create` (`chart`, `conway`), opens it
-with `app.open`, and reads what it draws with `diagram.inspect`: the units with
+with `app.open`, on a Conway map with `tab` (`grid`, `lines`), `group` and `pair`,
+and reads what it draws with `diagram.inspect`: the units with
 each role's holders and vacancies on the view's day, in the order the chart
 lists them and never folded, or the columns, the crossings and the findings,
 each with its check's key, weight and category as `checks.list` gives them.

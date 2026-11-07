@@ -69,18 +69,49 @@ landscape.model = {
   )),
 }
 
-/** The organisation with two teams that declare they work together and run no interface, open on a Conway map. */
+/**
+ * The organisation with its teams on a Conway map: two that say they work
+ * together and run no interface, one they connect to with nothing said, and a
+ * party that is no unit yet.
+ */
 function conwayAtTheTop(top: ScopeSnapshot): ScopeSnapshot {
-  const team = (id: string, name: string) => ({ id, kind: 'actor' as const, name, unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} })
+  const team = (id: string, name: string, type: object = { unitTypeId: 'ut-team' }) => ({ id, kind: 'actor' as const, name, ...type, lifecycle: 'live' as const, isManaged: false, aspects: {} })
+  const app = (id: string, partyId: string) => ({ id, kind: 'application' as const, name: `${id} app`, partyId, lifecycle: 'live' as const, isManaged: true, aspects: {} })
   return {
     ...top,
     activeDiagramId: 'cw',
     model: {
       ...top.model,
       unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [] }],
-      elements: [...top.model.elements, team('ops', 'Operations'), team('sales', 'Sales')],
-      relations: [...top.model.relations, { id: 'i-ops-sales', type: 'interacts', sourceId: 'ops', targetId: 'sales', mode: 'service' }],
+      elements: [
+        ...top.model.elements, team('ops', 'Operations'), team('sales', 'Sales'), team('fin', 'Finance'), team('party', 'Carriers', {}),
+        app('a-ops', 'ops'), app('a-fin', 'fin'), app('a-party', 'party'), app('a-sales', 'sales'),
+        { ...app('a-loose', 'ops'), partyId: undefined },
+      ],
+      relations: [
+        ...top.model.relations, { id: 'i-ops-sales', type: 'interacts', sourceId: 'ops', targetId: 'sales', mode: 'service' },
+        { id: 'f-ops-fin', type: 'flow', sourceId: 'a-ops', targetId: 'a-fin', isBidirectional: false },
+        { id: 'f-ops-party', type: 'flow', sourceId: 'a-ops', targetId: 'a-party', isBidirectional: false },
+      ],
       diagrams: [...top.model.diagrams, { id: 'cw', kind: 'conway', name: 'Teams and systems', members: [] }],
+    },
+  }
+}
+
+/** A cell of the Conway grid that is there, by what it reads out. */
+function pairCell(name: RegExp): HTMLElement {
+  return within(document.querySelector<HTMLElement>('[data-guide="conway.grid"]')!).getAllByRole('gridcell', { name }).find((one) => !one.hasAttribute('data-absent'))!
+}
+
+/** The organisation open on a chart of one team that lacks the one role it must have: a finding to open. */
+function chartWithAVacancy(top: ScopeSnapshot): ScopeSnapshot {
+  const charted = chartAtTheTop(top)
+  return {
+    ...charted,
+    model: {
+      ...charted.model,
+      roles: [{ id: 'ro-lead', name: 'Lead', duties: [] }],
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: ['ut-team'], slots: [{ role: 'ro-lead', min: 1 }] }],
     },
   }
 }
@@ -534,28 +565,58 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByRole('button', { name: 'Remove / delete…' }))
     await screen.findByTestId('unit-deletion')
   }]],
-  // A list of findings, on a Conway map whose two teams declare they work
-  // together and run no interface: a note, hidden until its switch shows it,
-  // opened, marked as intended — kept here, through the open scope's session —
-  // and listed under Accepted, where it is taken back.
-  [['a Conway map', ['findings.showNotes'], async () => {
+  // A Conway map: the verdict and the grid, the panel on nothing, on a pair and on a unit, and the second reading.
+  [['a Conway map', ['conway.verdict', 'conway.reading', 'conway.groupBy', 'conway.findMe', 'conway.grid', 'conway.reader', 'findings.showNotes'], async () => {
     const teams = example.map((one) => (one.path === '' ? conwayAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(teams), boot: { initialProject: teams.find((one) => one.path === '')! } })
     await screen.findByTestId('conway-findings')
   }],
-  ['its notes shown, a check unfolded', ['findings.group', 'findings.instance'], async () => {
-    fireEvent.click(screen.getByRole('switch', { name: /^Show notes/ }))
-    fireEvent.click(await within(document.querySelector<HTMLElement>('[data-check="check.interactionUnused"]')!).findByTestId('findings-group'))
+  ['its notes shown', ['conway.finding'], async () => {
+    fireEvent.click(screen.getByTestId('conway-show-notes'))
+    await screen.findByText('Operations and Sales', { exact: false })
   }],
-  ['an unused interaction, opened', ['findings.back', 'findings.action', 'findings.markIntended'], async () => {
-    fireEvent.click(document.querySelector<HTMLElement>('[data-check="check.interactionUnused"] [data-guide="findings.instance"]')!)
+  ['an application nobody owns', ['conway.owners'], async () => {
+    fireEvent.click(await screen.findByText('a-loose app'))
+    await screen.findByTestId('conway-owners')
+  }],
+  ['two units with nothing between their systems', ['conway.removeSaid', 'conway.modelInterface', 'findings.markIntended'], async () => {
+    fireEvent.click(screen.getByTestId('conway-all'))
+    await screen.findByTestId('conway-findings')
+    fireEvent.click(pairCell(/Operations.*Sales|Sales.*Operations/))
+    await screen.findByTestId('finding-mark')
   }],
   ['marked as intended', ['findings.accepted'], async () => {
     fireEvent.click(screen.getByTestId('finding-mark'))
     fireEvent.click(await screen.findByTestId('finding-mark-confirm'))
+    fireEvent.click(await screen.findByTestId('conway-all'))
   }],
   ['what was accepted, unfolded', ['findings.takeBack'], async () => {
     fireEvent.click(await screen.findByTestId('findings-accepted-toggle'))
+  }],
+  ['two units that have said nothing', ['conway.sayHow', 'conway.planAway'], async () => {
+    fireEvent.click(pairCell(/Finance.*Operations|Operations.*Finance/))
+    await screen.findByRole('button', { name: /plan it away/ })
+  }],
+  ['a party that is no unit yet', ['conway.makeUnits'], async () => {
+    fireEvent.click(pairCell(/Carriers.*Operations|Operations.*Carriers/))
+    await screen.findByTestId('conway-make-units')
+  }],
+  ['a unit', ['conway.addInteraction'], async () => {
+    fireEvent.click(within(document.querySelector<HTMLElement>('[data-guide="conway.grid"]')!).getByRole('rowheader', { name: /Sales/ }))
+    await screen.findByTestId('unit-interaction-add')
+  }],
+  ['its lines', ['conway.show', 'conway.showUnowned'], async () => {
+    fireEvent.click(screen.getByRole('radio', { name: 'Lines' }))
+    await screen.findByTestId('conway-strip')
+  }]],
+  // A list of findings, on a chart whose one team lacks its role: unfolded, an instance opened.
+  [['a chart with a finding, a check unfolded', ['findings.group', 'findings.instance'], async () => {
+    const charted = example.map((one) => (one.path === '' ? chartWithAVacancy(one) : one))
+    renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
+    fireEvent.click(await within(await screen.findByTestId('chart-findings')).findByTestId('findings-group'))
+  }],
+  ['its finding, opened', ['findings.back', 'findings.action'], async () => {
+    fireEvent.click(document.querySelector<HTMLElement>('[data-guide="findings.instance"]')!)
   }]],
   [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',

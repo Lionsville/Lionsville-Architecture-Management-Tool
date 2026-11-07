@@ -2618,3 +2618,33 @@ ends do not come back: that is the safe side, since nothing says they were its.
 * **Roles of a domain's own**, beside the organisation's.
 * **An organisation's own model as a library** for another organisation.
 * **Capacity beyond a share**: planning time and demand.
+
+## As built, 4.0.0: the verdict, the pair grid and the panel
+
+The map hid its own answer: most of what it drew could not be judged, and it was
+drawn with the same weight as what could. It now says the answer first.
+
+**One sum.** `model/conwayReading.ts` reads `conwayMap`'s answer against the findings
+still shown: each pair's standing (`attention`, `agree`, `unused`, `unowned`,
+`accepted`), and a sum in which the interfaces judged and not judged add up to every
+one that crosses. With half the applications or more unowned, `lowCoverage` is what
+the page says, and the panel asks for owners in place.
+
+**Two readings.** The table became the grid, one triangle of the kit's Matrix and the
+page's first reading; the columns and lines became the second, routed in gutters and
+lanes above the columns (`app/units/conwayRoutes.ts`) so no name is crossed. `?tab=`,
+`?group=` and `?pair=` are in the address and in `app.open`.
+
+**The panel is the one place that changes anything**, each press one step where the
+record is kept: an interaction, an owner, a type on a party, a mark as intended, a
+plan. The findings keep their checks, keys and weights, and the panel lists them on
+the kit's List rather than `widgets/FindingsList`, grouped by check with the
+interfaces by pair. The full text of a check stays on the Checks page. The map no
+longer docks the element inspector: a unit's full editor is on the chart and on its
+page, and the panel links there.
+
+**An outside party stays out of an interaction.** An `interacts` row still needs two
+units, so a pair with an element marked `outside` says why and offers a mark as
+intended or a plan.
+
+`app/units/ConwayTable.tsx` is gone, and its section above stands as what it was.

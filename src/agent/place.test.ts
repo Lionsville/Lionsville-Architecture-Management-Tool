@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readFinding, readPlace, samePlace, stepBetween, writeFinding, writePlace, unknownPlace } from './place'
+  PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readFinding, readPlace, samePlace, stepBetween, viewFacetsOf, writeFinding, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
 
@@ -20,6 +20,19 @@ const SCOPES = [
 const IDS = [undefined, 'landscape', 'ADR-0003', 'id with spaces', 'a&b=c#d', '', 'ünïcode', 'a/b', '-', '?x=1']
 
 describe('the place function pair', () => {
+  it('keeps a Conway map\'s reading, grouping and pair in its address, and says so on the place a screen is', () => {
+    const place = { scope: 'acme', page: 'conway' as const, id: 'cw', tab: 'lines', group: 'ut-team', pair: 'a,b' }
+    expect(writePlace(place)).toBe('#/acme/-/conway/cw?tab=lines&group=ut-team&pair=a%2Cb')
+    expect(readPlace(writePlace(place))).toEqual(place)
+    expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'cw', name: 'Teams', kind: 'conway', tab: 'lines', pair: 'a,b' } } }))
+      .toEqual({ scope: 'acme', page: 'conway', id: 'cw', tab: 'lines', pair: 'a,b' })
+    expect(samePlace(place, { ...place, pair: 'a,c' })).toBe(false)
+    expect(stepBetween(place, { ...place, pair: 'a,c' })).toBe('replace')
+    expect(readPlace('#/acme/-/conway/cw?tab=nonsense')).toBeUndefined()
+    expect(viewFacetsOf(place, 'cw')).toEqual({ of: 'cw', tab: 'lines', group: 'ut-team', pair: 'a,b' })
+    expect(viewFacetsOf({ scope: 'acme', page: 'conway' }, 'cw')).toBeUndefined()
+  })
+
   it('reads back every place it writes, for every scope, page and id', () => {
     let n = 0
     for (const scope of SCOPES) {

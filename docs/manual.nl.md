@@ -2861,58 +2861,69 @@ gaat erheen om haar te wijzigen, zoals een dubbelklik op de persoon doet.
 
 ### De Conway-kaart
 
-Een **Conway-kaart** is ook een weergave: **+**, dan **Conway-kaart**. Ze zet
-de eenheden boven de applicaties die ze bezitten — een applicatie hoort bij de
-eenheid die ze als eigenaar noemt — en tekent de interfaces daartussen: een
-doorgetrokken lijn waar de twee eenheden hebben vastgelegd dat ze
-samenwerken, een gestreepte waar dat niet zo is. De kolommen staan in de
-volgorde waarin het organogram de eenheden noemt. **Groepeer op** vat de
-kolommen samen tot een eenheidstype boven de eigenaars, bijvoorbeeld een
-domein of een cluster. Een tabel onder de kaart telt de interfaces tussen elk
-paar eenheden, met een letter voor elke vastgelegde vorm van samenwerking —
-of er een interface tussen hen loopt of niet. Een cel is gekleurd waar een
-interface geen vastgelegde samenwerking heeft, en anders gekleurd waar een
-samenwerking is vastgelegd die geen interface nodig heeft.
+Een **Conway-kaart** is ook een weergave: **+**, dan **Conway-kaart**. Hij vraagt
+of je teams en je systemen op elkaar aansluiten, en zegt het antwoord in een zin
+boven de kaart, met één som die klopt: van de interfaces die over een eenheid
+heen gaan, hoeveel te beoordelen zijn en hoeveel niet, omdat een kant geen
+eigenaar heeft. Een applicatie hoort bij de eenheid die ze als eigenaar noemt.
+Waar de helft van de applicaties of meer er geen heeft, zegt de kaart dat hij nog
+geen antwoord kan geven en vraagt het paneel ernaast om eigenaren: **Kies een
+eenheid** bij elk, één stap per stuk.
 
-**Bevindingen op** *dag* zegt waarover de twee het oneens zijn: een interface
-die van de applicaties van de ene eenheid naar die van een andere loopt
-zonder vastgelegde samenwerking tussen de eenheden; een vastgelegde
-samenwerking zonder interface tussen de twee, wat vaak zo bedoeld is en als
-feit wordt gezegd; een applicatie die niemand bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Ze zijn de
-lijst met bevindingen, en een samenwerking die geen interface nodig heeft is
-een notitie, achter **Notities tonen**. Een geopende bevinding markeert op de
-kaart waarover ze gaat. De kaart leest alleen: waar een van de twee eenheden
-in deze scope wordt bijgehouden, beantwoordt **Een samenwerking vastleggen…**
-een overschrijding als één stap; waar deze scope een samenwerking bijhoudt die
-geen interface nodig heeft, haalt **De vastlegging verwijderen** haar weg als
-één stap, en biedt **De ontbrekende interface modelleren…** de applicaties
-van de twee eenheden, om die te openen van waaruit je haar modelleert;
-**Markeren als bedoeld…** zegt dat de twee samenwerken zonder interface, met
-een reden; **Open de twee eenheden** opent een van beide; en al het andere wordt beantwoord waar
-het wordt bijgehouden — een eigenaar op de applicatie, een limiet op het
-eenheidstype. Net als het organogram wordt ze op een dag
-getekend, en **Vind mij** gaat naar jouw eenheid. Een applicatie staat op de
-kaart zolang ze op de dag van de kaart live of uitfaserend is: een die
-nog niet live is, of verdwenen, wordt niet getekend, en haar interfaces en wat
-de kaart over haar zou vinden ook niet; de limiet van een eenheid telt wat ze
-op die dag bezit.
+**Raster**, de eerste lezing, toont elke twee eenheden één keer. Een driehoek in
+een gemarkeerde cel is **systemen verbonden, niets gezegd**, met het aantal van
+die interfaces; een vinkje is **beide kloppen**; een ring is **gezegd, maar geen
+systeem verbindt**, met de letter van hoe ze zeiden te werken; een streepje is
+**niet te beoordelen, geen eigenaar**, in de rij met applicaties zonder eigenaar;
+en een punt is **gemarkeerd als bedoeld**. **Lijnen**, de tweede lezing, tekent
+elke eenheid als kolom in de volgorde van het organogram met haar applicaties
+eronder, en de interfaces in de goten en boven de kolommen, zodat geen naam wordt
+doorgestreept: zwaar en gestreept waar niets is gezegd, dun waar beide kloppen.
+**Toon** laat weg wat klopt, en **Toon hun lijnen** voegt die naar applicaties
+zonder eigenaar toe. **Groepeer op** rolt de kolommen op naar een eenheidstype
+boven de eigenaren, en zegt het waar er niets op te rollen valt. De lezing, de
+groepering en het paar staan in het adres.
+
+Het paneel naast de kaart zegt **Waar je naar kijkt**, per check: de paren waarover
+niets is gezegd, applicaties zonder eigenaar, een eenheid die meer bezit dan haar
+type toestaat, en achter **Toon notities** wat is gezegd zonder systeem ertussen,
+en een eigenaar die een naam is en geen eenheid. **Geaccepteerd** somt op wat als
+bedoeld is gemarkeerd. Niets op de pagina verandert iets tot je een knop in dit
+paneel indrukt. Een druk op een cel, lijn of rij leest dat paar, en tekent de twee
+eenheden en hun interfaces onder het raster. Het zegt waarom het ertoe doet en
+biedt de antwoorden: **Zeg hoe ze samenwerken…**, **Ze horen niet van elkaar af te
+hangen: plan het weg…**, dat de applicaties op een plan van deze scope of een
+nieuw plan zet, en **Prima zo: markeer als bedoeld…**. Waar twee eenheden niet
+kunnen zeggen hoe ze samenwerken zegt het waarom: een partij die nog geen eenheid
+is krijgt ter plekke een type met **Maak er eenheden van**, een partij buiten de
+organisatie kun je alleen markeren of wegplannen, en twee eenheden die een andere
+scope bijhoudt beantwoord je daar. Een paar dat zei hoe het werkt zonder systeem
+ertussen kan **Verwijder wat is gezegd** of **Teken de ontbrekende interface…**.
+Een druk op de naam van een eenheid leest wat ze bezit, met wie ze werkt en haar
+open paren, met **Open op het organogram** voor de rest; een druk op een applicatie
+leest haar eigenaar en interfaces. **Vind mij** gaat naar je eenheid, en zegt
+waarom niet waar je geen rol hebt in een eenheid op de kaart. Net als het organogram
+is hij getekend op een dag. Een applicatie staat op de kaart zolang ze op de dag van
+de kaart live is of uitfaseert: een die nog niet live of al weg is wordt niet
+getekend, en haar interfaces en wat de kaart erover zou vinden ook niet; de limiet
+van een eenheid telt wat ze die dag bezit.
 
 ### Wie met wie samenwerkt
 
 De inspector van een eenheid heeft **Werkt samen met**: elke eenheid waarmee
 ze heeft vastgelegd samen te werken, op een van drie manieren —
-**Samenwerking** (een tijd zij aan zij aan één ding), **Als dienst** (de een
+**Zij aan zij** (een tijd aan één ding), **Als dienst** (de een
 levert wat de ander gebruikt, met weinig af te spreken per keer) en
-**Faciliterend** (de een helpt de ander iets te leren of op te pakken) — en de
-dagen waarop dat geldt, waar die bekend zijn. **+ Een samenwerking
-vastleggen…** voegt er een toe, een klik erop corrigeert of verwijdert haar,
+**Helpend** (de een helpt de ander iets te leren of op te pakken) — en de
+dagen waarop dat geldt, waar die bekend zijn. **+ Zeg hoe je met een eenheid
+werkt…** voegt er een toe, met niets gekozen tot jij kiest, een klik erop corrigeert of verwijdert haar,
 elk als één stap in de scope die de eenheid bijhoudt. Een samenwerking die een
 andere scope bijhoudt wordt genoemd met waar ze wordt bijgehouden. Een
 draw.io-vak dat naar een eenheid wijst opent haar op het organogram van de
 scope, waar dat er is.
 
 Een agent maakt beide weergaven met `diagram.create` (`chart`, `conway`), opent
-ze met `app.open`, en leest wat ze tekenen met `diagram.inspect`: de eenheden
+ze met `app.open`, op een Conway-kaart met `tab` (`grid`, `lines`), `group` en `pair`, en leest wat ze tekenen met `diagram.inspect`: de eenheden
 met per rol wie die vervult en wat vacant is op de dag van de weergave, in de
 volgorde van het organogram en nooit dichtgevouwen, of de kolommen, de
 overschrijdingen en de bevindingen, elk met de sleutel, het gewicht en de

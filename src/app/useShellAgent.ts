@@ -15,6 +15,7 @@ import { readFinding, writeFinding } from '../agent/place'
 import type { CheckKey } from '../model/checkCatalogue'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
+import { viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
 import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { PeopleView } from '../agent/people'
@@ -415,8 +416,7 @@ function useFrameMoves(
 /** What a destination says of the view it opens, beyond which view: nothing for a page, or a view with no id to keep it under. */
 function facetsOf(to: Destination): FrameState['facets'] {
   if (to.id === undefined || to.page === undefined || !VIEW_PAGES.includes(to.page)) return undefined
-  if (to.tab === undefined && to.group === undefined && to.pair === undefined) return undefined
-  return { of: to.id, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}) }
+  return viewFacetsOf(to, to.id)
 }
 
 /** A view with what the frame keeps of it laid over it, where that is this view's. */

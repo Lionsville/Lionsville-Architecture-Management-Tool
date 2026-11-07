@@ -59,7 +59,7 @@ describe('findings', () => {
 
   it('are listed in the one list of findings wherever a screen lists them', () => {
     expect(naming(/<FindingsList\b/)).toEqual([
-      'app/units/ChartSummary.tsx', 'app/units/ConwayPage.tsx', 'app/units/PlanStillOpen.tsx',
+      'app/units/ChartSummary.tsx', 'app/units/PlanStillOpen.tsx',
       'app/units/UnitSection.tsx', 'roadmap/ui/RoadmapFindings.tsx',
     ])
   })

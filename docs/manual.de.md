@@ -3017,63 +3017,72 @@ dorthin, um sie zu ändern, wie ein Doppelklick auf die Person.
 
 ### Die Conway-Karte
 
-Eine **Conway-Karte** ist ebenfalls eine Ansicht: **+**, dann
-**Conway-Karte**. Sie setzt die Einheiten über die Anwendungen, die ihnen
-gehören — eine Anwendung gehört zu der Einheit, die sie als Eigentümer nennt —
-und zeichnet die Schnittstellen dazwischen: eine durchgezogene Linie, wo die
-beiden Einheiten festgehalten haben, dass sie zusammenarbeiten, eine
-gestrichelte, wo nicht. Die Spalten stehen in der Reihenfolge, in der das
-Organigramm die Einheiten nennt. **Gruppieren nach** fasst die Spalten zu
-einem Einheitstyp über den Eigentümern zusammen, etwa einer Domäne oder einem
-Cluster. Eine Tabelle unter der Karte zählt die Schnittstellen zwischen jedem
-Paar von Einheiten, mit einem Buchstaben für jede festgehaltene Form der
-Zusammenarbeit — ob eine Schnittstelle zwischen ihnen läuft oder nicht. Eine
-Zelle ist hinterlegt, wo eine Schnittstelle keine festgehaltene Zusammenarbeit
-hat, und anders hinterlegt, wo eine Zusammenarbeit festgehalten ist, die keine
-Schnittstelle braucht.
+Eine **Conway-Karte** ist auch eine Ansicht: **+**, dann **Conway-Karte**. Sie fragt,
+ob deine Teams und deine Systeme zueinander passen, und sagt die Antwort in einem
+Satz über der Karte, mit einer Summe, die aufgeht: von den Schnittstellen über
+Einheiten hinweg, wie viele sich beurteilen lassen und wie viele nicht, weil einem
+Ende der Eigentümer fehlt. Eine Anwendung gehört zu der Einheit, die sie als
+Eigentümer nennt. Wo die Hälfte der Anwendungen oder mehr keinen hat, sagt die
+Karte, dass sie noch nicht antworten kann, und das Panel daneben fragt nach
+Eigentümern: **Einheit wählen** bei jeder, ein Schritt je Anwendung.
 
-**Befunde am** *Tag* sagt, worin die beiden nicht übereinstimmen: eine
-Schnittstelle, die von den Anwendungen einer Einheit zu denen einer anderen
-läuft, ohne festgehaltene Zusammenarbeit zwischen den Einheiten; eine
-festgehaltene Zusammenarbeit ohne Schnittstelle zwischen den beiden, was oft
-so gewollt ist und als Tatsache gesagt wird; eine Anwendung, die niemandem
-gehört; und eine Einheit, der mehr Anwendungen
-gehören, als ihr Typ erlaubt. Sie sind die Liste von Befunden, und eine
-Zusammenarbeit, die keine Schnittstelle braucht, ist ein Hinweis, hinter
-**Hinweise zeigen**. Ein geöffneter Befund markiert auf der Karte, worum es
-geht. Die Karte liest nur: wo eine der beiden Einheiten in diesem Bereich
-geführt wird, beantwortet **Eine Zusammenarbeit festhalten…** eine
-Überschreitung als ein Schritt; wo dieser Bereich eine Zusammenarbeit führt,
-die keine Schnittstelle braucht, nimmt **Festlegung entfernen** sie als ein
-Schritt weg, und **Die fehlende Schnittstelle modellieren…** bietet die
-Anwendungen der beiden Einheiten, um die zu öffnen, von der aus Sie sie
-modellieren; **Als beabsichtigt markieren…** sagt, dass die beiden ohne
-Schnittstelle zusammenarbeiten, mit einem Grund; **Beide Einheiten öffnen**
-öffnet eine von beiden; und alles
-andere wird dort beantwortet, wo es geführt wird — ein Eigentümer an der
-Anwendung, ein Limit am Einheitstyp. Wie
-das Organigramm wird sie an einem Tag gezeichnet, und **Mich finden** geht zu
-Ihrer Einheit. Eine Anwendung steht auf der Karte, solange sie am Tag der Karte
-aktiv oder auslaufend ist: eine, die noch nicht live ist, oder eine, die weg
-ist, wird nicht gezeichnet, ebenso wenig ihre Schnittstellen oder was die Karte
-über sie fände; das Limit einer Einheit zählt, was ihr an diesem Tag gehört.
+**Raster**, die erste Lesart, zeigt je zwei Einheiten einmal. Ein Dreieck in einer
+markierten Zelle ist **Systeme verbunden, nichts gesagt**, mit der Zahl dieser
+Schnittstellen; ein Häkchen ist **beides stimmt überein**; ein Ring ist **gesagt,
+aber kein System verbindet**, mit dem Buchstaben, wie sie zu arbeiten sagten; ein
+Strich ist **nicht zu beurteilen, kein Eigentümer**, in der Zeile der Anwendungen
+ohne Eigentümer; und ein Punkt ist **als beabsichtigt markiert**. **Linien**, die
+zweite Lesart, zeichnet jede Einheit als Spalte in der Reihenfolge des Organigramms
+mit ihren Anwendungen darunter, und die Schnittstellen in den Zwischenräumen und
+über den Spalten, damit kein Name durchgestrichen wird: kräftig gestrichelt, wo
+nichts gesagt ist, dünn, wo beides übereinstimmt. **Zeigen** lässt weg, was
+übereinstimmt, und **Ihre Linien zeigen** fügt die zu Anwendungen ohne Eigentümer
+hinzu. **Gruppieren nach** rollt die Spalten zu einem Einheitstyp über den
+Eigentümern auf, und sagt es, wo es nichts aufzurollen gibt. Lesart, Gruppierung
+und Paar stehen in der Adresse.
+
+Das Panel neben der Karte sagt **Worauf zu schauen ist**, nach Prüfung: die Paare,
+über die nichts gesagt ist, Anwendungen ohne Eigentümer, eine Einheit, die mehr
+besitzt, als ihr Typ erlaubt, und hinter **Hinweise zeigen**, was ohne System
+dazwischen gesagt ist, und ein Eigentümer, der ein Name und keine Einheit ist.
+**Akzeptiert** listet, was als beabsichtigt markiert wurde. Nichts auf der Seite
+ändert etwas, bis eine Schaltfläche in diesem Panel gedrückt wird. Ein Druck auf
+eine Zelle, Linie oder Zeile liest dieses Paar und zeichnet seine zwei Einheiten
+und Schnittstellen unter das Raster. Es sagt, warum es wichtig ist, und bietet die
+Antworten: **Sagen, wie sie zusammenarbeiten…**, **Sie sollten nicht voneinander
+abhängen: wegplanen…**, das die Anwendungen auf einen Plan dieses Bereichs oder
+einen neuen setzt, und **Gut so: als beabsichtigt markieren…**. Wo zwei Einheiten
+nicht sagen können, wie sie zusammenarbeiten, sagt es warum: Eine Partei, die noch
+keine Einheit ist, bekommt mit **Zu Einheiten machen** gleich dort einen Typ, eine
+Partei außerhalb der Organisation lässt sich nur markieren oder wegplanen, und zwei
+Einheiten, die ein anderer Bereich führt, werden dort beantwortet. Ein Paar, das
+ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte entfernen** oder
+**Fehlende Schnittstelle zeichnen…**. Ein Druck auf den Namen einer Einheit liest,
+was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit **Im Organigramm
+öffnen** für den Rest; ein Druck auf eine Anwendung liest ihren Eigentümer und ihre
+Schnittstellen. **Mich finden** geht zu deiner Einheit und sagt, warum nicht, wo du
+keine Rolle in einer Einheit auf der Karte hast. Wie das Organigramm ist sie an
+einem Tag gezeichnet. Eine Anwendung steht auf der Karte, solange sie am Tag der
+Karte live ist oder ausläuft: Eine noch nicht live oder schon weg wird nicht
+gezeichnet, ihre Schnittstellen und was die Karte darüber fände auch nicht; das
+Limit einer Einheit zählt, was ihr an dem Tag gehört.
 
 ### Wer mit wem arbeitet
 
 Der Inspektor einer Einheit hat **Arbeitet mit**: jede Einheit, mit der sie
 festgehalten hat zusammenzuarbeiten, auf eine von drei Arten —
-**Zusammenarbeit** (eine Zeit lang Seite an Seite an einer Sache), **Als
+**Seite an Seite** (eine Zeit lang an einer Sache), **Als
 Dienst** (die eine liefert, was die andere nutzt, mit wenig abzustimmen bei
 jeder Nutzung) und **Unterstützend** (die eine hilft der anderen, etwas zu
 lernen oder aufzugreifen) — und die Tage, an denen das gilt, wo sie bekannt
-sind. **+ Eine Zusammenarbeit festhalten…** fügt eine hinzu, ein Klick darauf
+sind. **+ Sagen, wie ihr mit einer Einheit arbeitet…** fügt eine hinzu, ohne Vorauswahl, ein Klick darauf
 korrigiert oder entfernt sie, jeweils als ein Schritt in dem Bereich, der die
 Einheit führt. Eine, die ein anderer Bereich führt, wird mit dem Ort genannt,
 an dem sie geführt wird. Ein draw.io-Kasten, der auf eine Einheit zeigt,
 öffnet sie im Organigramm des Bereichs, wo es eines gibt.
 
 Ein Agent legt beide Ansichten mit `diagram.create` an (`chart`, `conway`),
-öffnet sie mit `app.open` und liest, was sie zeichnen, mit `diagram.inspect`:
+öffnet sie mit `app.open`, auf einer Conway-Karte mit `tab` (`grid`, `lines`), `group` und `pair`, und liest, was sie zeichnen, mit `diagram.inspect`:
 die Einheiten mit den Inhabern jeder Rolle und den unbesetzten Stellen am Tag
 der Ansicht, in der Reihenfolge des Organigramms und nie eingeklappt, oder die
 Spalten, die Überschreitungen und die Befunde, jeder mit Schlüssel, Gewicht und
