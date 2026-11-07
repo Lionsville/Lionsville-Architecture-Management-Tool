@@ -4,7 +4,7 @@
   overscroll-behavior-x: contain;
   background: var(--surface);
   color: var(--ink);
-  font-size: var(--t-md);
+  font-size: var(--t-body);
 }
 .kit-time__head {
   display: grid;
@@ -17,7 +17,7 @@
   padding: var(--s-1) var(--s-3);
   border-right: 1px solid var(--line-strong);
   color: var(--ink-3);
-  font-size: var(--t-sm);
+  font-size: var(--t-body);
 }
 .kit-time__tools {
   display: flex;
@@ -31,7 +31,7 @@
 
 .kit-time__ruler { position: relative; min-width: 0; height: 44px; overflow: hidden; }
 .kit-time__ruler:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
-.kit-time__marks { position: relative; height: 20px; font-size: var(--t-sm); line-height: 20px; }
+.kit-time__marks { position: relative; height: 20px; font-size: var(--t-body); line-height: 20px; }
 .kit-time__todaymark,
 .kit-time__daymark { position: absolute; top: 0; padding-inline: var(--s-1); white-space: nowrap; font-weight: var(--fw-strong); }
 .kit-time__todaymark { color: var(--axis-today); }
@@ -64,7 +64,7 @@
   overflow: hidden;
   border-left: 1px solid var(--line);
   color: var(--ink-2);
-  font-size: var(--t-sm);
+  font-size: var(--t-body);
   line-height: 24px;
   text-align: center;
   white-space: nowrap;
@@ -106,10 +106,10 @@
   min-height: var(--row-h);
   background: var(--surface-2);
 }
-.kit-time__groupname { display: flex; justify-content: space-between; gap: var(--s-2); padding: var(--s-1) var(--s-3); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-time__groupname { display: flex; justify-content: space-between; gap: var(--s-2); padding: var(--s-1) var(--s-3); color: var(--ink-2); font-size: var(--t-body); font-weight: var(--fw-strong); }
 .kit-time__group[data-level='1'] .kit-time__groupname { padding-inline-start: var(--s-5); font-weight: var(--fw-regular); }
 .kit-time__group[data-level='2'] .kit-time__groupname { padding-inline-start: var(--s-6); font-weight: var(--fw-regular); }
-.kit-time__groupswitch { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-3); color: var(--ink-2); font-size: var(--t-sm); cursor: pointer; }
+.kit-time__groupswitch { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-3); color: var(--ink-2); font-size: var(--t-small); cursor: pointer; }
 .kit-time__groupswitch input { margin: 0; accent-color: var(--accent); }
 .kit-time__groupcount { font-weight: var(--fw-regular); }
 .kit-time__groupfold { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
@@ -136,7 +136,7 @@
 .kit-time__labelpress { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
 .kit-time__labelpress:hover { text-decoration: underline; }
 .kit-time__labelpress:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
-.kit-time__aside { flex: none; color: var(--ink-3); font-size: var(--t-sm); }
+.kit-time__aside { flex: none; color: var(--ink-3); font-size: var(--t-small); }
 .kit-time__lane { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; min-width: 0; padding-block: 2px; overflow: hidden; }
 
 .kit-time__bar {
@@ -154,7 +154,7 @@
   background: var(--kit-bar-fill);
   color: var(--ink);
   font: inherit;
-  font-size: var(--t-sm);
+  font-size: var(--t-body);
   text-align: left;
 }
 button.kit-time__bar { cursor: pointer; }
@@ -207,7 +207,7 @@ button.kit-time__bar:focus-visible { outline: var(--focus-ring-width) solid var(
 button.kit-time__milestone { cursor: pointer; }
 button.kit-time__milestone:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 /* A count stands beside its diamond: inside one it would be below what can be read. */
-.kit-time__count { position: absolute; left: 14px; top: 0; font-size: var(--t-xs); line-height: 16px; font-variant-numeric: tabular-nums; }
+.kit-time__count { position: absolute; left: 14px; top: 0; font-size: var(--t-small); line-height: 16px; font-variant-numeric: tabular-nums; }
 
 .MuiPaper-root.kit-time__range {
   display: grid;
@@ -218,7 +218,7 @@ button.kit-time__milestone:focus-visible { outline: var(--focus-ring-width) soli
   background: var(--surface-raised);
   box-shadow: var(--shadow);
 }
-.kit-time__rangefield { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-time__rangefield { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-small); }
 .kit-time__rangefield input {
   height: var(--ctl-h);
   padding-inline: var(--s-2);
@@ -227,7 +227,7 @@ button.kit-time__milestone:focus-visible { outline: var(--focus-ring-width) soli
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: var(--t-md);
+  font-size: var(--t-body);
 }
 .kit-time__rangefield input[aria-invalid] { border-color: var(--bad); }
-.kit-time__refused { margin: 0; color: var(--bad); font-size: var(--t-sm); }
+.kit-time__refused { margin: 0; color: var(--bad); font-size: var(--t-body); }

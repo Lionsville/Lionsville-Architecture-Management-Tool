@@ -9,7 +9,7 @@
   background: var(--surface-raised);
   box-shadow: var(--shadow);
   color: var(--ink-2);
-  font-size: var(--t-sm);
+  font-size: var(--t-small);
 }
 .kit-key__values { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); }
 .kit-key__value {
@@ -47,7 +47,7 @@ button.kit-key__value:focus-visible,
   cursor: pointer;
 }
 .kit-key__keep:hover { text-decoration: underline; }
-.kit-key__note { padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); }
+.kit-key__note { padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-small); }
 
 .kit-key__title { font-weight: var(--fw-strong); }
 .kit-key__close {

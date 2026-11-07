@@ -10,11 +10,11 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: var(--t-md);
+  font-size: var(--t-body);
   white-space: nowrap;
   cursor: pointer;
 }
-.kit-button[data-size='small'] { height: var(--target-min); padding-inline: var(--s-2); font-size: var(--t-sm); }
+.kit-button[data-size='small'] { height: var(--target-min); padding-inline: var(--s-2); font-size: var(--t-body); }
 .kit-button[data-icon] { width: var(--ctl-h); padding-inline: 0; }
 .kit-button[data-icon][data-size='small'] { width: var(--target-min); }
 .kit-button:hover { background: var(--surface-2); }
@@ -65,4 +65,4 @@
 @media (prefers-reduced-motion: reduce) { .kit-button__working { animation: none; } }
 
 .kit-button__with-reason { display: inline-flex; align-items: center; gap: var(--s-2); }
-.kit-button__reason { font-size: var(--t-sm); color: var(--ink-3); }
+.kit-button__reason { font-size: var(--t-small); color: var(--ink-3); }

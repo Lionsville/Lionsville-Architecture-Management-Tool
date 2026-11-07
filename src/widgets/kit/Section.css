@@ -2,8 +2,8 @@
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
 .kit-section { margin-block-start: var(--s-5); }
-.kit-section__title { margin: 0 0 var(--s-1); font-size: var(--t-lg); font-weight: var(--fw-strong); color: var(--ink); }
-.kit-linkline { margin: var(--s-3) 0 0; padding-inline: var(--s-3); font-size: var(--t-sm); color: var(--ink-2); }
+.kit-section__title { margin: 0 0 var(--s-1); font-size: var(--t-large); font-weight: var(--fw-strong); color: var(--ink); }
+.kit-linkline { margin: var(--s-3) 0 0; padding-inline: var(--s-3); font-size: var(--t-body); color: var(--ink-2); }
 .kit-linkline__link {
   appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer;
 }
@@ -13,11 +13,11 @@
 .kit-page { padding: var(--s-3) var(--s-4) var(--s-5); min-width: 0; }
 .kit-pagehead { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-2) var(--s-3); }
 .kit-pagehead__main { flex: 1 1 320px; min-width: 0; }
-.kit-pagehead__title { margin: 0; font-size: var(--t-xl); font-weight: var(--fw-strong); color: var(--ink); overflow-wrap: anywhere; }
-.kit-pagehead__meta { margin: var(--s-1) 0 0; font-size: var(--t-sm); color: var(--ink-2); }
+.kit-pagehead__title { margin: 0; font-size: var(--t-title); font-weight: var(--fw-strong); color: var(--ink); overflow-wrap: anywhere; }
+.kit-pagehead__meta { margin: var(--s-1) 0 0; font-size: var(--t-small); color: var(--ink-2); }
 .kit-pagehead__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
-.kit-pageline { margin: var(--s-2) 0 0; font-size: var(--t-md); max-width: var(--measure-reader); overflow-wrap: anywhere; }
-.kit-factline { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); margin: var(--s-2) 0 0; font-size: var(--t-sm); color: var(--ink-2); }
+.kit-pageline { margin: var(--s-2) 0 0; font-size: var(--t-body); max-width: var(--measure-reader); overflow-wrap: anywhere; }
+.kit-factline { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); margin: var(--s-2) 0 0; font-size: var(--t-body); color: var(--ink-2); }
 .kit-checkcount { appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: var(--s-1); }
 .kit-checkcount[data-weight='note'] { color: var(--ink-2); }
 .kit-checkcount:hover span { text-decoration: underline; }

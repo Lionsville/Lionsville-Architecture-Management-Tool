@@ -14,7 +14,7 @@
   background: var(--kit-band-fill);
   border-bottom: 2px solid var(--kit-band-ink);
   color: var(--ink);
-  font-size: var(--t-md);
+  font-size: var(--t-body);
 }
 .kit-band[data-tone='looking'] { --kit-band-ink: var(--looking); --kit-band-fill: var(--looking-soft); }
 .kit-band[data-tone='finding'] { --kit-band-ink: var(--warn); --kit-band-fill: var(--warn-soft); }
@@ -25,7 +25,7 @@
 
 .kit-band__title { font-weight: var(--fw-strong); overflow-wrap: anywhere; }
 .kit-band__detail { color: var(--ink-2); overflow-wrap: anywhere; }
-.kit-band__position { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-band__position { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-small); }
 .kit-band__step {
   display: inline-flex;
   align-items: center;
@@ -52,7 +52,7 @@
   background: var(--surface-2);
   color: var(--ink);
   font: inherit;
-  font-size: var(--t-sm);
+  font-size: var(--t-body);
   cursor: pointer;
 }
 .kit-band__step:focus-visible,

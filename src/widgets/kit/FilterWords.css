@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.kit-filter { min-width: 0; font-size: var(--t-md); color: var(--ink); }
+.kit-filter { min-width: 0; font-size: var(--t-body); color: var(--ink); }
 .kit-filter__bar {
   display: flex;
   flex-wrap: wrap;
@@ -23,7 +23,7 @@
 .kit-filter__find::placeholder { color: var(--ink-3); opacity: 1; }
 .kit-filter__find:focus-visible { outline: var(--focus-ring-width) solid var(--field-focus); outline-offset: calc(0px - var(--focus-ring-width)); }
 .kit-filter__anchor { display: inline-flex; }
-.kit-filter__shown { color: var(--ink-3); font-size: var(--t-sm); }
+.kit-filter__shown { color: var(--ink-3); font-size: var(--t-small); }
 .kit-filter__actions { display: inline-flex; gap: var(--s-2); margin-inline-start: auto; }
 
 .kit-filter__line {
@@ -69,10 +69,10 @@
   background: var(--surface-raised);
   box-shadow: var(--shadow);
   color: var(--ink);
-  font-size: var(--t-md);
+  font-size: var(--t-body);
 }
 .kit-filter__field { margin: 0 0 var(--s-2); padding: 0; border: 0; }
-.kit-filter__field legend { padding: 0; color: var(--ink-2); font-size: var(--t-sm); }
+.kit-filter__field legend { padding: 0; color: var(--ink-2); font-size: var(--t-small); }
 .kit-filter__option {
   display: flex;
   align-items: center;
@@ -82,5 +82,5 @@
 }
 .kit-filter__option input { margin: 0; accent-color: var(--accent); }
 .kit-filter__narrow { width: 100%; min-height: var(--row-h); margin-block-end: var(--s-1); padding-inline: var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; }
-.kit-filter__optionGroup { margin-block-start: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); font-weight: 600; }
-.kit-filter__count { margin-inline-start: auto; color: var(--ink-3); font-size: var(--t-sm); }
+.kit-filter__optionGroup { margin-block-start: var(--s-2); color: var(--ink-3); font-size: var(--t-small); font-weight: 600; }
+.kit-filter__count { margin-inline-start: auto; color: var(--ink-3); font-size: var(--t-small); }

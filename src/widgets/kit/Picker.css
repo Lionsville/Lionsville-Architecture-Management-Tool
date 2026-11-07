@@ -1,4 +1,4 @@
-.kit-picker { min-width: 0; font-size: var(--t-md); line-height: var(--lh-tight); color: var(--ink); }
+.kit-picker { min-width: 0; font-size: var(--t-body); line-height: var(--lh-tight); color: var(--ink); }
 .kit-picker__field {
   display: flex;
   align-items: center;
@@ -20,7 +20,7 @@
 .kit-picker__results:empty { display: none; }
 .kit-picker__list { max-height: 280px; overflow-y: auto; }
 .kit-picker__popup { z-index: 1500; }
-.kit-picker__popup .kit-picker__results { margin-top: 2px; border: 1px solid var(--line-strong); border-radius: var(--r-2); box-shadow: var(--shadow); font-size: var(--t-md); line-height: var(--lh-tight); color: var(--ink); }
+.kit-picker__popup .kit-picker__results { margin-top: 2px; border: 1px solid var(--line-strong); border-radius: var(--r-2); box-shadow: var(--shadow); font-size: var(--t-body); line-height: var(--lh-tight); color: var(--ink); }
 /* The open list hangs from the field as one box. */
 .kit-picker[data-posture='open'] .kit-picker__results { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--r-2) var(--r-2); }
 
@@ -39,9 +39,9 @@
 .kit-picker__row[data-create] { justify-content: flex-start; align-items: center; gap: var(--s-1); color: var(--accent); }
 .kit-picker__row[data-refused] { color: var(--ink-3); cursor: not-allowed; }
 .kit-picker__name { min-width: 0; overflow-wrap: anywhere; }
-.kit-picker__detail { flex: 0 1 auto; min-width: 0; color: var(--ink-2); font-size: var(--t-sm); text-align: end; }
-.kit-picker__heading { padding: var(--s-1) var(--s-2) 2px; color: var(--ink-3); font-size: var(--t-sm); }
-.kit-picker__note { margin: 0; padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-sm); }
+.kit-picker__detail { flex: 0 1 auto; min-width: 0; color: var(--ink-2); font-size: var(--t-small); text-align: end; }
+.kit-picker__heading { padding: var(--s-1) var(--s-2) 2px; color: var(--ink-3); font-size: var(--t-small); }
+.kit-picker__note { margin: 0; padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-small); }
 
 .MuiPaper-root.kit-picker__over { width: 340px; max-width: calc(100vw - var(--s-5)); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); }
 .kit-picker__over .kit-picker__field,
@@ -52,10 +52,10 @@
 
 .kit-picker__many { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
 .kit-picker__chosen { display: flex; flex-wrap: wrap; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
-.kit-picker__chosen li { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-1); border: 1px solid var(--line); border-radius: var(--r-1); font-size: var(--t-sm); overflow-wrap: anywhere; }
+.kit-picker__chosen li { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-1); border: 1px solid var(--line); border-radius: var(--r-1); font-size: var(--t-body); overflow-wrap: anywhere; }
 .kit-picker__unchoose { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--ink-3); cursor: pointer; }
 .kit-picker__unchoose:hover { color: var(--ink); }
 .kit-picker__unchoose:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-picker__row[data-selected] { background: var(--selected-soft); }
 .kit-picker__note[data-hint] { border-top: 1px solid var(--line); }
-.kit-picker__foot { padding: var(--s-1) var(--s-2) var(--s-2); color: var(--ink-3); font-size: var(--t-xs); }
+.kit-picker__foot { padding: var(--s-1) var(--s-2) var(--s-2); color: var(--ink-3); font-size: var(--t-small); }

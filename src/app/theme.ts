@@ -159,10 +159,9 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
   const { accent: shades, cssVariables = true } = options
   const colours = coloursOf(mode, shades)
   const outline = colours['line-strong']
-  const size = (token: 't-xs' | 't-sm' | 't-md' | 't-lg' | 't-xl' | 't-2xl') => Number.parseFloat(SCALE[token])
   const line = { tight: Number(SCALE['lh-tight']), body: Number(SCALE['lh-body']) }
   const weight = { regular: Number(SCALE['fw-regular']), medium: Number(SCALE['fw-medium']), strong: Number(SCALE['fw-strong']) }
-  const heading = (fontSize: number) => ({ fontSize, fontWeight: weight.strong, lineHeight: line.tight })
+  const heading = (fontSize: string) => ({ fontSize, fontWeight: weight.strong, lineHeight: line.tight })
   return createTheme({
     cssVariables,
     tokens: { colours, ...(shades ? { shades } : {}) },
@@ -194,15 +193,15 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       fontWeightRegular: weight.regular,
       fontWeightMedium: weight.medium,
       fontWeightBold: weight.strong,
-      h1: heading(size('t-2xl')), h2: heading(size('t-2xl')), h3: heading(size('t-2xl')), h4: heading(size('t-2xl')),
-      h5: heading(size('t-xl')), h6: heading(size('t-lg')),
-      subtitle1: { fontSize: size('t-md'), fontWeight: weight.strong, lineHeight: line.body },
-      subtitle2: { fontSize: size('t-sm'), fontWeight: weight.strong, lineHeight: line.body },
-      body1: { fontSize: size('t-md'), lineHeight: line.body },
-      body2: { fontSize: size('t-sm'), lineHeight: line.body },
-      caption: { fontSize: size('t-xs'), lineHeight: line.body },
-      overline: { fontSize: size('t-xs'), fontWeight: weight.medium, lineHeight: line.body, letterSpacing: '0.04em' },
-      button: { fontSize: size('t-sm'), fontWeight: weight.medium, lineHeight: line.body, textTransform: 'none' },
+      h1: heading(SCALE['t-page']), h2: heading(SCALE['t-page']), h3: heading(SCALE['t-page']), h4: heading(SCALE['t-page']),
+      h5: heading(SCALE['t-title']), h6: heading(SCALE['t-large']),
+      subtitle1: { fontSize: SCALE['t-body'], fontWeight: weight.strong, lineHeight: line.body },
+      subtitle2: { fontSize: SCALE['t-small'], fontWeight: weight.strong, lineHeight: line.body },
+      body1: { fontSize: SCALE['t-body'], lineHeight: line.body },
+      body2: { fontSize: SCALE['t-body'], lineHeight: line.body },
+      caption: { fontSize: SCALE['t-small'], lineHeight: line.body },
+      overline: { fontSize: SCALE['t-small'], fontWeight: weight.medium, lineHeight: line.body, letterSpacing: '0.04em' },
+      button: { fontSize: SCALE['t-body'], fontWeight: weight.medium, lineHeight: line.body, textTransform: 'none' },
     },
     // Square drafting corners: `sx`'s `borderRadius: 1` is this many pixels.
     shape: { borderRadius: Number.parseFloat(SCALE['r-2']) },
@@ -212,7 +211,7 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       MuiCssBaseline: {
         styleOverrides: {
           ':root': { ...tokenVariables(mode, shades), colorScheme: mode },
-          body: { fontSize: size('t-md'), lineHeight: line.body },
+          body: { fontSize: SCALE['t-body'], lineHeight: line.body },
           'code, kbd, pre, samp': { fontFamily: SCALE['font-mono'] },
           // A bare `button` is the one element that does not inherit the page's
           // typeface: a link drawn as one came out in the system's.
@@ -220,6 +219,11 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
         },
       },
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+      // What MUI sizes for itself, below the scale or beside it: a tip of 11 px, a chip of 13, a cell of 14.
+      MuiTooltip: { styleOverrides: { tooltip: { fontSize: SCALE['t-small'] } } },
+      MuiChip: { styleOverrides: { root: { fontSize: SCALE['t-small'], height: 'auto', minHeight: SCALE['row-h-dense'] }, label: { whiteSpace: 'normal' } } },
+      MuiTableCell: { styleOverrides: { root: { fontSize: SCALE['t-body'] }, head: { fontSize: SCALE['t-small'] } } },
+      MuiBadge: { styleOverrides: { badge: { fontSize: SCALE['t-small'] } } },
       MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: outline } } },
       MuiInput: { styleOverrides: { underline: { '&::before': { borderBottomColor: outline } } } },
       // MUI's own −11 px start margin on a switch or checkbox label, meant to
@@ -229,6 +233,8 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       MuiFormControlLabel: { styleOverrides: { root: { marginLeft: -4 } } },
       MuiButton: {
         styleOverrides: {
+          sizeSmall: { fontSize: SCALE['t-body'] },
+          sizeLarge: { fontSize: SCALE['t-body'] },
           root: ({ ownerState, theme }) => {
             const colour = ownerState.color
             if (!isFilledColour(colour)) return {}
@@ -254,7 +260,7 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
       // which is 4.496:1 on the light ground — under the line by a rounding,
       // and further under once the hover tint is over it. `text.secondary` is
       // the page's own second ink and clears both.
-      MuiToggleButton: { styleOverrides: { root: ({ theme }) => ({ color: theme.palette.text.secondary }) } },
+      MuiToggleButton: { styleOverrides: { root: ({ theme }) => ({ color: theme.palette.text.secondary, fontSize: SCALE['t-body'] }) } },
       MuiAlert: {
         styleOverrides: {
           root: ({ ownerState, theme }) => {

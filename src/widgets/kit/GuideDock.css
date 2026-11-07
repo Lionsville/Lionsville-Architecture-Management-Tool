@@ -6,21 +6,21 @@
 .kit-guide[data-small] { width: auto; padding: var(--s-1); }
 .kit-guide__said { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .kit-guide__head { display: flex; align-items: center; gap: var(--s-1); }
-.kit-guide__where { flex: 1 1 auto; min-width: 0; font-size: var(--t-xs); color: var(--ink-2); }
-.kit-guide__title { margin: 0; font-size: var(--t-md); font-weight: 600; }
-.kit-guide__why, .kit-guide__note, .kit-guide__act, .kit-guide__done { margin: 0; font-size: var(--t-sm); }
+.kit-guide__where { flex: 1 1 auto; min-width: 0; font-size: var(--t-small); color: var(--ink-2); }
+.kit-guide__title { margin: 0; font-size: var(--t-body); font-weight: 600; }
+.kit-guide__why, .kit-guide__note, .kit-guide__act, .kit-guide__done { margin: 0; font-size: var(--t-body); }
 .kit-guide__note { padding: var(--s-1) var(--s-2); background: var(--leaves); border-radius: var(--r-2); }
 .kit-guide__act { font-weight: 600; }
-.kit-guide__more { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: var(--t-xs); cursor: pointer; }
+.kit-guide__more { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: var(--t-small); cursor: pointer; }
 .kit-guide__more:hover { color: var(--ink); text-decoration: underline; }
 .kit-guide__more:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.kit-guide__rest { font-size: var(--t-sm); color: var(--ink-2); }
+.kit-guide__rest { font-size: var(--t-small); color: var(--ink-2); }
 .kit-guide__foot { display: flex; align-items: center; gap: var(--s-1); padding-top: var(--s-1); }
 .kit-guide__grow { flex: 1 1 auto; }
 .kit-guide-ring { position: fixed; z-index: 1289; pointer-events: none; border-radius: var(--r-3); outline: 2px solid var(--guide-ring); outline-offset: 0; }
 .kit-guide-tag {
   position: fixed; z-index: 1289; pointer-events: none; transform: translateY(-50%); padding: 0 var(--s-2); white-space: nowrap;
-  font-size: var(--t-xs); line-height: 20px; color: var(--on-accent); background: var(--guide-ring); border-radius: var(--r-2);
+  font-size: var(--t-small); line-height: 20px; color: var(--on-accent); background: var(--guide-ring); border-radius: var(--r-2);
 }
 .kit-guide-line { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1288; pointer-events: none; }
 .kit-guide-line line { stroke: var(--guide-ring); stroke-width: 1; }

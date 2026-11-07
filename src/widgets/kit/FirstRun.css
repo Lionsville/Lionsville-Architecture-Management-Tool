@@ -4,18 +4,18 @@
 .kit-first { max-width: 880px; margin-inline: auto; padding: var(--s-6) var(--s-4); color: var(--ink); }
 .kit-first__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-5); margin-block-end: var(--s-5); }
 .kit-first__head > div:first-child { flex: 1 1 320px; min-width: 0; }
-.kit-first__title { margin: 0 0 var(--s-2); font-size: var(--t-xl); font-weight: var(--fw-strong); }
+.kit-first__title { margin: 0 0 var(--s-2); font-size: var(--t-title); font-weight: var(--fw-strong); }
 .kit-first__body { margin: 0; color: var(--ink); line-height: var(--lh-body); }
 .kit-first__choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s-3); }
 .kit-first__choice {
   display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); background: var(--surface); border: 1px solid var(--line);
 }
-.kit-first__choiceTitle { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); }
-.kit-first__choiceBody { font-size: var(--t-sm); line-height: var(--lh-body); }
+.kit-first__choiceTitle { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); }
+.kit-first__choiceBody { font-size: var(--t-body); line-height: var(--lh-body); }
 .kit-first__choiceFoot { margin-block-start: auto; display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: flex-end; }
-.kit-first__foot { margin-block-start: var(--s-4); font-size: var(--t-sm); color: var(--ink-2); }
+.kit-first__foot { margin-block-start: var(--s-4); font-size: var(--t-body); color: var(--ink-2); }
 
-.kit-structure { flex: 0 1 340px; display: flex; flex-direction: column; align-items: center; gap: var(--s-3); font-size: var(--t-sm); }
+.kit-structure { flex: 0 1 340px; display: flex; flex-direction: column; align-items: center; gap: var(--s-3); font-size: var(--t-body); }
 .kit-structure__row { position: relative; display: flex; justify-content: center; gap: var(--s-2); padding-block-start: var(--s-2); }
 .kit-structure__row[data-lined]::before { content: ''; position: absolute; inset: calc(0px - var(--s-3)) 16% auto; height: var(--s-3); border: 1px solid var(--line-strong); border-block-end: 0; }
 .kit-structure__box { position: relative; padding: var(--s-1) var(--s-3); background: var(--surface); border: 1px solid var(--line-strong); text-align: center; }

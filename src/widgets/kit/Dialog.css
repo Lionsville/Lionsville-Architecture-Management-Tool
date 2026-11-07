@@ -12,14 +12,14 @@
   background: var(--surface);
   box-shadow: var(--shadow);
   color: var(--ink);
-  font-size: var(--t-md);
+  font-size: var(--t-body);
   line-height: var(--lh-body);
 }
 .MuiPaper-root.kit-dialog[data-size='s'] { max-width: var(--w-dialog-s); }
 .MuiPaper-root.kit-dialog[data-size='m'] { max-width: var(--w-dialog-m); }
 .MuiPaper-root.kit-dialog[data-size='l'] { max-width: var(--w-dialog-l); }
 .kit-dialog__form { display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; }
-.kit-dialog__title { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.kit-dialog__title { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); line-height: var(--lh-tight); overflow-wrap: anywhere; }
 .kit-dialog__body { display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; overflow-y: auto; color: var(--ink-2); }
 .kit-dialog__body > p { margin: 0; }
 .kit-dialog__error { margin: 0; color: var(--bad); }
@@ -31,13 +31,13 @@
 .kit-dialog__choice input { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); }
 .kit-dialog__choice input:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .kit-dialog__choice-label { display: block; color: var(--ink); }
-.kit-dialog__effect { display: block; color: var(--ink-3); font-size: var(--t-sm); }
+.kit-dialog__effect { display: block; color: var(--ink-3); font-size: var(--t-body); }
 .kit-dialog__effect[data-danger] { color: var(--bad); }
 
 .kit-dialog__facts { padding: var(--s-2) var(--s-3); border: 1px solid var(--line); border-radius: var(--r-2); }
 .kit-dialog__facts-title { color: var(--ink); }
-.kit-dialog__facts-detail { color: var(--ink-3); font-size: var(--t-sm); }
+.kit-dialog__facts-detail { color: var(--ink-3); font-size: var(--t-body); }
 
 .kit-dialog__danger { padding: var(--s-2) var(--s-3); border: 1px solid var(--bad); border-radius: var(--r-2); background: var(--bad-soft); }
 .kit-dialog__danger-title { color: var(--ink); }
-.kit-dialog__danger-detail { color: var(--ink-2); font-size: var(--t-sm); }
+.kit-dialog__danger-detail { color: var(--ink-2); font-size: var(--t-body); }

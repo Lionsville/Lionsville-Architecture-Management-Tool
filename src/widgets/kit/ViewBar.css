@@ -22,7 +22,7 @@
 .kit-viewbar__item[data-on] .kit-button { color: var(--accent); font-weight: var(--fw-strong); }
 
 .kit-viewbar__panel { display: grid; gap: 2px; min-width: 300px; padding: var(--s-2); }
-.kit-viewbar__heading { margin-top: var(--s-2); padding: 2px var(--s-2); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.kit-viewbar__heading { margin-top: var(--s-2); padding: 2px var(--s-2); color: var(--ink-2); font-size: var(--t-small); font-weight: var(--fw-strong); }
 .kit-viewbar__heading:first-child { margin-top: 0; }
 .kit-viewbar__act {
   display: flex;
@@ -42,7 +42,7 @@
 .kit-viewbar__act:hover { background: var(--surface-2); }
 .kit-viewbar__act:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-viewbar__act:disabled { color: var(--ink-3); cursor: default; background: transparent; }
-.kit-viewbar__says { color: var(--ink-3); font-size: var(--t-xs); white-space: nowrap; }
+.kit-viewbar__says { color: var(--ink-3); font-size: var(--t-small); white-space: nowrap; }
 .kit-viewbar__check {
   display: flex;
   align-items: center;

@@ -123,17 +123,24 @@ export const DARK: Record<ColourToken, string> = {
 
 export const SCALE = {
   'font-ui': '"Source Sans 3","Source Sans Pro","Segoe UI",system-ui,-apple-system,sans-serif',
-  'font-mono': '"Source Code Pro",ui-monospace,Menlo,Consolas,monospace', 't-xs': '12px', 't-sm': '13px',
-  't-md': '14px', 't-lg': '16px', 't-xl': '19px', 't-2xl': '25px', 't-label': 'var(--t-sm)',
+  'font-mono': '"Source Code Pro",ui-monospace,Menlo,Consolas,monospace',
+  // The five sizes a screen uses, in rem so that a browser's text size and the top bar's follow them.
+  't-small': '0.8125rem', 't-body': '0.9375rem', 't-large': '1.0625rem', 't-title': '1.25rem', 't-page': '1.625rem',
+  // Branches still landing say the older names. Each is the size that took its place.
+  't-xs': 'var(--t-small)', 't-sm': 'var(--t-body)', 't-md': 'var(--t-body)', 't-lg': 'var(--t-large)', 't-xl': 'var(--t-title)',
+  't-2xl': 'var(--t-page)', 't-label': 'var(--t-small)',
+  // A canvas keeps its own type: in px, so no text size reaches a card, and its zoom is what makes it larger.
+  'canvas-t-xs': '12px', 'canvas-t-sm': '13px', 'canvas-t-md': '14px', 'canvas-t-lg': '16px',
   't-canvas-name': '13px', 'fw-regular': '400', 'fw-medium': '500', 'fw-strong': '600',
   'lh-tight': '1.25', 'lh-body': '1.45', 'measure-reader': '68ch', 's-1': '4px', 's-2': '8px',
   's-3': '12px', 's-4': '16px', 's-5': '24px', 's-6': '32px', 'r-1': '2px', 'r-2': '3px', 'r-3': '6px',
-  'ctl-h': '30px', 'bar-h': '44px', 'tabs-h': '36px', 'viewbar-h': '36px', 'band-h': '32px',
-  'panel-w-tree': '300px', 'panel-w': '320px', 'panel-w-l': '520px', 'rail-w': '84px',
-  'pane-list': '420px', 'w-dialog-s': '440px', 'w-dialog-m': '560px', 'w-dialog-l': '1040px',
-  'row-h': '28px', 'row-h-dense': '24px', 'row-h-loose': '36px', 'row-prop': '24px',
-  'label-col': '112px', 'clamp-lines': '3', 'cell-size': '28px', 'mark-size': '10px',
-  'target-min': '24px', 'line-width-structure': '1px', 'line-width-emphasis': '2px',
+  // What holds text grows with it. A panel stops growing before it leaves the work no room.
+  'ctl-h': '1.875rem', 'bar-h': '2.75rem', 'tabs-h': '2.25rem', 'viewbar-h': '2.25rem', 'band-h': '2rem',
+  'panel-w-tree': '18.75rem', 'panel-w': 'min(22rem, 42vw)', 'panel-w-l': 'min(34rem, 60vw)', 'rail-w': '5.25rem',
+  'pane-list': 'min(28rem, 50vw)', 'w-dialog-s': '30rem', 'w-dialog-m': '37.5rem', 'w-dialog-l': '68rem',
+  'row-h': '1.875rem', 'row-h-dense': '1.5rem', 'row-h-loose': '2.25rem', 'row-prop': '1.5rem',
+  'label-col': '7.5rem', 'clamp-lines': '3', 'cell-size': '1.75rem', 'mark-size': '0.625rem',
+  'target-min': '1.5rem', 'line-width-structure': '1px', 'line-width-emphasis': '2px',
   'line-dash-functional': '4 3', 'line-dash-implied': '1 3', 'line-dash-planned': '7 4',
   'focus-ring-width': '2px', 'focus-ring-offset': '1px', 'dim-opacity': '.45',
   'canvas-frame-width': '3px',
@@ -203,9 +210,10 @@ export function tokensOf(theme: Theme): Colours {
   return theme.tokens?.colours ?? RESOLVED[theme.palette.mode]
 }
 
-/** A measure as a number, for the few places that do sums with one: `px('row-h')` is 28. */
+/** A measure as a number, for the few places that do sums with one, at the browser's own 16 px to the rem: `px('row-h-dense')` is 24. */
 export function px(token: ScaleToken): number {
   const value: string = SCALE[token]
   const named = ALIAS.exec(value)?.[1]
-  return Number.parseFloat(named ? SCALE[named as ScaleToken] : value)
+  if (named) return px(named as ScaleToken)
+  return Number.parseFloat(value) * (value.endsWith('rem') ? 16 : 1)
 }

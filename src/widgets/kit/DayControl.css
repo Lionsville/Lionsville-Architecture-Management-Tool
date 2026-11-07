@@ -1,5 +1,5 @@
 .kit-day { display: inline-flex; align-items: center; gap: var(--s-2); }
-.kit-day__outside { color: var(--ink-3); font-size: var(--t-xs); }
+.kit-day__outside { color: var(--ink-3); font-size: var(--t-small); }
 .MuiPaper-root.kit-day__chooser {
   padding: var(--s-3);
   border: 1px solid var(--line-strong);
@@ -8,8 +8,8 @@
   box-shadow: var(--shadow);
 }
 .kit-day__chooser form { display: grid; gap: var(--s-2); justify-items: start; }
-.kit-day__note { max-width: 32ch; margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
-.kit-day__label { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+.kit-day__note { max-width: 32ch; margin: 0; color: var(--ink-2); font-size: var(--t-small); }
+.kit-day__label { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-small); }
 .kit-day__field {
   height: var(--ctl-h);
   padding-inline: var(--s-2);
@@ -18,7 +18,7 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: var(--t-md);
+  font-size: var(--t-body);
   color-scheme: inherit;
 }
 .kit-day__field:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
@@ -36,4 +36,4 @@
 }
 
 /* A view saved on its own day says so on its tab; today says nothing. */
-.editor-tab__day { color: var(--ink-2); font-size: var(--t-sm); font-weight: normal; }
+.editor-tab__day { color: var(--ink-2); font-size: var(--t-small); font-weight: normal; }

@@ -9,7 +9,7 @@
   background: var(--surface);
   border-bottom: 1px solid var(--line-strong);
   color: var(--ink-2);
-  font-size: var(--t-sm);
+  font-size: var(--t-body);
 }
 .kit-strip__ruler { position: absolute; inset: 0; }
 .kit-strip__cell { position: absolute; top: 0; bottom: 0; padding-inline-start: var(--s-1); border-left: 1px solid var(--line); color: var(--ink-3); line-height: 18px; white-space: nowrap; overflow: hidden; }

@@ -34,7 +34,7 @@ describe('the tokens', () => {
     const variables = tokenVariables('light')
     expect(variables['--line-reports-to']).toBe('var(--accent)')
     expect(variables['--ground']).toBe(LIGHT.ground)
-    expect(variables['--row-h']).toBe('28px')
+    expect(variables['--row-h']).toBe('1.875rem')
     const shaded = tokenVariables('dark', { light: {}, dark: { accent: '#abcdef' } })
     expect(shaded['--accent']).toBe('#abcdef')
     expect(shaded['--ground']).toBe(DARK.ground)
@@ -43,7 +43,7 @@ describe('the tokens', () => {
   it('reads a token as CSS and a measure as a number', () => {
     const token: ColourToken = 'ink-2'
     expect(tokenVar(token)).toBe('var(--ink-2)')
-    expect(px('row-h')).toBe(28)
+    expect(px('row-h')).toBe(30)
     expect(px('t-label')).toBe(13)
   })
 })

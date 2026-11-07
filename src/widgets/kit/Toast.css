@@ -20,7 +20,7 @@
   box-shadow: var(--shadow);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: var(--t-md);
+  font-size: var(--t-body);
   line-height: var(--lh-tight);
   pointer-events: auto;
   animation: kit-toast-in 120ms ease-out;
@@ -48,6 +48,6 @@
   border-radius: var(--r-1);
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: var(--t-xs);
+  font-size: var(--t-small);
   line-height: 1.3;
 }

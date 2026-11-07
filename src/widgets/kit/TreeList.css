@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.kit-tree { display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-sm); }
+.kit-tree { display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-body); }
 .kit-tree__item { list-style: none; }
 .kit-tree__group { margin: 0; padding: 0; }
 .kit-tree__row {
@@ -21,5 +21,5 @@
 .kit-tree__caret { display: inline-flex; width: 14px; flex: none; color: var(--ink-2); }
 .kit-tree__caret[data-folded] { transform: rotate(-90deg); }
 .kit-tree__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kit-tree__note { flex: none; display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-xs); font-weight: var(--fw-regular); }
-.kit-tree__count { flex: none; color: var(--ink-2); font-size: var(--t-xs); font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }
+.kit-tree__note { flex: none; display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-small); font-weight: var(--fw-regular); }
+.kit-tree__count { flex: none; color: var(--ink-2); font-size: var(--t-small); font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }
