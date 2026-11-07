@@ -51,7 +51,8 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   // A unit kept where the person may only read is offered, and said so: adding it would be a step there.
   const choices = pickableBy(view.choices, servedBy.mayChange, { s })
   const none = view.rows.length === 0 && (
-    <Typography component="span" sx={QUIET} data-testid="served-by-none">{compact ? s('org.servedByNone', { scope: here }) : s('org.servedByNobody')}</Typography>
+    // On a home it is the value of a labelled line, read at the size its neighbours' values are.
+    <Typography component="span" sx={compact ? QUIET : { fontSize: 'var(--t-body)' }} data-testid="served-by-none">{compact ? s('org.servedByNone', { scope: here }) : s('org.servedByNobody')}</Typography>
   )
   const body = (
     <>

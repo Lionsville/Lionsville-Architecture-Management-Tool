@@ -113,8 +113,9 @@ export function NewScopeDialog({
 function ServedByField({ options, value, onChange, s }: NonNullable<NewScopeDialogProps['servedBy']> & { s: Translate }) {
   const picked = options.find((one) => one.id === value)
   return (
-    <div data-testid="new-scope-served-by">
-      <p className="kit-factline">{s('org.newScopeServedBy')}: {s('org.newScopeServedByHint')}</p>
+    // Laid out as the dialog's other fields are, label over the control and the hint under it.
+    <div className="kit-field" data-testid="new-scope-served-by">
+      <span className="kit-field__label">{s('org.newScopeServedBy')}</span>
       {picked
         ? (
             <Chip
@@ -129,6 +130,7 @@ function ServedByField({ options, value, onChange, s }: NonNullable<NewScopeDial
               onPick={onChange} testId="new-scope-served-by-add" disabled={options.every((one) => one.disabled === true)}
             />
           )}
+      <p className="kit-field__words">{s('org.newScopeServedByHint')}</p>
     </div>
   )
 }
