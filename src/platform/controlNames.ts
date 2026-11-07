@@ -28,7 +28,7 @@ export const CONTROL_NAMES = [
   'shell.crumbs', 'shell.activity', 'shell.alsoHere',
   // The frame: its two rows, whatever screen is up.
   'frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher', 'frame.yourWork', 'frame.activity',
-  // Every page (ADR-0044): the × at the end of its bar and a column's seam, on each page that has one;
+  // Every page (ADR-0044): a column's seam, on each page that has one;
   // the product's site under Help in ⋯, and where the desktop app is had, said where an agent needs it.
   'page.seam', 'shell.website', 'agent.download',
   // A scope's home.
@@ -47,6 +47,8 @@ export const CONTROL_NAMES = [
   'org.servedBy',
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
+  // Keeping a colouring with the view (ADR-0027, amended), in the Colour by menu once a reader has chosen their own.
+  'board.keepLens',
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // The register, and the technology register drawn by the same page.

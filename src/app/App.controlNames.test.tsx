@@ -294,6 +294,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const menu = await screen.findByRole('menu', { name: 'Element menu' })
     fireEvent.click(within(menu).getByRole('menuitem', { name: /Start connection to/ }))
   }]],
+  [['a landscape on its board, coloured by a reader’s own choice', ['board.keepLens'], async () => {
+    await onBoard()
+    fireEvent.click(await screen.findByLabelText('Colour by'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Technology lifecycle' }))
+    fireEvent.click(await screen.findByLabelText('Colour by'))
+  }]],
   [['an application’s record', ['record.replace', 'record.uses'], () => recordOf('billing')]],
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
   [['the business architecture, a capability chosen', [

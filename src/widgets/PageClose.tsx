@@ -28,7 +28,7 @@ export function PageClose({ onClose, label }: { onClose: () => void; label?: str
   if (usePlaceHost()?.page && said !== t('common.backToReading')) return null
   return (
     <Tooltip title={said}>
-      <IconButton size="small" aria-label={said} onClick={onClose} data-testid="page-close" data-guide="page.close" sx={{ ml: 'auto', color: 'text.secondary' }}>
+      <IconButton size="small" aria-label={said} onClick={onClose} data-testid="page-close" sx={{ ml: 'auto', color: 'text.secondary' }}>
         <CloseIcon size={16} />
       </IconButton>
     </Tooltip>
