@@ -608,6 +608,7 @@ function renderApp(
           drawingOrigin: shell.drawingOrigin,
           people: shell.people,
           comments: shell.comments,
+          attachments: shell.attachments,
           ...(shell.accent ? { accent: shell.accent } : {}),
           sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),

@@ -678,6 +678,12 @@ describe('the working file\'s part, loaded when wanted', () => {
 })
 
 describe('the shell over what a source just opened', () => {
+  it('takes a server\'s attachments with it, so no other source offers to keep a file', () => {
+    const repositories = {} as SourceParts['repositories']
+    const before = { attachments: { add: async () => undefined, href: () => '' } } as unknown as Shell
+    expect(overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts).attachments).toBeUndefined()
+  })
+
   it('takes off the address a link to the source before started from, and keeps the one the new source gives', () => {
     const repositories = memoryRepositories()
     const before: Shell = {
