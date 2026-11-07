@@ -7,7 +7,7 @@ import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import type { DesignModel } from '../model/types';
 import { DEFAULT_ZONE_SIZES, HOME_ZONE } from '../model/zones';
-import { placedNode, NODE_MAX_SIZE } from '../model/placement';
+import { placedNode, placementRect, rectsIntersect, NODE_MAX_SIZE } from '../model/placement';
 import { renderEditorState } from './testing/editorHost';
 
 /**
@@ -104,6 +104,30 @@ describe('changeElementKind', () => {
       // Placing something is membership AND geometry (ADR-0012 §6), so the
       // second half is itself a transaction of the two.
       .toEqual(['element.update', 'transaction']);
+  });
+
+  it('lands a card clear of the one a kind change already brought there', () => {
+    const channel = (id: string) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} });
+    const { result, placement } = render({
+      name: 'ACME',
+      elements: [channel('a'), channel('b')],
+      relations: [],
+      diagrams: [laidOut({
+        id: 'd1',
+        kind: 'layer7',
+        name: 'L7',
+        placements: [
+          { id: 'a', zone: 'inputChannels', x: 40, y: 300 },
+          { id: 'b', zone: 'inputChannels', x: 40, y: 500 },
+        ],
+      })],
+    });
+    act(() => result.current.actions.changeElementKind('a', 'actor'));
+    act(() => result.current.actions.changeElementKind('b', 'actor'));
+    const [a, b] = [placement('a')!, placement('b')!];
+    expect(rectsIntersect(placementRect('actor', a), placementRect('actor', b))).toBe(false);
+    // The first had nothing in its way, and its row is where the clamp sent it.
+    expect(a).toMatchObject({ zone: 'actors', x: 40, y: 102 });
   });
 
   it('is one undo step', () => {

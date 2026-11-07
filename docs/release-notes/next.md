@@ -9,7 +9,8 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   sent every card past its edge to the same spot, and a taller board flattened the
   bottom band's rows onto one line. A card that still fits now stays where it is,
   and the others move with their band and keep their places, or spread out where
-  it is too small to hold them.
+  it is too small to hold them. A card whose kind you change, or that an agent
+  draws into a full band, lands beside the cards there rather than on one.
 - **Exporting a drawing from the editor saves a file.** *Export as* in the drawing
   editor did nothing, without a word, on the desktop and in a browser. PNG, JPEG,
   WebP, an animation as a GIF, SVG, XML and JSON now save a file named after the

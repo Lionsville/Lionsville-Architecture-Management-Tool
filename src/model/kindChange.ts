@@ -12,9 +12,11 @@ import type {
 import type { StringKey } from '../i18n/strings';
 import { nodeFigure } from './kinds';
 import type { NodeFigure } from './kinds';
-import { clampPlacementIntoZone, nodeMaxSize, nodeMinSize, placedNode } from './placement';
+import {
+  clampPlacementIntoZone, nodeMaxSize, nodeMinSize, placedNode, placedNodes, placementRect, rectsIntersect, spotNear,
+} from './placement';
 import type { CanvasKind } from './placement';
-import { HOME_ZONE } from './zones';
+import { HOME_ZONE, zoneRect } from './zones';
 
 /**
  * CHANGING WHAT SOMETHING IS, after it exists.
@@ -170,11 +172,15 @@ export function changeableKinds(
  * An explicit width/height the user set is kept where it still fits and clamped
  * where it does not; a placement that never carried one keeps carrying none, so
  * a kind change never invents a stored size out of a default.
+ *
+ * Given the `elements`, a card the band's edge sent onto another takes the
+ * nearest free place instead.
  */
 export function placementForKind(
   placement: PlacedNode,
   becoming: Pick<DesignElement, 'kind' | 'outside'>,
   diagram: DesignDiagram,
+  elements?: readonly Pick<DesignElement, 'id' | 'kind' | 'outside'>[],
 ): PlacedNode {
   if (diagram.kind !== 'layer7') {
     return clampSize(placement, nodeFigure(becoming, placement.zone), diagram);
@@ -186,7 +192,20 @@ export function placementForKind(
   // other band holds only the figures whose home it is.
   const legal = zone === 'landscape' || zone === home;
   const moved: PlacedNode = legal ? placement : { ...placement, zone: home };
-  return clampSize(moved, nodeFigure(becoming, moved.zone), diagram);
+  const figure = nodeFigure(becoming, moved.zone);
+  const kept = clampSize(moved, figure, diagram);
+  if (!elements || !kept.zone || (kept.x === placement.x && kept.y === placement.y)) return kept;
+  // The clamp slid it to the band's edge, which is where the last card changed
+  // this way went. Past a card that is already there, not onto it.
+  const mine = placementRect(figure, kept);
+  const others = placedNodes(diagram)
+    .filter((p) => p.id !== placement.id && (p.zone ?? 'landscape') === kept.zone)
+    .flatMap((p) => {
+      const drawn = elements.find((e) => e.id === p.id);
+      return drawn ? [placementRect(nodeFigure(drawn, p.zone), p)] : [];
+    });
+  if (!others.some((rect) => rectsIntersect(mine, rect))) return kept;
+  return { ...kept, ...spotNear(mine, zoneRect(kept.zone, diagram.geometry), others) };
 }
 
 function clampSize(

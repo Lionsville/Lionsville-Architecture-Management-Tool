@@ -765,6 +765,21 @@ describe('where a card goes (the placement fixes)', () => {
     expect(commandFor('element.undraw', { id: 'api' }, view(undrawn))).toMatchObject({ refusal: 'agent.notDrawn' })
   })
 
+  it('element.draw never puts a card squarely on another when the band has run out of rows', () => {
+    const names = Array.from({ length: 40 }, (_, i) => `tool-${i}`)
+    let board = fromArrays({
+      name: 'Tools',
+      elements: names.map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
+      relations: [],
+      diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] })],
+    })
+    for (const id of names) {
+      board = roundTrip(board, commandFor('element.draw', { id, zone: 'management' }, view(board, { activeDiagramId: 'l7' })))
+    }
+    const spots = names.map((id) => placedOn(board.diagrams.l7, id)!).map(({ x, y }) => `${x},${y}`)
+    expect(new Set(spots).size).toBe(names.length)
+  })
+
   it('ungroup takes members out, or dissolves the group with its box', () => {
     const two = roundTrip(boxed, commandFor('placeNextTo', { elementId: 'crm', anchorId: 'billing' }, view(boxed)))
     const one = roundTrip(two, commandFor('ungroup', { name: 'Finance', elementIds: ['crm'] }, view(two)))

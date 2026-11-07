@@ -12,10 +12,10 @@ import { claimKey } from '../../model/keys'
 import type { Diagram, Model } from '../../model/normalised'
 import { boxesOf, groupList, placedOn } from '../../model/normalised'
 import {
-  clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn, freeZonePosition,
+  clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn, spotNear,
   groupRectAround, placementRect, rectsIntersect, unionRects,
 } from '../../model/placement'
-import { HOME_ZONE } from '../../model/zones'
+import { HOME_ZONE, zoneRect } from '../../model/zones'
 import { nodeFigure } from '../../model/kinds'
 import type { DesignElement, DiagramGroup, DomainGroupRect, ElementId, Layer7Zone, PlacedNode, Rect } from '../../model/types'
 import type { AgentAnswer } from '../tools'
@@ -71,7 +71,7 @@ function seedOnLandscape(
     ?? (box ? freeSlotIn(box, figure, membersOf(model, diagram, groupId!).map(([, rect]) => rect))
       : defaultZonePosition(zone, figure, diagram.order.members.filter((id) => (placedOn(diagram, id)!.zone ?? 'landscape') === zone).length, diagram))
   const placement: PlacedNode = { id: elementId, zone, ...position, ...(groupId !== undefined ? { group: groupId } : {}) }
-  const kept = zone === 'landscape' ? placement : clampPlacementIntoZone(placement, figure, diagram) ?? placement
+  const kept = keptInBand(model, diagram, element, placement)
   const grown = groupId === undefined ? undefined : growGroup(diagram, groupId, placementRect(figure, kept))
   return { placement: kept, layout: transaction([...made, ...(grown ? [grown] : [])]) }
 }
@@ -85,8 +85,8 @@ export function groupNameOn(diagram: Diagram, groupId: string | undefined): stri
 /**
  * A card filed in a side band, kept inside it. The clamp slides it to the
  * band's edge, which is on top of whatever was already at that edge — the
- * anchor, usually — so a clamped card that would land on another one takes a
- * free slot in the band instead. A landscape card is not touched.
+ * anchor, usually — so a clamped card that would land on another one takes the
+ * nearest place free in the band instead. A landscape card is not touched.
  */
 export function keptInBand(
   model: Model, diagram: Diagram,
@@ -101,7 +101,7 @@ export function keptInBand(
     .map((id) => placementRect(nodeFigure(model.elements[id], placedOn(diagram, id)!.zone), placedOn(diagram, id)!))
   const mine = placementRect(figure, clamped)
   if (!others.some((rect) => rectsIntersect(mine, rect))) return clamped
-  return { ...clamped, ...freeZonePosition(placement.zone!, figure, others, diagram) }
+  return { ...clamped, ...spotNear(mine, zoneRect(placement.zone!, diagram), others) }
 }
 
 export function groupBox(diagram: Diagram, groupId: string): DomainGroupRect | undefined {

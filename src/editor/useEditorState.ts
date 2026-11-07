@@ -747,7 +747,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const element = model.elements.find((e) => e.id === id);
         const placement = placedNodes(diagram).find((p) => p.id === id);
         if (!element || !placement) return;
-        const next = placementForKind(placement, { kind, outside: element.outside }, diagram);
+        const next = placementForKind(placement, { kind, outside: element.outside }, diagram, model.elements);
         dispatch(transaction([
           { type: 'element.update', id, patch: { kind } },
           placeOn(diagram.id, [next]),
