@@ -33,6 +33,10 @@ const COLUMN_HEAD = 17 + 2 + 3
 const COLUMN_ROW = 29 + 3
 /** How wide a step has to be for whole words at the size that reads at 90%. */
 const ROOMY_STEP = 98
+const PLACE_GRID = 8
+const NAME_LINES = 3
+const NAME_PADDING = 14
+const NAME_LETTER = 6.6
 
 export type PosterAreaSize = {
   id: string
@@ -51,8 +55,16 @@ export type PosterBlock = { id: string; x: number; y: number; width: number; hei
 /** The blocks' own names beside the areas', which are element ids. */
 export const POSTER_COLUMN_ID = SHEET_COLUMN_BOX
 
+/** A tile per poster: its width a minimum in a flowing grid, its height never changing. */
+export type PosterTileSize = 's' | 'm' | 'l'
+const TILES: Readonly<Record<PosterTileSize, { width: number; height: number }>> = {
+  s: { width: 92, height: 40 },
+  m: { width: POSTER_TILE.width, height: POSTER_TILE.height },
+  l: { width: 128, height: 54 },
+}
+
 const rowsOf = (tiles: number, cols: number) => Math.ceil(tiles / cols)
-const tilesHeight = (tiles: number, cols: number) => rowsOf(tiles, cols) * (POSTER_TILE.height + POSTER_TILE.gap) - POSTER_TILE.gap
+const tilesHeight = (tiles: number, cols: number, size: PosterTileSize) => rowsOf(tiles, cols) * (TILES[size].height + POSTER_TILE.gap) - POSTER_TILE.gap
 
 /** Nearly square, wider than tall. */
 export function tileColumns(tiles: number): number {
@@ -64,19 +76,19 @@ function isGrouped(area: PosterAreaSize): boolean {
 }
 
 /** The height of an area: every tile's row, and nothing a browser has to be asked. */
-export function contentHeight(area: PosterAreaSize): number {
+export function contentHeight(area: PosterAreaSize, size: PosterTileSize = 'm'): number {
   if (!isGrouped(area)) {
     const tiles = Math.max(area.loose, 1)
-    return tilesHeight(tiles, area.span ?? tileColumns(tiles)) + AREA_FRAME
+    return tilesHeight(tiles, area.span ?? tileColumns(tiles), size) + AREA_FRAME
   }
-  const groupings = area.groupings.map((tiles) => tilesHeight(Math.max(tiles, 1), tileColumns(Math.max(tiles, 1))) + GROUPING_HEAD + GROUPING_FRAME)
-  const loose = area.loose > 0 ? [tilesHeight(area.loose, tileColumns(area.loose))] : []
+  const groupings = area.groupings.map((tiles) => tilesHeight(Math.max(tiles, 1), tileColumns(Math.max(tiles, 1)), size) + GROUPING_HEAD + GROUPING_FRAME)
+  const loose = area.loose > 0 ? [tilesHeight(area.loose, tileColumns(area.loose), size)] : []
   return Math.max(...groupings, ...loose) + AREA_FRAME
 }
 
 /** The narrowest an area is drawn: its tiles in their columns, or its groupings side by side. */
-export function minWidth(area: PosterAreaSize): number {
-  const step = POSTER_TILE.width + POSTER_TILE.gap
+export function minWidth(area: PosterAreaSize, size: PosterTileSize = 'm'): number {
+  const step = TILES[size].width + POSTER_TILE.gap
   if (!isGrouped(area)) {
     const tiles = Math.max(area.loose, 1)
     return (area.span ?? tileColumns(tiles)) * step - POSTER_TILE.gap + 16
@@ -105,7 +117,7 @@ export function bandHeight(lanes: number, rows: 1 | 2): number {
 }
 
 /** Shelves of blocks: filled in sheet order, widened to fill, as tall as the tallest. */
-function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: number): { blocks: PosterBlock[]; bottom: number } {
+function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: number, size: PosterTileSize): { blocks: PosterBlock[]; bottom: number } {
   const blocks: PosterBlock[] = []
   let top = y
   let shelf: PosterAreaSize[] = []
@@ -113,9 +125,9 @@ function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: 
   const close = () => {
     if (shelf.length === 0) return
     const room = width - POSTER_GAP * (shelf.length - 1)
-    const least = shelf.map((area) => Math.min(minWidth(area), room))
+    const least = shelf.map((area) => Math.min(minWidth(area, size), room))
     const total = least.reduce((sum, one) => sum + one, 0)
-    const height = Math.max(...shelf.map(contentHeight))
+    const height = Math.max(...shelf.map((area) => contentHeight(area, size)))
     let left = x
     shelf.forEach((area, index) => {
       // The last takes what rounding left, so the right edge is the page's.
@@ -128,7 +140,7 @@ function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: 
     used = 0
   }
   for (const area of areas) {
-    const least = minWidth(area)
+    const least = minWidth(area, size)
     if (shelf.length > 0 && used + POSTER_GAP + least > width) close()
     used += (shelf.length > 0 ? POSTER_GAP : 0) + least
     shelf.push(area)
@@ -140,8 +152,8 @@ function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: 
 export type PosterLayout = { width: number; height: number; blocks: PosterBlock[]; bandRows: 1 | 2 }
 
 /** The whole page. Same inputs, same answer, in the browser and on a server. */
-export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: PosterBand; column?: PosterColumn }): PosterLayout {
-  const { areas, band, column } = input
+export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: PosterBand; column?: PosterColumn; tile?: PosterTileSize }): PosterLayout {
+  const { areas, band, column, tile = 'm' } = input
   const left = column ? COLUMN_WIDTH + COLUMN_GAP : 0
   const width = POSTER_WIDTH - left
   const bandRows = band ? band.rows ?? bandRowsFor(band.steps, width) : 1
@@ -152,7 +164,7 @@ export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: Po
     blocks.push({ id: band.id, x: left, y: 0, width, height })
     y = height + POSTER_GAP
   }
-  const shelved = shelves(areas, left, y, width)
+  const shelved = shelves(areas, left, y, width, tile)
   blocks.push(...shelved.blocks)
   const down = Math.max(shelved.bottom, y)
   const asked = column ? COLUMN_FRAME + column.groups * COLUMN_HEAD + column.rows * COLUMN_ROW : 0
@@ -164,4 +176,75 @@ export function firstLayout(input: { areas: readonly PosterAreaSize[]; band?: Po
 /** The order a person reads a page in, top then left, never the order things were placed in. */
 export function readingOrder<T extends { x: number; y: number }>(blocks: readonly T[]): T[] {
   return [...blocks].sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+const crossing = (a: PosterBlock, b: PosterBlock) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+
+/** Which blocks lie over one another. Said, and never fixed: a place is a person's, and growth is theirs to answer. */
+export function overlapsOf(blocks: readonly PosterBlock[]): { a: string; b: string }[] {
+  const found: { a: string; b: string }[] = []
+  blocks.forEach((one, at) => {
+    for (const other of blocks.slice(at + 1)) if (crossing(one, other)) found.push({ a: one.id, b: other.id })
+  })
+  return found
+}
+
+/**
+ * The first free place on the page for a block of this size, top then left, on
+ * the eight-unit grid and a gap clear of what is there; nothing when the page has
+ * no such room. What an area added to a placed sheet gets until somebody places it.
+ */
+export function freePlace(blocks: readonly PosterBlock[], size: { width: number; height: number }, page: { width: number; height: number }): { x: number; y: number } | undefined {
+  const snap = (value: number) => Math.ceil(value / PLACE_GRID) * PLACE_GRID
+  const xs = [...new Set([0, ...blocks.map((block) => snap(block.x + block.width + POSTER_GAP))])].sort((a, b) => a - b)
+  const ys = [...new Set([0, ...blocks.map((block) => snap(block.y + block.height + POSTER_GAP))])].sort((a, b) => a - b)
+  for (const y of ys) {
+    for (const x of xs) {
+      if (x + size.width > page.width || y + size.height > page.height) continue
+      const here = { id: '', x: x - POSTER_GAP, y: y - POSTER_GAP, width: size.width + POSTER_GAP * 2, height: size.height + POSTER_GAP * 2 }
+      if (!blocks.some((block) => crossing(here, block))) return { x, y }
+    }
+  }
+  return undefined
+}
+
+/** Where a block's tiles go: those placed by hand, then the rest flowing through what is left, in their order. */
+export function tileCells(
+  ids: readonly string[], cols: number, placed: Readonly<Record<string, { col: number; row: number; span?: number }>>,
+): { id: string; col: number; row: number; span: number }[] {
+  const taken = new Set<string>()
+  const cell = (col: number, row: number) => `${col}:${row}`
+  const cells: { id: string; col: number; row: number; span: number }[] = []
+  for (const id of ids) {
+    const hand = placed[id]
+    if (!hand) continue
+    // A cell kept from a wider block comes back to its edge rather than off it.
+    const span = Math.min(Math.max(hand.span ?? 1, 1), cols)
+    const col = Math.min(hand.col, cols - span)
+    for (let at = col; at < col + span; at += 1) taken.add(cell(at, hand.row))
+    cells.push({ id, col, row: hand.row, span })
+  }
+  let col = 0
+  let row = 0
+  for (const id of ids) {
+    if (placed[id]) continue
+    while (taken.has(cell(col, row))) {
+      col += 1
+      if (col >= cols) { col = 0; row += 1 }
+    }
+    taken.add(cell(col, row))
+    cells.push({ id, col, row, span: 1 })
+  }
+  return cells
+}
+
+/**
+ * Whether a tile's clamp cuts this name, as near as arithmetic knows: the words
+ * of a name are measured by a browser, and this is the same count from the width
+ * of an average letter. For a report to an agent with no screen; a print counts
+ * the real ones.
+ */
+export function nameLikelyCut(name: string, tileWidth: number, lines = NAME_LINES): boolean {
+  const perLine = Math.max(1, Math.floor((tileWidth - NAME_PADDING) / NAME_LETTER))
+  return Math.ceil(name.trim().length / perLine) > lines
 }

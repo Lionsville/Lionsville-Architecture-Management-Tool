@@ -25,8 +25,9 @@ import { tokenVar } from '../../widgets/kit/tokens'
 import { locatedSelector } from '../../widgets/useLocated'
 import type { FunctionCoverage } from '../coverage'
 import type { LensValue, SheetLens } from '../lens'
-import { bandStepRoomy, firstLayout, POSTER_COLUMN_ID, POSTER_TILE, POSTER_WIDTH, readingOrder, tileColumns } from '../posterLayout'
-import type { PosterAreaSize, PosterBlock, PosterLayout } from '../posterLayout'
+import { bandStepRoomy, POSTER_COLUMN_ID, POSTER_TILE, POSTER_WIDTH, readingOrder, tileColumns } from '../posterLayout'
+import type { PosterBlock } from '../posterLayout'
+import { posterFirstLayout } from '../posterPlaces'
 import type { LaidOutSheet, SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane } from '../sheet'
 import { lookOf } from './sheetLook'
 import './SheetPoster.css'
@@ -60,26 +61,6 @@ export type SheetPosterProps = {
   /** What the strip under the canvas says beside the dock. */
   strip?: ReactNode
   t: Translate
-}
-
-function sizeOf(area: SheetArea, spans: Readonly<Record<string, number>> | undefined): PosterAreaSize {
-  const span = spans?.[area.element.id]
-  return {
-    id: area.element.id,
-    groupings: area.groupings.map((grouping) => grouping.capabilities.length),
-    loose: area.capabilities.length,
-    ...(span !== undefined ? { span } : {}),
-  }
-}
-
-function layoutOf(laidOut: LaidOutSheet, spans: Readonly<Record<string, number>> | undefined): PosterLayout {
-  const parties = laidOut.actors.filter((actor) => actor.group === 'parties')
-  const steps = laidOut.journey?.lanes[0]?.cells.reduce((sum, cell) => sum + cell.steps.length, 0) ?? 0
-  return firstLayout({
-    areas: laidOut.areas.map((area) => sizeOf(area, spans)),
-    ...(laidOut.journey ? { band: { id: laidOut.journey.element.id, steps, lanes: laidOut.journey.lanes.length } } : {}),
-    ...(parties.length > 0 ? { column: { groups: parties.filter((actor) => actor.depth === 0).length, rows: parties.filter((actor) => actor.depth > 0).length } } : {}),
-  })
 }
 
 function place(block: PosterBlock): CSSProperties {
@@ -372,7 +353,7 @@ function usePan(pane: { current: HTMLDivElement | null }, panBy: (dx: number, dy
 }
 
 export function SheetPoster({ laidOut, areaSpans, lens, valueOf, coverageAt, nameOf, selectedId, onSelect, strip, t }: SheetPosterProps) {
-  const layout = useMemo(() => layoutOf(laidOut, areaSpans), [laidOut, areaSpans])
+  const layout = useMemo(() => posterFirstLayout(laidOut, areaSpans ? { areaSpans } : {}), [laidOut, areaSpans])
   const camera = useCamera({ width: POSTER_WIDTH, height: layout.height })
   const { attach, stage, pane, panBy, open, target, listen } = camera
   const pan = usePan(pane, panBy)

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { bandRowsFor, bandStepRoomy, contentHeight, firstLayout, minWidth, POSTER_COLUMN_ID, POSTER_GAP, POSTER_WIDTH, readingOrder, tileColumns } from './posterLayout'
+import { bandRowsFor, bandStepRoomy, contentHeight, firstLayout, freePlace, minWidth, nameLikelyCut, overlapsOf, POSTER_COLUMN_ID, POSTER_GAP, POSTER_WIDTH, readingOrder, tileCells, tileColumns } from './posterLayout'
 import type { PosterAreaSize, PosterBlock } from './posterLayout'
 
 const plain = (id: string, tiles: number, span?: number): PosterAreaSize => ({ id, groupings: [], loose: tiles, ...(span !== undefined ? { span } : {}) })
@@ -92,5 +92,87 @@ describe('the journey band', () => {
 describe('reading order', () => {
   it('runs top then left, whatever order the blocks were placed in', () => {
     expect(readingOrder([{ id: 'c', x: 0, y: 9 }, { id: 'b', x: 5, y: 0 }, { id: 'a', x: 0, y: 0 }]).map((block) => block.id)).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('a tile size', () => {
+  it('changes a block\'s height and width by the arithmetic of its rows and columns', () => {
+    const area = plain('a', 8)
+    expect(contentHeight(area, 's')).toBe(2 * (40 + 6) - 6 + 46)
+    expect(contentHeight(area, 'l')).toBe(2 * (54 + 6) - 6 + 46)
+    expect(contentHeight(area)).toBe(contentHeight(area, 'm'))
+    expect(minWidth(area, 's')).toBeLessThan(minWidth(area))
+    expect(minWidth(area, 'l')).toBeGreaterThan(minWidth(area))
+  })
+
+  it('reaches the whole page', () => {
+    const small = firstLayout({ areas: [plain('a', 12)], tile: 's' })
+    const large = firstLayout({ areas: [plain('a', 12)], tile: 'l' })
+    expect(small.height).toBeLessThan(large.height)
+  })
+})
+
+describe('overlaps', () => {
+  const at = (id: string, x: number, y: number): PosterBlock => ({ id, x, y, width: 100, height: 100 })
+  it('names the pairs, and blocks that only touch are no overlap', () => {
+    expect(overlapsOf([at('a', 0, 0), at('b', 50, 50), at('c', 100, 0), at('d', 400, 400)])).toEqual([{ a: 'a', b: 'b' }, { a: 'b', b: 'c' }])
+  })
+  it('finds none in a first layout', () => {
+    const laid = firstLayout({ areas: [plain('a', 30), plain('b', 12), plain('c', 3), plain('d', 40)], band: { id: 'j', steps: 34, lanes: 2 }, column: { groups: 4, rows: 25 } })
+    expect(overlapsOf(laid.blocks)).toEqual([])
+  })
+})
+
+describe('a free place', () => {
+  const page = { width: 1860, height: 1000 }
+  const block = (x: number, y: number, width: number, height: number): PosterBlock => ({ id: `${x}`, x, y, width, height })
+
+  it('is the top left of an empty page', () => {
+    expect(freePlace([], { width: 200, height: 100 }, page)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('is a gap clear of what is there, on the grid, top then left', () => {
+    const free = freePlace([block(0, 0, 300, 100)], { width: 200, height: 100 }, page)
+    expect(free).toEqual({ x: 312, y: 0 })
+    expect((free?.x ?? 1) % 8).toBe(0)
+  })
+
+  it('goes down a row when the row is full', () => {
+    expect(freePlace([block(0, 0, 1800, 100)], { width: 200, height: 100 }, page)).toEqual({ x: 0, y: 112 })
+  })
+
+  it('is nothing when the page has no room', () => {
+    expect(freePlace([block(0, 0, 1860, 1000)], { width: 200, height: 100 }, page)).toBeUndefined()
+  })
+})
+
+describe('tiles in cells', () => {
+  it('flow in their order when nobody placed any', () => {
+    expect(tileCells(['a', 'b', 'c'], 2, {})).toEqual([
+      { id: 'a', col: 0, row: 0, span: 1 }, { id: 'b', col: 1, row: 0, span: 1 }, { id: 'c', col: 0, row: 1, span: 1 },
+    ])
+  })
+
+  it('flow round the exceptions, which stay where they were put', () => {
+    const cells = tileCells(['a', 'b', 'c'], 2, { b: { col: 0, row: 0, span: 2 } })
+    expect(cells).toEqual([
+      { id: 'b', col: 0, row: 0, span: 2 }, { id: 'a', col: 0, row: 1, span: 1 }, { id: 'c', col: 1, row: 1, span: 1 },
+    ])
+  })
+
+  it('come back to the edge of a block that got narrower', () => {
+    expect(tileCells(['a'], 2, { a: { col: 5, row: 1 } })).toEqual([{ id: 'a', col: 1, row: 1, span: 1 }])
+    expect(tileCells(['a'], 2, { a: { col: 1, row: 0, span: 4 } })).toEqual([{ id: 'a', col: 0, row: 0, span: 2 }])
+  })
+})
+
+describe('a name\'s clamp, as near as arithmetic knows', () => {
+  it('says a long name is cut and a short one is not', () => {
+    expect(nameLikelyCut('Invoicing', 110)).toBe(false)
+    expect(nameLikelyCut('Cross-border customs documentation and declarations handling', 110)).toBe(true)
+  })
+  it('counts two lines where a tile carries a label', () => {
+    expect(nameLikelyCut('Customs documentation and handling', 110, 2)).toBe(true)
+    expect(nameLikelyCut('Customs documentation and handling', 110, 3)).toBe(false)
   })
 })
