@@ -102,7 +102,8 @@ it, under this name, so that the second screen finds it.
 
 The frame (`app/frame/AppFrame.tsx`) stands above every screen and does not move:
 row one says where you are and whether your work is safe, row two lists every
-place in this scope. Nothing below it draws a bar of its own.
+place in this scope, its views only once one is open or a page is up: on a home
+the views are the page's own rows. Nothing below it draws a bar of its own.
 
 **A page is a `PageDialog`.** Keep `open` and `onClose`. In the frame it is a place
 in the main column (`role="region"`, `[data-place-page]`), under the rows and over

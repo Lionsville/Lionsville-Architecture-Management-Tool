@@ -496,24 +496,26 @@ function TreeGlyph() {
 function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; pageUp: boolean }) {
   const { services: { s }, agent } = parts
   const homeHere = !parts.nav.project && !pageUp
+  // On a home the tree is what a person moves through, and the page beside it lists
+  // this scope's views: the same names over it, changing at every press, read as
+  // where you are (the owner, 7 November 2026). A page over a home keeps them.
+  const views = facts?.kind === 'home' && !homeHere ? facts : undefined
   return (
     <>
       <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => agent.openSomewhere({ scope: at, page: 'home' })}>
         {s('frame.home')}
       </button>
-      {facts?.kind === 'home' && (facts.views ?? []).map((view) => (
+      {(views?.views ?? []).map((view) => (
         <button key={view.id} type="button" className="kit-frame__tab" data-testid={`frame-view-${view.id}`} onClick={() => agent.openSomewhere({ scope: at, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id })}>
           {view.name}
         </button>
       ))}
-      {facts?.kind === 'home' && facts.onNewView && (
-        <HomeNewView parts={parts} at={at} onLandscape={facts.onNewView} />
-      )}
+      {views?.onNewView && <HomeNewView parts={parts} at={at} onLandscape={views.onNewView} />}
     </>
   )
 }
 
-/** A home's +: the same question a scope's tabs ask, with the view then made as the scope opens on it. */
+/** The + on a page over a home: the same question a scope's tabs ask, with the view then made as the scope opens on it. */
 function HomeNewView({ parts, at, onLandscape }: { parts: ShellParts; at: ScopePath; onLandscape: () => void }) {
   const { services: { s }, organisation } = parts
   const [open, setOpen] = useState(false)

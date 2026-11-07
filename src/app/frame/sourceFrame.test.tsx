@@ -39,6 +39,7 @@ describe('a source on the frame', () => {
   it('holds a home it cannot read yet, so nothing offers to start again', async () => {
     withFrame({ holding: () => true, Hold: () => <p>This organisation could not be read</p> })
     expect(await screen.findByText('This organisation could not be read')).toBeTruthy()
+    expect(screen.queryByTestId('new-board')).toBeNull()
     expect(screen.queryByTestId('frame-new-view')).toBeNull()
     expect(screen.queryByText('Acme Logistics', { selector: 'h1, h2, h3, h4, h5, h6' })).toBeNull()
   })

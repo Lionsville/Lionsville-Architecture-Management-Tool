@@ -96,6 +96,36 @@ describe('the two rows', () => {
   })
 })
 
+describe('row two on a home', () => {
+  it('lists no view while moving through the tree: Home, the places on its right and More, with the views on the page beside it', async () => {
+    const { ask } = await home()
+    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'home' })).arrived).toBe(true)
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Depot'))
+    const row = screen.getByTestId('frame-places')
+    expect(within(row).getByTestId('frame-home').getAttribute('aria-current')).toBe('page')
+    expect(within(row).getByTestId('frame-page-decisions')).toBeDefined()
+    expect(within(row).getByRole('button', { name: 'More' })).toBeDefined()
+    expect(within(row).queryByTestId(/^frame-view-/)).toBeNull()
+    expect(within(row).queryByTestId('frame-new-view')).toBeNull()
+    expect(within(screen.getByTestId('boards')).getByRole('row', { name: /The board/ })).toBeDefined()
+  })
+
+  it('shows the scope\'s views once one is open, with Home to go back, and they are one press away by address', async () => {
+    const { ask } = await home()
+    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })).arrived).toBe(true)
+    expect(await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })).toBeDefined()
+    fireEvent.click(screen.getByTestId('frame-home'))
+    await waitFor(() => expect(within(screen.getByTestId('frame-views')).queryByRole('tab')).toBeNull())
+  })
+
+  it('leaves what a page over a home shows as it was', async () => {
+    await home()
+    fireEvent.click(screen.getByTestId('tree-place-register'))
+    await placePage()
+    expect(within(screen.getByTestId('frame-places')).getByTestId('frame-new-view')).toBeDefined()
+  })
+})
+
 describe('the foot of the tree', () => {
   it('says what its entries hold, each word going to that page by its own address', async () => {
     await home()
