@@ -10,7 +10,7 @@
  * needs a session is refused with a key rather than landed on the open scope,
  * and a resource URI carries the path.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
 import { summarise } from '../model/activity'
@@ -450,5 +450,35 @@ describe('the account a session says (ADR-0038, amended §10)', () => {
     expect(kept?.recordedBy).toEqual({ name: 'Ada', account: 'acc-1', via: 'An agent' })
     const mine = parsed(await handle({ id: '2', tool: 'observations.list', args: { recordedBy: 'me' } }, held))
     expect((mine.observations as { title: string }[]).map((one) => one.title)).toEqual(['Seen twice'])
+  })
+
+  it('reads the register for what is mine, and only then: a name as typed, and a merged id', async () => {
+    const people = vi.fn(() => [
+      { id: 'pe-1', name: 'Anna de Vries', pseudonym: 'Person 4K7Q', kind: 'internal' as const, state: 'active' as const },
+      { id: 'pe-old', pseudonym: 'Person 9QX2', kind: 'internal' as const, state: 'active' as const, mergedInto: 'pe-1' },
+    ])
+    const held = session({ account: () => ({ id: 'acc-1', name: 'Ada Example' }), me: () => 'pe-1', people })
+    const shell = { screen: () => ({}), open: () => {}, client: () => 'An agent', driving: new Driving() } as never
+    await handle({ id: '1', tool: 'observation.record', args: { title: 'Typed', where: 'Desk', by: 'De Vries, Anna' } }, held, shell)
+    people.mockClear()
+    const all = parsed(await handle({ id: '2', tool: 'observations.list', args: {} }, held))
+    expect((all.observations as unknown[]).length).toBe(1)
+    expect(people.mock.calls.length).toBe(0)
+    await handle({ id: '3', tool: 'observation.record', args: { title: 'Picked', where: 'Desk', by: { person: 'pe-old' } } }, held, shell)
+    const mine = parsed(await handle({ id: '4', tool: 'observations.list', args: { recordedBy: 'me' } }, held))
+    expect((mine.observations as { title: string }[]).map((one) => one.title)).toEqual(['Typed', 'Picked'])
+  })
+
+  it('asks the same of a scope that is not open', async () => {
+    const read = vi.fn(async () => ({
+      model: {
+        name: 'Elsewhere', elements: [], relations: [], diagrams: [],
+        observations: [{ id: 'ob-e', number: 1, title: 'Over there', date: '2026-09-01', impact: 'minor' as const, seen: 1, body: '', by: 'Ada Example', history: [] }],
+      },
+      activeDiagramId: '', ancestorDecisions: [],
+    }))
+    const held = session({ account: () => ({ id: 'acc-1', name: 'Ada Example' }), tree: { read } as never })
+    const mine = parsed(await handle({ id: '1', tool: 'observations.list', args: { scope: 'elsewhere', recordedBy: 'me' } }, held))
+    expect((mine.observations as { title: string }[]).map((one) => one.title)).toEqual(['Over there'])
   })
 })

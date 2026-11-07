@@ -1062,13 +1062,13 @@ const SPECS = [
       + 'with mergedInto — and mergedIntoScope where the survivor lives in another scope (ADR-0035); '
       + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true. Each says its '
       + 'tone — bright (something that works), neutral or problem (ADR-0038) — and who recorded it where that was kept; tone '
-      + 'lists one tone alone, and recordedBy: "me" what the person you act for recorded or saw.',
+      + 'lists one tone alone, and recordedBy: "me" what the person you act for recorded or saw: by their account or entry, a merged entry included, or by their full name typed as who saw it or kept as who recorded it.',
     inputSchema: {
       type: 'object',
       properties: {
         impact: { type: 'string', description: 'Only observations of this impact.', enum: ['minor', 'major', 'critical'] },
         tone: { type: 'string', description: 'Only observations of this tone: bright, something that works; neutral, not said either way; problem, something that goes wrong. Default: every tone. all and problems (everything but the bright spots) are read for one release.', enum: ['bright', 'neutral', 'problem', 'all', 'problems'] },
-        recordedBy: { type: 'string', description: 'me: only what the person you act for recorded, or saw.', enum: ['me'] },
+        recordedBy: { type: 'string', description: 'me: only what the person you act for recorded, or saw, by id or by their full name as typed. Where names are withheld from you, by id alone.', enum: ['me'] },
         analysed: { type: 'boolean', description: 'true: only those linked to a cause; false: only those not yet analysed.' },
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
         includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },

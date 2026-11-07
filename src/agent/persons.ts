@@ -34,6 +34,7 @@ import type { Person } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
 import { peopleMatching } from '../people/matching'
 import { registerOf, shownEnglish, shownPerson, signatureApart } from '../people/shown'
+import type { Register } from '../people/shown'
 import type { PeopleMatch } from '../search/search'
 import type { AgentAnswer } from './tools'
 
@@ -50,6 +51,8 @@ export type AgentRegister = {
   withhold: boolean
   /** Whether a signature that kept a name has come apart from its entry: forgotten, or gone (`signatureApart`). */
   apart: (id: PersonId) => boolean
+  /** The entries by id, for what is asked of them rather than said: whose an observation is (`observations/recordedBy`). */
+  entries: Register
 }
 
 /** The register as an agent reads it, over its entries and the organisation's policy. */
@@ -61,6 +64,7 @@ export function agentRegister(people: readonly Person[], policy: PeoplePolicy | 
     match: peopleMatching(people, shownEnglish, showing),
     withhold: showing.withhold,
     apart: (id) => signatureApart(id, register),
+    entries: register,
   }
 }
 

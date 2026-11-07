@@ -26,8 +26,8 @@ import type { FilterResult, Filters, SavedFilter, SavedFilters } from '../filter
 import { nodeKey, pictureCounts, pictureLinks } from '../graph'
 import type { PictureCounts, PictureSize } from '../graph'
 import type { Observation, ObservationBelow, ScopeAnalysis } from '../observation'
-import { isMine } from '../recordedBy'
-import { meIn } from '../../people/me'
+import { isMine, mineCaption, mineOf } from '../recordedBy'
+import type { Mine, MineCaption } from '../recordedBy'
 import { registerOf } from '../../people/shown'
 import type { Translate } from '../../i18n'
 import { usePersonNames } from '../../people/ui/names'
@@ -78,8 +78,8 @@ export type PictureFilters = {
   view: PictureView
   /** Left by the filters: everything, while none is on. */
   shows: (key: string) => boolean
-  /** Nobody is said to be the person using the app — no account and no *This is me* — so nothing is *mine*. */
-  nobodyIsMe: boolean
+  /** What is said beside *Mine* while it is on: who nobody is, or what it counts where it found nothing. */
+  mineSays: MineCaption | undefined
   /**
    * The counts over the picture: what it draws of the scopes in view, less
    * what the filters hid — told what the scopes over each explain of it.
@@ -121,8 +121,9 @@ export function usePictureFilters(deps: {
   const paths = useMemo(() => inView.map((one) => one.scope), [inView])
   // Who saw it is matched as it reads, the register's name or the text (ADR-0036 §8).
   const names = usePersonNames()
-  const { isMine, nobody: nobodyIsMe } = useIsMine()
+  const { isMine, mine } = useIsMine()
   const records = useMemo(() => filterRecords(inView, here.scope, names.text, isMine), [inView, here.scope, names, isMine])
+  const mineSays = filters.mine ? mineCaption(mine, records.some((one) => one.mine === true && one.counted)) : undefined
   const links = useMemo(() => pictureLinks(inView, here.scope), [inView, here.scope])
   const result = useMemo(() => applyFilters(records, links, filters), [records, links, filters])
   const hiddenLocal = useMemo(() => (viewLocal ? 0 : below.reduce((sum, one) => sum + recordsIn(one), 0)), [viewLocal, below])
@@ -150,7 +151,7 @@ export function usePictureFilters(deps: {
   return {
     filters, setFilters, clear, rowOpen, toggleRow: () => setRowOpen((open) => !open),
     active: activeFilters(filters, paths), result, inView, hasBelow, viewLocal, setViewLocal, hiddenLocal,
-    saved: savedApi, view, shows, nobodyIsMe,
+    saved: savedApi, view, shows, mineSays,
     counts: (above) => pictureCounts(inView, here.scope, { ...(above ? { above } : {}), ...(result.filtering ? { visible: result.visible } : {}) }),
     labelOf: (path) => (path === here.scope ? name : scopeLabel(path)),
     hereLabel: (s) => (here.scope === '' ? s('observation.pictureGlobal') : s('observation.pictureThisScope', { scope: name })),
@@ -161,15 +162,15 @@ export function usePictureFilters(deps: {
 }
 
 /**
- * Mine (ADR-0038, amended §10): recorded by my account, or by or seen by the
- * person I am. No new linking step: *This is me* and an administrator's link
- * stay as they are, and with nobody said the toolbar says where to say it.
+ * Mine (ADR-0038, amended §10, and again 7 November 2026): recorded by or seen
+ * by me, by id or by my full name as typed. No new linking step: *This is me*
+ * and an administrator's link stay as they are, and the toolbar says what it
+ * counts where it finds nothing. Worked out once per register, not per row.
  */
-function useIsMine(): { isMine: (one: Observation) => boolean; nobody: boolean } {
+function useIsMine(): { isMine: (one: Observation) => boolean; mine: Mine } {
   const access = usePersonNames().access
   return useMemo(() => {
-    const me = meIn(access?.me, registerOf(access?.people ?? []))?.id
-    const account = access?.account?.()?.id
-    return { isMine: (one: Observation) => isMine(one, account, me), nobody: me === undefined && account === undefined }
+    const mine = mineOf({ account: access?.account?.(), me: access?.me }, registerOf(access?.people ?? []))
+    return { isMine: (one: Observation) => isMine(one, mine), mine }
   }, [access])
 }

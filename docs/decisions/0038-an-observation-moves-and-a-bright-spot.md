@@ -3,7 +3,9 @@
 * Status: accepted, 16 October 2026; as built, 16 October 2026 (3.7.0):
   bright spots (§6), then the move (§1–§5); implemented, 16 October 2026
   (3.7.0); amended, 25 October 2026: a tone in three, who recorded it, and
-  a record's changes (§9–§12; not yet built, 3.8.0)
+  a record's changes (§9–§12; not yet built, 3.8.0); amended, 7 November
+  2026: *Mine* also counts a name as typed and whoever logged it (§10,
+  *Amendment, 7 November 2026*, below)
 * Date: 2026-10-16
 * Deciders: Wouter Simons
 * Extends: ADR-0021 §4 (a record that leaves the analysis stays as history,
@@ -426,6 +428,10 @@ The register gains a *Recorded by* column. **Mine** is: recorded by my
 account, or seen by (`by`) the person my account or *This is me* is linked
 to. With nobody said, *Mine* offers *This is me*. No new linking step.
 
+*Amended, 7 November 2026 (below): Mine also counts a name as typed and whoever
+logged it, follows the register's merges, and says what it counts when it finds
+nothing.*
+
 ### 11. A record's changes
 
 Every reader of a record that has a page — observation, cause, solution,
@@ -444,6 +450,59 @@ the scope's page with a restore.
 * `changes.list` (`about`) answers a record's changes.
 * `tone` and `recordedBy` are part of the turn to **format 15** (ADR-0041
   §14).
+
+## Amendment, 7 November 2026: Mine counts a name as typed, and whoever logged it
+
+§10 counted exact ids alone. Used, that left *Mine* empty for exactly the people
+it is for: `by` is free text wherever nobody picks an entry, so somebody whose
+observations carry their name as words — typed by them or for them, before the
+register or beside it — asked for theirs and was told they had none, while the
+words on every row said otherwise. An id merged into their entry did not count
+either, though the register reads it as them. A filter is a way of looking and no statement about
+who did what, so one that sometimes keeps a namesake's row costs little beside
+one that hides a person's own work. Who logged a record is also a fair reading
+of *mine*, whichever account it was logged from.
+
+**Mine is now**, on top of what §10 counts:
+
+* **A typed `by` that names me.** My names are the account's and, where I am
+  linked, the name my entry reads as. A text names me when every word of one of
+  them occurs in it as a whole word, in any order, folded by the one rule
+  (`model/textSearch`), so *De Vries, Anna* and *Anna de Vries (told at the
+  stand-up)* are one person, and a text naming several people counts for each.
+* **`recordedBy.name`, by the same rule**, where the record carries no entry:
+  whoever logged it counts even where the account differs.
+* **Ids through the register's merges.** An id merged into my entry is mine.
+
+**What stays out**, each because the register says so:
+
+* **A name of fewer than two words never matches by text**: *Anna* alone would
+  claim every Anna. Words are counted by what separates a name's parts, so a
+  double given name or a surname with an apostrophe alone is one word as well.
+* **A record that names an entry is answered by that entry**, never by the
+  words beside it. A `by` picked, or a `recordedBy` with a `person`, that is
+  another entry is somebody else even under the same name: the register has
+  told two namesakes apart, and duplicates are for a merge to join. And so a
+  name kept beside a forgotten entry connects to nobody (ADR-0036 §8).
+* **No pseudonym, and no name of a forgotten entry.** My entry's name is what
+  it reads as (`people/shown`): a forgotten one reads as its pseudonym, and is
+  compared to nothing.
+* **Where names are withheld from an agent** (ADR-0036 §13), its
+  `recordedBy: "me"` counts ids alone: which texts came back would tell it what
+  the pseudonym stands for.
+
+Because a person cannot see from the row why it was left out, **a *Mine* that
+finds nothing says in one sentence what it counts**, and an account linked to no
+entry is told that its entry would count too. *Nobody is you here yet* stays for
+nobody said. The name rule's known cost is written down rather than worked
+around: every word may come from a different person, so *Anna Bakker and Piet de
+Vries* counts for an Anna de Vries, and two people of one full name with no
+entry between them share their rows.
+
+The register is read once per list and a row costs a lookup or two and a fold of
+its own text (`observations/recordedBy`, `mineOf`, `isMine`): the screens and
+`observations.list` ask the one rule, and a large register costs nothing per
+row.
 
 ## As built, 25 October 2026: a record's changes (§11)
 

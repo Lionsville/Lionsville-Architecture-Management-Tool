@@ -304,17 +304,22 @@ async function withNames(said: AgentAnswer, session: SessionView | undefined, sh
   return register ? answerWithNames(said, register.words, register.withhold, register.apart) : said
 }
 
-/** The two reads that ask the register before they answer: a search for a name, and the export's tables. */
+/** The two reads that ask the register whatever their arguments: a search for a name, and the export's tables. */
 const ASKS_THE_REGISTER: readonly string[] = ['search', 'project.export']
 
-/** The register, for a tool that asks it before it answers; nothing for every other. */
-function registerAsked(tool: string, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentRegister | undefined> {
-  return ASKS_THE_REGISTER.includes(tool) ? registerFor(session, shell) : Promise.resolve(undefined)
+/** Whether a call asks for what is mine, the one list that needs the register only then: the names and merges it follows. */
+function asksForMine({ tool, args }: Pick<AgentRequest, 'tool' | 'args'>): boolean {
+  return tool === 'observations.list' && (args as { recordedBy?: unknown } | undefined)?.recordedBy === 'me'
+}
+
+/** The register, for a call that asks it before it answers; nothing for every other. */
+function registerAsked(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentRegister | undefined> {
+  return ASKS_THE_REGISTER.includes(request.tool) || asksForMine(request) ? registerFor(session, shell) : Promise.resolve(undefined)
 }
 
 async function answerRequest(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!session) return withoutSession(request, shell)
-  const register = await registerAsked(request.tool, session, shell)
+  const register = await registerAsked(request, session, shell)
   const view = {
     model: session.indexed(),
     current: session.current,
@@ -349,7 +354,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (request.tool === 'changes.list') return listChanges(request.args, session)
   if (asked !== undefined && asked !== view.scopePath) {
     if (spec.tier !== 'read' || SESSION_BOUND.includes(request.tool)) return notOpen(asked)
-    return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree, register)
+    return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree, register, whoOf(session))
   }
   if (spec.tier === 'read') return readHere(request, view, session)
 
@@ -559,7 +564,7 @@ async function withoutSession(request: AgentRequest, shell: ShellView | undefine
   const asked = scopeAsked(request.args)
   const spec = toolSpec(request.tool)
   if (asked !== undefined && spec.tier === 'read' && !SESSION_BOUND.includes(request.tool)) {
-    return readElsewhere(request.tool as ReadTool, request.args, asked, tree, await registerAsked(request.tool, undefined, shell))
+    return readElsewhere(request.tool as ReadTool, request.args, asked, tree, await registerAsked(request, undefined, shell))
   }
   return refused('agent.noProject')
 }
@@ -649,6 +654,7 @@ async function readOperating(tool: OperatingRead, args: unknown, tree: TreeView 
 /** A read over a scope that is not open, answered from its document as it stands on disk. */
 async function readElsewhere(
   tool: ReadTool, args: unknown, asked: string, tree: TreeView | undefined, register?: AgentRegister,
+  who: Pick<ReadView, 'me' | 'account'> = {},
 ): Promise<AgentAnswer> {
   const wrong = checkArguments(toolSpec(tool).inputSchema, args)
   if (wrong) return refused('agent.badArguments', wrong)
@@ -662,6 +668,7 @@ async function readElsewhere(
     ancestorDecisions: held.ancestorDecisions,
     tree,
     ...(register ? { register } : {}),
+    ...who,
   })
 }
 

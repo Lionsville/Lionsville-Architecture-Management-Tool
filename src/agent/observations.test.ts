@@ -15,10 +15,13 @@ import { fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
 import type { Cause, Observation, ScopeAnalysis } from '../model/observation'
 import { apply } from '../model/reducer'
+import type { Person } from '../people/person'
+import { DEFAULT_POLICY } from '../people/policy'
 import { answer } from './answer'
 import type { ReadTool } from './answer'
 import { commandFor } from './commandFor'
 import type { Prepared, WriteView } from './commandFor'
+import { agentRegister } from './persons'
 import type { AgentAnswer, ToolName } from './tools'
 
 const observation = (id: string, number: number, over: Partial<Observation> = {}): Observation => ({
@@ -196,6 +199,37 @@ describe('who recorded it (ADR-0038, amended §10)', () => {
     expect(recorded.model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada', account: 'acc-1' })
     const mine = answer('observations.list', { recordedBy: 'me' }, view(recorded.model, { account: () => ({ id: 'acc-1', name: 'Ada' }) }))
     expect((parse(mine) as { observations: { id: string }[] }).observations.map((one) => one.id)).toEqual(['ob-new-1'])
+  })
+
+  describe('recordedBy: "me" asks the screens\' rule (amended 7 November 2026)', () => {
+    const people: Person[] = [
+      { id: 'pe-1', name: 'Anna de Vries', pseudonym: 'Person 4K7Q', kind: 'internal', state: 'active' },
+      { id: 'pe-old', pseudonym: 'Person 9QX2', kind: 'internal', state: 'active', mergedInto: 'pe-1' },
+    ]
+    const held: HostModel = {
+      ...host,
+      observations: [
+        observation('ob-typed', 1, { by: 'De Vries, Anna' }),
+        observation('ob-logged', 2, { recordedBy: { name: 'Anna de Vries', account: 'acc-2' } }),
+        observation('ob-merged', 3, { by: { person: 'pe-old' } }),
+        observation('ob-other', 4, { by: 'Bo Jansen' }),
+      ],
+    }
+    const listed = (register: ReturnType<typeof agentRegister> | undefined) => (parse(answer('observations.list', { recordedBy: 'me' }, view(fromArrays(held), {
+      me: () => 'pe-1', ...(register ? { register } : {}),
+    }))) as { observations: { id: string }[] }).observations.map((one) => one.id)
+
+    it('counts a name as typed, who logged it and a merged id', () => {
+      expect(listed(agentRegister(people, undefined))).toEqual(['ob-typed', 'ob-logged', 'ob-merged'])
+    })
+
+    it('counts ids alone where the policy gives agents pseudonyms', () => {
+      expect(listed(agentRegister(people, { ...DEFAULT_POLICY, agentsSee: 'pseudonyms' }))).toEqual(['ob-merged'])
+    })
+
+    it('counts what the id says with no register to ask', () => {
+      expect(listed(undefined)).toEqual([])
+    })
   })
 })
 

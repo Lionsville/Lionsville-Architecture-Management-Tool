@@ -67,7 +67,7 @@ export type Filters = {
   search: string
   /** The tones switched off (ADR-0038, amended): all three are on by default. */
   tonesOff: readonly ObservationTone[]
-  /** Only mine: recorded by my account, or seen by the person it is linked to. */
+  /** Only mine: recorded or seen by me, by id or by my full name as typed (`recordedBy.ts`). */
   mine: boolean
 }
 

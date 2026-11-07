@@ -46,6 +46,13 @@ export type PictureToolbarProps = {
   s: Translate
 }
 
+/** What is said beside *Mine*, by what `recordedBy.ts` says the case is. */
+const MINE_SAYS = {
+  nobody: 'observation.mineNobody',
+  counts: 'observation.mineCounts',
+  noEntry: 'observation.mineNoEntry',
+} as const
+
 const Rule = () => <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 0.5 }} />
 
 export function PictureToolbar({ f, tab, scopeLabel, s }: PictureToolbarProps) {
@@ -226,8 +233,8 @@ function ToneSwitch({ f, s }: { f: PictureFilters; s: Translate }) {
           <ToggleButton value="mine" data-testid="filter-mine" sx={{ px: 1.25, py: 0.25, textTransform: 'none', fontSize: 13 }}>{s('observation.whoseMine')}</ToggleButton>
         </ToggleButtonGroup>
       </Tooltip>
-      {f.filters.mine && f.nobodyIsMe && (
-        <Typography variant="caption" color="text.secondary" data-testid="filter-mine-nobody" sx={{ maxWidth: 280 }}>{s('observation.mineNobody')}</Typography>
+      {f.mineSays && (
+        <Typography variant="caption" color="text.secondary" data-testid={`filter-mine-${f.mineSays}`} sx={{ maxWidth: 360 }}>{s(MINE_SAYS[f.mineSays])}</Typography>
       )}
     </>
   )

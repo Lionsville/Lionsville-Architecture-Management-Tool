@@ -64,7 +64,7 @@ import { planAnswer } from './merge'
 import { movePlanAnswer } from './move'
 import { ofTone, TONES } from '../observations/filter'
 import type { Tone } from '../observations/filter'
-import { isMine } from '../observations/recordedBy'
+import { isMine, mineOf } from '../observations/recordedBy'
 import type { ObservationBelow } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
@@ -110,9 +110,10 @@ export type ReadView = {
   /**
    * The register as the agent is told it (ADR-0036 §8, §13): what a person
    * picked from it reads as — the name, or the pseudonym the policy gives —
-   * and which ids a word of a search names. Read for the two reads that need
-   * it before they answer, `search` and `project.export`; every other answer
-   * is said by name as it leaves the handler (`persons.ts`).
+   * and which ids a word of a search names. Read for the reads that need it
+   * before they answer, `search`, `project.export` and `observations.list`
+   * asking for what is mine; every other answer is said by name as it leaves
+   * the handler (`persons.ts`).
    */
   readonly register?: AgentRegister
 }
@@ -768,14 +769,17 @@ function wentTo(absorbing: { id: string } | undefined, history: Parameters<typeo
 function observationRows(args: Args, own: readonly Observation[], causes: readonly Cause[], view: ReadView) {
   const impact = args.impact as string | undefined
   const analysed = args.analysed as boolean | undefined
+  // Mine: recorded or seen by the person, by id or by their full name as typed (§10, amended). Asked once, not per row.
+  const mine = args.recordedBy === 'me'
+    ? mineOf({ account: view.account?.(), me: view.me?.() }, view.register?.entries, { withhold: view.register?.withhold === true })
+    : undefined
   return own
     .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
     .filter((one) => args.includeArchived === true || !one.archived)
     .filter((one) => impact === undefined || one.impact === impact)
     // One tone, or every one (ADR-0038, amended §9); 3.7's all, problems and bright are read for one release.
     .filter((one) => listedTone(one, args.tone))
-    // Mine: recorded by the account, by the person, or seen by them (§10).
-    .filter((one) => args.recordedBy !== 'me' || isMine(one, view.account?.()?.id, view.me?.()))
+    .filter((one) => mine === undefined || isMine(one, mine))
     .filter((one) => analysed === undefined || (explainedBy(causes, one.id).length > 0) === analysed)
     .map((one) => observationLine(one, causes, own))
 }

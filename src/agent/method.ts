@@ -45,7 +45,7 @@ export const OBSERVATIONS_METHOD =
   + 'An observation has a tone: neutral unless said, a problem, or a bright spot — something that works, '
   + 'analysed the same way: its causes are what make it work, and a solution on its root cause spreads it, with '
   + 'the same gates and experiment. A bright spot and a problem are never merged; neutral merges with either. '
-  + 'Who recorded it is kept from whoever you act for, never passed; observations.list takes tone and recordedBy: "me". '
+  + 'Who recorded it is kept from whoever you act for, never passed; observations.list takes tone and recordedBy: "me", which counts the person by id and by their full name as typed. '
   + 'An observation recorded in the wrong scope moves (observation.move), and a move cuts every link that '
   + 'explains it, since a cause explains observations of its own scope only: move.plan says which first. '
   + 'A comment (comment.add) is about a record and never changes it: a question, a doubt or a pointer to '

@@ -25,6 +25,7 @@ import { ObservationsPage } from './ObservationsPage'
 import { DEFAULT_POLICY } from '../../people/policy'
 import { personNames, PersonNamesProvider } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
+import type { Person } from '../../people/person'
 
 afterEach(() => cleanup())
 
@@ -452,13 +453,13 @@ describe('mine (ADR-0038, amended §10)', () => {
       ? { ...one, recordedBy: { name: 'Ada', account: 'acc-1' } }
       : one.id === 'o2' ? { ...one, recordedBy: { name: 'Bo', account: 'acc-2' } } : one)),
   }
-  const mountAs = (account: { id: string; name: string } | undefined) => {
-    // Only what the names read of a register: who the account is.
-    const register = { people: [], policy: DEFAULT_POLICY, me: undefined, readOnly: true, ...(account ? { account: () => account } : {}) } as unknown as PeopleRegisterAccess
+  const mountAs = (account: { id: string; name: string } | undefined, shown: HostModel = recorded, held: { people?: readonly Person[]; me?: string } = {}) => {
+    // Only what the names read of a register: who the account is, and who the entries are.
+    const register = { people: held.people ?? [], policy: DEFAULT_POLICY, me: held.me, readOnly: true, ...(account ? { account: () => account } : {}) } as unknown as PeopleRegisterAccess
     renderShell(
       <PersonNamesProvider names={personNames(register, translator('en'))}>
         <ObservationsPage
-          open onClose={() => {}} model={recorded} groupName="Acme" below={below} path="acme/claims"
+          open onClose={() => {}} model={shown} groupName="Acme" below={below} path="acme/claims"
           scopeLabel={(path) => path} onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix}
           today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
         />
@@ -480,6 +481,42 @@ describe('mine (ADR-0038, amended §10)', () => {
     fireEvent.click(screen.getByTestId('filter-mine'))
     expect(screen.getByTestId('filter-mine-nobody').textContent).toContain('This is me')
     expect(screen.queryByTestId('observation-row-o1')).toBeNull()
+  })
+
+  it('finds a name as typed, whichever way round, with no caption', () => {
+    mountAs({ id: 'acc-9', name: 'De Vries, Anna' }, { ...recorded, observations: recorded.observations!.map((one) => (one.id === 'o2' ? { ...one, by: 'Anna de Vries (told at the stand-up)' } : one)) })
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('observation-row-o2')).toBeTruthy()
+    expect(screen.queryByTestId('observation-row-o1')).toBeNull()
+    expect(screen.queryByTestId('filter-mine-noEntry')).toBeNull()
+  })
+
+  it('says what it counts where it finds nothing, for an account linked to no entry', () => {
+    mountAs({ id: 'acc-9', name: 'Anna de Vries' })
+    expect(screen.queryByTestId('filter-mine-noEntry')).toBeNull()
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('filter-mine-noEntry').textContent).toBe(translator('en')('observation.mineNoEntry'))
+    expect(screen.queryByTestId('filter-mine-nobody')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Everyone' }))
+    expect(screen.queryByTestId('filter-mine-noEntry')).toBeNull()
+  })
+
+  it('says what it counts where it finds nothing, for a person with an entry', () => {
+    const people = [{ id: 'pe-1', name: 'Anna de Vries', pseudonym: 'Person 4K7Q', kind: 'internal' as const, state: 'active' as const }]
+    mountAs(undefined, recorded, { people, me: 'pe-1' })
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('filter-mine-counts').textContent).toBe(translator('en')('observation.mineCounts'))
+  })
+
+  it('follows a merge in the register, from the screen', () => {
+    const people = [
+      { id: 'pe-1', name: 'Anna de Vries', pseudonym: 'Person 4K7Q', kind: 'internal' as const, state: 'active' as const },
+      { id: 'pe-old', pseudonym: 'Person 9QX2', kind: 'internal' as const, state: 'active' as const, mergedInto: 'pe-1' },
+    ]
+    mountAs(undefined, { ...recorded, observations: recorded.observations!.map((one) => (one.id === 'o2' ? { ...one, by: { person: 'pe-old' } } : one)) }, { people, me: 'pe-1' })
+    fireEvent.click(screen.getByTestId('filter-mine'))
+    expect(screen.getByTestId('observation-row-o2')).toBeTruthy()
+    expect(screen.queryByTestId('filter-mine-counts')).toBeNull()
   })
 })
 
