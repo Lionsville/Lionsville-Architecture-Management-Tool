@@ -181,6 +181,13 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'sheet' })).toEqual({ initialHome: 'acme/rail', notice: 'shell.placeGone' })
   })
 
+  it('opens a drawing in its editor where the address says ?edit, so a reload keeps the editor up', () => {
+    const drawn = scope('acme/rail', ['one', 'two'])
+    expect(placeLanding(held(drawn), { scope: 'acme/rail', page: 'drawing', id: 'two', edit: true }).initialPage)
+      .toEqual({ page: 'drawing', id: 'two', edit: true })
+    expect(placeLanding(held(drawn), { scope: 'acme/rail', page: 'drawing', id: 'two' }).initialPage).toBeUndefined()
+  })
+
   it('selects the element a link names on the view it opens, where the link said one (ADR-0033, amended)', () => {
     const landed = placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two', select: 'app-1' })
     expect(landed.initialProject?.activeDiagramId).toBe('two')
