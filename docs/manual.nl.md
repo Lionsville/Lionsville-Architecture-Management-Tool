@@ -2223,121 +2223,68 @@ Elke wijziging is een stap: ze staat in Activiteit, ⌘Z draait haar terug, en
 elk eenheidstype, elke rol en elke verantwoordelijkheid heeft een eigen
 geschiedenis.
 
-### Eenheden en rollen
+### Structuur
 
-Een **eenheidstype** is het woord van de organisatie voor een soort eenheid —
-hoe ze haar teams, treinen of afdelingen ook noemt. Het tabblad tekent de
-eenheidstypen als de structuur die ze vormen. De organisatie is baan 0, links,
-en elk eenheidstype staat er één keer, in de baan van het langste pad
-ernaartoe vanaf de organisatie, met een lijn vanaf elke plek waar een eenheid
-ervan onder mag vallen: vanaf de organisatie voor een type dat bovenaan mag
-staan, zodat een type dat bovenaan of onder een ander mag vallen beide lijnen
-heeft. Een lijn die een baan overslaat loopt over een rail boven de kaarten,
-waar geen kaart haar verbergt; een lijn terug omhoog door de banen, waar
-typen onder elkaar mogen vallen, is gestippeld. De kaart van een type zegt
-waar het vandaan komt (de naam van de bibliotheek, of *eigen*), hoeveel
-eenheden ervan er vandaag zijn, welke rollen het heeft en hoeveel van elk, met
-**stuurt aan** bij een rol die aanstuurt, of een eenheid ervan meer dan één
-domein mag bedienen, van hoeveel applicaties een eenheid ervan hoogstens
-eigenaar hoort te zijn — een controle leest dat getal; niets weigert het — en
-zijn laatste dag als het die heeft.
+De pagina heeft vijf tabbladen, naar de vraag die elk beantwoordt: **Structuur**,
+**Rollen**, **Verantwoordelijkheden**, **Uitzonderingen** en **Bibliotheken**. Welk
+tabblad, deel en welke eenheid openstaat staat in het adres van de pagina, zodat een
+link en een agent hetzelfde scherm bereiken.
 
-Een druk op een kaart kiest het type: de plekken waar het onder mag vallen, de
-typen die eronder mogen vallen en zijn rollen lichten op, en de rest wordt
-gedempt. Een druk op een rol laat de typen oplichten die haar hebben, en nog
-eens drukken op wat gekozen is laat het los. Wat gekozen is opent rechts om te
-bewerken: daar vink je **Waar een eenheid van dit type onder mag vallen** aan,
-en **Volgorde in de baan** zet het type **Omhoog** of **Omlaag** in zijn baan,
-in één stap — het organogram zet eenheden in die volgorde. **Nieuw
-eenheidstype** en **Nieuwe rol** voegen er een toe, en **Uit een
-bibliotheek…** ernaast neemt over wat een bibliotheek biedt (hieronder); een
-model waarin nog niets staat, biedt eerst **Begin met een bibliotheek**. Onder de banen staat in
-**Valt nog nergens onder** een eenheidstype dat niet bovenaan staat en niet
-onder een eenheidstype valt dat ergens staat: geen eenheid ervan kan worden
-ingedeeld waar het type dat toestaat, en het telt mee onder **Vraagt aandacht**
-op het organisatiescherm en staat op de pagina Controles. **Rollen die nog in geen eenheidstype zitten** houdt
-de rollen die geen type heeft.
+Een **eenheidstype** is het woord van de organisatie voor een soort eenheid.
+**Structuur** tekent de typen als de structuur die ze vormen, per **niveau**: hoe diep
+een eenheid van het type kan zitten. Elke kaart noemt het type, hoeveel eenheden het nu
+heeft en de rollen, elk op een regel, met *geeft leiding* bij een leidinggevende rol.
+Onder de niveaus zegt één regel wat nergens zit en welke rollen in geen type zitten.
 
-Een **rol** heeft een naam, een korte naam voor de matrix, een doel, en een
-aandeel in elke verantwoordelijkheid. **Stuurt de eenheid aan** markeert een
-rol waarvan de houder de mensen van de eenheid en van de eenheden eronder
-aanstuurt. De app houdt die markering bij; een uitvoering die weet wie mensen
-zijn, kan er een recht aan verbinden.
+Op een kaart drukken kiest het type: waar het mag zitten, wat erin mag zitten en de
+rollen lichten op, de rest dimt, en rechts opent de lezer. Op een rol drukken kiest die
+en tekent de rapportagelijnen, doorgetrokken voor een leidinggevende en gestippeld voor
+een functionele. Een leeg model toont de drie stappen op volgorde, met **Beginnen vanuit
+een bibliotheek** voorop.
 
-**Rapporteert aan**, op een rol, zegt waaraan de mensen in die rol
-rapporteren, waar de rol ook gehouden wordt: aan de mensen in een andere rol,
-**in dezelfde eenheid** — een developer aan de tech lead van het eigen team,
-een scrum master aan de product owner — of **in de dichtstbijzijnde eenheid
-erboven** die de rol heeft, anders in de ene eenheid van de organisatie die
-haar heeft. Zo rapporteert de technologiemanager van een business unit aan
-het hoofd technologie in de technologieafdeling, één keer gezegd op de rol
-technologiemanager, terwijl de rest van de business unit rapporteert zoals ze
-genest is. Er zijn twee rijen: een lijn van een **Lijnmanager** — de mensen
-in die rol sturen hen aan, in plaats van de nesting — en een
-**Functionele**: getoond, en beslist niets. Een rol kan beide hebben, zoals
-in een matrixorganisatie. **Vanaf** en **Tot en met** geven een lijn dagen.
-**Rapporteren aan haar**, onder de rijen, noemt de rollen die aan deze
-rapporteren.
+De lezer van een type zegt waar het mag zitten, met **Wijzigen**, en elke rol op één
+regel: hoeveel, en waaraan de houders rapporteren. Alleen een lijn die dit type wijzigt
+valt op, als *eigen lijn hier*. **Meer** bevat of een eenheid meerdere domeinen mag
+bedienen, het maximum aan applicaties, de volgorde in het niveau en de dagen.
 
-Dezelfde twee rijen staan onder elke rol die een eenheidstype heeft, en zeggen
-wat de rol zegt tot het type het voor zijn eigen eenheden anders zegt: een
-andere rol, of **Via de nesting in dit type**, wat de lijn van de rol daar
-weghaalt. Een eenheid zegt het voor zichzelf anders in haar inspector
-(*Eenheden en de mensen erin*). Een lijn van een lijnmanager waardoor een
-keten van managers terugkomt waar ze begon, en een lijn van een rol naar
-zichzelf in dezelfde eenheid, worden daar meteen geweigerd, met de reden.
+Op de regel van een rol drukken toont aan wie de houders rapporteren en **waar dat
+vandaan komt**, de bovenste regel eerst: de eigen lijn van een houder, van de eenheid,
+van dit type, van de rol, dan de nesting. **Lijn wijzigen voor** dit type zet hier een
+lijn; **Terug naar wat de rol zegt** haalt hem weg. Een lijn die een kring zou sluiten
+wordt geweigerd, met de reden.
 
-**De structuur tekent de lijnen van een rol als je haar kiest**, en anders
-geen, zodat de kaarten leesbaar blijven. Kies de chip van een rol op een kaart
-en de lijnen uit die chip en naar die chip worden getekend, zoals ze voor het
-type van die kaart gelden: op de kaart zelf voor een lijn in dezelfde
-eenheid, naar de kaarten erboven die de rol hebben, anders naar elke kaart die
-haar heeft — in de waarschuwingskleur waar een eenheid zou moeten zeggen
-welke. De chips aan de andere kant lichten op; een kaart die de rol ook heeft,
-tekent niets tot haar eigen chip gekozen is. Kies je de rol ergens anders — in
-de bak, of op het tabblad **Verantwoordelijkheden** — dan worden haar lijnen vanaf elke kaart
-getekend die haar heeft. Een eenheidstype kiezen tekent geen lijnen.
-Doorgetrokken voor die van een lijnmanager, gestippeld voor een functionele.
+### Rollen
 
-**Regels die het model leest** zeggen wiens rol waarvoor instaat: de eigenaar
-van een applicatie is wie een gekozen rol heeft in de eenheid waar de
-applicatie bij hoort, en de eigenaar van een domein wie een gekozen rol heeft
-in de eenheid die het bedient. De eigenaar wordt uitgerekend op de dag waarop
-je kijkt, dus hij volgt wie de rol heeft, en er wordt geen naam opgeslagen.
+**Rollen** toont elke rol: waar die zit, de leidinggevende en het aandeel. Een rol kiezen
+opent hem groot: doel, houders en vacatures, de lijnen, waarvoor hij instaat, wie eraan
+rapporteert, en elke eenheid met wie de rol daar vervult. Op een eenheid drukken gaat naar
+haar plaats in de organisatie.
 
-Een rol verwijderen haalt haar in één stap uit de eenheidstypen die haar
-hebben en uit de regels die haar noemen. Hebben mensen haar vandaag of later,
-dan zegt de vraag ervoor hoeveel en in welke eenheden, omdat hun toewijzingen
-dan een rol noemen die er niet meer is; laat je de rol liever op een dag
-eindigen, dan staan ze ernaast met **Verplaats de mensen**. Een
-verantwoordelijkheid verwijderen neemt het aandeel van elke rol erin mee.
+De twee eigenaarsregels staan boven de lijst. Een regel die niet is ingesteld zegt wat
+daarvan het gevolg is. Een rol verwijderen haalt hem uit de typen en de regels, in één
+stap; vervullen mensen hem nog, dan zegt de vraag hoeveel en waar.
 
 ### Verantwoordelijkheden
 
-Het tabblad **Verantwoordelijkheden** is een matrix: een rij per
-verantwoordelijkheid, gegroepeerd zoals de organisatie groepeert —
-bijvoorbeeld naar waardestroom — en een kolom per rol. Druk op een cel om het
-aandeel van die rol te laten lopen door R (uitvoerend), A
-(eindverantwoordelijk), C (geraadpleegd) en I (geïnformeerd), en terug naar
-niets. Elke verantwoordelijkheid hoort precies één A te hebben: een rij met
-geen of met meerdere zegt dat in de laatste kolom, en ze staat bij wat de
-organisatie over zichzelf tegenspreekt. Niets weigert het — een model in
-wording gaat door allebei heen.
+**Verantwoordelijkheden** opent op een deel: links een boom van de groepen, rechts een
+raster met de rollen die daarin een aandeel hebben. De andere rollen zijn samengevouwen
+in één kolom **+N**. **Hele organisatie** toont alles, voor audits en export. **Eenheid**
+beperkt het raster tot de rollen van één eenheid en zegt wie ze vervult; een rij met de A
+buiten de eenheid zegt waar die zit. De lezer van een eenheid op het organigram leidt
+hierheen.
 
-Boven de matrix houdt **Rollen** de kolommen van de gekozen rollen over en de
-verantwoordelijkheden waarin een van hen een aandeel heeft, en houdt
-**Groepen** de gekozen groepen over; is niets gekozen, dan staat alles er. De
-laatste kolom leest nog steeds elke rol, getoond of niet. Wie het tabblad
-verlaat en terugkomt, houdt wat gekozen was.
+Op een cel drukken selecteert en schrijft niets. R, A, C, I of – op het toetsenbord, of de
+knoppen onder het raster, zetten de letter als één stap. Elke verantwoordelijkheid wil
+precies één A: een rij zonder of met meer zegt dat onder **Nodig**, de boom telt wat eronder
+zit en de telling boven het raster geldt altijd de hele organisatie. **Filter** houdt rollen
+en groepen over, **Ordenen** bevat de volgorde en **Exporteren** bewaart CSV.
 
-De matrix opent in de **eigen volgorde** van de organisatie. Druk op de kop
-van een rol in de matrix en dan in haar inspector op **Naar links** of **Naar
-rechts** om haar kolom te schuiven; druk op de naam van een
-verantwoordelijkheid om haar te schuiven tussen die van haar groep; druk op ↑ en ↓ in de kop van een groep om de hele
-groep te schuiven. Elke verschuiving is één stap die ⌘Z terugdraait. Iets
-nieuws staat achteraan tot het geschoven wordt. **A–Z** toont de rollen, de
-groepen en de verantwoordelijkheden in plaats daarvan op naam, en laat de
-eigen volgorde zoals ze is.
+### Uitzonderingen
+
+**Uitzonderingen** is de ene lijst van alles wat iets anders zegt dan het model: de lijn
+van een type, van een eenheid, van één houder, en een rol buiten de plaatsen van de
+eenheid. Een rij kiezen toont hem groot, met **Terug naar standaard**. Zeggen meerdere typen
+hetzelfde, dan biedt de pagina **De rol wijzigen** aan: dat vraagt eerst, en is één stap.
 
 ### Bibliotheken
 

@@ -2035,114 +2035,102 @@ The **Operating model** card on the organisation's home opens the
 organisation's own design of how it is organised: the kinds of unit it has,
 the roles each kind holds, and what each role is responsible for — in its own
 words. It is kept at the organisation and edited there; opened over any other
-scope it only reads, and says so. Every change is a step: it shows in
+scope it reads the organisation's model in full, says so once, and offers the way there. Every change is a step: it shows in
 Activity, ⌘Z takes it back, and each unit type, role and responsibility has a
 history of its own.
 
-### Units and roles
+### Structure
 
-A **unit type** is the organisation's word for a kind of unit — whatever it
-calls its teams, trains or departments. The tab draws the unit types as the
-structure they make. The organisation is lane 0, on the left, and each unit
-type stands once, in the lane of the longest path to it from the
-organisation, with a line from every place a unit of it may sit: from the
-organisation for a type at the top, so a type that may sit at the top or
-inside another shows both lines. A line that skips a lane runs along a rail
-above the cards, where no card hides it; a line back up the lanes, where
-types may sit in each other, is dashed. A type's card says where it came from
-(the library's name, or *own*), how many units of it there are today, the
-roles it holds with how many of each and **manages** on a managing one,
-whether a unit of it may serve more than one domain, how many applications a
-unit of it should own at most — a check reads that number; nothing refuses
-it — and its last day where it has one.
+The page has five tabs, by the question each answers: **Structure**, **Roles**,
+**Responsibilities**, **Exceptions** and **Libraries**. Which tab, part and unit
+are up is in the page's address, so a link and an agent reach the same screen.
 
-Pressing a card picks the type: the places it may sit, the types that may sit
-in it and its roles light up, and everything else dims. Pressing a role lights
-the types that hold it, and pressing the pick again lets it go. What is picked
-opens on the right to edit: **Where a unit of this type may sit** is ticked
-there, and **Order in its lane** moves the type up or down its lane, one step —
-the organisation chart lists units in that order. **New unit type** and **New
-role** add one, and **From a library…** beside them brings in what a library
-offers (below); a model with nothing in it yet offers **Start from a
-library** first. Under the lanes, **Sits nowhere yet** holds a unit type that is
-neither at the top nor in a unit type that sits anywhere: no unit of it can be
-placed where its type allows, and it is counted on the **Checks** line on the
-organisation's home and listed on its Checks page. **Roles in no unit type yet** holds the roles no type
-holds.
+A **unit type** is the organisation's word for a kind of unit. **Structure** draws
+the unit types as the structure they make, by **level**: how deep a unit of the
+type can sit. Each card names the type, how many units it has today, and its roles,
+one line each, with *manages* on a managing one. A line runs from every place a unit
+may sit; one that skips a level runs along a rail above the cards, and one back up
+the levels is dashed. Under the levels, one line says what sits nowhere and which
+roles are in no unit type, and names them.
+A type that sits nowhere is also counted on the **Checks** line on the organisation's
+home and listed on its Checks page.
 
-A **role** has a name, a short name for the matrix, a purpose, and its part in
-each responsibility. **Manages its unit** marks a role whose holder manages
-the people of the unit and of the units below it. The app keeps the mark; a
-build that knows who people are may grant a right from it.
+Pressing a card picks the type: where it may sit, what may sit in it and its roles
+light up, the rest dims, and its reader opens on the right. Pressing a role picks it
+and draws its reporting lines, solid for a line manager's and dotted for a functional
+one, in the warning colour where a unit would have to say which. Pressing the pick
+again lets it go. An empty model shows the three things to say, in order, with
+**Start from a library** first.
 
-**Reports to**, on a role, says where the holders of that role report
-wherever the role is held: to the holders of another role, either **in the
-same unit** — a developer to the team's own tech lead, a scrum master to its
-product owner — or **in the nearest unit above** that has the role, else in
-the one unit of the organisation that has it. So a business unit's technology
-manager reports to the head of technology in the technology department,
-said once on the technology manager's role, while the rest of the business
-unit reports up the way it is nested. There are two rows: a **Line
-manager**'s line — its holders manage them, in place of the nesting — and a
-**Functional** one: shown, and deciding nothing. A role may have both, as it
-does in a matrix organisation. **From** and **Until** give a line days.
-**Reported to by**, under the rows, lists the roles that report to this one.
+A type's reader says where it may sit, with **Change**, and each role it holds in one
+line: how many, then where its holders report. A line this type changes is the only
+one that speaks up, as *own line here*. **More** holds whether a unit may serve more
+than one domain, how many applications a unit should own at most (a check warns above
+it; nothing refuses it), its order in its level, and its days.
 
-The same two rows sit under each role a unit type holds, and say what the
-role says until the type says otherwise for its own units: another role, or
-**By nesting in this type**, which takes the role's line away there. A unit
-says otherwise for itself in its inspector (*Units and the people in them*).
-A line manager's line that would make a chain of managers come back to where
-it started, and a line from a role to itself in the same unit, are refused
-there and then, and said why.
+Pressing a role's line shows who its holders report to and **where that comes from**,
+top rule first: one holder's own line, the unit's, this type's, the role's, then
+nesting. **Change the line for** this type sets a line here, solid or dotted, in the
+same unit or the nearest above, with days; **Back to what the role says** takes it
+away; another choice is **By nesting in this type**. A line manager's line that would
+make a chain come back to where it started, and a line from a role to itself in the
+same unit, are refused there and then, and said why. A unit says otherwise for itself
+in its inspector (*Units and the people in them*).
 
-**The structure draws a role's lines when you pick it**, and none otherwise,
-so the cards stay readable. Pick a role's chip on a card and the lines from
-that chip and into it are drawn, as they are for that card's type: on the card
-itself for a line in the same unit, to the cards above it that hold the role,
-else to every card that holds it — in the warning colour where a unit would
-have to say which. The chips at the other ends light up; a card that holds
-the role too draws nothing until its own chip is picked. Pick the role
-anywhere else — in the tray, or on the **Responsibilities** tab — and its
-lines are drawn from every card that holds it. Picking a unit type draws no
-lines. Solid for a line manager's, dotted for a functional one.
+### Roles
 
-**Rules the model reads** say whose role answers for what: an application's
-owner is the holder of a chosen role in the unit it belongs to, and a domain's
-owner the holder of a chosen role in the unit that serves it. The owner is
-worked out on the day it is looked at, so it follows whoever holds the role
-and no name is stored.
+**Roles** lists every role: where it is held, its line manager and its part. Selecting
+one opens it large: its purpose, its holders and vacant places, its two lines, what it
+answers for, who reports to it, each unit that holds it and who holds it there, and
+whether it **manages** the people of its unit and the units below. Pressing a unit goes
+to its place in the organisation. **More** holds the short name, its column's order and
+its days.
 
-Removing a role takes it out of the unit types that hold it and the rules that
-name it, in one step. Where people hold it today or later, the question before
-it goes says how many and in which units, since their assignments would name a
-role that is gone; ending the role on a day instead lists them beside it with
-**Move the people**. Removing a responsibility takes every role's part in it
-with it.
+The two owner rules stand above the list: an application's owner is the holder of a
+chosen role in the unit it belongs to, and a domain's the holder of a chosen role in the
+unit that serves it. It is worked out on the day it is looked at, so it follows whoever
+holds the role and no name is stored; a rule not set says what follows from that.
+
+Removing a role takes it out of the unit types that hold it and the rules that name it,
+in one step. Where people hold it today or later, the question before it goes says how
+many and in which units; ending the role on a day instead lists them beside it with
+**Move the people**. Removing a responsibility takes every role's part in it with it.
 
 ### Responsibilities
 
-The **Responsibilities** tab is a matrix: a row per responsibility, grouped as
-the organisation groups them — by value stream, for example — and a column per
-role. Press a cell to take that role's part through R (responsible), A
-(accountable), C (consulted) and I (informed), and back to nothing. Each
-responsibility wants exactly one A: a row with none, or with several, says so
-in its last column, and it is listed among what the organisation contradicts
-about itself. Nothing refuses it — a model being worked on passes through both.
+**Responsibilities** opens on a part: a tree of the responsibility groups and their
+responsibilities on the left, and a grid of the roles with a part in what is picked,
+by their full name. The other roles fold into one **+N** column: pressing it shows
+them, and **Add one as a column** adds one. **Whole organisation** shows every row under
+its group's heading, by short name, for audits and export.
 
-Over the matrix, **Roles** keeps the columns of the roles picked and the
-responsibilities any of them has a part in, and **Groups** keeps the groups
-picked; with nothing picked, everything is shown. The last column still reads
-every role, shown or not. Leaving the tab and coming back keeps what was
-picked.
+**Unit** narrows the grid to one unit's roles, the type's and its own, and says under
+each who holds it today. A row whose A sits outside the unit names where. Letters
+belong to the role, so two units of a type read the same. A unit's inspector on the
+chart leads here with **What its roles answer for**.
 
-The matrix opens in the organisation's **own order**. Press a role's heading
-in the matrix and press **Move left** or **Move right** in its inspector to
-move its column; press a responsibility's name to move it among those of its group; press the
-↑ and ↓ on a group's heading to move the whole group. Each move is one step
-that ⌘Z takes back. Something new stands last until it is moved. **A–Z**
-shows the roles, the groups and the responsibilities by name instead, and
-leaves the own order as it is.
+A press on a cell selects it and writes nothing. R, A, C, I or – on the keyboard, or the
+buttons under the grid, set the letter as one step; the arrows walk the grid, whose
+headings stay put, and the line under it names the row, the role and the letter. Pressing
+a role's heading opens its reader, and a row's name opens the responsibility.
+
+Each responsibility wants exactly one A. A row with none or several says so under
+**Needs**, each group in the tree counts what is below it, and the count above the grid
+is always of the whole organisation: **Show only these** lists those rows. Nothing
+refuses it, since a model being worked on passes through both. **Filter** keeps roles
+and groups. **Arrange** holds the order: **Own order** or **A–Z**, and moving groups,
+responsibilities and role columns, each one step. **Export** saves this view or the
+whole organisation as CSV.
+
+### Exceptions
+
+**Exceptions** is the one list of every place that says otherwise than the model, with
+the default it departs from: a unit type's line, a unit's own, one holder's own, and a
+role held outside the unit's slots. Line managers' lines show unless the filter asks for
+functional ones. Selecting a row reads it large, with **Back to default**, and a way to
+the type, the unit and the role. Where several unit types say the same line, the page
+says so and offers **Change the role**: it asks first, since it moves lines for many
+units, and is one step.
 
 ### Libraries
 
@@ -2151,7 +2139,7 @@ value streams (the seven of its version 3.0) and **Team Topologies**. Each is
 read-only, has a version, and is written in English, Dutch and German, in
 this app's own words.
 
-**From a library…** opens them in a dialog over the page. The libraries are
+**Libraries** lists them, and selecting one reads it large with what came in from it. **From a library…** opens them in a dialog over the page. The libraries are
 listed on the left; the one picked is drawn in the middle as the structure it
 would make, in the same lanes as your own, read-only: each unit type with its
 purpose and the roles it holds, and under the lanes the roles none of its
@@ -2171,16 +2159,15 @@ lands beside your deepest type that holds nothing, so Team Topologies' teams
 sit beside your teams rather than loose at the top. Each role is brought in,
 or one of yours is used for it — suggested where the library says the two are
 alike, or where the names are the same — and then nothing is brought in for
-it. **Bring in** says how many items the step makes and writes them as one
+it but its letters on what the step makes, so those rows arrive with their A. **Bring in** says how many items the step makes and writes them as one
 step: the page then marks what is new until you leave it, and the message at
 the bottom offers **Undo**, which takes back that step while nothing has
 happened since. ⌘Z takes it back too.
 
 What comes in belongs to the organisation: rename it, rewrite it, cut it. The
 **Libraries** tab shows, for each library, **What came in**: the library's
-word beside what it is called here, which you can rename in place — press the
-library's word to open the item where it is edited — and what has changed
-since; and the ones that used one of yours, as **used your …**. A name or a
+word beside what it is called here — press the library's word to open the item,
+which is where it is renamed — and what has changed since; and the ones that used one of yours, as **used your …**. A name or a
 place chosen on the way in is not a change; a unit type moved since is one.
 Each item remembers the library entry and the version it was based on, so
 **Compare with the libraries** lists how it differs from the library as it

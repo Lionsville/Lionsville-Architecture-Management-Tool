@@ -2348,126 +2348,65 @@ das steht dann auch da. Jede Änderung ist ein Schritt: Sie steht in der
 Aktivität, ⌘Z nimmt sie zurück, und jeder Einheitstyp, jede Rolle und jede
 Verantwortung hat einen eigenen Verlauf.
 
-### Einheiten und Rollen
+### Struktur
 
-Ein **Einheitstyp** ist das Wort der Organisation für eine Art von Einheit —
-wie auch immer sie ihre Teams, Züge oder Abteilungen nennt. Der Reiter zeichnet
-die Einheitstypen als die Struktur, die sie bilden. Die Organisation ist Bahn
-0, links, und jeder Einheitstyp steht einmal darin, in der Bahn des längsten
-Wegs von der Organisation zu ihm, mit einer Linie von jedem Platz, an dem eine
-Einheit davon stehen darf: von der Organisation für einen Typ, der ganz oben
-stehen darf, sodass ein Typ, der ganz oben oder in einem anderen stehen darf,
-beide Linien zeigt. Eine Linie, die eine Bahn überspringt, läuft über eine
-Schiene oberhalb der Karten, wo keine Karte sie verdeckt; eine Linie zurück
-die Bahnen hinauf, wo Typen ineinander stehen dürfen, ist gestrichelt. Die
-Karte eines Typs sagt, woher er kommt (der Name der Bibliothek, oder *eigen*),
-wie viele Einheiten davon es heute gibt, welche Rollen er hat und wie viele
-von jeder, mit **führt** an einer führenden Rolle, ob eine Einheit davon mehr
-als eine Domäne bedienen darf, wie viele Anwendungen eine Einheit davon
-höchstens verantworten sollte — eine Prüfung liest diese Zahl; nichts
-verweigert sie — und seinen letzten Tag, wenn er einen hat.
+Die Seite hat fünf Reiter, nach der Frage, die jeder beantwortet: **Struktur**, **Rollen**,
+**Verantwortlichkeiten**, **Ausnahmen** und **Bibliotheken**. Welcher Reiter, Teil und welche
+Einheit offen ist, steht in der Adresse der Seite, sodass ein Link und ein Agent denselben
+Bildschirm erreichen.
 
-Ein Druck auf eine Karte wählt den Typ: die Plätze, an denen er stehen darf,
-die Typen, die in ihm stehen dürfen, und seine Rollen leuchten auf, alles
-andere tritt zurück. Ein Druck auf eine Rolle lässt die Typen aufleuchten, die
-sie haben, und ein erneuter Druck auf das Gewählte lässt es los. Das Gewählte
-öffnet sich rechts zum Bearbeiten: dort wird **Wo eine Einheit dieses Typs
-stehen darf** angehakt, und **Reihenfolge in der Bahn** schiebt den Typ **Nach
-oben** oder **Nach unten** in seiner Bahn, in einem Schritt — das Organigramm
-führt Einheiten in dieser Reihenfolge. **Neuer Einheitstyp** und **Neue Rolle**
-fügen einen hinzu, und **Aus einer Bibliothek…** daneben übernimmt, was eine
-Bibliothek bietet (siehe unten); ein Modell, in dem noch nichts steht, bietet
-zuerst **Mit einer Bibliothek beginnen**. Unter den Bahnen hält **Gehört noch nirgends hin** einen
-Einheitstyp, der weder ganz oben steht noch zu einem Einheitstyp gehört, der
-irgendwo steht: Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es
-erlaubt, und er zählt unter **Braucht Aufmerksamkeit** auf dem
-Organisationsbildschirm mit und steht auf dessen Seite Prüfungen. **Rollen, die noch in keinem Einheitstyp vorkommen**
-hält die Rollen, die kein Typ hat.
+Ein **Einheitstyp** ist das Wort der Organisation für eine Art von Einheit. **Struktur**
+zeichnet die Typen als die Struktur, die sie bilden, nach **Ebene**: wie tief eine Einheit des
+Typs sitzen kann. Jede Karte nennt den Typ, wie viele Einheiten er heute hat und seine Rollen,
+je eine Zeile. Unter den Ebenen sagt eine Zeile, was nirgends sitzt und welche Rollen in keinem
+Typ sind.
 
-Eine **Rolle** hat einen Namen, einen Kurznamen für die Matrix, einen Zweck
-und einen Anteil an jeder Verantwortung. **Führt die Einheit** kennzeichnet
-eine Rolle, deren Inhaber die Menschen der Einheit und der Einheiten darunter
-führt. Die App hält das Kennzeichen; eine Ausgabe, die weiß, wer die Menschen
-sind, kann daraus ein Recht ableiten.
+Eine Karte drücken wählt den Typ: wo er sitzen darf, was darin sitzen darf und seine Rollen
+leuchten auf, der Rest tritt zurück, und rechts öffnet sich der Leser. Eine Rolle drücken wählt
+sie und zeichnet ihre Berichtslinien, durchgezogen für die Führungskraft und gepunktet für eine
+fachliche. Ein leeres Modell zeigt die drei Schritte der Reihe nach.
 
-**Berichtet an**, auf einer Rolle, sagt, an wen die Inhaber dieser Rolle
-berichten, wo immer die Rolle gehalten wird: an die Inhaber einer anderen
-Rolle, **in derselben Einheit** — eine Entwicklerin an den Tech Lead des
-eigenen Teams, ein Scrum Master an die Product Ownerin — oder **in der
-nächsten Einheit darüber**, die die Rolle hat, sonst in der einen Einheit der
-Organisation, die sie hat. So berichtet die Technologiemanagerin einer
-Geschäftseinheit an die Leitung Technologie in der Technologieabteilung,
-einmal auf der Rolle Technologiemanager gesagt, während der Rest der
-Geschäftseinheit so berichtet, wie sie verschachtelt ist. Es gibt zwei
-Zeilen: die Linie einer **Führungskraft** — deren Inhaber führen sie,
-anstelle der Verschachtelung — und eine **Fachliche**: gezeigt, und sie
-entscheidet nichts. Eine Rolle kann beide haben, wie in einer
-Matrixorganisation. **Ab** und **Bis einschließlich** geben einer Linie Tage.
-**Berichten an sie**, unter den Zeilen, nennt die Rollen, die an diese
-berichten.
+Der Leser eines Typs sagt, wo er sitzen darf, mit **Ändern**, und jede Rolle in einer Zeile: wie
+viele, und an wen ihre Inhaber berichten. Nur eine Linie, die dieser Typ ändert, fällt auf, als
+*eigene Linie hier*. **Mehr** enthält, ob eine Einheit mehrere Domänen bedienen darf, die
+Höchstzahl der Anwendungen, die Reihenfolge und die Tage.
 
-Dieselben zwei Zeilen stehen unter jeder Rolle, die ein Einheitstyp hat, und
-sagen, was die Rolle sagt, bis der Typ es für seine eigenen Einheiten anders
-sagt: eine andere Rolle, oder **Über die Verschachtelung in diesem Typ**,
-was die Linie der Rolle dort wegnimmt. Eine Einheit sagt es für sich selbst
-in ihrem Inspektor anders (*Einheiten und die Menschen darin*). Eine Linie
-einer Führungskraft, durch die eine Kette von Führungskräften dorthin
-zurückkehrt, wo sie begann, und eine Linie von einer Rolle zu sich selbst in
-derselben Einheit werden dort sofort abgelehnt, mit dem Grund.
+Die Zeile einer Rolle drücken zeigt, an wen ihre Inhaber berichten und **woher das kommt**, die
+oberste Regel zuerst: die eigene Linie einer Person, der Einheit, dieses Typs, der Rolle, dann die
+Verschachtelung. **Linie ändern für** diesen Typ setzt hier eine Linie; **Zurück zu dem, was die
+Rolle sagt** nimmt sie weg. Eine Linie, die einen Kreis schließen würde, wird abgelehnt, mit Grund.
 
-**Die Struktur zeichnet die Linien einer Rolle, wenn Sie sie wählen**, und
-sonst keine, damit die Karten lesbar bleiben. Wählen Sie den Chip einer Rolle
-auf einer Karte, und die Linien aus diesem Chip und in ihn werden gezeichnet,
-wie sie für den Typ dieser Karte gelten: auf der Karte selbst für eine Linie
-in derselben Einheit, zu den Karten darüber, die die Rolle haben, sonst zu
-jeder Karte, die sie hat — in der Warnfarbe, wo eine Einheit sagen müsste,
-welche. Die Chips am anderen Ende leuchten auf; eine Karte, die die Rolle auch
-hat, zeichnet nichts, bis ihr eigener Chip gewählt ist. Wählen Sie die Rolle
-anderswo — in der Ablage oder auf dem Reiter **Verantwortungen** —, werden ihre Linien
-von jeder Karte gezeichnet, die sie hat. Einen Einheitstyp zu wählen zeichnet
-keine Linien. Durchgezogen für die einer Führungskraft, gepunktet für eine
-fachliche.
+### Rollen
 
-**Regeln, die das Modell liest** sagen, wessen Rolle wofür einsteht:
-Verantwortlich für eine Anwendung ist, wer eine gewählte Rolle in der Einheit
-innehat, zu der sie gehört, und für eine Domäne, wer eine gewählte Rolle in
-der Einheit innehat, die sie bedient. Der Verantwortliche wird an dem Tag
-ermittelt, an dem man hinsieht; er folgt also, wer die Rolle innehat, und
-kein Name wird gespeichert.
+**Rollen** zeigt jede Rolle: wo sie sitzt, die Führungskraft und den Anteil. Eine Rolle wählen
+öffnet sie groß: Zweck, Inhaber und freie Plätze, die Linien, wofür sie einsteht, wer an sie
+berichtet, und jede Einheit mit ihrem Inhaber. Eine Einheit drücken führt zu ihrem Platz in der
+Organisation.
 
-Eine Rolle zu entfernen nimmt sie in einem Schritt aus den Einheitstypen, die
-sie haben, und aus den Regeln, die sie nennen. Haben Menschen sie heute oder
-später, sagt die Frage davor, wie viele und in welchen Einheiten, denn ihre
-Zuordnungen nennten dann eine Rolle, die es nicht mehr gibt; beenden Sie die
-Rolle besser an einem Tag, stehen sie daneben mit **Die Menschen verschieben**.
-Eine Verantwortung zu entfernen nimmt den Anteil jeder Rolle daran mit.
+Die zwei Eigentümerregeln stehen über der Liste. Eine nicht festgelegte Regel sagt, was daraus
+folgt. Eine Rolle entfernen nimmt sie aus den Typen und Regeln, in einem Schritt; haben Menschen
+sie noch, sagt die Frage, wie viele und wo.
 
-### Verantwortungen
+### Verantwortlichkeiten
 
-Der Reiter **Verantwortungen** ist eine Matrix: eine Zeile je Verantwortung,
-gruppiert, wie die Organisation gruppiert — etwa nach Wertstrom — und eine
-Spalte je Rolle. Ein Druck auf eine Zelle führt den Anteil dieser Rolle durch
-R (durchführend), A (rechenschaftspflichtig), C (konsultiert) und I
-(informiert) und zurück zu nichts. Jede Verantwortung braucht genau ein A:
-Eine Zeile mit keinem oder mit mehreren sagt das in ihrer letzten Spalte, und
-sie steht bei dem, was die Organisation sich selbst widerspricht. Nichts
-verweigert es — ein Modell in Arbeit geht durch beides hindurch.
+**Verantwortlichkeiten** öffnet auf einem Teil: links ein Baum der Gruppen, rechts ein Raster mit
+den Rollen, die dort einen Anteil haben. Die anderen Rollen sind in einer Spalte **+N** gefaltet.
+**Ganze Organisation** zeigt alles, für Audits und Export. **Einheit** beschränkt das Raster auf die
+Rollen einer Einheit und sagt, wer sie hat; eine Zeile mit dem A außerhalb sagt, wo es ist. Der
+Leser einer Einheit im Organigramm führt hierher.
 
-Über der Matrix behält **Rollen** die Spalten der gewählten Rollen und die
-Verantwortungen, an denen eine von ihnen einen Anteil hat, und **Gruppen**
-behält die gewählten Gruppen; ist nichts gewählt, steht alles da. Die letzte
-Spalte liest weiterhin jede Rolle, gezeigt oder nicht. Wer den Reiter verlässt
-und zurückkommt, behält, was gewählt war.
+Eine Zelle drücken wählt sie und schreibt nichts. R, A, C, I oder – auf der Tastatur oder die
+Knöpfe unter dem Raster setzen den Buchstaben als einen Schritt. Jede Verantwortlichkeit will genau
+ein A: Eine Zeile ohne oder mit mehreren sagt das unter **Fehlt**, der Baum zählt, was darunter ist,
+und die Zahl über dem Raster gilt immer der ganzen Organisation. **Filter** behält Rollen und
+Gruppen, **Ordnen** enthält die Reihenfolge, **Exportieren** speichert CSV.
 
-Die Matrix öffnet in der **eigenen Reihenfolge** der Organisation. Drücken
-Sie in der Matrix auf die Kopfzeile einer Rolle und in ihrem Inspektor auf
-**Nach links** oder **Nach rechts**, um ihre Spalte zu rücken; drücken Sie
-auf den Namen einer Verantwortung, um sie unter denen ihrer Gruppe zu rücken; drücken Sie ↑ und ↓
-in der Kopfzeile einer Gruppe, um die ganze Gruppe zu rücken. Jede
-Verschiebung ist ein Schritt, den ⌘Z zurücknimmt. Etwas Neues steht zuletzt,
-bis es verschoben wird. **A–Z** zeigt die Rollen, die Gruppen und die
-Verantwortungen stattdessen nach Namen und lässt die eigene Reihenfolge, wie
-sie ist.
+### Ausnahmen
+
+**Ausnahmen** ist die eine Liste von allem, was etwas anderes sagt als das Modell: die Linie eines
+Typs, einer Einheit, einer Person, und eine Rolle außerhalb der Plätze der Einheit. Eine Zeile wählen
+zeigt sie groß, mit **Zurück zum Standard**. Sagen mehrere Typen dasselbe, bietet die Seite **Die Rolle
+ändern** an: Das fragt zuerst und ist ein Schritt.
 
 ### Bibliotheken
 

@@ -191,10 +191,33 @@ describe('the matrix', () => {
 })
 
 describe('a column heading that opens what it names', () => {
-  it('opens on a press and on Enter, and only where the column has no group to fold', () => {
+  it('opens on a press', () => {
     const onOpenColumn = vi.fn()
     renderShell(<Matrix label="M" rows={[{ id: 'r', label: 'R' }]} columns={[{ id: 'c', label: 'C' }]} cellOf={() => null} onOpenColumn={onOpenColumn} />)
     fireEvent.click(document.querySelector('[data-kit-cell="-1:0"]')!)
     expect(onOpenColumn).toHaveBeenCalledWith('c')
+  })
+})
+
+describe('a matrix whose headings go somewhere', () => {
+  it('opens what a column names, says who is under it, and folds to the short word it is given', () => {
+    const onOpenColumn = vi.fn()
+    renderShell(
+      <Matrix
+        label="RACI" rowHeading="Row" rows={[{ id: 'g', label: 'Group', heading: true }, { id: 'a', label: 'A row', parent: 'g' }]}
+        columns={[{ id: 'one', label: 'One', under: 'Somebody' }, { id: 'two', label: 'Two', group: 'rest' }]}
+        columnGroups={[{ id: 'rest', label: 'The rest', short: '+1' }]} defaultFoldedGroups={['rest']} cellOf={() => null}
+        onOpenColumn={onOpenColumn} litColumn="one"
+      />,
+    )
+    const one = screen.getByRole('columnheader', { name: /One/ })
+    expect(one.textContent).toBe('OneSomebody')
+    expect(one.hasAttribute('data-crossed')).toBe(true)
+    fireEvent.click(one)
+    expect(onOpenColumn).toHaveBeenCalledWith('one')
+    fireEvent.click(screen.getByRole('columnheader', { name: '+1' }))
+    expect(screen.getByRole('columnheader', { name: 'Two' })).toBeTruthy()
+    expect(onOpenColumn).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('rowheader', { name: /Group/ }).closest('tr')?.hasAttribute('data-heading')).toBe(true)
   })
 })
