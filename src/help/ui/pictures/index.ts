@@ -8,8 +8,18 @@
  * adds the pictures of its chapters with `addHelpPicture`.
  */
 import type { ComponentType } from 'react'
+import {
+  AgentPicture, BoardPicture, ChartPicture, DecisionsPicture, DrawingPicture, FramePicture, GuidancePicture, ObservationsPicture,
+  OperatingPicture, PanelPicture, PeoplePicture, PosterPicture, RegistersPicture, RoadmapPicture, SheetPicture, StartPicture,
+  TechnologyPicture, WorkPicture,
+} from './screens'
 
-export const PICTURES: Record<string, ComponentType> = {}
+export const PICTURES: Record<string, ComponentType> = {
+  start: StartPicture, frame: FramePicture, work: WorkPicture, board: BoardPicture, panel: PanelPicture,
+  technology: TechnologyPicture, sheet: SheetPicture, poster: PosterPicture, chart: ChartPicture, drawing: DrawingPicture,
+  decisions: DecisionsPicture, observations: ObservationsPicture, roadmap: RoadmapPicture, registers: RegistersPicture,
+  operating: OperatingPicture, people: PeoplePicture, guidance: GuidancePicture, agent: AgentPicture,
+}
 
 export function addHelpPicture(chapter: string, picture: ComponentType): void {
   PICTURES[chapter] = picture
