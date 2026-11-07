@@ -42,7 +42,8 @@
   easier to read*, below); as built and implemented, 17 October 2026.
   Amended, 7 November 2026: who recorded an observation reads through the
   register, and what it cannot reach of that is said (§10); as built the same
-  day
+  day. The operating model's page rebuilt by question in 4.0.0 (*As built,
+  4.0.0: the operating model by question*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0039, in part, 2026-10-16 — §12's *the holders of a
@@ -2702,3 +2703,33 @@ it is fixed* opens the scope with the record — a line is selected as a line �
 band over it says the finding's sentence and how to fix it, *1 of N* with the next
 one, and *Back to Checks*, which comes back to the same check. The finding is in the
 address (`finding=`), so a reload keeps the band.
+
+## As built, 4.0.0: the operating model by question
+
+The page was arranged by how the model is stored; it is now arranged by the question
+a person brings, with a tab each and the tab in the address (`?tab=`, and the part,
+unit and item picked as `look`): **Structure**, the unit types by level as before,
+with the two trays become one line under it; **Roles**, every role in one line of the
+kit's List with the two owner rules above it, each saying what an unset rule means;
+**Responsibilities**; **Exceptions**, every unit type, unit and holder that says
+otherwise than the model and every role held outside the slots, with the default it
+departs from, *Back to default*, and *Change the role* where many say the same; and
+**Libraries**, each read in the large preview with *What came in* as text.
+
+**Defaults read as text.** A unit type's reader gives each role one line, how many
+and where its holders report, and only a line the type changes speaks up; a field
+appears on *Change*. A role's line in a type opens the order the answer comes from,
+holder, unit, type, role, nesting, with one way to change it there and one way back.
+The rare settings are under *More*.
+
+**The RACI opens on a part.** A tree of the responsibility groups beside the grid,
+the roles with no part in what is shown folded into one column, *Whole organisation*
+one press away, and *Unit* to narrow it to a unit's roles with who holds each. The
+count of rows that need one A reads every role and never narrows. The grid is the
+kit's Matrix: a press selects, a letter, Space or the picker writes, and one set is
+one step. Reordering is in *Arrange*, and *Export* saves the view or the whole
+organisation as CSV.
+
+What did not change: the records, their commands and the agent's tools. The
+*As built, 3.6.1* sections above stand as what the page was; their trays, the
+*Units and roles* tab, the inspector and a press that cycled a letter are gone.
