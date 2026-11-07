@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { pressShow } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -63,22 +64,27 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   return { ...view, onPreferencesChange, latest };
 }
 
-const lifecycleButton = () => screen.getByRole('button', { name: 'Toggle lifecycle badges' });
+const lifecycleChecked = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+  const box = screen.getByRole('checkbox', { name: 'Lifecycle word', hidden: true }) as HTMLInputElement;
+  const { checked } = box;
+  fireEvent.keyDown(screen.getByRole('dialog', { name: 'Show', hidden: true }), { key: 'Escape' });
+  return checked;
+};
 
 describe('SolutionDesignEditor — preferences in', () => {
   it('starts in the state the host handed over', () => {
     renderEditor({
-      initialPreferences: { showLifecycle: false, paletteCollapsed: true },
+      initialPreferences: { showLifecycle: false, keepRail: true },
     });
-    expect(lifecycleButton().getAttribute('aria-pressed')).toBe('false');
-    // A collapsed palette shows its expand affordance instead of the rows.
-    expect(screen.queryByRole('button', { name: 'Application', expanded: false })).toBeNull();
+    expect(lifecycleChecked()).toBe(false);
+    expect(screen.getByRole('complementary', { name: 'Element palette' })).toBeDefined();
   });
 
   it('falls back to the defaults for junk', () => {
     renderEditor({ initialPreferences: 'not an object' });
-    expect(lifecycleButton().getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Application', expanded: false })).toBeDefined();
+    expect(lifecycleChecked()).toBe(true);
+    expect(screen.queryByRole('complementary', { name: 'Element palette' })).toBeNull();
   });
 });
 
@@ -91,10 +97,10 @@ describe('SolutionDesignEditor — preferences out', () => {
   it('reports a toggled setting, with the rest of the set alongside it', () => {
     const { onPreferencesChange, latest } = renderEditor();
 
-    fireEvent.click(lifecycleButton());
+    pressShow('Lifecycle word');
 
     expect(onPreferencesChange).toHaveBeenCalledTimes(1);
-    expect(latest()).toMatchObject({ showLifecycle: false, showGrid: true, snapToGrid: false });
+    expect(latest()).toMatchObject({ showLifecycle: false, showGrid: false, snapToGrid: false });
     // The board's Tidy starts at hybrid; this line is here to prove the whole
     // set travels with a single toggled flag, not to pin the direction itself.
     expect(latest()?.tidyOptions.direction).toBe('hybrid');
@@ -103,8 +109,8 @@ describe('SolutionDesignEditor — preferences out', () => {
   it('reports each further change once', () => {
     const { onPreferencesChange, latest } = renderEditor();
 
-    fireEvent.click(lifecycleButton());
-    fireEvent.click(lifecycleButton());
+    pressShow('Lifecycle word');
+    pressShow('Lifecycle word');
 
     expect(onPreferencesChange).toHaveBeenCalledTimes(2);
     expect(latest()?.showLifecycle).toBe(true);

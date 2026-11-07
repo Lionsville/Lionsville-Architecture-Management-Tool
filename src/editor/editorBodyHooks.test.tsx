@@ -52,7 +52,7 @@ describe('the view settings', () => {
     act(() => view.result.current.setShowGrid((on) => !on));
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0]).toMatchObject({ showGrid: !before, showMinimap: true });
-    act(() => view.result.current.setPaletteWidth(view.result.current.paletteWidth));
+    act(() => view.result.current.setInspectorWidth(view.result.current.inspectorWidth));
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 

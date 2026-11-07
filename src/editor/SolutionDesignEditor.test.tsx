@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { addFromBar, pressRoute, pressShow, showLineLabels } from './testing/boardBar';
 import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
@@ -99,19 +100,32 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
  * button inside performs the add. `label` is the row's visible label.
  */
 function placeFromPalette(label: string) {
-  fireEvent.click(screen.getByRole('button', { name: label, expanded: false }));
-  fireEvent.click(screen.getByRole('button', { name: `Add ${label.toLowerCase()}` }));
+  addFromBar(label, `New ${label.toLowerCase()}`);
 }
+
+describe('an empty board', () => {
+  it('says so with its two ways in, and the first card takes that away', async () => {
+    const model = baseModel();
+    model.diagrams[0] = { ...model.diagrams[0], members: [] };
+    renderEditor({ model });
+    expect(await screen.findByTestId('empty-board')).toBeDefined();
+    fireEvent.click(within(screen.getByTestId('empty-board')).getByRole('button', { name: 'Add an application' }));
+    const field = screen.getByRole('combobox');
+    fireEvent.change(field, { target: { value: 'Billing' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    await waitFor(() => expect(screen.queryByTestId('empty-board')).toBeNull());
+  });
+});
 
 describe('SolutionDesignEditor (smoke, jsdom)', () => {
   it('renders the toolbar tab, the zone bands and the palette', () => {
     renderEditor();
     expect(screen.getByRole('tab', { name: 'Layer 7 — EU' })).toBeDefined();
-    expect(screen.getByText('ACTORS')).toBeDefined();
-    expect(screen.getByText('INPUT CHANNELS')).toBeDefined();
-    expect(screen.getByText('EXTERNAL SYSTEMS')).toBeDefined();
-    expect(screen.getByText('MANAGEMENT LAYER')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Application', expanded: false })).toBeDefined();
+    expect(screen.getByText('Actors')).toBeDefined();
+    expect(screen.getByText('Input channels')).toBeDefined();
+    expect(screen.getByText('External systems')).toBeDefined();
+    expect(screen.getByText('Management layer')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDefined();
   });
 
   it('placing from the palette lands a keyed element + landscape placement, in one step, and selects it', () => {
@@ -139,20 +153,6 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
    * to drop the descriptions the rail's tooltips carried; and Place said
    * nothing about where.
    */
-  it('says how to add, describes every kind in both states, and its button says Add to canvas', async () => {
-    renderEditor();
-    expect(screen.getByTestId('palette-how').textContent).toBe('Drag a kind onto the canvas, or click it to name it first.');
-    expect(screen.getByTestId('palette-description-application').textContent).toBe('A system the organisation runs or buys');
-    fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
-    expect(screen.getByText('Name')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Add application' }).textContent).toBe('Add to canvas');
-    // Collapsed to the rail: the tooltip on a kind carries its description and the same caption.
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse palette' }));
-    fireEvent.mouseOver(screen.getByRole('button', { name: 'Open application options' }));
-    expect(await screen.findByText('A system the organisation runs or buys')).toBeDefined();
-    expect(await screen.findByText('Drag a kind onto the canvas, or click it to name it first.')).toBeDefined();
-  });
-
   it('has zoom controls of its own, in the reader\'s language, and none of React Flow\'s', () => {
     renderEditor();
     expect(screen.getByLabelText('Zoom in')).toBeDefined();
@@ -161,17 +161,16 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(document.querySelector('.react-flow__controls')).toBeNull();
   });
 
-  it('shows no align bar while nothing is selected', () => {
+  it('shows no bar over a selection while nothing is selected', () => {
     renderEditor({ model: modelWithPlacement('d1') });
-    expect(screen.getByLabelText('Toggle grid visibility')).toBeDefined();
-    expect(screen.queryByLabelText('Align left')).toBeNull();
-    expect(screen.queryByLabelText('Distribute horizontally')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Align' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Distribute' })).toBeNull();
   });
 
-  it('gives every connection handle a hint saying what dragging it does', async () => {
+  it('gives the nub a hint saying what dragging it does', async () => {
     renderEditor({ model: modelWithPlacement('d1') });
     const handle = await waitFor(() => {
-      const held = document.querySelector('.react-flow__handle');
+      const held = document.querySelector('.lv-nub');
       if (!held) throw new Error('no handle yet');
       return held;
     });
@@ -229,7 +228,8 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.queryByText('Container view')).toBeNull();
     expect(screen.getByTestId('lv-c4-panel').textContent).toContain('[Container] Webshop');
     expect(screen.getByText('Webshop')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Component', expanded: false })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('menuitem', { name: 'Component' })).toBeDefined();
   });
 });
 
@@ -318,21 +318,20 @@ describe('SolutionDesignEditor — iteration 2', () => {
     expect(screen.queryByTestId('aspect-platform')).toBeNull();
   });
 
-  it('offers the domain group palette entry on layer7 and not on container diagrams', () => {
+  it('offers a domain group from Add on layer7 and not on container diagrams', () => {
     const { unmount } = renderEditor();
-    expect(screen.getByRole('button', { name: 'Domain group', expanded: false })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('menuitem', { name: 'Domain group' })).toBeDefined();
     unmount();
 
     renderEditor({ activeDiagramId: 'd2' });
-    expect(screen.queryByText('Domain group')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.queryByRole('menuitem', { name: 'Domain group' })).toBeNull();
   });
 
   it('adding a domain group writes the layoutConfig rect', () => {
     const { landed, sent } = renderEditor();
-    // The row opens; the Place button inside it is what adds — same gesture as
-    // every other palette row since the group stopped being an exception.
-    fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
+    addFromBar('Domain group', 'New group');
 
     expect(sent()).toBe(1);
     expect(landed().geometry?.groups).toHaveLength(1);
@@ -568,7 +567,7 @@ describe('SolutionDesignEditor — paste cascade', () => {
 
     // A non-editable on-canvas target so the shortcut hook runs. jsdom reports
     // an empty navigator.platform → the keymap resolves Mod to Ctrl here.
-    const target = screen.getByText('ACTORS');
+    const target = screen.getByText('Actors');
     const copy = () => fireEvent.keyDown(target, { key: 'c', ctrlKey: true });
     const paste = () => fireEvent.keyDown(target, { key: 'v', ctrlKey: true });
     // The x of every pasted placement on the board. A copy is anything that was
@@ -605,16 +604,11 @@ describe('SolutionDesignEditor — minimap', () => {
     expect(container.querySelector('.react-flow__minimap')).toBeNull();
   });
 
-  it('renders one after the toolbar toggle, and takes it away again', () => {
+  it('renders one after the Show setting, and takes it away again', () => {
     const { container } = renderEditor();
-    const toggle = screen.getByLabelText('Toggle minimap');
-    expect(toggle.getAttribute('aria-pressed')).toBe('false');
-
-    fireEvent.click(toggle);
+    pressShow('Map of the board');
     expect(container.querySelector('.react-flow__minimap')).not.toBeNull();
-    expect(screen.getByLabelText('Toggle minimap').getAttribute('aria-pressed')).toBe('true');
-
-    fireEvent.click(screen.getByLabelText('Toggle minimap'));
+    pressShow('Map of the board');
     expect(container.querySelector('.react-flow__minimap')).toBeNull();
   });
 
@@ -626,7 +620,7 @@ describe('SolutionDesignEditor — minimap', () => {
     });
     expect(container.querySelector('.react-flow__minimap')).not.toBeNull();
 
-    fireEvent.click(screen.getByLabelText('Toggle minimap'));
+    pressShow('Map of the board');
     expect(onPreferencesChange).toHaveBeenCalledWith(
       expect.objectContaining({ showMinimap: false }),
     );
@@ -636,7 +630,6 @@ describe('SolutionDesignEditor — minimap', () => {
 // ── Line labels on hover only ────────────────────────────────────────────────
 
 describe('SolutionDesignEditor — line labels hidden', () => {
-  const labelsButton = () => screen.getByLabelText('Toggle line labels');
   const linePath = async () => {
     const edge = await screen.findByTestId('rf__edge-c1');
     const path = edge.querySelector('.react-flow__edge-path');
@@ -647,10 +640,9 @@ describe('SolutionDesignEditor — line labels hidden', () => {
   it('starts on hover only, and shows them all on the toggle', async () => {
     renderEditor({ model: modelWithConnection() });
     await screen.findByTestId('rf__edge-c1');
-    expect(labelsButton().getAttribute('aria-pressed')).toBe('false');
     expect(screen.queryByTestId('edge-label-c1')).toBeNull();
 
-    fireEvent.click(labelsButton());
+    showLineLabels(true);
 
     expect(await screen.findByTestId('edge-label-c1')).toBeDefined();
   });
@@ -664,7 +656,7 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     });
     await screen.findByTestId('edge-label-c1');
 
-    fireEvent.click(labelsButton());
+    showLineLabels(false);
     expect(onPreferencesChange).toHaveBeenCalledWith(
       expect.objectContaining({ showEdgeLabels: false }),
     );
@@ -676,7 +668,7 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     renderEditor({ model: modelWithConnection(), onPreferencesChange });
     await screen.findByTestId('rf__edge-c1');
 
-    fireEvent.click(labelsButton());
+    showLineLabels(true);
     expect(onPreferencesChange).toHaveBeenCalledWith(
       expect.objectContaining({ showEdgeLabels: true }),
     );
@@ -713,13 +705,15 @@ describe('SolutionDesignEditor — line labels hidden', () => {
   it('puts a hovered label where the pointer is, and follows it along the line', async () => {
     renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
     const path = await linePath();
-    const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
-    const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(viewport.style.transform);
-    if (!m) throw new Error(`unexpected viewport transform: ${viewport.style.transform}`);
-    const [tx, ty, k] = [Number(m[1]), Number(m[2]), Number(m[3])];
-    const toFlow = (client: { x: number; y: number }) => ({ x: (client.x - tx) / k, y: (client.y - ty) / k });
+    const toFlow = (client: { x: number; y: number }) => {
+      const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
+      const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(viewport.style.transform);
+      if (!m) throw new Error(`unexpected viewport transform: ${viewport.style.transform}`);
+      const [tx, ty, k] = [Number(m[1]), Number(m[2]), Number(m[3])];
+      return { x: (client.x - tx) / k, y: (client.y - ty) / k, k };
+    };
     const chipAt = () => {
-      const t = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)\s*$/.exec(
+      const t = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)\s*scale\([\d.]+\)\s*$/.exec(
         screen.getByTestId('edge-label-c1').style.transform,
       );
       if (!t) throw new Error('chip has no position');
@@ -732,12 +726,12 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     let expected = toFlow({ x: 300, y: 200 });
     expect(chipAt().x).toBeCloseTo(expected.x, 5);
     // Lifted 18 screen pixels above the pointer, so it never sits under the cursor.
-    expect(chipAt().y).toBeCloseTo(expected.y - 18 / k, 5);
+    expect(chipAt().y).toBeCloseTo(expected.y - 18 / expected.k, 5);
 
     fireEvent.mouseMove(path, { clientX: 340, clientY: 260 });
     expected = toFlow({ x: 340, y: 260 });
     expect(chipAt().x).toBeCloseTo(expected.x, 5);
-    expect(chipAt().y).toBeCloseTo(expected.y - 18 / k, 5);
+    expect(chipAt().y).toBeCloseTo(expected.y - 18 / expected.k, 5);
   });
 
   it('keeps a hidden label on a selected line, so it can still be edited in place', async () => {
@@ -823,7 +817,7 @@ describe('SolutionDesignEditor — route connections only', () => {
     const geometry = model.diagrams[0].geometry!;
     const { landed, sent } = renderEditor({ model });
 
-    fireEvent.click(screen.getByLabelText('Route connections only'));
+    pressRoute();
 
     // The router is WASM, so the change lands a tick later — wait for it rather
     // than for a timeout, and assert it is still exactly ONE step.
@@ -837,65 +831,24 @@ describe('SolutionDesignEditor — route connections only', () => {
     expect(route?.waypoints.length).toBeGreaterThan(0);
   });
 
-  it('locks out Tidy while it runs, then releases both buttons', async () => {
+  it('locks out Arrange while a pass runs, then releases it', async () => {
     const { sent } = renderEditor({ model: modelWithBlockedEdge() });
-    const tidy = screen.getByLabelText<HTMLButtonElement>('Tidy layout');
-    const route = screen.getByLabelText<HTMLButtonElement>('Route connections only');
-    expect(tidy.disabled).toBe(false);
-
     // Both actions are one undo step over the whole diagram, so they must not
-    // overlap. `busy` is set synchronously in the click handler — no microtask has
-    // run yet at this point, so this observes the pending state, not a race.
-    fireEvent.click(route);
-    expect(tidy.disabled).toBe(true);
-    expect(route.disabled).toBe(true);
+    // overlap. `busy` is set synchronously in the press, so this sees the pending state.
+    pressRoute();
+    expect((screen.getByRole('button', { name: 'Arranging…' }) as HTMLButtonElement).disabled).toBe(true);
 
     await waitFor(() => expect(sent()).toBe(1));
-    expect(tidy.disabled).toBe(false);
-    expect(route.disabled).toBe(false);
+    expect((screen.getByRole('button', { name: 'Arrange' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('hides the action under readOnly', () => {
     renderEditor({ model: modelWithBlockedEdge(), readOnly: true });
-    expect(screen.queryByLabelText('Route connections only')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange' })).toBeNull();
   });
 });
 
 // ── QF3: visible-grid toggle ─────────────────────────────────────────────────
-
-describe('SolutionDesignEditor — grid visibility toggle (QF3)', () => {
-  it('renders the dot grid by default and hides it when toggled off', () => {
-    const { container } = renderEditor();
-    const toggle = screen.getByLabelText('Toggle grid visibility');
-
-    // Default on: the RF background is present and the button reads pressed.
-    expect(container.querySelector('.react-flow__background')).not.toBeNull();
-    expect(toggle.getAttribute('aria-pressed')).toBe('true');
-
-    // Toggle off: the background unmounts and the button flips.
-    fireEvent.click(toggle);
-    expect(container.querySelector('.react-flow__background')).toBeNull();
-    expect(screen.getByLabelText('Toggle grid visibility').getAttribute('aria-pressed')).toBe(
-      'false',
-    );
-  });
-
-  it('is independent of the snap toggle', () => {
-    renderEditor();
-    const snap = screen.getByLabelText('Toggle snap to grid');
-    const grid = screen.getByLabelText('Toggle grid visibility');
-    // Snap defaults off, grid defaults on — orthogonal state.
-    expect(snap.getAttribute('aria-pressed')).toBe('false');
-    expect(grid.getAttribute('aria-pressed')).toBe('true');
-
-    // Toggling snap on does not touch grid visibility.
-    fireEvent.click(snap);
-    expect(screen.getByLabelText('Toggle snap to grid').getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByLabelText('Toggle grid visibility').getAttribute('aria-pressed')).toBe(
-      'true',
-    );
-  });
-});
 
 describe('SolutionDesignEditor — collapsible panels (U7b)', () => {
   it('collapses and expands the inspector; chevron reachable in both states', () => {
@@ -923,28 +876,12 @@ describe('SolutionDesignEditor — collapsible panels (U7b)', () => {
     expect(document.querySelector('.kit-panel__name')).not.toBeNull();
   });
 
-  it('collapses the palette to an icon rail, and a rail icon reopens it at that row', () => {
-    renderEditor();
-    expect(screen.getByText('Application')).toBeDefined();
-
-    fireEvent.click(screen.getByLabelText('Collapse palette'));
-    expect(screen.queryByText('Application')).toBeNull();
-    expect(screen.getByLabelText('Expand palette')).toBeDefined();
-
-    // Clicking a kind on the rail expands the panel with that row already open,
-    // so the logo and name are one click away rather than two.
-    fireEvent.click(screen.getByLabelText('Open application options'));
-    expect(screen.getByText('Application')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Add application' })).toBeDefined();
-  });
-
   it('keeps collapse state in-memory only (no storage writes) and resets on remount', () => {
     const localSpy = vi.spyOn(Storage.prototype, 'setItem');
 
     const { unmount, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
     fireEvent.click(screen.getByRole('button', { name: 'Fold the panel away' }));
-    fireEvent.click(screen.getByLabelText('Collapse palette'));
 
     // Matches the snap/lifecycle precedent: nothing is persisted.
     expect(localSpy).not.toHaveBeenCalled();
@@ -1014,21 +951,11 @@ describe('SolutionDesignEditor — palette drag over the board', () => {
  * palette row that added on click and could not be dragged at all.
  */
 describe('SolutionDesignEditor — domain groups from the palette', () => {
-  it('places a named, coloured group from the tray', () => {
+  it('places a named group from Add', () => {
     const { landed } = renderEditor();
+    addFromBar('Domain group', 'Commerce');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
-    fireEvent.change(screen.getByLabelText('Domain group name'), {
-      target: { value: 'Commerce' },
-    });
-    fireEvent.change(screen.getByLabelText('Domain group colour'), {
-      target: { value: '#2f6fdb' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
-
-    expect(landed().groups).toEqual([
-      { id: 'commerce', name: 'Commerce', color: '#2f6fdb' },
-    ]);
+    expect(landed().groups).toEqual([{ id: 'commerce', name: 'Commerce' }]);
     expect(landed().geometry?.groups).toEqual([
       expect.objectContaining({ id: 'commerce' }),
     ]);
@@ -1075,59 +1002,13 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     };
     const { landed } = renderEditor({ model });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
-    fireEvent.change(screen.getByLabelText('Domain group name'), {
-      target: { value: 'Commerce' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
+    addFromBar('Domain group', 'Commerce');
 
     expect((landed().groups ?? []).map((g) => g.name)).toEqual(['Commerce', 'Commerce 2']);
     expect((landed().geometry?.groups ?? []).map((g) => g.id)).toEqual([
       'commerce',
       'commerce-2',
     ]);
-  });
-});
-
-describe('SolutionDesignEditor — palette tray pre-seed', () => {
-  it('pre-seeds the logo and name; the inspector reflects the same fields', () => {
-    const { landed } = renderEditor();
-
-    // Open the application row, pick a mark and name it before placing.
-    fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
-    fireEvent.click(screen.getByLabelText('Database'));
-    fireEvent.change(screen.getByLabelText('Application name'), {
-      target: { value: 'Kernsysteem' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
-
-    const created = landed().elements.at(-1)!;
-    expect(created.iconKey).toBe('database');
-    expect(created.name).toBe('Kernsysteem');
-
-    // Auto-selected → the inspector holds the same name. One source of truth:
-    // the tray writes the fields the inspector edits, it does not keep its own.
-    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Kernsysteem');
-  });
-
-  it('places an unseeded element when the tray is untouched — parity with today', () => {
-    const { landed } = renderEditor();
-    placeFromPalette('Actor');
-
-    const created = landed().elements.at(-1)!;
-    expect(created.name).toBe('New actor');
-    expect(created.shapeVariant).toBeUndefined();
-    expect(created.accentColor).toBeUndefined();
-    expect(created.iconKey).toBeUndefined();
-  });
-
-  it('leaves accent colour and shape to the inspector — the tray does not offer them', () => {
-    renderEditor();
-    fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
-
-    const palette = screen.getByRole('complementary', { name: 'Element palette' });
-    expect(within(palette).queryByRole('group', { name: 'Shape' })).toBeNull();
-    expect(within(palette).queryByLabelText('Accent colour')).toBeNull();
   });
 });
 

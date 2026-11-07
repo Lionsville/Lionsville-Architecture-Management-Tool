@@ -346,7 +346,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId('people-answered-toggle').catch(() => screen.getByTestId('people-duplicates')))
   }]],
   [['a landscape open on its board', [
-    'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library',
+    'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.arrange', 'board.show', 'board.colour',
   ], onBoard],
   ['a line being drawn', ['board.connect', 'board.inspector'], async () => {
     const card = await selectCard('billing')
@@ -364,9 +364,8 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }]],
   [['a landscape on its board, coloured by a reader’s own choice', ['board.keepLens'], async () => {
     await onBoard()
-    fireEvent.click(await screen.findByLabelText('Colour by'))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Technology lifecycle' }))
-    fireEvent.click(await screen.findByLabelText('Colour by'))
+    fireEvent.click(document.querySelector('[data-guide="board.colour"]') as HTMLElement)
+    fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: 'Technology lifecycle' }))
   }]],
   [['an application’s record', ['record.replace', 'record.uses'], () => recordOf('billing')]],
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],

@@ -17,13 +17,10 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { C4PanelInfo } from '../export/c4Panel';
 
-/** Clear of React Flow's zoom controls, which own the corner itself. */
-const CONTROLS_CLEARANCE = 56;
-
 export function C4InfoPanel({ info }: { info: C4PanelInfo }) {
   const theme = useTheme();
   return (
-    <Panel position="bottom-left" style={{ marginLeft: CONTROLS_CLEARANCE, pointerEvents: 'none' }}>
+    <Panel position="bottom-left" style={{ marginBottom: 56, pointerEvents: 'none' }}>
       <Box
         data-testid="lv-c4-panel"
         sx={{

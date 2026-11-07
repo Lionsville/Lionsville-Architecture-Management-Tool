@@ -11,6 +11,7 @@ import type { LayoutActions } from './useLayoutActions';
 import type { CanvasRequests, Documentation } from './useEditorRequests';
 import type { DeleteRequests } from './useDeleteRequests';
 import type { ExportDialogState } from './useExport';
+import type { AddRequests } from './AddPicker';
 import type { EditorDialogState } from './EditorDialogs';
 import type { useDoubleClicks } from './useEditorHandle';
 import type { ViewportMemory } from './canvas/viewportMemory';
@@ -38,6 +39,7 @@ export interface EditorParts {
   deletes: DeleteRequests;
   exports: ExportDialogState;
   dialogs: EditorDialogState;
+  adding: AddRequests;
   clicks: ReturnType<typeof useDoubleClicks>;
   /** The whole board is mounted for a capture a host asked for (ADR-0007). */
   capturing: boolean;

@@ -268,7 +268,7 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
 
 /** The size the export dialog says the picture will be, once it is open. */
 async function exportSize(): Promise<string> {
-  fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
+  fireEvent.click(screen.getByTestId('board-export'));
   const said = await screen.findByText(/pixels, about/);
   return said.textContent ?? '';
 }

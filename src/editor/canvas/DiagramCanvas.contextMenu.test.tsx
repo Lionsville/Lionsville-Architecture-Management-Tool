@@ -29,7 +29,8 @@ beforeAll(() => installReactFlowMocks());
  * entries one microtask after the last `observe`, as a browser delivers a
  * frame's, and an edge is drawn only once both its ends have a size.
  */
-const measured = () => act(async () => {});
+// A frame on: the board is framed once it has a size.
+const measured = () => act(async () => { await new Promise((done) => requestAnimationFrame(done)); });
 afterEach(() => cleanup());
 
 /** Two placed elements and one line between them; the application has a container diagram. */
@@ -416,7 +417,7 @@ describe('DiagramCanvas — canvas menu', () => {
     expect(within(root).getByText('Add domain group here')).toBeDefined();
     expect(within(root).getByText('Tidy layout')).toBeDefined();
     expect(within(root).getByText('Route connections')).toBeDefined();
-    expect(within(root).getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked')).toBe('true');
+    expect(within(root).getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked')).toBe('false');
 
     fireEvent.click(within(openSubmenu(root, 'Add here')).getByText('Application'));
 
@@ -454,15 +455,16 @@ describe('DiagramCanvas — canvas menu', () => {
     expect(pasted?.y).toBeCloseTo(expected.y, 3);
   });
 
-  it('Show grid / Snap to grid toggle the same state as the placement toolbar', async () => {
+  it('Show grid / Snap to grid toggle the same state as the dock', async () => {
     renderEditor();
     await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByRole('menuitemcheckbox', { name: 'Show grid' }));
-    expect(screen.getByLabelText('Toggle grid visibility').getAttribute('aria-pressed')).toBe('false');
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByRole('menuitemcheckbox', { name: 'Snap to grid' }));
-    expect(screen.getByLabelText('Toggle snap to grid').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Grid' }));
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Toggle grid visibility' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Toggle snap to grid' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('Select all selects the diagram content', async () => {
@@ -527,7 +529,7 @@ describe('DiagramCanvas — keyboard', () => {
     );
     expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
 
-    const canvasTarget = screen.getByText('ACTORS');
+    const canvasTarget = screen.getByText('Actors');
     fireEvent.keyDown(canvasTarget, { key: 'F10', shiftKey: true });
     expect(menu('Element menu')).toBeDefined();
     fireEvent.keyDown(menu('Element menu'), { key: 'Escape' });
@@ -539,7 +541,7 @@ describe('DiagramCanvas — keyboard', () => {
 
   it('Shift+F10 with nothing selected opens the canvas menu', () => {
     renderEditor();
-    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'F10', shiftKey: true });
+    fireEvent.keyDown(screen.getByText('Actors'), { key: 'F10', shiftKey: true });
     expect(menu('Canvas menu')).toBeDefined();
   });
 });

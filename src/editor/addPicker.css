@@ -1,0 +1,46 @@
+.lv-add__kinds { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); margin-block-end: var(--s-1); }
+.lv-add__kind {
+  padding: 1px var(--s-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+}
+.lv-add__kind[aria-checked='true'] { border-color: var(--accent); background: var(--selected-soft); color: var(--ink); }
+.lv-add__how { display: block; }
+
+/* The rail of kinds, when somebody keeps it open. */
+.lv-rail {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s-1);
+  width: 84px;
+  padding: var(--s-2) var(--s-1);
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.lv-rail__kind {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--s-1) 2px;
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-xs);
+  line-height: var(--lh-tight);
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: grab;
+}
+.lv-rail__kind:hover { background: var(--surface-2); color: var(--ink); }
+.lv-rail__kind:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.lv-rail__kind--press { cursor: pointer; }

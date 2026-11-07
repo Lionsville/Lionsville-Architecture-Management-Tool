@@ -60,7 +60,6 @@ function renderToolbar(props: {
         onRouteEdges={vi.fn()}
         autoRoute={false}
         onToggleAutoRoute={vi.fn()}
-        onFitView={vi.fn()}
         onExport={vi.fn()}
         onOpenHelp={vi.fn()}
         showLifecycle
@@ -90,7 +89,7 @@ describe('the menu of a container view', () => {
     fireEvent.contextMenu(screen.getByText('Billing'));
     const menu = diagramMenu();
     expect(within(menu).getByText('Rename diagram…')).toBeTruthy();
-    expect(within(menu).getByText('Diagram settings…')).toBeTruthy();
+    expect(within(menu).getByText('Board settings…')).toBeTruthy();
     // No duplicate: a second view about the same application would be two
     // answers to "what is inside it".
     expect(within(menu).queryByText('Duplicate diagram')).toBeNull();
@@ -106,7 +105,7 @@ describe('the menu of a container view', () => {
     const menu = diagramMenu();
     const remove = within(menu).getByText('Delete diagram…').closest('[role="menuitem"]');
     expect(remove?.getAttribute('aria-disabled')).not.toBe('true');
-    fireEvent.click(within(menu).getByText('Diagram settings…'));
+    fireEvent.click(within(menu).getByText('Board settings…'));
     expect(onOpenDiagramSettings).toHaveBeenCalledWith('cd1');
   });
 

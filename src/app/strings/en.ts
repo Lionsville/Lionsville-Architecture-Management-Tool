@@ -1053,6 +1053,7 @@ export const EN = {
    * register as a library (ADR-0012 §2, §3). Drawing never moves ownership;
    * the one question asked is about an application nobody defines.
    */
+  'library.inScope': 'in {scope}',
   'library.title': 'Add an existing application',
   'library.hint': 'Every application in the organisation that is not on this board yet.',
   'library.search': 'Search the register',

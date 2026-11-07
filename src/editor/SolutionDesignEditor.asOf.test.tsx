@@ -112,14 +112,14 @@ describe('the date control', () => {
   it('puts edits away while looking and draws the edge; a view saved on its day stays editable (ADR-0027, amended)', () => {
     renderEditor(model({ asOf: '2027-01-01' }));
     // On the board's own day it is an ordinary board.
-    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange', hidden: true })).not.toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
     look('2028-03-01');
-    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange', hidden: true })).toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).toBeNull();
     expect(document.querySelector('[data-look-edge]')).not.toBeNull();
     look('2027-01-01');
-    expect(screen.queryByRole('button', { name: 'Tidy layout', hidden: true })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange', hidden: true })).not.toBeNull();
     expect(document.querySelector('[data-guide="board.palette"]')).not.toBeNull();
   });
 

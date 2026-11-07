@@ -3,6 +3,7 @@
 
 import type { RefObject } from 'react';
 import type { DesignDiagram, ElementId } from '../model/types';
+import type { DiagramCanvasProps } from './canvas/DiagramCanvas';
 import type { PlatformTree } from '../model/deployment';
 import type { ClipboardPayload } from '../model/clipboard';
 import type { AttachSidesPatch } from '../model/routes';
@@ -71,6 +72,11 @@ export interface CanvasForDiagramProps {
   menuRequest?: { kind: 'open' | 'rename'; nonce: number };
   /** See `DiagramCanvasProps.onAddExistingAt`: the host's register, at the click. */
   onAddExistingAt?: (at?: ExistingAt) => void;
+  onAskAdd?: DiagramCanvasProps['onAskAdd'];
+  showStatus?: boolean;
+  showDescriptions?: boolean;
+  showKey?: boolean;
+  routeNote?: string;
 }
 
 /**

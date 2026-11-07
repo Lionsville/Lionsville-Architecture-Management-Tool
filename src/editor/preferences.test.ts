@@ -25,14 +25,14 @@ describe('mergePreferences', () => {
         snapToGrid: true,
         showGrid: false,
         showLifecycle: false,
-        paletteCollapsed: true,
+        keepRail: true,
         inspectorCollapsed: true,
       }),
     ).toMatchObject({
       snapToGrid: true,
       showGrid: false,
       showLifecycle: false,
-      paletteCollapsed: true,
+      keepRail: true,
       inspectorCollapsed: true,
     });
   });
@@ -125,27 +125,23 @@ describe('mergePreferences — 4B fields', () => {
   it('defaults the minimap off and the panels to their own widths', () => {
     const merged = mergePreferences({});
     expect(merged.showMinimap).toBe(false);
-    expect(merged.paletteWidth).toBe(PANEL_LIMITS.palette.default);
     expect(merged.inspectorWidth).toBe(PANEL_LIMITS.inspector.default);
   });
 
   it('keeps a stored width that is inside the limits', () => {
-    const merged = mergePreferences({ paletteWidth: 300, inspectorWidth: 420 });
-    expect(merged.paletteWidth).toBe(300);
+    const merged = mergePreferences({ inspectorWidth: 420 });
     expect(merged.inspectorWidth).toBe(420);
   });
 
   it('clamps a stored width instead of trusting it', () => {
     // A blob from another version, or a hand edit: a panel wider than the window
     // is worse than a forgotten preference.
-    const merged = mergePreferences({ paletteWidth: 9000, inspectorWidth: 10 });
-    expect(merged.paletteWidth).toBe(PANEL_LIMITS.palette.max);
+    const merged = mergePreferences({ inspectorWidth: 10 });
     expect(merged.inspectorWidth).toBe(PANEL_LIMITS.inspector.min);
   });
 
   it('falls back per field for a width that is not a number', () => {
-    const merged = mergePreferences({ paletteWidth: '300', showMinimap: 'yes', showGrid: false });
-    expect(merged.paletteWidth).toBe(PANEL_LIMITS.palette.default);
+    const merged = mergePreferences({ inspectorWidth: '300', showMinimap: 'yes', showGrid: false });
     expect(merged.showMinimap).toBe(false);
     expect(merged.showGrid).toBe(false);
   });
@@ -170,7 +166,7 @@ describe('mergePreferences — the outline a page docks (3.7.3)', () => {
 describe('preferencesEqual — 4B fields', () => {
   it('notices a width change', () => {
     const a = mergePreferences({});
-    expect(preferencesEqual(a, { ...a, paletteWidth: a.paletteWidth + 1 })).toBe(false);
+    expect(preferencesEqual(a, { ...a, inspectorWidth: a.inspectorWidth + 1 })).toBe(false);
     expect(preferencesEqual(a, { ...a, inspectorWidth: a.inspectorWidth + 1 })).toBe(false);
   });
 

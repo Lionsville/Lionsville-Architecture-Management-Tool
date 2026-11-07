@@ -458,7 +458,6 @@ export const GROWN = {
   'src/editor/EditorToolbar.tsx': { complexity: 62, lines: 393 },
   'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1009 },
   'src/editor/canvas/DomainGroupLayer.tsx': { lines: 201 },
-  'src/editor/canvas/ElementPalette.tsx': { lines: 479 },
   'src/editor/canvas/Layer7Canvas.tsx': { lines: 187 },
   'src/editor/canvas/ZoneLayer.tsx': { lines: 222 },
   'src/editor/edges/FloatingEdge.tsx': { complexity: 61, lines: 518 },

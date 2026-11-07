@@ -28,12 +28,16 @@ export interface EditorPreferences {
   showGrid: boolean;
   /** Lifecycle badges on nodes (U5). */
   showLifecycle: boolean;
-  /** Left palette collapsed (U7b). */
-  paletteCollapsed: boolean;
+  /** The rail of kinds kept open beside the board (Add → Keep open): closed unless asked, so reading comes first. */
+  keepRail: boolean;
+  /** The status dots on a card. */
+  showStatus: boolean;
+  /** A card's description, once the reader is close enough. */
+  showDescriptions: boolean;
+  /** The key on the canvas. */
+  showKey: boolean;
   /** Right inspector collapsed (U7b). */
   inspectorCollapsed: boolean;
-  /** Left palette width in px when expanded (4B, drag handle). */
-  paletteWidth: number;
   /** Right inspector width in px when expanded (4B, drag handle). */
   inspectorWidth: number;
   /** The width of the outline a laid-out page docks on its left — the organisation chart's (3.7.3, drag handle). */
@@ -85,11 +89,13 @@ export const BOARD_TIDY_DEFAULTS: TidyOptions = {
 
 export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   snapToGrid: false,
-  showGrid: true,
+  showGrid: false,
   showLifecycle: true,
-  paletteCollapsed: false,
+  keepRail: false,
+  showStatus: true,
+  showDescriptions: true,
+  showKey: true,
   inspectorCollapsed: false,
-  paletteWidth: PANEL_LIMITS.palette.default,
   inspectorWidth: PANEL_LIMITS.inspector.default,
   outlineWidth: OUTLINE_LIMITS.default,
   showMinimap: false,
@@ -138,12 +144,14 @@ export function mergePreferences(stored: unknown): EditorPreferences {
     snapToGrid: bool(raw.snapToGrid, defaults.snapToGrid),
     showGrid: bool(raw.showGrid, defaults.showGrid),
     showLifecycle: bool(raw.showLifecycle, defaults.showLifecycle),
-    paletteCollapsed: bool(raw.paletteCollapsed, defaults.paletteCollapsed),
+    keepRail: bool(raw.keepRail, defaults.keepRail),
+    showStatus: bool(raw.showStatus, defaults.showStatus),
+    showDescriptions: bool(raw.showDescriptions, defaults.showDescriptions),
+    showKey: bool(raw.showKey, defaults.showKey),
     inspectorCollapsed: bool(raw.inspectorCollapsed, defaults.inspectorCollapsed),
     // Widths go through the panel clamp rather than a type check: a stored 9000
     // is as real as a stored string, and a panel wider than the window is worse
     // than a forgotten preference.
-    paletteWidth: panelWidth('palette', raw.paletteWidth),
     inspectorWidth: panelWidth('inspector', raw.inspectorWidth),
     outlineWidth: outlineWidth(raw.outlineWidth),
     showMinimap: bool(raw.showMinimap, defaults.showMinimap),
@@ -174,9 +182,11 @@ export function preferencesEqual(a: EditorPreferences, b: EditorPreferences): bo
     a.snapToGrid === b.snapToGrid &&
     a.showGrid === b.showGrid &&
     a.showLifecycle === b.showLifecycle &&
-    a.paletteCollapsed === b.paletteCollapsed &&
+    a.keepRail === b.keepRail &&
+    a.showStatus === b.showStatus &&
+    a.showDescriptions === b.showDescriptions &&
+    a.showKey === b.showKey &&
     a.inspectorCollapsed === b.inspectorCollapsed &&
-    a.paletteWidth === b.paletteWidth &&
     a.inspectorWidth === b.inspectorWidth &&
     a.outlineWidth === b.outlineWidth &&
     a.showMinimap === b.showMinimap &&

@@ -115,7 +115,7 @@ describe('what the canvas asks React Flow to draw', () => {
     expect(drawn()).toBeLessThan(placedNodes(big.diagrams[0]).length);
     const downloads = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
+    fireEvent.click(screen.getByTestId('board-export'));
 
     // A board this size is tens of megapixels, so the dialog says so and its
     // button asks to go anyway. The preview is the first capture, and it
@@ -135,11 +135,11 @@ describe('what the canvas asks React Flow to draw', () => {
     await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
     const downloads = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
+    fireEvent.click(screen.getByTestId('board-export'));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }, SLOWLY));
 
     await waitFor(
-      () => expect((screen.getByRole('button', { name: 'Export PNG' }) as HTMLButtonElement).disabled)
+      () => expect((screen.getByTestId('board-export') as HTMLButtonElement).disabled)
         .toBe(false),
       SLOWLY,
     );

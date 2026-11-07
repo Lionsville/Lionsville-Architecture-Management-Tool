@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Everything about one diagram that is not the picture: what it is called, what
- * the exported drawing says about it, and which maturity columns its
- * applications carry.
+ * Everything about one board that is not the picture, in two tabs because they are
+ * two questions: what sits on the cards, shown on a card as it is edited, and what
+ * is printed on an export.
  *
  * The columns are the reason this dialog exists. `aspectConfig` was per-diagram
  * data from the start — ordered, renameable, and round-tripping through
@@ -18,17 +18,14 @@
  * know what a model is.
  */
 import { useState } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import { FieldLabel, FieldsDialog, SectionHeading } from '../widgets/CompactForms';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Divider from '@mui/material/Divider';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
-import TextField from '@mui/material/TextField';
+import { Button } from '../widgets/kit/Button';
+import { Card } from '../widgets/kit/Card';
+import { Dialog } from '../widgets/kit/Dialog';
+import { TextField } from '../widgets/kit/Field';
+import { Tabs } from '../widgets/kit/Tabs';
+import { ViewBarCheck } from '../widgets/kit/ViewBar';
+import { AspectBadgeRow } from './nodes/AspectBadgeRow';
+import './canvas/board.css';
 import { AspectColumnsEditor, settleFreshAspectKeys } from './AspectColumnsEditor';
 import { DEFAULT_ASPECT_CONFIG, normaliseAspectConfig } from '../model/aspects';
 import { useStrings } from '../i18n/LanguageContext';
@@ -85,6 +82,7 @@ export function DiagramSettingsDialog({
 }: DiagramSettingsDialogProps) {
   const { t } = useStrings();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [tab, setTab] = useState<'cards' | 'export'>('cards');
   // A fresh target resets the draft; the same target keeps what was typed, so a
   // stray click on the backdrop is recoverable by reopening.
   const [seenId, setSeenId] = useState<string | undefined>(undefined);
@@ -117,105 +115,117 @@ export function DiagramSettingsDialog({
     onClose();
   };
 
+  const open = target !== undefined && draft !== null;
+  const name = draft && (
+    <TextField
+      autoFocus
+      label={t('field.name')}
+      value={draft.name}
+      onChange={(next) => edit({ name: next })}
+    />
+  );
+  const onCards = draft && (
+    <div className="lv-settings__cards">
+      {name}
+      <div className="lv-settings__columns">
+        <div>
+          <div className="lv-settings__head">
+            <h3 className="lv-settings__title">{t('diagramSettings.aspects')}</h3>
+            <ViewBarCheck label={t('diagramSettings.showAspects')} checked={draft.showAspects} onChange={(showAspects) => edit({ showAspects })} />
+          </div>
+          <p className="lv-settings__help">{t('diagramSettings.aspectsHelp')}</p>
+          {!draft.showAspects && <p className="lv-settings__help">{t('diagramSettings.hiddenNote')}</p>}
+          <AspectColumnsEditor
+            columns={draft.columns}
+            fresh={draft.fresh}
+            dimmed={!draft.showAspects}
+            onChange={(columns, fresh) => edit({ columns, fresh })}
+          />
+        </div>
+        <CardPreview columns={draft.columns} shown={draft.showAspects} />
+      </div>
+    </div>
+  );
+  const onExport = draft && (
+    <div className="lv-settings__export">
+      {!isLayer7 && name}
+      <p className="lv-settings__help">{t('diagramSettings.presentationHelp')}</p>
+      <ViewBarCheck
+        label={t('diagramSettings.showTitleBlock')}
+        checked={draft.showTitleBlock}
+        onChange={(showTitleBlock) => edit({ showTitleBlock })}
+      />
+      <div className="lv-settings__pair">
+        <TextField
+          label={t('diagramSettings.author')}
+          placeholder={t('diagramSettings.authorPlaceholder')}
+          value={draft.author}
+          disabled={!draft.showTitleBlock}
+          onChange={(author) => edit({ author })}
+        />
+        <TextField
+          label={t('diagramSettings.client')}
+          placeholder={defaultClient}
+          hint={t('diagramSettings.clientHelp', { name: defaultClient })}
+          value={draft.client}
+          disabled={!draft.showTitleBlock}
+          onChange={(client) => edit({ client })}
+        />
+      </div>
+      <TextField
+        type="date"
+        label={t('diagramSettings.date')}
+        hint={t('diagramSettings.dateHelp')}
+        value={draft.documentDate}
+        disabled={!draft.showTitleBlock}
+        onChange={(documentDate) => edit({ documentDate })}
+      />
+    </div>
+  );
   return (
-    <FieldsDialog open={target !== undefined && draft !== null} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('diagramSettings.title')}</DialogTitle>
-      <DialogContent>
-        {draft && (
-          <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <TextField
-              autoFocus
-              fullWidth
-              label={t('field.name')}
-              value={draft.name}
-              onChange={(e) => edit({ name: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter') return;
-                e.preventDefault();
-                commit();
-              }}
-            />
+    <Dialog
+      open={open}
+      size="l"
+      title={t('diagramSettings.title')}
+      onClose={onClose}
+      onSubmit={commit}
+      actions={(
+        <>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" type="submit" disabled={!canSave}>{t('common.save')}</Button>
+        </>
+      )}
+    >
+      {draft && isLayer7 && (
+        <>
+          <Tabs
+            label={t('diagramSettings.title')}
+            value={tab}
+            onChange={setTab}
+            items={[
+              { value: 'cards', label: t('diagramSettings.tabCards') },
+              { value: 'export', label: t('diagramSettings.tabExport') },
+            ]}
+          />
+          {tab === 'cards' ? onCards : onExport}
+        </>
+      )}
+      {draft && !isLayer7 && onExport}
+    </Dialog>
+  );
+}
 
-            <Box>
-              <SectionHeading>{t('diagramSettings.presentation')}</SectionHeading>
-              <FieldLabel sx={{ mb: 1.25 }}>{t('diagramSettings.presentationHelp')}</FieldLabel>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1}>
-                  <TextField
-                    fullWidth
-                    label={t('diagramSettings.author')}
-                    placeholder={t('diagramSettings.authorPlaceholder')}
-                    value={draft.author}
-                    disabled={!draft.showTitleBlock}
-                    onChange={(e) => edit({ author: e.target.value })}
-                  />
-                  <TextField
-                    fullWidth
-                    label={t('diagramSettings.client')}
-                    placeholder={defaultClient}
-                    helperText={t('diagramSettings.clientHelp', { name: defaultClient })}
-                    value={draft.client}
-                    disabled={!draft.showTitleBlock}
-                    onChange={(e) => edit({ client: e.target.value })}
-                  />
-                </Stack>
-                <TextField
-                  type="date"
-                  label={t('diagramSettings.date')}
-                  helperText={t('diagramSettings.dateHelp')}
-                  value={draft.documentDate}
-                  disabled={!draft.showTitleBlock}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={{ width: 220 }}
-                  onChange={(e) => edit({ documentDate: e.target.value })}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={draft.showTitleBlock}
-                      onChange={(e) => edit({ showTitleBlock: e.target.checked })}
-                    />
-                  }
-                  label={t('diagramSettings.showTitleBlock')}
-                />
-              </Stack>
-            </Box>
-
-            {isLayer7 && (
-              <>
-                <Divider />
-                <Box>
-                  <SectionHeading>{t('diagramSettings.aspects')}</SectionHeading>
-                  <FieldLabel sx={{ mb: 1.25 }}>{t('diagramSettings.aspectsHelp')}</FieldLabel>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={draft.showAspects}
-                        onChange={(e) => edit({ showAspects: e.target.checked })}
-                      />
-                    }
-                    label={t('diagramSettings.showAspects')}
-                  />
-                  {!draft.showAspects && <FieldLabel sx={{ mb: 1 }}>{t('diagramSettings.hiddenNote')}</FieldLabel>}
-
-                  <AspectColumnsEditor
-                    columns={draft.columns}
-                    fresh={draft.fresh}
-                    dimmed={!draft.showAspects}
-                    onChange={(columns, fresh) => edit({ columns, fresh })}
-                  />
-                </Box>
-              </>
-            )}
-          </Stack>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={commit} disabled={!canSave}>
-          {t('common.save')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+/** What the columns come to on a card, as they are edited, at the distance the codes show. */
+function CardPreview({ columns, shown }: { columns: readonly AspectConfigEntry[]; shown: boolean }) {
+  const { t } = useStrings();
+  return (
+    <div className="lv-settings__preview">
+      <div className="lv-settings__help">{t('diagramSettings.looksLike')}</div>
+      <Card
+        name={t('diagramSettings.previewName')}
+        marks={shown && columns.length > 0 ? <AspectBadgeRow aspects={{}} config={columns} /> : undefined}
+      />
+      <p className="lv-settings__help">{t('diagramSettings.previewNote')}</p>
+    </div>
   );
 }

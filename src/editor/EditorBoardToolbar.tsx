@@ -5,11 +5,13 @@
  * The toolbar over the board, wired to the editor's state: the diagram tabs
  * and what they can do, the layout passes, the day, the view toggles.
  */
-import { useReactFlow } from '@xyflow/react';
 import type { DesignDiagram } from '../model/types';
 import { cancelElkLayout, canCancelElkLayout } from '../layout/elkLayout';
 import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
-import { FIT_ALL } from './canvas/fitAll';
+import { addableKinds } from './AddPicker';
+import { paletteLabel } from './canvas/paletteItems';
+import { useStrings } from '../i18n/LanguageContext';
+import type { BoardBarAdd } from './BoardBar';
 import type { SolutionDesignEditorProps } from './props';
 import { EMPTY_SELECTION } from './useEditorState';
 import type { BoardView } from './useBoardView';
@@ -18,7 +20,7 @@ import type { EditorParts } from './editorParts';
 
 export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: EditorParts; diagram: DesignDiagram; laidOut: boolean; onPageBar?: (node: HTMLElement | null) => void }) {
   const { props, state, writable, looking, view, board, layout, exports, dialogs } = parts;
-  const { fitView } = useReactFlow();
+  const add = useBoardAdd(parts, diagram);
   return (
     <EditorToolbar
       model={state.model}
@@ -41,10 +43,16 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       tidyOptions={view.tidyOptions}
       onTidyOptionsChange={view.setTidyOptions}
       onRouteEdges={() => void layout.handleRouteEdges()}
+      onRouteEdgesAll={() => void layout.handleRouteEdgesAll()}
+      {...(add ? { add } : {})}
+      show={{
+        status: view.showStatus, onStatus: view.setShowStatus,
+        descriptions: view.showDescriptions, onDescriptions: view.setShowDescriptions,
+        showKey: view.showKey, onKey: view.setShowKey,
+      }}
       autoRoute={layout.autoRoute}
       onToggleAutoRoute={layout.handleToggleAutoRoute}
       autoRouteNote={layout.autoRouteNote}
-      onFitView={() => { void fitView({ ...FIT_ALL, duration: 300 }) }}
       onExport={exports.openExport}
       exportBusy={exports.exporting}
       onOpenHelp={dialogs.openHelp}
@@ -65,6 +73,29 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       onOpenThisView={!laidOut ? () => { dialogs.setThisViewOpen(true); state.setSelection(EMPTY_SELECTION); } : undefined}
     />
   );
+}
+
+/** What Add offers, each opening the picker at the middle of the board. */
+function useBoardAdd(parts: EditorParts, diagram: DesignDiagram): BoardBarAdd | undefined {
+  const { t } = useStrings();
+  const { adding, view, props } = parts;
+  if (diagram.kind !== 'layer7' && diagram.kind !== 'container') return undefined;
+  const existing = diagram.kind === 'layer7' ? props.ownership?.onAddExisting : undefined;
+  return {
+    kinds: addableKinds(diagram).map((kind) => ({
+      label: paletteLabel(kind, t),
+      onPress: () => adding.ask({ screen: boardMiddle(), kind }),
+    })),
+    ...(existing ? { onExisting: () => existing() } : {}),
+    keepOpen: view.keepRail,
+    onKeepOpen: view.setKeepRail,
+  };
+}
+
+/** Where a picker asked for from the bar or the rail opens: the middle of the board, or of the window. */
+export function boardMiddle(): { x: number; y: number } {
+  const box = document.querySelector('[data-guide="board.canvas"]')?.getBoundingClientRect();
+  return box ? { x: box.left + box.width / 2 - 160, y: box.top + box.height / 3 } : { x: window.innerWidth / 2, y: window.innerHeight / 3 };
 }
 
 /** The tabs' own menus: open, make, rename, settings, duplicate, delete, history. */

@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { useContext, useState } from 'react';
 import { Panel } from '@xyflow/react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import type { AspectConfigEntry } from '../../model/types';
+import type { AspectConfigEntry, DesignDiagram } from '../../model/types';
+import { badgeLegend } from '../../model/aspects';
 import type { ColourBy, OverlayBand } from '../../model/overlay';
 import { useStrings } from '../../i18n/LanguageContext';
-import { CloseIcon } from '../../widgets/icons';
+import { KeyStrip, OTHER_VALUE, type KeyValue } from '../../widgets/kit/KeyStrip';
+import { Mark } from '../../widgets/kit/Mark';
+import { ASPECT_STATUS_LABEL } from '../aspectLegend';
 import { overlayBandLabel, overlayTitle } from '../overlayWords';
-import { overlayIndex, overlayInk, overlayTint } from '../theme/overlayColors';
+import { overlayIndex, overlayInk } from '../theme/overlayColors';
+import { STATUS_MARK } from '../nodes/AspectBadgeRow';
+import { BoardFocusContext } from './boardFocus';
 
 export interface OverlayLegendProps {
   colourBy: ColourBy;
@@ -22,73 +23,71 @@ export interface OverlayLegendProps {
   aspectColumns: readonly AspectConfigEntry[];
   /** Takes the overlay off. */
   onClose(): void;
+  /** Keeps this reader's lens with the view. Absent: nothing to keep, or nobody here may. */
+  onKeep?(): void;
 }
 
 /**
- * The overlay's key, on the canvas while an overlay is up (3.7.0). The
- * legend used to live only under the *Colour by* button, in a popover that
- * closed on the first click outside it — so the one moment a person wanted
- * to read what a colour meant, while looking at the board, it was gone. This
- * stays in the corner: what the board is coloured by, then each band with its
- * number, its swatch, its name and how many cards it holds. The number is
- * what the card's tag says, so a band is found by reading, not by matching a
- * hue. Closing it turns the overlay off; a reader may, as a reader may choose
- * one (`useBoardView`).
+ * The key to the one lens that is up, on the canvas and away from the cards: what it
+ * is by, each band with the number its cards carry and how many, *Keep with the view*
+ * and the way to take it down. Pressing a band keeps its cards and lets the rest recede.
  */
-export function OverlayLegend({ colourBy, bands, aspectColumns, onClose }: OverlayLegendProps) {
+export function OverlayLegend({ colourBy, bands, aspectColumns, onClose, onKeep }: OverlayLegendProps) {
   const { t } = useStrings();
   const theme = useTheme();
+  const focus = useContext(BoardFocusContext);
+  const [pressed, setPressed] = useState<string | undefined>(undefined);
+  const values: KeyValue[] = bands.map((band) => {
+    const ink = overlayInk(theme, band);
+    return {
+      id: band.key,
+      label: overlayBandLabel(band, t),
+      count: band.memberIds.length,
+      shown: band.faded
+        ? undefined
+        : <span className="lv-lens-tag" style={{ '--lv-lens-ink': ink, '--lv-lens-on': theme.palette.getContrastText(ink) } as React.CSSProperties}>{overlayIndex(band)}</span>,
+    };
+  });
+  const press = (id: string | undefined) => {
+    setPressed(id);
+    const band = bands.find((one) => one.key === id);
+    focus.set(band ? { nodes: new Set(band.memberIds), lines: new Set() } : null);
+  };
   return (
-    <Panel position="bottom-right" style={{ marginBottom: 28 }}>
-      <Paper
-        elevation={2}
+    <Panel position="bottom-right">
+      <KeyStrip
         data-testid="overlay-legend"
-        role="group"
-        aria-label={t('overlay.legend', { what: overlayTitle(colourBy, aspectColumns, t) })}
-        sx={{ px: 1.25, py: 0.75, borderRadius: 2, maxWidth: 260, maxHeight: 280, overflow: 'auto' }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {t('overlay.legendTitle', { what: overlayTitle(colourBy, aspectColumns, t) })}
-          </Typography>
-          <Tooltip title={t('overlay.off')}>
-            <IconButton size="small" aria-label={t('overlay.off')} onClick={onClose} sx={{ p: 0.25, mr: -0.5 }}>
-              <CloseIcon size={14} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        {bands.length === 0 && (
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('overlay.noCards')}</Typography>
-        )}
-        {bands.map((band) => {
-          const ink = overlayInk(theme, band);
-          return (
-            <Box key={band.key} data-testid={`overlay-legend-${band.key}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.2 }}>
-              {band.faded ? (
-                <Box aria-hidden sx={{ width: 16, height: 15, borderRadius: '3px', flexShrink: 0, border: `1px dashed ${theme.palette.divider}` }} />
-              ) : (
-                <Box
-                  aria-hidden
-                  sx={{
-                    minWidth: 16, height: 15, px: 0.4, borderRadius: '3px', flexShrink: 0,
-                    fontSize: 9.5, fontWeight: 800, lineHeight: '15px', textAlign: 'center', fontVariantNumeric: 'tabular-nums',
-                    backgroundColor: ink, color: theme.palette.getContrastText(ink),
-                  }}
-                >
-                  {overlayIndex(band)}
-                </Box>
-              )}
-              <Box aria-hidden sx={{ width: 14, height: 14, borderRadius: '3px', flexShrink: 0, backgroundColor: overlayTint(theme, band), border: `1px solid ${theme.palette.divider}`, boxShadow: band.faded ? 'none' : `inset 3px 0 0 ${ink}` }} />
-              <Typography sx={{ fontSize: 11, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: band.faded ? 'text.secondary' : 'text.primary' }}>
-                {overlayBandLabel(band, t)}
-              </Typography>
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-                {band.memberIds.length}
-              </Typography>
-            </Box>
-          );
-        })}
-      </Paper>
+        title={t('overlay.legendTitle', { what: overlayTitle(colourBy, aspectColumns, t, bands) })}
+        values={values}
+        {...(pressed ? { pressed } : {})}
+        onPress={(id) => { if (id !== OTHER_VALUE) press(id); }}
+        {...(bands.length === 0 ? { note: t('overlay.noCards') } : {})}
+        {...(onKeep ? { onKeep } : {})}
+        onClose={{ label: t('overlay.off'), press: onClose }}
+      />
+    </Panel>
+  );
+}
+
+/**
+ * What the dots mean on this board, on the canvas where they are read: one mark per
+ * status, and the columns left to right. Show takes it down; an export prints its own.
+ */
+export function BoardKey({ diagram }: { diagram: DesignDiagram }) {
+  const { t } = useStrings();
+  const legend = badgeLegend(diagram);
+  if (legend.columns.length === 0) return null;
+  return (
+    <Panel position="bottom-right">
+      <KeyStrip
+        data-testid="board-key"
+        values={[...legend.statuses, 'unset' as const].map((status) => ({
+          id: status,
+          label: status === 'unset' ? t('overlay.unset') : t(ASPECT_STATUS_LABEL[status]),
+          shown: <Mark kind={STATUS_MARK[status]} />,
+        }))}
+        note={t('board.keyColumns', { columns: legend.columns.map((column) => column.label).join(', ') })}
+      />
     </Panel>
   );
 }

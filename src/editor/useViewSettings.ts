@@ -28,9 +28,11 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   const [showLifecycle, setShowLifecycle] = useState(initial.showLifecycle);
   // Panel collapse (U7b) and widths (4B): dragged on the seam beside each
   // panel, clamped by `model/panels`.
-  const [paletteCollapsed, setPaletteCollapsed] = useState(initial.paletteCollapsed);
+  const [keepRail, setKeepRail] = useState(initial.keepRail);
+  const [showStatus, setShowStatus] = useState(initial.showStatus);
+  const [showDescriptions, setShowDescriptions] = useState(initial.showDescriptions);
+  const [showKey, setShowKey] = useState(initial.showKey);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(initial.inspectorCollapsed);
-  const [paletteWidth, setPaletteWidth] = useState(initial.paletteWidth);
   const [inspectorWidth, setInspectorWidth] = useState(initial.inspectorWidth);
   // The outline a laid-out page docks on its left (3.7.3), dragged on its own seam.
   const [outlineWidth, setOutlineWidth] = useState(initial.outlineWidth);
@@ -41,8 +43,8 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   const [showEdgeLabels, setShowEdgeLabels] = useState(initial.showEdgeLabels);
 
   const settings: EditorPreferences = {
-    snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   };
   useReportPreferences(settings, initial, preferences?.onChange);
   // Preferences changed from their own page, while this is mounted under it: the
@@ -62,7 +64,7 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   return {
     ...settings,
     setTidyOptions, setGroupTidyOptions, setSnapToGrid, setShowGrid, setShowLifecycle,
-    setPaletteCollapsed, setInspectorCollapsed, setPaletteWidth, setInspectorWidth, setOutlineWidth,
+    setKeepRail, setShowStatus, setShowDescriptions, setShowKey, setInspectorCollapsed, setInspectorWidth, setOutlineWidth,
     setShowMinimap, setShowEdgeLabels,
   };
 }
@@ -86,20 +88,20 @@ function useReportPreferences(
 ) {
   const last = useRef<EditorPreferences>(initial);
   const {
-    snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   } = next;
   useEffect(() => {
     if (!onChange) return;
     const settings: EditorPreferences = {
-      snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-      paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+      snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+      inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
     };
     if (preferencesEqual(last.current, settings)) return;
     last.current = settings;
     onChange(settings);
   }, [
-    onChange, snapToGrid, showGrid, showLifecycle, paletteCollapsed, inspectorCollapsed,
-    paletteWidth, inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    onChange, snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
   ]);
 }

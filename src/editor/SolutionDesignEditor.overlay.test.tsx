@@ -76,19 +76,27 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   return { ...view, host };
 }
 
-const open = () => fireEvent.click(screen.getByLabelText('Colour by'));
-/** A choice by its group's words: the *Platform* overlay and the *Platform* aspect column share a name and not a group. */
-const choose = (label: string, group = 'What it stands on') =>
-  fireEvent.click(within(screen.getByRole('group', { name: group })).getByRole('menuitem', { name: label }));
-/**
- * What a card is wearing, as the class Emotion hashed its style into: two
- * cards in the same band share it and two in different bands do not, which is
- * the whole of what the overlay promises. Read this way rather than off
- * `getComputedStyle`, whose CSS parser drops a gradient value.
- */
-const wash = (id: string) =>
-  document.querySelector(`.react-flow__node[data-id="${id}"]`)
-    ?.firstElementChild?.firstElementChild?.className ?? '';
+const colourWord = () => document.querySelector('[data-guide="board.colour"]') as HTMLElement;
+const open = () => fireEvent.click(colourWord());
+/** A choice in the one menu. A heading goes before its rows, so the group is the rows after it. */
+const choose = (label: string, group = 'What it stands on') => {
+  const rows = screen.getAllByRole('menuitemcheckbox');
+  const all = [...screen.getByRole('menu').children];
+  const words = (one: Element) => one.textContent?.trim();
+  const from = all.findIndex((row) => words(row) === group);
+  const row = all.slice(from + 1).find((one) => words(one) === label) ?? rows.find((one) => words(one) === label);
+  fireEvent.click(row as HTMLElement);
+};
+const band = (key: string) => screen.getByTestId('overlay-legend').querySelector(`[data-key="${key}"]`) as HTMLElement;
+const chooseOne = (name: string) => {
+  fireEvent.click(screen.getByRole('menuitem', { name: 'One platform or offering' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name }));
+};
+/** What a card is wearing: two cards in the same band share it and two in different bands do not. */
+const wash = (id: string) => {
+  const card = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"] .kit-card`);
+  return card ? `${card.style.getPropertyValue('--lv-lens-wash')}|${card.dataset.dimmed ?? ''}` : '';
+};
 
 describe('colour by', () => {
   it('starts off: every application card wears the same ground', async () => {
@@ -114,11 +122,11 @@ describe('colour by', () => {
     expect(wash('partner')).toBe(before.partner);
     // The legend stands on the canvas while the overlay is up, with each band's number and count; the button says what the board is coloured by.
     const legend = screen.getByTestId('overlay-legend');
-    expect(legend.getAttribute('aria-label')).toBe('Legend: coloured by Platform');
-    expect(within(screen.getByTestId('overlay-legend-openshift')).getByText('OpenShift')).toBeTruthy();
-    expect(screen.getByTestId('overlay-legend-openshift').textContent).toBe('1OpenShift2');
-    expect(screen.getByTestId('overlay-legend-none').textContent).toContain('On nothing yet');
-    expect(screen.getByLabelText('Colour by').textContent).toBe('Platform');
+    expect(legend.getAttribute('aria-label')).toBe('Coloured by Platform');
+    expect(within(band('openshift')).getByText('OpenShift')).toBeTruthy();
+    expect(band('openshift').textContent?.replace(/\s/g, '')).toBe('1OpenShift2');
+    expect(band('none').textContent).toContain('On nothing yet');
+    expect(colourWord().textContent).toContain('Platform');
     // Every card in a band wears the band's number, so a band is found by reading and not by matching a hue.
     expect(within(document.querySelector('.react-flow__node[data-id="wms"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('1');
     expect(within(document.querySelector('.react-flow__node[data-id="crm"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('2');
@@ -141,14 +149,14 @@ describe('colour by', () => {
     await measured();
     expect(wash('wms')).toBe(wash('portal'));
     expect(wash('crm')).not.toBe(wash('wms'));
-    expect(screen.getByTestId('overlay-legend-value:Warehouse').textContent).toBe('1Warehouse2');
-    expect(screen.getByTestId('overlay-legend-unset').textContent).toContain('Not set');
+    expect(band('value:Warehouse').textContent?.replace(/\s/g, '')).toBe('1Warehouse2');
+    expect(band('unset').textContent).toContain('Not set');
     open();
-    fireEvent.click(screen.getByTestId('colour-by-aspect-dr'));
+    choose('Disaster recovery', 'An operational aspect');
     await measured();
-    expect(screen.getByLabelText('Colour by').textContent).toBe('Disaster recovery');
-    expect(screen.getByTestId('overlay-legend-atRisk').textContent).toBe('1At risk1');
-    expect(screen.getByTestId('overlay-legend-unset').textContent).toBe('2Not set3');
+    expect(colourWord().textContent).toContain('Disaster recovery');
+    expect(band('atRisk').textContent?.replace(/\s/g, '')).toBe('1Atrisk1');
+    expect(band('unset').textContent?.replace(/\s/g, '')).toBe('2Notset3');
   });
 
   it('leaves the view as it was until the lens is kept with it (ADR-0027, amended)', async () => {
@@ -158,13 +166,11 @@ describe('colour by', () => {
     choose('Technology lifecycle');
     await measured();
     expect(host.current.model.diagrams[0].colourBy).toBeUndefined();
-    open();
     fireEvent.click(screen.getByTestId('keep-lens'));
     await measured();
     expect(host.current.model.diagrams[0].colourBy).toBe('technologyLifecycle');
-    expect(screen.getByLabelText('Colour by').textContent).toBe('Technology lifecycle');
+    expect(colourWord().textContent).toContain('Technology lifecycle');
     // Kept: nothing is this reader's any more, so there is nothing to keep.
-    open();
     expect(screen.queryByTestId('keep-lens')).toBeNull();
   });
 
@@ -172,15 +178,15 @@ describe('colour by', () => {
     const { host } = renderEditor();
     await measured();
     open();
-    fireEvent.click(screen.getByTestId('colour-by-one-openshift'));
+    chooseOne('OpenShift');
     await measured();
     expect(host.current.model.diagrams[0].colourBy).toBeUndefined();
     // Both on the cluster wear its wash; the one on nothing is faded, not washed.
     expect(wash('wms')).toBe(wash('portal'));
     expect(wash('crm')).not.toBe(wash('wms'));
-    expect(within(screen.getByTestId('overlay-legend-openshift')).getByText('OpenShift')).toBeTruthy();
-    expect(screen.getByTestId('overlay-legend-none').textContent).toContain('Not standing on it');
-    expect(screen.getByLabelText('Colour by').textContent).toBe('OpenShift');
+    expect(within(band('openshift')).getByText('OpenShift')).toBeTruthy();
+    expect(band('none').textContent).toContain('Not standing on it');
+    expect(colourWord().textContent).toContain('OpenShift');
   });
 
   it('is not offered on a view that is not a landscape', async () => {
@@ -188,7 +194,7 @@ describe('colour by', () => {
     held.diagrams.push(laidOut({ id: 'cd', kind: 'container', name: 'WMS', applicationElementId: 'wms', placements: [{ id: 'wms', x: 0, y: 0 }] }));
     renderEditor({ model: held, activeDiagramId: 'cd' });
     await measured();
-    expect(screen.queryByLabelText('Colour by')).toBeNull();
+    expect(colourWord()).toBeNull();
   });
 
   it('still works for a reader, who may change what a view shows without writing it', async () => {

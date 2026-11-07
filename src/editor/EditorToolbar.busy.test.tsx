@@ -40,7 +40,6 @@ function renderToolbar(overrides: Partial<EditorToolbarProps> = {}) {
     onRouteEdges: vi.fn(),
     autoRoute: false,
     onToggleAutoRoute: vi.fn(),
-    onFitView: vi.fn(),
     onExport: vi.fn(),
     onOpenHelp: vi.fn(),
     showLifecycle: true,
@@ -65,31 +64,26 @@ function renderToolbar(overrides: Partial<EditorToolbarProps> = {}) {
   return props;
 }
 
-const exportButton = () => screen.getByRole('button', { name: 'Export PNG' }) as HTMLButtonElement;
+const exportButton = () => screen.getByTestId('board-export') as HTMLButtonElement;
 
 describe('EditorToolbar — export busy', () => {
-  it('is pressable and shows its own icon when idle', () => {
+  it('is pressable when idle', () => {
     const props = renderToolbar();
     expect(exportButton().disabled).toBe(false);
     fireEvent.click(exportButton());
     expect(props.onExport).toHaveBeenCalledTimes(1);
   });
 
-  it('disables itself and spins while exporting', () => {
+  it('disables itself while exporting', () => {
     const props = renderToolbar({ exportBusy: true });
-    expect(exportButton().disabled).toBe(true);
-    // The spinner is a picture of the button's state, which the button says.
     expect(exportButton().getAttribute('aria-busy')).toBe('true');
-    expect(exportButton().querySelector('.MuiCircularProgress-root')).not.toBeNull();
     fireEvent.click(exportButton());
     expect(props.onExport).not.toHaveBeenCalled();
   });
 
-  it('does not disable Tidy — an export is not a layout pass', () => {
+  it('does not disable Arrange — an export is not a layout pass', () => {
     renderToolbar({ exportBusy: true });
-    expect((screen.getByRole('button', { name: 'Tidy layout' }) as HTMLButtonElement).disabled).toBe(
-      false,
-    );
+    expect((screen.getByRole('button', { name: 'Arrange' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
@@ -109,19 +103,18 @@ describe('cancelling a tidy', () => {
     fireEvent.click(button);
     expect(onCancelTidy).toHaveBeenCalledTimes(1);
     expect(props.onTidy).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Tidy layout' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange' })).toBeNull();
   });
 
   it('leaves the button disabled where there is nothing to cancel', () => {
     renderToolbar({ busy: 'tidy' });
-    expect((screen.getByRole('button', { name: 'Tidy layout' }) as HTMLButtonElement).disabled)
-      .toBe(true);
+    expect((screen.getByRole('button', { name: 'Arranging…' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.queryByRole('button', { name: 'Cancel tidy' })).toBeNull();
   });
 
-  it('is the tidy button again once the pass is over', () => {
+  it('is the Arrange word again once the pass is over', () => {
     renderToolbar({ onCancelTidy: vi.fn() });
-    expect((screen.getByRole('button', { name: 'Tidy layout' }) as HTMLButtonElement).disabled)
+    expect((screen.getByRole('button', { name: 'Arrange' }) as HTMLButtonElement).disabled)
       .toBe(false);
     expect(screen.queryByRole('button', { name: 'Cancel tidy' })).toBeNull();
   });

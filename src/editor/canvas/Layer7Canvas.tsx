@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { canvasRect } from '../../model/zones';
 import { useCallback, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
 import { domainGroupForPoint, domainGroupRectMap } from '../../model/placement';
@@ -206,6 +207,7 @@ export function Layer7Canvas(
       onMenuAction={handleMenuAction}
       canTidyGroup={Boolean(props.onTidyGroup)}
       resolvePaneClick={resolvePaneClick}
+      emptyFrame={canvasRect(geometry)}
     >
       <ZoneLayer
         geometry={geometry}

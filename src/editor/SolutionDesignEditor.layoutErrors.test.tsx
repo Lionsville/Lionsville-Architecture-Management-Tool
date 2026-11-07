@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { addFromBar, pressRoute, pressTidy } from './testing/boardBar';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -107,38 +108,29 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     mockRoute.mockRejectedValue(wasmDown());
     const { host, onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Route connections only'));
+    pressRoute();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     expect(onLayoutError.mock.calls[0][0]).toMatch(/reload the page/i);
     expect(host.current.commands).toEqual([]);
   });
 
-  it('releases both buttons after a failure, so the toolbar is not left dead', async () => {
+  it('releases Arrange after a failure, so the bar is not left dead', async () => {
     mockRoute.mockRejectedValue(wasmDown());
     const { onLayoutError } = renderEditor();
-    const route = screen.getByLabelText<HTMLButtonElement>('Route connections only');
-    const tidy = screen.getByLabelText<HTMLButtonElement>('Tidy layout');
 
-    fireEvent.click(route);
-    expect(route.disabled).toBe(true);
+    pressRoute();
+    expect((screen.getByRole('button', { name: 'Arranging…' }) as HTMLButtonElement).disabled).toBe(true);
 
-    // The report and the release are two updates: the error is said from the
-    // pass's catch, the buttons are let go when it settles, a render later.
-    // Asserted the moment the report landed, a loaded machine saw the report
-    // before the release.
     await waitFor(() => expect(onLayoutError).toHaveBeenCalled());
-    await waitFor(() => {
-      expect(route.disabled).toBe(false);
-      expect(tidy.disabled).toBe(false);
-    });
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Arrange' }) as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('reports a Tidy that failed outright and commits nothing', async () => {
     mockTidy.mockRejectedValue(new Error('ELK exploded'));
     const { host, onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    pressTidy();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     expect(host.current.commands).toEqual([]);
@@ -152,7 +144,7 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     mockTidy.mockResolvedValue({ placements: moved, routingError: wasmDown() });
     const { host, onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    pressTidy();
 
     await waitFor(() => expect(host.current.commands).toHaveLength(1));
     expect(placedNodes(host.current.model.diagrams[0])).toEqual(expect.arrayContaining(moved));
@@ -174,7 +166,7 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
       mockTidy.mockRejectedValue(new Error('ELK exploded'));
       const { onLayoutError } = renderEditor();
 
-      fireEvent.click(screen.getByLabelText('Tidy layout'));
+      pressTidy();
 
       await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
       // A macrotask turn: Node reports an unhandled rejection at the end of the tick
@@ -193,7 +185,7 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     });
     const { host, onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    pressTidy();
 
     await waitFor(() => expect(host.current.commands.length).toBeGreaterThan(0));
     expect(onLayoutError).not.toHaveBeenCalled();
@@ -224,7 +216,7 @@ describe('SolutionDesignEditor — a board the router refused is reported', () =
     mockTidy.mockResolvedValue({ placements: PLACEMENTS, edgeRoutes: [], skipped: overCap(200) });
     const { onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    pressTidy();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     const message = onLayoutError.mock.calls[0][0];
@@ -240,7 +232,7 @@ describe('SolutionDesignEditor — a board the router refused is reported', () =
     mockRoute.mockResolvedValue({ placements: [], edgeRoutes: [], skipped: overCap(180) });
     const { onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Route connections only'));
+    pressRoute();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     expect(onLayoutError.mock.calls[0][0]).toContain('180');
@@ -250,10 +242,10 @@ describe('SolutionDesignEditor — a board the router refused is reported', () =
     mockRoute.mockResolvedValue({ placements: [], edgeRoutes: [], skipped: overCap(180) });
     const { onLayoutError } = renderEditor();
 
-    const button = screen.getByLabelText('Route connections only');
-    fireEvent.click(button);
+    pressRoute();
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
-    fireEvent.click(button);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Arranging…' })).toBeNull());
+    pressRoute();
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(2));
   });
 
@@ -263,7 +255,7 @@ describe('SolutionDesignEditor — a board the router refused is reported', () =
     mockRoute.mockResolvedValue({ placements: [], edgeRoutes: [], skipped: [] });
     const { onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Route connections only'));
+    pressRoute();
 
     await waitFor(() => expect(mockRoute).toHaveBeenCalled());
     expect(onLayoutError).not.toHaveBeenCalled();
@@ -279,7 +271,7 @@ describe('SolutionDesignEditor — a board the router refused is reported', () =
     });
     const { onLayoutError } = renderEditor();
 
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    pressTidy();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     expect(onLayoutError.mock.calls[0][0]).toMatch(/could not be routed. Reload/i);
@@ -327,8 +319,7 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
    * empty history, so clicking it moves nothing.)
    */
   const changeGeometry = () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
+    addFromBar('Application', 'New application');
   };
 
   /**
@@ -343,9 +334,8 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
 
   it('shows the toggle pressed when the diagram has the mode on', () => {
     renderLive();
-    expect(
-      screen.getByLabelText('Auto-route connections').getAttribute('aria-pressed'),
-    ).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Arrange' }));
+    expect(screen.getByTestId('arrange-auto').getAttribute('aria-pressed')).toBe('true');
   });
 
   it('turns itself off and reports once when the board is over the cap', async () => {

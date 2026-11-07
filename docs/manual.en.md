@@ -905,12 +905,25 @@ organisation's home included.
 ## Drawing
 
 **The landscape** has five bands: actors, input channels, external systems,
-the application landscape and the management layer. Drag an element from the
-palette on the left into a band, or right-click the canvas and **Add here**.
-Bands resize by dragging their edge.
+the application landscape and the management layer. Double-click the board: one
+field searches what exists and names what is new, at that point. Enter adds, Tab
+changes what a new one would be, and its logo, colour and shape are the inspector's
+once it has a name. **Add** on the bar does the same, a right-click on the canvas
+has **Add here**, and **Add → Keep the kinds open** keeps a rail of the kinds beside
+the board, to drag from. Bands resize by dragging their edge.
 
-**Domain groups** box the applications that belong together. Add one from the
-palette or from the canvas menu, give it a colour, drag applications in, tidy it
+**Reading a board.** It is neutral: a band and a group differ by their edge and
+their ground, and colour is status, or the one lens that is up. A colour set by hand
+on an element stays as the thin rail at its left. What a card says follows how close
+you are, while its name holds its size: below 70% its name and status marks, from
+70% the column codes and its description, above 120% its vendor as well. Pointing at
+a card or selecting it keeps its lines and its neighbours and lets the rest recede,
+with the lines' labels up. The key on the canvas says what the marks mean; **Show**
+takes it away, along with the status marks, the lifecycle word, descriptions, the
+line labels and the map.
+
+**Domain groups** box the applications that belong together. Add one from
+**Add** or from the canvas menu, give it a colour, drag applications in, tidy it
 on its own. Removing a group leaves its elements where they are.
 
 **Container diagrams.** An application can have a container diagram
@@ -931,18 +944,18 @@ Where those containers run is drawn around them: dashed **deployment boxes**,
 one per platform, nested the way the platforms nest — the namespace inside the
 cluster inside the account — with a container that runs on nothing outside
 every box. They are worked out from the rows and cannot be moved: a box is
-where its members are. The **deployment** button in the toolbar takes them
+where its members are. **Deployment boxes** under **Show** takes them
 away for a reader who wants the plain C4 picture, and the view remembers.
 
 **Finding things.** ⌘F / Ctrl+F opens the finder: type a name, category,
 vendor or technology, Enter or a click selects the element and the canvas
-scrolls to it, switching diagram first if it has to. The palette has its own
-search, in both languages.
+scrolls to it, switching diagram first if it has to. **Find** on the bar opens
+the same.
 
-**Panels.** Drag the edge between a panel and the canvas to resize it,
-double-click the edge for the default width, use the chevrons to collapse a
-panel to a rail. The minimap button in the toolbar shows or hides the corner
-map.
+**Panels.** Drag the edge between the inspector and the canvas to resize it,
+double-click the edge for the default width, use the chevron to collapse it to a
+rail. **Map** in the dock at the bottom left shows or hides the corner map, beside
+the zoom, **Fit**, **100%** and **Grid**, which also holds snapping.
 
 **Keyboard.** Tab walks the elements on the canvas, Enter selects the focused
 one and Shift+Enter adds it to the selection. The arrow keys nudge the
@@ -1029,7 +1042,11 @@ Deleting any actor moves what sits in it up into its parent.
 
 ## Connections
 
-Drag from one element's handle to another, or right-click and **Start
+Point at an element and drag from the dot at its edge to another: the line shows
+the route it will get, what it may land on is ringed, and it lands on the side you
+let go by. Hold Alt to choose the side it leaves from too. Let go on open board and
+the same field as a double-click asks what is to come, and what you choose arrives
+connected. Without the mouse, right-click or Shift+F10 and **Start
 connection to…**. A connection carries a label, a protocol (whatever you type:
 REST, EDI, Kafka), a technology, a direction that sets the arrowheads, a colour
 and a line style. Double-click the label to edit it in place.
@@ -1073,14 +1090,15 @@ had, and everything you drew by hand stays exactly as you left it.
 
 ## Layout
 
-**Tidy** runs an automatic layout over the diagram, with a direction (across,
-down, or groups across and their applications down), a density, and pins for
-what you placed by hand. **Route connections** redraws only the lines and
-leaves every element where it is; **Re-route everything** ignores pins. A
+**Arrange** on the bar holds it all. **Tidy the board** runs an automatic layout
+over the diagram, with a reading direction (across, down, or groups across and their
+applications down), the spacing, and what to leave alone. **Route the lines** redraws
+only the lines and leaves every element where it is; **Route all lines again**
+ignores what you pinned; **Route after every move** keeps them routed. A
 domain group can be tidied on its own from its menu.
 
 Tidy works beside the app rather than inside it, so the window stays alive while
-it runs and the Tidy button becomes a **Cancel** while it does. On a diagram of
+it runs and **Arrange** becomes a **Cancel** while it does. On a diagram of
 more than four hundred boxes it declines and says so, rather than thinking for
 several minutes: split the board across diagrams, or tidy one domain group at a
 time.
@@ -2003,7 +2021,7 @@ flows only.
 
 What you choose is yours and writes nothing; **Keep with the view**, in the same menu, makes it what everybody opens on.
 
-**Colour by** in the landscape's toolbar tints the cards by platform — the
+**Colour** on the landscape's bar tints the cards by platform — the
 cluster, not the namespace — or by technology lifecycle, so the cards
 standing on something retiring go amber, the whole chain counted — or by
 **one platform or offering**: every application that uses it, is hosted on
@@ -2013,13 +2031,15 @@ record says** — the card's own lifecycle, its category, owner, vendor or
 technology — and by the status in **one operational aspect** column, so
 *which of these does nobody own* and *which are still on the old vendor*
 are answered by looking. Every card in a band wears the band's colour as a
-wash, a bar down its left edge and a **number**; the **legend** in the
+wash, a rail down its left edge and a **number**, and while it is up nothing
+else on the board is coloured; the **key** in the
 corner of the board names each band with that number and how many cards it
-holds, and stays while you read. The number is the point: two colours are
-not apart to every eye, and a number is. The button on the toolbar says what
-the board is coloured by, and ✕ on the legend takes the colouring off. A
-reader may choose any of these without writing; the choice is kept on the
-view when the session may write. The
+holds, and stays while you read; pressing a band there keeps its cards and lets
+the rest recede. The number is the point: two colours are
+not apart to every eye, and a number is. The word on the bar says what
+the board is coloured by, and ✕ on the key takes the colouring off. Colouring
+belongs to the reader and writes nothing, until **Keep with the view** on the key,
+for whoever may write. The
 **platform** badge reads off the roll-up where nobody set it, and the
 roadmap's findings flag an application still standing on a platform after it
 or anything above it has retired, naming the platform that actually goes.

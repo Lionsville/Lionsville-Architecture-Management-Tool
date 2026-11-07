@@ -1,52 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { placedNodes } from '../model/placement';
-import { colourByAspect, colourByOne, VALUE_COLOUR_BY } from '../model/overlay';
 import type { ColourBy, OverlayBand } from '../model/overlay';
-import { COLOUR_BY_LABEL, overlayTitle } from './overlayWords';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
-import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
-import MenuList from '@mui/material/MenuList';
-import Popover from '@mui/material/Popover';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { createPortal } from 'react-dom';
+import { BoardBar, type BoardBarAdd, type BoardBarShow } from './BoardBar';
 import { usePlaceHost } from '../widgets/kit/placeHost';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
 import type { TidyOptions } from '../layout/tidy';
 import { ContextMenu } from './canvas/ContextMenu';
 import { OWN_MENU_ATTR } from './isEditableTarget';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
-import { TidySettingsPanel } from './TidySettingsPanel';
-import type { AspectConfigEntry, DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
-import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
-import { aspectConfigFor, badgeLegend } from '../model/aspects';
-import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
+import type { DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
+import { AddIcon, BackIcon, CaretIcon, RadarIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { DayControl } from '../widgets/kit/DayControl';
 import { formatDay } from '../i18n/dates';
 import { daysWorthLooking } from './daysWorthLooking';
-import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
+import { type Language, type StringKey } from '../i18n/strings';
 
 /**
  * Which layout action is currently running. Both of them go through a WASM
@@ -149,7 +137,6 @@ export interface EditorToolbarProps {
    * connections" press reclassifies them.
    */
   autoRouteNote?: string;
-  onFitView(): void;
   onExport(): void;
   /**
    * A PNG export is rasterising. Its own flag rather than {@link busy}: an
@@ -159,6 +146,12 @@ export interface EditorToolbarProps {
   exportBusy?: boolean;
   /** Opens the keyboard-shortcuts help overlay (U4c). */
   onOpenHelp(): void;
+  /** Add's kinds, and whether the rail stays open. Absent on a view nothing is placed on. */
+  add?: BoardBarAdd;
+  /** What Show says about the cards and the key. */
+  show?: BoardBarShow;
+  /** Route every line again, those a person drew too. */
+  onRouteEdgesAll?(): void;
   /** Lifecycle-badge toggle state + handler (U5); default on. */
   showLifecycle: boolean;
   onToggleLifecycle(): void;
@@ -314,9 +307,8 @@ function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarPr
 }
 
 export function EditorToolbar(props: EditorToolbarProps) {
-  const theme = useTheme();
   const host = usePlaceHost();
-  const { t, language } = useStrings();
+  const { t } = useStrings();
   const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
   // Each kind is its own list. A drawing is not dropped into a sheet's, and a
   // kind the host cannot open is not offered.
@@ -325,7 +317,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
   // The legend is a button of its own beside the lifecycle toggle: a control
   // whose hover explained the colours and whose click did something else
   // read as neither, and it named no column.
-  const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   // Right-click on a Layer 7 tab: the diagram menu, built by the same pure
   // builder as the canvas menus and drawn by the same component. A container
   // diagram has no tab, so the same menu opens from its entry in the
@@ -408,9 +399,10 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const framed = host?.views ?? null;
   const inRow = (node: React.ReactNode) => (framed ? createPortal(node, framed) : node);
   return (
+    <>
     <Box
       sx={{
-        display: barDisplay(framed !== null, props.activeDiagram.kind),
+        display: framed ? 'contents' : 'flex',
         alignItems: 'center',
         gap: 1,
         px: 1,
@@ -527,219 +519,19 @@ export function EditorToolbar(props: EditorToolbarProps) {
         </>
       ))}
 
-      <PageBarSlot props={props} /><Box data-testid="toolbar-spacer" sx={{ ml: 'auto' }} />
-      {props.readOnly && <Chip size="small" label={t('toolbar.readOnly')} variant="outlined" />}
-      <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-      {!props.readOnly && !framed && (
-        <>
-          <Tooltip title={t('toolbar.undoTip')}>
-            <span>
-              <IconButton
-                size="small"
-                aria-label={t('toolbar.undo')}
-                onClick={props.onUndo}
-                disabled={!props.canUndo}
-              >
-                <UndoIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title={t('toolbar.redoTip')}>
-            <span>
-              <IconButton
-                size="small"
-                aria-label={t('toolbar.redo')}
-                onClick={props.onRedo}
-                disabled={!props.canRedo}
-              >
-                <RedoIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </>
-      )}
-      {!props.readOnly && !props.looking && !props.laidOut && (
-        <TidySplitButton
-          busy={props.busy}
-          onTidy={props.onTidy}
-          onCancelTidy={props.onCancelTidy}
-          options={props.tidyOptions}
-          onOptionsChange={props.onTidyOptionsChange}
-          // A container diagram has one "group" — the application boundary — so
-          // the same two pins apply, under words that match what is on screen.
-          boundaryLabels={isContainer}
-        />
-      )}
-      {!props.readOnly && !props.looking && !props.laidOut && (
-        <Tooltip title={t('toolbar.routeOnlyTip')}>
-          <span>
-            <IconButton
-              size="small"
-              aria-label={t('toolbar.routeOnly')}
-              onClick={props.onRouteEdges}
-              disabled={props.busy !== undefined} aria-busy={props.busy === 'route'}
-            >
-              {props.busy === 'route' ? <CircularProgress size={16} aria-hidden /> : <RouteIcon />}
-            </IconButton>
-          </span>
-        </Tooltip>
-      )}
-      {!props.readOnly && !props.looking && !props.laidOut && (
-        <Tooltip
-          title={
-            (props.autoRoute ? t('toolbar.autoRouteOn') : t('toolbar.autoRouteOff')) +
-            (props.autoRouteNote ? ` — ${props.autoRouteNote}` : '')
-          }
-        >
-          <IconButton
-            size="small"
-            aria-label={t('toolbar.autoRoute')}
-            aria-pressed={props.autoRoute}
-            onClick={props.onToggleAutoRoute}
-            sx={{
-              color: props.autoRoute ? 'primary.main' : 'text.secondary',
-              backgroundColor: props.autoRoute
-                ? alpha(theme.palette.primary.main, 0.12)
-                : 'transparent',
-            }}
-          >
-            <AutoRouteIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-      <Tooltip title={t('toolbar.searchTip')}>
-        <IconButton size="small" aria-label={t('toolbar.search')} onClick={props.onOpenSearch}>
-          <SearchIcon />
-        </IconButton>
-      </Tooltip>
-      {!props.laidOut && (<>
-      <Tooltip title={props.showMinimap ? t('toolbar.minimapOn') : t('toolbar.minimapOff')}>
-        <IconButton
-          size="small"
-          aria-label={t('toolbar.minimap')}
-          aria-pressed={props.showMinimap}
-          onClick={props.onToggleMinimap}
-          sx={{
-            color: props.showMinimap ? 'primary.main' : 'text.secondary',
-            backgroundColor: props.showMinimap
-              ? alpha(theme.palette.primary.main, 0.12)
-              : 'transparent',
-          }}
-        >
-          <MinimapIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={props.showEdgeLabels ? t('toolbar.edgeLabelsOn') : t('toolbar.edgeLabelsOff')}>
-        <IconButton
-          size="small"
-          aria-label={t('toolbar.edgeLabels')}
-          aria-pressed={props.showEdgeLabels}
-          onClick={props.onToggleEdgeLabels}
-          sx={{
-            color: props.showEdgeLabels ? 'primary.main' : 'text.secondary',
-            backgroundColor: props.showEdgeLabels
-              ? alpha(theme.palette.primary.main, 0.12)
-              : 'transparent',
-          }}
-        >
-          <LabelIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={t('toolbar.fitView')}>
-        <IconButton size="small" aria-label={t('toolbar.fitView')} onClick={props.onFitView}>
-          <FitIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={props.exportBusy ? t('toolbar.exportingPng') : t('toolbar.exportPng')}>
-        <span>
-          <IconButton
-            size="small"
-            aria-label={t('toolbar.exportPng')}
-            onClick={props.onExport}
-            disabled={props.exportBusy === true} aria-busy={props.exportBusy === true}
-          >
-            {props.exportBusy ? <CircularProgress size={16} aria-hidden /> : <ExportIcon />}
-          </IconButton>
-        </span>
-      </Tooltip>
-      </>)}
-      {(!props.laidOut || props.dated) && <ViewDay props={props} />}
-      {!props.laidOut && (<>
-      <Tooltip title={t('toolbar.lifecycleTip')}>
-        <IconButton
-          size="small"
-          aria-label={t('toolbar.lifecycleBadges')}
-          aria-pressed={props.showLifecycle}
-          onClick={props.onToggleLifecycle}
-          sx={{
-            color: props.showLifecycle ? 'primary.main' : 'text.secondary',
-            backgroundColor: props.showLifecycle
-              ? alpha(theme.palette.primary.main, 0.12)
-              : 'transparent',
-          }}
-        >
-          <LifecycleIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={t('toolbar.legend')}>
-        <IconButton
-          size="small"
-          aria-label={t('toolbar.legend')}
-          aria-haspopup="dialog"
-          aria-expanded={Boolean(legendAnchor)}
-          onClick={(e) => setLegendAnchor(e.currentTarget)}
-        >
-          <LegendIcon />
-        </IconButton>
-      </Tooltip>
-      {props.onColourByChange && (
-        <ColourByControl
-          colourBy={props.colourBy}
-          onChange={props.onColourByChange}
-          {...(props.onKeepColourBy ? { onKeep: props.onKeepColourBy } : {})}
-          bands={props.overlayBands ?? []}
-          candidates={props.overlayCandidates ?? []}
-          aspectColumns={aspectConfigFor(props.activeDiagram)}
-        />
-      )}
-      {props.onToggleDeployment && (
-        <Tooltip title={t('toolbar.deployment')}>
-          <IconButton
-            size="small"
-            aria-label={t('toolbar.deployment')}
-            aria-pressed={props.showDeployment ?? true}
-            onClick={props.onToggleDeployment}
-            sx={{
-              color: (props.showDeployment ?? true) ? 'primary.main' : 'text.secondary',
-              backgroundColor: (props.showDeployment ?? true)
-                ? alpha(theme.palette.primary.main, 0.12)
-                : 'transparent',
-            }}
-          >
-            <DeploymentIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-      </>)}
-      <Popover
-        open={Boolean(legendAnchor)}
-        anchorEl={legendAnchor}
-        onClose={() => setLegendAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        slotProps={{ paper: { sx: { p: 1.5, mt: 0.5 }, 'data-testid': 'badge-legend' } as never }}
-      >
-        <BadgeLegend diagram={props.activeDiagram} showLifecycle={props.showLifecycle} />
-      </Popover>
-      <Tooltip title={t('toolbar.shortcuts')}>
-        <IconButton size="small" aria-label={t('toolbar.shortcuts')} onClick={props.onOpenHelp}>
-          <HelpIcon />
-        </IconButton>
-      </Tooltip>
-      {props.onLanguageChange && (
-        <LanguageToggle language={language} onChange={props.onLanguageChange} />
-      )}
+      {!framed && !isContainer && <Box sx={{ ml: 'auto' }} />}
     </Box>
+    {barDisplay(framed !== null, props.activeDiagram.kind) !== 'none' && (
+      <BoardBar
+        props={props}
+        framed={framed !== null}
+        pageBar={<PageBarSlot props={props} />}
+        day={!props.laidOut || props.dated ? <ViewDay props={props} /> : undefined}
+        add={props.add}
+        show={props.show}
+      />
+    )}
+    </>
   );
 }
 
@@ -862,127 +654,6 @@ function activeTabOf(props: EditorToolbarProps): string {
 
 function selectedTab(tabs: readonly DesignDiagram[], active: string): string | false {
   return tabs.some((d) => d.id === active) ? active : false;
-}
-
-function LanguageToggle({
-  language,
-  onChange,
-}: {
-  language: Language;
-  onChange(language: Language): void;
-}) {
-  const { t } = useStrings();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  return (
-    <>
-      <Tooltip title={t('toolbar.languageTip', { name: t(LANGUAGE_NAME[language]) })}>
-        <IconButton
-          size="small"
-          aria-label={t('common.language')}
-          aria-haspopup="menu"
-          onClick={(e) => setAnchor(e.currentTarget)}
-          sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary', px: 0.75 }}
-        >
-          {language.toUpperCase()}
-        </IconButton>
-      </Tooltip>
-      <Menu open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)}>
-        {LANGUAGES.map((candidate) => (
-          <MenuItem
-            key={candidate}
-            dense
-            selected={candidate === language}
-            onClick={() => { setAnchor(null); if (candidate !== language) onChange(candidate); }}
-          >
-            {t(LANGUAGE_NAME[candidate])}
-          </MenuItem>
-        ))}
-      </Menu>
-    </>
-  );
-}
-
-/**
- * Tidy as a split button: the icon runs a tidy with the current settings, the
- * caret opens those settings (which carry their own Apply). They live in editor
- * state for the session only — nothing is written to the model.
- */
-function TidySplitButton({
-  busy,
-  onTidy,
-  onCancelTidy,
-  options,
-  onOptionsChange,
-  boundaryLabels,
-}: {
-  busy?: LayoutAction;
-  onTidy(): void;
-  /**
-   * Stop the pass that is running. Absent where it cannot honestly be offered —
-   * the layout only stops when it has a thread of its own to stop.
-   */
-  onCancelTidy?(): void;
-  options: TidyOptions;
-  onOptionsChange(options: TidyOptions): void;
-  boundaryLabels?: boolean;
-}) {
-  const { t } = useStrings();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const close = () => setAnchor(null);
-  const cancelling = busy === 'tidy' && onCancelTidy !== undefined;
-
-  return (
-    <>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        {/* While a tidy is running the button IS the cancel: the spinner is
-            where the eye already is, and a second control that only exists for
-            a few seconds is a control nobody finds in time. */}
-        <Tooltip title={cancelling ? t('toolbar.cancelTidy') : t('toolbar.tidyTip')}>
-          <span>
-            <IconButton
-              size="small"
-              aria-label={cancelling ? t('toolbar.cancelTidy') : t('toolbar.tidy')}
-              onClick={cancelling ? onCancelTidy : onTidy}
-              disabled={busy !== undefined && !cancelling} aria-busy={busy === 'tidy'}
-            >
-              {busy === 'tidy' ? <CircularProgress size={16} aria-hidden /> : <TidyIcon />}
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={t('toolbar.tidySettings')}>
-          <IconButton
-            size="small"
-            aria-label={t('toolbar.tidySettings')}
-            aria-haspopup="true"
-            onClick={(event) => setAnchor(event.currentTarget)}
-            sx={{ ml: -0.75, p: 0.25 }}
-          >
-            <CaretIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <Popover
-        open={Boolean(anchor)}
-        anchorEl={anchor}
-        onClose={close}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { p: 1.5, mt: 0.5 } } }}
-      >
-        <TidySettingsPanel
-          options={options}
-          onChange={onOptionsChange}
-          applyLabel={t('toolbar.tidy')}
-          showPinGroups
-          boundaryLabels={boundaryLabels}
-          onApply={() => {
-            close();
-            onTidy();
-          }}
-        />
-      </Popover>
-    </>
-  );
 }
 
 /**
@@ -1231,166 +902,6 @@ function Breadcrumb({
           </IconButton>
         </Tooltip>
       )}
-    </Box>
-  );
-}
-
-/**
- * What the landscape is coloured by (ADR-0013, ADR-0020; the record's own
- * values and the aspect columns since 3.7.0), and the way to say it.
- *
- * The button says which overlay is up, in words, for the reason the day
- * button says the day: a board coloured by owner looks exactly like a board
- * coloured by vendor, and a person who has forgotten which they chose would
- * otherwise read one as the other. The legend moved onto the canvas
- * (`OverlayLegend`), where it stays while a person reads the board; this menu
- * only chooses. Nothing here writes — what a view SHOWS is a reader's to change,
- * which is why it is offered read-only too — but *Keep with the view*, which is
- * offered while the lens is this reader's and they may write (ADR-0027, amended).
- */
-function ColourByControl(props: {
-  colourBy: ColourBy | undefined;
-  onChange(by: ColourBy | undefined): void;
-  onKeep?(): void;
-  bands: readonly OverlayBand[];
-  candidates: readonly { id: ElementId; name: string }[];
-  aspectColumns: readonly AspectConfigEntry[];
-}) {
-  const { t } = useStrings();
-  const theme = useTheme();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const on = props.colourBy !== undefined;
-  const choose = (by: ColourBy | undefined) => { props.onChange(by); setAnchor(null); };
-  const item = (value: ColourBy | undefined, label: string, testId?: string) => (
-    <MenuItem
-      key={value ?? 'none'}
-      dense
-      selected={props.colourBy === value}
-      data-testid={testId}
-      onClick={() => choose(value)}
-    >
-      {label}
-    </MenuItem>
-  );
-  const group = (title: string, items: ReactNode[]) => (
-    <Box key={title} role="group" aria-label={title}>
-      <ListSubheader component="div" disableSticky sx={{ lineHeight: '24px', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', px: 1.5 }}>{title}</ListSubheader>
-      {items}
-    </Box>
-  );
-  return (
-    <>
-      <Tooltip title={t('toolbar.colourByTip')}>
-        <Button
-          size="small"
-          aria-label={t('toolbar.colourBy')}
-          aria-pressed={on}
-          aria-haspopup="menu"
-          aria-expanded={Boolean(anchor)}
-          data-testid="colour-by"
-          onClick={(e) => setAnchor(e.currentTarget)}
-          sx={{
-            minWidth: 0,
-            px: on ? 1 : 0.6,
-            textTransform: 'none',
-            fontSize: 12,
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            color: on ? 'primary.main' : 'text.secondary',
-            backgroundColor: on ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
-            '& .MuiButton-startIcon': { mr: on ? 0.5 : 0, ml: 0 },
-          }}
-          startIcon={<PaletteIcon />}
-        >
-          {props.colourBy !== undefined && overlayTitle(props.colourBy, props.aspectColumns, t, props.bands)}
-        </Button>
-      </Tooltip>
-      <Popover
-        open={Boolean(anchor)}
-        anchorEl={anchor}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        slotProps={{ paper: { sx: { py: 0.5, mt: 0.5, minWidth: 220, maxHeight: 420, overflow: 'auto' } } }}
-      >
-        {/* A MenuItem stands in a MenuList since MUI 9, which is also what
-            gives the choices their arrow keys inside a popover. */}
-        <MenuList dense disablePadding aria-label={t('toolbar.colourBy')}>
-          {props.onKeep && (
-            <MenuItem data-guide="board.keepLens" data-testid="keep-lens" onClick={() => { props.onKeep?.(); setAnchor(null); }}>
-              {t('toolbar.keepLens')}
-            </MenuItem>
-          )}
-          {item(undefined, t('common.none'))}
-          {group(t('overlay.groupRows'), [
-            item('platform', t(COLOUR_BY_LABEL.platform)),
-            item('technologyLifecycle', t(COLOUR_BY_LABEL.technologyLifecycle)),
-          ])}
-          {group(t('overlay.groupRecord'), VALUE_COLOUR_BY.map((by) => item(by, t(COLOUR_BY_LABEL[by as keyof typeof COLOUR_BY_LABEL]))))}
-          {props.aspectColumns.length > 0 && group(
-            t('overlay.groupAspects'),
-            props.aspectColumns.map((column) => item(colourByAspect(column.key), column.label, `colour-by-aspect-${column.key}`)),
-          )}
-          {/* The reverse question (ADR-0020): who stands on this one thing. */}
-          {props.candidates.length > 0 && group(
-            t('overlay.one'),
-            props.candidates.map((candidate) => item(colourByOne(candidate.id), candidate.name, `colour-by-one-${candidate.id}`)),
-          )}
-        </MenuList>
-      </Popover>
-    </>
-  );
-}
-
-/**
- * What the badges mean, for this board: each column's code with its long
- * name, in the board's order, then the four statuses a badge can show, then
- * the lifecycle colours. The same `badgeLegend` the export's key is drawn
- * from, so the two cannot disagree; a board with no aspect columns says so
- * rather than listing nothing.
- */
-function BadgeLegend({ diagram, showLifecycle }: { diagram: DesignDiagram; showLifecycle: boolean }) {
-  const { t } = useStrings();
-  const tokens = getNodeTokens(useTheme());
-  const legend = badgeLegend(diagram);
-  const swatch = (token: { bg: string; border: string }) => (
-    <Box sx={{ width: 14, height: 14, borderRadius: '3px', flexShrink: 0, backgroundColor: token.bg, border: `1px solid ${token.border}` }} />
-  );
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 220 }}>
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
-        {t('toolbar.legendAspects')}
-      </Typography>
-      {legend.columns.length === 0 && (
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('toolbar.legendNone')}</Typography>
-      )}
-      {legend.columns.map((column) => (
-        <Box key={column.code + column.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Box sx={{ width: 38, textAlign: 'center', fontSize: 9, fontWeight: 700, lineHeight: '14px', borderRadius: '3px', color: tokens.aspects.unset.fg, backgroundColor: tokens.aspects.unset.bg, border: `1px solid ${tokens.aspects.unset.border}` }}>
-            {column.code}
-          </Box>
-          <Typography sx={{ fontSize: 11 }}>{column.label}</Typography>
-        </Box>
-      ))}
-      {legend.columns.length > 0 && legend.statuses.map((status) => (
-        <Box key={status} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          {swatch(tokens.aspects[status])}
-          <Typography sx={{ fontSize: 11 }}>{t(ASPECT_STATUS_LABEL[status])}</Typography>
-        </Box>
-      ))}
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 0.75 }}>
-        {t('field.lifecycle')}
-      </Typography>
-      {!showLifecycle && (
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('toolbar.legendLifecycleHidden')}</Typography>
-      )}
-      {LIFECYCLE_LEGEND.map(({ key, labelKey, noteKey }) => (
-        <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          {swatch(tokens.lifecycle[key])}
-          <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{t(labelKey)}</Typography>
-          <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>— {t(noteKey)}</Typography>
-        </Box>
-      ))}
     </Box>
   );
 }

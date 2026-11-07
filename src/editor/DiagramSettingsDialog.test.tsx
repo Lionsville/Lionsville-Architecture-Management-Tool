@@ -30,6 +30,7 @@ function open(over: Partial<DesignDiagram> = {}, client = 'Acme Logistics') {
   return { onSave, onClose };
 }
 
+const exportTab = () => fireEvent.click(screen.getByRole('tab', { name: 'On an export' }));
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
 /** The label field of the nth column row, found by its current value. */
@@ -81,6 +82,7 @@ describe('DiagramSettingsDialog — what it opens with', () => {
 
   it('offers the group as the client placeholder rather than filling it in', () => {
     open({}, 'Acme Rail');
+    exportTab();
     const field = screen.getByLabelText('Client') as HTMLInputElement;
     expect(field.value).toBe('');
     expect(field.placeholder).toBe('Acme Rail');
@@ -104,6 +106,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('carries the title-block fields it was given', () => {
     const { onSave } = open();
+    exportTab();
     fireEvent.change(screen.getByLabelText('Author'), { target: { value: ' W. Simons ' } });
     fireEvent.change(screen.getByLabelText('Client'), { target: { value: 'Acme Rail' } });
     fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-09-05' } });
@@ -115,7 +118,8 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('turns the title block off as an explicit false, not an absence', () => {
     const { onSave } = open();
-    fireEvent.click(screen.getByRole('switch', { name: 'Draw the title block' }));
+    exportTab();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Draw the title block' }));
     save();
     expect(onSave.mock.calls[0][1].showTitleBlock).toBe(false);
   });
@@ -209,7 +213,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('hides the badges without discarding the columns', () => {
     const { onSave } = open({ aspectConfig: [{ key: 'dr', label: 'Continuity' }] });
-    fireEvent.click(screen.getByRole('switch', { name: 'Show the operational aspects' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show on cards' }));
     save();
     expect(onSave.mock.calls[0][1]).toMatchObject({
       showAspects: false,
@@ -228,7 +232,7 @@ describe('DiagramSettingsDialog — a container diagram', () => {
   it('offers the title block but no operational aspects', () => {
     const { onSave } = open({ kind: 'container', name: 'App · containers' });
     expect(screen.getByLabelText('Author')).toBeDefined();
-    expect(screen.queryByText('OPERATIONAL ASPECTS')).toBeNull();
+    expect(screen.queryByText('Status columns')).toBeNull();
     save();
     expect(onSave.mock.calls[0][1].aspectConfig).toBeUndefined();
   });

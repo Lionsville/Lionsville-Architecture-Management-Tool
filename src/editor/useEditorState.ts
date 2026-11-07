@@ -160,6 +160,8 @@ export interface ElementSeed {
   zone?: Layer7Zone;
   /** The dashed group's id (ADR-0012 §6). */
   group?: string;
+  /** A line in hand comes from here: it arrives connected, in the same step. */
+  connectFrom?: ElementId;
   // Optional pre-seed style (U7c/D10 quick-style-from-palette). Absent = inherit,
   // exactly as before. These are the SAME fields the inspector Appearance tab
   // edits — one source of truth, no new columns, no migration.
@@ -723,6 +725,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         geometry(transaction([
           { type: 'element.create', element },
           placeOn(diagram.id, [placement]),
+          ...(seed.connectFrom ? [{
+            type: 'relation.create' as const,
+            relation: { id: ids.connection(), type: 'flow' as const, sourceId: seed.connectFrom, targetId: id, isBidirectional: false },
+          }] : []),
         ]));
         setSelection(selectElement(id));
       },

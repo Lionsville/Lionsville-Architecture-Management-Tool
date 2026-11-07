@@ -833,6 +833,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.writeFailed': 'Dieser Bereich konnte nicht geschrieben werden: {message}',
   'gesture.leftCopy': '{scope} hat es jetzt, aber dieser Bereich konnte nicht geschrieben werden, daher liegt der Datensatz an zwei Stellen. {message}',
 
+  'library.inScope': 'in {scope}',
   'library.title': 'Vorhandene Anwendung hinzufügen',
   'library.hint': 'Jede Anwendung der Organisation, die noch nicht auf diesem Board ist.',
   'library.search': 'Im Register suchen',

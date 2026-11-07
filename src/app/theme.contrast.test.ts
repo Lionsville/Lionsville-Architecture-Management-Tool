@@ -461,7 +461,6 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   'src/editor/EditorToolbar.tsx': [1, 'separator'],
   // The chevron on a palette row, whose name says what it is, and the comment
   // above the palette that says why its words are not in this ink.
-  'src/editor/canvas/ElementPalette.tsx': [2, 'chevron, comment'],
   // A logo tile's border when it is not the one picked; the logo is the tile.
   'src/editor/nodes/LogoGrid.tsx': [1, 'unpicked border'],
   // What the none band of an overlay is tinted with, under a card that names it.
@@ -491,11 +490,10 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // The drop-zone highlight fading in: a tint, no words.
   'src/editor/canvas/ZoneLayer.tsx': [2, 'drop highlight and its transition'],
   // A handle: a dot, no words.
-  'src/editor/nodes/NodeHandles.tsx': [1, 'handle'],
+  'src/editor/canvas/boardFocus.tsx': [4, 'the marks and a line under the focus, comments'],
   // The retired dim, and the comment that lists it: a design call, left as it is.
   'src/editor/nodes/NodeShell.tsx': [2, 'retired dim, comment'],
   // A card outside the overlay's band, faded so the band stands out: a design call.
-  'src/editor/nodes/ApplicationCardNode.tsx': [1, 'overlay fade'],
   // A logo tile that cannot be picked: a control that is off.
   'src/editor/nodes/LogoGrid.tsx': [1, 'disabled tile'],
   // Shapes inside an icon.

@@ -49,6 +49,10 @@ export type Library = {
    * lands there, in that band, and the band question is not asked.
    */
   open(at?: ExistingAt): void
+  /** What the picker would list, without opening it. */
+  rows(): readonly LibraryRow[]
+  /** One of those landed at once, there. */
+  pickAt(id: ElementId, at?: ExistingAt): void
   choice: LibraryChoice | undefined
   /** One row of the picker: draw it, or ask about it. */
   pick(id: ElementId): void
@@ -98,6 +102,11 @@ export function useLibrary(deps: {
     const chosen = new Map([...chosenFor(index, scope)].map(([id, one]) => [id, s('library.chosenAs', { block: one.block.name, scope: scopeLabel(one.scope) })]))
     setChoice({ kind: 'picking', rows: libraryRows(index, session.current(), diagram, chosen) })
   }, [activeBoard, index, session, scope, s, scopeLabel])
+
+  const rows = useCallback((): readonly LibraryRow[] => {
+    const diagram = activeBoard()
+    return diagram ? libraryRows(index, session.current(), diagram) : []
+  }, [activeBoard, index, session])
 
   const close = useCallback(() => { atRef.current = undefined; setChoice(undefined) }, [])
 
@@ -168,6 +177,11 @@ export function useLibrary(deps: {
     }
   }, [activeBoard, session, scope, index, notify, s, land, scopeLabel])
 
+  const pickAt = useCallback((id: ElementId, at?: ExistingAt) => {
+    atRef.current = at
+    pick(id)
+  }, [pick])
+
   const own = useCallback(() => {
     if (choice?.kind !== 'asking') return
     land(choice.plan.own, true, s('library.owned', { name: choice.plan.name }))
@@ -196,7 +210,7 @@ export function useLibrary(deps: {
   }, [choice])
 
   return useMemo(
-    () => ({ open, choice: shown, pick, own, drawOnly, place, close }),
-    [open, shown, pick, own, drawOnly, place, close],
+    () => ({ open, rows, pickAt, choice: shown, pick, own, drawOnly, place, close }),
+    [open, rows, pickAt, shown, pick, own, drawOnly, place, close],
   )
 }

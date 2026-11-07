@@ -86,7 +86,7 @@ const searchField = () => screen.getByLabelText('Search elements');
 describe('SolutionDesignEditor — element search', () => {
   it('opens from the toolbar and from ⌘F, and starts empty', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     expect(searchField()).toBeDefined();
     expect(screen.getByText('Type to search this design.')).toBeDefined();
   });
@@ -103,7 +103,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('lists matches by name and by vendor, and says where they live', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'adyen' } });
     const results = screen.getByRole('listbox', { name: 'Search results' });
     expect(within(results).getByText('Betaalplatform')).toBeDefined();
@@ -115,14 +115,14 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('says so when nothing matches', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'zzzqqq' } });
     expect(screen.getByText('No element matches “zzzqqq”.')).toBeDefined();
   });
 
   it('Enter focuses the first match and closes the dialog', async () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'webshop' } });
     fireEvent.keyDown(searchField(), { key: 'Enter' });
     // The element is now the selection, so the inspector shows its form.
@@ -132,7 +132,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('arrows move the active row without taking focus out of the field', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     // All three elements carry an "e"; `elementSearch` puts the two on the open
     // diagram first (Betaalplatform, Webshop) and the container one last.
     fireEvent.change(searchField(), { target: { value: 'e' } });
@@ -158,7 +158,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('Enter takes the arrowed-to row, not always the first', async () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'e' } });
     // Row 0 is Betaalplatform; arrow down to Webshop and take that one.
     fireEvent.keyDown(searchField(), { key: 'ArrowDown' });
@@ -170,7 +170,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('a new query puts the highlight back on the first row', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'e' } });
     fireEvent.keyDown(searchField(), { key: 'ArrowDown' });
 
@@ -181,7 +181,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('arrows are inert with nothing to arrow through', () => {
     renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'zzzqqq' } });
     fireEvent.keyDown(searchField(), { key: 'ArrowDown' });
     fireEvent.keyDown(searchField(), { key: 'Enter' });
@@ -212,7 +212,7 @@ describe('SolutionDesignEditor — element search', () => {
     const view = render(ui({}));
 
     // A ⌘F focus first…
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'webshop' } });
     fireEvent.keyDown(searchField(), { key: 'Enter' });
 
@@ -223,7 +223,7 @@ describe('SolutionDesignEditor — element search', () => {
 
   it('clicking a hit on another diagram asks the host to switch to it', () => {
     const { onActiveDiagramChange } = renderEditor();
-    fireEvent.click(screen.getByLabelText('Find element'));
+    fireEvent.click(screen.getByTestId('board-find'));
     fireEvent.change(searchField(), { target: { value: 'orderservice' } });
     fireEvent.click(screen.getByText('Orderservice'));
     expect(onActiveDiagramChange).toHaveBeenCalledWith('d2');
@@ -232,66 +232,15 @@ describe('SolutionDesignEditor — element search', () => {
 
 // ── palette filter ───────────────────────────────────────────────────────────
 
-describe('ElementPalette — search', () => {
-  const filter = () => screen.getByLabelText('Search the palette');
-
-  it('narrows the rows and keeps the sections that still have one', () => {
-    renderEditor();
-    expect(screen.getByText('Application')).toBeDefined();
-    expect(screen.getByText('Actor')).toBeDefined();
-
-    fireEvent.change(filter(), { target: { value: 'actor' } });
-    expect(screen.queryByText('Application')).toBeNull();
-    expect(screen.getByText('Actor')).toBeDefined();
-    expect(screen.queryByText('Applications & components')).toBeNull();
-  });
-
-  it('matches the Dutch label too, whatever the UI language is', () => {
-    // An English UI used by a Dutch-speaking architect is the normal case here.
-    renderEditor();
-    fireEvent.change(filter(), { target: { value: 'applicatie' } });
-    expect(screen.getByText('Application')).toBeDefined();
-  });
-
-  it('matches the description, not only the name', () => {
-    renderEditor();
-    fireEvent.change(filter(), { target: { value: 'buys' } });
-    expect(screen.getByText('Application')).toBeDefined();
-    expect(screen.queryByText('Actor')).toBeNull();
-  });
-
-  it('says so when nothing matches', () => {
-    renderEditor();
-    fireEvent.change(filter(), { target: { value: 'zzzqqq' } });
-    expect(screen.getByText('Nothing matches “zzzqqq”')).toBeDefined();
-  });
-
-  it('is not offered on the collapsed rail', () => {
-    renderEditor({ initialPreferences: { paletteCollapsed: true } });
-    expect(screen.queryByLabelText('Search the palette')).toBeNull();
-  });
-});
-
 // ── resizable panels ─────────────────────────────────────────────────────────
 
 describe('SolutionDesignEditor — panel seams', () => {
-  const paletteSeam = () => screen.getByRole('separator', { name: 'Resize palette' });
   const inspectorSeam = () => screen.getByRole('separator', { name: 'Resize inspector' });
 
-  it('opens each panel at its stored width', () => {
-    renderEditor({ focusElement: { id: 'a1', nonce: 1 }, initialPreferences: { paletteWidth: 300, inspectorWidth: 400 } });
-    // The seam is the accessible face of the width, so it is what we read: MUI
-    // compiles `sx` to a class, and asserting on a generated class name would
-    // pin the styling engine rather than the behaviour.
-    expect(paletteSeam().getAttribute('aria-valuenow')).toBe('300');
+  it('opens the inspector at its stored width', () => {
+    renderEditor({ focusElement: { id: 'a1', nonce: 1 }, initialPreferences: { inspectorWidth: 400 } });
+    // The seam is the accessible face of the width, so it is what we read.
     expect(inspectorSeam().getAttribute('aria-valuenow')).toBe('400');
-  });
-
-  it('widens the palette with the keyboard and reports the new width', () => {
-    const { latest } = renderEditor({ initialPreferences: { paletteWidth: 232 } });
-    fireEvent.keyDown(paletteSeam(), { key: 'ArrowRight' });
-    expect(paletteSeam().getAttribute('aria-valuenow')).toBe('240');
-    expect(latest()?.paletteWidth).toBe(240);
   });
 
   it('grows the inspector when its seam is dragged LEFT — it lives on the right', () => {
@@ -302,20 +251,8 @@ describe('SolutionDesignEditor — panel seams', () => {
     expect(latest()?.inspectorWidth).toBe(320);
   });
 
-  it('clamps at the limits rather than letting a panel eat the board', () => {
-    const { latest } = renderEditor({ initialPreferences: { paletteWidth: PANEL_LIMITS.palette.max } });
-    fireEvent.keyDown(paletteSeam(), { key: 'ArrowRight', shiftKey: true });
-    expect(latest()?.paletteWidth ?? PANEL_LIMITS.palette.max).toBe(PANEL_LIMITS.palette.max);
-  });
-
-  it('double-click resets to the default width', () => {
-    const { latest } = renderEditor({ initialPreferences: { paletteWidth: 400 } });
-    fireEvent.doubleClick(paletteSeam());
-    expect(latest()?.paletteWidth).toBe(PANEL_LIMITS.palette.default);
-  });
-
   it('takes the seam away when the panel is a rail', () => {
-    renderEditor({ initialPreferences: { paletteCollapsed: true, inspectorCollapsed: true } });
+    renderEditor({ initialPreferences: { inspectorCollapsed: true } });
     expect(screen.queryByRole('separator', { name: 'Resize palette' })).toBeNull();
     expect(screen.queryByRole('separator', { name: 'Resize inspector' })).toBeNull();
   });

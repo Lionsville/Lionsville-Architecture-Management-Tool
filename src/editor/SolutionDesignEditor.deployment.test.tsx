@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { pressShow } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -122,7 +123,7 @@ describe('the deployment boxes', () => {
 });
 
 describe('the toggle', () => {
-  const press = () => fireEvent.click(screen.getByLabelText('Deployment boxes'));
+  const press = () => pressShow('Deployment boxes');
 
   it('takes the boxes away and keeps the answer on the view', async () => {
     const { host } = renderEditor();
@@ -138,7 +139,8 @@ describe('the toggle', () => {
     held.diagrams.push(laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }));
     renderEditor({ model: held, activeDiagramId: 'l7' });
     await measured();
-    expect(screen.queryByLabelText('Deployment boxes')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(screen.queryByRole('checkbox', { name: 'Deployment boxes', hidden: true })).toBeNull();
   });
 
   it('still works for a reader, who may change what a view shows without writing it', async () => {

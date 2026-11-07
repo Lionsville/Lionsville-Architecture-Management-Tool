@@ -28,6 +28,7 @@ import { EditorDialogs, EditorLateDialogs, useEditorDialogs } from './EditorDial
 import { InsideChoice } from './InsideChoice';
 import { EditorDocumentationPage } from './EditorDocumentationPage';
 import { BoardToolbar } from './EditorBoardToolbar';
+import { AddPicker, useAddRequests } from './AddPicker';
 import { BoardCanvas, LaidOutView, PaletteDock } from './EditorPanels';
 import { InspectorDock } from './EditorInspectorDock';
 import { ArrangeSeatProvider } from './inspector/arrangeSeat';
@@ -124,6 +125,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       <EditorDialogs titleFrom={props.exportTitleBlock?.client} onSettingsChange={parts.readOnly ? undefined : props.diagrams.onSettingsChange} state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
         unitDeletion={props.ownership?.unitDeletion} />
       <InsideChoice offers={parts.clicks.offers} onClose={parts.clicks.dismissOffers} />
+      <AddPicker parts={parts} diagram={activeDiagram} />
       {documentationPage}
       <EditorLateDialogs props={props} state={state} dialogs={parts.dialogs} onFocus={parts.requests.requestFocus} />
     </Box>
@@ -182,9 +184,10 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   });
   const capture = useBoardCapture(wrapperRef, activeDiagram, theme, props.logos?.onExportImagesMissing);
   const dialogs = useEditorDialogs();
+  const adding = useAddRequests();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
   const parts: EditorParts = {
-    props, state, readOnly, writable, looking, cameFrom, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
+    props, state, readOnly, writable, looking, cameFrom, view, board, layout, requests, docs, deletes, exports, dialogs, clicks, adding,
     capturing: capture.capturing, ...session,
   };
   useEditorHandle({

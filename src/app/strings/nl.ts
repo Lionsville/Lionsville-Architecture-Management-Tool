@@ -832,6 +832,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.writeFailed': 'Dat niveau kon niet worden geschreven: {message}',
   'gesture.leftCopy': '{scope} heeft het nu, maar dit niveau kon niet worden geschreven, dus het record staat op twee plaatsen. {message}',
 
+  'library.inScope': 'in {scope}',
   'library.title': 'Bestaande applicatie toevoegen',
   'library.hint': 'Elke applicatie in de organisatie die nog niet op dit bord staat.',
   'library.search': 'Zoek in het register',

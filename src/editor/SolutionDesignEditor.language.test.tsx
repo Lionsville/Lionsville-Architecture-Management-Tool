@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { addFromBar } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -76,35 +77,28 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
 describe('SolutionDesignEditor — language', () => {
   it('speaks English when the host passes none', () => {
     renderEditor();
-    expect(screen.getByLabelText('Fit view')).toBeDefined();
-    expect(screen.getByLabelText('Element palette')).toBeDefined();
-    expect(screen.getAllByText('Add to canvas').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('zoom-fit')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDefined();
   });
 
-  it('speaks Dutch when asked — toolbar tooltip, palette rows and zone bands', () => {
+  it('speaks Dutch when asked — the bar, the dock and what Add offers', () => {
     renderEditor({ language: 'nl' });
-    // Toolbar (aria-label doubles as the tooltip's text).
-    expect(screen.getByLabelText('Passend maken')).toBeDefined();
-    // Palette chrome and a row label.
-    expect(screen.getByLabelText('Elementenpalet')).toBeDefined();
-    expect(screen.getByText('Aan het canvas toevoegen')).toBeDefined();
-    expect(screen.getByText('Applicatie')).toBeDefined();
-    // The canvas overlay (the zone bands themselves render through a React Flow
-    // viewport portal that jsdom does not lay out; `model/zones.test.ts` pins
-    // their captions).
-    expect(screen.getByLabelText('Raster tonen of verbergen')).toBeDefined();
-    // And nothing English is left in those places.
-    expect(screen.queryByLabelText('Fit view')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ordenen' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Tonen' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Arrange' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Toevoegen' }));
+    expect(screen.getByRole('menuitem', { name: 'Applicatie' })).toBeDefined();
   });
 
   it('translates the inspector and a new domain group, and does not ask for the language it is in', () => {
     renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByRole('button', { name: 'Domeingroep', expanded: false }));
-    expect(screen.getByPlaceholderText('Nieuwe groep')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Toevoegen' }));
+    expect(screen.getByRole('menuitem', { name: 'Domeingroep' })).toBeDefined();
     cleanup()
     const { onLanguageChange } = renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByLabelText('Taal'));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Nederlands' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Taal' }));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Nederlands' }));
     expect(onLanguageChange).not.toHaveBeenCalled();
   });
 
@@ -119,7 +113,8 @@ describe('SolutionDesignEditor — language', () => {
 
   it('translates the keyboard-shortcuts dialog', () => {
     renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByLabelText('Sneltoetsen'));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Sneltoetsen/ }));
     expect(screen.getByRole('heading', { name: 'Sneltoetsen' })).toBeDefined();
     expect(screen.getByText('Alles selecteren')).toBeDefined();
     expect(screen.getByText('Element zoeken')).toBeDefined();
@@ -134,15 +129,11 @@ describe('SolutionDesignEditor — language', () => {
    * translation, it is wrong content, so this asserts the model and not just
    * the field.
    */
-  it('names a new element in the UI language, in the model as well as the field', () => {
+  it('names a new element what was typed, and selects it in the language of the screen', () => {
     const { host } = renderEditor({ language: 'nl' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Applicatie', expanded: false }));
-    // The name field shows what you will get if you leave it blank…
-    expect(screen.getByPlaceholderText('Nieuwe applicatie')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'applicatie toevoegen' }));
+    addFromBar('Applicatie', 'Nieuwe applicatie', 'Toevoegen');
 
-    // …and that is exactly what lands in the model.
     expect(host.current.commands).toHaveLength(1);
     expect(host.current.model.elements.at(-1)?.name).toBe('Nieuwe applicatie');
     expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Nieuwe applicatie');
@@ -150,22 +141,22 @@ describe('SolutionDesignEditor — language', () => {
 
   it('asks the host for the chosen language rather than switching itself', () => {
     const { onLanguageChange } = renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByLabelText('Taal'));
-    // The menu names every language the way it names itself.
-    expect(screen.getAllByRole('menuitem').map((item) => item.textContent))
-      .toEqual(['Nederlands', 'Deutsch', 'English']);
-    fireEvent.click(screen.getByRole('menuitem', { name: 'English' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Taal' }));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'English' }));
     expect(onLanguageChange).toHaveBeenCalledWith('en');
     // Still Dutch: the editor does not own the value.
-    expect(screen.getByLabelText('Passend maken')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Ordenen' })).toBeDefined();
   });
 
-  it('offers no toggle where the host owns the language, and keeps it in read-only mode', () => {
+  it('offers no language where the host owns it, and keeps it in read-only mode', () => {
     renderEditor({ onLanguageChange: undefined });
-    expect(screen.queryByLabelText('Language')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    expect(screen.queryByRole('menuitem', { name: 'Language' })).toBeNull();
     cleanup()
     renderEditor({ readOnly: true });
-    expect(screen.getByLabelText('Language')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    expect(screen.getByRole('menuitem', { name: 'Language' })).toBeDefined();
   });
 
 });

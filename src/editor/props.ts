@@ -702,6 +702,10 @@ export interface EditorOwnership {
    * which band.
    */
   onAddExisting?(at?: ExistingAt): void;
+  /** What exists and is not on this board, said for the add picker's one list. */
+  existingRows?(): readonly { id: ElementId; name: string; detail?: string }[];
+  /** One of those drawn on this board, there. Whatever it needs asking is the host's. */
+  onPickExisting?(id: ElementId, at?: ExistingAt): void;
   /**
    * An actor as a unit (ADR-0036 §3): its type, the domains it serves, what
    * it owns, its roles and who holds them, who manages it and what the

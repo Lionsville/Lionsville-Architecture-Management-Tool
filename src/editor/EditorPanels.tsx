@@ -5,64 +5,33 @@
  * The editor's body under the toolbar: the palette docked left, the board or
  * a laid-out view in the middle, the inspector docked right.
  */
-import { useCallback, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import { ThemeProvider } from '@mui/material/styles';
-import type { DesignDiagram, ElementKind } from '../model/types';
+import type { DesignDiagram } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
-import { allowedKindsOn } from '../model/kindChange';
 import { aspectConfigFor } from '../model/aspects';
-import { useStrings } from '../i18n/LanguageContext';
-import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
-import { newDomainGroup } from './canvas/domainGroupPlacement';
-import { PanelResizer } from './PanelResizer';
+import { ElementPalette } from './canvas/ElementPalette';
+import { addableKinds } from './AddPicker';
+import { boardMiddle } from './EditorBoardToolbar';
 import { CanvasForDiagram } from './CanvasForDiagram';
-import { EMPTY_SELECTION, defaultElementNames, selectElement } from './useEditorState';
+import { EMPTY_SELECTION, selectElement } from './useEditorState';
 import { standInsFor, heldIdsOf } from './elementInspectorFacts';
 import type { EditorParts } from './editorParts';
 import { SelectionInspector } from './EditorInspectorDock';
 import { usePersonNames } from '../people/ui/names';
 import type { PersonRef } from '../model/person';
 
-/** The palette (D1) and the seam beside it, which only exists while the panel is open. */
+/** The rail of kinds, kept open by whoever keeps it open. */
 export function PaletteDock({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
-  const { props, state, view } = parts;
-  const { t } = useStrings();
-  // What the palette's name field shows when you leave it blank — and exactly
-  // what `addElement` will then write into the model, in the same language.
-  const defaultNames = useMemo(() => defaultElementNames(t), [t]);
-  const { actions } = state;
-  // No position: `seedPlacement` lands it in the kind's home zone.
-  const add = useCallback((kind: ElementKind, seed?: PaletteSeed) => {
-    actions.addElement({ kind, ...seed });
-  }, [actions]);
-  // The rect comes from the shared helper, because a group dropped on the
-  // board has to end up identical to one placed from the tray apart from where.
-  const addDomainGroup = useCallback((seed?: DomainGroupSeed) => {
-    const { group, box } = newDomainGroup({ diagram, translate: t, ...seed });
-    actions.addDomainGroup(group, box);
-  }, [diagram, actions]);
-  const layer7 = diagram.kind === 'layer7';
+  const { adding, props, view } = parts;
+  const existing = diagram.kind === 'layer7' ? props.ownership?.onAddExisting : undefined;
+  if (!view.keepRail) return null;
   return (
-    <>
-      <ElementPalette
-        kinds={[...allowedKindsOn(diagram)]}
-        onAdd={add}
-        onAddDomainGroup={layer7 ? addDomainGroup : undefined}
-        onAddExisting={layer7 ? props.ownership?.onAddExisting : undefined}
-        logoLibrary={props.logos?.library}
-        onRequestLogoUpload={props.logos?.onRequestUpload}
-        defaultNames={defaultNames}
-        collapsed={view.paletteCollapsed}
-        onToggleCollapsed={() => view.setPaletteCollapsed((on) => !on)}
-        width={view.paletteWidth}
-      />
-      {/* A rail is a fixed 48 px of chevron, and a resize handle on it would
-          promise a width you cannot have. */}
-      {!view.paletteCollapsed && (
-        <PanelResizer kind="palette" side="left" width={view.paletteWidth} onWidth={view.setPaletteWidth} label={t('palette.resize')} />
-      )}
-    </>
+    <ElementPalette
+      kinds={addableKinds(diagram)}
+      onPress={(kind) => adding.ask({ screen: boardMiddle(), kind })}
+      {...(existing ? { onAddExisting: () => existing() } : {})}
+    />
   );
 }
 
@@ -153,6 +122,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
           bands: board.overlay,
           aspectColumns: aspectConfigFor(diagram),
           onClose: () => board.chooseColourBy(undefined),
+          ...(parts.writable && board.lensIsOwn ? { onKeep: board.keepLens } : {}),
         } : undefined}
         onOpenDocumentation={parts.docs.open}
         onTidyGroup={writable((name: string) => void layout.handleTidyGroup(name))}
@@ -172,6 +142,11 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         onRequestDeleteSelection={deletes.requestDeleteSelection}
         menuRequest={requests.menuRequest}
         onAddExistingAt={writable(props.ownership?.onAddExisting)}
+        onAskAdd={writable(parts.adding.ask)}
+        showStatus={view.showStatus}
+        showDescriptions={view.showDescriptions}
+        showKey={view.showKey}
+        routeNote={layout.autoRouteNote}
       />
     </ThemeProvider>
   );

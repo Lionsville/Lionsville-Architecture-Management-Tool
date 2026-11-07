@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 import { useState } from 'react';
+import { pressTidy } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -57,7 +58,6 @@ function Harness(props: {
         onRouteEdges={vi.fn()}
         autoRoute={false}
         onToggleAutoRoute={vi.fn()}
-        onFitView={vi.fn()}
         onExport={vi.fn()}
         onOpenHelp={vi.fn()}
         showLifecycle
@@ -79,82 +79,46 @@ function Harness(props: {
 
 const openSettings = () => fireEvent.click(screen.getByLabelText('Tidy settings'));
 
-describe('EditorToolbar — Tidy split button', () => {
-  it('tidies on the icon without opening the settings', () => {
+describe('EditorToolbar — Arrange', () => {
+  const openArrange = () => fireEvent.click(screen.getByRole('button', { name: 'Arrange' }));
+
+  it('tidies from the panel, and the panel goes', async () => {
     const onTidy = vi.fn();
     render(<Harness onTidy={onTidy} />);
-
-    fireEvent.click(screen.getByLabelText('Tidy layout'));
+    openArrange();
+    fireEvent.click(screen.getByTestId('arrange-tidy'));
 
     expect(onTidy).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('Direction')).toBeNull();
+    await waitForElementToBeRemoved(() => screen.queryByText('Reading direction'));
   });
 
   it('reports a direction change and leaves the other settings alone', () => {
     const onOptions = vi.fn();
     render(<Harness onOptions={onOptions} />);
-    openSettings();
+    openArrange();
 
-    fireEvent.click(screen.getByText('Down'));
+    fireEvent.click(screen.getByRole('radio', { name: 'Down' }));
 
     expect(onOptions).toHaveBeenCalledWith({ ...DEFAULT_TIDY_OPTIONS, direction: 'vertical' });
   });
 
-  it('reports density and pin-anchor-points changes', () => {
+  it('reports density and what a tidy leaves alone', () => {
     const onOptions = vi.fn();
     render(<Harness onOptions={onOptions} />);
-    openSettings();
+    openArrange();
 
-    fireEvent.click(screen.getByText('Spacious'));
+    fireEvent.click(screen.getByRole('radio', { name: 'Spacious' }));
     expect(onOptions).toHaveBeenLastCalledWith({ ...DEFAULT_TIDY_OPTIONS, density: 'spacious' });
 
-    // Pins are ON by default since the routing phase, so this click turns them OFF.
-    fireEvent.click(screen.getByLabelText('Pin anchor points'));
-    expect(DEFAULT_TIDY_OPTIONS.pinAnchorPoints).toBe(true);
-    expect(onOptions).toHaveBeenLastCalledWith({
-      ...DEFAULT_TIDY_OPTIONS,
-      density: 'spacious',
-      pinAnchorPoints: false,
-    });
-  });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Bends and labels I placed' }));
+    expect(onOptions).toHaveBeenLastCalledWith({ ...DEFAULT_TIDY_OPTIONS, density: 'spacious', pinAnchorPoints: false });
 
-  it('keeps the current value when the active toggle is clicked again', () => {
-    const onOptions = vi.fn();
-    render(<Harness onOptions={onOptions} />);
-    openSettings();
-
-    // 'Auto' is already selected; MUI hands back null for this click.
-    fireEvent.click(screen.getByText('Auto'));
-
-    expect(onOptions).not.toHaveBeenCalled();
-  });
-
-  it('applies from the panel and closes it', async () => {
-    const onTidy = vi.fn();
-    render(<Harness onTidy={onTidy} />);
-    openSettings();
-
-    fireEvent.click(screen.getByText('Tidy layout', { selector: 'button' }));
-
-    expect(onTidy).toHaveBeenCalledTimes(1);
-    // MUI keeps the popover mounted through its exit transition.
-    await waitForElementToBeRemoved(() => screen.queryByText('Direction'));
-  });
-
-  it('offers pin group placements on the board panel and reports it', () => {
-    const onOptions = vi.fn();
-    render(<Harness onOptions={onOptions} />);
-    openSettings();
-
-    fireEvent.click(screen.getByLabelText('Pin group placements'));
-
-    expect(onOptions).toHaveBeenLastCalledWith({ ...DEFAULT_TIDY_OPTIONS, pinGroups: true });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Where the groups stand' }));
+    expect(onOptions).toHaveBeenLastCalledWith(expect.objectContaining({ pinGroups: true }));
   });
 
   it('hides the whole control in read-only mode', () => {
     render(<Harness readOnly />);
-
-    expect(screen.queryByLabelText('Tidy layout')).toBeNull();
-    expect(screen.queryByLabelText('Tidy settings')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Arrange' })).toBeNull();
   });
 });

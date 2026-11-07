@@ -72,10 +72,17 @@ import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
-import { useBoardZoom, ZoomControls } from './ZoomControls';
-import { OverlayLegend, type OverlayLegendProps } from './OverlayLegend';
+import { useBoardZoom } from './ZoomControls';
+import type { OverlayLegendProps } from './OverlayLegend';
+import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoard, useAskAdd } from './BoardOverlays';
+import { groupIntoNewDomainGroup } from './menuActions/selection';
+import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
-import { FIT_ALL, MAX_ZOOM, MIN_ZOOM, viewportOverNodes } from './fitAll';
+import { FIT_ALL, MAX_ZOOM, MIN_ZOOM } from './fitAll';
+import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
+import { useBoardFrame, useReadingDistance } from './useBoardFrame';
+import { awaitsLayout } from '../useAutoLayout';
+import './board.css';
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
 import { RouteEditingContext, type RouteEditingApi } from './RouteEditingContext';
@@ -332,6 +339,16 @@ export interface DiagramCanvasProps {
    * which is what it does everywhere else.
    */
   onLineDoubleClick?(relationId: string): void;
+  /** A person asked to add something at a point, by double-click or a line let go. Absent: nobody here may. */
+  onAskAdd?(request: AddRequest): void;
+  /** What Show says about the cards and the canvas. */
+  showStatus?: boolean;
+  showDescriptions?: boolean;
+  showKey?: boolean;
+  /** What the router has to say about this board, for the dock. */
+  routeNote?: string;
+  /** What to frame on a board with nothing on it yet: its sheet. */
+  emptyFrame?: Rect;
   /** What each card wears under the landscape's overlay (ADR-0013). */
   overlayMarks?: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
@@ -472,9 +489,6 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const viewportOwner = useRef(props.diagram.id);
   viewportOwner.current = props.diagram.id;
   const kept = useRef(viewports?.recall(props.diagram.id));
-  const restored = useRef(false);
-  // React Flow's own initial fit is done (or was not asked for): only then is
-  // a framing of ours not overwritten by it a moment later.
   const [initialised, setInitialised] = useState(false);
   const handleViewportChange = useCallback((viewport: Viewport) => {
     viewports?.keep(viewportOwner.current, viewport);
@@ -599,38 +613,6 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     setNodes(derivedNodes);
   }, [derivedNodes, selectedElementIds, selectedConnectionIds]);
   useEffect(() => setEdges(derivedEdges), [derivedEdges]);
-
-  // The first framing, once the nodes are in: a diagram left before is put
-  // back where it was, and one never visited is fitted — by us rather than
-  // by React Flow's `fitView` prop, which fits the moment the first nodes
-  // are measured and, on a canvas the browser has not laid out yet, fits a
-  // board into a container of no size at all: maximum zoom on one corner,
-  // which is what a landscape opened from its home looked like. So the fit
-  // waits for the container to have a size, a frame at a time.
-  useEffect(() => {
-    if (!initialised || restored.current || nodes.length === 0) return;
-    restored.current = true;
-    if (kept.current) { void setViewport(kept.current); return; }
-    // From the nodes' own positions and declared sizes, not from what React
-    // Flow has measured: a frame after the nodes land, its store has sizes for
-    // none of them yet, and a fit over nothing is maximum zoom on a corner.
-    let tries = 0;
-    const attempt = () => {
-      const box = containerRef.current?.getBoundingClientRect();
-      if ((!box || box.width === 0 || box.height === 0) && tries++ < 60) { requestAnimationFrame(attempt); return; }
-      // Still no size — a hidden canvas, or a test with no layout: nothing to
-      // frame into, and a viewport worked out from zero is not a viewport.
-      if (!box || box.width === 0 || box.height === 0) return;
-      // The pure helper over the nodes as given, with their declared sizes —
-      // not the instance's `getNodesBounds`, which reads what React Flow has
-      // measured and is what this correction exists to get past. The frame
-      // after a layout pass is worked out the same way (`useLayoutActions`).
-      const viewport = viewportOverNodes(nodes, box.width, box.height);
-      if (!viewport) { void fitView(FIT_ALL); return; }
-      void setViewport(viewport);
-    };
-    requestAnimationFrame(attempt);
-  }, [initialised, nodes, fitView, setViewport]);
 
   // Mirror the latest nodes for handlers that must read them synchronously
   // (helper-line math) without becoming a re-subscribing callback dependency.
@@ -826,7 +808,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const altConnectRef = useRef(false);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Alt') altConnectRef.current = event.type === 'keydown';
+      if (event.key !== 'Alt') return;
+      altConnectRef.current = event.type === 'keydown';
+      const canvas = containerRef.current;
+      if (!canvas) return;
+      if (event.type === 'keydown') canvas.dataset.alt = 'true';
+      else delete canvas.dataset.alt;
     };
     const onBlur = () => {
       altConnectRef.current = false;
@@ -842,6 +829,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   }, []);
   const handleConnectStart = useCallback((event: MouseEvent | TouchEvent) => {
     altConnectRef.current = 'altKey' in event && event.altKey;
+    if (containerRef.current) containerRef.current.dataset.connecting = 'true';
   }, []);
   /**
    * Which end of the line the drag has hold of (ADR-0013).
@@ -890,7 +878,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       if (!connection.source || !connection.target) return;
       // The handle ids name the sides (`right-s`, `top-t`); with Alt held they
       // become the new line's attach sides, in the same commit as the line.
-      const sides = altConnectRef.current ? sidesFromHandles(connection) : undefined;
+      // Where it lands is where it was released; where it leaves, only with Alt.
+      const sides = sidesFromHandles(altConnectRef.current ? connection : { targetHandle: connection.targetHandle ?? null });
       actions.connect(connection.source, connection.target, sides);
     },
     [actions],
@@ -1087,6 +1076,18 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const platform = useMemo(() => detectPlatform(), []);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useBoardZoom(containerRef);
+  useReadingDistance(containerRef);
+  const { focus, onNodeMouseEnter, onNodeMouseLeave } = useBoardFocusing(selectedElementIds, selectedConnectionIds, edges);
+  const asking = useAskAdd(containerRef, props, actions);
+  const { framed } = useBoardFrame({
+    container: containerRef,
+    nodes: derivedNodes,
+    kept: kept.current,
+    awaiting: awaitsLayout(props.diagram),
+    ready: initialised,
+    ...(props.emptyFrame ? { emptyFrame: props.emptyFrame } : {}),
+    setViewport,
+  });
   // When the pointer last went down inside the canvas — how the focus handler
   // tells a click apart from a Tab (see `handleContainerFocus`).
   const lastPointerDownRef = useRef(0);
@@ -1621,7 +1622,10 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   return (
     <Box
-      ref={boardRef} data-guide="board.canvas"
+      ref={boardRef} data-guide="board.canvas" className="lv-board"
+      data-unframed={framed ? undefined : true}
+      {...boardAttributes(props)}
+      onDoubleClick={asking.onDoubleClick}
       onKeyDown={handleContainerKeyDown}
       onFocus={handleContainerFocus}
       onPointerDownCapture={() => {
@@ -1643,6 +1647,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           : {}),
       }}
     >
+      <BoardFocusSheet focus={focus} />
+      <BoardFocusProvider value={focus}>
       <CanvasMenuContext.Provider value={canvasMenu}>
       <RouteEditingContext.Provider value={routeEditing}>
         <NodeResizeContext.Provider value={nodeResize}>
@@ -1653,11 +1659,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}
           onlyRenderVisibleElements={virtualise}
-          // A diagram left before is put back where it was; any other gets
-          // React Flow's fit — told to count the nodes it has not drawn — and
-          // the framing above corrects it where it fit into no size at all.
-          fitView={!kept.current}
-          fitViewOptions={FIT_ALL}
+          // Put back where it was left, or framed by `useBoardFrame` before it is shown.
+          {...(kept.current ? { defaultViewport: kept.current } : {})}
           onInit={() => setInitialised(true)}
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
@@ -1686,9 +1689,15 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           onNodeDragStop={handleDragStop}
           onConnectStart={handleConnectStart}
           onConnect={handleConnect}
+          onConnectEnd={asking.onConnectEnd}
+          connectionLineComponent={BoardConnectionLine}
+          // Near a card is on it: the handle closest to the release is the side it lands on.
+          connectionRadius={60}
           onReconnectStart={props.readOnly ? undefined : handleReconnectStart}
           onReconnect={props.readOnly ? undefined : handleReconnect}
           onReconnectEnd={props.readOnly ? undefined : handleReconnectEnd}
+          onNodeMouseEnter={onNodeMouseEnter}
+          onNodeMouseLeave={onNodeMouseLeave}
           onNodeDoubleClick={handleNodeDoubleClick}
           onEdgeDoubleClick={handleEdgeDoubleClick}
           onNodeContextMenu={handleNodeContextMenu}
@@ -1724,16 +1733,16 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
               style={{ border: `1px solid ${tokens.card.border}`, borderRadius: 4 }}
             />
           )}
-          <ZoomControls
-            map={props.onToggleMinimap ? { on: props.showMinimap ?? false, onToggle: props.onToggleMinimap } : undefined}
-            placement={props.readOnly ? undefined : {
-              snapToGrid: props.snapToGrid, onToggleSnapToGrid: props.onToggleSnapToGrid,
-              showGrid: props.showGrid, onToggleShowGrid: props.onToggleShowGrid,
-              canAlign: selectedElementIds.size >= 2, canDistribute: selectedElementIds.size >= 3,
-              onAlign: handleAlign, onDistribute: handleDistribute,
-            }}
+          <BoardChrome
+            diagram={props.diagram}
+            readOnly={props.readOnly}
+            view={props}
+            selected={selectedElementIds}
+            onAlign={handleAlign}
+            onDistribute={handleDistribute}
+            {...(onAddDomainGroupByDrop ? { onGroup: () => groupIntoNewDomainGroup(menuHost, [...selectedElementIds]) } : {})}
+            startedFrom={connectFrom}
           />
-          {props.overlayLegend && <OverlayLegend {...props.overlayLegend} />}
           <HelperLines
             horizontal={helperLines.horizontal}
             vertical={helperLines.vertical}
@@ -1741,9 +1750,13 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           />
           {props.children}
         </ReactFlow>
+        {framed && nodes.length === 0 && props.diagram.kind === 'layer7' && (
+          <EmptyBoard readOnly={props.readOnly} onAdd={asking.askMiddle} onExisting={asking.askExisting} />
+        )}
         </NodeResizeContext.Provider>
       </RouteEditingContext.Provider>
       </CanvasMenuContext.Provider>
+      </BoardFocusProvider>
       {connectFrom !== null && (
         <Paper
           role="status"

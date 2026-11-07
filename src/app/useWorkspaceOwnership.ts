@@ -65,6 +65,8 @@ export function useWorkspaceOwnership(deps: {
   gestureOffers: Gestures['offers']
   gestureChoose: Gestures['choose']
   addExisting: Library['open']
+  existingRows: Library['rows']
+  pickExisting: Library['pickAt']
   /**
    * What an actor's unit section is drawn with (ADR-0036 §3): the register,
    * today and the day the board is looked at (ADR-0027), fresh ids, every
@@ -91,7 +93,7 @@ export function useWorkspaceOwnership(deps: {
   s: Translate
 }): EditorOwnership {
   const {
-    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, units, deleting, s,
+    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, existingRows, pickExisting, units, deleting, s,
   } = deps
   /**
    * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
@@ -146,6 +148,11 @@ export function useWorkspaceOwnership(deps: {
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: addExisting,
+    existingRows: () => existingRows().map((row) => ({
+      id: row.id, name: row.name,
+      ...(row.master !== undefined ? { detail: s('library.inScope', { scope: scopeLabel(row.master) }) } : {}),
+    })),
+    onPickExisting: pickExisting,
     // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the
     // organisation's — and first in its inspector where it is one, an actor
     // with a type (as built 3.6.1); an actor without one keeps the element's order.
@@ -178,7 +185,7 @@ export function useWorkspaceOwnership(deps: {
         onRefused: deleting.onRefused,
       }, elementIds),
     } : {}),
-  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units, deleting])
+  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, existingRows, pickExisting, ownerDescriptions, scopeLabel, units, deleting])
 }
 
 /** The organisation with this scope's session laid over it, once per index and model: a panel asks on every render. */

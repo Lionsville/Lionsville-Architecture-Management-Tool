@@ -8,8 +8,7 @@ import { CanvasDock } from '../../widgets/kit/CanvasDock';
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom';
 import { stepZoom, zoomAbout, ZOOM_HOME } from '../../widgets/kit/zoom';
 import { FIT_ALL } from './fitAll';
-import { PlacementToolbar } from './PlacementToolbar';
-import type { PlacementToolbarProps } from './PlacementToolbar';
+import { useStrings } from '../../i18n/LanguageContext';
 
 /**
  * The kit's one zoom behaviour on React Flow's viewport: ⌘ or Ctrl with + − 0, and
@@ -35,15 +34,15 @@ export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (elem
 }
 
 /**
- * The one cluster floating on the canvas, bottom left: the kit's dock, and on a
- * canvas that may be edited the grid, the snap and the align and distribute buttons
- * beside it. One cluster, not one at the top centre and another at the bottom left:
- * a person looks in one place for what the canvas offers.
+ * The dock, bottom left and the same on every zoomable canvas. Grid opens both of what
+ * goes with it, for whoever may place things. A router that declined says so here.
  */
-export function ZoomControls({ placement, map }: {
-  placement?: PlacementToolbarProps;
+export function ZoomControls({ grid, map, note }: {
+  grid?: { showGrid: boolean; onToggleShowGrid(): void; snapToGrid: boolean; onToggleSnapToGrid(): void };
   map?: { on: boolean; onToggle: () => void };
+  note?: string;
 }) {
+  const { t } = useStrings();
   const { zoomTo, fitView, getZoom } = useReactFlow();
   const zoom = useStore((state) => state.transform[2]);
   return (
@@ -56,8 +55,14 @@ export function ZoomControls({ placement, map }: {
         onZoomOut={() => void zoomTo(stepZoom(getZoom(), 'out'))}
         onFit={() => void fitView({ ...FIT_ALL, duration: 300 })}
         onHome={() => void zoomTo(ZOOM_HOME, { duration: 300 })}
-        map={map}
-        extra={placement && <PlacementToolbar {...placement} />}
+        {...(grid ? {
+          gridItems: [
+            { label: t('canvas.gridToggle'), checked: grid.showGrid, onSelect: grid.onToggleShowGrid },
+            { label: t('canvas.snapToggle'), checked: grid.snapToGrid, onSelect: grid.onToggleSnapToGrid },
+          ],
+        } : {})}
+        {...(map ? { map } : {})}
+        {...(note ? { note } : {})}
       />
     </Panel>
   );

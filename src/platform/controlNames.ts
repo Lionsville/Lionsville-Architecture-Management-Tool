@@ -52,8 +52,10 @@ export const CONTROL_NAMES = [
   'org.servedBy',
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
-  // Keeping a colouring with the view (ADR-0027, amended), in the Colour by menu once a reader has chosen their own.
-  'board.keepLens', 'board.day', 'board.look',
+  // Keeping a colouring with the view (ADR-0027, amended), on the key strip once a reader has chosen their own.
+  'board.keepLens',
+  // The View bar over a board: its panels, and the Colour menu.
+  'board.arrange', 'board.show', 'board.colour', 'board.day', 'board.look',
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // The register, and the technology register drawn by the same page.

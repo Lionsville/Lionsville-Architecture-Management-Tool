@@ -105,7 +105,7 @@ describe.each(ways)('on %s', (_name, way) => {
   it('draws the canvas read-only: no palette to drag from, and it says so', async () => {
     await open()
     expect(screen.getByText('Read-only')).toBeDefined()
-    expect(screen.queryByLabelText('Element palette')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add' })).toBeNull()
   })
 
   it('offers no menu on the board’s tab to rename, duplicate or delete it', async () => {
@@ -116,7 +116,7 @@ describe.each(ways)('on %s', (_name, way) => {
 
   it('changes nothing from the keyboard: duplicate, paste, nudge', async () => {
     const { steps } = await open()
-    const target = screen.getByText('ACTORS')
+    const target = screen.getByText('Actors')
     // One act per key, as a person presses them: the selection the first
     // one makes is what the rest act on.
     for (const key of [
@@ -131,7 +131,7 @@ describe.each(ways)('on %s', (_name, way) => {
 
   it('shows the inspector’s fields without letting them edit', async () => {
     await open()
-    const target = screen.getByText('ACTORS')
+    const target = screen.getByText('Actors')
     act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
     await screen.findByRole('heading', { level: 2, name: /./ })
     expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
@@ -179,7 +179,7 @@ describe('a scope its source does not say is only read', () => {
       source: writableElsewhere,
       provider: readHere,
     })
-    expect(await screen.findByLabelText('Element palette')).toBeDefined()
+    expect(await screen.findByRole('button', { name: 'Add' })).toBeDefined()
     expect(screen.queryByText('Read-only')).toBeNull()
   })
 })
@@ -190,7 +190,7 @@ describe('a scope only read, where its source lets a reader comment (ADR-0037 §
       boot: { initialProject: scope() }, source: writableElsewhere,
       provider: { ...readHere, comments: { mayComment: (path: string) => path === 'acme/landscape' } },
     })
-    const target = await screen.findByText('ACTORS')
+    const target = await screen.findByText('Actors')
     act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
     await screen.findByRole('heading', { level: 2, name: /./ })
     expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()

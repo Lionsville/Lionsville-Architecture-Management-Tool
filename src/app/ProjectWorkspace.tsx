@@ -415,7 +415,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
-    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, deleting, s, chartMove,
+    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, existingRows: library.rows, pickExisting: library.pickAt, units, deleting, s, chartMove,
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
   const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })

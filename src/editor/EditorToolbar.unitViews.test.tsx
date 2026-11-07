@@ -39,7 +39,7 @@ function renderToolbar(props: {
         onOpenChart={props.onOpenChart} onOpenConway={props.onOpenConway}
         onCreateChart={props.onCreateChart} onCreateConway={props.onCreateConway}
         onTidy={vi.fn()} tidyOptions={DEFAULT_TIDY_OPTIONS} onTidyOptionsChange={vi.fn()} onRouteEdges={vi.fn()}
-        autoRoute={false} onToggleAutoRoute={vi.fn()} onFitView={vi.fn()} onExport={vi.fn()} onOpenHelp={vi.fn()}
+        autoRoute={false} onToggleAutoRoute={vi.fn()} onExport={vi.fn()} onOpenHelp={vi.fn()}
         showLifecycle onToggleLifecycle={vi.fn()} onAsOfChange={vi.fn()} onUndo={vi.fn()} onRedo={vi.fn()}
         canUndo={false} canRedo={false} onOpenSearch={vi.fn()} showMinimap={false} onToggleMinimap={vi.fn()}
         showEdgeLabels onToggleEdgeLabels={vi.fn()}

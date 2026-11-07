@@ -48,7 +48,6 @@ function renderToolbar(props: {
         onRouteEdges={vi.fn()}
         autoRoute={false}
         onToggleAutoRoute={vi.fn()}
-        onFitView={vi.fn()}
         onExport={vi.fn()}
         onOpenHelp={vi.fn()}
         showLifecycle

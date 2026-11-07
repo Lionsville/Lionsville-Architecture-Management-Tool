@@ -122,7 +122,7 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     await measured();
 
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
-    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
+    fireEvent.keyDown(screen.getByText('Actors'), { key: 'Delete' });
 
     expect(within(dialog()).getByText(/Sends orders/)).toBeDefined();
     expect(host.current.commands).toEqual([]);
@@ -151,7 +151,7 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
     });
     fireEvent.click(within(screen.getByRole('menu', { name: 'Canvas menu' })).getByText('Select all'));
 
-    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
+    fireEvent.keyDown(screen.getByText('Actors'), { key: 'Delete' });
     expect(within(dialog()).getByText(/2 elements and 1 connection/)).toBeDefined();
     expect(host.current.commands).toEqual([]);
 
@@ -184,7 +184,7 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
     renderEditor();
 
     fireEvent.click(nodeEl('a1'));
-    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
+    fireEvent.keyDown(screen.getByText('Actors'), { key: 'Delete' });
 
     // The remove-or-delete dialog, not the confirmation.
     expect(within(dialog()).getByRole('button', { name: 'Remove from diagram' })).toBeDefined();
@@ -286,7 +286,7 @@ describe('SolutionDesignEditor — deleting a unit with people in it', () => {
     );
     await measured();
     fireEvent.click(nodeEl('team'));
-    fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
+    fireEvent.keyDown(screen.getByText('Actors'), { key: 'Delete' });
     expect(within(dialog()).getAllByTestId('role-ended').map((one) => one.textContent)).toEqual([
       'Ada Lovelace stops being Product owner in Carriers.', '1 assignment in it that is already over goes too.',
     ]);
