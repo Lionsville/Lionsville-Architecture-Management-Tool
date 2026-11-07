@@ -78,9 +78,9 @@ export type Budget = {
   total: number
 }
 
-// The file ceiling 3.19 MB: the plan and roadmap words, then a home's tree, rows and first-run pages, are first-download; measured 3.186.
+// The file ceiling 3.23 MB: the plan and roadmap words, a home's tree, rows and first-run pages, then Guidance's words and frame, are first-download; measured 3.221.
 // 10.40 MB: the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_190_000, total: 10_400_000 }
+export const WEB_BUDGET: Budget = { file: 3_230_000, total: 10_400_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's
