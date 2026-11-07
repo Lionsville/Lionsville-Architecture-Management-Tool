@@ -60,6 +60,11 @@ export interface PageView {
    * palette's is (`preferences.ts`). Absent: the page keeps its own while up.
    */
   outline?: { width: number; onWidth(next: number): void };
+  /**
+   * The row of the toolbar over the view, for a page whose controls stand with
+   * the day rather than in a second bar of their own. Null until it is drawn.
+   */
+  pageBar?: HTMLElement | null;
 }
 
 /**

@@ -495,6 +495,7 @@ function renderApp(
           ...(landing?.initialFinding ? { initialFinding: landing.initialFinding } : {}),
           ...(landing?.initialFramePage ? { initialFramePage: landing.initialFramePage } : {}),
           ...(landing?.initialLook ? { initialLook: landing.initialLook } : {}),
+          ...(landing?.initialFacets ? { initialFacets: landing.initialFacets } : {}),
           ...(landing?.notice ? { notice: landing.notice } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,

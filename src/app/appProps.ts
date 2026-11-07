@@ -11,6 +11,7 @@
  * are optional wherever every field in them is, so a build (or a test) that
  * has no folder, no menu bar and no provider says nothing about any of them.
  */
+import type { ViewFacets } from '../widgets/placeTab'
 import type { StringKey } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
@@ -78,6 +79,8 @@ export type AppBoot = {
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /** The look the address named: a view on a day. */
   initialLook?: { view?: string; day: string }
+  /** What the address keeps of the view it lands on (`useViewFacets`). */
+  initialFacets?: ViewFacets & { of: string }
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
   /**

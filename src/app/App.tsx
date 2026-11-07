@@ -759,7 +759,7 @@ function useShellBase(props: AppProps) {
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services
   // ⌘\ is this person's on this computer, and read once as the app comes up.
-  const [frame] = useState(() => frameStore({ pinned: prefs.readPreferences().treePinned === true, ...frameFromAddress(props.boot), ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}) }))
+  const [frame] = useState(() => frameStore({ pinned: prefs.readPreferences().treePinned === true, ...frameFromAddress(props.boot), ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}), ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}) }))
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])

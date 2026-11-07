@@ -93,3 +93,33 @@ export function usePlaceListView(of: string): readonly [ListView, (next: ListVie
   }, [choose])
   return [view, set]
 }
+
+/** What a view keeps in the address beside its id: its reading, what it is grouped by, the pair chosen. */
+export type ViewFacets = {
+  readonly tab?: string | undefined
+  readonly group?: string | undefined
+  readonly pair?: string | undefined
+}
+
+export type PlaceFacets = {
+  readonly of: (viewId: string) => ViewFacets | undefined
+  readonly choose: (viewId: string, facets: ViewFacets) => void
+}
+
+export const PlaceFacetsContext = createContext<PlaceFacets | undefined>(undefined)
+
+/**
+ * The same for a view: kept in the frame, so a link and an agent reach this
+ * state of it; with no frame above it, as in its own test, a `useState`.
+ */
+export function useViewFacets(viewId: string): readonly [ViewFacets, (patch: ViewFacets) => void] {
+  const held = useContext(PlaceFacetsContext)
+  const [own, setOwn] = useState<ViewFacets>({})
+  const now = held ? held.of(viewId) ?? {} : own
+  const choose = useCallback((patch: ViewFacets) => {
+    const next = { ...now, ...patch }
+    setOwn(next)
+    held?.choose(viewId, next)
+  }, [held, now, viewId])
+  return [now, choose]
+}

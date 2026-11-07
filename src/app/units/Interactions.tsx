@@ -17,15 +17,13 @@
  */
 import { useState } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
+import MuiButton from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import './Interactions.css'
 import type { Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
 import { INTERACTION_MODES, INTERACTION_MODE_LABEL } from '../../model/relations'
@@ -52,6 +50,13 @@ export type InteractDialogProps = {
   s: Translate
 }
 
+/** Each mode, named as the person answers the question. */
+const MODE_NAME: Record<InteractionMode, StringKey> = {
+  collaboration: 'interacts.name.collaboration',
+  service: 'interacts.name.service',
+  facilitating: 'interacts.name.facilitating',
+}
+
 /** Each mode in a sentence, in this project's own words. */
 const MODE_HELP: Record<InteractionMode, StringKey> = {
   collaboration: 'interacts.help.collaboration',
@@ -59,21 +64,22 @@ const MODE_HELP: Record<InteractionMode, StringKey> = {
   facilitating: 'interacts.help.facilitating',
 }
 
-type Form = { with: ElementId; mode: InteractionMode; from: string; until: string }
+type Form = { with: ElementId; mode: InteractionMode | ''; from: string; until: string }
 
 function formOf(interacting: Interacting): Form {
-  if (interacting.mode === 'new') return { with: interacting.with ?? '', mode: 'collaboration', from: '', until: '' }
+  // Nothing chosen on opening: the way that is meant to be temporary used to be chosen in advance, so a hurried press recorded a claim nobody made.
+  if (interacting.mode === 'new') return { with: interacting.with ?? '', mode: '', from: '', until: '' }
   const { row, from } = interacting
   return {
     with: row.sourceId === from.id ? row.targetId : row.sourceId,
-    mode: row.mode ?? 'collaboration', from: row.validFrom ?? '', until: row.validUntil ?? '',
+    mode: row.mode ?? '', from: row.validFrom ?? '', until: row.validUntil ?? '',
   }
 }
 
 /** The row the form says, from the unit it was opened on. */
 export function interactionOf(form: Form, id: string, from: ElementId): Relation {
   return {
-    id, type: 'interacts', sourceId: from, targetId: form.with, mode: form.mode,
+    id, type: 'interacts', sourceId: from, targetId: form.with, ...(form.mode !== '' ? { mode: form.mode } : {}),
     ...(form.from ? { validFrom: form.from } : {}), ...(form.until ? { validUntil: form.until } : {}),
   }
 }
@@ -101,40 +107,41 @@ export function InteractDialog({ interacting, units, newRowId, dispatch, scopeNa
     else done({ type: 'relation.update', id: held.id, patch })
   }
   const others = units.filter((unit) => unit.id !== interacting.from.id)
+  const other = others.find((unit) => unit.id === form.with)
+  const fixedOther = interacting.mode === 'new' && interacting.with !== undefined && other !== undefined
+  const title = other ? s('interacts.dialogTitlePair', { a: interacting.from.name, b: other.name }) : s('interacts.dialogTitle', { unit: interacting.from.name })
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="interact-dialog">
-      <DialogTitle sx={{ fontSize: 16 }}>{s('interacts.dialogTitle', { unit: interacting.from.name })}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
-        <TextField select label={s('interacts.with')} value={form.with} onChange={(event) => set({ with: event.target.value })}
-          slotProps={{ htmlInput: { 'data-testid': 'interact-with' } }}>
-          {others.map((unit) => <MenuItem key={unit.id} value={unit.id}>{unit.name}</MenuItem>)}
-        </TextField>
-        <TextField select label={s('interacts.mode')} value={form.mode} onChange={(event) => set({ mode: event.target.value as InteractionMode })}
-          slotProps={{ htmlInput: { 'data-testid': 'interact-mode' } }}>
-          {INTERACTION_MODES.map((mode) => <MenuItem key={mode} value={mode}>{s(INTERACTION_MODE_LABEL[mode])}</MenuItem>)}
-        </TextField>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s(MODE_HELP[form.mode])}</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField type="date" label={s('interacts.from')} value={form.from} onChange={(event) => set({ from: event.target.value })}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'interact-from' } }} />
-          <TextField type="date" label={s('interacts.until')} value={form.until} onChange={(event) => set({ until: event.target.value })}
-            error={backwards} slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'interact-until' } }} />
-        </Box>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('interacts.oneStep', { scope: scopeName })}</Typography>
-      </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-        {held && (
-          <Button size="small" color="error" onClick={() => done({ type: 'relation.delete', id: held.id })} data-testid="interact-remove">
-            {s('interacts.remove')}
+    <Dialog
+      open size="s" title={title} onClose={onClose} data-testid="interact-dialog"
+      actions={(
+        <>
+          {held && <Button variant="danger" onClick={() => done({ type: 'relation.delete', id: held.id })} data-testid="interact-remove">{s('interacts.remove')}</Button>}
+          <Button variant="plain" onClick={onClose}>{s('interacts.cancel')}</Button>
+          <Button variant="primary" disabled={!form.with || form.mode === '' || backwards} onClick={save} data-testid="interact-save">
+            {s(held ? 'interacts.saveChange' : 'interacts.save')}
           </Button>
-        )}
-        <Box sx={{ flex: 1 }} />
-        <Button size="small" onClick={onClose}>{s('interacts.cancel')}</Button>
-        <Button size="small" variant="contained" disabled={!form.with || backwards} onClick={save} data-testid="interact-save">
-          {s(held ? 'interacts.saveChange' : 'interacts.save')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+        </>
+      )}
+    >
+      {!fixedOther && (
+        <SelectField
+          label={s('interacts.with')} value={form.with} data-testid="interact-with" onChange={(value) => set({ with: value })}
+          options={[{ value: '', label: s('interacts.chooseUnit') }, ...others.map((unit) => ({ value: unit.id, label: unit.name }))]}
+        />
+      )}
+      <DialogChoices
+        label={s('interacts.mode')} value={form.mode} onChange={(mode) => set({ mode })}
+        options={INTERACTION_MODES.map((mode) => ({ value: mode, label: s(MODE_NAME[mode]), effect: s(MODE_HELP[mode]) }))}
+      />
+      <div className="interact__days">
+        <TextField type="date" label={s('interacts.from')} value={form.from} data-testid="interact-from" onChange={(value) => set({ from: value })} />
+        <TextField
+          type="date" label={s('interacts.until')} value={form.until} data-testid="interact-until" onChange={(value) => set({ until: value })}
+          {...(backwards ? { error: s('interacts.backwards') } : {})}
+        />
+      </div>
+      <p className="interact__step">{s('interacts.oneStep', { scope: scopeName })}</p>
+    </Dialog>
   )
 }
 
@@ -167,7 +174,7 @@ export function InteractionsSection({ lines, onDeclare, onEdit, s }: {
         ))}
       </Box>
       {onDeclare && (
-        <Button size="small" sx={{ mt: 0.5, fontSize: 12 }} onClick={onDeclare} data-testid="unit-interaction-add">{s('interacts.add')}</Button>
+        <MuiButton size="small" sx={{ mt: 0.5, fontSize: 12 }} onClick={onDeclare} data-testid="unit-interaction-add">{s('interacts.add')}</MuiButton>
       )}
     </Box>
   )

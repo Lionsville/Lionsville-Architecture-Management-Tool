@@ -121,6 +121,9 @@ export const CONTROL_NAMES = [
   // operating.bringIn; and What came in on each library's card.
   'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
   // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.
+  // The Conway map: its bar, its two readings, the panel beside them.
+  'conway.reading', 'conway.groupBy', 'conway.findMe', 'conway.verdict', 'conway.grid', 'conway.show', 'conway.showUnowned', 'conway.reader',
+  'conway.finding', 'conway.owners', 'conway.sayHow', 'conway.planAway', 'conway.removeSaid', 'conway.modelInterface', 'conway.makeUnits', 'conway.addInteraction',
   'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
   // …the switch that draws its empty optional roles, and its summary in the inspector while nothing is picked (3.6.1).
   'chart.showOptional', 'chart.summary',

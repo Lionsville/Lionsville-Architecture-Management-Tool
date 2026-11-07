@@ -20,7 +20,7 @@ import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scop
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
 import type { Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
-import type { FrameStore } from './frame/frameStore'
+import type { FrameState, FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
@@ -401,15 +401,36 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab, list, pick, finding, lookOf, lookDay } = frame.get()
+    let { panel, tab, list, pick, finding, lookOf, lookDay, facets } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay) return
-      ({ panel, tab, list, pick, finding, lookOf, lookDay } = now)
+      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding && now.lookOf === lookOf && now.lookDay === lookDay && now.facets === facets) return
+      ({ panel, tab, list, pick, finding, lookOf, lookDay, facets } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
   return useCallback((panel: FramePanel | undefined) => { frame?.set({ panel }) }, [frame])
+}
+
+/** What a destination says of the view it opens, beyond which view: nothing for a page, or a view with no id to keep it under. */
+function facetsOf(to: Destination): FrameState['facets'] {
+  if (to.id === undefined || to.page === undefined || !VIEW_PAGES.includes(to.page)) return undefined
+  if (to.tab === undefined && to.group === undefined && to.pair === undefined) return undefined
+  return { of: to.id, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}) }
+}
+
+/** A view with what the frame keeps of it laid over it, where that is this view's. */
+function viewInFrame(open: NonNullable<Screen['open']>, held: FrameState): NonNullable<Screen['open']> {
+  const { view } = open
+  const said = held.facets
+  if (!view || said?.of !== view.id) return open
+  return {
+    ...open,
+    view: {
+      ...view,
+      ...(said.tab !== undefined ? { tab: said.tab } : {}), ...(said.group !== undefined ? { group: said.group } : {}), ...(said.pair !== undefined ? { pair: said.pair } : {}),
+    },
+  }
 }
 
 /**
@@ -429,13 +450,14 @@ function holdInFrame(frame: FrameStore | undefined, to: Destination): Destinatio
   frame?.set({
     panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
     record, recordOf: record === undefined ? undefined : 'people',
+    facets: facetsOf(to),
     list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
     ...(to.day !== undefined ? { asksLook: { ...(to.id !== undefined ? { view: to.id } : {}), day: to.day } } : {}),
   })
   return listPage
 }
 
-/** The screen with what the frame holds laid over it: its panel, and a tab the page keeps there. */
+/** The screen with what the frame holds laid over it: its panel, a tab the page keeps there, and what the view keeps there. */
 function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const held = frame?.get()
   if (!held) return screen
@@ -446,11 +468,11 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const pick = listed && held.pick !== undefined ? held.pick : record
   const open = screen.open
   const looked = open?.view && held.lookOf === open.view.id && held.lookDay !== undefined
-    ? { open: { ...open, view: { ...open.view, day: held.lookDay } } }
-    : {}
+    ? { ...open, view: { ...open.view, day: held.lookDay } }
+    : open
   return {
     ...screen,
-    ...looked,
+    ...(looked ? { open: page ? looked : viewInFrame(looked, held) } : {}),
     ...(page && (tab !== undefined || pick !== undefined)
       ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
       : {}),

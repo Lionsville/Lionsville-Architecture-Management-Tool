@@ -49,6 +49,8 @@
  * 8.413 MB, which was 13 kB over the 8.4 MB before. A ceiling is still a
  * number somebody changes on purpose, in a commit that says why.
  *
+ * **And for the Conway map's verdict and panel**, by 20 kB and 90 kB: its words in three languages are first-download, and the kit's list, panel and matrix came along in its chunk; measured 3.085 MB and 10.146 MB.
+ *
  * **Both raised for 4.0.0**, by 80 kB each: one frame stands over every screen,
  * so its rows, its tree and ⌘K are in the first download. The whole measured
  * 10.046 MB and the largest file 3.059 MB when this was said. **And again**, by
@@ -69,8 +71,8 @@ export type Budget = {
   total: number
 }
 
-// 10.26 MB: the decisions page's own 0.10 MB (its reader and writing window on the kit) on top of what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_100_000, total: 10_260_000 }
+// 10.35 MB: the Conway map's 0.09 MB on top of the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
+export const WEB_BUDGET: Budget = { file: 3_100_000, total: 10_350_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

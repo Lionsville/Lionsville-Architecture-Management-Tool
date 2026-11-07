@@ -45,6 +45,8 @@ export type UnitViewsHere = {
   heldHere: (id: ElementId) => boolean
   /** What to call a unit, a party or an application. */
   name: (id: ElementId) => string
+  /** Whether it is somebody outside this organisation: a party no interaction can be declared with. */
+  outside: (id: ElementId) => boolean
   /** The plans that bring a unit and end it, where one does: the first of each the tree names. */
   plansOf: (id: ElementId) => UnitPlans
 }
@@ -62,6 +64,7 @@ export function unitViewsHere(index: ScopeIndex, scope: ScopePath, model: HostMo
   const held = new Set(model.elements.filter((element) => element.ref === undefined).map((element) => element.id))
   const scopeOf = (id: ElementId): ScopePath | undefined => (held.has(id) ? scope : at.unitAt(id)?.scope ?? index.lookup(id)?.master)
   const names = new Map(model.elements.map((element) => [element.id, element.name]))
+  const outsiders = new Set(model.elements.filter((element) => element.outside).map((element) => element.id))
   const plans = new Map<ElementId, UnitPlans>()
   for (const { unitId, role, plan } of [...index.unitPlans().filter((one) => one.scope !== scope), ...unitPlansOf(scope, model)]) {
     const held = plans.get(unitId) ?? {}
@@ -76,6 +79,7 @@ export function unitViewsHere(index: ScopeIndex, scope: ScopePath, model: HostMo
     scopeOf,
     heldHere: (id) => held.has(id),
     name: (id) => names.get(id) ?? at.unitAt(id)?.name ?? index.lookup(id)?.name ?? id,
+    outside: (id) => outsiders.has(id) || index.lookup(id)?.outside === true,
     plansOf: (id) => plans.get(id) ?? NO_PLANS,
   }
 }

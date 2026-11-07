@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { useCallback, useRef, type JSX, type RefObject } from 'react';
+import { useCallback, useRef, useState, type JSX, type RefObject } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
@@ -70,6 +70,7 @@ const EMPTY_LOGO_LIBRARY: UploadedLogo[] = [];
 function EditorBody(props: SolutionDesignEditorProps) {
   const { t } = useStrings();
   const { parts, activeDiagram, setWrapperNode } = useEditorParts(props);
+  const [pageBar, setPageBar] = useState<HTMLElement | null>(null);
   const { state, readOnly } = parts;
   const documentationPage = (
     <EditorDocumentationPage
@@ -107,11 +108,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
       ref={setWrapperNode}
       sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}
     >
-      <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} />
+      <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} onPageBar={setPageBar} />
       {/* A look is a state of the window: nothing else about the board may read as the live one (decision 4). */}
       <Box data-look-edge={parts.looking ? '' : undefined} data-testid="look-edge" sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {!readOnly && docks.palette && <PaletteDock parts={parts} diagram={activeDiagram} />}
-        {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} />}
+        {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} pageBar={pageBar} />}
         {docks.inspector && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
       <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
@@ -275,11 +276,11 @@ function viewBody(kind: DesignDiagram['kind']): 'board' | 'laidOut' | 'drawing' 
 /**
  * What stays docked beside a view. A board keeps the palette and the
  * inspector. The technology landscape authors the layer's two kinds, so it
- * keeps both too. The organisation chart and the Conway map keep the
- * inspector — a unit or an application chosen on them is edited there, its
- * people assigned and its interactions declared — and no palette, because
- * nothing is placed on them. A sheet and a map have their own inspector, and
- * a drawing is a picture.
+ * keeps both too. The organisation chart keeps the inspector — a unit or an
+ * application chosen on it is edited there, its people assigned and its
+ * interactions declared — and no palette, because nothing is placed on it. A
+ * sheet, a map and a Conway map have their own panel, and a drawing is a
+ * picture.
  */
 function docksOf(kind: DesignDiagram['kind']): { palette: boolean; inspector: boolean } {
   switch (kind) {
@@ -288,10 +289,10 @@ function docksOf(kind: DesignDiagram['kind']): { palette: boolean; inspector: bo
     case 'technology':
       return { palette: true, inspector: true }
     case 'chart':
-    case 'conway':
       return { palette: false, inspector: true }
     case 'sheet':
     case 'map':
+    case 'conway':
     case 'drawing':
       return { palette: false, inspector: false }
     default: {

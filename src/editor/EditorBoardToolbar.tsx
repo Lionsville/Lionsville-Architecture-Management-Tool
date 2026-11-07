@@ -15,7 +15,7 @@ import type { BoardView } from './useBoardView';
 import type { EditorDialogState } from './EditorDialogs';
 import type { EditorParts } from './editorParts';
 
-export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; diagram: DesignDiagram; laidOut: boolean }) {
+export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: EditorParts; diagram: DesignDiagram; laidOut: boolean; onPageBar?: (node: HTMLElement | null) => void }) {
   const { props, state, writable, looking, view, board, layout, exports, dialogs } = parts;
   const { fitView } = useReactFlow();
   return (
@@ -27,6 +27,7 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       {...(parts.cameFrom ? { cameFrom: parts.cameFrom } : {})}
       busy={layout.busy}
       laidOut={laidOut}
+      {...(onPageBar ? { onPageBar } : {})}
       dated={isDated(diagram.kind)}
       {...diagramMenus(props, dialogs)}
       // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in

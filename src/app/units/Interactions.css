@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.interact__days { display: flex; gap: var(--s-2); margin-top: var(--s-2); }
+.interact__step { margin: var(--s-2) 0 0; color: var(--ink-2); font-size: var(--t-xs); }

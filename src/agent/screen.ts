@@ -101,6 +101,8 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   checks: ['found', 'accepted'],
   decisions: ['all', 'here', 'above'],
   roadmap: ['plans', 'findings'],
+  /** A Conway map's two readings. */
+  conway: ['grid', 'lines'],
 }
 
 /** Whether a page has this tab; a page with none has no tab at all. */
@@ -149,6 +151,10 @@ export type Destination = {
    * only. The Checks page is asked which check to pick by `id`, a check's key.
    */
   readonly select?: string
+  /** On a Conway map: the unit type it is grouped by. */
+  readonly group?: string
+  /** On a Conway map: the pair chosen, its two units' ids with a comma between, an end nobody owns empty. */
+  readonly pair?: string
 }
 
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
@@ -185,6 +191,11 @@ export type ScreenView = {
   readonly kind: string
   /** The day it is looked at, where that is not its own (`Destination.day`). */
   readonly day?: string
+  /** The reading it is on, where it has more than one and it is not its first. */
+  readonly tab?: string
+  /** What it is grouped by and which pair is chosen, on a Conway map. */
+  readonly group?: string
+  readonly pair?: string
 }
 
 export type Screen = {

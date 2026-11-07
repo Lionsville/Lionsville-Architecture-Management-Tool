@@ -31,8 +31,8 @@ import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
-import { PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
-import type { PlaceTo } from '../../widgets/placeTab'
+import { PlaceFacetsContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
+import type { PlaceTo, ViewFacets } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
@@ -87,6 +87,10 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     pick: state.listOf === page ? state.pick : undefined,
     choose: (list: string, pick: string | undefined, of: string) => { frame.set({ list: list || undefined, pick, listOf: of as Page }); lookAgain() },
   }), [state.list, state.pick, state.listOf, page, frame, lookAgain])
+  const facets = useMemo(() => ({
+    of: (viewId: string) => (state.facets?.of === viewId ? state.facets : undefined),
+    choose: (viewId: string, chosen: ViewFacets) => { frame.set({ facets: { ...chosen, of: viewId } }); lookAgain() },
+  }), [state.facets, frame, lookAgain])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return
@@ -98,6 +102,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     <FrameCommandsContext.Provider value={lines}>
       <PlaceTabContext.Provider value={tabs}>
         <PlaceListContext.Provider value={lists}>
+        <PlaceFacetsContext.Provider value={facets}>
         <Frame
           pageUp={pageUp}
           controlsInset={windowChrome.controlsInset}
@@ -112,6 +117,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {children}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
+        </PlaceFacetsContext.Provider>
         </PlaceListContext.Provider>
       </PlaceTabContext.Provider>
     </FrameCommandsContext.Provider>

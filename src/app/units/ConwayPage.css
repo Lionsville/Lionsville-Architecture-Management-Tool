@@ -1,0 +1,67 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.conway { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; background: var(--ground); color: var(--ink); }
+.conway__main { flex: 1 1 auto; min-width: 0; overflow: auto; padding: var(--s-4); }
+
+.conway__verdict { margin: 0; font-size: var(--t-lg); line-height: var(--lh-tight); font-weight: var(--fw-strong); }
+.conway__sum { margin: var(--s-1) 0 0; max-width: 72ch; color: var(--ink-2); font-size: var(--t-sm); }
+.conway__said { margin: var(--s-1) 0 0; color: var(--ink-2); font-size: var(--t-sm); }
+
+.conway__grid { margin-top: var(--s-4); max-width: max-content; max-height: 60vh; display: flex; min-height: 0; border: 1px solid var(--line); background: var(--surface); }
+.conway__grid .kit-matrix { --kit-matrix-head: 200px; --cell-size: 44px; }
+.conway__grid .kit-matrix__rowHead { text-align: end; cursor: pointer; }
+.conway__grid .kit-matrix__colHead { cursor: pointer; }
+.conway__grid .kit-matrix__cell:not([data-absent]) { cursor: pointer; }
+.conway__grid .kit-matrix tr .kit-matrix__cell[data-tone='soft'] { background: var(--surface-2); }
+.conway__cell { display: inline-flex; align-items: center; justify-content: center; gap: 2px; font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }
+.conway__cell[data-standing='attention'] { font-weight: var(--fw-strong); }
+.conway__cell sup { font-size: var(--t-xs); line-height: 1; color: var(--ink-2); }
+.conway__you { color: var(--ink-2); font-size: var(--t-xs); }
+
+.conway__key { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-3); color: var(--ink-2); font-size: var(--t-xs); }
+.conway__keyItem { display: inline-flex; align-items: center; gap: var(--s-1); }
+.conway__about { margin: var(--s-2) 0 0; max-width: 72ch; color: var(--ink-2); font-size: var(--t-xs); }
+
+/* The second reading: columns in the chart's order that scroll sideways, the lines in the gutters and above. */
+.conway__showRow { display: flex; justify-content: flex-end; margin-top: var(--s-2); }
+.conway__lines { margin-top: var(--s-2); overflow-x: auto; }
+.conway__stage { position: relative; display: inline-flex; align-items: flex-start; gap: var(--conway-gutter); padding: 0 var(--s-4) var(--s-3) var(--s-3); }
+.conway__stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.conway__stage .kit-line { pointer-events: auto; cursor: pointer; }
+.conway__stage .kit-line[data-ink='signal'] .kit-line__path { stroke-width: var(--line-width-emphasis); }
+.conway__stage .kit-line:focus-visible { outline: none; }
+.conway__stage .kit-line:focus-visible .kit-line__path { stroke: var(--focus-ring); stroke-width: var(--line-width-emphasis); }
+.conway__column { position: relative; flex: none; width: 176px; box-sizing: border-box; display: grid; align-content: start; gap: var(--s-1); padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-2); background: var(--surface); }
+.conway__column[data-picked] { border-color: var(--selected-edge); }
+.conway__columnHead { display: block; width: 100%; padding: 0 0 var(--s-1); border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--t-sm); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; }
+.conway__columnHead:disabled { cursor: default; }
+.conway__columnType { display: block; color: var(--ink-2); font-size: var(--t-xs); font-weight: var(--fw-regular); }
+.conway__appCard { cursor: pointer; }
+.conway__appCard[data-marked] { background: var(--warn-soft); box-shadow: inset 0 0 0 1px var(--state-attention-border); }
+
+.conway__strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); padding: var(--s-2) var(--s-3); border: 1px solid var(--line); background: var(--surface); font-size: var(--t-sm); }
+.conway__stripWords { flex: 1 1 280px; min-width: 0; }
+
+/* The pair, drawn under the grid. */
+.conway__pair { position: relative; display: grid; align-items: start; grid-template-columns: minmax(150px, 220px) minmax(120px, 280px) minmax(150px, 220px); gap: 0; margin-top: var(--s-4); max-width: max-content; }
+.conway__pair > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.conway__pair .conway__column { width: auto; }
+.conway__pair .kit-line .kit-line__path { stroke-width: var(--line-width-emphasis); }
+.conway__pairWords { align-self: center; display: grid; justify-items: center; gap: var(--s-1); padding: var(--s-2); position: relative; z-index: 1; }
+
+/* The reader's own rows: an application and the unit to give it, and the way it is said two units work. */
+.conway__ownerRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 150px); align-items: center; gap: var(--s-2); padding-block: 2px; font-size: var(--t-sm); }
+.conway__ownerName { min-width: 0; overflow-wrap: anywhere; }
+.conway__text { margin: 0 0 var(--s-2); font-size: var(--t-sm); color: var(--ink); }
+.conway__quiet { margin: 0 0 var(--s-2); font-size: var(--t-xs); color: var(--ink-2); }
+.conway__stack { display: grid; gap: var(--s-1); justify-items: start; margin-bottom: var(--s-2); }
+.conway__link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: var(--t-sm); cursor: pointer; text-align: start; }
+.conway__link:hover { text-decoration: underline; }
+.conway__link:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.conway__row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); padding-block: 2px; font-size: var(--t-sm); }
+.conway__unitTypes { display: grid; gap: var(--s-2); margin-bottom: var(--s-2); }
+
+.conway .kit-panel__kind::first-letter { text-transform: uppercase; }
+/* An answer here is a sentence: it wraps in the panel, and is never cut. */
+.conway .kit-panel .kit-button { max-width: 100%; height: auto; min-height: var(--ctl-h); white-space: normal; text-align: start; }

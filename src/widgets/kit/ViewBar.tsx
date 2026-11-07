@@ -29,13 +29,15 @@ export type ViewBarProps = {
   more?: ReactNode
   /** What this bar is of, for a screen reader. */
   label?: string
+  /** It stands in a row that is already a bar, and draws no bar of its own. */
+  flush?: boolean
   'data-guide'?: string
 }
 
-export function ViewBar({ reading, add, arrange, show, colour, day, find, exportAs, more, label, 'data-guide': guide }: ViewBarProps) {
+export function ViewBar({ reading, add, arrange, show, colour, day, find, exportAs, more, label, flush, 'data-guide': guide }: ViewBarProps) {
   const { t } = useStrings()
   return (
-    <div className="kit-viewbar" role="group" aria-label={label ?? t('kit.viewbar.label')} data-guide={guide}>
+    <div className="kit-viewbar" data-flush={flush || undefined} role="group" aria-label={label ?? t('kit.viewbar.label')} data-guide={guide}>
       <div className="kit-viewbar__start">{reading}{add}{arrange}{show}{colour}{day}</div>
       <div className="kit-viewbar__end">{find}{exportAs}{more}</div>
     </div>

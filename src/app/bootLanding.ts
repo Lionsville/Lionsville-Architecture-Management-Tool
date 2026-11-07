@@ -6,6 +6,7 @@
  * boot was given before anything renders. Pure, so each case is a test without
  * a shell.
  */
+import type { ViewFacets } from '../widgets/placeTab'
 import { nearestPlace } from '../agent/place'
 import type { Place } from '../agent/place'
 import { FRAME_PAGES, HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
@@ -40,6 +41,8 @@ export type BootLanding = {
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /** The look the address named, taken up by the workspace once it is there. */
   initialLook?: { view?: string; day: string }
+  /** What the address keeps of the view it lands on, beyond which view: its reading, its grouping, a pair. */
+  initialFacets?: ViewFacets & { of: string }
   /**
    * What to say once the app is up, where the address did not land where it
    * pointed: a page this app has no such thing as, or a view or record that
@@ -177,8 +180,11 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     // A link's element, selected and marked on the view it opens (ADR-0033,
     // amended 11 October 2026): on arrival only, where the view draws it.
     const select = near.select === undefined ? undefined : initialPageFor({ ...near, id: view })
+    const facets = near.tab !== undefined || near.group !== undefined || near.pair !== undefined
+      ? { initialFacets: { of: view, ...(near.tab !== undefined ? { tab: near.tab } : {}), ...(near.group !== undefined ? { group: near.group } : {}), ...(near.pair !== undefined ? { pair: near.pair } : {}) } }
+      : {}
     return {
-      initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...gone,
+      initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...facets, ...gone,
       ...(near.day !== undefined ? { initialLook: { view, day: near.day } } : {}),
     }
   }

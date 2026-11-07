@@ -103,6 +103,9 @@ tr[data-crossed] > .kit-matrix__rowHead { background: var(--crosshair); font-wei
   text-align: center;
 }
 .kit-matrix__cell[data-folded] { background: var(--surface-2); }
+.kit-matrix__cell[data-absent] { border-color: transparent; }
+.kit-matrix tr[data-crossed] > .kit-matrix__cell[data-absent] { background: transparent; }
+.kit-matrix__headMark { display: inline-flex; align-items: center; margin-inline-start: var(--s-1); vertical-align: middle; font-weight: var(--fw-regular); }
 .kit-matrix tr .kit-matrix__cell[data-tone='solid'] { background: var(--raci-a); color: var(--raci-a-ink); }
 .kit-matrix tr .kit-matrix__cell[data-tone='soft'] { background: var(--raci-r); }
 .kit-matrix tr .kit-matrix__cell[data-attention] {

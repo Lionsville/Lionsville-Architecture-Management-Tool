@@ -97,6 +97,8 @@ export interface EditorToolbarProps {
   onCreateConway?(): void;
   /** The active view is laid out (ADR-0016): the canvas's controls have nothing to act on. */
   laidOut?: boolean;
+  /** Where a laid-out page may draw its own controls in this row (`PageView.pageBar`). */
+  onPageBar?: (node: HTMLElement | null) => void;
   /**
    * The active view is drawn on a day, laid out or not: a board, and the
    * organisation chart and the Conway map (ADR-0036 §7). It keeps the day
@@ -510,6 +512,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         </>
       ))}
 
+      {props.laidOut && props.onPageBar && <Box ref={props.onPageBar} data-testid="toolbar-page-bar" sx={{ display: 'flex', flex: '1 1 auto', minWidth: 0 }} />}
       <Box data-testid="toolbar-spacer" sx={{ ml: 'auto' }} />
       {props.readOnly && <Chip size="small" label={t('toolbar.readOnly')} variant="outlined" />}
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />

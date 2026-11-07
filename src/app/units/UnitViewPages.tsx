@@ -21,7 +21,8 @@ import type { ChartPage as ChartPageShape } from './ChartPage'
 import type { ConwayPage as ConwayPageShape } from './ConwayPage'
 import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
 import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
-import { unitViewsHere } from './unitViewsHere'
+import { unitLanding, unitViewsHere } from './unitViewsHere'
+import { planBodyTemplate } from '../../roadmap/planTemplate'
 import type { UnitMaking } from './useNewUnit'
 import { flattenScopes } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
@@ -94,10 +95,28 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
       />
     )
   }
+  const { onOpenElsewhere: _chartOnly, ...conwayCommon } = common
+  /** A unit on its chart, an application on its page: here through the open scope's own pages, elsewhere by opening that scope. */
+  const openRecord = (id: ElementId) => {
+    const where = here.scopeOf(id)
+    const to = here.at.unitAt(id) ? { page: 'element' as const, id } : { page: 'document' as const, id }
+    if (where === undefined || where === scope) parts.show({ ...to, ...unitLanding(session.current(), to), scope })
+    else onOpenScope?.(where, to)
+  }
+  const landscape = model.diagrams.find((one) => one.kind === 'layer7')
   return (
     <ConwayPage
-      {...common} {...(select ? { select } : {})} index={index} scope={scope} model={model}
-      declare={{ dispatch: session.dispatch, newRowId: () => session.ids.connection(), scopeName }}
+      {...conwayCommon} {...(select ? { select } : {})} index={index} scope={scope} model={model}
+      {...(view.pageBar !== undefined ? { pageBar: view.pageBar } : {})}
+      onOpen={openRecord}
+      declare={{
+        dispatch: session.dispatch, newRowId: () => session.ids.connection(), scopeName,
+        newPlanId: () => props.shell.makeId('tr'), planBody: () => planBodyTemplate(props.shell.s),
+        writeIn, writable, ...(props.shell.notify ? { onRefused: (key) => props.shell.notify?.(props.shell.s(key)) } : {}),
+      }}
+      onOpenPlan={(id) => parts.show({ page: 'plan', id, scope })}
+      onOpenOperating={make.onOpenOperating}
+      {...(landscape ? { onOpenLandscape: () => parts.show({ page: 'board', id: landscape.id, scope }) } : {})}
     />
   )
 }

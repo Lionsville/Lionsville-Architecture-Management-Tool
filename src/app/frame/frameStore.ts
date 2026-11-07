@@ -11,6 +11,7 @@
  * and the rows read them; a store and not a context value, so a keystroke's
  * new status draws the rows and not the whole workspace again.
  */
+import type { ViewFacets } from '../../widgets/placeTab'
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { TypeLink } from '../../projects/scopeType'
 import type { FramePanel, Page } from '../../agent/screen'
@@ -83,6 +84,8 @@ export type FrameState = {
   readonly lookDay?: string
   /** A look an address or an agent asked for, which the workspace takes up once it is there. */
   readonly asksLook?: { readonly view?: string; readonly day: string }
+  /** What the view that is up keeps in the address (`useViewFacets`), and which view it is of. */
+  readonly facets?: ViewFacets & { readonly of: string }
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
   /** ⌘\: the tree docked on every screen, by this person's choice. */
