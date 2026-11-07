@@ -228,7 +228,7 @@ describe('where the holder reports (ADR-0039, amended 17 October 2026)', () => {
     }])
     await waitFor(() => expect(screen.getByTestId('holder-line').dataset.source).toBe('person'))
     expect(text('holder-line')).toContain('Developer → Omar Benali (Cluster lead, Parcel & Freight)')
-    expect(within(screen.getByTestId('holder-line')).getByTestId('line-override-mark').textContent).toBe('override')
+    expect(within(screen.getByTestId('holder-line')).getByTestId('line-override-mark').textContent).toBe('exception')
     expect(screen.getAllByTestId('holder-manager').map((one) => one.dataset.via)).toEqual(['override'])
     expect(text('holder-model')).toBe('The model says: by nesting')
     expect(await axeFindings()).toEqual([])

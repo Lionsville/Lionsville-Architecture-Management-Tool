@@ -20,7 +20,6 @@
 import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -133,9 +132,8 @@ function HolderLine({ line, organisation, day, names, s }: HolderLinesProps & { 
   return (
     <Typography component="div" sx={LINE} data-testid="holder-line" data-kind={line.kind} data-source={line.source} data-state={line.state}>
       {lineWords(line, organisation, day, s, names)}
-      <Chip variant="outlined" label={s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')}
-        sx={{ height: 18, fontSize: 'var(--t-small)', ml: 0.5, ...(line.kind === 'dotted' ? { borderStyle: 'dotted' } : {}) }} />
-      <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>{s(SOURCE[line.source])}</Box>
+      {/* The kind and where it was said in words, one line: the exception alone keeps its mark, which the chart's legend shares. */}
+      <Box component="span" sx={{ ...QUIET, ml: 0.5 }}>· {s(line.kind === 'solid' ? 'unit.lineSolid' : 'unit.lineDotted')} · {s(SOURCE[line.source])}</Box>
       {line.override && <OverrideMark s={s} />}
     </Typography>
   )

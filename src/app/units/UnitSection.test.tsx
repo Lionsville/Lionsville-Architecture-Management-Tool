@@ -827,7 +827,7 @@ describe('a unit\'s reporting lines (ADR-0039 §7)', () => {
     await waitFor(() => expect(screen.queryByTestId('unit-line-form')).toBeNull())
     expect(screen.getAllByTestId('unit-line')[1].textContent).toContain('this unit\'s own')
     // A unit's own line is an exception to the model, and marked as one (ADR-0039, amended 17 October 2026).
-    expect(within(screen.getAllByTestId('unit-line')[1]).getByTestId('line-override-mark').textContent).toBe('override')
+    expect(within(screen.getAllByTestId('unit-line')[1]).getByTestId('line-override-mark').textContent).toBe('exception')
     expect(within(screen.getAllByTestId('unit-line')[0]).queryByTestId('line-override-mark')).toBeNull()
   })
 
