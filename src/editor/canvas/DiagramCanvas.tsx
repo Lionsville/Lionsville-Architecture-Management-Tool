@@ -1719,14 +1719,10 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           <ZoomControls
             map={props.onToggleMinimap ? { on: props.showMinimap ?? false, onToggle: props.onToggleMinimap } : undefined}
             placement={props.readOnly ? undefined : {
-              snapToGrid: props.snapToGrid,
-              onToggleSnapToGrid: props.onToggleSnapToGrid,
-              showGrid: props.showGrid,
-              onToggleShowGrid: props.onToggleShowGrid,
-              canAlign: selectedElementIds.size >= 2,
-              canDistribute: selectedElementIds.size >= 3,
-              onAlign: handleAlign,
-              onDistribute: handleDistribute,
+              snapToGrid: props.snapToGrid, onToggleSnapToGrid: props.onToggleSnapToGrid,
+              showGrid: props.showGrid, onToggleShowGrid: props.onToggleShowGrid,
+              canAlign: selectedElementIds.size >= 2, canDistribute: selectedElementIds.size >= 3,
+              onAlign: handleAlign, onDistribute: handleDistribute,
             }}
           />
           {props.overlayLegend && <OverlayLegend {...props.overlayLegend} />}
