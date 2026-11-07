@@ -23,7 +23,7 @@ import { Picker } from '../../widgets/kit/Picker'
 import { Preview } from '../../widgets/kit/Preview'
 import { linkHolds } from './TopicsContext'
 import type { TopicLink, TopicSummary, TopicsAccess } from './TopicsContext'
-import { EditTopicDialog } from './topicDialogs'
+import { EditTopicDialog } from './TopicEditDialog'
 
 /** How a link's days are said: since when, from when, or from and until. */
 function linkWords(link: TopicLink, today: string, day: (date: string | undefined) => string, t: ReturnType<typeof useStrings>['t']): string {
