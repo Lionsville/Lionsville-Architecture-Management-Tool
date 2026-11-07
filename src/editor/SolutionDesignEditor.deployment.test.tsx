@@ -3,7 +3,6 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { pressShow } from './testing/boardBar';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -45,7 +44,7 @@ function model(): DesignModel {
     ] as Relation[],
     diagrams: [
       laidOut({
-        id: 'wms-containers', kind: 'container', name: 'WMS · containers', applicationElementId: 'wms',
+        id: 'wms-containers', kind: 'container', name: 'WMS · containers', applicationElementId: 'wms', showDeployment: true,
         placements: [
           { id: 'wms', x: 0, y: 0 },
           { id: 'wms-api', x: 80, y: 100 },
@@ -92,7 +91,7 @@ describe('the deployment boxes', () => {
     await measured();
     const ns = screen.getAllByTestId('lv-deployment-box')
       .find((box) => box.getAttribute('data-platform') === 'ns');
-    expect(ns?.textContent).toBe('Logistics namespace');
+    expect(ns?.textContent).toBe('Logistics namespace [Platform]');
   });
 
   it('draws the inner box inside the outer one', async () => {
@@ -123,7 +122,7 @@ describe('the deployment boxes', () => {
 });
 
 describe('the toggle', () => {
-  const press = () => pressShow('Deployment boxes');
+  const press = () => fireEvent.click(screen.getByTestId('container-deployment'));
 
   it('takes the boxes away and keeps the answer on the view', async () => {
     const { host } = renderEditor();
@@ -139,8 +138,18 @@ describe('the toggle', () => {
     held.diagrams.push(laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }));
     renderEditor({ model: held, activeDiagramId: 'l7' });
     await measured();
-    fireEvent.click(screen.getByRole('button', { name: 'Show' }));
-    expect(screen.queryByRole('checkbox', { name: 'Deployment boxes', hidden: true })).toBeNull();
+    expect(screen.queryByTestId('container-deployment')).toBeNull();
+  });
+
+  it('is off where nobody said otherwise, and a press draws them: two levels on one diagram are asked for', async () => {
+    const held = model();
+    delete held.diagrams[0]!.showDeployment;
+    renderEditor({ model: held });
+    await measured();
+    expect(boxes()).toEqual([]);
+    press();
+    await measured();
+    expect(boxes()).toEqual(['openshift', 'ns']);
   });
 
   it('still works for a reader, who may change what a view shows without writing it', async () => {
@@ -150,6 +159,6 @@ describe('the toggle', () => {
     await measured();
     expect(boxes()).toEqual([]);
     // Nothing written: the stored answer is still what everybody else opens on.
-    expect(host.current.model.diagrams[0].showDeployment).toBeUndefined();
+    expect(host.current.model.diagrams[0].showDeployment).toBe(true);
   });
 });

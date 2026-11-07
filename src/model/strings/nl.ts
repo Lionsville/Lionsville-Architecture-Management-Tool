@@ -18,7 +18,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kind.function': 'Functie',
   'kind.process': 'Proces',
   'kind.application': 'Applicatie',
-  'kind.component': 'Component',
+  'kind.component': 'Container',
   'kind.platform': 'Platform',
   'kind.platformService': 'Platformdienst',
   'kind.buildingBlock': 'Bouwsteen',
@@ -263,9 +263,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'kindChange.notOnThisDiagram': 'Dit element staat niet op dit aanzicht',
   'kindChange.hasContainerDiagram':
     'Deze applicatie heeft een containeraanzicht — verwijder dat aanzicht eerst',
-  'kindChange.hasParent': 'Dit component hoort bij een applicatie — maak het eerst los',
+  'kindChange.hasParent': 'Deze container hoort bij een applicatie — maak hem eerst los',
   'kindChange.hasComponents':
-    'Deze applicatie heeft componenten — verplaats of verwijder die eerst',
+    'Deze applicatie heeft containers — verplaats of verwijder die eerst',
   'kindChange.notAllowedHere': 'Dit aanzicht draagt die soort niet',
 
   // --- wat de enige schrijver weigert (ADR-0002) ---------------------------

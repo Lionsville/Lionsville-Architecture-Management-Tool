@@ -15,7 +15,7 @@ export const EN = {
   'kind.function': 'Function',
   'kind.process': 'Process',
   'kind.application': 'Application',
-  'kind.component': 'Component',
+  'kind.component': 'Container',
   'kind.platform': 'Platform',
   'kind.platformService': 'Platform service',
   'kind.buildingBlock': 'Building block',
@@ -270,9 +270,9 @@ export const EN = {
   'kindChange.notOnThisDiagram': 'This element is not placed on this diagram',
   'kindChange.hasContainerDiagram':
     'This application has a container diagram — delete that view first',
-  'kindChange.hasParent': 'This component belongs to an application — detach it first',
+  'kindChange.hasParent': 'This container belongs to an application — detach it first',
   'kindChange.hasComponents':
-    'This application has components — move or delete them first',
+    'This application has containers — move or delete them first',
   'kindChange.notAllowedHere': 'This diagram does not hold that kind',
 
   // --- what the one writer refuses (ADR-0002) ------------------------------

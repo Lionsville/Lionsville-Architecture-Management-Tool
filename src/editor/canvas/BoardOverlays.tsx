@@ -147,8 +147,9 @@ function nearestSide(box: { left: number; top: number; width: number; height: nu
 }
 
 /** What a canvas's element says about what Show and Colour have up, for board.css. */
-export function boardAttributes(props: Pick<DiagramCanvasProps, 'overlayLegend' | 'showStatus' | 'showDescriptions'>) {
+export function boardAttributes(props: Pick<DiagramCanvasProps, 'overlayLegend' | 'showStatus' | 'showDescriptions' | 'diagram'>) {
   return {
+    'data-kind': props.diagram.kind,
     'data-lens': props.overlayLegend ? true : undefined,
     'data-hide-status': props.showStatus === false ? true : undefined,
     'data-hide-descriptions': props.showDescriptions === false ? true : undefined,

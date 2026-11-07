@@ -20,10 +20,10 @@ import { usePersonNames } from '../people/ui/names';
 import { shownAsOf, type ShownDays } from './useShownDays';
 import type { EditorActions } from './useEditorState';
 
-/** Whether a board draws its deployment boxes: the reader's flip, else the stored answer, else yes. */
+/** Whether a board draws its deployment boxes: the reader's flip, else the stored answer, else no: mixed levels are asked for. */
 export function shownDeployment(diagram: DesignDiagram | undefined, held: Readonly<Record<string, boolean>>): boolean {
-  if (diagram === undefined) return true;
-  return held[diagram.id] ?? diagram.showDeployment ?? true;
+  if (diagram === undefined) return false;
+  return held[diagram.id] ?? diagram.showDeployment ?? false;
 }
 
 /** What a landscape is coloured by: the reader's choice — `none` included — else the stored one. */

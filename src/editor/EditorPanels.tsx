@@ -17,6 +17,7 @@ import { CanvasForDiagram } from './CanvasForDiagram';
 import { EMPTY_SELECTION, selectElement } from './useEditorState';
 import { standInsFor, heldIdsOf } from './elementInspectorFacts';
 import type { EditorParts } from './editorParts';
+import { labelsOn } from './useViewSettings';
 import { SelectionInspector } from './EditorInspectorDock';
 import { usePersonNames } from '../people/ui/names';
 import type { PersonRef } from '../model/person';
@@ -106,7 +107,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         noteFor={props.ownership?.noteFor}
         showMinimap={view.showMinimap}
         onToggleMinimap={() => view.setShowMinimap((on) => !on)}
-        showEdgeLabels={exports.exportOptions ? exports.exportOptions.showLabels : view.showEdgeLabels}
+        showEdgeLabels={exports.exportOptions ? exports.exportOptions.showLabels : labelsOn(view, diagram)}
         mountEveryElement={parts.capturing || exports.exportOptions !== undefined}
         onElementDoubleClick={clicks.handleDoubleClick}
         onCreateContainer={writable(props.diagrams.onCreateContainer)}
@@ -131,6 +132,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         onTidy={writable(() => void layout.handleTidy().catch(() => {}))}
         onRouteConnections={writable(() => void layout.handleRouteEdges())}
         onRouteConnectionsAll={writable(() => void layout.handleRouteEdgesAll())}
+        onRouteLines={writable((lines: readonly string[]) => void layout.handleRouteLines(lines))}
         onResetRoute={writable((id: string) => void layout.handleResetRoute(id))}
         onSetRouteSides={writable((id: string, sides: AttachSidesPatch) => void layout.handleSetRouteSides(id, sides))}
         layoutBusy={layout.busy !== undefined}
@@ -143,7 +145,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         menuRequest={requests.menuRequest}
         onAddExistingAt={writable(props.ownership?.onAddExisting)}
         onAskAdd={writable(parts.adding.ask)}
-        showStatus={view.showStatus}
+        showStatus={diagram.kind === 'container' ? view.containerStatus : view.showStatus}
         showDescriptions={view.showDescriptions}
         showKey={view.showKey}
         routeNote={layout.autoRouteNote}

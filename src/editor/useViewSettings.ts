@@ -41,10 +41,12 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   // selection.
   const [showMinimap, setShowMinimap] = useState(initial.showMinimap);
   const [showEdgeLabels, setShowEdgeLabels] = useState(initial.showEdgeLabels);
+  const [containerLabels, setContainerLabels] = useState(initial.containerLabels);
+  const [containerStatus, setContainerStatus] = useState(initial.containerStatus);
 
   const settings: EditorPreferences = {
     snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
-    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   };
   useReportPreferences(settings, initial, preferences?.onChange);
   // Preferences changed from their own page, while this is mounted under it: the
@@ -58,6 +60,8 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
     setShowLifecycle(next.showLifecycle);
     setShowMinimap(next.showMinimap);
     setShowEdgeLabels(next.showEdgeLabels);
+    setContainerLabels(next.containerLabels);
+    setContainerStatus(next.containerStatus);
     setTidyOptions(next.tidyOptions);
   }, [outside]);
 
@@ -65,11 +69,16 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
     ...settings,
     setTidyOptions, setGroupTidyOptions, setSnapToGrid, setShowGrid, setShowLifecycle,
     setKeepRail, setShowStatus, setShowDescriptions, setShowKey, setInspectorCollapsed, setInspectorWidth, setOutlineWidth,
-    setShowMinimap, setShowEdgeLabels,
+    setShowMinimap, setShowEdgeLabels, setContainerLabels, setContainerStatus,
   };
 }
 
 export type ViewSettings = ReturnType<typeof useViewSettings>;
+
+/** Whether this view's lines say what they carry: a container diagram keeps its own answer, on by default. */
+export function labelsOn(view: Pick<ViewSettings, 'showEdgeLabels' | 'containerLabels'>, diagram: { kind: string }): boolean {
+  return diagram.kind === 'container' ? view.containerLabels : view.showEdgeLabels;
+}
 
 /**
  * Report the view settings whenever one of them actually changes.
@@ -89,19 +98,19 @@ function useReportPreferences(
   const last = useRef<EditorPreferences>(initial);
   const {
     snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
-    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   } = next;
   useEffect(() => {
     if (!onChange) return;
     const settings: EditorPreferences = {
       snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
-      inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+      inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
     };
     if (preferencesEqual(last.current, settings)) return;
     last.current = settings;
     onChange(settings);
   }, [
     onChange, snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
-    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, tidyOptions, groupTidyOptions,
+    inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   ]);
 }

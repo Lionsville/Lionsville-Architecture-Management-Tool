@@ -12,6 +12,7 @@
 .kit-linelabel {
   display: inline-block;
   box-sizing: border-box;
+  width: max-content;
   max-width: 180px;
   padding: 1px var(--s-1);
   border: 1px solid var(--line);
@@ -25,11 +26,14 @@
   transform: scale(calc(1 / var(--canvas-zoom, 1)));
 }
 .kit-linelabel[data-picked] { border-color: var(--line-focus); color: var(--ink); }
+.kit-linelabel[data-placeholder] { color: var(--ink-3); font-style: italic; }
 .kit-linelabel[data-dimmed] { color: var(--ink-dim); }
-.kit-linelabel__how { font-family: var(--font-mono); }
+.kit-linelabel__words { white-space: pre-line; }
+.kit-linelabel__how { font-family: var(--font-mono); white-space: nowrap; }
 .kit-linelabel__exception { color: var(--exception); font-weight: var(--fw-strong); }
 .kit-linelabel__number { display: none; font-variant-numeric: tabular-nums; }
-/* Below the distance where a label reads it says a number and the Lines list says the rest. Picked, it still says its words. */
-[data-distance='far'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__words { display: none; }
-[data-distance='far'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__number { display: inline; }
-[data-distance='far'] .kit-linelabel:not([data-numbered]):not([data-picked]) { display: none; }
+/* Below the zoom where a label has room it says a number and the Lines list says the rest. Picked, it still says its words. */
+[data-labels='numbers'] .kit-linelabel[data-numbered]:not([data-picked]) { border-radius: 50%; min-width: 18px; padding: 1px 3px; }
+[data-labels='numbers'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__words { display: none; }
+[data-labels='numbers'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__number { display: inline; }
+[data-labels='numbers'] .kit-linelabel:not([data-numbered]):not([data-picked]) { display: none; }

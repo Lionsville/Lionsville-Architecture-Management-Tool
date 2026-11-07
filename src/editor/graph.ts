@@ -113,6 +113,7 @@ export interface BuildGraphArgs {
 }
 
 const BOUNDARY_PADDING = 56;
+const C4_BOX_MIN = { width: 120, height: 64 };
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
@@ -122,6 +123,14 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       .filter((d) => d.kind === 'container' && d.applicationElementId)
       .map((d) => d.applicationElementId as ElementId),
   );
+
+  // What the card says it holds: only asked of a board that can go down.
+  const containerCounts = new Map<ElementId, number>();
+  for (const element of args.model.elements) {
+    if (element.kind !== 'component' || !element.parentId) continue;
+    if (!containerDiagramApps.has(element.parentId) && element.parentId !== args.diagram.applicationElementId) continue;
+    containerCounts.set(element.parentId, (containerCounts.get(element.parentId) ?? 0) + 1);
+  }
 
   const aspectConfig = aspectConfigFor(args.diagram);
   const nodes: ElementNode[] = [];
@@ -139,7 +148,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
-      : placementRect(figure, placement);
+      : roomToSayItsType(args.diagram, placementRect(figure, placement));
     nodes.push({
       id: element.id,
       // What a box looks like is the figure, not the kind (ADR-0012 §4): the
@@ -170,6 +179,9 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         aspectConfig,
         hasContainerDiagram:
           element.kind === 'application' && containerDiagramApps.has(element.id),
+        ...(containerCounts.has(element.id) ? { containerCount: containerCounts.get(element.id) } : {}),
+        ...(args.diagram.kind === 'container' && !isBoundary && element.kind !== 'component' ? { c4Context: true } : {}),
+        ...(isBoundary && !containerCounts.has(element.id) ? { c4Empty: true } : {}),
         resizeLimits: {
           min: nodeMinSize(figure),
           max: nodeMaxSize(figure, placement.zone, args.diagram.geometry),
@@ -213,7 +225,22 @@ export function boundaryRect(
   return unionRects([stored, componentsBox]) as Rect;
 }
 
+/**
+ * A box on a container diagram says its name and its type, whatever size it was
+ * placed at: an actor placed as a low tile on a landscape would have no room for
+ * [Person]. Lines attach to the same rectangle.
+ */
+function roomToSayItsType(diagram: DesignDiagram, rect: Rect): Rect {
+  if (diagram.kind !== 'container') return rect;
+  return { ...rect, width: Math.max(rect.width, C4_BOX_MIN.width), height: Math.max(rect.height, C4_BOX_MIN.height) };
+}
+
 export type FloatingEdgeModel = Edge<FloatingEdgeData>;
+
+/** A container diagram's lines by number, in the order the model keeps them: the same numbers as its Lines list. */
+function lineNumbers(numbered: boolean, ids: readonly string[]): ReadonlyMap<string, number> {
+  return new Map(numbered ? ids.map((id, index) => [id, index + 1] as const) : []);
+}
 
 export function buildEdges(
   args: BuildGraphArgs, previous?: readonly FloatingEdgeModel[],
@@ -243,7 +270,7 @@ export function buildEdges(
       element.id,
       isBoundary
         ? boundaryRect(args.diagram, elementsById)
-        : placementRect(nodeFigure(element, placement.zone), placement),
+        : roomToSayItsType(args.diagram, placementRect(nodeFigure(element, placement.zone), placement)),
     );
   }
   // Where an interface lands on this diagram, and therefore what it does NOT
@@ -346,6 +373,7 @@ export function buildEdges(
   };
 
   const edges: FloatingEdgeModel[] = [];
+  const numbers = lineNumbers(args.diagram.kind === 'container', drawn.map((one) => one.connection.id));
   for (const { connection, sourceId, targetId, route, stored } of drawn) {
     // Resolve the stroke once and reuse it for the arrowheads, so a custom edge
     // colour tints the line and its markers together (plan D1). NULL falls back
@@ -366,6 +394,8 @@ export function buildEdges(
       data: {
         label: connection.label,
         protocol: connection.protocol,
+        ...(numbers.has(connection.id) ? { number: numbers.get(connection.id) } : {}),
+        ...(subject !== undefined && (sourceId === subject || targetId === subject) ? { unlanded: true } : {}),
         isBidirectional: connection.isBidirectional,
         color: connection.color,
         lineStyle: connection.lineStyle,
@@ -494,6 +524,9 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     held.readOnly === next.readOnly &&
     held.aspectConfig === next.aspectConfig &&
     held.hasContainerDiagram === next.hasContainerDiagram &&
+    held.containerCount === next.containerCount &&
+    held.c4Context === next.c4Context &&
+    held.c4Empty === next.c4Empty &&
     held.showLifecycle === next.showLifecycle &&
     held.phase === next.phase &&
     // By identity: see `StandInNote`. The supplier holds one object per record
@@ -540,6 +573,8 @@ function sameEdgeData(held?: FloatingEdgeData, next?: FloatingEdgeData): boolean
   return (
     held.label === next.label &&
     held.protocol === next.protocol &&
+    held.number === next.number &&
+    held.unlanded === next.unlanded &&
     held.isBidirectional === next.isBidirectional &&
     held.color === next.color &&
     held.lineStyle === next.lineStyle &&

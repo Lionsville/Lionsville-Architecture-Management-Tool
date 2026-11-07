@@ -95,6 +95,7 @@ export function useReadingDistance(container: RefObject<HTMLDivElement | null>):
       last = zoom;
       const said = canvasZoomProps(zoom);
       element.dataset.distance = said['data-distance'];
+      element.dataset.labels = said['data-labels'];
       element.style.setProperty('--canvas-zoom', said.style['--canvas-zoom']);
     };
     apply(flow.getState().transform[2]);
@@ -109,14 +110,16 @@ export function useReadingDistance(container: RefObject<HTMLDivElement | null>):
 export function atFullSize(element: Element | null | undefined): () => void {
   const canvas = element?.closest<HTMLElement>('[data-distance]');
   if (!canvas) return () => undefined;
-  const { distance } = canvas.dataset;
+  const { distance, labels } = canvas.dataset;
   const zoom = canvas.style.getPropertyValue('--canvas-zoom');
   canvas.dataset.capturing = 'true';
   canvas.dataset.distance = 'middle';
+  canvas.dataset.labels = 'words';
   canvas.style.setProperty('--canvas-zoom', '1');
   return () => {
     delete canvas.dataset.capturing;
     if (distance) canvas.dataset.distance = distance;
+    if (labels) canvas.dataset.labels = labels;
     canvas.style.setProperty('--canvas-zoom', zoom);
   };
 }

@@ -83,6 +83,7 @@ export function shapeRadiusFor(
     // consulting this radius, so it never reaches here for an actor. A non-actor
     // kind carrying the value renders harmlessly with its default radius.
     case 'figure':
+    case 'store':
       return defaultRadius(kind, hasDescription);
   }
 }

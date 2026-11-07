@@ -23,10 +23,12 @@ export type ZoneProps = Omit<ComponentPropsWithRef<'section'>, 'children'> & {
   dimmed?: boolean
   /** A zone that can fold. A count in `aside` is what a folded zone still says. */
   fold?: { folded: boolean; onToggle: () => void }
+  /** Attributes for its head, where the head is what can be pressed and the rest lets the pointer through. */
+  headProps?: ComponentPropsWithRef<'header'>
   children?: ReactNode
 }
 
-export function Zone({ name, nameAs, kind = 'zone', aside, dimmed, fold, className, children, ...rest }: ZoneProps) {
+export function Zone({ name, nameAs, kind = 'zone', aside, dimmed, fold, headProps, className, children, ...rest }: ZoneProps) {
   const { t } = useStrings()
   const nameId = useId()
   return (
@@ -38,7 +40,7 @@ export function Zone({ name, nameAs, kind = 'zone', aside, dimmed, fold, classNa
       data-dimmed={dimmed || undefined}
       data-folded={fold?.folded || undefined}
     >
-      <header className="kit-zone__head">
+      <header {...headProps} className="kit-zone__head">
         {fold && (
           <button
             type="button"

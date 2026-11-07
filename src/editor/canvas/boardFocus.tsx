@@ -64,6 +64,15 @@ export function useLineInFocus(id: string): boolean {
   return useSyncExternalStore(focus.subscribe, () => focus.get()?.lines.has(id) ?? false);
 }
 
+/** Whether something is in focus and this line is not: its label recedes with it, by its ink. */
+export function useLineDimmed(id: string): boolean {
+  const focus = useContext(BoardFocusContext);
+  return useSyncExternalStore(focus.subscribe, () => {
+    const state = focus.get();
+    return state !== null && !state.lines.has(id);
+  });
+}
+
 const quoted = (id: string) => `[data-id="${id.replace(/["\\]/g, '\\$&')}"]`;
 
 /** Everything but what is kept, in one rule each: the ink of a card, its marks, a line. */

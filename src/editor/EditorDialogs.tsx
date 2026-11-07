@@ -40,6 +40,8 @@ const DiagramSettingsDialog = lazyPart<ComponentProps<typeof DiagramSettingsDial
 );
 
 /** Which of the plain dialogs is up. ⌘F's dialog owns its own query; this is only whether it is up. */
+export type ThisViewTab = 'properties' | 'lines' | 'tidy';
+
 export function useEditorDialogs() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,12 +51,13 @@ export function useEditorDialogs() {
   const [renameDiagramTarget, setRenameDiagramTarget] = useState<{ id: string; name: string } | undefined>(undefined);
   // *This view*, in the panel: pressing the name of the view that is up.
   const [thisViewOpen, setThisViewOpen] = useState(false);
+  const [thisViewTab, setThisViewTab] = useState<ThisViewTab>('properties');
   const openHelp = useCallback(() => setHelpOpen(true), []);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   return {
     helpOpen, setHelpOpen, openHelp, searchOpen, setSearchOpen, openSearch,
     settingsDiagramId, setSettingsDiagramId, renameDiagramTarget, setRenameDiagramTarget,
-    thisViewOpen, setThisViewOpen,
+    thisViewOpen, setThisViewOpen, thisViewTab, setThisViewTab,
   };
 }
 
@@ -82,6 +85,7 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
         <ExportDialog
           open
           name={diagram.name}
+          offersLineList={diagram.kind === 'container'}
           options={exportOptions}
           onChange={exports.setExportOptions}
           preview={exports.exportPreview}

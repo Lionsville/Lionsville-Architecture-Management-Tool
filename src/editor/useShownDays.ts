@@ -67,10 +67,12 @@ export function dayShown(
 }
 
 /**
- * Going into an application's containers from a board, the day goes along and
- * Back returns there (ADR-0027, amended): a container diagram opened from a board
- * on 1 Sep 2027 is that landscape's, not today's, and the board a person came from
- * is the one to go back to, not the first one that places it. Answers that board.
+ * Going into an application's containers from a board, the day goes along and Back
+ * returns there (ADR-0027, amended): a container diagram opened from a board on
+ * 1 Sep 2027 is that landscape's, not today's, and the board a person came from is
+ * the one to go back to, not the first one that places it. The same sideways, from
+ * one application's diagram to a neighbour's. Coming back up changes nothing: the
+ * look stayed with the board. Answers where this diagram was opened from.
  */
 export function useCarriedDay(
   active: { id: string; kind: string; asOf?: string } | undefined,
@@ -81,13 +83,34 @@ export function useCarriedDay(
   useEffect(() => {
     const was = last.current;
     last.current = active;
-    if (!was || !active || was.id === active.id || was.kind !== 'layer7' || active.kind !== 'container') return;
+    if (!was || !active || was.id === active.id || active.kind !== 'container') return;
+    if (was.kind !== 'layer7' && was.kind !== 'container') return;
+    if (cameFrom[was.id] === active.id) return;
     setCameFrom((held) => ({ ...held, [active.id]: was.id }));
     const day = shownAsOf(was, viewing.days);
     if (day) viewing.show(active.id, day);
     else viewing.forget(active.id);
-  }, [active, viewing]);
+  }, [active, viewing, cameFrom]);
   return active ? cameFrom[active.id] : undefined;
+}
+
+/**
+ * Back returns what was selected, as the zoom already is, per view: what a person
+ * selected to go down is what they find when they come back up.
+ */
+export function useSelectionPerLevel<S>(activeId: string | undefined, cameFrom: string | undefined, selection: S, setSelection: (held: S) => void): void {
+  const held = useRef(new Map<string, S>());
+  const last = useRef({ id: activeId, selection, cameFrom });
+  useEffect(() => {
+    const was = last.current;
+    if (was.id !== activeId) {
+      if (was.id !== undefined) held.current.set(was.id, was.selection);
+      // Up from where it was opened from, and only then: going down starts afresh.
+      const kept = activeId !== undefined && was.cameFrom === activeId ? held.current.get(activeId) : undefined;
+      if (kept !== undefined) { setSelection(kept); last.current = { id: activeId, selection: kept, cameFrom }; return; }
+    }
+    last.current = { id: activeId, selection, cameFrom };
+  }, [activeId, selection, cameFrom, setSelection]);
 }
 
 /**

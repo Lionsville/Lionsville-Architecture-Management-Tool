@@ -30,7 +30,7 @@ describe('palette metadata', () => {
 
   it('defaults to English so callers that pass no translator are unchanged', () => {
     expect(paletteLabel('application')).toBe('Application');
-    expect(paletteDescription('component')).toBe('A part inside one application');
+    expect(paletteDescription('component')).toBe('Runs on its own, inside one application');
   });
 
   it('places every item in exactly one section', () => {

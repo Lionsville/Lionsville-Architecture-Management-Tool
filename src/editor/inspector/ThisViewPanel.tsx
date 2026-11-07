@@ -6,7 +6,6 @@
  * with nothing selected there is no panel and the board has the width. Settings
  * stay in the tab's menu too; this is where they can be read.
  */
-import { useState } from 'react';
 import { formatDay } from '../../i18n/dates';
 import { useStrings } from '../../i18n/LanguageContext';
 import { aspectConfigFor } from '../../model/aspects';
@@ -16,13 +15,20 @@ import type { DesignDiagram } from '../../model/types';
 import { Button } from '../../widgets/kit/Button';
 import { PropertyRow, PropertyRows } from '../../widgets/kit/Field';
 import { Panel, PanelSection } from '../../widgets/kit/Panel';
+import { containerFacts } from '../containerLines';
+import type { ThisViewTab } from '../EditorDialogs';
 import type { EditorParts } from '../editorParts';
+import { LinesTab, UnlandedLines } from './LinesTab';
 import { TidySettingsPanel } from '../TidySettingsPanel';
 
 export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts; diagram: DesignDiagram; onClose(): void }) {
   const { t, language } = useStrings();
   const { state, view, layout, board, readOnly, dialogs, props } = parts;
-  const [tab, setTab] = useState<'properties' | 'tidy'>('properties');
+  const { thisViewTab, setThisViewTab: setTab } = dialogs;
+  const container = diagram.kind === 'container';
+  const tab = thisViewTab === 'lines' && !container ? 'properties' : thisViewTab;
+  const facts = container ? containerFacts(state.model, board.shownDiagram ?? diagram, board.lookingAt) : undefined;
+  const application = container ? state.model.elements.find((one) => one.id === diagram.applicationElementId) : undefined;
   const placed = placedNodes(diagram);
   const drawn = new Set(placed.map((one) => one.id));
   const lines = state.model.relations.filter((row) => (row.type ?? 'flow') === 'flow' && drawn.has(row.sourceId) && drawn.has(row.targetId));
@@ -33,19 +39,23 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
   const canTidy = !readOnly && (diagram.kind === 'layer7' || diagram.kind === 'container');
   return (
     <Panel
-      kind={t('inspector.thisView')}
-      name={diagram.name}
-      facts={t('inspector.viewFacts', { elements: drawn.size, lines: lines.length, day })}
+      kind={t(container ? 'c4.aboutDiagram' : 'inspector.thisView')}
+      name={container ? application?.name ?? diagram.name : diagram.name}
+      facts={facts ? t('c4.facts', { containers: facts.containers, around: facts.around, lines: facts.lines, day }) : t('inspector.viewFacts', { elements: drawn.size, lines: lines.length, day })}
       dataGuide="board.inspector"
       onClose={onClose}
-      {...(canTidy ? {
-        tabs: [{ value: 'properties', label: t('inspector.properties') }, { value: 'tidy', label: t('inspector.tidy') }],
+      {...(canTidy || container ? {
+        tabs: [
+          { value: 'properties', label: t('inspector.properties') },
+          ...(container ? [{ value: 'lines', label: `${t('c4.lines')} (${facts?.lines ?? 0})` }] : []),
+          ...(canTidy ? [{ value: 'tidy', label: t('inspector.tidy') }] : []),
+        ],
         tab,
-        onTab: (next: string) => setTab(next as 'properties' | 'tidy'),
+        onTab: (next: string) => setTab(next as ThisViewTab),
       } : {})}
       help={t('inspector.empty')}
     >
-      {tab === 'tidy' && canTidy
+      {tab === 'lines' && container ? <LinesTab parts={parts} diagram={diagram} /> : tab === 'tidy' && canTidy
         ? (
           <TidySettingsPanel
             width="100%" options={view.tidyOptions} onChange={view.setTidyOptions} applyLabel={t('inspector.tidy')}
@@ -55,6 +65,8 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
         )
         : (
           <>
+            {facts?.description && <p className="lv-lines__said">{facts.description}</p>}
+            {container && <UnlandedLines parts={parts} diagram={diagram} />}
             <PropertyRows readOnly>
               <PropertyRow label={t('inspector.shownDay')} data-testid="view-day" value={day} />
               {columns && <PropertyRow label={t('inspector.columns')} data-testid="view-columns" value={columns} />}

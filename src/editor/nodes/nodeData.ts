@@ -47,6 +47,12 @@ export interface ElementNodeData extends Record<string, unknown> {
   aspectConfig: readonly AspectConfigEntry[];
   /** True when the node has its own container diagram (drill-down hint). */
   hasContainerDiagram?: boolean;
+  /** How many containers it holds, which the card says in words. */
+  containerCount?: number;
+  /** A box drawn around a container diagram's subject: it says its type, and recedes. */
+  c4Context?: boolean;
+  /** The subject of this diagram with nothing inside it yet. */
+  c4Empty?: boolean;
   /**
    * Resize floor and ceiling for this node's NodeResizer. Projected here rather
    * than read in the component because the ceiling depends on the band the node

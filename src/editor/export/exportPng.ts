@@ -305,6 +305,8 @@ export function exportFooterHeight(block: ExportTitleBlock | undefined): number 
   return (block.c4 ? FOOTER_C4_ROW : FOOTER_ROW) + legendRows(block.legend).length * FOOTER_LEGEND_ROW;
 }
 
+const NOTATION_PER_ROW = 3;
+
 type LegendRow = { label: string; text?: string; swatches?: ExportSwatch[] };
 
 /** The key's rows, one per kind of colour it explains; none for an empty key. */
@@ -315,6 +317,11 @@ function legendRows(legend: ExportLegend | undefined): LegendRow[] {
     rows.push({ label: legend.labels.aspects, text: legend.aspects, swatches: legend.statuses });
   }
   if (legend.lifecycle?.length) rows.push({ label: legend.labels.lifecycle, swatches: legend.lifecycle });
+  // A notation's words are long: they go three to a row, so that none is cut off the edge.
+  for (let at = 0; at < (legend.notation?.length ?? 0); at += NOTATION_PER_ROW) {
+    rows.push({ label: at === 0 ? legend.labels.key ?? '' : '', swatches: legend.notation?.slice(at, at + NOTATION_PER_ROW) });
+  }
+  (legend.lines ?? []).forEach((line, index) => rows.push({ label: index === 0 ? legend.labels.lines ?? '' : '', text: line }));
   return rows;
 }
 
@@ -414,11 +421,30 @@ function drawSwatch(
   const width = 22 * scale;
   const height = 11 * scale;
   const y = baseline - 9 * scale;
-  ctx.fillStyle = swatch.token.bg;
   ctx.strokeStyle = swatch.token.border;
   ctx.lineWidth = 1 * scale;
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeRect(x, y, width, height);
+  if (swatch.line === 'solid' || swatch.line === 'dashed') {
+    const middle = y + height / 2;
+    ctx.setLineDash(swatch.line === 'dashed' ? [4 * scale, 3 * scale] : []);
+    ctx.beginPath();
+    ctx.moveTo(x, middle);
+    ctx.lineTo(x + width - 6 * scale, middle);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = swatch.token.bg;
+    ctx.beginPath();
+    ctx.moveTo(x + width, middle);
+    ctx.lineTo(x + width - 7 * scale, middle - 3.5 * scale);
+    ctx.lineTo(x + width - 7 * scale, middle + 3.5 * scale);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    if (swatch.line === 'dashed-box') ctx.setLineDash([3 * scale, 2 * scale]);
+    ctx.fillStyle = swatch.token.bg;
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeRect(x, y, width, height);
+    if (swatch.line === 'dashed-box') ctx.setLineDash([]);
+  }
   ctx.fillStyle = palette.ink;
   ctx.font = `${11 * scale}px sans-serif`;
   ctx.fillText(swatch.label, x + width + 5 * scale, baseline);

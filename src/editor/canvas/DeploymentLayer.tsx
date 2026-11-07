@@ -2,8 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useNodes, ViewportPortal } from '@xyflow/react';
-import { alpha, useTheme } from '@mui/material/styles';
-import { getNodeTokens } from '../theme/tokens';
+import { useStrings } from '../../i18n/LanguageContext';
 import { deploymentBoxes } from '../../model/deployment';
 import type { PlatformTree } from '../../model/deployment';
 import { unionRects } from '../../model/placement';
@@ -38,8 +37,7 @@ export interface DeploymentLayerProps {
 }
 
 export function DeploymentLayer(props: DeploymentLayerProps) {
-  const theme = useTheme();
-  const tokens = getNodeTokens(theme);
+  const { t } = useStrings();
   // The live nodes, so a box re-measures mid-drag rather than at the drop — and
   // so the day the board shows needs no second answer here: a card that is
   // retired by then is not a node, and takes its box with it.
@@ -71,37 +69,14 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
         return (
           <div
             key={box.id}
+            className="lv-deployment"
             data-testid="lv-deployment-box"
             data-platform={box.id}
-            style={{
-              position: 'absolute',
-              left: rect.x,
-              top: rect.y,
-              width: rect.width,
-              height: rect.height,
-              border: `1.5px dashed ${tokens.domainGroup.border}`,
-              borderRadius: 10,
-              background: alpha(tokens.domainGroup.border, theme.palette.mode === 'dark' ? 0.07 : 0.04),
-              pointerEvents: 'none',
-              // Under the cards and under the boundary box, deepest nearest the
-              // front, so an inner box reads on top of the one it sits in.
-              zIndex: -20 + box.depth,
-            }}
+            // Under the cards and under the boundary box, deepest nearest the front,
+            // so an inner box reads on top of the one it sits in.
+            style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height, zIndex: -20 + box.depth }}
           >
-            <span
-              style={{
-                position: 'absolute',
-                top: 3,
-                left: 10,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: tokens.domainGroup.label,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {box.name}
-            </span>
+            <span className="lv-deployment__name">{`${box.name} [${t('kind.platform')}]`}</span>
           </div>
         );
       })}

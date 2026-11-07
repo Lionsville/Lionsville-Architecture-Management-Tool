@@ -27,12 +27,12 @@ function board(over: Partial<DesignDiagram> = {}): DesignDiagram {
 }
 
 describe('what a board shows', () => {
-  it('draws deployment boxes where nobody said otherwise, the stored answer next, the reader’s flip first', () => {
-    expect(shownDeployment(undefined, {})).toBe(true);
-    expect(shownDeployment(board(), {})).toBe(true);
-    expect(shownDeployment(board({ showDeployment: false }), {})).toBe(false);
+  it('draws no deployment boxes where nobody said otherwise, the stored answer next, the reader’s flip first', () => {
+    expect(shownDeployment(undefined, {})).toBe(false);
+    expect(shownDeployment(board(), {})).toBe(false);
+    expect(shownDeployment(board({ showDeployment: true }), {})).toBe(true);
     expect(shownDeployment(board({ showDeployment: false }), { d1: true })).toBe(true);
-    expect(shownDeployment(board(), { other: false })).toBe(true);
+    expect(shownDeployment(board(), { other: true })).toBe(false);
   });
 
   it('colours by the reader’s choice — none included — before the stored one', () => {

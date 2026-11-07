@@ -873,6 +873,8 @@ export interface ExportTitleBlock {
 export interface ExportSwatch {
   label: string;
   token: AspectToken;
+  /** A sample of a line or a dashed edge, for a key that says what a line means. */
+  line?: 'solid' | 'dashed' | 'dashed-box';
 }
 
 export interface ExportLegend {
@@ -882,7 +884,11 @@ export interface ExportLegend {
   statuses?: ExportSwatch[];
   /** The lifecycle colours, when the board draws lifecycle badges. */
   lifecycle?: ExportSwatch[];
-  labels: { aspects: string; lifecycle: string };
+  /** A container diagram's notation: what each box and line drawn on it means. */
+  notation?: ExportSwatch[];
+  /** Every line in words, where the drawing could carry only two lines of each. */
+  lines?: string[];
+  labels: { aspects: string; lifecycle: string; key?: string; lines?: string };
 }
 
 export interface ExportDiagramPngOptions {

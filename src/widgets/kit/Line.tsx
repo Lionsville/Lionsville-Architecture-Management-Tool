@@ -66,9 +66,16 @@ export function labelWords(words: string): string {
   return `${words.slice(0, cut > 20 ? cut : LABEL_AT_MOST - 1)}…`
 }
 
+/** How a line is carried: what was written, in brackets on one line, however uncertain. The rest is the panel's. */
+const HOW_AT_MOST = 18
+
+export function howWords(how: string): string {
+  return how.length <= HOW_AT_MOST ? `[${how}]` : `[${how.slice(0, HOW_AT_MOST - 1).trimEnd()}…]`
+}
+
 export type LineLabelProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
   words: string
-  /** A second line in the code face: `[HTTPS]`. */
+  /** A second line in the code face: `HTTPS`, drawn `[HTTPS]`. */
   how?: string
   /** The word that says a line is an exception: colour alone never does. */
   exception?: string
@@ -76,6 +83,8 @@ export type LineLabelProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
   number?: number
   picked?: boolean
   dimmed?: boolean
+  /** It says how to add words rather than any words. */
+  placeholder?: boolean
   /** Anything else it holds, such as a route handle. */
   extra?: ReactNode
 }
@@ -84,7 +93,7 @@ export type LineLabelProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
  * A label holds its size on screen. A canvas places it, and centres it through the
  * wrapper it places, because the scale here is about the label's own middle.
  */
-export function LineLabel({ words, how, exception, number, picked, dimmed, extra, className, title, ...rest }: LineLabelProps) {
+export function LineLabel({ words, how, exception, number, picked, dimmed, placeholder, extra, className, title, ...rest }: LineLabelProps) {
   const { t } = useStrings()
   const said = labelWords(words)
   return (
@@ -95,11 +104,12 @@ export function LineLabel({ words, how, exception, number, picked, dimmed, extra
       data-picked={picked || undefined}
       data-dimmed={dimmed || undefined}
       data-numbered={number !== undefined || undefined}
+      data-placeholder={placeholder || undefined}
     >
       <div className="kit-linelabel__words">
         {exception && <span className="kit-linelabel__exception">{exception} </span>}
         {said}
-        {how && <div className="kit-linelabel__how">{how}</div>}
+        {how && <div className="kit-linelabel__how">{howWords(how)}</div>}
       </div>
       {number !== undefined && <span className="kit-linelabel__number" aria-label={t('kit.line.number', { number })}>{number}</span>}
       {extra}

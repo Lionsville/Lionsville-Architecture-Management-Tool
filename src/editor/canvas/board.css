@@ -45,6 +45,90 @@
 /* A band's low tile has room for one line of its name far off; the rest is on hover. */
 [data-distance='far'] .lv-tile--low .kit-card__name { -webkit-line-clamp: 1; }
 
+/* A container diagram: boxes say what they are at every distance, and the context recedes. */
+.lv-board[data-kind='container'] .lv-tile { text-align: center; }
+.lv-board[data-kind='container'] .lv-tile:not([data-context]) { background: var(--c4-container-fill); border-color: var(--c4-container-line); }
+.lv-board[data-kind='container'] .lv-tile[data-context] { background: var(--c4-context-fill); }
+.lv-board[data-kind='container'] .lv-tile .kit-card__head { justify-content: center; }
+.lv-board[data-kind='container'] .lv-tile .kit-card__name { padding-right: 0; -webkit-line-clamp: 2; }
+.lv-board[data-kind='container'][data-distance='far'] .lv-tile .kit-card__sub { display: -webkit-box; }
+.lv-board[data-kind='container'][data-labels='numbers'] .lv-tile__description { display: none; }
+/* The cylinder: a lid on the box and a curve at its foot, in the box's own edge. */
+.lv-tile[data-store] {
+  --lv-lid: calc(14px / var(--canvas-zoom, 1));
+  padding-top: calc(var(--lv-lid) + 4px / var(--canvas-zoom, 1));
+  border-radius: 50% / var(--lv-lid) !important;
+}
+.lv-tile[data-store]::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1px / var(--canvas-zoom, 1)) calc(-1px / var(--canvas-zoom, 1)) auto;
+  height: calc(var(--lv-lid) * 2);
+  border: calc(1px / var(--canvas-zoom, 1)) solid var(--c4-container-line);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.lv-tile__type { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-tile__under { color: var(--ink-2); font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); line-height: var(--lh-tight); white-space: nowrap; }
+
+.lv-boundary { color: var(--ink); }
+.lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
+.lv-boundary .kit-zone__aside { display: inline-flex; align-items: center; gap: 4px; }
+.lv-boundary__empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  pointer-events: auto;
+  cursor: default;
+  zoom: calc(1 / var(--canvas-zoom, 1));
+  transform: translate(-50%, -50%);
+}
+
+/* A sample in a key: the thing's own edge and ground. */
+.lv-key-box { flex: none; box-sizing: border-box; width: 22px; height: 14px; border: 1px solid var(--c4-container-line); border-radius: var(--r-1); background: var(--c4-container-fill); }
+.lv-key-box[data-shape='context'] { border-color: var(--card-edge); background: var(--c4-context-fill); }
+.lv-key-box[data-shape='boundary'] { border: 1px dashed var(--zone-edge); background: transparent; }
+.lv-key-box[data-shape='deployment'] { border: 1px dashed var(--zone-edge); background: var(--zone-fill); }
+.lv-key-box[data-shape='person'] { border-color: var(--card-edge); border-radius: 7px; background: var(--c4-context-fill); }
+.lv-key-box[data-shape='store'] { border-radius: 50% / 28%; }
+.lv-key-line { flex: none; color: var(--line-ink); }
+.lv-key-line line { stroke: currentColor; stroke-width: 1.25; }
+.lv-key-line path { fill: currentColor; }
+
+.lv-lines { display: grid; gap: var(--s-2); }
+.lv-lines__said { display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); white-space: normal; }
+.lv-unlanded { display: grid; gap: var(--s-1); padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-2); }
+.lv-unlanded__title { color: var(--ink); font-weight: var(--fw-strong); }
+.lv-unlanded__how { color: var(--ink-2); font-size: var(--t-sm); }
+
+.lv-levelbar { display: flex; align-items: center; gap: var(--s-2); min-width: 0; padding-inline: var(--s-2); }
+.lv-levelbar__title, .lv-levelbar__title button { color: var(--ink); font-size: var(--t-md); font-weight: var(--fw-strong); white-space: nowrap; }
+
+/* A row per category, under the containers. */
+.lv-layer { position: absolute; z-index: -5; box-sizing: border-box; border: calc(1px / var(--canvas-zoom, 1)) solid var(--line); border-radius: var(--r-2); background: var(--surface); pointer-events: none; }
+.lv-layer__name { position: absolute; top: 50%; left: calc(var(--s-2) / var(--canvas-zoom, 1)); color: var(--ink-2); font-size: calc(var(--t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); transform: translateY(-50%); }
+
+.lv-crossing { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-sm); }
+
+/* Where it runs: derived and never pressed, around the containers and under them. */
+.lv-deployment {
+  position: absolute;
+  border: calc(1px / var(--canvas-zoom, 1)) dashed var(--zone-edge);
+  border-radius: var(--r-3);
+  background: var(--zone-fill);
+  pointer-events: none;
+}
+.lv-deployment__name {
+  position: absolute;
+  bottom: calc(2px / var(--canvas-zoom, 1));
+  left: calc(var(--s-2) / var(--canvas-zoom, 1));
+  color: var(--ink-3);
+  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+}
+
 /* A colour question, on a card: its wash, and the band's number. */
 .lv-tile[data-lens] { background: var(--lv-lens-wash); }
 .lv-lens-tag {
@@ -146,7 +230,8 @@
 
 /* Lines hold their width and head on screen; the head scales with the stroke's width. */
 .lv-edge-chip { transform-origin: center; }
-[data-distance='far'] .lv-edge-chip:not([data-up]) { display: none; }
+.lv-board:not([data-kind='container'])[data-distance='far'] .lv-edge-chip:not([data-up]) { display: none; }
+.lv-edge-chip { z-index: 9; }
 
 /* The credit, on the board's ground and out of the way. */
 .lv-board .react-flow__attribution { background: transparent; color: var(--ink-3); }

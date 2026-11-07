@@ -87,7 +87,7 @@ export type Budget = {
 
 // The file ceiling 3.30 MB: the drawing's words and its guard, first-download, 3.295 measured; before them 3.27 MB: the first-run page, Your work and the example's band, first-download, 3.266 measured; before them 3.24 MB: the plan and roadmap words, a home's tree, rows and first-run pages, then Guidance's words and frame, are first-download; measured 3.221; then the observation chain's words, 10 kB.
 // 10.72 MB: the drawing rebuilt on the kit, 10.717 measured; 10.67 MB: settings as a page and the first run, 10.664 measured; 10.64 MB: the organisation chart as a tree, 10.619 measured; 10.59 MB: the sheet's Overview, lenses, find bar and Coverage's matrix, all in parts of their own, 10.569 measured; 10.50 MB: the one panel and the record page's 0.04 MB, the observation chain's 0.06 MB, the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_300_000, total: 10_720_000 }
+export const WEB_BUDGET: Budget = { file: 3_330_000, total: 10_770_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

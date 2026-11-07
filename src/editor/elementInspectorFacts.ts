@@ -99,9 +99,9 @@ export const ICON_SIZE_OPTIONS: { value: NodeIconSize | ''; labelKey: StringKey 
 export function shapeOptionsFor(
   kind: DesignElement['kind'],
 ): { value: NodeShapeVariant | ''; labelKey: StringKey }[] {
-  return kind === 'actor'
-    ? [...SHAPE_VARIANT_OPTIONS, { value: 'figure' as const, labelKey: 'option.stickman' as const }]
-    : SHAPE_VARIANT_OPTIONS;
+  if (kind === 'actor') return [...SHAPE_VARIANT_OPTIONS, { value: 'figure' as const, labelKey: 'option.stickman' as const }];
+  if (kind === 'component') return [...SHAPE_VARIANT_OPTIONS, { value: 'store' as const, labelKey: 'option.store' as const }];
+  return SHAPE_VARIANT_OPTIONS;
 }
 
 /** An application or a container: the two kinds that run somewhere and use something. */

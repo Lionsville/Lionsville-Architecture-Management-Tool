@@ -162,9 +162,10 @@ export type ElementId = string;
 /**
  * Root-box shape override for a node; absent = each kind's current shape.
  * `figure` is the actor stickman (U7c/D11) — actor-only; other kinds ignore it
- * and fall back to their default shape.
+ * and fall back to their default shape. `store` is a container that keeps data, drawn
+ * as the cylinder a reader looks for: container-only, the same rule the other way.
  */
-export type NodeShapeVariant = 'rounded' | 'sharp' | 'subtle' | 'figure';
+export type NodeShapeVariant = 'rounded' | 'sharp' | 'subtle' | 'figure' | 'store';
 
 /**
  * Where a unit's own reporting line lands (ADR-0039 §3), and a holder's own

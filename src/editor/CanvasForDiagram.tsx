@@ -60,6 +60,7 @@ export interface CanvasForDiagramProps {
   onTidy?(): void;
   onRouteConnections?(): void;
   onRouteConnectionsAll?(): void;
+  onRouteLines?(lines: readonly string[]): void;
   onResetRoute?(connectionId: string): void;
   onSetRouteSides?(connectionId: string, sides: AttachSidesPatch): void;
   layoutBusy: boolean;
@@ -85,7 +86,7 @@ export interface CanvasForDiagramProps {
  * canvas, handed the same props.
  */
 export function CanvasForDiagram(props: CanvasForDiagramProps) {
-  const { diagram, state, onTidyGroup, groupTidyOptions, onGroupTidyOptionsChange, showDeployment, platformTree, ...rest } = props;
+  const { diagram, state, onTidyGroup, groupTidyOptions, onGroupTidyOptionsChange, showDeployment, platformTree, onRouteLines, ...rest } = props;
   const shared = {
     ...rest,
     model: state.model,
@@ -102,6 +103,6 @@ export function CanvasForDiagram(props: CanvasForDiagramProps) {
       onGroupTidyOptionsChange={onGroupTidyOptionsChange}
     />
   ) : (
-    <ContainerCanvas {...shared} showDeployment={showDeployment} platformTree={platformTree} />
+    <ContainerCanvas {...shared} showDeployment={showDeployment} platformTree={platformTree} {...(onRouteLines ? { onRouteLines } : {})} />
   );
 }

@@ -156,10 +156,10 @@ describe('what a reader’s choice on a board writes', () => {
     const view = renderHook(() => useBoardView({
       model: m, diagram: m.diagrams[0], viewing, platformTree: undefined, theme: createTheme(), actions: a,
     }));
-    expect(view.result.current.showDeployment).toBe(true);
-    act(() => view.result.current.toggleDeployment());
     expect(view.result.current.showDeployment).toBe(false);
-    expect(a.setShowDeployment).toHaveBeenCalledWith(false);
+    act(() => view.result.current.toggleDeployment());
+    expect(view.result.current.showDeployment).toBe(true);
+    expect(a.setShowDeployment).toHaveBeenCalledWith(true);
   });
 
   it('colours by a lens that is the reader\'s, and writes it only when it is kept (ADR-0027, amended)', () => {

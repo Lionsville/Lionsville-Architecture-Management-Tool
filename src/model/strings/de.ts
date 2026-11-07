@@ -18,7 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kind.function': 'Funktion',
   'kind.process': 'Prozess',
   'kind.application': 'Anwendung',
-  'kind.component': 'Komponente',
+  'kind.component': 'Container',
   'kind.platform': 'Plattform',
   'kind.platformService': 'Plattformdienst',
   'kind.buildingBlock': 'Baustein',
@@ -263,9 +263,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'kindChange.notOnThisDiagram': 'Dieses Element liegt nicht auf diesem Diagramm',
   'kindChange.hasContainerDiagram':
     'Diese Anwendung hat ein Container-Diagramm — löschen Sie zuerst diese Ansicht',
-  'kindChange.hasParent': 'Diese Komponente gehört zu einer Anwendung — lösen Sie sie zuerst',
+  'kindChange.hasParent': 'Dieser Container gehört zu einer Anwendung — lösen Sie ihn zuerst',
   'kindChange.hasComponents':
-    'Diese Anwendung hat Komponenten — verschieben oder löschen Sie diese zuerst',
+    'Diese Anwendung hat Container — verschieben oder löschen Sie diese zuerst',
   'kindChange.notAllowedHere': 'Dieses Diagramm nimmt diese Art nicht auf',
 
   // --- what the one writer refuses (ADR-0002) ------------------------------

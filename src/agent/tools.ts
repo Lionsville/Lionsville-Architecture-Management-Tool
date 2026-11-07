@@ -3134,7 +3134,7 @@ const SPECS = [
           type: 'boolean',
           description: 'A container diagram: whether the deployment boxes are drawn — the platforms its containers '
             + 'are hostedOn, as dashed groups around them, nested the way the platforms nest (ADR-0013). '
-            + 'Absent or null: they are.',
+            + 'Absent or null: they are not.',
         },
         xml: {
           type: 'string',

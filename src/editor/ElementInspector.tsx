@@ -12,6 +12,9 @@
  * every other kind, keeps the element's order with the section after it.
  */
 import { useState } from 'react';
+import { formatDay } from '../i18n/dates';
+import { Button } from '../widgets/kit/Button';
+import { containersWord } from './nodes/BoardTile';
 import type { ReactNode } from 'react';
 import { commentCount } from '../comments/thread';
 import { useComments } from '../comments/ui/CommentsContext';
@@ -102,7 +105,7 @@ export function ElementInspector(props: ElementInspectorProps) {
         renameRequest: rename,
       })}
       facts={elementFacts(props, t)}
-      status={owned && <Elsewhere owned={owned} t={t} />}
+      status={<>{owned && <Elsewhere owned={owned} t={t} />}<OpenContainerDiagram {...props} /></>}
       actions={(
         <>
           {open && <PanelLink data-testid="open-details" onPress={() => open(element.id)}>{t('record.open')} ›</PanelLink>}
@@ -143,3 +146,21 @@ function Elsewhere({ owned, t }: { owned: NonNullable<ElementInspectorProps['own
   );
 }
 
+
+/** An application with a diagram says what is under it, and offers the way down first. */
+function OpenContainerDiagram({ element, model, onOpenView, dayShown }: Pick<ElementInspectorProps, 'element' | 'model' | 'onOpenView' | 'dayShown'>) {
+  const { t, language } = useStrings();
+  if (element.kind !== 'application' || !onOpenView) return null;
+  const under = model.diagrams.find((one) => one.kind === 'container' && one.applicationElementId === element.id);
+  if (!under) return null;
+  const count = model.elements.filter((one) => one.kind === 'component' && one.parentId === element.id).length;
+  return (
+    <div className="inspector-open-under">
+      <Button variant="primary" size="small" data-testid="open-container" data-guide="inspector.openContainer" onClick={() => onOpenView(under.id)}>{t('menu.openContainer')}</Button>
+      <span>
+        {containersWord(count, t).replace(' ›', '')}
+        {dayShown ? ` · ${t('inspector.opensOn', { day: formatDay(dayShown, language) })}` : ''}
+      </span>
+    </div>
+  );
+}

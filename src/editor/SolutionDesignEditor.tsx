@@ -18,7 +18,7 @@ import { useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
 import { useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
-import { isLookingAway, useCarriedDay, useShownDays } from './useShownDays';
+import { isLookingAway, useCarriedDay, useSelectionPerLevel, useShownDays } from './useShownDays';
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useLayoutActions } from './useLayoutActions';
@@ -34,6 +34,8 @@ import { InspectorDock } from './EditorInspectorDock';
 import { ArrangeSeatProvider } from './inspector/arrangeSeat';
 import type { ArrangeActs } from './inspector/arrangeSeat';
 import type { EditorParts } from './editorParts';
+import { findContainerDiagram } from '../model/containerDiagram';
+import { levelUpOf } from './EditorToolbar';
 
 /**
  * The @lionsville/solution-design editor: toolbar (diagram tabs/breadcrumb,
@@ -155,6 +157,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const viewing = props.document.viewing ?? ownDays;
   const looking = isLookingAway(activeDiagram, viewing.days);
   const cameFrom = useCarriedDay(activeDiagram, viewing);
+  useSelectionPerLevel(activeDiagram?.id, cameFrom, state.selection, state.setSelection);
   const writable = !(props.editing.readOnly ?? false);
   // A look is read-only (ADR-0027, amended): everything that draws from `readOnly`
   // puts its edits away, and what takes the day it is looking at reads `writable`.
@@ -179,7 +182,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
       // nobody has laid out carries the pass's canvas. Its own fields are the
       // stored board's, so the title block reads the same.
       diagram: layout.shown, model: state.model, lookingAt: board.lookingAt, host: props.exportTitleBlock,
-      showLifecycle: view.showLifecycle, t, language,
+      showLifecycle: view.showLifecycle, showStatus: view.containerStatus, t, language,
     },
   });
   const capture = useBoardCapture(wrapperRef, activeDiagram, theme, props.logos?.onExportImagesMissing);
@@ -222,6 +225,21 @@ function useEditorSession() {
  * ref are attached to the same node, so the listener (re)binds whenever the
  * wrapper mounts — it only renders once the active diagram resolves.
  */
+/** ⌘↓: what the selected application holds. Enter stays with its documentation, ⇧Enter with the selection. */
+function levelIn({ state, props }: EditorParts): void {
+  const element = state.selectedElement;
+  if (element?.kind !== 'application') return;
+  const under = findContainerDiagram(state.model, element.id);
+  if (under) props.document.onActiveDiagramChange(under.id);
+}
+
+/** ⌘↑: back where this diagram was opened from. */
+function levelOut(parts: EditorParts, diagram: DesignDiagram | undefined): void {
+  if (diagram?.kind !== 'container') return;
+  const up = levelUpOf(parts.state.model, diagram, parts.cameFrom);
+  if (up) parts.props.document.onActiveDiagramChange(up.id);
+}
+
 function useKeyboard(
   parts: EditorParts,
   activeDiagram: DesignDiagram | undefined,
@@ -248,6 +266,8 @@ function useKeyboard(
     onRequestDeleteSelection: deletes.requestDeleteSelection,
     onOpenContextMenu: () => requests.requestMenu('open'),
     onRequestRename: () => requests.requestMenu('rename'),
+    onLevelIn: () => levelIn(parts),
+    onLevelOut: () => levelOut(parts, activeDiagram),
     onOpenSearch: dialogs.openSearch,
     onOpenDocumentation: parts.docs.open,
     hostOwnsUndo: props.editing.history.keysOwnedByHost,

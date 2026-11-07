@@ -131,6 +131,9 @@ export const CANVAS_SHORTCUTS: ShortcutDef[] = [
   { id: 'redo', keys: ['Mod', 'Shift', 'z'], labelKey: 'shortcut.redo', group: 'edit', when: notReadOnly },
   // Ctrl+Y is the Windows/Linux redo; a harmless second binding to the same handler.
   { id: 'redo-alt', keys: ['Mod', 'y'], labelKey: 'shortcut.redo', group: 'edit', when: notReadOnly },
+  // A level down and back: Enter is the documentation's, and Shift+Enter the selection's.
+  { id: 'level-in', keys: ['Mod', 'ArrowDown'], labelKey: 'shortcut.level-in', group: 'selection' },
+  { id: 'level-out', keys: ['Mod', 'ArrowUp'], labelKey: 'shortcut.level-out', group: 'selection' },
   // view
   { id: 'zoom-in', keys: ['='], labelKey: 'shortcut.zoom-in', group: 'view' },
   { id: 'zoom-out', keys: ['-'], labelKey: 'shortcut.zoom-out', group: 'view' },

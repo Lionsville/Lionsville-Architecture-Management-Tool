@@ -58,6 +58,9 @@ function ArrangeBar({ props }: { props: EditorToolbarProps }) {
       {(close) => (
         <>
           <ViewBarAct data-testid="arrange-tidy" label={t('bar.tidy')} says={t('bar.tidySays')} onClick={() => { close(); props.onTidy(); }} />
+          {props.onLayersByCategory && (
+            <ViewBarAct data-testid="arrange-layers" label={t('bar.layers')} says={t('bar.layersSays')} onClick={() => { close(); props.onLayersByCategory?.(); }} />
+          )}
           <ViewBarAct data-testid="arrange-route" label={t('bar.route')} says={t('bar.routeSays')} onClick={() => { close(); props.onRouteEdges(); }} />
           {props.onRouteEdgesAll && (
             <ViewBarAct label={t('bar.routeAll')} says={t('bar.routeAllSays')} onClick={() => { close(); props.onRouteEdgesAll?.(); }} />
@@ -103,8 +106,26 @@ function ArrangeBar({ props }: { props: EditorToolbarProps }) {
   );
 }
 
+/** What on a container diagram changes what a reader believes, in words on the bar and each saying its state. */
+function ContainerWords({ props }: { props: EditorToolbarProps }) {
+  const { t } = useStrings();
+  return (
+    <>
+      <ViewBarButton on={props.showEdgeLabels} aria-pressed={props.showEdgeLabels} onClick={props.onToggleEdgeLabels} data-guide="board.labels" data-testid="container-labels">
+        {t(props.showEdgeLabels ? 'bar.labelsOn' : 'bar.labelsOff')}
+      </ViewBarButton>
+      {props.onToggleDeployment && (
+        <ViewBarButton on={props.showDeployment === true} aria-pressed={props.showDeployment === true} onClick={props.onToggleDeployment} data-guide="board.deployment" data-testid="container-deployment">
+          {t('toolbar.deployment')}
+        </ViewBarButton>
+      )}
+    </>
+  );
+}
+
 function ShowBar({ props, show }: { props: EditorToolbarProps; show: BoardBarShow | undefined }) {
   const { t } = useStrings();
+  const container = props.activeDiagram.kind === 'container';
   return (
     <ViewBarPanel label={t('bar.show')} data-guide="board.show">
       {() => (
@@ -113,19 +134,20 @@ function ShowBar({ props, show }: { props: EditorToolbarProps; show: BoardBarSho
           {show && <ViewBarCheck label={t('bar.statusDots')} checked={show.status} onChange={show.onStatus} />}
           <ViewBarCheck label={t('bar.lifecycleWord')} checked={props.showLifecycle} onChange={props.onToggleLifecycle} />
           {show && <ViewBarCheck label={t('bar.descriptions')} checked={show.descriptions} onChange={show.onDescriptions} />}
-          <ViewBarHeading>{t('bar.lineLabels')}</ViewBarHeading>
-          <Segmented
-            label={t('bar.lineLabels')}
-            value={props.showEdgeLabels ? 'always' : 'hover'}
-            onChange={(value) => { if ((value === 'always') !== props.showEdgeLabels) props.onToggleEdgeLabels(); }}
-            options={[{ value: 'hover', label: t('bar.onHover') }, { value: 'always', label: t('bar.always') }]}
-          />
+          {!container && (
+            <>
+              <ViewBarHeading>{t('bar.lineLabels')}</ViewBarHeading>
+              <Segmented
+                label={t('bar.lineLabels')}
+                value={props.showEdgeLabels ? 'always' : 'hover'}
+                onChange={(value) => { if ((value === 'always') !== props.showEdgeLabels) props.onToggleEdgeLabels(); }}
+                options={[{ value: 'hover', label: t('bar.onHover') }, { value: 'always', label: t('bar.always') }]}
+              />
+            </>
+          )}
           <ViewBarHeading>{t('bar.onCanvas')}</ViewBarHeading>
           {show && <ViewBarCheck label={t('bar.key')} checked={show.showKey} onChange={show.onKey} />}
           <ViewBarCheck label={t('bar.map')} checked={props.showMinimap} onChange={props.onToggleMinimap} />
-          {props.onToggleDeployment && (
-            <ViewBarCheck label={t('toolbar.deployment')} checked={props.showDeployment ?? true} onChange={props.onToggleDeployment} />
-          )}
         </>
       )}
     </ViewBarPanel>
@@ -210,7 +232,14 @@ export function BoardBar({ props, framed, pageBar, day, add, show }: {
         ),
       } : {})}
       {...(editing ? { arrange: <ArrangeBar props={props} /> } : {})}
-      {...(onCanvas ? { show: <ShowBar props={props} show={show} /> } : {})}
+      {...(onCanvas ? {
+        show: (
+          <>
+            <ShowBar props={props} show={show} />
+            {props.activeDiagram.kind === 'container' && <ContainerWords props={props} />}
+          </>
+        ),
+      } : {})}
       {...(onCanvas && props.onColourByChange ? { colour: <ColourBar props={props} /> } : {})}
       day={day}
       find={<ViewBarButton onClick={props.onOpenSearch} data-testid="board-find">{t('bar.find')}</ViewBarButton>}

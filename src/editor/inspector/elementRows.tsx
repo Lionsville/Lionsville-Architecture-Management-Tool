@@ -398,7 +398,7 @@ function recordRows(ctx: Ctx): RowSpec[] {
     ));
   };
   if (showVendor(element.kind)) rows.push(text('vendor'));
-  if (showTechnology(element.kind)) rows.push(text('technology'));
+  if (showTechnology(element.kind) && element.kind !== 'component') rows.push(text('technology'));
   if (showOutside(element.kind)) {
     const label = t('field.outside');
     rows.push(whenFilled('outside', label, element.outside === true, (opening) => (
@@ -599,6 +599,19 @@ function DescriptionBlock({ ctx }: { ctx: Ctx }) {
   );
 }
 
+/** What a container is built with: printed on the box, so it is asked for where the box is edited. */
+function containerTechnologyRow(ctx: Ctx): RowSpec {
+  const { field: { element, owned, update }, t } = ctx;
+  const label = t('field.technology');
+  return always('containerTechnology', label, (opening) => (
+    <PropertyRow
+      label={label} data-testid="element-technology" help={t('field.containerTechnologyHelp')}
+      value={element.technology ?? ''} empty={empty(ctx)} readOnly={owned('technology')} edit="text" startOpen={opening}
+      onCommit={(value) => update({ technology: value || undefined })}
+    />
+  ));
+}
+
 // --- the surfaces ------------------------------------------------------------
 
 function propertiesRows(ctx: Ctx): RowSpec[] {
@@ -606,7 +619,8 @@ function propertiesRows(ctx: Ctx): RowSpec[] {
   return [
     ...technologyRows(ctx),
     lifecycleRow(ctx),
-    ...(element.kind === 'application' ? [categoryRow(ctx)] : []),
+    ...(element.kind === 'component' ? [containerTechnologyRow(ctx)] : []),
+    ...(element.kind === 'application' || element.kind === 'component' ? [categoryRow(ctx)] : []),
   ];
 }
 

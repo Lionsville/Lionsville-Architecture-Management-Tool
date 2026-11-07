@@ -36,6 +36,8 @@ export interface ExportOptions {
   titleBlock: boolean;
   /** The key under the strip: the aspect columns, the badge and lifecycle colours. */
   legend: boolean;
+  /** Every line in words under the picture, where a label had to cut short. Only a container diagram offers it. */
+  lineList?: boolean;
 }
 
 export interface ExportDialogProps {
@@ -59,6 +61,7 @@ export interface ExportDialogProps {
    * field falls back on said under it. Absent where the view may not be changed.
    */
   titleFields?: ExportTitleFields;
+  offersLineList?: boolean;
 }
 
 export interface ExportTitleFields {
@@ -115,6 +118,9 @@ export function ExportDialog(props: ExportDialogProps) {
           )}
           {/* The key lives on the strip: without one there is nowhere to draw it. */}
           <SettingSwitch label={t('export.legend')} hint={t('export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
+          {props.offersLineList && (
+            <SettingSwitch label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={exporting || !options.titleBlock} onChange={(lineList) => onChange({ ...options, lineList })} />
+          )}
           <p className="export-dialog__size">{t('export.size', props.size)}</p>
           {large && <p className="export-dialog__large" role="status">{t('export.largeBody')}</p>}
         </div>

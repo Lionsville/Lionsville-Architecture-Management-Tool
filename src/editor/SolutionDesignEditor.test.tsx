@@ -222,14 +222,13 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.getByText('Read-only')).toBeDefined();
   });
 
-  it('shows the container breadcrumb and the C4 corner when a container diagram is active', () => {
+  it('says the level in the bar when a container diagram is active, and says container throughout', () => {
     renderEditor({ activeDiagramId: 'd2' });
-    // The level is said once, in the corner, not again as a chip after the name.
-    expect(screen.queryByText('Container view')).toBeNull();
-    expect(screen.getByTestId('lv-c4-panel').textContent).toContain('[Container] Webshop');
-    expect(screen.getByText('Webshop')).toBeDefined();
+    expect(screen.queryByTestId('lv-c4-panel')).toBeNull();
+    expect(screen.getByTestId('this-view').textContent).toBe('Container diagram for Webshop');
+    expect(screen.getByTestId('level-up').textContent).toContain('‹');
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    expect(screen.getByRole('menuitem', { name: 'Component' })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: 'Container' })).toBeDefined();
   });
 });
 
@@ -373,11 +372,10 @@ describe('SolutionDesignEditor — edge labels', () => {
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
 
     const chip = await screen.findByTestId('edge-label-c1');
-    const spans = chip.querySelectorAll('span');
-    expect(spans[0].textContent).toBe('Sends orders\nand invoices');
-    expect(spans[0].style.whiteSpace).toBe('pre-line');
-    // The technology line always sits BELOW the description.
-    expect(spans[1].textContent).toBe('EDI');
+    const words = chip.querySelector('.kit-linelabel__words');
+    expect(words?.firstChild?.textContent).toBe('Sends orders\nand invoices');
+    // The technology line always sits BELOW the description, in brackets.
+    expect(chip.querySelector('.kit-linelabel__how')?.textContent).toBe('[EDI]');
   });
 
   it('double-click opens a multiline editor; blur commits the new label', async () => {
@@ -713,7 +711,7 @@ describe('SolutionDesignEditor — line labels hidden', () => {
       return { x: (client.x - tx) / k, y: (client.y - ty) / k, k };
     };
     const chipAt = () => {
-      const t = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)\s*scale\([\d.]+\)\s*$/.exec(
+      const t = /translate\(-50%, -50%\) translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(
         screen.getByTestId('edge-label-c1').style.transform,
       );
       if (!t) throw new Error('chip has no position');

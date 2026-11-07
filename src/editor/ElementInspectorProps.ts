@@ -129,6 +129,8 @@ export interface ElementInspectorProps {
   /** The plans over the landscape, for those that touch it. Absent = no such row. */
   plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
   /** The view's own settings, where its columns are said. Absent = no way there from here. */
+  /** The day the board beside it shows, which goes along into what is under it. */
+  dayShown?: string;
   onOpenViewSettings?(): void;
   /** Open a view of this scope, such as its container view. Absent = the name reads and goes nowhere. */
   onOpenView?(diagramId: string): void;

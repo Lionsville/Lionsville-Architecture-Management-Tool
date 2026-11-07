@@ -31,7 +31,7 @@ describe('c4PanelFor', () => {
 
   it('names the level, the application and where it belongs', () => {
     const panel = c4PanelFor(model, container(), t, 'en', today)!;
-    expect(panel.title).toBe('[Container] Warehouse Management');
+    expect(panel.title).toBe('Container diagram for Warehouse Management');
     expect(panel.scope).toBe('Application landscape · Warehouse Management [Application]');
   });
 
@@ -56,6 +56,6 @@ describe('c4PanelFor', () => {
 
   it('survives an application that is no longer in the model', () => {
     const orphan = c4PanelFor({ ...model, elements: [] }, container(), t, 'en', today)!;
-    expect(orphan.title).toBe('[Container] WMS containers');
+    expect(orphan.title).toBe('Container diagram for WMS containers');
   });
 });

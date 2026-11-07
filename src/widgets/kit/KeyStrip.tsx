@@ -49,9 +49,11 @@ export function keyValues(values: readonly KeyValue[], otherLabel: string): KeyV
   ]
 }
 
-export function KeyStrip({ title, values, pressed, onPress, onKeep, onClose, note, 'data-guide': guide, 'data-testid': testId }: {
+export function KeyStrip({ title, values, all, pressed, onPress, onKeep, onClose, note, 'data-guide': guide, 'data-testid': testId }: {
   /** What the key is of, where it is not plain from the values. */
   title?: string
+  /** A notation: every value, in the order given, since none of them is *Other*. */
+  all?: boolean
   values: readonly KeyValue[]
   pressed?: string
   onPress?: (id: string | undefined) => void
@@ -65,7 +67,7 @@ export function KeyStrip({ title, values, pressed, onPress, onKeep, onClose, not
   'data-testid'?: string
 }) {
   const { t } = useStrings()
-  const shown = keyValues(values, t('kit.key.other'))
+  const shown = all ? values : keyValues(values, t('kit.key.other'))
   return (
     <div className="kit-key" role="group" aria-label={title ?? t('kit.key.label')} data-guide={guide} data-testid={testId}>
       <div className="kit-key__values">

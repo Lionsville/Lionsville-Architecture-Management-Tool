@@ -5,12 +5,13 @@ import type { ReactNode } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import type { Translate } from '../../i18n';
 import { useStrings } from '../../i18n/LanguageContext';
-import type { Lifecycle } from '../../model/types';
+import { KIND_LABEL_KEYS } from '../../model/kinds';
+import type { DesignElement, Lifecycle } from '../../model/types';
 import { Card } from '../../widgets/kit/Card';
 import { hasDocumentation, shortDescription } from '../../documentation/documentation';
 import { shapeRadiusFor, type NodeShapeKind } from '../theme/elementStyle';
 import { AspectBadgeRow } from './AspectBadgeRow';
-import { BlockGlyph, DocGlyph, DrillGlyph, WarningGlyph } from './glyphs';
+import { BlockGlyph, DocGlyph, WarningGlyph } from './glyphs';
 import { lifecycleWord } from './LifecycleBadge';
 import { iconSlotSize, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { shownDescription, type ElementNodeProps } from './nodeData';
@@ -47,6 +48,7 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
   const retired = data.showLifecycle && phase === 'retired';
   const corner = cornerMarks(overlay ? data : { ...data, overlay: undefined }, t);
   const marks = tileMarks(data, phase, statuses === true, t);
+  const type = sub ?? (data.c4Context ? <TileType words={contextType(element.kind, t)} /> : undefined);
   const lens = overlay
     ? { '--lv-lens-wash': overlay.tint, '--lv-lens-ink': overlay.ink, '--lv-lens-on': overlay.on } as React.CSSProperties
     : undefined;
@@ -71,19 +73,30 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
         planned={phase === 'planned' && data.showLifecycle}
         {...(overlay ? { rail: overlay.ink } : element.accentColor ? { rail: element.accentColor } : {})}
         lead={tileLead(element, figure, large)}
-        sub={sub || description ? (
+        sub={type || description ? (
           <>
-            {sub}
-            {description && <span className="lv-tile__description">{sub ? ' ' : ''}{description}</span>}
+            {type}
+            {description && <span className="lv-tile__description">{type ? ' ' : ''}{description}</span>}
           </>
         ) : undefined}
         about={about || note ? <>{note?.from}{note && about ? ' · ' : ''}{about}</> : undefined}
         marks={marks}
-        hoverWord={data.hasContainerDiagram ? t('node.openContainer') : undefined}
+        data-context={data.c4Context || undefined}
+        data-store={element.shapeVariant === 'store' && shape === 'component' ? true : undefined}
       />
       {corner.length > 0 && <span className="lv-tile__corner" style={lens}>{corner}</span>}
     </NodeShell>
   );
+}
+
+/** What a box on a container diagram is, in brackets and on one line: its nature never rests on its colour alone. */
+export function TileType({ words }: { words: string }) {
+  return <span className="lv-tile__type" title={words}>{`[${words}]`}</span>;
+}
+
+/** C4 says *person* where the rest of the product says actor; everything else goes by the name of its kind. */
+function contextType(kind: DesignElement['kind'], t: Translate): string {
+  return kind === 'actor' ? t('c4.person') : t(KIND_LABEL_KEYS[kind]);
 }
 
 /** A dashed edge for what is outside; the bands' short boxes have room for one line far off. */
@@ -96,11 +109,13 @@ function tileClass(shape: NodeShapeKind, outside: boolean): string {
 function tileMarks(data: ElementNodeProps['data'], phase: Lifecycle, statuses: boolean, t: Translate): ReactNode {
   const row = statuses && data.aspectConfig.length > 0;
   const life = data.showLifecycle ? lifecycleWord(phase, t) : undefined;
-  if (!row && !life) return undefined;
+  const under = data.hasContainerDiagram ? <span className="lv-tile__under">{containersWord(data.containerCount ?? 0, t)}</span> : undefined;
+  if (!row && !life && !under) return undefined;
   return (
     <>
       {row && <AspectBadgeRow aspects={data.element.aspects} config={data.aspectConfig} />}
       {life}
+      {under}
     </>
   );
 }
@@ -135,11 +150,14 @@ function cornerMarks(data: ElementNodeProps['data'], t: Translate): ReactNode[] 
       </span>,
     );
   }
-  if (data.hasContainerDiagram) {
-    marks.push(<Tooltip key="drill" title={t('node.hasContainer')}><span role="img"><DrillGlyph /></span></Tooltip>);
-  }
   if (hasDocumentation(shownDescription(data))) {
     marks.push(<Tooltip key="doc" title={t('node.hasDocumentation')}><span role="img" data-testid="doc-glyph"><DocGlyph /></span></Tooltip>);
   }
   return marks;
+}
+
+/** What is under an application with a diagram, in words on the card. */
+export function containersWord(count: number, t: Translate): string {
+  if (count === 0) return t('node.containersNone');
+  return count === 1 ? t('node.containersOne') : t('node.containersMany', { count });
 }

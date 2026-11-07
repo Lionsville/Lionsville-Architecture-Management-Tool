@@ -11,7 +11,8 @@ import type { Theme } from '@mui/material/styles';
 import type { DesignDiagram, DesignModel } from '../model/types';
 import type { Language, Translate } from '../i18n';
 import { badgeLegend } from '../model/aspects';
-import type { ExportLegend, ExportTitleBlock } from './props';
+import type { ExportLegend, ExportSwatch, ExportTitleBlock } from './props';
+import { containerFacts, diagramLines } from './containerLines';
 import type { ExportOptions } from './export/ExportDialog';
 import { c4PanelFor } from './export/c4Panel';
 import { getNodeTokens } from './theme/tokens';
@@ -26,6 +27,8 @@ export interface TitleBlockContext {
   host: { client: string; author?: string } | undefined;
   theme: Theme;
   showLifecycle: boolean;
+  /** Whether the boxes carry their status marks: on a container diagram, the key explains them only then. */
+  showStatus?: boolean;
   t: Translate;
   language: Language;
 }
@@ -60,9 +63,42 @@ export function titleBlockFor(options: ExportOptions, context: TitleBlockContext
     author: diagram.author ?? host?.author,
     // Absent = the day of export, which is the exporter's own default.
     date: diagram.documentDate || undefined,
-    legend: options.legend ? exportLegendFor(diagram, context.theme, context.showLifecycle, t) : undefined,
+    legend: legendFor(options, context, diagram),
     // A container diagram's corner, which takes the title's place.
     c4: c4PanelFor(model, diagram, t, context.language),
+  };
+}
+
+/** The key as the picture says it: on a container diagram its notation always, what is drawn and nothing else. */
+function legendFor(options: ExportOptions, context: TitleBlockContext, diagram: DesignDiagram): ExportLegend | undefined {
+  const { t, theme, model, lookingAt } = context;
+  const container = diagram.kind === 'container';
+  const day = lookingAt ?? diagram.asOf;
+  const base = options.legend && (!container || context.showStatus)
+    ? exportLegendFor(diagram, theme, context.showLifecycle, t)
+    : undefined;
+  if (!container) return base;
+  const tokens = getNodeTokens(theme);
+  const labels = base?.labels ?? { aspects: t('export.aspects'), lifecycle: t('export.lifecycle') };
+  const { drawn } = containerFacts(model, diagram, day);
+  const box = (bg: string, border: string): ExportSwatch['token'] => ({ bg, border, fg: border });
+  const samples: ExportSwatch[] = options.legend ? [
+    ...(drawn.has('container') ? [{ label: t('key.container'), token: box(tokens.card.bg, tokens.edge.stroke) }] : []),
+    ...(drawn.has('store') ? [{ label: t('key.store'), token: box(tokens.card.bg, tokens.edge.stroke) }] : []),
+    ...(drawn.has('application') ? [{ label: t('key.application'), token: box(tokens.boundary.bg, tokens.card.border) }] : []),
+    ...(drawn.has('person') ? [{ label: t('key.person'), token: box(tokens.boundary.bg, tokens.card.border) }] : []),
+    { label: t('key.boundary'), token: box('transparent', tokens.boundary.border), line: 'dashed-box' as const },
+    ...(drawn.has('line') ? [{ label: t('key.line'), token: box(tokens.edge.stroke, tokens.edge.stroke), line: 'solid' as const }] : []),
+    ...(drawn.has('unlanded') ? [{ label: t('key.unlanded'), token: box(tokens.edge.stroke, tokens.edge.stroke), line: 'dashed' as const }] : []),
+  ] : [];
+  const lines = options.lineList ? diagramLines(model, diagram, day).map((line) => (
+    `${line.number}  ${line.from} → ${line.to}${line.label ? `: ${line.label}` : ''}${line.protocol ? ` [${line.protocol}]` : ''}`
+  )) : [];
+  return {
+    ...base,
+    labels: { ...labels, key: t('export.key'), lines: t('export.lines') },
+    ...(samples.length > 0 ? { notation: samples } : {}),
+    ...(lines.length > 0 ? { lines } : {}),
   };
 }
 

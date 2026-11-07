@@ -66,6 +66,10 @@ export interface CanvasShortcutHandlers {
   onOpenContextMenu(): void;
   /** F2: rename whatever is selected (inspector Name field, group label, edge label). */
   onRequestRename(): void;
+  /** ⌘↓: into what the selected application holds. */
+  onLevelIn?(): void;
+  /** ⌘↑: back where a container diagram was opened from. */
+  onLevelOut?(): void;
   /** ⌘F: the element finder. Absent = the chord is still swallowed, and inert. */
   onOpenSearch?(): void;
   /**
@@ -422,6 +426,12 @@ function dispatch(
       return;
     case 'find':
       h.onOpenSearch?.();
+      return;
+    case 'level-in':
+      h.onLevelIn?.();
+      return;
+    case 'level-out':
+      h.onLevelOut?.();
       return;
   }
 }

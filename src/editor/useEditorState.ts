@@ -1440,7 +1440,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
 
       setShowDeployment(on) {
         const diagram = currentDiagram();
-        if (!diagram || (diagram.showDeployment ?? true) === on) return;
+        if (!diagram || (diagram.showDeployment ?? false) === on) return;
         dispatch({
           type: 'diagram.update', id: diagram.id, patch: { showDeployment: on }, undoable: false,
         });

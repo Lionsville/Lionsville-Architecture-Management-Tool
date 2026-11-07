@@ -195,10 +195,10 @@ function usePicture(args: ExportArgs, exportMode: 'light' | 'dark' | undefined) 
       ? (unionRects([canvasRect(diagram.geometry), nodesBounds]) as Rect)
       : nodesBounds;
   }, [diagram, getNodes]);
-  const { model, lookingAt, host, showLifecycle, t, language } = titleBlock;
+  const { model, lookingAt, host, showLifecycle, showStatus, t, language } = titleBlock;
   const titleBlockOf = useCallback(
-    (options: ExportOptions) => titleBlockFor(options, { diagram, model, lookingAt, host, theme: exportTheme, showLifecycle, t, language }),
-    [diagram, lookingAt, host, model, t, language, exportTheme, showLifecycle],
+    (options: ExportOptions) => titleBlockFor(options, { diagram, model, lookingAt, host, theme: exportTheme, showLifecycle, ...(showStatus !== undefined ? { showStatus } : {}), t, language }),
+    [diagram, lookingAt, host, model, t, language, exportTheme, showLifecycle, showStatus],
   );
   const renderExport = useCallback(async (options: ExportOptions, pixelRatio?: number) => {
     const container = wrapperRef.current;

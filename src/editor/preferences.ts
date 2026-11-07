@@ -51,6 +51,10 @@ export interface EditorPreferences {
    * competing for the eye. A person who wants them all on says so once.
    */
   showEdgeLabels: boolean;
+  /** A container diagram says what its lines carry unless somebody turned that off: C4 asks it of every line. */
+  containerLabels: boolean;
+  /** Status marks on a container diagram's boxes, asked for: they are the landscape's question. */
+  containerStatus: boolean;
   /**
    * Board-level Tidy settings (the toolbar's caret popover).
    *
@@ -100,6 +104,8 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   outlineWidth: OUTLINE_LIMITS.default,
   showMinimap: false,
   showEdgeLabels: false,
+  containerLabels: true,
+  containerStatus: false,
   tidyOptions: BOARD_TIDY_DEFAULTS,
   groupTidyOptions: DEFAULT_TIDY_OPTIONS,
 };
@@ -156,6 +162,8 @@ export function mergePreferences(stored: unknown): EditorPreferences {
     outlineWidth: outlineWidth(raw.outlineWidth),
     showMinimap: bool(raw.showMinimap, defaults.showMinimap),
     showEdgeLabels: bool(raw.showEdgeLabels, defaults.showEdgeLabels),
+    containerLabels: bool(raw.containerLabels, defaults.containerLabels),
+    containerStatus: bool(raw.containerStatus, defaults.containerStatus),
     tidyOptions: tidyOptions(raw.tidyOptions, defaults.tidyOptions),
     groupTidyOptions: tidyOptions(raw.groupTidyOptions, defaults.groupTidyOptions),
   };
@@ -191,6 +199,8 @@ export function preferencesEqual(a: EditorPreferences, b: EditorPreferences): bo
     a.outlineWidth === b.outlineWidth &&
     a.showMinimap === b.showMinimap &&
     a.showEdgeLabels === b.showEdgeLabels &&
+    a.containerLabels === b.containerLabels &&
+    a.containerStatus === b.containerStatus &&
     tidyEqual(a.tidyOptions, b.tidyOptions) &&
     tidyEqual(a.groupTidyOptions, b.groupTidyOptions)
   );

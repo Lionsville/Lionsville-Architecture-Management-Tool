@@ -30,7 +30,7 @@ import {
   routeSides,
   type LegAxis,
 } from '../../model/routes';
-import { useLineInFocus } from '../canvas/boardFocus';
+import { useLineDimmed, useLineInFocus } from '../canvas/boardFocus';
 import { useRouteEditing } from '../canvas/RouteEditingContext';
 import { usePointerDrag } from '../canvas/usePointerDrag';
 import { closestSides, type EdgeAnchors } from '../../model/floatingEdgeMath';
@@ -50,6 +50,7 @@ const POSITION_OF_SIDE: Record<AttachSide, Position> = {
   left: Position.Left,
 };
 const positionOfSide = (side: AttachSide): Position => POSITION_OF_SIDE[side];
+import { LineLabel } from '../../widgets/kit/Line';
 import { edgeDashArray, edgePathKind, resolveEdgeStroke } from './edgeStyle';
 
 export interface FloatingEdgeData extends Record<string, unknown> {
@@ -64,6 +65,10 @@ export interface FloatingEdgeData extends Record<string, unknown> {
   routing?: EdgeRouting;
   /** Manual routing points for this connection on the active diagram. */
   waypoints?: Point[];
+  /** Its number in the Lines list of a container diagram, carried where the words have no room. */
+  number?: number;
+  /** A container diagram's line that reaches the application and names no container yet. */
+  unlanded?: boolean;
   /** Custom label anchor on the active diagram; absent = path midpoint. */
   labelPosition?: Point;
   /**
@@ -220,6 +225,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   const tokens = getNodeTokens(theme);
   const routeEditing = useRouteEditing();
   const inFocus = useLineInFocus(id);
+  const dimmed = useLineDimmed(id);
   // Handles and markers keep a constant SCREEN size — see `BEND_HANDLE_PX`.
   const { zoom } = useViewport();
   const handleScale = zoom > 0 ? 1 / zoom : 1;
@@ -485,7 +491,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   // so a coloured edge stays legible while selected.
   const baseStroke = resolveEdgeStroke(data?.color, tokens.edge.stroke);
   const stroke = selected ? tokens.edge.strokeSelected : baseStroke;
-  const dashArray = edgeDashArray(data?.lineStyle);
+  const dashArray = edgeDashArray(data?.lineStyle ?? (data?.unlanded ? 'dashed' : undefined));
   const hasLabel = Boolean(data?.label || data?.protocol);
   // Handles belong to the SELECTED line, whoever drew it (Phase 2a). Unselected
   // lines — router output above all — show nothing, which is what keeps a
@@ -636,18 +642,9 @@ export const FloatingEdge = memo(function FloatingEdge({
             }}
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${anchor.x}px, ${anchor.y}px) scale(${handleScale})`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 1,
-              background: tokens.edge.labelBg,
-              border: `1px solid ${selected ? stroke : tokens.edge.labelBorder}`,
-              borderRadius: 6,
-              padding: '2px 7px',
-              maxWidth: 240,
-              textAlign: 'center',
-              fontFamily: theme.typography.fontFamily,
+              // The kit's label holds its own size, about its own middle; only the field that edits it asks this to.
+              // The nudge is `LabelSpread`'s, so that labels keep clear of each other with no render.
+              transform: `translate(-50%, -50%) translate(${anchor.x}px, ${anchor.y}px) translate(var(--lv-nudge-x, 0px), var(--lv-nudge-y, 0px))${editing ? ` scale(${handleScale})` : ''}`,
               pointerEvents: routeEditing.readOnly ? 'none' : 'all',
               cursor: editing ? 'text' : 'grab',
               zIndex: 9,
@@ -684,46 +681,15 @@ export const FloatingEdge = memo(function FloatingEdge({
                 }}
               />
             ) : (
-              <>
-                {data?.label ? (
-                  <span
-                    style={{
-                      color: tokens.edge.labelFg,
-                      fontSize: 10,
-                      lineHeight: 1.35,
-                      whiteSpace: 'pre-line',
-                    }}
-                  >
-                    {data.label}
-                  </span>
-                ) : (
-                  // The label's own second ink, set apart by its italic: at 55 %
-                  // of it the hint was 2.3:1, a sentence nobody could read.
-                  <span
-                    style={{
-                      color: tokens.edge.labelFg,
-                      fontSize: 9,
-                      fontStyle: 'italic',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {t('edge.labelHint')}
-                  </span>
-                )}
-                {data?.protocol && (
-                  <span
-                    style={{
-                      color: tokens.edge.labelFg,
-                      fontSize: 9,
-                      letterSpacing: 0.6,
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {data.protocol}
-                  </span>
-                )}
-              </>
+              <LineLabel
+                words={data?.label ?? t('edge.labelHint')}
+                {...(data?.label ? {} : { placeholder: true })}
+                {...(data?.protocol ? { how: data.protocol } : {})}
+                {...(data?.number !== undefined ? { number: data.number } : {})}
+                {...(selected ? { picked: true } : {})}
+                {...(dimmed ? { dimmed: true } : {})}
+                title={[data?.label, data?.protocol].filter(Boolean).join(' · ') || undefined}
+              />
             )}
           </div>
         </EdgeLabelRenderer>

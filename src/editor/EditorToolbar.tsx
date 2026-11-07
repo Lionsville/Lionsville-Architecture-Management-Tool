@@ -19,6 +19,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { createPortal } from 'react-dom';
 import { BoardBar, type BoardBarAdd, type BoardBarShow } from './BoardBar';
+import { Button as KitButton } from '../widgets/kit/Button';
 import { usePlaceHost } from '../widgets/kit/placeHost';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
@@ -57,6 +58,8 @@ export interface EditorToolbarProps {
   looking?: boolean;
   /** The board this container diagram was opened from: where its way back goes. */
   cameFrom?: string;
+  /** A container diagram with categories: a row per category, then the lines. */
+  onLayersByCategory?(): void;
   busy?: LayoutAction;
   onActiveDiagramChange(diagramId: string): void;
   /** The view that is up was pressed: its own panel. Absent, nothing happens. */
@@ -423,6 +426,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             onActiveDiagramChange={props.onActiveDiagramChange}
             cameFrom={props.cameFrom}
             onMenu={hasTabMenu ? openTabMenuBelow : undefined}
+            {...(props.onOpenThisView ? { onOpenThisView: props.onOpenThisView } : {})}
           />
           <ContextMenu
             open={tabMenu !== null}
@@ -834,6 +838,7 @@ function Breadcrumb({
   activeDiagram,
   onActiveDiagramChange,
   cameFrom,
+  onOpenThisView,
   onMenu,
 }: {
   model: DesignModel;
@@ -846,55 +851,37 @@ function Breadcrumb({
    * under `readOnly` and where the host offers none of the three.
    */
   onMenu?(anchor: HTMLElement, diagramId: string): void;
+  /** Its name, pressed, opens what it says about itself and the key. */
+  onOpenThisView?(): void;
 }) {
   const { t } = useStrings();
   const application = model.elements.find((e) => e.id === activeDiagram.applicationElementId);
-  // Back target: the board this was opened from; else the layer7 diagram where
-  // this application is placed, falling back to the first layer7 diagram.
-  const parent =
-    model.diagrams.find((d) => d.id === cameFrom) ?? model.diagrams.find(
-      (d) =>
-        d.kind === 'layer7' &&
-        placedNodes(d).some((p) => p.id === activeDiagram.applicationElementId),
-    ) ?? model.diagrams.find((d) => d.kind === 'layer7');
-
+  const parent = levelUpOf(model, activeDiagram, cameFrom);
+  const name = application?.name ?? activeDiagram.name;
+  const title = t('c4.containerTitle', { name });
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 0.5 }}>
+    <div className="lv-levelbar">
       {parent && (
-        <Tooltip title={t('toolbar.backTo', { name: parent.name })}>
-          <IconButton
+        <Tooltip title={t('toolbar.backTo', { name: viewWord(model, parent) })}>
+          <KitButton
             size="small"
-            aria-label={t('toolbar.backToLandscape')}
+            aria-label={t('toolbar.backTo', { name: viewWord(model, parent) })}
+            data-testid="level-up"
+            data-guide="board.levelUp"
             onClick={() => onActiveDiagramChange(parent.id)}
           >
-            <BackIcon />
-          </IconButton>
+            {`‹ ${viewWord(model, parent)}`}
+          </KitButton>
         </Tooltip>
       )}
-      {parent && (
-        <Link
-          component="button"
-          underline="hover"
-          color="text.secondary"
-          sx={{ fontSize: 13, fontWeight: 600 }}
-          onClick={() => onActiveDiagramChange(parent.id)}
-        >
-          {parent.name}
-        </Link>
-      )}
-      <Typography color="text.disabled" sx={{ fontSize: 13 }}>
-        /
-      </Typography>
-      {/* No "Container view" chip after the name: the C4 corner of the board
-          says the level, and it says it larger. */}
-      <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-        {application?.name ?? activeDiagram.name}
-      </Typography>
+      {onOpenThisView
+        ? <span className="lv-levelbar__title"><KitButton variant="quiet" aria-haspopup="dialog" data-testid="this-view" onClick={onOpenThisView}>{title}</KitButton></span>
+        : <span className="lv-levelbar__title">{title}</span>}
       {onMenu && (
         <Tooltip title={t('toolbar.containerMenu')}>
           <IconButton
             size="small"
-            aria-label={t('toolbar.containerMenuOf', { name: application?.name ?? activeDiagram.name })}
+            aria-label={t('toolbar.containerMenuOf', { name })}
             aria-haspopup="menu"
             onClick={(event) => onMenu(event.currentTarget, activeDiagram.id)}
           >
@@ -902,6 +889,18 @@ function Breadcrumb({
           </IconButton>
         </Tooltip>
       )}
-    </Box>
+    </div>
   );
+}
+
+/** Where a level up goes: the board this was opened from, else the first board that places it, else the first board. */
+export function levelUpOf(model: DesignModel, diagram: DesignDiagram, cameFrom: string | undefined): DesignDiagram | undefined {
+  return model.diagrams.find((d) => d.id === cameFrom) ?? model.diagrams.find(
+    (d) => d.kind === 'layer7' && placedNodes(d).some((p) => p.id === diagram.applicationElementId),
+  ) ?? model.diagrams.find((d) => d.kind === 'layer7');
+}
+
+/** What a view is called on the way back: a container diagram goes by its application. */
+function viewWord(model: DesignModel, diagram: DesignDiagram): string {
+  return (diagram.kind === 'container' ? model.elements.find((e) => e.id === diagram.applicationElementId)?.name : undefined) ?? diagram.name;
 }

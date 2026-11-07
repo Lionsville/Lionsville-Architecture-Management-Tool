@@ -376,7 +376,7 @@ describe('menuItemsFor — pane', () => {
 
   it('Add here lists exactly the kinds the palette offers, by their palette labels', () => {
     const add = byId(menuItemsFor(PANE, ctx({ allowedKinds: ['component', 'actor', 'application'] })), 'add-here');
-    expect(add.children?.map((c) => c.label)).toEqual(['Component', 'Actor', 'Application']);
+    expect(add.children?.map((c) => c.label)).toEqual(['Container', 'Actor', 'Application']);
     expect(add.children?.[0]).toMatchObject({ action: 'add-here', args: { kind: 'component' } });
   });
 

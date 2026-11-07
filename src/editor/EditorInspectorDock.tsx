@@ -20,7 +20,7 @@ import { InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { moveFor } from './EditorDocumentationPage';
 import { ThisViewPanel } from './inspector/ThisViewPanel';
-import { selectionCount } from './useEditorState';
+import { EMPTY_SELECTION, selectionCount } from './useEditorState';
 import type { EditorParts } from './editorParts';
 
 /**
@@ -33,7 +33,8 @@ export function InspectorDock({ parts, diagram }: { parts: EditorParts; diagram:
   const { t } = useStrings();
   // Asking about something else, or another view, is leaving this one.
   const { state, dialogs: { setThisViewOpen } } = parts;
-  const selected = selectionCount(state.selection) > 0;
+  // Walking the Lines list selects a line and stays in the list.
+  const selected = selectionCount(state.selection) > 0 && !walkingLines(parts);
   useEffect(() => { if (selected) setThisViewOpen(false); }, [selected, setThisViewOpen]);
   useEffect(() => () => setThisViewOpen(false), [diagram.id, setThisViewOpen]);
   const inspector = selectionInspector(parts, diagram);
@@ -59,9 +60,14 @@ export function SelectionInspector({ parts, diagram }: { parts: EditorParts; dia
   return selectionInspector(parts, diagram) ?? null;
 }
 
+function walkingLines({ state, dialogs }: EditorParts): boolean {
+  return dialogs.thisViewOpen && dialogs.thisViewTab === 'lines' && (state.selectedConnection !== undefined && state.selectedConnection !== null);
+}
+
 function selectionInspector(parts: EditorParts, diagram: DesignDiagram): ReactNode {
   const { state, readOnly, view, layout, deletes, dialogs } = parts;
   const writable = <T,>(handler: T) => (readOnly ? undefined : handler);
+  if (walkingLines(parts)) return <ThisViewPanel parts={parts} diagram={diagram} onClose={() => { dialogs.setThisViewOpen(false); state.setSelection(EMPTY_SELECTION); }} />;
   if (state.selectedElement) return <SelectedElementInspector parts={parts} diagram={diagram} />;
   if (state.selectedConnection) {
     return (
@@ -150,6 +156,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       onOpenDrawing={props.diagrams.onOpenDrawing}
       plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
       onOpenView={props.document.onActiveDiagramChange}
+      {...(parts.board.lookingAt ? { dayShown: parts.board.lookingAt } : {})}
       onOpenViewSettings={!readOnly && props.diagrams.onSettingsChange ? () => parts.dialogs.setSettingsDiagramId(diagram.id) : undefined}
     />
   );

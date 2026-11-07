@@ -67,10 +67,15 @@ export function useRouteActions(args: LayoutArgs, running: LayoutRunning) {
     [routeEdges, diagram],
   );
   const handleRouteEdgesAll = useCallback(() => routeEdges(undefined), [routeEdges]);
+  // These lines whoever drew them, and every other hand-drawn one where it is.
+  const handleRouteLines = useCallback((lines: readonly string[]) => {
+    const asked = new Set(lines);
+    return routeEdges(new Set([...(diagram ? manualRouteIds(diagram) : [])].filter((id) => !asked.has(id))));
+  }, [routeEdges, diagram]);
 
   const lines = useLineRouteActions(args, running, autoRoute);
   const auto = useAutoRouting(args, running, autoRoute);
-  return { autoRoute, handleRouteEdges, handleRouteEdgesAll, ...auto, ...lines };
+  return { autoRoute, handleRouteEdges, handleRouteEdgesAll, handleRouteLines, ...auto, ...lines };
 }
 
 /**
