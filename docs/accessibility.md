@@ -7,6 +7,46 @@ follows is what was checked, how, what was fixed, and what does not conform
 yet. It is kept beside the code so that the next change to a screen can see
 what it has to keep true.*
 
+## Version 4: what changed, and what was not audited again
+
+The 4.0 redesign rebuilt every screen on one design system (ADR-0045), so some
+of what the audit below describes is of screens that have since been redrawn.
+What holds for the new screens, and how it is held:
+
+- **Contrast comes from the tokens.** Every colour is a token in both modes
+  (`src/widgets/kit/tokens.ts`), and `src/app/theme.contrast.test.ts` measures
+  every token that carries words at 4.5:1 or more and every token that has to
+  be seen — the focus ring, a field's outline, a line — at 3:1 or more beside
+  what it sits on, as well as the words on a sheet's poster on the grounds its
+  Colour gives them. A source's accent is drawn at 4.5:1 on every ground and
+  under its own ink, or refused (`src/widgets/kit/accent.test.ts`).
+  `build/literalColours.test.ts` keeps a colour from being written anywhere
+  else. The focus ring is one token wherever it is drawn.
+- **A board is neutral.** The tint per zone and per kind went: colour answers
+  one question at a time, chosen under *Colour*, and a key along the foot says
+  what it means. A status keeps a shape beside its colour, so it is never
+  colour alone; an *assumed* record is dashed.
+- **Text size.** Five type sizes in rem, and a step in the top row from 90 to
+  150 percent on the document's root; a browser's own text size reaches the
+  same sizes. The largest step and a 200 % zoom were checked at 1440 × 900 and
+  1100 × 700 on the build: a row's controls keep their width and fold before
+  anything clips. A canvas's text stays in px, since its zoom makes it larger.
+- **One zoom on every canvas**: ⌘ or Ctrl with + − 0, the wheel or a pinch,
+  and the dock's − and + and *Fit* as buttons, so no canvas zooms by pointer
+  alone.
+- **One list, one panel, one dialog family.** A list is walked by the arrows
+  and hands the focus back to the row it left; the large preview closes with
+  Escape onto the row last shown; a matrix's press only selects and a key
+  writes. axe runs over the kit's parts in their own tests, beside the screens'
+  tests named below.
+- **Pages are places**, with no layer over the board: Back and Forward reach
+  them on both hosts, and the frame's two rows are the same on every screen.
+
+Not done for version 4: the keyboard audit, reflow at 400 % and text spacing
+below were not walked again over the new screens, and no screen reader has been
+heard on them. Where a paragraph below names a control that is gone (the
+palette, a tab's own close, a zone's tinted label), it describes 3.x.
+
 ## How it is checked
 
 Three kinds of test, all in `npm run check`, so a regression fails the loop
