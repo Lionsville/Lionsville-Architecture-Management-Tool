@@ -700,6 +700,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.fixedInteraction': '{name}: die Zusammenarbeit entfernt.',
   'checks.noFixTitle': 'Hier gibt es nichts zu beheben.',
   'checks.noFixBody': 'Kein Widerspruch in diesem Bereich oder darunter.',
+  'checks.clearTitleWhole': 'Keine Befunde in der gesamten Organisation',
   'checks.clearTitle': 'Keine Befunde in {scope}',
   'checks.clearBody': '{ran} Prüfungen liefen über diesen Bereich und alles darunter. {only} können nur bei geöffnetem Bereich zählen.',
   'checks.band.done': 'Behoben. Es steht nicht mehr auf der Liste.',

@@ -699,6 +699,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'checks.fixedInteraction': '{name}: de samenwerking verwijderd.',
   'checks.noFixTitle': 'Hier valt niets op te lossen.',
   'checks.noFixBody': 'Geen tegenspraak in deze scope of eronder.',
+  'checks.clearTitleWhole': 'Geen bevindingen in de hele organisatie',
   'checks.clearTitle': 'Geen bevindingen in {scope}',
   'checks.clearBody': '{ran} controles liepen over deze scope en alles eronder. {only} kunnen alleen tellen met de scope open.',
   'checks.band.done': 'Opgelost. Het staat niet meer op de lijst.',

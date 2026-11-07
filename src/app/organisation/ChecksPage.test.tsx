@@ -160,6 +160,11 @@ describe('the Checks page', () => {
     expect(onOpenScope).toHaveBeenCalledOnce()
   })
 
+  it('says nothing was found in words that read as a sentence', () => {
+    page({ rows: [], counts: { fix: 0, review: 0, note: 0 } })
+    expect(screen.getByText('No findings in the whole organisation')).toBeTruthy()
+  })
+
   it('picks the check it is asked for, and the finding to come back to under it', () => {
     page({ request: { select: 'check.unattributed', finding: 'check.unattributed|retail|post' } })
     expect(detail().dataset.check).toBe('check.unattributed')

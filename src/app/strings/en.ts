@@ -904,6 +904,7 @@ export const EN = {
   'checks.fixedInteraction': '{name}: the interaction removed.',
   'checks.noFixTitle': 'Nothing to fix here.',
   'checks.noFixBody': 'No contradiction in this scope or below it.',
+  'checks.clearTitleWhole': 'No findings in the whole organisation',
   'checks.clearTitle': 'No findings in {scope}',
   'checks.clearBody': '{ran} checks ran over this scope and everything below it. {only} can only count with the scope open.',
   'checks.band.done': 'Put right. It has left the list.',

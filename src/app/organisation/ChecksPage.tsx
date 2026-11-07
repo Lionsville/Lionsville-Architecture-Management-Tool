@@ -431,7 +431,7 @@ export function ChecksPage(props: ChecksPageProps) {
           ) : (
             <div className="checks-page__reader">
               <PageState
-                state="empty" title={s('checks.clearTitle', { scope: at === ROOT_SCOPE ? s('checks.wholeOrganisation') : scopeName(at) })}
+                state="empty" title={at === ROOT_SCOPE ? s('checks.clearTitleWhole') : s('checks.clearTitle', { scope: scopeName(at) })}
                 body={s('checks.clearBody', { ran: every.filter((row) => row.counted).length, only: every.filter((row) => !row.counted).length })}
                 {...(onOpenScope ? { action: { label: s('checks.openToCount'), onPress: onOpenScope } } : {})}
               />
