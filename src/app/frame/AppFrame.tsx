@@ -145,6 +145,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
             : state.panel === 'activity' ? <ActivityPanel parts={parts} facts={facts} />
               : state.panel === 'settle' && Settle ? <Settle {...slot} /> : undefined}
           accented={Boolean(parts.props.provider?.accent)}
+          panelName={state.panel}
         >
           {holding && Hold ? <Hold {...slot} /> : children}
           {!holding && page === 'agents' && <AgentsPlace parts={parts} at={at} />}

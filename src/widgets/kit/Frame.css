@@ -47,6 +47,8 @@
 .kit-frame__status[data-tone='saved'] .kit-frame__status-mark { color: var(--ok); }
 .kit-frame__status[data-tone='waiting'] .kit-frame__status-mark { color: var(--warn); }
 .kit-frame__status[data-tone='problem'] .kit-frame__status-mark { color: var(--bad); }
+/* Settling stands where the inspector would: two panels side by side leave no canvas to read the question against. */
+.kit-frame[data-panel='settle'] [data-guide='board.inspector'] { display: none; }
 .kit-frame__accent { flex: 0 0 auto; height: 4px; background: var(--accent); }
 .kit-frame__status:hover { background: var(--surface-2); color: var(--ink); }
 .kit-frame__status[data-alarm='true'] { color: var(--bad); font-weight: var(--fw-strong); }

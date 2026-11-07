@@ -19,6 +19,8 @@ import './Frame.css'
 export type FrameProps = {
   /** Wear a thin band of the accent above the rows: an environment somebody gave a colour, told apart at a glance. */
   accented?: boolean
+  /** Which panel is up, for what gives way to it. */
+  panelName?: string | undefined
   readonly rowOne: ReactNode
   /** What comes before the view's tabs, and what comes after them. */
   readonly rowTwoStart: ReactNode
@@ -35,7 +37,7 @@ export type FrameProps = {
   readonly children: ReactNode
 }
 
-export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, controlsInset = 0, draggable = false, accented = false, children }: FrameProps) {
+export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, controlsInset = 0, draggable = false, accented = false, panelName, children }: FrameProps) {
   const [page, setPage] = useState<HTMLElement | null>(null)
   const [views, setViews] = useState<HTMLElement | null>(null)
   const host = useMemo<PlaceHost>(() => ({ page, views, pageUp }), [page, views, pageUp])
@@ -45,7 +47,7 @@ export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageU
   } as CSSProperties
   return (
     <PlaceHostContext.Provider value={host}>
-      <div className="kit-frame" data-testid="frame">
+      <div className="kit-frame" data-testid="frame" data-panel={panelName}>
         {accented && <div className="kit-frame__accent" data-testid="frame-accent" />}
         <div className="kit-frame__row kit-frame__row--one" data-testid="shell-toolbar" data-draggable={draggable || undefined} style={barStyle}>{rowOne}</div>
         <nav className="kit-frame__row kit-frame__row--two" data-testid="frame-places">

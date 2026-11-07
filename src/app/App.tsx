@@ -850,7 +850,8 @@ function useShellBase(props: AppProps) {
     onHome: nav.goHome,
     onTreeChanged: tree.refresh,
     notify: toasts.notify,
-    onFailure: failed,
+    // A source holding this home says so itself, on the place: a toast over it would be a second, shorter copy.
+    onFailure: (where, cause, key) => { if (!props.provider?.frame?.holding?.()) failed(where, cause, key) },
     onKeptResult: reportKept,
     writable,
     s,
