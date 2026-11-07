@@ -22,7 +22,7 @@ import type { SheetClaims } from './SheetPage'
 import type { SheetActions, SheetResponsible } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
-import { actor, capability, shippingScope } from '../testFixtures'
+import { actor, shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel, Relation } from '../../model'
 
 afterEach(() => cleanup())
@@ -452,7 +452,24 @@ describe('the areas', () => {
         domains={{ choices: () => [], name: (scope) => `The ${scope}`, known: () => false, takenUpBy: () => [] }}
       />,
     )
-    expect(within(screen.getByTestId('sheet-area-billing')).getByText('The finance no longer exists')).toBeTruthy()
+    expect(within(screen.getByTestId('sheet-area-billing')).getByText('No scope is called The finance')).toBeTruthy()
+  })
+})
+
+describe('a domain’s own sheet', () => {
+  it('tells what it took up from above from what it owns, each saying where it is defined', () => {
+    renderShell(
+      <SheetPage
+        open model={model()} sheet={SHEET} readOnly={false} actions={actions()} onClose={() => {}}
+        ownerOf={(id) => (id === 'billing' ? { label: 'Acme', fields: ['name'] } : undefined)}
+      />,
+    )
+    const own = screen.getByTestId('sheet-areas')
+    expect(within(own).getByTestId('sheet-area-fulfilment')).toBeTruthy()
+    expect(within(own).queryByTestId('sheet-area-billing')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Taken up from above' })).toBeTruthy()
+    expect(screen.getByTestId('sheet-area-billing').hasAttribute('data-standin')).toBe(true)
+    expect(screen.getByTestId('sheet-area-billing').textContent).toContain('Acme')
   })
 })
 

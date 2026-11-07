@@ -238,7 +238,7 @@ export const EN = {
   'sheet.newJourneyMeans': 'The steps a customer goes through, across the top of the sheet.',
   'sheet.fromAboveMeans': 'Take up a capability a sheet above this one holds.',
   'sheet.takenUpSection': 'Taken up from above',
-  'sheet.domainGone': '{name} no longer exists',
+  'sheet.domainGone': 'No scope is called {name}',
   'sheet.unmappedSay': 'These are in nobody’s hands yet: hand each to a domain, or let a domain take it up.',
   'sheet.unmappedJumpOne': '1 area not mapped to a domain ›',
   'sheet.unmappedJumpOther': '{count} areas not mapped to a domain ›',
@@ -315,4 +315,7 @@ export const EN = {
   'map.author': 'Author',
   'map.client': 'Client',
   'map.date': 'Date',
+  'sheet.answersFor': 'Answers for it',
+  'sheet.handedTo': 'Handed to',
+  'sheet.addDescription': '+ Description',
 } as const

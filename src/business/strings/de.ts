@@ -214,7 +214,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.newJourneyMeans': 'Die Schritte, die ein Kunde durchläuft, oben auf dem Blatt.',
   'sheet.fromAboveMeans': 'Eine Fähigkeit übernehmen, die ein Blatt darüber hält.',
   'sheet.takenUpSection': 'Von oben übernommen',
-  'sheet.domainGone': '{name} gibt es nicht mehr',
+  'sheet.domainGone': 'Kein Bereich heißt {name}',
   'sheet.unmappedSay': 'Diese liegen noch bei niemandem: Übergeben Sie sie einer Domäne, oder lassen Sie eine Domäne sie übernehmen.',
   'sheet.unmappedJumpOne': '1 Bereich keiner Domäne zugeordnet ›',
   'sheet.unmappedJumpOther': '{count} Bereiche keiner Domäne zugeordnet ›',
@@ -291,4 +291,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'map.author': 'Autor',
   'map.client': 'Kunde',
   'map.date': 'Datum',
+  'sheet.answersFor': 'Verantwortet es',
+  'sheet.handedTo': 'Übergeben an',
+  'sheet.addDescription': '+ Beschreibung',
 }

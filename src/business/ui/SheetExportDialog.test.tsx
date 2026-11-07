@@ -8,7 +8,7 @@
  */
 import type { DesignDiagram } from '../../model'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { SheetExportDialog } from './SheetExportDialog'
 import { renderShell } from '../../app/testing/renderShell'
 

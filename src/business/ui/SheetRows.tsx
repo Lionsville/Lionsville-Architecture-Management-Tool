@@ -22,6 +22,7 @@ import { plural } from '../../i18n/strings'
 import { CaretIcon } from '../../widgets/icons'
 import { Mark } from '../../widgets/kit/Mark'
 import { tokenVar } from '../../widgets/kit/tokens'
+import '../../widgets/kit/hidden.css'
 import type { LensValue, SheetLens } from '../lens'
 import type { SheetArea } from '../sheet'
 import type { SheetRow } from '../sheetRows'
@@ -138,10 +139,24 @@ function NameField({ element, label, onNamed }: { element: DesignElement; label:
   )
 }
 
+function RowCaret({ row, folded, onFold, t }: { row: SheetRow; folded: boolean; onFold(id: ElementId): void; t: Translate }) {
+  if (!row.parent) return <span className="sheet-row__pad" />
+  return (
+    <button
+      type="button" className="sheet-row__caret" tabIndex={-1} aria-expanded={!folded}
+      aria-label={t(folded ? 'sheet.unfold' : 'sheet.fold', { name: row.element.name })} data-sheet-add
+      onClick={() => onFold(row.element.id)}
+    >
+      <CaretIcon />
+    </button>
+  )
+}
+
 function Row({ row, count, context }: { row: SheetRow; count?: string; context: RowContext }) {
   const { element } = row
   const { t, onSelect, onFold } = context
-  const value = context.valueOf(element)
+  // A parent says its count: what it comes to is what is under it, and a mark would say that twice. Who holds it and who it is handed to are its own.
+  const value = row.parent && context.lens !== 'who' && context.lens !== 'domains' ? undefined : context.valueOf(element)
   const selected = context.selectedId === element.id
   const heat = value?.heat
   const style = {
@@ -149,24 +164,14 @@ function Row({ row, count, context }: { row: SheetRow; count?: string; context: 
     ...(heat !== undefined ? { '--sheet-heat': `var(--heat-${heat})`, '--sheet-on-heat': `var(--on-heat-${heat})` } : {}),
   } as CSSProperties
   const test = row.parent && row.depth === 0 ? `sheet-grouping-${element.id}` : `sheet-capability-${element.id}`
-  const dim = context.only !== undefined && value?.value !== context.only
+  const dim = context.only !== undefined && !row.parent && value?.value !== context.only
   const folded = context.folded.has(element.id)
   return (
     <div
       className="sheet-row" style={style} data-parent={row.parent || undefined} data-heat={heat}
       data-selected={selected || undefined} data-dim={dim || undefined} data-hit={context.hits?.has(element.id) || undefined}
     >
-      {row.parent
-        ? (
-          <button
-            type="button" className="sheet-row__caret" tabIndex={-1} aria-expanded={!folded}
-            aria-label={t(folded ? 'sheet.unfold' : 'sheet.fold', { name: element.name })} data-sheet-add
-            onClick={() => onFold(element.id)}
-          >
-            <CaretIcon />
-          </button>
-        )
-        : <span className="sheet-row__pad" />}
+      <RowCaret row={row} folded={folded} onFold={onFold} t={t} />
       {context.naming?.id === element.id
         ? <NameField element={element} label={t('common.name')} onNamed={context.onNamed} />
         : (

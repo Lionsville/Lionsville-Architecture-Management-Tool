@@ -19,17 +19,16 @@
  * start, because no one having started is not 142 faults.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import type { DesignDiagram, DesignModel, ElementId, Relation } from '../../model'
 import type { AspectScale } from '../../model/aspectScale'
-import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
@@ -66,7 +65,7 @@ import { ReadingSwitch } from './SheetBar'
 import type { OtherView, SheetReading } from './SheetBar'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
-import { InlineFrame, fileSafe, settled } from './SheetPage'
+import { InlineFrame, LookBand, fileSafe, settled } from './SheetPage'
 import type { SheetCaptureOptions, SheetHandle } from './SheetPage'
 import './Sheet.css'
 
@@ -194,96 +193,17 @@ function ColumnPanel({ id, map, known, onOpen, onClose, onSelect, width, t }: {
   )
 }
 
-export function MapPage(props: MapPageProps) {
-  const { model, map, actions } = props
-  const { t, language } = useStrings()
-  const theme = useTheme()
-  const page = useRef<HTMLDivElement | null>(null)
-  const [pick, setPick] = useState<Picked | undefined>(undefined)
-  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
-  const [level, setLevel] = useState(OPENING_LEVEL)
-  const [filter, setFilter] = useState<Filter>('all')
-  const [query, setQuery] = useState('')
-  const [finding, setFinding] = useState(false)
-  const [allColumns, setAllColumns] = useState(false)
-  const [renaming, setRenaming] = useState<string | undefined>(undefined)
-  const [exportOpen, setExportOpen] = useState(false)
-  const [drawsOpen, setDrawsOpen] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [toast, setToast] = useState<ToastWords | null>(null)
-  const [reading, changeReading] = usePlaceReading()
-  const sheetLevel = usePlaceTabFor('sheet')
-  const lookDay = reading.day
-  const looking = lookDay !== undefined && lookDay !== map?.asOf
-  const readOnly = props.readOnly || looking
-  const chooseDay = (day: string | undefined) => {
-    const { day: _was, ...rest } = reading
-    changeReading(day !== undefined ? { ...rest, day } : rest)
-  }
-
-  const onHandle = props.onHandle
-  const mapId = map?.id
-  // `width` is the sheet's: a map is a table, and its width is its columns'. Everything unfolded for a picture.
-  const capture = useCallback(async (options: SheetCaptureOptions) => {
-    const node = page.current
-    if (!node) throw new Error('MapPage: the page is not on screen')
-    setExporting(true)
-    try {
-      await settled()
-      return await captureSheet(node, { maxPixels: options.maxPixels, background: theme.palette.background.default })
-    } finally {
-      setExporting(false)
-    }
-  }, [theme])
-  useEffect(() => {
-    if (!onHandle) return undefined
-    if (!props.open || mapId === undefined) { onHandle(undefined); return undefined }
-    const selectedId = pick?.id
-    onHandle({ diagramId: mapId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
-    return () => onHandle(undefined)
-  }, [onHandle, props.open, mapId, capture, pick])
-
-  const laidOut = useMemo(
-    () => (map
-      ? mapPage(model, lookDay !== undefined ? { ...map, asOf: lookDay } : map, {
-        ...(props.elsewhere ? { elsewhere: props.elsewhere } : {}),
-        ...(props.describe ? { describe: props.describe } : {}),
-        ...(props.today !== undefined ? { today: props.today } : {}),
-        ...(allColumns && props.applications ? { allApplications: props.applications } : {}),
-      })
-      : undefined),
-    [model, map, lookDay, props.elsewhere, props.describe, props.today, allColumns, props.applications],
-  )
-  const selected = pick?.kind === 'row' ? model.elements.find((element) => element.id === pick.id) : undefined
-  const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
-  // What is open beyond the level, by hand or because a row was asked for that sat under it.
-  const [unfolded, setUnfolded] = useState<ReadonlySet<ElementId>>(new Set())
-  const [revealed, setRevealed] = useState(0)
-  /** A row picked from outside the matrix has nothing folded over it, and the matrix starts again from that. */
-  const reveal = (id: ElementId) => {
-    const chain = new Set(unfolded)
-    for (let at = model.elements.find((element) => element.id === id)?.parentId; at !== undefined;) {
-      chain.add(at)
-      at = model.elements.find((element) => element.id === at)?.parentId
-    }
-    setUnfolded(chain)
-    setRevealed((count) => count + 1)
-  }
-  const { locatedId, locate } = useLocated(page, (id) => { setPick({ kind: 'row', id }); reveal(id) }, 'data-kit-row')
-  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
+/** What a row and a cell come to, and what Space does on one. */
+function useCells(laidOut: LaidOutMap | undefined, props: MapPageProps, t: Translate, setToast: (toast: ToastWords) => void) {
+  const { model, actions } = props
   const rowById = useMemo(() => new Map(laidOut?.rows.map((row) => [row.element.id, row]) ?? []), [laidOut])
-
   const cellOf = useCallback((rowId: string, columnId: string): MatrixCell | null => {
     const row = rowById.get(rowId)
     const column = laidOut?.columns.find((one) => one.id === columnId)
     if (!row || !column || !row.supportedBy.includes(columnId)) return null
-    if (row.leaf) {
-      return { show: <Mark kind="cov-apps" />, meaning: t('map.supportsTip', { application: column.name, function: row.element.name }) }
-    }
-    const under = row.counts?.[columnId] ?? 1
-    return { show: <span className="map-count">{under}</span>, meaning: t('map.rolledUpTip', { application: column.name, function: row.element.name }) }
+    if (row.leaf) return { show: <Mark kind="cov-apps" />, meaning: t('map.supportsTip', { application: column.name, function: row.element.name }) }
+    return { show: <span className="map-count">{row.counts?.[columnId] ?? 1}</span>, meaning: t('map.rolledUpTip', { application: column.name, function: row.element.name }) }
   }, [rowById, laidOut, t])
-
   /** Space on a cell: one step with its Undo, written here, where this scope can take it away again. */
   const toggle = useCallback((rowId: string, columnId: string) => {
     const row = rowById.get(rowId)
@@ -300,203 +220,441 @@ export function MapPage(props: MapPageProps) {
       message: t(on ? 'map.linked' : 'map.unlinked', { application: column.name, function: row.element.name }),
       ...(props.onUndo ? { undo: { onPress: props.onUndo } } : {}),
     })
-  }, [rowById, laidOut, model.relations, actions, t, props.onUndo])
+  }, [rowById, laidOut, model.relations, actions, t, props.onUndo, setToast])
+  return { rowById, cellOf, toggle }
+}
 
-  const moreItems: MenuEntry[] = [
-    ...(!readOnly && props.onCreateMap ? [{ label: t('map.newMap'), onSelect: props.onCreateMap }] : []),
-    ...(!readOnly && props.onRename && map ? [{ label: t('map.rename'), onSelect: () => setRenaming(map.name) }] : []),
-    ...(!readOnly && props.onUpdate ? [{ label: t('map.draws'), onSelect: () => setDrawsOpen(true) }] : []),
-    ...(allColumnsEntry(props.applications, allColumns, setAllColumns, t)),
-    ...(!readOnly && props.onDelete ? [{ label: t('map.delete'), onSelect: props.onDelete, final: true }] : []),
+/** The ⋯: what the tab's own menu was, and which columns. A reader keeps only what changes nothing. */
+function moreOfMap(props: MapPageProps, readOnly: boolean, t: Translate, at: { allColumns: boolean; onAllColumns(all: boolean): void; onRename(): void; onDraws(): void }): MenuEntry[] {
+  const reads: MenuEntry[] = props.applications?.length ? [{ label: t(at.allColumns ? 'map.columnsUsed' : 'map.columnsAll'), onSelect: () => at.onAllColumns(!at.allColumns) }] : []
+  if (readOnly) return reads
+  return [
+    ...(props.onCreateMap ? [{ label: t('map.newMap'), onSelect: props.onCreateMap }] : []),
+    ...(props.onRename && props.map ? [{ label: t('map.rename'), onSelect: at.onRename }] : []),
+    ...(props.onUpdate ? [{ label: t('map.draws'), onSelect: at.onDraws }] : []),
+    ...reads,
+    ...(props.onDelete ? [{ label: t('map.delete'), onSelect: props.onDelete, final: true }] : []),
   ]
+}
 
+/** What a list of rows is called, by what kept them. */
+function listTitle(filter: Filter, counts: { gaps: number; overlaps: number }, t: Translate): string {
+  if (filter === 'gaps') return t('map.filterGaps', { count: counts.gaps })
+  return filter === 'overlaps' ? t('map.filterOverlaps', { count: counts.overlaps }) : t('map.function')
+}
+
+/** The bar: the reading, which rows, the day, and what else can be done with this map. */
+function MapBar({ props, readOnly, t, at }: {
+  props: MapPageProps
+  readOnly: boolean
+  t: Translate
+  at: {
+    hasRows: boolean; counts: { all: number; gaps: number; overlaps: number }; filter: Filter; onFilter(filter: Filter): void
+    level: number; onLevel(level: number): void; day: string | undefined; onDay(day: string | undefined): void
+    finding: boolean; onFinding(): void; onExport(): void; onRename(): void; onDraws(): void
+    allColumns: boolean; onAllColumns(all: boolean): void; onReading(reading: SheetReading): void
+  }
+}) {
+  const { map } = props
+  const moreItems = moreOfMap(props, readOnly, t, at)
+  const others = props.maps && props.onOpenMap ? { others: { views: props.maps, onOpen: props.onOpenMap } } : {}
+  return (
+    <div data-testid="map-topbar">
+      <ViewBar
+        label={map?.name ?? t('map.page')}
+        reading={props.onSheet || (props.maps?.length ?? 0) > 1 ? <ReadingSwitch value="coverage" onChange={at.onReading} canCover t={t} guide="map.reading" {...others} /> : undefined}
+        show={at.hasRows ? (
+          <>
+            <Segmented
+              label={t('map.filter')} value={at.filter} onChange={at.onFilter} data-guide="map.filter"
+              options={[
+                { value: 'all', label: t('map.filterAll', { count: at.counts.all }) },
+                { value: 'gaps', label: t('map.filterGaps', { count: at.counts.gaps }) },
+                { value: 'overlaps', label: t('map.filterOverlaps', { count: at.counts.overlaps }) },
+              ]}
+            />
+            {at.filter === 'all' && (
+              <Segmented
+                label={t('map.levels')} value={String(at.level)} onChange={(to) => at.onLevel(Number(to))} data-guide="map.levels"
+                options={[1, 2, 3].map((one) => ({ value: String(one), label: String(one) }))}
+              />
+            )}
+          </>
+        ) : undefined}
+        day={<DayControl data-guide="map.day" day={at.day} groups={props.days ?? []} onChange={at.onDay} />}
+        find={<ViewBarButton on={at.finding} aria-pressed={at.finding} onClick={at.onFinding}>{t('sheet.findWord')}</ViewBarButton>}
+        exportAs={props.onSave && <ViewBarButton onClick={at.onExport}>{t('map.export')}</ViewBarButton>}
+        more={moreItems.length > 0 ? <MoreMenu items={moreItems} label={t('sheet.more')} /> : undefined}
+      />
+    </div>
+  )
+}
+
+/** The crossing itself, with the answer pinned beside the name. */
+function CoverageMatrix({ laidOut, name, cells, folded, pick, onPick, onColumn, onFold, readOnly, version, t }: {
+  laidOut: LaidOutMap
+  name: string
+  cells: ReturnType<typeof useCells>
+  folded: readonly string[]
+  pick: Picked | undefined
+  onPick(id: ElementId): void
+  onColumn(id: ElementId): void
+  onFold(row: string, folded: boolean): void
+  readOnly: boolean
+  /** A new value starts the folds again from `folded`. */
+  version: string
+  t: Translate
+}) {
+  const { rowById } = cells
+  const banded = laidOut.groups.length > 1 || laidOut.groups.some((group) => group.where !== undefined)
+  const peopleOf = (id: string) => {
+    const row = rowById.get(id)
+    if (!row || row.assignedTo.length === 0) return null
+    const says = t('map.peopleTip', { names: row.assignedNames.join(', ') })
+    return <span title={says}>{row.leaf ? <Mark kind="cov-people" label={says} /> : row.assignedTo.length}</span>
+  }
+  const answerOf = (id: string) => { const row = rowById.get(id); return row ? verdict(row, t) : null }
+  return (
+    <div data-testid="map-grid" data-guide="map.grid" style={{ display: 'contents' }}>
+      <Matrix
+        key={version} label={name} rowHeading={t('map.function')} rotateHeads
+        rows={laidOut.rows.map((row) => ({ id: row.element.id, label: row.element.name, ...(row.parentId !== undefined ? { parent: row.parentId } : {}) }))}
+        columns={laidOut.columns.map((column) => ({
+          id: column.id, label: column.known ? column.name : `${column.name} (${t('map.unknownApplication')})`,
+          ...(banded ? { group: column.where ?? OWN_GROUP } : {}),
+        }))}
+        {...(banded ? { columnGroups: laidOut.groups.map((group) => ({ id: group.where ?? OWN_GROUP, label: group.where ?? t('map.thisScope') })), groupBand: true } : {})}
+        cellOf={cells.cellOf}
+        answers={[{ label: t('map.covered'), of: answerOf }, { label: t('map.people'), of: peopleOf }]}
+        defaultFoldedRows={folded} onFoldRow={onFold}
+        {...(pick?.kind === 'row' ? { selected: { row: pick.id, column: '' } } : {})}
+        onSelect={({ row }) => onPick(row)} onOpenRow={onPick} openFoldable onOpenColumn={onColumn}
+        {...(!readOnly ? { keys: [' '], onKey: ({ row, column }: { row: string; column: string }) => cells.toggle(row, column), hint: t('map.keyHint') } : {})}
+        dataGuide="map.matrix"
+      />
+    </div>
+  )
+}
+
+/** What fills the page: nothing to map, nothing linked, the matrix, or the rows a filter keeps. */
+function MapBody({ laidOut, props, readOnly, firstLeaf, matched, title, pick, onStart, onPick, matrix, t }: {
+  laidOut: LaidOutMap | undefined
+  props: MapPageProps
+  readOnly: boolean
+  firstLeaf: ElementId | undefined
+  matched: readonly MapRow[] | undefined
+  title: string
+  pick: Picked | undefined
+  onStart(id: ElementId): void
+  onPick(id: ElementId): void
+  matrix: ReactNode
+  t: Translate
+}) {
+  if (!laidOut || laidOut.rows.length === 0) {
+    return (
+      <PageState
+        state="empty" title={t('map.noFunctions')} body={t('map.noFunctionsHint')}
+        {...(props.onSheet ? { action: { label: t('map.toSheet'), onPress: () => props.onSheet?.() } } : {})}
+      />
+    )
+  }
+  if (laidOut.counts.covered + laidOut.counts.manual === 0) {
+    return (
+      <PageState
+        state="empty" title={t('map.nobodyYet', { count: laidOut.counts.uncovered })} body={t('map.noApplications')}
+        {...(!readOnly && firstLeaf !== undefined ? { action: { label: t('map.startLinking'), onPress: () => onStart(firstLeaf) } } : {})}
+      />
+    )
+  }
+  if (!matched) return matrix
+  return (
+    <div className="map-list">
+      <List
+        label={title}
+        groups={[{ id: 'rows', label: '', rows: matched.map((row) => ({
+          id: row.element.id, text: row.element.name,
+          note: row.supportedBy.length > 0 ? row.supportedBy.map((id) => laidOut.columns.find((one) => one.id === id)?.name ?? id).join(', ') : t('map.nothing'),
+        })) }]}
+        selectedId={pick?.kind === 'row' ? pick.id : null} onOpen={onPick}
+        empty={<PageState compact state="empty" title={t('sheet.findNone')} />}
+      />
+    </div>
+  )
+}
+
+/** The picture of the map, for an agent and for a person: unfolded, and nothing scrolling. */
+function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | null }, selectedId: ElementId | undefined) {
+  const theme = useTheme()
+  const [exporting, setExporting] = useState(false)
+  const capture = useCallback(async (options: SheetCaptureOptions) => {
+    if (!node.current) throw new Error('MapPage: the page is not on screen')
+    setExporting(true)
+    try {
+      await settled()
+      return await captureSheet(node.current, { maxPixels: options.maxPixels, background: theme.palette.background.default })
+    } finally {
+      setExporting(false)
+    }
+  }, [theme, node])
+  const { onHandle, map, open } = props
+  const mapId = map?.id
+  useEffect(() => {
+    if (!onHandle) return undefined
+    if (!open || mapId === undefined) { onHandle(undefined); return undefined }
+    onHandle({ diagramId: mapId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
+    return () => onHandle(undefined)
+  }, [onHandle, open, mapId, capture, selectedId])
   const exportPng = async (layout: ExportLayout) => {
     if (!map || !props.onSave) return
     const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
     props.onSave({ name: `${fileSafe(map.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
   }
+  return { exporting, exportPng }
+}
 
-  const hasRows = (laidOut?.rows.length ?? 0) > 0
-  const nothingLinked = hasRows && laidOut !== undefined && laidOut.counts.covered + laidOut.counts.manual === 0
-  const matched = useMemo(() => filtered(laidOut?.rows ?? [], filter, query), [laidOut, filter, query])
-  const firstLeaf = laidOut?.rows.find((row) => row.leaf)?.element.id
-  const counts = useMemo(() => ({
-    gaps: filtered(laidOut?.rows ?? [], 'gaps', '').length,
-    overlaps: filtered(laidOut?.rows ?? [], 'overlaps', '').length,
-    all: laidOut?.rows.filter((row) => row.leaf).length ?? 0,
-  }), [laidOut])
+/** What is open beyond the level: by hand, or because a row was asked for that sat under it. */
+function useUnfolded(model: DesignModel) {
+  const [unfolded, setUnfolded] = useState<ReadonlySet<ElementId>>(new Set())
+  const [revealed, setRevealed] = useState(0)
+  /** A row picked from outside the matrix has nothing folded over it, and the matrix starts again from that. */
+  const reveal = (id: ElementId) => {
+    const chain = new Set(unfolded)
+    for (let at = model.elements.find((element) => element.id === id)?.parentId; at !== undefined;) {
+      chain.add(at)
+      at = model.elements.find((element) => element.id === at)?.parentId
+    }
+    setUnfolded(chain)
+    setRevealed((count) => count + 1)
+  }
+  const onFold = (row: string, folded: boolean) => {
+    const next = new Set(unfolded)
+    if (folded) next.delete(row)
+    else next.add(row)
+    setUnfolded(next)
+  }
+  return { unfolded, revealed, reveal, onFold, reset: () => setUnfolded(new Set()) }
+}
 
-  const onReadingPress = (to: SheetReading) => { if (to !== 'coverage') { sheetLevel(to); props.onSheet?.() } }
-  const columnPicked = pick?.kind === 'column' ? pick.id : undefined
-  const Frame = props.inline ? InlineFrame : PageDialog
-  const inMatrix = laidOut && hasRows && !nothingLinked && filter === 'all' && query.trim() === ''
-  const foldedRows = exporting || !laidOut ? [] : foldedAt(laidOut.rows, level).filter((id) => !unfolded.has(id))
-  return (
-    <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('map.page')}>
-      <div data-testid="map-topbar">
-        <ViewBar
-          label={map?.name ?? t('map.page')}
-          reading={props.onSheet || (props.maps?.length ?? 0) > 1 ? (
-            <ReadingSwitch
-              value="coverage" onChange={onReadingPress} canCover t={t} guide="map.reading"
-              {...(props.maps && props.onOpenMap ? { others: { views: props.maps, onOpen: props.onOpenMap } } : {})}
-            />
-          ) : undefined}
-          show={hasRows && !nothingLinked ? (
-            <>
-              <Segmented
-                label={t('map.filter')} value={filter} onChange={setFilter} data-guide="map.filter"
-                options={[
-                  { value: 'all', label: t('map.filterAll', { count: counts.all }) },
-                  { value: 'gaps', label: t('map.filterGaps', { count: counts.gaps }) },
-                  { value: 'overlaps', label: t('map.filterOverlaps', { count: counts.overlaps }) },
-                ]}
-              />
-              {filter === 'all' && (
-                <Segmented
-                  label={t('map.levels')} value={String(level)} onChange={(to) => { setLevel(Number(to)); setUnfolded(new Set()) }} data-guide="map.levels"
-                  options={[1, 2, 3].map((one) => ({ value: String(one), label: String(one) }))}
-                />
-              )}
-            </>
-          ) : undefined}
-          day={<DayControl data-guide="map.day" day={lookDay ?? map?.asOf} groups={props.days ?? []} onChange={chooseDay} />}
-          find={<ViewBarButton on={finding} aria-pressed={finding} onClick={() => { setFinding(!finding); setQuery('') }}>{t('sheet.findWord')}</ViewBarButton>}
-          exportAs={props.onSave && <ViewBarButton onClick={() => setExportOpen(true)}>{t('map.export')}</ViewBarButton>}
-          more={moreItems.length > 0 ? <MoreMenu items={moreItems} label={t('sheet.more')} /> : undefined}
+/** The panels over the page, on what is picked: a capability, or a system. */
+function MapPanels({ pick, laidOut, props, readOnly, width, onWidth, onPick, onClose, t }: {
+  pick: Picked | undefined
+  laidOut: LaidOutMap | undefined
+  props: MapPageProps
+  readOnly: boolean
+  width: number
+  onWidth(width: number): void
+  onPick(id: ElementId): void
+  onClose(): void
+  t: Translate
+}) {
+  const { model, actions } = props
+  if (pick?.kind === 'column' && laidOut) {
+    const heldHere = model.elements.some((element) => element.id === pick.id)
+    const open = props.onOpenApplication ? () => props.onOpenApplication?.(pick.id) : heldHere ? () => actions.onOpenElement(pick.id) : undefined
+    return (
+      <div className="sheet-page__over">
+        <ColumnPanel
+          id={pick.id} map={laidOut} known={laidOut.columns.find((one) => one.id === pick.id)?.known ?? false} width={width}
+          onClose={onClose} onSelect={onPick} t={t} onOpen={open}
         />
       </div>
-      {looking && (
-        <Band
-          tone="looking" title={t('sheet.looking', { day: formatDay(lookDay, language) })} detail={t('sheet.lookingDetail')}
-          action={(
-            <>
-              <Button variant="plain" size="small" onClick={() => chooseDay(undefined)}>{t('sheet.lookingBack')}</Button>
-              {!props.readOnly && props.onUpdate && <Button variant="quiet" size="small" onClick={() => { props.onUpdate?.({ asOf: lookDay }); chooseDay(undefined) }}>{t('sheet.lookingKeep')}</Button>}
-            </>
-          )}
-        />
-      )}
-      {finding && (
-        <div className="sheet-find" role="search">
-          <span className="sheet-find__field">
-            <TextInput autoFocus value={query} placeholder={t('sheet.findPlaceholder')} aria-label={t('sheet.find')} onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setFinding(false); setQuery('') } }}
-            />
-          </span>
-          {query.trim() !== '' && <span className="sheet-find__count" role="status">{matched.length === 0 ? t('sheet.findNone') : t('sheet.findCount', { count: matched.length })}</span>}
-        </div>
-      )}
-      {laidOut && hasRows && !nothingLinked && (
-        <div className="map-page__line">
-          <span className="map-page__summary" data-testid="map-summary" data-guide="map.summary">{summaryOf(laidOut, t)}</span>
-          <span data-testid="map-legend">{t('map.legend')}</span>
-        </div>
-      )}
-      <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId, 'data-kit-row')}>
-        <div className="sheet-page__work">
-          <div className="map-page__grid" data-testid="map-body">
-            {!laidOut || !hasRows
-              ? (
-                <PageState
-                  state="empty" title={t('map.noFunctions')} body={t('map.noFunctionsHint')}
-                  {...(props.onSheet ? { action: { label: t('map.toSheet'), onPress: () => props.onSheet?.() } } : {})}
-                />
-              )
-              : nothingLinked
-                ? (
-                  <PageState
-                    state="empty" title={t('map.nobodyYet', { count: laidOut.counts.uncovered })} body={t('map.noApplications')}
-                    {...(!readOnly && firstLeaf !== undefined ? { action: { label: t('map.startLinking'), onPress: () => { setPick({ kind: 'row', id: firstLeaf }); reveal(firstLeaf) } } } : {})}
-                  />
-                )
-                : inMatrix
-                  ? (
-                    <div data-testid="map-grid" data-guide="map.grid" style={{ display: 'contents' }}>
-                      <Matrix
-                        key={`${level}:${exporting}:${revealed}`}
-                        label={map?.name ?? t('map.page')} rowHeading={t('map.function')} rotateHeads
-                        rows={laidOut.rows.map((row) => ({ id: row.element.id, label: row.element.name, ...(row.parentId !== undefined ? { parent: row.parentId } : {}) }))}
-                        columns={laidOut.columns.map((column) => ({ id: column.id, label: column.known ? column.name : `${column.name} (${t('map.unknownApplication')})`, ...(column.where !== undefined ? { group: column.where } : laidOut.groups.length > 1 ? { group: OWN_GROUP } : {}) }))}
-                        {...(laidOut.groups.length > 1 || laidOut.groups.some((group) => group.where !== undefined)
-                          ? { columnGroups: laidOut.groups.map((group) => ({ id: group.where ?? OWN_GROUP, label: group.where ?? t('map.thisScope') })), groupBand: true }
-                          : {})}
-                        cellOf={cellOf}
-                        answers={[
-                          { label: t('map.covered'), of: (id: string) => { const row = rowById.get(id); return row ? verdict(row, t) : null } },
-                          { label: t('map.people'), of: (id: string) => {
-                            const row = rowById.get(id)
-                            if (!row || row.assignedTo.length === 0) return null
-                            return row.leaf
-                              ? <span title={t('map.peopleTip', { names: row.assignedNames.join(', ') })}><Mark kind="cov-people" label={t('map.peopleTip', { names: row.assignedNames.join(', ') })} /></span>
-                              : <span title={t('map.peopleTip', { names: row.assignedNames.join(', ') })}>{row.assignedTo.length}</span>
-                          } },
-                        ]}
-                        defaultFoldedRows={foldedRows}
-                        onFoldRow={(row, folded) => {
-                          const next = new Set(unfolded)
-                          if (folded) next.delete(row)
-                          else next.add(row)
-                          setUnfolded(next)
-                        }}
-                        {...(pick?.kind === 'row' ? { selected: { row: pick.id, column: '' } } : {})}
-                        onSelect={({ row }) => setPick({ kind: 'row', id: row })}
-                        onOpenRow={(id) => setPick({ kind: 'row', id })} openFoldable
-                        onOpenColumn={(id) => setPick({ kind: 'column', id })}
-                        {...(!readOnly ? { keys: [' '], onKey: ({ row, column }: { row: string; column: string }) => toggle(row, column), hint: t('map.keyHint') } : {})}
-                        dataGuide="map.matrix"
-                      />
-                    </div>
-                  )
-                  : (
-                    <div className="map-list">
-                      <List
-                        label={filter === 'gaps' ? t('map.filterGaps', { count: counts.gaps }) : filter === 'overlaps' ? t('map.filterOverlaps', { count: counts.overlaps }) : t('map.function')}
-                        groups={[{ id: 'rows', label: '', rows: matched.map((row) => ({ id: row.element.id, text: row.element.name, note: row.supportedBy.length > 0 ? row.supportedBy.map((id) => laidOut.columns.find((one) => one.id === id)?.name ?? id).join(', ') : t('map.nothing') })) }]}
-                        selectedId={pick?.kind === 'row' ? pick.id : null}
-                        onOpen={(id) => { setPick({ kind: 'row', id }); reveal(id) }}
-                        empty={<PageState compact state="empty" title={t('sheet.findNone')} />}
-                      />
-                    </div>
-                  )}
-          </div>
-          {selected && !exporting && (
-            <div className="sheet-page__over">
-              <SeamResizer
-                orientation="vertical" region="after" value={detailsWidth} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
-                defaultValue={INSPECTOR_WIDTH.default} onChange={setDetailsWidth} label={t('sheet.resizeDetails')}
-              />
-              <FunctionInspector
-                element={selected} model={model} readOnly={readOnly} actions={actions} width={detailsWidth}
-                applications={props.applications} onOpenDocumentation={props.onOpenDocumentation} elsewhere={props.elsewhere}
-                onRemoved={() => setPick(undefined)} onClose={() => setPick(undefined)} onSelect={(id) => setPick({ kind: 'row', id })}
-                ownerOf={props.ownerOf} responsible={props.responsible} domains={props.domains} scales={props.scales ?? []} describe={props.describe}
-              />
-            </div>
-          )}
-          {columnPicked !== undefined && laidOut && !exporting && (
-            <div className="sheet-page__over">
-              <ColumnPanel
-                id={columnPicked} map={laidOut} known={laidOut.columns.find((one) => one.id === columnPicked)?.known ?? false} width={detailsWidth}
-                onClose={() => setPick(undefined)} onSelect={(id) => setPick({ kind: 'row', id })} t={t}
-                onOpen={props.onOpenApplication ? () => props.onOpenApplication?.(columnPicked) : held.has(columnPicked) ? () => actions.onOpenElement(columnPicked) : undefined}
-              />
-            </div>
-          )}
-        </div>
-      </Box>
+    )
+  }
+  const selected = pick?.kind === 'row' ? model.elements.find((element) => element.id === pick.id) : undefined
+  if (!selected) return null
+  return (
+    <div className="sheet-page__over">
+      <SeamResizer
+        orientation="vertical" region="after" value={width} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
+        defaultValue={INSPECTOR_WIDTH.default} onChange={onWidth} label={t('sheet.resizeDetails')}
+      />
+      <FunctionInspector
+        element={selected} model={model} readOnly={readOnly} actions={actions} width={width}
+        applications={props.applications} onOpenDocumentation={props.onOpenDocumentation} elsewhere={props.elsewhere}
+        onRemoved={onClose} onClose={onClose} onSelect={onPick} ownerOf={props.ownerOf} responsible={props.responsible}
+        domains={props.domains} scales={props.scales ?? []} describe={props.describe}
+      />
+    </div>
+  )
+}
+
+/** The dialogs of the bar, and the toast of a link. */
+function MapDialogs({ map, props, exportOpen, onExportClose, exportPng, renaming, onRenaming, drawsOpen, onDrawsClose, readOnly, t }: {
+  map: DesignDiagram | undefined
+  props: MapPageProps
+  exportOpen: boolean
+  onExportClose(): void
+  exportPng(layout: ExportLayout): Promise<void>
+  renaming: string | undefined
+  onRenaming(name: string | undefined): void
+  drawsOpen: boolean
+  onDrawsClose(): void
+  readOnly: boolean
+  t: Translate
+}) {
+  return (
+    <>
       {exportOpen && map && (
         <SheetExportDialog
-          initial="screen" onExport={exportPng} onClose={() => setExportOpen(false)} title={t('map.exportTitle')} hint={t('map.exportHint')}
+          initial="screen" onExport={exportPng} onClose={onExportClose} title={t('map.exportTitle')} hint={t('map.exportHint')}
           {...(!readOnly && props.onUpdate ? { titleBlock: { map, onChange: props.onUpdate } } : {})}
         />
       )}
       {drawsOpen && map && props.onUpdate && (
-        <MapDrawsDialog map={map} model={model} onOrder={(areas) => props.onUpdate?.({ areas })} onClose={() => setDrawsOpen(false)} t={t} />
+        <MapDrawsDialog map={map} model={props.model} onOrder={(areas) => props.onUpdate?.({ areas })} onClose={onDrawsClose} t={t} />
       )}
       {renaming !== undefined && (
-        <RenameDialog name={renaming} onChange={setRenaming} onCancel={() => setRenaming(undefined)} onDone={() => { if (renaming.trim() !== '') props.onRename?.(renaming.trim()); setRenaming(undefined) }} t={t} />
+        <RenameDialog
+          name={renaming} onChange={onRenaming} onCancel={() => onRenaming(undefined)} t={t}
+          onDone={() => { if (renaming.trim() !== '') props.onRename?.(renaming.trim()); onRenaming(undefined) }}
+        />
       )}
+    </>
+  )
+}
+
+function MapFind({ query, count, onQuery, onClose, t }: { query: string; count: number; onQuery(query: string): void; onClose(): void; t: Translate }) {
+  return (
+    <div className="sheet-find" role="search">
+      <span className="sheet-find__field">
+        <TextInput
+          autoFocus value={query} placeholder={t('sheet.findPlaceholder')} aria-label={t('sheet.find')} onChange={(event) => onQuery(event.target.value)}
+          onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}
+        />
+      </span>
+      {query.trim() !== '' && <span className="sheet-find__count" role="status">{count === 0 ? t('sheet.findNone') : t('sheet.findCount', { count })}</span>}
+    </div>
+  )
+}
+
+/** The sentence over the page and the map's own legend, which stays on the page. */
+function MapLine({ laidOut, t }: { laidOut: LaidOutMap; t: Translate }) {
+  return (
+    <div className="map-page__line">
+      <span className="map-page__summary" data-testid="map-summary" data-guide="map.summary">{summaryOf(laidOut, t)}</span>
+      <span data-testid="map-legend">{t('map.legend')}</span>
+    </div>
+  )
+}
+
+/** A day looked at: one press back, and who may keep it on the view. */
+function MapLook({ day, props, onBack, t }: { day: string; props: MapPageProps; onBack(): void; t: Translate }) {
+  const { readOnly, onUpdate } = props
+  return <LookBand day={day} onBack={onBack} t={t} {...(!readOnly && onUpdate ? { onKeep: () => { onUpdate({ asOf: day }); onBack() } } : {})} />
+}
+
+/** The day looked at, in the address, and that nothing is written while it lasts. */
+function useMapDay(props: MapPageProps) {
+  const [reading, changeReading] = usePlaceReading()
+  const lookDay = reading.day
+  const looking = lookDay !== undefined && lookDay !== props.map?.asOf
+  const chooseDay = (day: string | undefined) => {
+    const { day: _was, ...rest } = reading
+    changeReading(day !== undefined ? { ...rest, day } : rest)
+  }
+  return { lookDay, looking, readOnly: props.readOnly || looking, chooseDay }
+}
+
+/** How many rows each filter keeps, and which rows a list shows instead of the matrix. */
+function useMapRows(laidOut: LaidOutMap | undefined, filter: Filter, query: string) {
+  const rows = useMemo(() => laidOut?.rows ?? [], [laidOut])
+  const counts = useMemo(() => ({
+    gaps: filtered(rows, 'gaps', '').length, overlaps: filtered(rows, 'overlaps', '').length, all: rows.filter((row) => row.leaf).length,
+  }), [rows])
+  const listed = filter !== 'all' || query.trim() !== ''
+  const matched = useMemo(() => (listed ? filtered(rows, filter, query) : undefined), [listed, rows, filter, query])
+  return { rows, counts, matched, hasRows: rows.length > 0 && laidOut !== undefined && laidOut.counts.covered + laidOut.counts.manual > 0 }
+}
+
+/** The map's rows, on the day looked at. */
+function useLaidOutMap(props: MapPageProps, day: string | undefined, allColumns: boolean) {
+  const { model, map, elsewhere, describe, today, applications } = props
+  return useMemo(
+    () => (map
+      ? mapPage(model, day !== undefined ? { ...map, asOf: day } : map, {
+        ...(elsewhere ? { elsewhere } : {}),
+        ...(describe ? { describe } : {}),
+        ...(today !== undefined ? { today } : {}),
+        ...(allColumns && applications ? { allApplications: applications } : {}),
+      })
+      : undefined),
+    [model, map, day, elsewhere, describe, today, allColumns, applications],
+  )
+}
+
+export function MapPage(props: MapPageProps) {
+  const { model, map } = props
+  const { t } = useStrings()
+  const page = useRef<HTMLDivElement | null>(null)
+  const [pick, setPick] = useState<Picked | undefined>(undefined)
+  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
+  const [level, setLevel] = useState(OPENING_LEVEL)
+  const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
+  const [finding, setFinding] = useState(false)
+  const [allColumns, setAllColumns] = useState(false)
+  const [renaming, setRenaming] = useState<string | undefined>(undefined)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [drawsOpen, setDrawsOpen] = useState(false)
+  const [toast, setToast] = useState<ToastWords | null>(null)
+  const sheetLevel = usePlaceTabFor('sheet')
+  const { lookDay, looking, readOnly, chooseDay } = useMapDay(props)
+  const { exporting, exportPng } = useMapPicture(props, page, pick?.id)
+  const laidOut = useLaidOutMap(props, lookDay, allColumns)
+  const folds = useUnfolded(model)
+  const pickRow = (id: ElementId) => { setPick({ kind: 'row', id }); folds.reveal(id) }
+  const { locatedId, locate } = useLocated(page, pickRow, 'data-kit-row')
+  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
+  const cells = useCells(laidOut, props, t, setToast)
+
+  const { rows, counts, matched, hasRows } = useMapRows(laidOut, filter, query)
+  const Frame = props.inline ? InlineFrame : PageDialog
+  const closeFind = () => { setFinding(false); setQuery('') }
+  const name = map?.name ?? t('map.page')
+  const topInset = (props.windowChrome ?? NO_WINDOW_CHROME).topInset
+  return (
+    <Frame open={props.open} topInset={topInset} onClose={props.onClose} aria-label={t('map.page')}>
+      <MapBar
+        props={props} readOnly={readOnly} t={t}
+        at={{
+          hasRows, counts, filter, onFilter: setFilter, level, onLevel: (to) => { setLevel(to); folds.reset() },
+          day: lookDay ?? map?.asOf, onDay: chooseDay, finding, onFinding: () => (finding ? closeFind() : setFinding(true)),
+          onExport: () => setExportOpen(true), onRename: () => setRenaming(map?.name), onDraws: () => setDrawsOpen(true),
+          allColumns, onAllColumns: setAllColumns,
+          onReading: (to) => { if (to !== 'coverage') { sheetLevel(to); props.onSheet?.() } },
+        }}
+      />
+      {looking && lookDay !== undefined && <MapLook day={lookDay} props={props} onBack={() => chooseDay(undefined)} t={t} />}
+      {finding && <MapFind query={query} count={matched?.length ?? 0} onQuery={setQuery} onClose={closeFind} t={t} />}
+      {laidOut && hasRows && <MapLine laidOut={laidOut} t={t} />}
+      <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId, 'data-kit-row')}>
+        <div className="sheet-page__work">
+          <div className="map-page__grid" data-testid="map-body">
+            <MapBody
+              laidOut={laidOut} props={props} readOnly={readOnly} firstLeaf={rows.find((row) => row.leaf)?.element.id} matched={matched} pick={pick}
+              title={listTitle(filter, counts, t)}
+              onStart={pickRow} onPick={pickRow} t={t}
+              matrix={laidOut && (
+                <CoverageMatrix
+                  laidOut={laidOut} name={name} cells={cells} pick={pick} readOnly={readOnly} t={t}
+                  folded={exporting ? [] : foldedAt(rows, level).filter((id) => !folds.unfolded.has(id))} version={`${level}:${exporting}:${folds.revealed}`}
+                  onPick={(id) => setPick({ kind: 'row', id })} onColumn={(id) => setPick({ kind: 'column', id })} onFold={folds.onFold}
+                />
+              )}
+            />
+          </div>
+          {!exporting && (
+            <MapPanels
+              pick={pick} laidOut={laidOut} props={props} readOnly={readOnly} width={detailsWidth} onWidth={setDetailsWidth}
+              onPick={pickRow} onClose={() => setPick(undefined)} t={t}
+            />
+          )}
+        </div>
+      </Box>
+      <MapDialogs
+        map={map} props={props} exportOpen={exportOpen} onExportClose={() => setExportOpen(false)} exportPng={exportPng} renaming={renaming} onRenaming={setRenaming}
+        drawsOpen={drawsOpen} onDrawsClose={() => setDrawsOpen(false)} readOnly={readOnly} t={t}
+      />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </Frame>
   )
@@ -519,11 +677,6 @@ function MapDrawsDialog({ map, model, onOrder, onClose, t }: { map: DesignDiagra
 
 /** The group a column kept in this scope falls under, where others fall under theirs. */
 const OWN_GROUP = '__own'
-
-function allColumnsEntry(applications: readonly Supporter[] | undefined, all: boolean, set: (all: boolean) => void, t: Translate): MenuEntry[] {
-  if (!applications?.length) return []
-  return [{ label: t(all ? 'map.columnsUsed' : 'map.columnsAll'), onSelect: () => set(!all) }]
-}
 
 function RenameDialog({ name, onChange, onCancel, onDone, t }: { name: string; onChange(name: string): void; onCancel(): void; onDone(): void; t: Translate }) {
   return (

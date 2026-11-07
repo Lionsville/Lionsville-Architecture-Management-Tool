@@ -275,6 +275,32 @@ function useFolded(initial: readonly string[] | undefined, told: ((id: string, f
   return [folded, toggle] as const
 }
 
+/** What a press on a heading does: the band's folds, a column's name, a row's name and its caret. */
+function headPresses({ columns, columnGroups, drawn, toggleGroup, toggleRow, onOpenColumn, onOpenRow, openFoldable }: Pick<MatrixProps, 'columns' | 'columnGroups' | 'onOpenColumn' | 'onOpenRow' | 'openFoldable'> & {
+  readonly drawn: readonly Drawn[]
+  readonly toggleGroup: (id: string) => void
+  readonly toggleRow: (id: string) => void
+}) {
+  return {
+    pressedBand(target: HTMLElement) {
+      const band = target.closest<HTMLElement>('[data-kit-group]')?.dataset.kitGroup
+      if (band === undefined) return false
+      if (columnGroups?.some((group) => group.id === band)) toggleGroup(band)
+      return true
+    },
+    pressHeading(pressedColumn: number) {
+      const columnDef = drawn[pressedColumn]
+      if (onOpenColumn && columnDef?.kind === 'column') { onOpenColumn(columnDef.id); return }
+      const group = columnDef?.kind === 'folded' ? columnDef.id : columns.find((one) => one.id === columnDef?.id)?.group
+      if (group) toggleGroup(group)
+    },
+    pressRowName(target: HTMLElement, rowDef: { readonly row: MatrixRowDef; readonly foldable: boolean }) {
+      if (rowDef.foldable && (target.closest('.kit-matrix__caret') !== null || !openFoldable)) toggleRow(rowDef.row.id)
+      else onOpenRow?.(rowDef.row.id)
+    },
+  }
+}
+
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint,
   defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
@@ -371,13 +397,11 @@ export function Matrix({
     }
   }
 
+  const { pressedBand, pressHeading, pressRowName } = headPresses({ columns, columnGroups, drawn, toggleGroup, toggleRow, onOpenColumn, onOpenRow, openFoldable })
+
   const onClick = (event: MouseEvent<HTMLTableElement>) => {
     const target = event.target as HTMLElement
-    const band = target.closest<HTMLElement>('[data-kit-group]')?.dataset.kitGroup
-    if (band !== undefined) {
-      if (columnGroups?.some((group) => group.id === band)) toggleGroup(band)
-      return
-    }
+    if (pressedBand(target)) return
     const cell = target.closest<HTMLElement>('[data-kit-cell]')
     const address = cell?.dataset.kitCell?.split(':').map(Number)
     if (!address) return
@@ -387,16 +411,9 @@ export function Matrix({
     const rowDef = shownRows[pressedRow]
     const columnDef = drawn[pressedColumn]
     if (pressedRow === -1) {
-      if (columnDef?.kind === 'column' && onOpenColumn) {
-        onOpenColumn(columnDef.id)
-        return
-      }
-      const group = columnDef?.kind === 'folded' ? columnDef.id : columns.find((one) => one.id === columnDef?.id)?.group
-      if (group) toggleGroup(group)
+      pressHeading(pressedColumn)
     } else if (pressedColumn === -1 && rowDef) {
-      const onCaret = target.closest('.kit-matrix__caret') !== null
-      if (rowDef.foldable && (onCaret || !openFoldable)) toggleRow(rowDef.row.id)
-      else onOpenRow?.(rowDef.row.id)
+      pressRowName(target, rowDef)
     } else if (rowDef && columnDef?.kind === 'column') {
       if (!absent?.(rowDef.row.id, columnDef.id)) onSelect?.({ row: rowDef.row.id, column: columnDef.id })
     }

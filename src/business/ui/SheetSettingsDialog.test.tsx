@@ -11,7 +11,7 @@
  * sheet names none, and the lanes are the rows the steps actually make.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { SheetSettingsDialog } from './SheetSettingsDialog'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'

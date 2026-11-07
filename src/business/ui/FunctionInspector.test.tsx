@@ -76,6 +76,8 @@ describe('the fields', () => {
 
   it('writes the description through the documentation page’s own field', () => {
     const { actions } = open('picking')
+    // Asked for: almost none has one.
+    fireEvent.click(screen.getByRole('button', { name: '+ Description' }))
     const field = screen.getByRole('textbox', { name: /description/i })
     fireEvent.change(field, { target: { value: 'Goods off the shelf.' } })
     expect(actions.updateElement).toHaveBeenCalledWith(
@@ -407,6 +409,7 @@ describe('a capability another scope answers for', () => {
     open('picking', false, vi.fn(), () => owned)
     expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
     expect((screen.getByLabelText('Picking: Live from') as HTMLInputElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: '+ Description' }))
     expect((screen.getByLabelText('Description') as HTMLTextAreaElement).disabled).toBe(false)
   })
 

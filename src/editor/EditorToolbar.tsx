@@ -418,7 +418,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         bgcolor: 'background.paper',
         // Out of width — a narrow window, or 400 % zoom (1.4.10) — the tools
         // take a second row rather than running off the side of the window.
-        minHeight: 48, flexWrap: 'wrap',
+        minHeight: 48, flexWrap: 'wrap', ...emptyInFrame(framed, props.activeDiagram.kind),
       }}
     >
       {inRow(isContainer ? (
@@ -835,6 +835,11 @@ function NewViewMenu({ props }: { props: EditorToolbarProps }) {
  * host draws it but offers no opener for its kind; then no tab is the answer,
  * not an id MUI cannot find among the tabs.
  */
+/** A sheet and its Coverage have a View bar of their own, and row two holds the tabs: this bar would be an empty row. */
+function emptyInFrame(framed: HTMLElement | null, kind: DesignDiagram['kind']) {
+  return framed && (kind === 'sheet' || kind === 'map') ? { display: 'none' } : {}
+}
+
 function activeTabOf(props: EditorToolbarProps): string {
   const { activeDiagram, model } = props
   if (activeDiagram.kind !== 'map') return activeDiagram.id

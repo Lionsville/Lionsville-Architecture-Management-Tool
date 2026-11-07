@@ -12,7 +12,7 @@
 .sheet-page__keyRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); }
 .sheet-page__keyRow .kit-key { border: 0; box-shadow: none; background: transparent; padding: 0; }
 .sheet-page__keyEnd { margin-inline-start: auto; }
-.sheet-page__link { appearance: none; border: 0; padding: 0; background: none; color: var(--accent-ink, var(--ink)); font: inherit; text-decoration: underline; cursor: pointer; }
+.sheet-page__link { appearance: none; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .sheet-page__link:focus-visible,
 .sheet-row__main:focus-visible,
 .sheet-row__caret:focus-visible,
@@ -34,7 +34,7 @@
 .sheet-area__headMain { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; font-size: var(--t-sm); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; }
 .sheet-area__count { flex: none; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .sheet-area__note { padding-block: var(--s-1); color: var(--ink-2); }
-.sheet-area__problem { display: flex; gap: var(--s-1); align-items: center; padding-block: 2px; color: var(--warn-ink, var(--ink)); }
+.sheet-area__problem { display: flex; gap: var(--s-1); align-items: center; padding-block: 2px; color: var(--warn); }
 .sheet-area[data-selected] > .sheet-area__head { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
 
 .sheet-meter { display: inline-flex; flex: none; align-self: center; width: 36px; height: 4px; overflow: hidden; border-radius: var(--r-1); background: var(--surface-2); }
@@ -50,7 +50,7 @@
 .sheet-row:hover { background: var(--surface-2); }
 .sheet-row[data-selected]:hover { background: var(--accent-soft); }
 .sheet-row__caret { flex: none; width: 16px; height: var(--row-h-dense); appearance: none; border: 0; padding: 0; background: none; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-.sheet-row__caret svg { width: 10px; height: 10px; transition: transform var(--dur-1, 80ms) linear; }
+.sheet-row__caret svg { width: 10px; height: 10px; transition: transform 80ms linear; }
 .sheet-row__caret[aria-expanded="false"] svg { transform: rotate(-90deg); }
 .sheet-row__pad { flex: none; width: 16px; }
 .sheet-row__main { flex: 1 1 auto; min-width: 0; min-height: var(--row-h-dense); appearance: none; border: 0; padding: 3px 0; background: none; color: inherit; font: inherit; line-height: var(--lh-tight); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; display: flex; gap: var(--s-1); align-items: flex-start; }
@@ -69,7 +69,7 @@
 
 .sheet-unit { appearance: none; max-width: 100%; border: 0; padding: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-unit:hover { color: var(--ink); }
-.sheet-unit[data-sheet-unit="outside"] { color: var(--warn-ink, var(--ink)); }
+.sheet-unit[data-sheet-unit="outside"] { color: var(--warn); }
 .sheet-area__unit { flex: 0 1 40%; min-width: 0; align-self: center; text-align: end; }
 
 /* Add stays in words at the foot; the rest shows at the row. */
@@ -137,13 +137,13 @@
 .sheet-fold > summary { display: flex; align-items: center; gap: var(--s-2); min-height: var(--row-h); cursor: pointer; }
 .sheet-fold > summary > span:last-child { margin-inline-start: auto; color: var(--ink-2); }
 .sheet-fold__body { display: flex; flex-direction: column; gap: var(--s-2); padding-block: var(--s-2); }
-.sheet-held { display: flex; align-items: baseline; gap: var(--s-2); min-height: var(--row-h-dense); }
-.sheet-held__name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.sheet-held__note { flex: none; color: var(--ink-2); }
+.sheet-held { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); min-height: var(--row-h-dense); }
+.sheet-held__name { flex: 1 1 60px; min-width: 0; overflow-wrap: anywhere; text-align: start; }
+.sheet-held__note { flex: 0 1 auto; color: var(--ink-2); }
 .sheet-held__say { color: var(--ink-2); margin-block: var(--s-1); }
-.sheet-held[data-warn] .sheet-held__note { color: var(--warn-ink, var(--ink)); }
+.sheet-held[data-warn] .sheet-held__note { color: var(--warn); }
 .sheet-held__label { flex: 0 0 96px; color: var(--ink-2); }
-.sheet-held__values { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.sheet-held__values { flex: 1 1 0; min-width: 120px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
 .sheet-panel__foot { padding-block: var(--s-3); display: flex; flex-direction: column; gap: var(--s-1); align-items: flex-start; }
 .sheet-panel__testid { display: contents; }
 
@@ -153,7 +153,7 @@
 .map-page__grid { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
 .map-page__grid > .kit-matrix { flex: 1 1 auto; }
 .sheet-page[data-exporting] .kit-matrix__scroll { overflow: visible; }
-.map-verdict[data-gap] { color: var(--warn-ink, var(--ink)); font-weight: var(--fw-medium); }
+.map-verdict[data-gap] { color: var(--warn); font-weight: var(--fw-medium); }
 .map-column__row { display: flex; gap: var(--s-2); }
 .map-count { color: var(--cov-apps); font-size: var(--t-xs); }
 .map-list { flex: 1 1 auto; min-width: 0; overflow: auto; }

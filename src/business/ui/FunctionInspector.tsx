@@ -305,6 +305,8 @@ function kindWord(element: DesignElement, model: DesignModel): StringKey {
   }
 }
 
+const capitalised = (word: string) => word.charAt(0).toLocaleUpperCase() + word.slice(1)
+
 /** The way down to it, from the top of its tree. */
 function pathOf(element: DesignElement, model: DesignModel): string {
   const names: string[] = []
@@ -329,69 +331,115 @@ function FoldLine({ label, value, children, testId }: { label: string; value: st
   )
 }
 
-export function FunctionInspector(props: FunctionInspectorProps) {
+/** What a function adds to what every record has: what covers it, who holds it, its ratings. */
+function FunctionBlocks({ props, owned }: { props: FunctionInspectorProps & { element: DesignElement }; owned(field: string): boolean }) {
+  const { element, model, readOnly, actions } = props
+  const { t } = useStrings()
+  return (
+    <>
+      <CoveredBy
+        element={element} model={model} readOnly={readOnly} actions={actions} applications={props.applications}
+        elsewhere={props.elsewhere} responsible={props.responsible} describe={props.describe}
+      />
+      <PanelSection title={t('sheet.whoHolds')}>
+        <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
+        <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
+        {props.domains && <div className="sheet-held__say">{t('sheet.handingSay')}</div>}
+      </PanelSection>
+      <Ratings element={element} readOnly={readOnly || owned('ratings')} actions={actions} scales={props.scales ?? []} />
+    </>
+  )
+}
+
+/** The folded lines: when it lives, and where it sits. */
+function FoldedLines({ props, owned }: { props: FunctionInspectorProps & { element: DesignElement }; owned(field: string): boolean }) {
   const { element, model, readOnly, actions } = props
   const { t, language } = useStrings()
-  if (!element) return null
-  const owner = props.ownerOf?.(element.id)
-  /** Is this field the owning scope's? See the canvas inspector's twin of this. */
-  const owned = (field: string) => owner?.fields.includes(field) ?? false
   const siblings = childrenOf(model.elements.filter((held) => held.kind === element.kind), element.parentId)
   const at = siblings.findIndex((held) => held.id === element.id)
   const parent = model.elements.find((held) => held.id === element.parentId)
   const place = at >= 0 && parent ? t('sheet.placeOf', { at: at + 1, count: siblings.length, name: parent.name }) : t('sheet.parentRoot')
   const lifeWord = t(`lifecycle.${element.lifecycle}` as StringKey)
   const dated = DATED_PHASES.find((phase) => phase === element.lifecycle && element.lifecycleDates?.[phase] !== undefined)
-  const path = pathOf(element, model)
+  const print = props.columnsInPrint
+  return (
+    <>
+      <FoldLine label={t('sheet.lifecycle')} value={dated ? `${lifeWord} · ${formatDay(element.lifecycleDates![dated]!, language)}` : lifeWord} testId="sheet-fold-lifecycle">
+        <TextField
+          select fullWidth label={t('sheet.lifecycle')} value={element.lifecycle} disabled={readOnly || owned('lifecycle')}
+          onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
+        >
+          {LIFECYCLE_ORDER.map((phase) => <MenuItem key={phase} value={phase}>{t(`lifecycle.${phase}` as StringKey)}</MenuItem>)}
+        </TextField>
+        <OrderedDateFields
+          keys={DATED_PHASES} values={element.lifecycleDates}
+          label={(phase) => t(`sheet.date.${phase}` as StringKey)}
+          ariaLabel={(phase) => `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}`}
+          size="small" fullWidth sx={{ minWidth: 0 }} disabled={readOnly || owned('lifecycleDates')}
+          accepts={datesInOrder} refusal={t('command.datesOutOfOrder')}
+          onChange={(lifecycleDates) => actions.updateElement(element.id, { lifecycleDates })}
+        />
+      </FoldLine>
+      <FoldLine label={t('sheet.place')} value={place} testId="sheet-fold-place">
+        <ParentField element={element} model={model} readOnly={readOnly} actions={actions} />
+        {print?.drawn && !readOnly && (
+          <label className="kit-field">
+            <span>{t('sheet.widthInPrint')}</span>
+            <Select
+              aria-label={t('sheet.widthInPrint')} value={String(print.span)}
+              options={Array.from({ length: MAX_SPAN }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))}
+              onChange={(event) => print.onSpan(withSpan(print.spans, element.id, Number(event.target.value)))}
+            />
+          </label>
+        )}
+      </FoldLine>
+    </>
+  )
+}
 
+/** Where it is really kept, said once at the top: everything below it that will not change will not for this. */
+function KeptElsewhere({ owner }: { owner: NonNullable<ReturnType<NonNullable<FunctionInspectorProps['ownerOf']>>> }) {
+  const { t } = useStrings()
+  return (
+    <span data-testid="owned-elsewhere">
+      {t('standIn.definedIn', { scope: owner.label })}{' '}
+      {owner.onOpen && <button type="button" className="sheet-page__link" onClick={owner.onOpen}>{t('standIn.open', { scope: owner.label })}</button>}
+    </span>
+  )
+}
+
+export function FunctionInspector(props: FunctionInspectorProps) {
+  const { element, model, readOnly, actions } = props
+  const { t } = useStrings()
+  if (!element) return null
+  const held = { ...props, element }
+  const owner = props.ownerOf?.(element.id)
+  /** Is this field the owning scope's? See the canvas inspector's twin of this. */
+  const owned = (field: string) => owner?.fields.includes(field) ?? false
+  const path = pathOf(element, model)
+  const optional = {
+    ...(props.width !== undefined ? { width: props.width } : {}),
+    ...(!readOnly && !owned('name') ? { onRename: (name: string) => { actions.updateElement(element.id, { name }) } } : {}),
+    ...(props.nameFocus !== undefined ? { renameRequest: props.nameFocus } : {}),
+    ...(path !== '' ? { facts: path } : {}),
+    ...(owner ? { status: <KeptElsewhere owner={owner} /> } : {}),
+    ...(props.onClose ? { onClose: props.onClose } : {}),
+  }
   return (
     <div className="sheet-panel__testid" data-testid="sheet-inspector">
       {/* One per record: a name half typed is about the one it was typed on, and must not land on the next. */}
       <Panel
-        key={element.id}
-        kind={t(kindWord(element, model))}
-        name={element.name}
-        dataGuide="sheet.inspector"
-        {...(props.width !== undefined ? { width: props.width } : {})}
-        {...(!readOnly && !owned('name') ? { onRename: (name: string) => { actions.updateElement(element.id, { name }) } } : {})}
-        {...(props.nameFocus !== undefined ? { renameRequest: props.nameFocus } : {})}
-        {...(path !== '' ? { facts: path } : {})}
-        {...(owner ? {
-          status: (
-            <span data-testid="owned-elsewhere">
-              {t('standIn.definedIn', { scope: owner.label })}{' '}
-              {owner.onOpen && <button type="button" className="sheet-page__link" onClick={owner.onOpen}>{t('standIn.open', { scope: owner.label })}</button>}
-            </span>
-          ),
-        } : {})}
+        key={element.id} kind={capitalised(t(kindWord(element, model)))} name={element.name} dataGuide="sheet.inspector" {...optional}
         actions={props.onOpenDocumentation && (
           <button
             type="button" className="sheet-page__link" data-testid="sheet-open-page" aria-label={t('sheet.openPage', { name: element.name })}
             onClick={() => props.onOpenDocumentation?.(element.id)}
           >{t('sheet.pageLink')}</button>
         )}
-        {...(props.onClose ? { onClose: props.onClose } : {})}
       >
         <CompactForms>
-          {element.kind === 'function' && (
-            <CoveredBy
-              element={element} model={model} readOnly={readOnly} actions={actions} applications={props.applications}
-              elsewhere={props.elsewhere} responsible={props.responsible} describe={props.describe}
-            />
-          )}
-          {element.kind === 'function' && (
-            <PanelSection title={t('sheet.whoHolds')}>
-              <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
-              <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
-              {props.domains && <div className="sheet-held__say">{t('sheet.handingSay')}</div>}
-            </PanelSection>
-          )}
-          {element.kind === 'function' && <Ratings element={element} readOnly={readOnly || owned('ratings')} actions={actions} scales={props.scales ?? []} />}
-          {element.kind === 'step' && (
-            <PanelSection>
-              <LaneField element={element} model={model} readOnly={readOnly} actions={actions} />
-            </PanelSection>
-          )}
+          {element.kind === 'function' && <FunctionBlocks props={held} owned={owned} />}
+          {element.kind === 'step' && <PanelSection><LaneField element={element} model={model} readOnly={readOnly} actions={actions} /></PanelSection>}
           {element.kind === 'actor' && (
             <PanelSection>
               <label className="sheet-held">
@@ -403,43 +451,8 @@ export function FunctionInspector(props: FunctionInspectorProps) {
               </label>
             </PanelSection>
           )}
-          <PanelSection>
-            <MarkdownField
-              value={element.description ?? ''}
-              disabled={readOnly}
-              onChange={(value) => actions.updateElement(element.id, { description: value }, `sheet.description:${element.id}`)}
-              renderMarkdown={props.renderMarkdown}
-            />
-          </PanelSection>
-          <FoldLine label={t('sheet.lifecycle')} value={dated ? `${lifeWord} · ${formatDay(element.lifecycleDates![dated]!, language)}` : lifeWord} testId="sheet-fold-lifecycle">
-            <TextField
-              select fullWidth label={t('sheet.lifecycle')} value={element.lifecycle} disabled={readOnly || owned('lifecycle')}
-              onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
-            >
-              {LIFECYCLE_ORDER.map((phase) => <MenuItem key={phase} value={phase}>{t(`lifecycle.${phase}` as StringKey)}</MenuItem>)}
-            </TextField>
-            <OrderedDateFields
-              keys={DATED_PHASES} values={element.lifecycleDates}
-              label={(phase) => t(`sheet.date.${phase}` as StringKey)}
-              ariaLabel={(phase) => `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}`}
-              size="small" fullWidth sx={{ minWidth: 0 }} disabled={readOnly || owned('lifecycleDates')}
-              accepts={datesInOrder} refusal={t('command.datesOutOfOrder')}
-              onChange={(lifecycleDates) => actions.updateElement(element.id, { lifecycleDates })}
-            />
-          </FoldLine>
-          <FoldLine label={t('sheet.place')} value={place} testId="sheet-fold-place">
-            <ParentField element={element} model={model} readOnly={readOnly} actions={actions} />
-            {props.columnsInPrint?.drawn && !readOnly && (
-              <label className="kit-field">
-                <span>{t('sheet.widthInPrint')}</span>
-                <Select
-                  aria-label={t('sheet.widthInPrint')} value={String(props.columnsInPrint.span)}
-                  options={Array.from({ length: MAX_SPAN }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))}
-                  onChange={(event) => props.columnsInPrint?.onSpan(withSpan(props.columnsInPrint.spans, element.id, Number(event.target.value)))}
-                />
-              </label>
-            )}
-          </FoldLine>
+          <Description element={element} readOnly={readOnly} actions={actions} renderMarkdown={props.renderMarkdown} />
+          <FoldedLines props={held} owned={owned} />
           {!readOnly && (
             <div className="sheet-panel__foot">
               <Remove
@@ -451,6 +464,30 @@ export function FunctionInspector(props: FunctionInspectorProps) {
         </CompactForms>
       </Panel>
     </div>
+  )
+}
+
+/** A description is asked for: almost none has one, and an empty box would stand where the links are read. */
+function Description({ element, readOnly, actions, renderMarkdown }: {
+  element: DesignElement
+  readOnly: boolean
+  actions: SheetActions
+  renderMarkdown: FunctionInspectorProps['renderMarkdown']
+}) {
+  const { t } = useStrings()
+  const [asked, setAsked] = useState(false)
+  const has = (element.description ?? '') !== ''
+  if (!has && readOnly) return null
+  if (!has && !asked) {
+    return <PanelSection><button type="button" className="sheet-page__link" onClick={() => setAsked(true)}>{t('sheet.addDescription')}</button></PanelSection>
+  }
+  return (
+    <PanelSection>
+      <MarkdownField
+        value={element.description ?? ''} disabled={readOnly} renderMarkdown={renderMarkdown}
+        onChange={(value) => actions.updateElement(element.id, { description: value }, `sheet.description:${element.id}`)}
+      />
+    </PanelSection>
   )
 }
 
@@ -743,7 +780,7 @@ function AssignedTo({ element, model, readOnly, actions, responsible, elsewhere,
   const elsewhereFiled = assigned.some((id) => !model.elements.some((held) => held.id === id))
   return (
     <div className="sheet-held" data-testid="sheet-assigned-to" data-guide="sheet.assignedTo">
-      <span className="sheet-held__label">{t('sheet.assignedTo')}</span>
+      <span className="sheet-held__label">{t('sheet.answersFor')}</span>
       <div className="sheet-held__values">
         {assigned.length === 0 && <span>{t('sheet.assignedNobody')}</span>}
         {assigned.map((id) => {
@@ -804,7 +841,7 @@ function Domains({ element, model, readOnly, owned, actions, domains }: {
   return (
     <div data-testid="sheet-domains" data-guide="sheet.domains">
       <div className="sheet-held">
-        <span className="sheet-held__label">{t('sheet.domains')}</span>
+        <span className="sheet-held__label">{t('sheet.handedTo')}</span>
         <div className="sheet-held__values">
           {/* A stand-in keeps none of its own: the scope that defines it says them, and they are read there. */}
           {owned && <span>{t('sheet.domainsThere')}</span>}

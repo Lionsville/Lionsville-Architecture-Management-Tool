@@ -214,7 +214,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.newJourneyMeans': 'De stappen die een klant doorloopt, boven aan het blad.',
   'sheet.fromAboveMeans': 'Neem een capability over die een blad hierboven heeft.',
   'sheet.takenUpSection': 'Overgenomen van hierboven',
-  'sheet.domainGone': '{name} bestaat niet meer',
+  'sheet.domainGone': 'Geen scope heet {name}',
   'sheet.unmappedSay': 'Deze liggen nog bij niemand: geef ze aan een domein, of laat een domein ze overnemen.',
   'sheet.unmappedJumpOne': '1 gebied niet aan een domein gekoppeld ›',
   'sheet.unmappedJumpOther': '{count} gebieden niet aan een domein gekoppeld ›',
@@ -291,4 +291,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'map.author': 'Auteur',
   'map.client': 'Klant',
   'map.date': 'Datum',
+  'sheet.answersFor': 'Is verantwoordelijk',
+  'sheet.handedTo': 'Doorgegeven aan',
+  'sheet.addDescription': '+ Beschrijving',
 }

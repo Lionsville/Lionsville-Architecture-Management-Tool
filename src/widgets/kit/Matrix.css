@@ -15,8 +15,8 @@
 .kit-matrix__table { border-collapse: separate; border-spacing: 0; }
 
 /* Colour comes from the col and the row, so a step of the arrow repaints without redrawing the cells. */
-.kit-matrix col[data-crossed] { background: var(--crosshair); }
-.kit-matrix tr[data-crossed] > td { background: var(--crosshair); }
+.kit-matrix:focus-within col[data-crossed] { background: var(--crosshair); }
+.kit-matrix:focus-within tr[data-crossed] > td { background: var(--crosshair); }
 
 .kit-matrix__corner,
 .kit-matrix__colHead,
@@ -47,7 +47,7 @@
   font-weight: var(--fw-regular);
   vertical-align: bottom;
 }
-.kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
+.kit-matrix:focus-within .kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
 .kit-matrix__colHead[data-folded] { color: var(--ink); cursor: pointer; }
 .kit-matrix__colName { display: block; width: max-content; max-width: 96px; hyphens: auto; }
 .kit-matrix[data-rotate] .kit-matrix__colName { max-height: 140px; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; }
@@ -78,7 +78,7 @@
   text-align: start;
   white-space: nowrap;
 }
-tr[data-crossed] > .kit-matrix__rowHead { background: var(--crosshair); font-weight: var(--fw-medium); }
+.kit-matrix:focus-within tr[data-crossed] > .kit-matrix__rowHead { background: var(--crosshair); font-weight: var(--fw-medium); }
 .kit-matrix__rowName { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 .kit-matrix__caret { display: inline-flex; margin-inline-end: var(--s-1); vertical-align: middle; }
 .kit-matrix__caret[data-folded] { transform: rotate(-90deg); }
