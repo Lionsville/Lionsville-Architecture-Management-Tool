@@ -83,6 +83,7 @@ import type { ScopeStore } from './ScopeStore'
 import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { folderRevision } from './revision'
+import { writeInto } from './writeInto'
 import { writeStaged } from './stagedWrites'
 import type { StagedWrite } from './stagedWrites'
 
@@ -745,13 +746,7 @@ export class FileSystemScopeStore implements ScopeStore {
   private async write(folder: DirectoryHandleLike, file: FolderFile): Promise<void> {
     const parts = file.path.split('/')
     const parent = await this.folderInside(folder, parts.slice(0, -1))
-    const handle = await parent.getFileHandle(parts[parts.length - 1], { create: true })
-    const writable = await handle.createWritable()
-    try {
-      await writable.write('text' in file ? file.text : file.bytes)
-    } finally {
-      await writable.close()
-    }
+    await writeInto(parent, parts[parts.length - 1], 'text' in file ? file.text : file.bytes)
   }
 
   private async folderInside(

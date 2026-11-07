@@ -7,6 +7,7 @@
  * by its path from the root, and a folder's files listed.
  */
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
+import { writeInto } from './writeInto'
 import { isAbsent } from './FileSystemScopeStore'
 
 function segmentsOf(path: string): string[] {
@@ -61,13 +62,7 @@ export async function textAt(root: DirectoryHandleLike, path: string): Promise<s
 export async function writeAt(root: DirectoryHandleLike, path: string, data: string | Uint8Array): Promise<void> {
   const segments = segmentsOf(path)
   const folder = await folderAt(root, segments.slice(0, -1).join('/'), true)
-  const handle = await folder!.getFileHandle(segments[segments.length - 1], { create: true })
-  const writable = await handle.createWritable()
-  try {
-    await writable.write(data)
-  } finally {
-    await writable.close()
-  }
+  await writeInto(folder!, segments[segments.length - 1], data)
 }
 
 /**

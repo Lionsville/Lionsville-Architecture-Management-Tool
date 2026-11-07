@@ -218,7 +218,7 @@ export class FolderScopeRepository implements ScopeRepository {
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
         const missing = this.bytesMissing(read, result.content.images, steps)
         if (missing) return { refused: 'shell.imageBytesGone', scope: read.node.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
-        if (!result.changed && !whole) continue
+        if (!result.changed && !whole && !await this.drawingPictureWaits(read, result.content)) continue
         const library = nextLibrary(read.library, result.content.images)
         const snapshot = snapshotFor(read.node, result.content, read, library)
         planned.push({ read, content: result.content, library, snapshot, steps, whole })
@@ -306,6 +306,21 @@ export class FolderScopeRepository implements ScopeRepository {
     if (address === undefined) return undefined
     const naming = steps.find(({ command }) => command.type === 'image.add' && command.image.contentAddress === address)
     return { address, ...(naming ? { stepId: naming.stepId } : {}) }
+  }
+
+  /**
+   * Whether a picture a drawing names has been put and is not a file yet. The
+   * state is what it was, so a write would change no revision; but the bytes
+   * have nowhere else to go, and a step that says nothing new is how a caller
+   * brings them to rest (`copyScopes`, over a scope brought without them).
+   */
+  private async drawingPictureWaits(read: ReadScope, content: ScopeContent): Promise<boolean> {
+    for (const named of new Set(drawingPictureAddresses(content.model.diagrams))) {
+      const file = drawingPictureFile(named)
+      if (!file || !this.staging.get(read.node.id, named)) continue
+      if (!await bytesAt(this.folder.root, picturePath(read.node.address, file)).catch(() => undefined)) return true
+    }
+    return false
   }
 
   /** Each planned step, with what its scope's files are to be fingerprinted as once the write has landed. */
