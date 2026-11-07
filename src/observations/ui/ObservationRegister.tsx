@@ -39,6 +39,7 @@ import { IMPACT_COLOR, IMPACT_LABEL, TONE_WORD, OUTCOME_COLOR, OUTCOME_LABEL, PH
 import { formatExperimentNumber, formatSolutionNumber, isLive, solutionPhase } from '../solution'
 import type { Experiment, Solution, SolutionPhase } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
+import { usePersonNames } from '../../people/ui/names'
 import { MergedNote, recordedByText } from './Readers'
 import { visuallyHidden } from './FormParts'
 import { toneStripe } from './ToneBar'
@@ -171,11 +172,13 @@ export function ObservationRegister(props: ObservationRegisterProps) {
 /** One observation's row: this scope's, or one of a scope below. */
 function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { one: Observation; scope?: string }) {
   const { s } = props
+  const names = usePersonNames()
   const key = nodeKey(one.id, scope)
   const into = props.analysedInto(one.id, scope)
   const merged = scope === undefined ? props.mergedInto(one) : undefined
   const archived = isArchived(one)
   const tone = toneOf(one)
+  const recorder = one.recordedBy ? recordedByText(one.recordedBy, names, s) : ''
   return (
     <TableRow
       hover
@@ -204,8 +207,8 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
       <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, whiteSpace: 'nowrap' }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
-      <TableCell sx={{ fontSize: 12, whiteSpace: 'nowrap', color: one.recordedBy ? 'inherit' : 'text.secondary' }} data-testid={`observation-recorded-by-${key}`}>
-        {one.recordedBy ? recordedByText(one.recordedBy, s) : '—'}
+      <TableCell sx={{ fontSize: 12, whiteSpace: 'nowrap', color: recorder ? 'inherit' : 'text.secondary' }} data-testid={`observation-recorded-by-${key}`}>
+        {recorder || '—'}
       </TableCell>
       <TableCell sx={{ fontSize: 12 }}>
         {merged

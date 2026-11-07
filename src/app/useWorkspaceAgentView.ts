@@ -164,6 +164,8 @@ export function useWorkspaceAgentView(deps: {
     me: () => peopleRef.current?.me,
     // And who records an observation, where the source has accounts (ADR-0038, amended §10).
     account: () => peopleRef.current?.account?.(),
+    // And what the source says of an account a record names, for who recorded it (ADR-0036 §10).
+    recorder: (account) => peopleRef.current?.recorder?.(account),
     // And whether they may remove somebody else's, where the source says (ADR-0037 §5).
     ...(comments?.mayModerate ? { mayModerate: () => comments.mayModerate?.(scope) ?? true } : {}),
     ...(changeAcross ? { changeAcross } : {}),

@@ -182,12 +182,13 @@ describe('who recorded it (ADR-0038, amended §10)', () => {
 
   it('is the account and the entry it is linked to, via the agent', () => {
     const { model, answer: said } = as({ account: () => ({ id: 'acc-1', name: 'Ada' }), me: () => 'pe-ada', people, client: 'An agent' })(fromArrays(host), fact)
-    expect(model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada', account: 'acc-1', person: 'pe-ada', via: 'An agent' })
-    expect(said).toMatchObject({ recordedBy: { name: 'Ada', via: 'An agent' } })
+    // No name beside the entry, in the record and so in the step (amended 7 November 2026); what an agent is told is said as the answer leaves (`recorders.test.ts`).
+    expect(model.observations!['ob-new-1'].recordedBy).toEqual({ account: 'acc-1', person: 'pe-ada', via: 'An agent' })
+    expect(said).toMatchObject({ recordedBy: { person: 'pe-ada', via: 'An agent' } })
   })
 
   it('is This is me with no accounts, and nobody with neither', () => {
-    expect(as({ me: () => 'pe-ada', people })(fromArrays(host), fact).model.observations!['ob-new-1'].recordedBy).toEqual({ name: 'Ada Example', person: 'pe-ada' })
+    expect(as({ me: () => 'pe-ada', people })(fromArrays(host), fact).model.observations!['ob-new-1'].recordedBy).toEqual({ person: 'pe-ada' })
     counter = 0
     expect(write(fromArrays(host), 'observation.record', fact).model.observations!['ob-new-1']).not.toHaveProperty('recordedBy')
   })

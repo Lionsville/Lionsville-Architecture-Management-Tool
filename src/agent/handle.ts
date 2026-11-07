@@ -77,8 +77,9 @@ import { answerOperating, isOperatingRead } from './operatingModel'
 import { ASSIGNMENTS_LIST, listAssignments } from './assignments'
 import { listReportingLines, REPORTING_LINES_LIST } from './reportingLines'
 import type { Person } from '../people/person'
+import type { RecorderSource } from '../model/observation'
 import type { PersonId } from '../model/person'
-import { agentRegister, answerWithNames, mayNamePeople } from './persons'
+import { agentRegister, answerWithNames, answerWithRecorders, mayNamePeople } from './persons'
 import type { AgentRegister } from './persons'
 import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
@@ -139,6 +140,12 @@ export type SessionView = {
    * whose are *mine*. Absent on a source with no accounts.
    */
   account?(): { readonly id: string; readonly name: string } | undefined
+  /**
+   * What the source says of an account a record names (`SourcePeople.recorder`;
+   * ADR-0036 §10, amended 7 November 2026): who an answer says recorded it. Absent
+   * on a source with no accounts, and the record's own word stands.
+   */
+  recorder?: RecorderSource
   /**
    * Whether that person may remove other people's comments in the scope the
    * call writes (ADR-0037 §5): what a source with accounts says, as
@@ -301,7 +308,9 @@ async function registerFor(session: SessionView | undefined, shell: ShellView | 
 async function withNames(said: AgentAnswer, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!mayNamePeople(said)) return said
   const register = await registerFor(session, shell)
-  return register ? answerWithNames(said, register.words, register.withhold, register.apart) : said
+  // Who recorded it first: an account leaves no answer, with a register to read or without one.
+  const recorded = answerWithRecorders(said, register, session?.recorder ?? shell?.people?.recorder)
+  return register ? answerWithNames(recorded, register.words, register.withhold, register.apart) : recorded
 }
 
 /** The two reads that ask the register whatever their arguments: a search for a name, and the export's tables. */

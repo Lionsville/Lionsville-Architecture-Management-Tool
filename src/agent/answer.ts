@@ -811,7 +811,8 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
     tone: toneOf(observation),
-    ...(observation.recordedBy ? { recordedBy: recordedByLine(observation.recordedBy) } : {}),
+    // Said through the entry, the source and the policy as the answer leaves the handler (`persons.ts`), with whatever else carries a record.
+    ...(observation.recordedBy ? { recordedBy: observation.recordedBy } : {}),
     seen: observation.seen,
     ...(observation.archived ? { archived: true } : {}),
     ...wentTo(merged, observation.history),
@@ -1271,7 +1272,3 @@ function listedTone(one: Observation, asked: unknown): boolean {
   return ofTone(one, TONES.includes(asked as Tone) ? asked as Tone : 'all')
 }
 
-/** Who recorded an observation, as a read says it: the name, and the agent it came through. */
-function recordedByLine(by: NonNullable<Observation['recordedBy']>): { name: string; via?: string } {
-  return { name: by.name, ...(by.via ? { via: by.via } : {}) }
-}

@@ -17,6 +17,7 @@
  */
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import type { RecorderSource } from '../../model/observation'
 import type { PersonId, PersonRef } from '../../model/person'
 import { personIdOf, personRefOf } from '../../model/person'
 import type { Person } from '../person'
@@ -24,7 +25,7 @@ import { peopleMatching } from '../matching'
 import type { PeopleMatching } from '../matching'
 import { meIn } from '../me'
 import { registerOf, resolvePerson, shownPerson, shownText, signatureApart } from '../shown'
-import type { Translate } from '../shown'
+import type { Register, Shown, Translate } from '../shown'
 import type { PeopleRegisterAccess } from './access'
 
 export type PersonNames = {
@@ -53,6 +54,12 @@ export type PersonNames = {
    * Text is never apart: it was never a link.
    */
   apart(ref: PersonRef | undefined): boolean
+  /** The register as last read, for what is read through it rather than by a reference; `undefined` until it has been. */
+  register: Register | undefined
+  /** What the source says of an account a record names (`SourcePeople.recorder`), for who recorded it. */
+  recorder?: RecorderSource
+  /** What a reference reads as, in this screen's words. */
+  words(shown: Shown): string
   /** The register, for picking and adding; absent where it is not there, and a field then takes text alone. */
   access?: PeopleRegisterAccess
 }
@@ -88,6 +95,9 @@ export function personNames(access: PeopleRegisterAccess | undefined, t: Transla
       const id = personIdOf(ref)
       return id !== undefined && me !== undefined && canonical(id) === me
     },
+    register: people === undefined ? undefined : register,
+    ...(access?.recorder ? { recorder: access.recorder } : {}),
+    words: (shown) => shownText(shown, t),
     ...(access ? { access } : {}),
   }
 }

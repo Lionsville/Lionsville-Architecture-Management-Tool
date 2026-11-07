@@ -53,7 +53,8 @@ import type {
 import { observationProblems } from '../form'
 import type { PersonRef } from '../../model/person'
 import type { PersonNames } from '../../people/ui/names'
-import { usePersonNames } from '../../people/ui/names'
+import { recorderEntry, recorderShown } from '../recordedBy'
+import { NOT_READ, usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { EVENT_LABEL, TONE_WORD, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
@@ -471,7 +472,7 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
       <Term>{s('observation.colRecordedBy')}</Term>
       <Value testId="observation-recorded-by">
         <Box component="span" sx={quiet(Boolean(observation.recordedBy))}>
-          {observation.recordedBy ? recordedByText(observation.recordedBy, s) : s('observation.recordedByUnknown')}
+          {(observation.recordedBy && recordedByText(observation.recordedBy, names, s)) || s('observation.recordedByUnknown')}
         </Box>
       </Value>
       <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
@@ -514,9 +515,22 @@ function ObservationHistory({ history, s, day, nameOf, scopeLabel }: {
   )
 }
 
-/** Who recorded it, and through which client where it was an agent. */
-export function recordedByText(by: RecordedBy, s: Translate): string {
-  return by.via ? `${by.name} ${s('comments.via', { agent: by.via })}` : by.name
+/**
+ * Who recorded it, and through which client where it was an agent: the one render
+ * of a recorder on a screen (`recorderShown`), so a forget reaches it. Nothing
+ * where nothing says who; not yet anybody until the register has been read, for
+ * a record an entry answers for: never the name stored beside it.
+ */
+export function recordedByText(by: RecordedBy, names: PersonNames, s: Translate): string {
+  const who = recorderWords(by, names)
+  const via = by.via ? s('comments.via', { agent: by.via }) : ''
+  return who && via ? `${who} ${via}` : who || via
+}
+
+function recorderWords(by: RecordedBy, names: PersonNames): string {
+  if (names.register === undefined && recorderEntry(by, names.recorder) !== undefined) return NOT_READ
+  const shown = recorderShown(by, names.register ?? new Map(), {}, names.recorder)
+  return shown === undefined || shown.as === 'nameWithheld' ? '' : names.words(shown)
 }
 
 /** The tone, said with its bar (ADR-0038, amended): the same bar the register's stripe and the form's buttons carry. */

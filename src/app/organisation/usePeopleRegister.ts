@@ -40,6 +40,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
 import { holdsAllIn, managesPeople } from '../../model/managing'
 import type { ManagesPeople } from '../../model/managing'
+import type { RecorderSource } from '../../model/observation'
 import type { PersonId } from '../../model/person'
 import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
 import { registerOf, resolvePerson } from '../../people/shown'
@@ -78,6 +79,8 @@ export type PeopleAccess = {
   readOnly: boolean
   /** The account using the app, where the source has accounts (`SourcePeople.account`). */
   account?: () => SourceAccount | undefined
+  /** What the source says of an account a record names (`SourcePeople.recorder`). */
+  recorder?: RecorderSource
   /** Whether this person may make one kind of change, of one entry where it is the entry's; where the source says (`SourcePeople.may`). */
   may?: (action: PeopleAction, id?: PersonId) => boolean
   /** Whether an entry has an address this person is not shown; where the source says. */
@@ -288,7 +291,8 @@ export function usePeopleRegister(deps: {
     leave: (id, on) => changed(leavePerson(repositories.people, agentConsequences, id, on)),
     today: () => today,
     readOnly: () => readOnly,
-  }), [read, changed, repositories, agentConsequences, today, readOnly])
+    ...(source?.recorder ? { recorder: source.recorder } : {}),
+  }), [read, changed, repositories, agentConsequences, today, readOnly, source?.recorder])
 
   // The host's two doors, read through a ref: a shell hands new functions on every render, and the
   // register is one object while nothing it says has changed — what a screen built on it is memoised by.
@@ -300,6 +304,7 @@ export function usePeopleRegister(deps: {
     ...held,
     meSaid: source?.me !== undefined,
     ...(source?.account ? { account: source.account } : {}),
+    ...(source?.recorder ? { recorder: source.recorder } : {}),
     readOnly,
     ...(source?.may ? { may: source.may } : {}),
     ...(source?.withheld ? { withheld: source.withheld } : {}),

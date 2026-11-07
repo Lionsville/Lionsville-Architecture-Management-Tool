@@ -14,6 +14,7 @@
  */
 import { useCallback, useState } from 'react'
 import type { ManagesPeople } from '../../model/managing'
+import type { RecorderSource } from '../../model/observation'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
 import type { DistinctPair } from '../distinct'
@@ -40,6 +41,8 @@ export type PeopleRegisterAccess = {
   meSaid?: boolean
   /** The account using the app, where the source has accounts: who records, and whose is *Mine*. */
   account?(): { readonly id: string; readonly name: string } | undefined
+  /** What the source says now about an account a record names (`SourcePeople.recorder`). Absent, the record's own word stands. */
+  recorder?: RecorderSource
   readOnly: boolean
   /**
    * Whether this person may make one kind of change — of one entry, where the

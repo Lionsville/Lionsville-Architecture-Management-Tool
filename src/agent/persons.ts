@@ -23,18 +23,28 @@
  * answer ties that name to the entry and undoes the forgetting. Where names
  * are withheld, as *a former colleague*, and the name as signed is withheld.
  *
+ * **Who recorded a record** (ADR-0036 §10, §13; ADR-0038, amended §10) is read
+ * through `recorderShown`, wherever an answer carries one, the whole model of an
+ * export included: `{ person, name, via }` where an entry answers, the name stored
+ * beside it never said; `{ name, via }` where none does; and where the policy gives
+ * agents pseudonyms and no entry can stand for the name, `{ nameWithheld: true, via }`.
+ * An account never leaves, with a register to read or without one: on a source with
+ * accounts it is the person's sign-in.
+ *
  * Done once, over the answer as it leaves the handler, so no tool has to
  * remember to do it: the answer is read by the shape of a reference, as
  * `personIdsIn` reads a model. An answer with no reference in it is passed
  * through untouched, and the register is not read for it.
  */
+import type { RecordedBy, RecorderSource } from '../model/observation'
 import { isPersonRef, isPicked, pickedPerson } from '../model/person'
 import type { PersonId, PersonRef } from '../model/person'
 import type { Person } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
 import { peopleMatching } from '../people/matching'
-import { registerOf, shownEnglish, shownPerson, signatureApart } from '../people/shown'
+import { registerOf, resolvePerson, shownEnglish, shownPerson, signatureApart } from '../people/shown'
 import type { Register } from '../people/shown'
+import { recorderEntry, recorderShown } from '../observations/recordedBy'
 import type { PeopleMatch } from '../search/search'
 import type { AgentAnswer } from './tools'
 
@@ -114,9 +124,65 @@ export function withPersonNames(value: unknown, words: PersonWords, withhold = f
   )))
 }
 
+/** What an agent is told of who recorded a record: never an account, and a name only where nothing answers for it. */
+export type RecorderSaid = { person?: PersonId; name?: string; nameWithheld?: true; via?: string }
+
+const RECORDER_KEYS: ReadonlySet<string> = new Set(['name', 'account', 'person', 'via'])
+
+/** Whether a `recordedBy` value is a record of who recorded it, rather than something else of that name: strings under its own four keys. */
+function isRecorder(value: unknown): value is RecordedBy {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  return Object.entries(value).every(([key, item]) => RECORDER_KEYS.has(key) && typeof item === 'string')
+}
+
+/** A recorder as an agent is told it. With no register to ask, an entry is its id alone, as an export's table says it. */
+export function recorderSaid(by: RecordedBy, register: AgentRegister | undefined, source: RecorderSource | undefined): RecorderSaid {
+  const via = by.via ? { via: by.via } : {}
+  const entry = recorderEntry(by, source)
+  if (!register) {
+    if (entry !== undefined) return { person: entry, ...via }
+    const name = (by.account === undefined ? undefined : source?.(by.account)?.name) ?? by.name
+    return { ...(name ? { name } : {}), ...via }
+  }
+  const shown = recorderShown(by, register.entries, { withhold: register.withhold }, source)
+  if (shown === undefined) return via
+  if (shown.as === 'nameWithheld') return { nameWithheld: true, ...via }
+  const words = shownEnglish(shown)
+  if (entry === undefined) return { name: words, ...via }
+  return { person: resolvePerson(entry, register.entries)?.id ?? entry, name: words, ...via }
+}
+
+/** Every recorder in a value, said; a recorder that says nothing leaves no key. */
+function withRecorders(value: unknown, say: (by: RecordedBy) => RecorderSaid): unknown {
+  if (Array.isArray(value)) return value.map((item) => withRecorders(item, say))
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(Object.entries(value).flatMap(([key, item]): [string, unknown][] => {
+    if (key !== 'recordedBy' || !isRecorder(item)) return [[key, withRecorders(item, say)]]
+    const said = say(item)
+    return Object.keys(said).length > 0 ? [[key, said]] : []
+  }))
+}
+
+/** An answer with every recorder in it said (`recorderSaid`): what no answer is let out without. */
+export function answerWithRecorders(answer: AgentAnswer, register: AgentRegister | undefined, source: RecorderSource | undefined): AgentAnswer {
+  if (!answer.ok) return answer
+  return {
+    ...answer,
+    content: answer.content.map((block) => {
+      if (block.type !== 'text' || !block.text.includes('"recordedBy"')) return block
+      try {
+        const read: unknown = JSON.parse(block.text)
+        return { ...block, text: JSON.stringify(withRecorders(read, (by) => recorderSaid(by, register, source)), undefined, 2) }
+      } catch {
+        return block
+      }
+    }),
+  }
+}
+
 /** Whether an answer may name somebody by id: a cheap look before the register is read. */
 export function mayNamePeople(answer: AgentAnswer): boolean {
-  return answer.ok && answer.content.some((block) => block.type === 'text' && (block.text.includes('"person"') || block.text.includes('"signedAs"') || block.text.includes('"proposedAs"')))
+  return answer.ok && answer.content.some((block) => block.type === 'text' && (block.text.includes('"person"') || block.text.includes('"signedAs"') || block.text.includes('"proposedAs"') || block.text.includes('"recordedBy"')))
 }
 
 /**

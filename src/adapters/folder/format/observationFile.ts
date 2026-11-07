@@ -118,7 +118,7 @@ export function observationFileText(observation: Observation): string {
     // A bright spot or a problem (ADR-0038, amended §9); a neutral one says nothing, as every
     // observation before was written. A 14's `bright` is read as `tone: bright` and written so.
     tone: observation.tone ?? (observation.bright ? 'bright' : undefined),
-    // Who recorded it, where it was kept (§10): the name, the account and the entry, and the agent.
+    // Who recorded it, where it was kept (§10): the entry or the name, the account, and the agent. Since 7 November 2026 an entry writes no name.
     recordedBy: observation.recordedBy?.name,
     recordedByAccount: observation.recordedBy?.account,
     recordedByPerson: observation.recordedBy?.person,
@@ -436,12 +436,12 @@ function toneFrom(tone: string | undefined, bright: string | undefined): Pick<Ob
   return bright === 'true' ? { tone: 'bright' } : {}
 }
 
-/** Who recorded it (§10): a name, and the account, the entry and the agent where they were written; none without a name. */
+/** Who recorded it (§10): whichever of the name, the account, the entry and the agent were written; none where none was. */
 function recordedByFrom(fields: Parameters<typeof frontMatterString>[0]): Pick<Observation, 'recordedBy'> {
   const name = frontMatterString(fields, 'recordedBy')?.trim()
-  if (!name) return {}
   const account = frontMatterString(fields, 'recordedByAccount')
   const person = frontMatterString(fields, 'recordedByPerson')
   const via = frontMatterString(fields, 'recordedByVia')
-  return { recordedBy: { name, ...(account ? { account } : {}), ...(person ? { person } : {}), ...(via ? { via } : {}) } }
+  if (!name && !account && !person && !via) return {}
+  return { recordedBy: { ...(name ? { name } : {}), ...(account ? { account } : {}), ...(person ? { person } : {}), ...(via ? { via } : {}) } }
 }

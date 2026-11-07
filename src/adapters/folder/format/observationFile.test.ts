@@ -78,6 +78,21 @@ describe('an observation as a file', () => {
     expect(observationFromFile(text, observationPath(recorded))).toEqual(recorded)
   })
 
+  it('reads a record that kept no name: an entry, an account, an agent, and none where nothing is left (amended 7 November 2026)', () => {
+    for (const recordedBy of [
+      { account: 'acc-1', person: 'pe-1', via: 'An agent' },
+      { person: 'pe-1' },
+      { account: 'acc-1' },
+      { via: 'An agent' },
+    ]) {
+      const recorded: Observation = { ...observation, recordedBy }
+      const text = observationFileText(recorded)
+      expect(text).not.toMatch(/^recordedBy:/m)
+      expect(observationFromFile(text, observationPath(recorded))).toEqual(recorded)
+    }
+    expect(observationFromFile(observationFileText(observation), observationPath(observation))).not.toHaveProperty('recordedBy')
+  })
+
   it('writes a move both ways, the scope always and the organisation as the empty path, and reads it back (ADR-0038 §1)', () => {
     const moved: Observation = {
       ...observation,

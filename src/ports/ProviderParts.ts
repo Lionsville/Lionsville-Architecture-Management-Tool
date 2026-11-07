@@ -18,6 +18,7 @@
  * where a component may be named.
  */
 import type { Destination, MovedBy, Screen } from '../agent/screen'
+import type { RecorderSource } from '../model/observation'
 import type { PersonId } from '../model/person'
 import type { DistinctPair } from '../people/distinct'
 import type { PeopleAction, Person, PolicyHold } from '../people/person'
@@ -170,6 +171,15 @@ export type SourcePeople = {
    * on a source with no accounts, where *This is me* says who.
    */
   readonly account?: () => SourceAccount | undefined
+  /**
+   * What the source says now about an account a record names and that holds no
+   * entry (`RecordedBy`; ADR-0036 §10, amended 7 November 2026): the entry it was
+   * linked to since, or the name it goes by since it was renamed or erased, where
+   * what the record kept may be wrong. Asked as a recorder is read, so it answers
+   * from what the source last said; nothing, and the record's own word stands.
+   * Absent on a source with no accounts: this is all core knows of one.
+   */
+  readonly recorder?: RecorderSource
   /**
    * Hear when the register changed other than through this window, and the
    * way to stop: the app reads it again, so a forget shows everywhere at once.

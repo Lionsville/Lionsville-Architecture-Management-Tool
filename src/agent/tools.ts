@@ -1080,7 +1080,9 @@ const SPECS = [
   {
     name: 'observation.read',
     tier: 'read',
-    description: 'One observation in full: its fields, its dated history, the causes that explain it, and its body as markdown.',
+    description: 'One observation in full: its fields, its dated history, the causes that explain it, and its body as markdown. '
+      + 'Who recorded it is said as recordedBy: a person and what they read as, or a name, with the client it came through; '
+      + 'where the organisation gives agents pseudonyms and nobody in the register stands for that name, it is withheld from you (nameWithheld).',
     inputSchema: { type: 'object', properties: { id: ID('observation') }, required: ['id'], additionalProperties: false },
   },
   {

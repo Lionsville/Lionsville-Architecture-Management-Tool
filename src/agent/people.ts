@@ -22,6 +22,7 @@
  */
 import { isDay } from '../model/lifecycle'
 import { addDays } from '../model/transition'
+import type { RecorderSource } from '../model/observation'
 import type { PersonId } from '../model/person'
 import type { DistinctPair } from '../people/distinct'
 import { possibleDuplicates, duplicatePairs } from '../people/duplicates'
@@ -38,6 +39,8 @@ import { json, refused } from './tools'
 export type PeopleView = {
   /** The register, its policy, and the pairs a person answered as not the same person — absent, none. */
   read(): Promise<{ people: readonly Person[]; policy: PeoplePolicy; distinct?: readonly DistinctPair[] }>
+  /** What the source says of an account a record names, for who recorded it (`SourcePeople.recorder`). Absent, the record's own word stands. */
+  recorder?: RecorderSource
   add(person: NewPerson): Promise<{ person: Person } | { refused: PeopleRefusal }>
   /** Marks them as left, and does everything leaving does beyond the register (`people/leave.ts`). */
   leave(id: PersonId, on: string): Promise<Left | { refused: PeopleRefusal }>

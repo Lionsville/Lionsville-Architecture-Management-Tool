@@ -16,15 +16,24 @@
  * a namesake with an entry of their own is not me and a name kept beside a
  * forgotten entry connects to nobody. The register is read once, by
  * {@link mineOf}; a row then costs a lookup or two and a fold of its own text.
+ *
+ * **What a recorder reads as** (ADR-0036 §10, amended 7 November 2026) is
+ * {@link recorderShown}, the one function every screen and every answer to an
+ * agent reads through, and {@link recorderInCopy} what a copy carries. The entry
+ * is the record's, or what the source says of the account; with an entry, a name
+ * stored beside it is never read, so a forget reaches it. With none, the
+ * source's current name for the account, and then the name stored. Core knows of
+ * an account only that a source may answer for it (ADR-0036: core has no
+ * accounts).
  */
 import { fold } from '../model/textSearch'
-import { isPicked } from '../model/person'
+import { isPicked, pickedPerson } from '../model/person'
 import type { PersonId } from '../model/person'
-import type { Observation, RecordedBy } from '../model/observation'
+import type { Observation, RecordedBy, RecorderSource } from '../model/observation'
 import { meIn } from '../people/me'
 import type { Person } from '../people/person'
-import { resolvePerson, shownEntry } from '../people/shown'
-import type { Register, Showing } from '../people/shown'
+import { resolvePerson, shownEntry, shownPerson } from '../people/shown'
+import type { Register, Shown, Showing } from '../people/shown'
 
 /** The account using the app, where the source has accounts. */
 export type RecordingAccount = { readonly id: string; readonly name: string }
@@ -37,9 +46,52 @@ export function whoRecords(
   account: RecordingAccount | undefined, me: RecordingPerson | undefined, via?: string,
 ): RecordedBy | undefined {
   const through = via ? { via } : {}
-  if (account) return { name: account.name, account: account.id, ...(me ? { person: me.id } : {}), ...through }
-  if (me?.name) return { name: me.name, person: me.id, ...through }
+  // An entry answers for the name, so none is written beside it: the name is the register's to forget (amended 7 November 2026).
+  if (account) return { ...(me ? { person: me.id } : { name: account.name }), account: account.id, ...through }
+  if (me?.name) return { person: me.id, ...through }
   return undefined
+}
+
+/** The entry that answers for a recorder: the record's, or the one the source says the account is linked to. */
+export function recorderEntry(by: RecordedBy, source?: RecorderSource): PersonId | undefined {
+  return by.person ?? (by.account === undefined ? undefined : source?.(by.account)?.person)
+}
+
+/** What a recorder reads as: a reference's reading, or a name left out because names are withheld and no entry can stand for it. */
+export type RecorderShown = Shown | { as: 'nameWithheld' }
+
+/**
+ * What a recorder reads as, for a screen and for an agent alike. With an entry,
+ * what the register says of it (`people/shown`): the pseudonym once forgotten,
+ * *a former colleague* once removed, the withheld form under a pseudonym policy,
+ * the kept entry after a merge. With none, the source's name for the account and
+ * then the name stored; nothing where neither says anything. A pseudonym policy
+ * has no pseudonym to give such a name, so it is left out, and that is said.
+ */
+export function recorderShown(
+  by: RecordedBy, register: Register, showing: Showing = {}, source?: RecorderSource,
+): RecorderShown | undefined {
+  const entry = recorderEntry(by, source)
+  if (entry !== undefined) return shownPerson(pickedPerson(entry), register, showing)
+  const name = (by.account === undefined ? undefined : source?.(by.account)?.name) ?? by.name
+  if (!name) return undefined
+  return showing.withhold ? { as: 'nameWithheld' } : { as: 'text', text: name }
+}
+
+/**
+ * What a copy carries of a recorder, which goes where this source's accounts mean
+ * nothing: never the account, and the entry where one answers, which the copy's
+ * register reads (ADR-0036 §8). A copy without names keeps the entry and the
+ * agent; with nothing left, no record.
+ */
+export function recorderInCopy(
+  by: RecordedBy, { nameless = false, source }: { nameless?: boolean; source?: RecorderSource | undefined },
+): RecordedBy | undefined {
+  const person = recorderEntry(by, source)
+  const said = by.account === undefined ? undefined : source?.(by.account)?.name
+  const name = person === undefined && !nameless ? said ?? by.name : undefined
+  const kept: RecordedBy = { ...(name ? { name } : {}), ...(person !== undefined ? { person } : {}), ...(by.via ? { via: by.via } : {}) }
+  return Object.keys(kept).length > 0 ? kept : undefined
 }
 
 /** Who *mine* asks about, worked out once per register rather than per row. */

@@ -446,6 +446,7 @@ describe('the account a session says (ADR-0038, amended §10)', () => {
     const shell = { screen: () => ({}), open: () => {}, client: () => 'An agent', driving: new Driving() } as never
     const recorded = parsed(await handle({ id: '1', tool: 'observation.record', args: { title: 'Seen twice', where: 'Desk', by: 'W.S.' } }, held, shell))
     expect(recorded).toMatchObject({ recordedBy: { name: 'Ada', via: 'An agent' } })
+    expect(JSON.stringify(recorded)).not.toContain('acc-1')
     const kept = Object.values(held.model().observations ?? {}).find((one) => one.title === 'Seen twice')
     expect(kept?.recordedBy).toEqual({ name: 'Ada', account: 'acc-1', via: 'An agent' })
     const mine = parsed(await handle({ id: '2', tool: 'observations.list', args: { recordedBy: 'me' } }, held))
@@ -463,7 +464,8 @@ describe('the account a session says (ADR-0038, amended §10)', () => {
     people.mockClear()
     const all = parsed(await handle({ id: '2', tool: 'observations.list', args: {} }, held))
     expect((all.observations as unknown[]).length).toBe(1)
-    expect(people.mock.calls.length).toBe(0)
+    // Once, for who recorded it, as the answer leaves (`persons.ts`); asking what is mine reads it before.
+    expect(people.mock.calls.length).toBe(1)
     await handle({ id: '3', tool: 'observation.record', args: { title: 'Picked', where: 'Desk', by: { person: 'pe-old' } } }, held, shell)
     const mine = parsed(await handle({ id: '4', tool: 'observations.list', args: { recordedBy: 'me' } }, held))
     expect((mine.observations as { title: string }[]).map((one) => one.title)).toEqual(['Typed', 'Picked'])

@@ -9,12 +9,12 @@ import { isMine, mineCaption, mineOf, whoRecords } from './recordedBy'
 describe('who records (ADR-0038, amended §10)', () => {
   it('is the account where the source has accounts, with the entry it is linked to', () => {
     expect(whoRecords({ id: 'acc-1', name: 'Ada' }, { id: 'pe-1', name: 'Ada Example' }))
-      .toEqual({ name: 'Ada', account: 'acc-1', person: 'pe-1' })
+      .toEqual({ account: 'acc-1', person: 'pe-1' })
     expect(whoRecords({ id: 'acc-1', name: 'Ada' }, undefined)).toEqual({ name: 'Ada', account: 'acc-1' })
   })
 
   it('is This is me on a source with no accounts', () => {
-    expect(whoRecords(undefined, { id: 'pe-1', name: 'Ada Example' })).toEqual({ name: 'Ada Example', person: 'pe-1' })
+    expect(whoRecords(undefined, { id: 'pe-1', name: 'Ada Example' })).toEqual({ person: 'pe-1' })
   })
 
   it('is nobody with neither, rather than a word that names no one', () => {
@@ -23,7 +23,7 @@ describe('who records (ADR-0038, amended §10)', () => {
   })
 
   it('says the agent an agent recorded through', () => {
-    expect(whoRecords(undefined, { id: 'pe-1', name: 'Ada' }, 'An agent')).toEqual({ name: 'Ada', person: 'pe-1', via: 'An agent' })
+    expect(whoRecords(undefined, { id: 'pe-1', name: 'Ada' }, 'An agent')).toEqual({ person: 'pe-1', via: 'An agent' })
   })
 })
 

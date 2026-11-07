@@ -84,6 +84,16 @@ describe('format 15', () => {
     expect(back?.model.observations).toEqual([bright, problem, neutral])
   })
 
+  it('keeps a record with an entry and no name, read back as written through the folder and the working file (amended 7 November 2026)', () => {
+    const written = observation('ob-4', 4, { recordedBy: { account: 'acc-ada', person: 'pe-ada', via: 'An agent' } })
+    const held = { ...customer(), model: { ...customer().model, observations: [written] } }
+    const files = scopeFiles(held)
+    expect(files.map(textOf).join('\n')).not.toMatch(/^recordedBy:/m)
+    expect(scopeFromFolder(files, 'customer')?.model.observations).toEqual([written])
+    const opened = openDocumentBytes(workingFileBytes([held]), held)
+    expect(opened.ok && opened.scope.model.observations).toEqual([written])
+  })
+
   it('carries them through a working file', () => {
     const held = customer()
     const opened = openDocumentBytes(workingFileBytes([held]), held)
@@ -109,7 +119,8 @@ describe('format 15', () => {
     const odd = observationFileText(neutral).replace('impact: minor', 'impact: minor\ntone: sunny\nrecordedByAccount: acc-x')
     const read = observationFromFile(odd, 'observations/0003-seen-3.md')
     expect(read?.tone).toBeUndefined()
-    expect(read?.recordedBy).toBeUndefined()
+    // A record that kept no name is still a record (amended 7 November 2026): the account stands.
+    expect(read?.recordedBy).toEqual({ account: 'acc-x' })
   })
 })
 

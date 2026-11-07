@@ -89,8 +89,25 @@ export type ObservationTone = 'bright' | 'neutral' | 'problem'
 
 export const OBSERVATION_TONES: readonly ObservationTone[] = ['bright', 'neutral', 'problem']
 
-/** The account that recorded a record, and the register entry it is linked to where there is one. */
-export type RecordedBy = { name: string; account?: string; person?: string; via?: string }
+/**
+ * Who recorded a record: the register entry where there is one, and otherwise
+ * the name an account went by, with the account where the source has accounts
+ * and the agent it came through. Written once and never changed (ADR-0038,
+ * amended §10). A record made since 7 November 2026 holds no `name` where it
+ * holds a `person`: the name is the register's, which can forget it. One written
+ * by 3.8.0 or 3.8.1 holds both, and the name is not read (`observations/recordedBy`).
+ */
+export type RecordedBy = { name?: string; account?: string; person?: string; via?: string }
+
+/**
+ * What a source says about an account now, for a record that names it and no
+ * entry (`SourcePeople.recorder`): the entry it is linked to, or the name it
+ * goes by, where the name the record kept may be wrong.
+ */
+export type RecorderAnswer = { readonly person?: string; readonly name?: string }
+
+/** Who answers {@link RecorderAnswer}; nothing, and the record's own word stands. */
+export type RecorderSource = (account: string) => RecorderAnswer | undefined
 
 export type Observation = {
   /** Stable, never shown. The number is what people call it. */
