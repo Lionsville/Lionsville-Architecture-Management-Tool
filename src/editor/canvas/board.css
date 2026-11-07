@@ -38,7 +38,9 @@
   color: var(--ink-3);
   zoom: calc(1 / var(--canvas-zoom, 1));
 }
-.lv-tile--corner .kit-card__name { padding-right: calc(18px / var(--canvas-zoom, 1)); }
+.lv-tile .kit-card__name { padding-right: calc(var(--lv-corner, 0) * 18px / var(--canvas-zoom, 1)); }
+/* A band's low tile has room for one line of its name far off; the rest is on hover. */
+[data-distance='far'] .lv-tile--low .kit-card__name { -webkit-line-clamp: 1; }
 
 /* A colour question, on a card: its wash, and the band's number. */
 .lv-tile[data-lens] { background: var(--lv-lens-wash); }

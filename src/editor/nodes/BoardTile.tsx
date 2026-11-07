@@ -61,11 +61,11 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
       selectionRing={false}
     >
       <Card
-        className={`lv-tile${outside ? ' lv-tile--outside' : ''}${corner.length > 0 ? ' lv-tile--corner' : ''}`}
+        className={tileClass(shape, outside === true)}
         name={element.name}
         title={element.name}
         data-lens={overlay ? true : undefined}
-        style={{ ...lens, borderRadius: shapeRadiusFor(shape, element.shapeVariant, Boolean(description)) }}
+        style={{ ...lens, '--lv-corner': corner.length, borderRadius: shapeRadiusFor(shape, element.shapeVariant, Boolean(description)) } as React.CSSProperties}
         selected={selected}
         dimmed={retired || overlayFaded === true}
         planned={phase === 'planned' && data.showLifecycle}
@@ -84,6 +84,12 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
       {corner.length > 0 && <span className="lv-tile__corner" style={lens}>{corner}</span>}
     </NodeShell>
   );
+}
+
+/** A dashed edge for what is outside; the bands' short boxes have room for one line far off. */
+function tileClass(shape: NodeShapeKind, outside: boolean): string {
+  if (outside) return 'lv-tile lv-tile--outside';
+  return shape === 'application' ? 'lv-tile' : 'lv-tile lv-tile--low';
 }
 
 /** What stays on a tile at every distance: its status columns where its kind has them, and a phase that is not the plain one. */
