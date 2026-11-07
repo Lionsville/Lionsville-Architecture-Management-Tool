@@ -151,7 +151,7 @@ describe('a list split by the marks', () => {
     { text: 'Declare an interaction with Sales' },
   ]
   const marked = (over: Partial<CheckMarking> = {}): CheckMarking => ({
-    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), mayChange: () => true, removeAssignment: vi.fn(), ...over,
+    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), mayChange: () => true, markAll: vi.fn(() => Promise.resolve([])), takeBackAll: vi.fn(() => Promise.resolve()), write: vi.fn(() => Promise.resolve(true)), removeAssignment: vi.fn(), ...over,
   })
 
   it('offers Mark as intended… on a line said from a finding, and never on one said from none', () => {

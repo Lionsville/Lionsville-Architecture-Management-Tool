@@ -12,8 +12,13 @@
  * may only read, shows only the way to where it is.
  */
 import { useState } from 'react'
-import type { Translate } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
+import { INTERACTION_MODE_LABEL, INTERACTION_MODES } from '../../model/relations'
 import { CHECK_ACTION_LABEL, CHECK_CATALOGUE } from '../../model/checkCatalogue'
+import type { CheckAction } from '../../model/checkCatalogue'
+import type { Person } from '../../people/person'
+import type { ScopeModel } from '../../projects/scope'
+import { MenuButton } from '../../widgets/kit/Menu'
 import type { OwnerChoice } from '../../model/ownerField'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -21,7 +26,7 @@ import { Button } from '../../widgets/kit/Button'
 import { Picker } from '../../widgets/kit/Picker'
 import type { PickerOption } from '../../widgets/kit/Picker'
 import type { CheckMarking } from '../checkMarking'
-import { endAssignmentFix, markSharedFix, removeAssignmentFix, removeInteractionFix, setOwnerFix } from './checkFixes'
+import { acceptFix, assignFix, declareFix, endAssignmentFix, markSharedFix, removeAssignmentFix, removeInteractionFix, setOwnerFix } from './checkFixes'
 import type { Fix } from './checkFixes'
 import type { CheckInstance } from './treeChecks'
 
@@ -37,6 +42,12 @@ export type FindingActionsProps = {
   readonly openLabel?: string
   /** Link: the session of the scope that yields does it, so the scope is opened on it. */
   readonly onLink?: (scope: ScopePath, id: string, to: ScopePath) => void
+  /** Where a new record's id comes from: an interaction declared, a role assigned. */
+  readonly makeId?: ((prefix: string) => string) | undefined
+  /** Who a role can be assigned to. */
+  readonly people?: readonly Person[] | undefined
+  /** A scope's records, for an interface worked out from its container lines. */
+  readonly modelOf?: ((scope: ScopePath) => ScopeModel['model'] | undefined) | undefined
   /** A fix that landed, with its way back. */
   readonly onFixed: (done: FixDone) => void
   readonly s: Translate
@@ -69,41 +80,85 @@ function onABoard({ opens }: CheckInstance): boolean {
   return opens !== undefined && 'page' in opens && (opens.page.page === 'element' || opens.page.page === 'board')
 }
 
-export function FindingActions({ instance, index, marking, today, onOpen, openLabel, onLink, onFixed, s }: FindingActionsProps) {
+/** Somebody who can hold a role: named, and not gone or merged away. */
+function peopleOptions(people: readonly Person[]): PickerOption[] {
+  return people.filter((one) => one.name !== undefined && one.mergedInto === undefined && one.leftOn === undefined).map((one) => ({ id: one.id, label: one.name as string }))
+}
+
+function Assign({ people, onPick, s }: { people: readonly Person[]; onPick: (id: string) => void; s: Translate }) {
+  const [open, setOpen] = useState(false)
+  if (!open) return <Button onClick={() => setOpen(true)} data-testid="fix-assign">{s(CHECK_ACTION_LABEL.assign)}</Button>
+  return (
+    <span className="org-fix">
+      <span className="org-fix__picker">
+        <Picker label={s(CHECK_ACTION_LABEL.assign)} placeholder={s(CHECK_ACTION_LABEL.assign)} options={peopleOptions(people)} posture="popup" autoFocus onPick={(option) => onPick(option.id)} />
+      </span>
+      <Button variant="quiet" onClick={() => setOpen(false)}>{s('common.cancel')}</Button>
+    </span>
+  )
+}
+
+/** The scope whose record should give way, where two define one thing: *Link* is offered on it. */
+function yieldingScope({ key, finding }: CheckInstance): ScopePath | undefined {
+  return key === 'check.conflict' && 'scopes' in finding ? finding.scopes?.[0] : undefined
+}
+
+/** The fixes of one press: which action of the catalogue, what writes it, and what the toast says it did. */
+function oneFixes(props: FindingActionsProps): readonly { action: CheckAction; testId: string; danger?: true; fix: () => Fix | undefined; said: StringKey }[] {
+  const { instance, index, today, modelOf, makeId } = props
+  const about = instance.about
+  return [
+    { action: 'markShared', testId: 'fix-mark-shared', fix: () => (about !== undefined ? markSharedFix(index, about) : undefined), said: 'checks.fixedShared' },
+    { action: 'endAssignment', testId: 'fix-end-assignment', fix: () => endAssignmentFix(index, instance, today), said: 'checks.fixedEnded' },
+    { action: 'removeAssignment', testId: 'checks-remove-assignment', danger: true, fix: () => removeAssignmentFix(index, instance), said: 'checks.fixedRemoved' },
+    { action: 'removeInteraction', testId: 'fix-remove-interaction', fix: () => removeInteractionFix(index, instance), said: 'checks.fixedInteraction' },
+    {
+      action: 'acceptInterface', testId: 'fix-accept', said: 'checks.fixedAccepted',
+      fix: () => (makeId ? acceptFix(instance.scope !== undefined ? modelOf?.(instance.scope) : undefined, instance, makeId('rel'), today, (id) => index.lookup(id)?.name ?? id) : undefined),
+    },
+  ]
+}
+
+export function FindingActions(props: FindingActionsProps) {
+  const { instance, index, marking, today, onOpen, openLabel, onLink, makeId, people, onFixed, s } = props
   const { actions } = CHECK_CATALOGUE[instance.key]
   const about = instance.about
-  const land = (fix: Fix | undefined, said: string) => {
+  const subject = instance.subject ?? instance.text
+  const land = (fix: Fix | undefined, said: StringKey) => {
     if (!fix || !marking?.mayChange(fix.scope)) return
     void marking.write(fix.scope, fix.commands).then((landed) => {
-      if (landed) onFixed({ message: said, back: () => { void marking.write(fix.scope, fix.back) } })
+      if (landed) onFixed({ message: s(said, { name: subject }), back: () => { void marking.write(fix.scope, fix.back) } })
       return undefined
     })
   }
   const may = (scope: ScopePath | undefined) => scope !== undefined && marking?.mayChange(scope) === true
   const master = about !== undefined ? index.lookup(about)?.master : undefined
-  const conflict = instance.key === 'check.conflict' && 'scopes' in instance.finding ? instance.finding.scopes?.[0] : undefined
-  const subject = instance.subject ?? instance.text
+  const onRecord = about !== undefined && may(master)
+  const yields = yieldingScope(instance)
+  const offered = oneFixes(props).filter((one) => actions.includes(one.action) && may(one.action === 'markShared' ? master : instance.scope))
   return (
     <span className="org-finding__acts">
-      {actions.includes('setOwner') && about !== undefined && may(master) && (
-        <SetOwner index={index} s={s} onSet={(choice) => land(setOwnerFix(index, about, choice), s('checks.fixedOwner', { name: subject }))} />
+      {actions.includes('setOwner') && onRecord && (
+        <SetOwner index={index} s={s} onSet={(choice) => land(setOwnerFix(index, about, choice), 'checks.fixedOwner')} />
       )}
-      {actions.includes('markShared') && about !== undefined && may(master) && (
-        <Button data-testid="fix-mark-shared" onClick={() => land(markSharedFix(index, about), s('checks.fixedShared', { name: subject }))}>{s(CHECK_ACTION_LABEL.markShared)}</Button>
+      {offered.map((one) => (
+        <Button key={one.action} data-testid={one.testId} {...(one.danger ? { variant: 'danger' as const } : {})} onClick={() => land(one.fix(), one.said)}>
+          {s(CHECK_ACTION_LABEL[one.action])}
+        </Button>
+      ))}
+      {actions.includes('assign') && onRecord && makeId && people && (
+        <Assign people={people} s={s} onPick={(person) => land(assignFix(index, instance, person, makeId('as'), today), 'checks.fixedAssigned')} />
       )}
-      {actions.includes('endAssignment') && may(instance.scope) && (
-        <Button data-testid="fix-end-assignment" onClick={() => land(endAssignmentFix(index, instance, today), s('checks.fixedEnded', { name: subject }))}>{s(CHECK_ACTION_LABEL.endAssignment)}</Button>
+      {actions.includes('declareInteraction') && makeId && may(instance.scope) && (
+        <MenuButton
+          label={s(CHECK_ACTION_LABEL.declareInteraction)}
+          items={INTERACTION_MODES.map((mode) => ({ label: s(INTERACTION_MODE_LABEL[mode]), onSelect: () => land(declareFix(instance, mode, makeId('rel')), 'checks.fixedDeclared') }))}
+        />
       )}
-      {actions.includes('removeAssignment') && may(instance.scope) && (
-        <Button variant="danger" data-testid="checks-remove-assignment" onClick={() => land(removeAssignmentFix(index, instance), s('checks.fixedRemoved', { name: subject }))}>{s(CHECK_ACTION_LABEL.removeAssignment)}</Button>
+      {onLink && yields !== undefined && about !== undefined && may(yields) && (
+        <Button data-testid="register-link" onClick={() => onLink(yields, about, instance.scope ?? '')}>{s('register.linkRow')}</Button>
       )}
-      {actions.includes('removeInteraction') && may(instance.scope) && (
-        <Button data-testid="fix-remove-interaction" onClick={() => land(removeInteractionFix(index, instance), s('checks.fixedInteraction', { name: subject }))}>{s(CHECK_ACTION_LABEL.removeInteraction)}</Button>
-      )}
-      {actions.includes('link') && onLink && conflict !== undefined && about !== undefined && marking?.mayChange(conflict) && (
-        <Button data-testid="register-link" onClick={() => onLink(conflict, about, instance.scope ?? '')}>{s('register.linkRow')}</Button>
-      )}
-      {onOpen && instance.opens && <Button variant="quiet" onClick={() => onOpen(instance)} data-guide="checks.instance.open">{openLabel ?? s(onABoard(instance) ? 'register.openOnBoard' : 'checks.openWhereFixed')}</Button>}
+      {onOpen && instance.opens && <Button variant="quiet" onClick={() => onOpen(instance)}>{openLabel ?? s(onABoard(instance) ? 'register.openOnBoard' : 'checks.openWhereFixed')}</Button>}
     </span>
   )
 }

@@ -26,6 +26,7 @@ and behaves is said here, once.
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
 | `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row |
+| `listDensity.ts` | how close a person likes every list's rows: one choice for the product, which the app keeps |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
 | `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes |
@@ -151,9 +152,12 @@ In a test of a whole app: `placePage()` from `app/testing/placePage.ts` is what
 - `readOnly` hides what writes: the screen decides, and the kit draws what it is
   given.
 
-A list is composed the same way every time: `readListView` from the address,
-`listed` for the rows, `FilterWords` and `List` over them, `Preview` over those
-with `ids` in the order drawn, and `writeListView` on every change.
+A list is composed the same way every time: `usePlaceListView('<page>')` for what
+it shows, which is in the address (`?q=`, `?group=`, `?sort=`, `?cols=`, `?f.<field>=`)
+with the record picked as the place's id; `listed` for the rows, `FilterWords` and
+`List` over them, `Preview` over those with `ids` in the order drawn. A page with
+records to pick adds itself to `RECORD_PAGES` in `agent/place.ts`, so picking one
+is not a step Back walks through.
 
 ## How a canvas uses it
 

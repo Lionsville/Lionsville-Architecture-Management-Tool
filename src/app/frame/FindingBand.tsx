@@ -78,7 +78,7 @@ export function FindingBandStack({ walk, frame, parts, others }: {
   const close = <IconButton label={s('checks.band.dismiss')} size="small" onClick={dismiss}><CloseIcon size={12} /></IconButton>
   const band: StackedBand = here
     ? {
-      id: 'finding', tone: 'finding', mark: entry.weight, title: here.text, detail: s(entry.how), dataGuide: 'checks.band',
+      id: 'finding', tone: 'finding', mark: entry.weight, title: here.text, detail: s(entry.how),
       position: {
         at: at + 1, total: ways.length,
         ...(at > 0 ? { onPrevious: () => go(ways[at - 1]) } : {}),
@@ -87,7 +87,7 @@ export function FindingBandStack({ walk, frame, parts, others }: {
       action: <><Button size="small" onClick={back} data-testid="finding-back">{s('checks.band.back')}</Button>{close}</>,
     }
     : {
-      id: 'finding', tone: 'finding', mark: 'agree', title: s('checks.band.done'), dataGuide: 'checks.band',
+      id: 'finding', tone: 'finding', mark: 'agree', title: s('checks.band.done'),
       detail: ways.length > 0 ? plural(s, { one: 'checks.band.moreOne', other: 'checks.band.moreOther' }, ways.length) : s('checks.band.none'),
       action: (
         <>

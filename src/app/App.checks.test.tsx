@@ -119,21 +119,21 @@ describe('a finding marked as intended where its scope is open', { timeout: 20_0
 })
 
 describe('the Checks page', { timeout: 20_000 }, () => {
-  it('lists every check by category from the home\'s card, the notes hidden until shown, each instance opening where it is fixed', async () => {
+  it('lists what was found from the home\'s card, the notes folded, each finding opening where it is fixed', async () => {
     show(organisation())
     fireEvent.click(await screen.findByTestId('open-checks'))
     await screen.findByTestId('checks-topbar')
-    const landscape = await screen.findByRole('heading', { name: 'The landscape' })
-    expect(landscape).toBeDefined()
-    // A note's check is hidden until the notes are shown, as in every list.
+    await screen.findByRole('row', { name: /To review/ })
+    // A note's check is folded away, as in every list.
     expect(screen.queryByTestId('checks-row-check.interactionUnused')).toBeNull()
-    fireEvent.click(screen.getByTestId('checks-weight-note'))
+    fireEvent.click(screen.getByRole('row', { name: /^Notes/ }))
     fireEvent.click(screen.getByTestId('checks-row-check.interactionUnused'))
     const detail = screen.getByTestId('checks-detail')
     expect(within(detail).getByTestId('checks-why').textContent).toContain('Two units declare that they work together')
     expect(await axeFindings()).toEqual([])
-    // Each instance opens where it is fixed: the unit it starts from, in the scope that keeps it.
-    fireEvent.click(within(detail).getByRole('button', { name: /^Operations and Sales declare/ }))
+    // A finding opens where it is fixed: the unit it starts from, in the scope that keeps it.
+    fireEvent.click(within(detail).getByRole('row', { name: /Operations|Sales/ }))
+    fireEvent.click(within(screen.getByTestId('checks-row-actions')).getByRole('button', { name: /Open/ }))
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Acme Logistics'))
   })
 
@@ -142,17 +142,19 @@ describe('the Checks page', { timeout: 20_000 }, () => {
     fireEvent.click(await screen.findByTestId('attention-count-review'))
     await screen.findByTestId('checks-topbar')
     fireEvent.click(await screen.findByTestId('checks-row-check.applicationUnowned'))
-    const detail = screen.getByTestId('checks-detail')
-    fireEvent.click(within(detail).getByRole('button', { name: /^Mark as intended… Point of sale/ }))
-    fireEvent.change(await screen.findByTestId('finding-mark-reason'), { target: { value: 'Bought in, run by the shop' } })
-    fireEvent.click(screen.getByTestId('finding-mark-confirm'))
+    const detail = () => screen.getByTestId('checks-detail')
+    fireEvent.click(within(detail()).getByRole('checkbox', { name: /Point of sale/ }))
+    fireEvent.change(within(screen.getByTestId('checks-mark-form')).getByRole('textbox'), { target: { value: 'Bought in, run by the shop' } })
+    fireEvent.click(screen.getByTestId('checks-mark'))
     // Written to the scope that keeps the application, and read again.
     await waitFor(async () => expect((await held.read('retail'))?.model.checkMarks).toEqual([
       { check: 'check.applicationUnowned', key: 'pos', reason: 'Bought in, run by the shop', on: '2026-10-12' },
     ]))
-    const accepted = await within(screen.getByTestId('checks-detail')).findByTestId('checks-accepted')
+    // Stays on the check, which says so under Accepted.
+    await waitFor(() => expect(detail().dataset.check).toBe('check.applicationUnowned'))
+    fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
+    const accepted = await within(detail()).findByTestId('checks-accepted')
     expect(within(accepted).getByTestId('accepted-reason').textContent).toContain('“Bought in, run by the shop”')
-    expect(screen.getByTestId('checks-row-check.applicationUnowned').textContent).toMatch(/0$/)
     fireEvent.click(within(accepted).getByTestId('finding-take-back'))
     await waitFor(async () => expect((await held.read('retail'))?.model.checkMarks ?? []).toEqual([]))
     await waitFor(() => expect(screen.getByTestId('checks-row-check.applicationUnowned').textContent).toMatch(/1$/))
@@ -163,11 +165,11 @@ describe('the Checks page', { timeout: 20_000 }, () => {
     show(organisation(), undefined, wire.gateway)
     await waitFor(() => expect(wire.bound()).toBe(true))
     const answer = await wire.ask('app.open', { scope: '', page: 'checks', id: 'check.interactionUnused' })
-    expect(answer.page).toEqual({ page: 'checks' })
-    // A note's check, asked for: the notes are shown for it.
+    expect(answer.page).toMatchObject({ page: 'checks' })
+    // A note's check, asked for: its section is unfolded for it.
     await waitFor(() => expect(screen.getByTestId('checks-detail').dataset.check).toBe('check.interactionUnused'))
-    expect(screen.getByTestId('checks-weight-note').getAttribute('aria-pressed')).toBe('true')
-    expect((await wire.ask('app.current')).page).toEqual({ page: 'checks' })
+    expect(screen.getByTestId('checks-row-check.interactionUnused')).toBeTruthy()
+    expect((await wire.ask('app.current')).page).toMatchObject({ page: 'checks', id: 'check.interactionUnused' })
   })
 })
 

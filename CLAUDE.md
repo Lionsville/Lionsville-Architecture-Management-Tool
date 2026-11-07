@@ -956,16 +956,13 @@ src/app/          The shell around the editor.
                                       OrganisationScreen · OrganisationCards ·
                                       ScopeTree · useOrganisation · the four
                                       dialogs every screen asks a scope about
-                                      register · RegisterPage   every application
-                                      in the tree, derived (ADR-0012 §2); a page
-                                      here rather than under `projects/ui/`,
-                                      which may not import React
-                                      and TechnologyPage beside it, one page
-                                      drawn with a configuration each: every
-                                      service and platform in the tree, the
-                                      same fold over the same index
-                                      (ADR-0014) — the fold itself is
-                                      `projects/technologyRegister`
+                                      register · registerView · registerWords ·
+                                      RegisterPage   every application, service
+                                      and platform in the tree, derived (ADR-0012
+                                      §2, ADR-0014), one page with a tab each; a
+                                      page here rather than under `projects/ui/`,
+                                      which may not import React; the fold over
+                                      technology is `projects/technologyRegister`
                                       leaving   what leaving ends beyond the
                                       register: a person's assignments, one
                                       step per scope (ADR-0036 §10)
@@ -977,14 +974,16 @@ src/app/          The shell around the editor.
                                       over a home's cards, one at a time,
                                       each a part of its own, and what the
                                       one up was asked to pick
-                                      treeChecks · useHomeChecks · ChecksPage
-                                      every finding at or under a home off
-                                      what the shell holds — the tree's, every
-                                      scope's dates, the Conway map over the
-                                      home — split by the marks, counted by
-                                      weight under the cards (`NeedsAttention`)
-                                      and listed by check and category on the
-                                      Checks page (ADR-0036, amended)
+                                      treeChecks · useHomeChecks · checksView ·
+                                      ChecksPage   every finding at or under a
+                                      home off what the shell holds, split by the
+                                      marks, counted by weight under the cards
+                                      (`NeedsAttention`) and a work list on the
+                                      Checks page (ADR-0036, amended);
+                                      checkFixes · FindingActions, what puts a
+                                      finding right where it is read;
+                                      `frame/FindingBand`, the band that carries
+                                      one to its field and back
                     units/            an actor as a unit in its inspector
                                       (ADR-0036 §3, §4): UnitSection, drawn
                                       through `EditorOwnership.unitSection`,

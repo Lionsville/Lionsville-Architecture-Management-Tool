@@ -154,20 +154,8 @@ export function useShellAgent(deps: {
       openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, openPreferences.current)
       return
     }
-    // The technology register's address is the register, on its tab.
-    const merged = to.page === 'technologyRegister'
-    const listPage = merged ? 'register' : to.page
-    const tab = merged ? to.tab ?? 'services' : to.tab
-    const pick = (to.page === 'register' || merged) ? to.id ?? to.select : to.page === 'checks' ? to.id : undefined
-    // A person is the People page's record, by the path or by the shell's own *Open in People*.
+    const listPage = holdInFrame(frame, to)
     const record = to.page === 'people' ? to.id ?? to.select : undefined
-    const carried = to.finding !== undefined ? readFinding(to.finding) : undefined
-    if (carried) frame?.set({ finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } })
-    frame?.set({
-      panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
-      record, recordOf: record === undefined ? undefined : 'people',
-      list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
-    })
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person in the frame, set above.
       homeAt(to.scope, listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined)
@@ -422,6 +410,28 @@ function useFrameMoves(
     })
   }, [frame, lookAgain])
   return useCallback((panel: FramePanel | undefined) => { frame?.set({ panel }) }, [frame])
+}
+
+/**
+ * What a destination says that the frame keeps: its panel, its tab, what its list
+ * shows and the record picked there, and a finding being carried. Answers the page
+ * it lands on, since the technology register's address is the register, on its tab.
+ */
+function holdInFrame(frame: FrameStore | undefined, to: Destination): Destination['page'] {
+  const merged = to.page === 'technologyRegister'
+  const listPage = merged ? 'register' : to.page
+  const tab = merged ? to.tab ?? 'services' : to.tab
+  const pick = (to.page === 'register' || merged) ? to.id ?? to.select : to.page === 'checks' ? to.id : undefined
+  // A person is the People page's record, by the path or by the shell's own *Open in People*.
+  const record = to.page === 'people' ? to.id ?? to.select : undefined
+  const carried = to.finding !== undefined ? readFinding(to.finding) : undefined
+  if (carried) frame?.set({ finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } })
+  frame?.set({
+    panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
+    record, recordOf: record === undefined ? undefined : 'people',
+    list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
+  })
+  return listPage
 }
 
 /** The screen with what the frame holds laid over it: its panel, and a tab the page keeps there. */

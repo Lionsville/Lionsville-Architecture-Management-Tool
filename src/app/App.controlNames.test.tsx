@@ -186,9 +186,11 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   // Its findings, counted by weight: the Checks page from a count, on a check
   // whose instances may be marked as intended from where they are listed.
-  ['the Checks page, from a count under Needs attention', ['checks.weight', 'checks.row', 'checks.instance', 'findings.markIntended'], async () => {
+  ['the Checks page, from a count under Needs attention', ['checks.weight', 'checks.scope', 'checks.row', 'checks.instance', 'findings.markIntended'], async () => {
     fireEvent.click(await screen.findByTestId('attention-count-review'))
     await screen.findByTestId('checks-instances')
+    const found = within(screen.getByTestId('checks-instances'))
+    fireEvent.click(found.getAllByRole('row').find((row) => row.getAttribute('data-guide') === 'checks.instance')!)
   }]],
   // The topics catalogue (ADR-0042), opened from the organisation's card.
   [['the topics catalogue, from the organisation’s card', ['topics.new', 'page.seam'], async () => {
@@ -252,11 +254,15 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('boards')
   }]],
   [['the register', [
-    'register.row', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
+    'register.row', 'register.tabs', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-register'))
-    await screen.findByTestId('register-table')
+    const table = await screen.findByTestId('register-table')
+    // Also drawn in starts hidden, and opening is the preview's.
+    fireEvent.click(screen.getByRole('button', { name: /^View/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Also drawn in' }))
+    fireEvent.click(within(table).getAllByRole('row', { hidden: true })[1]!)
   }]],
   [['the technology register', [
     'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings',
@@ -264,7 +270,11 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-technology'))
-    await screen.findByTestId('technology-register-table')
+    const table = await screen.findByTestId('technology-register-table')
+    // Kept in starts hidden there, and opening is the preview's.
+    fireEvent.click(screen.getByRole('button', { name: /^View/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Kept in' }))
+    fireEvent.click(within(table).getAllByRole('row', { hidden: true })[1]!)
   }]],
   [['the people register', ['people.row', 'people.add', 'people.importCsv', 'people.tabs', 'people.find', 'people.day'], async () => {
     const held = heldRepositories(example)

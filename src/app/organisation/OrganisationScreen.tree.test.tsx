@@ -15,7 +15,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { checkOnPage } from '../testing/findings'
+import { checkOnPage, pressFound } from '../testing/findings'
 import { heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -321,23 +321,22 @@ describe('what the organisation says needs attention', () => {
   it('says each finding on the Checks page as a sentence naming the record', async () => {
     show(withFindings())
     const conflicts = await checkOnPage('fix', 'check.conflict')
-    expect(conflicts.textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
+    expect(pressFound(conflicts, 'attention-finance-erp').textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
     fireEvent.click(screen.getByTestId('checks-row-check.dangling'))
-    expect(screen.getByTestId('checks-detail').textContent).toContain('CRM stands in for something nothing in the organisation defines')
+    expect(pressFound(screen.getByTestId('checks-detail'), 'attention-finance-crm').textContent).toContain('CRM stands in for something nothing in the organisation defines')
   })
 
   it('puts a conflict on both scopes, since neither is the wrong one', async () => {
     show(withFindings())
     const conflicts = await checkOnPage('fix', 'check.conflict')
-    expect(conflicts.textContent).toContain('ERP is defined both here and in Finance')
-    expect(within(conflicts).getByTestId('attention-retail-erp')).toBeDefined()
+    expect(pressFound(conflicts, 'attention-retail-erp').textContent).toContain('ERP is defined both here and in Finance')
     expect(within(conflicts).getByTestId('attention-finance-erp')).toBeDefined()
   })
 
   it('opens the scope the finding is about, with the record selected', async () => {
     show(withFindings())
     const dangling = await checkOnPage('fix', 'check.dangling')
-    fireEvent.click(within(dangling).getByTestId('attention-finance-crm'))
+    fireEvent.click(within(pressFound(dangling, 'attention-finance-crm')).getByRole('button', { name: /Open/ }))
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Finance'))
   })
 
@@ -357,7 +356,7 @@ describe('what the organisation says needs attention', () => {
     const attention = await screen.findByTestId('needs-attention')
     expect(attention.textContent).toContain('8 to fix')
     const dangling = await checkOnPage('fix', 'check.dangling')
-    expect(screen.getByTestId('checks-row-check.dangling').textContent).toMatch(/A stand-in of something nothing defines8$/)
+    expect(screen.getByTestId('checks-row-check.dangling').textContent).toMatch(/A stand-in of something nothing defines\s*8$/)
     expect(within(dangling).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
   })
 

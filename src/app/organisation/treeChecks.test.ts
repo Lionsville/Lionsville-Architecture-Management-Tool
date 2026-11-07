@@ -58,7 +58,7 @@ describe('the findings at or under a home', () => {
   it('opens each of the tree\'s where Needs attention did, and keeps the row\'s own names for something outside to find it by', () => {
     const tree = all().filter((one) => ATTENTION.some((item) => item === one.finding))
     expect(tree.map((one) => one.opens)).toEqual([
-      { scope: 'retail', page: { page: 'element', id: 'post' } },
+      { scope: 'retail', page: { page: 'element', id: 'post', field: 'owner' } },
       { scope: 'retail', page: { page: 'board', id: 'ctx' } },
       { scope: '', page: { page: 'operating', id: 'ut-guild' } },
       { person: 'pe-1' },
@@ -81,9 +81,9 @@ describe('the findings at or under a home', () => {
     const conway = all().filter((one) => one.key === 'check.interactionUnused' || one.key === 'check.applicationUnowned')
     expect(conway.map((one) => [one.key, one.scope, one.opens])).toEqual([
       ['check.interactionUnused', '', { scope: '', page: { page: 'element', id: 'ops' } }],
-      ['check.applicationUnowned', '', { scope: '', page: { page: 'element', id: 'billing' } }],
+      ['check.applicationUnowned', '', { scope: '', page: { page: 'element', id: 'billing', field: 'owner' } }],
       // Over the whole organisation, a domain's own applications too, each kept where it is defined.
-      ['check.applicationUnowned', 'retail', { scope: 'retail', page: { page: 'element', id: 'pos' } }],
+      ['check.applicationUnowned', 'retail', { scope: 'retail', page: { page: 'element', id: 'pos', field: 'owner' } }],
     ])
     expect(conway[0]!.text).toBe('Operations and Sales declare As a service, and no interface runs between them.')
     expect(treeInstances({ attention: [], models: [], at: '', today: TODAY, index, home: undefined, t })).toEqual([])

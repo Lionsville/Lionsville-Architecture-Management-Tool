@@ -56,7 +56,7 @@ import type { CheckMarking } from '../checkMarking'
 import { firstCheck, foundGroups, heldByTwo, WORK_GROUPS, workSections } from './checksView'
 import type { WorkGroup, WorkSection } from './checksView'
 import { FindingActions } from './FindingActions'
-import type { FixDone } from './FindingActions'
+import type { FindingActionsProps, FixDone } from './FindingActions'
 import { weightCount } from './NeedsAttention'
 import type { CheckInstance, CheckPlace, CheckRow } from './treeChecks'
 import './RegisterPage.css'
@@ -83,6 +83,8 @@ export type ChecksPageProps = {
   /** Go where an instance is fixed. The check and the instance start the walk through it. */
   onGo: (place: CheckPlace, row?: CheckRow, instance?: CheckInstance) => void
   onLink?: ((scope: ScopePath, id: string, to: ScopePath) => void) | undefined
+  /** What the fixes that make a record need. */
+  fixes?: Pick<FindingActionsProps, 'makeId' | 'people' | 'modelOf'>
   /** Open this home's scope: where the checks only it can work out are counted. */
   onOpenScope?: (() => void) | undefined
   s: Translate
@@ -134,7 +136,9 @@ function MarkForm({ count, onMark, onCancel, s }: { count: number; onMark: (reas
 
 /** What the rows of a found list name, for the heading over them. */
 function subjectWord(row: CheckRow, index: ChecksPageProps['index']): StringKey {
-  const about = row.shown[0]?.about
+  const first = row.shown[0]
+  // A line is named by what it says, and an element is only where it starts.
+  const about = first && 'subject' in first.finding && first.finding.subject === 'relation' ? undefined : first?.about
   switch (about !== undefined ? index?.lookup(about)?.kind : undefined) {
     case 'application': return 'register.colName'
     case 'actor': return 'checks.colUnit'
@@ -145,9 +149,9 @@ function subjectWord(row: CheckRow, index: ChecksPageProps['index']): StringKey 
 }
 
 /** Everything found of one check, as the shared list. */
-function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLink, onFixed, onMarked, scopeName, s }: {
+function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLink, fixes, onFixed, onMarked, scopeName, s }: {
   row: CheckRow; view: ListView; setView: (next: ListView) => void; ask: string | undefined; marking: CheckMarking | undefined
-  index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']
+  index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; fixes: ChecksPageProps['fixes']
   onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
 }) {
   const [density] = useListDensity()
@@ -187,7 +191,7 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
   const drawn: readonly ListGroup[] = groups.map((group) => ({
     id: group.id, label: group.label,
     rows: group.rows.map((one): ListRow => ({
-      id: one.id, text: one.subject ?? one.text,
+      id: one.id, text: one.subject ?? one.text, attributes: one.attributes,
       cells: { under: one.under, master: one.scope !== undefined ? scopeName(one.scope) : undefined },
       actions: (
         <span className="org-finding" data-testid="checks-row-actions">
@@ -196,7 +200,7 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
             {index && (
               <FindingActions
                 instance={one} index={index} marking={marking} today={today} onOpen={(held) => held.opens && onGo(held.opens, row, held)}
-                {...(onLink ? { onLink } : {})} onFixed={onFixed} s={s}
+                {...(onLink ? { onLink } : {})} {...fixes} onFixed={onFixed} s={s}
               />
             )}
             {markable(one) && !marking1 && <Button data-guide="findings.markIntended" onClick={() => setMarking1(true)}>{s(CHECK_MARK_WORDS.open)}</Button>}
@@ -211,7 +215,7 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
   return (
     <div data-testid="checks-instances">
       <FilterWords
-        dataGuide="checks.found" find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('checks.findIn', { count: row.shown.length })}
+        find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('checks.findIn', { count: row.shown.length })}
         {...(choices.length > 0 ? { groups: choices, group: view.group, onGroup: (group: string | null) => setView({ ...view, group }) } : {})}
         shown={{ count, total: row.shown.length }}
       />
@@ -230,9 +234,9 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
 }
 
 /** The check picked: what the catalogue says of it, what is found, and what was marked as intended. */
-function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, onOpenScope, onFixed, onMarked, scopeName, s }: {
+function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, fixes, onOpenScope, onFixed, onMarked, scopeName, s }: {
   row: CheckRow; tab: string; setTab: (tab: string) => void; view: ListView; setView: (next: ListView) => void; finding: string | undefined
-  marking: CheckMarking | undefined; index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; onOpenScope: ChecksPageProps['onOpenScope']
+  marking: CheckMarking | undefined; index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; fixes: ChecksPageProps['fixes']; onOpenScope: ChecksPageProps['onOpenScope']
   onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
 }) {
   const { entry } = row
@@ -246,7 +250,7 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
     <div className="checks-page__reader" data-testid="checks-detail" data-check={row.key} aria-live="polite">
       <Panel
         kind={`${s(CHECK_WEIGHT_LABEL[entry.weight].name)} · ${s(CHECK_CATEGORY_LABEL[entry.category])}`} kindIcon={<Mark kind={entry.weight} />} name={s(entry.name)}
-        tabs={tabs} tab={accepted ? 'accepted' : 'found'} onTab={setTab} dataGuide="checks.reader"
+        tabs={tabs} tab={accepted ? 'accepted' : 'found'} onTab={setTab}
       >
         <PanelSection>
           <p className="checks-page__text" data-testid="checks-why">{s(entry.why)}</p>
@@ -273,12 +277,25 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
         ) : (
           <FoundList
             row={row} view={view} setView={setView} ask={finding} marking={marking} index={index} today={today}
-            onGo={onGo} onLink={onLink} onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
+            onGo={onGo} onLink={onLink} fixes={fixes} onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
           />
         )}
       </Panel>
     </div>
   )
+}
+
+/** Which level the numbers are of, said in the head, and how to widen or narrow it. */
+function ScopeOfChecks({ at, scopes, onScope, scopeName, s }: {
+  at: ScopePath; scopes: ChecksPageProps['scopes']; onScope: ChecksPageProps['onScope']; scopeName: (path: ScopePath) => string; s: Translate
+}) {
+  const label = at === ROOT_SCOPE ? s('checks.wholeOrganisation') : s('checks.andBelow', { scope: scopeName(at) })
+  if (!scopes || scopes.length < 2) return <span className="org-page__covers">{label}</span>
+  const items = scopes.map((one) => ({
+    label: `${'\u2003'.repeat(one.depth)}${one.path === ROOT_SCOPE ? s('checks.wholeOrganisation') : one.name}`,
+    checked: one.path === at, onSelect: () => onScope?.(one.path),
+  }))
+  return <span className="checks-page__scope"><MenuButton label={label} items={items} data-guide="checks.scope" /></span>
 }
 
 export function ChecksPage(props: ChecksPageProps) {
@@ -289,22 +306,17 @@ export function ChecksPage(props: ChecksPageProps) {
   const [tab, setTab] = usePlaceTab('found')
   const [toast, setToast] = useState<ToastWords | null>(null)
   const [session, setSession] = useSessionSet(props.remember)
-  const [unfolded, setUnfolded] = useState(0)
   const every = useMemo(() => rows.flatMap((one) => one.rows), [rows])
   const by = (view.filters[WORK_FIELD]?.[0] ?? 'weight') as WorkGroup
   const sections = useMemo(() => workSections(rows, by), [rows, by])
 
   const asked = every.find((row) => row.key === request?.select)
-  // Asked for a check: that one. A note's section unfolds to show it.
+  // Asked for a check: that one, with its section unfolded to show it.
   const lastAsked = useRef<unknown>(undefined)
   useEffect(() => {
     if (!asked || lastAsked.current === request) return
     lastAsked.current = request
     if (view.select !== asked.key) setView({ ...view, select: asked.key })
-    if (SECTION_FOLDED.has(sectionKindOf(asked)) && !session.has(asked.key)) {
-      setSession(new Set([...session, NOTES_OPEN]))
-      setUnfolded((was) => was + 1)
-    }
   }, [request, asked])
 
   const picked = every.find((row) => row.key === view.select)
@@ -316,6 +328,7 @@ export function ChecksPage(props: ChecksPageProps) {
     id: section.id, label: sectionLabel(section, scopeName, s), count: section.count,
     rows: section.rows.map((row): ListRow => ({
       id: section.kind === 'scope' ? `${row.key}@${section.scope ?? ''}` : row.key,
+      attributes: { 'data-testid': `checks-row-${row.key}`, 'data-check': row.key },
       text: s(row.entry.name), mark: <Mark kind={row.entry.weight} label={s(CHECK_WEIGHT_LABEL[row.entry.weight].name)} />,
       note: row.counted ? String(row.shown.length) : s('checks.openToCount'),
     })),
@@ -325,11 +338,8 @@ export function ChecksPage(props: ChecksPageProps) {
     : current?.key ?? null
   const notesOpen = session.has(NOTES_OPEN)
   // Said of every section there could be: the list reads this once, and the checks may still be being read then.
-  const folded = [...SECTION_FOLDED].filter((kind) => !(kind === 'note' && notesOpen))
-  const scopeMenu = scopes?.map((one) => ({
-    label: `${' '.repeat(one.depth)}${one.path === ROOT_SCOPE ? s('checks.wholeOrganisation') : one.name}`,
-    checked: one.path === at, onSelect: () => onScope?.(one.path),
-  }))
+  const showing = asked ? sectionKindOf(asked) : undefined
+  const folded = [...SECTION_FOLDED].filter((kind) => kind !== showing && !(kind === 'note' && notesOpen))
   const onFixed = (done: FixDone) => setToast({ key: Date.now(), message: done.message, undo: { onPress: done.back, shared: true } })
   const onMarked = (made: readonly KeptCheckMark[]) => {
     // Stay on the check: the result of the act does not leave the screen.
@@ -349,11 +359,7 @@ export function ChecksPage(props: ChecksPageProps) {
         <div className="org-page__head" data-testid="checks-topbar">
           <div className="org-page__title">
             <h1 className="org-page__name">{s('checks.title')}</h1>
-            {scopeMenu && scopeMenu.length > 1 ? (
-              <span className="checks-page__scope">
-                <MenuButton label={at === ROOT_SCOPE ? s('checks.wholeOrganisation') : s('checks.andBelow', { scope: scopeName(at) })} items={scopeMenu} data-guide="checks.scope" />
-              </span>
-            ) : <span className="org-page__covers">{at === ROOT_SCOPE ? s('checks.wholeOrganisation') : s('checks.andBelow', { scope: scopeName(at) })}</span>}
+            <ScopeOfChecks at={at} scopes={scopes} onScope={onScope} scopeName={scopeName} s={s} />
             <span className="org-page__covers" data-testid="checks-counts">{workSentence(counts, reviews, s)}</span>
           </div>
         </div>
@@ -364,12 +370,12 @@ export function ChecksPage(props: ChecksPageProps) {
           density={density} onDensity={setDensity}
         />
         <div className="checks-page__work">
-          <section className="checks-page__list" aria-label={s('checks.title')} data-guide="checks.list">
+          <section className="checks-page__list" aria-label={s('checks.title')}>
             {counts.fix === 0 && total > 0 && (
               <p className="checks-clear" data-testid="checks-no-fix"><Mark kind="agree" /><span><strong>{s('checks.noFixTitle')}</strong> {s('checks.noFixBody')}</span></p>
             )}
             <List
-              key={`${by}-${unfolded}`} label={s('checks.title')} groups={groups} density={density} selectedId={selectedId} onOpen={chooseCheck}
+              key={`${by}-${showing ?? ''}`} label={s('checks.title')} groups={groups} density={density} selectedId={selectedId} onOpen={chooseCheck}
               defaultFolded={folded} rowGuide="checks.row"
               onFold={(id, isFolded) => { if (id === 'note') setSession(new Set(isFolded ? [...session].filter((one) => one !== NOTES_OPEN) : [...session, NOTES_OPEN])) }}
             />
@@ -377,7 +383,7 @@ export function ChecksPage(props: ChecksPageProps) {
           {current ? (
             <CheckReader
               row={current} tab={tab} setTab={setTab} view={view} setView={setView} finding={request?.finding}
-              marking={marking} index={index} today={today} onGo={onGo} onLink={onLink} onOpenScope={onOpenScope}
+              marking={marking} index={index} today={today} onGo={onGo} onLink={onLink} fixes={props.fixes} onOpenScope={onOpenScope}
               onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
             />
           ) : (

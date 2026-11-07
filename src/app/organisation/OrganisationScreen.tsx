@@ -373,10 +373,6 @@ export function OrganisationScreen({
    * the tree's findings, the technology rows, every scope's dates, the Conway map over the home and, at the organisation,
    * the operating model's own — counted under the cards and listed on the Checks page.
    */
-  const checkScopes = useMemo(() => [
-    { path: ROOT_SCOPE, name: s('common.organisation'), depth: 0 },
-    ...everyScope.filter((one) => one.path !== ROOT_SCOPE).map((one) => ({ path: one.path, name: scopeName(one.path), depth: one.path.split('/').length })),
-  ], [everyScope, scopeName, s])
   const checks = useHomeChecks({ findings, register, technology, at, root, tree: treeRead, marks: checkMarks, people, platformTree, today, scopeName, s })
 
   /**
@@ -572,8 +568,7 @@ export function OrganisationScreen({
       </Box>
 
       <HomePages
-        pages={homePages} at={at} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName}
-        scopes={checkScopes} index={treeRead?.index} today={today} language={language}
+        pages={homePages} at={at} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName} everyScope={everyScope} treeRead={treeRead} today={today} language={language} topics={topics}
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
         onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome} ready={ready}
       />

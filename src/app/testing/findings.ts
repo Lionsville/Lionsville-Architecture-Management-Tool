@@ -47,3 +47,9 @@ export async function checkOnPage(weight: 'fix' | 'review' | 'note', key: string
     return detail
   })
 }
+
+/** A row of Found pressed, by its test id: what can be done about it, and its sentence, come up under it. */
+export function pressFound(detail: HTMLElement, testId: string): HTMLElement {
+  fireEvent.click(within(detail).getByTestId(testId))
+  return within(detail).getByTestId('checks-row-actions')
+}

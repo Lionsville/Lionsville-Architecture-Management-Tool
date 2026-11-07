@@ -11,6 +11,11 @@
  * field that fixes it. Pure, and over as much of the index as it reads.
  */
 import type { Command, ElementId } from '../../model'
+import { transaction } from '../../model/commands'
+import { acceptImplied, impliedInterfacesOn } from '../../model/implied'
+import type { PersonId } from '../../model/person'
+import type { InteractionMode } from '../../model/types'
+import type { ScopeModel } from '../../projects/scope'
 import { ownerPatch } from '../../model/ownerField'
 import type { OwnerChoice } from '../../model/ownerField'
 import type { Assignment } from '../../model/units'
@@ -89,5 +94,49 @@ export function removeInteractionFix(index: Index, instance: CheckInstance): Fix
     scope: row.scope,
     commands: [{ type: 'relation.delete', id: row.relation.id }],
     back: [{ type: 'relation.create', relation: row.relation }],
+  }
+}
+
+/** A role a unit should have somebody in: the person picked, holding it from today, and taken away again. */
+export function assignFix(index: Index, instance: CheckInstance, person: PersonId, id: string, today: string): Fix | undefined {
+  const unitId = instance.about
+  const roleId = 'fields' in instance.finding ? instance.finding.fields?.[0] : undefined
+  const scope = unitId !== undefined ? masterOf(index, unitId) : undefined
+  if (unitId === undefined || roleId === undefined || scope === undefined) return undefined
+  return {
+    scope,
+    commands: [{ type: 'assignment.add', assignment: { id, unitId, roleId, person: { person }, from: today } }],
+    back: [{ type: 'assignment.remove', id }],
+  }
+}
+
+/** An interface between two groups with nothing declared: the interaction, kept where the interface's row is. */
+export function declareFix(instance: CheckInstance, mode: InteractionMode, id: string): Fix | undefined {
+  const { finding, scope } = instance
+  if (!('kind' in finding) || finding.kind !== 'undeclared' || scope === undefined) return undefined
+  return {
+    scope,
+    commands: [{ type: 'relation.create', relation: { id, type: 'interacts', sourceId: finding.from, targetId: finding.to, mode } }],
+    back: [{ type: 'relation.delete', id }],
+  }
+}
+
+/** Container lines that add up to an interface nobody drew: the interface accepted, with the lines landed on it, and all of that taken back. */
+export function acceptFix(
+  model: Pick<ScopeModel['model'], 'elements' | 'relations'> | undefined, instance: CheckInstance, id: string, today: string,
+  nameOf: (element: ElementId) => string,
+): Fix | undefined {
+  const { finding, scope } = instance
+  if (!model || scope === undefined || !('subject' in finding)) return undefined
+  const implied = impliedInterfacesOn({ elements: [...model.elements], relations: [...model.relations] }, today)
+    .find((one) => one.relations.some((row) => row.id === finding.id))
+  if (!implied) return undefined
+  return {
+    scope,
+    commands: [acceptImplied(implied, id, nameOf)],
+    back: [transaction([
+      ...implied.relations.map((row) => ({ type: 'relation.update' as const, id: row.id, patch: { refines: row.refines } })),
+      { type: 'relation.delete', id },
+    ])],
   }
 }

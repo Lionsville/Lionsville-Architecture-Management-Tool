@@ -197,8 +197,9 @@ function groupChoices(tab: RegisterTab, s: Translate): readonly FilterChoice[] {
   return [{ id: 'archetype', label: s('register.colArchetype') }, master, { id: 'partOf', label: s('register.colPartOf') }, findings]
 }
 
+const EMPTY_TITLE = { applications: 'register.emptyTitle', services: 'register.emptyServices', platforms: 'register.emptyPlatforms' } as const
 const ITEM_LABEL = { applications: 'register.colName', services: 'register.colService', platforms: 'register.colPlatform' } as const
-/** Under twelve rows the bar is only Find: there is nothing to narrow. */
+/** Under twelve rows there is nothing to narrow, so Filter and Group stay away; which columns show is still asked of View. */
 const FEW = 12
 
 function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView, words, s }: {
@@ -224,13 +225,13 @@ function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView,
   return (
     <>
       <FilterWords
-        dataGuide={`${named}.list`} find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('register.find')}
+        find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('register.find')}
         {...(few ? {} : {
           fields: filterFields(tab, rows, words, s), filters: view.filters, onFilters: (filters: ListView['filters']) => setView({ ...view, filters }),
           groups: groupChoices(tab, s), group: view.group, onGroup: (group: string | null) => setView({ ...view, group }),
-          columns: columns.map(({ id, label }) => ({ id, label })), shownColumns: shownIds, onColumns: (next: readonly string[]) => setView({ ...view, columns: next }),
-          density, onDensity: setDensity, onReset: () => setView(FRESH_VIEW),
         })}
+        columns={columns.map(({ id, label }) => ({ id, label }))} shownColumns={shownIds} onColumns={(next) => setView({ ...view, columns: next })}
+        density={density} onDensity={setDensity} onReset={() => setView(FRESH_VIEW)}
         shown={{ count, total: rows.length }}
       />
       <div data-testid={tab === 'applications' ? 'register-table' : 'technology-register-table'}>
@@ -300,7 +301,8 @@ function factsOf(tab: RegisterTab, row: Shown, words: RegisterWords, s: Translat
 }
 
 export function RegisterPage(props: RegisterPageProps) {
-  const { open, onClose, rows, technology, instances, scopes, index, today, language, scopeName, request, onOpen, onOpenPage, onLink, onReport, onSeeInChecks, onHome, readOnly = false, s } = props
+  const { open, onClose, rows, technology, instances, scopes, index, today, language, scopeName, request, onOpen, onOpenPage, onLink, onReport, onSeeInChecks, onHome, s } = props
+  const readOnly = props.readOnly ?? false
   const [rawTab, setRawTab] = usePlaceTab('applications')
   const tab: RegisterTab = isRegisterTab(rawTab) ? rawTab : 'applications'
   const [view, setView] = usePlaceListView('register')
@@ -322,11 +324,11 @@ export function RegisterPage(props: RegisterPageProps) {
   const platformsHow = useMemo(() => platformHow(words, found, language), [words, found, language])
   const services = useMemo(() => servicesOf(technology), [technology])
   const platforms = useMemo(() => platformsOf(technology), [technology])
-  const shown: readonly Shown[] = tab === 'applications' ? rows : tab === 'services' ? services : platforms
+  const shown = ({ applications: rows, services, platforms } satisfies Record<RegisterTab, readonly Shown[]>)[tab] as readonly Shown[]
 
   const ids = useMemo(() => {
-    const how = (tab === 'applications' ? applicationsHow : tab === 'services' ? servicesHow : platformsHow) as ListHow<Shown>
-    return listed(shown, view, how).flatMap((group) => group.rows.map((row) => row.id))
+    const how: Record<RegisterTab, unknown> = { applications: applicationsHow, services: servicesHow, platforms: platformsHow }
+    return listed(shown, view, how[tab] as ListHow<Shown>).flatMap((group) => group.rows.map((row) => row.id))
   }, [shown, view, tab, applicationsHow, servicesHow, platformsHow])
   const current = view.select !== null ? shown.find((row) => row.id === view.select) : undefined
   const nothingAtAll = rows.length === 0 && technology.length === 0
@@ -358,9 +360,7 @@ export function RegisterPage(props: RegisterPageProps) {
         <div className="org-page__body">
           {nothingAtAll || shown.length === 0 ? (
             <PageState
-              state="empty"
-              title={s(tab === 'applications' ? 'register.emptyTitle' : tab === 'services' ? 'register.emptyServices' : 'register.emptyPlatforms')}
-              body={s('register.emptyBody')}
+              state="empty" title={s(EMPTY_TITLE[tab])} body={s('register.emptyBody')}
               {...(onHome ? { action: { label: s('register.emptyGo'), onPress: onHome } } : {})}
             />
           ) : tab === 'applications' ? (
@@ -372,23 +372,9 @@ export function RegisterPage(props: RegisterPageProps) {
           )}
         </div>
       </div>
-      <Preview
-        ids={ids} currentId={current ? current.id : null} onSelect={(id) => setView({ ...view, select: id })}
-        title={current?.name ?? ''} code={current?.id}
-        listWord={s(tab === 'applications' ? 'register.listApplications' : tab === 'services' ? 'register.listServices' : 'register.listPlatforms')}
-        dataGuide="register.preview"
-        facts={current ? factsOf(tab, current, words, s) : undefined}
-        foot={current && current.master !== undefined ? (
-          <span className="org-preview__foot">
-            {tab !== 'applications' && onReport && (
-              <Button variant="primary" onClick={() => onReport(tab === 'services' ? 'service' : 'platform', current.master as ScopePath, current.id)} data-testid="register-report">
-                {s(tab === 'services' ? 'register.serviceReport' : 'register.platformReport')}
-              </Button>
-            )}
-            {onOpen && <Button data-guide={tab === 'applications' ? 'register.openRow' : 'technologyRegister.openRow'} data-testid={`register-open-${current.id}`} onClick={() => onOpen(current.master as ScopePath, current.id)}>{s('register.openOnBoard')}</Button>}
-            {onOpenPage && <Button data-testid={`register-page-${current.id}`} onClick={() => onOpenPage(current.master as ScopePath, current.id)}>{s('register.recordPage')}</Button>}
-          </span>
-        ) : undefined}
+      <RecordPreview
+        tab={tab} ids={ids} current={current} words={words} onSelect={(id) => setView({ ...view, select: id })} s={s}
+        onOpen={onOpen} onOpenPage={onOpenPage} onReport={onReport}
       >
         {current && (
           <RecordFindings
@@ -396,9 +382,39 @@ export function RegisterPage(props: RegisterPageProps) {
             onLink={readOnly ? undefined : onLink} onSeeInChecks={onSeeInChecks} onFixed={(done) => setToast({ key: Date.now(), message: done.message, undo: { onPress: done.back, shared: true } })} s={s}
           />
         )}
-      </Preview>
+      </RecordPreview>
       <Toast toast={toast} onClose={() => setToast(null)} />
     </PageDialog>
+  )
+}
+
+const LIST_WORD = { applications: 'register.listApplications', services: 'register.listServices', platforms: 'register.listPlatforms' } as const
+
+/** A record, large: its facts and findings, and the ways on from it said in words. */
+function RecordPreview({ tab, ids, current, words, onSelect, onOpen, onOpenPage, onReport, children, s }: {
+  tab: RegisterTab; ids: readonly string[]; current: Shown | undefined; words: RegisterWords
+  onSelect: (id: string | null) => void; onOpen: Open | undefined; onOpenPage: Open | undefined; onReport: RegisterPageProps['onReport']; children: ReactNode; s: Translate
+}) {
+  const master = current?.master
+  const openGuide = tab === 'applications' ? 'register.openRow' : 'technologyRegister.openRow'
+  return (
+    <Preview
+      ids={ids} currentId={current ? current.id : null} onSelect={onSelect} title={current?.name ?? ''} code={current?.id} listWord={s(LIST_WORD[tab])}
+      facts={current ? factsOf(tab, current, words, s) : undefined}
+      foot={current && master !== undefined ? (
+        <span className="org-preview__foot">
+          {tab !== 'applications' && onReport && (
+            <Button variant="primary" onClick={() => onReport(tab === 'services' ? 'service' : 'platform', master, current.id)} data-testid="register-report">
+              {s(tab === 'services' ? 'register.serviceReport' : 'register.platformReport')}
+            </Button>
+          )}
+          {onOpen && <Button data-guide={openGuide} data-testid={`register-open-${current.id}`} onClick={() => onOpen(master, current.id)}>{s('register.openOnBoard')}</Button>}
+          {onOpenPage && <Button data-testid={`register-page-${current.id}`} onClick={() => onOpenPage(master, current.id)}>{s('register.recordPage')}</Button>}
+        </span>
+      ) : undefined}
+    >
+      {children}
+    </Preview>
   )
 }
 

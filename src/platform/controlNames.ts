@@ -52,7 +52,7 @@ export const CONTROL_NAMES = [
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // The register, and the technology register drawn by the same page.
-  'register.row', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
+  'register.row', 'register.tabs', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings',
   'technologyRegister.openRow',
   // The People page (ADR-0036): a person's row, adding someone, importing a list, and the policy.
@@ -143,7 +143,7 @@ export const CONTROL_NAMES = [
   // The Checks page over a home (ADR-0036, amended 11 October 2026): its card,
   // a count by weight under the cards, the weights shown, a check's row, and
   // an instance of the check picked.
-  'org.card.checks', 'org.attentionCount', 'checks.weight', 'checks.row', 'checks.instance',
+  'org.card.checks', 'org.attentionCount', 'checks.weight', 'checks.scope', 'checks.row', 'checks.instance',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

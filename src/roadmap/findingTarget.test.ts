@@ -8,11 +8,11 @@ import { findingTarget } from './findingTarget'
 const finding = (over: Partial<Finding>): Finding => ({ kind: 'retiresWithDependants', subject: 'element', id: 'a', name: 'A', ...over })
 
 describe('findingTarget', () => {
-  it('opens the element or the plan a finding names, and a line at the element it starts from', () => {
+  it('opens the element or the plan a finding names, and a line itself, at the element it starts from', () => {
     const relations = [{ id: 'l1', sourceId: 'from', targetId: 'to' }]
     expect(findingTarget(finding({}), relations)).toEqual({ page: 'element', id: 'a' })
     expect(findingTarget(finding({ subject: 'transition', id: 'tr-1' }), relations)).toEqual({ page: 'plan', id: 'tr-1' })
-    expect(findingTarget(finding({ subject: 'relation', id: 'l1' }), relations)).toEqual({ page: 'element', id: 'from' })
+    expect(findingTarget(finding({ subject: 'relation', id: 'l1' }), relations)).toEqual({ page: 'element', id: 'from', line: 'l1' })
     expect(findingTarget(finding({ subject: 'relation', id: 'gone' }), relations)).toBeUndefined()
   })
 })

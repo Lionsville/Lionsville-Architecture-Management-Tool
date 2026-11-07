@@ -17,6 +17,7 @@ import type { Language, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { ElementId } from '../../model'
 import type { PeoplePage as PeoplePageShape } from '../../people/ui/PeoplePage'
+import type { ScopeSummary } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -34,7 +35,7 @@ import type { RegisterPage as RegisterPageShape } from './RegisterPage'
 import { FrameStoreContext } from '../frame/frameStore'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { CheckInstance, CheckPlace, CheckRow } from './treeChecks'
-import type { HomeChecks } from './useHomeChecks'
+import type { HomeChecks, TreeRead } from './useHomeChecks'
 import type { HomePagesState } from './useHomePages'
 import type { Organisation } from './useOrganisation'
 import type { PeopleAccess } from './usePeopleRegister'
@@ -96,17 +97,20 @@ function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
   )
 }
 
-export function HomePages({ pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, scopes, index, today, language, s, windowChrome, ready = true }: {
+export function HomePages({ pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, everyScope, treeRead, today, language, topics, s, windowChrome, ready = true }: {
   pages: HomePagesState
   /** The tree's index has been read: until then a page that reads it is arriving, not empty. */
   ready?: boolean
   /** The home: what the Checks page keeps its weights under for the session. */
   at: ScopePath
-  /** What the Checks page can be over instead, and how many scopes the register's sentence is out of. */
-  scopes: readonly { readonly path: ScopePath; readonly name: string; readonly depth: number }[]
-  index: ComponentProps<typeof ChecksPageShape>['index']
+  /** Every scope in the tree: what the Checks page can be over instead, and what the register's sentence is out of. */
+  everyScope: readonly ScopeSummary[]
+  /** The tree as read: what the fixes on a finding read and write by. */
+  treeRead: TreeRead | undefined
   today: string
   language: Language
+  /** Where a record a fix makes gets its id. */
+  topics: { readonly makeId?: (prefix: string) => string } | undefined
   register: readonly RegisterRow[]
   technology: readonly TechnologyRow[]
   /** A scope as the registers say it: its own name, the organisation's heading at the root. */
@@ -139,6 +143,15 @@ export function HomePages({ pages, at, register, technology, registerScopeName, 
   const toChecks = useCallback((instance: CheckInstance) => pages.open('checks', instance.key, undefined, instance.id), [pages])
   const report = useCallback((kind: 'service' | 'platform', scope: ScopePath, id: ElementId) => open(scope, { page: kind, id }), [open])
   const goHome = useCallback(() => close(), [close])
+  const makeId = topics?.makeId
+  const models = treeRead?.models
+  const index = treeRead?.index
+  const fixes = useMemo(() => ({
+    makeId, people: people?.people, modelOf: (path: ScopePath) => models?.find((one) => one.path === path)?.model,
+  }), [makeId, people?.people, models])
+  const scopes = useMemo(() => everyScope.map((one) => (
+    { path: one.path, name: scopeName(one.path), depth: one.path === ROOT_SCOPE ? 0 : one.path.split('/').length }
+  )), [everyScope, scopeName])
   return (
     <>
       <RegisterPage
@@ -156,7 +169,7 @@ export function HomePages({ pages, at, register, technology, registerScopeName, 
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} at={at} scopes={scopes}
-        onScope={(path) => { close(); onHome(path); pages.open('checks') }} scopeName={scopeName} index={index} today={today} onGo={go} onLink={onLink}
+        onScope={(path) => { close(); onHome(path); pages.open('checks') }} scopeName={scopeName} index={index} today={today} onGo={go} onLink={onLink} fixes={fixes}
         {...(at !== ROOT_SCOPE ? { onOpenScope: () => open(at) } : {})} s={s} windowChrome={windowChrome}
       />
     </>

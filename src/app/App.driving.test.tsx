@@ -164,7 +164,8 @@ describe('with the organisation screen up', () => {
     const { ask } = await organisationOnScreen()
     await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     for (const [page, bar] of [['register', 'register-topbar'], ['technologyRegister', 'technology-register-topbar'], ['people', 'people-topbar']]) {
-      expect(parsed(await ask('app.open', { scope: '', page })).page).toEqual({ page })
+      // The technology register's address lands on the register, on its services.
+      expect(parsed(await ask('app.open', { scope: '', page })).page).toMatchObject(page === 'technologyRegister' ? { page: 'register', tab: 'services' } : { page })
       expect(await screen.findByTestId(bar)).toBeDefined()
       const home = parsed(await ask('app.open', { scope: '', page: 'home' }))
       expect(home.arrived).toBe(true)

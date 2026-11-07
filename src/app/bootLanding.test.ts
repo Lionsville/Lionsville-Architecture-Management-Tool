@@ -137,7 +137,7 @@ describe('a place in the address (ADR-0033)', () => {
   it('lands a home on that home, and its page', () => {
     expect(placeLanding(undefined, { scope: 'acme', page: 'home' })).toEqual({ initialHome: 'acme' })
     expect(placeLanding(undefined, { scope: '', page: 'home' })).toEqual({})
-    expect(placeLanding(undefined, { scope: '', page: 'technologyRegister' })).toEqual({ initialHomePage: 'technologyRegister' })
+    expect(placeLanding(undefined, { scope: '', page: 'technologyRegister' })).toEqual({ initialHomePage: 'register', initialList: { tab: 'services' } })
     expect(placeLanding(undefined, { scope: 'acme', page: 'register' })).toEqual({ initialHome: 'acme', initialHomePage: 'register' })
     expect(placeLanding(undefined, { scope: '', page: 'checks' })).toEqual({ initialHomePage: 'checks' })
   })

@@ -42,6 +42,8 @@ export type ListRow = {
   readonly cells?: Readonly<Record<string, ReactNode>>
   /** What can be done from the row, drawn under it while it is the selected one. */
   readonly actions?: ReactNode
+  /** What something outside points at this row by: a test id, a `data-` name. */
+  readonly attributes?: Readonly<Record<string, string>>
 }
 
 export type ListGroup = {
@@ -125,6 +127,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       aria-selected={selected}
       aria-level={level}
       tabIndex={focusable ? 0 : -1}
+      {...row.attributes}
     >
       {ticks && (
         <div role="gridcell" className="kit-list__tick">

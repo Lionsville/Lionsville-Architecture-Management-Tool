@@ -18,7 +18,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { checkOnPage } from '../testing/findings'
+import { checkOnPage, pressFound } from '../testing/findings'
 import { answering, heldRepositories } from '../testing/heldRepositories'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
@@ -273,17 +273,14 @@ describe('the organisation screen — its own pages', () => {
     // on the Checks page, not tallied on the card: the card keeps the counts.
     expect(cards.textContent).not.toContain('unattributed')
     const detail = await checkOnPage('review', 'check.unattributed')
-    expect(detail.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
-    // Each row says what kind of finding it is, in a word that does not move
-    // with the language.
-    expect(detail.querySelector('[data-finding="unattributed"]')?.textContent)
-      .toContain('Post office is outside the organisation')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
+    expect(pressFound(detail, within(detail).getByRole('row', { name: /Post office/ }).dataset.testid!).textContent)
+      .toContain('Post office is outside the organisation and nobody has said whose it is')
+    fireEvent.keyDown(window, { key: 'Escape' })
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
     // Kept in says the scope's name, never its path.
-    expect(within(table).getByTestId('register-master-wms').textContent).toBe('Retail')
+    expect(within(table).getByRole('row', { name: /Warehouse/ }).textContent).toContain('Retail')
     expect(table.textContent).toContain('Post office')
   })
 
@@ -300,7 +297,7 @@ describe('the organisation screen — its own pages', () => {
     }
     renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
     const detail = await checkOnPage('fix', 'check.unitTypeNowhere')
-    fireEvent.click(within(detail).getByTestId('attention--ut-guild'))
+    fireEvent.click(within(pressFound(detail, 'attention--ut-guild')).getByRole('button', { name: /Open/ }))
     const inspector = await screen.findByTestId('operating-inspector')
     expect(within(inspector).getByDisplayValue('Guild')).toBeTruthy()
     expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
@@ -320,24 +317,28 @@ describe('the organisation screen — its own pages', () => {
     expect(cards.textContent).toContain('1 shared')
     // The two findings are said on the Checks page, each naming the service.
     const offered = await checkOnPage('review', 'check.offeredNotShared')
-    expect(offered.textContent).toContain('Message brokering is used by')
-    expect(offered.textContent).toContain('is not marked shared — mark it shared, or move it')
+    const sentence = pressFound(offered, within(offered).getByRole('row', { name: /Message brokering/ }).dataset.testid!).textContent
+    expect(sentence).toContain('Message brokering is used by')
+    expect(sentence).toContain('is not marked shared — mark it shared, or move it')
     fireEvent.click(screen.getByTestId('checks-row-check.unrealised'))
-    expect(screen.getByTestId('checks-detail').textContent).toContain('Message brokering is offered, but no platform delivers it')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
+    const unrealised = screen.getByTestId('checks-detail')
+    expect(pressFound(unrealised, within(unrealised).getByRole('row', { name: /Message brokering/ }).dataset.testid!).textContent).toContain('Message brokering is offered, but no platform delivers it')
+    fireEvent.keyDown(window, { key: 'Escape' })
 
-    fireEvent.click(within(cards).getByTestId('open-technology'))
+    fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
-    expect(within(table).getByTestId('technology-master-containers').textContent).toBe('Shared platforms')
-    expect(within(table).getByTestId('technology-who-containers').textContent).toBe('Platform team')
-    expect(within(table).getByTestId('technology-shared-containers').textContent).toBe('Shared')
-    expect(within(table).getByTestId('technology-use-containers').textContent).toBe('1 application · 1 scope')
-    expect(within(table).getByTestId('technology-realised-containers').textContent).toBe('OpenShift')
-    expect(within(table).getByTestId('technology-shared-brokering').textContent).toBe('Own team')
-    expect(within(table).getByTestId('technology-realised-brokering').textContent).toBe('Nothing delivers it')
-    expect(within(table).getByTestId('technology-row-brokering').textContent).toContain('used by Warehouse system')
-    expect(within(table).getByTestId('technology-use-openshift').textContent).toBe('0 hosted')
-    expect(within(table).getByTestId('technology-realised-openshift').textContent).toBe('Container platform')
+    const containers = within(table).getByRole('row', { name: /Container/ }).textContent
+    expect(containers).toContain('Platform team')
+    expect(containers).toContain('Shared')
+    expect(containers).toContain('OpenShift')
+    const brokering = within(table).getByRole('row', { name: /Message brokering/ }).textContent
+    expect(brokering).toContain('Not marked shared')
+    expect(brokering).toContain('Nothing')
+    // What it delivers, on the platforms' own tab.
+    fireEvent.click(screen.getByRole('tab', { name: /Platforms/ }))
+    const openshift = (await screen.findByRole('row', { name: /OpenShift/ })).textContent
+    expect(openshift).toContain('Container platform')
+    expect(openshift).toContain('0')
   })
 
   it('opens a register row\'s page in the scope that answers for it', async () => {
@@ -346,6 +347,7 @@ describe('the organisation screen — its own pages', () => {
     installReactFlowMocks()
     renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
     fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-register'))
+    fireEvent.click(await screen.findByRole('row', { name: /Post office/ }))
     fireEvent.click(await screen.findByTestId('register-page-post'))
     // The landscape opens, and on it the page — with the record's fields
     // there to be written, which is what the row was opened for.
