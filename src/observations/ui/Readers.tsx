@@ -721,7 +721,6 @@ export function CauseReader(props: CauseReaderProps) {
     const { title, ...rest } = patch
     props.onUpdate(title !== undefined && !title.trim() ? rest : patch)
   }, canEdit)
-  const [previewShown, setPreviewShown] = useState(true)
   const [panel, setPanel] = useState<CausePanel | undefined>(undefined)
   // A question asked from the right-click opens here, once per ask.
   const [answered, setAnswered] = useState(props.asked)
@@ -729,7 +728,6 @@ export function CauseReader(props: CauseReaderProps) {
     setAnswered(props.asked)
     if (props.asked) setPanel(props.asked.panel)
   }
-  const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : cause.body
   // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
   const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
