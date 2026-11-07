@@ -86,7 +86,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
 }
 
 /** A list in its order, dragged or moved by the arrows, with a tick on each where it can be left out. */
-function OrderList({ heading, order, extra = [], named, none, onOrder, drawWord, t }: {
+export function OrderList({ heading, order, extra = [], named, none, onOrder, drawWord, t }: {
   heading: string
   order: readonly ElementId[]
   /** What could be drawn and is not. */

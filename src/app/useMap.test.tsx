@@ -59,7 +59,7 @@ describe('making one', () => {
     const host = mount()
     act(() => host.maps().create())
     const made = host.model().diagrams.find((d) => d.kind === 'map')!
-    expect(made).toMatchObject({ id: 'mp-1', name: 'Enterprise map' })
+    expect(made).toMatchObject({ id: 'mp-1', name: 'Coverage' })
     expect(made.areas).toBeUndefined()
     expect(host.maps().mapId).toBe('mp-1')
     expect(host.maps().map?.id).toBe('mp-1')
@@ -90,6 +90,6 @@ describe('opening and closing', () => {
     act(() => host.maps().open('d1'))
     expect(host.maps().mapId).toBeUndefined()
     act(() => host.maps().open('mp-1'))
-    expect(host.maps().map?.name).toBe('Enterprise map')
+    expect(host.maps().map?.name).toBe('Coverage')
   })
 })

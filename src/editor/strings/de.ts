@@ -175,7 +175,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.newDiagram': 'Neues Layer-7-Diagramm',
   'toolbar.newLandscape': 'Landschaft',
   'toolbar.newSheet': 'Geschäftsarchitektur',
-  'toolbar.newMap': 'Unternehmenskarte',
+  'toolbar.newMap': 'Abdeckung',
   'toolbar.newTechnology': 'Technologielandschaft',
   'toolbar.newDrawing': 'Zeichnung',
   'toolbar.newChart': 'Organigramm',

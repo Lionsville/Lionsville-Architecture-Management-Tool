@@ -10,7 +10,7 @@ import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
 import type { PageView } from '../editor'
-import type { DesignDiagram } from '../model'
+import type { DesignDiagram, DiagramSettings } from '../model'
 import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import type { MapPage as MapPageShape } from '../business/ui/MapPage'
@@ -375,6 +375,11 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
         onCreateMap: pages.createMap,
         onRename: (name: string) => diagrams.onRenameDiagram(diagram.id, name),
         onDelete: () => diagrams.requestDeleteDiagram(diagram.id),
+        onUpdate: (patch) => {
+          // A title block is a view's settings, and what it draws and its day are its own fields.
+          if (patch.areas !== undefined || 'asOf' in patch) session.dispatch({ type: 'diagram.update', id: diagram.id, patch })
+          else diagrams.onDiagramSettingsChange(diagram.id, { ...settingsOf(diagram), ...patch })
+        },
       } : {})}
       onOpenApplication={(id) => {
         const keptIn = parts.props.tree.index.lookup(id)?.master
@@ -435,6 +440,16 @@ function saveLandscapePicture(parts: WorkspaceParts, name: string, png: Uint8Arr
     diagnostics.report({ level: 'error', where: 'landscapeExport', message: 'shell.saveFileFailed', cause })
     notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
   })
+}
+
+/** The settings a view has now, for one to change: the rest stay as they are. */
+function settingsOf(diagram: DesignDiagram): DiagramSettings {
+  const { name, author, client, documentDate, showTitleBlock, aspectConfig, showAspects } = diagram
+  return {
+    name, ...(author !== undefined ? { author } : {}), ...(client !== undefined ? { client } : {}),
+    ...(documentDate !== undefined ? { documentDate } : {}), ...(showTitleBlock !== undefined ? { showTitleBlock } : {}),
+    ...(aspectConfig !== undefined ? { aspectConfig } : {}), ...(showAspects !== undefined ? { showAspects } : {}),
+  }
 }
 
 function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {

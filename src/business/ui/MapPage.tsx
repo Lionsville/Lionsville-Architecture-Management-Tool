@@ -57,6 +57,8 @@ import { usePlaceReading, usePlaceTabFor } from '../../widgets/placeTab'
 import { matchesQuery } from '../../model/textSearch'
 import { paperWidth } from '../grid'
 import { mapPage } from '../map'
+import { rootsOfKind } from '../sheetDiagram'
+import { OrderList } from './SheetSettingsDialog'
 import type { LaidOutMap, MapDescribe, MapRow } from '../map'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
 import type { FunctionInspectorProps, SheetActions, SheetDomains, SheetResponsible, Supporter } from './FunctionInspector'
@@ -107,10 +109,11 @@ export type MapPageProps = {
   onOpenMap?(id: string): void
   /** A second map, which a tab no longer offers here. Absent under `readOnly`. */
   onCreateMap?(): void
-  /** Rename, its title block, its removal: the tab's own menu, since it shares the sheet's tab. */
+  /** Rename and removal: the tab's own menu, since it shares the sheet's tab. */
   onRename?(name: string): void
-  onSettings?(): void
   onDelete?(): void
+  /** The map's own fields: which areas it draws, the day it is saved on, its title block. */
+  onUpdate?(patch: Partial<Pick<DesignDiagram, 'areas' | 'asOf' | 'author' | 'client' | 'documentDate' | 'showTitleBlock'>>): void
   /** Open an application in the scope that keeps it, wherever that is. */
   onOpenApplication?(id: ElementId): void
   onUndo?(): void
@@ -118,7 +121,7 @@ export type MapPageProps = {
 }
 
 type Filter = 'all' | 'gaps' | 'overlaps'
-type Pick = { kind: 'row'; id: ElementId } | { kind: 'column'; id: ElementId }
+type Picked = { kind: 'row'; id: ElementId } | { kind: 'column'; id: ElementId }
 
 const EXPORT_MAX_PIXELS = 40_000_000
 /** Two levels fit one page on a real tree; the next is one press away. */
@@ -196,7 +199,7 @@ export function MapPage(props: MapPageProps) {
   const { t, language } = useStrings()
   const theme = useTheme()
   const page = useRef<HTMLDivElement | null>(null)
-  const [pick, setPick] = useState<Pick | undefined>(undefined)
+  const [pick, setPick] = useState<Picked | undefined>(undefined)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
   const [level, setLevel] = useState(OPENING_LEVEL)
   const [filter, setFilter] = useState<Filter>('all')
@@ -205,6 +208,7 @@ export function MapPage(props: MapPageProps) {
   const [allColumns, setAllColumns] = useState(false)
   const [renaming, setRenaming] = useState<string | undefined>(undefined)
   const [exportOpen, setExportOpen] = useState(false)
+  const [drawsOpen, setDrawsOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [toast, setToast] = useState<ToastWords | null>(null)
   const [reading, changeReading] = usePlaceReading()
@@ -301,7 +305,7 @@ export function MapPage(props: MapPageProps) {
   const moreItems: MenuEntry[] = [
     ...(!readOnly && props.onCreateMap ? [{ label: t('map.newMap'), onSelect: props.onCreateMap }] : []),
     ...(!readOnly && props.onRename && map ? [{ label: t('map.rename'), onSelect: () => setRenaming(map.name) }] : []),
-    ...(!readOnly && props.onSettings ? [{ label: t('map.settings'), onSelect: props.onSettings }] : []),
+    ...(!readOnly && props.onUpdate ? [{ label: t('map.draws'), onSelect: () => setDrawsOpen(true) }] : []),
     ...(allColumnsEntry(props.applications, allColumns, setAllColumns, t)),
     ...(!readOnly && props.onDelete ? [{ label: t('map.delete'), onSelect: props.onDelete, final: true }] : []),
   ]
@@ -332,12 +336,12 @@ export function MapPage(props: MapPageProps) {
       <div data-testid="map-topbar">
         <ViewBar
           label={map?.name ?? t('map.page')}
-          reading={(
+          reading={props.onSheet || (props.maps?.length ?? 0) > 1 ? (
             <ReadingSwitch
               value="coverage" onChange={onReadingPress} canCover t={t} guide="map.reading"
               {...(props.maps && props.onOpenMap ? { others: { views: props.maps, onOpen: props.onOpenMap } } : {})}
             />
-          )}
+          ) : undefined}
           show={hasRows && !nothingLinked ? (
             <>
               <Segmented
@@ -365,7 +369,12 @@ export function MapPage(props: MapPageProps) {
       {looking && (
         <Band
           tone="looking" title={t('sheet.looking', { day: formatDay(lookDay, language) })} detail={t('sheet.lookingDetail')}
-          action={<Button variant="plain" size="small" onClick={() => chooseDay(undefined)}>{t('sheet.lookingBack')}</Button>}
+          action={(
+            <>
+              <Button variant="plain" size="small" onClick={() => chooseDay(undefined)}>{t('sheet.lookingBack')}</Button>
+              {!props.readOnly && props.onUpdate && <Button variant="quiet" size="small" onClick={() => { props.onUpdate?.({ asOf: lookDay }); chooseDay(undefined) }}>{t('sheet.lookingKeep')}</Button>}
+            </>
+          )}
         />
       )}
       {finding && (
@@ -477,13 +486,34 @@ export function MapPage(props: MapPageProps) {
         </div>
       </Box>
       {exportOpen && map && (
-        <SheetExportDialog initial="screen" onExport={exportPng} onClose={() => setExportOpen(false)} title={t('map.exportTitle')} hint={t('map.exportHint')} />
+        <SheetExportDialog
+          initial="screen" onExport={exportPng} onClose={() => setExportOpen(false)} title={t('map.exportTitle')} hint={t('map.exportHint')}
+          {...(!readOnly && props.onUpdate ? { titleBlock: { map, onChange: props.onUpdate } } : {})}
+        />
+      )}
+      {drawsOpen && map && props.onUpdate && (
+        <MapDrawsDialog map={map} model={model} onOrder={(areas) => props.onUpdate?.({ areas })} onClose={() => setDrawsOpen(false)} t={t} />
       )}
       {renaming !== undefined && (
         <RenameDialog name={renaming} onChange={setRenaming} onCancel={() => setRenaming(undefined)} onDone={() => { if (renaming.trim() !== '') props.onRename?.(renaming.trim()); setRenaming(undefined) }} t={t} />
       )}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </Frame>
+  )
+}
+
+/** Which areas a map draws, which the model and the agent could always say and the page could not. */
+function MapDrawsDialog({ map, model, onOrder, onClose, t }: { map: DesignDiagram; model: DesignModel; onOrder(areas: string[]): void; onClose(): void; t: Translate }) {
+  const roots = rootsOfKind(model.elements, 'function').map((root) => root.id)
+  const drawn = map.areas ?? roots
+  return (
+    <Dialog open size="m" title={t('map.draws')} onClose={onClose} actions={<Button onClick={onClose}>{t('common.close')}</Button>}>
+      <OrderList
+        heading={t('sheet.settingsAreas')} order={drawn} extra={roots.filter((id) => !drawn.includes(id))}
+        named={(id) => model.elements.find((held) => held.id === id)?.name ?? id}
+        onOrder={onOrder} drawWord={(name) => t('sheet.settingsDraw', { name })} t={t}
+      />
+    </Dialog>
   )
 }
 

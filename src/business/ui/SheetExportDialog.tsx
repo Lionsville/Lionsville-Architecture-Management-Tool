@@ -21,7 +21,7 @@ import { useStrings } from '../../i18n'
 import type { DesignDiagram, SheetPaper } from '../../model'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { SelectField } from '../../widgets/kit/Field'
+import { SelectField, TextField } from '../../widgets/kit/Field'
 import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
 import type { SheetActions } from './FunctionInspector'
@@ -38,6 +38,8 @@ export type SheetExportDialogProps = {
   /** The sheet's own canvas and columns, which say how a picture is laid out. Absent for a reader, and for a map. */
   sheet?: DesignDiagram
   actions?: Pick<SheetActions, 'updateSheet'>
+  /** A map's title block: its name stays on the tab and the other words of a picture live here (a map has no tab menu of its own). */
+  titleBlock?: { map: DesignDiagram; onChange(patch: Partial<Pick<DesignDiagram, 'author' | 'client' | 'documentDate' | 'showTitleBlock'>>): void }
   /** What the dialog is called, where it is not the sheet's. */
   title?: string
   hint?: string
@@ -46,7 +48,7 @@ export type SheetExportDialogProps = {
 /** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
 const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
 
-export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, title, hint }: SheetExportDialogProps) {
+export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, titleBlock, title, hint }: SheetExportDialogProps) {
   const { t } = useStrings()
   const [layout, setLayout] = useState<ExportLayout>(initial ?? 'A1')
   const [busy, setBusy] = useState(false)
@@ -84,6 +86,20 @@ export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, 
           ...PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` })),
         ]}
       />
+      {titleBlock && (
+        <>
+          <label className="sheet-held">
+            <input
+              type="checkbox" checked={titleBlock.map.showTitleBlock === true} aria-label={t('map.titleBlock')}
+              onChange={(event) => titleBlock.onChange({ showTitleBlock: event.target.checked })}
+            />
+            {t('map.titleBlock')}
+          </label>
+          <TextField label={t('map.author')} value={titleBlock.map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
+          <TextField label={t('map.client')} value={titleBlock.map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
+          <TextField label={t('map.date')} value={titleBlock.map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
+        </>
+      )}
       {sheet && actions && (
         <>
           <SelectField

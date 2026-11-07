@@ -273,6 +273,10 @@ export function onRowKeys(event: KeyboardEvent<HTMLElement>, context: Pick<RowCo
     case 'ArrowRight':
       if (id !== undefined && here.getAttribute('aria-expanded') === 'false') { event.preventDefault(); context.onFold(id) }
       break
+    case 'Enter':
+      // The first Enter selects it, as a press does; the next names it.
+      if (id !== undefined && here.getAttribute('aria-current') === 'true') { event.preventDefault(); context.onName(id) }
+      break
     case 'F2':
       if (id !== undefined) { event.preventDefault(); context.onName(id) }
       break

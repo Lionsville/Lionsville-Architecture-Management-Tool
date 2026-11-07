@@ -184,7 +184,7 @@ export const EN = {
   'toolbar.newDiagram': 'New Layer 7 diagram',
   'toolbar.newLandscape': 'Landscape',
   'toolbar.newSheet': 'Business architecture',
-  'toolbar.newMap': 'Enterprise map',
+  'toolbar.newMap': 'Coverage',
   'toolbar.newTechnology': 'Technology landscape',
   'toolbar.newDrawing': 'Drawing',
   'toolbar.newChart': 'Organisation chart',

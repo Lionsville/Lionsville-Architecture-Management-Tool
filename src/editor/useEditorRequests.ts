@@ -131,7 +131,6 @@ export function useDocumentation(
     setSelection(selectElement(elementId));
     setDocumentationId(elementId);
   }, [setSelection, state.model.elements, props.ownership]);
-  useHostDocumentation(props.requests?.documentation, state, activeDiagram, open, setDiagramId);
   // By the number, so a host that hands the same request over again closes nothing twice.
   const leaveNonce = props.requests?.leaveDocumentation?.nonce;
   useEffect(() => {

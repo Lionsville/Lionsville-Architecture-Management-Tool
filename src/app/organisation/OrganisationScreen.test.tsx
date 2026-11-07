@@ -403,7 +403,7 @@ describe('the organisation screen — its own pages', () => {
 
   it('offers to make a map beside the sheet, and to open the one it has', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
-    expect((await screen.findByTestId('open-map')).textContent).toBe('Enterprise map')
+    expect((await screen.findByTestId('open-map')).textContent).toBe('Make Coverage…')
 
     cleanup()
     const withMap = organisation()

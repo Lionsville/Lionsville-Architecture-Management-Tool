@@ -6,6 +6,7 @@
  * The one choice the picture needs — the width it is laid out for — and what
  * the dialog does while the browser draws it and when it will not.
  */
+import type { DesignDiagram } from '../../model'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetExportDialog } from './SheetExportDialog'
@@ -51,7 +52,7 @@ describe('SheetExportDialog', () => {
 describe('where the picture’s own layout lives', () => {
   it('keeps the sheet’s canvas and columns here, as changes to the sheet, for who may write them', () => {
     const updateSheet = vi.fn()
-    const sheet = { id: 's', kind: 'sheet', name: 'S', members: [], geometry: { nodes: [] } } as const
+    const sheet: DesignDiagram = { id: 's', kind: 'sheet', name: 'S', members: [], geometry: { nodes: [] } }
     renderShell(<SheetExportDialog onExport={vi.fn(async () => {})} onClose={vi.fn()} sheet={sheet} actions={{ updateSheet }} />)
     fireEvent.change(screen.getByLabelText('Canvas'), { target: { value: 'fit' } })
     expect(updateSheet).toHaveBeenCalledWith({ paper: 'fit' })
