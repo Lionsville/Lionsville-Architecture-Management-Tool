@@ -14,6 +14,7 @@ import type { HostModel } from '../model/hostModel'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { usePersonNames } from '../people/ui/names'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
+import { useFrameCommands } from './frame/frameStore'
 import { treeSources } from '../search/search'
 import type { SearchHit } from '../search/search'
 import { flattenScopes } from '../projects/scope'
@@ -203,6 +204,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
 export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
   const { props, session, showElement, library, readings, dialogs } = parts
   const { s } = props.shell
+  const frameCommands = useFrameCommands()
   // A person is found through the register first, then the records that point at them (ADR-0036 §8).
   const names = usePersonNames()
   const { index, scopeModels, ancestorDecisions } = props.tree
@@ -250,6 +252,7 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
         onClose={() => dialogs.setSearchOpen(false)}
         onChoose={dialogs.chooseHit}
         people={names.match}
+        more={frameCommands}
         s={s}
       />
       <GestureDialogs parts={parts} />

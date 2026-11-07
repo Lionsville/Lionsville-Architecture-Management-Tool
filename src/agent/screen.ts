@@ -20,13 +20,17 @@
  */
 
 import type { DesignDiagram } from '../model/types'
+import { OBSERVATION_TABS } from '../observations/tabs'
 import type { ObservationTab } from '../observations/tabs'
+
+export { OBSERVATION_TABS }
 
 /** The pages an agent can ask for. `home` is a scope's own screen, with nothing open. */
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
+  'work', 'activity', 'settings', 'preferences',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -64,13 +68,50 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
   }
 }
 
+/**
+ * The places the frame itself keeps rather than a screen under it (ADR-0033,
+ * amended): *Your work* and *Activity* are panels beside whatever is up, and a
+ * scope's settings and the preferences are asked for over it. They have an
+ * address and an agent reaches them, and moving to one moves nothing else.
+ */
+export const FRAME_PANELS = ['work', 'activity'] as const
+export type FramePanel = (typeof FRAME_PANELS)[number]
+export const FRAME_PAGES: readonly Page[] = [...FRAME_PANELS, 'settings', 'preferences']
+
+export function isFramePanel(value: unknown): value is FramePanel {
+  return (FRAME_PANELS as readonly unknown[]).includes(value)
+}
+
 /** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks']
+export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', ...FRAME_PAGES]
+
+/**
+ * Which pages have tabs, and the tabs each has: what `?tab=` may say
+ * (ADR-0019, amended). A page with tabs reads the one it is on from
+ * `usePlaceTab` and writes it there, so an agent and a link reach each one.
+ * A tab is added here, in the table, or it has no address.
+ */
+export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
+  observations: OBSERVATION_TABS,
+  people: ['people', 'review', 'privacy'],
+  register: ['applications', 'services', 'platforms'],
+  technologyRegister: ['services', 'platforms'],
+  operating: ['structure', 'rules', 'responsibilities', 'libraries'],
+  principles: ['principles', 'topics', 'blocks'],
+  checks: ['fix', 'review', 'notes', 'marked'],
+  decisions: ['all', 'here', 'above'],
+  roadmap: ['plans', 'findings'],
+}
+
+/** Whether a page has this tab; a page with none has no tab at all. */
+export function isPageTab(page: Page | undefined, tab: unknown): tab is string {
+  return page !== undefined && typeof tab === 'string' && (PAGE_TABS[page] ?? []).includes(tab)
+}
 
 /** Pages that need an id to mean anything. */
 export const NEEDS_ID: readonly Page[] = ['plan', 'element', 'document', 'platform', 'service']
 
-export { OBSERVATION_TABS, isObservationTab } from '../observations/tabs'
+export { isObservationTab } from '../observations/tabs'
 export type { ObservationTab }
 
 /**
@@ -83,8 +124,10 @@ export type Destination = {
   readonly scope?: string
   readonly page?: Page
   readonly id?: string
-  /** Which tab of the observations page; meaningful with `page: 'observations'` alone. */
-  readonly tab?: ObservationTab
+  /** Which tab of the page, one of {@link PAGE_TABS}'s for it. */
+  readonly tab?: string
+  /** A frame panel open beside the place (`FRAME_PANELS`); a page of `work` or `activity` says the same over a home. */
+  readonly panel?: FramePanel
   /**
    * An element to select on the board, sheet, map or technology landscape
    * being opened. Not part of the place: where it is not drawn there, the
@@ -97,24 +140,24 @@ export type Destination = {
 
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
 export type ScreenPage =
-  | { readonly page: 'decisions'; readonly id?: string }
-  | { readonly page: 'observations'; readonly id?: string; readonly tab?: ObservationTab }
-  | { readonly page: 'roadmap' }
+  | { readonly page: 'decisions'; readonly id?: string; readonly tab?: string }
+  | { readonly page: 'observations'; readonly id?: string; readonly tab?: string }
+  | { readonly page: 'roadmap'; readonly tab?: string }
   /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
-  | { readonly page: 'operating'; readonly id?: string }
+  | { readonly page: 'operating'; readonly id?: string; readonly tab?: string }
   /** The scope's principles (ADR-0041), on one principle where one is picked. */
-  | { readonly page: 'principles'; readonly id?: string }
+  | { readonly page: 'principles'; readonly id?: string; readonly tab?: string }
   /** A record's page over the board (the documentation page), on the element whose page it is. */
   | { readonly page: 'document'; readonly id: string }
   | { readonly page: 'plan'; readonly id: string }
   | { readonly page: 'platform'; readonly id: string }
   | { readonly page: 'service'; readonly id: string }
-  | { readonly page: 'register' }
-  | { readonly page: 'technologyRegister' }
+  | { readonly page: 'register'; readonly tab?: string }
+  | { readonly page: 'technologyRegister'; readonly tab?: string }
   /** The people register (ADR-0036), on the organisation's home. */
-  | { readonly page: 'people' }
+  | { readonly page: 'people'; readonly tab?: string }
   /** Every check, by category, over a home (ADR-0036, amended 11 October 2026). */
-  | { readonly page: 'checks' }
+  | { readonly page: 'checks'; readonly tab?: string }
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
   | { readonly page: 'topics' }
   /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
@@ -141,6 +184,8 @@ export type Screen = {
   }
   /** The page over the view, or on the home. Absent: the view itself, or a bare home. */
   readonly page?: ScreenPage
+  /** The frame's panel open beside it, where one is. */
+  readonly panel?: FramePanel
 }
 
 /**
@@ -175,7 +220,7 @@ export function scopeOf(screen: Screen): string | undefined {
 function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'observations' | 'operating' | 'principles' }): boolean {
   const up = screen.page
   if (up?.page !== to.page || (to.id !== undefined && up.id !== to.id)) return false
-  return to.tab === undefined || (up.page === 'observations' && up.tab === to.tab)
+  return to.tab === undefined || ('tab' in up && up.tab === to.tab)
 }
 
 /** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
@@ -192,9 +237,13 @@ function onHome(screen: Screen, page: Page, scope: string): boolean {
  */
 export function arrived(screen: Screen, to: Destination, scope: string): boolean {
   const page = to.page
+  // The frame's panels are said on the screen; a dialog asked for is not, and a
+  // scope's own or the window's is up once the scope is right.
+  if (isFramePanel(page)) return screen.panel === page && scopeOf(screen) === scope
+  if (page === 'settings' || page === 'preferences') return scopeOf(screen) === scope
   // No page: the scope open on whatever its tab shows, with nothing over it.
   if (page === undefined) return screen.open?.path === scope && screen.page === undefined
-  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope)
+  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope) && (to.tab === undefined || (screen.page !== undefined && 'tab' in screen.page && screen.page.tab === to.tab))
   if (!screen.open || screen.open.path !== scope) return false
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {

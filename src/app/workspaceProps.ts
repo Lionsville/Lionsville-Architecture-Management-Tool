@@ -34,7 +34,7 @@ import type { SourceComments } from '../ports/ProviderParts'
 import type { CrashTrail } from './ErrorBoundary'
 import type { InitialPage } from './App'
 import type { ProjectSettings } from './ProjectSettingsDialog'
-import type { Crumb, ToolbarAgent, ToolbarChip, ToolbarOverflow } from './ShellToolbar'
+import type { Crumb } from './ShellToolbar'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
 import type { ProblemOffer } from './problem'
@@ -85,18 +85,6 @@ export type WorkspaceSource = {
    * the way the agent's view is; absent for all three sources that ship.
    */
   onSession?: (session: ScopeSession) => (() => void) | void
-  /**
-   * The chip that names where work is kept, for the bar: only where the open
-   * source's provider gave a word or a panel for it. Absent for all three
-   * sources that ship, whose chip is on the organisation's home alone.
-   */
-  chip?: ToolbarChip
-  /**
-   * The open source's provider's own button in the bar (`App`'s
-   * `SourceBarButton`), already drawn inside its boundary and the language.
-   * Absent for all three sources that ship.
-   */
-  barButton?: ReactNode
   /**
    * Every change of the open scope travels as a step (`Shell.publishesSteps`),
    * and the scope is not written whole after one. Absent for all three sources
@@ -294,12 +282,6 @@ export type WorkspaceHost = {
   /** The host has a menu bar of its own, which carries ⌘Z and ⌘⇧Z (ADR-0005, amended). */
   hostMenu?: boolean
   /**
-   * The menu, for a host with no menu bar. Absent on the desktop. The
-   * workspace fills in the one capability it knows — whether there is a
-   * history to offer — and passes the rest through.
-   */
-  overflow?: Omit<ToolbarOverflow, 'can'> & { can: Omit<ToolbarOverflow['can'], 'history'> }
-  /**
    * Tell the host whether closing the window would lose something. Absent in a
    * browser tab, where the window is ours and `beforeunload` says it.
    */
@@ -349,8 +331,6 @@ export type WorkspaceAgent = {
    * to show another.
    */
   onSession?: (view: WorkspaceAgentView | undefined) => void
-  /** The glyph on the bar: the server's state, and the way to the dialog. */
-  bar?: ToolbarAgent
 }
 
 /** What the shell lends every screen: the words, the notices, fresh ids and the clock. */

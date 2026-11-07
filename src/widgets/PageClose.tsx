@@ -18,10 +18,14 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import { useStrings } from '../i18n/LanguageContext'
 import { CloseIcon } from './icons'
+import { usePlaceHost } from './kit/placeHost'
 
 export function PageClose({ onClose, label }: { onClose: () => void; label?: string | undefined }) {
   const { t } = useStrings()
   const said = label ?? t('common.close')
+  // In the frame a page is left by Esc, by *Home* or a view's tab, and by Back
+  // (decision 1). Only going back to reading is the page's own to offer.
+  if (usePlaceHost()?.page && said !== t('common.backToReading')) return null
   return (
     <Tooltip title={said}>
       <IconButton size="small" aria-label={said} onClick={onClose} data-testid="page-close" data-guide="page.close" sx={{ ml: 'auto', color: 'text.secondary' }}>
@@ -33,6 +37,8 @@ export function PageClose({ onClose, label }: { onClose: () => void; label?: str
 
 /** The ‹ at the start of a page's bar, saying what it does: close, or go back to reading. */
 export function PageBack({ onBack, label, children }: { onBack: () => void; label: string; children?: ReactNode }) {
+  const { t } = useStrings()
+  if (usePlaceHost()?.page && label !== t('common.backToReading')) return null
   return (
     <Tooltip title={label}>
       <IconButton size="small" aria-label={label} onClick={onBack} data-testid="page-back">

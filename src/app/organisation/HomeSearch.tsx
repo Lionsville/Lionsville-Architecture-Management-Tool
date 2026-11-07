@@ -14,9 +14,7 @@
  * workspace's hit would land on (`initialPageFor`), so a search from the home
  * and one from a board arrive at the same place.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import Button from '@mui/material/Button'
-import Tooltip from '@mui/material/Tooltip'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import type { Translate } from '../../i18n'
 import { usePersonNames } from '../../people/ui/names'
 import { flattenScopes } from '../../projects/scope'
@@ -28,7 +26,7 @@ import type { SearchHit } from '../../search/search'
 import { GlobalSearchDialog } from '../../search/ui/GlobalSearchDialog'
 import type { InitialPage } from '../App'
 import { initialPageFor } from '../bootLanding'
-import { QUIET } from '../ShellToolbar'
+import { useFrameCommands } from '../frame/frameStore'
 import type { TreeRead } from './useHomeChecks'
 
 export type HomeSearchProps = {
@@ -42,10 +40,12 @@ export type HomeSearchProps = {
   onOpen: (path: ScopePath, page?: InitialPage) => void
   /** The People page with one person picked, for a hit on a person. */
   onOpenPerson?: (person: string) => void
+  /** Handed the way to open it, for row one's field. */
+  searchRef?: (open: () => void) => void
   s: Translate
 }
 
-export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, s }: HomeSearchProps) {
+export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, searchRef, s }: HomeSearchProps) {
   const [open, setOpen] = useState(false)
   const people = usePersonNames()
 
@@ -82,22 +82,20 @@ export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, s }
     else onOpen(hit.scope ?? at, initialPageFor({ page: hit.opens.page, id: hit.opens.id }))
   }, [onOpen, onOpenPerson, at])
 
+  // The way in is row one's field: this says how to get here, and what ⌘K holds beside the records.
+  const more = useFrameCommands()
+  const openSearch = useRef(() => setOpen(true))
+  searchRef?.(openSearch.current)
   return (
-    <>
-      <Tooltip title={s('shell.searchTip')}>
-        <Button size="small" color="inherit" onClick={() => setOpen(true)} sx={QUIET} data-testid="home-search">
-          {s('shell.search')}
-        </Button>
-      </Tooltip>
-      <GlobalSearchDialog
-        open={open}
-        sources={sources}
-        scopeLabel={scopeLabel}
-        onClose={() => setOpen(false)}
-        onChoose={choose}
-        people={people.match}
-        s={s}
-      />
-    </>
+    <GlobalSearchDialog
+      open={open}
+      sources={sources}
+      scopeLabel={scopeLabel}
+      onClose={() => setOpen(false)}
+      onChoose={choose}
+      people={people.match}
+      more={more}
+      s={s}
+    />
   )
 }

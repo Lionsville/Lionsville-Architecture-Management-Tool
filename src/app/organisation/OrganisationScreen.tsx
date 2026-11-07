@@ -27,7 +27,7 @@
  * no new board or scope, no settings, no removal — and still opens every page
  * it has, to read.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -62,14 +62,11 @@ import type { InitialPage } from '../App'
 import type { SourceSayings } from '../appProps'
 import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
-import { BackForward } from '../BackForward'
-import { BarEnd } from '../BarEnd'
-import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
-import { Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
+import { useFrameFacts } from '../frame/frameStore'
+import type { ScreenFacts } from '../frame/frameStore'
+import { QUIET, SourceChipView } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
@@ -99,9 +96,7 @@ import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
-import { FoldAll, ScopeTree } from './ScopeTree'
 import { HomeSearch } from './HomeSearch'
-import type { HomeSearchProps } from './HomeSearch'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
@@ -169,16 +164,6 @@ export type OrganisationScreenProps = {
    * tree begins.
    */
   waysIn?: readonly SourceWayIn[]
-  /** The menu, for a host that has no menu bar — where theme and language are. */
-  overflow?: ToolbarOverflow
-  agent?: ToolbarAgent
-  /**
-   * The open source's provider's own button (`App`'s `SourceBarButton`),
-   * already inside its boundary and the language: at the right end of the
-   * bar, after the agent control and before the chip, on every home. Absent
-   * for every source that ships.
-   */
-  barButton?: ReactNode
   /**
    * Go to another scope's home: a crumb on the bar, or a row's name. The
    * shell's, because which home is up is the shell's state — the same as
@@ -334,9 +319,9 @@ function HomeMeta({ home, typeLines, changed, language, s }: {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
+  organisation, examples, order, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
-  overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
+  onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt, topics,
 }: OrganisationScreenProps) {
@@ -344,21 +329,8 @@ export function OrganisationScreen({
   const mayWrite = writable(at)
   /** Which of this screen's pages is up over its cards, one at a time, and what it was asked to pick (`useHomePages`). */
   const homePages = useHomePages(pageRequest, onPageChange)
-  /**
-   * How tall this screen's bar is, measured the way the workspace measures
-   * its own: the register and the technology pages open BELOW it, so the
-   * crumbs stay and the way home is the same as from every other page. They
-   * used to cover it and leave a lone ‹, and the register opened over a
-   * backdrop as a dialog would. Zero until measured, as in the workspace.
-   */
-  const [barHeight, setBarHeight] = useState(0)
-  const barRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => setBarHeight(node.getBoundingClientRect().height))
-    observer.observe(node)
-    setBarHeight(node.getBoundingClientRect().height)
-  }, [])
-  const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: barHeight }), [windowChrome, barHeight])
+  const searchDoor = useRef<() => void>(() => undefined)
+  const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, controlsInset: 0, draggable: false, topInset: 0 }), [windowChrome])
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing
@@ -452,28 +424,18 @@ export function OrganisationScreen({
       openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
     >
     <Box sx={{
-      height: '100vh', width: '100vw', overflowY: 'auto',
+      flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto',
       bgcolor: 'background.default', display: 'flex', flexDirection: 'column',
     }}>
-      <OrganisationBar
-        barRef={barRef}
-        tree={tree}
-        home={home}
-        heading={heading}
-        level={level} typeName={typeName}
-        source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
-        sourceDescription={sourceDescription}
-        sourceLabelKey={sourceSayings.labelKey}
-        sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
-        waysIn={atRoot ? waysIn : undefined}
-        onGoHome={closePagesAndGoHome}
-        onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
-        overflow={overflow}
-        agent={agent} barButton={barButton} search={{ root, treeRead, onOpen: organisation.open, onOpenPerson: (person) => homePages.open('people', person) }}
-        s={s}
-        windowChrome={windowChrome}
+      <HomeFacts
+        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()}
+        {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
+        {...(root && root.path === at ? { views: root.model.diagrams } : {})}
       />
-
+      <HomeSearch
+        at={home.path} tree={tree} root={root} treeRead={treeRead} onOpen={organisation.open} onOpenPerson={(person) => homePages.open('people', person)}
+        searchRef={(open) => { searchDoor.current = open }} s={s}
+      />
       <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
         {/* Wider on a wide screen, where the cards and the tables have use
             for the room; the sentences keep their own measure (720). From
@@ -491,6 +453,16 @@ export function OrganisationScreen({
           )}
 
           <HomeMeta home={home} typeLines={typeLines} changed={changed} language={language} s={s} />
+
+          <HomeTools
+            home={home} heading={heading} level={level} typeName={typeName}
+            source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
+            sourceDescription={sourceDescription} sourceLabelKey={sourceSayings.labelKey} sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
+            waysIn={atRoot ? waysIn : undefined}
+            onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
+            onNewScope={mayWrite ? () => organisation.addUnder(at) : undefined}
+            s={s}
+          />
 
           {/* What this screen is, and where things live: the first sentence
               every desktop session reads, so it says it plainly. At the root
@@ -589,61 +561,6 @@ export function OrganisationScreen({
           )}
 
           <UnreadableScopes tree={tree} at={at} s={s} />
-
-          {/* The tree, under its heading whether or not there is anything in
-              it yet: an empty scope says so in a sentence, with the examples
-              underneath at the root. On every home, a landscape's too: the
-              way to file a scope under this one is at the head of it, and a
-              scope that draws may still hold scopes of its own. */}
-          <>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
-                {s('org.tree', { name: named || !atRoot ? heading : s('common.organisation') })}
-              </Typography>
-              {home.children.length > 0 && (
-                <>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('picker.order')}</Typography>
-                  <ToggleButtonGroup
-                    size="small"
-                    exclusive
-                    value={order}
-                    onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
-                    aria-label={s('picker.order')}
-                  >
-                    <ToggleButton value="name" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                      {s('picker.orderName')}
-                    </ToggleButton>
-                    <ToggleButton value="updated" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                      {s('picker.orderUpdated')}
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </>
-              )}
-              <FoldAll tree={home} folds={organisation} s={s} />
-              {/* The one way to a new scope, on the home it is filed under —
-                  for somebody who may write here. */}
-              {mayWrite && (
-                <Button
-                  size="small" variant="contained" onClick={() => organisation.addUnder(at)}
-                  data-testid="new-scope" data-guide="org.newScope"
-                >
-                  {s('picker.newScope')}
-                </Button>
-              )}
-            </Stack>
-            <ScopeTree
-              tree={ordered}
-              name={named || !atRoot ? heading : s('common.organisation')}
-              folds={organisation}
-              onHome={onGoHome}
-              onSettings={organisation.editScope}
-              onDelete={organisation.askDelete}
-              writable={writable}
-              landscape={level === 'landscape' || home.kind === 'landscape'} typeName={typeName} typeLink={typeLink}
-              language={language}
-              s={s}
-            />
-          </>
 
           {/* The examples are for a folder with nothing in it yet. Once the
               organisation holds a view or a scope, an offer to copy one in
@@ -843,108 +760,63 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
   )
 }
 
+/** A home's facts for the frame, as a component so the hook sits beside the rest of this screen's drawing. */
+function HomeFacts(facts: ScreenFacts) {
+  useFrameFacts(facts)
+  return null
+}
+
 /**
- * The bar, the way the workspace has one.
- *
- * The same left-to-right reading ADR-0005 asks for — where you are, as the
- * crumbs above this scope and then its own name, then what you can do to it,
- * then where it is kept — and the same window chrome duties: keep clear of the
- * traffic lights, and be the surface the window is dragged by.
+ * What the frame's rows do not say about a home: what it is, its settings, where
+ * a new scope is filed, and — at the root — where work is kept and the ways to
+ * work from somewhere else.
  */
-function OrganisationBar({
-  barRef, tree, home, heading, level, typeName, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
-  waysIn = [],
-  onGoHome, onSettings, overflow, agent, barButton, search, s, windowChrome,
+function HomeTools({
+  home, heading, level, typeName, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace, waysIn = [], onSettings, onNewScope, s,
 }: {
-  /** Measured, so the pages that open under it know how far down to start. */
-  barRef: (node: HTMLDivElement | null) => void
-  tree: ScopeSummary
   home: ScopeSummary
   heading: string
-  /** What the scope is by shape, for the word beside the name when it has not said. */
   level: 'organisation' | 'domain' | 'landscape'
-  /** What a unit type is called, for a scope typed from the operating model (ADR-0036, amended 17 October 2026). */
   typeName: (unitTypeId: string) => string | undefined
-  source?: WorkingSource
-  sourceDescription?: StringKey | (string & {})
-  sourceLabelKey?: StringKey | (string & {})
-  sourceChip?: SourceChip
-  chipPanel?: (close: () => void) => ReactNode
-  /**
-   * What the chip looks like, where the provider drew it a face (`ToolbarChip`'s
-   * `face`). Like a word or a panel of the provider's own, it puts the chip on
-   * every scope's home.
-   */
-  chipFace?: (open: boolean, fallback: ReactNode) => ReactNode
-  waysIn?: readonly SourceWayIn[]
-  onGoHome: (path: ScopePath) => void
-  /** Absent for somebody who may only read this scope: its record is not theirs to change. */
-  onSettings?: () => void
-  overflow?: ToolbarOverflow
-  agent?: ToolbarAgent
-  /** The open source's provider's own button, already drawn: at the end, before the chip. */
-  barButton?: ReactNode
-  /** What ⌘K reads on a home and where a hit opens (`HomeSearch`). */
-  search: Pick<HomeSearchProps, 'root' | 'treeRead' | 'onOpen' | 'onOpenPerson'>
+  source?: WorkingSource | undefined
+  sourceDescription?: StringKey | (string & {}) | undefined
+  sourceLabelKey?: StringKey | (string & {}) | undefined
+  sourceChip?: SourceChip | undefined
+  chipPanel?: ((close: () => void) => ReactNode) | undefined
+  chipFace?: ((open: boolean, fallback: ReactNode) => ReactNode) | undefined
+  waysIn?: readonly SourceWayIn[] | undefined
+  onSettings?: (() => void) | undefined
+  onNewScope?: (() => void) | undefined
   s: Translate
-  windowChrome: WindowChrome
 }) {
-  const quiet = QUIET
-  const crumbs = useMemo(() => crumbsFor(home.path, flattenScopes(tree), s), [home.path, tree, s])
-  // A chip the provider gave a word, a panel or a face of its own sits at the
-  // right end, beside the agent control, as it does on the workspace's bar: it
-  // names who and where the person is, and is in one place on every screen.
-  // The word a built-in source is said with stays beside the button that
-  // changes it, where it always was.
+  // A chip the provider gave a word, a panel or a face of its own sits in row
+  // one, on every screen. The word a built-in source is said with stays beside
+  // the button that changes it, where it always was.
   const atTheEnd = sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined
-  const chip = source && (
-    <SourceChipView
-      source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
-    />
-  )
   return (
-    <Box ref={barRef} data-testid="shell-toolbar" sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, ...WRAPS,
-      borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
-      // The window controls are painted over this bar's start, so the first
-      // thing begins after them rather than under them.
-      pl: `${12 + windowChrome.controlsInset}px`,
-      WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
-      '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-    }}>
-      <BackForward chrome={windowChrome} s={s} />
-      <Crumbs crumbs={crumbs} current={heading} currentPath={home.path} onGoHome={onGoHome} s={s} />
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
       <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {scopeTypeLabel({ kind: home.kind ?? level, unitTypeId: home.unitTypeId }, typeName, s)}
       </Typography>
       {onSettings && (
         <Tooltip title={s('group.openFor', { name: heading })}>
-          <Button size="small" color="inherit" onClick={onSettings} sx={quiet}>
-            {s('group.open')}
-          </Button>
+          <Button size="small" color="inherit" onClick={onSettings} sx={QUIET}>{s('group.open')}</Button>
         </Tooltip>
       )}
-
-      <Box sx={{ flex: 1 }} />
-
-      <HomeSearch at={home.path} tree={tree} {...search} s={s} />
-      {source && !atTheEnd && chip}
+      {source && !atTheEnd && (
+        <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} s={s} />
+      )}
       {waysIn.map((way) => (
-        <Button
-          key={way.kind}
-          size="small"
-          color="inherit"
-          data-testid={`connect-source-${way.kind}`}
-          onClick={way.onConnect}
-          sx={quiet}
-        >
-          {/* The provider's key, from its own table or from this one's
-              (`i18n/registerStrings`); the shell only renders it. */}
+        <Button key={way.kind} size="small" color="inherit" data-testid={`connect-source-${way.kind}`} onClick={way.onConnect} sx={QUIET}>
+          {/* The provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it. */}
           {s(way.labelKey as StringKey)}
         </Button>
       ))}
-      <BarEnd agent={agent} button={barButton} chip={source && atTheEnd ? chip : undefined} overflow={overflow} s={s} />
-    </Box>
+      {/* The one way to a new scope, on the home it is filed under — for somebody who may write here. */}
+      {onNewScope && (
+        <Button size="small" variant="contained" onClick={onNewScope} data-testid="new-scope" data-guide="org.newScope">{s('picker.newScope')}</Button>
+      )}
+    </Stack>
   )
 }
 

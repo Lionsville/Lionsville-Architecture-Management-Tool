@@ -8,8 +8,8 @@
  */
 import { nearestPlace } from '../agent/place'
 import type { Place } from '../agent/place'
-import { HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
-import type { Destination } from '../agent/screen'
+import { FRAME_PAGES, HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
+import type { Destination, ObservationTab } from '../agent/screen'
 import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { readScopes } from '../projects/scopeAccess'
@@ -30,6 +30,8 @@ export type BootLanding = {
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
+  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /**
    * What to say once the app is up, where the address did not land where it
    * pointed: a page this app has no such thing as, or a view or record that
@@ -143,6 +145,7 @@ export function placeToRead(place: Place): ScopePath | undefined {
  */
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
+  if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'settings' | 'preferences' }
   if (page !== undefined && HOME_PAGES.includes(page)) {
     return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' }) }
   }
@@ -211,7 +214,7 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
   if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}) }
   switch (to.page) {
     case 'decisions': return { page: 'decisions', ...id }
-    case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab } : {}) }
+    case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab as ObservationTab } : {}) }
     case 'roadmap': return { page: 'roadmap' }
     case 'operating': return { page: 'operating', ...id }
     case 'principles': return { page: 'principles', ...id }

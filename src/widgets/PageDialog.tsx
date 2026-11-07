@@ -15,9 +15,17 @@
  * there Escape closes the list, and then leaves the field, and only the next
  * press closes the page, so a person putting a list away does not lose the
  * page with it (ADR-0044 §2).
+ *
+ * Inside the frame it is no dialog at all but a place in the main column
+ * (`PlacePage`); the dialog is what is left for a page drawn with no frame
+ * above it, which is a test of that page alone.
  */
+import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
 import type { DialogProps } from '@mui/material/Dialog'
+import { usePlaceHost } from './kit/placeHost'
 
 export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> & {
   /** How much of the top of the window belongs to the host, in px. */
@@ -32,13 +40,70 @@ export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> &
 function leavesFieldFirst(event: object): boolean {
   const target = (event as { target?: unknown }).target
   if (!(target instanceof HTMLElement) || !target.closest('.MuiAutocomplete-root')) return false
-  const page = target.closest<HTMLElement>('[role="dialog"]')
+  const page = target.closest<HTMLElement>('[role="dialog"], [data-place-page]')
   if (page) page.focus()
   else target.blur()
   return true
 }
 
+/** Is a modal up over the page? Then Escape is its own. */
+function modalUp(): boolean {
+  return Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'))
+    .some((found) => found.closest('[aria-hidden="true"]') === null)
+}
+
+/**
+ * A page inside the frame: a place in the main column, not a layer over the
+ * window (decision 1). It takes the focus as it opens and hands it back as it
+ * closes, as the dialog did, and Escape closes the page on top, from wherever
+ * the focus is, since the rows stay pressable beside it.
+ */
+function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Omit<PageDialogProps, 'topInset'> & { host: HTMLElement }) {
+  const page = useRef<HTMLDivElement>(null)
+  const latestClose = useRef(onClose)
+  latestClose.current = onClose
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const here = page.current
+    if (here && !here.contains(document.activeElement)) here.focus({ preventScroll: true })
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || modalUp()) return
+      // Only the page on top: a plan is up over the roadmap, and each closes by itself.
+      if (host.lastElementChild !== page.current) return
+      if (leavesFieldFirst(event)) return
+      latestClose.current?.(event, 'escapeKeyDown')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (before?.isConnected && document.activeElement === document.body) before.focus({ preventScroll: true })
+    }
+  }, [open, host])
+  if (!open) return null
+  const { paper } = (slotProps ?? {}) as { paper?: Record<string, unknown> }
+  const { sx: paperSx, ...paperRest } = (paper ?? {}) as { sx?: object | object[] }
+  const { keepMounted: _keepMounted, maxWidth: _maxWidth, fullWidth: _fullWidth, transitionDuration: _transition, disableEscapeKeyDown: _escape, ...own } = rest as Record<string, unknown>
+  return createPortal(
+    <Box
+      ref={page}
+      className="kit-place"
+      role="region"
+      tabIndex={-1}
+      data-place-page=""
+      sx={[...([] as object[]).concat(sx as object ?? []), ...([] as object[]).concat(paperSx ?? [])]}
+      {...paperRest}
+      {...own}
+    >
+      {children}
+    </Box>,
+    host,
+  )
+}
+
 export function PageDialog({ topInset = 0, slotProps, sx, onClose, ...rest }: PageDialogProps) {
+  const host = usePlaceHost()
+  if (host?.page) return <PlacePage host={host.page} slotProps={slotProps} sx={sx} onClose={onClose} {...rest} />
   const under = topInset > 0
   return (
     <Dialog

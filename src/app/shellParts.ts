@@ -27,6 +27,7 @@ import type { ShareLink } from './useShareLink'
 import type { TreeFindings } from './useTreeFindings'
 import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
+import type { FrameStore } from './frame/frameStore'
 import type { SessionFolds } from './sessionFolds'
 
 /**
@@ -37,6 +38,10 @@ import type { SessionFolds } from './sessionFolds'
  */
 export interface ShellParts {
   props: AppProps
+  /** What the frame holds across screens, and what the screen under it says (`frame/frameStore.ts`). */
+  frame: FrameStore
+  /** May this person change the scope at this path? */
+  writable: (path: ScopePath) => boolean
   /** The groups the props left out, filled in: what `App` reads is never absent. */
   source: WorkingSource
   host: AppHost

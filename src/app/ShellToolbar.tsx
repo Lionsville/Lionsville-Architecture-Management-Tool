@@ -2,7 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The bar at the top: what you are working from, what you have open and how
+ * What the frame's row one draws of where you are and where work is kept: the
+ * crumbs and the chip.
+ *
+ * Until 4.0.0 this was the bar at the top: what you are working from, what you have open and how
  * it stands, the three pages beside the canvas, and — on a host with no menu
  * bar — the menu.
  *
@@ -29,66 +32,13 @@ import Popover from '@mui/material/Popover'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
-import type { Language, StringKey, Translate } from '../i18n'
-import type { DocumentStatus } from '../projects/documentSession'
+import type { StringKey, Translate } from '../i18n'
 import { ancestorScopes } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSummary } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
-import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { SourceChip } from '../platform/sourceProvider'
-import { ActivityMenu } from './ActivityMenu'
-import { BackForward } from './BackForward'
-import type { ActivityEntry, ActivityMenuProps } from './ActivityMenu'
-import { BarEnd } from './BarEnd'
-import type { ToolbarAgent, ToolbarOverflow } from './BarEnd'
-import { clockTime } from './clockTime'
-
-/**
- * The word for each state, and the two that have none.
- *
- * `clean` and `no-file` fall through to the timestamp: one has a time worth
- * showing and the other has nothing to say beyond "not yet". Everything else is
- * a word, because a time is an answer to a different question.
- */
-const STATUS_LABEL: Partial<Record<DocumentStatus, StringKey>> = {
-  dirty: 'shell.unsaved',
-  saving: 'shell.saving',
-  'external-changed': 'shell.changedElsewhere',
-  conflict: 'shell.conflict',
-}
-
-/**
- * The indicator for a source whose changes travel as steps: the source's own
- * word where its provider answers one, and nothing where it does not — never a
- * save time, because nothing is saved. A refused write and the two states a
- * person has to act on keep their words: those are true whatever the source.
- */
-export function stepStatusText(
-  status: DocumentStatus, saveFailed: boolean, sourceStatus: boolean, s: Translate,
-): string {
-  if (saveFailed) return s('shell.saveRefused')
-  if (status === 'conflict' || status === 'external-changed') return s(STATUS_LABEL[status]!)
-  if (!sourceStatus) return ''
-  return status === 'dirty' || status === 'saving' ? s('shell.stepsSending') : s('shell.stepsSent')
-}
-
-/** The indicator for a source that is written whole: the state's word, or the time of the last save. */
-function saveStatusText(
-  status: DocumentStatus, saveFailed: boolean, savedAt: Date | null, language: Language, s: Translate,
-): string {
-  if (saveFailed) return s('shell.saveRefused')
-  const word = STATUS_LABEL[status]
-  if (word) return s(word)
-  return savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')
-}
-
-/** Red is for what the user has to act on, not for what is merely in flight. */
-function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
-  return saveFailed || status === 'conflict' || status === 'external-changed'
-}
 
 /**
  * What the source is called on the bar: its provider's word for a source of
@@ -367,13 +317,15 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   // window, and shorter than their names only where the line is short.
   const pressed = useContext(CrumbPressContext)
   const go = (path: ScopePath) => { pressed(); onGoHome(path) }
+  // The organisation stays readable however long the names between are: it is
+  // the way back to the first screen, and the middle gives way first.
   const shrinking = (order: number) => ({
-    minWidth: 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    minWidth: order === 0 ? '6ch' : 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
   return (
     <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flex: '1 1 0', maxWidth: 'max-content' }}>
       {crumbs.map((crumb, index) => (
-        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(crumbs.length - index + 1) }}>
+        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
             <Button
               size="small"
@@ -410,124 +362,6 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   )
 }
 
-// The glyph and the menu moved to the end both bars share (`BarEnd`); their
-// words are still said here, where the callers of this bar read them.
-export { agentTip } from './BarEnd'
-export type { ToolbarAgent, ToolbarOverflow } from './BarEnd'
-
-export type ShellToolbarProps = {
-  designName: string
-  /**
-   * Every scope above this one, root first. Shown before the design's name
-   * because the same design name in two domains is not only possible, it is
-   * the normal case — and each is the way to that scope's home.
-   */
-  crumbs: readonly Crumb[]
-  /** When the store last accepted this design; `null` means never. */
-  savedAt: Date | null
-  /**
-   * Where the document stands — dirty, saving, changed underneath us, or in
-   * conflict. `clean` is the ordinary case and shows the time instead, because
-   * "Saved · 14:02" says both things at once and a word would say less.
-   */
-  status?: DocumentStatus
-  /**
-   * The last write was refused.
-   *
-   * Shown instead of the time, not beside it: a time from before the failure is
-   * older than the work on screen, and an indicator saying "Saved · 14:02"
-   * while nothing has been saved since 14:02 is the most expensive kind of
-   * wrong this bar can be.
-   */
-  saveFailed?: boolean
-  /**
-   * Every change of the open scope travels as a step (`Shell.publishesSteps`),
-   * so there is no save to report: "Not saved yet" and "Saved · 14:02" come
-   * from a write that never happens, and say something false about work that
-   * is already where it is kept. The bar then says what the source says
-   * instead — see {@link ShellToolbarProps.sourceStatus} — or nothing.
-   */
-  publishesSteps?: boolean
-  /**
-   * The source's provider answers the five words itself (`AppProvider.status`),
-   * so `status` is its word and not a file's. Read only where `publishesSteps`:
-   * then a clean status is "all sent" and a dirty or saving one is "sending",
-   * and without an answer of the provider's own the bar says nothing at all.
-   */
-  sourceStatus?: boolean
-  /**
-   * Who else has this scope open, names only — the shell is told, and never
-   * works it out (`useModelSession.ts`, `ScopeSession.alsoHere`). Empty for
-   * every source that ships, and then the bar says nothing rather than saying
-   * that nobody is there.
-   */
-  alsoHere?: readonly string[]
-  language: Language
-  /** Leave this scope for the home of one above it, or its own: what a crumb does. */
-  onGoHome: (path: ScopePath) => void
-  /** The open scope's path, for its own crumb. */
-  scopePath: ScopePath
-  /** Open the project's own settings: its name and its group. */
-  onOpenSettings: () => void
-  /**
-   * The three pages beside the canvas. Documentation opens on the selected
-   * element (the editor resolves which); decisions is the ADR page; search is
-   * the one over elements, documentation and decisions together.
-   */
-  onOpenDocumentation: () => void
-  onOpenDecisions: () => void
-  /** What was seen, and what lies behind it (ADR-0021). */
-  onOpenObservations: () => void
-  /** The time axis and the plans over it (ADR-0009). */
-  onOpenRoadmap: () => void
-  onOpenSearch: () => void
-  /**
-   * Every change made to this project this session, oldest first — read when
-   * the list is opened, not held. A function rather than an array because the
-   * stack is a ref: nothing renders from it, and asking for it on every render
-   * of this bar would be paying for a list nobody has opened.
-   */
-  activity: () => readonly ActivityEntry[]
-  /**
-   * What the source's own log says was lately done to this scope, by everybody
-   * (`platform/sourceProvider.ts`'s `SourceRecentActivity`, bound to the open
-   * scope). Absent where the source keeps none, and the list is the session's.
-   */
-  recentActivity?: ActivityMenuProps['recent']
-  /**
-   * Whether the source keeps a log of its own, which the tooltip says: the
-   * list is then what was lately done and by whom, and otherwise what was
-   * done since the scope was opened. Absent, it is whether there is a list
-   * to ask at all.
-   */
-  activityKept?: boolean
-  /** The menu, for a host that has no menu bar. */
-  overflow?: ToolbarOverflow
-  /** The agent glyph. Present on every host: on the web it opens the explanation. */
-  agent?: ToolbarAgent
-  /**
-   * The chip that names where work is kept, on this bar too: only where the
-   * open source's provider gave a word or a panel of its own for it, because
-   * a way into something has to be where the person is. Drawn at the right
-   * end of the bar, after the agent control and before the menu — the place
-   * it has on every home too. Absent for every source that ships, whose chip
-   * is on the organisation's home and nowhere else, as it always was.
-   */
-  sourceChip?: ToolbarChip
-  /**
-   * The open source's provider's own button (`App`'s `SourceBarButton`),
-   * already inside its boundary and the language: drawn after the agent
-   * control and before the chip. Absent for every source that ships.
-   */
-  barButton?: ReactNode
-  s: Translate
-  /**
-   * What the window leaves to this bar. On the desktop the macOS title bar is
-   * hidden behind us, so this bar owns the two things it used to do: keep clear
-   * of the traffic lights, and be the surface you drag the window by.
-   */
-  windowChrome?: WindowChrome
-}
 
 /**
  * A quiet button in a top bar: it keeps its width. It used to give way to
@@ -538,98 +372,3 @@ export const QUIET = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary'
 
 /** A top bar that runs out of width takes a second row, rather than overlapping itself. */
 export const WRAPS = { flexWrap: 'wrap', rowGap: 0.5 } as const
-
-export function ShellToolbar({
-  designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
-  publishesSteps, sourceStatus, alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
-  onOpenSearch, activity, recentActivity, activityKept = recentActivity !== undefined,
-  overflow, agent, barButton, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
-}: ShellToolbarProps) {
-  const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
-  // Half a screen: the status collapses to a dot that says the same thing on
-  // hover, before the bar has to wrap or clip.
-  const narrow = useMediaQuery('(max-width: 1100px)')
-
-  const quiet = QUIET
-  const statusText = publishesSteps === true
-    ? stepStatusText(status, saveFailed, sourceStatus === true, s)
-    : saveStatusText(status, saveFailed, savedAt, language, s)
-
-  return (
-    <Box data-testid="shell-toolbar" sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, ...WRAPS,
-      borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
-      // The window controls are painted over this bar's start, so the first
-      // button begins after them rather than under them. 12px is this bar's own
-      // padding — the same `px: 1.5` as on the right, spelled out because it is
-      // being added to.
-      pl: `${12 + windowChrome.controlsInset}px`,
-      // Drag the bar, drag the window — except where something is clickable.
-      // Stated once for every control in here, so a button added later cannot
-      // quietly become dead surface.
-      WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
-      '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-    }}>
-      <BackForward chrome={windowChrome} s={s} />
-      <Crumbs crumbs={crumbs} current={designName} currentPath={scopePath} onGoHome={onGoHome} s={s} />
-      <Tooltip title={s('settings.title')}>
-        <Button size="small" color="inherit" onClick={onOpenSettings} sx={quiet}>
-          {s('settings.open')}
-        </Button>
-      </Tooltip>
-      {statusText && <Tooltip title={narrow ? statusText : ''}>
-        <Typography
-          sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap', flexShrink: 0 }}
-          data-testid="saved-indicator"
-          aria-label={narrow ? statusText : undefined}
-        >
-          {narrow ? '●' : statusText}
-        </Typography>
-      </Tooltip>}
-      {alsoHere.length > 0 && (
-        <Typography
-          data-testid="also-here" data-guide="shell.alsoHere"
-          sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}
-        >
-          {s('shell.alsoHere', { names: alsoHere.join(', ') })}
-        </Typography>
-      )}
-      <Box sx={{ flex: 1 }} />
-      {([
-        ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
-        ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
-        ['shell.observations', 'shell.observationsTip', onOpenObservations],
-        ['shell.roadmap', 'shell.roadmapTip', onOpenRoadmap],
-        ['shell.search', 'shell.searchTip', onOpenSearch],
-      ] as const).map(([label, tip, onClick]) => (
-        <Tooltip key={label} title={s(tip)}>
-          <Button size="small" color="inherit" onClick={onClick} sx={quiet}>
-            {s(label)}
-          </Button>
-        </Tooltip>
-      ))}
-      {/* Since it was opened, or lately and by whom: which one the list is
-          depends on whether the source keeps a log of its own. */}
-      <Tooltip title={s(activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
-        <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet} data-guide="shell.activity">
-          {s('shell.activity')}
-        </Button>
-      </Tooltip>
-      <ActivityMenu
-        anchorEl={activityMenu}
-        onClose={() => setActivityMenu(null)}
-        entries={activityMenu ? activity() : []}
-        {...(recentActivity ? { recent: recentActivity } : {})}
-        language={language}
-        s={s}
-      />
-      {/* The chip at the right end, beside the agent control: what it names
-          is who and where the person is, which a bar says last, and the
-          same place on every screen it is drawn on. */}
-      <BarEnd
-        agent={agent} button={barButton} chip={sourceChip && <SourceChipView {...sourceChip} s={s} />}
-        overflow={overflow} s={s}
-      />
-    </Box>
-  )
-}

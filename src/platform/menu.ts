@@ -145,7 +145,7 @@ export const EDIT_ITEMS: {
  */
 export const HELP_MENU: readonly MenuEntry[] = [
   item('menu.userManual', { type: 'manual' }),
-  item('menu.shortcuts', { type: 'shortcuts' }, undefined, ['scope']),
+  item('menu.shortcuts', { type: 'shortcuts' }),
 ]
 
 /**

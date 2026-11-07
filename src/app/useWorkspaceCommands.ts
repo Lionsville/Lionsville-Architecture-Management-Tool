@@ -61,7 +61,6 @@ export function useWorkspaceCommands(deps: {
       case 'redo': if (!hostControls.editInField('redo')) session.redo(); break
       case 'deleteSelection': editorHandle.current?.deleteSelection(); break
       case 'selectAll': editorHandle.current?.selectAll(); break
-      case 'shortcuts': editorHandle.current?.showShortcuts(); break
     }
   }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle])
 }

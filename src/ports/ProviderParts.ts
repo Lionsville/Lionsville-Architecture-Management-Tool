@@ -421,3 +421,14 @@ export type SourceMenuContext = {
   readonly readOnly: boolean
   readonly open: SourceOpen
 }
+
+/**
+ * What a provider says in *Your work* about its own source (the frame's panel):
+ * how its work is kept, who it is shared with, whether it is connected. Drawn
+ * under the panel's own sections, while its source is the one open.
+ */
+export type SourceYourWorkProps<Own = unknown> = {
+  own?: Own
+  session?: ScopeSession
+  open: SourceOpen
+}

@@ -18,7 +18,7 @@ import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, HOME_PAGES, NEEDS_ID, scopeOf, VIEW_PAGES, viewPage } from './screen'
+import { arrived, HOME_PAGES, isPageTab, NEEDS_ID, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
@@ -364,8 +364,8 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
  */
 function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel | undefined, scope: string): Resolved | AgentAnswer {
   const where = scope || 'the organisation'
-  if (asked.tab !== undefined && target.page !== 'observations') {
-    return refused('agent.badArguments', '"tab" is for page observations')
+  if (asked.tab !== undefined && !isPageTab(target.page, asked.tab)) {
+    return refused('agent.badArguments', `"tab" must be one of the tabs of the page: ${target.page ? (PAGE_TABS[target.page] ?? []).join(', ') || 'it has none' : 'it has none'}`)
   }
   if (asked.select !== undefined) {
     // A drawing opens as a view and does not select an element on a board.

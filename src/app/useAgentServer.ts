@@ -14,7 +14,7 @@ import { AGENT_OFF } from '../platform/agentServer'
 import type { AgentServerStatus } from '../platform/agentServer'
 import { reasonOf } from '../platform/errors'
 import type { AgentGateway } from '../ports/AgentGateway'
-import type { ToolbarAgent } from './ShellToolbar'
+import type { ToolbarAgent } from './BarEnd'
 import type { Failed } from './useShellServices'
 import type { Notify } from './useToasts'
 

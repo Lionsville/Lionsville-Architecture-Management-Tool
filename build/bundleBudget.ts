@@ -63,7 +63,8 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 3_000_000, total: 10_000_000 }
+// 4.0.0: the frame stands over every screen, so its rows, its tree and ⌘K are first-download; 60 kB, said here.
+export const WEB_BUDGET: Budget = { file: 3_080_000, total: 10_080_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

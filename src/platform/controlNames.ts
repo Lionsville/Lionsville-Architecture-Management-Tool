@@ -26,9 +26,11 @@ export const CONTROL_NAME_ATTRIBUTE = 'data-guide'
 export const CONTROL_NAMES = [
   // The bar over an open scope, and the parts it shares with a home's.
   'shell.crumbs', 'shell.activity', 'shell.alsoHere',
+  // The frame: its two rows, whatever screen is up.
+  'frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher',
   // Every page (ADR-0044): the × at the end of its bar and a column's seam, on each page that has one;
   // the product's site under Help in ⋯, and where the desktop app is had, said where an agent needs it.
-  'page.close', 'page.seam', 'shell.website', 'agent.download',
+  'page.seam', 'shell.website', 'agent.download',
   // A scope's home.
   'org.tree', 'org.tree.row', 'org.newScope', 'org.cards',
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',

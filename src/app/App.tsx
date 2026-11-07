@@ -59,6 +59,9 @@ import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
+import { AppFrame } from './frame/AppFrame'
+import { frameStore, FrameStoreContext } from './frame/frameStore'
+import { PlaceHostContext } from '../widgets/kit/placeHost'
 import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
@@ -466,9 +469,20 @@ export function App(props: AppProps) {
             and around the two screens rather than around everything: a crash
             must not take the toast bar with it. */}
         <ErrorBoundary where="app" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
-          <AppScreen parts={parts} />
+          {/* The first run has no scope and no rows to speak of; everything else is a place in the frame. */}
+          {props.provider?.sourceNeeded
+            ? <AppScreen parts={parts} />
+            : (
+              <FrameStoreContext.Provider value={parts.frame}>
+                <AppFrame parts={parts}>
+                  <ErrorBoundary where="app" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
+                    <AppScreen parts={parts} />
+                  </ErrorBoundary>
+                </AppFrame>
+              </FrameStoreContext.Provider>
+            )}
         </ErrorBoundary>
-        {!parts.nav.project && <HomeHistoryDialogs parts={parts} />}
+        {!parts.nav.project && <PlaceHostContext.Provider value={undefined}><HomeHistoryDialogs parts={parts} /></PlaceHostContext.Provider>}
         <AppNotices parts={parts} />
         <AppDialogs parts={parts} />
         <ToastBar
@@ -627,8 +641,11 @@ function useShellParts(props: AppProps): ShellParts {
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
     openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, people: people.agent, scopes,
     report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
-    watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined
-      || props.provider?.barButton !== undefined,
+    // The frame's rows say where the app is, so the screen is watched on every build.
+    watchScreen: true,
+    frame: base.frame,
+    openPreferences: () => base.machine.setOpen(true),
+    ...(props.boot.initialFramePage ? { initialFramePage: props.boot.initialFramePage } : {}),
   })
   base.screenRef.current = shellAgent.screenNow
   openScopeRef.current = shellAgent.openSession
@@ -643,6 +660,7 @@ function useShellParts(props: AppProps): ShellParts {
   const { machine, order, savedFilters, todayDay } = base
   return {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
+    frame: base.frame, writable,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people, folds,
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
@@ -708,6 +726,8 @@ function useShellBase(props: AppProps) {
     screen: () => screenRef.current(),
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services
+  // ⌘\ is this person's on this computer, and read once as the app comes up.
+  const [frame] = useState(() => frameStore({ pinned: prefs.readPreferences().treePinned === true }))
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])
@@ -783,6 +803,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable,
+    savedFilters, organisation, refreshTree, screenRef, selectedRef, share, writable, frame,
   }
 }

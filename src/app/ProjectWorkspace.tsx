@@ -70,7 +70,7 @@ import type { Command } from '../model/commands'
 import type { Model } from '../model/normalised'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
-  const { parts, toolbarRef } = useWorkspaceParts(props)
+  const parts = useWorkspaceParts(props)
   const { diagnostics } = props.host
   const pictureFailed = useCallback((cause: unknown) => {
     diagnostics.report({ level: 'warn', where: 'pictures', message: 'a picture was not read', cause })
@@ -87,7 +87,7 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
     >
       <ScopeViews parts={parts}>
         <CheckMarkingContext.Provider value={parts.marking}>
-          <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
+          <WorkspaceBar parts={parts} />
           {parts.pickers.document.input}
           {parts.pickers.logo.input}
           {/* Inert under a page: what a page covers takes no focus and says nothing to a reader, rather than the whole board staying in the tree under every page. The pages are portals, so this reaches the board alone. */}
@@ -221,9 +221,8 @@ function useWorkspaceParts(props: ProjectWorkspaceProps) {
   const tree = useTreeParts(props, base)
   const screen = useScreenParts(props, base, tree)
   const { indexRef: _indexRef, safeguardRef: _safeguardRef, maps: _maps, ...fromBase } = base
-  const { toolbarRef, ...fromScreen } = screen
-  const parts: WorkspaceParts = { props, ...fromBase, ...tree, ...fromScreen }
-  return { parts, toolbarRef }
+  const parts: WorkspaceParts = { props, ...fromBase, ...tree, ...screen }
+  return parts
 }
 
 /** The session over this scope, what edits through it, and what saves it. */
@@ -480,7 +479,7 @@ function useScreenParts(
     commands: host.commands, forceSave, files, documentPicker: pickers.document, snapshots, session,
     hostControls: host.controls, editorHandle: renderer.editorHandle,
   })
-  const { toolbarRef, pageChrome } = usePageChrome(host.windowChrome)
+  const { pageChrome } = usePageChrome(host.windowChrome)
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
@@ -514,5 +513,5 @@ function useScreenParts(
     ...(navigation.onOpenPeople ? { onOpenPeople: navigation.onOpenPeople } : {}), pointComment: requests.pointComment,
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
-  return { snapshots, toolbarRef, pageChrome, todayDay, today, pages, show, dialogs, analysis }
+  return { snapshots, pageChrome, todayDay, today, pages, show, dialogs, analysis }
 }

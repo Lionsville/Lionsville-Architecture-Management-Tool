@@ -39,6 +39,8 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
+import type { SourceYourWorkProps } from '../ports/ProviderParts'
+import type { ComponentType } from 'react'
 import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
 /** A provider's sentences about its source, as keys of its own table. */
@@ -66,6 +68,8 @@ export type AppBoot = {
    */
   initialPage?: InitialPage
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
+  /** One of the frame's own places the address named (`FRAME_PAGES`). */
+  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
   /**
@@ -226,6 +230,8 @@ export type AppProvider = {
    * where it always was. Read from the registration by the boot.
    */
   chipPanel?: SourceChipPanel
+  /** What this provider says in *Your work* about its own source (`SourceYourWorkProps`). */
+  yourWork?: ComponentType<SourceYourWorkProps>
   /**
    * What the chip looks like, from the open source's provider
    * (`SourceChipFace`): drawn inside it in place of the label, which stays its

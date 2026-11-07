@@ -50,7 +50,21 @@ export type GlobalSearchDialogProps = {
   onChoose: (hit: SearchHit) => void
   /** The register's half (ADR-0036 §8): which register ids a word names. Absent, people are found by text alone. */
   people?: PeopleMatch
+  /**
+   * What ⌘K offers beside the records: places and commands from the one table,
+   * after the records, grouped under their own headings. Absent: records alone.
+   */
+  more?: (asked: string) => readonly PaletteLine[]
   s: Translate
+}
+
+/** A line of ⌘K that is not a record: its heading, its words, its key, and what it does. */
+export type PaletteLine = {
+  readonly id: string
+  readonly group: string
+  readonly label: string
+  readonly keys?: string
+  readonly run: () => void
 }
 
 const KIND_LABEL: Record<SearchKind, StringKey> = {
@@ -113,7 +127,7 @@ export function chipOf(hit: SearchHit, s: Translate): string | undefined {
   return undefined
 }
 
-export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, people, s }: GlobalSearchDialogProps) {
+export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, people, more, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -142,7 +156,9 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
   // highlight resets when the rows it points into change.
   useEffect(() => setActiveIndex(0), [asked])
 
-  const active = hits.length > 0 ? Math.min(activeIndex, hits.length - 1) : -1
+  const lines = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
+  const total = hits.length + lines.length
+  const active = total > 0 ? Math.min(activeIndex, total - 1) : -1
   const optionId = (index: number) => `lv-gsearch-option-${index}`
 
   useEffect(() => {
@@ -152,14 +168,23 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
   }, [active, hits])
 
   const move = (delta: number) => {
-    if (hits.length === 0) return
-    setActiveIndex((current) => (Math.min(current, hits.length - 1) + delta + hits.length) % hits.length)
+    if (total === 0) return
+    setActiveIndex((current) => (Math.min(current, total - 1) + delta + total) % total)
   }
 
   const choose = (hit: SearchHit) => {
     onChoose(hit)
     onClose()
   }
+  const run = (line: PaletteLine) => {
+    onClose()
+    line.run()
+  }
+  const chooseAt = (index: number) => {
+    if (index < hits.length) choose(hits[index])
+    else run(lines[index - hits.length])
+  }
+  const previewed = active >= 0 && active < hits.length ? hits[active] : undefined
 
   // The empty state describes the list, so it quotes the query the list answers.
   const trimmed = asked.trim()
@@ -168,7 +193,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth={previewed ? 'md' : 'sm'}
       fullWidth
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '10vh' } }}
     >
@@ -182,7 +207,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') { event.preventDefault(); move(1) }
             else if (event.key === 'ArrowUp') { event.preventDefault(); move(-1) }
-            else if (event.key === 'Enter' && active >= 0) { event.preventDefault(); choose(hits[active]) }
+            else if (event.key === 'Enter' && active >= 0) { event.preventDefault(); chooseAt(active) }
           }}
           label={s('gsearch.title')}
           placeholder={s('gsearch.placeholder')}
@@ -190,7 +215,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
             htmlInput: {
               'aria-label': s('gsearch.field'),
               role: 'combobox',
-              'aria-expanded': hits.length > 0,
+              'aria-expanded': total > 0,
               'aria-controls': 'lv-gsearch-results',
               'aria-activedescendant': active >= 0 ? optionId(active) : undefined,
               autoComplete: 'off',
@@ -198,12 +223,13 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
           }}
         />
       </Box>
+      <Box sx={{ display: 'flex', minHeight: 0 }}>
       <Box
         ref={listRef}
         id="lv-gsearch-results"
         role="listbox"
         aria-label={s('gsearch.results')}
-        sx={{ maxHeight: 420, overflowY: 'auto', pb: 0.5 }}
+        sx={{ maxHeight: 420, overflowY: 'auto', pb: 0.5, flex: '1 1 0', minWidth: 0 }}
       >
         {/* One group per kind, named by its heading, so a screen reader says
             which kind a row is as it reaches the first of them. */}
@@ -232,9 +258,39 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
             })}
           </Box>
         ))}
+        {runsOfGroup(lines).map(({ group, from, run: inGroup }) => (
+          <Box key={group} role="group" aria-label={group}>
+            <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11 }}>{group}</ListSubheader>
+            {inGroup.map((line, offset) => {
+              const index = hits.length + from + offset
+              return (
+                <ListItemButton
+                  key={line.id} id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
+                  onMouseMove={() => setActiveIndex(index)} onClick={() => run(line)}
+                  data-testid={`palette-${line.id}`}
+                  sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
+                >
+                  <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
+                  {line.keys !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{line.keys}</Typography>}
+                </ListItemButton>
+              )
+            })}
+          </Box>
+        ))}
+      </Box>
+      {/* What a whole sentence needs room for: a hit read before it is opened. */}
+      {previewed && (
+        <Box data-testid="palette-preview" sx={{ flex: '0 0 300px', minWidth: 0, borderLeft: 1, borderColor: 'divider', p: 1.5, overflowY: 'auto', maxHeight: 420 }}>
+          {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
+          <Typography sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
+          {previewed.scope !== undefined && <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
+          {previewed.detail && <Typography sx={{ fontSize: 13, mt: 1, overflowWrap: 'anywhere' }}>{previewed.detail}</Typography>}
+          {previewed.snippet && <Typography sx={{ fontSize: 13, mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
+        </Box>
+      )}
       </Box>
       {/* Beside the listbox, not in it: a listbox holds options and nothing else. */}
-      {hits.length === 0 && (
+      {total === 0 && (
         <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, pb: 1.5 }}>
           {trimmed === '' ? s('gsearch.empty') : s('gsearch.noMatches', { query: trimmed })}
         </Typography>
@@ -244,6 +300,17 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
       </Typography>
     </Dialog>
   )
+}
+
+/** The lines in runs of one heading, in the order they came, with where each run starts. */
+function runsOfGroup(lines: readonly PaletteLine[]): { group: string; from: number; run: PaletteLine[] }[] {
+  const runs: { group: string; from: number; run: PaletteLine[] }[] = []
+  lines.forEach((line, index) => {
+    const last = runs[runs.length - 1]
+    if (last && last.group === line.group) last.run.push(line)
+    else runs.push({ group: line.group, from: index, run: [line] })
+  })
+  return runs
 }
 
 /** The hits in runs of one kind, in the order they came, with where each run starts. */

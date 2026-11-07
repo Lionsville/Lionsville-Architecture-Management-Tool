@@ -14,10 +14,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Place } from '../agent/place'
-import { arrived, HOME_PAGES, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
+import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
-import type { Destination, MovedBy, Screen } from '../agent/screen'
+import type { Destination, FramePanel, MovedBy, Screen } from '../agent/screen'
+import type { FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
@@ -85,6 +86,12 @@ export function useShellAgent(deps: {
   people?: PeopleView
   /** The tree of scopes, lent to the agent (ADR-0040 §3). */
   scopes?: ScopesView
+  /** What the frame holds beside the screen: its panel, and the tab of the page that is up. */
+  frame?: FrameStore
+  /** The window's preferences, an address and an agent asking for them. */
+  openPreferences?: () => void
+  /** One of the frame's own places the address named, opened once as the app comes up. */
+  initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
@@ -117,9 +124,10 @@ export function useShellAgent(deps: {
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
   /** The screen the last look found: what an open that ends on a home compares that home with. */
   const lastLook = useRef<Screen | undefined>(undefined)
+  const { frame } = deps
   const screenNow = useCallback(
-    (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
-    [project, home, homeName, organisationName, orgPage],
+    (): Screen => inFrame(screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }), frame),
+    [project, home, homeName, organisationName, orgPage, frame],
   )
   /** The element selected on the view on screen, where one is: what a link selects again (ADR-0033, amended). */
   const selectedNow = useCallback(() => agentSessionRef.current?.renderer?.selected?.(), [])
@@ -130,7 +138,20 @@ export function useShellAgent(deps: {
    * moving the app — nothing there to open, a scope that could not be read,
    * or a fallback onto the home that was already up with nothing over it.
    */
+  const openPreferences = useRef(deps.openPreferences)
+  openPreferences.current = deps.openPreferences
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
+    // The frame's own places move nothing but what they say: over the scope you
+    // are in, and over the home of the scope named where that is another.
+    if (to.page !== undefined && FRAME_PAGES.includes(to.page)) {
+      const here = project?.path ?? home
+      if (to.scope !== here) homeAt(to.scope, 'home')
+      if (isFramePanel(to.page)) frame?.set({ panel: to.page })
+      else if (to.page === 'settings') frame?.set({ asks: 'settings' })
+      else openPreferences.current?.()
+      return
+    }
+    frame?.set({ panel: to.panel, tab: to.tab, tabOf: to.tab === undefined ? undefined : to.page })
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person `select` names.
       homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.select)
@@ -158,7 +179,7 @@ export function useShellAgent(deps: {
       },
       nothing,
     })
-  }, [homeAt, project, openScopeAt])
+  }, [homeAt, project, home, openScopeAt, frame])
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a
    * move to another place is a step whoever made it, and Back opens the place
@@ -266,6 +287,28 @@ export function useShellAgent(deps: {
     agentDriving.current = false
     agentOpened.current = false
   }, [driving])
+  // What an address asked of the frame itself, once, as the app comes up.
+  const askedOfFrame = useRef(deps.initialFramePage)
+  useEffect(() => {
+    const page = askedOfFrame.current
+    if (page === undefined) return
+    askedOfFrame.current = undefined
+    openFor({ scope: project?.path ?? home, page })
+  }, [openFor, project, home])
+  // The frame's panel moved: a place of its own, so Back shuts it and a reload keeps it.
+  useEffect(() => {
+    if (!frame) return undefined
+    let { panel, tab } = frame.get()
+    return frame.subscribe(() => {
+      const now = frame.get()
+      if (now.panel === panel && now.tab === tab) return
+      ({ panel, tab } = now)
+      lookAgainRef.current()
+    })
+  }, [frame])
+  const setPanel = useCallback((panel: FramePanel | undefined) => {
+    frame?.set({ panel })
+  }, [frame])
   const registerAgent = agentShell.register
   const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
     agentSessionRef.current = view
@@ -278,7 +321,8 @@ export function useShellAgent(deps: {
   }, [registerAgent])
   return {
     orgPageRequest, setOrgPage, openSomewhere, openBlock, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
-    screen: where?.screen, movedBy: where?.by ?? 'person', screenNow, selectedNow, openSession,
+    screen: where?.screen, movedBy: where?.by ?? 'person', screenNow, selectedNow, openSession, setPanel,
+    lookAgain: useCallback(() => lookAgainRef.current(), []),
   }
 }
 
@@ -344,6 +388,19 @@ function movesTheApp(screen: Screen, to: Destination & { scope: string }, open: 
   if (to.page !== 'element' || to.id === undefined) return false
   const boards = boardsDrawing(open.current(), to.id)
   return boards.length === 1 && boards[0].id !== open.activeDiagramId()
+}
+
+/** The screen with what the frame holds laid over it: its panel, and a tab the page keeps there. */
+function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
+  const held = frame?.get()
+  if (!held) return screen
+  const page = screen.page
+  const tab = page && held.tabOf === page.page && !('tab' in page && page.tab !== undefined) && isPageTab(page.page, held.tab) ? held.tab : undefined
+  return {
+    ...screen,
+    ...(page && tab !== undefined ? { page: { ...page, tab } as Screen['page'] } : {}),
+    ...(held.panel !== undefined ? { panel: held.panel } : {}),
+  }
 }
 
 /** Where the app is, as the agent is told it: the scope that is open and its view and page, or the home. */

@@ -25,6 +25,8 @@ import MenuList from '@mui/material/MenuList';
 import Popover from '@mui/material/Popover';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import { createPortal } from 'react-dom';
+import { usePlaceHost } from '../widgets/kit/placeHost';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -295,6 +297,7 @@ function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarPr
 
 export function EditorToolbar(props: EditorToolbarProps) {
   const theme = useTheme();
+  const host = usePlaceHost();
   const { t, language } = useStrings();
   const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
   // Each kind is its own list. A drawing is not dropped into a sheet's, and a
@@ -381,6 +384,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
     }
   };
 
+  // In the frame the view's tabs are row two, and undo is row one: the bar under
+  // them is the view's own tools (decision 1). With no frame, as in a test of this
+  // bar alone, each draws where it stands.
+  const framed = host?.views ?? null;
+  const inRow = (node: React.ReactNode) => (framed ? createPortal(node, framed) : node);
   return (
     <Box
       sx={{
@@ -397,7 +405,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         minHeight: 48, flexWrap: 'wrap',
       }}
     >
-      {isContainer ? (
+      {inRow(isContainer ? (
         <>
           <Breadcrumb
             model={props.model}
@@ -417,7 +425,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       ) : (
         <>
           <Tabs
-            value={selectedTab(tabs, props.activeDiagram.id)}
+            value={host?.pageUp ? false : selectedTab(tabs, props.activeDiagram.id)}
             onChange={(_e, value: string) => {
               // A laid-out view is a tab like any other since ADR-0016: the
               // host draws it in place of the canvas. The host's openers stay
@@ -495,12 +503,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </Dialog>
           {!props.readOnly && <NewViewMenu props={props} />}
         </>
-      )}
+      ))}
 
       <Box data-testid="toolbar-spacer" sx={{ ml: 'auto' }} />
       {props.readOnly && <Chip size="small" label={t('toolbar.readOnly')} variant="outlined" />}
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-      {!props.readOnly && (
+      {!props.readOnly && !framed && (
         <>
           <Tooltip title={t('toolbar.undoTip')}>
             <span>

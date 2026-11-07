@@ -56,7 +56,8 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         document={{
           model: session.model,
           activeDiagramId: session.activeDiagramId,
-          onActiveDiagramChange: session.setActiveDiagramId,
+          // A view's tab is also the way out of a page: the view comes up, and the page goes.
+          onActiveDiagramChange: (id) => { parts.pages.closePages(); session.setActiveDiagramId(id) },
           viewing: parts.viewing,
         }}
         editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly }}

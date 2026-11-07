@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, WEBSITE_LINK, offered } from '../platform/menu'
+import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
 
@@ -57,7 +57,6 @@ export function OverflowMenu({
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
   const entries = offered(FILE_MENU, 'web', can)
-  const help = offered(HELP_MENU, 'web', can)
 
   /**
    * The providers' lines, read while the menu is open and not before.
@@ -120,37 +119,6 @@ export function OverflowMenu({
         <Divider />
         <MenuItem onClick={choose(PREFERENCES_ITEM.command)}>
           <ListItemText primary={s(PREFERENCES_ITEM.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-        </MenuItem>
-        {/* Help, under its own heading: the same two the desktop's Help menu
-            carries, and then the way to the desktop app, which only a host
-            with no menu bar has any use for — this one. */}
-        <Divider />
-        <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>
-        {help.map((entry) => (entry.kind === 'item' ? (
-          <MenuItem key={entry.label} onClick={choose(entry.command)}>
-            <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-          </MenuItem>
-        ) : null))}
-        <MenuItem
-          component="a"
-          href={DESKTOP_APP_LINK.href}
-          target="_blank"
-          rel="noreferrer"
-          data-testid="overflow-desktop-app"
-          onClick={() => setAnchor(null)}
-        >
-          <ListItemText primary={s(DESKTOP_APP_LINK.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-        </MenuItem>
-        <MenuItem
-          component="a"
-          href={WEBSITE_LINK.href}
-          target="_blank"
-          rel="noreferrer"
-          data-testid="overflow-website"
-          data-guide="shell.website"
-          onClick={() => setAnchor(null)}
-        >
-          <ListItemText primary={s(WEBSITE_LINK.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
         </MenuItem>
         {/* The providers' own lines, last and under a rule. A rule and not a
             heading: a heading would be a word of ours about somewhere this shell

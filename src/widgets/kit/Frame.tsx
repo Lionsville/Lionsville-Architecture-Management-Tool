@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * The frame: two rows that never change, a band under them when the window is
+ * in a state a person must not miss, and everything else a place in one main
+ * column (decision 1). The tree docks at its start and a panel at its end, and
+ * a page takes the column over the view rather than opening over the window.
+ *
+ * It knows no scope and no model. What the rows hold is handed in, and where a
+ * page or a view's tabs go is said to whoever asks through {@link PlaceHostContext}.
+ */
+import { useMemo, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { PlaceHostContext } from './placeHost'
+import type { PlaceHost } from './placeHost'
+import './Frame.css'
+
+export type FrameProps = {
+  readonly rowOne: ReactNode
+  /** What comes before the view's tabs, and what comes after them. */
+  readonly rowTwoStart: ReactNode
+  readonly rowTwoEnd: ReactNode
+  readonly band?: ReactNode
+  readonly tree?: ReactNode
+  readonly panel?: ReactNode
+  /** Is a page up over the view? */
+  readonly pageUp: boolean
+  /** Space the window keeps at the start of row one, for its own controls, in px. */
+  readonly controlsInset?: number
+  /** Row one is the surface the window is dragged by. */
+  readonly draggable?: boolean
+  readonly children: ReactNode
+}
+
+export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, controlsInset = 0, draggable = false, children }: FrameProps) {
+  const [page, setPage] = useState<HTMLElement | null>(null)
+  const [views, setViews] = useState<HTMLElement | null>(null)
+  const host = useMemo<PlaceHost>(() => ({ page, views, pageUp }), [page, views, pageUp])
+  const barStyle = {
+    ...(controlsInset > 0 ? { paddingInlineStart: `${8 + controlsInset}px` } : {}),
+    ...(draggable ? { WebkitAppRegion: 'drag' } : {}),
+  } as CSSProperties
+  return (
+    <PlaceHostContext.Provider value={host}>
+      <div className="kit-frame" data-testid="frame">
+        <div className="kit-frame__row kit-frame__row--one" data-testid="shell-toolbar" data-draggable={draggable || undefined} style={barStyle}>{rowOne}</div>
+        <nav className="kit-frame__row kit-frame__row--two" data-testid="frame-places">
+          {rowTwoStart}
+          <div className="kit-frame__views" ref={setViews} data-testid="frame-views" />
+          <div className="kit-frame__grow" />
+          {rowTwoEnd}
+        </nav>
+        {band}
+        <div className="kit-frame__body">
+          {tree && <aside className="kit-frame__tree" data-testid="frame-tree">{tree}</aside>}
+          <main className="kit-frame__main">
+            {children}
+            <div className="kit-frame__pages" ref={setPage} data-testid="frame-pages" />
+          </main>
+          {panel && <aside className="kit-frame__panel" data-testid="frame-panel">{panel}</aside>}
+        </div>
+      </div>
+    </PlaceHostContext.Provider>
+  )
+}

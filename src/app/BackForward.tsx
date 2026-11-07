@@ -6,11 +6,9 @@
  * pressed from inside the page.
  *
  * A browser tab has a Back of its own, its keys and its gestures, and they
- * move the same history the shell writes places into (`placeHistory.ts`), so
- * nothing is drawn there. A desktop window has none of those, and the host
- * says so in `WindowChrome.backForward`: then the bar draws the two buttons,
- * at its start after the space the window controls take, and the other ways
- * in every desktop app has — the Go menu with its keys, the mouse's back and
+ * move the same history the shell writes places into (`placeHistory.ts`). A
+ * desktop window has none of those, and the host says so in
+ * `WindowChrome.backForward`: the other ways in every desktop app has — the Go menu with its keys, the mouse's back and
  * forward buttons, the trackpad's swipe — arrive as host commands or as the
  * mouse's own buttons, and all of them end in `history.back()` or
  * `history.forward()`. One history, whichever was pressed.
@@ -115,13 +113,12 @@ export function useMouseHistoryButtons(chrome: WindowChrome): void {
   }, [on])
 }
 
-/** The two buttons, where the host asks for them; nothing anywhere else. */
-export function BackForward({ chrome, s }: { chrome: WindowChrome; s: Translate }) {
-  if (!chrome.backForward) return null
-  return <BackForwardButtons s={s} />
-}
-
-function BackForwardButtons({ s }: { s: Translate }) {
+/**
+ * The two buttons, on both hosts (decision 1): the frame differs by nothing,
+ * and a browser's own Back is out of sight in full screen. They press the one
+ * history the browser's own moves too.
+ */
+export function BackForward({ s }: { s: Translate }) {
   const { canGoBack, canGoForward } = useHistoryEnds()
   const button = { width: 28, height: 28, color: 'text.secondary' } as const
   return (

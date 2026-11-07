@@ -61,7 +61,7 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { HOME_PAGES, isObservationTab, PAGES, VIEW_PAGES, viewPage } from './screen'
+import { FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, PAGE_TABS, PAGES, VIEW_PAGES, viewPage } from './screen'
 import type { DesignDiagram } from '../model/types'
 import type { Destination, Page, Screen } from './screen'
 
@@ -83,10 +83,10 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel'])
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'select'])
+const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -107,6 +107,7 @@ export function writePlace(place: Place): string {
   }
   if (place.tab !== undefined) query.set('tab', place.tab)
   if (place.select !== undefined) query.set('select', place.select)
+  if (place.panel !== undefined) query.set('panel', place.panel)
   const rest = query.toString()
   return `#${PLACE_PATH_PREFIX}${path.join('/')}${rest === '' ? '' : `?${rest}`}`
 }
@@ -168,7 +169,7 @@ function readPath(text: string): Place | undefined {
   // and on the path at once, is not a place.
   if (said.id !== undefined && page !== undefined) return undefined
   const scope = scopeParts.join('/')
-  return placeFrom(scope, page, id ?? said.id, said.tab, said.select)
+  return placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel)
 }
 
 /** `#place?scope=…&page=…&id=…`, the form before 3.7.0, after its prefix. */
@@ -176,11 +177,11 @@ function readQueryForm(text: string): Place | undefined {
   const said = queryOf(new URLSearchParams(text), KEYS)
   if (said === undefined || said.scope === undefined) return undefined
   if (said.page !== undefined && !isPage(said.page)) return undefined
-  return placeFrom(said.scope, said.page, said.id, said.tab, said.select)
+  return placeFrom(said.scope, said.page, said.id, said.tab, said.select, said.panel)
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -189,11 +190,13 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
   return out
 }
 
-function placeFrom(scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined): Place | undefined {
+function placeFrom(scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
-  if (tab !== undefined && !isObservationTab(tab)) return undefined
+  if (tab !== undefined && !(page === undefined ? anyPageHasTab(tab) : isPageTab(page, tab))) return undefined
+  if (panel !== undefined && !isFramePanel(panel)) return undefined
   return {
     scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}),
+    ...(panel !== undefined ? { panel } : {}),
     ...(select !== undefined && select !== '' ? { select } : {}),
   }
 }
@@ -205,6 +208,11 @@ function decodeAll(segments: readonly string[]): string[] | undefined {
   } catch {
     return undefined
   }
+}
+
+/** A tab with no page said beside it: read back as what it is, for the destination that wrote it. */
+function anyPageHasTab(tab: string): boolean {
+  return Object.values(PAGE_TABS).some((tabs) => tabs.includes(tab))
 }
 
 function isPage(value: string): value is Page {
@@ -233,12 +241,15 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
-  const { scope, page, id, tab } = held as Record<string, unknown>
+  const { scope, page, id, tab, panel } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
   if (id !== undefined && typeof id !== 'string') return undefined
-  if (tab !== undefined && !isObservationTab(tab)) return undefined
-  return { scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}) }
+  if (tab !== undefined && !(typeof page === 'string' && isPage(page) && isPageTab(page, tab))) return undefined
+  return {
+    scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab: tab as string } : {}),
+    ...(isFramePanel(panel) ? { panel } : {}),
+  }
 }
 
 /**
@@ -251,26 +262,32 @@ export function placeInState(state: unknown): Place | undefined {
  * screen that says nothing at all.
  */
 export function placeOf(screen: Screen): Place | undefined {
+  const beside = screen.panel !== undefined ? { panel: screen.panel } : {}
   if (screen.open) {
     const scope = screen.open.path
     if (screen.page) {
       const up = screen.page
       return {
         scope, page: up.page, ...('id' in up && up.id !== undefined ? { id: up.id } : {}),
-        ...(up.page === 'observations' && up.tab !== undefined ? { tab: up.tab } : {}),
+        ...('tab' in up && up.tab !== undefined ? { tab: up.tab } : {}), ...beside,
       }
     }
     const view = screen.open.view
-    return view ? { scope, page: viewPage(diagramKind(view.kind)), id: view.id } : undefined
+    return view ? { scope, page: viewPage(diagramKind(view.kind)), id: view.id, ...beside } : undefined
   }
-  if (screen.home) return { scope: screen.home.path, page: screen.page?.page ?? 'home' }
+  if (screen.home) {
+    const up = screen.page
+    // A panel over a bare home is the panel's own short address: `#/-/work`.
+    if (up === undefined && screen.panel !== undefined) return { scope: screen.home.path, page: screen.panel }
+    return { scope: screen.home.path, page: up?.page ?? 'home', ...(up !== undefined && 'tab' in up && up.tab !== undefined ? { tab: up.tab } : {}), ...beside }
+  }
   return undefined
 }
 
-/** The same place: the same scope, page, id and tab. */
+/** The same place: the same scope, page, id, tab and panel. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel
 }
 
 /** The two pages where moving from one record to the next is choosing, not going somewhere. */
@@ -292,7 +309,9 @@ const RECORD_PAGES: readonly Page[] = ['decisions', 'observations']
 export function stepBetween(from: Place | undefined, to: Place): 'push' | 'replace' | 'none' {
   if (from === undefined) return 'replace'
   if (samePlace(from, to)) return 'none'
-  if (from.scope === to.scope && from.page === to.page && to.page !== undefined && RECORD_PAGES.includes(to.page)) return 'replace'
+  if (from.scope === to.scope && from.page === to.page && to.page !== undefined && RECORD_PAGES.includes(to.page) && from.panel === to.panel) return 'replace'
+  // Another tab on the same page is choosing as well, whichever page has tabs.
+  if (from.scope === to.scope && from.page === to.page && from.id === to.id && from.panel === to.panel) return 'replace'
   return 'push'
 }
 
@@ -338,7 +357,7 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
     const nearest = above(scope).find((path) => path === '' || facts.scopeIs(path)) ?? ''
     return { scope: nearest, page: 'home' }
   }
-  if (page !== undefined && HOME_PAGES.includes(page)) return place
+  if (page !== undefined && (HOME_PAGES.includes(page) || FRAME_PAGES.includes(page))) return place
   const views = facts.views
   const first: Place = views === undefined
     ? { scope }

@@ -490,6 +490,7 @@ function renderApp(
           ...(landing?.initialHome !== undefined ? { initialHome: landing.initialHome } : {}),
           ...(landing?.initialPage ? { initialPage: landing.initialPage } : {}),
           ...(landing?.initialHomePage ? { initialHomePage: landing.initialHomePage } : {}),
+          ...(landing?.initialFramePage ? { initialFramePage: landing.initialFramePage } : {}),
           ...(landing?.notice ? { notice: landing.notice } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,

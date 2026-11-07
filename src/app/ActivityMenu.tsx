@@ -24,9 +24,6 @@
  * alone and reads exactly as it always did.
  */
 import { useEffect, useState } from 'react'
-import Box from '@mui/material/Box'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../i18n'
 import { formatMoment } from '../i18n/dates'
@@ -165,76 +162,56 @@ function useKept(open: boolean, recent: ActivityMenuProps['recent']) {
   return { kept, asking }
 }
 
-export function ActivityMenu({ anchorEl, onClose, entries, recent, language, s }: ActivityMenuProps) {
-  const { kept, asking } = useKept(Boolean(anchorEl), recent)
+/**
+ * The lines themselves, newest first, for the Activity panel: read-only as a
+ * record, and every line the same words the menu said.
+ */
+export function ActivityLines({ open = true, entries, recent, language, s }: Omit<ActivityMenuProps, 'anchorEl' | 'onClose'> & { open?: boolean }) {
+  const { kept, asking } = useKept(open, recent)
   // Newest at the top, which is the order a person reads a log in and the
   // opposite of the order a stack keeps it.
   const lines = mergeActivity(entries, kept).reverse()
+  if (lines.length === 0) {
+    return <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s(asking ? 'shell.activityReading' : 'shell.activityEmpty')}</Typography>
+  }
   return (
-    <Menu
-      anchorEl={anchorEl}
-      open={Boolean(anchorEl)}
-      onClose={onClose}
-      slotProps={{ list: { 'aria-label': s('shell.activity'), dense: true } }}
-    >
-      {lines.length === 0 ? (
-        <MenuItem disabled>
-          <Typography sx={{ fontSize: 12 }}>
-            {s(asking ? 'shell.activityReading' : 'shell.activityEmpty')}
-          </Typography>
-        </MenuItem>
-      ) : (
-        lines.map((entry, i) => (
-          <MenuItem key={`${entry.at}-${i}`} disableRipple sx={{ cursor: 'default' }}>
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'baseline', minWidth: 220 }}>
-              <Typography data-testid="activity-summary" sx={{ fontSize: 12, flex: 1 }}>
-                {s(entry.summary.key, {
-                  name: entry.summary.name ?? '—',
-                  count: entry.summary.count ?? 1,
-                  asOf: entry.summary.asOf ?? '',
-                  // What kind of row it was, in today's language rather than
-                  // the one it was drawn in (ADR-0012 §5).
-                  type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
-                  // Where a move took the scope from, and to.
-                  from: entry.summary.from ?? '',
-                  to: entry.summary.to ?? '',
-                })}
-              </Typography>
-              {(entry.origin !== undefined || entry.you || entry.unattended) && (
-                <Typography
-                  data-testid="activity-origin"
-                  sx={{ fontSize: 10, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}
-                >
-                  {entry.unattended
-                    // Nobody's: a board laid out as it opened. Before any
-                    // author, because whoever's window it was did not do it.
-                    ? s('shell.activityUnattended')
-                    : entry.origin === 'agent'
-                    ? s('shell.activityAgent')
-                    : entry.origin === undefined
-                      // The person's own, where the list also holds everybody
-                      // else's and an untagged line would no longer say whose.
-                      ? s(entry.via === undefined ? 'shell.activityYou' : 'shell.activityYouVia', {
-                        client: entry.via ?? '',
-                      })
-                      // The author's own name where there is one — a step whose
-                      // author arrived nameless is still not this person's — and
-                      // the client beside it where the step said which.
-                      : s(entry.via === undefined ? 'shell.activityBy' : 'shell.activityByVia', {
-                        name: entry.by ?? s('shell.activityElsewhere'),
-                        client: entry.via ?? '',
-                      })}
-                </Typography>
-              )}
-              {/* The day as well as the time: a log a source keeps reaches back
-                  past today, and "09:12" alone would not say which morning. */}
-              <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                {formatMoment(entry.at, language)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))
-      )}
-    </Menu>
+    <ul className="kit-lines" aria-label={s('shell.activity')}>
+      {lines.map((entry, i) => (
+        <li key={`${entry.at}-${i}`} className="kit-lines__row">
+          <span data-testid="activity-summary">
+            {s(entry.summary.key, {
+              name: entry.summary.name ?? '—',
+              count: entry.summary.count ?? 1,
+              asOf: entry.summary.asOf ?? '',
+              // What kind of row it was, in today's language rather than
+              // the one it was drawn in (ADR-0012 §5).
+              type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
+              // Where a move took the scope from, and to.
+              from: entry.summary.from ?? '',
+              to: entry.summary.to ?? '',
+            })}
+          </span>
+          <small>
+            {(entry.origin !== undefined || entry.you || entry.unattended) && (
+              <span data-testid="activity-origin">{originWords(entry, s)} · </span>
+            )}
+            {/* The day as well as the time: a log a source keeps reaches back
+                past today, and "09:12" alone would not say which morning. */}
+            {formatMoment(entry.at, language)}
+          </small>
+        </li>
+      ))}
+    </ul>
   )
+}
+
+/** Whose a line is, in words: nobody's, the agent's, this person's, or the author's with the client beside it. */
+function originWords(entry: ActivityLine, s: Translate): string {
+  // Nobody's: a board laid out as it opened. Before any author, because
+  // whoever's window it was did not do it.
+  if (entry.unattended) return s('shell.activityUnattended')
+  if (entry.origin === 'agent') return s('shell.activityAgent')
+  // The person's own, where the list also holds everybody else's.
+  if (entry.origin === undefined) return s(entry.via === undefined ? 'shell.activityYou' : 'shell.activityYouVia', { client: entry.via ?? '' })
+  return s(entry.via === undefined ? 'shell.activityBy' : 'shell.activityByVia', { name: entry.by ?? s('shell.activityElsewhere'), client: entry.via ?? '' })
 }

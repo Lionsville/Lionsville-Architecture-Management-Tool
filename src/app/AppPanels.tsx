@@ -33,7 +33,6 @@ import { useServedBy } from './organisation/useServedBy'
 import type { HomeStore } from './organisation/HomeRecords'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
-import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
 import type { SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
@@ -59,7 +58,7 @@ export function AppScreen({ parts }: { parts: ShellParts }) {
 }
 
 /** The menu on a host that has none of its own (ADR-0005): the same on both screens. */
-function overflowFor<Can extends { history?: boolean; scope: boolean }>(parts: ShellParts, can: Can) {
+function overflowFor(parts: ShellParts, can: { history: boolean; scope: boolean }) {
   const { services: { prefs }, commands: { bus } } = parts
   if (parts.hostMenu) return undefined
   return {
@@ -115,6 +114,11 @@ function useScopeSessionTaker(parts: ShellParts): ((session: ScopeSession) => ((
   return publishes ? both : take
 }
 
+/** The ⋯ in row one. */
+export function frameOverflow(parts: ShellParts, scope: boolean) {
+  return overflowFor(parts, scope ? { history: parts.props.repositories.history !== undefined, scope: true } : { history: parts.home.history.available, scope: false })
+}
+
 function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSnapshot }) {
   const { props, services: { toasts, prefs, s, reportKept }, nav, writes, ancestry, prompts, host } = parts
   const onSession = useScopeSessionTaker(parts)
@@ -135,8 +139,6 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         status: props.provider?.status,
         onWork: props.provider?.onWork,
         onSession,
-        chip: workspaceChip(parts),
-        barButton: barButtonFor(parts, 'workspace'),
         publishesSteps: props.provider?.publishesSteps ?? false,
         writable: writableFor(parts),
         comments: props.provider?.comments,
@@ -169,7 +171,6 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       host={{
         commands: parts.commands.bus.on,
         hostMenu: parts.hostMenu,
-        overflow: overflowFor(parts, { scope: true }),
         onUnsavedWork: host.onUnsavedWork,
         windowChrome: parts.windowChrome,
         controls: props.hostControls,
@@ -183,7 +184,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         chooseDestination: props.provider?.destination,
       }}
       snapshots={{ history: props.repositories.history, note: historyNote(parts), kept: props.provider?.historyKept }}
-      agent={{ onSession: parts.agent.registerAgentSession, bar: parts.agentServer.bar }}
+      agent={{ onSession: parts.agent.registerAgentSession }}
       shell={{
         s, language: prefs.language, notify: toasts.notify, makeId: props.makeId,
         problem: parts.services.problem, drawingOrigin: props.provider?.drawingOrigin, people: parts.people,
@@ -282,13 +283,6 @@ function Home({ parts }: { parts: ShellParts }) {
           chipPanel={chipPanelFor(parts)}
           chipFace={chipFaceFor(parts)}
           waysIn={parts.provider.offered}
-          // The same two the workspace's bar carries: the menu on a host
-          // that has none of its own, and the agent glyph, which has to be
-          // reachable with nothing open (ADR-0007). The folder's history, from
-          // its front door too (`homeHistory`).
-          overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
-          agent={parts.agentServer.bar}
-          barButton={barButtonFor(parts, 'organisation')}
           onGoHome={nav.goHome}
           findings={findings.treeFindings}
           checkMarks={marking.marks}
@@ -409,7 +403,7 @@ function chipFaceFor(parts: ShellParts): ((open: boolean, fallback: ReactNode) =
  * bar it is in, the way about, where the app is and the cheap half of what a
  * chrome is handed.
  */
-function barButtonFor(parts: ShellParts, where: 'workspace' | 'organisation'): ReactNode {
+export function frameBarButton(parts: ShellParts, where: 'workspace' | 'organisation'): ReactNode {
   const { props, services: { prefs, s, toasts }, provider, agent } = parts
   const Button = provider.BarButton
   if (!Button) return undefined
@@ -430,7 +424,7 @@ function barButtonFor(parts: ShellParts, where: 'workspace' | 'organisation'): R
  * word, a panel or a face for it. Every source that ships has none, and its
  * chip stays on the organisation's home alone.
  */
-function workspaceChip(parts: ShellParts): ToolbarChip | undefined {
+export function frameChip(parts: ShellParts): ToolbarChip | undefined {
   const { chip, ChipPanel, ChipFace } = parts.provider
   if (!chip && !ChipPanel && !ChipFace) return undefined
   return {
@@ -470,10 +464,9 @@ function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
 
 /** The standing notices, and every registered provider's own strip. */
 export function AppNotices({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, agent, provider } = parts
+  const { props, services: { prefs, s }, provider } = parts
   return (
     <>
-      <AgentDrivingBanner driving={agent.driving} onStop={agent.stop} s={s} />
       {provider.chromes.map(({ kind, chrome: Chrome }) => (
         /* Inside the theme and inside the language, so a provider's strip is
            in this person's dark mode and this person's German; beside the

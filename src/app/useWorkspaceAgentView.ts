@@ -20,7 +20,7 @@ import type { DesignElement, Relation } from '../model'
 import type { ChangeAcross } from '../agent/merge'
 import type { LandSteps, FollowScopeTypes } from '../agent/handle'
 import type { RendererView } from '../agent/renderer'
-import type { Destination } from '../agent/screen'
+import type { Destination, ObservationTab } from '../agent/screen'
 import { isViewPageName } from './pageLanding'
 import { coverageOf, unmappedFunctions } from '../business'
 import { documentFindings, findingsOfOrganisation, identityFindings } from '../projects/checks'
@@ -216,7 +216,7 @@ export function showOn(
       case 'decisions': openDecisions(to.id); break
       // It fell through to closing every page, so `app.open` on the
       // observations of the scope already open landed on the canvas.
-      case 'observations': openObservations(to.id, to.tab); break
+      case 'observations': openObservations(to.id, to.tab as ObservationTab | undefined); break
       case 'roadmap': openRoadmap(); break
       case 'operating': pages.openOperating(to.id); break
       case 'principles': pages.openPrinciples(to.id); break
