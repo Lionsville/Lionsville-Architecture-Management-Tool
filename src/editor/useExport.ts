@@ -17,6 +17,7 @@ import type { ExportOptions } from './export/ExportDialog';
 import { getExportTokens } from './theme/tokens';
 import { EditorRefused, type SolutionDesignEditorProps } from './props';
 import { pngFilename, titleBlockFor, type TitleBlockContext } from './exportTitleBlock';
+import { useOutOfSight } from '../widgets/outOfSight';
 
 /**
  * The preview's long edge, in image pixels. Enough to judge a sheet, and a
@@ -81,6 +82,7 @@ export function useExportDialog(args: ExportArgs) {
   // conflicts with a layout pass. All it owes the user is a spinner on the
   // button they pressed, and no second export while the first rasterises.
   const [exporting, setExporting] = useState(false);
+  const outOfSight = useOutOfSight(exporting, { title: t('export.outOfSightTitle'), body: t('export.outOfSight') });
   const picture = usePicture(args, exportOptions?.theme);
   const { exportTheme, exportBounds, titleBlockOf, renderExportRef } = picture;
 
@@ -113,7 +115,7 @@ export function useExportDialog(args: ExportArgs) {
   const confirmExport = useConfirmExport(args, exportOptions, setExporting, renderExportRef, closeExport);
 
   return {
-    exportOptions, setExportOptions, exporting, exportTheme, exportSize,
+    exportOptions, setExportOptions, exporting, outOfSight, exportTheme, exportSize,
     exportPreview: preview.exportPreview, previewBusy: preview.previewBusy,
     openExport, closeExport, confirmExport,
   };

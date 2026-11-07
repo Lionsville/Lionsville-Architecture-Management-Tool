@@ -46,6 +46,11 @@ describe('ExportDialog — as axe reads it', () => {
 });
 
 describe('ExportDialog', () => {
+  it('says the window has to come back when it went out of sight mid-way', () => {
+    open({ exporting: true, outOfSight: true });
+    expect(screen.getByText(/out of sight/)).toBeTruthy();
+  });
+
   it('hands every choice back whole, so the caller never merges', () => {
     const { onChange } = open();
     fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));

@@ -93,6 +93,7 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
           previewBusy={exports.previewBusy}
           size={exportSize}
           exporting={exports.exporting}
+          outOfSight={exports.outOfSight}
           onExport={exports.confirmExport}
           onClose={exports.closeExport}
           {...(onSettingsChange ? {

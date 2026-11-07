@@ -17,6 +17,7 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { Segmented } from '../../widgets/kit/Segmented'
+import { useOutOfSight } from '../../widgets/outOfSight'
 import { PRINT_PAPERS, printScale } from '../../widgets/printPage'
 import type { PrintLook, PrintPaper } from '../../widgets/printPage'
 import { POSTER_WIDTH } from '../posterLayout'
@@ -66,6 +67,7 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
   const date = sheet.documentDate ?? (today !== '' ? formatDay(today, language) : '')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
+  const outOfSight = useOutOfSight(busy, { title: t('export.outOfSightTitle'), body: t('export.outOfSight') })
   const paper = PRINT_PAPERS[paperName]
   const cut = useMemo(() => cutNames(paper), [cutNames, paper])
   const scale = printScale(page, paper, true)
@@ -113,6 +115,7 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
         : <p data-testid="poster-export-cut">{t('sheet.poster.cutNone')}</p>}
       {waiting > 0 && <p>{plural(t, { one: 'sheet.poster.waitingOne', other: 'sheet.poster.waitingOther' }, waiting)}</p>}
       {page.width > POSTER_WIDTH && <p>{t('sheet.poster.exportWider')}</p>}
+      {outOfSight && <p role="status">{t('export.outOfSight')}</p>}
     </Dialog>
   )
 }

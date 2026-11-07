@@ -192,6 +192,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'export.authorHelp': 'Leer: niemand wird genannt',
   'export.dialogTitleOf': '{name} als Bild exportieren',
   'export.confirm': 'Exportieren',
+  'export.outOfSight': 'Dieses Fenster ist nicht zu sehen, und ein Bild lässt sich nur in einem sichtbaren Fenster zeichnen. Der Export geht weiter, sobald Sie es zurückholen.',
+  'export.outOfSightTitle': 'Export wartet: Holen Sie dieses Fenster zurück',
   'export.largeConfirm': 'Trotzdem exportieren',
   'toolbar.deployment': 'Wo es läuft',
   'overlay.platform': 'Plattform',

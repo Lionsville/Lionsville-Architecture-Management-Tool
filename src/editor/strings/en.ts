@@ -202,6 +202,8 @@ export const EN = {
   'export.authorHelp': 'Empty: nobody is named',
   'export.dialogTitleOf': 'Export {name} as a picture',
   'export.confirm': 'Export',
+  'export.outOfSight': 'This window is out of sight, and a picture can only be drawn in a window you can see. The export goes on as soon as you bring it back.',
+  'export.outOfSightTitle': 'Export waiting: bring this window back',
   'export.largeConfirm': 'Export anyway',
   'toolbar.deployment': 'Where it runs',
   'overlay.platform': 'Platform',

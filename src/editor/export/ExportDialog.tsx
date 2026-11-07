@@ -53,6 +53,8 @@ export interface ExportDialogProps {
   size: { width: number; height: number; megapixels: number };
   /** The real export is running; the button spins and the options hold still. */
   exporting: boolean;
+  /** The window went out of sight while it runs: it stands still until the window is back, and says so. */
+  outOfSight?: boolean;
   onExport(): void;
   onClose(): void;
   /**
@@ -123,6 +125,7 @@ export function ExportDialog(props: ExportDialogProps) {
           )}
           <p className="export-dialog__size">{t('export.size', props.size)}</p>
           {large && <p className="export-dialog__large" role="status">{t('export.largeBody')}</p>}
+          {props.outOfSight && <p className="export-dialog__large" role="status">{t('export.outOfSight')}</p>}
         </div>
         {/* The preview sits on the export's own background, so a light picture
             previewed in a dark window is seen as it will be seen. */}

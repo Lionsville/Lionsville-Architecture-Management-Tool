@@ -192,6 +192,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.authorHelp': 'Leeg: niemand wordt genoemd',
   'export.dialogTitleOf': '{name} exporteren als afbeelding',
   'export.confirm': 'Exporteren',
+  'export.outOfSight': 'Dit venster is uit beeld, en een afbeelding kan alleen worden getekend in een venster dat u ziet. De export gaat verder zodra u het terughaalt.',
+  'export.outOfSightTitle': 'Export wacht: haal dit venster terug',
   'export.largeConfirm': 'Toch exporteren',
   'toolbar.deployment': 'Waar het draait',
   'overlay.platform': 'Platform',
