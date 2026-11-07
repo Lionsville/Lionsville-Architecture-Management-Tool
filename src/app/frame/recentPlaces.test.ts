@@ -32,6 +32,24 @@ describe('the list', () => {
     expect(remembered(list, place('s', 'new'))).toHaveLength(12)
   })
 
+  it('keeps the records of one page as one place, landing on the newest', () => {
+    const record = (id: string): RecentPlace => ({ scope: 'road', page: 'observations', id, in: 'Road', at: AT })
+    const list = remembered([record('a'), record('b')], record('c'))
+    expect(list.map((one) => one.id)).toEqual(['c'])
+  })
+
+  it('counts a plan as the roadmap and an element page as the documentation, which is what their rows say', () => {
+    const on = (page: RecentPlace['page'], id?: string): RecentPlace => ({ scope: 'road', page, ...(id ? { id } : {}), in: 'Road', at: AT })
+    expect(remembered([on('roadmap')], on('plan', 'p'))).toHaveLength(1)
+    expect(remembered([on('documentation')], on('element', 'e'))).toHaveLength(1)
+    expect(remembered([on('observations')], on('decisions'))).toHaveLength(2)
+    expect(remembered([{ ...on('observations'), scope: 'rail' }], on('observations'))).toHaveLength(2)
+  })
+
+  it('keeps two views apart, for they have names', () => {
+    expect(remembered([place('s', 'one')], place('s', 'two'))).toHaveLength(2)
+  })
+
   it('reads a stored value warily, by source', () => {
     expect(recentFrom({ a: [place('s', 'v'), { scope: 1 }, null] }, 'a')).toHaveLength(1)
     expect(recentFrom({ a: 'no' }, 'a')).toEqual([])
@@ -42,5 +60,11 @@ describe('the list', () => {
   it('offers only what is still there', () => {
     const list = [place('gone', 'a'), place('here', 'b'), place('here', 'c'), place('here', 'd'), place('here', 'e')]
     expect(stillThere(list, (path) => path === 'here').map((one) => one.id)).toEqual(['b', 'c', 'd'])
+  })
+
+  it('shows a page once though an earlier build kept it three times, and fills up with the next place', () => {
+    const record = (id: string): RecentPlace => ({ scope: 'road', page: 'observations', id, in: 'Road', at: AT })
+    const kept = [record('a'), record('b'), record('c'), place('road', 'v')]
+    expect(stillThere(kept, () => true).map((one) => one.id)).toEqual(['a', 'v'])
   })
 })

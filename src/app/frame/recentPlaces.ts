@@ -50,7 +50,17 @@ export function recentOf(screen: Screen, at: string): RecentPlace | undefined {
   return { scope, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id, name: view.name, in: named, at }
 }
 
-const same = (a: RecentPlace, b: RecentPlace) => a.scope === b.scope && a.page === b.page && a.id === b.id
+/**
+ * What a row is told apart by. A view has a name of its own. A page does not, so
+ * the records opened on it, which only its id tells apart, are one place: three
+ * rows of *Observations* say nothing, and a row's press lands on the newest.
+ * A plan is the roadmap's and an element's page the documentation's, as a row says them.
+ */
+const PAGE_OF: Partial<Record<string, string>> = { plan: 'roadmap', element: 'documentation', document: 'documentation' }
+const placeKey = (place: RecentPlace) => (place.name === undefined
+  ? `${place.scope}|${PAGE_OF[place.page] ?? place.page}`
+  : `${place.scope}|${place.page}|${place.id ?? ''}`)
+const same = (a: RecentPlace, b: RecentPlace) => placeKey(a) === placeKey(b)
 
 /** The place put first, once: arriving again moves it up rather than listing it twice. */
 export function remembered(list: readonly RecentPlace[], place: RecentPlace): RecentPlace[] {
@@ -67,9 +77,14 @@ export function recentFrom(stored: unknown, key: string): RecentPlace[] {
   })
 }
 
-/** Those that still have somewhere to land, newest first. */
+/** Those that still have somewhere to land, newest first, each place once however an earlier build kept it. */
 export function stillThere(list: readonly RecentPlace[], scopeIs: (path: string) => boolean, most = 3): RecentPlace[] {
-  return list.filter((one) => scopeIs(one.scope)).slice(0, most)
+  const seen = new Set<string>()
+  return list.filter((one) => {
+    if (!scopeIs(one.scope) || seen.has(placeKey(one))) return false
+    seen.add(placeKey(one))
+    return true
+  }).slice(0, most)
 }
 
 export const RECENT_KEY = 'recentPlaces'
