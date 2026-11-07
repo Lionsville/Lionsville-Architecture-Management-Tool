@@ -13,6 +13,7 @@
   border-bottom: 1px solid var(--line-strong);
 }
 .kit-time__corner {
+  font-size: var(--t-small);
   grid-row: 1 / 3;
   padding: var(--s-1) var(--s-3);
   border-right: 1px solid var(--line-strong);
@@ -66,6 +67,7 @@
   color: var(--ink-2);
   font-size: var(--t-small);
   line-height: 1.625rem;
+  text-overflow: ellipsis;
   text-align: center;
   white-space: nowrap;
 }

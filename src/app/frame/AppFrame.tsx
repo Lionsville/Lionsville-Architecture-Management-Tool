@@ -537,11 +537,16 @@ function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: S
       <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => agent.openSomewhere({ scope: at, page: 'home' })}>
         {s('frame.home')}
       </button>
-      {(views?.views ?? []).map((view) => (
+      {/* A home's views scroll, as a scope's tabs do, when the row has no room for them all. */}
+      {(views?.views ?? []).length > 0 && (
+        <div className="kit-frame__homeviews">
+          {(views?.views ?? []).map((view) => (
         <button key={view.id} type="button" className="kit-frame__tab" data-testid={`frame-view-${view.id}`} onClick={() => agent.openSomewhere({ scope: at, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id })}>
           {view.name}
         </button>
-      ))}
+          ))}
+        </div>
+      )}
       {views?.onNewView && <HomeNewView parts={parts} at={at} onLandscape={views.onNewView} />}
     </>
   )

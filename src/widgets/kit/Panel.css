@@ -23,7 +23,7 @@
 .kit-panel__kindRow { display: flex; align-items: center; gap: var(--s-1); min-height: var(--ctl-h); }
 .kit-panel__kindIcon { display: inline-flex; color: var(--ink-2); }
 .kit-panel__kind { color: var(--ink-2); font-size: var(--t-small); }
-.kit-panel__actions { display: inline-flex; align-items: center; gap: var(--s-1); margin-inline-start: auto; }
+.kit-panel__actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; min-width: 0; align-items: center; gap: var(--s-1); margin-inline-start: auto; }
 
 .kit-panel__name {
   margin: 0;

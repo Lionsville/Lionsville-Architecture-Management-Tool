@@ -16,11 +16,12 @@
 .kit-frame__views .MuiTabs-root { min-height: var(--tabs-h); }
 .kit-frame__views .MuiTab-root { min-height: var(--tabs-h); padding-block: 0; text-transform: none; }
 .kit-frame__grow { flex: 1 1 0; min-width: 0; }
-.kit-frame__body { flex: 1 1 auto; min-height: 0; display: flex; }
+.kit-frame__body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
 /* Its own width and nothing it holds: without the min-width a name that cannot wrap widens the column past what was asked. */
 .kit-frame__tree { flex: 0 0 auto; width: var(--panel-w-tree); min-width: 0; max-width: 60vw; min-height: 0; display: flex; overflow: hidden; background: var(--surface); }
 .kit-frame__main { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .kit-frame__panel { flex: 0 0 auto; min-height: 0; display: flex; }
+.kit-frame__homeviews { flex: 0 1 auto; min-width: min(10rem, 30%); display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; }
 .kit-frame__pages { display: contents; }
 
 /* A page, in the main column over the view: it pushes nothing and nothing shows through. */
@@ -66,7 +67,7 @@
 .kit-tree__head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; padding-block: var(--s-1); padding-inline: var(--s-3) var(--kit-tree-end); font-size: var(--t-small); color: var(--ink-2); background: var(--surface); }
 .kit-tree__empty { margin: 0; padding: var(--s-2) var(--s-3); font-size: var(--t-small); color: var(--ink-2); }
 .kit-tree__rows { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-.kit-tree__foot { flex: 0 0 auto; border-top: 1px solid var(--line); padding-block: var(--s-1); }
+.kit-tree__foot { flex: 0 1 auto; max-height: 50%; overflow-y: auto; border-top: 1px solid var(--line); padding-block: var(--s-1); }
 .kit-tree__heading { padding: var(--s-1) var(--s-3); font-size: var(--t-small); color: var(--ink-2); }
 .kit-tree__row {
   display: flex; align-items: center; min-height: var(--row-h); min-width: 0; cursor: pointer; padding-inline-end: var(--s-1); border-inline-start: 2px solid transparent;
@@ -104,7 +105,13 @@
 @container kit-frame (max-width: 75rem) {
   .kit-frame__find span { display: none; }
   .kit-frame__find { flex: 0 0 36px; justify-content: center; padding-inline: 0; }
-  .kit-frame__status { max-width: 130px; min-width: 40px; flex-shrink: 1; }
+  .kit-frame__status { max-width: 8rem; min-width: 5rem; flex-shrink: 1; }
   .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
   .kit-frame__status-short { display: inline; }
+}
+
+/* A window this narrow in rem, by zoom or by text size, holds one column of work: a panel stands over it instead of squeezing it to nothing, and the tree leaves it most of the width. */
+@container kit-frame (max-width: 56rem) {
+  .kit-frame__panel { position: absolute; inset-block: 0; inset-inline-end: 0; z-index: 5; max-width: 90%; box-shadow: var(--shadow); }
+  .kit-frame__tree { max-width: 45cqw; }
 }

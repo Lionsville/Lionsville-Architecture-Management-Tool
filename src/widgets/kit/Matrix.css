@@ -49,8 +49,8 @@
 }
 .kit-matrix:focus-within .kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
 .kit-matrix__colHead[data-folded] { color: var(--ink); cursor: pointer; }
-.kit-matrix__colName { display: block; width: max-content; max-width: 96px; hyphens: auto; }
-.kit-matrix[data-rotate] .kit-matrix__colName { max-height: 140px; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; }
+.kit-matrix__colName { display: block; width: max-content; max-width: 6.5rem; hyphens: auto; }
+.kit-matrix[data-rotate] .kit-matrix__colName { max-height: 12rem; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; }
 
 .kit-matrix__colHead[data-opens] { cursor: pointer; color: var(--ink); }
 .kit-matrix__colHead[data-opens] .kit-matrix__colName { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--fw-medium); }

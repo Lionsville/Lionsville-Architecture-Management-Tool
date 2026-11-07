@@ -353,7 +353,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           color="inherit"
           onClick={() => go(currentPath)}
           data-testid="crumb-current"
-          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
+          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, minHeight: 'var(--target-min)', textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
         >
           {current}
         </Button>

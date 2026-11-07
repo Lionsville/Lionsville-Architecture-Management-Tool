@@ -176,7 +176,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
             <RulerMarks view={view} width={width} today={today} day={day} slides={onDayChange !== undefined} onViewChange={onViewChange} />
             <div className="kit-time__cells">
               {rulerCells(view, width).map((cell) => (
-                <span key={cell.key} className="kit-time__cell" data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
+                <span key={cell.key} className="kit-time__cell" title={cellWord(cell, locale)} data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
                   {cell.width * width >= 22 || width === 0 ? cellWord(cell, locale) : ''}
                 </span>
               ))}

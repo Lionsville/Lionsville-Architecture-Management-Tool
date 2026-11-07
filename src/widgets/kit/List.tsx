@@ -472,7 +472,7 @@ export function List({
       )}
       {!hasRows ? empty : (
         <div
-          ref={root} role={groups.some((group) => group.label || group.rows.some((row) => row.depth)) ? 'treegrid' : 'grid'} aria-label={label} aria-multiselectable={ticks || undefined}
+          ref={root} role={groups.some((group) => group.label || group.rows.some((row) => row.depth !== undefined)) ? 'treegrid' : 'grid'} aria-label={label} aria-multiselectable={ticks || undefined}
           className="kit-list__grid" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocusIn} onBlur={onFocusOut}
           onDragStart={onRowDragStart ? (event) => {
             const key = (event.target as HTMLElement).closest<HTMLElement>('[data-kit-row]')?.dataset.kitRow

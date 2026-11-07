@@ -56,7 +56,7 @@
 .conway__text { margin: 0 0 var(--s-2); font-size: var(--t-body); color: var(--ink); }
 .conway__quiet { margin: 0 0 var(--s-2); font-size: var(--t-small); color: var(--ink-2); }
 .conway__stack { display: grid; gap: var(--s-1); justify-items: start; margin-bottom: var(--s-2); }
-.conway__link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: var(--t-body); cursor: pointer; text-align: start; }
+.conway__link { min-height: var(--target-min); padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: var(--t-body); cursor: pointer; text-align: start; }
 .conway__link:hover { text-decoration: underline; }
 .conway__link:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .conway__row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); padding-block: 2px; font-size: var(--t-body); }

@@ -12,7 +12,7 @@
 .sheet-page__keyRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); }
 .sheet-page__keyRow .kit-key { border: 0; box-shadow: none; background: transparent; padding: 0; }
 .sheet-page__keyEnd { margin-inline-start: auto; }
-.sheet-page__link { appearance: none; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.sheet-page__link { min-height: var(--target-min);  appearance: none; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .sheet-page__link:focus-visible,
 .sheet-row__main:focus-visible,
 .sheet-row__caret:focus-visible,
@@ -31,7 +31,7 @@
 .sheet-areas__packed .sheet-area { position: absolute; margin: 0; }
 .sheet-area[data-standin] { border-inline-start: 1px dashed var(--line-strong); padding-inline-start: var(--s-2); }
 .sheet-area__head { display: flex; align-items: flex-start; gap: var(--s-2); padding-block: var(--s-1); border-bottom: 1px solid var(--line-strong); }
-.sheet-area__headMain { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; font-size: var(--t-body); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; }
+.sheet-area__headMain { min-height: var(--target-min);  flex: 1 1 auto; min-width: 0; appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; font-size: var(--t-body); font-weight: var(--fw-strong); text-align: start; cursor: pointer; overflow-wrap: anywhere; hyphens: auto; }
 .sheet-area__count { flex: none; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .sheet-area__note { padding-block: var(--s-1); color: var(--ink-2); }
 .sheet-area__problem { display: flex; gap: var(--s-1); align-items: center; padding-block: 2px; color: var(--warn); }
@@ -49,7 +49,7 @@
 .sheet-row[data-dim] { opacity: 0.45; }
 .sheet-row:hover { background: var(--surface-2); }
 .sheet-row[data-selected]:hover { background: var(--accent-soft); }
-.sheet-row__caret { flex: none; width: 16px; height: var(--row-h-dense); appearance: none; border: 0; padding: 0; background: none; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.sheet-row__caret { flex: none; width: var(--target-min); height: var(--row-h-dense); appearance: none; border: 0; padding: 0; background: none; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .sheet-row__caret svg { width: 10px; height: 10px; transition: transform 80ms linear; }
 .sheet-row__caret[aria-expanded="false"] svg { transform: rotate(-90deg); }
 .sheet-row__pad { flex: none; width: 16px; }
@@ -120,7 +120,7 @@
 .sheet-unmapped { margin-block-start: var(--s-5); padding: var(--s-2) var(--s-3); border: 1px dashed var(--line-strong); border-radius: var(--r-2); }
 .sheet-unmapped__title { font-weight: var(--fw-strong); }
 .sheet-unmapped__rows { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-1); }
-.sheet-unmapped__row { appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); cursor: pointer; }
+.sheet-unmapped__row { min-height: var(--target-min);  appearance: none; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); cursor: pointer; }
 
 /* The find bar stays open, with the hits lit where they sit. */
 .sheet-find { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); background: var(--surface); }

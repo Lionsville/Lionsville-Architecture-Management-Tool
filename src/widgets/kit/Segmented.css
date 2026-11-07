@@ -9,7 +9,7 @@
   overflow: hidden;
 }
 .kit-segmented:has(:focus-visible) { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
-.kit-segmented__option {
+.kit-segmented__option { min-width: var(--target-min); min-height: var(--target-min); 
   flex: none;
   padding-inline: var(--s-2);
   border: 0;

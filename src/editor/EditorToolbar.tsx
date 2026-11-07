@@ -456,7 +456,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             // right by the auto margin of the spacer after the + (3.7.2), so
             // the tabs are not handed half the free width while the rest of
             // the bar stands empty.
-            sx={{ minHeight: 40, flex: '1 1 0', maxWidth: 'max-content', minWidth: 0, '& .MuiTab-root': { minHeight: 40, py: 0.5 } }}
+            sx={{ minHeight: 'var(--tabs-h)', flex: '1 1 0', maxWidth: 'max-content', minWidth: 0, '& .MuiTab-root': { minHeight: 'var(--tabs-h)', py: 0 }, '& .MuiTabs-scroller, & .MuiTabs-flexContainer': { height: '100%' } }}
           >
             {tabs.map((diagram) => (
               <Tab

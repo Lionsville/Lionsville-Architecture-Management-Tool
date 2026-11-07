@@ -83,7 +83,7 @@ export function JourneyBand({ journey, open, onOpen, selectedId, onSelect, onNew
           <CaretIcon />
         </button>
         <button type="button" className="sheet-page__link sheet-journey__name" data-element-id={journey.element.id} onClick={() => onSelect(journey.element.id)}>{journey.element.name}</button>
-        {!open && <span className="sheet-journey__phases">{journey.phases.map((phase) => phase.name).join(' · ')}</span>}
+        {!open && <span className="sheet-journey__phases" title={journey.phases.map((phase) => phase.name).join(' · ')}>{journey.phases.map((phase) => phase.name).join(' · ')}</span>}
         <span className="sheet-journey__sum">{t('sheet.journeySum', { phases: journey.phases.length, steps, lanes: Math.max(0, journey.lanes.length - 1) })}</span>
       </div>
       {open && (
