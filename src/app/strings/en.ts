@@ -1462,6 +1462,7 @@ export const EN = {
   'conway.hideTheirLines': 'Hide their lines',
   'conway.keyHeavy': 'Heavy and dashed: systems connect, nothing said',
   'conway.keyThin': 'Thin: both agree',
+  'conway.keyDotted': 'Dotted and faint: an end has no owner, so it cannot be judged',
   'conway.keyPress': 'Press a line or a card to read it in the panel.',
   'conway.lineLabel': '{source} → {target}',
   'conway.moreLines': 'and {count} more',

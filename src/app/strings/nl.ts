@@ -1239,6 +1239,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'conway.hideTheirLines': 'Verberg hun lijnen',
   'conway.keyHeavy': 'Zwaar en gestreept: systemen verbonden, niets gezegd',
   'conway.keyThin': 'Dun: beide kloppen',
+  'conway.keyDotted': 'Gestippeld en vaag: een kant heeft geen eigenaar, dus niet te beoordelen',
   'conway.keyPress': 'Druk op een lijn of kaart om die in het paneel te lezen.',
   'conway.lineLabel': '{source} → {target}',
   'conway.moreLines': 'en nog {count}',

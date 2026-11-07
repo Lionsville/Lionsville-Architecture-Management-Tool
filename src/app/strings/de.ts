@@ -1240,6 +1240,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'conway.hideTheirLines': 'Ihre Linien ausblenden',
   'conway.keyHeavy': 'Kräftig gestrichelt: Systeme verbunden, nichts gesagt',
   'conway.keyThin': 'Dünn: beides stimmt überein',
+  'conway.keyDotted': 'Gepunktet und blass: einem Ende fehlt der Eigentümer, also nicht zu beurteilen',
   'conway.keyPress': 'Drücke eine Linie oder Karte, um sie im Panel zu lesen.',
   'conway.lineLabel': '{source} → {target}',
   'conway.moreLines': 'und {count} weitere',

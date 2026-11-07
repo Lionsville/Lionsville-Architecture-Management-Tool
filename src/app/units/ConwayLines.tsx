@@ -210,7 +210,7 @@ export function ConwayLines({ map, kindOf, nameOf, show, onShow, showUnowned, on
         </div>
       )}
       <div className="conway__key">
-        <span>{t('conway.keyHeavy')}</span><span>{t('conway.keyThin')}</span><span>{t('conway.keyPress')}</span>
+        <span>{t('conway.keyHeavy')}</span><span>{t('conway.keyThin')}</span>{showUnowned && <span>{t('conway.keyDotted')}</span>}<span>{t('conway.keyPress')}</span>
       </div>
     </>
   )
@@ -243,7 +243,8 @@ export function ConwayPairDrawing({ a, b, lines, kindOf, nameOf, pickedApp, grou
       const [left, right] = source.left < target.left ? [source, target] : [target, source]
       const [y1, y2] = [(left.top + left.bottom) / 2, (right.top + right.bottom) / 2]
       const middle = (left.right + right.left) / 2
-      return [{ key: line.flow.id, line, d: `M${left.right},${y1} C${middle},${y1} ${middle},${y2} ${right.left},${y2}` }]
+      // At right angles, as the Lines reading and the chart draw theirs: one way of drawing a line on these pages.
+      return [{ key: line.flow.id, line, d: `M${left.right},${y1} H${middle} V${y2} H${right.left}` }]
     })
     setRoutes(next)
   }, [lines])
